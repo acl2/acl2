@@ -9846,8 +9846,8 @@
 
 (defun prove-loop0 (clauses pspv hints ens wrld ctx state)
 
-; Warning: Because this function binds in-prove-flg to t, it should be called
-; only when *acl2-time-limit* has been let-bound.
+; Warning: This function assumes that *acl2-time-limit* has already been
+; let-bound in raw Lisp by bind-acl2-time-limit.
 
 ; The perhaps unusual structure below is intended to invoke
 ; print-pstack-and-gag-state only when there is a hard error such as an

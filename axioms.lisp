@@ -37098,9 +37098,9 @@
 ; in-local-flg.
 ;    in-local-flg
 
-; Probably in-prove-flg should be untouchable, but for now we omit it from the
-; list in order that the community book, misc/bash.lisp, be certifiable.
-;   in-prove-flg
+;   Since in-prove-flg need not be untouchable (currently it is only used by
+;   break-on-error), we omit it from this list.  It is used by community book
+;   misc/bash.lisp.
 
     axiomsp
 
