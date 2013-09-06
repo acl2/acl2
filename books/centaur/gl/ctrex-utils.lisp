@@ -183,6 +183,19 @@
 (defun pos-fix (x)
   (if (posp x) x 1))
 
+
+(defun gl-ctrex-def (fn state)
+  (declare (xargs :stobjs state
+                  :guard (symbolp fn)))
+  (b* ((tab (table-alist 'gl-ctrex-defs (w state)))
+       (look (cdr (hons-assoc-equal fn tab)))
+       ((when (equal (len look) 2))
+        (b* (((list formals body) look))
+          (mv t formals body))))
+    (acl2::fn-get-def fn state)))
+
+
+
 (mutual-recursion
  (defun magicer-ev (x alist clk state hard-errp aokp)
    (declare (xargs :guard (and (natp clk)
@@ -231,7 +244,7 @@
                  ((mv ev-err val)
                   (acl2::magic-ev-fncall fn args state hard-errp aokp))
                  ((unless ev-err) (mv nil val))
-                 ((mv ok formals body) (acl2::fn-get-def fn state))
+                 ((mv ok formals body) (gl-ctrex-def fn state))
                  ((unless ok) (mv (acl2::msg
                                    "can't execute and no definition: ~x0 ~@1~%"
                                    fn (if (eq ev-err t) "" ev-err))
@@ -252,6 +265,14 @@
           ((mv err rest) (magicer-ev-lst (cdr x) alist clk state hard-errp aokp))
           ((when err) (mv err nil)))
        (mv nil (cons first rest))))))
+
+(defun set-gl-ctrex-def-fn (fn formals body state)
+  (declare (xargs :mode :program :stobjs state))
+  (b* (((er tr-body) (acl2::translate body t t t 'set-gl-ctrex-def (w state) state)))
+    (value `(table gl-ctrex-defs ',fn '(,formals ,tr-body)))))
+
+(defmacro set-gl-ctrex-def (fn formals body)
+  `(make-event (set-gl-ctrex-def-fn ',fn ',formals ',body state)))
 
 
 
