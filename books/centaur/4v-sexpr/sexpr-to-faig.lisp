@@ -316,6 +316,7 @@ faig-constructors)."
   (fv-4v-commute 4v-iff      f-aig-iff      (a b))
   (fv-4v-commute 4v-ite      f-aig-ite      (a b c))
   (fv-4v-commute 4v-ite*     f-aig-ite*     (a b c))
+  (fv-4v-commute 4v-zif      f-aig-zif      (a b c))
   (fv-4v-commute 4v-tristate t-aig-tristate      (c a))
   (fv-4v-commute 4v-pullup   f-aig-pullup   (a))
   (fv-4v-commute 4v-res      f-aig-res      (a b)))
@@ -357,6 +358,7 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
          (iff       (f-aig-iff    arg1 arg2))
          (or        (f-aig-or     arg1 arg2))
          (ite*      (f-aig-ite*   arg1 arg2 arg3))
+         (zif       (f-aig-zif    arg1 arg2 arg3))
          (buf       (f-aig-unfloat    arg1))
          (res       (f-aig-res    arg1 arg2))
          (tristate  (t-aig-tristate    arg1 arg2))
@@ -459,8 +461,12 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
      (equal (t-aig-ite (f-aig-unfloat c) (f-aig-unfloat x) (f-aig-unfloat y))
             (f-aig-ite c x y)))
 
+   (defthm t-aig-ite*-unfloat-is-f-aig-zif-unfloat
+     (equal (t-aig-ite* (f-aig-unfloat c) x y)
+            (f-aig-zif c x y)))
+
    (defthm t-aig-ite*-f-aig-unfloat
-     (equal (t-aig-ite* (f-aig-unfloat c) (f-aig-unfloat x) (f-aig-unfloat y))
+     (equal (f-aig-zif c (f-aig-unfloat x) (f-aig-unfloat y))
             (f-aig-ite* c x y)))))
 
 
@@ -546,8 +552,15 @@ use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
           ((when (eq fn 'res))      (f-aig-res (4v-first args) (4v-second args)))
           ((when (eq fn 'tristate)) (t-aig-tristate (4v-first args) (4v-second args)))
           ((when (eq fn 'pullup))   (f-aig-pullup (4v-first args)))
+          ((when (eq fn 'zif))
+           (t-aig-ite* (maybe-f-aig-unfloat
+                        (mbe :logic (first sargs)
+                             :exec (and (consp sargs) (car sargs)))
+                        (4v-first args))
+                       (4v-second args)
+                       (4v-third args)))
           ;; Otherwise, fixup only those subexpressions that might produce Zs
-          (args (maybe-f-aig-unfloat-list (cdr x) args))
+          (args (maybe-f-aig-unfloat-list sargs args))
           (arg1 (4v-first args))
           (arg2 (4v-second args))
           (arg3 (4v-third args)))

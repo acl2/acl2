@@ -61,12 +61,8 @@
   (vl::vl-module->esim *counter-vl*))
 
 
-
 (defstv counter-run         ;; name for this test vector
   :mod *counter*            ;; the module this vector pertains to
-
-  :initial
-  '(("out"    init))  ; initial value for the counter
 
   :inputs
   '(("clk"    0 ~)  ; clk will toggle
@@ -88,6 +84,10 @@
    ;           v   .   v   .   v   .   v   .   v
   '(("out"    o0   _  o1   _  o2   _  o3   _  o4 _))   ; extract out before each posedge
 
+  :overrides
+  '(("out"    init _))  ; initial value for the counter
+
+
   ;; I'll use this as a chance to also show off the documentation features.
   :labels '(c0  c1 c1  c2 c2  c3 c3  c4 c4  c5)
   :parents (esim-tutorial)
@@ -95,8 +95,6 @@
   :long "<p>This is a demo of the defstv documentation stuff.  You can see what
 it generates by going to the counter-run page in the XDOC manual; see
 centaur/README.html if you don't know where to look.</p>")
-
-
 
 
 ; Some basic examples of running the counter.

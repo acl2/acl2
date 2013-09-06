@@ -145,6 +145,7 @@ counterpart.</p>")
         (iff       (4v-iff      arg1 arg2))
         (or        (4v-or       arg1 arg2))
         (ite*      (4v-ite*     arg1 arg2 arg3))
+        (zif       (4v-zif      arg1 arg2 arg3))
         (buf       (4v-unfloat  arg1))
         (res       (4v-res      arg1 arg2))
         (tristate  (4v-tristate arg1 arg2))
@@ -154,8 +155,7 @@ counterpart.</p>")
         ;; (wand     (4v-wand  arg1 arg2))
         ;; (wor      (4v-wor   arg1 arg2))
         (otherwise (4vx)))))
-         
-         
+
 
 ; [Jared] I was tempted to make a 4v-sexpr-eval1 function in the style of
 ; 4v-sexpr-eval-alist1, but this seems troublesome because it would mean
@@ -190,6 +190,7 @@ counterpart.</p>")
           (iff       (4v-iff      arg1 arg2))
           (or        (4v-or       arg1 arg2))
           (ite*      (4v-ite*     arg1 arg2 arg3))
+          (zif       (4v-zif      arg1 arg2 arg3))
           (buf       (4v-unfloat  arg1))
           (res       (4v-res      arg1 arg2))
           (tristate  (4v-tristate arg1 arg2))

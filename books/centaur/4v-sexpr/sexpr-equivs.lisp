@@ -59,6 +59,7 @@
 (prove-4v-equiv-cong 4v-res (a b))
 (prove-4v-equiv-cong 4v-ite (c a b))
 (prove-4v-equiv-cong 4v-ite* (c a b))
+(prove-4v-equiv-cong 4v-zif (c a b))
 (prove-4v-equiv-cong 4v-tristate (c a))
 (prove-4v-equiv-cong 4v-pullup (a))
 

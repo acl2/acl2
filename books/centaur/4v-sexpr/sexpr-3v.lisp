@@ -32,6 +32,7 @@
            (not (or (eq fn (4vz))
                     (eq fn 'id)
                     (eq fn 'res)
+                    (eq fn 'zif)
                     (eq fn 'tristate))))))
 
   (local (in-theory (enable* 3v-syntax-sexprp

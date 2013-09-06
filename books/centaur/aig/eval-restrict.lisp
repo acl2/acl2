@@ -768,6 +768,7 @@ constant false, whereas the car of @('y') is @('t'), constant true.</p>
 (prove-faig-congruences f-aig-ite (c a b))
 (prove-faig-congruences t-aig-ite* (c a b))
 (prove-faig-congruences f-aig-ite* (c a b))
+(prove-faig-congruences f-aig-zif (c a b))
 (prove-faig-congruences t-aig-tristate (c a))
 (prove-faig-congruences f-aig-pullup (a))
 

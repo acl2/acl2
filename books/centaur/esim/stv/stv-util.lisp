@@ -30,10 +30,10 @@
   :parents (symbolic-test-vectors)
   :short "Temporary internal representation of STV lines during compilation."
   :tag :stvdata
-  ((initial   true-list-listp)
-   (inputs    true-list-listp)
+  ((inputs    true-list-listp)
    (outputs   true-list-listp)
-   (internals true-list-listp)))
+   (internals true-list-listp)
+   (overrides true-list-listp)))
 
 (cutil::defaggregate compiled-stv
   :parents (symbolic-test-vectors)
@@ -42,49 +42,59 @@
   ((nphases posp
             "number of phases for this simulation"
             :rule-classes :type-prescription)
-   (out-extract-alists "what to extract at times 0...{N-1} from outputs")
-   (int-extract-alists "what to extract at times 0...{N-1} from internals")
+
+   (nst-extract-alists "what to extract at times 0...{N-1} from next-states"
+                       true-listp :rule-classes :type-prescription)
+
+   (out-extract-alists "what to extract at times 0...{N-1} from outputs"
+                       true-listp :rule-classes :type-prescription)
+
+   (int-extract-alists "what to extract at times 0...{N-1} from internals"
+                       true-listp :rule-classes :type-prescription)
+
+   (override-bits      "flat list of state bits involved in overrides, i.e.,
+                        just the override_value and override_decision vars"
+                       symbol-listp)
+
    (restrict-alist     "combined alist binding
-                         (init-state &rarr; sexpr) and
-                         (input-bit@phase &rarr; sexpr)")
-   (in-usersyms        "(simulation var &rarr; bit list) alist for INITIAL+INS")
-   (out-usersyms       "(simulation var &rarr; bit list) alist for OUTS+INTS")
-   (expanded-ins       "not useful for much")
-   (expanded-outs      "not useful for much")
-   (expanded-ints      "not useful for much")))
+                          (input-bit@phase &rarr; sexpr) and
+                          (override-bit@phase &rarr; sexpr)")
+
+   (in-usersyms        "(simulation var &rarr; bit list) alist for Inputs +
+                        Overrides (replacement value insertion)")
+   (out-usersyms       "(simulation var &rarr; bit list) alist for Outputs +
+                        Internals + Overrides (original value extraction)")
+
+   (expanded-ins       "Input lines with s-expression values, used only so
+                        that we can resolve ~s in stv-doc.")
+
+   (override-paths     "Paths being overridden, so we can recreate the cut
+                        module as needed."
+                       true-listp)
+
+   ))
 
 (cutil::defaggregate processed-stv
   :parents (stv-process)
   :short "Representation of a processed STV."
   :tag :processed-stv
-  ((mod                "module being simulated")
-   (user-stv           "pre-compilation stv")
+  ((name               "A name for this STV."
+                       symbolp)
+   (user-stv           "The user-level, pre-compiled STV.  This may be useful when
+                        generating documentation for STVs.")
    (compiled-stv       compiled-stv-p
-                       "post-compilation stv")
+                       "A @(see compiled-stv-p), should be the compiled version
+                        of the user's STV; see @(see stv-compile).")
    (relevant-signals   "(out/int sim var bit &rarr; sexpr) alist"))
 
   :long "<p>You should probably read @(see stv-implementation-details) to
 understand these fields.</p>
 
-<ul>
-
-<li>The @('mod') is the @(see esim) module for this STV.  We save this in the
-processed STV so that we re-simulate it later, if necessary, for @(see
-stv-debug).</li>
-
-<li>The @('user-stv') is the user-level, pre-compiled STV.  This may be useful
-when generating documentation for STVs.</li>
-
-<li>The @('compiled-stv') is a @(see compiled-stv-p) and should be the compiled
-version of the user's STV; see @(see stv-compile).</li>
-
-<li>The @('relevant-signals') is an alist computed by @(see stv-process) that
+<p>The @('relevant-signals') is an alist computed by @(see stv-process) that
 maps each the bits for each internal/output simulation variable to
 already-restricted @(see 4v-sexprs).  That is, these s-expressions are
 generally in terms of the input simulation variable bits, and ready to be
-evaluated by @(see stv-run).</li>
-
-</ul>
+evaluated by @(see stv-run).</p>
 
 <p>Historically we had another field that could also optionally store
 pre-computed snapshots for debugging.  We took this out because it could make
@@ -120,7 +130,8 @@ going to simulate."
   (b* (((stvdata stv) stv))
     (max (stv-max-phases-in-lines stv.inputs)
          (max (stv-max-phases-in-lines stv.outputs)
-              (stv-max-phases-in-lines stv.internals)))))
+              (max (stv-max-phases-in-lines stv.internals)
+                   (stv-max-phases-in-lines stv.overrides))))))
 
 
 (define stv-suffix-signals ((x atom-listp)

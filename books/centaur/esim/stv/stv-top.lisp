@@ -77,14 +77,11 @@ stv-implementation-details).</p>")
   :long "<h3>Example Test Vector</h3>
 
 @({
- ((:initial
-   (\"foo.statemachine.busy\"  0)
-   (\"foo.prevStutter\"        stutter))
-
- ;; phases:                0      1     2     3     4          5        6  ...
+ (
+ ;; phases:                0      1     2     3     4      5        6  ...
  ;; ---------------------------------------------------------------------------
 
-  (:inputs
+  (:inputs ;; for supplying values to input wires
    (\"clock\"               0      ~)
    (\"ibus[13:10]\"     #b101  #b101     _)
    (\"ibus[9:0]\"          op     op     _)
@@ -94,25 +91,29 @@ stv-implementation-details).</p>")
    (\"reset\"               0)
    (\"fuse[0]\"             X))
 
-  (:outputs
+  (:outputs ;; for extracting values on output wires
    (\"result_bus\"          _      _     _     _     _       res1     res2)
    (\"result_bus[63:32]\"   _      _     _     _     _    res-hi1  res-hi2)
    (\"result_bus[31:0]\"    _      _     _     _     _    res-lo1  res-lo2)
    )
 
-  (:internals
+  (:internals ;; for extracting values on internal wires
    (\"queue0.mgr.fail\"     _      _     qf1   qf2   _))
 
+ ;; advanced features:
+
+  (:overrides ;; for forcibly overriding values on wires
+
+   ;; abstract away product wire, replacing it with variables
+   (\"foo.prod\"           _      _   prod    _     _      _        _ )
+
+   ;; force fast mode to true after phase 1, no matter what its real value is
+   (\"foo.fastmode\"       _      _     1     1     1      1        1 ))
+
   )
- ;; ---------------------------------------------------------------------------
 })
 
 <h3>High-Level Overview</h3>
-
-<p>The @(':initial') section controls the initial values of state bits.  For
-the above vector, @('foo.statemachine.busy') will be initialized to zero and
-@('foo.prevStutter') will be some particular value, @('stutter'), that can be
-specified at @(see stv-run) time.</p>
 
 <p>The @(':inputs') section controls how the module's inputs will be set over
 the course of the simulation.  For the above vector,</p>
@@ -164,6 +165,11 @@ there is an X in only one side of the result bus.</li>
 
 <p>The @(':internals') section is similar to the outputs section, but it allows
 you to pull out the values of internal signals in the module.</p>
+
+
+<p>The @(':overrides') section is similar to the inputs section, but it allows
+you to forcibly install new values onto wires, regardless of how they are
+actually driven by the circuit.</p>
 
 
 <h3>Input Line Format</h3>
@@ -280,33 +286,40 @@ include a Verilog-style bit- or part-select at the end.  It is also possible to
 use explicit lsb-first ordered lists of ESIM paths.</p>
 
 
-<h3>Initial Line Format</h3>
+<h3>Override Line Format</h3>
 
-<p>Each line in the @(':initial') section explains how to initialize some state
-bits.  Unlike input lines, each initial line has only a single value, namely
-its value at the start of the simulation.  This is because the value the
-register stores during the subsequent phases of the simulation is determined by
-the circuit.  Each initial line has the following format:</p>
+<p>Each line in the @(':override') section explains how to override some
+internal wire.</p>
 
-@({
- (name value)
-})
-
-<p>The names in initial lines may be strings that are Verilog-style plain or
+<p>The names in override lines may be strings that are Verilog-style plain or
 hierarchical identifiers using periods as separators, which may optionally
 include a Verilog-style bit- or part-select at the end.  It is also possible to
 use explicit lsb-first ordered lists of ESIM paths.</p>
 
-<p>STVs are slightly clever in how they interpret these names.  In short, you
-don't have to write down the whole path to a Verilog @('reg') or anything like
-that, because the STV compiler will automatically walk backwards from whatever
-paths you give it.  As long as this walk takes it to a flop or latch, it will
-know which state bit to initialize.  In practice, you can give paths that are
-separated from their Verilog @('reg')s through any number of assignments,
-inverters, and buffers.</p>
+<p>The @('value')s here are similar to those of input lines, except that:</p>
 
-<p>The @('value')s here are like those of input lines, except that you can't
-use @('~') since there isn't any previous value to invert.</p>")
+<ul>
+
+<li>@('~') is not allowed, because it would be somewhat confusing.</li>
+
+<li>@('_') means \"don't override the wire during this phase\".</li>
+
+</ul>
+
+<p>Every variable used in an override line becomes both an input and an output
+variable of the STV.  For instance, in the example above, we had the following
+override line:</p>
+
+@({
+   (\"foo.prod\"           _      _   prod    _     _      _        _ )
+})
+
+<p>Here, as an input to the STV, @('prod') allows us to forcibly set the value
+of the wire @('foo.prod').  As an output, @('prod') gives us the <b>original,
+un-overridden</b> expression for @('prod').  (Well, that's probably mostly
+true.  If @('prod') depends on other overridden values, or is involved in some
+combinational loop so that it affects itself, then this may not be quite
+right.)</p>")
 
 
 
@@ -460,10 +473,13 @@ are installed, so just use explicit bounds instead.</p>"
   :parents (defstv)
   :short "Main error checking and processing of an STV."
 
-  (&key (mod good-esim-modulep) initial inputs outputs internals)
+  (&key (mod good-esim-modulep)
+        (name symbolp)
+        inputs outputs internals overrides)
 
   :returns (pstv (equal (processed-stv-p pstv)
-                        (if pstv t nil)))
+                        (if pstv t nil))
+                 :hyp (force (symbolp name)))
 
   :long "<p>This is the main part of @(see defstv).</p>
 
@@ -477,9 +493,6 @@ documentation, creating autohyps macros, etc.</p>"
                         ;; Blah, silly, (good-esim-modulep nil) is true, so
                         ;; explicitly check for this.
                         (raise "No :mod was specified.")))
-       (initial     (if (true-list-listp initial)
-                        initial
-                      (raise ":initial is not even a true-list-listp")))
        (inputs      (if (true-list-listp inputs)
                         inputs
                       (raise ":inputs are not even a true-list-listp")))
@@ -489,8 +502,11 @@ documentation, creating autohyps macros, etc.</p>"
        (internals   (if (true-list-listp internals)
                         internals
                       (raise ":internals are not even a true-list-listp")))
+       (overrides   (if (true-list-listp overrides)
+                        overrides
+                      (raise ":overrides are not even a true-list-listp")))
 
-       (stv         (make-stvdata :initial   initial
+       (stv         (make-stvdata :overrides overrides
                                   :inputs    inputs
                                   :outputs   outputs
                                   :internals internals))
@@ -511,8 +527,11 @@ documentation, creating autohyps macros, etc.</p>"
         ;; this shouldn't happen... it should throw an error instead
         (raise "stv-compile failed?"))
 
+       (mod (stv-cut-module
+             (compiled-stv->override-paths compiled-stv) mod))
+
        (processed-stv
-        (time$ (stv-process stv compiled-stv mod)
+        (time$ (stv-process name stv compiled-stv mod)
                :msg "; stv processing: ~st sec, ~sa bytes~%"
                :mintime 1/2))
 
@@ -523,7 +542,6 @@ documentation, creating autohyps macros, etc.</p>"
     processed-stv))
 
 
-
 (define defstv-fn
   :parents (defstv)
   :short "Implementation of @(see defstv)."
@@ -532,7 +550,7 @@ documentation, creating autohyps macros, etc.</p>"
    (mod-const-name  symbolp "E.g., the symbol *mmx*")
    (mod             good-esim-modulep "E.g., the actual E module for *mmx*")
    ;; Arguments from the user...
-   initial inputs outputs internals
+   inputs outputs internals overrides
    labels parents short long)
 
   (b* ((labels      (if (symbol-listp labels)
@@ -550,7 +568,8 @@ documentation, creating autohyps macros, etc.</p>"
                                                   ""))))
 
        (processed-stv (defstv-main :mod       mod
-                                   :initial   initial
+                                   :name      name
+                                   :overrides overrides
                                    :inputs    inputs
                                    :outputs   outputs
                                    :internals internals))
@@ -583,11 +602,14 @@ acl2::defstv).</p>"
 
 
          ;; Stupid trick to avoid saving the module in the .cert file
-         (stvconst-without-mod (intern-in-package-of-symbol
-                                (str::cat "*" (symbol-name name) "-WITHOUT-MOD*")
-                                name))
-         (stvconst-with-mod    (intern-in-package-of-symbol
+         (stvconst             (intern-in-package-of-symbol
                                 (str::cat "*" (symbol-name name) "*")
+                                name))
+         (modconst             (intern-in-package-of-symbol
+                                (str::cat "*" (symbol-name name) "-MOD*")
+                                name))
+         (name-mod             (intern-in-package-of-symbol
+                                (str::cat (symbol-name name) "-MOD")
                                 name))
          (name-autohyps        (intern-in-package-of-symbol
                                 (str::cat (symbol-name name) "-AUTOHYPS")
@@ -599,21 +621,22 @@ acl2::defstv).</p>"
                                 (str::cat (symbol-name name) "-AUTOBINDS")
                                 name))
 
-         (cmds `((defconst ,stvconst-without-mod
-                   ;; Remove :mod from the quoted constant we save
-                   ',(change-processed-stv processed-stv :mod nil))
+         (cmds `((defconst ,stvconst ',processed-stv)
 
-                 (defconst ,stvconst-with-mod
-                   ;; Now restore it with a separate defconst, which gets evaluated
-                   ;; at include-book time
-                   (change-processed-stv ,stvconst-without-mod
-                                         :mod ,mod-const-name))
+                 (defconst ,modconst
+                   (stv-cut-module (compiled-stv->override-paths
+                                    (processed-stv->compiled-stv ,stvconst))
+                                   ,mod-const-name))
 
                  (defund ,name ()
                    ;; Using a 0-ary function instead of a constant is nice when
                    ;; we want to look at DEF-GL-THMs with :PR, etc.
                    (declare (xargs :guard t))
-                   ,stvconst-with-mod)
+                   ,stvconst)
+
+                 (defund ,name-mod ()
+                   (declare (xargs :guard t))
+                   ,modconst)
 
                  (defmacro ,name-autohyps ()
                    ',(stv-autohyps processed-stv))
@@ -634,9 +657,8 @@ acl2::defstv).</p>"
                           :long ,long)
                        cmds))))
 
-      `(progn . ,cmds)))
-
-
+      `(with-output :off (event)
+         (progn . ,cmds))))
 
 
 (defsection defstv
@@ -646,15 +668,15 @@ acl2::defstv).</p>"
 
 @({
  (defstv my-run
-   :mod *my-mod*
-   :initial   '((\"foo.bar.myreg\" mr)       ...)
+   :mod       *my-mod*
    :inputs    '((\"opcode\" _ _ op _)        ...)
    :outputs   '((\"result\" _ _ _ _ res _)   ...)
    :internals '((\"foo.bar.mybus\" _ _ mb _) ...)
-   :labels '(A nil B nil C nil)]
-   :parents ...
-   :short ...
-   :long ...)
+   :overrides '((\"foo.bar.mywire\" _ mw _ _) ...)
+   :labels    '(A nil B nil C nil)]
+   :parents   ...
+   :short     ...
+   :long      ...)
 })
 
 <p>The @('defstv') command is the main interface for defining symbolic test
@@ -672,9 +694,9 @@ convenient macros for use in @(see def-gl-thm) commands, and can also produce
 requirement lets us avoid writing the module into the certificate, which can
 significantly improve performance when including books with STVs.</li>
 
-<li>The @(':initial'), @(':inputs'), @(':outputs'), and @(':internals') control
-how to simulate the module.  For the syntax and meaning of these lines, see
-@(see symbolic-test-vector-format).</li>
+<li>The @(':inputs'), @(':outputs'), @(':internals'), and @(':overrides')
+control how to simulate the module.  For the syntax and meaning of these lines,
+see @(see symbolic-test-vector-format).</li>
 
 </ul>
 
@@ -704,7 +726,6 @@ processed-stv-p).  You should generally only interact with this object using
 interfacing functions like @(see stv->vars), @(see stv-out->width), etc., and
 not directly use the @('processed-stv-p') accessors (in case we change the
 format).</dd>
-
 
 <dt>@('(my-run-autohyps)')</dt>
 
@@ -770,16 +791,24 @@ be fine and very convenient.  For more complex modules, you'll probably want to
 write your own binding macros.  See @(see stv-easy-bindings) for a high-level
 way to describe most kind of bindings.</dd>
 
+<dt>@('(my-run-mod)')</dt>
+
+<dd>This is a disabled 0-ary function (i.e., a constant) that either returns
+@('*mod*') or, when @(':overrides') are used, some modified version of
+@('*mod*') where the overridden wires have been cut.  There is ordinarily no
+reason to need this, but certain functions like @('stv-debug') make use of
+it.</dd>
+
 </dl>"
 
   (defmacro defstv (name &key
                          mod
-                         initial inputs outputs internals
+                         inputs outputs internals overrides
                          labels parents short long)
     `(make-event
       (let ((event (defstv-fn ',name
                      ',mod ,mod
-                     ,initial ,inputs ,outputs ,internals
+                     ,inputs ,outputs ,internals ,overrides
                      ,labels ',parents ,short ,long)))
         event))))
 

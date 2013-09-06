@@ -1058,7 +1058,7 @@ vl-simpconfig-p).  In many cases, the defaults will probably be fine.</p>"
                     :name defmodules-fn)))
         (value
          `(with-output
-            :off (summary)
+            :off (summary event)
             (progn (defconst ,name ',translation)
                    (value-triple ',name))))))))
 

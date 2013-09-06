@@ -78,17 +78,16 @@ many phases there are."
 
   :long "<p>This is an STV preprocessing step which can be run before or after
 @(see stv-expand).  We generally expect that all the lines have been widened
-before any compilation is performed.</p>
-
-<p>Note that we don't widen @(':initial') lines; they have only one value, not
-a series of values over time.</p>"
+before any compilation is performed.</p>"
 
   (b* (((stvdata stv) stv)
        (number-of-phases (stv-number-of-phases stv))
        (new-inputs       (stv-widen-lines stv.inputs number-of-phases nil))
        (new-outputs      (stv-widen-lines stv.outputs number-of-phases t))
-       (new-internals    (stv-widen-lines stv.internals number-of-phases t)))
+       (new-internals    (stv-widen-lines stv.internals number-of-phases t))
+       (new-overrides    (stv-widen-lines stv.overrides number-of-phases t)))
     (change-stvdata stv
                     :inputs    new-inputs
                     :outputs   new-outputs
-                    :internals new-internals)))
+                    :internals new-internals
+                    :overrides new-overrides)))

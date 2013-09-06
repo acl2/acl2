@@ -171,9 +171,9 @@
   </xsl:for-each>
 </xsl:template>
 
-<xsl:template match="stv_initials">
+<xsl:template match="stv_overrides">
   <xsl:for-each select="stv_line">
-   <tr class="stv_initial_line"><xsl:apply-templates/></tr>
+   <tr class="stv_override_line"><xsl:apply-templates/></tr>
   </xsl:for-each>
 </xsl:template>
 

@@ -884,6 +884,7 @@ input."
              ((buf (buf a))         . (buf a))
              ((buf (ite a b c))     . (ite a b c))
              ((buf (ite* a b c))    . (ite* a b c))
+             ((buf (zif a b c))     . (ite* a b c))
              ((buf (and a b))       . (and a b))
              ((buf (or a b))        . (or a b))
              ((buf (not a))         . (not a))
@@ -990,6 +991,14 @@ input."
              ;; ?? ITE* normalize to XOR
              ((ite* a b (not b))     . (not (xor a b)))
              ((ite* a (not b) b)     . (xor a b))
+
+             ;; ZIF constant propagation
+             ((zif (t) a b)         . a)
+             ((zif (f) a b)         . b)
+             ;; ZIF remove NOT on condition
+             ((zif (not c) a b)     . (zif c b a))
+             ;; ZIF select is buffered
+             ((zif (buf c) a b)     . (zif c a b))
 
              ;; ??? Normalize IFF to NOT of XOR.
              ;; If we decide not to do this normalization, maybe move IFF up in the
@@ -1921,6 +1930,7 @@ simplifying using the known signals."
     (iff a b)
     (or a b)
     (ite* a b c)
+    (zif a b c)
     (buf a)
     (res a a)
     (ite a b c)
@@ -2293,6 +2303,8 @@ simplifying using the known signals."
   '(((xor a a)        . (f))
     ((xor a (not a))  . (t))
     ((ite* a x x)     . (buf x))
+    ((zif  a x x)     . x)
+    ((zif  x a b)     . (ite* x a b))
     ((buf a)          . a)))
            
 (defsection 4v-sexpr-boolean-rewritep

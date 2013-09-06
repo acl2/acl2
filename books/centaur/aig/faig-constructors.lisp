@@ -312,6 +312,17 @@ for discussion related to this issue.</p>"
   ///
   (prove-faig-op-commutes f-aig-ite* (c a b)))
 
+(define f-aig-zif (c a b)
+  :parents (faig-constructors)
+  :short "@(call f-aig-zif) constructs an FAIG representing a kind of pass gate
+style mux."
+  :long "<p>This mainly exists to support @(see 4v-zif) in sexpr-to-faig
+conversion.</p>"
+  :enabled t
+  (b* ((c (f-aig-unfloat c)))
+    (t-aig-ite* c a b))
+  ///
+  (prove-faig-op-commutes f-aig-zif (c a b)))
 
 (define f-aig-res (x y)
   :parents (faig-constructors)
@@ -397,6 +408,7 @@ resistor."
     f-aig-res
     f-aig-ite
     f-aig-ite*
+    f-aig-zif
     t-aig-tristate
     f-aig-pullup))
 

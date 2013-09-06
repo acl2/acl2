@@ -211,7 +211,8 @@ ever actually use a list of E bits to name their input.</p>"
        ((stvdata stv) stv)
 
        ;; Grab the expanded input lines, since they'll have the resolved tilde
-       ;; (~) entries.  We don't need to expand the output or internal lines.
+       ;; (~) entries.  We don't need to expand the output, internal, or
+       ;; override lines.
        (ex-ins  (compiled-stv->expanded-ins cstv))
        ((unless (true-list-listp ex-ins))
         (raise "Expanded inputs aren't a true-list-listp?"))
@@ -226,12 +227,6 @@ ever actually use a list of E bits to name their input.</p>"
                      (acc (str::revappend-chars "</stv_labels>" acc)))
                   acc)
               acc))
-       (acc (cons #\Newline acc))
-
-       (acc (str::revappend-chars "<stv_initials>" acc))
-       (acc (cons #\Newline acc))
-       (acc (stv-lines-to-xml stv.initial nil acc))
-       (acc (str::revappend-chars "</stv_initials>" acc))
        (acc (cons #\Newline acc))
 
        (acc (str::revappend-chars "<stv_inputs>" acc))
@@ -250,6 +245,12 @@ ever actually use a list of E bits to name their input.</p>"
        (acc (cons #\Newline acc))
        (acc (stv-lines-to-xml stv.internals nil acc))
        (acc (str::revappend-chars "</stv_internals>" acc))
+       (acc (cons #\Newline acc))
+
+       (acc (str::revappend-chars "<stv_overrides>" acc))
+       (acc (cons #\Newline acc))
+       (acc (stv-lines-to-xml stv.overrides nil acc))
+       (acc (str::revappend-chars "</stv_overrides>" acc))
        (acc (cons #\Newline acc))
 
        (acc (str::revappend-chars "</stv>" acc)))

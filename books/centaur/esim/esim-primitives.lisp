@@ -220,6 +220,23 @@ than a @(see *esim-xnor*).</p>"
   :x (:out ((|q| . (ite |clk| |d| s)))
       :nst ((s   . (ite |clk| |d| s)))))
 
+(def-esim-primitive *esim-fsmreg*
+  :short "Primitive E module for an unclocked register."
+  :long "<p>This is an FSM-style register that always updates its state bit to
+its input value at each step.</p>"
+  :i ((|d|))
+  :o ((|q|))
+  :x (:out ((|q| . s))
+      :nst ((s   . |d|))))
+
+(def-esim-primitive *esim-zif*
+  :short "Primitive E module for a kind of pass-gate style mux."
+  :long "<p>This is a special kind of mux that can preserve Z values on its
+inputs, used to support experimental esim decomposition.</p>"
+  :i ((|sel|) (|a|) (|b|))
+  :o ((|o|))
+  :x (:out ((|o| . (zif |sel| |a| |b|)))))
+
 (defsection *esim-primitives*
   :parents (esim-primitives)
   :short "A list of all esim primitives."
@@ -244,5 +261,7 @@ than a @(see *esim-xnor*).</p>"
 ;;          *esim-res*
           *esim-tri*
           *esim-flop*
-          *esim-latch*)))
+          *esim-latch*
+          *esim-fsmreg*
+          *esim-zif*)))
 

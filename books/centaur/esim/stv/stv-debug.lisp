@@ -73,7 +73,8 @@
   :parents (stv-debug)
   :short "Prepare an STV for debugging by create \"snapshots\" that are ready
 to be evaluated and written to the VCD file."
-  ((pstv processed-stv-p))
+  ((pstv processed-stv-p)
+   (mod))
   :returns (snapshots vl::cons-list-listp)
   :long "<p>This is computationally expensive.  We memoize it so that we only
 need to make the snapshots the first time you want to debug an STV.  The same
@@ -91,7 +92,7 @@ like.</p>"
             ?nst-alists-general
             out-alists-general
             int-alists-general)
-        (time$ (stv-fully-general-simulation-debug nphases pstv.mod)
+        (time$ (stv-fully-general-simulation-debug nphases mod cstv.override-bits)
                :msg "; stv debug simulation: ~st sec, ~sa bytes.~%"
                :mintime 1/2)))
 
@@ -112,13 +113,13 @@ like.</p>"
   :parents (symbolic-test-vectors)
   :short "Evaluate a symbolic test vector at particular, concrete inputs, and
 generate a waveform."
-  ((pstv (and (processed-stv-p pstv)
-              (good-esim-modulep (processed-stv->mod pstv))))
+  ((pstv processed-stv-p)
    input-alist
    &key
    ((filename stringp) '"stv.debug")
    ((viewer   stringp) '"gtkwave")
    (state    'state))
+  :guard-debug t
   :returns (mv out-alist state)
   :long "<p>This macro is an extended version of @(see stv-run).  In addition
 to building an alist of the output simulation variables, it also writes out a
@@ -129,8 +130,28 @@ especially the first time before things are memoized.</p>"
    (b* (((processed-stv pstv) pstv)
         ((compiled-stv cstv) pstv.compiled-stv)
 
+        (mod-function (intern-in-package-of-symbol
+                       (str::cat (symbol-name pstv.name) "-MOD")
+                       pstv.name))
+        ((mv er mod)
+         (magic-ev-fncall mod-function
+                          nil ;; args
+                          state
+                          t ;; hard error returns nil?  sure why not
+                          t ;; attachments allowed? sure why not
+                          ))
+
+        ((when er)
+         (mv (raise "Error evaluating ~x0 to look up STV module: ~@1."
+                    mod-function (if (eq er 't) "t" er))
+             state))
+        ((unless (good-esim-modulep mod))
+         (mv (raise "Error: ~x0 returned a bad ESIM module: ~@1"
+                    mod-function (bad-esim-modulep mod))
+             state))
+
         (snapshots
-         (time$ (stv-make-snapshots pstv)
+         (time$ (stv-make-snapshots pstv mod)
                 :mintime 1/2
                 :msg "; stv-debug snapshots: ~st sec, ~sa bytes.~%"))
 
@@ -168,7 +189,7 @@ especially the first time before things are memoized.</p>"
 
         ;; Actual VCD generation
         ((mv date state) (oslib::date))
-        (dump (vl::vcd-dump-main pstv.mod evaled-snapshots date))
+        (dump (vl::vcd-dump-main mod evaled-snapshots date))
 
         ((mv & & state) (assign acl2::writes-okp t))
         (state (time$ (vl::with-ps-file filename

@@ -24,9 +24,9 @@
 (in-package "ACL2")
 (include-book "sexpr-eval")
 (include-book "sexpr-vars")
-(include-book "sexpr-3v")
 (include-book "cutil/defprojection" :dir :system)
 (include-book "misc/definline" :dir :system)
+(local (include-book "sexpr-3v"))
 ;(local (include-book "sexpr-to-faig")) ;; for 3v-opt stuff
 (set-inhibit-warnings "theory" "non-rec")
 
@@ -467,6 +467,32 @@ s-expression for a conservative multiplexor."
                                                        (4v-sexpr-vars b))))
     :hints(("Goal" :in-theory (enable 4vs-ite*-dumb)))))
 
+
+
+(defsection 4vs-zif-dumb
+  :parents (4vs-constructors)
+  :short "@(call 4vs-zif-dumb) constructs @('(ZIF C A B)'), i.e., the
+s-expression for an pass-gate style multiplexor."
+
+  (definlined 4vs-zif-dumb (c a b)
+    (declare (xargs :guard t))
+    (hons-list 'zif c a b))
+
+  (local (in-theory (enable 4vs-zif-dumb)))
+
+  (defthm 4v-sexpr-eval-of-4vs-zif-dumb
+    (equal (4v-sexpr-eval (4vs-zif-dumb c a b) env)
+           (4v-zif (4v-sexpr-eval c env)
+                   (4v-sexpr-eval a env)
+                   (4v-sexpr-eval b env)))
+    :hints(("Goal" :in-theory (enable 4vs-zif-dumb))))
+
+  (defthm 4v-sexpr-vars-of-4vs-zif-dumb
+    (equal (4v-sexpr-vars (4vs-zif-dumb c a b))
+           (hons-alphorder-merge (4v-sexpr-vars c)
+                                 (hons-alphorder-merge (4v-sexpr-vars a)
+                                                       (4v-sexpr-vars b))))
+    :hints(("Goal" :in-theory (enable 4vs-zif-dumb)))))
 
 
 

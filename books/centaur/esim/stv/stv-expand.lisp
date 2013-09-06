@@ -561,6 +561,6 @@ compiler.</p>"
   (b* (((stvdata stv) stv))
     (make-stvdata :inputs    (stv-expand-names-in-lines stv.inputs :i mod)
                   :outputs   (stv-expand-names-in-lines stv.outputs :o mod)
-                  :initial   (stv-expand-hids-in-lines stv.initial mod)
-                  :internals (stv-expand-hids-in-lines stv.internals mod))))
+                  :internals (stv-expand-hids-in-lines stv.internals mod)
+                  :overrides (stv-expand-hids-in-lines stv.overrides mod))))
 

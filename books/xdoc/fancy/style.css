@@ -425,6 +425,26 @@ hr { margin-top: 2em; }
 }
 
 
+.stv_internal_line {
+    background-color: #ff0000; /* bozo fix colors */
+}
+
+.stv_internal_line td:nth-child(even) {
+  background-color: #ffcc00; /* bozo fix colors */
+}
+
+.stv_internal_line td {
+  border-bottom: 1px;
+  border-bottom-color: #000000; /* bozo fix colors */
+  border-bottom-style: solid;
+  border-right: 1px;
+  border-right-style: solid;
+  border-right-color: #000000;
+}
+
+
+
+
 .stv_name {
     border-right: 2px;
     border-right-style: solid;
