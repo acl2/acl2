@@ -47,6 +47,7 @@
      ,(vl-warninglist-claim vl-parse-statement-fn)
      ,(vl-warninglist-claim vl-parse-statement-or-null-fn)
      ,(vl-warninglist-claim vl-parse-statements-until-end-fn)
+     ,(vl-warninglist-claim vl-parse-statements-until-join-fn)
      :hints(("Goal" :induct (vl-flag-parse-statement flag atts tokens warnings))
             (and acl2::stable-under-simplificationp
                  (flag::expand-calls-computed-hint

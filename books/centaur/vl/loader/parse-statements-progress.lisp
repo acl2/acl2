@@ -79,6 +79,7 @@
                          :extra-args (atts))
      ,(vl-progress-claim vl-parse-statement-fn)
      ,(vl-progress-claim vl-parse-statement-or-null-fn)
+
      (vl-parse-statements-until-end-fn
       (and (<= (acl2-count (mv-nth 2 (vl-parse-statements-until-end-fn tokens warnings)))
                (acl2-count tokens))
@@ -88,6 +89,17 @@
                     (< (acl2-count (mv-nth 2 (vl-parse-statements-until-end-fn tokens warnings)))
                        (acl2-count tokens))))
       :rule-classes ((:rewrite) (:linear)))
+
+     (vl-parse-statements-until-join-fn
+      (and (<= (acl2-count (mv-nth 2 (vl-parse-statements-until-join-fn tokens warnings)))
+               (acl2-count tokens))
+           (implies (and (not (mv-nth 0 (vl-parse-statements-until-join-fn
+                                         tokens warnings)))
+                         (mv-nth 1 (vl-parse-statements-until-join-fn tokens warnings)))
+                    (< (acl2-count (mv-nth 2 (vl-parse-statements-until-join-fn tokens warnings)))
+                       (acl2-count tokens))))
+      :rule-classes ((:rewrite) (:linear)))
+
      :hints(("Goal" :induct (vl-flag-parse-statement flag atts tokens warnings))
             '(:do-not '(simplify))
             (flag::expand-calls-computed-hint

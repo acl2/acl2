@@ -526,7 +526,7 @@
            (:= (vl-match-token :vl-colon))
            (id := (vl-match-token :vl-idtoken))
            (items :w= (vl-parse-0+-block-item-declarations)))
-         (stmts := (vl-parse-statements-until-end))
+         (stmts := (vl-parse-statements-until-join))
          (:= (vl-match-token :vl-kwd-join))
          (return (make-vl-blockstmt :sequentialp nil
                                     :name (and id (vl-idtoken->name id))
@@ -685,6 +685,17 @@
            (return (make-vl-nullstmt :atts atts)))
          (ret := (vl-parse-statement-aux atts))
          (return ret)))
+
+ (defparser vl-parse-statements-until-join (tokens warnings)
+   (declare (xargs :measure (two-nats-measure (acl2-count tokens) 3)))
+   ;; Returns a list of vl-stmt-p's.
+   ;; Tries to read until the keyword "join"
+   (seqw tokens warnings
+         (when (vl-is-token? :vl-kwd-join)
+           (return nil))
+         (first :s= (vl-parse-statement))
+         (rest := (vl-parse-statements-until-join))
+         (return (cons first rest))))
 
  (defparser vl-parse-statements-until-end (tokens warnings)
    (declare (xargs :measure (two-nats-measure (acl2-count tokens) 3)))

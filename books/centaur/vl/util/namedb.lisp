@@ -729,7 +729,8 @@ note is printed and @('fresh-name') looks like @('name_n') instead."
     (declare (xargs :guard (and (stringp name)
                                 (vl-namedb-p db))
                     :verify-guards nil))
-    (b* ((names   (vl-namedb->names db))
+    (b* ((name    (string-fix name))
+         (names   (vl-namedb->names db))
          (pset    (vl-namedb->pset db))
 
          ((when (hons-get name names))
@@ -757,8 +758,7 @@ note is printed and @('fresh-name') looks like @('name_n') instead."
   (verify-guards vl-namedb-plain-name)
 
   (defthm stringp-of-vl-namedb-plain-name
-    (implies (force (stringp name))
-             (stringp (mv-nth 0 (vl-namedb-plain-name name db))))
+    (stringp (mv-nth 0 (vl-namedb-plain-name name db)))
     :hints(("Goal" :in-theory (disable vl-namedb->pset-under-set-equiv)))
     :rule-classes :type-prescription)
 

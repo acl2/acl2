@@ -125,6 +125,9 @@
      ,(vl-stmt-claim vl-parse-statements-until-end-fn
                      (vl-stmtlist-p val)
                      :true-listp t)
+     ,(vl-stmt-claim vl-parse-statements-until-join-fn
+                     (vl-stmtlist-p val)
+                     :true-listp t)
      :hints(("Goal" :induct (vl-flag-parse-statement flag atts tokens warnings))
             (and acl2::stable-under-simplificationp
                  (flag::expand-calls-computed-hint
