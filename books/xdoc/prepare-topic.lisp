@@ -131,7 +131,6 @@
         (t
          (gather-topics names (cdr all-topics)))))
 
-
 (defun preprocess-topic (x all-topics dir topics-fal state)
   (b* ((name     (cdr (assoc :name x)))
        (base-pkg (cdr (assoc :base-pkg x)))
@@ -153,6 +152,7 @@
        ((unless (stringp long))
         (mv (er hard? 'preprocess-topic "Long is not a string: ~x0.~%" x)
             state))
+
        (acc    nil)
        (acc    (str::revappend-chars "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
        (acc    (cons #\Newline acc))
@@ -168,11 +168,10 @@
        (acc    (cons #\Newline acc))
        (acc    (str::revappend-chars "<short>" acc))
 
-       ;; Previously: ((mv acc state) (preprocess-main short dir base-pkg state acc))
-
-       ((mv short-acc state) (preprocess-main short dir topics-fal base-pkg state nil))
+       ((mv short-acc state)
+        (preprocess-main short dir topics-fal base-pkg state nil))
        (short-str  (str::rchars-to-string short-acc))
-       (acc        (append short-acc acc))
+
        ((mv err &) (parse-xml short-str))
        (state
         (if err
@@ -184,24 +183,37 @@
                (fms "~%~%" nil *standard-co* state nil))
           state))
 
+       (acc (b* (((unless err)
+                  (append short-acc acc))
+                 (acc (str::revappend-chars "<b>Markup error in :short: </b><code>" acc))
+                 (acc (simple-html-encode-str err 0 (length err) acc))
+                 (acc (str::revappend-chars "</code>" acc)))
+              acc))
+
        (acc    (str::revappend-chars "</short>" acc))
        (acc    (cons #\Newline acc))
        (acc    (str::revappend-chars "<long>" acc))
 
-       ;; Previously: ((mv acc state) (preprocess-main long dir base-pkg state acc))
        ((mv long-acc state) (preprocess-main long dir topics-fal base-pkg state nil))
        (long-str (str::rchars-to-string long-acc))
-       (acc      (append long-acc acc))
        ((mv err &) (parse-xml long-str))
+
        (state
         (if err
             (pprogn
-               (fms "~|~%WARNING: problem with :long in topic ~x0:~%" 
+               (fms "~|~%WARNING: problem with :long in topic ~x0:~%"
                     (list (cons #\0 name))
                     *standard-co* state nil)
                (princ$ err *standard-co* state)
                (fms "~%~%" nil *standard-co* state nil))
           state))
+
+       (acc (b* (((unless err)
+                  (append long-acc acc))
+                 (acc (str::revappend-chars "<h3>Markup error in :long</h3></code>" acc))
+                 (acc (simple-html-encode-str err 0 (length err) acc))
+                 (acc (str::revappend-chars "</code>" acc)))
+              acc))
 
        (acc    (str::revappend-chars "</long>" acc))
        (acc    (cons #\Newline acc))

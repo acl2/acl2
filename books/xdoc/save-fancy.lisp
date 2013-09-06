@@ -205,6 +205,17 @@
                (fms "~%~%" nil *standard-co* state nil))
           state))
 
+       (short-str
+        (b* (((unless err)
+              short-str)
+             (tmp nil)
+             (tmp (str::revappend-chars
+                   "<b><color rgb='#ff0000'>Markup error in :short</color></b>
+                    <code>" tmp))
+             (tmp (simple-html-encode-str err 0 (length err) tmp))
+             (tmp (str::revappend-chars "</code>" tmp)))
+          (str::rchars-to-string tmp)))
+
 ; I originally used a JSON object like {"name":"Append","rawname":"..."}  But
 ; then some back-of-the-napkin calculations said that these nice names were
 ; taking up about 400 KB of space in the index, so I figured I'd get rid of
@@ -309,6 +320,16 @@
                (princ$ err *standard-co* state)
                (fms "~%~%" nil *standard-co* state nil))
           state))
+       (long-str
+        (b* (((unless err)
+              long-str)
+             (tmp nil)
+             (tmp (str::revappend-chars
+                   "<h3><color rgb='#ff0000'>Markup error in :long</color></h3>
+                    <code>" tmp))
+             (tmp (simple-html-encode-str err 0 (length err) tmp))
+             (tmp (str::revappend-chars "</code>" tmp)))
+          (str::rchars-to-string tmp)))
 
        (from-xml (str::rchars-to-string
                   (simple-html-encode-chars

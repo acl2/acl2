@@ -27,6 +27,7 @@
              ;; Things to add:
              '(b* quit exit value defxdoc defxdoc-raw macro-args
                   xdoc-extend defsection defsection-progn cutil lnfix
+                  set-default-parents
                   getprop formals justification def-bodies current-acl2-world def-body
                   access theorem untranslated-theorem guard xdoc xdoc! unquote
                   undocumented assert! top))

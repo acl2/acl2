@@ -27,15 +27,24 @@
 
 (in-package "XDOC")
 (include-book "import-acl2doc")  ;; For base acl2 documentation
-(program)
 
 (defxdoc xdoc
   :short "<i>XDOC</i> is a tool for documenting ACL2 books.  You can use it to
-look up documentation, document your own libraries, and create web-based
-manuals.  It is meant to replace ACL2 facilities like @(see defdoc), @(':doc'),
-and so on."
+access documentation about ACL2 and its books, to document your own books, and
+to create custom web-based manuals.  It is intended as a replacement for ACL2
+facilities like @(see defdoc), @(':doc'), and so on."
 
-  :long "<p>To use XDOC, the first step is:</p>
+  :long "<box><p><b>Note:</b> the documentation here explains how to use XDOC
+to document your own books and create web-based manuals.  If you just want to
+see documentation about ACL2 and its books, you probably don't need to read any
+of this&mdash;<a href='http://www.centtech.com/'>Centaur Technology</a> hosts
+an <a href='http://fv.centtech.com/acl2/latest/doc/'>online XDOC manual</a>
+that covers the latest released version of ACL2 and the corresponding version
+of the <a href='http://code.google.com/p/acl2-books/'>ACL2 Community
+Books</a>.</p></box>
+
+<p>To use XDOC to document your own books or create custom manuals, the first
+step is:</p>
 
 @({
  (include-book \"xdoc/top\" :dir :system)
@@ -46,9 +55,6 @@ complete interface to the XDOC system, including:</p>
 
 <ul>
 
-<li>The @(':xdoc') command for viewing documentation within the terminal
-&mdash; the XDOC alternative to ACL2's @(':doc') command.</li>
-
 <li>@(see defxdoc) and @(see defsection), which are the basic commands for
 adding documentation &mdash; the XDOC alternatives to ACL2's @(see defdoc)
 command.</li>
@@ -58,13 +64,15 @@ your libraries.</li>
 
 </ul>
 
-<p>The @(':xdoc') command consults the XDOC database <b>and</b> ACL2's
-@(':doc') database, so you can always use @(':xdoc foo') without having to know
+<p>Loading this book also overrides the <see topic='@(url
+ld-keyword-aliases)'>LD keyword alias</see> for @(':doc'), so that you (and the
+users of your books) can access both ordinary ACL2 documentation and the XDOC
+documentation from the terminal by just using @(':doc'), without having to know
 which documentation system was used to document the topic.</p>")
 
+(local (set-default-parents xdoc))
 
 (defxdoc defxdoc
-  :parents (xdoc)
   :short "Add documentation to the @(see xdoc) database."
 
   :long "<box><p>Note: @('defxdoc') is very basic.  You will usually want to
@@ -87,27 +95,26 @@ command.</p>
 @({
  (defxdoc duplicity
    :parents (std/lists defsort count no-duplicatesp)
-   :short \"@(call duplicity) counts how many times the element @('a') occurs
-within the string @('x').\"
-   :long \"<p>This function is similar to ACL2's built-in @('count') function
-but is more limited:</p>  ...\")
+   :short \"@(call duplicity) counts how many times the
+            element @('a') occurs within the string @('x').\"
+   :long \"<p>This function is similar to ACL2's built-in
+          @('count') function but is more limited:</p>  ...\")
 })
 
-<p>All keyword arguments are optional.</p>
+<p>The @('name') of each documentation topic must be a symbol.  All of the
+keyword arguments are optional:</p>
 
 <ul>
 
-<li>@('name') is the name of this documentation topic, and should be a
-symbol.</li>
-
-<li>@('parents') let you associate this documentation with other topics.  As
-shown in the above example, a topic can have many parents.  Note that circular
-parents are not allowed and will lead to errors when generating
-documentation.</li>
+<li>@('parents') let you associate this documentation with other topics.  A
+topic may have many parents, but circular chains of parents are not allowed and
+will lead to errors when generating manuals.  If no @(':parents') are given
+explicitly, the <see topic='@(url set-default-parents)'>default parents</see>
+will be used.</li>
 
 <li>@('short') should be a short description of this topic that is suitable for
-inlining in other pages.  For instance, it is displayed in the full index, and
-as \"hover\" text in the navigation page.</li>
+inlining in other pages.  For instance, it may be displayed in subtopic listing
+and in \"hover\" text on navigation pages.</li>
 
 <li>@('long') should be the full, detailed documentation for this topic.</li>
 
@@ -132,12 +139,12 @@ use @(see defxdoc-raw) instead.</p>")
 
 
 (defxdoc markup
-  :parents (xdoc)
-  :short "XDOC documentation strings are mainly written in a simple XML markup
-language."
+  :short "The <a href='http://en.wikipedia.org/wiki/Xml'>XML</a> markup
+language that is the basis of XDOC documentation strings."
 
-  :long "<p>XML is basically similar to HTML, but requires that tags begin and
-end in balance.</p>
+  :long "<p>XDOC uses an XML markup language that is similar to a subset of <a
+href='http://en.wikipedia.org/wiki/HTML'>HTML</a>.  Note that in XML, beginning
+and ending tags really need to be balanced.</p>
 
 <h3>Formatting Text</h3>
 
@@ -154,10 +161,12 @@ end in balance.</p>
 <h3>Displaying Source Code</h3>
 
 <p>The @(see preprocessor) allows you to insert function definitions, theorems,
-etc., from the ACL2 world.  But sometimes you want to write other kinds of code
-fragments as examples.</p>
+etc., from the ACL2 world.  This can help you avoid having to copy and paste
+definitions into your documentation, which can help to keep your documentation
+up to date.</p>
 
-<p>The raw markup options are:</p>
+<p>But sometimes you want to write other kinds of code fragments as examples.
+The raw markup options are:</p>
 
 <ul>
 
@@ -170,29 +179,29 @@ and \"preformatted,\" i.e., newlines and spaces should be preserved.</li>
 </ul>
 
 <p><b>However</b>, it's often better to use the preprocessor's
-<tt>@@('...')</tt> and <tt>@@({...})</tt> macros.  These are nice because they
-automatically escape special HTML characters like &lt; into &amp;lt;, and also
-automatically add hyperlinks to documented functions.</p>
+<tt>@@('...')</tt> and <tt>@@({...})</tt> macros, respectively.  These are nice
+because they automatically escape special HTML characters like &lt; into
+&amp;lt;, and also automatically add hyperlinks to documented functions.</p>
 
-<p>If you do decide to write raw @('<code>') blocks, your lisp forms should
-usually be <b>indented one space</b> to prevent Emacs problems.  For
-instance:</p>
+<p>Whenever you include Lisp code fragments in your documentation, you should
+usually keep everything <b>indented one space</b> to prevent Emacs problems.
+For instance:</p>
 
 @({
- (defxdoc foo
-   :long \"<h3>How to format @('<code>') blocks</h3>
-
- <p>GOOD -- the form is indented one space:</p>
- <code>
-  (my-lisp-form (foo ...)
-                (bar ...))
- </code>
-
- <p>BAD -- the form is directly on the left-margin:</p>
- <code>
- (my-lisp-form (foo ...)
-               (bar ...))
- </code>
+|(defxdoc foo
+|  :long \"<h3>How to format @('<code>') blocks</h3>
+|
+|<p>GOOD -- the form is indented one space:</p>
+|<code>
+| (my-lisp-form (foo ...)
+|               (bar ...))
+|</code>
+|
+|<p>BAD -- the form is directly on the left-margin:</p>
+|<code>
+|(my-lisp-form (foo ...)
+|              (bar ...))
+|</code>
 })
 
 <p>Without this leading space, Emacs can become confused and think that
@@ -224,11 +233,11 @@ Technology</a>.</p>
 
 <p>For section headings,</p>
 <ul>
- <li>@('<h1>') creates the biggest heading:<h1>Example</h1></li>
- <li>@('<h2>') the next biggest:<h2>Example</h2></li>
- <li>@('<h3>') a medium-sized heading:<h3>Example</h3></li>
- <li>@('<h4>') the second smallest:<h4>Example</h4></li>
- <li>@('<h5>') the smallest heading:<h5>Example</h5></li>
+ <li>@('<h1>') creates the biggest heading:<h1>H1 Example</h1></li>
+ <li>@('<h2>') the next biggest:<h2>H2 Example</h2></li>
+ <li>@('<h3>') a medium-sized heading:<h3>H3 Example</h3></li>
+ <li>@('<h4>') the second smallest:<h4>H4 Example</h4></li>
+ <li>@('<h5>') the smallest heading:<h5>H5 Example</h5></li>
 </ul>
 
 <p>@('<p>') tags should be put around paragraphs.</p>
@@ -293,7 +302,6 @@ support in the future, and maybe other tags that users want.</p>")
 
 
 (defxdoc preprocessor
-  :parents (xdoc)
   :short "In addition to its @(see markup) language, XDOC includes a
 preprocessor which can be used to interpret certain directives of the form
 @('@(...)')."
@@ -411,7 +419,6 @@ need to be escaped.</p>")
 
 
 (defxdoc save
-  :parents (xdoc)
   :short "Saves the XDOC database into files for web browsers, etc."
 
   :long "<p>Once you have documented your library with @(see defxdoc), you may
@@ -498,7 +505,6 @@ use a version we do not currently support.</p>")
 
 
 (defxdoc fancy-manual
-  :parents (save)
   :short "Structure of a @(':type :fancy') manual."
 
   :long "<p>By default, @(see save) will create a manual in the new, \"fancy\"
@@ -512,7 +518,6 @@ layout and organization.</p>")
 
 
 (defxdoc emacs-links
-  :parents (xdoc)
   :short "Instructions for integrating XDOC web pages with <a
   href='http://www.gnu.org/software/emacs/'>Emacs</a>."
 
@@ -757,7 +762,6 @@ with keyword arguments.  See also @(see extract-keyword-from-args).</p>
 
 
 (defxdoc defsection
-  :parents (xdoc)
   :short "Fancy @('(encapsulate nil ...)') with a name and @(see xdoc)
 support."
 
@@ -855,7 +859,6 @@ onto the end of the documentation for @('foo').</p>")
 
 
 (defxdoc defsection-progn
-  :parents (xdoc)
   :short "Fancy @('(progn ...)') with a name and @(see xdoc) support."
 
   :long "<p>The @('defsection-progn') macro is like @(see defsection) except
@@ -867,12 +870,10 @@ not introduce a new local scope, but a @('defsection') does.</p>")
 
 
 (defxdoc undocumented
-  :parents (xdoc)
   :short "Placeholder for undocumented topics.")
 
 
 (defxdoc test-of-entities
-  :parents (xdoc)
   :short "Placeholder topic for testing out HTML entity support in XDOC."
   :long "<p>Here are the entities that XDOC allows:</p>
 
@@ -891,3 +892,53 @@ not introduce a new local scope, but a @('defsection') does.</p>")
 <li>@('&mdash;') becomes &mdash;</li>
 <li>@('&rarr;')  becomes &rarr;</li>
 </ul>")
+
+
+
+(defxdoc set-default-parents
+  :short "Set up default parents to use for @(see xdoc)."
+
+  :long "<p>When documenting a book of inter-related functions, you may
+sometimes wish to use the same @(':parents') across many @(see defxdoc) or
+@(see defsection) commands.  This can sometimes get tedious.</p>
+
+<p>The macro @(call set-default-parents) can be used to set up a default list
+of parent topics to be automatically used by commands such as @(see defxdoc)
+and @(see defsection).</p>
+
+<p>Basic Example:</p>
+
+@({
+   (local (set-default-parents fox-p))
+
+   (defxdoc make-fox           ;; use default :parents, (fox-p)
+     :short ...
+     :long ...)
+
+   (defsection feed-fox        ;; use default :parents, (fox-p)
+     :short ...
+     :long ...)
+
+   (defsection chase-mouse     ;; use explicit :parents, (fox-p mouse-p)
+     :parents (fox-p mouse-p)
+     :short ...
+     :long ...)
+
+   (local (set-default-parents fox-p hawk-p))
+
+   (defsection bother-hawk     ;; use default :parents, (fox-p hawk-p)
+     :short ...
+     :long ...)
+
+   (local (set-default-parents nil))
+
+   (defxdoc zebra-p            ;; use default :parents, nil
+     :short ...
+     :long ...)
+})
+
+<p>Note that @('set-default-parents') is just a macro that expands to a @(see
+table) event.  It's good practice to only <b>locally</b> set the default
+parents&mdash;otherwise the default parents can \"leak\" from your book and
+lead you to inadvertently set the parents of other, unrelated topics.</p>")
+

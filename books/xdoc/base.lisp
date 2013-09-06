@@ -42,10 +42,28 @@
  `(defconst *xdoc-dir* ,(cbd)))
 
 (table xdoc 'doc nil)
+(table xdoc 'default-parents nil)
 
 (defun get-xdoc-table (world)
   (declare (xargs :mode :program))
   (cdr (assoc-eq 'doc (table-alist 'xdoc world))))
+
+(defmacro set-default-parents (&rest parents)
+  `(table xdoc 'default-parents
+          (let ((parents ',parents))
+            (cond ((symbol-listp parents)
+                   parents)
+                  ((and (consp parents)
+                        (atom (cdr parents))
+                        (symbol-listp (car parents)))
+                   (car parents))
+                  (t
+                   (er hard? 'set-default-parents
+                       "Expected a symbol-listp, but found ~x0" parents))))))
+
+(defun get-default-parents (world)
+  (declare (xargs :mode :program))
+  (cdr (assoc-eq 'default-parents (table-alist 'xdoc world))))
 
 (defun guard-for-defxdoc (name parents short long)
   (declare (xargs :guard t))
@@ -83,9 +101,10 @@
                          (acl2::access acl2::certify-book-info info :full-book-name)
                        "Current Interactive Session"))
            (bookname (normalize-bookname bookname state))
+           (parents (or ',parents (get-default-parents (w state))))
            (entry (list (cons :name ',name)
                         (cons :base-pkg (acl2::pkg-witness pkg))
-                        (cons :parents ',parents)
+                        (cons :parents parents)
                         (cons :short ',short)
                         (cons :long ',long)
                         (cons :from bookname))))
