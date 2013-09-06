@@ -405,7 +405,7 @@ expensive but processing subsequent STVs can be much cheaper.</p>"
         ;; We can avoid computing the internal signals if we didn't ask for
         ;; any.  This is kind of silly, but it can save a lot of time if you
         ;; don't care about the internals at all.
-        (subsetp cstv.int-extract-alists '(nil)))
+        (not (subsetp cstv.int-extract-alists '(nil))))
 
        ((mv ?init-st-general
             ?in-alists-general
