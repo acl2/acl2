@@ -41157,7 +41157,7 @@
   (set-rewrite-stack-limit 30)                            ; set to small limit
   :set-rewrite-stack-limit 30                             ; same as above
   (set-rewrite-stack-limit *default-rewrite-stack-limit*) ; the default
-  :set-rewrite-stack-limit (1- (expt 2 28))               ; maximum legal limit
+  (set-rewrite-stack-limit (1- (expt 2 28)))              ; maximum legal limit
   :set-rewrite-stack-limit nil         ; same as above -- essentially, no limit
   ~ev[]
   This event sets the maximum stack depth for calls of certain functions that

@@ -494,7 +494,8 @@
 ; modifications, we made progress -- except there appears (as of Sept. 2011) to
 ; be no good way for us to save an executable image.  Specifically, it appears
 ; that c:build-program not will suffice for saving state (properties etc.) --
-; it's just for saving specified .o files.
+; it's just for saving specified .o files.  (This impression seems to be
+; confirmed at http://stackoverflow.com/questions/7686246/saving-lisp-state .)
 
 ; Here we document steps to take towards possibly porting to ECL in the future.
 
