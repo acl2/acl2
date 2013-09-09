@@ -129,6 +129,20 @@
       (vl-vardecllist-ppmap (cdr x)
                             (acons (vl-vardecl->loc (car x)) str alist)))))
 
+(define vl-eventdecllist-ppmap ((x     vl-eventdecllist-p)
+                                (alist vl-commentmap-p)
+                                &key (ps 'ps))
+  :returns (mv (alist vl-commentmap-p
+                      :hyp (and (force (vl-eventdecllist-p x))
+                                (force (vl-commentmap-p alist))))
+               (ps))
+  (if (atom x)
+      (mv alist ps)
+    (mv-let (str ps)
+      (with-semilocal-ps (vl-pp-eventdecl (car x)))
+      (vl-eventdecllist-ppmap (cdr x)
+                              (acons (vl-eventdecl->loc (car x)) str alist)))))
+
 (define vl-modinstlist-ppmap ((x        vl-modinstlist-p)
                               (mods     vl-modulelist-p)
                               (modalist (equal modalist (vl-modalist mods)))
@@ -327,6 +341,7 @@
        ((mv imap ps) (vl-portdecllist-ppmap x.portdecls imap))
        ((mv imap ps) (vl-regdecllist-ppmap x.regdecls imap))
        ((mv imap ps) (vl-vardecllist-ppmap x.vardecls imap))
+       ((mv imap ps) (vl-eventdecllist-ppmap x.eventdecls imap))
        ((mv imap ps) (vl-netdecllist-ppmap x.netdecls imap))
        ((mv imap ps) (vl-fundecllist-ppmap x.fundecls imap))
        ((mv imap ps) (vl-taskdecllist-ppmap x.taskdecls imap))
@@ -387,11 +402,6 @@ submodules in HTML mode.</p>"
                (vl-print " (")
                (vl-pp-portlist x.ports)
                (vl-println ");")
-
-               (if (not x.eventdecls)
-                   ps
-                 (vl-println "// BOZO implement eventdecl printing"))
-
                (vl-pp-encoded-commentmap guts)
                (vl-ps-span "vl_key" (vl-println "endmodule"))
                (vl-println "")

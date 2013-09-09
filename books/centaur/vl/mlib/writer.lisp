@@ -1086,6 +1086,72 @@ expression into a string."
     (vl-ps-seq (vl-pp-vardecl (car x))
                (vl-pp-vardecllist (cdr x)))))
 
+(define vl-pp-eventdecl ((x vl-eventdecl-p) &key (ps 'ps))
+  (b* (((vl-eventdecl x) x))
+    (vl-ps-seq
+     (if x.atts (vl-pp-atts x.atts) ps)
+     (vl-ps-span "vl_key" (vl-print "  event "))
+     (vl-print-wirename x.name)
+     (if x.arrdims
+         (vl-pp-rangelist x.arrdims)
+       ps)
+     (vl-println " ;"))))
+
+(define vl-pp-eventdecllist ((x vl-eventdecllist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-eventdecl (car x))
+               (vl-pp-eventdecllist (cdr x)))))
+
+(define vl-pp-paramdecl ((x vl-paramdecl-p) &key (ps 'ps))
+  (b* (((vl-paramdecl x) x))
+    (vl-ps-seq (vl-print "  ")
+               (if x.atts
+                   (vl-ps-seq (vl-pp-atts x.atts)
+                              (vl-print " "))
+                 ps)
+               (vl-ps-span "vl_key"
+                           (if x.localp
+                               (vl-print "localparam ")
+                             (vl-print "parameter "))
+                           (case x.type
+                             (:vl-signed (vl-print "signed "))
+                             (:vl-integer (vl-print "integer "))
+                             (:vl-real (vl-print "real "))
+                             (:vl-time (vl-print "time "))
+                             (:vl-realtime (vl-print "realtime "))
+                             (otherwise ps)))
+               (if x.range
+                   (vl-ps-seq (vl-pp-range x.range)
+                              (vl-print " "))
+                 ps)
+               (vl-print-wirename x.name)
+               (vl-print " = ")
+               (vl-pp-expr x.expr)
+               (vl-println ";"))))
+
+(define vl-pp-paramdecllist ((x vl-paramdecllist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-paramdecl (car x))
+               (vl-pp-paramdecllist (cdr x)))))
+
+(define vl-pp-blockitem ((x vl-blockitem-p) &key (ps 'ps))
+  (case (tag x)
+    (:vl-regdecl   (vl-pp-regdecl x))
+    (:vl-vardecl   (vl-pp-vardecl x))
+    (:vl-eventdecl (vl-pp-eventdecl x))
+    (:vl-paramdecl (vl-pp-paramdecl x))
+    (otherwise     (progn$ (impossible) ps))))
+
+(define vl-pp-blockitemlist ((x vl-blockitemlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq (vl-pp-blockitem (car x))
+               (vl-pp-blockitemlist (cdr x)))))
+
+
+
 (define vl-pp-gatedelay ((x vl-gatedelay-p) &key (ps 'ps))
   (b* (((vl-gatedelay x) x))
     (cond
@@ -1697,6 +1763,13 @@ expression into a string."
           (ps (vl-ps-update-autowrap-ind _pp_stmt_autowrap_ind_)))
      ps))
 
+(define vl-pp-blockitemlist-indented ((x vl-blockitemlist-p) &key (ps 'ps))
+  (if (atom x)
+      ps
+    (vl-ps-seq
+     (vl-pp-stmt-indented (vl-pp-blockitem (car x)))
+     (vl-pp-blockitemlist-indented (cdr x)))))
+
 (define vl-pp-assignstmt ((x vl-assignstmt-p) &key (ps 'ps))
   (b* (((vl-assignstmt x) x))
     (vl-ps-seq (vl-pp-stmt-autoindent)
@@ -1739,18 +1812,54 @@ expression into a string."
                  ps)
                (vl-println " ;"))))
 
+(define vl-pp-disablestmt ((x vl-disablestmt-p) &key (ps 'ps))
+  (b* (((vl-disablestmt x) x))
+    (vl-ps-seq (vl-pp-stmt-autoindent)
+               (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key"
+                           (vl-print "disable "))
+               (vl-pp-expr x.id)
+               (vl-println " ;"))))
+
+(define vl-pp-deassignstmt ((x vl-deassignstmt-p) &key (ps 'ps))
+  (b* (((vl-deassignstmt x) x))
+    (vl-ps-seq (vl-pp-stmt-autoindent)
+               (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-ps-span "vl_key"
+                           (case x.type
+                             (:vl-deassign (vl-print "deassign "))
+                             (:vl-release  (vl-print "release "))
+                             (otherwise    (progn$ (impossible) ps))))
+               (vl-pp-expr x.lvalue)
+               (vl-println " ;"))))
+
+(define vl-pp-eventtriggerstmt ((x vl-eventtriggerstmt-p) &key (ps 'ps))
+  (b* (((vl-eventtriggerstmt x) x))
+    (vl-ps-seq (vl-pp-stmt-autoindent)
+               (if x.atts (vl-pp-atts x.atts) ps)
+               (vl-print "-> ")
+               (vl-pp-expr x.id)
+               (vl-println " ;"))))
+
 (define vl-pp-atomicstmt ((x vl-atomicstmt-p) &key (ps 'ps))
-  (cond ((vl-fast-nullstmt-p x)
-         (vl-pp-nullstmt x))
-        ((vl-fast-assignstmt-p x)
-         (vl-pp-assignstmt x))
-        ((vl-fast-enablestmt-p x)
-         (vl-pp-enablestmt x))
-        (t
-         (vl-ps-seq
-          (vl-print "// OOPS, IMPLEMENT ")
-          (vl-println (symbol-name (tag x)))
-          ps))))
+  :guard-hints(("Goal" :in-theory (enable vl-atomicstmt-p)))
+  (mbe :logic
+       (cond ((vl-nullstmt-p x)         (vl-pp-nullstmt x))
+             ((vl-assignstmt-p x)       (vl-pp-assignstmt x))
+             ((vl-deassignstmt-p x)     (vl-pp-deassignstmt x))
+             ((vl-enablestmt-p x)       (vl-pp-enablestmt x))
+             ((vl-disablestmt-p x)      (vl-pp-disablestmt x))
+             ((vl-eventtriggerstmt-p x) (vl-pp-eventtriggerstmt x))
+             (t
+              (progn$ (impossible) ps)))
+       :exec
+       (case (tag x)
+         (:vl-nullstmt      (vl-pp-nullstmt x))
+         (:vl-assignstmt    (vl-pp-assignstmt x))
+         (:vl-deassignstmt  (vl-pp-deassignstmt x))
+         (:vl-enablestmt    (vl-pp-enablestmt x))
+         (:vl-disablestmt   (vl-pp-disablestmt x))
+         (otherwise         (vl-pp-eventtriggerstmt x)))))
 
 (define vl-casetype-string ((x vl-casetype-p))
   :returns (str stringp :rule-classes :type-prescription)
@@ -1813,17 +1922,16 @@ expression into a string."
              (vl-ps-span "vl_key"
                          (vl-print (if x.sequentialp "begin " "fork ")))
              (if (not x.name)
-                 ps
+                 (vl-println "")
                (vl-ps-seq
                 (vl-print " : ")
                 (vl-ps-span "vl_id"
                             (vl-print-str (vl-maybe-escape-identifier x.name)))
                 (if (not x.decls)
-                    ps
-                  (vl-ps-span
-                   "vl_cmt"
-                   (vl-print "// BOZO implement vl-pp-stmt for block with decls")))))
-             (vl-println "")
+                    (vl-println "")
+                  (vl-ps-seq
+                   (vl-println "")
+                   (vl-pp-blockitemlist-indented x.decls)))))
              (vl-pp-stmt-indented (vl-pp-stmtlist x.stmts))
              (vl-pp-stmt-autoindent)
              (vl-ps-span "vl_key" (vl-print-str (if x.sequentialp "end" "join")))
@@ -1869,13 +1977,74 @@ expression into a string."
                        (vl-ps-span "vl_key" (vl-print "endcase"))
                        (vl-println ""))))
 
-         (otherwise
-          ;; :vl-forstmt :vl-foreverstmt
-          ;; :vl-waitstmt :vl-repeatstmt :vl-whilestmt
-          (vl-ps-span "vl_cmt"
-                      (vl-pp-stmt-autoindent)
-                      (vl-print "// BOZO implement vl-pp-stmt for ")
-                      (vl-println (symbol-name type)))))))))
+         ((:vl-foreverstmt)
+          (b* (((vl-foreverstmt x) x))
+            (vl-ps-seq (vl-pp-stmt-autoindent)
+                       (if atts (vl-pp-atts atts) ps)
+                       (vl-ps-span "vl_key" (vl-println "forever"))
+                       (vl-pp-stmt-indented (vl-pp-stmt x.body))
+                       ;; no ending semicolon, the body prints one
+                       )))
+
+         ((:vl-repeatstmt)
+          (b* (((vl-repeatstmt x) x))
+            (vl-ps-seq (vl-pp-stmt-autoindent)
+                       (if atts (vl-pp-atts atts) ps)
+                       (vl-ps-span "vl_key" (vl-print "repeat"))
+                       (vl-print " (")
+                       (vl-pp-expr x.condition)
+                       (vl-println ")")
+                       (vl-pp-stmt-indented (vl-pp-stmt x.body))
+                       ;; no ending semicolon, the body prints one
+                       )))
+
+         ((:vl-waitstmt)
+          (b* (((vl-waitstmt x) x))
+            (vl-ps-seq (vl-pp-stmt-autoindent)
+                       (if atts (vl-pp-atts atts) ps)
+                       (vl-ps-span "vl_key" (vl-print "wait"))
+                       (vl-print " (")
+                       (vl-pp-expr x.condition)
+                       (vl-println ")")
+                       (vl-pp-stmt-indented (vl-pp-stmt x.body))
+                       ;; no ending semicolon, the body prints one
+                       )))
+
+         ((:vl-whilestmt)
+          (b* (((vl-whilestmt x) x))
+            (vl-ps-seq (vl-pp-stmt-autoindent)
+                       (if atts (vl-pp-atts atts) ps)
+                       (vl-ps-span "vl_key" (vl-print "while"))
+                       (vl-print " (")
+                       (vl-pp-expr x.condition)
+                       (vl-println ")")
+                       (vl-pp-stmt-indented (vl-pp-stmt x.body))
+                       ;; no ending semicolon, the body prints one
+                       )))
+
+         ((:vl-forstmt)
+          (b* (((vl-forstmt x) x))
+            (vl-ps-seq (vl-pp-stmt-autoindent)
+                       (if atts (vl-pp-atts atts) ps)
+                       (vl-ps-span "vl_key" (vl-print "for "))
+                       (vl-print "(")
+                       (vl-pp-expr x.initlhs)
+                       (vl-print " = ")
+                       (vl-pp-expr x.initrhs)
+                       (vl-print "; ")
+                       (vl-pp-expr x.test)
+                       (vl-print "; ")
+                       (vl-pp-expr x.nextlhs)
+                       (vl-print " = ")
+                       (vl-pp-expr x.nextrhs)
+                       (vl-println ")")
+                       (vl-pp-stmt-indented (vl-pp-stmt x.body))
+                       ;; no ending semicolon, the body prints one
+                       )))
+
+         (otherwise (progn$
+                     (impossible)
+                     ps)))))))
 
  (defund vl-pp-stmtlist-fn (x ps)
    (declare (xargs :guard (vl-stmtlist-p x)
@@ -1913,7 +2082,10 @@ expression into a string."
                                 (vl-pp-stmtlist-fn . list)
                                 (vl-pp-cases-fn . case)))
 
-(verify-guards vl-pp-stmt-fn)
+(verify-guards vl-pp-stmt-fn
+  :hints(("Goal"
+          :in-theory (disable double-containment
+                              member-equal-when-member-equal-of-cdr-under-iff))))
 
 (define vl-pp-always ((x vl-always-p) &key (ps 'ps))
   (b* (((vl-always x) x))
@@ -1944,52 +2116,6 @@ expression into a string."
                (vl-println "")
                (vl-pp-initiallist (cdr x)))))
 
-(define vl-pp-paramdecl ((x vl-paramdecl-p) &key (ps 'ps))
-  (b* (((vl-paramdecl x) x))
-    (vl-ps-seq (vl-print "  ")
-               (if x.atts
-                   (vl-ps-seq (vl-pp-atts x.atts)
-                              (vl-print " "))
-                 ps)
-               (vl-ps-span "vl_key"
-                           (if x.localp
-                               (vl-print "localparam ")
-                             (vl-print "parameter "))
-                           (case x.type
-                             (:vl-signed (vl-print "signed "))
-                             (:vl-integer (vl-print "integer "))
-                             (:vl-real (vl-print "real "))
-                             (:vl-time (vl-print "time "))
-                             (:vl-realtime (vl-print "realtime "))
-                             (otherwise ps)))
-               (if x.range
-                   (vl-ps-seq (vl-pp-range x.range)
-                              (vl-print " "))
-                 ps)
-               (vl-print-wirename x.name)
-               (vl-print " = ")
-               (vl-pp-expr x.expr)
-               (vl-println ";"))))
-
-(define vl-pp-paramdecllist ((x vl-paramdecllist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-paramdecl (car x))
-               (vl-pp-paramdecllist (cdr x)))))
-
-(define vl-pp-blockitem ((x vl-blockitem-p) &key (ps 'ps))
-  (case (tag x)
-    (:vl-regdecl   (vl-pp-regdecl x))
-    (:vl-vardecl   (vl-pp-vardecl x))
-    (:vl-eventdecl (vl-println "// BOZO implement eventdecl printing"))
-    (:vl-paramdecl (vl-pp-paramdecl x))
-    (otherwise     (progn$ (impossible) ps))))
-
-(define vl-pp-blockitemlist ((x vl-blockitemlist-p) &key (ps 'ps))
-  (if (atom x)
-      ps
-    (vl-ps-seq (vl-pp-blockitem (car x))
-               (vl-pp-blockitemlist (cdr x)))))
 
 (define vl-taskporttype-string ((x vl-taskporttype-p))
   :returns (str stringp :rule-classes :type-prescription)
@@ -2134,9 +2260,7 @@ instead of @(see ps).</p>"
                (vl-pp-regdecllist x.regdecls)
                (vl-pp-netdecllist x.netdecls)
                (vl-pp-vardecllist x.vardecls)
-               (if (not x.eventdecls)
-                   ps
-                 (vl-println "// BOZO implement eventdecl printing"))
+               (vl-pp-eventdecllist x.eventdecls)
                (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
                (vl-pp-taskdecllist x.taskdecls)
                (vl-pp-assignlist x.assigns)
