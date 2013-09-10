@@ -58,10 +58,14 @@
   ;;
   ;; Typical usage is (cw "foo: ~x0~%" (str::hexify foo))
   (declare (xargs :guard t))
-  (cond ((natp x)
-         (b* ((chars (explode-atom x 16)) ;; looks like BEEF...
-              (nice-chars (list* #\# #\u #\x (first chars)
-                                 (insert-underscores (nthcdr 1 chars)))))
+  (cond ((integerp x)
+         (b* ((xsign (< x 0))
+              (xabs (abs x))
+              (chars (explode-atom xabs 16)) ;; looks like BEEF...
+              (nice-chars (list* #\# #\u #\x 
+                                 (append (and xsign '(#\-))
+                                         (cons (first chars)
+                                               (insert-underscores (nthcdr 1 chars)))))))
            (implode nice-chars)))
         ((symbolp x)
          (symbol-name x))
