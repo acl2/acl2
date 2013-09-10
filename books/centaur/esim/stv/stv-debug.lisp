@@ -117,7 +117,7 @@ generate a waveform."
    input-alist
    &key
    ((filename stringp) '"stv.debug")
-   ((viewer   stringp) '"gtkwave")
+   ((viewer   (or (stringp viewer) (not viewer))) '"gtkwave")
    (state    'state))
   :guard-debug t
   :returns (mv out-alist state)

@@ -516,6 +516,37 @@ paths."
   ||#
 
 
+(define stv-check-noncanonical-paths (paths mod)
+  :short "Checks that the listed paths all exist in the module"
+  (b* (((when (atom paths)) nil)
+       (path (car paths))
+       (submod (follow-esim-path path mod))
+       (wirename (if (atom path) path (cdr (last path)))))
+    (if (and wirename (symbolp wirename))
+        (or (member-of-pat-flatten wirename (gpl :i submod))
+            (find-in-occs-field :o wirename (gpl :occs submod))
+            (raise "Path ~x0 does not exist" path))
+      (raise "~x0 is not a valid wirename" wirename))
+    (stv-check-noncanonical-paths (cdr paths) mod)))
+       
+       
+    
+
+(define stv-expand-hid
+  :parents (stv-expand)
+  :short "@(call stv-expand-hid) expands a signal name when it is allowed to be
+hierarchical, i.e. a hid or a list of esim paths."
+  :returns (lsb-paths "LSB-first list of non-canonical paths for @('x'), in the
+                       sense of @(see acl2::mod-internal-paths).")
+  ((name "the name at the start of the STV line")
+   mod)
+
+  (if (stringp name)
+      ;; assume it's a hid
+      (stv-hid-to-paths name mod)
+    (prog2$ (stv-check-noncanonical-paths name mod)
+            name)))
+
 (define stv-expand-hids-in-lines
   :parents (stv-expand)
   :short "@(call stv-expand-hids-in-lines) expands all of the HIDs in a list of
@@ -527,9 +558,7 @@ STV internal lines into lists of esim paths."
         nil)
        (line1              (car lines))
        ((cons name phases) line1)
-       ((unless (stringp name))
-        (raise "Internals line name is not a string: ~x0" name))
-       (lsb-paths (stv-hid-to-paths name mod)))
+       (lsb-paths (stv-expand-hid name mod)))
     (cons (cons lsb-paths phases)
           (stv-expand-hids-in-lines (cdr lines) mod)))
   ///
@@ -540,10 +569,12 @@ STV internal lines into lists of esim paths."
              (true-list-listp (stv-expand-hids-in-lines lines mod)))))
 
 
+
 (define stv-expand
   :parents (symbolic-test-vectors)
   :short "Expand Verilog-style names throughout an STV into LSB-ordered ESIM
 style paths."
+  
 
   ((stv stvdata-p)
    mod)
