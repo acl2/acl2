@@ -27,7 +27,10 @@
 (include-book "aiger")
 (include-book "aig-print")
 (include-book "aig-sat")
-(include-book "aig-sat-tests")
+; Avoid dependence of this top.lisp book on glucose, so that running the
+; command " make everything USE_QUICKLISP=1" with ACL2(h) will build the
+; manual:
+; (include-book "aig-sat-tests")
 (include-book "aig-vars-ext")
 (include-book "aig-vars-fast")
 (include-book "aig-vars")

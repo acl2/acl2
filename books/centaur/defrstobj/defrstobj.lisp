@@ -32,10 +32,6 @@
 (include-book "array-lemmas")
 ||#
 
-(make-event
- (let ((array-lemmas (extend-pathname (cbd) "array-lemmas" state)))
-   `(defconst *array-lemmas-book* ',array-lemmas)))
-
 
 (defun-nx non-executable-nth (n x)
   ;; Used in good-stp below, to get around stobj restrictions
@@ -898,7 +894,7 @@
          (logic)
          (set-inhibit-warnings "non-rec" "disable" "subsume") ;; implicitly local
          (local (set-default-hints nil))
-         (local (include-book ,*array-lemmas-book*))
+         (local (include-book "centaur/defrstobj/array-lemmas" :dir :system))
          (local (in-theory
                  (union-theories
                   (union-theories (theory 'minimal-theory)
