@@ -883,7 +883,23 @@ implementations.")
 
 #+gcl
 (defvar *saved-system-banner*
-  si::*system-banner*)
+
+; This variable is only used in GCL 2.6.9 and later, and the following comments
+; pertain only to that case.
+
+; Set this variable to nil before save-exec in order to save an image without a
+; GCL startup banner, as this will leave si::*system-banner* unbound; see
+; below.
+
+; ACL2 keeps this value at nil except when acl2-default-restart unbinds
+; si::*system-banner*, in which case *saved-system-banner* is set to the value
+; of si::*system-banner* just before that unbinding takes place.  When
+; save-exec saves an image, it first checks whether si::*system-banner* is
+; unbound and *saved-system-banner* is non-nil, in which case it sets
+; si::*system-banner* to *saved-system-banner*.  Even if si::*system-banner* is
+; bound, *saved-system-banner* is set to nil before saving an image.
+
+  nil)
 
 #+akcl
 (defun save-acl2-in-akcl-aux (sysout-name gcl-exec-name
@@ -891,7 +907,11 @@ implementations.")
                                           set-optimize-maximum-pages
                                           host-lisp-args
                                           inert-args)
-  (setq si::*system-banner* *saved-system-banner*)
+  (when (and (gcl-version-> 2 6 9 t)
+             *saved-system-banner*)
+    (when (not (boundp 'si::*system-banner*)) ; true, unless user intervened
+      (setq si::*system-banner* *saved-system-banner*))
+    (setq *saved-system-banner* nil))
   (if (and write-worklispext (probe-file "worklispext"))
       (delete-file "worklispext"))
   (let* ((ext "gcl")
@@ -1184,7 +1204,8 @@ implementations.")
 ; save-exec, in order to avoid seeing startup information.  We do not comment
 ; here on whether that is legally appropriate; for example, it suppresses
 ; copyright information for ACL2 and, for CCL at least, information about the
-; host Lisp.
+; host Lisp.  We also do not guarantee that this behavior (suppressing printing
+; of startup information) is supported for every host Lisp.
 
 ; Note that LD always prints some startup information, regardless of the value
 ; of *print-startup-banner*.  To suppress that information, evaluate
@@ -1226,11 +1247,11 @@ implementations.")
 ; much as we handle a similar issue for CCL above, following GCL source file
 ; lsp/gcl_top.lsp.
 
-    (setq *saved-system-banner* si::*system-banner*)
-    (when (and (gcl-version-> 2 6 9 t)
-               *print-startup-banner*
+    (when (and *print-startup-banner*
+               (gcl-version-> 2 6 9 t)
                (boundp 'si::*system-banner*))
       (format t si::*system-banner*)
+      (setq *saved-system-banner* si::*system-banner*)
       (makunbound 'si::*system-banner*)
       (when (boundp 'si::*tmp-dir*)
         (format t "Temporary directory for compiler files set to ~a~%"
