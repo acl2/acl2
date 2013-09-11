@@ -5934,11 +5934,11 @@
 
 (defmacro trans-or (form1 condition form2 extra-msg)
 
-; Like trans-er-let*, this function deals in trans-er's 3-tuples and binds and
-; returns (mv erp val bindings).  The result comes is the result of form1,
-; except if that result is an error, condition is true, and form2 produces a
-; non-nil result, then the result from form2 is returned.  In the case of an
-; error,
+; Like trans-er-let*, this function deals in trans-er's 3-tuples (mv erp val
+; bindings).  The 3-tuple produced by form1 is returned except in one case:
+; that 3-tuple has non-nil first value (erp), condition is true, and form2
+; produces a 3-tuple of the form (mv nil val bindings), in which case that
+; 3-tuple is returned.
 
   `(let ((trans-or-extra-msg ,extra-msg))
      (mv-let (trans-or-erp trans-or-val trans-or-bindings)

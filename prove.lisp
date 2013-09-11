@@ -521,6 +521,28 @@
 ; return four values: the new step-limit, wonp, the new term, and a new ttree.
 ; This fn is a No-Change Loser.
 
+; Note that preprocess-clause calls expand-abbreviations; but also
+; preprocess-clause calls clausify-input, which calls expand-and-or, which
+; calls expand-abbreviations.  But this is not redundant, as expand-and-or
+; calls expand-abbreviations after expanding function definitions and using
+; rewrite rules when the result is a conjunction or disjunction (depending on
+; bool) -- even when the rule being applied is not an abbreviation rule.  Below
+; are event sequences that illustrate this extra work being done.  In both
+; cases, evaluation of (getprop 'foo 'lemmas nil 'current-acl2-world (w state))
+; shows that we are expanding with a rewrite-rule structure that is not of
+; subclass 'abbreviation.
+
+; (defstub bar (x) t)
+; (defun foo (x) (and (bar (car x)) (bar (cdr x))))
+; (trace$ expand-and-or expand-abbreviations clausify-input preprocess-clause)
+; (thm (foo x) :hints (("Goal" :do-not-induct :otf)))
+
+; (defstub bar (x) t)
+; (defstub foo (x) t)
+; (defaxiom foo-open (equal (foo x) (and (bar (car x)) (bar (cdr x)))))
+; (trace$ expand-and-or expand-abbreviations clausify-input preprocess-clause)
+; (thm (foo x) :hints (("Goal" :do-not-induct :otf)))
+
   (cond ((variablep term) (mv step-limit nil term ttree))
         ((fquotep term) (mv step-limit nil term ttree))
         ((member-equal (ffn-symb term) fns-to-be-ignored-by-rewrite)

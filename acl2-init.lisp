@@ -881,12 +881,17 @@ implementations.")
   (cond ((null s) "")
         (t (concatenate 'string " " s))))
 
+#+gcl
+(defvar *saved-system-banner*
+  si::*system-banner*)
+
 #+akcl
 (defun save-acl2-in-akcl-aux (sysout-name gcl-exec-name
                                           write-worklispext
                                           set-optimize-maximum-pages
                                           host-lisp-args
                                           inert-args)
+  (setq si::*system-banner* *saved-system-banner*)
   (if (and write-worklispext (probe-file "worklispext"))
       (delete-file "worklispext"))
   (let* ((ext "gcl")
@@ -1212,6 +1217,25 @@ implementations.")
               (lisp-implementation-type)
               (lisp-implementation-version)))
     (setq ccl::*inhibit-greeting* t))
+
+  #+gcl
+  (progn
+
+; Some recent versions of GCL (specifically, 2.6.9 in Sept. 2013) do not print
+; the startup banner until we first exit the loop.  So we handle that situation
+; much as we handle a similar issue for CCL above, following GCL source file
+; lsp/gcl_top.lsp.
+
+    (setq *saved-system-banner* si::*system-banner*)
+    (when (and (gcl-version-> 2 6 9 t)
+               *print-startup-banner*
+               (boundp 'si::*system-banner*))
+      (format t si::*system-banner*)
+      (makunbound 'si::*system-banner*)
+      (when (boundp 'si::*tmp-dir*)
+        (format t "Temporary directory for compiler files set to ~a~%"
+                si::*tmp-dir*))))
+
   #+hons (qfuncall acl2h-init)
   (when *print-startup-banner*
     (format t

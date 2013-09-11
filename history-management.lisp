@@ -17392,6 +17392,11 @@
         *expandable-boot-strap-non-rec-fns*))
 
 (defconst *definition-minimal-theory*
+
+; We include mv-nth because of the call of simplifiable-mv-nthp in the
+; definition of call-stack, which (as noted there) results in a use of the
+; definition of mv-nth without tracking it in a ttree.
+
   (list* 'mv-nth 'iff *expandable-boot-strap-non-rec-fns*))
 
 (defdoc theories-and-primitives

@@ -13077,11 +13077,19 @@
                                              pcert-info old-dir
                                              new-dir cert-op ctx state)
 
-; See make-certificate-file.
+; This function supports the creation of relocated .cert files for Debian GCL
+; distributions.  See make-certificate-file.
+
+; Warning: It is tempting to replace strings in (car portcullis), which is the
+; list of portcullis commands, and the expansion-alist.  However, that will
+; result in an uncertified book after moving the .cert.final file to the .cert
+; file, because post-alist3 contains a checksum for the book as computed by
+; function check-sum-cert, using the portcullis commands and the
+; expansion-alist.
 
   (make-certificate-file1
    file
-   (cons (car portcullis) ; Warning: used in checksum, so do not modify!
+   (cons (car portcullis)
          (replace-string-prefix-in-tree
           (cdr portcullis) old-dir (length old-dir) new-dir))
    certification-file

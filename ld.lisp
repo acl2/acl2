@@ -21033,6 +21033,13 @@
 ; quick-compile-acl2.  Also deleted no-object-file-or-out-of-date-object-file,
 ; since it was there only to support quick-compile-acl2.
 
+; Improved the error message for #.expr when expr hasn't been defined by
+; defconst.
+
+; Modified printing of the banner for GCL, especially for versions 2.6.9 and
+; later, due to a change in how GCL prints such banners.  (Printing of the
+; banner still works fine with older versions of GCL.)
+
   :doc
   ":Doc-Section release-notes
 
