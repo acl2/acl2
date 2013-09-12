@@ -21040,6 +21040,8 @@
 ; later, due to a change in how GCL prints such banners.  (Printing of the
 ; banner still works fine with older versions of GCL.)
 
+; For SBCL only, increased --control-stack-size from 8 to 16.
+
   :doc
   ":Doc-Section release-notes
 

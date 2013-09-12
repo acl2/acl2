@@ -1607,7 +1607,11 @@ implementations.")
 ; to be stack overflow from fmt0, which is not tail recursive.  More recently,
 ; community book centaur/misc/defapply.lisp causes a stack overflow even with
 ; --control-stack-size 4 (though that might disappear after we added (comp t)
-; in a couple of places).  So we use 8 instead of 4.
+; in a couple of places).  Yet more recently, community books
+; books/centaur/regression/common.lisp and books/centaur/tutorial/intro.lisp
+; fail with --control-stack-size 8, due to calls of def-gl-clause-processor.
+; So we use --control-stack-size 16.  We might increase 16 to 32 or greater in
+; the future.
 
 ; See *sbcl-dynamic-space-size* for an explanation of the --dynamic-space-size
 ; setting below.
@@ -1617,7 +1621,7 @@ implementations.")
 ; out this option to us after ACL2 Version_6.2, we started using it in place of
 ; " --userinit /dev/null", which had not worked on Windows.
 
-        "~s --dynamic-space-size ~s --control-stack-size 8 --core ~s~a ~
+        "~s --dynamic-space-size ~s --control-stack-size 16 --core ~s~a ~
          --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)'~a ~a~%"
         prog
         *sbcl-dynamic-space-size*
