@@ -214,6 +214,12 @@ int main()
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(in-package "ACL2")
+
+; Added by Matt K.: We now set waterfall-parallelism on by default for ACL2(p).
+; I'm preserving the multiline comment that was here previously, just below.
+(set-waterfall-parallelism t)
+
 #||
  /projects/acl2/releases/v4-3-64/ccl-saved_acl2p
 or
@@ -229,8 +235,6 @@ or
    "setup-nested-page-tables.lisp"))
 
 ||#
-
-(in-package "ACL2")
 
 (include-book "../Y86/y86")
 (include-book "../Y86/asm")
