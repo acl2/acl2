@@ -21042,6 +21042,15 @@
 
 ; For SBCL only, increased --control-stack-size from 8 to 16.
 
+; For CMUCL only, declaimed len to be notinline, to avoid what appears to be a
+; CMUCM compiler bug that shows up when attempting to certify the community
+; book books/models/jvm/m1/defsys.lisp.
+
+; Incorporated fix from Sol Swords for ACL2(h): "memoize time
+; tracking: fix some subtle RDTSC-related problems that could cause
+; safe-incf errors on machines that often switch your thread across
+; cores".
+
   :doc
   ":Doc-Section release-notes
 

@@ -1835,6 +1835,15 @@ the calls took.")
         (t
          cl-defun)))
 
+(defun fix-time (ticks ctx)
+  (declare (type integer ticks))
+  (if (and (<= 0 ticks)
+           (< ticks (* 864000 ;; 10 days, in seconds
+                       *float-ticks/second*)))
+      ticks
+    (progn (format t "Ignoring time increment of ~a sec for ~a~%"
+                   (/ ticks *float-ticks/second*) ctx)
+           0)))
 
 (defg *memoize-init-done* nil)
 
@@ -2376,10 +2385,10 @@ the calls took.")
                          `((safe-incf
                             (aref ,*mf-ma*
                                   (the mfixnum (1+ ,*mf-count-loc*)))
-                            (mod
-                             (the integer (- (internal-real-time)
-                                             ,start-time))
-                             most-positive-mfixnum)
+                            (the integer
+                              (fix-time (the integer (- (internal-real-time)
+                                                        ,start-time))
+                                        ',fn))
                             ,fn)))
                   ,@(and forget
 

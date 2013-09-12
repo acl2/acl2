@@ -1387,7 +1387,16 @@
            zip
            zp
            zpf
-           ))
+           )
+
+; For ACL2 built on CMUCL 20D Unicode, an attempt failed on 9/12/2013 to
+; certify the community book books/models/jvm/m1/defsys.lisp.  During
+; debugging, we found a note that mentioned "*Inline-Expansion-Limit* (400)
+; exceeded".  The following declaim form, which may be quite harmless, solves
+; the problem.
+
+         #+cmu
+         (notinline len))
 
 ; We provide here ``raw'' implementations of basic functions that we
 ; ``wish'' were already in Common Lisp, to support primitives of the
