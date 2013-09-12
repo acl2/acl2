@@ -6283,19 +6283,19 @@
                                     rest))))
                (t (trans-value (cons call rest)))))))))
 
-(defun translate11-let (x tbody targs stobjs-out bindings known-stobjs
+(defun translate11-let (x tbody0 targs stobjs-out bindings known-stobjs
                           flet-alist ctx wrld state-vars)
 
 ; Warning:  If the final form of a translated let is changed,
 ; be sure to reconsider translated-acl2-unwind-protectp.
 
-; X is a cons whose car is 'LET.  If tbody is nil, as is the case for a
+; X is a cons whose car is 'LET.  If tbody0 is nil, as is the case for a
 ; user-supplied LET expression, then this function is nothing more than the
 ; restriction of function translate11 to that case.  Otherwise, the LET
 ; expression arises from a STOBJ-LET expression, and we make the following
 ; exceptions: the bindings are allowed to bind more than one stobj; we suppress
 ; the check that a stobj bound in the LET bindings must be returned by the LET;
-; tbody is used as the translation of the body of the LET; and targs, if
+; tbody0 is used as the translation of the body of the LET; and targs, if
 ; non-nil, is used as the translation of the strip-cadrs of the bindings of the
 ; let, as these are assumed already to be translated.
 
@@ -6333,7 +6333,7 @@
       (cond
        ((and stobj-flags ; optimization (often false)
              multiple-bindings-p
-             (null tbody)
+             (null tbody0)
              (non-trivial-stobj-binding stobj-flags (cadr x)))
         (trans-er ctx
                   "A single-threaded object name, such as ~x0, may be ~
@@ -6374,8 +6374,8 @@
                                           flet-alist x ctx wrld
                                           state-vars))))
                (tbody
-                (if tbody
-                    (trans-value tbody)
+                (if tbody0
+                    (trans-value tbody0)
                   (translate11 (car (last x)) stobjs-out bindings known-stobjs
                                flet-alist x ctx wrld state-vars)))
                (tdcls (translate11-lst
@@ -6397,7 +6397,7 @@
                   (unknown-binding-msg-er x ctx stobjs-bound
                                           "a LET" "the LET" "the LET"))
                  ((and
-                   (null tbody)              ; else skip this check
+                   (null tbody0)             ; else skip this check
                    stobjs-bound              ; hence (not (eq stobjs-out t))
                    (not multiple-bindings-p) ; possible stobj mod in bindings
                    (not (eq (caar (cadr x))
@@ -6514,13 +6514,13 @@
                            "Implementation error: Unexpected form for ~x0."
                            'translate11-let*))))))
 
-(defun translate11-mv-let (x tbody stobjs-out bindings known-stobjs
+(defun translate11-mv-let (x tbody0 stobjs-out bindings known-stobjs
                              local-stobj local-stobj-creator flet-alist
                              ctx wrld state-vars)
 
 ; X is a cons whose car is 'MV-LET.  This function is nothing more than the
 ; restriction of function translate11 to that case, with two exceptional cases:
-; if tbody is not nil, then it is to be used as the translation of the body of
+; if tbody0 is not nil, then it is to be used as the translation of the body of
 ; the MV-LET, and we suppress the check that a stobj bound by MV-LET must be
 ; returned by the MV-LET; and if local-stobj is not nil, then we are in the
 ; process of translating (with-local-stobj local-stobj x local-stobj-creator),
@@ -6603,8 +6603,8 @@
                                    bindings known-stobjs
                                    "in a DECLARE form in an MV-LET"
                                    flet-alist x ctx wrld state-vars))
-           (tbody (if tbody
-                      (trans-value tbody)
+           (tbody (if tbody0
+                      (trans-value tbody0)
                     (translate11 (car (last x))
                                  stobjs-out bindings known-stobjs flet-alist x
                                  ctx wrld state-vars))))
@@ -6627,7 +6627,7 @@
               (unknown-binding-msg-er x ctx stobjs-bound
                                       "an MV-LET" "the MV-LET" "the MV-LET"))
              ((and stobjs-bound
-                   (null tbody) ; else skip this check
+                   (null tbody0) ; else skip this check
                    (not (subsetp stobjs-bound
                                  (collect-non-x nil stobjs-out))))
               (let ((stobjs-returned (collect-non-x nil stobjs-out)))

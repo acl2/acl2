@@ -21051,6 +21051,46 @@
 ; safe-incf errors on machines that often switch your thread across
 ; cores".
 
+; Just below is a book containing a proof of nil, which exploits the soundness
+; bug reported by Jen Davis and Dave Greve, permitting a stobj to be bound by a
+; let or mv-let form without being among the outputs of that form.  The bug was
+; in translate11-let (and also, similarly, in translate11-mv-let); it was a
+; coding bug that failed to distinguish between the original value of a formal,
+; tbody, and an updated version of that formal.
+
+;   (in-package "ACL2")
+;
+;   (defstobj st halt)
+;
+;   (defun foo (st)
+;     (declare (xargs :stobjs st))
+;     (let ((st (update-halt 0 st)))
+;       (halt st)))
+;
+;   (defun bar ()
+;     (declare (xargs :guard t))
+;     (with-local-stobj
+;      st
+;      (mv-let (result st)
+;              (let ((x (foo st)))
+;                (declare (ignore x))
+;                (mv (halt st) st))
+;              result)))
+;
+;   (defthm thm1
+;     (equal (bar) 0)
+;     :rule-classes nil)
+;
+;   (defthm thm2
+;     (equal (bar) nil)
+;     :hints (("Goal" :in-theory (disable (bar))))
+;     :rule-classes nil)
+;
+;   (defthm contradiction
+;     nil
+;     :hints (("Goal" :use (thm1 thm2)))
+;     :rule-classes nil)
+
   :doc
   ":Doc-Section release-notes
 
@@ -21191,6 +21231,13 @@
   one above), such warnings about ``weak'' simply aren't correct.
 
   ~st[BUG FIXES]
+
+  Fixed a soundness bug that was permitting a ~il[stobj] to be bound by a
+  ~ilc[let] or ~ilc[mv-let] form, without being among the outputs of that form.
+  Thanks to Jen Davis and Dave Greve for reporting this bug.  Their report
+  included an example which forms the basis for a proof of ~c[nil], included as
+  a comment in the form ~c[(deflabel note-6-3 ...)] in ACL2 source file
+  ~c[ld.lisp].
 
   (GCL only) Fixed an obscure soundness bug due to an error in the GCL
   implementation of ~ilc[set-debugger-enable].  For details, see the relevant
