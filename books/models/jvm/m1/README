@@ -3,7 +3,7 @@ J Strother Moore
 December, 2012
 
 On this directory you will find a definition of a simple von Neumann machine
-called M1, the proofs of the correctness of 18 simple M1 programs, and a proof
+called M1, the proofs of the correctness of 19 simple M1 programs, and a proof
 that M1 is Turing equivalent.  M1 is an idealized version of a trivial subset
 of the Java Virtual Machine.  A highlight of the Turing equivalent proof is the
 definition and use of a verifying compiler from a simple subset of Lisp to M1.
@@ -177,6 +177,47 @@ script.lsp rather than alphabetically!
 * sum.lisp
 * sumsq.lisp
 * wormhole-abstraction.lisp
+
+All of the proofs above use the Boyer-Moore ``clock function'' approach to
+total program correctness.  In each example, a function is defined that takes
+the relevant inputs to the program and returns the minimum number of steps
+required to drive the M1 interpreter to halt on those inputs.  Then the theorem
+is proved that when the program is run that many steps on appropriate input the
+result is a halted state with the correct answer in the location specified.
+I use that style because it is easy for students to grasp and apply.  (And,
+as shown in
+
+  ``Proof Styles in Operational Semantics,'' with S. Ray, Formal Methods in
+  Computer-Aided Design (FMCAD 2004), A. J. Hu and A. K. Martin (eds.),
+  Springer Lecture Notes in Computer Science, 3312, pages 67-81, 2004.
+
+  http://www.cs.utexas.edu/users/sandip/publications/proof-styles/main.html
+
+the clock style proof method is equivalent to (indeed, interchangeable with)
+other proof styles.  The clock style approach is in fact used to verify the
+Turing equivalence of M1, described below.
+
+But I also demonstrate here how ACL2 can be used to verify M1 programs via
+the Floyd-Hoare inductive assertion style proofs.  As noted in the paper
+
+  ``Inductive Assertions and Operational Semantics,'' CHARME 2003,
+  D. Geist (ed.), Springer Verlag LNCS 2860, pp. 289-303, 2003
+
+  http://www.cs.utexas.edu/users/moore/publications/trecia/index.html
+
+it is possible to use the inductive assertion style proof method with a formal
+operational semantics without defining a weakest precondition or verification
+condition generator (VCG).  Instead, the theorem prover's rewriter can derive
+the required verification conditions from the code and semantics given
+user-supplied annotations attached to suitable cut points.  This is demonstrated
+for M1 in this file:
+
+* m1-half-via-inductive-assertions.lisp
+
+where I prove that an M1 program divides an even natural by 2 and halts,
+without characterizing how long it takes.  I prove that if the program halts
+the input was even, which also means: if the input is not even the program does
+not halt.
 
 The Turing Equivalence of M1: The following files prove that M1 can simulate a
 Turing machine interpreter.  To do this, I write an M1 program that interprets
