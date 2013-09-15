@@ -29052,6 +29052,7 @@
     (iprint-soft-bound . ,*iprint-soft-bound-default*)
     (keep-tmp-files . nil)
     (last-make-event-expansion . nil)
+    (last-prover-steps . nil)
     (last-step-limit . -1) ; any number should be OK
     (ld-level . 0)
     (ld-okp . :default) ; see :DOC calling-ld-in-bad-contexts
@@ -37236,6 +37237,7 @@
     pc-assign
     illegal-to-certify-message
     acl2-sources-dir
+    last-prover-steps ; being conservative here; perhaps could omit
     ))
 
 ; There are a variety of state global variables, 'ld-skip-proofsp among them,
@@ -40922,7 +40924,9 @@
   limit on prover steps for a single event, rather than globally.  For a
   related utility based on time instead of prover steps,
   ~pl[with-prover-time-limit].  For examples of how step limits work, see the
-  community book ~c[books/misc/misc2/step-limits.lisp].
+  community book ~c[books/misc/misc2/step-limits.lisp].  For a utility that
+  returns an indicator of the number of prover steps most recently taken,
+  ~pl[last-prover-steps].
 
   Note: This is an event!  It does not print the usual event summary
   but nevertheless changes the ACL2 logical ~il[world] and is so

@@ -21205,6 +21205,9 @@
   modified ~ilc[verify-guards] to print a friendlier error message when its
   argument is a macro-alias.
 
+  ~l[last-prover-steps] for a new utility that returns the number of prover
+  steps most recently taken.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   The processing of ~c[:use] and ~c[:by] ~il[hints] has been changed in the
