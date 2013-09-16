@@ -3816,12 +3816,12 @@
   A solution is to record the steps taken by the first ~ilc[defun] before
   executing subsequent events, as follows (~pl[make-event]).
   ~bv[]
-  (progn (defun ...)
+  (progn (defun f1 ...)
          (make-event (pprogn (f-put-global 'my-step-count
                                            (last-prover-steps state)
                                            state)
                              (value '(value-triple nil))))
-         (table ...))
+         (defun f2 ...))
   ~ev[]~/"
   (f-get-global 'last-prover-steps state))
 
