@@ -1,0 +1,22 @@
+#summary Tips and Tricks for Navigating ACL2 Library Code
+
+= Introduction =
+
+A place for short FAQs related to the ACL2 books with quick answers
+
+== How do I figure out which versions affect a particular symbol? ==
+
+A quick way of answering this question is to issue
+
+{{{
+svn diff -r 2000:2053 | grep firstn-chars
+}}}
+
+There are more complicated methods, but they're more work.  For more information, see http://code.google.com/p/acl2-books/issues/detail?id=86
+
+
+== How can I determine which file is currently being built? ==
+
+{{{
+ps axww
+}}}
