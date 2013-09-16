@@ -20,7 +20,7 @@
 
 (in-package "XDOC")
 (include-book "tools/bstar" :dir :system)
-(include-book "str/cat" :dir :system)
+(include-book "str/defs" :dir :system)
 (program)
 
 
@@ -91,4 +91,4 @@
          (acc (remove-spaces-from-front acc))
          (acc (reverse acc))
          (acc (remove-spaces-from-front acc)))
-    (coerce acc 'string)))
+    (str::implode acc)))

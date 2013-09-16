@@ -68,7 +68,10 @@
       </th>
       <th id="letters"></th>
       <td>
-	<span id="jumpmsg" data-powertip="<p>If you know what topic you want, you
+<!-- Come back to this after Typeahead 0.10.  There may be a way to get it to
+     autocomplete when the user hits enter, then. -->
+ 	<form> 
+	<label id="jumpmsg" data-powertip="<p>If you know what topic you want, you
 					  can type its symbol-name here (without
                                           a package name), then choose the match
                                           when it comes up.</p>
@@ -77,9 +80,20 @@
 					  then either click or use up/down to
                                           choose what you want before hitting
                                           Enter.</p>">
-	  Jump to </span>
+	  Jump to </label>
 	<input id="jump" type="text" size="20" placeholder="loading..."
 	       disabled="disabled"/>
+	</form>
+      </td>
+      <td>
+	<form onsubmit="{search_go(); return false;}">
+	<label id="searchmsg"/>
+  	  Search </label>
+        <input id="searchbox" type="text" size="30" placeholder="loading..."
+	       disabled="disabled"/>
+	<input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;"
+	       hidefocus="true" tabindex="-1"/>
+	</form>
       </td>
     </tr>
   </table>

@@ -174,7 +174,7 @@
 
        ((mv err &) (parse-xml short-str))
        (state
-        (if err
+        (if (and err (xdoc-verbose-p))
             (pprogn
                (fms "~|~%WARNING: problem with :short in topic ~x0:~%" 
                     (list (cons #\0 name))
@@ -199,7 +199,7 @@
        ((mv err &) (parse-xml long-str))
 
        (state
-        (if err
+        (if (and err (xdoc-verbose-p))
             (pprogn
                (fms "~|~%WARNING: problem with :long in topic ~x0:~%"
                     (list (cons #\0 name))
@@ -210,7 +210,7 @@
 
        (acc (b* (((unless err)
                   (append long-acc acc))
-                 (acc (str::revappend-chars "<h3>Markup error in :long</h3></code>" acc))
+                 (acc (str::revappend-chars "<h3>Markup error in :long</h3><code>" acc))
                  (acc (simple-html-encode-str err 0 (length err) acc))
                  (acc (str::revappend-chars "</code>" acc)))
               acc))

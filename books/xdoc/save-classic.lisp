@@ -28,6 +28,7 @@
 (in-package "XDOC")
 (include-book "mkdir")
 (include-book "prepare-topic")
+(include-book "oslib/catpath" :dir :system)
 (set-state-ok t)
 
 (program)
@@ -237,7 +238,7 @@ command, along the following lines:</p>
           (gather-topic-names (cdr x)))))
 
 (defun topics-fal (x)
-  (make-fast-alist (pairlis$ (gather-topic-names x) nil)))
+  (make-fast-alist (pairlis$ (gather-topic-names x) x)))
 
 
 (defun find-orphaned-topics-1 (child parents topics-fal acc)
@@ -445,7 +446,9 @@ command, along the following lines:</p>
        (state       (mkdir dir state))
        (state       (mkdir dir/xml state))
 
-       (xdoc/classic (oslib::catpath *xdoc-dir* "classic"))
+       (dir-system   (acl2::f-get-global 'acl2::system-books-dir state))
+       (xdoc-dir     (oslib::catpath dir-system "xdoc"))
+       (xdoc/classic (oslib::catpath xdoc-dir "classic"))
 
        ;; We copy classic/Makefile-trans to dir/Makefile.  The "-trans" part of
        ;; its name is just to prevent people from thinking they can type "make"

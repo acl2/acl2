@@ -27,7 +27,7 @@
 
 (in-package "XDOC")
 (include-book "base")
-(include-book "str/case-conversion" :dir :system)
+(include-book "str/defs" :dir :system)
 (program)
 
 
@@ -69,10 +69,9 @@
 ; package and the symbol name when creating file names.
 
   (declare (type symbol x))
-  (let ((str (concatenate 'string
-                          (symbol-package-name x)
-                          "::"
-                          (symbol-name x))))
+  (let ((str (str::cat (symbol-package-name x)
+                       "::"
+                       (symbol-name x))))
     (file-name-mangle-aux str 0 (length str) acc)))
 
 
@@ -113,116 +112,9 @@
 ;(reverse (coerce (simple-html-encode-chars '(#\a #\& #\b) nil) 'string))
 ;(reverse (coerce (simple-html-encode-chars '(#\a #\" #\b) nil) 'string))
 
-
-
-(defund revappend-chars-aux (x n xl y)
-  ;; YUCK, copy from string library to avoid str/ dependency
-  (declare (xargs :guard (and (stringp x)
-                              (natp n)
-                              (natp xl)
-                              (<= n xl)
-                              (equal xl (length x)))
-                  :measure (nfix (- (nfix xl) (nfix n)))))
-  (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-           :exec (= n xl))
-      y
-    (revappend-chars-aux x (+ 1 (lnfix n)) xl (cons (char x n) y))))
-
-(defund revappend-chars (x y)
-  ;; YUCK, copy from string library to avoid str/ dependency
-  (declare (xargs :guard (stringp x))
-           (type string x))
-
-  (mbe :logic (revappend (coerce x 'list) y)
-       :exec (revappend-chars-aux x 0 (length x) y)))
-
-(defund strprefixp-impl (x y xn yn xl yl)
-  ;; YUCK, copy from string library to avoid str/ dependency
-  (declare (type string x)
-           (type string y)
-           (type integer xn)
-           (type integer yn)
-           (type integer xl)
-           (type integer yl)
-           (xargs :guard (and (stringp x)
-                              (stringp y)
-                              (natp xn)
-                              (natp yn)
-                              (natp xl)
-                              (natp yl)
-                              (= xl (length x))
-                              (= yl (length y))
-                              (<= xn (length x))
-                              (<= yn (length y)))
-                  :measure (min (nfix (- (nfix xl) (nfix xn)))
-                                (nfix (- (nfix yl) (nfix yn))))))
-  (cond ((mbe :logic (zp (- (nfix xl) (nfix xn)))
-              :exec (= (the integer xn)
-                       (the integer xl)))
-         t)
-        ((mbe :logic (zp (- (nfix yl) (nfix yn)))
-              :exec (= (the integer yn)
-                       (the integer yl)))
-         nil)
-        ((eql (the character (char x xn))
-              (the character (char y yn)))
-         (strprefixp-impl x y
-                          (+ (lnfix xn) 1)
-                          (+ (lnfix yn) 1)
-                          xl yl))
-        (t
-         nil)))
-
-(defund strsubst-aux (old new x n xl oldl acc)
-  ;; YUCK, copy from string library to avoid str/ dependency
-  (declare (type string old)
-           (type string new)
-           (type string x)
-           (type integer n)
-           (type integer xl)
-           (type integer oldl)
-           (xargs :guard (and (stringp old)
-                              (stringp new)
-                              (stringp x)
-                              (natp n)
-                              (natp xl)
-                              (posp oldl)
-                              (= oldl (length old))
-                              (= xl (length x)))
-                  :measure (nfix (- (nfix xl) (nfix n)))))
-  (cond ((mbe :logic (zp oldl)
-              :exec nil)
-         acc)
-
-        ((mbe :logic (zp (- (nfix xl) (nfix n)))
-              :exec (>= n xl))
-         acc)
-
-        ((strprefixp-impl old x 0 n oldl xl)
-         (let ((acc (revappend-chars new acc)))
-           (strsubst-aux old new x (+ oldl (lnfix n)) xl oldl acc)))
-
-        (t
-         (let ((acc (cons (char x n) acc)))
-           (strsubst-aux old new x (+ 1 (lnfix n)) xl oldl acc)))))
-
-(defund strsubst (old new x)
-  ;; YUCK, copy from string library to avoid str/ dependency
-  (declare (xargs :guard (and (stringp old)
-                              (stringp new)
-                              (stringp x))))
-  (let ((xl   (length x))
-        (oldl (length old)))
-    (if (= oldl 0)
-        (mbe :logic (if (stringp x)
-                        x
-                      "")
-             :exec x)
-      (reverse (coerce (strsubst-aux old new x 0 xl oldl nil) 'string)))))
-
 (defun sneaky-downcase (x)
-  (let ((down (string-downcase x)))
-    (strsubst "acl2" "ACL2" down)))
+  (let ((down (str::downcase-string x)))
+    (str::strsubst "acl2" "ACL2" down)))
 
 ;(sneaky-downcase "SILLY-ACL2-TUTORIAL")
 
@@ -254,30 +146,20 @@
                          (simple-html-encode-chars (coerce pkg-low 'list) acc))))))
     (simple-html-encode-chars (coerce name-low 'list) acc)))
 
-(defun upcase-first-letter (x)
-  (declare (type string x))
-  (if (equal x "")
-      x
-    (concatenate 'string
-                 (coerce (list (char-upcase (char x 0))) 'string)
-                 (subseq x 1 nil))))
-
-
-
 (defun sym-mangle-cap (x base-pkg acc)
 
 ; Same as sym-mangle, but upper-case the first letter.
 
   (b* ((name-low (name-low (symbol-name x))))
     (if (in-package-p x base-pkg)
-        (let* ((name-cap (upcase-first-letter name-low)))
-          (simple-html-encode-chars (coerce name-cap 'list) acc))
+        (let* ((name-cap (str::upcase-first name-low)))
+          (simple-html-encode-chars (explode name-cap) acc))
       (let* ((pkg-low (name-low (symbol-package-name x)))
-             (pkg-cap (upcase-first-letter pkg-low))
+             (pkg-cap (str::upcase-first pkg-low))
              (acc (list* #\: #\:
-                         (simple-html-encode-chars (coerce pkg-cap 'list) acc))))
-        (simple-html-encode-chars (coerce name-low 'list) acc)))))
+                         (simple-html-encode-chars (explode pkg-cap) acc))))
+        (simple-html-encode-chars (explode name-low) acc)))))
 
 
-; (reverse (coerce (sym-mangle 'acl2 'acl2::foo nil) 'string))
-; (reverse (coerce (sym-mangle 'acl2-tutorial 'acl2::foo nil) 'string))
+; (reverse (implode (sym-mangle 'acl2 'acl2::foo nil)))
+; (reverse (implode (sym-mangle 'acl2-tutorial 'acl2::foo nil)))

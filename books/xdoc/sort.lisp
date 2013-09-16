@@ -41,7 +41,7 @@
    (t
     (fast-union x (cdr y) (cons (car y) acc)))))
 
-(defund halve-list-aux (mid x acc)
+(defun halve-list-aux (mid x acc)
   (if (or (atom x)
           (atom (cdr x)))
       (mv acc mid)
@@ -49,7 +49,7 @@
                     (cdr (cdr x))
                     (cons (car mid) acc))))
 
-(defund halve-list (x)
+(defun halve-list (x)
   (halve-list-aux x x nil))
 
 (defun mergesort (x)

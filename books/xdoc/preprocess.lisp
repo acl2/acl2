@@ -23,69 +23,81 @@
 
 (in-package "XDOC")
 (include-book "autolink")
-(include-book "str/strprefixp" :dir :system)
-(include-book "str/istrprefixp" :dir :system)
-(include-book "str/strpos" :dir :system)
-(include-book "oslib/catpath" :dir :system)
+(include-book "str/defs" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (set-state-ok t)
 (program)
 
-
+(encapsulate
+ ()
+ ;; We're not allowed to attach to program mode functions without a ttag, so
+ ;; make this logic mode.
+ (logic)
+ (defstub xdoc-verbose-p () t)
+ (defun xdoc-verbose-fn ()
+   (declare (xargs :guard t))
+   t)
+ (defun xdoc-quiet-fn ()
+   (declare (xargs :guard t))
+   nil)
+ (defmacro xdoc-verbose ()
+   `(defattach xdoc-verbose-p xdoc-verbose-fn))
+ (defmacro xdoc-quiet ()
+   `(defattach xdoc-verbose-p xdoc-quiet-fn))
+ (xdoc-verbose))
 
 ; ----------------- World Lookup Stuff --------------------------
 
 (defun get-formals (fn world)
-  (let ((formals (getprop fn 'formals :bad 'current-acl2-world world)))
-    (if (not (eq formals :bad))
-        formals
-      (let ((macro-args (getprop fn 'macro-args :bad 'current-acl2-world world)))
-        (if (not (eq macro-args :bad))
-            macro-args
-          (prog2$
-           (cw "; xdoc note: get-formals failed for ~s0::~s1.~%"
-               (symbol-package-name fn) (symbol-name fn))
-           (concatenate 'string
-                        "Error getting formals for "
-                        (symbol-package-name fn)
-                        "::"
-                        (symbol-name fn))))))))
+  (b* ((formals (getprop fn 'formals :bad 'current-acl2-world world))
+       ((unless (eq formals :bad))
+        formals)
+       (macro-args (getprop fn 'macro-args :bad 'current-acl2-world world))
+       ((unless (eq macro-args :bad))
+        macro-args))
+    (and (xdoc-verbose-p)
+         (cw "; xdoc note: get-formals failed for ~s0::~s1.~%"
+             (symbol-package-name fn) (symbol-name fn)))
+    (str::cat "Error getting formals for "
+              (symbol-package-name fn)
+              "::"
+              (symbol-name fn))))
 
 (defun get-measure (fn world)
-  (let ((just (getprop fn 'justification nil 'current-acl2-world world)))
-    (if just
-        (access justification just :measure)
-      (or (cw "; xdoc note: get-measure failed for ~x0.~%" fn)
-          (concatenate 'string
-                       "Error getting measure for "
-                       (symbol-package-name fn)
-                       "::"
-                       (symbol-name fn))))))
+  (b* ((just (getprop fn 'justification nil 'current-acl2-world world))
+       ((when just)
+        (access justification just :measure)))
+    (and (xdoc-verbose-p)
+         (cw "; xdoc note: get-measure failed for ~x0.~%" fn))
+    (str::cat "Error getting measure for "
+              (symbol-package-name fn)
+              "::"
+              (symbol-name fn))))
 
 (defun get-guard (fn world)
-  (if (not (eq (getprop fn 'formals :bad 'current-acl2-world world) :bad))
-      (getprop fn 'guard nil 'current-acl2-world world)
-    (prog2$
-     (cw "; xdoc note: get-guard failed for ~x0.~%" fn)
-     (concatenate 'string
-                  "Error getting guard for "
-                  (symbol-package-name fn)
-                  "::"
-                  (symbol-name fn)))))
+  (b* ((formals (getprop fn 'formals :bad 'current-acl2-world world))
+       ((unless (eq formals :bad))
+        (getprop fn 'guard nil 'current-acl2-world world)))
+    (and (xdoc-verbose-p)
+         (cw "; xdoc note: get-guard failed for ~x0.~%" fn))
+    (str::cat "Error getting guard for "
+              (symbol-package-name fn)
+              "::"
+              (symbol-name fn))))
 
 (defun get-body (fn world)
   ;; This gets the original body normalized or non-normalized body based on
   ;; what the user typed for the :normalize xarg.  The use of "last" skips past
   ;; any other :definition rules that have been added since then.
-  (let ((bodies (getprop fn 'def-bodies nil 'current-acl2-world world)))
-    (if bodies
-        (access def-body (car (last bodies)) :concl)
-      (or (cw "; xdoc note: get-body failed for ~x0.~%" fn)
-          (concatenate 'string
-                       "Error getting body for "
-                       (symbol-package-name fn)
-                       "::"
-                       (symbol-name fn))))))
+  (b* ((bodies (getprop fn 'def-bodies nil 'current-acl2-world world))
+       ((when bodies)
+        (access def-body (car (last bodies)) :concl)))
+    (and (xdoc-verbose-p)
+         (cw "; xdoc note: get-body failed for ~x0.~%" fn))
+    (str::cat "Error getting body for "
+              (symbol-package-name fn)
+              "::"
+              (symbol-name fn))))
 
 
 (defun eat-things-from-event (keys event)
@@ -184,20 +196,21 @@
 
 (defun get-event-aux (name world)
   ;; A general purpose event lookup as in :pe
-  (let* ((props (acl2::getprops name 'current-acl2-world world))
-        (evt   (and props (acl2::get-event name world))))
-    (or evt
-        (cw "; xdoc note: get-event failed for ~x0.~%" name)
-        (concatenate 'string
-                     "Error getting event for "
-                     (symbol-package-name name)
-                     "::"
-                     (symbol-name name)))))
+  (b* ((props (acl2::getprops name 'current-acl2-world world))
+       (evt   (and props (acl2::get-event name world)))
+       ((when evt)
+        evt))
+    (and (xdoc-verbose-p)
+         (cw "; xdoc note: get-event failed for ~x0.~%" name))
+    (str::cat "Error getting event for "
+              (symbol-package-name name)
+              "::"
+              (symbol-name name))))
 
 (defun get-event (name world)
   (clean-up-event (get-event-aux name world)))
 
-#|
+#||
 
 (get-event-aux 'append (w state))
 (get-event 'append (w state))
@@ -228,7 +241,7 @@
                                             (acl2::cdr . t)))
              :base-pkg 'xdoc::foo)
 
-|#
+||#
 
 (defun get-def (fn world)
   (get-event fn world))
@@ -237,66 +250,61 @@
   ;; BOZO maybe do some cleaning to remove hints, etc.
   (get-event name world))
 
-;; (defmacro foo ()
-;;   `(progn (logic)
-;;           (make-event
-;;            '(encapsulate
-;;               (((h *) => *))
-;;               (local (defun h (x) (+ x 1)))
-;;               (defun f (x) (+ x 1))
-;;               (defun g (x) (+ x 2))))))
+#||
 
-;; (defstobj st fld)
+(defmacro foo ()
+  `(progn (logic)
+          (make-event
+           '(encapsulate
+              (((h *) => *))
+              (local (defun h (x) (+ x 1)))
+              (defun f (x) (+ x 1))
+              (defun g (x) (+ x 2))))))
 
-;; (defun-sk all-integerp (x)
-;;   (forall a (implies (member-equal a x)
-;;                      (integerp a))))
+(defstobj st fld)
 
-;; (defconst *const* 3)
+(defun-sk all-integerp (x)
+  (forall a (implies (member-equal a x)
+                     (integerp a))))
 
-;; (foo)
+(defconst *const* 3)
 
-;; (get-event 'undefined (w state)) ; good, fails
-;; (get-event 'append (w state))
-;; (get-event 'binary-append (w state))
-;; (get-event 'st (w state))
-;; (get-event 'fld (w state)) ;; bad? returns the whole stobj
-;; (get-event 'all-integerp (w state))
-;; (get-event 'all-integerp-witness (w state)) ;; good i guess - returns the encapsulate
-;; (get-event 'f (w state))
-;; (get-event 'h (w state)) ;; good i guess, returns the encapsulate
-;; (get-event 'acl2::car-cons (w state))
-;; (get-event '*const* (w state))
+(foo)
 
-;; (get-formals 'binary-append (w state))  ;; --> (ACL2::X ACL2::Y)
-;; (get-formals 'append (w state)) ;; --> (ACL2::X ACL2::Y &REST ACL2::RST)
-;; (get-formals 'all-integerp-witness (w state)) ;; good, works
-;; (get-formals 'all-integerp (w state)) ;; good, works
-;; (get-formals 'fld (w state)) ;; good, works
-;; (get-formals 'st (w state)) ;; good, fails
+(get-event 'undefined (w state)) ; good, fails
+(get-event 'append (w state))
+(get-event 'binary-append (w state))
+(get-event 'st (w state))
+(get-event 'fld (w state)) ;; bad? returns the whole stobj
+(get-event 'all-integerp (w state))
+(get-event 'all-integerp-witness (w state)) ;; good i guess - returns the encapsulate
+(get-event 'f (w state))
+(get-event 'h (w state)) ;; good i guess, returns the encapsulate
+(get-event 'acl2::car-cons (w state))
+(get-event '*const* (w state))
 
-;; (get-measure 'binary-append (w state)) ;; good, works
-;; (get-measure 'append (w state))  ;; good, fails
-;; (get-measure 'st (w state)) ;; good, fails
-;; (get-measure 'fld (w state)) ;; good, fails
-;; (get-measure 'all-integerp-witness (w state)) ;; good, fails
-;; (get-measure 'all-integerp (w state)) ;; good, fails
+(get-formals 'binary-append (w state))  ;; --> (ACL2::X ACL2::Y)
+(get-formals 'append (w state)) ;; --> (ACL2::X ACL2::Y &REST ACL2::RST)
+(get-formals 'all-integerp-witness (w state)) ;; good, works
+(get-formals 'all-integerp (w state)) ;; good, works
+(get-formals 'fld (w state)) ;; good, works
+(get-formals 'st (w state)) ;; good, fails
 
-;; (get-guard 'binary-append (w state)) ;; good, works
-;; (get-guard 'append (w state)) ;; hrmn -- fails?
-;; (get-guard 'all-integerp-witness (w state)) ;; NIL???
-;; (get-guard 'all-integerp (w state)) ;; NIL???
-;; (get-guard 'fld (w state)) ;; works
-;; (get-guard 'st (w state)) ;; good, fails
+(get-measure 'binary-append (w state)) ;; good, works
+(get-measure 'append (w state))  ;; good, fails
+(get-measure 'st (w state)) ;; good, fails
+(get-measure 'fld (w state)) ;; good, fails
+(get-measure 'all-integerp-witness (w state)) ;; good, fails
+(get-measure 'all-integerp (w state)) ;; good, fails
 
+(get-guard 'binary-append (w state)) ;; good, works
+(get-guard 'append (w state)) ;; hrmn -- fails?
+(get-guard 'all-integerp-witness (w state)) ;; NIL???
+(get-guard 'all-integerp (w state)) ;; NIL???
+(get-guard 'fld (w state)) ;; works
+(get-guard 'st (w state)) ;; good, fails
 
-
-
-
-
-
-
-
+||#
 
 
 ; -------------- Preprocessor Command Parsing  ------------------
@@ -308,7 +316,7 @@
 (defun read-literal (x n xl chars) ;; ==> (MV SUCCESSP N-PRIME)
   ;; Try to read CHARS, verbatim.
   (declare (type string x))
-  (cond ((= n xl)
+  (cond ((eql n xl)
          (mv (atom chars) n))
         ((consp chars)
          (if (eql (char x n) (car chars))
@@ -319,7 +327,7 @@
 
 (defun read-through-some-char-aux (x n xl chars acc) ;; ==> (MV SUCCESSP STRING N-PRIME)
   (declare (type string x))
-  (if (= xl n)
+  (if (eql xl n)
       (mv nil (str::rchars-to-string acc) n)
     (let ((charN (char x n)))
       (if (member charN chars)
@@ -333,7 +341,7 @@
 
 (defun skip-past-ws (x n xl) ;; ==> N-PRIME
   (declare (type string x))
-  (cond ((= xl n)
+  (cond ((eql xl n)
          n)
         ((member (char x n) '(#\Space #\Tab #\Newline #\Page))
          (skip-past-ws x (+ 1 n) xl))
@@ -355,7 +363,7 @@
        ((mv error arg n)     (parse-symbol x n xl base-pkg kpa t)))
       (cond
        ;; Some error parsing arg.  Add a little more context.
-       (error (mv (concatenate 'string "In " (symbol-name command) " directive: " error)
+       (error (mv (str::cat "In " (symbol-name command) " directive: " error)
                   nil nil n))
 
        ;; Ends with ), good.
@@ -364,9 +372,9 @@
         (mv nil command arg (+ n 1)))
 
        (t
-        (mv (concatenate 'string "In " (symbol-name command) " directive, expected ) after "
-                         (symbol-name arg)
-                         ". Near " (error-context x n xl) ".")
+        (mv (str::cat "In " (symbol-name command) " directive, expected ) after "
+                      (symbol-name arg)
+                      ". Near " (error-context x n xl) ".")
             nil nil n)))))
 
 ;; (let ((x "body foo)"))
@@ -440,34 +448,34 @@
       (mv acc state)))
 
 
-(defconst *xdoc-link-file-message*
-  "; This is an XDOC Link file.
-; Ordinarily, you should not see this file.
-;
-; If you are viewing this file in a web browser, you probably
-; have not configured your web browser to send .xdoc-link files
-; to Emacs.
-;
-;   (Or, if you have already done that, but you accessed this
-;    file through a web server, the server may just not be
-;    assigning .xdoc-link files the appropriate MIME type.)
-;
-; If you are viewing this file in Emacs, you probably have not
-; loaded xdoc.el from the xdoc/ directory.
-;
-; Please see the XDOC manual for more information.")
+;; (defconst *xdoc-link-file-message*
+;;   "; This is an XDOC Link file.
+;; ; Ordinarily, you should not see this file.
+;; ;
+;; ; If you are viewing this file in a web browser, you probably
+;; ; have not configured your web browser to send .xdoc-link files
+;; ; to Emacs.
+;; ;
+;; ;   (Or, if you have already done that, but you accessed this
+;; ;    file through a web server, the server may just not be
+;; ;    assigning .xdoc-link files the appropriate MIME type.)
+;; ;
+;; ; If you are viewing this file in Emacs, you probably have not
+;; ; loaded xdoc.el from the xdoc/ directory.
+;; ;
+;; ; Please see the XDOC manual for more information.")
 
 (defun process-srclink-directive (arg dir state acc) ;; ===> (MV ACC STATE)
 
-; We do two things:
+; We previously did two things:
 ;
 ;   1. Extend acc with a srclink tag, and
 ;
 ;   2. Write a .xdoc-link file to dir for this tag, unless DIR is NIL in
 ;      which case we skip this step
 ;
-; This is kind of ugly in that we may write the same .xdoc-link file many
-; times, but this doesn't seem to practically be a problem.
+; This was kind of ugly in that we may write the same .xdoc-link file many
+; times, but this didn't seem to practically be a problem.
 ;
 ; Our emacs linking mechanism is slightly broken, in that all we can tell emacs
 ; is the name of a symbol to look for using its tags mechanism.  We are hoping
@@ -485,18 +493,30 @@
 ;
 ; Whether or not #2 and #3 hold is a total crap-shoot, and we're basically
 ; hoping that most of the time find-tag will take them to the right place.
+;
+; We no longer write .srclink files because the fancy viewer doesn't need them;
+; it uses a fancy URL scheme along the lines of:
+;    data:application/x-acl2-xdoc-link;charset=utf-8,<contents>
+; where <contents> are the entire source link file we previously generated.
+; Web browsers understand this and can "open" the "file" that they've just
+; been given directly in the URL.
 
-  (b* ((shortname (coerce (string-downcase (symbol-name arg)) 'list))
-       (filename  (b* ((nacc (file-name-mangle arg nil))
-                       (nacc (str::revappend-chars ".xdoc-link" nacc)))
-                    (str::rchars-to-string nacc)))
+  (b* ((shortname (explode (str::downcase-string (symbol-name arg))))
 
-       ;; NOTE: the use of filename here is legacy stuff for the classic
-       ;; viewer.  We don't need it or use it in the fancy viewer.  The fancy
-       ;; viewer only uses the shortname, i.e., the text of the link.
-       (acc (str::revappend-chars "<srclink file=\"" acc))
-       (acc (str::revappend-chars filename acc))
-       (acc (str::revappend-chars "\">" acc))
+       ; NOTE: for srclink support in the classic viewer, we needed to include
+       ; the file=... part.  We need it or use it in the fancy viewer.  The
+       ; fancy viewer only uses the shortname, i.e., the text of the link.
+       ; Well, since we've broken srclinks in the classic viewer anyway, may
+       ; as well not include it.
+
+       ;; (filename  (b* ((nacc (file-name-mangle arg nil))
+       ;;                 (nacc (str::revappend-chars ".xdoc-link" nacc)))
+       ;;             (str::rchars-to-string nacc)))
+       ;; (acc (str::revappend-chars "<srclink file=\"" acc))
+       ;; (acc (str::revappend-chars filename acc))
+       ;; (acc (str::revappend-chars "\">" acc))
+
+       (acc (str::revappend-chars "<srclink>" acc))
        (acc (simple-html-encode-chars shortname acc))
        (acc (str::revappend-chars "</srclink>" acc))
 
@@ -505,14 +525,17 @@
         ;; DIR is nil, then don't actually try to write any files!
         (mv acc state))
 
-       (fullpath           (oslib::catpath dir filename))
-       ((mv channel state) (open-output-channel fullpath :character state))
-       (state (princ$ *xdoc-link-file-message* channel state))
-       (state (newline channel state))
-       (state (newline channel state))
-       (state (princ$ (coerce shortname 'string) channel state))
-       (state (newline channel state))
-       (state (close-output-channel channel state)))
+       ;; It seems nice to get rid of this.  It'll break source links in the
+       ;; classic viewer.  That seems okay.  In exchange we don't need catpath.
+       ;; (fullpath           (oslib::catpath dir filename))
+       ;; ((mv channel state) (open-output-channel fullpath :character state))
+       ;; (state (princ$ *xdoc-link-file-message* channel state))
+       ;; (state (newline channel state))
+       ;; (state (newline channel state))
+       ;; (state (princ$ (coerce shortname 'string) channel state))
+       ;; (state (newline channel state))
+       ;; (state (close-output-channel channel state))
+       )
       (mv acc state)))
 
 (defun process-body-directive (arg topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
@@ -648,8 +671,9 @@
     (sym       (process-sym-directive     arg base-pkg state acc))
     (csym      (process-sym-cap-directive arg base-pkg state acc))
     (otherwise
-     (prog2$
-      (cw "; xdoc error: unknown directive ~x0.~%" command)
+     (progn$
+      (and (xdoc-verbose-p)
+           (cw "; xdoc error: unknown directive ~x0.~%" command))
       (let* ((acc (str::revappend-chars "[[ unknown directive " acc))
              (acc (str::revappend-chars (symbol-package-name command) acc))
              (acc (str::revappend-chars "::" acc))
@@ -803,7 +827,7 @@
 
 (defun advance-line (x n xl)
   ;; Returns the index of the next newline after character N, or else XL
-  (b* (((when (= n xl))
+  (b* (((when (eql n xl))
         n)
        (c (char x n))
        ((when (eql c #\Newline))
@@ -932,7 +956,7 @@ baz
 
 
 (defun fancy-trim-start (x n xl new-start)
-  (b* (((when (= n xl))
+  (b* (((when (eql n xl))
         ;; saw nothing but spaces and newlines, turn it into the empty string.
         n)
        (c (char x n))
@@ -992,7 +1016,8 @@ baz
                      ;; @(' directive -- turns into raw <tt> block with auto linking
                      (b* ((end (str::strpos-fast "')" x (+ n 2) 2 xl))
                           ((unless end)
-                           (prog2$ (cw "; xdoc error: no closing ') found for @(' ...~%")
+                           (prog2$ (and (xdoc-verbose-p)
+                                        (cw "; xdoc error: no closing ') found for @(' ...~%"))
                                    (mv acc state)))
                           (sub (fancy-extract-block x (+ n 3) end))
                           (acc (str::revappend-chars "<tt>" acc))
@@ -1005,7 +1030,8 @@ baz
                      ;; @({ directive -- turns into raw <code> block with auto linking
                      (b* ((end (str::strpos-fast "})" x (+ n 2) 2 xl))
                           ((unless end)
-                           (prog2$ (cw "; xdoc error: no closing }) found for @({ ...~%")
+                           (prog2$ (and (xdoc-verbose-p)
+                                        (cw "; xdoc error: no closing }) found for @({ ...~%"))
                                    (mv acc state)))
                           (sub (maybe-fix-spaces-in-sub (fancy-extract-block x (+ n 3) end)))
                           (acc (str::revappend-chars "<code>" acc))
@@ -1016,7 +1042,8 @@ baz
 
                     ((mv error command arg n) (parse-directive x (+ n 2) xl base-pkg kpa))
                     ((when error)
-                     (prog2$ (cw "; xdoc error: ~x0.~%" error)
+                     (prog2$ (and (xdoc-verbose-p)
+                                  (cw "; xdoc error: ~x0.~%" error))
                              (mv acc state)))
                     ((mv acc state)
                      (process-directive command arg dir topics-fal base-pkg state acc)))

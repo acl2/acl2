@@ -19,12 +19,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "XDOC")
-;(include-book "save-classic")
 (include-book "prepare-topic")
 (include-book "spellcheck")
 (include-book "word-wrap")
-(include-book "str/natstr" :dir :system)
-(include-book "str/prefix-lines" :dir :system)
 (set-state-ok t)
 (program)
 
@@ -334,6 +331,9 @@
        ((mv err tokens) (parse-xml text))
 ;       (- (cw "Checking result...~%"))
        ((when err)
+        ;; Don't consult XDOC-VERBOSE-P here.  The user has explicitly asked to
+        ;; be shown this topic but we can't show it to them.  They need to be
+        ;; told why.
         (cw "Error displaying xdoc topic:~%~%")
         (b* ((state (princ$ err *standard-co* state))
              (state (newline *standard-co* state))
@@ -362,7 +362,8 @@
 
 ; Until we hijacked the :doc command, I didn't feel so bad about XDOC not
 ; trying very hard to tell you about related topics.  But now at least sort of
-; try to do something.  See spellcheck.lisp for the basic gist...
+; try to do something.  See spellcheck.lisp for the basic gist.  Eventually
+; we could extend this to include other search features.
 
 ;; (defun skip-through-close-long (xml-tokens)
 ;;   (cond ((atom xml-tokens)

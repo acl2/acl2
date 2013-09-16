@@ -38,9 +38,6 @@
   `(mbe :logic (ifix ,x) :exec ,x))
 
 
-(make-event
- `(defconst *xdoc-dir* ,(cbd)))
-
 (table xdoc 'doc nil)
 (table xdoc 'default-parents nil)
 

@@ -24,7 +24,6 @@
 (in-package "XDOC")
 (include-book "fmt-to-str")
 (include-book "names")
-(include-book "str/cat" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (set-state-ok t)
 (program)
@@ -106,9 +105,9 @@
         (if some-chars-p
             (mv nil (str::rchars-to-string acc) n)
           (mv (if nice-error-msg-p
-                  (concatenate 'string "Near " (error-context x n xl)
-                               ": expected to read some part of a symbol, but found "
-                               (coerce (list char) 'string) ".")
+                  (str::cat "Near " (error-context x n xl)
+                            ": expected to read some part of a symbol, but found "
+                            (implode (list char)) ".")
                 "Symbol Parse Error")
               "" n)))
 
@@ -133,8 +132,8 @@
 
   (b* (((when (= xl n))
         (mv (if nice-error-msg-p
-                (concatenate 'string "Near " (error-context x n xl)
-                             ": end of string while trying to parse a symbol.")
+                (str::cat "Near " (error-context x n xl)
+                          ": end of string while trying to parse a symbol.")
               "Symbol Parse Error")
             nil n))
        (char (char x n))
@@ -160,8 +159,8 @@
         ;; Found "::" after the first part, so it's a package name.
         (b* (((unless (assoc-equal part1 kpa))
               (mv (if nice-error-msg-p
-                      (concatenate 'string "Near " (error-context x n xl)
-                                   ": not a known package: " part1 ".")
+                      (str::cat "Near " (error-context x n xl)
+                                ": not a known package: " part1 ".")
                     "Symbol Parse Error")
                   nil n))
              ((mv error part2 n)
@@ -174,8 +173,8 @@
              ;; or something
              ((when (eql (char x n) #\:))
               (mv (if nice-error-msg-p
-                      (concatenate 'string "Near " (error-context x n xl)
-                                   ": Three layers of colons in symbol name?")
+                      (str::cat "Near " (error-context x n xl)
+                                ": Three layers of colons in symbol name?")
                     "Symbol Parse Error")
                   nil n)))
           (mv nil (intern$ part2 part1) n)))
@@ -184,8 +183,8 @@
        ((when (and (< n xl)
                    (eql (char x n) #\:)))
         (mv (if nice-error-msg-p
-                (concatenate 'string "Near " (error-context x n xl)
-                             ": Lone colon after symbol name?")
+                (str::cat "Near " (error-context x n xl)
+                          ": Lone colon after symbol name?")
               "Symbol Parse Error")
             nil n)))
 

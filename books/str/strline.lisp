@@ -55,8 +55,7 @@
                                 (natp n)
                                 (natp xl)
                                 (<= n xl)
-                                (= xl (length x)))
-                    :measure (nfix (- (nfix xl) (nfix n)))))
+                                (= xl (length x)))))
     (mbe :logic
          (position-ac char
                       (nthcdr n (explode x))

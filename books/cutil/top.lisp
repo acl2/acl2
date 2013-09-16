@@ -28,6 +28,7 @@
 (include-book "defprojection")
 (include-book "define")
 (include-book "defrule")
+(include-book "defredundant")
 
 (defxdoc cutil
   :parents (acl2::macro-libraries)

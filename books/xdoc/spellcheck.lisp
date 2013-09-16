@@ -19,8 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "XDOC")
-(include-book "str/case-conversion" :dir :system)
-(include-book "str/strtok" :dir :system)
+(include-book "str/defs" :dir :system)
 (include-book "sort")
 (program)
 

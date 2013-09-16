@@ -68,6 +68,16 @@ function render_text (str) { // XDOC Markup (string) --> Plain Text Fragment
              .replace(/'/g, '&apos;');
 }
 
+var short_plaintext_cache = {};
+function topic_short_plaintext(key) {
+    if (key in short_plaintext_cache) {
+	return short_plaintext_cache[key];
+    }
+    var ret = render_text(topic_short(key));
+    short_plaintext_cache[key] = ret;
+    return ret;
+}
+
 function render_html (str) { // XDOC Markup (string) --> HTML DOM Fragment
     var xml = $.parseXML(wrap_xdoc_fragment(str));
     var dom = xslt_processor.transformToFragment(xml,document);
@@ -290,7 +300,7 @@ function nav_make_node(key) {
     nav_id_table[id] = {"key":key, "ever_expanded":false};
 
     var name = topic_name(key);
-    var tooltip = "<p>" + render_text(topic_short(key)) + "</p>";
+    var tooltip = "<p>" + topic_short_plaintext(key) + "</p>";
 
     var node = "<ul class=\"hindex\" id=\"_nav" + id + "\">";
     node += "<li><nobr>";
@@ -392,10 +402,13 @@ function nav_flat() {
        // Nothing to do, we've already built the flat index.
        return;
     }
-
-    $("#flat").html("");
-
+    $("#flat").html("<p>Loading...</p>");
     nav_flat_ever_shown = true;
+
+    setTimeout(nav_flat_really_install, 10);
+}
+
+function nav_flat_really_install() {
 
     var myarr = [];
     var keys = all_keys();
@@ -411,7 +424,7 @@ function nav_flat() {
         var key = myarr[i].key;
         var name = topic_name(key);
         var rawname = topic_rawname(key);
-        var tooltip = "<p>" + render_text(topic_short(key)) + "</p>";
+        var tooltip = "<p>" + topic_short_plaintext(key) + "</p>";
         if ((rawname.charAt(0) != current_startchar) && starts_with_alpha(rawname)) {
             current_startchar = rawname.charAt(0).toUpperCase();
             dl.append("<li class=\"flatsec\" id=\"flat_startchar_" + current_startchar + "\"><b>"
@@ -424,9 +437,10 @@ function nav_flat() {
                   + name
                   + "</li>");
     }
-    $("#flat").append(dl);
+    $("#flat").html(dl);
     $(".flatnav").powerTip({placement:'se',smartPlacement: true});
 }
+
 
 function nav_flat_tochar(c) {
     nav_flat();
@@ -475,7 +489,7 @@ function dat_load_parents(key) {
         var pname = parent_names[i];
         var tooltip = "Error: parent topic is missing!";
         if (topic_exists(key)) {
-            tooltip = render_text(topic_short(pkey));
+            tooltip = topic_short_plaintext(pkey);
         }
         acc += "<li>";
         acc += "<a href=\"javascript:action_go_key('" + pkey + "')\""
@@ -612,6 +626,139 @@ function dat_load_key(key)
 
 // --------------------------------------------------------------------------
 //
+//                          SEARCHING FEATURE
+//
+// --------------------------------------------------------------------------
+
+var short_tokens_initialized = false;
+var short_tokens = {};
+
+function search_tokenize(plaintext) {
+    var tokens = plaintext.toLowerCase().split(/[ \t\n:]+/);
+    if (tokens.length == 1 && tokens[0] == "") {
+	// Correct for ridiculous behavior of string.split
+	return [];
+    }
+    for(var i in tokens) {
+	var orig = tokens[i];
+	var trim = orig.replace(/^[()"'`.,;?!]*/, '')
+	               .replace(/[()"'`.,;?!]*$/, '');
+	tokens[i] = trim;
+    }
+    return tokens;
+}
+
+function make_short_tokens() {
+    if (short_tokens_initialized)
+	return;
+    var keys = all_keys();
+    for(var i in keys) {
+	var key = keys[i];
+	var name = topic_name(key);
+	var rawname = topic_rawname(key);
+	var plaintext = topic_short_plaintext(key);
+	var tokens = search_tokenize(name + " " + rawname + " " + plaintext);
+	short_tokens[key] = tokens;
+    }
+    short_tokens_initialized = true;
+}
+
+function subarray_at_offsetp (a, b, n) { 
+    // Does array A occur at array B, starting from position N?
+    var al = a.length;
+    var bl = b.length - n;
+    if (al > bl) {
+	return false;
+    }
+    for(var i = 0; i < al; ++i) {
+	if (a[i] != b[(i+n)])
+	    return false;
+    }
+    return true;
+}
+
+function subarrayp (a, b) {
+    var al = a.length;
+    var bl = b.length;
+    if (al == 0) return true;
+    if (al > bl) return false;
+    var stop = (bl-al)+1;
+    for(var i = 0; i < stop; ++i) {
+	if (subarray_at_offsetp(a,b,i))
+	    return true;
+    }
+    return false;
+}
+
+function search_go() {
+
+// TODO List:
+//   - Add ?search=blah support
+//   - Add back-button support
+//   - Add title search
+//   - Add full-text search
+
+    $("#parents").html("");
+    $("#parents").hide();
+
+    $("#data").html("");
+    $("#right").scrollTop(0);
+
+    $("#data").append("<p><b style='color: red'>Note:</b> <i>search is extremely beta.</i> "
+		      + "It doesn't even search the <tt>:long</tt> sections yet.</p>");
+
+    $("#data").append("<p id='searching_message'>Searching...</p>");
+
+    var query = search_tokenize($("#searchbox").val());
+
+    setTimeout(search_go_main, 10, query);
+    return false;
+}
+
+function search_go_main(query) {
+    make_short_tokens();
+    if (query.length == 0) {
+	$("#data").append("<h3>No results (empty search)</h3>");
+	return;
+    }
+
+    $("#searching_message").hide();
+
+    $("#data").append("<h1><u>" + query.join(" ") + "</u></h1>");
+
+    var num_short_hits = 0;
+    var hits = jQuery("<dl></dl>");
+    var keys = all_keys();
+    for(var i in keys) {
+	var key = keys[i];
+	var tokens = short_tokens[key];
+	if (subarrayp(query, tokens)) {
+	    num_short_hits++;
+	    hits.append("<dt><a href=\"javascript:action_go_key('" + key + "')\">"
+			+ topic_name(key)
+			+ "</dt>");
+            var dd = jQuery("<dd></dd>");
+            dd.append(render_html(topic_short(key)));
+            hits.append(dd);
+	}
+    }
+    if (num_short_hits != 0) {
+	$("#data").append("<h3><b>" + num_short_hits + "</b> Short Hits</h3>");
+	$("#data").append(hits);
+    }
+    else {
+	$("#data").append("<h3>No Short Hits</h3>");
+    }
+
+    return;
+}
+
+
+
+
+
+// --------------------------------------------------------------------------
+//
 //                    DATA LOADING / INITIALIZATION
 //
 // --------------------------------------------------------------------------
@@ -642,6 +789,7 @@ function jump_init() {
             name: "topics",
             local: ta_data,
             limit: 6,
+	autoselect: 'first',
             template: "<p><b class=\"sf\">{{{nicename}}}</b> &mdash; {{{short}}}<br/>"
                      + "<tt>{{value}}</tt></p>",
             engine: Hogan
@@ -663,6 +811,14 @@ function jump_go(obj,datum) {
     $("#jump").val("");
     $("#jump").typeahead('setQuery', '');
 }
+
+function search_init() {
+    $("#searchbox").attr("placeholder", "files");
+    $("#searchbox").removeAttr("disabled");
+}
+
+
+
 
 
 function onIndexLoaded()
@@ -696,6 +852,7 @@ function onIndexLoaded()
     nav_activate_tooltip(0);
 
     jump_init();
+    search_init();
 }
 
 function onDataLoaded()

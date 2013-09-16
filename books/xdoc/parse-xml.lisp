@@ -354,9 +354,8 @@
   (let* ((strlen (length str))
          (start index)
          (stop   (min strlen (+ index 60))))
-    (concatenate 'string
-                 (substitute #\Space #\Newline (subseq str start stop))
-                 (if (equal stop strlen) "" "..."))))
+    (str::cat (substitute #\Space #\Newline (subseq str start stop))
+              (if (equal stop strlen) "" "..."))))
 
 (defun open-tag-backtrace-entry (orig-str open-tok)
   (declare (type string orig-str))
@@ -366,14 +365,13 @@
          (spaces-len (max 0 (- 6 name-len)))
          (pad        (coerce (make-list spaces-len :initial-element #\Space) 'string))
          (nearby     (nearby-text n orig-str)))
-    (concatenate 'string "   <" name "> " pad nearby *nls*)))
+    (str::cat "   <" name "> " pad nearby *nls*)))
 
 (defun open-tags-backtrace (orig-str open-tags)
   (if (atom open-tags)
       ""
-    (concatenate 'string
-                 (open-tag-backtrace-entry orig-str (car open-tags))
-                 (open-tags-backtrace orig-str (cdr open-tags)))))
+    (str::cat (open-tag-backtrace-entry orig-str (car open-tags))
+              (open-tags-backtrace orig-str (cdr open-tags)))))
 
 (defun find-tag-imbalance (x open-tags loc)
   "Returns (MV ERROR/NIL LOC/NIL STILL-OPEN-TAGS/NIL)"
@@ -412,8 +410,8 @@
              (nearby    (flatten-tokens-for-errormsg context)))
           (mv (str::cat err *nls* "Nearby text: {" nearby "}" *nls* *nls*
                         (if open-tags
-                            (concatenate 'string "Open tags stack:" *nls*
-                                         (open-tags-backtrace x (reverse open-tags)))
+                            (str::cat "Open tags stack:" *nls*
+                                      (open-tags-backtrace x (reverse open-tags)))
                           ""))
               nil))))
     (mv err tokens)))

@@ -173,6 +173,7 @@
 (include-book "cutil/defalist-tests" :dir :system)
 (include-book "cutil/defmapappend-tests" :dir :system)
 (include-book "cutil/defprojection-tests" :dir :system)
+(include-book "cutil/defredundant-tests" :dir :system)
 (include-book "cutil/tools/assert-return-thms" :dir :system)
 (include-book "centaur/misc/tshell-tests" :dir :system)
 
@@ -632,6 +633,12 @@ functions.")
 (local (xdoc::fix-the-hierarchy))
 
 (local (deflabel doc-rebuild-label))
+
+(make-event
+ (b* ((state (serialize-write "xdoc.sao"
+                              (xdoc::get-xdoc-table (w state))
+                              :verbosep t)))
+   (value '(value-triple "xdoc.sao"))))
 
 (make-event
 ; xdoc::save is an event, so we might have just called it directly.  But for

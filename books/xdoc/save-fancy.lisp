@@ -24,6 +24,7 @@
 
 (in-package "XDOC")
 (include-book "save-classic")
+(include-book "importance")
 (include-book "centaur/bridge/to-json" :dir :system)
 (set-state-ok t)
 (program)
@@ -392,14 +393,21 @@
                 (maybe-add-top-topic
                  (normalize-parents-list
                   (clean-topics topics)))))
-       (- (cw "; Writing JSON for ~x0 topics.~%" (len topics)))
+
+       (- (cw "; Saving JSON files for ~x0 topics.~%" (len topics)))
+       ((mv topics state)
+        (time$ (order-topics-by-importance topics state)
+               :msg "; Importance sorting topics: ~st sec, ~sa bytes.~%"
+               :mintime 1/2))
+
        (topics-fal (time$ (topics-fal topics)))
        (uid-map    (time$ (make-uid-map 0 topics nil)))
 
        (index nil)
        (index (str::revappend-chars "var xindex = " index));
        ((mv index state)
-        (time$ (json-encode-index topics topics-fal uid-map state index)))
+        (time$ (json-encode-index topics topics-fal uid-map state index)
+               :msg "; Preparing JSON index: ~st sec, ~sa bytes.~%"))
        (index (cons #\; index))
        (index (str::rchars-to-string index))
        (idxfile (oslib::catpath dir "xindex.js"))
@@ -410,7 +418,9 @@
        (data nil)
        (data (str::revappend-chars "var xdata = " data))
        ((mv data state)
-        (time$ (json-encode-data topics topics-fal state data)))
+        (time$ (json-encode-data topics topics-fal state data)
+               :msg "; Preparing JSON topic data: ~st sec, ~sa bytes.~%"
+               :mintime 1/2))
        (data (cons #\; data))
        (data (str::rchars-to-string data))
        (datafile (oslib::catpath dir "xdata.js"))
@@ -441,8 +451,11 @@
        (state          (mkdir dir state))
        (state          (mkdir dir/lib state))
        (state          (mkdir dir/images state))
-       (xdoc/classic   (oslib::catpath *xdoc-dir* "classic"))
-       (xdoc/fancy     (oslib::catpath *xdoc-dir* "fancy"))
+
+       (dir-system     (acl2::f-get-global 'acl2::system-books-dir state))
+       (xdoc-dir       (oslib::catpath dir-system "xdoc"))
+       (xdoc/classic   (oslib::catpath xdoc-dir "classic"))
+       (xdoc/fancy     (oslib::catpath xdoc-dir "fancy"))
        (xdoc/fancy/lib (oslib::catpath xdoc/fancy "lib"))
 
        (- (cw "Copying fancy viewer main files...~%"))
