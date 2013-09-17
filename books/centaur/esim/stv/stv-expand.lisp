@@ -517,6 +517,7 @@ paths."
 
 
 (define stv-check-noncanonical-paths (paths mod)
+  :parents (stv-expand)
   :short "Checks that the listed paths all exist in the module"
   (b* (((when (atom paths)) nil)
        (path (car paths))

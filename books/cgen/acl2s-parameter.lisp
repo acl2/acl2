@@ -94,7 +94,7 @@ For internal flags dont use a doc-string"
   ")
 
 (defdoc ACL2::acl2s-defaults
-  ":Doc-Section ACL2::acl2s-defaults
+  ":Doc-Section ACL2::acl2-sedan
   
   Getting and setting defaults for various parameters in ACL2 Sedan~/
                                  

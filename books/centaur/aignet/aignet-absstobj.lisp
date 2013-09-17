@@ -703,43 +703,48 @@ aignet.  One additional type of lookup is required, namely finding the
 next-state node for a given register ID:</p> @(def lookup-reg->nxst)")
 
 
+; [Jared] changed parents here; previously everything below had
+; aignet-programming as another parent, but this topic was never defined.  it
+; may have been intended to be aignet-impl, but I think it's reasonable to just
+; not include it for now.
+
 (defxdoc num-nodes
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Total number of nodes in an aignet"
   :long "
 <p>Logically, @('(+ 1 (node-count aignet))'), (where @('node-count') is the
 same as @('len')), since the empty aignet implicitly has a constant node.</p>")
 
 (defxdoc num-ins
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Number of primary input nodes in an aignet"
   :long "
 <p>
 Logically, @('(stype-count :pi aignet)')</p> ")
 
 (defxdoc num-regs
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Number of register nodes in an aignet"
   :long "
 <p>
 Logically, @('(stype-count :reg aignet)')</p> ")
 
 (defxdoc num-outs
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Number of primary output nodes in an aignet"
   :long "
 <p>
 Logically, @('(stype-count :po aignet)')</p> ")
 
 (defxdoc num-nxsts
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Number of next-state nodes in an aignet"
   :long "
 <p>
 Logically, @('(stype-count :nxst aignet)')</p> ")
 
 (defxdoc num-gates
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Number of AND gate nodes in an aignet"
   :long "
 <p>
@@ -748,43 +753,43 @@ Logically, @('(stype-count :gate aignet)')</p> "
   :long "")
 
 (defxdoc fanin-litp
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Checks whether a literal is appropriate as a fanin to another node"
   :long "<p>AKA aignet-litp (but fanin-litp is the executable version).  True iff
 the literal's ID is in bounds and belongs to a non-output, non-next-state node.</p>")
 
 (defxdoc id-existsp
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Checks whether an ID is in bounds for an aignet"
   :long "<p>AKA aignet-idp.  True iff the ID is less than @('(num-nodes aignet)').</p>")
 
 (defxdoc innum->id
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Gets the ID of the node with the given PI number"
   :long "<p>Logically, @('(node-count (lookup-stype n :pi aignet))')</p>")
 
 (defxdoc outnum->id
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Gets the ID of the node with the given PO number"
   :long "<p>Logically, @('(node-count (lookup-stype n :po aignet))')</p>")
 
 (defxdoc regnum->id
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Gets the ID of the node with the given register number"
   :long "<p>Logically, @('(node-count (lookup-stype n :reg aignet))')</p>")
 
 (defxdoc id->type
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Gets the type code of the node with the given ID"
   :long "<p>Logically, @('(typecode (ctype (stype (car (lookup-id id aignet)))))').</p>")
 
 (defxdoc io-id->regp
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Gets the register bit of the node with the given ID"
   :long "<p>Logically, @('(regp (stype (car (lookup-id id aignet))))')</p>")
 
 (defxdoc io-id->ionum
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Gets the IO number of the node with the given ID"
   :long "<p>Logically,
 @({
@@ -796,7 +801,7 @@ POs, and registers.
 </p>")
 
 (defxdoc co-id->fanin
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Gets the fanin of a next-state or primary output node"
   :long "<p>Logically,
  @({
@@ -808,7 +813,7 @@ POs, and registers.
  itself.</p>")
 
 (defxdoc gate-id->fanin0
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Gets the 0th fanin of an AND gate node"
   :long "<p>Logically,
  @({
@@ -820,7 +825,7 @@ i.e. its ID is less than the ID of the gate node, and is not a combinational
 output node.</p>")
 
 (defxdoc gate-id->fanin1
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Gets the 1st fanin of an AND gate node"
   :long "<p>Logically,
  @({
@@ -832,12 +837,12 @@ i.e. its ID is less than the ID of the gate node, and is not a combinational
 output node.</p>")
 
 (defxdoc reg-id->nxst
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Finds the next-state node associated with a register ID, if it exists"
   :long "<p>Logically, @('(node-count (lookup-reg->nxst id aignet))')</p>")
 
 (defxdoc nxst-id->reg
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Gets the register ID associated with a next-state node"
   :long "<p>Logically,
 @({
@@ -851,22 +856,22 @@ one really wants to find the next-state node for a register (@(see
 reg-id->nxst)) rather than the other way around.</p>")
 
 (defxdoc id->phase
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Finds the value of the node under the all-0 simulation"
   :long "<p></p>")
 
 (defxdoc aignet-add-in
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Adds a primary input node to the aignet"
   :long "<p>Logically, @('(cons (pi-node) aignet)').</p>")
 
 (defxdoc aignet-add-reg
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Adds a register node to the aignet"
   :long "<p>Logically, @('(cons (reg-node) aignet)').</p>")
 
 (defxdoc aignet-add-gate
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Adds an AND gate node to the aignet"
   :long "<p>Logically,
  @({
@@ -877,7 +882,7 @@ The aignet-lit-fixes ensure that well-formedness of the network is preserved
 unconditionally.</p>")
 
 (defxdoc aignet-add-out
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Adds a primary output node to the aignet"
   :long "<p>Logically,
  @({
@@ -887,7 +892,7 @@ The aignet-lit-fix ensures that well-formedness of the network is preserved
 unconditionally.</p>")
 
 (defxdoc aignet-set-nxst
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Adds a next-state node to the aignet"
   :long "<p>Logically,
 @({
@@ -898,14 +903,14 @@ The aignet-lit-fix/aignet-id-fix together ensure that well-formedness of the
 network is preserved unconditionally.</p>")
 
 (defxdoc aignet-init
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Clears the aignet, ensuring minimum sizes for arrays"
   :long "<p>Logically, just returns NIL.  The resulting aignet contains only
 the implicit constant-0 node.  The sizes given are used to adjust arrays in the
 implementation.</p>")
 
 (defxdoc aignet-clear
-  :parents (aignet-logic aignet-programming)
+  :parents (aignet-logic)
   :short "Clears the aignet"
   :long "<p>Logically, just returns NIL.  The resulting aignet contains only the
 implicit constant-0 node.</p>")

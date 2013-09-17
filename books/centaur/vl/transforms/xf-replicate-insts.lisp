@@ -610,8 +610,8 @@ are in \"msb-first\" order, i.e., the \"msb-most slice\" of @('arg') comes
 first.</p>
 
 <p>We might fail with a fatal warning if there is some problem with the actual;
-we expect the actual to be already sized, <see url='@(url
-vl-expr-welltyped-p)'>well-typed</see>, and <see url='@(url
+we expect the actual to be already sized, <see topic='@(url
+vl-expr-welltyped-p)'>well-typed</see>, and <see topic='@(url
 expr-slicing)'>sliceable</see>), and its width must be compatible with the
 width of the port, as described in @(see argument-partitioning).</p>"
 

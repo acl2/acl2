@@ -25,7 +25,7 @@
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc template-subst
-  :parents (event-generation)
+  :parents (macro-libraries)
   :short "Process a template to generate some events"
   :long "
 <p>Template-subst is a function for manipulating templates that
@@ -45,7 +45,7 @@ constant as a template for generating these sorts of functions/proofs:
              (defthm _treefn_-preserves-acl2-count
                (equal (acl2-count (_treefn_ x _other-args_))
                       (acl2-count x)))))))
-@})
+})
 Now to instantiate this template we might do
 @({
  (template-subst *maptree-template*
@@ -56,7 +56,7 @@ Now to instantiate this template we might do
                                (_leaffn_ . +))
                  :str-alist '((\"_TREEFN_\" . \"ADD-TO-LEAVES\"))
                  :pkg-sym 'acl2::asdf)
-@})
+})
  </p>
 
 <p>The process has two main steps.</p>

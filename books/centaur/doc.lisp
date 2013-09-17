@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-
+(set-inhibit-warnings "ttags")
 (make-event
 
 ; Disabling waterfall parallelism because the include-books are too slow with

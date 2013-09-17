@@ -707,7 +707,7 @@ function search_go() {
     $("#data").append("<p><b style='color: red'>Note:</b> <i>search is extremely beta.</i> "
 		      + "It doesn't even search the <tt>:long</tt> sections yet.</p>");
 
-    $("#data").append("<p id='searching_message'>Searching...</p>");
+    $("#data").append("<p id='searching_message'>Searching (takes much longer the first time)...</p>");
 
     var query = search_tokenize($("#searchbox").val());
 

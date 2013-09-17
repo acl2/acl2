@@ -25,7 +25,7 @@
 (include-book "flatten")
 
 (defsection duplicity
-  :parents (std/lists defsort count no-duplicatesp)
+  :parents (std/lists count no-duplicatesp)
   :short "@(call duplicity) counts how many times the element @('a') occurs
 within the list @('x')."
 

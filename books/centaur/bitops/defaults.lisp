@@ -111,7 +111,7 @@ their inputs are ill-formed.")
 
 
 (defsection logcdr-default
-  :parents (bigops/defaults logcdr)
+  :parents (bitops/defaults logcdr)
 
   (defthm logcdr-default
     (implies (not (integerp x))
@@ -149,7 +149,7 @@ their inputs are ill-formed.")
 
 
 (defsection logxor-defaults
-  :parents (bitops/default logxor)
+  :parents (bitops/defaults logxor)
 
   (defthm logxor-default-1
     (implies (not (integerp x))

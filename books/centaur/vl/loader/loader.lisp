@@ -846,7 +846,7 @@ you might want to attach some other kind of report here.</p>
 (define vl-load ((config vl-loadconfig-p)
                  &key
                  (state 'state))
-  :parents (load)
+  :parents (loader)
   :short "Wrapper for @(see vl-load-main) that also reports errors or (with
 some configuration) can print other information."
 

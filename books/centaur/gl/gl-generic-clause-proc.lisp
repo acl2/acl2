@@ -2132,6 +2132,5 @@ bvar-db1 live stobjs. It returns:</p>
 
 <p>The symbolic interpreter used by @('gl-interp') is the latest interpreter
 defined using def-gl-clause-processor (as recorded in the
-gl::latest-greatest-gl-clause-proc table).</p>
-</ul>")
+gl::latest-greatest-gl-clause-proc table).</p>")
 

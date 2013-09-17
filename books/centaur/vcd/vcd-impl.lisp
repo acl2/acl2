@@ -22,7 +22,7 @@
 (include-book "vcd-stub")
 (include-book "oslib/date" :dir :system)
 (include-book "centaur/misc/tshell" :dir :system)
-(include-book "centaur/aig/three-four" :dir :system)
+(include-book "centaur/aig/faig-constructors" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/vl/util/print" :dir :system)
 (include-book "centaur/vl/toe/toe-emodwire" :dir :system)
