@@ -15,7 +15,9 @@ svn diff -r 2000:2053 | grep firstn-chars
 There are more complicated methods, but they're more work.  For more information, see http://code.google.com/p/acl2-books/issues/detail?id=86
 
 
-== How can I determine which file is currently being built? ==
+== How can I determine which books are currently being certified? ==
+
+The following command can provide that information on some Linux systems.  (There are probably suitable such options for "ps" on most any such system, including MacOS.)
 
 {{{
 ps axww
