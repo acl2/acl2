@@ -84,6 +84,11 @@ function render_html (str) { // XDOC Markup (string) --> HTML DOM Fragment
     return dom;
 }
 
+function htmlEncode(value){
+  // copied from stackoverflow:1219860
+  return $('<div/>').text(value).html();
+}
+
 function alphanum(a, b) { // Alphanumeric comparison (for nice sorting)
   // Credit: http://my.opera.com/GreyWyvern/blog/show.dml/1671288
   function chunkify(t) {
@@ -663,7 +668,7 @@ function make_short_tokens() {
     short_tokens_initialized = true;
 }
 
-function subarray_at_offsetp (a, b, n) { 
+function subarray_at_offsetp (a, b, n) {
     // Does array A occur at array B, starting from position N?
     var al = a.length;
     var bl = b.length - n;
@@ -690,14 +695,16 @@ function subarrayp (a, b) {
     return false;
 }
 
-function search_go() {
+function search_submit() {
+    var str = $("#searchbox").val();
+    var str_url = encodeURIComponent(str);
+    var str_html = "XDOC Search &mdash; " + htmlEncode(str);
+    window.history.pushState({"search":str}, str_html, "?search=" + str_url);
+    search_go(str);
+}
 
-// TODO List:
-//   - Add ?search=blah support
-//   - Add back-button support
-//   - Add title search
-//   - Add full-text search
-
+function search_go(str) {
+    // Kludgy: get the page ready to receive data.
     $("#parents").html("");
     $("#parents").hide();
 
@@ -709,45 +716,83 @@ function search_go() {
 
     $("#data").append("<p id='searching_message'>Searching (takes much longer the first time)...</p>");
 
-    var query = search_tokenize($("#searchbox").val());
+    var query = search_tokenize(str);
 
+    // Now wait a bit to allow that to render, before starting the search.
     setTimeout(search_go_main, 10, query);
     return false;
 }
 
+function search_add_hit(matches, hits, key) {
+    if (key in matches) {
+	// already showed this result, don't show it again
+	return;
+    }
+    matches[key] = 1;
+    hits.append("<dt><a href=\"javascript:action_go_key('" + key + "')\">"
+		+ topic_name(key)
+		+ "</a>"
+//		+ " (" + topic_uid(key) + ")" // nice for debugging
+		+ "</dt>");
+    var dd = jQuery("<dd></dd>");
+    dd.append(render_html(topic_short(key)));
+    hits.append(dd);
+}
+
 function search_go_main(query) {
     make_short_tokens();
+
+    $("#searching_message").hide();
     if (query.length == 0) {
 	$("#data").append("<h3>No results (empty search)</h3>");
 	return;
     }
 
-    $("#searching_message").hide();
+    var query_str = query.join(" ");
+    $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
 
-    $("#data").append("<h1><u>" + query.join(" ") + "</u></h1>");
+    // Matches will just bind keys we've already shown, so we don't repeatedly
+    // shown a topic just because it matches multiple criteria.
+    var matches = {};
 
-    var num_short_hits = 0;
+    // Hits will collect all the results
     var hits = jQuery("<dl></dl>");
     var keys = all_keys();
+
+    // We'll start with a stupid topic name search, in case there are any very
+    // exact hits.
+    for(var i in keys) {
+	var key = keys[i];
+	var name = topic_rawname(key);
+	var tokens = search_tokenize(name);
+	if (subarrayp(query,tokens))
+	    search_add_hit(matches, hits, key);
+    }
+
+    // Next, expand to a basic topic name substring search
+    for(var i in keys) {
+	var key = keys[i];
+	var name = topic_rawname(key);
+	if (name.toLowerCase().indexOf(query_str) != -1)
+	    search_add_hit(matches, hits, key);
+    }
+
+    // Next expand to a short-string search
     for(var i in keys) {
 	var key = keys[i];
 	var tokens = short_tokens[key];
-	if (subarrayp(query, tokens)) {
-	    num_short_hits++;
-	    hits.append("<dt><a href=\"javascript:action_go_key('" + key + "')\">"
-			+ topic_name(key)
-			+ "</dt>");
-            var dd = jQuery("<dd></dd>");
-            dd.append(render_html(topic_short(key)));
-            hits.append(dd);
-	}
+	var uid = topic_uid(key);
+	if (subarrayp(query, tokens))
+	    search_add_hit(matches, hits, key);
     }
-    if (num_short_hits != 0) {
-	$("#data").append("<h3><b>" + num_short_hits + "</b> Short Hits</h3>");
+
+    var num_hits = Object.keys(matches).length;
+    if (num_hits != 0) {
+	$("#data").append("<h3><b>" + num_hits + "</b> Results</h3>");
 	$("#data").append(hits);
     }
     else {
-	$("#data").append("<h3>No Short Hits</h3>");
+	$("#data").append("<h3>No results</h3>");
     }
 
     return;
@@ -855,18 +900,30 @@ function onIndexLoaded()
     search_init();
 }
 
+
+
 function onDataLoaded()
 {
     xdata_loaded = true;
     var params = getPageParameters();
-    var key = params["topic"] || TOP_KEY;
-    if (!key.match(/^[A-Za-z0-9._\-]*$/)) {
-        $("#right").html("Illegal topic name, rejecting to prevent XSS attacks.");
-        return;
+
+    if ("search" in params) {
+	var str = params["search"];
+	var str_url = encodeURIComponent(str);
+	var str_html = htmlEncode(str);
+	window.history.replaceState({"search":str}, str_html, "?search=" + str_url);
+	search_go(str);
     }
 
-    window.history.replaceState({"key":key}, key_title(key), "?topic=" + key);
-    dat_load_key(key);
+    else {
+	var key = params["topic"] || TOP_KEY;
+	if (!key.match(/^[A-Za-z0-9._\-]*$/)) {
+	    $("#right").html("Illegal topic name, rejecting to prevent XSS attacks.");
+	    return;
+	}
+	window.history.replaceState({"key":key}, key_title(key), "?topic=" + key);
+	dat_load_key(key);
+    }
 
     window.addEventListener('popstate',
                             function(event) {
@@ -933,6 +990,10 @@ function action_go_key(key)
 }
 
 function action_go_back(data) {
+    if ("search" in data) {
+	var str = data["search"];
+	search_go(str);
+    }
     var key = ("key" in data) ? data["key"] : null;
     if (key) {
         dat_load_key(key);

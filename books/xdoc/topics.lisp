@@ -34,17 +34,16 @@ access documentation about ACL2 and its books, to document your own books, and
 to create custom web-based manuals.  It is intended as a replacement for ACL2
 facilities like @(see defdoc), @(':doc'), and so on."
 
-  :long "<box><p><b>Note:</b> the documentation here explains how to use XDOC
-to document your own books and create web-based manuals.  If you just want to
-see documentation about ACL2 and its books, you probably don't need to read any
-of this&mdash;<a href='http://www.centtech.com/'>Centaur Technology</a> hosts
-an <a href='http://fv.centtech.com/acl2/latest/doc/'>online XDOC manual</a>
-that covers the latest released version of ACL2 and the corresponding version
-of the <a href='http://code.google.com/p/acl2-books/'>ACL2 Community
+  :long "<box><p><b>Note:</b> the documentation here is about using XDOC to
+document books and create manuals.  If you just want to use the documentation,
+you probably don't need to read any of this&mdash;<a
+href='http://www.centtech.com/'>Centaur Technology</a> hosts an <a
+href='http://fv.centtech.com/acl2/latest/doc/'>online XDOC manual</a> that
+covers the latest released version of ACL2 and the corresponding version of the
+<a href='http://code.google.com/p/acl2-books/'>ACL2 Community
 Books</a>.</p></box>
 
-<p>To use XDOC to document your own books or create custom manuals, the first
-step is:</p>
+<p>To use XDOC, the first step is:</p>
 
 @({
  (include-book \"xdoc/top\" :dir :system)
@@ -64,9 +63,9 @@ your libraries.</li>
 
 </ul>
 
-<p>Loading this book also overrides the <see topic='@(url
-ld-keyword-aliases)'>LD keyword alias</see> for @(':doc'), so that you (and the
-users of your books) can access both ordinary ACL2 documentation and the XDOC
+<p>Loading this book hijacks the @(':doc') command by installing a new <see
+topic='@(url ld-keyword-aliases)'>LD keyword alias</see>.  That is, you (and
+the users of your books) can see both ordinary ACL2 documentation and XDOC
 documentation from the terminal by just using @(':doc'), without having to know
 which documentation system was used to document the topic.</p>")
 
@@ -426,17 +425,21 @@ wish to create a manual that can be viewed from a web browser.</p>
 
 <h3>Saving a Manual</h3>
 
-<p>The @('xdoc::save') command allows you to save all of the documented topics
-as @('.xml') files.  Here's an example:</p>
+<p>The @('xdoc::save') command allows you to export all currently-loaded
+documented topics from ACL2.  Here's a basic example:</p>
 
 @({
+ ;; get documentation loaded
+ (include-book \"my-library1\")
+ (include-book \"my-library2\")
+ ;; save the manual
  (xdoc::save \"/home/jared/mylib-manual\")
 })
 
-<p>The argument is the name of a directory where the documentation should be
-saved.  If the directory does not exist, it will be created.  If there are
-files in the directory, they <color rgb=\"#ff0000\">may be
-overwritten</color>.</p>
+<p>The only required argument is the name of a directory where the
+documentation should be saved.  If the directory does not exist, it will be
+created.  If there are files in the directory, they <color rgb=\"#ff0000\">may
+be overwritten</color>.</p>
 
 <h3>Types of Manuals</h3>
 
@@ -505,6 +508,7 @@ use a version we do not currently support.</p>")
 
 
 (defxdoc fancy-manual
+  :parents (save)
   :short "Structure of a @(':type :fancy') manual."
 
   :long "<p>By default, @(see save) will create a manual in the new, \"fancy\"
