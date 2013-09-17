@@ -6053,10 +6053,11 @@
   (2) It is permissible for one definition to have a ~c[:]~il[guard] of ~c[t]
   and the other to have no explicit guard (hence, the guard is implicitly
   ~c[t]).~nl[]
-  (3) The ~c[:measure] check is avoided if we are skipping proofs (for example,
-  during ~ilc[include-book]), and otherwise, the new definition may have a
-  ~c[:measure] of ~c[(:? v1 ... vk)], where ~c[(v1 ... vk)] enumerates the
-  variables occurring in the measure stored for the old definition.~nl[]
+  (3) The ~c[:measure] check is avoided if the old definition is non-recursive
+  (and not defined within a ~ilc[mutual-recursion]) or we are skipping proofs
+  (for example, during ~ilc[include-book]).  Otherwise, the new definition may
+  have a ~c[:measure] of ~c[(:? v1 ... vk)], where ~c[(v1 ... vk)] enumerates
+  the variables occurring in the measure stored for the old definition.~nl[]
   (4) If either the old or new event is a ~ilc[mutual-recursion] event, then
   redundancy requires that both are ~ilc[mutual-recursion] events that define
   the same set of function symbols.

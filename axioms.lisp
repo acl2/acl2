@@ -20523,7 +20523,7 @@
   There may be times where you want to try different expansions.  For example,
   the community book ~c[books/make-event/proof-by-arith.lisp] attempts to admit
   a given event, which we'll denote ~c[EV], by trying events of the following
-  form as ~c[BOOK] various over different community books.
+  form as ~c[BOOK] varies over different community books.
   ~bv[]
   (encapsulate
    ()

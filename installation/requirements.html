@@ -88,14 +88,35 @@ svn co http://svn.clozure.com/publicsvn/openmcl/trunk/linuxx86/ccl
 </pre>
 
 Note: if you prefer the latest release, you can obtain that instead,
-for example as follows.
+for example as follows (but replace "1.9" by the latest version,
+for example as described
+at <code>http://ccl.clozure.com/download.html</code>, and
+replace <code>linuxx86</code> if appropriate as described above).
 
 <pre>
-svn co http://svn.clozure.com/publicsvn/openmcl/release/1.3/linuxx86/ccl
+svn co http://svn.clozure.com/publicsvn/openmcl/release/1.9/linuxx86/ccl
 </pre>
 
-Then create a suitable script, say as follows, where <code>DIR</code>
-is the directory above the new <code>ccl</code> directory.
+Next rebuild the executable by issuing the following commands, but
+replace "<code>./lx86cl64</code>" by a suitable executable; e.g., for
+64-bit Darwin (on Mac OS) use "<code>./dx86cl64</code>".
+
+<hr>
+<pre>
+./lx86cl64
+(rebuild-ccl :full t)
+(quit)
+./lx86cl64
+(rebuild-ccl :full t)
+(quit)
+</pre>
+<hr>
+
+<p>
+
+Now your CCL executable is up to date.  Next, create a suitable
+script, say as follows, where <code>DIR</code> is the full pathname
+for the directory above the new <code>ccl</code> directory.
 
 <hr>
 <pre>
@@ -118,14 +139,6 @@ execute the following shell command.
 
 <pre>
 chmod +x my-script
-</pre>
-
-Now rebuild the CCL lisp image by invoking the above script and then
-executing the following commands.
-
-<pre>
-(ccl:rebuild-ccl :full t)
-(quit)
 </pre>
 
 Your script (invoked with a suitable pathname, or just the filename if

@@ -6088,7 +6088,7 @@
 ; fns, args, bodies, types, stobjs, guards, and (if chk-measure-p is true)
 ; measures are equal -- except that the new measure can be (:? v1 ... vk) if
 ; (v1 ... vk) is the measured subset for the old definition.  We return nil if
-; def1 is thus redundant ("identical" to) with def2.  Otherwise we return a
+; def1 is thus redundant with ("identical" to) def2.  Otherwise we return a
 ; message suitable for printing using " Note that ~@k.".
 
 ; Note that def1 might actually be syntactically illegal, e.g., it might
@@ -6254,6 +6254,14 @@
                 :split-types declarations."
                (car def1)))
          ((not chk-measure-p)
+          nil)
+         ((null justification)
+
+; The old definition (def2) was non-recursive.  Then since the names and bodies
+; are identical (as checked above), the new definition (def1) is also
+; non-recursive.  In this case we don't care about the measures; see the
+; comment above about "syntactically illegal".
+
           nil)
          (t
           (non-identical-defp-chk-measures
@@ -8198,7 +8206,8 @@
   valid measure involves only those formal parameters.  However, this special
   case is only allowed for definitions that are redundant
   (~pl[redundant-events]) or are executed when skipping proofs
-  (~pl[skip-proofs]).
+  (~pl[skip-proofs]).  Another special case is ~c[:MEASURE nil], which is
+  treated the same as if ~c[:MEASURE] is omitted.
 
   ~c[:RULER-EXTENDERS]~nl[]
   For recursive definitions (possibly mutually recursive), ~c[value] controls

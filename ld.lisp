@@ -21264,6 +21264,13 @@
   ~c[(set-prover-step-limit nil)].  Thanks to David Russinoff for reporting
   this error.
 
+  It had been possible to get a low-level ACL2 error when submitting a
+  non-recursive definition for a function that had previously been defined, in
+  the following circumstance: the new definition might reasonably be considered
+  redundant except for a ~c[:measure] specified (needlessly) in at least one of
+  the definitions.  This has been fixed.  Thanks to Jared Davis for reporting
+  this bug with a helpful example.
+
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
   The ACL2 sources are now publicly available between ACL2 releases, using svn;

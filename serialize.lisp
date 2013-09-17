@@ -132,7 +132,7 @@ General form:
 
 In the logic this is an oracle read.
 
-Under the hood, we try to read and return a serialized object form a file that
+Under the hood, we try to read and return a serialized object from a file that
 was presumably created by ~ilc[serialize-write].  On success we return the
 contents of the file.  Any failures (e.g., file not found, bad file contents,
 etc.) will result in a hard Lisp error.
