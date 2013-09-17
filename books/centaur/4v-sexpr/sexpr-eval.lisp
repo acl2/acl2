@@ -1,4 +1,4 @@
-; S-Expressions for 4-Valued Logic
+ ; S-Expressions for 4-Valued Logic
 ; Copyright (C) 2010-2012 Centaur Technology
 ;
 ; Contact:
@@ -130,6 +130,7 @@ of fixnums to hold the values, or similar.</p>"
 counterpart.</p>")
 
   (defun 4v-sexpr-apply (fn args)
+    (declare (xargs :guard (true-listp args)))
     (b* (((when (or (eq fn (4vt))
                     (eq fn (4vf))
                     (eq fn (4vx))
