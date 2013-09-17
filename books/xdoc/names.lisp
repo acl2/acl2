@@ -74,6 +74,14 @@
                        (symbol-name x))))
     (file-name-mangle-aux str 0 (length str) acc)))
 
+(defun url (x)
+
+; Simplest way to get the URL for a topic.  Give it the symbol, it gives you
+; the URL.  Meant for use in macros that generate documentation.  See also
+; XDOC::SEE, defined below.
+
+  (declare (type symbol x))
+  (str::rchars-to-string (file-name-mangle x nil)))
 
 
 ; ----------------- Displaying Symbols --------------------------
@@ -131,6 +139,24 @@
                           (sneaky-downcase name))))
     name-low))
 
+
+(defun see (x)
+
+; Simplest way to get a <see...> link that leads to a symbol.  Give it the
+; symbol, it gives you <see topic='<url>'>name</see>, where name is properly
+; lower-cased, etc. Meant for use in macros that generate documentation. See
+; also XDOC::URL, above.
+
+  (declare (type symbol x))
+  (b* ((acc nil)
+       (acc (str::revappend-chars "<see topic=\"" acc))
+       (acc (file-name-mangle x acc))
+       (acc (str::revappend-chars "\">" acc))
+       (acc (str::revappend-chars (name-low (symbol-name x)) acc))
+       (acc (str::revappend-chars "</see>" acc)))
+    (str::rchars-to-string acc)))
+
+
 (defun sym-mangle (x base-pkg acc)
 
 ; This is our "standard" for displaying symbols in HTML (in lowercase).  We
@@ -163,3 +189,5 @@
 
 ; (reverse (implode (sym-mangle 'acl2 'acl2::foo nil)))
 ; (reverse (implode (sym-mangle 'acl2-tutorial 'acl2::foo nil)))
+
+

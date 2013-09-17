@@ -763,7 +763,11 @@ some kind of separator!</p>
                               :returns ',returnspecs
                               :formals ',formals)
 
-         (local (in-theory (enable ,fnname)))
+         (local
+          (make-event
+           (if (logic-mode-p ',fnname-fn (w state))
+               '(in-theory (enable ,fnname))
+             '(value-triple :invisible))))
 
          (make-event
           (let* ((world (w state))
