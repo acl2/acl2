@@ -23,7 +23,7 @@
 
 ; NOTE: This file requires that str/strprefixp has been loaded.
 
-(defparameter *tshell-debug*
+(defvar *tshell-debug*
   ;; Change this to T for verbose debugging information.
   nil)
 
@@ -34,29 +34,25 @@
 ; We look for certain strings to know when the program's output ends.  This is
 ; gross, but in practice it should work.
 
-(defparameter *tshell-exit-line*   "HORRIBLE_STRING_TO_DETECT_END_OF_TSHELL_COMMAND")
-(defparameter *tshell-status-line* "HORRIBLE_STRING_TO_DETECT_TSHELL_EXIT_STATUS")
-(defparameter *tshell-pid-line*    "TSHELL_PID")
+(defvar *tshell-exit-line*   "HORRIBLE_STRING_TO_DETECT_END_OF_TSHELL_COMMAND")
+(defvar *tshell-status-line* "HORRIBLE_STRING_TO_DETECT_TSHELL_EXIT_STATUS")
+(defvar *tshell-pid-line*    "TSHELL_PID")
 
 
 ; We actually use two bash processes.  *tshell* runs the programs.
 ; *tshell-killer* is only used to kill programs that *tshell* is running.
 
-; Bug fix 2013-09-17: these were formerly defvars, but Matt pointed out that
-; tshell-ensure is assuming they are initialized, so change them into
-; defparameters.  This is slightly scary since this book can get loaded
-; multiple times (e.g., because of undoing, or because of the book getting
-; reloaded during the second pass of certification), so if we run into weird
-; problems with tshells not being initialized when they should be, we need to
-; consider whether this raw file is getting reloaded.
+; Bug fix 2013-09-17: these were formerly uninitialized defvars, but Matt
+; pointed out that tshell-ensure is assuming they are initialized, so set
+; them to nil.
 
-(defparameter *tshell* nil)
-(defparameter *tshell-killer* nil)
+(defvar *tshell* nil)
+(defvar *tshell-killer* nil)
 
 ; I added another bash process for background jobs.  This seems easier than
 ; running them with *tshell*.
 
-(defparameter *tshell-bg* nil)
+(defvar *tshell-bg* nil)
 
 
 (defun tshell-stop ()
