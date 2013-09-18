@@ -42,13 +42,21 @@
 ; We actually use two bash processes.  *tshell* runs the programs.
 ; *tshell-killer* is only used to kill programs that *tshell* is running.
 
-(defvar *tshell*)
-(defvar *tshell-killer*)
+; Bug fix 2013-09-17: these were formerly defvars, but Matt pointed out that
+; tshell-ensure is assuming they are initialized, so change them into
+; defparameters.  This is slightly scary since this book can get loaded
+; multiple times (e.g., because of undoing, or because of the book getting
+; reloaded during the second pass of certification), so if we run into weird
+; problems with tshells not being initialized when they should be, we need to
+; consider whether this raw file is getting reloaded.
+
+(defparameter *tshell* nil)
+(defparameter *tshell-killer* nil)
 
 ; I added another bash process for background jobs.  This seems easier than
 ; running them with *tshell*.
 
-(defvar *tshell-bg*)
+(defparameter *tshell-bg* nil)
 
 
 (defun tshell-stop ()
