@@ -775,7 +775,8 @@ look for new modules.</p>"
 
        (result (make-vl-loadresult :mods mods
                                    :filemap st.filemap
-                                   :warnings st.warnings)))
+                                   :warnings st.warnings
+                                   :defines st.defines)))
 
     (fast-alist-free overrides)
     (fast-alist-free (vl-loadstate->modalist st))
