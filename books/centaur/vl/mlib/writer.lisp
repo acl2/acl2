@@ -1165,8 +1165,16 @@ expression into a string."
        (vl-ps-span "vl_int"
                    (vl-print-nat (vl-constint->value (vl-atom->guts x.rise))))))
 
+     ((and (hide (equal x.rise x.fall))
+           (hide (equal x.fall x.high)))
+      ;; Print #(a,a,a) just as #(a)
+      (vl-ps-seq
+       (vl-print "#(")
+       (vl-pp-expr x.rise)
+       (vl-print ")")))
+
      (x.high
-      ;; All three specified
+      ;; All three specified, and not equal...
       (vl-ps-seq (vl-print "#(")
                  (vl-pp-expr x.rise)
                  (vl-println? ", ")
