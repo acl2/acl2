@@ -1609,7 +1609,7 @@ expression into a string."
     (:vl-bufif0   "bufif0")
     (:vl-bufif1   "bufif1")
     (:vl-notif0   "notif0")
-    (:vl-notif1   "notif")
+    (:vl-notif1   "notif1")
     (:vl-nmos     "nmos")
     (:vl-pmos     "pmos")
     (:vl-rnmos    "rnmos")
