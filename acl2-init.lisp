@@ -1094,7 +1094,10 @@ implementations.")
 ; In akcl, at least some versions of it, we cannot call allocate-growth on the
 ; following two types.
 
-          #+gcl contiguous
+; Camm Maguire has told us on 9/22/2013 that certain allocations for contiguous
+; pages, as we now do in acl2.lisp for GCL 2.6.10 and later (which includes GCL
+; 2.6.10pre as of 9/22/2013).
+;          #+gcl contiguous
           #+gcl relocatable
           )
    do
@@ -1106,7 +1109,10 @@ implementations.")
     (t (si::allocate-growth type 0 0 0))))
 
 ;  (print "Start (si::gbc nil)") ;debugging GC
-  (si::set-hole-size 500) ; wfs suggestion
+
+; Camm Maguire suggests leaving the hole size alone for GCL 2.6.10pre as of
+; 9/22/2013:
+;  (si::set-hole-size 500) ; wfs suggestion
 
 ; Camm Maguire says (7/04) that "the gc algorithm skips over any pages which
 ; have not been written to since sgc-on was invoked.  So gc really needs to be
@@ -1147,7 +1153,10 @@ implementations.")
                        n))
           do (setq new-hole-size (+ new-hole-size (- n space))))
 ;    (print "Set hole size") ;debugging
-    (si::set-hole-size new-hole-size))
+; Camm Maguire suggests leaving the hole size alone for GCL 2.6.10pre as of
+; 9/22/2013:
+;    (si::set-hole-size new-hole-size)
+    )
 
 ; The calculation above is legacy.  Now we increment the hole size to 20% of
 ; max-pages instead of the default 10%.  Camm Maguire says that "Larger values
@@ -1155,9 +1164,11 @@ implementations.")
 ; part of the virtual (not resident) memory size, rather than being saved to
 ; disk.
 
-  (let ((new-size (floor si:*lisp-maxpages* 5)))
-    (if (< (si:get-hole-size) new-size)
-        (si::set-hole-size new-size)))
+; Camm Maguire suggests leaving the hole size alone for GCL 2.6.10pre as of
+; 9/22/2013:
+;  (let ((new-size (floor si:*lisp-maxpages* 5)))
+;    (if (< (si:get-hole-size) new-size)
+;        (si::set-hole-size new-size)))
 
 ;  (print (true-listp (w *the-live-state*))) ;swap in the world's pages
 

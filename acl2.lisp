@@ -484,6 +484,9 @@
 #+ccl
 (setq ccl::*record-source-file* nil)
 
+; We defer a fix for GCL involving allocation of 'contiguous to a later
+; section, after loading acl2-fns.lisp so that gcl-version-> is defined.
+
 ; The following avoids errors from extra right parentheses, but we leave it
 ; commented out since it doesn't seem important enough to merit messing around
 ; at this low level, and for just one Lisp.
@@ -2485,9 +2488,11 @@ which is saved just in case it's needed later.")
           nil))
         (terpri *debug-io*)
         (break-current))))))
+#+(and gcl (not cltl2))
+(in-package "ACL2")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;                        Some hacks for CCL
+;                        Additional hacks for CCL
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Also see the acl2h-init code.
@@ -2519,3 +2524,14 @@ which is saved just in case it's needed later.")
 #+ccl
 (when (boundp 'ccl::*save-source-locations*)
   (setq ccl::*save-source-locations* nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                        Additional hacks for GCL
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Camm Maguire has suggested, on 9/22/2013, the following forms for GCL
+; 2.6.10pre, which allowed him to complete an ACL2 regresssion.
+#+gcl
+(when (gcl-version-> 2 6 9)
+  (si::allocate 'contiguous 15000 t)
+  (si::allocate-sgc 'contiguous 15000 100000 10))

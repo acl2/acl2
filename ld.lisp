@@ -21320,6 +21320,12 @@
   of variable ~c[SBCL_HOME] that was provided in the original ~c[saved_acl2]
   script.
 
+  (GCL only) We made changes, following suggestions from Camm Maguire (whom we
+  thank for these suggestions), to support ACL2 builds on GCL 2.6.10 and
+  later.  (We recommend against using GCL 2.6.9.)  Specifically, we no longer
+  set the hole size, and we allocate contiguous pages sufficient to run an ACL2
+  regression without failing due to memory limitations.
+
   ~st[EMACS SUPPORT]
 
   Modified file ~c[emacs/emacs-acl2.el] to eliminate some warnings that were
