@@ -21264,12 +21264,11 @@
   ~c[(set-prover-step-limit nil)].  Thanks to David Russinoff for reporting
   this error.
 
-  It had been possible to get a low-level ACL2 error when submitting a
-  non-recursive definition for a function that had previously been defined, in
-  the following circumstance: the new definition might reasonably be considered
-  redundant except for a ~c[:measure] specified (needlessly) in at least one of
-  the definitions.  This has been fixed.  Thanks to Jared Davis for reporting
-  this bug with a helpful example.
+  The ~c[:measure] (if supplied) is now ignored when checking redundancy with
+  respect to a non-recursive definition that is not defined within a
+  ~ilc[mutual-recursion].  (~l[redundant-events] and ~pl[xargs].)  It had been
+  possible to get a low-level ACL2 error in this situation.  Thanks to Jared
+  Davis for reporting this bug with a helpful example.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 

@@ -9374,8 +9374,8 @@
                 (consp check-expansion)))
        (er soft ctx
            "The check-expansion flag of make-event must be t, nil, or a cons ~
-             pair.  The following check-expansion flag is thus illegal: ~x0.  ~
-             See :DOC make-event."
+            pair.  The following check-expansion flag is thus illegal: ~x0.  ~
+            See :DOC make-event."
            check-expansion))
       ((and expansion?
             (consp check-expansion))

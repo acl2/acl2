@@ -1469,9 +1469,11 @@ implementations.")
 
 ; -dynamic-space-size must be no greater than 1632 MBytes.
 
-; So we use 1600 and see how it goes....
+; Indeed, we have exceeded that in a version of community book
+; books/centaur/gl/solutions.lisp using ACL2(h) built on CMUCL.  So we use the
+; maximum possible value just below.
 
-                        1600
+                        1632
                         (insert-string host-lisp-args)
                         (user-args-string inert-args))))
     (chmod-executable sysout-name)

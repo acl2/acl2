@@ -12385,11 +12385,11 @@
   ; Same effect as just above:
   (with-output
      :on summary
-     :summary :all ; equivalently, the value (a list) of *summary-types*
+     :summary nil
      :gag-mode :goals
      (defthm app-assoc (equal (app (app x y) z) (app x (app y z)))))
 
-  ; Same as just above, but turn off only the indicated parts of the summary.
+  ; Turn on only the indicated parts of the summary.
   (with-output
      :on summary
      :summary (time rules)
@@ -17681,7 +17681,7 @@
   (defconst-fast *x* (expensive-fn ...))
   ~ev[]
   A more general utility may be found in community book
-  ~c[books/tools/defconsts.lisp].  Also ~il[using-tables-efficiently] for an
+  ~c[books/tools/defconsts.lisp].  Also ~pl[using-tables-efficiently] for an
   analogous issue with ~ilc[table] events.
 
   It may be of interest to note that ~c[defconst] is implemented at the
