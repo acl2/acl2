@@ -21326,10 +21326,11 @@
   script.
 
   (GCL only) We made changes, following suggestions from Camm Maguire (whom we
-  thank for these suggestions), to support ACL2 builds on GCL 2.6.10 and
-  later.  (We recommend against using GCL 2.6.9.)  Specifically, we no longer
-  set the hole size, and we allocate contiguous pages sufficient to run an ACL2
-  regression without failing due to memory limitations.
+  thank for these suggestions), to support ACL2 builds on recent versions of
+  GCL (2.6.8 and 2.6.10; we recommend against using GCL 2.6.9, since issues
+  there were fixed in 2.6.10).  Specifically, we no longer set the hole size,
+  and we allocate contiguous pages sufficient to run an ACL2 regression without
+  failing due to memory limitations.
 
   ~st[EMACS SUPPORT]
 
