@@ -96,7 +96,7 @@
            ((mv & & state) (assign acl2::writes-okp t))
            (state
             ,(if (eq type :fancy)
-                 `(save-fancy ,dir state)
+                 `(save-fancy all-xdoc-topics ,dir state)
                `(save-topics all-xdoc-topics ,dir ',index-pkg ',expand-level state))))
         (value '(value-triple :invisible))))))
 

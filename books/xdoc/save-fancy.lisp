@@ -387,9 +387,8 @@
   state)
 ||#
 
-(defun save-json-files (dir state)
-  (b* ((topics (get-xdoc-table (w state)))
-       (topics (force-root-parents
+(defun save-json-files (topics dir state)
+  (b* ((topics (force-root-parents
                 (maybe-add-top-topic
                  (normalize-parents-list
                   (clean-topics topics)))))
@@ -504,8 +503,8 @@
     state))
 
 
-(defun save-fancy (dir state)
+(defun save-fancy (all-topics dir state)
   (b* ((state (prepare-fancy-dir dir state))
-       (state (save-json-files dir state)))
+       (state (save-json-files all-topics dir state)))
     state))
 
