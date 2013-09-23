@@ -3358,16 +3358,42 @@
 
     (erase-acl2p-checkpoints-for-summary state))))
 
-(defun print-failure (ctx state)
+(defun character-alistp (x)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  recognizer for association lists with characters as keys~/
+
+  ~c[(Character-alistp x)] is true if and only if ~c[x] is a list of pairs
+  of the form ~c[(cons key val)] where ~c[key] is a ~ilc[characterp].~/~/"
+
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (consp (car x))
+                (characterp (car (car x)))
+                (character-alistp (cdr x))))))
+
+(defun tilde-@p (arg)
+  (declare (xargs :guard t))
+  (or (stringp arg)
+      (and (consp arg)
+           (stringp (car arg))
+           (character-alistp (cdr arg)))))
+
+(defun print-failure (erp ctx state)
   (pprogn (print-gag-state state)
           #+acl2-par
           (print-acl2p-checkpoints state)
           (io? error nil state
-               (ctx)
+               (ctx erp)
                (let ((channel (proofs-co state)))
                  (pprogn
-                  (error-fms-channel nil ctx "See :DOC failure." nil channel
-                                     state)
+                  (error-fms-channel nil ctx "~@0See :DOC failure."
+                                     (list (cons #\0
+                                                 (if (tilde-@p erp)
+                                                     erp
+                                                   "")))
+                                     channel state)
                   (newline channel state)
                   (fms *proof-failure-string* nil channel state nil))))))
 
@@ -3837,11 +3863,14 @@
 ; to print the summary or parts of it.  For example, we handle
 ; pop-warning-frame regardless of whether or not we print the warning summary.
 
-; If erp is t, the "event" caused an error and we do not scan for redefined
-; names but we do print the failure string.  If noop-flg is t then the
-; installed world did not get changed by the "event" (e.g., the "event" was
+; If erp is non-nil, the "event" caused an error and we do not scan for
+; redefined names but we do print the failure string.  If noop-flg is t then
+; the installed world did not get changed by the "event" (e.g., the "event" was
 ; redundant or was not really an event but was something like a call of (thm
 ; ...)) and we do not scan the most recent event block for redefined names.
+
+; If erp is a message, as recognized by tilde-@p, then that message will be
+; printed by the call below of print-failure.
 
   #+(and (not acl2-loop-only) acl2-rewrite-meter) ; for stats on rewriter depth
   (cond ((atom ctx))
@@ -3966,7 +3995,7 @@
                  state))
         (cond (erp
                (pprogn
-                (print-failure ctx state)
+                (print-failure erp ctx state)
                 (cond
                  ((f-get-global 'proof-tree state)
                   (io? proof-tree nil state
@@ -17393,28 +17422,6 @@
   #+acl2-par
   (declare (ignorable state))
   (value@par t))
-
-(defun character-alistp (x)
-
-  ":Doc-Section ACL2::ACL2-built-ins
-
-  recognizer for association lists with characters as keys~/
-
-  ~c[(Character-alistp x)] is true if and only if ~c[x] is a list of pairs
-  of the form ~c[(cons key val)] where ~c[key] is a ~ilc[characterp].~/~/"
-
-  (declare (xargs :guard t))
-  (cond ((atom x) (eq x nil))
-        (t (and (consp (car x))
-                (characterp (car (car x)))
-                (character-alistp (cdr x))))))
-
-(defun tilde-@p (arg)
-  (declare (xargs :guard t))
-  (or (stringp arg)
-      (and (consp arg)
-           (stringp (car arg))
-           (character-alistp (cdr arg)))))
 
 (defun@par translate-error-hint (arg ctx wrld state)
   (declare (ignore wrld))

@@ -21186,6 +21186,11 @@
   ~pl[ld-skip-proofsp].  Third, new keyword ~c[:EXPANSION?] can be used to
   avoid storing expansions in certificate files.  ~l[make-event].
 
+  When a ~ilc[defun] event prints a failure message in the summary, that
+  message now indicates when the failure is due to a failed proof of guard
+  verification or a failed proof of the measure theorem.  Thanks to Shilpi Goel
+  for requesting this enhancement.
+
   ~st[NEW FEATURES]
 
   ACL2 can now be instructed to time activities using real time (wall clock

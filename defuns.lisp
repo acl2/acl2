@@ -1070,69 +1070,71 @@
 
              (value (cons (or col 0) cl-set-ttree)))
             (t
-             (mv-let (erp ttree state)
-                     (prove (termify-clause-set cl-set)
-                            (make-pspv ens wrld
-                                       :displayed-goal displayed-goal
-                                       :otf-flg otf-flg)
-                            hints ens wrld ctx state)
-                     (cond (erp
+             (mv-let
+              (erp ttree state)
+              (prove (termify-clause-set cl-set)
+                     (make-pspv ens wrld
+                                :displayed-goal displayed-goal
+                                :otf-flg otf-flg)
+                     hints ens wrld ctx state)
+              (cond (erp
+                     (let ((erp-msg
+                            (cond
+                             ((subsetp-eq
+                               '(summary error)
+                               (f-get-global 'inhibit-output-lst state))
 
-; We use io? with error1 instead of the usual (er soft ...), because we want to
-; avoid the cost of computing the alternate t-machines if we won't be printing
-; anyhow.
+; This case is an optimization, in order to avoid the computations below, in
+; particular of termination-machines.  Note that erp-msg is potentially used in
+; error output -- see the (er soft ...) form below -- and it is also
+; potentially used in summary output, when print-summary passes to
+; print-failure the first component of the error triple returned below.
 
-                            (pprogn
-                             (io? error nil state
-                                  (ctx names t-machines bodies)
-                                  (error-fms
-                                   nil
-                                   ctx
-                                   "The proof of the measure conjecture for ~
-                                    ~&0 has failed.~@1~|"
-                                   (list
-                                    (cons #\0 names)
-                                    (cons #\1
-                                          (if (equal
-                                               t-machines
-                                               (termination-machines
-                                                names bodies
-                                                (make-list (length names)
-                                                           :initial-element
-                                                           :all)))
-                                              ""
-                                            (msg "~|**NOTE**:  The use of ~
-                                                  declaration ~x0 would ~
-                                                  change the measure ~
-                                                  conjecture, perhaps making ~
-                                                  it easier to prove.  See ~
-                                                  :DOC ruler-extenders."
-                                                 '(xargs :ruler-extenders
-                                                         :all)))))
-                                   state))
-                             (silent-error state)))
-                           (t
-                            (mv-let (col state)
-                                    (io? event nil (mv col state)
-                                         (names)
-                                         (fmt "That completes the proof of ~
-                                               the measure theorem for ~&1.  ~
-                                               Thus, we admit ~#1~[this ~
-                                               function~/these functions~] ~
-                                               under the principle of ~
-                                               definition."
-                                              (list (cons #\1 names))
-                                              (proofs-co state)
-                                              state
-                                              nil)
-                                         :default-bindings ((col 0)))
-                                    (pprogn
-                                     (increment-timer 'print-time state)
-                                     (value
-                                      (cons
-                                       (or col 0)
-                                       (cons-tag-trees
-                                        cl-set-ttree ttree)))))))))))))))))))
+                              nil)
+                             (t
+                              (msg
+                               "The proof of the measure conjecture for ~&0 ~
+                                has failed.~@1"
+                               names
+                               (if (equal
+                                    t-machines
+                                    (termination-machines
+                                     names bodies
+                                     (make-list (length names)
+                                                :initial-element
+                                                :all)))
+                                   ""
+                                 (msg "~|**NOTE**:  The use of declaration ~
+                                       ~x0 would change the measure ~
+                                       conjecture, perhaps making it easier ~
+                                       to prove.  See :DOC ruler-extenders."
+                                      '(xargs :ruler-extenders :all))))))))
+                       (mv-let
+                        (erp val state)
+                        (er soft ctx "~@0~|" erp-msg)
+                        (declare (ignore erp val))
+                        (mv (msg "~@0  " erp-msg) nil state))))
+                    (t
+                     (mv-let (col state)
+                             (io? event nil (mv col state)
+                                  (names)
+                                  (fmt "That completes the proof of the ~
+                                        measure theorem for ~&1.  Thus, we ~
+                                        admit ~#1~[this function~/these ~
+                                        functions~] under the principle of ~
+                                        definition."
+                                       (list (cons #\1 names))
+                                       (proofs-co state)
+                                       state
+                                       nil)
+                                  :default-bindings ((col 0)))
+                             (pprogn
+                              (increment-timer 'print-time state)
+                              (value
+                               (cons
+                                (or col 0)
+                                (cons-tag-trees
+                                 cl-set-ttree ttree)))))))))))))))))))
 
 ; When we succeed in proving termination, we will store the
 ; justification properties.
@@ -4985,17 +4987,29 @@
                            ens wrld ctx state)
                     (cond
                      (erp
-                      (er soft ctx
-                          "The proof of the guard conjecture for ~&0 has ~
-                           failed.  You may wish to avoid specifying a guard, ~
-                           or to supply option :VERIFY-GUARDS ~x1 with the ~
-                           :GUARD.~@2~|"
-                          names
-                          nil
-                          (if guard-debug
-                              ""
-                            "  Otherwise, you may wish to specify ~
-                             :GUARD-DEBUG T; see :DOC verify-guards.")))
+                      (mv-let
+                       (erp1 val state)
+                       (er soft ctx
+                           "The proof of the guard conjecture for ~&0 has ~
+                            failed.  You may wish to avoid specifying a ~
+                            guard, or to supply option :VERIFY-GUARDS ~x1 ~
+                            with the :GUARD.~@2~|"
+                           names
+                           nil
+                           (if guard-debug
+                               ""
+                             "  Otherwise, you may wish to specify ~
+                             :GUARD-DEBUG T; see :DOC verify-guards."))
+                       (declare (ignore erp1))
+                       (mv (msg
+                            "The proof of the guard conjecture for ~&0 has ~
+                             failed; see the discussion above about ~&1.  "
+                            names
+                            (if guard-debug
+                                '(:VERIFY-GUARDS)
+                              '(:VERIFY-GUARDS :GUARD-DEBUG)))
+                           val
+                           state)))
                      (t
                       (mv-let (col state)
                               (io? event nil (mv col state)
