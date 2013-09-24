@@ -21275,6 +21275,9 @@
   possible to get a low-level ACL2 error in this situation.  Thanks to Jared
   Davis for reporting this bug with a helpful example.
 
+  Eliminated a potential error when using ~ilc[comp] to compile an uncompiled
+  function defined under ~ilc[progn!], which we observed in LispWorks.
+
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
   The ACL2 sources are now publicly available between ACL2 releases, using svn;
@@ -21836,17 +21839,20 @@
   is given a single function to compile.  Those files contain the ACL2
   definitions of all functions to compile, omitting those in the lists obtained
   by evaluating the forms ~c[(@ logic-fns-with-raw-code)] and
-  ~c[(@ program-fns-with-raw-code)].  If you define function symbols with raw
-  Lisp code, say by using trust tags (~pl[defttag]) and readtime conditionals
-  ~c[#-acl2-loop-only], then you are advised to add all such symbols to one of
-  the lists stored in the two ~il[state] globals above: to
+  ~c[(@ program-fns-with-raw-code)].  ~c[:Comp] skips compilation for functions
+  that are already compiled, as is typically the case when you redefine
+  functions in raw Lisp using the utility ~c[include-raw] defined in community
+  book ~c[books/tools/include-raw.lisp].  But if you define interpreted (as
+  opposed to compiled) functions with raw Lisp code, say by using trust
+  tags (~pl[defttag]) and ~ilc[progn!], then you are advised to add all such
+  symbols to one of the lists stored in the two ~il[state] globals above: to
   ~c[logic-fns-with-raw-code] if the function symbol is in ~c[:]~ilc[logic]
   mode, else to ~c[program-fns-with-raw-code].  Then, instead of the
   corresponding ACL2 definition (without raw Lisp code) being written to a
   file, the function symbol will be passed directly to the Lisp ~c[compile]
   function.  Note that the above two state globals are both untouchable, so you
-  may need to deal with that before modifying them, for example as follows
-  (also ~pl[remove-untouchable]).
+  may need to deal with that before modifying them, for example as
+  follows (also ~pl[remove-untouchable]).
   ~bv[]
   (defttag t)
   (state-global-let*
