@@ -63,8 +63,9 @@
 
 <xsl:template match="a">
   <a href="{@href}" target="_blank">
-    <xsl:value-of select="."/>
-    <img src="Icon_External_Link.png" title="External link to {@href}"/>
+    <nobr>
+    <xsl:value-of select="."/><img src="Icon_External_Link.png" title="External link to {@href}"/>
+    </nobr>
   </a>
 </xsl:template>
 

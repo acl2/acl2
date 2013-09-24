@@ -221,6 +221,7 @@
  (if (not (boundp-global :suppress-preload-xdoc state))
      `(progn
         (include-book "xdoc/top" :dir :system)
+        (include-book "xdoc/debug" :dir :system)
         (xdoc::colon-xdoc-init))
    `(value-triple nil)))
 

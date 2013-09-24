@@ -232,7 +232,7 @@ the canonical set of open-source libraries (\"@(see books)\") for ACL2.  They
 include lemma libraries for reasoning in many domains, macro libraries for more
 quickly writing and documenting code, interfacing tools for connecting ACL2 to
 other systems, productivity tools for better proof automation and debugging,
-and specialty libraries for areas like hardware verification.</p>
+and specialty libraries for areas like @(see hardware-verification).</p>
 
 <p>This user manual covers both ACL2 and the Community Books.  It is derived by
 combining the classic @(see doc-string)s found in the ACL2 source code and some

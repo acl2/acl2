@@ -34,16 +34,41 @@ access documentation about ACL2 and its books, to document your own books, and
 to create custom web-based manuals.  It is intended as a replacement for ACL2
 facilities like @(see defdoc), @(':doc'), and so on."
 
-  :long "<box><p><b>Note:</b> the documentation here is about using XDOC to
-document books and create manuals.  If you just want to use the documentation,
-you probably don't need to read any of this&mdash;<a
-href='http://www.centtech.com/'>Centaur Technology</a> hosts an <a
-href='http://fv.centtech.com/acl2/latest/doc/'>online XDOC manual</a> that
-covers the latest released version of ACL2 and the corresponding version of the
-<a href='http://code.google.com/p/acl2-books/'>ACL2 Community
-Books</a>.</p></box>
+  :long "<h3>Getting Documentation</h3>
 
-<p>To use XDOC, the first step is:</p>
+<p>Most of the documentation below is about using XDOC to document your own
+@(see acl2::books) and create manuals.  If you just want to browse the
+documentation, you probably don't need to read any of this!  Instead, see
+either:</p>
+
+<ul>
+
+<li><b>Online version.</b> If you expect to have an internet connection while
+using the documentation, you may be happy with the <a
+href='http://fv.centtech.com/acl2/latest/doc/'>online XDOC manual</a> hosted by
+<a href='http://www.centtech.com/'>Centaur Technology</a>.  This version covers
+the latest released version of ACL2 and the corresponding version of the <a
+href='http://code.google.com/p/acl2-books/'>ACL2 Community Books</a>.</li>
+
+<li><b>Local version.</b> If you sometimes work without an internet connection,
+or are using development snapshots of ACL2 and need up-to-date documentation,
+you can build a local version of the documentation.  You first need to build
+ACL2(h), then certify the @('centaur/doc') book as follows:
+
+@({
+  cd acl2-sources/books
+  make USE_QUICKLISP=1 centaur/doc.cert
+})
+
+After this is built, the manual should be available at:
+
+@({acl2-sources/books/centaur/manual/index.html})</li>
+
+</ul>
+
+<h3>Documenting your Books</h3>
+
+<p>To use XDOC to document your own books, the first step is:</p>
 
 @({
  (include-book \"xdoc/top\" :dir :system)
@@ -63,11 +88,24 @@ your libraries.</li>
 
 </ul>
 
-<p>Loading this book hijacks the @(':doc') command by installing a new <see
-topic='@(url ld-keyword-aliases)'>LD keyword alias</see>.  That is, you (and
-the users of your books) can see both ordinary ACL2 documentation and XDOC
+<p>The @('xdoc/top') book hijacks the @(':doc') command by installing a new
+<see topic='@(url ld-keyword-aliases)'>LD keyword alias</see>.  This way,
+you (and your users) can see both ordinary ACL2 documentation and XDOC
 documentation from the terminal by just using @(':doc'), without having to know
-which documentation system was used to document the topic.</p>")
+which documentation system was used to document which topic.</p>
+
+<box><p><b><color rgb='#ff0000'>NEW</color></b> (experimental): When writing
+documentation, you can now automatically have XDOC topics displayed as you
+submit new @(see defxdoc) forms&mdash;just add:</p>
+
+@({
+ (include-book \"xdoc/debug\" :dir :system)
+})
+
+<p>to your @(see acl2::acl2-customization) file, or include it while you are
+developing your book.  Afterward, whenever you submit each @(see defxdoc) form,
+it will automatically be displayed in the terminal, showing you any markup
+problems and giving you a quick, text-mode preview.</p></box>")
 
 (local (set-default-parents xdoc))
 

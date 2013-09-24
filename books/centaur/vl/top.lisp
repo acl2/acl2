@@ -99,7 +99,12 @@
 
 (defxdoc vl
   :parents (hardware-verification)
-  :short "VL Verilog Toolkit."
+  :short "The VL Verilog Toolkit is a large ACL2 library for working with <a
+href='http://en.wikipedia.org/wiki/Verilog'>Verilog</a> source code, developed
+by <a href='http://www.centtech.com/'>Centaur Technology</a>.  It includes a
+Verilog loader and many functions for inspecting and transforming modules, and
+serves as a frontend for many Verilog tools."
+
   :long "<box><p><b>Note</b>: this documentation is mainly a reference manual.
 If you are new to VL, please see @(see getting-started) first.</p></box>")
 
@@ -109,26 +114,26 @@ If you are new to VL, please see @(see getting-started) first.</p></box>")
 
   :long "<h3>Introduction</h3>
 
-<p><b>VL</b> is an <a
-href=\"http://www.cs.utexas.edu/users/moore/acl2/\">ACL2</a> library for
-working with Verilog source code.  It includes:</p>
+<p><b>VL</b> is an @(see acl2) library for working with <a
+href='http://en.wikipedia.org/wiki/Verilog'>Verilog</a> source code.  It
+includes:</p>
 
 <ul>
  <li>A representation for Verilog @(see modules),</li>
  <li>A @(see loader) for parsing Verilog source code into this representation,</li>
  <li>Utilities for inspecting and analyzing these modules,</li>
- <li>Various transforms that can simplify these modules, and</li>
+ <li>Various @(see transforms) that can simplify these modules, and</li>
  <li>Pretty-printing and other report-generation functions.</li>
 </ul>
 
 <p>The original (and still primary) purpose of VL is to translate Verilog
 modules into E-language modules for formal verification.  E is a comparatively
-simple, hierarchical, register-transfer level hardware description language.
-An early version of E is described in the following paper.  The interpreter for
-E is @(see esim).</p>
+simple, hierarchical, register-transfer level hardware description language;
+see @(see esim).  An early version of E is described in:</p>
 
-<p>Warren A. Hunt, Jr. and Sol Swords.  \"Centaur technology media unit
-verification.  Case study: Floating point addition.\" in Computer Aided
+<p>Warren A. Hunt, Jr. and Sol Swords.  <a
+href='http://dx.doi.org/10.1007/978-3-642-02658-4_28'>Centaur technology media
+unit verification.  Case study: Floating point addition.</a> in Computer Aided
 Verification (CAV '09), June 2009.</p>
 
 <p>Our overall approach to E translation is to apply several Verilog-to-Verilog
@@ -142,20 +147,29 @@ E, and VL can be used to implement other Verilog tools.  For instance:</p>
 
 <ul>
 
-<li>We have used it to developed linting tools like @(see use-set) and a more
-powerful linter which is available in @('vl/lint') but is not yet
-documented.</li>
+<li>The publicly available VL @(see kit) is a command-line executable built on
+top of ACL2 and VL, which includes commands for @(see lint)ing Verilog designs,
+converting Verilog modules into a JSON format, and other commands.</li>
 
 <li>We have implemented an equivalence checking tool (which is not yet
-released) that has a unit-based timing model and handles transistor-level
+released) that has a tick-based timing model and handles transistor-level
 constructs.  This tool uses the same parser and most of VL's transforms, but
 also has a couple of additional transformation steps.</li>
 
-<li>We have also used it to implement a web-based \"module browser\" (which
+<li>We have used it to implement a web-based \"module browser\" (which
 will probably not be released since it is very Centaur specific) that lets
 users see the original and translated source code for our modules, and has
 several nice features (e.g., hyperlinks for navigating between wires and
 following wires, and integrated linting and warning/error reporting).</li>
+
+<li>We have used it to implement <i>VL-Mangle</i>, a web-based refactoring
+tool (which will probably not be released because it is hard to distribute).
+To support this tool we also developed the @(see acl2::bridge).  A paper
+describing this tool can be found in: Jared Davis. <a
+href='http://www.cs.utexas.edu/users/jared/publications/2013-doform-embedding/embedding.pdf'>Embedding
+ACL Models in End-User Applications</a>.  In <a
+href='http://www.cs.bham.ac.uk/research/projects/formare/events/aisb2013/'>Do-Form
+2013</a>.  April, 2013, Exeter, UK.</a>.</li>
 
 </ul>
 
@@ -177,9 +191,11 @@ and hierarchical modules.  (This is really how we use it.)</li>
 
 <p>Verilog is a huge language, and VL supports only part of it.</p>
 
-<p>VL is based on our reading of the Verilog-2005 standard, IEEE Std 1364-2005.
-Page and section numbers given throughout the VL documentation are in reference
-to this document.  VL does not have any support for SystemVerilog.</p>
+<p>VL is based on our reading of the <a
+href='http://standards.ieee.org/findstds/standard/1364-2005.html'>Verilog-2005
+standard, IEEE Std 1364-2005</a>.  Page and section numbers given throughout
+the VL documentation are in reference to this document.  VL does not have any
+support for SystemVerilog.</p>
 
 <p>VL's @(see preprocessor) is somewhat incomplete.  It basically just supports
 @('`define') and @('`ifdef')-related stuff and can @('`include') files in the

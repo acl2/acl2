@@ -40,6 +40,7 @@
 
 (table xdoc 'doc nil)
 (table xdoc 'default-parents nil)
+(table xdoc 'post-defxdoc-event nil)
 
 (defun get-xdoc-table (world)
   (declare (xargs :mode :program))
@@ -91,22 +92,31 @@
 
 (defmacro defxdoc (name &key parents short long)
   (declare (xargs :guard (guard-for-defxdoc name parents short long)))
-  `(make-event
-    (let* ((pkg   (acl2::f-get-global 'acl2::current-package state))
-           (info  (acl2::f-get-global 'acl2::certify-book-info state))
-           (bookname (if info
-                         (acl2::access acl2::certify-book-info info :full-book-name)
-                       "Current Interactive Session"))
-           (bookname (normalize-bookname bookname state))
-           (parents (or ',parents (get-default-parents (w state))))
-           (entry (list (cons :name ',name)
-                        (cons :base-pkg (acl2::pkg-witness pkg))
-                        (cons :parents parents)
-                        (cons :short ',short)
-                        (cons :long ',long)
-                        (cons :from bookname))))
-     `(table xdoc 'doc
-             (cons ',entry (get-xdoc-table world))))))
+  `(with-output :off (event summary)
+    (make-event
+     (let* ((world (w state))
+            (pkg   (acl2::f-get-global 'acl2::current-package state))
+            (info  (acl2::f-get-global 'acl2::certify-book-info state))
+            (bookname (if info
+                          (acl2::access acl2::certify-book-info info :full-book-name)
+                        "Current Interactive Session"))
+            (bookname (normalize-bookname bookname state))
+            (parents (or ',parents (get-default-parents (w state))))
+            (entry (list (cons :name ',name)
+                         (cons :base-pkg (acl2::pkg-witness pkg))
+                         (cons :parents parents)
+                         (cons :short ',short)
+                         (cons :long ',long)
+                         (cons :from bookname)))
+            (table-event
+             `(table xdoc 'doc
+                     (cons ',entry (get-xdoc-table world))))
+            (post-event
+             (cdr (assoc-eq 'post-defxdoc-event (table-alist 'xdoc world)))))
+       `(progn
+          ,table-event
+          ,@(and post-event (list post-event))
+          (value-triple '(defxdoc ,',name)))))))
 
 (defun defxdoc-raw-fn (name parents short long)
   (declare (xargs :guard t)
