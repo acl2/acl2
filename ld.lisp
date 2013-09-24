@@ -21344,6 +21344,11 @@
 
   ~st[EXPERIMENTAL/ALTERNATE VERSIONS]
 
+  (Allegro CL only) ACL2(h) now avoids blow-ups in hash table sizes that could
+  be caused by ~il[hons-shrink-alist].  Thanks to Jared Davis for helping to
+  debug this problem, and to David Rager for contributing the community book
+  ~c[books/parsers/earley/earley-parser.lisp], which highlighted this problem.
+
   ~/~/")
 
 (deflabel the-method

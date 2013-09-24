@@ -383,12 +383,6 @@
 
 (defconst *macro-expansion-ctx* "macro expansion")
 
-(defun remove-keyword (word l)
-  (cond ((null l) nil)
-        ((eq word (car l))
-         (remove-keyword word (cddr l)))
-        (t (list* (car l) (cadr l) (remove-keyword word (cddr l))))))
-
 (defun error-trace-suggestion (two-leading-spaces)
 
 ; Warning: Do not eliminate the message about print-gv without first reading
