@@ -40,7 +40,7 @@
 ; so that a subsequent (comp t) form will not re-installing a logic definition
 ; for the function, mkdir, that is about to be redefined in raw Lisp.
  #!acl2(f-put-global 'logic-fns-with-raw-code
-                     (cons 'xdoc::mkdir (@ program-fns-with-raw-code))
+                     (cons 'xdoc::mkdir (@ logic-fns-with-raw-code))
                      state)
 
  (defun mkdir (dir state)
