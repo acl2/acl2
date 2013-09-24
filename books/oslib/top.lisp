@@ -28,6 +28,7 @@
 (include-book "mkdir")
 (include-book "file-types")
 (include-book "tempfile")
+(include-book "rmtree")
 
 (defxdoc oslib
   :parents (acl2::interfacing-tools)

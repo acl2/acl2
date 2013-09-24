@@ -281,3 +281,31 @@ failure.</p>"
         state))
     state))
 
+
+
+(define rmtree ((dir "The path that you want to remove, e.g., @('./foo/bar')"
+                     stringp)
+               &optional
+               (state 'state))
+  :returns (mv (successp booleanp
+                         :rule-classes :type-prescription
+                         "Success indicator.  We might fail due to file system
+                          permissions, illegal file names, etc.")
+               (state state-p1
+                      :hyp (force (state-p1 state))))
+  :parents (oslib)
+  :short "Recursively delete files, like the shell command @('rm -rf'), and
+return a success indicator so you can recover from errors."
+
+  :long "<p>In the logic this function reads from the ACL2 oracle to determine
+if it succeeds.  In the execution, we attempt to delete the requested path, and
+detect errors.</p>"
+
+  :ignore-ok t
+  (b* ((- (raise "Raw Lisp definition not installed?"))
+       ((mv err val state) (read-acl2-oracle state))
+       (okp (and (not err)
+                 (booleanp val)
+                 val)))
+    (mv okp state)))
+
