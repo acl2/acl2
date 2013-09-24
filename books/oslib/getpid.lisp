@@ -20,28 +20,8 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "OSLIB")
-(include-book "read-acl2-oracle")
-(include-book "cutil/define" :dir :system)
-(include-book "tools/include-raw" :dir :system)
+(include-book "logic-defs")
 ; (depends-on "getpid-raw.lsp")
-
-(define getpid (&optional (state 'state))
-  :returns (mv (pid "The Process ID for this ACL2 session on success, or
-                     @('nil') on failure."
-                    (or (natp pid)
-                        (not pid))
-                    :rule-classes :type-prescription)
-               (state state-p1 :hyp (force (state-p1 state))))
-  :parents (oslib)
-  :short "Get the current process identification (PID) number."
-
-  :long "<p>This will just fail if called on an unsupported Lisp.</p>"
-
-  (b* ((- (er hard? __function__ "Raw Lisp definition not installed?"))
-       ((mv err val state) (read-acl2-oracle state))
-       ((when err)
-        (mv nil state)))
-    (mv (nfix val) state)))
 
 (defttag oslib)
 (include-raw "getpid-raw.lsp")

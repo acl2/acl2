@@ -25,6 +25,7 @@
 (include-book "date")
 (include-book "getpid")
 (include-book "ls")
+(include-book "mkdir")
 (include-book "file-types")
 (include-book "tempfile")
 

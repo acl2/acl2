@@ -1,5 +1,5 @@
-; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2011 Centaur Technology
+; OSLIB -- Operating System Utilities
+; Copyright (C) 2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,18 +18,9 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "XDOC")
-(set-state-ok t)
+(in-package "OSLIB")
+(include-book "logic-defs")
+; (depends-on "mkdir-raw.lsp")
 
-; BOZO the real definition of mkdir is found in mkdir-raw.lisp.  We write this
-; stub so that books like save.lisp and display.lisp don't need ttags.  But the
-; top-level save command has to remember to load the mkdir-raw book so that the
-; under-the-hood definition can be loaded.
-
-(defun mkdir (dir state)
-  (declare (xargs :guard (stringp dir))
-           (ignorable dir))
-  (prog2$
-   (er hard? 'mkdir "raw lisp definition not yet installed.")
-   state))
-
+(defttag oslib)
+(include-raw "mkdir-raw.lsp")

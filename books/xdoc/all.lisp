@@ -35,8 +35,6 @@
 (include-book "display")
 (include-book "import-acl2doc")
 (include-book "importance")
-(include-book "mkdir")
-(include-book "mkdir-raw")
 (include-book "parse-xml")
 (include-book "preprocess")
 (include-book "save-classic")

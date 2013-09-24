@@ -46,7 +46,6 @@
 
 (include-book "xdoc/save-fancy" :dir :system)
 (include-book "xdoc/defxdoc-raw" :dir :system)
-(include-book "xdoc/mkdir-raw" :dir :system)
 (include-book "xdoc/topics" :dir :system)
 
 (include-book "4v-sexpr/top")

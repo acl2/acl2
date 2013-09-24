@@ -447,9 +447,9 @@
 
        (dir/lib        (oslib::catpath dir "lib"))
        (dir/images     (oslib::catpath dir "images"))
-       (state          (mkdir dir state))
-       (state          (mkdir dir/lib state))
-       (state          (mkdir dir/images state))
+       (state          (oslib::mkdir! dir))
+       (state          (oslib::mkdir! dir/lib))
+       (state          (oslib::mkdir! dir/images))
 
        (dir-system     (acl2::f-get-global 'acl2::system-books-dir state))
        (xdoc-dir       (oslib::catpath dir-system "xdoc"))

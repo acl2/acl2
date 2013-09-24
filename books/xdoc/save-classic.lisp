@@ -22,13 +22,13 @@
 ;
 ; This file defines the XDOC functions for running the preprocessor and saving
 ; XML files.  Note that the save-topics command we introduce cannot actually be
-; used unless the mkdir-raw book is loaded first.  This is automatically handled
-; by the "save" macro in top.lisp.
+; used unless the oslib/mkdir book is loaded first.  This is automatically
+; handled by the "save" macro in top.lisp.
 
 (in-package "XDOC")
-(include-book "mkdir")
 (include-book "prepare-topic")
 (include-book "oslib/catpath" :dir :system)
+(include-book "oslib/logic-defs" :dir :system)
 (set-state-ok t)
 
 (program)
@@ -443,8 +443,8 @@ command, along the following lines:</p>
                 state))
        (- (cw "; Preparing directory ~s0.~%" dir))
        (dir/xml     (oslib::catpath dir "xml"))
-       (state       (mkdir dir state))
-       (state       (mkdir dir/xml state))
+       (state       (oslib::mkdir! dir))
+       (state       (oslib::mkdir! dir/xml))
 
        (dir-system   (acl2::f-get-global 'acl2::system-books-dir state))
        (xdoc-dir     (oslib::catpath dir-system "xdoc"))

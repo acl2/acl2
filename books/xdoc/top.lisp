@@ -76,7 +76,7 @@
      (include-book
       "xdoc/defxdoc-raw" :dir :system :ttags :all)
      (include-book
-      "xdoc/mkdir-raw" :dir :system)
+      "oslib/mkdir" :dir :system)
      (include-book
       ,(if (eq type :fancy)
            "xdoc/save-fancy"
