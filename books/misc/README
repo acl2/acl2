@@ -47,12 +47,16 @@ assert.lisp -- an assertion mechanism for use within books
 
 ===============================================================================
 
-bash.lisp -- simplification of top-level goal
+bash-bsd.lisp, bash.lisp -- simplification of top-level goal
 
 If you submit (bash term), you will get back a list of terms produced by the
 ACL2 simplifier.  See the description at the top of bash.lisp for details.
 
 See also defopener.lisp and expander.lisp.
+
+Note: bash.lisp is just bash-bsd.lisp plus xdoc-style documentation.
+If you use bash.lisp, you will be including a GPL'ed book (ACL2
+community book xdoc/top), but not if you only use bash-bsd.lisp.
 
 ===============================================================================
 

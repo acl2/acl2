@@ -238,6 +238,20 @@
 ; (include-book "centaur/misc/memory-mgmt" :dir :system)
 ; (value-triple (set-max-mem (* 8 (expt 2 30))))
 
+; Added by Matt K., 9/21/2013:
+
+; With cmucl, one gets the following error for 1f (below) using a value here of
+; 3000, even if -dynamic-space-size is set to 1632 on the command line, which
+; is the maximum allowable in our CMUCL implementation, "CMU Common Lisp
+; snapshot-2013-06 (20D Unicode)".
+;   *A1 gc_alloc_large failed, nbytes=65244752.
+;    CMUCL has run out of dynamic heap space (1632 MB).
+;     You can control heap size with the -dynamic-space-size commandline option.
+; So we use a smaller for limit CMUCL.  Note: Adding the two forms just above, to
+; invoke set-max-mem, didn't solve the problem, whether I added them just above
+; or added them at the beginning of this book.
+
+#-cmucl
 (def-gl-thm 1f
   :hyp (and (unsigned-byte-p 3000 x)
             (unsigned-byte-p 3000 y))
@@ -245,8 +259,12 @@
   :g-bindings (gl::auto-bindings (:mix (:nat x 3000)
                                        (:nat y 3000))))
 
-
-
-
+#+cmucl
+(def-gl-thm 1f
+  :hyp (and (unsigned-byte-p 2000 x)
+            (unsigned-byte-p 2000 y))
+  :concl (equal (+ x y) (+ y x))
+  :g-bindings (gl::auto-bindings (:mix (:nat x 2000)
+                                       (:nat y 2000))))
 
 

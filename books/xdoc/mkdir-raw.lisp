@@ -34,6 +34,15 @@
 
 (progn!
  (set-raw-mode t)
+
+; Added by Matt K.:
+; For Lisps that do not compile automatically on the fly, we add the following
+; so that a subsequent (comp t) form will not re-installing a logic definition
+; for the function, mkdir, that is about to be redefined in raw Lisp.
+ #!acl2(f-put-global 'logic-fns-with-raw-code
+                     (cons 'xdoc::mkdir (@ program-fns-with-raw-code))
+                     state)
+
  (defun mkdir (dir state)
    (b* (((unless (stringp dir))
          (er hard? 'mkdir "Dir must be a string, but is: ~x0.~%" dir)
