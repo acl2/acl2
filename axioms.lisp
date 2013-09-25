@@ -20553,10 +20553,40 @@
 
   (3) The ~c[:EXPANSION?] keyword argument.
 
-  Suppose keyword argument ~c[:EXPANSION? exp] is specified, where ~c[exp] is
-  not ~c[nil].  Then the ~c[:CHECK-EXPANSION] keyword must be omitted or have
-  value ~c[nil] or ~c[t], not a cons pair.  To explain the effect of
-  ~c[:EXPANSION? exp], we split into the following two cases.
+  If keyword argument ~c[:EXPANSION?] has a non~c[nil] value, then the
+  ~c[:CHECK-EXPANSION] keyword must be omitted or have value ~c[nil] or ~c[t],
+  hence not a cons pair.
+
+  The idea of the ~c[:EXPANSION?] keyword is to give you a way to avoid storing
+  expansion results in a book's ~il[certificate].  Roughly speaking, when the
+  expansion result matches the value of ~c[:EXPANSION?], then no expansion
+  result is stored for the event by book certification; then when the book is
+  later included, the value of ~c[:EXPANSION?] is used as the expansion, thus
+  bypassing the expansion phase.  One could say that the event is its own
+  make-event replacement, but it is more accurate to say that there is no
+  make-event replacement at all, since nothing is stored in the certificate for
+  this event.  Below, we elaborate on make-event replacements when
+  ~c[:EXPANSION] is used and also discuss other properties of this keyword.
+
+  We modify the notion of ``expansion result'' for ~c[make-event] forms to
+  comprehend the use of the ~c[:EXPANSION?] keyword.  For that purpose, let's
+  consider a call of ~c[make-event] to be ``reducible'' if it has an
+  ~c[:EXPANSION?] keyword with non-~c[nil] value, ~c[exp], and its
+  ~c[:CHECK-EXPANSION] keyword is missing or has value ~c[nil], in which case
+  the ``reduction'' of this ~c[make-event] call is defined to be ~c[exp].  The
+  expansion result as originally defined is modified by the following
+  ``recursive reduction'' process: recur through the original expansion,
+  passing through calls of ~ilc[local], ~ilc[skip-proofs], ~ilc[with-output],
+  ~ilc[with-prover-step-limit], and ~ilc[with-prover-time-limit], and
+  replacing (recursively) any reducible call of ~c[make-event] by its
+  reduction.  Furthermore, we refer to two forms as ``reduction equivalent'' if
+  their recursive reductions are equal.  Note that the recursive reduction
+  process does not pass through ~ilc[progn] or ~ilc[encapsulate], but that
+  process is applied to the computation of expansions for their subsidiary
+  ~ilc[make-event] calls.
+
+  To explain further the effect of ~c[:EXPANSION? exp], we split into the
+  following two cases.
 
   o Case 1: Evaluation is not taking place when including a book or evaluating
   the second pass of an ~ilc[encapsulate] event; more precisely, the value of
@@ -20564,14 +20594,16 @@
   two subcases.
   ~bq[]
 
-  - Case 1a: The expansion result is not ~c[exp].  Then the ~c[make-event] call
-  is processed as though the ~c[:EXPANSION?] keyword had been omitted.
+  - Case 1a: The expansion result is not reduction-equivalent to ~c[exp].  Then
+  the ~c[make-event] call is processed as though the ~c[:EXPANSION?] keyword
+  had been omitted.
 
-  - Case 2a: The expansion result is ~c[exp].  Then there is no ~c[make-event]
-  replacement for this call of ~c[make-event]; no replacement will be put into
-  the ~il[certificate] file for a book containing this ~c[make-event] call.
-  When that book is subsequently included, the original form will be evaluated.
-  Which leads us to:~eq[]
+  - Case 2a: The expansion result is reduction-equivalent to ~c[exp].  Then
+  there is no ~c[make-event] replacement for this call of ~c[make-event]; no
+  replacement will be put into the ~il[certificate] file for a book containing
+  this ~c[make-event] call.  When that book is subsequently included, the
+  original form will be evaluated in the manner described in the next
+  case.~eq[]
 
   o Case 2: Evaluation is taking place when including a book or evaluating the
   second pass of an ~ilc[encapsulate] event; more precisely, the value of
@@ -20580,21 +20612,22 @@
   ~c[:CHECK-EXPANSION] is ~c[t].
 
   The ~c[:EXPANSION?] keyword can be particularly useful in concert with the
-  disjunctive case (2) discussed above.  Suppose that expansion produces a
-  value as discussed in (2) above, ~c[(:OR exp-1 ... exp-k)].  If one of these
-  expressions ~c[exp-i] is more likely than the others to be the expansion,
-  then you may wish to specify ~c[:EXPANSION? exp-i], as this will avoid
-  storing a ~c[make-event] replacement in that common case.  This could be
-  useful if the expressions are large, to avoid enlarging the ~il[certificate]
-  file for a book containing the ~c[make-event] call.
+  disjunctive (``~c[:OR]'') case (2) discussed above.  Suppose that expansion
+  produces a value as discussed in (2) above, ~c[(:OR exp-1 ... exp-k)].  If
+  one of these expressions ~c[exp-i] is more likely than the others to be the
+  expansion, then you may wish to specify ~c[:EXPANSION? exp-i], as this will
+  avoid storing a ~c[make-event] replacement in that common case.  This could
+  be useful if the expressions are large, to avoid enlarging the
+  ~il[certificate] file for a book containing the ~c[make-event] call.
 
   It is legal to specify both ~c[:EXPANSION? exp] and ~c[:CHECK-EXPANSION t].
-  When ~c[(ld-skip-proofsp state)] is the symbol ~c[INCLUDE-BOOK], and in raw
-  Lisp, this is treated the same as if ~c[:EXPANSION?] is omitted and the value
-  of ~c[:CHECK-EXPANSION] is ~c[exp].  Otherwise, this combination is treated
-  the same as ~c[:CHECK-EXPANSION t], modified to accommodate the effect of
-  ~c[:EXPANSION?] as discussed above: if the expansion is indeed the value of
-  ~c[:EXPANSION?], then no ~c[make-event] replacement is generated."
+  When either ~c[(ld-skip-proofsp state)] is the symbol ~c[INCLUDE-BOOK], or
+  evaluation is taking place in raw Lisp, then this combination is treated the
+  same as if ~c[:EXPANSION?] is omitted and the value of ~c[:CHECK-EXPANSION]
+  is ~c[exp].  Otherwise, this combination is treated the same as
+  ~c[:CHECK-EXPANSION t], modified to accommodate the effect of ~c[:EXPANSION?]
+  as discussed above: if the expansion is indeed the value of ~c[:EXPANSION?],
+  then no ~c[make-event] replacement is generated."
 
   (declare (xargs :guard t))
 ; Keep this in sync with the -acl2-loop-only definition.

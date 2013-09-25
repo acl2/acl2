@@ -9334,6 +9334,35 @@
                            whole-form in-encapsulatep check-expansion
                            wrld ctx state))))
 
+(defun ultimate-expansion (x)
+
+; We dive inside values of :expansion? keywords, starting with x, and stepping
+; past wrappers (in the sense of destructure-expansion).  Except, if
+; :expansion? is provided but :check-expansion is non-nil (hence t), then
+; :expansion? is ignored for this purpose, so that we can avoid destroying the
+; surrounding make-event that should be saved for purposes of :check-expansion.
+; The idea is that when including a book (or doing the second pass of an
+; encapsulate), we replace a make-event form directly by its :expansion? value
+; unless :check-expansion is t, in which case the make-event form and the
+; :expansion?  value are not equivalent, because the make-event form redoes the
+; expansion process.
+
+; Warning: Be careful not to use this function unless each make-event form
+; encountered during the traversal that has a value for the :expansion? keyword
+; can be trusted to have an expansion suitably consistent with that value.
+
+  (case-match x
+    (('make-event & . kwd-alist)
+     (let ((exp (cadr (assoc-keyword :expansion? kwd-alist))))
+       (cond ((and exp
+                   (not (cadr (assoc-keyword :check-expansion kwd-alist))))
+              (ultimate-expansion exp))
+             (t x))))
+    (& (mv-let (w y)
+               (destructure-expansion x)
+               (cond (w (rebuild-expansion w (ultimate-expansion y)))
+                     (t x))))))
+
 (defun make-event-fn (form expansion? check-expansion on-behalf-of whole-form
                            state)
   (let ((ctx (make-event-ctx whole-form))
@@ -9481,8 +9510,9 @@
                         (declare (ignore base))
                         (rebuild-expansion
                          wrappers
-                         (f-get-global 'last-make-event-expansion state))))
-                      (t expansion1))))
+                         (ultimate-expansion
+                          (f-get-global 'last-make-event-expansion state)))))
+                      (t (ultimate-expansion expansion1)))))
                (assert$
                 (equal stobjs-out *error-triple-sig*) ; evaluated an event form
                 (let ((expected-expansion (if (consp check-expansion)
@@ -9492,7 +9522,11 @@
                                                  check-expansion
                                                  expansion?))))
                   (cond ((and expected-expansion
-                              (not (equal expected-expansion expansion2)))
+                              (not (equal expected-expansion ; easy try first
+                                          expansion2))
+                              (not (equal (ultimate-expansion
+                                           expected-expansion)
+                                          expansion2)))
                          (er soft ctx
                              "The current MAKE-EVENT expansion differs from ~
                               the expected (original or specified) expansion. ~
@@ -9506,7 +9540,11 @@
                          (let ((actual-expansion
                                 (cond
                                  ((or (consp check-expansion)
-                                      (equal expansion? expansion2))
+                                      (equal expansion?
+                                             expansion2) ; easy try first
+                                      (equal (ultimate-expansion
+                                              expansion?)
+                                             expansion2))
 
 ; The original make-event form does not generate a make-event replacement (see
 ; :doc make-event).
@@ -9577,6 +9615,18 @@
                             (f-put-global 'last-make-event-expansion
                                           actual-expansion
                                           state)
+                            (cond
+                             ((f-get-global 'make-event-debug state)
+                              (fms "Saving make-event replacement into state ~
+                                    global 'last-make-event-expansion (debug ~
+                                    level ~x0):~|~Y12"
+                                   (list (cons #\0 debug-depth)
+                                         (cons #\1 actual-expansion)
+                                         (cons #\2 (abbrev-evisc-tuple state)))
+                                   (proofs-co state)
+                                   state
+                                   nil))
+                             (t state))
                             (er-progn
                              (cond ((and new-ttags-p ; optimization
                                          (let ((wrld1 (w state)))
