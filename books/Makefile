@@ -427,7 +427,11 @@ endif
 # just below, but later, ACL2_CUSTOM_TARGETS adds its targets to
 # OK_CERTS.
 
-SLOW_BOOKS := \
+# Before defining SLOW_BOOKS, we define ADDED_BOOKS to be the books
+# that we want to add back in when using target "everything" instead
+# of the default target, "all".
+
+ADDED_BOOKS := \
   coi/termination/assuming/complex.cert \
   models/jvm/m5/apprentice.cert \
   parallel/proofs/ideal-speedup.cert \
@@ -436,7 +440,29 @@ SLOW_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   $(filter rtl/rel7/%, $(OK_CERTS))
 
-ifneq ($(ACL2_HAS_HONS), )
+# Now SLOW_BOOKS is defined as the list above, except that below, we
+# also include books that are too slow for both an ordinary regression
+# (target "all") and an "everything" regression.
+
+SLOW_BOOKS := $(ADDED_BOOKS)
+
+# Note that models/y86/ is already excluded in the setting of
+# REBUILD_MAKEFILE_BOOKS above, but these books are built if
+# models/y86-target.cert is included.  File models/y86-target.lisp is
+# already labeled as hons-only, but even with ACL2(h) we want to
+# exclude some host Lisps.  Certainly CCL can handle these books,
+# since it has significant optimizations for ACL2(h).  But in one ANSI
+# GCL ACL2(h) regression, certification runs were still proceeding
+# after more than 10 hours for each of four books under models/y86/
+# (y86-basic/common/x86-state, y86-two-level/common/x86-state,
+# y86-two-level-abs/common/x86-state-concrete, and
+# y86-basic/py86/popcount), probably because of the demands of
+# def-gl-thm.  Moreover, LispWorks has too small a value for
+# array-dimension-limit to support these certifications.
+
+ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
+# When the Lisp is not one of those mentioned on the line above, we
+# skip the models/y86/ books.
   SLOW_BOOKS += models/y86-target.cert
 endif
 
@@ -573,7 +599,8 @@ ifeq ($(ACL2_HAS_REALS), )
 # command that is used to define REBUILD_MAKEFILE_BOOKS, above.
 # Otherwise we might make the same file twice, would could cause
 # conflicts if -j is other than 1.  Also: Do not include any targets,
-# such as models/y86-target.cert, that we don't want built with "all".
+# such as models/y86-target.cert, that we don't always want built with
+# "all".
 
 ACL2_CUSTOM_TARGETS := \
   clause-processors/SULFA/target.cert \
@@ -610,8 +637,9 @@ clause-processors/SULFA/target.cert: \
 fix-cert/fix-cert.cert:
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
-# The following need not be made a custom target, since it's not in
-# an excluded directory.
+# The following need not be made a custom target, since it's not in an
+# excluded directory.  Note that we use -j 1 because of the
+# potentially large memory requirements.
 ifneq ($(ACL2_HAS_HONS), )
 models/y86-target.cert:
 	cd $(@D)/y86 ; $(STARTJOB) -c "$(MAKE) -j 1"
@@ -889,36 +917,6 @@ OK_CERTS := $(filter-out workshops/%, $(OK_CERTS))
 endif # ifeq ($(realpath workshops), )
 
 all: $(OK_CERTS)
-
-# Now compute books to add.  We add all of SLOW_BOOKS, except that we
-# only include models/y86-target.cert for Lisps that can handle it.
-
-# We don't want to certify the models/y86 books unless the host Lisp
-# can tolerate it, such as CCL, which has significant optimizations
-# for ACL2(h).  Note that since we exclude models/y86/ when defining
-# REBUILD_MAKEFILE_BOOKS, those books are only made because of the
-# book models/y86-target.lisp, which while not included in
-# ACL2_CUSTOM_TARGETS nevertheless has custom dependencies above.
-# Now, in an ANSI GCL ACL2(h) regression, certification runs were
-# still proceeding after more than 10 hours for each of four books
-# under models/y86/ (y86-basic/common/x86-state,
-# y86-two-level/common/x86-state,
-# y86-two-level-abs/common/x86-state-concrete, and
-# y86-basic/py86/popcount), probably because of the demands of
-# def-gl-thm.  Moreover, LispWorks has too small a value for
-# array-dimension-limit to support these certifications.
-
-ifeq ($(ACL2_HAS_HONS), )
-
-ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
-ADDED_BOOKS := $(SLOW_BOOKS)
-else
-ADDED_BOOKS := models/y86-target.cert $(SLOW_BOOKS)
-endif # ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
-
-else
-ADDED_BOOKS := models/y86-target.cert $(SLOW_BOOKS)
-endif # ifeq ($(ACL2_HAS_HONS), )
 
 # It was tempted to handle the `everything' target as follows:
 #  everything: USE_QUICKLISP = 1
