@@ -150,3 +150,100 @@
 
 (assert-event (eq (symbol-class 'g1 (w state))
                   :COMMON-LISP-COMPLIANT))
+
+; Finally, here are some random additional tests to show what is stored in the
+; expansion-alist of the certificate (see also
+; make-event-keywords-or-exp-check.lisp).
+
+; Turn on debugging in case we want to take a look:
+(make-event
+ (er-progn (assign make-event-debug t)
+           (value '(value-triple nil))))
+
+; The next few store an expansion of (LOCAL (VALUE-TRIPLE :ELIDED)).
+
+(make-event
+ '(:or (local (defun foo1 (x) x))
+       (defun noop (x) x)))
+
+(make-event
+ (er-progn
+  (value (cw "Here I'm computing with state...~%"))
+  (value '(make-event
+           '(:or (local (defun foo2 (x) x))
+                 (defun noop (x) x))
+           )))
+ :expansion?
+ (defun foo2 (x) x))
+
+(make-event
+ (er-progn
+  (value (cw "Here I'm computing with state...~%"))
+  (value '(make-event
+           '(:or (local (defun foo3 (x) x))
+                 (defun noop (x) x))
+           :expansion?
+           (defun foo3 (x) x))))
+ :expansion?
+ (defun foo3 (x) x))
+
+; Now let's see what's stored for non-local expansions.
+
+; Nothing stored: :expansion? propagates upward.
+(make-event
+ (er-progn
+  (value (cw "Here I'm computing with state...~%"))
+  (value '(make-event
+           '(:or (defun foo4 (x) x)
+                 (defun noop (x) x))
+           :expansion?
+           (defun foo4 (x) x))))
+ :expansion?
+ (defun foo4 (x) x))
+
+; Nothing stored: :expansion? is correct.
+(make-event
+ '(:or (local (defun foo5 (x) x))
+       (defun noop (x) x))
+ :expansion?
+ (local (defun foo5 (x) x)))
+
+; Nothing stored: :expansion? is correct.
+(make-event
+ '(:or (defun foo6 (x) x)
+       (defun noop (x) x))
+ :expansion?
+ (defun foo6 (x) x)
+ :check-expansion t)
+
+; Expansion is stored with :check-expansion replaced by actual expansoin, since
+; :expansion? is not correct.
+(make-event
+ '(:or (defun foo7 (x) x)
+       (defun noop (x) x))
+ :expansion?
+ (defun wrong (x) x)
+ :check-expansion t)
+
+; Let's try stressing the system by using local events that we might expect to
+; be elided, and yet using :check-expansion to ensure that an expansion is
+; done.  We'll try that sort of thing three times: once with :expansion? right,
+; once with :expansion wrong, and once without :expansion.
+
+(make-event
+ '(local (defun foo8 (x) x))
+ :expansion? ; right
+ (local (defun foo8 (x) x))
+ :check-expansion t)
+
+(make-event
+ '(local (defun foo8 (x) x))
+ :expansion? ; wrong
+ (defun wrong (x) x)
+ :check-expansion t)
+
+(make-event
+ '(local (defun foo8 (x) x))
+ :expansion? ; missing
+ nil
+ :check-expansion t)
