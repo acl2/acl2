@@ -793,10 +793,10 @@ endif
 clean-books-nonstd:
 ifndef ACL2
 	cd books/nonstd ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 clean
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 clean clean-links
 else
 	cd books/nonstd ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) clean
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) clean clean-links
 endif
 
 # This following should be executed inside the acl2-sources directory.
