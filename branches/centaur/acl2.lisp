@@ -484,6 +484,13 @@
 #+ccl
 (setq ccl::*record-source-file* nil)
 
+; Camm Maguire has suggested, on 9/22/2013, the following forms, which allowed
+; him to complete an ACL2 regresssion using 2.6.10pre.
+#+gcl
+(progn
+  (si::allocate 'contiguous 15000 t)
+  (si::allocate-sgc 'contiguous 15000 100000 10))
+
 ; The following avoids errors from extra right parentheses, but we leave it
 ; commented out since it doesn't seem important enough to merit messing around
 ; at this low level, and for just one Lisp.
@@ -494,7 +501,8 @@
 ; modifications, we made progress -- except there appears (as of Sept. 2011) to
 ; be no good way for us to save an executable image.  Specifically, it appears
 ; that c:build-program not will suffice for saving state (properties etc.) --
-; it's just for saving specified .o files.
+; it's just for saving specified .o files.  (This impression seems to be
+; confirmed at http://stackoverflow.com/questions/7686246/saving-lisp-state .)
 
 ; Here we document steps to take towards possibly porting to ECL in the future.
 
@@ -2011,73 +2019,6 @@ which is saved just in case it's needed later.")
                                       :type *compiled-file-extension*))))))))))
    (note-compile-ok)))
 
-(defun no-object-file-or-out-of-date-object-file (fl)
-  (or (null (probe-file
-             (make-pathname :name fl :type *compiled-file-extension*)))
-      (> (file-write-date
-          (make-pathname :name fl :type *lisp-extension*))
-         (file-write-date
-          (make-pathname :name fl :type *compiled-file-extension*)))))
-
-(defun quick-compile-acl2 (&optional very-fast use-acl2-proclaims)
-  (with-warnings-suppressed
-
-; Here is a natural place to put compiler options.
-
-; (declaim (optimize (safety 0) (space 0) (speed 3)))
-
-; As of version 18a, cmulisp spews gc messages to the terminal even when
-; standard and error output are redirected.  So we turn them off.
-
-   #+cmu
-   (setq extensions::*gc-verbose* nil)
-
-   (cond
-    ((or (not (probe-file (make-pathname :name "acl2-status"
-                                         :type "txt")))
-         (with-open-file (str (make-pathname :name "acl2-status"
-                                             :type "txt")
-                              :direction :input)
-                         (not (eq (read str nil)
-                                  :checked))))
-     (check-suitability-for-acl2)))
-   (our-with-compilation-unit
-    (let ((compile-rest-flg nil)
-          (*readtable* *acl2-readtable*)
-          #+akcl
-          (si:*notify-gbc* nil)
-          #+akcl
-
-; AKCL compiler note stuff.  We have so many tail recursive functions
-; that the notes about tail recursion optimization are just too much
-; to take.
-
-          (compiler:*suppress-compiler-notes* t)
-          (files (remove "defpkgs" *acl2-files* :test #'equal)))
-      (cond
-       ((some #'no-object-file-or-out-of-date-object-file files)
-        (when use-acl2-proclaims
-          (load "acl2-proclaims.lisp"))
-        (dolist
-          (fl files)
-          (let ((source (make-pathname :name fl :type *lisp-extension*))
-                (object (make-pathname :name fl :type *compiled-file-extension*)))
-            (cond
-             ((or *suppress-compile-build-time*
-                  (equal fl "proof-checker-pkg"))
-              (load source))
-             ((or compile-rest-flg (no-object-file-or-out-of-date-object-file fl))
-              (load source)
-              (proclaim-file source)
-              (when (not very-fast)
-                (setq compile-rest-flg t))
-              (compile-file source)
-              (load-compiled object))
-             (t (load-compiled object)
-                (proclaim-file source))))))
-       (t "Nothing to do."))))
-   (note-compile-ok)))
-
 #+gcl
 (defvar user::*fast-acl2-gcl-build* nil)
 
@@ -2145,11 +2086,9 @@ which is saved just in case it's needed later.")
                                :direction :input)
                           (not (member (read str nil)
                                        '(:compiled :initialized)))))
-      (error "Please compile ACL2 using ~s or~%~
-            ~s, which will write the~%~
-            token :compiled to the file acl2-status.txt."
-             '(compile-acl2)
-             '(quick-compile-acl2 t))))
+      (error "Please compile ACL2 using ~s, which will write~%~
+              the token :COMPILED to the file acl2-status.txt."
+             '(compile-acl2))))
     (let ((*readtable* *acl2-readtable*)
           (extension (if *suppress-compile-build-time*
                          *lisp-extension*
@@ -2553,9 +2492,11 @@ which is saved just in case it's needed later.")
           nil))
         (terpri *debug-io*)
         (break-current))))))
+#+(and gcl (not cltl2))
+(in-package "ACL2")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;                        Some hacks for CCL
+;                        Additional hacks for CCL
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Also see the acl2h-init code.

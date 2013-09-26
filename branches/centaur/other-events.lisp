@@ -1516,7 +1516,7 @@
 ; documentation purposes:
 
                          state
-                         declare apropos
+                         declare apropos finding-documentation
                          enter-boot-strap-mode exit-boot-strap-mode
                          lp acl2-defaults-table let let*
                          complex complex-rationalp
@@ -4651,8 +4651,7 @@
                                      make-event-chk)
 
 ; WARNING: Keep this in sync with destructure-expansion, elide-locals-rec,
-; elide-locals-post, make-include-books-absolute, and
-; find-first-non-local-name.
+; make-include-books-absolute, and find-first-non-local-name.
 
 ; Note: For a test of this function, see the reference to foo.lisp below.
 
@@ -5006,8 +5005,7 @@
 
 (defun destructure-expansion (form)
 
-; WARNING: Keep this in sync with chk-embedded-event-form, elide-locals-rec,
-; and elide-locals-post.
+; WARNING: Keep this in sync with chk-embedded-event-form and elide-locals-rec.
 
   (declare (xargs :guard (true-listp form)))
   (cond ((member-eq (car form) '(local skip-proofs with-output
@@ -5503,7 +5501,7 @@
 (defun elide-locals-rec (form strongp)
 
 ; WARNING: Keep this in sync with chk-embedded-event-form,
-; destructure-expansion, make-include-books-absolute, and elide-locals-post.
+; destructure-expansion, and make-include-books-absolute.
 
 ; We assume that form is a legal event form and return (mv changed-p new-form),
 ; where new-form results from eliding top-level local events from form, and
@@ -9336,6 +9334,35 @@
                            whole-form in-encapsulatep check-expansion
                            wrld ctx state))))
 
+(defun ultimate-expansion (x)
+
+; We dive inside values of :expansion? keywords, starting with x, and stepping
+; past wrappers (in the sense of destructure-expansion).  Except, if
+; :expansion? is provided but :check-expansion is non-nil (hence t), then
+; :expansion? is ignored for this purpose, so that we can avoid destroying the
+; surrounding make-event that should be saved for purposes of :check-expansion.
+; The idea is that when including a book (or doing the second pass of an
+; encapsulate), we replace a make-event form directly by its :expansion? value
+; unless :check-expansion is t, in which case the make-event form and the
+; :expansion?  value are not equivalent, because the make-event form redoes the
+; expansion process.
+
+; Warning: Be careful not to use this function unless each make-event form
+; encountered during the traversal that has a value for the :expansion? keyword
+; can be trusted to have an expansion suitably consistent with that value.
+
+  (case-match x
+    (('make-event & . kwd-alist)
+     (let ((exp (cadr (assoc-keyword :expansion? kwd-alist))))
+       (cond ((and exp
+                   (not (cadr (assoc-keyword :check-expansion kwd-alist))))
+              (ultimate-expansion exp))
+             (t x))))
+    (& (mv-let (w y)
+               (destructure-expansion x)
+               (cond (w (rebuild-expansion w (ultimate-expansion y)))
+                     (t x))))))
+
 (defun make-event-fn (form expansion? check-expansion on-behalf-of whole-form
                            state)
   (let ((ctx (make-event-ctx whole-form))
@@ -9376,8 +9403,8 @@
                 (consp check-expansion)))
        (er soft ctx
            "The check-expansion flag of make-event must be t, nil, or a cons ~
-             pair.  The following check-expansion flag is thus illegal: ~x0.  ~
-             See :DOC make-event."
+            pair.  The following check-expansion flag is thus illegal: ~x0.  ~
+            See :DOC make-event."
            check-expansion))
       ((and expansion?
             (consp check-expansion))
@@ -9483,8 +9510,9 @@
                         (declare (ignore base))
                         (rebuild-expansion
                          wrappers
-                         (f-get-global 'last-make-event-expansion state))))
-                      (t expansion1))))
+                         (ultimate-expansion
+                          (f-get-global 'last-make-event-expansion state)))))
+                      (t (ultimate-expansion expansion1)))))
                (assert$
                 (equal stobjs-out *error-triple-sig*) ; evaluated an event form
                 (let ((expected-expansion (if (consp check-expansion)
@@ -9494,7 +9522,11 @@
                                                  check-expansion
                                                  expansion?))))
                   (cond ((and expected-expansion
-                              (not (equal expected-expansion expansion2)))
+                              (not (equal expected-expansion ; easy try first
+                                          expansion2))
+                              (not (equal (ultimate-expansion
+                                           expected-expansion)
+                                          expansion2)))
                          (er soft ctx
                              "The current MAKE-EVENT expansion differs from ~
                               the expected (original or specified) expansion. ~
@@ -9508,7 +9540,11 @@
                          (let ((actual-expansion
                                 (cond
                                  ((or (consp check-expansion)
-                                      (equal expansion? expansion2))
+                                      (equal expansion?
+                                             expansion2) ; easy try first
+                                      (equal (ultimate-expansion
+                                              expansion?)
+                                             expansion2))
 
 ; The original make-event form does not generate a make-event replacement (see
 ; :doc make-event).
@@ -9579,6 +9615,18 @@
                             (f-put-global 'last-make-event-expansion
                                           actual-expansion
                                           state)
+                            (cond
+                             ((f-get-global 'make-event-debug state)
+                              (fms "Saving make-event replacement into state ~
+                                    global 'last-make-event-expansion (debug ~
+                                    level ~x0):~|~Y12"
+                                   (list (cons #\0 debug-depth)
+                                         (cons #\1 actual-expansion)
+                                         (cons #\2 (abbrev-evisc-tuple state)))
+                                   (proofs-co state)
+                                   state
+                                   nil))
+                             (t state))
                             (er-progn
                              (cond ((and new-ttags-p ; optimization
                                          (let ((wrld1 (w state)))
@@ -10522,7 +10570,7 @@
                                          state)
 
 ; WARNING: Keep this in sync with chk-embedded-event-form,
-; destructure-expansion, elide-locals-rec, and elide-locals-post.
+; destructure-expansion, and elide-locals-rec.
 
 ; See the comment in fix-portcullis-cmds for a discussion.  Starting after
 ; Version_3.6.1, we allow an include-book pathname for a portcullis command to
@@ -13079,11 +13127,19 @@
                                              pcert-info old-dir
                                              new-dir cert-op ctx state)
 
-; See make-certificate-file.
+; This function supports the creation of relocated .cert files for Debian GCL
+; distributions.  See make-certificate-file.
+
+; Warning: It is tempting to replace strings in (car portcullis), which is the
+; list of portcullis commands, and the expansion-alist.  However, that will
+; result in an uncertified book after moving the .cert.final file to the .cert
+; file, because post-alist3 contains a checksum for the book as computed by
+; function check-sum-cert, using the portcullis commands and the
+; expansion-alist.
 
   (make-certificate-file1
    file
-   (cons (car portcullis) ; Warning: used in checksum, so do not modify!
+   (cons (car portcullis)
          (replace-string-prefix-in-tree
           (cdr portcullis) old-dir (length old-dir) new-dir))
    certification-file

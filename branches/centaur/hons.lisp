@@ -812,11 +812,30 @@ reversed.  This can be useful as a way to clean up any unnecessary bindings in
 alist, or as a way to obtain a \"deep copy\" of a fast alist that can extended
 independently from the original while maintaining discipline.
 
+Note that hons-shrink-alist is potentially expensive, for the following two
+reasons.
+~bq[]
+
+o The alist is copied, dropping any shadowed pairs.  This process will require
+a hash table lookup for each entry in the alist; and it will require creating a
+new alist, which uses additional memory.
+
+o Unless ans is a fast alist that is stolen (see below), a new hash table is
+created, which uses additional memory.  This hash table is populated in time
+that is linear in the number of unique keys in the alist.
+~eq[]
+
 When ans is not an atom, good discipline requires that it is a fast alist.  In
 this case, ~c[hons-shrink-alist] steals the hash table for ans and extends it
 with all of the bindings in alist that are not in ans.  From the perspective of
 ~ilc[hons-assoc-equal], you can think of the resulting alist as being basically
-similar to ~c[(append ans alist)], but in a different order.~/~/"
+similar to ~c[(append ans alist)], but in a different order.
+
+Note that when alist is a fast alist, and either ans is not a fast alist (e.g.,
+ans is an atom) or is a fast alist with a different final cdr (name) than that
+of ans, then such stealing does not take place.  It would thus generally be
+desirable in such cases to free alist; ~pl[fast-alist-free] and
+~pl[fast-alist-free-on-exit].~/~/"
 
   ;; Has an under-the-hood implementation
   (cond ((atom alist)
@@ -884,7 +903,9 @@ it odd to ever prove a theorem about it.
 
 Under the hood, ~c[fast-alist-free] removes the hash table associated with this
 alist, if one exists.  This effectively converts the alist into an ordinary
-alist.~/
+alist.
+
+Also ~pl[fast-alist-free-on-exit].~/
 
 Because there is no automatic mechanism for freeing the hash tables used in
 fast alists, to avoid memory leaks you should manually free any alists that
@@ -1012,7 +1033,7 @@ tail-recursive call returns.~/~/")
 Free a fast alist after the completion of some form.~/
 
 Logically, ~c[(fast-alist-free-on-exit name form)] is the identity and returns
-~c[form].
+~c[form].  Also ~pl[fast-alist-free].
 
 Under the hood, this essentially expands to:
 ~bv[]
@@ -1165,6 +1186,14 @@ Deprecated.  Alias for ~ilc[fast-alist-free].~/~/"
             (:executable-counterpart fast-alist-free)
             (:executable-counterpart flush-hons-get-hash-table-link)
             ))
+
+(defun remove-keyword (word l)
+  (declare (xargs :guard (and (keywordp word)
+                              (keyword-value-listp l))))
+  (cond ((endp l) nil)
+        ((eq word (car l))
+         (remove-keyword word (cddr l)))
+        (t (list* (car l) (cadr l) (remove-keyword word (cddr l))))))
 
 ; For some additional helper functions and lemmas, see the community books
 ; books/misc/hons-help.lisp and books/misc/hons-help2.lisp.

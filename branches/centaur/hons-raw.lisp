@@ -101,20 +101,15 @@
 ; might be able to support it, we have added these wrappers for various ccl::
 ; functionality.
 
-(defun hl-mht (&key (test             'eql)
-                    (size             '60)
-                    (rehash-size      '1.5)
-                    (rehash-threshold '0.7)
-                    (weak             'nil)
-                    (shared           'nil)
-                    (lock-free        'nil))
+(defun hl-mht-fn (&key (test             'eql)
+                       (size             '60)
+                       (rehash-size      '1.5)
+                       (rehash-threshold '0.7)
+                       (weak             'nil)
+                       (shared           'nil)
+                       (lock-free        'nil))
 
-; Wrapper for make-hash-table.
-;
-; Because of our approach to threading, we generally don't need our hash tables
-; to be protected by locks.  HL-MHT is essentially like make-hash-table, but on
-; CCL creates hash tables that aren't shared between threads, which may result
-; in slightly faster updates.
+; See hl-mht.
 
   (declare (ignorable shared weak lock-free))
   (make-hash-table :test             test
@@ -126,6 +121,78 @@
                    #+Clozure :lock-free #+Clozure lock-free
                    ))
 
+#+allegro
+(declaim (type hash-table *hl-hash-table-size-ht*))
+#+allegro
+(defvar *allegro-hl-hash-table-size-ht*
+; See the comment about this hash table in hl-mht.
+  (make-hash-table))
+
+(defmacro hl-mht (&rest args)
+
+; This macro is a wrapper for hl-mht-fn, which in turn is a wrapper for
+; make-hash-table.
+
+; Because of our approach to threading, we generally don't need our hash tables
+; to be protected by locks.  HL-MHT is essentially like make-hash-table, but on
+; CCL creates hash tables that aren't shared between threads, which may result
+; in slightly faster updates.
+
+; In Allegro CL 9.0 (and perhaps other versions), make-hash-table causes
+; creation of a hash table of a somewhat larger size than is specified by the
+; :size argument, which can cause hons-shrink-alist to create hash tables of
+; ever-increasing size when this is not necessary.  The following example
+; illustrates this problem, which was first observed in community book
+; books/parsers/earley/earley-parser.lisp.
+
+;   (defconst *end* :end)
+;
+;   (defn my-hons-shrink-alist (a)
+;     (let ((ans (hons-shrink-alist a *end*)))
+;       (prog2$ (fast-alist-free a)
+;               ans)))
+;
+;   (defun my-fast-alist3 (n ans)
+;     (declare (type (integer 0 *) n))
+;     (cond ((zp n) ans)
+;           (t (my-fast-alist3 (1- n)
+;                              (my-hons-shrink-alist
+;                               (hons-acons (mod n 10) (* 10 n) ans))))))
+;
+;   (trace! (hl-mht-fn :native t :exit t))
+;
+;   (time$ (my-fast-alist3 33 *end*))
+
+; Our solution is to use a hash table, *allegro-hl-hash-table-size-ht*, to map
+; the actual size of a hash table, h, to the :size argument of the call of
+; hl-mht that created h.  Then, when we want to create a hash table of a given
+; :size, new-size-arg, we look in *allegro-hl-hash-table-size-ht* to check
+; whether a previous call of hl-mht created a hash table of that size using
+; some :size, old-size-arg, and if so, then we call make-hash-table with :size
+; old-size-arg instead of new-size-arg.  (Note that we don't give this special
+; treatment in the case that hl-mth is called without an explicit :size; but
+; that seems harmless.)
+
+  #-allegro
+  `(hl-mht-fn ,@args)
+  #+allegro
+  (let ((tail (and (keyword-value-listp args)
+                   (assoc-keyword :size args))))
+    (cond (tail
+           (let ((size-arg-var (gensym))
+                 (old-size-arg-var (gensym)))
+             `(let* ((,size-arg-var ,(cadr tail))
+                     (,old-size-arg-var
+                      (gethash ,size-arg-var *allegro-hl-hash-table-size-ht*)))
+                (cond (,old-size-arg-var
+                       (hl-mht-fn :size ,old-size-arg-var
+                                  ,@(remove-keyword :size args)))
+                      (t (let ((ht (hl-mht-fn ,@args)))
+                           (setf (gethash (hash-table-size ht)
+                                          *allegro-hl-hash-table-size-ht*)
+                                 ,size-arg-var)
+                           ht))))))
+          (t `(hl-mht-fn ,@args)))))
 
 ; In CCL, one can use (ccl::static-cons a b) in place of (cons a b) to create a
 ; cons that will not be moved by the garbage collector.

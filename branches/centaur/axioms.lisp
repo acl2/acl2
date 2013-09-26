@@ -1387,7 +1387,16 @@
            zip
            zp
            zpf
-           ))
+           )
+
+; For ACL2 built on CMUCL 20D Unicode, an attempt failed on 9/12/2013 to
+; certify the community book books/models/jvm/m1/defsys.lisp.  During
+; debugging, we found a note that mentioned "*Inline-Expansion-Limit* (400)
+; exceeded".  The following declaim form, which may be quite harmless, solves
+; the problem.
+
+         #+cmu
+         (notinline len))
 
 ; We provide here ``raw'' implementations of basic functions that we
 ; ``wish'' were already in Common Lisp, to support primitives of the
@@ -12376,11 +12385,11 @@
   ; Same effect as just above:
   (with-output
      :on summary
-     :summary :all ; equivalently, the value (a list) of *summary-types*
+     :summary nil
      :gag-mode :goals
      (defthm app-assoc (equal (app (app x y) z) (app x (app y z)))))
 
-  ; Same as just above, but turn off only the indicated parts of the summary.
+  ; Turn on only the indicated parts of the summary.
   (with-output
      :on summary
      :summary (time rules)
@@ -17672,7 +17681,7 @@
   (defconst-fast *x* (expensive-fn ...))
   ~ev[]
   A more general utility may be found in community book
-  ~c[books/tools/defconsts.lisp].  Also ~il[using-tables-efficiently] for an
+  ~c[books/tools/defconsts.lisp].  Also ~pl[using-tables-efficiently] for an
   analogous issue with ~ilc[table] events.
 
   It may be of interest to note that ~c[defconst] is implemented at the
@@ -20514,7 +20523,7 @@
   There may be times where you want to try different expansions.  For example,
   the community book ~c[books/make-event/proof-by-arith.lisp] attempts to admit
   a given event, which we'll denote ~c[EV], by trying events of the following
-  form as ~c[BOOK] various over different community books.
+  form as ~c[BOOK] varies over different community books.
   ~bv[]
   (encapsulate
    ()
@@ -20544,10 +20553,40 @@
 
   (3) The ~c[:EXPANSION?] keyword argument.
 
-  Suppose keyword argument ~c[:EXPANSION? exp] is specified, where ~c[exp] is
-  not ~c[nil].  Then the ~c[:CHECK-EXPANSION] keyword must be omitted or have
-  value ~c[nil] or ~c[t], not a cons pair.  To explain the effect of
-  ~c[:EXPANSION? exp], we split into the following two cases.
+  If keyword argument ~c[:EXPANSION?] has a non~c[nil] value, then the
+  ~c[:CHECK-EXPANSION] keyword must be omitted or have value ~c[nil] or ~c[t],
+  hence not a cons pair.
+
+  The idea of the ~c[:EXPANSION?] keyword is to give you a way to avoid storing
+  expansion results in a book's ~il[certificate].  Roughly speaking, when the
+  expansion result matches the value of ~c[:EXPANSION?], then no expansion
+  result is stored for the event by book certification; then when the book is
+  later included, the value of ~c[:EXPANSION?] is used as the expansion, thus
+  bypassing the expansion phase.  One could say that the event is its own
+  make-event replacement, but it is more accurate to say that there is no
+  make-event replacement at all, since nothing is stored in the certificate for
+  this event.  Below, we elaborate on make-event replacements when
+  ~c[:EXPANSION] is used and also discuss other properties of this keyword.
+
+  We modify the notion of ``expansion result'' for ~c[make-event] forms to
+  comprehend the use of the ~c[:EXPANSION?] keyword.  For that purpose, let's
+  consider a call of ~c[make-event] to be ``reducible'' if it has an
+  ~c[:EXPANSION?] keyword with non-~c[nil] value, ~c[exp], and its
+  ~c[:CHECK-EXPANSION] keyword is missing or has value ~c[nil], in which case
+  the ``reduction'' of this ~c[make-event] call is defined to be ~c[exp].  The
+  expansion result as originally defined is modified by the following
+  ``recursive reduction'' process: recur through the original expansion,
+  passing through calls of ~ilc[local], ~ilc[skip-proofs], ~ilc[with-output],
+  ~ilc[with-prover-step-limit], and ~ilc[with-prover-time-limit], and
+  replacing (recursively) any reducible call of ~c[make-event] by its
+  reduction.  Furthermore, we refer to two forms as ``reduction equivalent'' if
+  their recursive reductions are equal.  Note that the recursive reduction
+  process does not pass through ~ilc[progn] or ~ilc[encapsulate], but that
+  process is applied to the computation of expansions for their subsidiary
+  ~ilc[make-event] calls.
+
+  To explain further the effect of ~c[:EXPANSION? exp], we split into the
+  following two cases.
 
   o Case 1: Evaluation is not taking place when including a book or evaluating
   the second pass of an ~ilc[encapsulate] event; more precisely, the value of
@@ -20555,14 +20594,16 @@
   two subcases.
   ~bq[]
 
-  - Case 1a: The expansion result is not ~c[exp].  Then the ~c[make-event] call
-  is processed as though the ~c[:EXPANSION?] keyword had been omitted.
+  - Case 1a: The expansion result is not reduction-equivalent to ~c[exp].  Then
+  the ~c[make-event] call is processed as though the ~c[:EXPANSION?] keyword
+  had been omitted.
 
-  - Case 2a: The expansion result is ~c[exp].  Then there is no ~c[make-event]
-  replacement for this call of ~c[make-event]; no replacement will be put into
-  the ~il[certificate] file for a book containing this ~c[make-event] call.
-  When that book is subsequently included, the original form will be evaluated.
-  Which leads us to:~eq[]
+  - Case 2a: The expansion result is reduction-equivalent to ~c[exp].  Then
+  there is no ~c[make-event] replacement for this call of ~c[make-event]; no
+  replacement will be put into the ~il[certificate] file for a book containing
+  this ~c[make-event] call.  When that book is subsequently included, the
+  original form will be evaluated in the manner described in the next
+  case.~eq[]
 
   o Case 2: Evaluation is taking place when including a book or evaluating the
   second pass of an ~ilc[encapsulate] event; more precisely, the value of
@@ -20571,21 +20612,22 @@
   ~c[:CHECK-EXPANSION] is ~c[t].
 
   The ~c[:EXPANSION?] keyword can be particularly useful in concert with the
-  disjunctive case (2) discussed above.  Suppose that expansion produces a
-  value as discussed in (2) above, ~c[(:OR exp-1 ... exp-k)].  If one of these
-  expressions ~c[exp-i] is more likely than the others to be the expansion,
-  then you may wish to specify ~c[:EXPANSION? exp-i], as this will avoid
-  storing a ~c[make-event] replacement in that common case.  This could be
-  useful if the expressions are large, to avoid enlarging the ~il[certificate]
-  file for a book containing the ~c[make-event] call.
+  disjunctive (``~c[:OR]'') case (2) discussed above.  Suppose that expansion
+  produces a value as discussed in (2) above, ~c[(:OR exp-1 ... exp-k)].  If
+  one of these expressions ~c[exp-i] is more likely than the others to be the
+  expansion, then you may wish to specify ~c[:EXPANSION? exp-i], as this will
+  avoid storing a ~c[make-event] replacement in that common case.  This could
+  be useful if the expressions are large, to avoid enlarging the
+  ~il[certificate] file for a book containing the ~c[make-event] call.
 
   It is legal to specify both ~c[:EXPANSION? exp] and ~c[:CHECK-EXPANSION t].
-  When ~c[(ld-skip-proofsp state)] is the symbol ~c[INCLUDE-BOOK], and in raw
-  Lisp, this is treated the same as if ~c[:EXPANSION?] is omitted and the value
-  of ~c[:CHECK-EXPANSION] is ~c[exp].  Otherwise, this combination is treated
-  the same as ~c[:CHECK-EXPANSION t], modified to accommodate the effect of
-  ~c[:EXPANSION?] as discussed above: if the expansion is indeed the value of
-  ~c[:EXPANSION?], then no ~c[make-event] replacement is generated."
+  When either ~c[(ld-skip-proofsp state)] is the symbol ~c[INCLUDE-BOOK], or
+  evaluation is taking place in raw Lisp, then this combination is treated the
+  same as if ~c[:EXPANSION?] is omitted and the value of ~c[:CHECK-EXPANSION]
+  is ~c[exp].  Otherwise, this combination is treated the same as
+  ~c[:CHECK-EXPANSION t], modified to accommodate the effect of ~c[:EXPANSION?]
+  as discussed above: if the expansion is indeed the value of ~c[:EXPANSION?],
+  then no ~c[make-event] replacement is generated."
 
   (declare (xargs :guard t))
 ; Keep this in sync with the -acl2-loop-only definition.
@@ -29043,6 +29085,7 @@
     (iprint-soft-bound . ,*iprint-soft-bound-default*)
     (keep-tmp-files . nil)
     (last-make-event-expansion . nil)
+    (last-prover-steps . nil)
     (last-step-limit . -1) ; any number should be OK
     (ld-level . 0)
     (ld-okp . :default) ; see :DOC calling-ld-in-bad-contexts
@@ -37098,6 +37141,10 @@
 ; in-local-flg.
 ;    in-local-flg
 
+;   Since in-prove-flg need not be untouchable (currently it is only used by
+;   break-on-error), we omit it from this list.  It is used by community book
+;   misc/bash.lisp.
+
     axiomsp
 
     current-acl2-world
@@ -37223,6 +37270,7 @@
     pc-assign
     illegal-to-certify-message
     acl2-sources-dir
+    last-prover-steps ; being conservative here; perhaps could omit
     ))
 
 ; There are a variety of state global variables, 'ld-skip-proofsp among them,
@@ -40909,7 +40957,9 @@
   limit on prover steps for a single event, rather than globally.  For a
   related utility based on time instead of prover steps,
   ~pl[with-prover-time-limit].  For examples of how step limits work, see the
-  community book ~c[books/misc/misc2/step-limits.lisp].
+  community book ~c[books/misc/misc2/step-limits.lisp].  For a utility that
+  returns an indicator of the number of prover steps most recently taken,
+  ~pl[last-prover-steps].
 
   Note: This is an event!  It does not print the usual event summary
   but nevertheless changes the ACL2 logical ~il[world] and is so
@@ -41153,7 +41203,7 @@
   (set-rewrite-stack-limit 30)                            ; set to small limit
   :set-rewrite-stack-limit 30                             ; same as above
   (set-rewrite-stack-limit *default-rewrite-stack-limit*) ; the default
-  :set-rewrite-stack-limit (1- (expt 2 28))               ; maximum legal limit
+  (set-rewrite-stack-limit (1- (expt 2 28)))              ; maximum legal limit
   :set-rewrite-stack-limit nil         ; same as above -- essentially, no limit
   ~ev[]
   This event sets the maximum stack depth for calls of certain functions that

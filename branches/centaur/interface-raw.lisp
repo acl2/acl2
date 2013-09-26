@@ -8126,11 +8126,15 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
                                             'logic-fns-with-raw-code
                                             state)))
                                       (format t
-                                              "; (ACL2 Note) Compiling ~
-                                               separately due to raw code: ~
-                                               ~s~&"
+                                              "; (ACL2 Note) Attempting ~
+                                               separate compilation due to ~
+                                               raw code: ~s~&"
+
+; We ignore errors (if possible), since for example, we have seen LispWorks
+; complain when (car x) names a function that is a lexical closure.
+
                                               (car x))
-                                      (compile (car x)))
+                                      (our-ignore-errors (compile (car x))))
                                      (t (print-object$ (cons 'defun x)
                                                        chan state))))))))
                    ((and (eq (car trip) 'cltl-command)

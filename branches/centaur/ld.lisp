@@ -3866,7 +3866,7 @@
   This section of the online ~il[documentation] contains notes on the
   changes that distinguish successive released versions of ACL2.
 
-  The current ~il[version] of ACL2 is the value of the constant
+  The current version of ACL2 is the value of the constant
   ~c[(@ acl2-version)].")
 
 (deflabel note1
@@ -21028,6 +21028,69 @@
 ; has a comment explaining more about how this may not be appropriate and what
 ; needs to be done to suppress startup information.
 
+; Removed support for "make fast", "make very-fast", and "make fast-meter",
+; which as far as we know are no longer in use.  Thus, deleted
+; quick-compile-acl2.  Also deleted no-object-file-or-out-of-date-object-file,
+; since it was there only to support quick-compile-acl2.
+
+; Improved the error message for #.expr when expr hasn't been defined by
+; defconst.
+
+; Modified printing of the banner for GCL, especially for versions 2.6.9 and
+; later, due to a change in how GCL prints such banners.  (Printing of the
+; banner still works fine with older versions of GCL.)
+
+; For SBCL only, increased --control-stack-size from 8 to 16.
+
+; For CMUCL only, declaimed len to be notinline, to avoid what appears to be a
+; CMUCM compiler bug that shows up when attempting to certify the community
+; book books/models/jvm/m1/defsys.lisp.
+
+; Incorporated fix from Sol Swords for ACL2(h): "memoize time
+; tracking: fix some subtle RDTSC-related problems that could cause
+; safe-incf errors on machines that often switch your thread across
+; cores".
+
+; Just below is a book containing a proof of nil, which exploits the soundness
+; bug reported by Jen Davis and Dave Greve, permitting a stobj to be bound by a
+; let or mv-let form without being among the outputs of that form.  The bug was
+; in translate11-let (and also, similarly, in translate11-mv-let); it was a
+; coding bug that failed to distinguish between the original value of a formal,
+; tbody, and an updated version of that formal.
+
+;   (in-package "ACL2")
+;
+;   (defstobj st halt)
+;
+;   (defun foo (st)
+;     (declare (xargs :stobjs st))
+;     (let ((st (update-halt 0 st)))
+;       (halt st)))
+;
+;   (defun bar ()
+;     (declare (xargs :guard t))
+;     (with-local-stobj
+;      st
+;      (mv-let (result st)
+;              (let ((x (foo st)))
+;                (declare (ignore x))
+;                (mv (halt st) st))
+;              result)))
+;
+;   (defthm thm1
+;     (equal (bar) 0)
+;     :rule-classes nil)
+;
+;   (defthm thm2
+;     (equal (bar) nil)
+;     :hints (("Goal" :in-theory (disable (bar))))
+;     :rule-classes nil)
+;
+;   (defthm contradiction
+;     nil
+;     :hints (("Goal" :use (thm1 thm2)))
+;     :rule-classes nil)
+
   :doc
   ":Doc-Section release-notes
 
@@ -21123,6 +21186,11 @@
   ~pl[ld-skip-proofsp].  Third, new keyword ~c[:EXPANSION?] can be used to
   avoid storing expansions in certificate files.  ~l[make-event].
 
+  When a ~ilc[defun] event prints a failure message in the summary, that
+  message now indicates when the failure is due to a failed proof of guard
+  verification or a failed proof of the measure theorem.  Thanks to Shilpi Goel
+  for requesting this enhancement.
+
   ~st[NEW FEATURES]
 
   ACL2 can now be instructed to time activities using real time (wall clock
@@ -21141,6 +21209,9 @@
   suggesting the use of ~ilc[make-event] in its implementation.  We have also
   modified ~ilc[verify-guards] to print a friendlier error message when its
   argument is a macro-alias.
+
+  ~l[last-prover-steps] for a new utility that returns the number of prover
+  steps most recently taken.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -21169,6 +21240,13 @@
 
   ~st[BUG FIXES]
 
+  Fixed a soundness bug that was permitting a ~il[stobj] to be bound by a
+  ~ilc[let] or ~ilc[mv-let] form, without being among the outputs of that form.
+  Thanks to Jen Davis and Dave Greve for reporting this bug.  Their report
+  included an example which forms the basis for a proof of ~c[nil], included as
+  a comment in the form ~c[(deflabel note-6-3 ...)] in ACL2 source file
+  ~c[ld.lisp].
+
   (GCL only) Fixed an obscure soundness bug due to an error in the GCL
   implementation of ~ilc[set-debugger-enable].  For details, see the relevant
   comment in the ACL2 source code under ~c[(deflabel note-6-3 ...)].
@@ -21190,6 +21268,15 @@
   Fixed a bug that was causing an error upon evaluation of the form
   ~c[(set-prover-step-limit nil)].  Thanks to David Russinoff for reporting
   this error.
+
+  The ~c[:measure] (if supplied) is now ignored when checking redundancy with
+  respect to a non-recursive definition that is not defined within a
+  ~ilc[mutual-recursion].  (~l[redundant-events] and ~pl[xargs].)  It had been
+  possible to get a low-level ACL2 error in this situation.  Thanks to Jared
+  Davis for reporting this bug with a helpful example.
+
+  Eliminated a potential error when using ~ilc[comp] to compile an uncompiled
+  function defined under ~ilc[progn!], which we observed in LispWorks.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
@@ -21241,6 +21328,13 @@
   of variable ~c[SBCL_HOME] that was provided in the original ~c[saved_acl2]
   script.
 
+  (GCL only) We made changes, following suggestions from Camm Maguire (whom we
+  thank for these suggestions), to support ACL2 builds on recent versions of
+  GCL (2.6.8 and 2.6.10; we recommend against using GCL 2.6.9, since issues
+  there were fixed in 2.6.10).  Specifically, we no longer set the hole size,
+  and we allocate contiguous pages sufficient to run an ACL2 regression without
+  failing due to memory limitations.
+
   ~st[EMACS SUPPORT]
 
   Modified file ~c[emacs/emacs-acl2.el] to eliminate some warnings that were
@@ -21249,6 +21343,11 @@
   Warren Hunt for bringing the warnings to our attention.
 
   ~st[EXPERIMENTAL/ALTERNATE VERSIONS]
+
+  (Allegro CL only) ACL2(h) now avoids blow-ups in hash table sizes that could
+  be caused by ~il[hons-shrink-alist].  Thanks to Jared Davis for helping to
+  debug this problem, and to David Rager for contributing the community book
+  ~c[books/parsers/earley/earley-parser.lisp], which highlighted this problem.
 
   ~/~/")
 
@@ -21745,17 +21844,20 @@
   is given a single function to compile.  Those files contain the ACL2
   definitions of all functions to compile, omitting those in the lists obtained
   by evaluating the forms ~c[(@ logic-fns-with-raw-code)] and
-  ~c[(@ program-fns-with-raw-code)].  If you define function symbols with raw
-  Lisp code, say by using trust tags (~pl[defttag]) and readtime conditionals
-  ~c[#-acl2-loop-only], then you are advised to add all such symbols to one of
-  the lists stored in the two ~il[state] globals above: to
+  ~c[(@ program-fns-with-raw-code)].  ~c[:Comp] skips compilation for functions
+  that are already compiled, as is typically the case when you redefine
+  functions in raw Lisp using the utility ~c[include-raw] defined in community
+  book ~c[books/tools/include-raw.lisp].  But if you define interpreted (as
+  opposed to compiled) functions with raw Lisp code, say by using trust
+  tags (~pl[defttag]) and ~ilc[progn!], then you are advised to add all such
+  symbols to one of the lists stored in the two ~il[state] globals above: to
   ~c[logic-fns-with-raw-code] if the function symbol is in ~c[:]~ilc[logic]
   mode, else to ~c[program-fns-with-raw-code].  Then, instead of the
   corresponding ACL2 definition (without raw Lisp code) being written to a
   file, the function symbol will be passed directly to the Lisp ~c[compile]
   function.  Note that the above two state globals are both untouchable, so you
-  may need to deal with that before modifying them, for example as follows
-  (also ~pl[remove-untouchable]).
+  may need to deal with that before modifying them, for example as
+  follows (also ~pl[remove-untouchable]).
   ~bv[]
   (defttag t)
   (state-global-let*

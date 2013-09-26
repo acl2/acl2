@@ -881,12 +881,37 @@ implementations.")
   (cond ((null s) "")
         (t (concatenate 'string " " s))))
 
+#+gcl
+(defvar *saved-system-banner*
+
+; This variable is only used in GCL 2.6.9 and later, and the following comments
+; pertain only to that case.
+
+; Set this variable to nil before save-exec in order to save an image without a
+; GCL startup banner, as this will leave si::*system-banner* unbound; see
+; below.
+
+; ACL2 keeps this value at nil except when acl2-default-restart unbinds
+; si::*system-banner*, in which case *saved-system-banner* is set to the value
+; of si::*system-banner* just before that unbinding takes place.  When
+; save-exec saves an image, it first checks whether si::*system-banner* is
+; unbound and *saved-system-banner* is non-nil, in which case it sets
+; si::*system-banner* to *saved-system-banner*.  Even if si::*system-banner* is
+; bound, *saved-system-banner* is set to nil before saving an image.
+
+  nil)
+
 #+akcl
 (defun save-acl2-in-akcl-aux (sysout-name gcl-exec-name
                                           write-worklispext
                                           set-optimize-maximum-pages
                                           host-lisp-args
                                           inert-args)
+  (when (and (gcl-version-> 2 6 9 t)
+             *saved-system-banner*)
+    (when (not (boundp 'si::*system-banner*)) ; true, unless user intervened
+      (setq si::*system-banner* *saved-system-banner*))
+    (setq *saved-system-banner* nil))
   (if (and write-worklispext (probe-file "worklispext"))
       (delete-file "worklispext"))
   (let* ((ext "gcl")
@@ -1069,7 +1094,10 @@ implementations.")
 ; In akcl, at least some versions of it, we cannot call allocate-growth on the
 ; following two types.
 
-          #+gcl contiguous
+; Camm Maguire has told us on 9/22/2013 that certain allocations for contiguous
+; pages, as we now do in acl2.lisp for GCL 2.6.10 and later (which includes GCL
+; 2.6.10pre as of 9/22/2013).
+;          #+gcl contiguous
           #+gcl relocatable
           )
    do
@@ -1081,7 +1109,10 @@ implementations.")
     (t (si::allocate-growth type 0 0 0))))
 
 ;  (print "Start (si::gbc nil)") ;debugging GC
-  (si::set-hole-size 500) ; wfs suggestion
+
+; Camm Maguire suggests leaving the hole size alone for GCL 2.6.10pre as of
+; 9/22/2013:
+;  (si::set-hole-size 500) ; wfs suggestion
 
 ; Camm Maguire says (7/04) that "the gc algorithm skips over any pages which
 ; have not been written to since sgc-on was invoked.  So gc really needs to be
@@ -1122,7 +1153,10 @@ implementations.")
                        n))
           do (setq new-hole-size (+ new-hole-size (- n space))))
 ;    (print "Set hole size") ;debugging
-    (si::set-hole-size new-hole-size))
+; Camm Maguire suggests leaving the hole size alone for GCL 2.6.10pre as of
+; 9/22/2013:
+;    (si::set-hole-size new-hole-size)
+    )
 
 ; The calculation above is legacy.  Now we increment the hole size to 20% of
 ; max-pages instead of the default 10%.  Camm Maguire says that "Larger values
@@ -1130,9 +1164,11 @@ implementations.")
 ; part of the virtual (not resident) memory size, rather than being saved to
 ; disk.
 
-  (let ((new-size (floor si:*lisp-maxpages* 5)))
-    (if (< (si:get-hole-size) new-size)
-        (si::set-hole-size new-size)))
+; Camm Maguire suggests leaving the hole size alone for GCL 2.6.10pre as of
+; 9/22/2013:
+;  (let ((new-size (floor si:*lisp-maxpages* 5)))
+;    (if (< (si:get-hole-size) new-size)
+;        (si::set-hole-size new-size)))
 
 ;  (print (true-listp (w *the-live-state*))) ;swap in the world's pages
 
@@ -1179,7 +1215,8 @@ implementations.")
 ; save-exec, in order to avoid seeing startup information.  We do not comment
 ; here on whether that is legally appropriate; for example, it suppresses
 ; copyright information for ACL2 and, for CCL at least, information about the
-; host Lisp.
+; host Lisp.  We also do not guarantee that this behavior (suppressing printing
+; of startup information) is supported for every host Lisp.
 
 ; Note that LD always prints some startup information, regardless of the value
 ; of *print-startup-banner*.  To suppress that information, evaluate
@@ -1212,6 +1249,25 @@ implementations.")
               (lisp-implementation-type)
               (lisp-implementation-version)))
     (setq ccl::*inhibit-greeting* t))
+
+  #+gcl
+  (progn
+
+; Some recent versions of GCL (specifically, 2.6.9 in Sept. 2013) do not print
+; the startup banner until we first exit the loop.  So we handle that situation
+; much as we handle a similar issue for CCL above, following GCL source file
+; lsp/gcl_top.lsp.
+
+    (when (and *print-startup-banner*
+               (gcl-version-> 2 6 9 t)
+               (boundp 'si::*system-banner*))
+      (format t si::*system-banner*)
+      (setq *saved-system-banner* si::*system-banner*)
+      (makunbound 'si::*system-banner*)
+      (when (boundp 'si::*tmp-dir*)
+        (format t "Temporary directory for compiler files set to ~a~%"
+                si::*tmp-dir*))))
+
   #+hons (qfuncall acl2h-init)
   (when *print-startup-banner*
     (format t
@@ -1424,9 +1480,11 @@ implementations.")
 
 ; -dynamic-space-size must be no greater than 1632 MBytes.
 
-; So we use 1600 and see how it goes....
+; Indeed, we have exceeded that in a version of community book
+; books/centaur/gl/solutions.lisp using ACL2(h) built on CMUCL.  So we use the
+; maximum possible value just below.
 
-                        1600
+                        1632
                         (insert-string host-lisp-args)
                         (user-args-string inert-args))))
     (chmod-executable sysout-name)
@@ -1562,7 +1620,11 @@ implementations.")
 ; to be stack overflow from fmt0, which is not tail recursive.  More recently,
 ; community book centaur/misc/defapply.lisp causes a stack overflow even with
 ; --control-stack-size 4 (though that might disappear after we added (comp t)
-; in a couple of places).  So we use 8 instead of 4.
+; in a couple of places).  Yet more recently, community books
+; books/centaur/regression/common.lisp and books/centaur/tutorial/intro.lisp
+; fail with --control-stack-size 8, due to calls of def-gl-clause-processor.
+; So we use --control-stack-size 16.  We might increase 16 to 32 or greater in
+; the future.
 
 ; See *sbcl-dynamic-space-size* for an explanation of the --dynamic-space-size
 ; setting below.
@@ -1572,7 +1634,7 @@ implementations.")
 ; out this option to us after ACL2 Version_6.2, we started using it in place of
 ; " --userinit /dev/null", which had not worked on Windows.
 
-        "~s --dynamic-space-size ~s --control-stack-size 8 --core ~s~a ~
+        "~s --dynamic-space-size ~s --control-stack-size 16 --core ~s~a ~
          --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)'~a ~a~%"
         prog
         *sbcl-dynamic-space-size*

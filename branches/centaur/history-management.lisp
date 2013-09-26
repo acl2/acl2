@@ -2931,30 +2931,44 @@
    (pop-timer 'proof-tree-time t state)
    (pop-timer 'other-time t state)))
 
-(defun print-steps-summary (state)
-  (io? summary nil state
-       ()
-       (cond
-        ((member-eq 'steps
-                    (f-get-global 'inhibited-summary-types
-                                  state))
-         state)
-        (t (let* ((channel (proofs-co state))
-                  (rec (f-get-global 'step-limit-record state))
-                  (start (assert$ rec
-                                  (access step-limit-record rec :start)))
-                  (last-limit (assert$ start
-                                       (f-get-global 'last-step-limit state))))
-             (cond ((and last-limit
-                         (not (int= start last-limit)))
-                    (pprogn (princ$ "Prover steps counted:  " channel state)
-                            (cond ((eql last-limit -1)
-                                   (pprogn
-                                    (princ$ "More than " channel state)
-                                    (princ$ start channel state)))
-                                  (t (princ$ (- start last-limit) channel state)))
-                            (newline channel state)))
-                   (t state)))))))
+(defun prover-steps (state)
+
+; Returns nil if no steps were taken (or if state global 'last-step-limit is
+; nil, though that may be impossible).  Otherwise returns the (positive) number
+; of steps taken, with one exception: If the number of steps exceeded the
+; starting limit, then we return the negative of the starting limit.
+
+  (let* ((rec (f-get-global 'step-limit-record state))
+         (start (assert$ rec
+                         (access step-limit-record rec :start)))
+         (last-limit (assert$ start
+                              (f-get-global 'last-step-limit state))))
+    (cond ((and last-limit
+                (not (int= start last-limit)))
+           (cond ((eql last-limit -1)   ; more than start steps
+                  (assert$ (natp start) ; else start <= -2; impossible
+                           (- start)))
+                 (t (- start last-limit))))
+          (t nil))))
+
+(defun print-steps-summary (steps state)
+  (cond
+   ((null steps) state)
+   (t (io? summary nil state
+           (steps)
+           (cond
+            ((member-eq 'steps
+                        (f-get-global 'inhibited-summary-types
+                                      state))
+             state)
+            (t (let ((channel (proofs-co state)))
+                 (pprogn (princ$ "Prover steps counted:  " channel state)
+                         (cond ((<= steps 0)
+                                (pprogn
+                                 (princ$ "More than " channel state)
+                                 (princ$ (- steps) channel state)))
+                               (t (princ$ steps channel state)))
+                         (newline channel state)))))))))
 
 (defun print-rules-summary (state)
   (let ((acc-ttree (f-get-global 'accumulated-ttree state)))
@@ -3344,16 +3358,42 @@
 
     (erase-acl2p-checkpoints-for-summary state))))
 
-(defun print-failure (ctx state)
+(defun character-alistp (x)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  recognizer for association lists with characters as keys~/
+
+  ~c[(Character-alistp x)] is true if and only if ~c[x] is a list of pairs
+  of the form ~c[(cons key val)] where ~c[key] is a ~ilc[characterp].~/~/"
+
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (consp (car x))
+                (characterp (car (car x)))
+                (character-alistp (cdr x))))))
+
+(defun tilde-@p (arg)
+  (declare (xargs :guard t))
+  (or (stringp arg)
+      (and (consp arg)
+           (stringp (car arg))
+           (character-alistp (cdr arg)))))
+
+(defun print-failure (erp ctx state)
   (pprogn (print-gag-state state)
           #+acl2-par
           (print-acl2p-checkpoints state)
           (io? error nil state
-               (ctx)
+               (ctx erp)
                (let ((channel (proofs-co state)))
                  (pprogn
-                  (error-fms-channel nil ctx "See :DOC failure." nil channel
-                                     state)
+                  (error-fms-channel nil ctx "~@0See :DOC failure."
+                                     (list (cons #\0
+                                                 (if (tilde-@p erp)
+                                                     erp
+                                                   "")))
+                                     channel state)
                   (newline channel state)
                   (fms *proof-failure-string* nil channel state nil))))))
 
@@ -3757,6 +3797,60 @@
 
    (f-put-global 'accumulated-ttree nil state)))
 
+(defun last-prover-steps (state)
+
+  ":Doc-Section Miscellaneous
+
+  the number of prover steps most recently taken~/
+
+  For discussions of prover step limits, ~l[set-prover-step-limit] and
+  ~pl[with-prover-step-limit].  The value of the form
+  ~c[(last-prover-steps state)] indicates the number of prover steps taken, in
+  the sense described below, for the most recent context in which an event
+  summary would normally be printed.  Note that the value of
+  ~c[(last-prover-steps state)] is updated for all ~il[events], and for all
+  other forms such as calls of ~ilc[thm] or ~ilc[certify-book], that would
+  print a summary ~-[] regardless of whether or not such output is inhibited
+  (~pl[set-inhibit-output-lst] and ~pl[set-inhibited-summary-types]).  In
+  particular, the value is updated (typically to ~c[nil]) for ~ilc[table]
+  ~il[events], even when no summary is printed; for example, the value is
+  updated to ~c[nil] for ~c[table] events such as ~c[(]~ilc[logic]~c[)],
+  ~c[(]~ilc[program]~c[)], and even calls of ~ilc[set-prover-step-limit].
+
+  The value of ~c[(last-prover-steps state)] is determined as follows, based on
+  the most recent summary context (as described above):
+  ~bq[]
+
+  ~c[nil], if no prover steps were taken; else,
+
+  the (positive) number of steps taken, if the number of steps did not exceed
+  the starting limit; else,
+
+  the negative of the starting limit.
+  ~eq[]~/
+
+  We conclude with a remark for advanced users who wish to invoke
+  ~c[last-prover-steps] in the development of utilities that track prover
+  steps.  Suppose that you want to write a utility that takes some action based
+  on the number of prover steps performed by the first ~c[defun] event that is
+  generated, among others, for example the number of prover steps taken to
+  admit ~c[f1] in the following example.
+  ~bv[]
+  (progn (defun f1 ...)
+         (defun f2 ...))
+  ~ev[]
+  A solution is to record the steps taken by the first ~ilc[defun] before
+  executing subsequent events, as follows (~pl[make-event]).
+  ~bv[]
+  (progn (defun f1 ...)
+         (make-event (pprogn (f-put-global 'my-step-count
+                                           (last-prover-steps state)
+                                           state)
+                             (value '(value-triple nil))))
+         (defun f2 ...))
+  ~ev[]~/"
+  (f-get-global 'last-prover-steps state))
+
 (defun print-summary (erp noop-flg ctx state)
 
 ; This function prints the Summary paragraph.  Part of that paragraph includes
@@ -3769,11 +3863,14 @@
 ; to print the summary or parts of it.  For example, we handle
 ; pop-warning-frame regardless of whether or not we print the warning summary.
 
-; If erp is t, the "event" caused an error and we do not scan for redefined
-; names but we do print the failure string.  If noop-flg is t then the
-; installed world did not get changed by the "event" (e.g., the "event" was
+; If erp is non-nil, the "event" caused an error and we do not scan for
+; redefined names but we do print the failure string.  If noop-flg is t then
+; the installed world did not get changed by the "event" (e.g., the "event" was
 ; redundant or was not really an event but was something like a call of (thm
 ; ...)) and we do not scan the most recent event block for redefined names.
+
+; If erp is a message, as recognized by tilde-@p, then that message will be
+; printed by the call below of print-failure.
 
   #+(and (not acl2-loop-only) acl2-rewrite-meter) ; for stats on rewriter depth
   (cond ((atom ctx))
@@ -3796,90 +3893,97 @@
                            (cdr ctx)
                            state))
                 (filename (concatenate 'string bookname ".lisp")))
-           (with-open-file (str filename
-                                :direction :output
-                                :if-exists :rename-and-delete)
-                           (format str
-                                   "~s~%"
-                                   (cons filename
-                                         (merge-sort-cdr-> *rewrite-depth-alist*)))))
+           (with-open-file
+            (str filename
+                 :direction :output
+                 :if-exists :rename-and-delete)
+            (format str
+                    "~s~%"
+                    (cons filename
+                          (merge-sort-cdr-> *rewrite-depth-alist*)))))
          (setq *rewrite-depth-alist* nil)))
 
   #-acl2-loop-only (dmr-flush)
 
-  (let ((wrld (w state)))
-    (cond
-     ((or (ld-skip-proofsp state)
-          (output-ignored-p 'summary state))
-      (pprogn (increment-timer 'other-time state)
-              (if (or erp noop-flg)
-                  state
-                (print-redefinition-warning wrld ctx state))
-              (pop-timer 'prove-time t state)
-              (pop-timer 'print-time t state)
-              (pop-timer 'proof-tree-time t state)
-              (pop-timer 'other-time t state)
-              (mv-let (warnings state)
-                      (pop-warning-frame nil state)
-                      (declare (ignore warnings))
-                      state)))
-     (t
+  (let ((wrld (w state))
+        (steps (prover-steps state)))
+    (pprogn
+     (f-put-global 'last-prover-steps steps state)
+     (cond
+      ((or (ld-skip-proofsp state)
+           (output-ignored-p 'summary state))
+       (pprogn (increment-timer 'other-time state)
+               (if (or erp noop-flg)
+                   state
+                 (print-redefinition-warning wrld ctx state))
+               (pop-timer 'prove-time t state)
+               (pop-timer 'print-time t state)
+               (pop-timer 'proof-tree-time t state)
+               (pop-timer 'other-time t state)
+               (mv-let (warnings state)
+                       (pop-warning-frame nil state)
+                       (declare (ignore warnings))
+                       state)))
+      (t
 
 ; Even if 'summary is inhibited, we still use io? below, and inside some
 ; functions below, because of its window hacking and saved-output functions.
 
-      (pprogn
-       (increment-timer 'other-time state)
-       (if (or erp noop-flg)
-           state
-         (print-redefinition-warning wrld ctx state))
        (pprogn
-        (io? summary nil state
-             ()
-             (let ((channel (proofs-co state)))
-               (cond ((member-eq 'header
-                                 (f-get-global 'inhibited-summary-types state))
-                      state)
-                     (t
-                      (pprogn (newline channel state)
-                              (princ$ "Summary" channel state)
-                              (newline channel state))))))
-        (io? summary nil state
-             (ctx)
-             (let ((channel (proofs-co state)))
-               (cond ((member-eq 'form
-                                 (f-get-global 'inhibited-summary-types state))
-                      state)
-                     (t
-                      (mv-let
-                       (col state)
-                       (fmt1 "Form:  " nil 0 channel state nil)
+        (increment-timer 'other-time state)
+        (if (or erp noop-flg)
+            state
+          (print-redefinition-warning wrld ctx state))
+        (pprogn
+         (io? summary nil state
+              ()
+              (let ((channel (proofs-co state)))
+                (cond ((member-eq 'header
+                                  (f-get-global 'inhibited-summary-types
+                                                state))
+                       state)
+                      (t
+                       (pprogn (newline channel state)
+                               (princ$ "Summary" channel state)
+                               (newline channel state))))))
+         (io? summary nil state
+              (ctx)
+              (let ((channel (proofs-co state)))
+                (cond ((member-eq 'form
+                                  (f-get-global 'inhibited-summary-types
+                                                state))
+                       state)
+                      (t
                        (mv-let
                         (col state)
-                        (fmt-ctx ctx col channel state)
-                        (declare (ignore col))
-                        (newline channel state))))))))
-       (print-rules-and-hint-events-summary state) ; call of io? is inside
-       (pprogn (print-warnings-summary state)
-               (print-time-summary state)
-               (print-steps-summary state)
-               (progn$
+                        (fmt1 "Form:  " nil 0 channel state nil)
+                        (mv-let
+                         (col state)
+                         (fmt-ctx ctx col channel state)
+                         (declare (ignore col))
+                         (newline channel state))))))))
+        (print-rules-and-hint-events-summary state) ; call of io? is inside
+        (pprogn (print-warnings-summary state)
+                (print-time-summary state)
+                (print-steps-summary steps state)
+                (progn$
 
 ; If the time-tracker call below is changed, update :doc time-tracker
 ; accordingly.
 
-                (time-tracker :tau :print?
-                              :min-time 1
-                              :msg
-                              (concatenate
-                               'string
-                               "For the proof above, the total "
-                               (if (f-get-global 'get-internal-time-as-realtime
-                                                 state)
-                                   "realtime"
-                                 "runtime")
-                               " spent in the tau system was ~st seconds.  ~
-                                See :DOC time-tracker-tau.~|~%"))
+                 (time-tracker
+                  :tau :print?
+                  :min-time 1
+                  :msg
+                  (concatenate
+                   'string
+                   "For the proof above, the total "
+                   (if (f-get-global 'get-internal-time-as-realtime
+                                     state)
+                       "realtime"
+                     "runtime")
+                   " spent in the tau system was ~st seconds.  See :DOC ~
+                    time-tracker-tau.~|~%"))
 
 ; At one time we put (time-tracker :tau :end) here.  But in community book
 ; books/hints/basic-tests.lisp, the recursive proof attempt failed just below
@@ -3888,24 +3992,24 @@
 ; to avoid :end here; after all, we invoke :end before invoking :init anyhow,
 ; in case the proof was aborted without printing this part of the summary.
 
-                state))
-       (cond (erp
-              (pprogn
-               (print-failure ctx state)
-               (cond
-                ((f-get-global 'proof-tree state)
-                 (io? proof-tree nil state
-                      (ctx)
-                      (pprogn (f-put-global 'proof-tree-ctx
-                                            (cons :failed ctx)
-                                            state)
-                              (print-proof-tree state))))
-                (t state))))
-             (t (pprogn
-                 #+acl2-par
-                 (erase-acl2p-checkpoints-for-summary state)
-                 state)))
-       (f-put-global 'proof-tree nil state))))))
+                 state))
+        (cond (erp
+               (pprogn
+                (print-failure erp ctx state)
+                (cond
+                 ((f-get-global 'proof-tree state)
+                  (io? proof-tree nil state
+                       (ctx)
+                       (pprogn (f-put-global 'proof-tree-ctx
+                                             (cons :failed ctx)
+                                             state)
+                               (print-proof-tree state))))
+                 (t state))))
+              (t (pprogn
+                  #+acl2-par
+                  (erase-acl2p-checkpoints-for-summary state)
+                  state)))
+        (f-put-global 'proof-tree nil state)))))))
 
 (defun with-prover-step-limit-fn (limit form no-change-flg)
 
@@ -4047,6 +4151,9 @@
 
   For examples of how step-limits work besides those presented below, see the
   community book ~c[books/misc/misc2/step-limits.lisp].
+
+  For a utility that returns an indicator of the number of prover steps most
+  recently taken, ~pl[last-prover-steps].
 
   Note that ~c[with-prover-step-limit] may not be called inside definitions,
   and that it is simply the identity macro in raw Lisp.  However,
@@ -5975,10 +6082,11 @@
   (2) It is permissible for one definition to have a ~c[:]~il[guard] of ~c[t]
   and the other to have no explicit guard (hence, the guard is implicitly
   ~c[t]).~nl[]
-  (3) The ~c[:measure] check is avoided if we are skipping proofs (for example,
-  during ~ilc[include-book]), and otherwise, the new definition may have a
-  ~c[:measure] of ~c[(:? v1 ... vk)], where ~c[(v1 ... vk)] enumerates the
-  variables occurring in the measure stored for the old definition.~nl[]
+  (3) The ~c[:measure] check is avoided if the old definition is non-recursive
+  (and not defined within a ~ilc[mutual-recursion]) or we are skipping proofs
+  (for example, during ~ilc[include-book]).  Otherwise, the new definition may
+  have a ~c[:measure] of ~c[(:? v1 ... vk)], where ~c[(v1 ... vk)] enumerates
+  the variables occurring in the measure stored for the old definition.~nl[]
   (4) If either the old or new event is a ~ilc[mutual-recursion] event, then
   redundancy requires that both are ~ilc[mutual-recursion] events that define
   the same set of function symbols.
@@ -11125,13 +11233,13 @@
                     (symbol-name name))
                 nil)
                (global-val 'documentation-alist (w state))))))
-    (cond ((null lst) (value nil))
-          (t (er soft ctx
-                 "There is no documentation for ~x0.  ~#1~[A similar ~
-                  documented name is~/Similar documented names are~] ~
-                  ~&1.  See also :DOC apropos."
-                 name
-                 (strip-cdrs lst))))))
+    (er soft ctx
+        "There is no documentation for ~x0.~#1~[~/  A similar documented name ~
+         is ~&2.~/  Similar documented names are ~&2.~]~|~%NOTE: See also ~
+         :DOC finding-documentation."
+        name
+        (zero-one-or-more (length lst))
+        (strip-cdrs lst))))
 
 (defun end-doc (channel state)
   (cond
@@ -11370,18 +11478,30 @@
                                           fmt-alist
                                           channel state)))))
 
-(deflabel apropos
-
-; WARNING: Do not attempt to define apropos as a macro.  This symbol is
-; imported from Common Lisp and might already have a definition.
-
+(deflabel finding-documentation
   :doc
   ":Doc-Section acl2::Miscellaneous
 
-  searching the documentation online~/
+  searching the documentation~/
 
-  The ~c[:]~ilc[docs] command allows you to search the ~il[documentation] at
-  the terminal.  ~l[docs].~/~/")
+  The ~c[:]~ilc[doc] and ~c[:]~ilc[doc!] commands will display, at the
+  terminal, ~il[documentation] topics defined in ACL2 or in ~il[books] that
+  have already been included.  The ~c[:]~ilc[docs] command allows you to search
+  the ~il[documentation] at the terminal.  ~l[docs].
+
+  But how can you find documentation for books that are not included in the
+  current ACL2 session?
+
+  The xdoc manual is a combined manual for the ACL2 sources and the community
+  books.  It is built using documentation not only from the ACL2 sources
+  (which is rearranged) but also from the community books (whether included in
+  the current session or not), using an ``xdoc processor'' created by Jared
+  Davis.  The ACL2 home page
+  (~url[http://www.cs.utexas.edu/users/moore/acl2/]) has a link to this manual,
+  which as of this writing may be found directly by visiting the following web
+  page: ~url[http://fv.centtech.com/acl2/latest/doc/].  You can build a local
+  copy of this manual from the ACL2 Community Books, following instructions in
+  their ~c[Makefile].~/~/")
 
 (deflabel markup
   :doc
@@ -17303,28 +17423,6 @@
   (declare (ignorable state))
   (value@par t))
 
-(defun character-alistp (x)
-
-  ":Doc-Section ACL2::ACL2-built-ins
-
-  recognizer for association lists with characters as keys~/
-
-  ~c[(Character-alistp x)] is true if and only if ~c[x] is a list of pairs
-  of the form ~c[(cons key val)] where ~c[key] is a ~ilc[characterp].~/~/"
-
-  (declare (xargs :guard t))
-  (cond ((atom x) (eq x nil))
-        (t (and (consp (car x))
-                (characterp (car (car x)))
-                (character-alistp (cdr x))))))
-
-(defun tilde-@p (arg)
-  (declare (xargs :guard t))
-  (or (stringp arg)
-      (and (consp arg)
-           (stringp (car arg))
-           (character-alistp (cdr arg)))))
-
 (defun@par translate-error-hint (arg ctx wrld state)
   (declare (ignore wrld))
   (cond ((tilde-@p arg)
@@ -17380,6 +17478,11 @@
         *expandable-boot-strap-non-rec-fns*))
 
 (defconst *definition-minimal-theory*
+
+; We include mv-nth because of the call of simplifiable-mv-nthp in the
+; definition of call-stack, which (as noted there) results in a use of the
+; definition of mv-nth without tracking it in a ttree.
+
   (list* 'mv-nth 'iff *expandable-boot-strap-non-rec-fns*))
 
 (defdoc theories-and-primitives

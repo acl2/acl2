@@ -1022,18 +1022,24 @@ notation causes an error and (b) the use of ,. is not permitted."
          (val (and (symbolp sym)
                    (qfuncall fgetprop sym 'const nil
                              (qfuncall w *the-live-state*)))))
-    (if val
-        (cond ((and (consp val)
-                    (eq (car val) 'quote)
-                    (consp (cdr val))
-                    (null (cddr val)))
-               (cadr val))
-              (t (error "(Implementation error) Found non-quotep 'const ~%~
-                         property for ~s."
-                        sym)))
+    (cond
+     (val
+      (cond ((and (consp val)
+                  (eq (car val) 'quote)
+                  (consp (cdr val))
+                  (null (cddr val)))
+             (cadr val))
+            (t (error "(Implementation error) Found non-quotep 'const ~%~
+                       property for ~s."
+                      sym))))
+     (sym
+      (error "ACL2 supports #. syntax only for #.*a*, where *a* has been ~%~
+              defined by ~s.  Thus the form #.~s is illegal."
+             'defconst sym))
+     (t ; surprising case
       (error "ACL2 supports #. syntax only for #.*a*, where *a* has been ~%~
               defined by ~s."
-             'defconst))))
+             'defconst)))))
 
 (defun sharp-bang-read (stream char n)
 
