@@ -317,6 +317,15 @@ ACL2_CUSTOM_TARGETS :=
 
 ifndef NO_RESCAN
 
+# We skip the scan for excluded prefixes.  This change was implemented
+# by Matt Kaufmann on 9/25/2013 as part of the process of fixing
+# ACL2(r) regressions.  (Note that nonstd/Makefile includes this
+# Makefile.)
+ifneq ($(EXCLUDED_PREFIXES), )
+space =  # just a space
+EGREP_EXTRA_EXCLUDE_STRING = |$(subst $(space) $(space),|,$(strip $(EXCLUDED_PREFIXES)))
+endif # ifneq ($(EXCLUDED_PREFIXES), )
+
 # We exclude centaur/quicklisp explicitly, instead of using a cert_pl_exclude
 # file, because when people actually install Quicklisp packages, it ends up
 # having subdirectories that we don't know about ahead of time.  We exclude
@@ -326,7 +335,7 @@ $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|milawa|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/)' \
+    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|milawa|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
   > Makefile-books; \
   ls -l Makefile-books)
@@ -865,6 +874,10 @@ endif # ifdef ACL2_COMP
 ### Section: Exclude EXCLUDED_PREFIXES
 ##############################
 
+# It might no longer be necessary to filter out EXCLUDED_PREFIXES from
+# OK_CERTS, now that EGREP_EXTRA_EXCLUDE_STRING contributes to the
+# exclusion process, but we go ahead and do so here, for robustness.
+
 OK_CERTS := $(filter-out $(addsuffix %, $(EXCLUDED_PREFIXES)), $(OK_CERTS))
 
 ##############################
@@ -918,7 +931,7 @@ endif # ifeq ($(realpath workshops), )
 
 all: $(OK_CERTS)
 
-# It was tempted to handle the `everything' target as follows:
+# It was tempting to handle the `everything' target as follows:
 #  everything: USE_QUICKLISP = 1
 #  everything: all $(ADDED_BOOKS)
 # But that didn't work, presumably because the value of OK_CERTS was

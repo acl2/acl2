@@ -22,30 +22,68 @@
 #; University of Texas at Austin
 #; Austin, TX 78712-1188 U.S.A.
 
-# WARNING: This mechanism isn't currently set up to use an ACL2(r)
-# executable automatically.
-# When you execute make, be sure to use a command of the form:
-# make ACL2=your_saved_acl2r
+# Here is a summary of variables in this file that might be edited as
+# the regression evolves.  All directory names have a trailing slash
+# (/).  In brief, it would be good to extend the regression by adding
+# to FULLDIRS and also eliminating values from BADDIRS and
+# EXCLUDED_PREFIXES.
 
-# To add more directories, simply add them, run make, and keep adding
-# as required by include-book dependencies, while excluding
-# problematic individual files by adding to the variable BAD_LINKS.
-# When done, do "make clean" and also "make clean-links", in order to
-# have empty directories before executing svn add.  (Or, execute svn
-# add immediately after adding a directory -- but be sure to execute
-# svn delete if you change your mind!)
+# FULLDIRS
+#   Directories that are self-contained, in the sense that links to
+#   standard books are not to be added
+#   [NOTE: xdoc/ is in this list, but is a sort of short-circuit that
+#    is a gutted version of the standard xdoc/; see
+#    nonstd/xdoc/top.lisp.]
+# BADDIRS
+#   Directories for which no files or subdirectories are to
+#   participate in the regression
+# EXCLUDED_PREFIXES (note: used by ../Makefile)
+#   Extension of BADDIRS by .cert filenames for books that are not
+#   already excluded by BADDIRS but are not to be certified
+# EXTRA_TARGETS and also see "Additional dependencies and actions:
+#   Miscellaneous custom stuff
 
 SHELL := $(shell which bash)
 
-# Directories that have their own contents, and do not need links, or only
-# need some links:
-FULLDIRS := nsa fft
-
 # All directories:
-ALLDIRS := $(shell find . -type d | fgrep -v .svn)
+ALLDIRS := $(patsubst ./%,%/,$(shell find . -type d | fgrep -v .svn))
+
+# Directories that have their own contents and do not get links to
+# standard books. (Note that xdoc/ is a special case; see
+# xdoc/top.lisp.)
+FULLDIRS := nsa/ fft/ xdoc/
+
+# Initialize BADDIRS as the right sort of variable:
+BADDIRS := $(BADDIRS)
+
+# We exclude std/ because its books includes books from directories
+# not yet brought into nonstd/.  Perhaps that won't be difficult,
+# but it's for another day.
+BADDIRS += std/
+
+# We exclude workshops/2011/ because (at least)
+# workshops/2011/reid-gamboa-differentiator/support/inverse-square
+# includes nsa/inverse-square, which is excluded below because it
+# doesn't certify as of this writing.
+BADDIRS += workshops/2011/
 
 # Directories that need links:
-LINKDIRS := $(filter-out $(FULLDIRS),$(ALLDIRS))
+LINKDIRS := $(filter-out $(FULLDIRS) $(addsuffix %, $(BADDIRS)),$(ALLDIRS))
+
+EXCLUDED_PREFIXES += $(BADDIRS)
+
+# These no longer certify; Ruben might be working on them.
+EXCLUDED_PREFIXES += nsa/inverse-square.cert \
+		     nsa/inverse-derivatives.cert \
+
+# The book nsa/inverse-trig no longer certifies; Ruben might be
+# working on it.  We also exclude nsa/complex-polar, since it includes
+# inverse-trig, and nsa/ln, since it includes complex-polar, and
+# nsa/raise, since it includes ln
+EXCLUDED_PREFIXES += nsa/inverse-trig.cert \
+		     nsa/complex-polar.cert \
+		     nsa/ln.cert \
+		     nsa/raise.cert
 
 # We run links, even before including ../Makefile, so that
 # Makefiles are present.  Use clean-links explicitly to remove links.
@@ -61,7 +99,7 @@ LINKS0 := $(shell for file in $(wildcard ../*.pl) ; \
 	if [ ! -e $${file\#../} ] ; then ln -s $$file . ; fi ; \
 	done)
 
-$(info Making links in subdirectories...)
+$(info Making links in subdirectories: $(LINKDIRS))
 LINKS := $(shell \
 	(cd $(SAVED_DIR) ;\
 	for book_dir in $(LINKDIRS) ; \
@@ -92,6 +130,13 @@ BAD_LINKS += tools/lint.*
 # The book std/top includes lots of stuff under std/ that is not yet in
 # the books directory nonstd/std/.
 BAD_LINKS += std/top.*
+
+# The book misc/symbol-btree includes std/lists/take and
+# std/lists/nthcdr.  And misc/symbol-btree, in turn, supports
+# misc/rtl-untranslate and misc/untranslate-patterns.
+BAD_LINKS += misc/symbol-btree.* \
+	     misc/rtl-untranslate.* \
+	     misc/untranslate-patterns.*
 
 ifneq ($(BAD_LINKS), )
 REMOVE_LINKS := $(shell rm -f $(BAD_LINKS))
@@ -138,7 +183,7 @@ clean-links:
 	fi ; \
 	done
 
-# Extra links:
+# Additional dependencies and actions:
 
 arithmetic/top.cert: arithmetic/realp.cert arithmetic/real-listp.cert
 
