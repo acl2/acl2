@@ -520,6 +520,9 @@ sometimes be lost due to user interrupts and aborts.~/
 
 Performance Notes
 
+~l[hons-acons] for how the final ~ilc[cdr] of a fast alist can be used as a
+size hint or as a name for reports printed by calling ~ilc[fast-alist-summary].
+
 The keys of fast alists are always ~il[normed].  Why?  In Common Lisp,
 equal-based hashing is relatively slow, so to allow the use of eql-based hash
 tables, ~ilc[hons-acons] and ~ilc[hons-get] always ~ilc[hons-copy] the keys
@@ -788,8 +791,9 @@ from an alist or to copy ~il[fast-alists].~/
 
 This ~il[documentation] topic relates to the experimental extension of ACL2
 supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
+It assumes familiarity with fast alists; ~pl[fast-alists].
 
-Logically, ~c[hons-shrink-alist] is defined as follows:
+Logically, ~c[(hons-shrink-alist alist ans)] is defined as follows:
 
 ~bv[]
  (cond ((atom alist)
@@ -831,11 +835,17 @@ with all of the bindings in alist that are not in ans.  From the perspective of
 ~ilc[hons-assoc-equal], you can think of the resulting alist as being basically
 similar to ~c[(append ans alist)], but in a different order.
 
-Note that when alist is a fast alist, and either ans is not a fast alist (e.g.,
-ans is an atom) or is a fast alist with a different final cdr (name) than that
-of ans, then such stealing does not take place.  It would thus generally be
-desirable in such cases to free alist; ~pl[fast-alist-free] and
-~pl[fast-alist-free-on-exit].~/~/"
+Note that when ans is not a fast alist (e.g., ans is an atom) then such
+stealing does not take place.
+
+A common idiom is to replace an alist by the result of shrinking it, in which
+case it is best to free the input alist, for example as follows.
+~bv[]
+  (let ((alist (fast-alist-free-on-exit alist
+                                        (hons-shrink-alist alist nil))))
+    ...)
+~ev[]
+~l[fast-alist-free-on-exit] and ~pl[fast-alist-free].~/~/"
 
   ;; Has an under-the-hood implementation
   (cond ((atom alist)
@@ -1032,16 +1042,16 @@ tail-recursive call returns.~/~/")
   ":Doc-Section Hons-and-Memoization
 Free a fast alist after the completion of some form.~/
 
-Logically, ~c[(fast-alist-free-on-exit name form)] is the identity and returns
+Logically, ~c[(fast-alist-free-on-exit alist form)] is the identity and returns
 ~c[form].  Also ~pl[fast-alist-free].
 
 Under the hood, this essentially expands to:
 ~bv[]
  (prog1 form
-        (fast-alist-free name))
+        (fast-alist-free alist))
 ~ev[]
 
-In other words, ~c[name] is not freed immediately, but instead remains a fast
+In other words, ~c[alist] is not freed immediately, but instead remains a fast
 alist until the form completes.  This may be useful when you are writing code
 that uses a fast alist but has many return points.
 
