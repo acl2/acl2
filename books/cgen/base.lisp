@@ -11,7 +11,7 @@
 (include-book "defdata" :load-compiled-file :comp)
 (include-book "splitnat" :load-compiled-file :comp)
 (include-book "switchnat" :load-compiled-file :comp)
-(include-book "graph" :load-compiled-file :comp)
+(include-book "graph-tc" :ttags ((:hash-stobjs) (:redef+)))
 (include-book "library-support" :load-compiled-file :comp)
 (include-book "random-state" :load-compiled-file :comp)
 
@@ -123,16 +123,13 @@
            #\W #\X #\Y #\Z 
            ))
 
-;custom type but not registered
-(defconst *z-values* '(0 -1 "a")) ;for zp
-
-
 
 (defthm integerp-mod
     (implies (and (integerp m)
                   (integerp n))
 	     (integerp (mod m n)))
   :rule-classes (:rewrite :type-prescription))
+
 
 (encapsulate 
  nil
@@ -632,7 +629,20 @@
 
 ;added the above atom primitive types in the data-type graph using register-custom-type
 
-
+;custom type
+(defconst *z-values* '(0 -1 "a" 1/3 :a)) ;for zp
+(defun nth-z (n)
+  (declare (xargs :guard (natp n)))
+  (nth (mod n 5) *z-values*))
+(defun nth-z-uniform (m seed)
+    (declare (ignorable m))
+     (declare (type (unsigned-byte 31) seed))
+     (declare (xargs :guard (and (natp m)
+                                 (unsigned-byte-p 31 seed))))
+     (mv-let (n seed)
+             (defdata::random-natural-seed seed)
+             (mv (nth-z n) (the (unsigned-byte 31) seed))))
+(register-custom-type z t nth-z zp :enum-uniform nth-z-uniform)
 
 
 ;Subtype relations betweem the above
@@ -654,6 +664,20 @@
 (defdata-subtype character atom)
 (defdata-subtype string atom)
 (defdata-subtype symbol atom)
+
+(defdata ratio (oneof positive-ratio negative-ratio) :declare-guards t)
+(defdata-subtype ratio rational) 
+
+;added 26th Sep '13
+(defdata-subtype neg negative-rational)
+(defdata-subtype pos positive-rational) 
+(defdata-subtype negative-rational z)
+(defdata-subtype ratio z)
+(defdata-subtype complex-rational z)
+(defdata-subtype symbol z)
+(defdata-subtype character z)
+(defdata-subtype string z)
+(defdata-disjoint pos z)
 
 ;(assign make-event-debug t)
 ;(set-acl2s-defdata-verbose t)
@@ -845,9 +869,14 @@
 (defdata-subtype cons all)
 (defdata-subtype atom all)
 (defdata-subtype atom-list true-list)
-(defdata-subtype true-list all)
 (defdata-subtype alist true-list)
 (defdata-subtype list all)
+(defdata-subtype true-list list)
+
+;added 26th Sep '13
+(defdata-subtype cons z)
+(defdata-subtype list z)
+
 
 (defun all-but-zero-nil-tp (x)
   (declare (xargs :guard t))
@@ -1027,17 +1056,15 @@
 ;type-alist knew both true-listp and proper-consp, and this is common in ACL2
 (defdata-subtype proper-cons  true-list)
 
-(defdata ratio (oneof positive-ratio negative-ratio) :declare-guards t)
-
 (defdata-disjoint proper-cons improper-cons)
 (defdata-disjoint atom cons)
-(defdata-subtype ratio rational) 
+
 
 
 ;new exports
 (defmacro disjoint-p (T1 T2)
    ":Doc-Section DATA-DEFINITIONS
-  query wether two types are disjoint~/
+  top-level query wether two types are disjoint~/
   ~c[(disjoint-p T1 T2)] asks the question
   are T1, T2 disjoint? This call makes a quick
   lookup into the internal data type graph where
@@ -1059,7 +1086,8 @@
   (disjoint-p <Type-name1> <Type-name2>)
   ~ev[]~/
   "
-  `(is-disjoint ',T1 ',T2 (w state)))
+   `(trans-eval '(is-disjoint$$ ',t1 ',t2 R$ types-ht$) 'is-disjoint state nil))
+;  `(is-disjoint ',T1 ',T2 R$ types-ht$))
 
 
 (defmacro show-acl2s-defdata-all-types ()
@@ -1067,7 +1095,7 @@
 
 (defmacro subtype-p (T1 T2)
    ":Doc-Section DATA-DEFINITIONS
-  query wether two types are disjoint~/
+  top-level query wether two types are disjoint~/
   ~c[(subtype-p T1 T2)] asks the question
   is T1 a subtype of T2? This call makes a quick
   lookup into the internal data type graph where
@@ -1089,7 +1117,23 @@
   (subtype-p <Type-name1> <Type-name2>)
   ~ev[]~/
   "
-  `(is-subtype ',T1 ',T2 (w state)))#|ACL2s-ToDo-Line|#
+   `(trans-eval '(is-subtype$$ ',t1 ',t2 R$ types-ht$) 'is-subtype state nil))
+  ;`(is-subtype$$ ',T1 ',T2 R$ types-ht$))
+
+;; (defun is-subtype (t1 t2 state)
+;;   (declare (xargs :guard (and (symbolp t1)
+;;                               (symbolp t2))
+;;                   :mode :program
+;;                   :stobjs (state)))
+;;   (trans-eval `(is-subtype$$ ',t1 ',t2 R$ types-ht$) 'is-subtype state nil))
+
+;; (defun is-disjoint (t1 t2 state)
+;;   (declare (xargs :guard (and (symbolp t1)
+;;                               (symbolp t2))
+;;                   :mode :program
+;;                   :stobjs (state)))
+;;   (trans-eval `(is-disjoint$$ ',t1 ',t2 R$ types-ht$) 'is-disjoint state nil))                              
+
 
 (defun map-identity (x) 
   "for map elim rules -- dummy destructor"

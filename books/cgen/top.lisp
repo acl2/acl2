@@ -14,8 +14,9 @@
 (in-package "ACL2")
 
 (include-book "acl2s-parameter")
-(include-book "base")
 (include-book "main" :ttags :all)
+(include-book "base" :ttags :all)
+
 
 
 

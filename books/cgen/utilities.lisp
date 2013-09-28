@@ -1169,9 +1169,10 @@ Mainly to be used for evaluating enum lists "
 
 
 
-(defstub is-disjoint (* * *) => *)
-(defstub is-subtype (* * *) => *)
-(defstub is-alias (* * *) => *)
+;; (defstub is-disjoint (* * *) => *)
+;; (defstub is-subtype (* * *) => *)
+;; (defstub is-alias (* * *) => *)
+
 (defstub is-type-predicate (* *) => *)
 (defstub is-a-typeName (* *) => *)
 (defstub is-a-custom-type (* *) => *)

@@ -7,8 +7,8 @@
 
 ;record implementation
 (include-book "defexec/other-apps/records/records" :dir :system :load-compiled-file :comp)
-;(include-book "finite-set-theory/osets/sets" :dir :system :load-compiled-file :comp)
-(include-book "std/osets/top" :dir :system :load-compiled-file :comp)
+(include-book "finite-set-theory/osets/sets" :dir :system :load-compiled-file :comp)
+;(include-book "std/osets/top" :dir :system :load-compiled-file :comp)
 
 
 ;GETTING RECORDS TO behave nicely here are some
@@ -67,7 +67,8 @@
                  (not (equal a (ill-formed-key))))
             (consp x))
    :hints (("goal" :in-theory (enable mset mget mset-wf mget-wf acl2->map)))
-   :rule-classes :forward-chaining)
+   :rule-classes (:forward-chaining))
+   ;               (:rewrite :backchain-limit-lst 1)))
  
 (defthm field-not-empty-implies-record-not-empty2
   (implies (and (mget a x)
@@ -95,6 +96,23 @@
   :rule-classes :forward-chaining)
 
 (defthm good-map-implies-not-ifmp
-  (implies (good-map x) (not (ifmp x)))
+  (implies (good-map x) (and (not (ifmp x))
+                             (well-formed-map x)))
   :rule-classes ((:rewrite :backchain-limit-lst 1)
                  (:forward-chaining)))
+
+
+(local
+ (defthm mset-wf-key-non-nil-val-is-consp-lemma 
+   (IMPLIES (AND V
+                 (wf-keyp a)
+                 (not (IFMP X)))
+            (equal (IFMP (MSET-WF A V X)) nil))
+   :hints (("goal" :in-theory (enable extensible-records)))))
+               
+
+(defthm mset-wf-key-non-nil-val-is-consp
+ (IMPLIES (AND v
+               (wf-keyp a))
+          (consp (MSET A V x)))
+ :hints (("goal" :in-theory (enable map->acl2 acl2->map extensible-records))))

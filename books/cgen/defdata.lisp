@@ -8,16 +8,17 @@
 ;;;;It can be used independently, but is primarily intended
 ;;;;to support the CGEN/TESTING framework!!
 
-(acl2::begin-book t);$ACL2s-Preamble$|#
+(acl2::begin-book t :ttags ((:hash-stobjs) (:redef+)));$ACL2s-Preamble$|#
 
 
 (in-package "DEFDATA")
 
-(include-book "utilities" :load-compiled-file :comp)
+(include-book "utilities")
 (include-book "basis")
 (include-book "acl2s-parameter")
 (include-book "splitnat")
 (include-book "switchnat")
+(include-book "graph-tc" :ttags ((:hash-stobjs) (:redef+)));transtive closure and subtype relation
 
 (set-verify-guards-eagerness 2)
 
@@ -2504,8 +2505,14 @@ X:rgbcolors = blue
                   :derivedp nil
                   :recursivep nil
                   :type-class type-class))
-        (add-datatype-node-batch ,typename)
-        (sync-globals-for-dtg) ;sync globals with SCC and TC 
+        (make-event 
+         (er-progn 
+          (trans-eval `(add-vertex$$ ',',typename R$ types-ht$)
+                      'register-custom-type state t)
+          (value '(value-triple :invisible)))
+         :check-expansion t)
+;        (add-datatype-node-batch ,typename)
+;        (sync-globals-for-dtg) ;sync globals with SCC and TC 
         (value-triple (list ',typename 
                             ',(list typesize enum pred test-enum 
                                     nil nil type-class)))
@@ -3137,7 +3144,52 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
      (record-modifier-lemmas (cdr nms) tpred (cdr fnames) (cdr dprex) disabled))))
 
 
-(defun record-disjoint-constituent-lemmas (nms tpred dex-types wrld)
+
+(defun is-subtype (T1 T2 R$ types-ht$)
+  "conservative subtype check, return false if T1 or T2 are not present in graph"
+  (declare (xargs :guard (and (R$p R$)
+                              (types-ht$p types-ht$))
+                  :stobjs (R$ types-ht$)))
+    (cond ((eq T2 'acl2::all) t)
+        ((eq T1 'acl2::empty) t)
+;ASSUMPTION: Types equivalent to all and empty should be recognized
+;separately. In this function, we simply return nil, so we can have false
+;positives.
+        ((eq T2 'acl2::empty) nil)
+        ((eq T1 'acl2::all) nil)
+        (t 
+         (if (and (vertex-ht-valid-p T1 (rgraph-length R$) types-ht$)
+                  (vertex-ht-valid-p T2 (rgraph-length R$) types-ht$))
+             (is-subtype$$ T1 T2 R$ types-ht$)
+           nil))))
+
+
+(defun is-alias (T1 T2 R$ types-ht$)
+  (declare (xargs :guard (and (R$p R$)
+                              (types-ht$p types-ht$))
+                  :stobjs (R$ types-ht$)))
+  (and (is-subtype T1 T2 R$ types-ht$)
+       (is-subtype T2 T1 R$ types-ht$)))
+
+
+; 13 July 2013 -- equiv enum and oneof defs of Lett dont work
+; equivalently for disjoint lemmas:
+#||
+(defdata Lett (enum '(a b c d)) :type-lemmas t)
+(defdata Lett1 (oneof 'a 'b 'c 'd) :type-lemmas t)
+(LETTP (RECOGNIZER-INDEX 330)
+       (POS-IMPLICANTS (AND (LETTP V) (NOT (RECP V))))
+       (NEG-IMPLICANTS (NOT (LETTP V)))
+       (SIGNATURES (BOOLEANP (LETTP V)))
+       (BIG-SWITCH? :NO)
+       (MV-NTH-SYNONYM? :NO))
+||#
+; both have same tau-data, but defdata rec works in second def but not
+; not first. the disjoint lemma fails.
+; Q: How does tau-system discharge the obligation in one case and
+; not the other?
+(defun record-disjoint-constituent-lemmas (nms tpred dex-types R$ types-ht$)
+  (declare (xargs :stobjs (R$ types-ht$)))
   (if (endp nms)
       (list '(value-triple 
               (prog2$ 
@@ -3147,39 +3199,25 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
      (b* ((dex-type (car dex-types))
           (dpred (get-predicate-symbol dex-type))
 ; bugfix defdata-record-all-field-bug
-          ((when (or (is-alias dex-type 'acl2::all wrld)
-                     (is-alias dex-type 'acl2::cons wrld) 
-                     (is-alias dex-type 'acl2::list wrld)
-                     (is-alias dex-type 'acl2::alist wrld)
-                     (is-alias dex-type 'acl2::acons wrld) 
-                     (is-alias dex-type 'acl2::true-list wrld)
+          ((when (or (is-alias dex-type 'acl2::all R$ types-ht$)
+                     (is-alias dex-type 'acl2::cons R$ types-ht$) 
+                     (is-alias dex-type 'acl2::list R$ types-ht$)
+                     (is-alias dex-type 'acl2::alist R$ types-ht$)
+                     (is-alias dex-type 'acl2::acons R$ types-ht$) 
+                     (is-alias dex-type 'acl2::true-list R$ types-ht$)
                      ;; TODO
                      ;; 16 July 2013 - due to example from mitesh
                      ;; the disjoint lemma generation is nowhere near
                      ;; complete
-                     (is-subtype dex-type 'acl2::true-list wrld)))
+                     (is-subtype dex-type 'acl2::true-list R$ types-ht$)))
 
            '()))
        `((defthm ,(car nms)
           (implies (,tpred x)
                    (not (,dpred x)))
-; 13 July 2013 -- equiv enum and oneof defs of Lett dont work
-; equivalently for disjoint lemmas:
-#|
-(defdata Lett (enum '(a b c d)) :type-lemmas t)
-(defdata Lett1 (oneof 'a 'b 'c 'd) :type-lemmas t)
-(LETTP (RECOGNIZER-INDEX 330)
-       (POS-IMPLICANTS (AND (LETTP V) (NOT (RECP V))))
-       (NEG-IMPLICANTS (NOT (LETTP V)))
-       (SIGNATURES (BOOLEANP (LETTP V)))
-       (BIG-SWITCH? :NO)
-       (MV-NTH-SYNONYM? :NO))|#
-; both have same tau-data, but defdata rec works in second def but not
-; not first. the disjoint lemma fails.
-; Q: How does tau-system discharge the obligation in one case and
-; not the other?
+
           :hints (("Goal" :in-theory (e/d (,dpred) (,tpred ))))))) 
-     (record-disjoint-constituent-lemmas (cdr nms) tpred (cdr dex-types) wrld))))
+     (record-disjoint-constituent-lemmas (cdr nms) tpred (cdr dex-types) R$ types-ht$))))
 
 (defun record-constructor-lemma (nm cname tpred dprex vnames disabled)
   `(defthm ,nm ;TODO: of no use if cname is not disabled!
@@ -3214,8 +3252,8 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
         (find-recursive-records (cdr preds) new-constructors)))))
               
 
-(defun add-record-type-support-lemmas-to-ds$ (typid dnames dex-types ds$)
-  (declare (xargs :stobjs (ds$)))
+(defun add-record-type-support-lemmas-to-ds$ (typid dnames dex-types ds$ R$ types-ht$)
+  (declare (xargs :stobjs (ds$ R$ types-ht$)))
   (b* ((tpred (get-predicate-symbol typid))
        (dprex (get-predicate-symbol-lst dex-types))
        (s-lemm (support-lemmas ds$))
@@ -3235,7 +3273,7 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
        (dnms (modify-symbol-lst (string-append (symbol-name tpred) "-")
                                 dprex "-DISJOINT-LEMMA"))
        (disjoint-lemmas 
-        (record-disjoint-constituent-lemmas dnms tpred dex-types (defdata-world ds$)))
+        (record-disjoint-constituent-lemmas dnms tpred dex-types R$ types-ht$))
                          
        (record-lemmas (append disjoint-lemmas
                               (cons constructor-lemma
@@ -3248,10 +3286,10 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
       (append record-lemmas (acl2::access supp-lemmas% s-lemm :record)))
      ds$)))
       
-(defun is-record-type (texp typId ctx ds$)
+(defun is-record-type (texp typId ctx ds$ R$ types-ht$)
 ;returns (mv trans-record-def ds$) where trans-record-def is nil if texp is
 ;not a record
-  (declare (xargs :stobjs (ds$)))
+  (declare (xargs :stobjs (ds$ R$ types-ht$)))
   (b* (((unless (and (consp texp)
                     (eq (car texp) 'record)))
         (mv nil ds$))
@@ -3274,7 +3312,7 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
              texp)
          (mv nil ds$)))
        (ds$ (add-newconstructor-to-ds$ typId dnames dprex ds$))
-       (ds$ (add-record-type-support-lemmas-to-ds$ typId dnames dex-types ds$))
+       (ds$ (add-record-type-support-lemmas-to-ds$ typId dnames dex-types ds$ R$ types-ht$))
        )
 ;just use the product-datadef function, so record is just syntactic
 ;sugar. TODO: But you dont generate record lemmas for this desugared
@@ -3449,13 +3487,12 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
   
 ;add generated list type lemmas to a temporary global variable
 ;For each type only one list type is added
-(defun add-list-type-support-lemmas-to-ds$ (typid ctype1 ds$)
-  (declare (xargs :stobjs (ds$)))
+(defun add-list-type-support-lemmas-to-ds$ (typid ctype1 ds$ R$ types-ht$)
+  (declare (xargs :stobjs (ds$ R$ types-ht$)))
   (b* ((tpred (get-predicate-symbol typid))
        (s-lemm (support-lemmas ds$))
-       (wrld (defdata-world ds$))
-       (atom-list-subtypep (and (symbolp ctype1)
-                                (is-subtype ctype1 'acl2::atom wrld)))
+        (atom-list-subtypep (and (symbolp ctype1)
+                                 (is-subtype ctype1 'acl2::atom R$ types-ht$)))
        
        (tlp-forms `((defthm ,(modify-symbol "" tpred "-IMPLIES-TLP")
                       (implies (,tpred x)
@@ -3471,7 +3508,7 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
                       :rule-classes ((:rewrite :backchain-limit-lst 1)))
                     ))
        
-       (tlp-ctype1-forms (if (is-a-typeName ctype1 wrld)
+       (tlp-ctype1-forms (if (is-a-typeName ctype1 (defdata-world ds$))
                              (let ((ctype1-pred (get-predicate-symbol ctype1)))
                                `((defthm ,(modify-symbol "" tpred "-TLP-CONS")
                                    (implies (and (,ctype1-pred x)
@@ -3515,8 +3552,8 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
 ;;needed. I did more experiments. The rule is fine as is. Just
 ;;make sure not to screw up with the above rules.
 
-(defun is-list-type (texp typid tnames ctx ds$)
-  (declare (xargs :stobjs (ds$)))
+(defun is-list-type (texp typid tnames ctx ds$ R$ types-ht$)
+  (declare (xargs :stobjs (ds$ R$ types-ht$)))
 ;return (mv constituentTypeExpr|nil ds$)
   (b* (((unless (and (consp texp)
                      (eq (car texp) 'listof)))
@@ -3530,7 +3567,7 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
       ((mv & ctype1 ds$)
        (trans-constituent-type (cadr texp) typid tnames ctx ds$))
       ;;skipped error check.
-      (ds$ (add-list-type-support-lemmas-to-ds$ typid ctype1 ds$)))
+      (ds$ (add-list-type-support-lemmas-to-ds$ typid ctype1 ds$ R$ types-ht$)))
     (mv `(oneof nil (cons ,ctype1 ,typid)) ds$)))
        
 (defun is-set-type (texp typid tnames ctx ds$)
@@ -3557,8 +3594,8 @@ but ~x0 if not.~%" texp)
 ;dtexp : TypeName | Singleton | Enum | Map | Record | List | Set | Prod-Union-type
 ;record, list, map, set have been normalized (converted
 ;to constituentTypeExpr) in trans-dtexp
-(defun translate-defbody (dtexp typId tnames ctx ds$)
-  (declare (xargs :stobjs (ds$)))
+(defun translate-defbody (dtexp typId tnames ctx ds$ R$ types-ht$)
+  (declare (xargs :stobjs (ds$ R$ types-ht$)))
 ;returns (mv erp trans-defbody ds$)
   (b* (((when (is-singleton-type-p dtexp))
         (let ((ds$ (update-type-class-top-level$ 'acl2::singleton typId ds$)))
@@ -3582,14 +3619,14 @@ nor a predefined typename~%" dtexp)
        ((when is-map)     
         (let ((ds$ (update-type-class-top-level$ 'map typId ds$)))
           (mv nil is-map ds$))) ;ADDED 3rd May 2011 REMOVED 28th Aug '12 ADDED 17 July '13
-       ((mv is-record ds$) (is-record-type dtexp typId ctx ds$))
+       ((mv is-record ds$) (is-record-type dtexp typId ctx ds$ R$ types-ht$))
 ;type class of record also gets update on successful entry and not here
        ((when is-record) 
            (prog2$
             (cw? (defdata-debug ds$)
                           "record support lemmas: ~x0~%" (support-lemmas ds$))
             (mv nil is-record ds$)))
-       ((mv is-list ds$) (is-list-type dtexp typId tnames ctx ds$))
+       ((mv is-list ds$) (is-list-type dtexp typId tnames ctx ds$ R$ types-ht$))
        ((when is-list) (mv nil is-list ds$))
        ((mv is-set ds$) (is-set-type dtexp typId tnames ctx ds$))
        ((when is-set) (mv nil is-set ds$))
@@ -3621,9 +3658,9 @@ nor a predefined typename~%" dtexp)
 ;3. dataTypeExp is a legal data type expression
 ;4. keyword-list [:hints ...] TODO: should it be defined per mut-rec def or for defdata whole?
 ;5. dataTypeExp is also pre-processed 
-(defun translate-defs0 (def tnames ctx ds$)
+(defun translate-defs0 (def tnames ctx ds$ R$ types-ht$)
 ;return (trans-def ds$) or aborts on error
-  (declare (xargs :stobjs (ds$)))
+  (declare (xargs :stobjs (ds$ R$ types-ht$)))
   (b* (((unless (and (true-listp def)
                      (>= (len def) 2)))
         (prog2$
@@ -3636,7 +3673,7 @@ nor a predefined typename~%" dtexp)
          (er hard ctx "~x0 is not a valid Type Identifier .~%" typId)
          (mv nil ds$)))
        ((mv erp dtexp ds$) 
-        (translate-defbody dataTypExp typId tnames ctx ds$))
+        (translate-defbody dataTypExp typId tnames ctx ds$ R$ types-ht$))
        ((unless (not erp))
         (prog2$
          (er hard ctx "Could not translate defdata body ~x0~%" dataTypExp)
@@ -3650,16 +3687,16 @@ nor a predefined typename~%" dtexp)
        (mv (append (list typId dtexp) rst) ds$))) 
 
         
-(defun translate-defs0-lst (defs tnames ctx ds$ ans)
-  (declare (xargs :stobjs (ds$)))
+(defun translate-defs0-lst (defs tnames ctx ds$ R$ types-ht$ ans)
+  (declare (xargs :stobjs (ds$ R$ types-ht$)))
   (if (endp defs)
     (mv ans ds$)
     (b* ((def (car defs))
 ;check for errors in syntax and also preprocess (translate)
-         ((mv cdef ds$) (translate-defs0 def tnames ctx ds$)))
+         ((mv cdef ds$) (translate-defs0 def tnames ctx ds$ R$ types-ht$)))
       (translate-defs0-lst (cdr defs) 
                            tnames 
-                           ctx  ds$
+                           ctx ds$ R$ types-ht$
                            (append ans (list cdef))))))
                                                                                  
     
@@ -3668,9 +3705,9 @@ nor a predefined typename~%" dtexp)
 ;;; and then call check-syntax-defs on resulting normalised form
 ;;; Additionaly check for empty definitions and 
 ;;; empty enum/oneof/anyof/record/listof(Not required i guess, redundant)
-(defun translate-defs (defs ctx ds$)
+(defun translate-defs (defs ctx ds$ R$ types-ht$)
 ;returns (mv trans-defs ds$) or aborts on error
-  (declare (xargs :stobjs (ds$)
+  (declare (xargs :stobjs (ds$ R$ types-ht$)
                   :mode :program))
 
   (b* (((unless (and (consp defs) 
@@ -3695,7 +3732,7 @@ nor a predefined typename~%" dtexp)
                          (update-type-class (cons 'acl2::mutually-recursive 
                                                   (pairlis$ tnames undef-lst)) ds$)
                        ds$)))
-          (translate-defs0-lst defs tnames ctx ds$ nil)))
+          (translate-defs0-lst defs tnames ctx ds$ R$ types-ht$ nil)))
 ;single defn to be normalised
        (def (if (symbolp (car defs)) defs (car defs))) 
 ;rename defs to def to avoid confusion, def is the single definition
@@ -3715,7 +3752,7 @@ nor a predefined typename~%" dtexp)
          (er hard ctx "Found empty definition or Empty body in ~x0.~%"
              def)
          (mv nil ds$))))
-    (translate-defs0-lst (list def) (list (car def)) ctx ds$ nil)))
+    (translate-defs0-lst (list def) (list (car def)) ctx ds$ R$ types-ht$ nil)))
          
  
 
@@ -3841,13 +3878,26 @@ nor a predefined typename~%" dtexp)
                                        recursive-tnames
                                        type-class
                                        ))))
+
 ;generate add-datatype-node-dtg-batch calls for each tname in tnames
-(defun cons-up-add-datatype-node-dtg-calls (tnames)
+(defun cons-up-add-datatype-node-dtg-calls1 (tnames)
   (declare (xargs :guard (symbol-listp tnames)))
   (if (endp tnames)
     nil 
-    (cons `(add-datatype-node-batch ,(car tnames)) ;macro call, so dont quote like elsewhere
-          (cons-up-add-datatype-node-dtg-calls (cdr tnames)))))
+    (cons `(trans-eval `(add-vertex$$ ',',(car tnames) R$ types-ht$) 
+                       'add-vertices-to-type-graph-event state t)
+;`(add-datatype-node-batch ,(car tnames)) ;macro call, so dont quote like elsewhere
+     
+          (cons-up-add-datatype-node-dtg-calls1 (cdr tnames)))))
+
+(defun add-vertices-to-type-graph-event (tnames)
+  (declare (xargs :guard (symbol-listp tnames)))
+  (b* ((calls (cons-up-add-datatype-node-dtg-calls1 tnames)))
+    `(make-event 
+      (er-progn 
+       ,@calls
+       (value '(value-triple :invisible)))
+      :check-expansion t)))
 
 ;filter typ-exps which are typenames
 (defun filter-typeName (texp-lst tnames state)
@@ -4147,9 +4197,9 @@ nor a predefined typename~%" dtexp)
                            new-record-constructors 
                            support-lemmas custom-types
                            type-class
-                           ctx wrld state)
+                           ctx wrld state R$ types-ht$)
   (declare (xargs :mode :program
-                  :stobjs (state)))
+                  :stobjs (state R$ types-ht$)))
   (b* ((names (strip-cars defs))
        (?verbose (get-acl2s-defdata-verbose))
 ;(defbodies (strip-cadrs defs))
@@ -4215,7 +4265,7 @@ nor a predefined typename~%" dtexp)
 ;(base-type-support-lemmas (g :base support-lemmas))
 ;(verbose (get-acl2s-defdata-verbose))
        (generate-allp-alias-boolean-tau-rule-p (and (eq type-class 'acl2::alias)
-                                                    (is-subtype 'ACL2::ALL (cadr (car defs)) wrld)))
+                                                    (is-subtype 'ACL2::ALL (cadr (car defs)) R$ types-ht$))) ;TODO, new graph book doesnt support this.
                                          
        )
     (if (not (no-duplicatesp names))
@@ -4366,51 +4416,7 @@ nor a predefined typename~%" dtexp)
                                    pred-bodies-with
                                    rsts-with-preds)
 
-           ,@(and list-type-support-lemmas
-                  `((value-triple
-                     (progn$
-                      (cw? t
-                           "Submitting list type lemmas... ~%")
-                      (cw? t;,verbose
-                          "~x0~%" ',list-type-support-lemmas)))))
-           ,@list-type-support-lemmas   
-           
-           ,@(and set-type-support-lemmas
-                  `((value-triple
-                     (cw? t
-                          "Submitting set type lemmas... ~%"))))
-           ,@set-type-support-lemmas
-
-           ,@(and record-type-support-lemmas
-                  `((value-triple
-                     (progn$
-                      (time-tracker :defdata-record-lemmas :end)
-                      (time-tracker :defdata-record-lemmas :init
-                                    :times '(2 7)
-                                    :interval 5
-                                    :msg "Elapsed runtime in type proofs for records is ~st secs;~|~%")
-                      (time-tracker :defdata-record-lemmas :start)
-                      
-                     (cw? t
-                          "Submitting record type lemmas... ~%")
-                     (cw? t;,verbose
-                          "~x0~%" ',record-type-support-lemmas)))))
-           ,@record-type-support-lemmas
-           ,@(and record-type-support-lemmas
-                  '((value-triple (prog2$
-                                   (time-tracker :defdata-record-lemmas :stop)
-                                   :invisible))))
-            
-           
-           ,@ (and map-type-support-lemmas
-                   `((value-triple
-                      (cw? t
-                                    "Submitting map type lemmas... ~%"))))
-           ,@ map-type-support-lemmas
-
-           ;; ;,@ base-type-support-lemmas
-           
-           ,@(and inf-enums
+                 ,@(and inf-enums
                   `((value-triple
                      (cw? t
                           "Submitting enumerator functions ~x0.~%"
@@ -4473,6 +4479,9 @@ nor a predefined typename~%" dtexp)
                   `((acl2::set-termination-method ,(cdr current-termination-method-entry))))
 
            (in-theory (disable ,@inf-uniform-enum-syms))
+           
+
+           
            (value-triple
             (cw? t
                  "Updating defdata type table (type-class ~x0).~%" ',type-class))
@@ -4500,27 +4509,71 @@ nor a predefined typename~%" dtexp)
             (cw? t
                  "Adding ~x0 to the type relation graphs.~%" ',names))
            
-;test-enums will only be explicitly provided by the user and added to the table
-           ,@(cons-up-add-datatype-node-dtg-calls names) ;add the noded to datatype-graph
-           (sync-globals-for-dtg) ;o.w following call to defdata-subtype fails
+; test-enums will only be explicitly provided by the user and added to the table
+           ,(add-vertices-to-type-graph-event names) ;add the noded to datatype-graph
+ 
            (value-triple
-            (cw? t
-                 "Updating the defdata subtype/disjoint graphs.~%"))
-           ,@(let* ((ev-forms0 (constituent-types-oneof-subtype-events defs names (w state)))
-                    (ev-forms1 ;hack 16 July '13
-                     (cond ((and (eq type-class 'acl2::listof)
-                                 (is-registered 'acl2::true-list wrld))
-                            (make-subtype-events type-class defs))
+            (cw? ,gen-lemmasp
+                 "Updating defdata subtype/disjoint graphs.~%"))
+
+
+; Record type relations with following events. Finally completely characterize the defdata def using tau rules. TODO
+           ,@(and gen-lemmasp 
+                  (let* ((ev-forms0 (constituent-types-oneof-subtype-events defs names (w state)))
+                         (ev-forms1 ;hack 16 July '13
+                          (cond ((and (eq type-class 'acl2::listof)
+                                      (is-registered 'acl2::true-list wrld))
+                                 (make-subtype-events type-class defs))
 ;assumption: there are no mutual-recursive types in base.lisp where true-list is still undefined.
-                           ((member-eq type-class '(acl2::mutually-recursive acl2::alias map)) 
-                            (make-subtype-events type-class defs))
-                           (t '())))
-                    (ev-forms (append ev-forms1 ev-forms0)))
-               (if (and gen-lemmasp ev-forms)
-                   (append ev-forms 
-;sync globals with SCC and TC graph algorithm calc
-                           (list '(sync-globals-for-dtg)))
-                 (list '(sync-globals-for-dtg))))
+                                ((member-eq type-class '(acl2::mutually-recursive acl2::alias map)) 
+                                 (make-subtype-events type-class defs))
+                                (t '()))))
+                    (append ev-forms1 ev-forms0)))
+           
+                ,@(and list-type-support-lemmas
+                  `((value-triple
+                     (progn$
+                      (cw? t
+                           "Submitting list type lemmas... ~%")
+                      (cw? t;,verbose
+                          "~x0~%" ',list-type-support-lemmas)))))
+           ,@list-type-support-lemmas   
+           
+           ,@(and set-type-support-lemmas
+                  `((value-triple
+                     (cw? t
+                          "Submitting set type lemmas... ~%"))))
+           ,@set-type-support-lemmas
+
+           ,@(and record-type-support-lemmas
+                  `((value-triple
+                     (progn$
+                      (time-tracker :defdata-record-lemmas :end)
+                      (time-tracker :defdata-record-lemmas :init
+                                    :times '(2 7)
+                                    :interval 5
+                                    :msg "Elapsed runtime in type proofs for records is ~st secs;~|~%")
+                      (time-tracker :defdata-record-lemmas :start)
+                      
+                     (cw? t
+                          "Submitting record type lemmas... ~%")
+                     (cw? t;,verbose
+                          "~x0~%" ',record-type-support-lemmas)))))
+           ,@record-type-support-lemmas
+           ,@(and record-type-support-lemmas
+                  '((value-triple (prog2$
+                                   (time-tracker :defdata-record-lemmas :stop)
+                                   :invisible))))
+            
+           
+           ,@ (and map-type-support-lemmas
+                   `((value-triple
+                      (cw? t
+                                    "Submitting map type lemmas... ~%"))))
+           ,@ map-type-support-lemmas
+
+           ;; ;,@ base-type-support-lemmas
+      
 
            (acl2s-defaults :set testing-enabled ,testing-enabled)
            (value-triple ',names)
@@ -4553,9 +4606,11 @@ nor a predefined typename~%" dtexp)
       ds$))
   
 ;;process enums and normalise listof/record/set etc
-(defun compute-defdata (args debug-flag ctx wrld state)
+(defun compute-defdata (args debug-flag ctx wrld state R$ types-ht$)
   (declare (xargs :mode :program
-                  :stobjs (state)))
+                  :stobjs (state R$ types-ht$)))
+  (acl2::state-global-let*
+   ((acl2::guard-checking-on :all))
   (b* (((mv defs0 kwd-options-lst)
          (get-defs-and-keyword-list args nil)))
     (acl2::with-local-stobj
@@ -4563,7 +4618,7 @@ nor a predefined typename~%" dtexp)
      (mv-let 
       (erp result state ds$)
       (b* ((ds$ (initialize-ds$ debug-flag wrld ds$))
-           ((mv defs1 ds$) (translate-defs defs0 ctx ds$))
+           ((mv defs1 ds$) (translate-defs defs0 ctx ds$ R$ types-ht$))
            (enum-event (process-enum-form defs1 ctx wrld)))
         (if enum-event
 ;submit enumeration event form
@@ -4593,9 +4648,11 @@ nor a predefined typename~%" dtexp)
                                           ',(support-lemmas ds$)
                                           ',(custom-types ds$)
                                           ',(type-class ds$)
-                                          ',ctx (w state) state))))))
+                                          ',ctx (w state) 
+                                          state R$ types-ht$)))
+                    ))) 
             (mv nil mk-ev-form state ds$))))
-      (mv erp result state)))))
+      (mv erp result state))))))
 
 
 #|
@@ -4726,7 +4783,8 @@ nor a predefined typename~%" dtexp)
       :gag-mode ,(if (get-acl2s-defdata-debug) 'nil 't)
       (make-event
         (compute-defdata ',',args  ,(get-acl2s-defdata-debug)
-                         ','defdata (w state) state))))))
+                         ','defdata (w state) state R$ types-ht$)))
+    )))
 
 
 (defun make-subsumes-relation-name (T1 T2)
@@ -4747,9 +4805,6 @@ nor a predefined typename~%" dtexp)
          (str (string-append str11 str2)))
     (intern$ str "DEFDATA")))
 
-(defstub is-disjoint (* * *) => *)
-(defstub is-subtype (* * *) => *)
-(defstub is-alias (* * *) => *)
 #||
 (defun allp (x)
   (or (atom x)
@@ -4789,11 +4844,15 @@ Note that J specifically precludes predicates that are
 constant-everywhere in tau-system.
 ||# 
 
-(defun compute-defdata-relation (T1 T2 ctx wrld hints rule-classes otf-flg doc)
-  (declare (xargs :mode :program
+(defun compute-defdata-relation (T1 T2 hints rule-classes otf-flg doc ctx wrld R$ types-ht$)
+  (declare (xargs :mode :program :stobjs (R$ types-ht$)
                   :guard (and (is-a-variablep T1)
                               (is-a-variablep T2)
                               (keyword-listp rule-classes)
+                              (R$p2 (rgraph-length R$) R$)
+                              (types-ht$p types-ht$)
+                              (vertex-ht-valid-p T1 (rgraph-length R$) types-ht$)
+                              (vertex-ht-valid-p T2 (rgraph-length R$) types-ht$)
                               )))
   (b* ((T1p (get-predicate-symbol T1))
        (T2p (get-predicate-symbol T2))
@@ -4807,15 +4866,15 @@ constant-everywhere in tau-system.
 ;;                        (eq T2 'ACL2::ALL))))
 ;; ;if not existing typenames raise error
 ;;         (er hard ctx  "~|Subtype/disjoint relation not allowed on predicate ALL with non-empty rule-classes~%"))
-       (rule-classes (if (or (is-subtype 'ACL2::ALL T1 wrld)
-                             (is-subtype 'ACL2::ALL T2 wrld))
+       (rule-classes (if (or (is-subtype$$ 'ACL2::ALL T1 R$ types-ht$)
+                             (is-subtype$$ 'ACL2::ALL T2 R$ types-ht$))
                          '() 
 ; force not to be a tau-rule bcos tau complains
                           rule-classes))
        ((when (or (and (eq ctx 'defdata-disjoint)
-                       (is-disjoint T1 T2 wrld))
+                       (is-disjoint$$ T1 T2 R$ types-ht$))
                   (and (eq ctx 'defdata-subtype)
-                       (is-subtype T1 T2 wrld))))
+                       (is-subtype$$ T1 T2 R$ types-ht$))))
           '(value-triple :redundant))
        (form (if (eq ctx 'defdata-disjoint)
                  `(implies (,T1p x) (not (,T2p x)))
@@ -4866,9 +4925,11 @@ constant-everywhere in tau-system.
 ;macros call so dont need quotes
                 ,@event-form
                 ,(if (eq ctx 'defdata::defdata-disjoint)
-                     `(add-edge-to-disjoint-graph-batch ,T1 ,T2)
-                   `(add-edge-to-subtype-graph-batch ,T1 ,T2))
-                (sync-globals-for-dtg)
+                     ;`(add-edge-to-disjoint-graph-batch ,T1 ,T2)
+                     `(add-edge-event :disjoint ,T1 ,T2)
+                   ;`(add-edge-to-subtype-graph-batch ,T1 ,T2)
+                   `(add-edge-event :subtype ,T1 ,T2))
+        ;        (sync-globals-for-dtg)
                 (value-triple :success))))
 
 ;; (defun compute-defdata-subtype (T1 T2 state rule-classes hints otf-flg doc)
@@ -4956,8 +5017,11 @@ constant-everywhere in tau-system.
                )
        :gag-mode ,(if (get-acl2s-defdata-debug) 'nil 't)
        (make-event
-        (compute-defdata-relation ',',T1 ',',T2 'defdata::defdata-subtype (w state) 
-                                 ',',hints ',',rule-classes ',',otf-flg ',',doc))))))
+        (compute-defdata-relation ',',T1 ',',T2  
+                                 ',',hints ',',rule-classes ',',otf-flg ',',doc
+                                 'defdata::defdata-subtype (w state) R$ types-ht$)
+        ))
+     )))
         ;(compute-defdata-subtype ',',T1 ',',T2 state ',',hints ',',otf-flg ',',doc))))))
 
   
@@ -5022,8 +5086,11 @@ constant-everywhere in tau-system.
                )
        :gag-mode ,(if (get-acl2s-defdata-debug) 'nil 't)
        (make-event 
-        (compute-defdata-relation ',',T1 ',',T2 'defdata::defdata-disjoint (w state) 
-                                  ',',hints ',',rule-classes',',otf-flg ',',doc))))))#|ACL2s-ToDo-Line|#
+        (compute-defdata-relation ',',T1 ',',T2  
+                                  ',',hints ',',rule-classes',',otf-flg ',',doc
+                                  'defdata::defdata-disjoint (w state) R$ types-ht$)
+        ))
+     )))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

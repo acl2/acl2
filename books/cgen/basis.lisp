@@ -366,7 +366,7 @@
    (mv def-events~ P)))
                         
 
-  (defconst   *stobjs* '(state ts$))            
+(defconst *stobjs* '(state R$ types-ht$)) ;ACHTUNG: Keep in sync!
     
 (defun mk-declare (K)
   (declare (xargs :guard (and (keyword-value-listp K)
