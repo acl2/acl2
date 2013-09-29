@@ -8,9 +8,19 @@
 
 <b><font>[<a href="installation.html">Back to main page of Installation Guide.</a>]</font></b>
 
-<p>
+<p><hr size=3 noshade><p>
+
+ACL2 Version 6.2<br>
+Copyright (C) 2013, Regents of the University of Texas<br>
+ACL2 is licensed under the terms of the LICENSE file distributed with
+ACL2.
+
+<p><hr size=3 noshade><p>
+
+<H3>Table of Contents</H3>
 
 <UL>
+  <LI><A HREF="#Performance">Performance comparisons</A>
   <LI><A HREF="#Obtaining-Lisp">Obtaining Common Lisp</A> (alphabetical listing)
   <UL>
     <LI><A HREF="#Obtaining-Allegro">Obtaining Allegro Common Lisp</A>
@@ -21,14 +31,17 @@
     <LI><A HREF="#Obtaining-LispWorks">Obtaining LispWorks</A>
     <LI><A HREF="#Obtaining-SBCL">Obtaining SBCL</A>
   </UL>
-  <LI><A HREF="#Performance">Performance comparisons</A>
 </UL>
 
 <p><hr size=3 noshade><p>
 
-ACL2 Version 6.2 Copyright (C), Regents of the University of Texas
-ACL2 is licensed under the terms of the LICENSE file distributed with
-ACL2.
+<H3><A NAME="Performance">Performance comparisons</A></H3>
+
+You can see recent performance numbers by following <a
+href="http://www.cs.utexas.edu/users/moore/acl2/current/new.html#performance">this
+link</a>, or by going to the <a
+href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2 home page</a>
+and following the link "Recent changes to this page".
 
 <H3><A NAME="Obtaining-Lisp">Obtaining Common Lisp</A></H3>
 
@@ -49,9 +62,6 @@ alphabetically.
 </ul>
 
 <p>
-
-Often we put timing comparisons
-between different lisps in the <a href="http://www.cs.utexas.edu/users/moore/acl2/current/new.html">ACL2 News</a>.
 
 <P><B><A NAME="Obtaining-Allegro">Obtaining Allegro Common Lisp</A></B><P>
 
@@ -179,97 +189,81 @@ href="http://www.cons.org/cmucl/">http://www.cons.org/cmucl/</a></code>.
 
 <P><B><A NAME="Obtaining-GCL">Obtaining GCL</A></B><P>
 
-You do not need to fetch GCL if instead
-you <A HREF="http://packages.qa.debian.org/a/acl2.html">download a
+You might be able
+to <A HREF="http://packages.qa.debian.org/a/acl2.html">download a
 binary Debian package for ACL2</A>.  Thanks to Camm Maguire for
-maintaining this package.  Note that it may take some time after each
-ACL2 release for this binary Debian package to be updated for that
-release.  Here is a shell command that might be used to obtain that
-package.
+maintaining this package.  Note however that it may take some time
+after each ACL2 release for this binary Debian package to be updated
+for that release.  Here is a shell command that might be used to
+obtain that package (if running Debian).
 
 <pre>
-apt-get -q install gcl gcl-doc if running Debian
+apt-get -q install gcl gcl-doc
 </pre>
 
-Otherwise, you can fetch GCL in one of the ways described below.  Note
-that in Spring 2013 there were updates to GCL, reflected in ACL2, that
-allow ACL2 (starting with ACL2 Version 6.2) to build not only on
-traditional ("CLtL1") GCL but also on ANSI GCL.
-
-<p>
-
-The simplest way may be to fetch a recent version of GCL from
-  the <a href="http://www.gnu.org/software/gcl/">main GNU website for
-  GCL</a>.  The main GCL implementor has told us that he hopes to make
-  suitable versions of GCL Version 2.6.8 and GCL Version 2.6.9
-  available in tarball form at that website in approximately mid-June,
-  2013.
-
-<p>
-
-Another way to fetch a recent GCL is with one of the following
-commands, which will retrieve recent development/unstable cvs
-sources.
+Otherwise, it should be easy to obtain and build GCL yourself.  There
+are two recommended versions of GCL for building ACL2: GCL 2.6.8 and
+GCL 2.6.10.  (GCL 2.6.9, which is <i>not</i> recommended, has some
+issues that were fixed in GCL 2.6.10.)  GCL 2.6.8 appears to be faster
+for ACL2 regressions than GCL 2.6.10; we obtained the following
+times on a 64-bit Linux system using a development snapshot of ACL2 as
+of Sept. 23, 2013.
 
 <pre>
-cvs -z9 -q -d:pserver:anonymous@cvs.sv.gnu.org:/sources/gcl \
-     co -d gcl-2.6.8 -r Version_2_6_8pre gcl
+   ACL2 built on non-ANSI GCL 2.6.8:
+   33235.713u 1275.991s 1:29:23.91 643.4%	0+0k 156624+4638504io 25pf+0w
 
-cvs -z9 -q -d:pserver:anonymous@cvs.sv.gnu.org:/sources/gcl \
-     co -d gcl-2.6.9 -r Version_2_6_9pre gcl
+   ACL2 built on non-ANSI GCL 2.6.10pre:
+   40678.982u 1013.967s 1:45:06.91 661.0%	0+0k 153400+6615176io 9pf+0w
+
+   ACL2 built on ANSI GCL 2.6.10pre:
+   67950.466u 1050.753s 2:44:58.65 697.0%	0+0k 327160+6955712io 7pf+0w
 </pre>
 
-As per GCL installation instructions, you may wish to build GCL as
-follows on a 64-bit linux machine, instead
-using <code>--enable-maxpage=524288</code> on a 32-bit linux machine,
-and perhaps <code>--enable-maxpage=262144</code> on a Mac.
+On the other hand, modern Common Lisp implementations are ANSI
+compliant, and GCL 2.6.10 may have better ANSI support (which is
+needed if you choose to build
+<a href="http://www.cs.utexas.edu/users/moore/acl2/v6-2/HONS-AND-MEMOIZATION.html">ACL2(h)</a>).
+
+<p>
+
+As of this writing (late September 2013), it might be best to fetch
+GCL 2.6.8 for most purposes but GCL 2.6.10 if for some reason you want
+an ANSI build of GCL.  You can fetch it as a tarball from
+<a href="http://www.gnu.org/software/gcl/">main GNU website for
+  GCL</a>.
+From GCL source you can build an executable by extracting from the
+  tarball, standing in the resulting <code>gcl/</code> directory, and
+  issuing one of the following commands.
 
 <pre>
-./configure --enable-maxpage=1048576
-make
+# Recommended for 64-bit Linux:
+./configure --enable-maxpage=1048576 && make
+
+# Recommended for Mac OS:
+./configure && make
+
+# If you want an ANSI build
+# (but add "--enable-maxpage=1048576" as above for linux):
+./configure --enable-ansi && make
 </pre>
 
-You can build an ANSI image by adding <code>--enable-ansi</code> to
-the above <code>./configure</code> command.  Alternatively, you might
-find suitable prebuilt binaries for a variety of machines here:
-<br>
-<code><a href="http://packages.debian.org/search?keywords=gcl">http://packages.debian.org/search?keywords=gcl</a></code>
+As of late September 2013, GCL 2.6.10 is not yet available as a
+tarball.  However, you can get a pre-release (which we expect to work
+fine, having used it successfully ourselves) like this (assuming you
+have <code>git</code> installed):
+
+<pre>
+git clone git://git.sv.gnu.org/gcl.git
+cd gcl
+git checkout Version_2_6_10pre
+cd gcl
+</pre>
+
+Then run <code>configure</code> and <code>make</code> as indicated
+above.
 
 <p>
-
-<!--
-
-Through Version_6.1 we included the following instructions, saying
-that "GCL maintainer Camm Maguire has suggested the following, in
-order of preference (most to least):", as an ordered list:
-
-apt-get -q install gcl gcl-doc if running Debian
-Download and install the prebuilt binaries otherwise (if available for your platform)
-Download the latest (stable) source tarball and build yourself otherwise
-Download the latest (stable) cvs branch and build yourself
-
-However, it's not clear how helpful those instructions are, as opposed
-simply to spelling some things out as has been done above.
-
--->
-
-<!--
-Through Version_6.1 there were instructions here from Robert Krug for
-building on a Mac.  But Matt Kaufmann built ACL2 on a Mac in May,
-2013, by following normal GCL instructions, modified as shown below.
--->
-
-<p>
-
-<i>Note</i>: On rare occasions you may see a hard error when using GCL
-obtained before early June, 2013, sometimes (not always) labeled as
-"bad plist", that may be due to interaction between GCL and GNU Make.
-The main GCL implementor has told us that he has fixed this problem,
-and will provide tarballs at
-the <a href="http://www.gnu.org/software/gcl/">main GNU website for
-  GCL</a> in approximately mid-June, 2013 (as noted above).
-
-<P>
 
 <P><B><A NAME="Obtaining-LispWorks">Obtaining LispWorks</A></B><P>
 
@@ -287,6 +281,8 @@ href="http://sbcl.sourceforge.net/">http://sbcl.sourceforge.net/</a></code>.
 
 <p>
 
+<!-- I don't know that we need this comment any longer, since we write
+    a suitable --dynamic-space-size argument to saved_acl2 scripts.
 Note for 32-bit linux users: When building ACL2 with SBCL 1.0.18 and
 1.0.39 on 32-bit Linux, we ran out of memory with the SBCL message
 "Heap exhausted, game over."  We solved the problem by modifying our
@@ -302,14 +298,7 @@ export SBCL_HOME=/projects/acl2/lisps/sbcl/sbcl-1.0.39-x86-linux/output
 
 Your results may vary; one user has reported solving the problem with
 <code>--dynamic-space-size 2000000000</code>.
-
-<H3><A NAME="Performance">Performance comparisons</A></H3>
-
-You can see recent performance numbers by following <a
-href="http://www.cs.utexas.edu/users/moore/acl2/current/new.html#performance">this
-link</a>, or by going to the <a
-href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2 home page</a>
-and following the link "Recent changes to this page".
+-->
 
 <p>
 

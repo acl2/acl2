@@ -31,7 +31,6 @@
     a Unix-like Systems</A>
     <LI><A HREF="#Build-Particular">Building an Executable Image on Some Particular Systems</A>
     <UL>
-      <LI><A HREF="#Mac-OS-X-GCL">Special Case: Building an Executable Image on Mac OS X using GCL</A>
       <LI><A HREF="#Windows-GCL">Special Case: Building an Executable Image on a Windows System using GCL</A>
       <LI><A HREF="windows-gcl-jared.html">Older instructions from Jared Davis for
       building ACL2 on Windows using mingw</A>
@@ -105,7 +104,7 @@ and <code>run_acl2.exe</code> on Windows, to start an ACL2 session.
 the certificate (<code>.cert</code>) files are automatically
 fixed, according to the full pathname of your <code>books/</code> directory.)
 Also see
-the <a href="http://www.cs.utexas.edu/users/moore/acl2/current/ACL2-SEDAN.html">ACL2
+the <a href="http://www.cs.utexas.edu/users/moore/acl2/v6-2/ACL2-SEDAN.html">ACL2
 documentation topic on the ACL2 Sedan</a>.
 
 
@@ -515,24 +514,12 @@ example by executing the following command.<br><br>
 Subtopics of this section are as follows.
 
     <UL>
-      <LI><A HREF="#Mac-OS-X-GCL">Special Case: Building an Executable Image on Mac OS X using GCL</A>
       <LI><A HREF="#Windows-GCL">Special Case: Building an Executable Image on a Windows System using GCL</A>
       <LI><A HREF="windows7.html">Instructions from David Rager
       for building ACL2 on Windows</A>
       <LI><A HREF="windows-gcl-jared.html">Older instructions from Jared Davis for
       building ACL2 on Windows using mingw</A>
     </UL>
-
-<BR><HR><BR>
-<H3><A NAME="Mac-OS-X-GCL"></A>How to build/install ACL2 on GCL on Mac OS X</H3>
-
-If you want to build/install ACL2 on Mac OS X, you may find it easier to do so
-on top of <a href="requirements.html#Obtaining-CCL">CCL</a> rather than
-<a href="requirements.html#Obtaining-GCL">GCL</a>.  Otherwise, see <A
-HREF="requirements.html#gcl-mac">the directions for bulding GCL on Mac OS
-X</A>.  Then follow the usual installation instructions to <A
-HREF="#Sources">obtain the ACL2 sources</A> and <A
-HREF="#Other-Unix">build an executable image</A> on a Unix-like system.
 
 <BR><HR><BR>
 <H3><A NAME="Windows-GCL">Special Case: Building an Executable Image on a Windows System using GCL</A></H3>
@@ -695,30 +682,39 @@ Now proceed to read more about <A HREF="using.html">Using ACL2</A>.
 <BR><HR noshade size=8><BR>
 <H2><A NAME="Summary">Summary of Distribution</A></H2>
 
-The distribution includes the following.  A list of all files in
-<CODE>acl2-sources</CODE> may be found in the file <CODE>all-files.txt</CODE>
-in that directory.
+The ACL2
+    distribution, <code><A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/acl2.tar.gz">
+    acl2.tar.gz</A></code>, includes the ACL2 source files as well as
+    the following files and directories (and a few others not
+    mentioned here).  Note that a <code>books/</code> directory
+    is <b>not included</b>; see instructions above to fetch the community
+    books.
 <PRE>
-Readme.html; This file
-acl2-sources/
-  LICENSE  ; ACL2 license file
-  GNUmakefile ; For GNU make
-  TAGS     ; Handy for looking at source files with emacs
-  *.lisp   ; ACL2 source files
-  all-files.txt    ; List of all files in this directory and subdirectories
-  books/   ; NOT INCLUDED; see instructions above to fetch community books
-  doc/     ; ACL2 documentation in various formats
-  emacs/   ; Miscellaneous emacs and file utilities, especially emacs-acl2.el
-  init.lisp; Useful for building the system
-  saved/   ; Empty directory for backing up copies during make; not important
-acl2.tar.gz; gzip'd tar file containing all of acl2-sources/ (see below)
-images/    ; Some gzip'd tar'd executables; see images/Readme.html
-split/     ; The result of splitting up acl2.tar.gz; see split/Readme.html
+  LICENSE       ; ACL2 license file
+  GNUmakefile   ; For GNU make
+  TAGS          ; Handy for looking at source files with emacs
+  doc/          ; ACL2 documentation in various formats
+  emacs/        ; Some helpful emacs utilities
+  installation/ ; Installation instructions (start with installation.html)
+  saved/        ; Empty directory for backing up copies during make
 </PRE>
 
+Also available are the following.
+
+<ul>
+
+<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/images/">images/</a></code>:
+Some gzip'd tar'd executables; see <code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/images/Readme.html">images/Readme.html</a></code></li>
+
+<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/split/">split/</a></code>: The result of splitting up <code>acl2.tar.gz</code></li>
+
+</ul>
+
 <P>
-The entire acl2.tar.gz is about 7MB, which extracts to
-about 30MB.  The gzipped tarfile books-6.2.tar.gz (obtained as described
+Based on the preceding ACL2 release, we estimate that the
+entire <code>acl2.tar.gz</code> is about 7MB, which extracts to about
+30MB, and the gzipped tarfile <code>books-6.2.tar.gz</code> (obtained
+as described
 <a href="#Obtaining-books">above</a>) is about 12MB, which extracts to
 about 70MB.  Additional space is required to build an image, perhaps
 50 to 300 megabytes depending on the platform (including the host

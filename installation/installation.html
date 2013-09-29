@@ -78,9 +78,11 @@ into the <CODE>books/</CODE> directory (but first
 make regression
 (time nice make -j 8 ACL2=/u/smith/bin/acl2 regression) >& make-regression.log
 </pre>
-    <A HREF="http://www.cs.utexas.edu/users/moore/acl2/current/REGRESSION.html">See
-    :DOC regression</A> for explanation and further options, e.g.
-    for using <A HREF="http://www.cs.utexas.edu/users/moore/acl2/current/HONS-AND-MEMOIZATION.html">ACL2(h)</A>.
+The resulting log file, <code>make-regression.log</code>, should
+contain no occurrences of the string ``CERTIFICATION FAILED''; a
+normal exit (status 0) should guarantee this.  If you want additional
+explanation and further options, see the documentation
+for <A HREF="http://www.cs.utexas.edu/users/moore/acl2/current/BOOKS-CERTIFICATION.html">BOOKS-CERTIFICATION</A>.
 
 </ol>
 
@@ -101,8 +103,8 @@ NEED.</font></b> Otherwise, read on....
 <UL>
 <LI><A HREF="requirements.html">REQUIREMENTS</A>
 <UL>
-  <LI><A HREF="requirements.html#Obtaining-Lisp">Obtaining Common Lisp</A>
   <LI><A HREF="requirements.html#Performance">Performance comparisons</A>
+  <LI><A HREF="requirements.html#Obtaining-Lisp">Obtaining Common Lisp</A>
 </UL>
 <LI><A HREF="obtaining-and-installing.html">OBTAINING AND INSTALLING ACL2</A>
 <UL>
