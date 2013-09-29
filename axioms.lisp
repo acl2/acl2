@@ -36080,6 +36080,32 @@
                 output-string
               ""))))
 
+(encapsulate
+ ()
+
+; Before Version_2.9.3, len-update-nth had the form of the local lemma below.
+; It turns out that an easy way to prove the improved version below,
+; contributed by Jared Davis, is to prove the old version first as a lemma:
+
+ (local
+  (defthm len-update-nth-lemma
+    (implies (< (nfix n) (len x))
+             (equal (len (update-nth n val x))
+                    (len x)))))
+
+ (defthm len-update-nth
+   (equal (len (update-nth n val x))
+          (max (1+ (nfix n))
+               (len x)))))
+
+(defthm update-acl2-oracle-preserves-state-p1
+  (implies (and (state-p1 state)
+                (true-listp x))
+           (state-p1 (update-acl2-oracle x state)))
+  :hints (("Goal" :in-theory (enable state-p1))))
+
+(in-theory (disable update-acl2-oracle))
+
 (defun sys-call+ (command-string args state)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -36137,7 +36163,7 @@
   As is the case for ~c[sys-call], a trust tag is required to call
   ~c[sys-call+].  For discussion of this and more, ~pl[sys-call].~/~/"
 
-  (declare (xargs :guard t))
+  (declare (xargs :stobjs state))
   #+acl2-loop-only
   (declare (ignore command-string args))
   #+acl2-loop-only
@@ -36222,32 +36248,6 @@
 ; Time is maintained as a rational.  We print time in seconds, accurate
 ; to two decimal places.  We just print the number, without leading or
 ; trailing spaces or even the word ``seconds''.
-
-(encapsulate
- ()
-
-; Before Version_2.9.3, len-update-nth had the form of the local lemma below.
-; It turns out that an easy way to prove the improved version below,
-; contributed by Jared Davis, is to prove the old version first as a lemma:
-
- (local
-  (defthm len-update-nth-lemma
-    (implies (< (nfix n) (len x))
-             (equal (len (update-nth n val x))
-                    (len x)))))
-
- (defthm len-update-nth
-   (equal (len (update-nth n val x))
-          (max (1+ (nfix n))
-               (len x)))))
-
-(defthm update-acl2-oracle-preserves-state-p1
-  (implies (and (state-p1 state)
-                (true-listp x))
-           (state-p1 (update-acl2-oracle x state)))
-  :hints (("Goal" :in-theory (enable state-p1))))
-
-(in-theory (disable update-acl2-oracle))
 
 (local
  (defthm rational-listp-cdr

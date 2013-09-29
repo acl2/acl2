@@ -21349,6 +21349,10 @@
   debug this problem, and to David Rager for contributing the community book
   ~c[books/parsers/earley/earley-parser.lisp], which highlighted this problem.
 
+  (SBCL only) Fixed a bug that was causing a Lisp break after turning on
+  ~il[waterfall-parallelism].  Thanks to David Rager for confirming that our
+  proposed fix is correct.
+
   ~/~/")
 
 (deflabel the-method

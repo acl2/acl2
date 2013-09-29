@@ -1412,7 +1412,8 @@
 ; Returns t if there are futures still in the work-queue to process or if there
 ; are futures already being processed.
 
-  (< 1 *unassigned-and-active-future-count*))
+  (< 1 (atomically-modifiable-counter-read
+        *unassigned-and-active-future-count*)))
 
 
 ;---------------------------------------------------------------------
