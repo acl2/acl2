@@ -449,6 +449,14 @@ ADDED_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   $(filter rtl/rel7/%, $(OK_CERTS))
 
+# The following has taken only a couple of minutes on a decent Linux
+# system in 2013.  However, ACL2 built on GCL 2.6.8 and Mac OS 10.6
+# cannot complete the certification without running exhausting STRING
+# storage, probably because it contains a large stobj.  So we certify
+# it only in "everything" regressions.
+
+ADDED_BOOKS += workshops/2013/hardin-hardin/support/APSP.cert
+
 # Now SLOW_BOOKS is defined as the list above, except that below, we
 # also include books that are too slow for both an ordinary regression
 # (target "all") and an "everything" regression.
