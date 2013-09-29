@@ -1,26 +1,12 @@
 ; Copyright (C) 2013, Regents of the University of Texas
 ; Written by Matt Kaufmann (original date October, 2006)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; (NOTE: This book includes GPL community book xdoc/top.  Nevertheless, I
-; believe that the present book can legitimately be given the 3-clause BSD
-; license (see the LICENSE file distributed with ACL2).  However, until I am
-; more confident that this is the case, for now I will put a GPL v2 license on
-; it (as UT doesn't allow me to use GPL v3, hence I can't use "GPL v2 or
-; later").  Note that file bash-bsd.lisp contains all the code for this utility
-; and is indeed licensed with the 3-clause BSD license.
-
-; This book is free software; you can redistribute it and/or modify it
-; under Version 2 of the GNU General Public License as published by
-; the Free Software Foundation.
-
-; This book is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-; GNU General Public License for more details.
-
-; You should have received a copy of the GNU General Public License
-; along with this book; if not, write to the Free Software
-; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+; NOTE: This book includes GPL community book xdoc/top.  Therefore, as per
+; Section 2(b) of the Gnu Public License Version 2, software distributions of
+; books that include this book must have a GPL license.  If you want to use the
+; software documented in this book under a 3-clause BSD license, consider
+; the book bash-bsd.lisp instead.
 
 (in-package "ACL2")
 

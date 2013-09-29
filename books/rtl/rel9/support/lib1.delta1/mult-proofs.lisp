@@ -794,9 +794,21 @@
                      (* (neg (zeta (+ -1 m)))
                         (expt 2 (* 2 (+ -1 m)))))
                   (* x (sum-zeta m))))
-  :hints (("Goal" :in-theory (e/d ()
-                                  (bmux4 (sum-zeta) 
-                                         bmux4-reduce-to neg lnot zeta-bnd))
+  :hints (("Goal"
+
+; The following hint, :induct t, was added by Matt Kaufmann on 9/28/2013 so
+; that the proof goes through with ACL2(hp) and, presumably, ACL2(p).  A
+; difference between those two and "vanilla" ACL2 is in the algorithm for
+; reverting to prove the original goal by induction: this can happen later with
+; ACL2(p) and ACL2(hp) than with ACL2.  In this case, without :induct t,
+; ACL2(hp) created subgoals such as Subgoal 1.1.1.1.1.1.1.2'', while on the
+; other hand ACL2 aborted immediately after Subgoal 1.2'' to prove the original
+; goal by induction.
+
+           :induct t
+           :in-theory (e/d ()
+                           (bmux4 (sum-zeta) 
+                                  bmux4-reduce-to neg lnot zeta-bnd))
            :do-not '(generalize))
           ("Subgoal *1/3" :use sum-pp4-part2-reduce-lemma)
           ("Subgoal *1/2" :in-theory (e/d (neg lnot zeta-bnd) ((sum-zeta)))

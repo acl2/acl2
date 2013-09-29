@@ -200,6 +200,13 @@
   :hints(("Goal" :in-theory (enable ubdd-deps)))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
+; Added by Matt K., 9/28/2013, to get around ACL2(hp) error such as:
+;   Error:  Not owner of hash table #<HASH-TABLE :TEST EQL size 3/62 #x30200BB9920D>
+; David Rager points out (email, 9/28/2013) that "memoization is known
+; not to be thread-safe"; Jared Davis says this too.  (Perhaps this will be
+; addressed in the future.)
+(local (unmemoize 'ubdd-deps))
+
 (defthm q-ite-no-new-deps
   (implies (and (not (nth n (ubdd-deps x)))
                 (not (nth n (ubdd-deps y)))

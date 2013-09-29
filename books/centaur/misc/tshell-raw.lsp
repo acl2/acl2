@@ -58,11 +58,11 @@
 (defun tshell-stop ()
   ;; Stops any tshell processes that are running.
 
-  #-Clozure
+  #-(and Clozure (not mswindows))
   ;; BOZO maybe eventually add support for other Lisps
   nil
 
-  #+Clozure
+  #+(and Clozure (not mswindows))
   (progn (ignore-errors
            (when *tshell*
              (tshell-debug "TSHELL-STOP: stopping *tshell*~%")
@@ -83,11 +83,11 @@
 (defun tshell-start ()
   ;; Stops any tshell processes and starts new ones.
 
-  #-Clozure
+  #-(and Clozure (not mswindows))
   ;; BOZO maybe eventually add support for other Lisps
   nil
 
-  #+Clozure
+  #+(and Clozure (not mswindows))
   (progn (tshell-debug "TSHELL-START: killing old processes~%")
          (tshell-stop)
          (tshell-debug "TSHELL-START: starting *tshell*~%")
@@ -111,9 +111,9 @@
          nil))
 
 (defun tshell-check ()
-  #-Clozure
+  #-(and Clozure (not mswindows))
   t
-  #+Clozure
+  #+(and Clozure (not mswindows))
   (and (ccl::external-process-p *tshell*)
        (ccl::external-process-p *tshell-killer*)
        (ccl::external-process-p *tshell-bg*)
@@ -123,10 +123,10 @@
 
 (defun tshell-ensure ()
   ;; Stops any tshell processes and starts new ones.
-  #-Clozure
+  #-(and Clozure (not mswindows))
   ;; BOZO eventually add support for other Lisps
   nil
-  #+Clozure
+  #+(and Clozure (not mswindows))
   (unless (tshell-check)
     (tshell-debug "TSHELL-START: starting *tshell*~%")
     (setf *tshell* (ccl::run-program "/bin/bash" nil
@@ -167,7 +167,7 @@
     (declare (ignore pos))
     val))
 
-#+Clozure
+#+(and Clozure (not mswindows))
 (defun tshell-kill (pid)
   ;; Use the tshell-killer process to try to kill process PID.
   (tshell-debug "TSHELL-KILL: killing ~a.~%" pid)
@@ -212,10 +212,10 @@
   (unless (tshell-check)
     (error "Invalid *tshell*, *tshell-killer*, or *tshell-bg* -- did you call (tshell-start)?"))
 
-  #-Clozure
+  #-(and Clozure (not mswindows))
   (error "Oops, TSHELL isn't implemented for this Lisp.")
 
-  #+Clozure
+  #+(and Clozure (not mswindows))
   (let* ((tshell-in     (ccl::external-process-input-stream *tshell*))
          (tshell-out    (ccl::external-process-output-stream *tshell*))
          (tshell-err    (ccl::external-process-error-stream *tshell*))
@@ -332,10 +332,10 @@
   (unless (tshell-check)
     (error "Invalid *tshell*, *tshell-killer*, or *tshell-bg* -- did you call (tshell-start)?"))
 
-  #-Clozure
+  #-(and Clozure (not mswindows))
   (error "Oops, TSHELL isn't implemented on this Lisp.")
 
-  #+Clozure
+  #+(and Clozure (not mswindows))
   (let* ((tshell-bg-in (ccl::external-process-input-stream *tshell*))
          (nl  (coerce (list #\Newline) 'string))
          (cmd (concatenate 'string "(" cmd ") &" nl)))

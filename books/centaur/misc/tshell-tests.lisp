@@ -28,9 +28,9 @@
 
 (defmacro test-tshell (&key cmd save print okp lines)
   (declare (ignorable cmd save print okp lines))
-  #-Clozure
+  #-(and Clozure (not mswindows))
   `(value-triple :invisible)
-  #+Clozure
+  #+(and Clozure (not mswindows))
   `(make-event
     (b* (((mv $finishedp $status $lines)
           (tshell-call ,cmd :save ,save :print ,print)))

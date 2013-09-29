@@ -109,6 +109,14 @@ like.</p>"
 (defttag writes-okp)
 (remove-untouchable acl2::writes-okp nil)
 
+; Added by Matt K., 9/28/2013, to get around ACL2(hp) error such as:
+;   Error:  Not owner of hash table #<HASH-TABLE :TEST EQL size 95/135 #x30205C1CDBBD>
+; David Rager points out (email, 9/28/2013) that "memoization is known
+; not to be thread-safe"; Jared Davis says this too.  (Perhaps this will be
+; addressed in the future.)
+(local (unmemoize 'mod-state))
+(local (unmemoize 'occmap))
+
 (define stv-debug
   :parents (symbolic-test-vectors)
   :short "Evaluate a symbolic test vector at particular, concrete inputs, and
