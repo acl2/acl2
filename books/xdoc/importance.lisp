@@ -24,6 +24,17 @@
 (set-state-ok t)
 (program)
 
+(defun make-key (x)
+  (declare (type symbol x))
+  (str::rchars-to-string (file-name-mangle x nil)))
+
+(defun make-keys (x)
+  (declare (xargs :guard (symbol-listp x)))
+  (if (atom x)
+      nil
+    (cons (make-key (car x))
+          (make-keys (cdr x)))))
+
 
 ; importance.lisp
 ;
@@ -70,7 +81,7 @@
    parents      ; copy of parents from normal topic
    short-tokens ; already preprocessed
    long-tokens  ; already preprocessed
-   links        ; collected up links (short+long combined)
+   links        ; collected up links (short+long combined) keys (i.e., "ACL2____FOO")
    size         ; heuristic for how much content there is
    ))
 
@@ -129,6 +140,122 @@
     (if in-code-p
         rest
       (cons topic rest))))
+
+
+; Broken link reports.
+;
+; BOZO.  This really doesn't belong here at all.  But it's convenient to reuse
+; xtopics for this, since we already have gone to the work of extracting the
+; links from topic to topic, from both preprocessor and manually entered
+; <see topic='...'> tags.
+;
+; Terminology: if page A has a link to page B, then A is the "source" of the
+; link and B is the "target" of the link.
+;
+; Below, a LINKS-FAL is a fast alist that binds
+;
+;          TARGET (key) -> SOURCE LIST (names) 
+;
+; For instance, the LINKS-FAL might bind:
+;
+;       "ACL2____FOO" -> (ACL2::BAR ACL2::BAZ)
+;
+; When both ACL2::BAR and ACL2::BAZ have links to ACL2::FOO.
+
+(defun extend-links-fal
+  (source    ; symbol, name of the page we're processing
+   targets   ; string list, keys of the pages linked to from source
+   links-fal ; the fal being constructed
+   )
+  (declare (xargs :guard (and (stringp source)
+                              (symbol-listp targets))))
+  (b* (((when (atom targets))
+        links-fal)
+       (target1      (car targets))
+       (prev-sources (cdr (hons-get target1 links-fal)))
+       ((when (member source prev-sources))
+        (extend-links-fal source (cdr targets) links-fal))
+       (new-sources (cons source prev-sources))
+       (links-fal   (hons-acons target1 new-sources links-fal)))
+    (extend-links-fal source (cdr targets) links-fal)))
+
+(defun make-links-fal-aux (xtopics links-fal)
+  (b* (((when (atom xtopics))
+        links-fal)
+       (xtopic    (car xtopics))
+       (source    (xtopic->name xtopic))
+       (targets   (xtopic->links xtopic))
+       (links-fal (extend-links-fal source targets links-fal)))
+    (make-links-fal-aux (cdr xtopics) links-fal)))
+
+(defun make-links-fal (xtopics)
+  (b* ((links-fal (make-links-fal-aux xtopics nil))
+       (ans       (hons-shrink-alist links-fal nil)))
+    (fast-alist-free links-fal)
+    (fast-alist-free ans)
+    ans))
+
+(defun find-broken-links
+  (links-al   ; The (shrunk) links al we constructed above
+   keys-fal   ; Fast alist binding KEY to NIL for every defined topic
+   )
+  ;; returns a broken-links-al, which is a links-al but that only has entries
+  ;; for the topics that don't exist
+  (b* (((when (atom links-al))
+        nil)
+       ((cons target-key ?sources) (car links-al))
+       (look (hons-get target-key keys-fal))
+       ((when look)
+        ;; This is a defined topic, so nothing to report
+        (find-broken-links (cdr links-al) keys-fal)))
+    ;; This is NOT a defined topic, so keep it.
+    (cons (car links-al)
+          (find-broken-links (cdr links-al) keys-fal))))
+
+(defun sum-lengths (x)
+  (if (atom x)
+      0
+    (+ (length (car x))
+       (sum-lengths (cdr x)))))
+
+(defun report-broken-links-more-sources (sources)
+  (if (atom sources)
+      (cw ";;; ~%")
+    (progn$ (cw ";;; ~t0~s1~%" 12 (car sources))
+            (report-broken-links-more-sources (cdr sources)))))
+
+(defun report-broken-links-aux (links-al)
+  (b* (((when (atom links-al))
+        nil)
+       ((cons target sources) (car links-al)))
+    (cw ";;; ~s0:~%" target)
+    (cw ";;; ~t0 from ~s1~%" 6 (car sources))
+    (report-broken-links-more-sources (cdr sources))
+    (report-broken-links-aux (cdr links-al))))
+
+(defun report-broken-links (xtopics state)
+  (declare (xargs :stobjs state))
+  (b* ((links-fal (make-links-fal xtopics))
+       (keys-fal  (make-fast-alist
+                   (pairlis$ (make-keys (xtopiclist->names xtopics))
+                             nil)))
+       (broken (find-broken-links links-fal keys-fal))
+       (- (fast-alist-free links-fal))
+       (- (fast-alist-free keys-fal))
+       ((unless broken)
+        state)
+       (soft (acl2::fmt-soft-right-margin state))
+       (hard (acl2::fmt-hard-right-margin state))
+       (state (set-fmt-soft-right-margin 10000 state))
+       (state (set-fmt-hard-right-margin 10000 state))
+       (num (sum-lengths (strip-cdrs broken)))
+       (- (cw "~%;;; WARNING: Found ~x0 broken topic links: ~%" num)
+          (cw ";;;~%")
+          (report-broken-links-aux broken)
+          (cw ";;;~%"))
+       (state (set-fmt-soft-right-margin soft state))
+       (state (set-fmt-hard-right-margin hard state)))
+    state))
 
 
 ; Size ranking.  Perhaps the simplest way to measure if a topic is "important"
@@ -340,19 +467,7 @@
     (fast-alist-free topics-fal)
     (mv xtopics state)))
 
-
 ; Cross-reference/subtopic scoring.
-
-(defun make-key (x)
-  (declare (type symbol x))
-  (str::rchars-to-string (file-name-mangle x nil)))
-
-(defun make-keys (x)
-  (declare (xargs :guard (symbol-listp x)))
-  (if (atom x)
-      nil
-    (cons (make-key (car x))
-          (make-keys (cdr x)))))
 
 (defun dumb-increment-ranks
   (keys      ; Keys whose rank should be incremented
@@ -408,6 +523,13 @@
     (fast-alist-free rank-fal)
     (fast-alist-free ans)
     (rescale-page-ranks ans)))
+
+
+
+
+
+
+
 
 
 
@@ -499,7 +621,9 @@
        (topics-names (strip-cars topics-fal))
        (topics-keys  (make-keys topics-names))
        ((mv xtopics state) (xtopics-from-topics all-topics state))
+       (state        (report-broken-links xtopics state))
        (ordered-keys (rank-xtopics topics-keys xtopics))
+
        ;(- (cw "First 3 ordered-keys: ~x0.~%" (take 3 ordered-keys)))
        ;(- (cw "First 3 topics-keys: ~x0.~%" (take 3 topics-keys)))
        ;(- (cw "Number of ordered keys: ~x0.~%" (len ordered-keys)))

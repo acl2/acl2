@@ -169,7 +169,7 @@ describing this tool can be found in: Jared Davis. <a
 href='http://www.cs.utexas.edu/users/jared/publications/2013-doform-embedding/embedding.pdf'>Embedding
 ACL Models in End-User Applications</a>.  In <a
 href='http://www.cs.bham.ac.uk/research/projects/formare/events/aisb2013/'>Do-Form
-2013</a>.  April, 2013, Exeter, UK.</a>.</li>
+2013</a>.  April, 2013, Exeter, UK.</li>
 
 </ul>
 
