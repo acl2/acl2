@@ -14,5 +14,10 @@ ACL2_DIR ?= $(shell cd ../../.. ; pwd)
 export ACL2 ?= $(ACL2_DIR)/saved_acl2
 export ACL2_SYSTEM_BOOKS ?= $(ACL2_DIR)/books
 
-DIRS = translator examples/thacker
+# There were issues with examples/thacker when testing in late
+# September 2013 on Windows, so for now we remove that directory.  If
+# you want it included at your local installation, simply uncomment
+# the next line and comment out the one immediately below it.
+# DIRS = translator examples/thacker
+DIRS = translator
 include $(ACL2_SYSTEM_BOOKS)/Makefile-subdirs
