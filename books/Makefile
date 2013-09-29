@@ -800,6 +800,9 @@ BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2
 # The .acl2 files specify no compilation:
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2006/cowles-gamboa-euclid/Euclid/fld-u-poly/*.cert))
 
+# The .acl2 file specifies no compilation:
+BOOKS_SKIP_COMP += ccg/ccg.$(ACL2_COMP_EXT)
+
 # Some .acl2 files specify no compilation, including ed3.acl2, and
 # many books depend on ed3:
 BOOKS_SKIP_COMP += $(patsubst %.cert, %.$(ACL2_COMP_EXT), $(wildcard workshops/2006/cowles-gamboa-euclid/Euclid/*.cert))
