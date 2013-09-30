@@ -1,0 +1,16 @@
+#+(and acl2-par hons)
+(set-waterfall-parallelism
+
+; Hons and waterfall parallelism don't play well together in this book.  Here's
+; the error message that we receive during certification if we don't disable
+; waterfall parallelism.  This can probably be fixed by making the problematic
+; hash table a :shared table, but we leave that for another day.
+
+;;; | ***********************************************
+;;; | ************ ABORTING from raw Lisp ***********
+;;; | Error:  Not owner of hash table #<HASH-TABLE :TEST EQL size 4/150002 #x3020007FF2FD>
+;;; | ***********************************************
+
+ nil)
+
+(certify-book "qi-correct" ? t)

@@ -1,0 +1,2 @@
+#!/bin/sh
+exec ../../acl2-images/utilities-symmetry "$@"

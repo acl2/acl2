@@ -1,0 +1,10 @@
+#+(and acl2-par hons)
+(set-waterfall-parallelism 
+
+; qi.lisp currently exhibits a problem with hash tables when built
+; with ACL2(h).  This can probably be fixed by making the problematic
+; hash table a :shared table, but we leave that for another day.
+
+  nil)
+
+(certify-book "qi" ? t)

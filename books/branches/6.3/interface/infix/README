@@ -1,0 +1,167 @@
+Copyright (C) 1994,1995,1996 Computational Logic, Inc. (CLI).
+All Rights Reserved.
+
+Use of this software constitutes agreement with the terms of the
+license agreement, found in the file LICENSE.
+
+Infix printing for 
+
+ ACL2 Version 1.9
+
+Comments, bugs, suggestions to:
+
+  Michael K. Smith
+  Computational Logic Inc.
+  1717 W 6th, Suite 290
+  Austin, TX 78703-4776
+
+  Fax  : (512) 322-0656
+  Email: mksmith@cli.com
+
+  Date : Mar 27 59
+
+--------------------------------------------------------------------------
+PROBLEMS
+
+The only known problem (as of the above date) is with `!' formatting
+directives in comments.  If you depend on this capability (by using
+INFIX-FILE with `:comment t') then you need to make sure that all uses
+of ! in your file are acceptable.  In general, ! as punctuation will
+be fine, but things like `{!foo}*' will cause problems, i.e. you may
+experience unpredictable formatting results, or worse, a break into
+lisp.  In this case, you will need to either correct the problem or run 
+INFIX-FILE with `!' processing suppressed (which is the default).
+You can guarantee it by:
+
+ (infix-file "foo" :comment nil) 
+
+There is also a problem with deeply indented forms in LaTeX.  The
+depth of indentation permitted depends on your LaTeX installation.  On
+ours, it is 13, which is wired into the file latex-init.lisp, in the
+variable *latex-indent-number-limit*.  If this limit is exceeded the
+form is printed as lisp, rather than in infix, and we issue a message:
+
+ Warning: Tab limit reached in event local
+ Hand massaging required.
+
+--------------------------------------------------------------------------
+INSTALLATION
+
+For decent speed the system should be compiled.
+
+The best way to build the system is as follows:
+
+1. First build ACL2
+
+2. Connect to the infix installation directory.
+
+3. Set the following macros properly in the file "makefile":
+
+ LISP = acl2
+ DIR  = /slocal/src/acl2/v1-8/interface/infix
+ LPR  = lpr
+ DVI  = dvips
+
+DIR should point to the installation directory.  When I use {$DIR} in
+the rest of this file, I mean for it to be replaced by whatever you
+have set DIR to.  LPR should be the command on your system to print
+a .ps file.  DVI should print LaTeX output, without requiring an extension.
+
+4. UNFORTUNATE NOTE:  Near the top of the file "infix.lisp" is the form
+
+ (require "sloop" "/slocal/src/acl2/v1-8/interface/infix/sloop")
+
+You need to change that directory name to reflect the actual location
+of the infix sources.  E.g.
+
+ (require "sloop" "{$DIR}/sloop")
+
+5. Do:
+
+ make compile
+ 
+It is important to do this in the directory in which infix resides.
+For one thing, that's where the makefile is and for another it causes
+the variable, *infix-directory*, to get set properly.
+
+It is possible to build the system in a bare lisp by setting
+`LISP=lucid' or some other lisp.  But I do not recommend this as the
+system has not been extensively tested in that mode.
+
+6. To perform a simple test of the system and get some idea of what
+the results look like do:
+
+ make example
+
+Depending on what MODE is set to in your makefile, this will either produce
+infix-examples.ps (from Scribe) or infix-examples.dvi file (from LaTeX) and
+send them to a poscript printer.
+
+7. You might want to make the script doinfix executable (by `chmod +x doinfix').
+You can then infix your files at the shell prompt by 
+
+ doinfix file.lisp scribe &
+
+In order for this to work you will first need to modify the following
+line in doinfix:
+
+ set DIR = /slocal/src/acl2/v1-8/interface/infix
+
+to point to ${DIR}. 
+--------------------------------------------------------------------------
+USE
+
+The simplest way to run the program is to use step 7, above.  Failing
+that, the next simplest approach is as follows:
+
+Connect to the directory containing the ACL2 .lisp files that you want
+to convert to infix.  
+
+If `LISP' was set to ACL2 in the compilation phase then start up ACL2
+and do:
+  
+ :q                              ;; to exit the ACL2 loop
+ (in-package "user")
+ (load "{$DIR}/infix")
+
+Where `{$DIR}' is whatever directory path is needed to get to
+"infix.o".
+
+If 'LISP' was set to something else, start that lisp and do:
+
+ (load "{$DIR}/infix")
+
+In either case, the basic call is then 
+
+  (infix-file <file> :mode <mode>) 
+
+where <file> is the name of a .lisp file and, in the
+simplest case, <mode> is one of "scribe" or "latex".  For example:
+
+  (infix-file "clock" :mode "scribe") 
+  (infix-file "clock.lisp" :mode "scribe") works too.
+
+See the documentation in infix.lisp for information on user
+parameterization and extension of modes.  In particular, see the
+section `SETTINGS THAT MAY BE MODIFIED IN MODE-THEORY.LISP'.
+
+Just as a note, if you have an events file, say clock.lisp, and
+create a corresponding theory file, clock-theory.lisp, then you can
+use the even simpler invocation:
+
+  (infix-file "clock") 
+
+The simplest such a clock-theory file might just consist of:
+
+  (in-package "user")
+  (load-base "latex-theory")
+
+By default, infix expects the scribe-theory and latex-theory files to
+be in *infix-directory*.  And they in turn expect their corresponding
+-init files to be there also. 
+
+Other -theory files may reside in *infix-directory* or in the `current
+directory' (defined to be the directory returned by (probe-file "./")
+at execution time).  The current directory is checked first.
+
+

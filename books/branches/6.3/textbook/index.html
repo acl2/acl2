@@ -1,0 +1,134 @@
+<HTML>
+<HEAD>
+<TITLE>Solutions to the Exercises in Computer-Aided Reasoning: An Approach
+</TITLE>
+</HEAD>
+<!-- Keep this file and README in sync. -->
+<BODY TEXT="#000000" 
+      BGCOLOR="FFFFFF">
+
+<H2>Solutions to the Exercises</H2>
+
+<H2>Computer-Aided Reasoning: An Approach</H2>
+
+Our solutions are provided in plain text format rather than HTML, Postscript,
+PDF, or other formats.  This way the solutions can be loaded into ACL2
+conveniently.  You may wish to enlarge your browser window to the full screen
+to accommodate lines containing 80 characters.  Once you are in one of our
+solution files, you may wish to use your browser's search command to find the
+particular exercise for which you are looking.  All of these files are part
+of ACL2's standard distribution (Versions 2.5 and higher).  So if ACL2 is
+installed on your machine, you may already have local copies of these files
+on the ACL2 <CODE>books/textbook/</CODE> subdirectory.
+<P>
+
+<TABLE BORDER=0>
+<TR><TD>&nbsp 1</TD><TD>Introduction (no exercises)</TD></TR>
+
+<TR><TD><BR><B>I</B></TD><TD><BR><B>Preliminaries</B></TD></TR>
+<TR><TD>&nbsp 2</TD><TD>Overview (no exercises)</TD></TR>
+
+<TR><TD><BR><B>II</B></TD><TD><BR><B>Programming</B></TD></TR>
+<TR><TD>&nbsp 3</TD><TD>The Language</TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap3/solutions.txt">Exercises 3.1 - 3.9</A></B></TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap3/programs.lisp">Exercises 3.10 - 3.23</A></B></TD></TR>
+<TR><TD>&nbsp 4</TD><TD>Programming Exercises</TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap4/solutions-program-mode.lisp">Exercises 4.1 - 4.21</A></B>
+   in <CODE>:program</CODE> mode <A HREF="#Note4">(see note 4)</A></TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap4/solutions-logic-mode.lisp">Exercises 4.1 - 4.21</A></B>
+   in <CODE>:logic</CODE> mode <A HREF="#Note4">(see note 4)</A></TD></TR>
+<TR><TD>&nbsp 5</TD><TD>Macros</TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap5/solutions.lisp">Exercises 5.1 - 5.7</A></B></TD></TR>
+
+<TR><TD><BR><B>III</B></TD><TD><BR><B>Reasoning</B></TD></TR>
+<TR><TD>&nbsp 6</TD><TD>The Logic</TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap6/solutions.txt">Exercises 6.1 - 6.25</A></B> with pencil and paper <A HREF="#Note6">(see note 6)</A></TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap6/selected-solutions.lisp">Exercises 6.3, 6.4, 6.6 - 6.8, 6.11 - 6.16</A></B> with ACL2 <A HREF="#Note6">(see note 6)</A></TD></TR>
+<TR><TD>&nbsp 7</TD><TD>Proof Examples</TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap7/solutions.txt">Exercises 7.1 - 7.9</A></B></TD></TR>
+
+<TR><TD><BR><B>IV</B></TD><TD><BR><B>Gaming</B></TD></TR>
+<TR><TD>&nbsp 8</TD><TD>The Mechanical Theorem Prover (no exercises)</TD></TR>
+<TR><TD>&nbsp 9</TD><TD>How to Use the Theorem Prover (no exercises)</TD></TR>
+<TR><TD>10</TD><TD>Theorem Prover Examples <A HREF="#Note10">(see note 10)</A></TD></TR>
+<TR><TD></TD><TD>
+10.1 Factorial (<A HREF="chap10/fact.lisp">script</A>)<BR>
+10.2 Associative and Commutative Functions (<A HREF="chap10/ac-example.lisp">script</A>)<BR>
+10.3 Insertion Sort (<A HREF="chap10/insertion-sort.lisp">script</A>)<BR>
+10.4 Tree Manipulation (<A HREF="chap10/tree.lisp">script</A>)<BR>
+10.5 Binary Adder and Multiplier (<A HREF="chap10/adder.lisp">script</A>)<BR>
+10.6 Compiler for Stack Machine (<A HREF="chap10/compiler.lisp">script</A> and <A HREF="chap10/compiler.acl2">package definition</A>)<BR>
+</TD></TR>
+<TR><TD>11</TD><TD>Theorem Prover Exercises <A HREF="#Note11">(see note 11)</A></TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/starters.lisp">Exercises 11.1-11.4</A></B></TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/perm.lisp">Exercise 11.5</A></B></TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/perm-append.lisp">Exercises 11.6 - 11.7</A></B></TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/qsort.lisp">Exercises 11.8 - 11.14</A></B></TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/mergesort.lisp">Exercises 11.15 - 11.16</A></B></TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/compress.lisp">Exercises 11.17 - 11.25</A></B></TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/summations.lisp">Exercises 11.26 - 11.33</A></B></TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/summations-book.lisp">Exercises 11.26 - 11.33</A></B>, using an arithmetic book</TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/tautology.lisp">Exercises 11.34 - 11.41</A></B></TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/encap.lisp">Exercises 11.42 - 11.46</A></B></TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/how-many-soln1.lisp">Exercises 11.47 - 11.51</A></B> via approach 1</TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/how-many-soln2.lisp">Exercises 11.47 - 11.51</A></B> via approach 2</TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/xtr.lisp">Exercise  11.52</A></B> via approach 1</TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/xtr2.lisp">Exercise  11.52</A></B> via approach 2</TD></TR>
+<TR><TD></TD><TD><B><A HREF="chap11/finite-sets.lisp">Exercises 11.53 - 11.57</A></B></TD></TR>
+</TABLE>
+
+
+<HR>
+
+<H3>Notes</H3>
+
+<A NAME="Note4">Note 4</A>
+<P>
+At the beginning of Chapter 4, Programming Exercises, we say that all
+of these exercises may be done in program mode.  We also suggest that
+once you have learned to use the ACL2 theorem prover, you do these
+exercises again, this time operating in logic mode and adding and
+verifying guards.  
+<P>
+We therefore have two solution files.  In the first, we use
+<CODE>:program</CODE> mode whenever ACL2 cannot automatically admit our
+definitions.  In the second, we use <CODE>:logic</CODE> mode (where possible), we
+include guards with our definitions, and we verify the guards.
+<P>
+<HR>
+<P>
+<A NAME="Note6">Note 6</A>
+<P>
+Many of the exercises in Chapter 6 require you to present formal proofs in
+terms of the primitive rules of inference or require set theoretic or other
+metatheoretic arguments.  Such exercises do not readily admit solutions
+expressed as ACL2 commands.
+<P>
+However, a few of the exercises do admit solution with ACL2, even though you
+-- the reader -- are not actually expected to do them this way.  Indeed, upon
+your first reading of Chapter 6, you will probably not be able to use the
+theorem prover well enough to do these proofs.  But you might eventually
+return to these exercises with the theorem prover behind you and appreciate
+these solutions.
+<P>
+<HR>
+<P>
+<A NAME="Note10">Note 10</A>
+<P>
+Chapter 10 contains no exercises for the reader.  It presents exercises and
+describes our solutions.  We provide the scripts for those solutions here.
+<P>
+<HR>
+<P>
+<A NAME="Note11">Note 11</A>
+<P>
+We provide more than one solution for some exercises.  This is just a matter
+of taste.  Different authors prefer different styles.  Sometimes, one solution
+is less elegant than another but more clearly indicates how the solution was
+discovered.
+
+<HR>
+
+<BR><BR><BR><BR><BR>
+</BODY>
+</HTML>

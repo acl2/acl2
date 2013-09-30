@@ -1,0 +1,104 @@
+# Note that ACL2 and ACL2_SYSTEM_BOOKS should be defined, e.g.:
+# bash
+# ACL2_DIR=/Users/kaufmann/acl2/v6-2/acl2-sources
+# export ACL2=${ACL2_DIR}/saved_acl2
+# export ACL2_SYSTEM_BOOKS=${ACL2_DIR}/books
+
+# WARNING: Do not run with -j (unless it's -j 1)!  Otherwise you may
+# get errors.  (Note from Matt K.: I've tried, but I can't seem to
+# figure out why file tiny.lisp can be created more than once when -j
+# is supplied a value greater than 1.)
+
+# Given the warning above, I'm not going to try to support provisional
+# certification for this directory.
+
+override ACL2_PCERT =
+
+top: all run-check.txt run-test
+
+include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
+# See the end for dependencies -- we don't auto-generate
+# Makefile-deps, because tiny.lisp and tiny-logic.lisp are generated
+# files.
+# -include Makefile-deps
+
+L3_TO_ACL2_DIR ?= $(shell cd ../../translator/ ; pwd)
+
+BOOKS = tiny run tiny-logic tiny-manual
+
+tiny.lisp: ../../translator/l3-to-acl2.cert tiny-acl2.txt
+	@echo '####################'
+	@echo 'Creating file $@'
+	@echo '(include-book "$(L3_TO_ACL2_DIR)/l3-to-acl2")' > workxxx.$@
+	@echo '(l3-to-acl2 "tiny-acl2.txt" "tiny.lisp"' >> workxxx.$@
+	@echo '            :str-to-sym' >> workxxx.$@
+	@echo '            (quote (("PC" . pctr) ("alu" . alu_var) ("function" . function0))))' >> workxxx.$@
+	@$(ACL2) < workxxx.$@ > $@.out
+	@echo "diff tiny.lisp gold/tiny.lisp --ignore-matching-lines='(INCLUDE-BOOK' --ignore-matching-lines='/l3'"
+	@diff tiny.lisp gold/tiny.lisp --ignore-matching-lines='(INCLUDE-BOOK' --ignore-matching-lines='/l3'
+	@echo "Successfully built $@"
+
+tiny-logic.lisp: ../../translator/l3-to-acl2.cert tiny-acl2.txt
+	@echo '####################'
+	@echo 'Creating file $@'
+	@echo '(include-book "$(L3_TO_ACL2_DIR)/l3-to-acl2")' > workxxx.$@
+	@echo '(l3-to-acl2 "tiny-acl2.txt" "tiny-logic.lisp"' >> workxxx.$@
+	@echo '            :logic :logic-only' >> workxxx.$@
+	@echo '            :str-to-sym' >> workxxx.$@
+	@echo '            (quote (("PC" . pctr) ("alu" . alu_var) ("function" . function0))))' >> workxxx.$@
+	@$(ACL2) < workxxx.$@ > $@.out
+	@echo "diff tiny-logic.lisp gold/tiny-logic.lisp --ignore-matching-lines='(INCLUDE-BOOK' --ignore-matching-lines='/l3'"
+	@diff tiny-logic.lisp gold/tiny-logic.lisp --ignore-matching-lines='(INCLUDE-BOOK' --ignore-matching-lines='/l3'
+	@echo "Successfully built $@"
+
+run-check.txt: run.cert
+	@echo '####################'
+	@echo 'Checking that the model runs as expected.'
+	@echo '(include-book "run")' > workxxx.$@
+	@echo '(run-output st$$ state)' >> workxxx.$@
+	@$(ACL2) < workxxx.$@ > run-check.out
+	@echo "diff run-check.txt gold/run-check.txt"
+	@diff run-check.txt gold/run-check.txt
+	@echo "Successfully completed $@"
+
+run-test.out: run.cert
+	@echo '####################'
+	@echo "Running :program mode test (from auto-generated tiny.lisp):"
+	@-rm -f workxxx.$@
+	@./run-test.sh $@
+
+run-test-logic.out: run.cert tiny-logic.cert
+	@echo '####################'
+	@echo "Running :logic mode test (from auto-generated tiny-logic.lisp):"
+	@echo '(include-book "tiny-logic")' > workxxx.$@
+	@./run-test.sh $@
+
+run-test-guard-verified.out: run.cert tiny-manual.cert
+	@echo '####################'
+	@echo "Running test for guard-verified functions (from"
+	@echo "manually produced tiny-manual.lisp):"
+	@echo '(include-book "tiny-manual")' > workxxx.$@
+	@./run-test.sh $@
+
+# We use recursive calls of make below so that even if -j is used,
+# they are run sequentially -- so that their output isn't interleaved.
+run-test:
+	@$(MAKE) run-test.out
+	@$(MAKE) run-test-logic.out
+	@$(MAKE) run-test-guard-verified.out
+
+clean: clean-more
+
+clean-more:
+	rm -f tiny.lisp tiny-logic.lisp run-check.txt
+
+# Dependencies for generated files:
+
+tiny.cert: tiny.lisp
+tiny-logic.cert: tiny-logic.lisp
+
+# From Makefile-deps generated after a manual cleaning:
+
+run.cert: tiny.cert
+
+tiny-manual.cert: ../../translator/l3.cert

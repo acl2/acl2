@@ -1,0 +1,206 @@
+<HEAD><TITLE>The ACL2 Books Directory</TITLE></HEAD>
+
+<BODY TEXT="#000000">
+<BODY BGCOLOR="#FFFFFF">
+
+<H1>The ACL2 Books Directory</H1>
+<P>
+The word ``book'' has two senses to the ACL2 user.  One is the normal one: a
+sequence of printed paper pages bound together between covers.  There are
+such books about ACL2.  Click <A
+HREF="http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html">here</A>
+for more information.
+<P>
+The other sense is a technical one: an ACL2 ``book'' is a file of
+definitions, theorems and other commands used to extend ACL2's reasoning
+abilities.  Commands add ``rules'' to ACL2's data base.  When a book is
+``certified,'' ACL2 checks that all the commands in it can be successfully
+processed.  A book can be ``included'' into an ACL2 session to extend the
+data base.  This is the standard way users exchange useful sets of theorems.
+See the online documentation topic BOOKS for details.
+<P>
+The standard distribution of ACL2 comes with many books.  They are stored on
+this directory.  This is a guide to the available books.  We include
+instructions on how to certify the books in this directory at the <A
+HREF="#CertificationInstructions">end</A> of this note.
+<P>
+Some of the links below are to files.  Others are to directories.  When
+you visit a directory, look at its <CODE>README</CODE> file.  Most of
+these books were written by ACL2 users other than the authors of ACL2.
+Authorship is acknowledged in the individual files.
+<UL>
+<LI><A HREF="Makefile">Makefile</A>: a Unix file for recertifying all the 
+books in this directory.</LI>
+<LI><A HREF="Makefile-generic">Makefile-generic</A>: a Unix file exploited by
+<CODE>Makefile</CODE>.</LI>
+<LI><A HREF="Makefile-subdirs">Makefile-subdirs</A>: a Unix file exploited by
+<CODE>Makefile</CODE>.</LI>
+<LI><A HREF="Makefile-psubdirs">Makefile-psubdirs</A>: a Unix file exploited by
+<CODE>Makefile</CODE>.</LI></LI>
+<LI><A HREF="README">README</A>: a text file directing you to this file.</LI>
+<LI><A HREF="Readme.html">Readme.html</A>: this file.</LI>
+<LI><A HREF="add-ons">add-ons</A>: books which add system-level
+functionality to ACL2; these should be considered experimental and
+potentially unsound.</LI>
+<LI><A HREF="arithmetic">arithmetic</A>: books about arithmetic.  The book
+<CODE>books/arithmetic/top-with-meta.lisp</CODE> may be the most commonly used
+ACL2 arithmetic book.  See the top of <A HREF="arithmetic/README">the README file
+in this directory</A> for a discussion of arithmetic libraries you may
+want to use, in particular this one or arithmetic-5.
+Arithmetic is an extraordinarily rich
+topic and none of our books fully do it justice.  If you develop an improved
+arithmetic book, let us know!</LI>
+<LI><A HREF="arithmetic-5">arithmetic-5</A>: books about arithmetic contributed by Robert Krug.
+The following older libraries are basically superseded by arithmetic-5
+(see README files in each directory):
+<A HREF="arithmetic-2">arithmetic-2</A> and
+<A HREF="arithmetic-3">arithmetic-3</A>.</LI>
+<LI><A HREF="bdd">bdd</A>: books that exercise ACL2's BDD mechanism.
+</LI>
+<LI><A HREF="ccg">ccg</A>: automated termination analyisis.</LI>
+<LI><A HREF="centaur">centaur</A>: books contributed by Centaur formal
+  verification folks;
+  see <CODE><A HREF="centaur/README">centaur/README</A></CODE>
+</LI>
+<LI><A HREF="certify-numbers.lisp">certify-numbers.lisp</A>:  used to
+certify the <CODE>cowles</CODE> and <CODE>arithmetic</CODE> books when
+not using make, e.g., for example, when using a Macintosh.
+</LI>
+<LI><A HREF="cgen">cgen</A>: support for counterexample generation</LI>
+<LI><A HREF="clause-processors">clause-processors</A>: examples of the use of
+clause processors (e.g., external tools)</LI>
+<LI><A HREF="coi">coi</A>:  The coi books comprise a "shelf" of ACL2
+books related to the modeling of "computational objects" such as
+processors, memories, kernels, microcode, and so on.
+</LI>
+<LI><A HREF="concurrent-programs">concurrent-programs</A>: contributions by
+Sandip Ray (see </code>Readme.lsp</code> files in subdirectories)</LI>
+<LI><A HREF="cowles">cowles</A>: support for arithmetic books</LI>
+<LI><A HREF="cutil">cutil</A>: Centaur Basic Utilities
+<LI><A HREF="data-structures">data-structures</A>: books for common data
+structures, with utilities; see also subdirectory <a
+href="data-structures/memories">memories</a></LI>
+<LI><A HREF="deduction">deduction</A>: deduction engine(s)</LI>
+<LI><A HREF="defexec">defexec</A>: fast execution with mbe and defexec</LI>
+<LI><A HREF="defsort">defsort</A>: <code>defsort</code> defines a stable sort when given a comparison function</LI>
+<LI><A HREF="demos">demos</A>: some demos</LI>
+<LI><A HREF="finite-set-theory">finite-set-theory</A>: finite sets in ACL2</LI>
+<LI><A HREF="fix-cert">fix-cert</A>: update relocated .cert files</LI>
+<LI><A HREF="hacking">hacking</A>: a library for those who wish to use
+trust tags to modify or extend core ACL2 behavior</LI>
+<LI><A HREF="hints">hints</A>: tests of hints, especially <code>:or</code> and
+<code>:custom</code> hints</LI>
+<LI><A HREF="ihs">ihs</A>: ``integer hardware specification'', integer
+arithmetic appropriate for hardware modeling</LI>
+<LI><A HREF="interface">interface</A>: utilities providing Emacs support for
+proof-trees and acl2-mode, as well as (obsolete?) infix printing.</LI>
+<LI><A HREF="leftist-trees">leftist-trees</A>: a heap-like data structure that can be used as a priority queue</LI>
+<LI><A HREF="make-event">make-event</A>: illustrations of
+<code>make-event</code>, which implements the idea of macros that can take state</LI>
+<LI><A HREF="memoize">memoize</A>: a descendant of the memoization scheme developed by Bob Boyer and Warren A. Hunt, Jr., which was incorporated into ACL2(h)</LI>
+<LI><A HREF="meta">meta</A>: metafunctions for arithmetic</LI>
+<LI><A HREF="milawa">milawa</A>:  a "self-verifying" theorem prover for an ACL2-like logic, developed
+by Jared Davis for his Ph.D. dissertation.</LI>
+<LI><A HREF="misc">misc</A>:  a grab-bag of useful books and
+utilities</LI>
+<LI><A HREF="models">models</A>:  models, especially of digital systems, with associated proofs</LI>
+<LI><A HREF="nonstd">nonstd</A>:  books in support of reasoning about the real
+numbers in ACL2 using non-standard analysis.  If you want this directory, you will need to
+<a
+href="http://code.google.com/p/acl2-books/downloads/">download
+the gzipped tar file</a> to your <code>acl2-sources/books/</code> directory,
+and then gunzip and extract it there.</LI>
+<LI><A HREF="ordinals">ordinals</A>: books about ordinals</LI>
+<LI><A HREF="oslib">oslib</A>: operating system utilities</LI>
+<LI><A HREF="paco">paco</A>: Paco, a cut-down, simplified ACL2-like theorem prover for
+pedagogical use.</LI>
+<LI><A HREF="parallel">parallel</A>: example use of primitives for
+  parallelism (with speed-up only in experimental extension that supports parallel evaluation)</LI>
+<LI><A HREF="parsers">parsers</A>: parsers</LI>
+<LI><A HREF="powerlists">powerlists</A>: a data-structure suited to the analysis of recursive,
+data-parallel algorithms.</LI>
+<LI><A HREF="proofstyles">proofstyles</A>: Soundness and completeness of
+different proof strategies used in sequential program verification, along
+with (in subdirectory <code>invclock</code>logical equivalence of two proof styles for
+verifying programs using operational semantics, namely inductive invariants and
+clock functions.</LI>
+<LI><A HREF="quadratic-reciprocity">quadratic-reciprocity</A>: Gauss's Law of Quadratic Reciprocity</LI>
+<LI><A HREF="regex">regex</A>: a regular expression scanner implementation designed to
+be similar to GNU Grep</LI>
+<LI><A HREF="rtl">rtl</A>: floating-point arithmetic support, used for example
+in proofs about AMD rtl</LI>
+<LI><A HREF="security">security</A>: books supporting reasoning about
+security protocols</LI>
+<LI><A HREF="serialize">serialize</A>: routines for serializing ACL2 objects to disk</li>
+<LI><A HREF="sorting">sorting</A>: correctness and equivalence of several sort algorithms</LI>
+<LI><A HREF="std">std</A>: "standard" libraries being developed for ACL2</LI>
+<LI><A HREF="str">str</A>: a rudimentary string library for ACL2</LI>
+<LI><A HREF="symbolic">symbolic</A>: generic proofs of partial and total
+correctness of sequential programs based on assertional reasoning</LI>
+<LI><A HREF="system">system</A>: checks of invariants on the ACL2
+logical world, and verification of termination and guards of some
+system functions.</LI>
+<LI><A HREF="taspi">taspi</A>: code relating to TASPI (Tree Analysis System for 
+Phylogenetic Inference)</LI>
+<LI><A HREF="tau">tau</A>: support for
+  the <A HREF="http://www.cs.utexas.edu/users/moore/acl2/current/TAU-SYSTEM.html">tau system</A></LI>
+<LI><A HREF="textbook">textbook</A>: solutions to the exercises
+in <I><A
+HREF="http://www.cs.utexas.edu/users/moore/publications/acl2-books/car/index.html">Computer-Aided
+Reasoning: An Approach</A></I></LI>
+<LI><A HREF="tools">tools</A>: macros and tools designed to make common constructs easier and less verbose to write</LI>
+<LI><A HREF="translators">translators</A>: translators to and from ACL2</LI>
+<LI><A HREF="tutorial-problems">tutorial-problems</A>: solutions to
+exercises of a tutorial nature</LI>
+<LI><A HREF="unicode">unicode</A>: help for reading input from files</LI>
+<LI><A HREF="wp-gen">wp-gen</A>: Weakest precondition generation and examples</li>
+<LI><A HREF="xdoc">xdoc</A> and <A HREF="xdoc-impl">xdoc-impl</A>: prototype XML documentation system</li>
+<LI><A HREF="workshops">workshops</A>:  Books in support of ACL2 workshops, as
+listed just below.  If you want this directory, you will need to
+<a
+href="http://code.google.com/p/acl2-books/downloads/">download
+the gzipped tar file</a> to your <code>acl2-sources/books/</code> directory,
+and then gunzip and extract it there.</LI>
+<UL>
+<LI><A HREF="workshops/1999">workshops/1999</A>:  books from ACL2 Workshop 1999, supporting and described
+in <I><A
+HREF="http://www.cs.utexas.edu/users/moore/publications/acl2-books/acs/index.html">Computer-Aided
+Reasoning: ACL2 Case Studies</A></I>, including full scripts for each case
+study and answers to all the exercises</LI>
+<LI><A HREF="workshops/2000">workshops/2000</A>:  books and papers from ACL2 Workshop 2000</LI>
+<LI><A HREF="workshops/2002">workshops/2002</A>:  books and papers from ACL2 Workshop 2002</LI>
+<LI><A HREF="workshops/2003">workshops/2003</A>:  books and papers from ACL2 Workshop 2003</LI>
+<LI><A HREF="workshops/2004">workshops/2004</A>:  books and papers from ACL2 Workshop 2004</LI>
+<LI><A HREF="workshops/2006">workshops/2006</A>:  books from ACL2 Workshop 2006</LI>
+<LI><A HREF="workshops/2007">workshops/2007</A>:  books from ACL2 Workshop 2007</LI>
+<LI><A HREF="workshops/2009">workshops/2009</A>:  books from ACL2 Workshop 2009</LI>
+<LI><A HREF="workshops/2011">workshops/2011</A>:  books from ACL2 Workshop 2011</LI>
+<LI><A HREF="workshops/2013">workshops/2013</A>:  books from ACL2 Workshop 2013</LI>
+</UL>
+</UL>
+<P>
+If you seek a book you suspect someone might have created but which is not
+here, join the ACL2 mailing list and ask the community.
+<P>
+If you develop a book you think will be useful to the community, please submit
+it following the <a
+href="http://www.cs.utexas.edu/users/moore/acl2/books/index.html">instructions
+for contributing books to ACL2</a>.
+<P>
+
+<H2><A NAME="CertificationInstructions">Certification Instructions</A></H2>
+
+Instructions for certifying the ACL2 community books may be found in
+the folllowing ACL2 documentation topic: <a href="http://www.cs.utexas.edu/users/moore/acl2/current/BOOKS-CERTIFICATION.html">BOOKS-CERTIFICATION</a>.
+
+<p>
+
+If you obtained your books from a gzipped tarfile (typically
+named <code>books-*.tar.gz</code>), as opposed to svn, then you don't
+yet have the workshops books.  If you want them, simply
+<a href="http://code.google.com/p/acl2-books/downloads/">download
+workshops.tar.gz</a> to your acl2-sources/books/ directory</a>, and
+then gunzip and extract it there.
+<BR><BR><BR><BR><BR><BR>
+</BODY>
+</HTML>

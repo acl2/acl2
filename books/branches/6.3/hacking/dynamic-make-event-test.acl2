@@ -1,0 +1,10 @@
+(in-package "ACL")
+(ld "hacker-pkg.lsp")
+
+; We need the following for provisional certification, so that ACL2 can read
+; symbols rewrite-code::SYM in dynamic-make-event.acl2x at the start of the
+; Pcertify step.
+(include-book "rewrite-code")
+
+; cert-flags: ? t :ttags ((defcode) (dynamic-make-event-test))
+(certify-book "dynamic-make-event-test" ? t :ttags ((defcode) (dynamic-make-event-test)))

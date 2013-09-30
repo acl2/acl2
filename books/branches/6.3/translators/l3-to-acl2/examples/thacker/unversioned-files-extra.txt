@@ -1,0 +1,3 @@
+tiny-logic.lisp
+tiny.lisp
+run-check.txt

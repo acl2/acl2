@@ -1,0 +1,184 @@
+<html>
+<head>
+<title>Osets Change Log</title>
+<link rel="stylesheet" href="http://www.cs.utexas.edu/users/jared/style.css"
+      type="text/css"/>
+</head>
+<body>
+
+<table border="0" width="100%" bgcolor="#f0f0f0" class="logo"
+       cellpadding="8">
+<tr>
+<td align="center" class="logoText">
+Finite Set Theory based on Fully Ordered Lists<br/>
+</td>
+</tr>
+</table>
+
+<h3>Change Log</h3>
+
+<h4>Version 0.9, October 22, 2004</h4>
+
+<p>This is a major release.</p>
+
+  <p><em>The library now requires ACL2 2.9.</em></p>
+
+  <p><em>The set order has been changed.</em> We now use the same
+  <tt>&lt;&lt;</tt> as the total-order book.  Effectively, we make
+  fewer assumptions about the set order, no longer requiring that nil
+  be the greatest element.  This change might allow us to consider
+  custom set orders in the future.  This was a bit of an undertaking.
+  Many proofs in <tt>membership.lisp</tt> and <tt>fast.lisp</tt> have
+  been changed to avoid relying on <tt>nil</tt>'s maximality.  There
+  are also some changes in other low level theorems, such as
+  <tt>head-insert</tt>.  There should be little or no impact on user
+  theorems, unless you were reasoning "from first principles", e.g.,
+  for "fast" functions defined using <tt>cons</tt> and so forth.</p>
+
+  <p><em>Computed hints are now automatically managed.</em>
+  Previously, the macros <tt>enable/disable-set-reasoning</tt> were
+  used to turn on the computed hint for conducting pick-a-point
+  proofs.  These macros have been removed and are no longer necessary,
+  and pick-a-point proofs are automatically enabled.  (To disable
+  them, disable the "tagging" theorem,
+  <tt>pick-a-point-subset-strategy</tt>, instead.)  Thanks to Matt
+  Kaufmann for modifying ACL2 to permit this change.</p>
+
+  <p><em><tt>Membership.lisp</tt> has been cleaned up.</em> The
+  support for computed hints have been separated out and put into its
+  own package, <tt>COMPUTED-HINTS</tt>.  The encapsulate event which
+  the pick-a-point subset strategy was based on is now more general
+  and can be used with the new extensions in this release.  The
+  pick-a-point method is now developed earlier in the membership.lisp
+  file, and is used in order to prove many of the theorems which used
+  to be based on induction arguments, e.g., <tt>subset-reflexive</tt>.
+  </p>
+
+  <p><em>A new package, <tt>INSTANCE</tt>, has been added to support
+  the new extensions.</em>  Users should not need to use this package
+  directly.</p>
+
+  <p><em>New extension: constructive quantification.</em> This
+  extension (in <tt>quantify.lisp</tt>) completely replaces typed sets
+  with a more general and powerful theory of constructive
+  quantification.  Given a k-ary (k > 1) predicate <tt>P</tt>, you can
+  now quickly introduce a theory of quantification for that predicate
+  over sets and lists.</p>
+ 
+  <p><em>New extension: mappings.</em> Building off the base provided
+  by constructive quantification, mappings allow you to discuss the
+  images of sets under some arbitrary k-ary function, F, where (k > 1).
+  As with constructive quantification, an elaborate rewriting strategy
+  is also introduced for reasoning about mappings.  Mappings are also
+  implemented more efficiently (via MBE) than the naive implementation 
+  using repeated insertion.</p>
+
+  <p><em>Mergesort is easier to reason about.</em> <tt>Mergesort</tt>
+  now has a new logical definition via MBE, so that you can reason
+  about it as if it were a simple, recursive insert sort.  Of course,
+  it still acts as an efficient mergesort under the hood.  Thanks to
+  Serita Nelesen for pointing out the deficiencies with the previous 
+  approach.  I've also done away with the use of <tt>member-equal</tt>,
+  and instead a new <tt>in-list</tt> function has been added which 
+  returns a boolean instead of part of the list.</p>
+
+  <p><em>Cardinality reasoning has been improved.</em> This is
+  particularly true with regards to the cardinalities of
+  intersections.  Added theorems <tt>cardinality-zero-empty</tt>,
+  <tt>intersect-cardinality-non-subset</tt>,
+  <tt>intersect-cardinality-subset-2</tt>, and
+  <tt>intersect-cardinality-non-subset-2</tt>.  Also changed
+  <tt>intersect-cardinality-subset</tt> to also be a :rewrite rule in
+  addition to being :linear.  Thanks to Robert Krug and Hanbing Liu
+  for their input in these changes.</p>
+
+  <p><em>Subset reasoning has been improved.</em> Added the theorem
+  <tt>subset-tail</tt> at Hanbing Liu's suggestion, which is useful
+  for induction-style proofs of subset.  Also, the theorems
+  <tt>difference-preserves-subset</tt> and <tt>subset-delete</tt>,
+  have been added at Omar El-Domeiri's suggestion.  Finally,
+  <tt>subset-insert</tt> has been added, and parallels
+  <tt>subset-delete</tt>.</p>
+
+
+<h4>Version 0.81, March 23, 2004</h4>
+
+<p>This is a minor release to merge the library with ACL2.</p>
+
+  <p><em>Matt Kaufmann has integreated the library with ACL2.</em> The
+  library will now be part of the standard books released with ACL2.
+  The build system has been modified to work nicely with ACL2's
+  makefiles, changed the computed hints functions to be program mode
+  in order to fix some problems with the new, more stringent guard
+  checking in ACL2 2.8.  He has also updated the README to be more
+  accurate about what is built, and cleaned up the stray parentheses
+  in membership.lisp.  Thanks, Matt!</p>
+
+
+<h4>Version 0.8, March 18, 2004</h4>
+
+<p>This is a significant release, involving significant cleanup work
+and a few new theorems.</p>
+
+  <p><em>The build system has been significantly improved.</em> A file
+  <tt>package.lisp</tt> has been added, and now contains the defpkg
+  event for the set theory books, so you can now simply "ld" this file
+  to get the set theory package.  The <tt>.acl2</tt> have been changed
+  so that they do not contain include-book events, and
+  <tt>sets.lisp</tt> now includes the other books locally and then
+  redefines events from those books.  This approach makes loading
+  <tt>sets.lisp</tt> faster, allows us to export events in a better
+  order, and hides all of the local proofs.  These changes have all
+  been made at the suggestion of Eric Smith.  Thanks!
+  </p>
+
+  <p><em>A mergesort has been added.</em> This allows you to quickly
+  create a set from an unordered list which may contain duplicates, 
+  and its performance seems quite good.</p>
+
+  <p><em>Optional set order reasoning is now available.</em> The file
+  <tt>set-order.lisp</tt> has been added and can be optionally
+  included to help with reasoning about the set order.  Of course,
+  this should only be done if you are arguing from "first principles"
+  that your functions create sets, and should otherwise generally be
+  avoided.</p>
+
+  <p><em>Double containment is now a rewrite rule.</em>  A new theorem,
+  double-containment, has been added in order to explicitly rewrite 
+  equalities between sets into mutual subset statements.  The computed
+  hints which previously performed double containment proofs have been
+  removed.  
+
+  <p><em>Computed hints can now be easily disabled.</em> The macro
+  <tt>disable-set-reasoning</tt> has been added, and can be used to
+  turn off the pick-a-point proofs that enable-set-reasoning turns
+  on.</p>
+
+  <p><em>Some new theorems help fill out the rewriting strategy.</em>
+  In particular, the theorems <tt>difference-insert-X/Y</tt> and
+  <tt>difference-delete-X/Y</tt> were added.</p>
+
+
+<h4>Version 0.7, Feb 19, 2004</h4>
+
+<p>This is a minor release, mainly introducing a new extension.</p>
+
+  <p><em>A new induction scheme is now used for insert.</em> This
+  induction scheme rephrases insert's operation in terms of membership
+  rather than the set order, allowing inductive proofs over the
+  definition of insert to avoid introducing the set order into
+  proofs.</p>
+ 
+  <p><em>New extension: typed sets.</em> This extension allows you to
+  introduce a theory about sets which contain elements of a fixed
+  type, e.g., <tt>integerp</tt>.</p>
+
+
+
+<h4>Version 0.6, Feb 1, 2004</h4>
+
+<p>This is the first publically available version of the set theory
+library.</p>
+
+</body>
+</html>
