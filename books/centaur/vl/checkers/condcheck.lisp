@@ -320,8 +320,8 @@ occurs, and is used in any warning messages we produce.</p>"
 (define vl-exprctxalist-condcheck ((x vl-exprctxalist-p))
   :returns (warnings vl-warninglist-p)
   :parents (condcheck)
-  :short "@(call vl-exprctxalist-condcheck) extends @(see
-vl-expr-condcheck-check) across an @(see vl-exprctxalist-p)."
+  :short "@(call vl-exprctxalist-condcheck) extends @(see vl-expr-condcheck)
+across an @(see vl-exprctxalist-p)."
 
   (if (atom x)
       nil

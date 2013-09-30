@@ -543,7 +543,8 @@
   :parents (modes reference)
   :short "Use BDD-based symbolic simulation in GL."
   :long "<p>This macro produces an event which sets the GL reasoning mode to
-use @(see ubdd)s.  This is the default form of GL symbolic simulation.</p>"
+use @(see acl2::ubdds).  This is the default form of GL symbolic
+simulation.</p>"
 
   (defmacro gl-bdd-mode ()
     '(progn (acl2::defattach bfr-mode bfr-bdd)

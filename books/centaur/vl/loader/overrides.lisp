@@ -565,10 +565,10 @@ corresponding to a particular module.</p>"
 
 (defsection vl-read-override-file
   :parents (overrides)
-  :short "Load an override file into a @(see vl-override-alistp)."
+  :short "Load an override file into a @(see vl-overridelist-p)."
 
   :long "<p>Signature: @(call vl-read-override-file) returns @('(mv successp
-override-alist filemap defines' comment-map' walist' state)').</p>"
+overridelist filemap defines' comment-map' walist' state)').</p>"
 
   (defund vl-read-override-file (path modname defines comment-map walist filemapp state)
     "Returns (MV SUCCESSP OVERRIDE-LIST FILEMAP DEFINES' COMMENT-MAP' WALIST' STATE)"

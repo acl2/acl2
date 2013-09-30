@@ -285,10 +285,10 @@ for these types, as well as for @(see natp) and @(see posp).  But in some cases
 these may not be sufficient.</p>
 
 <p>If you need something fancier, you can write your own parser.  See @(see
-custom-parsers) for details.  After writing your own @('parse-foo') function,
-you can either register it as the default for all @('foo-p') fields, or you can
-install it just as the parser for a particular field using the @(':parser')
-option.  For instance:</p>
+custom-parser) for details.  After writing your own @('parse-foo') function, you can
+either register it as the default for all @('foo-p') fields, or you can install
+it just as the parser for a particular field using the @(':parser') option.
+For instance:</p>
 
 @({
        (outfile stringp

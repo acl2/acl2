@@ -80,7 +80,7 @@ ordinary lists of literals.  See @(see lit-listp).</li>
   :long "<p>We define a simple evaluator for CNF formulas that uses an
 environment to assign values to the identifiers.</p>
 
-<p>The environment, @(see $env), is an abstract stobj that implements a simple
+<p>The environment, @(see env$), is an abstract stobj that implements a simple
 bit array.  Our evaluators produce a <b>BIT</b> (i.e., 0 or 1) instead of a
 BOOL (i.e., T or NIL) to make it directly compatible with the bitarr
 stobj.</p>"

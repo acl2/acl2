@@ -39,7 +39,7 @@ representing finite sets of natural numbers."
 
   :long "<h3>Introduction</h3>
 
-<p>In the ordinary @(see bitset) library, sets of natural numbers are encoded
+<p>In the ordinary @(see bitsets) library, sets of natural numbers are encoded
 as bignums.  This is perfectly fine when the set elements are relatively small,
 but it is not an efficient way to deal with sets of large numbers.  For
 instance, trying to insert a number like 2^30 into an ordinary bitset will
@@ -548,7 +548,7 @@ for sparse bitsets."
 (defsection sbitset-pair-members
   :parents (sbitset-members)
   :short "@(call sbitset-pair-members) extracts the members of a single @(see
-sbitset-pair)."
+sbitset-pairp)."
 
   :long "<p>For instance, if the pair is @('(0 . 7)'), we produce the set
 @('{0, 1, 2}'); if the set is @('(1 . 7)'), we produce @('{60, 61, 62}').</p>

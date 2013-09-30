@@ -147,7 +147,7 @@ for warning @('x'), creating a new, extended warning."
 (defsection vl-warninglist-change-types
   :parents (warnings)
   :short "@(call vl-warninglist-change-types) changes the @('type') of every
-warning in @(see x) to @('new-type')."
+warning in the list @('x') to @('new-type')."
 
   (defund vl-warninglist-change-types (new-type x)
     (declare (xargs :guard (and (symbolp new-type)

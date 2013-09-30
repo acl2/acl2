@@ -863,10 +863,10 @@ used, GL's interpreter follows the @(':logic') definition instead of the
 @(':exec') definition, since it might be unsound to use the @(':exec') version
 of a definition without establishing the guard is met.  Also, while GL can
 symbolically simulate functions that take user-defined stobjs or even the ACL2
-@(see state), it does not operate on \"real\" @(see stobj)s; instead, it uses
-the logical definitions of the relevant stobj operations, which do not provide
-the performance benefits of destructive operations.  Non-executable functions
-cannot be symbolically executed.</p>")
+@(see state), it does not operate on \"real\" @(see acl2::stobj)s; instead, it
+uses the logical definitions of the relevant stobj operations, which do not
+provide the performance benefits of destructive operations.  Non-executable
+functions cannot be symbolically executed.</p>")
 
 
 (defxdoc modes

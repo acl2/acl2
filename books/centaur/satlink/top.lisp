@@ -45,10 +45,10 @@ Developing faster SAT solvers is an active area of research with frequent <a
 href='http://www.satcompetition.org/'>competitions</a>.</p>
 
 <p>SAT solvers are useful because many problems can be recast as SAT problems.
-For instance, the @(see gl) framework can translate many ACL2 proof goals,
+For instance, the @(see gl::gl) framework can translate many ACL2 proof goals,
 e.g., bounded arithmetic problems, into SAT problems.  This allows for a large
 class of theorems to be solved quickly and automatically by the SAT solver.
-This is especially useful in @(see hardware-verification).</p>
+This is especially useful in @(see acl2::hardware-verification).</p>
 
 <p><b>Satlink</b> is an interfacing library that allows ACL2 to make use of
 off-the-shelf SAT solvers like <a
@@ -62,8 +62,8 @@ provides:</p>
 conjunctive normal form; see @(see cnf).</li>
 
 <li>A function, @(see sat), that can invoke a SAT solver on a formula and
-interpret its output.  This is done via @(see tshell), so the integration is
-very smooth, e.g., you can interrupt the SAT solver.</li>
+interpret its output.  This is done via @(see acl2::tshell), so the integration
+is very smooth, e.g., you can interrupt the SAT solver.</li>
 
 <li>A @(see logical-story) that allows us to <color rgb='#ff0000'><b>assume,
 using a <see topic='@(url defttag)'>trust tag</see></b></color>, that when the

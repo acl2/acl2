@@ -265,7 +265,7 @@ basic restoring division algorithm in terms of @(see primitives).</p>
 
 <p>The core modules we produce here do <b>not</b> properly handle zero divides
 or detect X/Z values on the dividend and divisor.  To see how we correct for
-these cases, see @(see vl-make-n-bit-div).</p>
+these cases, see @(see vl-make-n-bit-div-rem).</p>
 
 <p>Aside from these special cases, the core module does produce the right
 answer by chaining together N division steps; for details about these steps and

@@ -26,7 +26,7 @@
 
 (defxdoc sin
   :parents (clex)
-  :short "Abstract @(see stobj) for a string input stream."
+  :short "Abstract @(see acl2::stobj) for a string input stream."
 
   :long "<p>The @('sin') (\"string input\") stobj allows you to efficiently,
 easily process strings in a stream-like, sequential fashion, while remembering
@@ -50,7 +50,7 @@ memory usage down.</p>
 
 (defsection sin$c
   :parents (sin)
-  :short "Concrete string input stream @(see stobj)."
+  :short "Concrete string input stream @(see acl2::stobj)."
 
   :long "<p>In the implementation, we take care to ensure that all indices
 satisfy @('(unsigned-byte-p 60)'), making them fixnums on Lisps such as CCL and

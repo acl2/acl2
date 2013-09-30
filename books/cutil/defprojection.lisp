@@ -259,7 +259,8 @@ you use this.</p>")
        (short (or short
                   (and parents
                        (str::cat "@(call " (symbol-name list-fn) ") maps "
-                                 "@(see " (symbol-name elem-fn) ") across a list."))))
+                                 "@(see " (symbol-package-name elem-fn)
+                                 "::" (symbol-name elem-fn) ") across a list."))))
 
        (long (or long
                  (and parents

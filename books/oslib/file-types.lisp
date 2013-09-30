@@ -33,9 +33,9 @@ directories, devices, etc."
 
   :long "<p>Many of these functions are just ACL2 wrappers for the Common Lisp
 <a href='http://common-lisp.net/project/osicat/'>Osicat</a> library.  Unlike
-the more basic file reading/writing operations (see @(see std/io)), there is no
-complex logical story for reasoning about these operations.  Instead, in the
-logic, practically everything here is just reading the oracle.</p>
+the more basic file reading/writing operations (see @(see acl2::std/io)), there
+is no complex logical story for reasoning about these operations.  Instead, in
+the logic, practically everything here is just reading the oracle.</p>
 
 <p>As a general rule, these functions are <b>not entirely portable</b>,
 especially regarding special characters like @('~'), @('..'), @('\\'), @('*')

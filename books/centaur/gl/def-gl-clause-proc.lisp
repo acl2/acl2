@@ -788,7 +788,7 @@ bindings:
 (defsection gl-hint
   :parents (reference)
   :short "Try to prove a goal using GL symbolic simulation."
-  :long "<p>Usage, as a computed hint (see @(see using-computed-hints)):</p>
+  :long "<p>Usage, as a <see topic='@(url acl2::computed-hints)'>computed hint</see>:</p>
 
 @({
  (gl-hint my-gl-clause-processor

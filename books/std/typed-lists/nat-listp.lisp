@@ -33,7 +33,7 @@ library."
   :long "<p>Most of these are generated automatically with @(see
 cutil::deflist).</p>
 
-<p>BOZO some additional lemmas are found in @(see arithmetic/nat-listp).</p>"
+<p>BOZO some additional lemmas are found in @('arithmetic/nat-listp').</p>"
 
   (cutil::deflist nat-listp (x)
     (natp x)

@@ -600,7 +600,7 @@ assumption that @('vars') are one-hot."
 
   :long "<p>How is this reduction accomplished?  Well, in the implementation of
 @(see 4v-shannon-expansion), reduced expressions are formed by using @(see
-sexpr-restrict) to assume that the variable being is first true, and then
+4v-sexpr-restrict) to assume that the variable being is first true, and then
 false.  Our approach is basically similar, and our new sexpr is essentially the
 following:</p>
 

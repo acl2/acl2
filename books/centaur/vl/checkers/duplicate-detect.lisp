@@ -25,6 +25,7 @@
 
 
 (defsection vl-atom-fix
+  :parents (vl-expr-fix)
 
   (local (in-theory (enable vl-atom-p
                             vl-atom
@@ -53,6 +54,11 @@
 
 
 (defsection vl-expr-fix
+  :parents (vl-expr-p)
+  :short "Throw away attributes and widths, keeping just the core of an expression."
+  :long "<p>This is often useful when writing heuristic checks where you want
+to look for particular expressions, where attributes and differing sizes are of
+no concern.</p>"
 
 ;; BOZO consider optimizing to avoid reconsing already-fixed expressions
 

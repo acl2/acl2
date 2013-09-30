@@ -26,7 +26,7 @@
 (defsection var-is-stobj-p
   :parents (support)
   :short "@(call var-is-stobj-p) checks whether @('var') is currently the name
-of a @(see stobj)."
+of a @(see acl2::stobj)."
 
   (defund var-is-stobj-p (var world)
     (declare (xargs :guard (and (symbolp var)
@@ -98,7 +98,7 @@ causes a hard error if @('fn') isn't a function."
 (defsection look-up-return-vals
   :parents (support)
   :short "@(call look-up-return-vals) returns the @('stobjs-out') property for
-@('fn').  This is a list that may contain @('nil')s and @(see stobj) names,
+@('fn').  This is a list that may contain @('nil')s and @(see acl2::stobj) names,
 with the same length as the number of return vals for @('fn')."
 
   (defund look-up-return-vals (fn world)

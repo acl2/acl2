@@ -583,7 +583,7 @@ description is given by the following theorem:</p>
   @(thm correctness-of-vl-depalist)
 
 <p>This alist is useful in dependency computations such as @(see
-vl-dependent-module).  It satisfies @(see alistp), @(see vl-depalist-p), and
+vl-dependent-modules).  It satisfies @(see alistp), @(see vl-depalist-p), and
 @(see vl-set-values-p).</p>"
 
   (defund vl-depalist (x)
@@ -1600,7 +1600,7 @@ submodules.</p>"
 (defsection vl-maximal-deporder
   :parents (vl-deporder)
   :short "@(call vl-maximal-deporder) returns the maximum level for any module
-in @('names'), according to the @(see vl-deporder-alist)."
+in @('names'), according to a @(see vl-deporder-alistp)."
 
   (defund vl-maximal-deporder (names alist)
     (declare (xargs :guard (and (true-listp names)
@@ -1626,7 +1626,7 @@ in @('names'), according to the @(see vl-deporder-alist)."
 
 (defsection vl-deporder-pass
   :parents (vl-deporder)
-  :short "@(call vl-deporder-pass) extends a partial @(see vl-deporder-alist)
+  :short "@(call vl-deporder-pass) extends a partial @(see vl-deporder-alistp)
 with entries for the modules whose level is now apparent."
 
   :long "<p>@('mods') are a list of modules, @('alist') is a partial

@@ -536,8 +536,8 @@ temporarily make it fast.</p>"
 <p>We construct a new sexpr by copying @('x'), except that we
 <b>unconditionally</b> replace every variable in @('x') with its binding in
 @('al'), regardless of whether such a binding actually exists.  Any unbound
-variables are just replaced by NIL, which in our @(see 4v-sexpr) format always
-evaluates to X.</p>
+variables are just replaced by NIL, which in our semantics always evaluates to
+X.</p>
 
 <p>We @(see memoize) this function, but this only helps when you are composing
 with the same alist.  We don't use @(':forget t') because you frequently want
@@ -645,7 +645,7 @@ temporarily make it fast.</p>"
 
 (defsection 4v-sexpr-alist-extract
   :parents (4v-sexprs)
-  :short "Extract a portion of a @(see 4v-sexpr) alist."
+  :short "Extract a portion of a <see topic='@(url 4v-sexprs)'>4v-sexpr</see> alist."
   :long "<p>@(call 4v-sexpr-alist-extract) is given:</p>
 
 <ul> <li>@('keys'), a list of names, and</li> <li>@('al'), a fast alist binding

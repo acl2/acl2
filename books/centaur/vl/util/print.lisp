@@ -170,8 +170,8 @@ we just printed a newline</i>, etc.</p>"
   :short "Fixed version of ACL2's @(see acl2::print-base-p) function that
 returns a Boolean."
   :long "<p>ACL2's built-in version of this just calls @(see member) and hence
-can return a non-Boolean.  That makes it incompatible with @(see stobj) field
-@('satisfies') types, so we have to introduce our own version.</p>"
+can return a non-Boolean.  That makes it incompatible with @(see acl2::stobj)
+field @('satisfies') types, so we have to introduce our own version.</p>"
   (if (acl2::print-base-p x)
       t
     nil))

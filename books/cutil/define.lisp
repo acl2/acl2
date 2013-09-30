@@ -42,7 +42,7 @@
 <ul>
 
 <li>Richer @('formals') lists that permit keyword/optional arguments, embedded
-guards and documentation, automatically infer @(see stobj) declarations,
+guards and documentation, automatically infer @(see acl2::stobj) declarations,
 etc.</li>
 
 <li>A more concise @(see xargs) syntax that also adds control over other
@@ -76,7 +76,7 @@ syntax and features to cover, and we address them in turn.</p>
 
 <p>The formal have many features; see @(see extended-formals).  Besides the
 ordinary extended-formals utilities, they can also include @(':type')
-declarations; see @(see type-spec).  For instance:</p>
+declarations; see @(see acl2::type-spec).  For instance:</p>
 
 @({
   (x oddp :type integer)

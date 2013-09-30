@@ -78,7 +78,7 @@ will generate:</p>
 <ul>
 <li>A function, @('name-fn'),</li>
 <li>A wrapper macro, @('name'),</li>
-<li>A <see topic='@(url macro-aliases-table)'>macro alias</see> associating
+<li>A <see topic='@(url acl2::macro-aliases-table)'>macro alias</see> associating
 @('name-fn') with @('name')</li>
 </ul>
 
@@ -139,13 +139,13 @@ defaggregate) fields have a @(':rule-classes') option.</p>
 <p>Some other features of extended formals are not evident in their syntax.</p>
 
 <p>We generally expect macros that take extended formals to automatically
-recognize @(see stobj)s and insert appropriate @('(declare (xargs :stobjs
+recognize @(see acl2::stobj)s and insert appropriate @('(declare (xargs :stobjs
 ...))') forms.</p>
 
 <p>Future work (not yet implemented): certain guards like @('stringp') and
-@('(unsigned-byte-p 32 x)'), are recognized as @(see type-spec)s and result in
-@(see type) declarations for the Lisp compiler.  This may occasionally improve
-efficiency.</p>")
+@('(unsigned-byte-p 32 x)'), are recognized as @(see acl2::type-spec)s and
+result in @(see type) declarations for the Lisp compiler.  This may
+occasionally improve efficiency.</p>")
 
 ; Internal representation for extended formals
 

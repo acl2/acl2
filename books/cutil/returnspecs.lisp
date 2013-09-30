@@ -119,7 +119,7 @@ for the associated return-type.</dd>
 
 <dd>This option only makes sense when there is a return-type term.  By default,
 the return-type theorem is added as a @(':rewrite') rule.  If you want to use
-other @(see rule-classes), then you will want to override this default.</dd>
+other @(see acl2::rule-classes), then you will want to override this default.</dd>
 
 </dl>")
 

@@ -150,7 +150,7 @@ means we can't write, e.g., congruence relations about @('(coerce x 'list)'),
 whereas this is no problem for @('(explode x)').</p>
 
 <p>We do the same thing for @('(coerce x 'string)') &mdash; see @(see
-pack).</p>
+implode).</p>
 
 <p><b>BOZO</b> consider using misc/fast-coerce here.</p>"
 

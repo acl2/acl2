@@ -362,8 +362,8 @@ module VL_1_BIT_DELAY_1 (out, in) ;
 endmodule
 })
 
-<p>VL takes this as a primitive.  It is used by our @(see assigndelays)
-transform to separate delays from assignment statements.</p>
+<p>VL takes this as a primitive.  It is used by our @(see delayredux) transform
+to separate delays from assignment statements.</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-del*), but note
 that esim really has no notion of delays and this ends up being equivalent to
@@ -766,9 +766,9 @@ to implement muxes.</p>
    1     z    |    z           z     z    |    x
 })
 
-<p>The corresponding @(see esim) primitive is @(see *esim-tri*), which drives
-its output to @('(tristate sel a)'); see @(see 4v-tristate).  This matches the
-Verilog truth table exactly.</p>")
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-tri*), which
+drives its output to @('(tristate sel a)'); see @(see acl2::4v-tristate).  This
+matches the Verilog truth table exactly.</p>")
 
 (defconsts *vl-1-bit-zmux*
   (b* ((name "VL_1_BIT_ZMUX")

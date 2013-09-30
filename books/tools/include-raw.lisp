@@ -28,10 +28,10 @@ or @(see set-raw-mode)."
 
   :long "<p>Sometimes you want to include raw Lisp code in an ACL2 book to
 achieve better performance or do fancy things like connect to external
-programs.  With @(see trust-tags), you can do this.  Unfortunately, the
-built-in mechanisms (@(see progn!) and @(see set-raw-mode)) have some
-portability problems related to compilation, file paths, read tables, non-ACL2
-objects, and so on; see below for some examples.</p>
+programs.  With <see topic='@(url defttag)'>trust tags</see>, you can do this.
+Unfortunately, the built-in mechanisms (@(see progn!) and @(see set-raw-mode))
+have some portability problems related to compilation, file paths, read tables,
+non-ACL2 objects, and so on; see below for some examples.</p>
 
 <h3>Using Include-Raw</h3>
 

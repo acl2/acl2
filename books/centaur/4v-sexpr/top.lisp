@@ -178,8 +178,8 @@ set of understood functions are determined by @(see 4v-sexpr-eval).</p>
 operations are <see topic='@(url 4v-monotonicity)'>monotonic</see>,
 monotonicity is an intrinsic property of every sexpr.</p>
 
-<p>As with our @(see aig) and @(see ubdd) representations, we generally expect
-to create all sexprs with @(see hons), and we often @(see memoize) operations
-that deal with sexprs.  We provide some @(see 4vs-constructors) for building
-s-expressions.</p>")
+<p>As with our @(see aig) and <see topic='@(url ubdds)'>ubdd</see>
+representations, we generally expect to create all sexprs with @(see hons), and
+we often @(see memoize) operations that deal with sexprs.  We provide some
+@(see 4vs-constructors) for building s-expressions.</p>")
 

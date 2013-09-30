@@ -662,24 +662,27 @@ warnings-prime x-prime)')</p>")))
 
 
 
-(defund vl-module-make-array-indexing (x)
-  (declare (xargs :guard (vl-module-p x)))
-  (b* (((vl-module x) x)
-       ((when (vl-module->hands-offp x))
-        x)
-       (names (append (vl-regdecllist-collect-array-names x.regdecls)
-                      (vl-netdecllist-collect-array-names x.netdecls)))
-       ((unless names)
-        x)
-       (fal      (make-lookup-alist names))
-       (warnings x.warnings)
-       ((mv warnings ports)     (vl-portlist-make-array-indexing     x.ports names fal warnings))
-       ((mv warnings assigns)   (vl-assignlist-make-array-indexing   x.assigns names fal warnings))
-       ((mv warnings modinsts)  (vl-modinstlist-make-array-indexing  x.modinsts names fal warnings))
-       ((mv warnings gateinsts) (vl-gateinstlist-make-array-indexing x.gateinsts names fal warnings))
-       ((mv warnings alwayses)  (vl-alwayslist-make-array-indexing   x.alwayses names fal warnings))
-       ((mv warnings initials)  (vl-initiallist-make-array-indexing  x.initials names fal warnings))
-       (- (fast-alist-free fal)))
+(defsection vl-module-make-array-indexing
+  :parents (array-indexing)
+
+  (defund vl-module-make-array-indexing (x)
+    (declare (xargs :guard (vl-module-p x)))
+    (b* (((vl-module x) x)
+         ((when (vl-module->hands-offp x))
+          x)
+         (names (append (vl-regdecllist-collect-array-names x.regdecls)
+                        (vl-netdecllist-collect-array-names x.netdecls)))
+         ((unless names)
+          x)
+         (fal      (make-lookup-alist names))
+         (warnings x.warnings)
+         ((mv warnings ports)     (vl-portlist-make-array-indexing     x.ports names fal warnings))
+         ((mv warnings assigns)   (vl-assignlist-make-array-indexing   x.assigns names fal warnings))
+         ((mv warnings modinsts)  (vl-modinstlist-make-array-indexing  x.modinsts names fal warnings))
+         ((mv warnings gateinsts) (vl-gateinstlist-make-array-indexing x.gateinsts names fal warnings))
+         ((mv warnings alwayses)  (vl-alwayslist-make-array-indexing   x.alwayses names fal warnings))
+         ((mv warnings initials)  (vl-initiallist-make-array-indexing  x.initials names fal warnings))
+         (- (fast-alist-free fal)))
 
       (change-vl-module x
                         :ports ports
@@ -690,16 +693,15 @@ warnings-prime x-prime)')</p>")))
                         :initials initials
                         :warnings warnings)))
 
-(defthm vl-module-p-of-vl-module-make-array-indexing
-  (implies (force (vl-module-p x))
-           (vl-module-p (vl-module-make-array-indexing x)))
-  :hints(("Goal" :in-theory (enable vl-module-make-array-indexing))))
+  (local (in-theory (enable vl-module-make-array-indexing)))
 
-(defthm vl-module->name-of-vl-module-make-array-indexing
-  (equal (vl-module->name (vl-module-make-array-indexing x))
-         (vl-module->name x))
-  :hints(("Goal" :in-theory (enable vl-module-make-array-indexing))))
+  (defthm vl-module-p-of-vl-module-make-array-indexing
+    (implies (force (vl-module-p x))
+             (vl-module-p (vl-module-make-array-indexing x))))
 
+  (defthm vl-module->name-of-vl-module-make-array-indexing
+    (equal (vl-module->name (vl-module-make-array-indexing x))
+           (vl-module->name x))))
 
 
 (defprojection vl-modulelist-make-array-indexing (x)

@@ -840,23 +840,23 @@ optimization altogether.</p>")
                 to remember the order of the fields.</p>"
 
                 (if honsp
-                    (str::cat "<p>Note that we always use @(see hons) when
+                    (str::cat "<p>Note that we always use @(see acl2::hons) when
                                creating " plain-foo-p " structures.</p>")
                   (str::cat "<p>The " plain-foo-p " structures we create here
-                             are just constructed with ordinary @(see cons).
-                             If you want to create @(see hons)ed structures,
+                             are just constructed with ordinary @(see acl2::cons).
+                             If you want to create @(see acl2::hons)ed structures,
                              see " see-honsed-foo " instead.</p>"))
 
                 "<h3>Definition</h3>
 
                 <p>This is an ordinary constructor function introduced by @(see
-                defaggregate).</p>"
+                cutil::defaggregate).</p>"
 
                 def-foo))
 
      `(defxdoc ,honsed-foo
         :parents (,foo-p)
-        :short ,(str::cat "Raw constructor for @(see hons)ed " see-foo-p
+        :short ,(str::cat "Raw constructor for @(see acl2::hons)ed " see-foo-p
                           " structures.")
         :long ,(str::cat
                 "<p>Syntax:</p> " call-honsed-foo
@@ -865,15 +865,15 @@ optimization altogether.</p>")
                     (str::cat "<p>Since " see-foo-p " structures are always
                               honsed, this is identical to " see-foo ".  We
                               introduce it mainly for consistency with other
-                              @(see defaggregate) style structures.</p>")
+                              @(see cutil::defaggregate) style structures.</p>")
                   (str::cat "<p>This is identical to " see-foo ", except that
-                            we @(see hons) the structure we are
+                            we @(see acl2::hons) the structure we are
                             creating.</p>"))
 
                 "<h3>Definition</h3>
 
                 <p>This is an ordinary honsing constructor introduced by @(see
-                defaggregate).</p>"
+                cutil::defaggregate).</p>"
 
                 def-honsed-foo))
 
@@ -892,24 +892,24 @@ optimization altogether.</p>")
                 existing structure, instead.</p>"
 
                 (if honsp
-                    (str::cat "<p>Note that we always use @(see hons) when
+                    (str::cat "<p>Note that we always use @(see acl2::hons) when
                                creating " plain-foo-p " structures.</p>")
                   (str::cat "<p>The " plain-foo-p " structures we create here
-                             are just constructed with ordinary @(see cons).
-                             If you want to create @(see hons)ed structures,
+                             are just constructed with ordinary @(see acl2::cons).
+                             If you want to create @(see acl2::hons)ed structures,
                              see " see-make-honsed-foo " instead.</p>"))
 
                 "<h3>Definition</h3>
 
                 <p>This is an ordinary @('make-') macro introduced by @(see
-                defaggregate).</p>"
+                cutil::defaggregate).</p>"
 
                 def-make-foo
                 def-make-foo-fn))
 
      `(defxdoc ,make-honsed-foo
         :parents (,foo-p)
-        :short ,(str::cat "Constructor macro for @(see hons)ed " see-foo-p
+        :short ,(str::cat "Constructor macro for @(see acl2::hons)ed " see-foo-p
                           " structures.")
         :long ,(str::cat
                 "<p>Syntax:</p>" call-make-honsed-foo
@@ -918,15 +918,15 @@ optimization altogether.</p>")
                     (str::cat "<p>Since " see-foo-p " structures are always
                               honsed, this is identical to " see-make-foo ".
                               We introduce it mainly for consistency with other
-                              @(see defaggregate)s.</p>")
+                              @(see cutil::defaggregate)s.</p>")
                   (str::cat "<p>This is identical to " see-make-foo ", except
-                            that we @(see hons) the structure we are
+                            that we @(see acl2::hons) the structure we are
                             creating.</p>"))
 
                 "<h3>Definition</h3>
 
                 <p>This is an ordinary honsing @('make-') macro introduced by
-                @(see defaggregate).</p>"
+                @(see cutil::defaggregate).</p>"
 
                 def-make-honsed-foo
                 def-make-honsed-foo-fn))
@@ -947,7 +947,7 @@ optimization altogether.</p>")
                 <h3>Definition</h3>
 
                 <p>This is an ordinary @('change-') macro introduced by @(see
-                defaggregate).</p>"
+                cutil::defaggregate).</p>"
 
                 def-change-foo
                 def-change-foo-fn)))))

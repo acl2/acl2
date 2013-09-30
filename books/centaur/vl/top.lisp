@@ -114,7 +114,7 @@ If you are new to VL, please see @(see getting-started) first.</p></box>")
 
   :long "<h3>Introduction</h3>
 
-<p><b>VL</b> is an @(see acl2) library for working with <a
+<p><b>VL</b> is an @(see acl2::acl2) library for working with <a
 href='http://en.wikipedia.org/wiki/Verilog'>Verilog</a> source code.  It
 includes:</p>
 

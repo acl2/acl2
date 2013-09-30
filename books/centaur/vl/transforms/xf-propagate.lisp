@@ -181,7 +181,7 @@ correctly.</p>"
   :hints(("Goal" :induct (len x))))
 
 
-(defsection vl-maybe-driven-by-modinsts
+(defsection vl-maybe-driven-by-modinst
   :parents (propagate)
   :short "Approxpimately the wires driven by a module instance (unsound)."
 

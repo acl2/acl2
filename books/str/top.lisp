@@ -105,9 +105,9 @@ Street, Suite 500, Boston, MA 02110-1335, USA.</p>")
   :parents (str)
   :short "Basic equivalence relations."
 
-  :long "<p>The string library provides the various @(see equivalence)
+  :long "<p>The string library provides the various @(see acl2::equivalence)
 relations about characters, character lists, and strings.  We end up with the
-following @(see refinement) hierarchy:</p>
+following @(see acl2::refinement) hierarchy:</p>
 
 @({
                       equal

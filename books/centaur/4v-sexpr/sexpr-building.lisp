@@ -40,7 +40,7 @@ the S-Expressions they produce are structure shared.</p>
 
 <p>These functions carry out a few trivial rewrites (constant folding, double
 negation elimination).  An open question: how much rewriting should they do?
-Right now I don't try to optimize very aggressively, e.g., @(see sexpr-and)
+Right now I don't try to optimize very aggressively, e.g., @(see 4vs-and)
 doesn't eat bufs.  It's not clear how much of the code from @(see
 sexpr-rewrite) should be duplicated here.</p>")
 

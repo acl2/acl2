@@ -165,7 +165,7 @@ the first argument, @('~x1') to the second, etc.</p>
 
 <p>The @('fatalp') flag indicates whether this error is so severe that the
 module ought to be thrown away and not subjected to further translation.  See
-the general discussion in @(see warning) for more information on how this is
+the general discussion in @(see warnings) for more information on how this is
 used.</p>
 
 <p>The @('fn') is supposed to be the name of the function that caused the

@@ -177,6 +177,7 @@
       ;; make the XDOC index prettier.
       vl
       hardware-verification
+      esim
 
       ;; acl2-customization file stuff
       why

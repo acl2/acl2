@@ -283,7 +283,7 @@ href='http://en.wikipedia.org/wiki/Conjunctive_normal_form'>conjunctive normal
 form</a> formulas and a way to call SAT solvers from ACL2 and trust their
 results.</li>
 
-<li>Libraries like @(see aig) and @(see ubdd) provide @(see hons)-based AIG and
+<li>Libraries like @(see aig) and @(see ubdds) provide @(see hons)-based AIG and
 BDD packages.</li>
 
 <li>@(see aignet) provides a more efficient, @(see stobj)-based AIG
@@ -313,7 +313,7 @@ an undriven wire.  For more on this, see @(see why-4v-logic).</p>
 these, the @(see 4v) library is somewhat higher level and is generally simpler
 and more convenient to work with.  It serves as the basis of the @(see esim)
 hardware simulator.  Meanwhile, the @(see faig) library is a bit lower-level
-and does not enjoy the very nice @(see 4v-monotonicy) property of @(see
+and does not enjoy the very nice @(see 4v-monotonicity) property of @(see
 4v-sexprs).  On the other hand, @(see faig)s are closer to @(see aig)s, and can
 be useful for loading expressions into @(see aignet) or @(see satlink).</p>
 

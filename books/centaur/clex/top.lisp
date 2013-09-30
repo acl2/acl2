@@ -29,13 +29,13 @@
 
   :long "<p>This is a rudimentary library for creating lexers for character
 data in ACL2.  It is an outgrowth and revision of lexer support routines that
-were originally developed as part of the @(see vl) library.</p>
+were originally developed as part of the @(see vl::vl) library.</p>
 
-<p>These routines are based on ACL2 @(see characters).  They are, accordingly,
-suitable for processing text in ASCII or ISO-8859-1 or some other 8-bit
-character set, but <b>not Unicode</b> or other wide character sets.  It would
-generally be a bad idea to use CLEX to write a lexer for a language like Java
-or XML that needs Unicode support.</p>
+<p>These routines are based on ACL2 @(see acl2::characters).  They are,
+accordingly, suitable for processing text in ASCII or ISO-8859-1 or some other
+8-bit character set, but <b>not Unicode</b> or other wide character sets.  It
+would generally be a bad idea to use CLEX to write a lexer for a language like
+Java or XML that needs Unicode support.</p>
 
 <p>Many lexical analyzers like <a href='http://flex.sourceforge.net/'>Flex</a>
 are rather sophisticated and allow you to declare the syntax of your tokens at
@@ -48,8 +48,8 @@ this is not so bad.  Here are the things that CLEX provides:</p>
 
 <ul>
 
-<li>A <see topic='sin'>stream input</see> mechanism that is somewhat efficient
-and conveniently tracks your position (for good error messages).</li>
+<li>A <see topic='@(url sin)'>stream input</see> mechanism that is somewhat
+efficient and conveniently tracks your position (for good error messages).</li>
 
 <li>A @(see defcharset) macro for describing basic character types (e.g.,
 whitespace, digits, letters, etc).</li>

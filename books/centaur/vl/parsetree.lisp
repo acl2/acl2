@@ -281,9 +281,8 @@ as real and string.</p>")
   :parents (vl-expr-p)
   :short "Recognizer for an @(see vl-exprtype-p) or @('nil')."
 
-  :long "<p>As with @(see vl-maybe-exprwidth-p), we use this for the @('sign')
-fields in our expressions, which allows us to represent expressions whose signs
-have not yet been computed.</p>"
+  :long "<p>We use this for the @('sign') fields in our expressions.  It allows
+us to represent expressions whose signs have not yet been computed.</p>"
 
   (or (not x)
       (vl-exprtype-p x))
@@ -885,7 +884,7 @@ are able to achieve the straightforward recursive structure we desire.</p>
 
 <ul>
 
-<li>@('finalwidth'), which is a @(see vl-maybe-natp-p), and</li>
+<li>@('finalwidth'), which is a @(see vl-maybe-natp), and</li>
 
 <li>@('finaltype'), which is a @(see vl-maybe-exprtype-p).</li>
 
@@ -1035,7 +1034,7 @@ instead.</p>"
   :parents (vl-expr-p)
   :short "Get the @('finalwidth') from an expression."
   :long "<p>See @(see vl-expr-p) for a discussion of widths.  The result is a
-@(see vl-maybe-exprwidth-p).</p>"
+@(see vl-maybe-natp).</p>"
   (if (eq (tag x) :vl-atom)
       (vl-atom->finalwidth x)
     (vl-nonatom->finalwidth x))
@@ -1131,7 +1130,7 @@ modules like @('VL_1_BIT_FLOP') and @('VL_1_BIT_LATCH').</dd>
 version\" of the expression before simplification has taken place.</dd>
 
 <dd>@('VL_ZERO_EXTENSION') is added when we create certain zero-extension
-expressions, mainly to pad operands during @(see ctxsize).</dd>
+expressions, mainly to pad operands during @(see expression-sizing).</dd>
 
 
 <dt>Net Declarations</dt>
@@ -1142,7 +1141,7 @@ typo-detection).</dd>
 
 <dd>@('VL_PORT_IMPLICIT'), with no value, is given to wires that are declared
 to be ports (i.e., @('input a;')) but which are not also declared to be
-wires (i.e., @('wire a;')) by @(see make-port-wires)</dd>
+wires (i.e., @('wire a;')) by @(see make-implicit-wires)</dd>
 
 <dd>@('VL_UNUSED') and @('VL_MAYBE_UNUSED') may be added by @(see use-set) when
 a wire appears to be unused.</dd>
@@ -1624,8 +1623,8 @@ the ports have no buffers.  We call this \"backflow.\" <b>BOZO</b> eventually
 implement a comprehensive approach to detecting and dealing with backflow.</p>
 
 <p>The width of a port can be determined after expression sizing has been
-performed by examining the width of the port expression.  See @(see selfsize)
-and @(see ctxsize) for details.</p>")
+performed by examining the width of the port expression.  See @(see
+expression-sizing) for details.</p>")
 
 (deflist vl-portlist-p (x)
   (vl-port-p x)

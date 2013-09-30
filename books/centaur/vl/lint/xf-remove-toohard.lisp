@@ -23,19 +23,20 @@
 (include-book "../mlib/allexprs")
 (local (include-book "../util/arithmetic"))
 
+(defsection remove-toohard
+  :parents (lint)
+  :short "(Unsound transform).  Remove from each module any assignments,
+instances, or inital/always blocks that have any \"toohard\" expressions in
+them, such as unresolved hierarchical identifiers, strings, function calls,
+system functions, and similar."
 
-; VL-Lint Only.
-;
-; (VL-MODULELIST-REMOVE-TOOHARD X) removes from each module any assignments,
-; instances, or inital/always blocks that have any "toohard" expressions in
-; them, such as unresolved hierarchical identifiers, strings, function calls,
-; system functions, and similar.
-;
-; This is obviously unsound and should never be used in the ordinary
-; transformation process.  We use it to prepare modules for sizing.
+  :long "<p>This is obviously unsound and should never be used in the ordinary
+transformation process.  We use it in our @(see lint)ing tool to prepare
+modules for sizing for the linter.</p>")
 
-(defsection vl-expr-toohard-subexpr
-
+(defsection vl-atom-toohard
+  :parents (remove-toohard)
+  
   (defund vl-atom-toohard (x)
     ;; Returns NIL if the atom is okay, or X otherwise.
     (declare (xargs :guard (vl-atom-p x)))
@@ -53,7 +54,10 @@
                     (if (vl-atom-toohard x)
                         t
                       nil)))
-    :hints(("Goal" :in-theory (enable vl-atom-toohard))))
+    :hints(("Goal" :in-theory (enable vl-atom-toohard)))))
+
+(defsection vl-expr-toohard-subexpr
+  :parents (remove-toohard)
 
   (defconst *not-toohard-ops*
     (list :VL-UNARY-PLUS :VL-UNARY-MINUS :VL-UNARY-LOGNOT
@@ -142,6 +146,7 @@
 
 
 (defsection vl-assignlist-remove-toohard
+  :parents (remove-toohard)
 
   (defund vl-assignlist-remove-toohard (x warnings)
     "Returns (MV WARNINGS X-PRIME)"
@@ -180,6 +185,7 @@
 
 
 (defsection vl-modinstlist-remove-toohard
+  :parents (remove-toohard)
 
   (defund vl-modinstlist-remove-toohard (x warnings)
     "Returns (MV WARNINGS X-PRIME)"
@@ -218,6 +224,7 @@
 
 
 (defsection vl-gateinstlist-remove-toohard
+  :parents (remove-toohard)
 
   (defund vl-gateinstlist-remove-toohard (x warnings)
     "Returns (MV WARNINGS X-PRIME)"
@@ -256,6 +263,7 @@
 
 
 (defsection vl-initiallist-remove-toohard
+  :parents (remove-toohard)
 
   (defund vl-initiallist-remove-toohard (x warnings)
     "Returns (MV WARNINGS X-PRIME)"
@@ -294,6 +302,7 @@
 
 
 (defsection vl-alwayslist-remove-toohard
+  :parents (remove-toohard)
 
   (defund vl-alwayslist-remove-toohard (x warnings)
     "Returns (MV WARNINGS X-PRIME)"
@@ -332,6 +341,7 @@
 
 
 (defsection vl-module-remove-toohard
+  :parents (remove-toohard)
 
   (defund vl-module-remove-toohard (x)
     "Returns X-PRIME"
@@ -362,18 +372,14 @@
            (vl-module->name x))))
 
 
-(defsection vl-modulelist-remove-toohard
-
-  (defprojection vl-modulelist-remove-toohard (x)
-    (vl-module-remove-toohard x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p)
-
-  (local (in-theory (enable vl-modulelist-remove-toohard)))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-remove-toohard
-    (equal (vl-modulelist->names (vl-modulelist-remove-toohard x))
-           (vl-modulelist->names x))))
+(defprojection vl-modulelist-remove-toohard (x)
+  (vl-module-remove-toohard x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
+  :parents (remove-toohard)
+  :rest ((defthm vl-modulelist->names-of-vl-modulelist-remove-toohard
+           (equal (vl-modulelist->names (vl-modulelist-remove-toohard x))
+                  (vl-modulelist->names x)))))
 
 
 #||

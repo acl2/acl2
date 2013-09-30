@@ -243,7 +243,7 @@ interpretation by the EMOD hardware simulator, and represented the constant
 true and false functions.  These wires no longer have a special meaning in
 ESIM, but throughout VL our notion of emodwires still assumes that T and F
 stand for constant true and false, and, e.g., we still rely on this in @(see
-make-esim).  We might eventually get away from this by using a transform
+e-conversion).  We might eventually get away from this by using a transform
 analagous to @(see weirdint-elim) to introduce T/F wires and eliminate
 constants.</p>
 

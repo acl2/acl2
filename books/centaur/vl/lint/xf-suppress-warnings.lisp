@@ -22,30 +22,37 @@
 (include-book "../parsetree")
 (local (include-book "../util/arithmetic"))
 
-; VL Warning Suppression
-;
-; This is quick and dirty, but probably is actually a pretty effective and
-; reasonable way to deal with suppressing unwanted warnings from VL-Lint.
-;
-; The basic idea is to stick attributes such as (* LINT_IGNORE *) into the
-; source code, which with our comment syntax can be done using the form //@VL
-; LINT_IGNORE, or similar.  We then look for these attributes to decide whether
-; to suppress a warning.
-;
-; For convenience we treat LINT_IGNORE directives in a case-insensitive way and
-; treat _ interchangeably with -.  This is useful because the Verilog user has
-; to use _ since these are attribute names and hence must be valid identifiers.
-;
-; We let the user write things like LINT_IGNORE_VL_WARN_ODDEXPR, or, more
-; conveniently, LINT_IGNORE_ODDEXPR, by just "mashing" the tail of what they
-; write by throwing away any leading VL_ or VL_WARN_ part.  By convention a
-; plain LINT_IGNORE with no further information means just ignore all warnings.
+(defsection lint-warning-suppression
+  :parents (lint warnings)
+  :short "An attribute- mechanism for suppressing particular @(see warnings)
+when using @(see lint)."
+
+  :long "<p>This is quick and dirty, but probably is actually a pretty
+effective and reasonable way to deal with suppressing unwanted warnings from
+VL-Lint.</p>
+
+<p>The basic idea is to stick attributes such as @('(* LINT_IGNORE *)') into
+the source code, which with our comment syntax can be done using the form
+@('//@VL LINT_IGNORE'), or similar.  We then look for these attributes to
+decide whether to suppress a warning.</p>
+
+<p>For convenience we treat @('LINT_IGNORE') directives in a case-insensitive
+way and treat _ interchangeably with -.  This is useful because the Verilog
+user typically has to use _ since these are attribute names and hence must be
+valid identifiers.</p>
+
+<p>We let the user write things like @('LINT_IGNORE_VL_WARN_ODDEXPR'), or, more
+conveniently, @('LINT_IGNORE_ODDEXPR'), by just \"mashing\" the tail of what
+they write by throwing away any leading @('VL_') or @('VL_WARN_') part.  By
+convention a plain @('LINT_IGNORE') with no further information means just
+ignore all warnings.</p>")
+
 
 (defsection vl-mash-warning-string
-
-; do basic string mashing to allow the user to refer to warnings in either
-; upper or lower case, treating - and _ as equivalent, and with or without
-; vl_warn_ prefixes.
+  :parents (lint-warning-suppression)
+  :short "Do basic string mashing to allow the user to refer to warnings in
+either upper or lower case, treating - and _ as equivalent, and with or without
+@('vl_warn_') prefixes."
 
   (defund vl-mash-warning-string (x)
     (declare (xargs :guard (stringp x)))
@@ -69,15 +76,13 @@
     :rule-classes :type-prescription))
 
 
-(defsection vl-mash-warning-strings
-
-  (defprojection vl-mash-warning-strings (x)
-    (vl-mash-warning-string x)
-    :guard (string-listp x))
-
-  (defthm string-listp-of-vl-mash-warning-strings
-    (string-listp (vl-mash-warning-strings x))
-    :hints(("Goal" :induct (len x)))))
+(defprojection vl-mash-warning-strings (x)
+  (vl-mash-warning-string x)
+  :guard (string-listp x)
+  :parents (lint-warning-suppression)
+  :rest ((defthm string-listp-of-vl-mash-warning-strings
+           (string-listp (vl-mash-warning-strings x))
+           :hints(("Goal" :induct (len x))))))
 
 
 
@@ -89,6 +94,7 @@
 
 
 (defsection vl-lint-ignore-att-mash
+  :parents (lint-warning-suppression)
 
   (defund vl-lint-ignore-att-mash (x)
     (declare (xargs :guard (and (stringp x)
@@ -103,6 +109,7 @@
 
 
 (defsection vl-warning-type-mash
+  :parents (lint-warning-suppression)
 
   (defund vl-warning-type-mash (x)
     (declare (xargs :guard (symbolp x)))
@@ -207,6 +214,7 @@
 
 
 (defsection vl-lint-suppress-warnings
+  :parents (lint-warning-suppression)
 
   (defund vl-lint-suppress-warnings (x)
     (declare (xargs :guard (vl-warninglist-p x)))
@@ -226,6 +234,7 @@
 
 
 (defsection vl-module-suppress-lint-warnings
+  :parents (lint-warning-suppression)
 
   (defund vl-module-suppress-lint-warnings (x)
     (declare (xargs :guard (vl-module-p x)))
@@ -244,6 +253,7 @@
 
 
 (defsection vl-modulelist-suppress-lint-warnings
+  :parents (lint-warning-suppression)
 
   (defprojection vl-modulelist-suppress-lint-warnings (x)
     (vl-module-suppress-lint-warnings x)
@@ -260,6 +270,7 @@
 ; We'll also allow you to globally suppress warnings.
 
 (defsection vl-warninglist-lint-ignoreall
+  :parents (lint-warning-suppression)
 
   (defund vl-warninglist-lint-ignoreall (x mashed-ignore-list)
     (declare (xargs :guard (and (vl-warninglist-p x)
@@ -281,6 +292,7 @@
 
 
 (defsection vl-module-lint-ignoreall
+  :parents (lint-warning-suppression)
 
   (defund vl-module-lint-ignoreall (x mashed-ignore-list)
     (declare (xargs :guard (and (vl-module-p x)
@@ -301,6 +313,7 @@
 
 
 (defsection vl-modulelist-lint-ignoreall-aux
+  :parents (lint-warning-suppression)
 
   (defprojection vl-modulelist-lint-ignoreall-aux (x mashed-ignore-list)
     (vl-module-lint-ignoreall x mashed-ignore-list)
@@ -315,6 +328,7 @@
 
 
 (defsection vl-modulelist-lint-ignoreall
+  :parents (lint-warning-suppression)
 
 ; The user-ignore-list here is just a list of user-level ignore strings.  That
 ; is, we'll mash them all first.  The user can say all kinds of things, like

@@ -260,11 +260,12 @@ instead of @('w').</li>
 
 (defsection vl-make-res-sexpr
   :parents (vl-make-res-occs)
-  :short "Generate a @(see 4v-res) expression to resolve a list of emodwires."
+  :short "Generate a @(see acl2::4v-res) expression to resolve a list of
+emodwires."
 
   :long "<p>@(call vl-make-res-sexpr) generates a <see topic='@(url
-4v-sexprs)'>4v-sexpr</see> that joins together all of its arguments with @(url
-4v-res) operations.</p>
+acl2::4v-sexprs)'>4v-sexpr</see> that joins together all of its arguments with
+@(see acl2::4v-res) operations.</p>
 
 <p>Note that the RES operation is commutative and associative, so any nest of
 RES operations is equivalent.  So, we just resolve the arguments in a

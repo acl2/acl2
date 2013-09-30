@@ -400,7 +400,7 @@ only have to pay the price of processing an STV once.</p>
 <p>Once the STV has been processed, we can run it with concrete values for the
 input simulation variables; see @(see stv-run).  To do this, we basically need
 to (1) translate the input numbers into bit-level bindings, (2) use @(see
-sexpr-eval) to reduce the sexprs that are found in the Processed STV with the
+4v-sexpr-eval) to reduce the sexprs that are found in the Processed STV with the
 bindings for their inputs, and (3) translate back from the resulting output-bit
 bindings into numbers (or Xes) for the output alist.  This is about as cheap as
 we know how to make it.</p>

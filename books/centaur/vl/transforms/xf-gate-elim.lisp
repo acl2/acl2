@@ -37,7 +37,7 @@ the VL's primitive modules like @(see *vl-1-bit-and*).</p>
 
 <p>Ordering notes.  This transform should typically be run after @(see
 gatesplit) and @(see gateredux), and also after other transforms like @(see
-blankargs), @(see expr-sizing), and @(see replicate).</p>
+blankargs), @(see expression-sizing), and @(see replicate).</p>
 
 <p>We only try to deal with non-array instances of gates, with the usual
 arities (i.e., 2 arguments to a NOT or BUF, and 3 arguments to AND, OR, ...).

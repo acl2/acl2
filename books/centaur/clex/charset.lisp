@@ -42,8 +42,7 @@ thought of as a bit-array lookup.</p>
 <p>To introduce new sets of characters, e.g., to recognize \"whitespace
 characters,\" or \"hex digits,\" or whatever, we use the @(see defcharset)
 macro.  After defining suitable character sets, functions like @(see
-read-while-in-charset) and @(see read-until-in-charset) become quite
-useful.</p>
+sin-match-charset*) become quite useful.</p>
 
 <p>We generally treat character sets as opaque.  It would be quite odd to,
 e.g., allow the theorem prover to expand a character set's definition into its

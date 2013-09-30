@@ -28,7 +28,7 @@
   :short "Add @('VL_ORIG_EXPR') annotations to some expressions."
 
   :long "<p>In this transformation, we annotate many expressions with their
-@('VL_ORIG_EXPR') attribute (see @(see attributes)).  The idea is to associate
+@('VL_ORIG_EXPR') attribute (see @(see vl-atts-p)).  The idea is to associate
 each expression with its \"original version,\" as it was read from the source
 file, before any simplification has taken place.</p>
 

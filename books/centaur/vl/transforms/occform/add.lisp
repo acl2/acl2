@@ -105,7 +105,7 @@ endmodule
 })
 
 <p>This is a basic ripple-carry adder formed by chaining together several
-full-adders; see @(see *vl-1-bit-adder-core*) and @(see vl-make-full-adders).</p>
+full-adders; see @(see *vl-1-bit-adder-core*).</p>
 
 <p>This module does NOT correspond to a full addition in Verilog.  It computes
 something akin to @('assign {cout, sum} = a + b + cin'), but it does not handle

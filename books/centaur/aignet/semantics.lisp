@@ -80,7 +80,7 @@
 
 (defxdoc aignet
   :parents (acl2::boolean-reasoning)
-  :short "An efficient, @(see stobj)-based And-Inverter Graph (AIG)
+  :short "An efficient, @(see acl2::stobj)-based And-Inverter Graph (AIG)
 representation for Boolean functions and finite-state machines."
   :long
   "<p>An and-inverter graph (AIG) at its most basic is a DAG whose nodes are either

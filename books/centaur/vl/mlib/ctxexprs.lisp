@@ -106,6 +106,7 @@ essentially say where some expressions are from.</p>"
          (type-thm (mksym 'vl-exprctxalist-p-of- collect))
          (true-thm (mksym 'true-listp-of- collect)))
     `(defsection ,collect
+       :parents (ctxexprs)
 
        (defund ,collect (mod x)
          (declare (xargs :guard (and (stringp mod)
@@ -136,6 +137,7 @@ essentially say where some expressions are from.</p>"
        (,collect-elem mod x)
        :guard (and (stringp mod)
                    (,list-type-p x))
+       :parents (ctxexprs)
        :rest
        ((defthm ,type-thm
           (implies (and (force (stringp mod))
@@ -173,6 +175,7 @@ essentially say where some expressions are from.</p>"
 (def-vl-ctxexprs-list :element vl-initial   :list vl-initiallist)
 
 (defsection vl-module-ctxexprs
+  :parents (ctxexprs)
 
   (defund vl-module-ctxexprs (x)
     (declare (xargs :guard (vl-module-p x)))

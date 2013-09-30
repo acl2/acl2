@@ -35,7 +35,8 @@ adds:</p>
 
 <ul>
 
-<li>A more concise syntax for @(see hints) that target @('\"Goal\"').</li>
+<li>A more concise syntax for @(see acl2::hints) that target
+@('\"Goal\"').</li>
 
 <li>A very concise syntax for
 @({
@@ -43,7 +44,7 @@ adds:</p>
     (local (in-theory (e/d ...)))
     (defthm ...))
 })
-with @(see rulesets) integration.</li>
+with @(see acl2::rulesets) integration.</li>
 
 <li>Integration with @(see xdoc).  You can give @(':parents'), @(':short'), and
 @(':long') documentation right at the top level of the @('defrule').</li>
@@ -83,8 +84,8 @@ into a local theory event that is submitted before your defthm.  That way,
 they're part of the theory that is inherited by all subgoals.</p>
 
 <p>To make @(':enable'), @(':disable'), and @(':e/d') slightly more powerful,
-they are actually integrated with the @(see rulesets) book.  In particular,
-these keywords are always translated into an @(see e/d*).</p>
+they are actually integrated with the @(see acl2::rulesets) book.  In
+particular, these keywords are always translated into an @(see acl2::e/d*).</p>
 
 <p>Some examples:</p>
 

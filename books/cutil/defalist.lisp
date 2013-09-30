@@ -40,10 +40,10 @@ like @('(cons-listp x)').  That is,</p>
 </ul>
 
 <p>Not requiring @('nil') termination has some advantages.  It plays well with
-@(see equivalence) relations like @(see list-equiv) and @(see
-acl2::alist-equiv).  It also allows you to use features of @(see fast-alists)
-such as \"size hints\" and \"alist names\" (see @(see hons-acons) for
-details).</p>
+@(see acl2::equivalence) relations like @(see list-equiv) and @(see
+acl2::alist-equiv).  It also allows you to use features of @(see
+acl2::fast-alists) such as \"size hints\" and \"alist names\" (see @(see
+hons-acons) for details).</p>
 
 <p>But there is also a disadvantage.  Namely, it may be difficult to operate on
 a defalist using traditional alist functions, whose @(see guard)s require @(see
@@ -199,14 +199,17 @@ and/or @(':long') to override it.</p>")
 
        (short (or short
                   (and parents
-                       (str::cat "@(call " (symbol-name name) ") recognizes
-association lists where every key satisfies @(see " (symbol-name keyp) ") and
-each value satisfies @(see " (symbol-name valp) ")."))))
+                       (str::cat "@(call " (symbol-package-name
+name) "::" (symbol-name name) ") recognizes association lists where every key
+satisfies @(see " (symbol-package-name keyp) "::" (symbol-name keyp) ") and
+each value satisfies @(see " (symbol-package-name valp) "::" (symbol-name
+valp) ")."))))
 
        (long (or long
                  (and parents
-                      (str::cat "<p>This is an ordinary @(see defalist).</p>"
-                                "@(def " (symbol-name name) ")"))))
+                      (str::cat "<p>This is an ordinary @(see cutil::defalist).</p>"
+                                "@(def " (symbol-package-name
+                                name) "::" (symbol-name name) ")"))))
 
        (doc (if (or parents short long)
                 `((defxdoc ,name :parents ,parents :short ,short :long ,long))

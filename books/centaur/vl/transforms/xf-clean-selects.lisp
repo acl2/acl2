@@ -187,6 +187,7 @@ concatenation and select expressions more readable.</p>")
 
 
 (defsection vl-stmt-clean-selects
+  :parents (clean-selects)
 
   (mutual-recursion
 
