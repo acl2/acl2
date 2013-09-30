@@ -264,7 +264,6 @@ STARTJOB ?= $(SHELL)
 .PHONY: all everything
 all:
 
-
 QUICKLISP_DIR=centaur/quicklisp
 
 ifneq ($(USE_QUICKLISP), )
@@ -284,18 +283,25 @@ $(QUICKLISP_DIR)/top.cert: $(QUICKLISP_DIR)/setup.lisp \
                            $(QUICKLISP_DIR)/cert.acl2 \
                            tools/include-raw.cert
 
-.PHONY: quicklisp_clean
-
-quicklisp_clean:
-	@echo "Removing downloaded quicklisp files"
-	@cd $(QUICKLISP_DIR); rm -rf setup.lisp quicklisp.lisp asdf.lisp \
-          cache dists local-projects tmp install.out quicklisp Makefile-tmp
 
 all: $(QUICKLISP_DIR)/top.cert
 
+endif # USE_QUICKLISP
+
+# [Jared]: I moved these out of the USE_QUICKLISP section so that "make clean"
+# will always remove the quicklisp files if you have ever built with
+# USE_QUICKLISP before.  The goal is to ensure that stale quicklisp files
+# aren't left around after a "make clean" by accident.
+
+.PHONY: quicklisp_clean
+
+quicklisp_clean:
+	@echo "Removing downloaded quicklisp files (if any)"
+	@cd $(QUICKLISP_DIR); rm -rf setup.lisp quicklisp.lisp asdf.lisp \
+          cache dists local-projects tmp install.out quicklisp Makefile-tmp
+
 clean: quicklisp_clean
 
-endif # USE_QUICKLISP
 
 # Ensure that the following variable is simply expanded.
 ACL2_CUSTOM_TARGETS :=
