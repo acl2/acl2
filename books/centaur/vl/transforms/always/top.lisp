@@ -19,6 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "caseelim")
 (include-book "elimalways")
 (include-book "eliminitial")
 (include-book "elimnegedge")
@@ -49,7 +50,8 @@ typical way that we expect to process @('always') blocks.</p>
 first do several preprocessing steps:</p>
 
 <ul>
-<li>@(see eliminitial) to get rid of any @('initial') statements</li>
+<li>@(see caseelim) to get rid of @('case') statements</li>
+<li>@(see eliminitial) to get rid of any @('initial') blocks</li>
 <li>@(see elimnegedge) to get rid of @('negedge clk') constructs</li>
 <li>@(see stmttemps) to split out complex conditions and rhs expressions</li>
 <li>@(see unelse) to reduce @('if/else') statements to just @('if')s</li>
@@ -60,7 +62,9 @@ first do several preprocessing steps:</p>
 And, as a last step, we use @(see elimalways) to remove any unsupported always
 blocks that weren't synthesized, and add fatal warnings to their modules.</p>"
 
-  (b* ((mods (xf-cwtime (vl-modulelist-eliminitial mods)
+  (b* ((mods (xf-cwtime (vl-modulelist-caseelim mods)
+                        :name xf-caseelim))
+       (mods (xf-cwtime (vl-modulelist-eliminitial mods)
                         :name xf-eliminitial))
        (mods (xf-cwtime (vl-modulelist-elimnegedge mods)
                         :name xf-elimnegedge))

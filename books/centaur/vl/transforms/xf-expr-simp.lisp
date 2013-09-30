@@ -49,6 +49,267 @@ output using an equivalence checker.</p>")
          :hints(("Goal" :in-theory (enable vl-expr-resolved-p)))))
 
 
+(define vl-expr-simp-unary-bitnot
+  ((x    vl-expr-p     "Expression to rewrite, of the form ~FOO.")
+   (args vl-exprlist-p "Its already-rewritten args."))
+  :guard (and (vl-nonatom-p x)
+              (equal (vl-nonatom->op x) :vl-unary-bitnot)
+              (equal (len args) 1))
+  :returns (new-x vl-expr-p :hyp :fguard)
+
+  (b* ((arg (first args))
+
+       ;; Reduce ~~A to A
+       ((when (and (vl-nonatom-p arg)
+                   (eq (vl-nonatom->op arg) :vl-unary-bitnot)))
+        (first (vl-nonatom->args arg)))
+
+       ;; Reduce ~1'b1 to 1'b0 and ~1'b0 to 1'b1
+       ((when (and (vl-atom-p arg)
+                   (vl-expr-resolved-p arg)
+                   (or (eql (vl-resolved->val arg) 1)
+                       (eql (vl-resolved->val arg) 0))
+                   (equal (vl-expr->finalwidth x) 1)
+                   (equal (vl-expr->finaltype x) :vl-unsigned)))
+        (b* ((curr (vl-resolved->val arg))
+             (ans  (if (eql curr 0)
+                       |*sized-1'b1*|
+                     |*sized-1'b0*|)))
+          (vl-cw-ps-seq (vl-cw "NC Rewrite ~a0 to ~a1~%" x ans))
+          ans))
+
+       ;; Reduce ~(A ? B : C) to (A ? ~B : ~C)
+       ((when (and (vl-nonatom-p arg)
+                   (eq (vl-nonatom->op arg) :vl-qmark)))
+        (b* (((list a b c) (vl-nonatom->args arg))
+             (~b (make-vl-nonatom :op :vl-unary-bitnot
+                                  :args (list b)
+                                  :finalwidth (vl-expr->finalwidth b)
+                                  :finaltype (vl-expr->finaltype b)))
+             (~c (make-vl-nonatom :op :vl-unary-bitnot
+                                  :args (list c)
+                                  :finalwidth (vl-expr->finalwidth c)
+                                  :finaltype (vl-expr->finaltype c)))
+             (ans (change-vl-nonatom arg
+                                     :args (list a ~b ~c))))
+          (vl-cw-ps-seq (vl-cw "QM Rewrite ~a0 to ~a1!~%" x ans))
+          ans))
+
+       ;; Reduce ~(A & B) using demorgan's law, but only if one of A or B is a
+       ;; negated expression (so that we think the negation will cancel on at
+       ;; least one branch.)
+       #||
+       (thm (iff (not (and a b)) (or (not a) (not b))))
+       ||#
+       ((when (and (vl-nonatom-p arg)
+                   (eq (vl-nonatom->op arg) :vl-binary-bitand)
+                   ;; (let ((and-args (vl-nonatom->args arg)))
+                   ;;   (or (and (vl-nonatom-p (first and-args))
+                   ;;            (eq (vl-nonatom->op (first and-args)) :vl-unary-bitnot))
+                   ;;       (and (vl-nonatom-p (second and-args))
+                   ;;            (eq (vl-nonatom->op (second and-args)) :vl-unary-bitnot))))
+                   ))
+        (b* (((list a b) (vl-nonatom->args arg))
+             (~a (make-vl-nonatom :op :vl-unary-bitnot
+                                  :args (list a)
+                                  :finalwidth (vl-expr->finalwidth a)
+                                  :finaltype (vl-expr->finaltype a)))
+             (~b (make-vl-nonatom :op :vl-unary-bitnot
+                                  :args (list b)
+                                  :finalwidth (vl-expr->finalwidth b)
+                                  :finaltype (vl-expr->finaltype b)))
+             (ans (change-vl-nonatom arg
+                                     :op :vl-binary-bitor
+                                     :args (list ~a ~b))))
+          (vl-cw-ps-seq (vl-cw "DMA Rewrite ~a0 to ~a1~%" x ans))
+          ans))
+
+       ;; Reduce ~(A | B) using demorgan's law, but only if one of A or B is
+       ;; a negated expression
+       #||
+       (thm (iff (not (or a b)) (and (not a) (not b))))
+       ||#
+       ((when (and (vl-nonatom-p arg)
+                   (eq (vl-nonatom->op arg) :vl-binary-bitor)
+                   ;; (let ((and-args (vl-nonatom->args arg)))
+                   ;;   (or (and (vl-nonatom-p (first and-args))
+                   ;;            (eq (vl-nonatom->op (first and-args)) :vl-unary-bitnot))
+                   ;;       (and (vl-nonatom-p (second and-args))
+                   ;;            (eq (vl-nonatom->op (second and-args)) :vl-unary-bitnot))))
+                   ))
+        (b* (((list a b) (vl-nonatom->args arg))
+             (~a (make-vl-nonatom :op :vl-unary-bitnot
+                                  :args (list a)
+                                  :finalwidth (vl-expr->finalwidth a)
+                                  :finaltype (vl-expr->finaltype a)))
+             (~b (make-vl-nonatom :op :vl-unary-bitnot
+                                  :args (list b)
+                                  :finalwidth (vl-expr->finalwidth b)
+                                  :finaltype (vl-expr->finaltype b)))
+             (ans (change-vl-nonatom arg
+                                     :op :vl-binary-bitand
+                                     :args (list ~a ~b))))
+          (vl-cw-ps-seq (vl-cw "DMO Rewrite ~a0 to ~a1~%" x ans))
+          ans)))
+
+    ;; Else, no rewrites to do.  Just install the new args.
+    (change-vl-nonatom x :args args)))
+
+
+
+(define vl-expr-simp-binary-bitand
+  ((x    vl-expr-p     "Expression to rewrite, of the form FOO & BAR.")
+   (args vl-exprlist-p "Its already-rewritten args."))
+  :guard (and (vl-nonatom-p x)
+              (equal (vl-nonatom->op x) :vl-binary-bitand)
+              (equal (len args) 2))
+  :returns (new-x vl-expr-p :hyp :fguard)
+  (b* (((list arg1 arg2) args)
+
+       ;; Reduce (A & 0) to 0
+       ((when (and (vl-expr-resolved-p arg2)
+                   (eql (vl-resolved->val arg2) 0)))
+        (b* ((ans (change-vl-atom arg2
+                                  :finaltype (vl-expr->finaltype x)
+                                  :finalwidth (vl-expr->finalwidth x))))
+          (vl-cw-ps-seq (vl-cw "AND0a rewrite ~a0 to ~a1~%" x ans))
+          ans))
+
+       ;; Reduce (0 & A) to 0.
+       ((when (and (vl-expr-resolved-p arg1)
+                   (eql (vl-resolved->val arg1) 0)))
+        (b* ((ans (change-vl-atom arg1
+                                  :finaltype (vl-expr->finaltype x)
+                                  :finalwidth (vl-expr->finalwidth x))))
+          (vl-cw-ps-seq (vl-cw "AND0b rewrite ~a0 to ~a1~%" x ans))
+          ans))
+
+       ;; Reduce (A & 1'b1) to A (for 1-bit A only)
+       ((when (and (vl-expr-resolved-p arg2)
+                   (eql (vl-resolved->val arg2) 1)
+                   (equal (vl-expr->finalwidth x) 1)
+                   (equal (vl-expr->finaltype x) :vl-unsigned)
+                   (equal (vl-expr->finalwidth arg1) 1)
+                   (equal (vl-expr->finaltype arg1) :vl-unsigned)))
+        (b* ((ans arg1))
+          (vl-cw-ps-seq (vl-cw "AND1a rewrite ~a0 to ~a1~%" x ans))
+          ans))
+
+       ;; Reduce (1'b1 & A) to A (for 1-bit A only)
+       ((when (and (vl-expr-resolved-p arg1)
+                   (eql (vl-resolved->val arg1) 1)
+                   (equal (vl-expr->finalwidth x) 1)
+                   (equal (vl-expr->finaltype x) :vl-unsigned)
+                   (equal (vl-expr->finalwidth arg2) 1)
+                   (equal (vl-expr->finaltype arg2) :vl-unsigned)))
+        (b* ((ans arg2))
+          (vl-cw-ps-seq (vl-cw "AND1b rewrite ~a0 to ~a1~%" x ans))
+          ans)))
+
+    ;; Else, no rewrites to do.  Just install the new args.
+    (change-vl-nonatom x :args args)))
+
+
+
+(define vl-expr-simp-binary-bitor
+  ((x    vl-expr-p     "Expression to rewrite, of the form FOO | BAR.")
+   (args vl-exprlist-p "Its already-rewritten args."))
+  :guard (and (vl-nonatom-p x)
+              (equal (vl-nonatom->op x) :vl-binary-bitor)
+              (equal (len args) 2))
+  :returns (new-x vl-expr-p :hyp :fguard)
+  (b* (((list arg1 arg2) args)
+
+       ;; Reduce (A | 0) to A, for A of any width.
+       ((when (and (vl-expr-resolved-p arg2)
+                   (eql (vl-resolved->val arg2) 0)
+                   (equal (vl-expr->finalwidth x) (vl-expr->finalwidth arg1))
+                   (equal (vl-expr->finaltype x) (vl-expr->finaltype arg1))))
+        (b* ((ans arg1))
+          (vl-cw-ps-seq (vl-cw "ORa0 rewrite ~a0 to ~a1~%" x ans))
+          ans))
+
+       ;; Reduce (0 | A) to A, for A of any width.
+       ((when (and (vl-expr-resolved-p arg1)
+                   (eql (vl-resolved->val arg1) 0)
+                   (equal (vl-expr->finalwidth x) (vl-expr->finalwidth arg2))
+                   (equal (vl-expr->finaltype x) (vl-expr->finaltype arg2))))
+        (b* ((ans arg2))
+          (vl-cw-ps-seq (vl-cw "OR0a rewrite ~a0 to ~a1~%" x ans))
+          ans))
+
+       ;; Reduce (A | 1'b1) to 1'b1, for one-bit A.
+       ((when (and (vl-expr-resolved-p arg2)
+                   (eql (vl-resolved->val arg2) 1)
+                   (equal (vl-expr->finalwidth x) 1)
+                   (equal (vl-expr->finalwidth arg1) 1)
+                   (equal (vl-expr->finalwidth arg2) 1)
+                   (eq (vl-expr->finaltype x) :vl-unsigned)
+                   (eq (vl-expr->finaltype arg1) :vl-unsigned)
+                   (eq (vl-expr->finaltype arg2) :vl-unsigned)))
+        (b* ((ans arg2))
+          (vl-cw-ps-seq (vl-cw "ORa1 rewrite ~a0 to ~a1~%" x ans))
+          ans))
+
+       ;; Reduce (1'b1 | A) to 1'b1, for one-bit A
+       ((when (and (vl-expr-resolved-p arg1)
+                   (eql (vl-resolved->val arg1) 1)
+                   (equal (vl-expr->finalwidth x) 1)
+                   (equal (vl-expr->finalwidth arg1) 1)
+                   (equal (vl-expr->finalwidth arg2) 1)
+                   (eq (vl-expr->finaltype x) :vl-unsigned)
+                   (eq (vl-expr->finaltype arg1) :vl-unsigned)
+                   (eq (vl-expr->finaltype arg2) :vl-unsigned)))
+        (b* ((ans arg1))
+          (vl-cw-ps-seq (vl-cw "OR1a rewrite ~a0 to ~a1~%" x ans))
+          ans)))
+
+    ;; Else, no rewrites to do.  Just install the new args.
+    (change-vl-nonatom x :args args)))
+
+
+
+(define vl-expr-simp-qmark
+  ((x    vl-expr-p     "Expression to rewrite, of the form FOO ? BAR : BAZ.")
+   (args vl-exprlist-p "Its already-rewritten args."))
+  :guard (and (vl-nonatom-p x)
+              (equal (vl-nonatom->op x) :vl-qmark)
+              (equal (len args) 3))
+  :returns (new-x vl-expr-p :hyp :fguard)
+  (b* (((list a b c) args)
+
+       ;; Reduce ~A ? B : C to A ? C : B
+       ((when (and (vl-nonatom-p a)
+                   (eq (vl-nonatom->op a) :vl-unary-bitnot)))
+        (b* (((list ~a b c) args)
+             (a   (first (vl-nonatom->args ~a)))
+             (ans (change-vl-nonatom x :args (list a c b))))
+          (vl-cw-ps-seq (vl-cw "QM~ Rewrite ~a0 to ~a1~%" x ans))
+          ans))
+
+       ;; Reduce 1 ? B : C to B
+       ((when (and (vl-expr-resolved-p a)
+                   (eql (vl-resolved->val a) 1)
+                   (equal (vl-expr->finalwidth x) (vl-expr->finalwidth b))
+                   (equal (vl-expr->finaltype x) (vl-expr->finaltype b))))
+        (b* ((ans b))
+          (vl-cw-ps-seq (vl-cw "QM1 rewrite ~a0 to ~a1~%" x ans))
+          ans))
+
+       ;; Reduce 0 ? B : C to C
+       ((when (and (vl-expr-resolved-p a)
+                   (eql (vl-resolved->val a) 0)
+                   (equal (vl-expr->finalwidth x) (vl-expr->finalwidth c))
+                   (equal (vl-expr->finaltype x) (vl-expr->finaltype c))))
+        (b* ((ans c))
+          (vl-cw-ps-seq (vl-cw "QM0 rewrite ~a0 to ~a1~%" x ans))
+          ans)))
+
+    ;; Else, no rewrites to do.  Just install the new args.
+    (change-vl-nonatom x :args args)))
+
+
+
 (defsection vl-expr-simp
   :parents (expr-simp)
   :short "Core routine to simplify expressions."
@@ -76,171 +337,12 @@ output using an equivalence checker.</p>")
            x)
           ((vl-nonatom x) x)
           (args (vl-exprlist-simp x.args))
-
-          ;; Reduce ~~A to A
-          ((when (and (eq x.op :vl-unary-bitnot)
-                      (vl-nonatom-p (first args))
-                      (eq (vl-nonatom->op (first args)) :vl-unary-bitnot)))
-           (first (vl-nonatom->args (first args))))
-
-          ;; Reduce ~1'b1 to 1'b0 and ~1'b0 to 1'b1
-          ((when (and (eq x.op :vl-unary-bitnot)
-                      (vl-atom-p (first args))
-                      (vl-expr-resolved-p (first args))
-                      (or (= (vl-resolved->val (first args)) 1)
-                          (= (vl-resolved->val (first args)) 0))
-                      (equal (vl-expr->finalwidth x) 1)
-                      (equal (vl-expr->finaltype x) :vl-unsigned)))
-           (b* ((curr (vl-resolved->val (first args)))
-                (ans  (if (= curr 0)
-                          |*sized-1'b1*|
-                        |*sized-1'b0*|)))
-             (vl-cw-ps-seq
-              (vl-cw "NC Rewrite ~a0 to ~a1~%" x ans))
-             ans))
-
-          ;; Reduce ~(A ? B : C) to (A ? ~B : ~C)
-          ((when (and (eq x.op :vl-unary-bitnot)
-                      (vl-nonatom-p (first args))
-                      (eq (vl-nonatom->op (first args)) :vl-qmark)))
-           (b* (((list a b c) (vl-nonatom->args (first args)))
-                (~b (make-vl-nonatom :op :vl-unary-bitnot
-                                     :args (list b)
-                                     :finalwidth (vl-expr->finalwidth b)
-                                     :finaltype (vl-expr->finaltype b)))
-                (~c (make-vl-nonatom :op :vl-unary-bitnot
-                                     :args (list c)
-                                     :finalwidth (vl-expr->finalwidth c)
-                                     :finaltype (vl-expr->finaltype c)))
-                (ans (change-vl-nonatom (first args)
-                                        :args (list a ~b ~c))))
-             (vl-cw-ps-seq
-              (vl-cw "QM Rewrite ~a0 to ~a1!~%" x ans))
-             ans))
-
-          ;; Reduce ~(A & B) using demorgan's law, but only if one of A or B is a
-          ;; negated expression (so that we think the negation will cancel on at
-          ;; least one branch.)
-          #||
-          (thm (iff (not (and a b))
-          (or (not a) (not b))))
-          ||#
-          ((when (and (eq x.op :vl-unary-bitnot)
-                      (vl-nonatom-p (first args))
-                      (eq (vl-nonatom->op (first args)) :vl-binary-bitand)
-;(let ((and-args (vl-nonatom->args (first args))))
-;  (or (and (vl-nonatom-p (first and-args))
-;           (eq (vl-nonatom->op (first and-args)) :vl-unary-bitnot))
-;      (and (vl-nonatom-p (second and-args))
-;           (eq (vl-nonatom->op (second and-args)) :vl-unary-bitnot))))
-                      ))
-           (b* (((list a b) (vl-nonatom->args (first args)))
-                (~a (make-vl-nonatom :op :vl-unary-bitnot
-                                     :args (list a)
-                                     :finalwidth (vl-expr->finalwidth a)
-                                     :finaltype (vl-expr->finaltype a)))
-                (~b (make-vl-nonatom :op :vl-unary-bitnot
-                                     :args (list b)
-                                     :finalwidth (vl-expr->finalwidth b)
-                                     :finaltype (vl-expr->finaltype b)))
-                (ans (change-vl-nonatom (first args)
-                                        :op :vl-binary-bitor
-                                        :args (list ~a ~b))))
-             (vl-cw-ps-seq
-              (vl-cw "DMA Rewrite ~a0 to ~a1~%" x ans))
-             ans))
-
-          ;; Reduce ~(A | B) using demorgan's law, but only if one of A or B is
-          ;; a negated expression
-          #|| 
-          (thm (iff (not (or a b))
-          (and (not a) (not b))))
-          ||#
-          ((when (and (eq x.op :vl-unary-bitnot)
-                      (vl-nonatom-p (first args))
-                      (eq (vl-nonatom->op (first args)) :vl-binary-bitor)
-;(let ((and-args (vl-nonatom->args (first args))))
-;  (or (and (vl-nonatom-p (first and-args))
-;           (eq (vl-nonatom->op (first and-args)) :vl-unary-bitnot))
-;      (and (vl-nonatom-p (second and-args))
-;           (eq (vl-nonatom->op (second and-args)) :vl-unary-bitnot))))
-                      ))
-           (b* (((list a b) (vl-nonatom->args (first args)))
-                (~a (make-vl-nonatom :op :vl-unary-bitnot
-                                     :args (list a)
-                                     :finalwidth (vl-expr->finalwidth a)
-                                     :finaltype (vl-expr->finaltype a)))
-                (~b (make-vl-nonatom :op :vl-unary-bitnot
-                                     :args (list b)
-                                     :finalwidth (vl-expr->finalwidth b)
-                                     :finaltype (vl-expr->finaltype b)))
-                (ans (change-vl-nonatom (first args)
-                                        :op :vl-binary-bitand
-                                        :args (list ~a ~b))))
-             (vl-cw-ps-seq
-              (vl-cw "DMO Rewrite ~a0 to ~a1~%" x ans))
-             ans))
-
-
-          ;; Reduce (A & 0) to 0
-          ((when (and (eq x.op :vl-binary-bitand)
-                      (and (vl-expr-resolved-p (second args))
-                           (= (vl-resolved->val (second args)) 0))))
-           (b* ((ans (change-vl-atom (second args)
-                                     :finaltype (vl-expr->finaltype x)
-                                     :finalwidth (vl-expr->finalwidth x))))
-             (vl-cw-ps-seq
-              (vl-cw "AND0a rewrite ~a0 to ~a1~%" x ans))
-             ans))
-
-          ;; Reduce (0 & A) to 0.
-          ((when (and (eq x.op :vl-binary-bitand)
-                      (and (vl-expr-resolved-p (first args))
-                           (= (vl-resolved->val (first args)) 0))))
-           (b* ((ans (change-vl-atom (first args)
-                                     :finaltype (vl-expr->finaltype x)
-                                     :finalwidth (vl-expr->finalwidth x))))
-             (vl-cw-ps-seq
-              (vl-cw "AND0b rewrite ~a0 to ~a1~%" x ans))
-             ans))
-
-          ;; Reduce (A & 1) to A
-          ((when (and (eq x.op :vl-binary-bitand)
-                      (and (vl-expr-resolved-p (second args))
-                           (= (vl-resolved->val (second args)) 1))
-                      (equal (vl-expr->finalwidth x) 1)
-                      (equal (vl-expr->finaltype x) :vl-unsigned)
-                      (equal (vl-expr->finalwidth (first args)) 1)
-                      (equal (vl-expr->finaltype (first args)) :vl-unsigned)))
-           (b* ((ans (first args)))
-             (vl-cw-ps-seq
-              (vl-cw "AND1a rewrite ~a0 to ~a1~%" x ans))
-             ans))
-
-          ;; Reduce (1 & A) to A
-          ((when (and (eq x.op :vl-binary-bitand)
-                      (and (vl-expr-resolved-p (first args))
-                           (= (vl-resolved->val (first args)) 1))
-                      (equal (vl-expr->finalwidth x) 1)
-                      (equal (vl-expr->finaltype x) :vl-unsigned)
-                      (equal (vl-expr->finalwidth (second args)) 1)
-                      (equal (vl-expr->finaltype (second args)) :vl-unsigned)))
-           (b* ((ans (second args)))
-             (vl-cw-ps-seq
-              (vl-cw "AND1b rewrite ~a0 to ~a1~%" x ans))
-             ans))
-
-          ;; Reduce ~A ? B : C to A ? C : B
-          ((when (and (eq x.op :vl-qmark)
-                      (vl-nonatom-p (first args))
-                      (eq (vl-nonatom->op (first args)) :vl-unary-bitnot)))
-           (b* (((list ~a b c) args)
-                (a   (first (vl-nonatom->args ~a)))
-                (ans (change-vl-nonatom x :args (list a c b))))
-             (vl-cw-ps-seq
-              (vl-cw "QM Rewrite ~a0 to ~a1~%" x ans))
-             ans)))
-
+          ((when (eq x.op :vl-unary-bitnot))  (vl-expr-simp-unary-bitnot x args))
+          ((when (eq x.op :vl-binary-bitand)) (vl-expr-simp-binary-bitand x args))
+          ((when (eq x.op :vl-binary-bitor))  (vl-expr-simp-binary-bitor x args))
+          ((when (eq x.op :vl-qmark))         (vl-expr-simp-qmark x args))
+          )
+       ;; Else, nothing to do, just install the reweritten args
        (change-vl-nonatom x :args args)))
 
    (defund vl-exprlist-simp (x)
@@ -433,3 +535,4 @@ output using an equivalence checker.</p>")
   :guard (vl-modulelist-p x)
   :result-type vl-modulelist-p
   :parents (expr-simp))
+
