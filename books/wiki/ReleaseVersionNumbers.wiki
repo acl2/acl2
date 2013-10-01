@@ -2,9 +2,11 @@
 
 = Introduction =
 
-Version 6.2 of ACL2 corresponds to r1835.
+Version 6.3 of ACL2 corresponds to r2094.
 
 = Details =
+
+Version 6.3 of ACL2 corresponds to r2094.
 
 Version 6.2 of ACL2 corresponds to r1835.
 
