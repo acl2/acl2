@@ -1,0 +1,4 @@
+
+(ld "tools/flag-package.lsp" :dir :system)
+
+(certify-book "meta-extract-user" ? t)

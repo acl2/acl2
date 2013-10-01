@@ -1,0 +1,39 @@
+Main.  fundamental-theorem-of-calculus.
+ (IMPLIES (AND (REALP A) (REALP X))
+          (EQUAL (INTEGRAL-RCFN-PRIME A X)
+                 (RCFN X)))
+using lemmas:
+  ("split-integral-by-subintervals" "ftoc-lemma")
+and library books:
+  ("integral-rcfn" "nsa-lemmas"
+                   "integral-rcfn-lemmas" "riemann-lemmas"
+                   "make-partition" "riemann-defuns")
+==============================
+Main.1.  split-integral-by-subintervals.
+ (IMPLIES (AND (REALP A) (REALP B) (REALP C))
+          (EQUAL (INTEGRAL-RCFN A C)
+                 (+ (INTEGRAL-RCFN A B)
+                    (INTEGRAL-RCFN B C))))
+using lemmas (NOT shown just below:  depth limit reached):
+  ("riemann-sum-approximates-integral" "integral-rcfn-equal-if-i-close")
+and library books:
+  ("integral-rcfn-lemmas" "nsa-lemmas" "integral-rcfn"
+                          "riemann-lemmas" "riemann-defuns")
+==============================
+Main.2.  ftoc-lemma.
+ (IMPLIES (AND (REALP EPS)
+               (NOT (EQUAL EPS 0))
+               (I-SMALL EPS)
+               (REALP X)
+               (STANDARD-NUMBERP X))
+          (EQUAL (STANDARD-PART (/ (INTEGRAL-RCFN X (+ X EPS)) EPS))
+                 (RCFN X)))
+using lemmas (NOT shown just below:  depth limit reached):
+  ("integral-rcfn-quotient-between-non-classical"
+       "between-i-close-implies-i-close")
+and library books:
+  ("min-x-and-max-x-lemmas" "defaxioms" "integral-rcfn"
+                            "max-and-min-attained" "nsa-lemmas"
+                            "integral-rcfn-lemmas" "riemann-lemmas"
+                            "make-partition" "riemann-defuns")
+==============================

@@ -1,0 +1,32 @@
+#!/bin/sh
+
+SCL="scl"
+
+if [ "$#" -ne "1" ]
+then
+	echo "Usage: milawa-scl <IMAGE-FILE>"
+	echo "Where <IMAGE-FILE> is the name of an SCL image to use, typically a"
+	echo "\".scl-image\" file, such as \"milawa.scl-image\"."
+	exit 1
+fi
+
+if [ -z "`which $SCL`" ]
+then
+	echo "Error: Scieneer Common Lisp not found."
+	echo ""
+	echo "Possible causes:"
+	echo "  - SCL is not installed?"
+	echo "  - SCL is not in your current \$PATH?"
+	echo "  - SCL is in your path, but is not named '$SCL'?"
+	echo "  - SCL is in your path and is named '$SCL', but is not executable?"
+	echo ""
+	echo "Possible fixes:"
+	echo "  - Add a symlink to SCL named '$SCL' somewhere in your \$PATH?"
+	echo "  - Edit the milawa-scl shell script and change SCL=\"...\" to the name"
+	echo "    of your SCL executable?"
+	echo "  - Make sure you can start SCL by typing '$SCL'"
+	echo ""
+fi
+
+exec $SCL -core $1
+

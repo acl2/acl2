@@ -1,0 +1,25 @@
+Please see Section 0 of ../arithmetic-4/README for information about
+which arithmetic books to use.
+
+This directory contains some meta rules for arithmetic.  They are shown below.
+There is a long history of meta rules for Nqthm.  The ones below were first
+proved, with hypotheses (because they preceded version 1.8 of ACL2), by John
+Cowles, following a proof by Matt Kaufmann of the first of them, which in turn
+followed a proof by Yuan Yu of that same lemma for Nqthm (who assisted Matt in
+formulating the ACL2 version), who in turn followed similar proofs by previous
+Nqthm users (probably starting with Boyer and Moore)!
+
+cancel_plus-equal-correct (file meta-plus-equal.lisp)
+  (equal (ev-plus-equal x a)
+         (ev-plus-equal (cancel_plus-equal x) a))
+
+cancel_plus-lessp-correct (file meta-plus-lessp.lisp)
+  (equal (ev-plus-lessp x a)
+         (ev-plus-lessp (cancel_plus-lessp x) a))
+
+cancel_times-equal-correct (file meta-times-equal.lisp)
+  (equal (ev-times-equal x a)
+         (ev-times-equal (cancel_times-equal x) a))
+
+Note that the book pseudo-termp-lemmas.lisp is not needed, but is included
+since many of its lemmas were already around for version 1.7.

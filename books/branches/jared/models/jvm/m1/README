@@ -1,0 +1,326 @@
+M1:  Code Proofs and Turing Equivalence
+J Strother Moore
+December, 2012
+
+On this directory you will find a definition of a simple von Neumann machine
+called M1, the proofs of the correctness of 19 simple M1 programs, and a proof
+that M1 is Turing equivalent.  M1 is an idealized version of a trivial subset
+of the Java Virtual Machine.  A highlight of the Turing equivalent proof is the
+definition and use of a verifying compiler from a simple subset of Lisp to M1.
+
+History, Related Work, and Background
+
+I developed M1 for the first offering, in 1997, of the course ``CS378 A Formal
+Model of the Java Virtual Machine,'' in the Computer Science Department of the
+University of Texas at Austin.  The course taught students how to model complex
+digital artifacts like microprocessors and virtual machines.  Over the course
+of the semester, the students modified and elaborated M1 until it became a
+reasonably accurate model of a substantial part of the JVM.  This process was
+taken to its stunning conclusion with M6 by Hanbing Liu in his 2006 UT Austin
+PhD dissertation, ``Formal Specification and Verification of a JVM and its
+Bytecode Verifier.''
+
+I found it helpful, over the years, to modify the original M1 in various ways
+to make challenge program coding, proofs, and/or subsequent elaborations easier
+for the students.  Thus, papers from the ACL2 group mentioning ``M1'' do not
+necessarily talk about the version of M1 defined here!  However, the most
+common discrepancy is just in the particular choice of subset of the
+instructions modeled.  I think any reasonable person would look at the various
+formal definitions and pronounce them all ``the same.''
+
+M1 differs from the JVM in so many ways it is pointless to try to list them.
+But so that readers will not think I think M1 is a model of the JVM let me say that
+(a) the instruction stream in M1 is a list of fully parsed instructions, not
+bytes, (b) the only data type supported is integers, (c) integers are unbounded,
+(d) the only instructions modeled are the analogues of ILOAD, ISTORE, ICONST,
+IADD, ISUB, IMUL, IFEQ, and GOTO, (e) there is no heap, (f) there are no Objects,
+(g) there are no methods, classes, or class tables -- just a single parsed
+bytecode program, (h) there are no threads or monitors, (i) there are no
+exceptions, and (j) there is no bytecode verifier or class loader.  But by
+enumerating these omissions you can get a sense for what the students formalized
+(with my help) over the semester.
+
+Despite these limitations, since M1 has unbounded integers it is Turing
+equivalent and thus strictly more powerful than any finite computing machine.
+It wasn't until March, 2012, that I bothered to prove that M1 is Turing
+equivalent.  In class that month the students said that M1 was hard to program
+and I countered that it was Turing equivalent.  But since M1 is a pedagogical
+device designed to show students how to model and reason about computing
+artifacts, I felt it was incumbent upon me not to merely allege that it was
+Turing equivalent but to formalize and prove it.
+
+This amounts to implementing a Turing machine interpreter in M1 bytecode and
+proving it correct.  I completed the first proof of M1's Turing equivalence
+over Spring Break, March 10--18, 2012.  I coded the interpreter by hand -- all
+804 M1 instructions -- and manually wrote the specifications and lemmas
+necessary to prove it correct.  I was helped in this endeavor by the fact that
+by 2012 I had taught the JVM course so many times that programming and
+verifying M1 code was second nature.  But the biggest help was that in 1984,
+Bob Boyer and I had proved the Turing equivalence of Pure Lisp with Nqthm:
+
+ A Mechanical Proof of the Turing Completeness of PURE LISP, with
+ R. S. Boyer. In W. W. Bledsoe and D. W. Loveland (eds.), Contemporary
+ Mathematics, Volume 29, Automated Theorem Proving: After 25 Years, American
+ Mathematical Society, Providence, Rhode Island, 1984, pp. 133-168.
+
+This paper gave me the definition, in the Nqthm logic, of an acceptable Turing
+machine interpreter and the form of the two theorems I had to prove to capture
+the notion that a convenient computational paradigm (in this case, M1) is as
+powerful as Turing machines.  The basic idea is to set up a correspondence
+between Turing machines and M1 states and then to prove that (a) if a Turing
+machine runs forever it corresponding M1 computation runs forever and (b) if a
+Turing machine halts with a given tape, its M1 counterpart halts with the same
+tape (modulo data representation).  Great care must be taken to insure that the
+computing machines and not the correspondence perform the necessary work.
+
+The title of the 1984 paper used ``completeness'' where today I use
+``equivalence.'' I believe that in 1984, the term ``Turing completeness'' was
+an acceptable way to say what we mean by ``Turing equivalence'' today and,
+today, ``Turing completeness'' means something different than we meant by in it
+1984.
+
+I also believe that the 1984 Boyer-Moore paper was the first time a computing
+paradigm, in that case, Pure Lisp, was mechanically proved to be as powerful as
+Turing machines.  I believe this M1 proof is only the second time.
+Furthermore, I believe M1 is the first von Neumann paradigm mechanically proved
+Turing equivalent.
+
+Finally, I should note that in neither the 1984 work nor the present work do we
+prove that Turing machines can emulate the more convenient paradigms (Pure Lisp
+or M1).  Since it is commonly accepted that any computation can be done by
+Turing machines, the interesting direction whether a more convenient paradigm
+can emulate Turing machines.
+
+The week after Spring Break, I gave two talks on the M1 proof.  The first was
+at the ACL2 research group seminar and the second was in my JVM class.
+
+I learned a lot about the complexity of presenting the work in those two
+seminars.  Neither went as smoothly as I wished, in part because the work
+itself was so complicated but also because it was messy and I did not know what
+I wanted to emphasize.  But, having given the talks I put the whole thing down.
+
+I believe it was a few weeks later, in early April, 2012, that I decided to
+implement a verifying compiler from a simple Lisp subset to M1.  The compiler
+could then be used to produce both the bytecode implementation and the
+necessary lemmas.  That version of the proof was being polished by April 14,
+2012.
+
+But I did not change the talk nor did I give the talk again.
+
+Then in Edinburgh during the Summer of 2012, I volunteered to give the talk
+again to Alan Bundy's group and then realized I needed to clean it up.  I
+started during the evenings of the Dagstuhl workshop on ``AI and Formal
+Software Development'', July 2-6, 2012.  But instead of working on the proof
+script, I worked exclusively on the talk.  The version of the talk I created
+that week is quite similar to the pdf file provided below.
+
+Having finished preparing a better talk, I then repeated the proof a third time
+to make it reflect what I wanted to say.  I gave the third talk in Bundy's
+seminar in July, 2012.
+
+The rest of this README describes the contents of this directory.
+
+The files on this directory can be recertified by starting ACL2 and 
+doing the following (or, use `make'):
+
+(ld "script.lsp" :ld-pre-eval-print t)
+
+On a Mac Powerbook 2.6 GHz Intel Core i7 with 16 GB 1600 MHz DDR3, this takes
+about 3.5 minutes running ACL2 Version 5.0 built on top of Closure Common Lisp.
+
+Aside from the re-certification script, script.lsp, the interesting files on
+this directory are:
+
+The Definition of M1 and a Few Theorems to Control Proofs About It:
+
+* m1.lisp
+
+A File You Can Read and Step Through with ACL2 to ``Play'' with M1 and a Simple Proof:
+
+* factorial-demo.lsp
+
+The General Template for M1 Code Proofs:  This file shows how to prove the correctness of
+a program that multiplies by repeated addition.  But it does it in a very generic style
+meant to be suggestive of how all single-loop M1 programs should be approached: 
+
+* template.lisp
+
+Simple M1 Program Proofs (here arranged alphabetically): These files just
+instantiate the template over and over again for various simple programs.  Each
+file starts with an informal description of the programming/proof challenge,
+e.g., ``define an M1 program to compute factorial and prove it correct.''  I
+recommend that you read the initial challenge and then fill in the template
+yourself!  But if the files are read in the order in which they are
+re-certified in script.lsp (mentioned above), you will note that they
+gradually introduce new proof techniques.  For example, bexpt shows how we can
+handle nested loops, magic shows that if we are not careful to specify that the
+program halts we can prove that one special program is capable of computing all
+numeric specifications, and wormhole-abstraction shows a way to avoid having to
+say ``too much'' about parts of the state we are uninterested in.  We actually
+recommend that you work these examples in the order that they are done in
+script.lsp rather than alphabetically!
+
+* alternating-sum-variant.lisp
+* alternating-sum.lisp
+* bexpt.lisp
+* div.lisp
+* even-solution-1.lisp
+* even-solution-2.lisp
+* expt.lisp
+* fact.lisp
+* fib.lisp
+* funny-fact.lisp
+* lessp.lisp
+* magic.lisp
+* power.lisp
+* sign.lisp
+* sum.lisp
+* sumsq.lisp
+* wormhole-abstraction.lisp
+
+All of the proofs above use the Boyer-Moore ``clock function'' approach to
+total program correctness.  In each example, a function is defined that takes
+the relevant inputs to the program and returns the minimum number of steps
+required to drive the M1 interpreter to halt on those inputs.  Then the theorem
+is proved that when the program is run that many steps on appropriate input the
+result is a halted state with the correct answer in the location specified.
+I use that style because it is easy for students to grasp and apply.  (And,
+as shown in
+
+  ``Proof Styles in Operational Semantics,'' with S. Ray, Formal Methods in
+  Computer-Aided Design (FMCAD 2004), A. J. Hu and A. K. Martin (eds.),
+  Springer Lecture Notes in Computer Science, 3312, pages 67-81, 2004.
+
+  http://www.cs.utexas.edu/users/sandip/publications/proof-styles/main.html
+
+the clock style proof method is equivalent to (indeed, interchangeable with)
+other proof styles.  The clock style approach is in fact used to verify the
+Turing equivalence of M1, described below.
+
+But I also demonstrate here how ACL2 can be used to verify M1 programs via
+the Floyd-Hoare inductive assertion style proofs.  As noted in the paper
+
+  ``Inductive Assertions and Operational Semantics,'' CHARME 2003,
+  D. Geist (ed.), Springer Verlag LNCS 2860, pp. 289-303, 2003
+
+  http://www.cs.utexas.edu/users/moore/publications/trecia/index.html
+
+it is possible to use the inductive assertion style proof method with a formal
+operational semantics without defining a weakest precondition or verification
+condition generator (VCG).  Instead, the theorem prover's rewriter can derive
+the required verification conditions from the code and semantics given
+user-supplied annotations attached to suitable cut points.  This is demonstrated
+for M1 in this file:
+
+* m1-half-via-inductive-assertions.lisp
+
+where I prove that an M1 program divides an even natural by 2 and halts,
+without characterizing how long it takes.  I prove that if the program halts
+the input was even, which also means: if the input is not even the program does
+not halt.
+
+The Turing Equivalence of M1: The following files prove that M1 can simulate a
+Turing machine interpreter.  To do this, I write an M1 program that interprets
+an encoding of arbitrary Turing machines and then I prove the program correct.
+The program is about 900 M1 instructions long.  To do this I must first reduce
+the ``standard'' Turing machine interpreter to a function that operates only on
+numbers (not ``4-tuple machine descriptions'' and ``tapes.''  That is done in
+tmi-reductions.lisp.  Then I must write the M1 program that does that same
+computation.  To write and verify it, I actually define a ``verifying
+compiler'' that compiles a tiny Lisp-like subset into M1 code and generates the
+clock functions and theorems necessary obtain the total correctness results.
+To carry out this compilation, I have to adopt M1 idioms for implementing
+``procedure call and return'' and mechanisms to protect local variables.  I
+follow the familiar X86 conventions employing stack frames.  I also had to
+overcome M1's lack of a JSR instruction: the only way to jump to an address
+stored on the stack is to compile a ``big switch'' which enumerates the known
+addresses as data items and then jumps to the corresponding pcs.  The verifying
+compiler would have been a lot easier to write and would have produce much
+nicer code to read had M1 supported CALL and RETURN!
+
+Before using the verifying compiler to prove the correctness of the Turing
+machine interpreter, I use it on a simple example, called low-seven.lisp.  Then
+I exhibit the Lisp-like code for the numeric Turing machine interpreter (and
+use the compiler to generate and prove the bytecode correct) in
+implementation.lisp.  Then, in theorems-a-and-b.lisp, I get the two main
+theorems showing that M1 is emulating the Turing Machine interpreter and
+finally, in find-k!.lisp, I reduce the clock functions to efficiently
+computable versions so I can determine how many M1 steps it takes to emulate a
+Turing Machine Interpreter on a given terminating run.
+
+ turing-equivalence-talk.pdf
+ tmi-reductions.lisp
+ defsys-utilities.lisp
+ defsys.lisp
+ low-seven.lisp
+ implementation.lisp
+ theorems-a-and-b.lisp
+ find-k!.lisp
+
+The two main theorems are phrased this way:
+
+(defthm theorem-a
+  (with-conventions
+   (implies (natp i)
+            (let ((s_f (m1 s_0 i)))
+              (implies
+               (haltedp s_f)
+               (tmi st tape tm (find-j st tape tm i))))))
+  :hints ...)
+
+(defthm theorem-b
+  (with-conventions
+   (implies (and (natp n)
+                 (tmi st tape tm n))
+            (let ((s_f (M1 s_0 (find-k st tape tm n))))
+              (and (haltedp s_f)
+                   (equal (decode-tape-and-pos
+                           (top (pop (stack s_f)))
+                           (top (stack s_f)))
+                          (tmi st tape tm n)))))))
+
+The with-conventions macro introduces certain representational conventions
+relating Turing machine descriptions and tapes to their M1 counterparts.  For
+example, s_0 is an M1 state that is purportedly ready to emulate the execution
+of the Turing machine described by the list of 4-tuples tm on the doubly
+infinite tape tape starting in intial Turing machine state st.
+
+Theorem A says that if s_f is the state obtained by executing M1 for i steps on
+s_0 then if s_f is halted, the Turing machine interpreter also halts in a
+certain number of steps, namely (find-k st tape tm i) Turing machine steps.
+
+Theorem B says that if the Turing maching tm starting in state st on tape halts
+in n steps, then the M1 state s_0 halts in (find-k st tape tm n) steps and
+returns the same tape, modulo the representation.
+
+An interesting curiosity is the remarkable inefficiency of the M1 Turing
+machine interpreter.  This is due mainly to the fact that M1 does not support a
+native ``less than'' comparator.  The only way to determine if one natural is
+less than another is to count both down by 1 until one of them is 0.  This
+means that certain operations, like computing floors and mods take exponential
+time.  Then, when Turing machine descriptions -- tables of 4-tuples specifying
+input state, symbol read, tape action, and output state -- are turned into
+numbers for storage in M1, it becomes exponentially expensive to decode them.
+In fast-k!.lisp I derive and verify a reasonably efficient function for
+computing the number of M1 steps needed to emulate a given halting Turing
+machine computation.  Then I apply it to an example taken from Roger's book,
+``A Theory of recursive functions and effective computability'', Hartley
+Rogers, McGraw-Hill, 1967.  There he shows a Turing machine that doubles the
+number on the tape.  That machines takes 78 Turing machine steps to double 4.
+Its M1 counterpart takes
+
+103,979,643,405,139,456,340,754,264,791,057,682,257,947,240,629,585,359,596
+
+steps, or slightly more than 10^56.
+
+This shows that it is actually A LOT easier to reason about some programs than
+it is to test them!
+
+Finally, I like this Turing equivalence work because it shows that the basic
+methods used to verify programs like factorial and sum -- demonstrated
+repeatedly in the template examples above -- can be used to prove decidely less
+trivial programs correct.
+
+See turing-equivalence-talk.pdf for more details, or read the definitions of the
+concepts in the .lisp files.
+

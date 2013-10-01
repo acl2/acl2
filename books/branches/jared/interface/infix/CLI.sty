@@ -1,0 +1,18 @@
+%   CLIverbatim is like the LaTeX verbatim environment except
+% that the characters \ { } $ _ and ^ are NOT transparent.  This means that
+% you can embed control sequences inside of verbatim text, and do math
+% subscripting and superscripting.
+
+\def\CLIdospecials{\do \ \do \&\do \# \do \^^K \do \^^A \do \% \do \~}
+
+\def\@CLIverbatim{\trivlist \item[]\if@minipage\else\vskip\parskip\fi
+\leftskip\@totalleftmargin\rightskip\z@
+\parindent\z@\parfillskip\@flushglue\parskip\z@
+\@tempswafalse \def\par{\if@tempswa\hbox{}\fi\@tempswatrue\@@par}
+\obeylines \small \tt \catcode``=13 \@noligs \let\do\@makeother \CLIdospecials}
+
+\def\CLIverbatim{\@CLIverbatim \frenchspacing\@vobeyspaces}
+\let\endCLIverbatim=\endtrivlist
+
+\def\smtt{\small\tt}
+\def\bm{\smtt}

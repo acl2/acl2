@@ -1,0 +1,1 @@
+; cert-flags: ? t :ttags :all :skip-proofs-okp t :defaxioms-okp t

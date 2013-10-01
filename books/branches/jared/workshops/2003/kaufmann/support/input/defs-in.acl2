@@ -1,0 +1,7 @@
+(value :q)
+
+(LP)
+
+(include-book "inputs")
+
+(certify-book "defs-in" ? t)

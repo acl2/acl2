@@ -1,0 +1,9 @@
+;; IVY operation: MODEL
+;;
+;; Find a model of "there is a noncommutative group".
+
+(and (= (f (e) x) x)
+     (= (f (g x) x) (e))
+     (= (f (f x y) z) (f x (f y z)))
+
+     (exists x (exists y (not (= (f x y) (f y x))))))

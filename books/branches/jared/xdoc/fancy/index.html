@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head id="#head">
+<meta charset="UTF-8">
+
+<!--
+; XDOC Documentation System for ACL2
+; Copyright (C) 2009-2013 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
+-->
+
+<title>XDOC (Loading)</title>
+<link rel="stylesheet" type="text/css" href="style.css"/>
+<link rel="shortcut icon" href="favicon.png"/>
+
+<!-- General Libraries -->
+<script src="lib/jquery-2.0.3.min.js"></script>
+<script src="lib/jquery.base64.js"></script>
+<script src="lib/jquery.powertip.min.js"></script>
+<link rel="stylesheet" type="text/css" href="lib/jquery.powertip.css"/>
+<script src="lib/typeahead.min.js"></script>
+<script src="lib/lazyload.js"></script>
+<script src="lib/hogan-2.0.0.js"></script>
+
+<!-- Actual XDOC stuff -->
+<script src="render.js"></script>
+<script src="config.js"></script>
+<script src="xdoc_index.js"></script>
+<script src="xdoc.js"></script>
+
+</head>
+<body>
+
+<div id="top">
+
+  <table border="0" id="toolbar">
+    <tr>
+      <th>
+	<a href="javascript:action_go_key('ACL2____TOP')">
+	  <img class="toolbutton" src="xdoc-home.png"
+	       data-powertip="<p>Go to the Top topic.</p>">
+	</a>
+        &#160; &#160;
+	<a href="javascript:nav_tree()">
+	  <img class="toolbutton" src="view_tree.png"
+	       data-powertip="<p>Use hierarchical navigation.</p>"/>
+	</a>
+	<a href="javascript:nav_flat()">
+	  <img class="toolbutton" src="view_flat.png"
+	       data-powertip="<p>Use flat navigation.</p>"/>
+	</a>
+      </th>
+      <th id="letters"></th>
+      <td>
+<!-- Come back to this after Typeahead 0.10.  There may be a way to get it to
+     autocomplete when the user hits enter, then. -->
+ 	<form> 
+	<label id="jumpmsg" data-powertip="<p>If you know what topic you want, you
+					  can type its symbol-name here (without
+                                          a package name), then choose the match
+                                          when it comes up.</p>
+
+					  <p>This is kind of buggy.  Start typing,
+					  then either click or use up/down to
+                                          choose what you want before hitting
+                                          Enter.</p>">
+	  Jump to </label>
+	<input id="jump" type="text" size="20" placeholder="loading..."
+	       disabled="disabled"/>
+	</form>
+      </td>
+      <td>
+	<form onsubmit="{search_submit(); return false;}">
+	<label id="searchmsg"/>
+  	  Search </label>
+        <input id="searchbox" type="text" size="30" placeholder="loading..."
+	       disabled="disabled"/>
+	<input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;"
+	       hidefocus="true" tabindex="-1"/>
+	</form>
+      </td>
+    </tr>
+  </table>
+
+</div>
+
+<div id="left">
+  <div id="nav">
+    <p>Loading...</p>
+  </div>
+
+  <div id="flat" style="display: none">
+    <p>Loading...</p>
+  </div>
+</div>
+
+<div id="right">
+  <div id="parents" style="display: none">
+  </div>
+  <div id="data">
+    <p>Loading...</p>
+  </div>
+</div>
+
+<div id="still_loading" style="display: none">
+</div>
+
+<!--
+<div id="bottom">
+Bottom
+</div>
+-->
+
+</body>
+</html>

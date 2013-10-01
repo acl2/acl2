@@ -1,0 +1,201 @@
+This directory and this file are a work in progress.  The original author was
+David Russinoff.  He, Matt Kaufmann, and Eric Smith continue to improve this
+work.
+
+This directory contains an ACL2 library of register-transfer logic, developed
+at AMD from 1996 to 2004 in support of the mechanical verification of various
+components of the AMD microprocessors that were designed during that period,
+especially their floating-point arithmetic units.
+
+The library's core definitions and lemmas are contained in the subdirectory
+"lib/".  A parallel subdirectory, "support/", contains a superset of these
+events, including all sublemmas that were required for the proofs of the
+library lemmas.  Thus, the books of "support/" must be certified before those
+of "lib/", but the user is generally discouraged from accessing "support/".
+
+A more powerful (but perhaps more risky) arithmetic library is available in the
+directory "arithmetic/".  To use this library, we recommend including the book
+"arithmetic/top".
+
+The library contains another subdirectory, "user/".  "user/" contains many good
+rules which we haven't included in "lib/" because we wanted to keep "lib/"
+uncluttered.  The rules in "user/" are more risky than those in "lib/".  Use
+them at your own risk.
+
+The books of each directory may be certified by loading the file "cert.lsp" in
+that directory (some of which may be out of date! -- we generally expect people
+to use "make").
+
+See the comments in lib/top.lisp for information of what each book in lib/
+contains.
+
+See lib/README for more on lib/.
+
+The library files contain virtually no documentation, but many of the
+interesting events are formal versions of definitions and lemmas that
+are stated and proved in the earlier sections of the following
+papers, which document various applications of the library:
+
+  D.M. Russinoff, A mechanically checked proof of correctness of the AMD-K5
+  floating point square root microcode, Formal Methods in System Design 14, 
+  75-125 (1999).  See
+  http://www.onr.com/user/russ/david/fsqrt.html.
+
+  D.M. Russinoff, A mechanically checked proof of IEEE compliance of the AMD-K7
+  floating point multiplication, division, and square root instructions,
+  London Mathematical Society Journal of Computation and Mathematics (1), 
+  pp. 148-200, December, 1998.  See
+  http://www.russinoff.com/david/k7-div-sqrt.html.
+
+  D.M. Russinoff, A case study in formal verification of register-transfer 
+  logic with ACL2: the floating point adder of the AMD Athlon processor,
+  invited paper, FMCAD 2000.  See
+  http://www.russinoff.com/david/fadd.html.
+
+For a discussion of our pipeline verification methodology:
+
+  M. Kaufmann and D. M. Russinoff, Verification of Pipeline circuits.  See
+  http://www.russinoff.com/david/pipeline.html.
+
+=========================================================================
+
+How to add new theorems to lib/:
+
+Suppose you want to prove a new theorem to add to a book in lib/.  There are
+two approaches.  If it is convenient to do the proof in an existing book in
+support/, that's fine.  But you may well find it more convenient to create a
+new book in support/, say, bk.lisp, that starts (after the initial in-package)
+with:  (include-book "../lib/top").  In that case you can proceed as follows.
+
+1. Develop and certify support/bk.lisp, starting after the in-package form
+   with:
+
+   (include-book "../lib/top").
+
+2. Find the book support/top*.lisp with the largest index, e.g., top3.lisp if
+   that exists and there is no top4.lisp.  Let us call this index m and this
+   book topm.lisp.
+
+3. Let n = m+1 and rename support/top.lisp to the corresponding
+   support/topn.lisp.
+
+4. As suggested near the end of support/top1.lisp, start up ACL2 and execute
+   the following forms:
+
+   (include-book "../lib/top")
+   (let ((world (w state)))
+     (set-difference-theories (current-theory :here) (theory 'ground-zero)))
+
+   Paste the result as indicated below to the end of support/topn.lisp,
+   replacing lib-topn for the appropriate n.
+
+   (deftheory lib-topn (union-theories (theory 'ground-zero) (quote
+   <<Paste the above result here.>>
+   )))
+
+5. Create a new book support/top.lisp that contains the following.
+
+   (in-package "ACL2")
+   (include-book "topm")
+   (include-book "bk")
+
+6. Replace (include-book "../lib/top") in bk.lisp with the following two forms,
+   replacing topm as appropriate in both cases.
+
+   (include-book "topm")
+   (in-theory (theory 'lib-topm))
+
+7. In both support/ and lib/, run
+
+   make dependencies
+
+   and update the Makefile accordingly.
+
+8. In the parent of support/ and lib/, run:  make.  Look for the string
+
+   **CERTIFICATION FAILED**
+
+   -- if you don't find it, then all certifications presumably succeeded.
+
+=========================================================================
+
+Beginning of Eric's notes for users of the library [This is still a work in
+progress]:
+
+Personally, I wouldn't include lib/top since it includes lib/arith (which
+contains the old arithmetic rules) and also includes other books you probably
+don't need (e.g., fadd lemmas, maybe brat).  (But maybe including lib/top is
+okay, since I expect the arithmetic rules to at least be somewhat compatible
+with mine.  [At least, lib/arith and arithmetic/top can both be included in one
+session.] But maybe you don't want both, because I may have essentially the
+same rule under a better name, and the duplication may slow down the rewriter
+and be a pain if you have to disable a rule -- since you'd have to disable both
+mine and the one in lib/arith.)
+
+Of the lib/ books, including your certified model.lisp should include
+lib/rtl
+lib/rtl-arr
+lib/util
+lib/clocks2
+lib/package-defs
+
+To start doing proofs, I'd include:
+
+lib/bits - which itself includes lib/rtl
+lib/round - since you'll be reasoning about rounding
+lib/reps - you will be reasoning about floating-point representations, right?
+
+You'll probably also want lib/basic and lib/float, at least until I can come up
+with a replacement for these books.  But note that arithmetic/ contains many
+more lemmas about the functions mentioned in basic, especially mod, fl, and
+expt.
+
+You probably don't need lib/fadd.  
+
+You'll also need an arithmetic book (or books).  The safest course would be to
+include lib/arith.  However, I have lots of arithmetic books that you might
+want to use instead.  (I think my books and lib/arith are compatible [check
+this?], so it's probably safe to include both.)  Actually, many of the rules in
+lib/arith exist in arithmetic/ too.
+
+The books in arithmetic/ are far from finished, but there is a lot of good
+stuff in there.  There may be looping rules, but there are also powerful rules
+which can save you a lot of hassle.  I should probably spend more time
+separating the safe stuff from the potentially dangerous stuff.
+
+It might help to read through some of the books in arithmetic/.  For example,
+if you'll be proving a lot of stuff about mod, you should read through
+arithmetic/mod2.lisp?  [I should probably combine mod.lisp and mod2.lisp.
+Mod.lisp contains "Doc's" lemmas, and "mod2.lisp" contains Eric's lemmas.  Once
+I get all of support working with mod2.lisp included, I can combine it with
+mod.lisp.]  For some books, I've pulled out the proofs in to a separate book
+(e.g., expo2-proofs.lisp).
+
+For a quick overview of the books in arithmetic, see the comments in
+arithmetic/top.lisp.
+
+Misc notes: Generally, I assign a lemma to a book based on which function the
+lemma is "about".  So if you're missing a fact about bvecp, look in
+support/bvecp.lisp.  Or if you're missing a lemma about mod, look in
+arithmetic/mod.lisp.  Sometimes it's hard to tell which function a lemma is
+"about".  I tend to rely on a rough mental picture of the directed acyclic
+graph created by the definitions of the functions we use.  Thus if FOO calls
+BAR, a lemma about FOO and BAR goes in the FOO book.  Also, I tend to classify
+a lemma as being "about" to most complicated function it mentions. So a lemma
+about mod of a sum, goes in the mod book since mod is more complicated than
++. (+ is used to define mod!).  Sometimes it's not clear where to put a lemma
+and I create a special book, such as "arithmetic/mod-expt.lisp", which contains
+lemmas mixing mod and expt.
+
+See also arithmetic/README.
+
+Examples of two useful greps (modify appropriately):
+
+Find all mentions of "mod-equal" in .lisp files:
+
+  grep -i "mod-equal" */*.lisp
+
+Find all mentions of the rule "mod-equal" in .out files (including all the
+times it was used in proofs):
+
+  grep -i "mod-equal" */*.out

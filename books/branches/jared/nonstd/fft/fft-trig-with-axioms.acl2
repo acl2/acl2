@@ -1,0 +1,4 @@
+(in-package "ACL2")
+(ld "../powerlists/defpkg.lsp")
+; cert-flags: ? t :defaxioms-okp t
+(certify-book "fft-trig-with-axioms" ? t :defaxioms-okp t)

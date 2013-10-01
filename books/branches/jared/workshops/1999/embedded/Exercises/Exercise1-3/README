@@ -1,0 +1,17 @@
+
+
+CONTENTS
+--------------------------------------------------
+
+Exercise1.3.lisp   Proof script for exercise 1.3 of the chapter.
+
+
+HOW TO RUN THE PROOFS
+-------------------------------------------------------------------------------
+To run the ACL2 script of the proof for exercise 1.3, run ACL2 and
+execute (ld "Exercise1.3.lisp").
+To certify the book, run ACL2 and execute (certify-book "Exercise1.3").
+
+
+
+

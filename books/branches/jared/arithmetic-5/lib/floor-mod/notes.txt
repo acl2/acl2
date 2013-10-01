@@ -1,0 +1,16 @@
+
+What about this:
+
+ (local
+  (defthm try-me-8a
+    (implies (and (integerp x)
+		  (<= 0 x)
+		  (integerp y)
+		  (<= 0 y)
+		  )
+	     (equal (floor x (* 2 y))
+		    (if (logbitp 0 (floor x y))
+			(+ -1/2 (* 1/2 (floor x y)))
+		      (* 1/2 (floor x y)))))
+    :hints (("Goal" :in-theory (enable logbitp)))))
+

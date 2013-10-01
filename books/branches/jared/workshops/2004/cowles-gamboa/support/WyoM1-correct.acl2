@@ -1,0 +1,7 @@
+(value :q)
+
+(lp)
+
+(include-book "WyoM1-utilities")
+
+(certify-book "WyoM1-correct" ? t)

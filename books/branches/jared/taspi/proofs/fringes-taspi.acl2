@@ -1,0 +1,2 @@
+(include-book "omerge-good-order")
+(certify-book "fringes-taspi" ? t)
