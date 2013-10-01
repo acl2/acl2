@@ -1,0 +1,18 @@
+# Dependencies:
+
+mesh-append.cert: mesh-append.lisp
+mesh-append.cert: partition-defuns.cert
+
+mesh-make-partition.cert: mesh-make-partition.lisp
+mesh-make-partition.cert: partition-defuns.cert
+
+partition-defuns.cert: partition-defuns.lisp
+
+partitionp-make-partition-rec.cert: partitionp-make-partition-rec.lisp
+partitionp-make-partition-rec.cert: partition-defuns.cert
+
+partitionp-make-partition.cert: partitionp-make-partition.lisp
+partitionp-make-partition.cert: partition-defuns.cert
+partitionp-make-partition.cert: partitionp-make-partition-rec.cert
+
+riemann-rcfn-helpers.cert: riemann-rcfn-helpers.lisp

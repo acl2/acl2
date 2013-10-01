@@ -1,0 +1,6 @@
+#+acl2-par
+; clause processors that modify state
+(set-waterfall-parallelism nil)
+
+(ld "tools/flag-package.lsp" :dir :system)
+(certify-book "equality" ? t)

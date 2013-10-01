@@ -1,0 +1,66 @@
+#!/bin/csh
+
+# Usage:  doinfix sample.lisp scribe
+#      :  doinfix sample.lisp latex
+#      :  doinfix sample.lisp             { defaults to sample or Scribe }
+# If you want the default mode to be LATEX then set DMODE
+# in this file.
+
+# My apologies for this ugly script.  Surely there's
+# a better way to do this.
+
+if (${#argv} == 0) then
+ echo 'usage: "doinfix file [mode]"'
+ exit
+endif
+
+set DIR = /slocal/src/acl2/v1-8/interface/infix
+set DMODE = "scribe"
+set FILE = ${argv[1]}
+set ROOT = $FILE:r
+set THEORY = $ROOT-theory.lisp
+
+if (${#argv} == 1) then
+ if ( -f $THEORY ) then 
+  set MODE=$ROOT
+ else
+  set MODE=$DMODE
+ endif
+else
+ set MODE=${argv[2]}
+endif
+
+# Want LOG to be written in the current directory.
+set LOG  = $ROOT:t.$MODE.log
+
+rm -f workxxx
+echo ':q' > workxxx
+echo '(in-package "user")' >> workxxx
+echo -n '(load "' >> workxxx
+echo -n $DIR >> workxxx
+echo '/infix")' >> workxxx
+echo -n '(infix-file "' >> workxxx
+echo -n $FILE >> workxxx
+echo -n '" :mode "' >> workxxx
+echo -n ${MODE} >> workxxx
+echo '")' >> workxxx
+
+acl2 < workxxx > $LOG
+
+if (${MODE} == "scribe") then
+ scribe $ROOT.mss >> $LOG
+else
+ if (${MODE} == "latex") then
+  latex $ROOT >> $LOG
+else
+ if (-f $ROOT.mss ) then
+  scribe $ROOT.mss >> $LOG
+else
+ if (-f $ROOT.tex ) then
+  latex $ROOT >> $LOG
+endif
+endif
+endif
+endif
+
+echo "See log file, $LOG." 

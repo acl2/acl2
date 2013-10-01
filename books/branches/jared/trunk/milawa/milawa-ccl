@@ -1,0 +1,32 @@
+#!/bin/sh
+
+CCL="ccl"
+
+if [ "$#" -ne "1" ]
+then
+	echo "Usage: milawa-ccl <IMAGE-FILE>"
+	echo "Where <IMAGE-FILE> is the name of an CCL image to use, typically a"
+	echo "\".ccl-image\" file, such as \"milawa.ccl-image\"."
+	exit 1
+fi
+
+if [ -z "`which $CCL`" ]
+then
+	echo "Error: CCL not found."
+	echo ""
+	echo "Possible causes:"
+	echo "  - Clozure Common Lisp is not installed?"
+	echo "  - CCL is not in your current \$PATH?"
+	echo "  - CCL is in your path, but is not named '$CCL'?"
+	echo "  - CCL is in your path and is named '$CCL', but is not executable?"
+	echo ""
+	echo "Possible fixes:"
+	echo "  - Add a symlink to CCL named '$CCL' somewhere in your \$PATH?"
+	echo "  - Edit the milawa-ccl shell script and change CCL=\"...\" to the name"
+	echo "    of your CCL executable?"
+	echo "  - Make sure you can start CCL by typing '$CCL'"
+	echo ""
+fi
+
+exec $CCL --batch -I $1
+

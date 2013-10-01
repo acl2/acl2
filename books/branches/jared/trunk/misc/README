@@ -1,0 +1,607 @@
+; README  --  introduction to misc directory
+
+; Originally cli-misc directory,
+; Copyright (C) 1997  Computational Logic, Inc.
+; The following license appeared here:
+
+; This book is free software; you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation; either version 2 of the License, or
+; (at your option) any later version.
+
+; This book is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+
+; You should have received a copy of the GNU General Public License
+; along with this book; if not, write to the Free Software
+; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+This directory contains a bunch of ACL2 books that were created over
+the years, starting at CLI.  They don't have any relation to each
+other; this is really a grab-bag.
+
+===============================================================================
+
+Installation
+
+The makefile and other files all assume that this library is installed in the
+local directory that exists in the ACL2 source distribution, i.e., that `..'
+is the main directory of ACL2 books, and ../data-structures is the
+data-structures library directory.  If for some reason you move this
+directory away from here, things will start to break.
+
+To certify all books type
+
+% make all
+
+to certify all books with the ACL2 image "acl2", assuming that the underlying
+Lisp creates object files with .o extensions.  You can also do
+
+% make all ACL2=<acl2-image>
+
+===============================================================================
+
+assert.lisp -- an assertion mechanism for use within books
+
+===============================================================================
+
+bash-bsd.lisp, bash.lisp -- simplification of top-level goal
+
+If you submit (bash term), you will get back a list of terms produced by the
+ACL2 simplifier.  See the description at the top of bash.lisp for details.
+
+See also defopener.lisp and expander.lisp.
+
+Note: bash.lisp is just bash-bsd.lisp plus xdoc-style documentation.
+If you use bash.lisp, you will be including a GPL'ed book (ACL2
+community book xdoc/top), but not if you only use bash-bsd.lisp.
+
+===============================================================================
+
+beta-reduce.lisp -- proof of correctness for a beta-reduction routine
+
+The final event in this book illustrates how to use this book to prove
+correctness for a simple beta-reduction routine for an arbitrary ACL2
+evaluator.
+
+===============================================================================
+
+book-checks.lisp -- utilities for checking that libraries don't
+                    enable/disable existing rules unexpectedly
+
+===============================================================================
+
+callers-and-ancestors.lisp -- utilities for finding all callers and
+                              ancestors (supporters) of functions; see
+                              the book for disclaimers
+
+===============================================================================
+
+character-encoding-test.{acl2,lisp} -- check for handling character encodings
+
+===============================================================================
+
+check-acl2-exports.lisp -- check for accidental omissions from *acl2-exports*
+
+===============================================================================
+
+check-state.lisp -- check conditions on state, causing soft error if violated;
+                    in particular, check-hons-enabled checks that we are
+                    running ACL2(h) (or ACL2(hp)) rather than ACL2
+
+===============================================================================
+
+computed-hint-rewrite.lisp -- interface to the rewriter for computed hints
+
+===============================================================================
+
+computed-hint.lisp -- examples of computed hints
+
+===============================================================================
+
+congruent-stobjs-test.lisp -- examples testing congruent stobjs
+
+===============================================================================
+
+csort.lisp  -- a proof of the ``feed-drain'' systolic sort algorithm
+
+Specification and proof of correctness of an abstract comparator array
+sorting algorithm.  This is the comparator array sort whose implementation on
+the Motorola CAP DSP model was verified by CLI.  A paper describing this
+proof is A Mechanical Checked Proof of a Comparator Sort Algorithm, by
+Brock and Moore.
+
+http://www.cs.utexas.edu/users/moore/acl2
+
+===============================================================================
+
+dead-events.lisp -- an analysis tool that shows dependencies, and thus
+                    may help to eliminate dead events (both definitions
+                    and theorems that do not support the specified events)
+
+===============================================================================
+
+defabsstobj-example-*.lisp -- example uses of defabsstobj
+
+===============================================================================
+
+defattach-bang.lisp -- avoid normal guard verification requirement for a
+                       function to be attached to a constrained function
+
+===============================================================================
+
+defattach-example.lisp -- example use of defattach
+
+===============================================================================
+
+definline.lisp -- utility for defining inlined functions
+
+See the documentation provided by the author (Jared Davis) in the file.
+
+===============================================================================
+
+defmac.lisp -- alternative to defmacro that can be more efficient for
+               macro expansion
+
+See also :doc defmac after including this book.
+
+===============================================================================
+
+defopener.lisp -- create theorem equating term with its simplification
+
+For documentation:
+(include-book "misc/defopener" :dir :system)
+followed by
+:doc! defopener.
+
+See also bash.lisp and expander.lisp.
+
+===============================================================================
+
+defproxy-test.lisp -- examples of the use of defproxy
+
+===============================================================================
+
+defp.lisp   -- define partial functions using defp
+defpun.lisp -- define partial functions using defpun
+
+The book defpun.lisp books provides a macro, defpun, by which you can
+introduce certain tail-recursive function ``definitions'' that do not
+always terminate.  The book defp.lisp provides a more powerful macro,
+defp, which is built on top of defpun but allows more general forms of
+tail recursion than does defpun.
+
+Details of defpun are provided by Manolios and Moore in ``Partial Functions in
+ACL2'' http://www.cs.utexas.edu/users/moore/publications/defpun/index.html
+
+===============================================================================
+
+misc2/defpun-exec-domain-example.lisp -- execute partial functions on a
+                                         specified domain
+
+===============================================================================
+
+defun-plus.lisp -- support specifying an "output signature" for a function
+
+===============================================================================
+
+dft.lisp    -- write proofs in a sort of familiar style using dft macro
+dft-ex.lisp -- examples of use of dft book
+
+The book dft defines a macro named dft (a named derived from DeFThm).  The book
+dft-ex illustrates the macro with a few simple arithmetic proofs.  Basically,
+the macro allows you to write proofs in a sort of familiar style.  Here is a
+simple example:
+
+(dft comm2-test-1
+     (equal (* a (* b c)) (* b (* a c)))
+     :rule-classes nil
+     :otf-flg nil
+     :proof
+     ((consider (* a (* b c)))
+      (= (* (* a b) c))
+      (= (* (* b a) c) :disable (associativity-of-*))
+      (= (* b (* a c)))))
+
+Each line in the :proof generates a lemma and at the end all the lemmas
+are assembled to prove the main theorem in a pretty empty theory.  You can
+see how this is actually done by using :trans1 on the dft command,
+
+ACL2 !>:trans1 (dft comm2-test-1 ...)
+
+and looking at the output.  The second book contains a few more interesting
+examples, e.g., of case analysis and other things.  There is no documentation,
+but perhaps the examples will help some.
+
+===============================================================================
+
+dijkstra-shortest-path.lisp -- a proof of the correctness of Dijkstra's
+                               shortest path algorithm
+
+===============================================================================
+
+disassemble.lisp -- support for disassemble$, an interface to Common
+                    Lisp's disassemble utility for showing assembly
+                    code for a given function symbol's definition
+
+===============================================================================
+
+equal-by-g.lisp -- a generic theorem for proving that records (in the sense of
+the misc/records book) are equal, by showing that any arbitrary field has the
+same value in both records.
+
+===============================================================================
+
+eval.lisp -- macros to check evaluation of forms
+
+Utilities defined in this book include the following:
+
+must-eval-to
+must-eval-to-t
+must-succeed
+must-fail
+thm?
+not-thm?
+
+===============================================================================
+
+evalable-printing.lisp -- a
+"beginner-friendly" way of printing objects such that evaluating the
+printed result gives that same result
+
+See also ../hacking/evalable-ld-printing.lisp, which prints LD results
+in "evalable" way, as provided by "evalable-printing" book.  To
+activate, include this book and assign a non-nil value to the state
+global EVALABLE-LD-PRINTINGP, as in (assign evalable-ld-printingp t).
+
+===============================================================================
+
+dump-events.lisp  --   file-dumping utility for ACL2
+expander.lisp     --   symbolic expansion utilities for ACL2
+
+See also simplify-defuns.lisp for a related tool.
+
+These books contains various experimental symbolic expansion programs for
+ACL2, and an event dumping utility.  This stuff can really be helpful when
+doing a big project with ACL2.  In expander.lisp the documented macros are
+SYMSIM and DEFTHM?.  In dump-events.lisp, see the documentation for
+DUMP-EVENTS. 
+
+Unfortunately, the real-world examples of the uses of these utilities are in
+proprietary proofs, so all we will do here is give a few hints.  The idea was
+to save time in large proofs by using DEFTHM? to pre-compute the reduced
+expansions of complex functions.  We used DEFTHM? to write theorems of the
+form (EQUAL (HAIRY-FN ...) (... <expanded and reduced body> ...)).  We then
+used DUMP-EVENTS to dump the lemmas produced by DEFTHM? to a file, which was
+then certified. 
+
+===============================================================================
+
+fast-coerce.lisp -- a replacement for coerce, which speeds up (coerce x 'list)
+
+This just providse the function fast-coerce, which is a drop-in replacement
+for coerce and is faster at converting strings to lists.
+
+===============================================================================
+
+
+fibonacci.lisp -- a thm. on the Fibonacci sequence and greatest common divisor
+-- Supporting books: --
+int-division.lisp
+grcd.lisp
+
+The main theorem main-grcd-fib states that if fib(i) is the ith Fibonacci
+number and grcd is the greatest common divisor function, then for positive
+integers n and k, grcd(fib(k), fib(n)) = fib(grcd(k,n)).
+
+===============================================================================
+
+file-io.lisp -- utilities for reading and writing files
+
+(read-list fname ctx state) returns (mv nil lst state) where lst is the list
+of top-level forms in the file named fname.  Except, if there is an error
+then (mv t nil state) is returned.
+
+(write-list list fname ctx state) pretty-prints the given list of forms to
+file fname, except that strings are printed without any formatting.
+
+===============================================================================
+
+find-lemmas.lisp -- utility for finding relevant lemmas
+
+(Find-lemmas (fn1 fn2 ...)) returns all lemmas in which all of the indicated
+function symbols occur, except those lemmas in the ground-zero world.  In
+order to include those as well, give a second argument of nil:
+(find-lemmas (fn1 fn2 ...) nil).
+
+If fns is a symbol, then fns is replaced by (list fns).
+
+===============================================================================
+
+gentle.lisp -- analogues of known functions with weaker guards (often, T)
+
+===============================================================================
+
+getprop.lisp -- user-managed fast property lists
+
+The ACL2 utilities GETPROP and PUTPROP take advantage of under-the-hood Lisp
+(hashed) property lists.  This book contains an example showing how this works.
+
+===============================================================================
+
+goodstein.lisp -- Goodstein function in ACL2
+
+===============================================================================
+
+hanoi.lisp -- a solution to the Towers of Hanoi problem
+
+===============================================================================
+
+hons-help.lisp and hons-help2.lisp -- support for HONS extension of ACL2
+
+===============================================================================
+
+hons-tests.lisp -- tests of HONS extension of ACL2
+
+===============================================================================
+
+how-to-prove-thms.lisp -- solutions to the exercises in
+                          "How To Prove Theorems Formally"
+
+See: http://www.cs.utexas.edu/users/moore/publications/how-to-prove-thms
+
+===============================================================================
+
+integer-type-set-test.lisp -- tests of enhancement to integer reasoning
+
+===============================================================================
+
+invariants.lisp -- tries to prove lemmas stating that if a certain
+                   property is true of the arguments to a function,
+                   that property will be true of the arguments to all
+                   its recursive calls.
+
+===============================================================================
+
+meta-lemmas.lisp  --  meta-lemmas for nth and member
+
+This book simply provides 2 meta-lemmas.  The first, REDUCE-NTH-META-CORRECT,
+quickly reduces NTH applied to formal proper lists, e.g.,
+
+(NTH 2 (CONS x (CONS y (CONS z NIL)))) ==> z.
+
+The second, REDUCE-MEMBER-META-CORRECT, quickly transforms MEMBER applied to
+EQLABLE-LISTP constants to nested IFs, e.g.,
+
+(MEMBER x '(:MEDIUM LARGE)) ==> (IF (EQL x :MEDIUM) '(:MEDIUM :LARGE)
+                                    (IF (EQL x :LARGE) '(:LARGE)
+                                        NIL)),
+
+which is propositionally equivalent to (OR (EQL x :MEDIUM) (EQL x :LARGE)).
+
+===============================================================================
+
+misc2/misc.lisp -- miscellaneous support, e.g. for lemmas proved to support
+                   decisions made in the ACL2 sources
+
+===============================================================================
+
+mult.lisp -- verification of a multiplication program written for the Mostek
+             6502 microprocessor
+
+As described near the top of the file, this solves a challenge posed by Bill
+Legato, to prove that a program written for the Mostek 6502 microprocessor
+correctly implements multiplication.
+
+===============================================================================
+
+nested-stobj-tests.lisp -- tests for nested stobjs (and stobj-let)
+
+===============================================================================
+
+oprof.lisp -- simple performance profiling tool for OpenMCL
+
+This book only works on the OpenMCL-based version of ACL2.  It implements a 
+simple performance profiler that allows you to see which functions are taking
+the most time during some computation.  See the comments inside this book for 
+usage instructions and examples.  Also note that this book uses a ttag, so to
+include it you will need to run something like this:
+  (include-book "misc/oprof" :dir :system :ttags '(oprof)).
+
+===============================================================================
+
+priorities.lisp -- priority-based rewriting
+
+===============================================================================
+
+problem13.lisp -- solution to a UTCS Problem 13
+
+The theorem shows that a function on the naturals satisfying a certain property
+must be the identity function.
+
+===============================================================================
+
+process-book-readme.lisp -- checker for Readme.lsp for user-contributed books
+
+===============================================================================
+
+profiling.lisp -- support for profiling functions in some host Lisps
+
+See the documentation at the top of the file.
+
+===============================================================================
+
+qi.lisp and qi-correct.lisp -- unlabeled BDDs (ubdds) and correctness thereof
+
+===============================================================================
+
+radix.lisp -- support for radix conversion
+
+===============================================================================
+
+random.lisp -- a pseudo-random number generator
+
+===============================================================================
+
+records.lisp   --  canonical key-value record structures
+  [also records-bsd.lisp: BSD-licensed version of the above]
+records0.lisp  --  canonical key-value record structures
+
+These books provide similar functionality, though the approaches differ; the
+history is given below.  Their purpose is to make it convenient to reason about
+finite functions, which we call "record structures" and can be thought of as
+(finite) lists of field-value pairs.  Why not simply use association lists?
+Imagine for example starting with the empty record (function), then associating
+'a with 1 and then 'b with 2.  Presumably the result would be '((b . 2) (a
+. 1)).  But if the updates were done in the other order, then the result would
+presumably be '((a . 1) (b . 2)).  Sometimes it is convenient to have only one
+"canonical" representation for a finite function.  The record books provide
+such a representation, as explained in comments near the top.
+
+Rob Sumners originally created a book of record structures such that two such
+structures with the same field-value associations are equal.  However, exported
+lemmas required hypotheses that the structures were well-formed.
+
+Matt Kaufmann eliminated the need for such hypotheses.  Instead, all that was
+necessary was that the fields are symbols.  Matt posted this problem to the
+acl2 mailing list, and Matt WIlding also came up with such a solution (not
+included here).
+
+Meanwhile, Pete Manolios was pushing for a total order on the ACL2 universe,
+and he created events for such a purpose.  Ultimately, built-in ACL2 function
+lexorder was made a total order, and Pete's events were modified to use
+lexorder.  The result is total-order.lisp (documented in brief below).
+
+Rob Sumners subsequently made some modifications to Matt Kaufmann's book,
+primarily by using the total-order book to eliminate hypotheses that keys are
+symbols.  The result is essentially records0.lisp.
+
+Later, Rob came up with an alternate, simpler approach to providing the same
+exported theorems.  The result is records.lisp.
+
+===============================================================================
+
+redef-pkg.lisp -- handy (though potentially unsound) utility for adding
+                  symbols to packages
+
+===============================================================================
+
+misc2/reverse-by-separation.lisp -- destructive linked-list program
+                                    verification example
+
+Quoting the file:
+
+; The following proof is a translation to ACL2 of a proof by Magnus Myreen
+; (Univ. of Cambridge), inspired by separation logic, about reversing linked
+; lists.
+
+===============================================================================
+
+rtl-untranslate.lisp -- replacement for untranslate suitable rtl functions
+
+===============================================================================
+
+misc2/ruler-extenders-tests.lisp -- tests for ruler-extenders
+
+This suite of tests is mainly for regression, though users interested
+in more information about ruler-extenders, beyond that provided in
+:doc ruler-extenders, may find this file to be interesting.
+
+===============================================================================
+
+save-time.lisp -- utility for saving times into the ACL2 state and for printing
+                  those saved times
+
+===============================================================================
+
+seq.lisp -- the seq macro language
+seqw.lisp -- the seqw macro language
+seq-examples.lsp -- examples of using the seq macro
+seqw-examples.lsp -- examples of using the seqw.macro
+
+SEQ is a macro language for implementing parsers or otherwise applying
+"actions" to "streams".  See the comments at the top of seq.lisp and also
+see the examples in seq-examples.lsp for more information.
+
+===============================================================================
+
+simplify-defuns.lisp -- simplify definitions in a file and prove equivalence
+
+See simplify-defuns.txt (which can be printed out as 8 pages with 12 point
+courier font).  Also see expander.lisp for a related tool.
+
+===============================================================================
+
+simplify-thm.lisp -- a simple event generator which breaks a term
+                     thought to be a theorem into some number of
+                     theorems of a form where none of the hyps nor the
+                     conclusion contain IFs.
+
+Someone may wish to extend this with rule-classes and other more
+flexible options.
+
+===============================================================================
+
+sin-cos.lisp  --  rational approximations to SIN and COS with Maclaurin series
+
+This library contains both "obvious" and "fast" series approximation functions
+for SIN and COS.  Homework:  Prove that the "fast" and "obvious" versions are
+identical.
+
+===============================================================================
+
+sort-symbols.lisp -- correctness of a mergesort routine for symbols, used
+                     by defpkg
+
+===============================================================================
+
+misc2/step-limits.lisp -- basic tests for checking that step limits work
+
+===============================================================================
+
+sticky-disable.lisp -- theory maintenance in spite of included books
+
+This book uses ACL2 tables to specify rules that should remain enabled or
+disabled even after an include-book.  Macros sticky-disable and sticky-enable
+allow the specification of these rules, and macro sticky-include-book
+implements the specified enabling and disabling after include-book.
+
+===============================================================================
+
+symbol-btree.lisp -- log time access on a key
+
+A symbol-btree is a data structure of the form (symbol value left . right)
+where left and right are symbol-btrees.  These data structures give faster
+access to values than alists, using function (symbol-btree-lookup key btree).
+See the top of the file for examples and a relevant theorem.
+
+===============================================================================
+
+total-order.lisp -- total order for ACL2
+total-order-bsd.lisp -- BSD-licensed version of the above
+
+===============================================================================
+
+trace-star.lisp -- a beginner-friendly variant of trace$.  Features
+"evalable" printing, provided by "evalable-printing" book, and
+other modifications.
+
+===============================================================================
+
+transfinite.lisp -- generic proof by strong ordinal induction
+
+This book presents a way to use functional instantiation to reduce a theorem to
+its inductive step in a proof by transfinite induction.  There is an example in
+the book that shows how this works.
+
+===============================================================================
+
+untranslate-patterns.lisp -- simple, pattern-based untranslation for ACL2
+
+===============================================================================
+
+wet.lisp -- a backtrace utility (see :DOC wet)
+
+===============================================================================

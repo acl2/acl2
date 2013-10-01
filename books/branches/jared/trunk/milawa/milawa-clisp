@@ -1,0 +1,33 @@
+#!/bin/sh
+
+CLISP="clisp"
+
+if [ "$#" -ne "1" ]
+then
+	echo "Usage: milawa-clisp <IMAGE-FILE>"
+	echo "Where <IMAGE-FILE> is the name of an CLISP image to use, typically a"
+	echo "\".clisp-image\" file, such as \"milawa.clisp-image\"."
+	exit 1
+fi
+
+if [ -z "`which $CLISP`" ]
+then
+	echo "Error: CLISP not found."
+	echo ""
+	echo "Possible causes:"
+	echo "  - CLISP is not installed?"
+	echo "  - CLISP is not in your current \$PATH?"
+	echo "  - CLISP is in your path, but is not named '$CLISP'?"
+	echo "  - CLISP is in your path and is named '$CLISP', but is not executable?"
+	echo ""
+	echo "Possible fixes:"
+	echo "  - Add a symlink to CLISP named '$CLISP' somewhere in your \$PATH?"
+	echo "  - Edit the milawa-clisp shell script and change CLISP=\"...\" to the name"
+	echo "    of your CLISP executable?"
+	echo "  - Make sure you can start CLISP by typing '$CLISP'"
+	echo ""
+fi
+
+ulimit -s 65535
+exec $CLISP -m 2048MB -M $1
+

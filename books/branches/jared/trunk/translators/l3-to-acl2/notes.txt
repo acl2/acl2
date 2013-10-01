@@ -1,0 +1,55 @@
+Miscellaneous notes on translator issues
+
+There may be name clashes, in part due to case sensitivity of L3
+vs. case-insensitivity of ACL2.  Our solution is to uppercase all
+names by default, but to take input that renames some strings to the
+desired symbols.  Indeed, renaming may be necessary for other reasons
+as well, besides case.  For example, the name PC is taken in the ACL2
+package, so I've manually renamed PC to PCTR in the example runs found
+in examples/thacker/Makefile.  Such renaming is the responsibility of
+the user, e.g., to map "PC" to the symbol PCTR.  Similarly, note that
+I mapped the name function to function0, since the name FUNCTION is
+unavailable for a function name in the ACL2 package.  The translator
+automatically renames t and nil, since those are constants, not
+variables, in ACL2.
+
+I could consider using (include-book "cutil/define" :dir :system),
+probably in l3.lisp.  I wonder if it might help in proving theorems
+about function outputs, of a type-like nature.
+
+The defun-struct definition of DECODE illustrates the need for
+ignorable declarations.  Perhaps there's a way to avoid the expense of
+that call of BL, which only creates one bit that we care about.
+
+There is currently no way for users to override the built-in
+translation of strings to constants (in analogy to the :str-to-sym
+keyword argument of l3-to-acl2), but that could be changed.
+
+I should consider combining the constant and sym alists -- we don't
+want any duplicates even between the two.
+
+Some observations from Anthony Fox (some of them already clear to me
+as of July 10, 2013, but I'll save them anyhow):
+
+Anthony points out that casting is of various sorts, including
+enumerated types to strings -- so I'll need to save info about the
+original names for enums.
+
+``Close (qvar"state"'' idiom is a fine way to look for state.  But
+there might be later issues with local state.
+
+LC represents "literal constant" in tinyScript.sml, so I'll take these
+to be (quoted) symbols.
+
+Anthony is fairly sure that he doesn't get a - in names, so
+translating ' to - makes sense, as in dfn'normal to dfn-normal.
+
+Anthony notes that the instructions can be linear trees, e.g.:
+(StoreDM (StoreOther (StoreOther2 v1))) ==> dfn'StoreOther2 v2 state
+
+Anthony notes that the kind of "arb" returned depends on the type --
+and that type will be in the generated ML.
+
+As Anthony notes, I'll want to think about how much of what's in
+l3.lisp is universal and how much is per-model.
+

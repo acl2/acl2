@@ -1,0 +1,66 @@
+Here is a summary of the contents of this directory, which contains books that
+exercise the BDD (ordered Binary Decision Diagram) capability of ACL2.
+
+Makefile		Makefile for certifying books in this directory on
+			systems (like Unix) supporting make.
+
+certify.lsp  		File for certifying books in this directory.  See the
+			comment on init.lsp at the end of this README file.
+
+bdd-primitives.lisp	Definitions and simple theorems pertaining to some
+			basic functions used for hardware specification.  This
+			file may well be useful for doing hardware verification
+			in ACL2 using BDDs, and it also provides examples of
+			the sorts of rules used in our approach.  (See also the
+			ACL2 documentation on "BDD".)
+
+alu.lisp		Specifications of an ALU:  a simple ripple-carry alu
+			(v-alu) and a tree-structured propagate-generate alu
+			(core-alu)
+
+alu-proofs.lisp		Proofs of equivalence of ALUs defined in alu.lisp,
+			employing BDDs
+
+bool-ops.lisp		Definitions of Boolean AND, OR, and XOR functions, and
+			theorems stating their commutativity
+
+cbf.lisp		A file used to generate ACL2 theorems to prove from the
+			IFIP benchmarks
+
+hamming.lisp		A proof using BDDs of the equivalence of a Hamming
+			circuit used in the CAP chip with its specification
+
+pg-theory.lisp		Proofs using BDDs of equivalence of adder
+			specifications; very similar in nature (but not
+			actually connected with) alu.lisp and alu-proofs.lisp
+
+bit-vector-reader.lsp	Raw Lisp file (NOT a book!) supporting #v syntax for
+			bit vectors, as explained in a comment in that file.
+
+When you certify the books in this directory, the file cbf.lisp will
+automatically create the file
+
+benchmarks.lisp
+
+corresponding to the IFIP benchmarks in the subdirectories
+
+be/cath
+be/ex
+
+which will then be certified.
+
+ACL2 performs better on large BDD problems in GCL when large spaces are
+allocated for conses, fixnums and symbols.  If you are running on a machine
+that has 128 MB of RAM then the following setting work well:
+
+#+gcl
+(si::allocate 'cons 20000 t)
+#+gcl
+(si::allocate 'fixnum 4000 t)
+#+gcl
+(si::allocate 'symbol 500 t)
+
+One convenient way to achieve these settings on such a machine is to write the
+six lines above into a file named init.lsp on this directory.  That file is
+automatically loaded when GCL is fired up.
+
