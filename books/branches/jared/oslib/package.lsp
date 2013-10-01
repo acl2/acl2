@@ -19,13 +19,13 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(ld "cutil/package.lsp" :dir :system)
+(ld "std/package.lsp" :dir :system)
 
 (defpkg "OSLIB"
   (set-difference-eq
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*
-             cutil::*cutil-exports*
+             std::*std-exports*
              sets::*sets-exports*
              '(str::cat
                str::natstr

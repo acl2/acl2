@@ -23,10 +23,10 @@
 (include-book "tools/bstar" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
 (local (include-book "top"))
-(local (include-book "cutil/defredundant" :dir :system))
+(local (include-book "std/util/defredundant" :dir :system))
 
 (make-event
- (cutil::defredundant-fn
+ (std::defredundant-fn
   '(
     ;; coerce.lisp
     acl2::explode$inline

@@ -19,7 +19,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-(include-book "cutil/defaggregate" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
 (include-book "tools/flag" :dir :system)
 (include-book "tools/pattern-match" :dir :system)
 
@@ -93,7 +93,7 @@
 (defun mk-accs-alist (basename tree)
   (declare (xargs :guard t))
   (if (atom tree)
-      (list (cons (cutil::da-accessor-name basename tree) 'x))
+      (list (cons (std::da-accessor-name basename tree) 'x))
     (append (alist-wrap-pairs 'car (mk-accs-alist basename (car tree)))
             (alist-wrap-pairs 'cdr (mk-accs-alist basename (cdr tree))))))
 
@@ -195,7 +195,7 @@
 ;; (defun da-accessors (name fields)
 ;;   (if (atom fields)
 ;;       nil
-;;     (cons (cutil::da-accessor-name name (car fields))
+;;     (cons (std::da-accessor-name name (car fields))
 ;;           (da-accessors name (cdr fields)))))
 
 ;; ;; (defun da-tag-rec (name tag)
@@ -209,14 +209,14 @@
 ;; ;;        (eq (car x) ',tag))))
 
 ;; (defun da-acl2-count-thm (name field)
-;;   (b* ((acc (cutil::da-accessor-name name field))
-;;        (?recog (cutil::da-recognizer-name name))
+;;   (b* ((acc (std::da-accessor-name name field))
+;;        (?recog (std::da-recognizer-name name))
 ;;        (thm-name (intern-in-package-of-symbol
 ;;                   (concatenate 'string
 ;;                                (symbol-name acc)
 ;;                                "-ACL2-COUNT-THM")
 ;;                   name))
-;;        (x (cutil::da-x name)))
+;;        (x (std::da-x name)))
 ;;     `(defthm ,thm-name
 ;;        (implies (consp ,x) ;; (or (,recog ,x) (consp ,x))
 ;;                 (< (acl2-count (,acc ,x)) (acl2-count ,x)))
@@ -243,11 +243,11 @@
 ;; (defmacro da-extras (name fields &key (tag 'nil tagp)
 ;;                           (legiblep 'nil))
 ;;   (declare (ignorable legiblep))
-;;   (let* (;; (recog (cutil::da-recognizer-name name))
+;;   (let* (;; (recog (std::da-recognizer-name name))
 ;;          (accs (da-accessors name fields))
 ;;          (tag (if tagp tag name))
 ;;          (thms (da-acl2-count-thms name fields))
-;;          (x    (cutil::da-x name)))
+;;          (x    (std::da-x name)))
 ;;     `(progn
 ;;        (def-pattern-match-constructor
 ;;          (,x) ,name (eq (tag ,x) ',tag) ,accs)
@@ -256,10 +256,10 @@
 
 
 ;; (defmacro da-with-extras (&rest rst)
-;;   `(progn (cutil::defaggregate . ,rst)
+;;   `(progn (std::defaggregate . ,rst)
 ;;           (da-extras . ,rst)))
 
-;; #!CUTIL
+;; #!STD
 ;; (defmacro GL::defagg-fns (name fields &key tag require hons (legiblep 't)
 ;;                                (debugp 'nil))
 ;;   (declare (ignorable debugp))

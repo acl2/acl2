@@ -75,7 +75,7 @@
 ; to other topics that are NOT in <code> tags (to avoid counting generated
 ; autolinks) while we generate these xtopics.
 
-(cutil::def-primitive-aggregate xtopic
+(std::def-primitive-aggregate xtopic
   (name         ; copy of :name from normal topic
    base-pkg     ; copy of base-pkg from normal topic
    parents      ; copy of parents from normal topic

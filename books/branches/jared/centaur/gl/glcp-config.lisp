@@ -21,7 +21,7 @@
 (in-package "GL")
 (include-book "shape-spec-defs")
 
-(cutil::defaggregate glcp-config
+(std::defaggregate glcp-config
   ((abort-unknown booleanp :default t)
    (abort-ctrex booleanp :default t)
    (exec-ctrex booleanp :default t)

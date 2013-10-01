@@ -217,11 +217,11 @@ compound-stmt begin formed.</p>"
   ;; I don't bother with make-honsed-vl-ifstmt, but we could add that easily
   ;; enough, if desired...
   `(progn
-     ,(cutil::da-make-maker-fn name fields nil)
-     ,(cutil::da-make-maker name fields)
-     ,(cutil::da-make-changer-fn name fields)
-     ,(cutil::da-make-changer name fields)
-     ,(cutil::da-make-binder name fields)))
+     ,(std::da-make-maker-fn name fields nil)
+     ,(std::da-make-maker name fields)
+     ,(std::da-make-changer-fn name fields)
+     ,(std::da-make-changer name fields)
+     ,(std::da-make-binder name fields)))
 
 
 

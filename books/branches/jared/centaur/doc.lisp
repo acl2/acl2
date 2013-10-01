@@ -168,12 +168,12 @@
 ;; these books.
 
 (include-book "defrstobj/basic-tests")
-(include-book "cutil/deflist-tests" :dir :system)
-(include-book "cutil/defalist-tests" :dir :system)
-(include-book "cutil/defmapappend-tests" :dir :system)
-(include-book "cutil/defprojection-tests" :dir :system)
-(include-book "cutil/defredundant-tests" :dir :system)
-(include-book "cutil/tools/assert-return-thms" :dir :system)
+(include-book "std/util/deflist-tests" :dir :system)
+(include-book "std/util/defalist-tests" :dir :system)
+(include-book "std/util/defmapappend-tests" :dir :system)
+(include-book "std/util/defprojection-tests" :dir :system)
+(include-book "std/util/defredundant-tests" :dir :system)
+(include-book "std/util/tools/assert-return-thms" :dir :system)
 (include-book "centaur/misc/tshell-tests" :dir :system)
 
 (include-book "defrstobj/groundwork/demo1")

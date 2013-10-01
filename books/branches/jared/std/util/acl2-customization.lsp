@@ -1,5 +1,5 @@
-; Built-In Typed Lists
-; Copyright (C) 2008-2013 Centaur Technology
+; CUTIL - Centaur Basic Utilities
+; Copyright (C) 2008-2011 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,5 +18,11 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "cutil/portcullis" :dir :system)
+#!ACL2
+(in-package "ACL2")
+
+(assign :suppress-preload-xdoc t)
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
+(ld "../package.lsp")
+(in-package "STD")
 

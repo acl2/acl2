@@ -23,6 +23,7 @@
 (include-book "litp")
 (include-book "cutil/defmvtypes" :dir :system)
 (include-book "cutil/defprojection" :dir :system)
+(include-book "cutil/deflist" :dir :system)
 (include-book "data-structures/list-defthms" :dir :system)
 (include-book "std/lists/equiv" :dir :system)
 (include-book "tools/defmacfun" :dir :system)

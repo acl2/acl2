@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "GETOPT")
-(include-book "cutil/top" :dir :system)
+(include-book "std/util/top" :dir :system)
 (include-book "str/case-conversion" :dir :system)
 (include-book "str/strprefixp" :dir :system)
 (include-book "str/subseq" :dir :system)
@@ -682,8 +682,8 @@ and so forth.  This only applies to visible options."
        (longname (formal->longname (car formals)))
        (parser   (formal->parser (car formals) world))
        (merge    (formal->merge (car formals)))
-       (accessor (cutil::da-accessor-name basename field))
-       (changer  (cutil::da-changer-name basename))
+       (accessor (std::da-accessor-name basename field))
+       (changer  (std::da-changer-name basename))
        (kwd      (intern$ (symbol-name field) "KEYWORD"))
        (case1
         `((equal longname ,longname)
@@ -713,7 +713,7 @@ and so forth.  This only applies to visible options."
                          (world    plist-worldp))
   (b* ((parse-foo  (parser-name basename))
        (parse-long (parser-name-long basename))
-       (foop       (cutil::da-recognizer-name basename)))
+       (foop       (std::da-recognizer-name basename)))
     `(define ,parse-long
        :parents (,parse-foo)
        ((longname stringp
@@ -755,7 +755,7 @@ and so forth.  This only applies to visible options."
   (b* ((parse-foo    (parser-name basename))
        (parse-long   (parser-name-long basename))
        (parse-bundle (parser-name-bundle basename))
-       (foop         (cutil::da-recognizer-name basename)))
+       (foop         (std::da-recognizer-name basename)))
     `(define ,parse-bundle
        :parents (,parse-foo)
        ((longnames string-listp "The already-expanded out names of the bundled
@@ -794,7 +794,7 @@ and so forth.  This only applies to visible options."
        (parse-short->long      (parser-name-short->long basename))
        (parse-short->long-list (parser-name-short->long-list basename))
        (parse-bundle (parser-name-bundle basename))
-       (foop         (cutil::da-recognizer-name basename))
+       (foop         (std::da-recognizer-name basename))
        (plain        (collect-plain-options formals world))
        (plain-longnames (formallist->longnames plain)))
     `(define ,parse-aux
@@ -883,7 +883,7 @@ and so forth.  This only applies to visible options."
   (b* ((parse-foo   (parser-name basename))
        (parse-aux   (parser-name-aux basename))
        (default-foo (default-name basename))
-       (foop        (cutil::da-recognizer-name basename))
+       (foop        (std::da-recognizer-name basename))
        (foop-link (b* ((acc (str::revappend-chars "<see topic='" nil))
                        (acc (xdoc::file-name-mangle foop acc))
                        (acc (str::revappend-chars "'>" acc))
@@ -1048,12 +1048,12 @@ and so forth.  This only applies to visible options."
 
 
 
-(define defoptions-fn ((info  cutil::agginfo-p)
+(define defoptions-fn ((info  std::agginfo-p)
                        (world plist-worldp))
-  (b* (((cutil::agginfo info) info)
+  (b* (((std::agginfo info) info)
        (visible      (drop-hidden-options info.efields))
        (- (sanity-check-formals info.name visible world))
-       (foop         (cutil::da-recognizer-name info.name))
+       (foop         (std::da-recognizer-name info.name))
        (usage-const  (intern-in-package-of-symbol
                       (cat "*" (symbol-name info.name) "-USAGE*")
                       info.name))
@@ -1088,10 +1088,10 @@ and so forth.  This only applies to visible options."
        (defaggregate ,name
          :extra-field-keywords ,*extra-fields-for-defoptions*
          . ,args)
-       (defconst ,default-foo (,(cutil::da-maker-name name)))
+       (defconst ,default-foo (,(std::da-maker-name name)))
        (make-event
         (b* ((world   (w state))
-             (agginfo (cutil::get-aggregate ',name world)))
+             (agginfo (std::get-aggregate ',name world)))
           (value
            (defoptions-fn agginfo world)))))))
 

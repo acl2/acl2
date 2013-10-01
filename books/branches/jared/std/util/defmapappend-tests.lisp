@@ -1,5 +1,5 @@
-; Built-In Typed Lists
-; Copyright (C) 2008-2013 Centaur Technology
+; CUTIL - Centaur Basic Utilities
+; Copyright (C) 2008-2011 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,5 +18,35 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "cutil/portcullis" :dir :system)
+(in-package "STD")
+(include-book "defmapappend")
 
+
+(local
+ (encapsulate
+   ()
+   (deflist nat-listp (x)
+     (natp x)
+     :elementp-of-nil nil)
+
+   (defund nats (n)
+     (declare (xargs :guard (natp n)))
+     (if (zp n)
+         nil
+       (cons n (nats (- n 1)))))
+
+   (defthm nat-listp-of-nats
+     (nat-listp (nats n))
+     :hints(("Goal" :in-theory (enable nats))))
+
+   (defprojection map-nats (x)
+     (nats x)
+     :guard (nat-listp x)
+     :optimize nil)
+
+   (defmapappend append-nats (x)
+     (nats x)
+     :guard (nat-listp x))
+
+   (value-triple (map-nats (nats 5)))
+   (value-triple (append-nats (nats 5)))))

@@ -1,5 +1,5 @@
-; Built-In Typed Lists
-; Copyright (C) 2008-2013 Centaur Technology
+; CUTIL - Centaur Basic Utilities
+; Copyright (C) 2008-2011 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,5 +18,9 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "cutil/portcullis" :dir :system)
+(in-package "STD")
 
+; This is a basically empty book which is included in cert.acl2 in order to
+; consolidate all of our portcullis commands into a single, usually-redundant
+; include-book command.  This simply improves the efficiency of our build
+; process.

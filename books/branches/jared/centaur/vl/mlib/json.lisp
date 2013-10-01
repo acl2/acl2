@@ -294,7 +294,7 @@ encoding.</p>"
   ;; Returns an alist of the form (fieldname . encoder-to-use)
   (b* (((when (atom efields))
         nil)
-       ((cutil::formal e1) (car efields))
+       ((std::formal e1) (car efields))
        (- (cw "Determining encoder for ~x0... " e1.name))
 
        ;; Are we supposed to omit it?
@@ -328,7 +328,7 @@ encoding.</p>"
   (b* (((when (atom alist))
         nil)
        ((cons fieldname encoder) (car alist))
-       (foo->bar                 (cutil::da-accessor-name basename fieldname))
+       (foo->bar                 (std::da-accessor-name basename fieldname))
        ;; Suppose the fieldname is foo.  We create the string ["foo":].  We can
        ;; create this at macroexpansion time.
        (name1       (str::downcase-string (symbol-name fieldname)))
@@ -350,8 +350,8 @@ encoding.</p>"
        (elem-p         (mksym 'vl- type '-p))
        (elem-p-str     (symbol-name elem-p))
 
-       ((cutil::agginfo agg) (cutil::get-aggregate elem world))
-       ((unless (cutil::formallist-p agg.efields))
+       ((std::agginfo agg) (std::get-aggregate elem world))
+       ((unless (std::formallist-p agg.efields))
         (raise "Expected :efields for ~x0 to be a valid formallist, found ~x1."
                elem agg.efields))
        (enc-alist (make-json-encoder-alist agg.efields omit overrides world))
