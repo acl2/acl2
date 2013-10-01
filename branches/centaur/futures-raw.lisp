@@ -1,4 +1,4 @@
-; ACL2 Version 6.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2013, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1412,7 +1412,8 @@
 ; Returns t if there are futures still in the work-queue to process or if there
 ; are futures already being processed.
 
-  (< 1 *unassigned-and-active-future-count*))
+  (< 1 (atomically-modifiable-counter-read
+        *unassigned-and-active-future-count*)))
 
 
 ;---------------------------------------------------------------------

@@ -1,5 +1,5 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 6.2 Installation Guide: Obtaining and Installing ACL2</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 6.3 Installation Guide: Obtaining and Installing ACL2</TITLE></HEAD>
 
 <BODY TEXT="#000000">
 <BODY BGCOLOR="#FFFFFF">
@@ -31,7 +31,6 @@
     a Unix-like Systems</A>
     <LI><A HREF="#Build-Particular">Building an Executable Image on Some Particular Systems</A>
     <UL>
-      <LI><A HREF="#Mac-OS-X-GCL">Special Case: Building an Executable Image on Mac OS X using GCL</A>
       <LI><A HREF="#Windows-GCL">Special Case: Building an Executable Image on a Windows System using GCL</A>
       <LI><A HREF="windows-gcl-jared.html">Older instructions from Jared Davis for
       building ACL2 on Windows using mingw</A>
@@ -51,9 +50,9 @@ and installing ACL2.
 
 <p>
 
-First, create a directory in which to store ACL2 Version 6.2.  We will
+First, create a directory in which to store ACL2 Version 6.3.  We will
 call this directory <I>dir</I>.  For example, <I>dir</I> might be
-<CODE>/home/jones/acl2/v6-2</CODE>.
+<CODE>/home/jones/acl2/v6-3</CODE>.
 
 <H3>NOTE: If you intend to obtain an incremental release (e.g. 2.9.4 as opposed
 to 2.9), please see the <a href="../new.html">ACL2 News</a> for instructions.
@@ -78,7 +77,7 @@ there are other shortcuts available.
 <p>
 
 WARNING: Some of these packages might be for old version of ACL2.  We
-recommend that you use the latest version of ACL2 (Version 6.2).
+recommend that you use the latest version of ACL2 (Version 6.3).
 
 <UL>
 
@@ -105,7 +104,7 @@ and <code>run_acl2.exe</code> on Windows, to start an ACL2 session.
 the certificate (<code>.cert</code>) files are automatically
 fixed, according to the full pathname of your <code>books/</code> directory.)
 Also see
-the <a href="http://www.cs.utexas.edu/users/moore/acl2/current/ACL2-SEDAN.html">ACL2
+the <a href="http://www.cs.utexas.edu/users/moore/acl2/v6-3/ACL2-SEDAN.html">ACL2
 documentation topic on the ACL2 Sedan</a>.
 
 
@@ -217,10 +216,10 @@ conversion.)
 
 <UL>
 
-<LI>Save <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/acl2.tar.gz">
+<LI>Save <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-3/distrib/acl2.tar.gz">
     acl2.tar.gz</A> on directory <I>dir</I>.  (You can
     run <code>md5sum</code> and compare
-    with <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/acl2-tar-gz-md5sum">
+    with <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-3/distrib/acl2-tar-gz-md5sum">
     acl2-tar-gz-md5sum</A> if you wish to verify the transmission.)
   </LI>
 <BR>
@@ -250,18 +249,18 @@ other than Gnu tar.  You can see if you have Gnu tar by running
 <UL>
 
   <li><b>Easy download.</b>
-    Fetch <CODE><A HREF="http://acl2-books.googlecode.com/files/books-6.2.tar.gz">a
+    Fetch <CODE><A HREF="http://acl2-books.googlecode.com/files/books-6.3.tar.gz">a
     gzipped tarfile</A></CODE> of the community books from the Google Code website, and then
     extract as follows to create a <code>books/</code>
     subdirectory:<BR>
 
-    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz books-6.2.tar.gz</code>
+    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz books-6.3.tar.gz</code>
   </li>
 
   <li><b><font color="red">OR</font></b>, obtain a read-only copy
     using svn as a new subdirectory, <code>books/</code>:<br>
 
-      <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;svn checkout http://acl2-books.googlecode.com/svn/branches/6.2 books</code>
+      <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;svn checkout http://acl2-books.googlecode.com/svn/branches/6.3 books</code>
   </li>
 	
   <li><b><font color="red">OR</font></b>, for read-write access,
@@ -270,7 +269,7 @@ other than Gnu tar.  You can see if you have Gnu tar by running
     (see <a href="https://code.google.com/p/acl2-books/">the
     acl2-books project page</a>). Then:<br>
 	  
-    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;svn checkout https://acl2-books.googlecode.com/svn/branches/6.2 books --username &lt;name&gt;</code>
+    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;svn checkout https://acl2-books.googlecode.com/svn/branches/6.3 books --username &lt;name&gt;</code>
   </li>
   <BR>
 
@@ -285,8 +284,8 @@ with ACL2(r).  You can fetch these easily as gzipped tarfiles, as
 follows, using the following links to the Google Code website.
 
 <UL>
-<LI><A HREF="http://acl2-books.googlecode.com/files/workshops-6.2.tar.gz">ACL2 Workshops books</A></LI>
-<LI><A HREF="http://acl2-books.googlecode.com/files/nonstd-6.2.tar.gz">ACL2(r) books</A></LI>
+<LI><A HREF="http://acl2-books.googlecode.com/files/workshops-6.3.tar.gz">ACL2 Workshops books</A></LI>
+<LI><A HREF="http://acl2-books.googlecode.com/files/nonstd-6.3.tar.gz">ACL2(r) books</A></LI>
 </UL>
 
 Then put the gzipped tarfile(s) in
@@ -294,8 +293,8 @@ the <CODE>acl2-sources/books/</CODE> directory, connect to that
 directory, and extract to create <CODE>workshops/</CODE>
 and <CODE>nonstd/</CODE> subdirectories, respectively:<BR>
 
-<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz workshops-6.2.tar.gz</CODE><BR>
-<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz nonstd-6.2.tar.gz</CODE>
+<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz workshops-6.3.tar.gz</CODE><BR>
+<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz nonstd-6.3.tar.gz</CODE>
 
 </UL>
 
@@ -331,7 +330,7 @@ instructions for building an executable.
 <H3><A NAME="Pre-Built-Images">Short Cut:  Pre-Built ACL2 Images</A></H3>
 
 The site <a
-href="http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/images/Readme.html">http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/images/Readme.html</a>
+href="http://www.cs.utexas.edu/users/moore/acl2/v6-3/distrib/images/Readme.html">http://www.cs.utexas.edu/users/moore/acl2/v6-3/distrib/images/Readme.html</a>
 contains links to ACL2 executables and packages.  Each <code>-md5sum</code> file
 was created using <code>md5sum</code>.  We may add additional
 links from time to time.
@@ -515,24 +514,12 @@ example by executing the following command.<br><br>
 Subtopics of this section are as follows.
 
     <UL>
-      <LI><A HREF="#Mac-OS-X-GCL">Special Case: Building an Executable Image on Mac OS X using GCL</A>
       <LI><A HREF="#Windows-GCL">Special Case: Building an Executable Image on a Windows System using GCL</A>
       <LI><A HREF="windows7.html">Instructions from David Rager
       for building ACL2 on Windows</A>
       <LI><A HREF="windows-gcl-jared.html">Older instructions from Jared Davis for
       building ACL2 on Windows using mingw</A>
     </UL>
-
-<BR><HR><BR>
-<H3><A NAME="Mac-OS-X-GCL"></A>How to build/install ACL2 on GCL on Mac OS X</H3>
-
-If you want to build/install ACL2 on Mac OS X, you may find it easier to do so
-on top of <a href="requirements.html#Obtaining-CCL">CCL</a> rather than
-<a href="requirements.html#Obtaining-GCL">GCL</a>.  Otherwise, see <A
-HREF="requirements.html#gcl-mac">the directions for bulding GCL on Mac OS
-X</A>.  Then follow the usual installation instructions to <A
-HREF="#Sources">obtain the ACL2 sources</A> and <A
-HREF="#Other-Unix">build an executable image</A> on a Unix-like system.
 
 <BR><HR><BR>
 <H3><A NAME="Windows-GCL">Special Case: Building an Executable Image on a Windows System using GCL</A></H3>
@@ -592,12 +579,12 @@ C:\gcl\gclm\lib\gcl-2.6.2\unixport\saved_gcl.exe -dir C:/gcl/gclm/lib/gcl-2.6.2/
     may be called
 <code>saved_acl2.exe</code> rather than <code>saved_acl2</code>.
 
-<!-- NOTE to developers: v6-2 below indicates a normal release, which is OK. -->
+<!-- NOTE to developers: v6-3 below indicates a normal release, which is OK. -->
 <!-- Do not edit that for incremental releases. -->
 
 <li><b>FINALLY</b>, create a file <code>acl2.bat</code> as explained in
-<code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/images/Readme.html#acl2-bat">
-http://www.cs.utexas.edu/users/moore/acl2/v6-2/distrib/images/Readme.html</a></code>.
+<code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-3/distrib/images/Readme.html#acl2-bat">
+http://www.cs.utexas.edu/users/moore/acl2/v6-3/distrib/images/Readme.html</a></code>.
 
 </ol>
 
@@ -695,30 +682,39 @@ Now proceed to read more about <A HREF="using.html">Using ACL2</A>.
 <BR><HR noshade size=8><BR>
 <H2><A NAME="Summary">Summary of Distribution</A></H2>
 
-The distribution includes the following.  A list of all files in
-<CODE>acl2-sources</CODE> may be found in the file <CODE>all-files.txt</CODE>
-in that directory.
+The ACL2
+    distribution, <code><A HREF="http://www.cs.utexas.edu/users/moore/acl2/v6-3/distrib/acl2.tar.gz">
+    acl2.tar.gz</A></code>, includes the ACL2 source files as well as
+    the following files and directories (and a few others not
+    mentioned here).  Note that a <code>books/</code> directory
+    is <b>not included</b>; see instructions above to fetch the community
+    books.
 <PRE>
-Readme.html; This file
-acl2-sources/
-  LICENSE  ; ACL2 license file
-  GNUmakefile ; For GNU make
-  TAGS     ; Handy for looking at source files with emacs
-  *.lisp   ; ACL2 source files
-  all-files.txt    ; List of all files in this directory and subdirectories
-  books/   ; NOT INCLUDED; see instructions above to fetch community books
-  doc/     ; ACL2 documentation in various formats
-  emacs/   ; Miscellaneous emacs and file utilities, especially emacs-acl2.el
-  init.lisp; Useful for building the system
-  saved/   ; Empty directory for backing up copies during make; not important
-acl2.tar.gz; gzip'd tar file containing all of acl2-sources/ (see below)
-images/    ; Some gzip'd tar'd executables; see images/Readme.html
-split/     ; The result of splitting up acl2.tar.gz; see split/Readme.html
+  LICENSE       ; ACL2 license file
+  GNUmakefile   ; For GNU make
+  TAGS          ; Handy for looking at source files with emacs
+  doc/          ; ACL2 documentation in various formats
+  emacs/        ; Some helpful emacs utilities
+  installation/ ; Installation instructions (start with installation.html)
+  saved/        ; Empty directory for backing up copies during make
 </PRE>
 
+Also available are the following.
+
+<ul>
+
+<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-3/distrib/images/">images/</a></code>:
+Some gzip'd tar'd executables; see <code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-3/distrib/images/Readme.html">images/Readme.html</a></code></li>
+
+<li><code><a href="http://www.cs.utexas.edu/users/moore/acl2/v6-3/distrib/split/">split/</a></code>: The result of splitting up <code>acl2.tar.gz</code></li>
+
+</ul>
+
 <P>
-The entire acl2.tar.gz is about 7MB, which extracts to
-about 30MB.  The gzipped tarfile books-6.2.tar.gz (obtained as described
+Based on the preceding ACL2 release, we estimate that the
+entire <code>acl2.tar.gz</code> is about 7MB, which extracts to about
+30MB, and the gzipped tarfile <code>books-6.3.tar.gz</code> (obtained
+as described
 <a href="#Obtaining-books">above</a>) is about 12MB, which extracts to
 about 70MB.  Additional space is required to build an image, perhaps
 50 to 300 megabytes depending on the platform (including the host

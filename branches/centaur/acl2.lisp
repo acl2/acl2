@@ -1,4 +1,4 @@
-; ACL2 Version 6.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 6.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2013, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -953,7 +953,7 @@ ACL2 from scratch.")
    (setq acl2::*copy-of-acl2-version*
 ;  Keep this in sync with the value of acl2-version in *initial-global-table*.
          (concatenate 'string
-                      "ACL2 Version 6.2"
+                      "ACL2 Version 6.3"
                       #+non-standard-analysis
                       "(r)"
                       #+(and mcl (not ccl))
