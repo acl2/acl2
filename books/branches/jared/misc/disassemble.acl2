@@ -1,2 +1,0 @@
-; cert-flags: ? t :ttags '(:disassemble$)
-(certify-book "disassemble" ? t :ttags '(:disassemble$))

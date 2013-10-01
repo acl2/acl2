@@ -1,2 +1,0 @@
-(include-book "bag-pkg")
-(certify-book "bag-exports" ? t)

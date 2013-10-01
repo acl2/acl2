@@ -1,5 +1,0 @@
-(defpkg "SYMBOL-FNS"
-  (union-eq *acl2-exports*
-	    *common-lisp-symbols-from-main-lisp-package*))
-
-(certify-book "symbol-fns-exports" ? t)
