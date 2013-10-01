@@ -960,39 +960,39 @@
 (in-theory (disable examples-for-term))
 
 (mutual-recursion
- (defun beta-reduce-term (x)
+ (defun wcp-beta-reduce-term (x)
    (declare (Xargs :guard (pseudo-termp x)
                    :verify-guards nil))
    (b* (((when (or (atom x) (eq (car X) 'quote))) x)
         (f (car x))
-        (args (beta-reduce-list (cdr x)))
+        (args (wcp-beta-reduce-list (cdr x)))
         ((when (atom f)) (cons f args))
         (vars (cadr f))
-        (body (beta-reduce-term (caddr f))))
+        (body (wcp-beta-reduce-term (caddr f))))
      (substitute-into-term body (pairlis$ vars args))))
- (defun beta-reduce-list (x)
+ (defun wcp-beta-reduce-list (x)
    (declare (xargs :guard (pseudo-term-listp x)))
    (if (atom x)
        nil
-     (cons (beta-reduce-term (car x))
-           (beta-reduce-list (cdr x))))))
+     (cons (wcp-beta-reduce-term (car x))
+           (wcp-beta-reduce-list (cdr x))))))
 
-(flag::make-flag beta-reduce-flag beta-reduce-term)
+(flag::make-flag wcp-beta-reduce-flag wcp-beta-reduce-term)
 
-(defthm-beta-reduce-flag
-  pseudo-termp-beta-reduce-flag
-  (beta-reduce-term
+(defthm-wcp-beta-reduce-flag
+  pseudo-termp-wcp-beta-reduce-flag
+  (wcp-beta-reduce-term
    (implies (pseudo-termp x)
-            (pseudo-termp (beta-reduce-term x)))
-   :name pseudo-termp-beta-reduce-term)
-  (beta-reduce-list
+            (pseudo-termp (wcp-beta-reduce-term x)))
+   :name pseudo-termp-wcp-beta-reduce-term)
+  (wcp-beta-reduce-list
    (implies (pseudo-term-listp x)
-            (pseudo-term-listp (beta-reduce-list x)))
-   :name pseudo-termp-beta-reduce-list)
-  :hints (("goal" :induct (beta-reduce-flag flag x)
+            (pseudo-term-listp (wcp-beta-reduce-list x)))
+   :name pseudo-termp-wcp-beta-reduce-list)
+  :hints (("goal" :induct (wcp-beta-reduce-flag flag x)
            :in-theory (enable pseudo-termp pseudo-term-listp))))
 
-(verify-guards beta-reduce-term
+(verify-guards wcp-beta-reduce-term
                :hints (("goal" :in-theory (enable pseudo-termp
                                                   pseudo-term-listp))))
 
@@ -1489,7 +1489,7 @@
           witnessed-clause))
        (example-alist
         (witness-cp-collect-examples-list
-         (beta-reduce-list generalized-clause)
+         (wcp-beta-reduce-list generalized-clause)
          example-templates example-alist state))
        ((when (not (good-instance-rules-and-examplesp
                     instance-rules example-alist)))
