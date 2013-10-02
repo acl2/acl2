@@ -303,6 +303,7 @@
                                     `(setq ,sym-initial-cbd
                                            (,sym-pathname-os-to-unix
                                             (namestring (truename ""))
+                                            (os (w ,sym-state))
                                             ,sym-state))
                                     `(,sym-f-put-global
                                       ',sym-cbd
