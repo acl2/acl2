@@ -210,14 +210,20 @@
 
 # The xdoc manual is built in centaur/manual/, top page index.html, as
 # a byproduct of building centaur/doc.cert with ACL2(h) using
-# USE_QUICKLISP=1 on the `make' command line.  This has been tested
-# using CCL on Linux, but may work for other OS/Lisp combinations.
-# See also centaur/README.html.  ACL2(h) is required for that build of
-# the xdoc manual, because it is required for some of the books
-# included in centaur/doc.lisp.  You can create a manual for your own
-# books using ACL2 or ACL2(h); see topic SAVE (parent topic XDOC) in
-# the xdoc manual, either in centaur/manual/ or on the web at
-# http://fv.centtech.com/acl2/latest/doc/.
+# USE_QUICKLISP=1 on the `make' command line, for example as follows:
+#   make -j 8 regression-fresh \
+#     USE_QUICKLISP=1 \
+#     ACL2_BOOK_CERTS=centaur/doc.cert \
+#     ACL2=/projects/acl2/devel/ccl-saved_acl2h
+# Note the use of target regression-fresh or regression, rather than
+# regression-everything, which would make additional books as well.
+# This has been tested using CCL on Linux, but may work for other
+# OS/Lisp combinations.  See also centaur/README.html.  ACL2(h) is
+# required for that build of the xdoc manual, because it is required
+# for some of the books included in centaur/doc.lisp.  You can create
+# a manual for your own books using ACL2 or ACL2(h); see topic SAVE
+# (parent topic XDOC) in the xdoc manual, either in centaur/manual/ or
+# on the web at http://fv.centtech.com/acl2/latest/doc/.
 
 # STATUS / TODO LIST / MISSING FEATURES / BOZOS:
 #
