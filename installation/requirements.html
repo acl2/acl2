@@ -204,32 +204,19 @@ apt-get -q install gcl gcl-doc
 Otherwise, it should be easy to obtain and build GCL yourself.  There
 are two recommended versions of GCL for building ACL2: GCL 2.6.8 and
 GCL 2.6.10.  (GCL 2.6.9, which is <i>not</i> recommended, has some
-issues that were fixed in GCL 2.6.10.)  GCL 2.6.8 appears to be faster
-for ACL2 regressions than GCL 2.6.10; we obtained the following
-times on a 64-bit Linux system using a development snapshot of ACL2 as
-of Sept. 23, 2013.
-
-<pre>
-   ACL2 built on non-ANSI GCL 2.6.8:
-   33235.713u 1275.991s 1:29:23.91 643.4%	0+0k 156624+4638504io 25pf+0w
-
-   ACL2 built on non-ANSI GCL 2.6.10pre:
-   40678.982u 1013.967s 1:45:06.91 661.0%	0+0k 153400+6615176io 9pf+0w
-
-   ACL2 built on ANSI GCL 2.6.10pre:
-   67950.466u 1050.753s 2:44:58.65 697.0%	0+0k 327160+6955712io 7pf+0w
-</pre>
-
-On the other hand, modern Common Lisp implementations are ANSI
-compliant, and GCL 2.6.10 may have better ANSI support (which is
-needed if you choose to build
+issues that were fixed in GCL 2.6.10.)  GCL 2.6.8 appeared initially
+to be faster for ACL2 regressions than GCL 2.6.10, but we recently
+measured GCL 2.6.10 (actually GCL 2.6.10pre, as of Oct. 1, 2013) to be
+slightly faster, using non-ANSI builds for both.  We have also had
+better success with GCL 2.6.10 than GCL 2.6.8 on a Mac, where 2.6.8
+ran out of memory for two regression tests but 2.6.10 (again, actually
+2.6.10pre) did not.  Note that GCL 2.6.10 may have better ANSI support
+than 2.6.8, and ANSI support is needed if you choose to build
 <a href="http://www.cs.utexas.edu/users/moore/acl2/v6-3/HONS-AND-MEMOIZATION.html">ACL2(h)</a>).
 
 <p>
 
-As of this writing (late September 2013), it might be best to fetch
-GCL 2.6.8 for most purposes but GCL 2.6.10 if for some reason you want
-an ANSI build of GCL.  You can fetch it as a tarball from
+You can fetch GCL 2.6.8 as a tarball from
 <a href="http://www.gnu.org/software/gcl/">main GNU website for
   GCL</a>.
 From GCL source you can build an executable by extracting from the
@@ -244,11 +231,11 @@ From GCL source you can build an executable by extracting from the
 ./configure && make
 
 # If you want an ANSI build
-# (but add "--enable-maxpage=1048576" as above for linux):
+# (but add "--enable-maxpage=1048576" in the case of 64-bit Linux, as above):
 ./configure --enable-ansi && make
 </pre>
 
-As of late September 2013, GCL 2.6.10 is not yet available as a
+As of early October 2013, GCL 2.6.10 is not yet available as a
 tarball.  However, you can get a pre-release (which we expect to work
 fine, having used it successfully ourselves) like this (assuming you
 have <code>git</code> installed):
