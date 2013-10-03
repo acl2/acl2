@@ -171,7 +171,8 @@
              ;; detect is if there are extra colons, e.g., foo::bar::baz should
              ;; be disallowed.  We really want a whitespace or paren or quote
              ;; or something
-             ((when (eql (char x n) #\:))
+             ((when (and (< n xl)
+                         (eql (char x n) #\:)))
               (mv (if nice-error-msg-p
                       (str::cat "Near " (error-context x n xl)
                                 ": Three layers of colons in symbol name?")
