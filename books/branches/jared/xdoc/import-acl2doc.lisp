@@ -20,7 +20,6 @@
 
 (in-package "ACL2") ;; So the acl2 topic comes from the acl2 package.
 (include-book "write-acl2-xdoc")
-(include-book "system/origin" :dir :system)
 (set-state-ok t)
 (program)
 

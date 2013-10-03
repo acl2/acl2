@@ -45,20 +45,20 @@
     ("B" nil .  "<b>~st</b>")
     ("BF" nil .  "~%<code>")
     ("BID" nil .    "")      ;begin implementation dependent
-    ("BPAR" nil .  "<p>")
+    ("BPAR" nil .  "~%~%<p>")
 
 ; XDOC question: Is <blockquote> supported?  I generate it just below.
 
 ; A: it isn't supported, but I'll add support for it.
 
-    ("BQ" nil .  "</p>~%<blockquote><p>")
+    ("BQ" nil .  "</p>~%~%<blockquote><p>")
     ("BV" nil .  "~%<code>")
     ("C" nil .  "<tt>~st</tt>")
     ("EF" nil .  "</code>~%")
     ("EID" nil .    "")      ;end implementation dependent
     ("EM" nil .  "<i>~st</i>") ;emphasis
     ("EPAR" nil .  "</p>")
-    ("EQ" nil .  "</p></blockquote>~%<p>")
+    ("EQ" nil .  "</p></blockquote>~%~%<p>")
     ("EV" nil .  "</code>~%")
 
 ; XDOC question: Is <img> supported?  I generate it just below, but I'm not
@@ -77,12 +77,12 @@
 ; time, but I sort of dislike that and would rather just print them in the same
 ; font.  So I arbitrarily choose to treat ~il and ~ilc the same.
 
-    ("IL" t .  "<see topic=\"@(url ~sc)\">~st</see>")
-    ("ILC" t .  "<see topic=\"@(url ~sc)\">~st</see>")
-    ("L" t .  "See @(see ~sc)")
+    ("IL" t .  "<see topic='@(url ~sc)'>~st</see>")
+    ("ILC" t .  "<see topic='@(url ~sc)'>~st</see>")
+    ("L" t .  "See <see topic='@(url ~sc)'>~st</see>")
     ("NL" nil .  "<br/>~%")
     ("PAR" nil .  "<p/>~%~%")
-    ("PL" t .  "see @(see ~sc)")
+    ("PL" t .  "see <see topic='@(url ~sc)'>~st</see>")
     ("SC" nil .  "~sT")
     ("ST" nil .  "<b>~st</b>") ;strong emphasis
     ("T" nil .  "<tt>~st</tt>")
@@ -102,13 +102,13 @@
 ; Jared note: these don't seem quite right.
 ;    ("CLICK-HERE" t .  "Click <a href=\"~sc\">here</a>")
 ;    ("PCLICK-HERE" t .  "click <a href=\"~sc\">here</a>")
-    ("CLICK-HERE" t .  "Click <see topic=\"@(url ~sc)\">here</see>")
-    ("PCLICK-HERE" t .  "click <see topic=\"@(url ~sc)\">here</see>")
+    ("CLICK-HERE" t .  "Click <see topic='@(url ~sc)'>here</see>")
+    ("PCLICK-HERE" t .  "click <see topic='@(url ~sc)'>here</see>")
 
-    ("FLY" t .  "<see topic=\"@(url ~sc)\"><img src='flying.gif'/></see>")
-    ("LARGE-FLY" t .  "<see topic=\"@(url ~sc)\"><img src='large-flying.gif'/></see>")
-    ("WALK" t .  "<see topic=\"@(url ~sc)\"><img src='walking.gif'/></see>")
-    ("LARGE-WALK" t .  "<see topic=\"@(url ~sc)\"><img src='large-walking.gif'/></see>")
+    ("FLY" t .  "<see topic='@(url ~sc)'><img src='flying.gif'/></see>")
+    ("LARGE-FLY" t .  "<see topic='@(url ~sc)'><img src='large-flying.gif'/></see>")
+    ("WALK" t .  "<see topic='@(url ~sc)'><img src='walking.gif'/></see>")
+    ("LARGE-WALK" t .  "<see topic='@(url ~sc)'><img src='large-walking.gif'/></see>")
 
 ;    ("FLY" t .  "[image]")
 ;    ("LARGE-FLY" t .  "[image]")
@@ -121,7 +121,7 @@
 
 ; A: I think it's probably okay.
 
-    ("URL" nil .  "<a href=\"~st\">~st</a>")
+    ("URL" nil .  "<a href='~st'>~st</a>")
     )
   "Table for use in printing documentation strings, when printing to
 an xdoc file.  See :DOC markup")
