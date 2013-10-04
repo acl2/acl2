@@ -29194,6 +29194,7 @@
     (wormhole-name . nil)
     (wormhole-status . nil)
     (write-acl2x . nil)
+    (write-bookdata . nil) ; see maybe-write-bookdata
     (write-for-read . nil)
     (writes-okp . t)))
 

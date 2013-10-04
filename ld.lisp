@@ -21381,6 +21381,10 @@
 
   ~st[NEW FEATURES]
 
+  We have added a tool for writing out useful information about a book's event
+  names when certifying the book.  ~l[bookdata].  Thanks to Dave Greve for
+  requesting this tool and participating in its specification.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   ~st[BUG FIXES]
