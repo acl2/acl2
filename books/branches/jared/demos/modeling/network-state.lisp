@@ -60,8 +60,8 @@
 (in-package "ACL2")
 
 (include-book "misc/eval" :dir :system)
-(include-book "cutil/defaggregate" :dir :system)
-(include-book "cutil/deflist" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 (include-book "misc/defun-plus" :dir :system)
 (include-book "tools/bstar" :dir :system)
 
@@ -73,7 +73,7 @@
   (or (equal x :unknown)
       (integerp x)))
 
-(cutil::defaggregate client-state
+(std::defaggregate client-state
   (number-to-square answer)
   :require ((integer-p-of-client-state->number-to-square
              (integerp number-to-square))
@@ -89,7 +89,7 @@
 ; Setup server state
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-(cutil::defaggregate server-state
+(std::defaggregate server-state
  (requests-served)
  :require ((integerp-of-server-state->requests-served
             (integerp requests-served)
@@ -103,7 +103,7 @@
 ; Setup network state
 ;;;;;;;;;;;;;;;;;;;;;;
 
-(cutil::defaggregate message
+(std::defaggregate message
   (tag payload)
   :require ((keywordp-of-message->tag
              (keywordp tag))
@@ -124,7 +124,7 @@
            (keywordp x))
   :rule-classes :forward-chaining)
 
-(cutil::defaggregate network-packet
+(std::defaggregate network-packet
   (sender dest message)
   :require ((id-p-of-network-packet->sender
              (id-p sender))
@@ -139,7 +139,7 @@
 (defconst *initial-network* ; for concrete simulation
   nil)
 
-(cutil::deflist network-state-p (x)
+(std::deflist network-state-p (x)
   (network-packet-p x)
   :elementp-of-nil nil
   :true-listp t)

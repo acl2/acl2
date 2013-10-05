@@ -26,11 +26,11 @@
 (include-book "esim-primitives")
 (include-book "esim-paths")
 (local (include-book "esim-sexpr-support-thms"))
-(include-book "cutil/define" :dir :system)
-(include-book "cutil/defaggregate" :dir :system)
-(include-book "cutil/defprojection" :dir :system)
-(include-book "cutil/defalist" :dir :system)
-(include-book "cutil/defmapappend" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
+(include-book "std/util/defalist" :dir :system)
+(include-book "std/util/defmapappend" :dir :system)
 (include-book "centaur/vl/toe/toe-emodwire" :dir :system)
 
 #||

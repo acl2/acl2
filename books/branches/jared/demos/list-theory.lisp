@@ -1,7 +1,7 @@
 ; Written by David Rager with help from Shilpi Goel and Jared Davis.  
 
 ; Note that much of this information is probably available in book
-; "cutil/deflist", but we have this simpler demo for more novice users.
+; "std/util/deflist", but we have this simpler demo for more novice users.
 
 ; This book intends to introduce users into the typical lemmas needed when
 ; reasoning about functions whose arguments are true-listp's, but have some

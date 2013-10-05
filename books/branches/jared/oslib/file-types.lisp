@@ -20,8 +20,8 @@
 
 (in-package "OSLIB")
 (include-book "read-acl2-oracle")
-(include-book "cutil/define" :dir :system)
-(include-book "cutil/defenum" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "std/util/defenum" :dir :system)
 (include-book "centaur/quicklisp/top" :dir :system)
 ; (depends-on "file-types-raw.lsp")
 ; cert_param: (uses-quicklisp)

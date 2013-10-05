@@ -19,7 +19,7 @@
 (in-package "ACL2")
 
 (include-book "std/io/read-file-characters" :dir :system)
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 
 (define read-file-characters-no-error ((filename stringp)
                                       (state state-p))

@@ -22,7 +22,7 @@
 ; config.lisp -- SAT solver configuration objects
 
 (in-package "SATLINK")
-(include-book "cutil/defaggregate" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
 
 (defaggregate config
   :parents (satlink)

@@ -4,7 +4,7 @@
 
 
 (include-book "litp")
-(include-book "cutil/defmvtypes" :dir :system)
+(include-book "std/util/defmvtypes" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))

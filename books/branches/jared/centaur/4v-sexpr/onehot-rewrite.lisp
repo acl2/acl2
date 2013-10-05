@@ -24,7 +24,7 @@
 (in-package "ACL2")
 (include-book "sexpr-rewrites")
 (include-book "sexpr-building")
-(include-book "cutil/defprojection" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 (local (include-book "centaur/misc/filter-alist" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
@@ -1134,7 +1134,7 @@ implement.</p>"
                  (4v-onehot-sexpr-list-prime vars x)))
     :hints(("Goal" :in-theory (enable 4v-onehot-sexpr-list-prime))))
 
-  (cutil::defprojection 4v-onehot-sexpr-list-prime (vars x)
+  (std::defprojection 4v-onehot-sexpr-list-prime (vars x)
     (4v-onehot-sexpr-prime vars x)
     :already-definedp t
     :nil-preservingp nil)

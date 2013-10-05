@@ -161,7 +161,7 @@ on the machine Lisp2.</p>
   :parents (numbers)
   :short "Recognizes lists of @(see digitp) characters."
 
-; BOZO consider using cutil::deflist
+; BOZO consider using std::deflist
 
   (defund digit-listp (x)
     (declare (xargs :guard (character-listp x)))

@@ -26,7 +26,7 @@
 ; (include-book "centaur/aignet/idp" :dir :system)
 (include-book "litp")
 (include-book "snodes")
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 (defmacro const-type () 0)
 (defmacro gate-type () 1)
 (defmacro in-type () 2)

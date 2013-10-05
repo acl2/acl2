@@ -19,6 +19,6 @@
 ; Original authors: Jared Davis <jared@kookamara.com>
 
 (in-package "ACL2")
-(ld "../cutil/package.lsp")
+(ld "../std/package.lsp")
 (ld "../str/package.lsp")
 (certify-book "lint" ? t)

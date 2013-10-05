@@ -194,7 +194,7 @@ executed; it uses a SAT solver to answer the question.</p>
 
 
 
-(cutil::deflist faig-purebool-list-p (x)
+(std::deflist faig-purebool-list-p (x)
   (faig-purebool-p x)
   :guard t
   :parents (faig-purebool-p)

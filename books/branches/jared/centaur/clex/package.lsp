@@ -20,14 +20,14 @@
 
 (in-package "ACL2")
 
-(include-book "cutil/portcullis" :dir :system)
+(include-book "std/portcullis" :dir :system)
 (include-book "str/portcullis" :dir :system)
 
 (defpkg "CLEX"
   (set-difference-eq
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*
-             cutil::*cutil-exports*
+             std::*std-exports*
              '(quit
                exit
                b*

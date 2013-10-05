@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (include-book "tools/include-raw" :dir :system)
 ;; (depends-on "gc-raw.lsp")

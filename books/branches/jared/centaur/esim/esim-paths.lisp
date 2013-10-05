@@ -25,8 +25,8 @@
 (in-package "ACL2")
 (include-book "esim-sexpr-support")
 (local (include-book "esim-sexpr-support-thms"))
-(include-book "cutil/deflist" :dir :system)
-(include-book "cutil/defmvtypes" :dir :system)
+(include-book "std/util/deflist" :dir :system)
+(include-book "std/util/defmvtypes" :dir :system)
 
 (make-event
 
@@ -39,10 +39,10 @@
                (value '(value-triple nil)))
    (value '(value-triple nil))))
 
-(cutil::deflist cons-listp (x)
-                (consp x)
-                :guard t
-                :elementp-of-nil nil)
+(std::deflist cons-listp (x)
+              (consp x)
+              :guard t
+              :elementp-of-nil nil)
 
 (in-theory (disable consp-of-car-when-cons-listp
                     consp-when-member-equal-of-cons-listp))

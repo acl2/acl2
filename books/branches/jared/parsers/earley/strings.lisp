@@ -18,7 +18,7 @@
 
 (in-package "ACL2")
 
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 
 (define str-trim-left2 ((char-bag character-listp)

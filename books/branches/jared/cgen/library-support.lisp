@@ -7,7 +7,7 @@
 
 ;record implementation
 (include-book "defexec/other-apps/records/records" :dir :system :load-compiled-file :comp)
-(include-book "finite-set-theory/osets/sets" :dir :system :load-compiled-file :comp)
+(include-book "std/osets/top" :dir :system :load-compiled-file :comp)
 ;(include-book "std/osets/top" :dir :system :load-compiled-file :comp)
 
 

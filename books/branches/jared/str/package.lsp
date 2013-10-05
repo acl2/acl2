@@ -30,7 +30,8 @@
                     a b c d e f g h i j k l m n o p q r s t u v w x y z
                     top)
              '(defxdoc defsection lnfix definlined definline
-                define defaggregate unsigned-byte-p signed-byte-p))
+                define defaggregate unsigned-byte-p signed-byte-p
+                raise))
 
    ;; Remove some "bad" acl2 string functions to try to prevent users from
    ;; accidentally using them.

@@ -20,7 +20,7 @@
 
 (in-package "GL")
 (include-book "bvar-db")
-(include-book "cutil/defaggregate" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
 (include-book "clause-processors/meta-extract-user" :dir :system)
 (include-book "bfr")
 (include-book "bfr-sat")

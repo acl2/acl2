@@ -6,7 +6,7 @@
 ;; (include-book "equal-based-set")
 ;; (local (include-book "defset-encapsulates"))
 
-(include-book "cutil/deflist" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 
 
 (defun string-index-measure (idx str)
@@ -219,17 +219,17 @@
 
 
 
-(cutil::deflist input-listp (x str)
-                (input-list-eltp x str)
-                :guard (stringp str))
+(std::deflist input-listp (x str)
+              (input-list-eltp x str)
+              :guard (stringp str))
 
 
 (defcong length-equiv equal (input-listp l str) 2
   :hints (("Goal" :in-theory (e/d (input-listp)
                                   (length length-equiv)))))
 
-(cutil::deflist pseudo-input-listp (x)
-                (pseudo-input-list-eltp x))
+(std::deflist pseudo-input-listp (x)
+              (pseudo-input-list-eltp x))
 
 (defthm input-listp-pseudo
   (implies (input-listp x str)

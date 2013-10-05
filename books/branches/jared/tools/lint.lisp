@@ -19,7 +19,7 @@
 ; Original authors: Jared Davis <jared@kookamara.com>
 
 (in-package "ACL2")
-(include-book "cutil/da-base" :dir :system)
+(include-book "std/util/da-base" :dir :system)
 (include-book "system/origin" :dir :system)
 (include-book "str/cat" :dir :system)
 (include-book "tools/rulesets" :dir :system)
@@ -61,7 +61,7 @@
 
 (defun da-accessor-for-defrec-field (rec field)
   ;; Create a defaggregate-style accessor foo->bar for field bar of defrec foo
-  `(defun-inline ,(cutil::da-accessor-name rec field) (x)
+  `(defun-inline ,(std::da-accessor-name rec field) (x)
      (declare (xargs :guard (,(intern$ (str::cat "WEAK-" (symbol-name rec) "-P") "ACL2") x)))
      (access ,rec x ,(intern$ (symbol-name field) "KEYWORD"))))
 
@@ -75,7 +75,7 @@
   (let ((fields (look-up-defrec-fields rec world)))
     `(progn
        ,@(da-accessors-for-defrec-fields rec fields)
-       ,(cutil::da-make-binder rec fields))))
+       ,(std::da-make-binder rec fields))))
 
 (defmacro da-defrec-emulation (rec)
   `(make-event

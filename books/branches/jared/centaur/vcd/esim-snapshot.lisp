@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "cutil/top" :dir :system)
+(include-book "std/util/top" :dir :system)
 (include-book "str/top" :dir :system)
 (include-book "../esim/esim-paths")
 
@@ -92,7 +92,7 @@
 
 (defsection symbol-path-list-p
 
-  (cutil::deflist symbol-path-list-p (x)
+  (std::deflist symbol-path-list-p (x)
     (symbol-path-p x)
     :guard t
     :elementp-of-nil t)

@@ -19,7 +19,7 @@
 (in-package "ACL2")
 
 (include-book "std/io/base" :dir :system)
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 
 ; These used to go through but aren't anymore.  We don't need them now, so I'm
 ; commenting them out.

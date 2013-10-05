@@ -20,7 +20,7 @@
 
 (in-package "ACL2")
 
-(ld "cutil/package.lsp" :dir :system)
+(ld "std/package.lsp" :dir :system)
 (ld "tools/flag-package.lsp" :dir :system)
 (ld "centaur/satlink/package.lsp" :dir :system)
 
@@ -67,8 +67,8 @@
     define
     defsection
     defmvtypes
-    cutil::defprojection
-    cutil::deflist
+    std::defprojection
+    std::deflist
     b*
     aig-eval
     aig-not

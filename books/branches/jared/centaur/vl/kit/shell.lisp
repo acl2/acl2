@@ -21,7 +21,7 @@
 (in-package "VL")
 (include-book "progutils")
 (include-book "tools/include-raw" :dir :system)
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 ; (depends-on "shell-raw.lsp")
 
 (defconst *vl-shell-help* "

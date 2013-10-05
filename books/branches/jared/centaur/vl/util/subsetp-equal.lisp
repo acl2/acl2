@@ -24,7 +24,7 @@
 ; redundantly if you need to.  Eventually this stuff should be put into a
 ; library.
 
-(include-book "cutil/defrule" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "centaur/misc/equal-sets" :dir :system)
 (include-book "std/osets/top" :dir :system)
 (include-book "std/lists/list-fix" :dir :system)

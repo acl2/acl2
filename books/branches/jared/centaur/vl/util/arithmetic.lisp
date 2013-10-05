@@ -29,8 +29,8 @@
 
 (include-book "arithmetic/top-with-meta" :dir :system)
 (include-book "centaur/bitops/integer-length" :dir :system)
-(include-book "cutil/deflist" :dir :system)
-(include-book "cutil/defrule" :dir :system)
+(include-book "std/util/deflist" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 
 
 ;; BOZO how much of this is still needed, given the new Tau system?

@@ -19,16 +19,16 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "cutil/deflist" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 
 (defsection std/typed-lists/atom-listp
   :parents (std/typed-lists atom-listp)
   :short "Lemmas about @(see atom-listp) available in the @(see
 std/typed-lists) library."
   :long "<p>Most of these are generated automatically with @(see
-cutil::deflist).</p>"
+std::deflist).</p>"
 
-  (cutil::deflist atom-listp (x)
+  (std::deflist atom-listp (x)
     (atom x)
     :true-listp t
     :elementp-of-nil t

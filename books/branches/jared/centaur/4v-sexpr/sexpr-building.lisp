@@ -24,7 +24,7 @@
 (in-package "ACL2")
 (include-book "sexpr-eval")
 (include-book "sexpr-vars")
-(include-book "cutil/defprojection" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 (include-book "misc/definline" :dir :system)
 (local (include-book "sexpr-3v"))
 ;(local (include-book "sexpr-to-faig")) ;; for 3v-opt stuff
@@ -256,7 +256,7 @@ because it can be disabled so that rules about @('cons') will not apply.</p>"
 
 (defsection 4v-not-list
   (local (in-theory (disable 4v-not)))
-  (cutil::defprojection 4v-not-list (x)
+  (std::defprojection 4v-not-list (x)
     (4v-not x)
     :guard t
     :nil-preservingp nil
@@ -266,7 +266,7 @@ because it can be disabled so that rules about @('cons') will not apply.</p>"
 
 (defsection 4vs-not-list
 
-  (cutil::defprojection 4vs-not-list (x)
+  (std::defprojection 4vs-not-list (x)
     (4vs-not x)
     :guard t
     :nil-preservingp nil

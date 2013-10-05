@@ -21,14 +21,14 @@
 
 (in-package "ACL2")
 
-(include-book "cutil/portcullis" :dir :system)
+(include-book "std/portcullis" :dir :system)
 (ld "tools/flag-package.lsp" :dir :system)
 (include-book "oslib/portcullis" :dir :system)
 
 (defpkg "SATLINK"
   (union-eq *acl2-exports*
             *common-lisp-symbols-from-main-lisp-package*
-            cutil::*cutil-exports*
+            std::*std-exports*
             '(b*
               bitp
               lnfix

@@ -281,12 +281,12 @@ encoding.</p>"
 
 
 
-; Fancy automatic json encoding of cutil structures
+; Fancy automatic json encoding of std structures
 
 (program)
 
 (define make-json-encoder-alist
-  (efields   ;; A proper cutil::formallist-p for this structure's fields
+  (efields   ;; A proper std::formallist-p for this structure's fields
    omit      ;; A list of any fields to omit from the encoded output
    overrides ;; An alist of (fieldname . encoder-to-use-instead-of-default)
    world     ;; For looking up default encoders

@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "cutil/deflist" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 
 ; We disable CHARACTER-LISTP itself, and also the following ACL2 built-in
 ; rules, since the DEFLIST adds stronger ones.
@@ -32,9 +32,9 @@
   :short "Lemmas about @(see character-listp) available in the @(see
 std/typed-lists) library."
   :long "<p>Most of these are generated automatically with @(see
-cutil::deflist).</p>"
+std::deflist).</p>"
 
-  (cutil::deflist character-listp (x)
+  (std::deflist character-listp (x)
     (characterp x)
     :true-listp t
     :elementp-of-nil nil

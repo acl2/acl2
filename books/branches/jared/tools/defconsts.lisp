@@ -338,7 +338,7 @@ in the certificate file instead of being recomputed.~/")
                     (let ((__function__
                            ;; Goofy: we bind __function__ to make it easy to
                            ;; move code between functions based on
-                           ;; cutil::define and defconsts forms
+                           ;; std::define and defconsts forms
                            ',(intern summary "ACL2")))
                       (declare (ignorable __function__))
                       ,form)

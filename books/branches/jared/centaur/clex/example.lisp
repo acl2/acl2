@@ -20,7 +20,7 @@
 
 (in-package "CLEX")
 (include-book "top")
-(include-book "cutil/top" :dir :system)
+(include-book "std/util/top" :dir :system)
 (include-book "str/top" :dir :system)
 
 (local (defthm characterp-of-car-when-character-listp

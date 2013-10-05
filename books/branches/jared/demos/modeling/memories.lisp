@@ -15,7 +15,7 @@
 
 (include-book "defexec/other-apps/records/records" :dir :system)
 
-(include-book "cutil/defalist" :dir :system)
+(include-book "std/util/defalist" :dir :system)
 (include-book "misc/defun-plus" :dir :system)
 
 (defn memory-val-p (x)

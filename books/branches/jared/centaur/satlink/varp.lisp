@@ -22,7 +22,7 @@
 ; varp.lisp -- Definition of CNF Variables
 
 (in-package "SATLINK")
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (set-tau-auto-mode nil)
 

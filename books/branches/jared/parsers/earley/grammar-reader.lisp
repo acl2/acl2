@@ -18,12 +18,12 @@
 
 (in-package "ACL2")
 
-;(include-book "cutil/defaggregate" :dir :system)
-(include-book "cutil/deflist" :dir :system)
+;(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 ;(include-book "tools/bstar" :dir :system)
 (include-book "str/top" :dir :system)
 (include-book "std/io/base" :dir :system)
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "parallel/with-waterfall-parallelism" :dir :system)
 
 (include-book "object-representations")
@@ -446,12 +446,12 @@
 ;;        (keywordp (car x))
 ;;        (stringp (cdr x))))
 
-;; (cutil::deflist keyword-string-pair-list-p (x)
+;; (std::deflist keyword-string-pair-list-p (x)
 ;;   (keyword-string-pair-p x)
 ;;   :elementp-of-nil nil
 ;;   :true-listp t)
 
-(cutil::defalist keyword-string-pair-list-p (x)
+(std::defalist keyword-string-pair-list-p (x)
   :key (keywordp x)
   :val (stringp x)
   :true-listp t

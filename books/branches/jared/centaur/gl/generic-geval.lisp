@@ -23,7 +23,7 @@
 (include-book "bvecs")
 (include-book "tools/bstar" :dir :system)
 (include-book "tools/templates" :dir :system)
-(include-book "cutil/defmvtypes" :dir :system)
+(include-book "std/util/defmvtypes" :dir :system)
 (include-book "../misc/defapply")
 
 (defun acl2::boolfix (x)

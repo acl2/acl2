@@ -23,10 +23,10 @@
 
 (in-package "ACL2")
 (include-book "../esim-sexpr-support")
-(include-book "cutil/defaggregate" :dir :system)
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/define" :dir :system)
 
-(cutil::defaggregate stvdata
+(std::defaggregate stvdata
   :parents (symbolic-test-vectors)
   :short "Temporary internal representation of STV lines during compilation."
   :tag :stvdata
@@ -35,7 +35,7 @@
    (internals true-list-listp)
    (overrides true-list-listp)))
 
-(cutil::defaggregate compiled-stv
+(std::defaggregate compiled-stv
   :parents (symbolic-test-vectors)
   :short "Compiled form of @(see symbolic-test-vectors)."
   :tag :compiled-stv
@@ -74,7 +74,7 @@
 
    ))
 
-(cutil::defaggregate processed-stv
+(std::defaggregate processed-stv
   :parents (stv-process)
   :short "Representation of a processed STV."
   :tag :processed-stv

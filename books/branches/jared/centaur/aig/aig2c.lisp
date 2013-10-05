@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "cutil/top" :dir :system)
+(include-book "std/util/top" :dir :system)
 (include-book "centaur/vl/util/namedb" :dir :system)
 (include-book "aig-base")
 (include-book "aig-vars-ext")
@@ -98,7 +98,7 @@ of, e.g., 32-bit bitwise ANDs, or anything like that.</li>
                 :xdoc aig2c-config-p for more information.")))
     t))
 
-(cutil::defaggregate aig2c-config
+(std::defaggregate aig2c-config
   :parents (aig2c)
   :short "Configuration object that governs how we translate an AIG into C/C++."
 

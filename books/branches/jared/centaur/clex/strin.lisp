@@ -22,7 +22,7 @@
 (include-book "linecol")
 (include-book "charset-fns")
 (include-book "charlist-fix")
-(include-book "cutil/defaggregate" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
 (include-book "str/strprefixp" :dir :system)
 (include-book "str/istrprefixp" :dir :system)
 (local (include-book "arithmetic"))

@@ -24,7 +24,7 @@
 (local (include-book "misc/assert" :dir :system))
 
 
-;; BOZO maybe use cutil::deflist for these list recognizers
+;; BOZO maybe use std::deflist for these list recognizers
 
 (defsection octal-digitp
   :parents (numbers)

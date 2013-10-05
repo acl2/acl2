@@ -32,9 +32,8 @@
 
 (defxdoc std/util
   :parents (std acl2::macro-libraries)
-  :short "The Centaur Utility Library&mdash;automates defining types,
-introducing typed functions, mapping over lists, and other boilerplate stuff,
-with good integration with the @(see acl2::std) libraries."
+  :short "A macro library that automates defining types, introducing typed
+functions, mapping over lists, and many other boilerplate tasks."
 
   :long "<p>We provide macros for</p>
 
@@ -72,31 +71,16 @@ with good integration with the @(see acl2::std) libraries."
  (include-book \"std/util/top\" :dir :system)
 })
 
+<p>Alternately, you may find it convenient to just load individual books.  Each
+major macro is typically defined in its own book, e.g., you could do:</p>
 
-<h3>Copyright Information</h3>
-
-<p>CUTIL - Centaur Basic Utilities<br/>
-Copyright (C) 2008-2011 <a href=\"http://www.centtech.com\">Centaur
-Technology</a>.</p>
-
-<p>Contact:</p>
 @({
-Centaur Technology Formal Verification Group
-7600-C N. Capital of Texas Highway, Suite 300
-Austin, TX 78731, USA.
+ (include-book \"std/util/define\" :dir :system)
+ (include-book \"std/util/defaggregate\" :dir :system)
+ (include-book \"std/util/deflist\" :dir :system)
 })
 
-<p>CUTIL is free software; you can redistribute it and/or modify it under the
-terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version.</p>
-
-<p>This program is distributed in the hope that it will be useful but WITHOUT
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-details.</p>
-
-<p>You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
-Street, Suite 500, Boston, MA 02110-1335, USA.</p>")
+<p>Note that unlike many other @(see std) libraries, these macros are defined
+in the @('STD::') package.  This is mainly to avoid name collisions with older
+macros like @('deflist') from other libraries.</p>")
 

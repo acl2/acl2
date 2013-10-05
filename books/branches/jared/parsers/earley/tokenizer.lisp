@@ -19,7 +19,7 @@
 (in-package "ACL2")
 
 (include-book "str/top" :dir :system)
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 
 (defconst *token-separators*
   '(#\+ #\- #\* #\/ #\{ #\} #\( #\) #\[ #\] #\; #\,
