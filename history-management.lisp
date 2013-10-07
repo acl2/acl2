@@ -4889,7 +4889,7 @@
 ; Form should evaluate to an error triple.
 
 ; We assign to saved-output-reversed, rather than binding it, so that saved
-; output for gag-mode reply (using pso or psog) is available outside the scope
+; output for gag-mode replay (using pso or psog) is available outside the scope
 ; of with-ctx-summarized.
 
   `(state-global-let*
@@ -4898,7 +4898,9 @@
      (print-base 10 set-print-base)
      (print-radix nil set-print-radix)
      (proof-tree-ctx nil)
-     (saved-output-p t))
+     (saved-output-p
+      (not (member-eq 'PROVE
+                      (f-get-global 'inhibit-output-lst state)))))
     (pprogn (f-put-global 'saved-output-reversed nil state)
             (with-prover-step-limit! :START ,form))))
 

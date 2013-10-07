@@ -7937,11 +7937,6 @@
         (if (gag-mode) state ,body)
         ,@keyword-args))
 
-(defmacro io?-gag (vars body &rest keyword-args)
-  `(io? prove nil state ,vars
-        (if (gag-mode) ,body state)
-        ,@keyword-args))
-
 (defun output-ignored-p (token state)
   (and (not (saved-output-token-p token state))
        (member-eq token

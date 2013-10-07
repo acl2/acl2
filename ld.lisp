@@ -21379,6 +21379,18 @@
 
   ~st[CHANGES TO EXISTING FEATURES]
 
+  ~il[Gag-mode] no longer saves prover output when ~c[PROVE] output is
+  inhibited (~pl[set-inhibit-output-lst]).  This may improve performance
+  slightly when certifying community books using their ~c[Makefile] or
+  ~c[cert.pl]; in particular, GCL 2.6.8 running on a Mac can now certify the
+  book ~c[books/tau/bounders/elementary-bounders.lisp] without running out of
+  space, even without explicitly turning off ~il[gag-mode] (which had been done
+  shortly before the Version  6.3 release).
+
+  When ~il[include-book] fails to find a readable ~il[certificate] (~c[.cert])
+  file, the error message now distinguishes between the case that this file is
+  missing and the case that read permission is missing.
+
   ~st[NEW FEATURES]
 
   We have added a tool for writing out useful information about a book's event
@@ -27766,22 +27778,23 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   where ~c[val] is one of ~c[t], ~c[nil], or ~c[:goals].
 
   The basic idea of ~il[gag-mode] is to avoid much of the verbose output from
-  the theorem prover, leaving only output that is expected to be helpful.  You
-  are strongly encouraged to put the form
+  the theorem prover, leaving only output that is expected to be helpful.  The
+  first two forms below set gag-mode on, while the other turns it off; these
+  may be placed in your ACL2 customization file; ~pl[acl2-customization].
   ~bv[]
-  (set-gag-mode t) ; or, (set-gag-mode :goals)
+  (set-gag-mode :goals) ; (default) avoid most prover output; show goal names
+  (set-gag-mode t)      ; avoid most prover output; also, hide goal names
+  (set-gag-mode nil)    ; allow prover output
   ~ev[]
-  in your ACL2 customization file; ~pl[acl2-customization].  The default value
-  is ~c[:goals].
 
-  The basic idea of gag-mode is to focus attention on so-called ``key
-  checkpoints''.  By default, a checkpoint is a goal that cannot be simplified.
-  (Below we discuss how to change this default.)  A key checkpoint is a
-  checkpoint that is not descended from another checkpoint.  (Technical point:
-  ``Descended'' signifies that both goals are at the top level in the same
-  forcing round, or are in the same proof by induction.)  Successful ACL2 users
-  generally focus their attention on key checkpoints; for a discussion of how
-  to use ACL2 prover output in an effective manner, ~pl[the-method], and
+  Gag-mode focuses attention on so-called ``key checkpoints''.  By default, a
+  checkpoint is a goal that cannot be simplified.  (Below we discuss how to
+  change this default.)  A key checkpoint is a checkpoint that is not descended
+  from another checkpoint.  (Technical point: ``descended'' signifies that both
+  goals are at the top level in the same forcing round, or are in the same
+  proof by induction.)  Successful ACL2 users generally focus their attention
+  on key checkpoints; for a discussion of how to use ACL2 prover output in an
+  effective manner, ~pl[the-method], and
   ~pl[introduction-to-the-theorem-prover] for a more detailed tutorial.  In
   gag-mode, a key checkpoint is only displayed when ACL2 is unable to make any
   further progress on that goal or some descendent of it, other than with a
@@ -27791,10 +27804,10 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   checkpoints are printed.  Evaluation of ~c[set-gag-mode :goals] also enters
   gag-mode, but will additionally cause the name of a goal to be printed as
   soon as it is generated (by invoking ~il[set-print-clause-ids]).  The
-  ~c[:goals] setting is useful for cases in which the prover spends very little
-  of its time generating goals to be proved by induction, yet you want to see
-  that it is making progress.  For finer-grained feedback about the
-  simplifier's activity, ~pl[dmr].
+  ~c[:goals] setting is the default, and is useful for cases in which the
+  prover spends very little of its time generating goals to be proved by
+  induction, yet you want to see that it is making progress.  For finer-grained
+  feedback about the simplifier's activity, ~pl[dmr].
 
   The current value of ~il[gag-mode] is returned by a macro of the same name:
   ~bv[]
@@ -27811,21 +27824,23 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
   The intention of gag-mode is to show you only the parts of a proof attempt
   that are relevant for debugging a failure; additional output is generally
   more likely to be distracting than truly helpful.  But on occasion you may
-  want to see the full proof output after an attempt made with gag-mode.  If
-  so, then ~pl[pso] and ~pl[pso!].  Since ~c[set-gag-mode] takes responsibility
-  for the saving of output, related utility ~ilc[set-saved-output] is
-  disabled when gag-mode is active.  Also note that calling ~c[set-gag-mode]
-  erases the currently saved output, if any.
+  want to see the full proof output after an attempt made with gag-mode.  This
+  can be done provided proof output is not inhibited
+  (~pl[set-inhibit-output-lst]) during the proof attempt; ~pl[pso] and
+  ~pl[pso!].  Since ~c[set-gag-mode] takes responsibility for the saving of
+  output, related utility ~ilc[set-saved-output] is disabled when gag-mode is
+  active.  Also note that calling ~c[set-gag-mode] erases the currently saved
+  output, if any.
 
   You may notice that gag-mode tends to print relatively little information
   about goals pushed for proof by sub-induction ~-[] i.e., a proof of *i.j,
-  *i.j.k, etc.  The principle here is that sub-inductions that do not succeed
-  should generally be avoided, not analyzed for ways to make them succeed.
-  Instead, the key checkpoint that generated the goal pushed for this induction
-  is more appropriate to analyze.  In general, the ``higher level'' the
-  checkpoint, the more worthy it is of attention.  Thus, we suggest that look
-  at the top-level checkpoints before looking at those labeled ``Key
-  checkpoints under a top-level induction''.
+  *i.j.k, etc.  That feature emphasizes that unsuccessful sub-inductions should
+  generally be avoided, not analyzed for ways to make them succeed.  Instead,
+  the key checkpoint that generated the goal pushed for this induction is more
+  appropriate to analyze.  In general, the ``higher level'' the checkpoint, the
+  more worthy it is of attention.  Thus, we suggest that look at the top-level
+  checkpoints before looking at those labeled ``Key checkpoints under a
+  top-level induction''.
 
   We conclude with remarks for advanced users.
 
