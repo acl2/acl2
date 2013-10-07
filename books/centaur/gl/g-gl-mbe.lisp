@@ -50,7 +50,7 @@
                                    "GL-MBE violation"
                                    config bvar-db state))
          (er hard? 'gl-mbe "GL-MBE assertion failed.  Args: (~x0 ~x1).
-                            Diagnostic info: ~x0~%"
+                            Diagnostic info: ~x2~%"
              ;; BOZO this is all assuming aig/alist-ctrex mode
              (gobj->term spec (list false-ctrex))
              (gobj->term impl (list false-ctrex))
