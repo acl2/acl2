@@ -8,7 +8,8 @@
 (include-book "list-ops-fast")
 (include-book "addr-range") ;bzo drop?
 (include-book "wrap")
-(local (include-book "rtl/rel8/arithmetic/fl" :dir :system))
+; (Matt K., 10/2013: Changed rel8 to rel9.)
+(local (include-book "rtl/rel9/arithmetic/fl" :dir :system))
 
 ;(local (include-book "../super-ihs/loglist")) ;bzo
 (local (include-book "../super-ihs/super-ihs")) ;bzo

@@ -557,7 +557,7 @@
  )
 
 ;bzo - why was this necessary in 2.9.2?
-(local (include-book "rtl/rel8/arithmetic/expo" :dir :system))
+(local (include-book "rtl/rel9/arithmetic/expo" :dir :system)) ; rel8 -> rel9, MattK, 10/2013
 (local (in-theory (disable expo-shift-general))) ;was looping!
 
 

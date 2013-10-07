@@ -459,7 +459,8 @@ ADDED_BOOKS := \
   workshops/2009/sumners/support/examples.cert \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
-  $(filter rtl/rel7/%, $(OK_CERTS))
+  $(filter rtl/rel7/%, $(OK_CERTS)) \
+  $(filter rtl/rel8/%, $(OK_CERTS))
 
 # The following has taken only a couple of minutes on a decent Linux
 # system in 2013.  However, ACL2 built on GCL 2.6.8 and Mac OS 10.6
@@ -557,8 +558,8 @@ ifeq ($(ACL2_HAS_REALS), )
 # The following dependency is to be ignored in ACL2(r), where the
 # relevant include-book in arithmetic-3/extra/ext.lisp is guarded by
 # #-:non-standard-analysis.
-arithmetic-3/extra/ext.cert: rtl/rel8/arithmetic/top.cert \
-                             rtl/rel8/arithmetic/extra-rules.cert
+arithmetic-3/extra/ext.cert: rtl/rel9/arithmetic/top.cert \
+                             rtl/rel9/arithmetic/extra-rules.cert
 
 endif # ifeq ($(ACL2_HAS_REALS), )
 

@@ -12,7 +12,7 @@
 (include-book "defexec/other-apps/records/records" :dir :system)
 (include-book "misc/check-state" :dir :system)
 (include-book "misc/defp" :dir :system)
-(include-book "rtl/rel8/lib/top" :dir :system)
+(include-book "rtl/rel9/support/lib3/log" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
 (include-book "tools/bstar" :dir :system)
 ||#

@@ -191,15 +191,15 @@
 
 )
 
-; An encapsulate for rtl/rel8/arithmetic.
-#-:non-standard-analysis ; rtl/rel8/ is not yet in books/nonstd/
+; An encapsulate for rtl/rel9/arithmetic.
+#-:non-standard-analysis ; rtl/rel9/ is not yet in books/nonstd/
 (encapsulate
   ()
 
   (local (include-book
 ; Warning: Keep this linebreak.  This dependency is dealt with directly in
 ; the top-level Makefile for all the books, for other than ACL2(r).
-          "rtl/rel8/arithmetic/top" :dir :system))
+          "rtl/rel9/arithmetic/top" :dir :system))
 
   (defthm x*/y=1->x=y-ext
     (implies (and (rationalp x)
@@ -718,7 +718,7 @@
   (local (include-book
 ; Warning: Keep this linebreak.  This dependency is dealt with directly in
 ; the top-level Makefile for all the books, for other than ACL2(r).
-          "rtl/rel8/arithmetic/extra-rules" :dir :system)) ; for exp-invert
+          "rtl/rel9/arithmetic/extra-rules" :dir :system)) ; for exp-invert
   ; rule-classes nil
   (defthm exp-invert-ext
     (implies (and (integerp n)
