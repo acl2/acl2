@@ -718,6 +718,25 @@
 ;
 ; To fix this, we look at the text between <code> and </code>, and if every
 ; line begins with a space, we eat those spaces.
+;
+; PATCH.  I eventually found that I wanted to be even more permissive than
+; the above.  Sometimes when I write preprocessor things in @({...}) blocks,
+; I find that I want to separate what I'm writing from the markup even more.
+; That is, it's sort of easier to ignore the markup when I write:
+;
+;  |@({
+;  |    this is some stuff
+;  |})
+;
+; Than:
+;
+;  |@({
+;  | this is some stuff
+;  |})
+;
+; At any rate, it seems pretty reasonable to try to eat up any amount of spaces
+; that are at the start of every line in the block.  So, now, instead of just
+; eating one space, we eat however many spaces are shared by all lines.
 
 (encapsulate
   ()
@@ -742,58 +761,117 @@
               (eql (fifth acc) #\c)
               (eql (sixth acc) #\<)))))
 
-(defun read-code-segment (x n xl acc always-spacep)
-  "Returns (MV N ACC ALWAYS-SPACEP)"
+(defun read-code-segment
 
 ; We assume we're inside a <code> block.  We read until </code> is found,
-; gathering the characters we see and tracking whether each newline is followed
-; by a space.
+; gathering the characters we see and tracking how many spaces follow each
+; newline.
 
+  (x n xl    ; string we're reading, position, length as usual
+     acc     ; accumulator for chars in this <code> block so far
+     spacesp ; are we currently reading spaces?
+     curr-sp ; how many spaces we've seen on this line so far
+     min-sp  ; minimum number of spaces we've seen on any prev line
+     )
+  "Returns (MV N ACC MIN-SP)"
   (b* (((when (>= n xl))
-        (mv n acc always-spacep))
+        ;; End of string while reading <code>?  Shouldn't really happen.
+        ;; Let's return 0 so that we won't change the section.
+        (mv n acc 0))
 
        (char-n (char x n))
        ((when (and (eql char-n #\<)
                    (str::strprefixp-impl "</code>" x 0 n
                                          7 ;; (length "</code>")
                                          xl)))
-        ;; Found </code> tag, so stop reading
-        (mv n acc always-spacep))
+        ;; Found </code> tag, so stop reading.  This is kind of subtle.
+        ;;
+        ;; Case 1: we had </code> at the start of the line, or after just some
+        ;; spaces.  In this case, we don't care how many spaces we've seen so
+        ;; far, because we explicitly want to allow for things like
+        ;;
+        ;;   |<code>
+        ;;   |  foo
+        ;;   |</code>
+        ;;
+        ;; Case 2: someone put the </code> inline with their text, i.e., they
+        ;; wrote something like
+        ;;
+        ;;   |<code>
+        ;;   |  foo
+        ;;   | bar</code>
+        ;;
+        ;; In this case, we definitely DO want to consider spaces on the
+        ;; current line.
+        (mv n acc (if spacesp
+                      min-sp
+                    (min curr-sp min-sp))))
 
        (acc (cons char-n acc))
+       ((when (eql char-n #\Space))
+        (read-code-segment x (+ 1 n) xl
+                           acc
+                           spacesp
+                           (if spacesp (+ 1 curr-sp) curr-sp)
+                           min-sp))
+
        ((unless (eql char-n #\Newline))
         ;; A normal character, just accumulate it.
-        (read-code-segment x (+ 1 n) xl acc always-spacep))
+        (read-code-segment x (+ 1 n) xl
+                           acc nil curr-sp min-sp)))
 
-       (n (+ 1 n))
-       ((when (>= n xl))
-        ;; End of string while reading <code>?  Shouldn't really happen...
-        (mv n acc always-spacep))
+    ;; For newlines, the situation is also subtle.  We want to allow
+    ;; people to double-space things, e.g.,
+    ;;
+    ;;    |<code>
+    ;;    |  foo
+    ;;    |[newline here]
+    ;;    |  bar
+    ;;    |</code>
+    ;;
+    ;; So basically: consider curr-sp only if there are non-spaces here.
+    (read-code-segment x (+ 1 n) xl
+                       acc
+                       t ;; start reading spaces again
+                       0 ;; new line has no spaces yet
+                       (if spacesp
+                           min-sp
+                         (min curr-sp min-sp)))))
 
-       (char-n (char x n))
-       ((when (eql char-n #\<))
-        ;; We allow the </code> to come without a space.
-        (mv n acc always-spacep))
+#||
+ (b* ((x  "      three spaces
+  two spaces
+ blah</code> more text <p>blah blah</p>")
+     ((mv n acc min-sp)
+      (read-code-segment x 0 (length x) nil t 0 100)))
+  (list n (str::rchars-to-string acc) min-sp))
+||#
 
-       (acc (cons char-n acc))
-       (always-spacep (and always-spacep
-                           (or (eql char-n #\Space)
-                               (eql char-n #\Newline)))))
-    (read-code-segment x (+ 1 n) xl acc always-spacep)))
+(defun starts-with-n-spaces (n x)
+  (or (zp n)
+      (and (consp x)
+           (eql (car x) #\Space)
+           (starts-with-n-spaces (- n 1) (cdr x)))))
 
-(defun revappend-code-chars (code-chars acc always-spacep)
+(defun revappend-code-chars
+  (code-chars ; characters from the <code> section (regular, non-reversed order)
+   acc        ; accumulator we're writing them into
+   min-sp     ; minimum spaces after each newline (except blank lines)
+   )
   (b* (((when (atom code-chars))
         acc)
-       (char1 (car code-chars))
-       (acc   (cons char1 acc))
+       ((cons char1 rest) code-chars)
+       (acc (cons char1 acc))
        ((unless (eql char1 #\Newline))
-        (revappend-code-chars (cdr code-chars) acc always-spacep))
-       ((when (and always-spacep
-                   (consp (cdr code-chars))
-                   (eql (second code-chars) #\Space)))
-        ;; Skip the first space
-        (revappend-code-chars (cddr code-chars) acc always-spacep)))
-    (revappend-code-chars (cdr code-chars) acc always-spacep)))
+        (revappend-code-chars (cdr code-chars) acc min-sp))
+       ;; Have a newline.
+       ((when (and (posp min-sp)
+                   (starts-with-n-spaces min-sp rest)))
+        ;; Skip these n spaces
+        (revappend-code-chars (nthcdr min-sp rest) acc min-sp)))
+    ;; Else, doesn't start with n spaces.  Must be a pure blank line.
+    ;; Don't muck with it.
+    (revappend-code-chars rest acc min-sp)))
 
 (defun transform-code-segments (x n xl acc)
   (b* (((when (>= n xl))
@@ -805,108 +883,85 @@
                      (just-started-code-p acc)))
         (transform-code-segments x n xl acc))
        ;; Started a code segment.
-       ((mv n code-acc always-spacep)
-        (read-code-segment x n xl nil t))
+       ((mv n code-acc min-sp)
+        (read-code-segment x n xl
+                           nil ;; accumulator for chars
+                           t   ;; yes, we're reading spaces, to begin
+                           0   ;; no spaces seen so far
+                           100 ;; as good as infinity, here.
+                           ))
        (code-chars (reverse code-acc))
-       (acc (revappend-code-chars code-chars acc always-spacep)))
+       (acc (revappend-code-chars code-chars acc min-sp)))
     (transform-code-segments x n xl acc)))
 
 (defun transform-code (x)
   ;; Fix leading spaces in <code> segments
   (str::rchars-to-string (transform-code-segments x 0 (length x) nil)))
 
-;; (transform-code 
-;; "<p>This is 
-;; some regular text</p>
-;; <code>
-;;     blah1
-;;     <blah>blah2</blah>
-;;     blah3
-;; </code>
-;; <p>And more text</p>")
+#||
+ (transform-code 
+"<p>This is 
+some regular text</p>
+<code>     
+    blah1
+    <blah>blah2</blah>
+    blah3
+</code>
+<p>And more text</p>")
+||#
 
-(defun advance-line (x n xl)
-  ;; Returns the index of the next newline after character N, or else XL
-  (b* (((when (eql n xl))
-        n)
-       (c (char x n))
-       ((when (eql c #\Newline))
-        n))
-    (advance-line x (+ 1 n) xl)))
 
-(defun all-lines-start-with-space-p (x n xl)
-  ;; Assumptions:
-  ;;  - We are starting a line
-  ;;  - Every line we've seen so far starts with a space
+
+
+; Horribly, we now pretty much repeat the same thing, but whereas the above
+; targets <code> blocks, we now deal with @({...}) blocks.  Here, we assume
+; that we've already extracted the whole string that we want to transform.
+
+(defun read-ppcode-segment
+  (x n xl    ; string we're reading, position, length as usual
+     spacesp ; are we currently reading spaces?
+     curr-sp ; how many spaces we've seen on this line so far
+     min-sp  ; minimum number of spaces we've seen on any prev line
+     )
+  "Returns MIN-SP"
   (b* (((when (>= n xl))
-        ;; DO NOT WEAKEN TO (= N XL).  We unusually allow this to exceed the
-        ;; string length; consider the call of advance-line below.
-        ;; Success, reached end of string, no space required
-        t)
-       (c (char x n))
-       ((when (eql c #\Newline))
-        ;; Fine, blank line, no space required
-        (all-lines-start-with-space-p x (+ 1 n) xl))
-       ((when (eql c #\Space))
-        ;; Fine, has a space, skip to next line
-        (b* ((n (advance-line x (+ 1 n) xl)))
-          (all-lines-start-with-space-p x (+ 1 n) xl))))
-    ;; Nope, found a non-space char at start of the line.
-    nil))
+        ;; End of string.  That's when we want to stop.
+        (if spacesp
+            min-sp
+          (min curr-sp min-sp)))
 
-(encapsulate
-  ()
-  (logic)
+       (char-n (char x n))
+       ;; No </code> handling; we'll read to the end of the string.
+       ((when (eql char-n #\Space))
+        (read-ppcode-segment x (+ 1 n) xl
+                             spacesp
+                             (if spacesp (+ 1 curr-sp) curr-sp)
+                             min-sp))
 
-  (local
-   (progn
-
-     (defun test (x)
-       (declare (xargs :mode :program))
-       (all-lines-start-with-space-p x 0 (length x)))
-
-     (assert! (test " foo
- bar
- baz"))
-
-     (assert! (not (test " foo
-bar
- baz")))
-
-     (assert! (test " foo
-
- bar
- baz
-"))
-
-     (assert! (not (test "foo
- bar
-baz
-"))))))
-
-(defun delete-leading-line-space (x n xl acc)
-  ;; Assumes (all-lines-start-with-space-p x n xl)
-  (b* (((when (>= n xl))
-        acc)
-       (c (char x n))
-       ((when (eql c #\Newline))
-        (delete-leading-line-space x (+ 1 n) xl (cons c acc)))
-       ;; Else it must be a space.  Skip the space but copy the other chars
-       ;; through the end of the line.
-       (start (+ 1 n))
-       (end   (advance-line x start xl))
-       ;; BOZO abuse of revappend-chars-aux to only copy until end...
-       ;; should fix its guard to allow this sort of thing
-       (acc   (str::revappend-chars-aux x start end acc)))
-    (delete-leading-line-space x end xl acc)))
+       ((unless (eql char-n #\Newline))
+        ;; normal character, stop reading spaces if we were doing so
+        (read-ppcode-segment x (+ 1 n) xl
+                             nil curr-sp min-sp)))
+    ;; Newline character, start new line
+    (read-ppcode-segment x (+ 1 n) xl
+                         t ;; start reading spaces again
+                         0 ;; new line has no spaces yet
+                         (if spacesp
+                             min-sp
+                           (min curr-sp min-sp)))))
 
 (defun maybe-fix-spaces-in-sub (x)
   (declare (type string x))
-  (b* ((xl (length x))
-       ((unless (all-lines-start-with-space-p x 0 xl))
+  (b* ((xl      (length x))
+       (min-sp  (read-ppcode-segment x 0 xl t 0 100))
+       ((when (zp min-sp))
         ;; Fine, don't do anything
         x)
-       (acc (delete-leading-line-space x 0 xl nil)))
+       (code-chars (explode x))
+       (code-chars (if (starts-with-n-spaces min-sp code-chars)
+                       (nthcdr min-sp code-chars)
+                     code-chars))
+       (acc (revappend-code-chars code-chars nil min-sp)))
     (str::rchars-to-string acc)))
 
 (encapsulate

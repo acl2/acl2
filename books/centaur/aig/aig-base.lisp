@@ -511,7 +511,22 @@ from the lists @('x') and @('y')."
     (cons (aig-implies (car x) (car y))
           (aig-implies-lists (cdr x) (cdr y)))))
 
-
+(def-ruleset aig-constructors
+  '(aig-not
+    aig-and
+    aig-or
+    aig-xor
+    aig-iff
+    aig-implies
+    aig-ite
+    aig-not-list
+    aig-and-list
+    aig-or-list
+    aig-and-lists
+    aig-or-lists
+    aig-iff-lists
+    aig-xor-lists
+    aig-implies-lists))
 
 ; -----------------------------------------------------------------------------
 ;
