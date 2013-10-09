@@ -39,6 +39,7 @@
 (include-book "preprocess")
 (include-book "save-classic")
 (include-book "save-fancy")
+(include-book "save")
 (include-book "topics")
 (include-book "write-acl2-xdoc")
 

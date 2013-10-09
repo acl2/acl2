@@ -66,40 +66,6 @@
 
 (add-ld-keyword-alias! :doc '(1 xdoc))
 
-(defmacro save (dir &key
-                    (type ':fancy)
-                    (import 't)
-                    ;; Classic options (ignored for type :fancy)
-                    (index-pkg 'acl2::foo)
-                    (expand-level '1))
-  `(progn
-     (include-book
-      "xdoc/defxdoc-raw" :dir :system :ttags :all)
-     (include-book
-      "oslib/mkdir" :dir :system)
-     (include-book
-      ,(if (eq type :fancy)
-           "xdoc/save-fancy"
-         "xdoc/save-classic")
-      :dir :system)
-     ;; ugh, stupid stupid writes-ok stupidity
-     (defttag :xdoc)
-     (remove-untouchable acl2::writes-okp nil)
-     ,@(and import
-            `((include-book
-               "xdoc/topics" :dir :system)
-              (import-acl2doc)))
-     ;; b* should have been included by the above includes
-     (make-event
-      (b* (((mv all-xdoc-topics state) (all-xdoc-topics state))
-           (- (cw "(len all-xdoc-topics): ~x0~%" (len all-xdoc-topics)))
-           ((mv & & state) (assign acl2::writes-okp t))
-           (state
-            ,(if (eq type :fancy)
-                 `(save-fancy all-xdoc-topics ,dir state)
-               `(save-topics all-xdoc-topics ,dir ',index-pkg ',expand-level state))))
-        (value '(value-triple :invisible))))))
-
 (defmacro xdoc-extend (name long)
   ;; Extend an existing xdoc topic with more content.  Long is an xdoc
   ;; format string, e.g., "<p>blah blah @(def blah) blah.</p>" that will

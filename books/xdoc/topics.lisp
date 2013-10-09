@@ -34,26 +34,25 @@ access documentation about ACL2 and its books, to document your own books, and
 to create custom web-based manuals.  It is intended as a replacement for ACL2
 facilities like @(see defdoc), @(':doc'), and so on."
 
-  :long "<h3>Getting Documentation</h3>
+  :long "<h3>Getting the Documentation</h3>
 
 <p>Most of the documentation below is about using XDOC to document your own
-@(see acl2::books) and create manuals.  If you just want to browse the
-documentation, you probably don't need to read any of this!  Instead, see
-either:</p>
+@(see acl2::books).  If you just want to browse the documentation, you probably
+don't need to read any of this!  Instead, see either:</p>
 
 <ul>
 
-<li><b>Online version.</b> If you expect to have an internet connection while
-using the documentation, you may be happy with the <a
+<li><b>The online version.</b> If you expect to have an internet connection
+while using the documentation, you may be happy with the <a
 href='http://fv.centtech.com/acl2/latest/doc/'>online XDOC manual</a> hosted by
 <a href='http://www.centtech.com/'>Centaur Technology</a>.  This version covers
 the latest released version of ACL2 and the corresponding version of the <a
 href='http://code.google.com/p/acl2-books/'>ACL2 Community Books</a>.</li>
 
-<li><b>Local version.</b> If you sometimes work without an internet connection,
-or are using development snapshots of ACL2 and need up-to-date documentation,
-you can build a local version of the documentation.  You first need to build
-ACL2(h), then certify the @('centaur/doc') book as follows:
+<li><b>A local version.</b> If you sometimes work without an internet
+connection, or are using development snapshots of ACL2 and need up-to-date
+documentation, you can build a local version of the documentation.  You first
+need to build ACL2(h), then certify the @('centaur/doc') book as follows:
 
 @({
   cd acl2-sources/books
@@ -66,7 +65,21 @@ After this is built, the manual should be available at:
 
 </ul>
 
+
 <h3>Documenting your Books</h3>
+
+<box><p><b><color rgb='#ff0000'>NEW</color></b> (experimental): When writing
+documentation, you can now optionally have XDOC topics automatically displayed
+as you submit new @(see defxdoc) forms&mdash;just add:</p>
+
+@({
+ (include-book \"xdoc/debug\" :dir :system)
+})
+
+<p>to your @(see acl2::acl2-customization) file, or include it while you are
+developing your book.  Afterward, each @(see defxdoc) form you submit will be
+immediately shown at the terminal, giving you a quick, text-mode preview that
+may help you to diagnose any markup problems.</p></box>
 
 <p>To use XDOC to document your own books, the first step is:</p>
 
@@ -74,38 +87,27 @@ After this is built, the manual should be available at:
  (include-book \"xdoc/top\" :dir :system)
 })
 
-<p>This book loads very quickly, requires no ttags, and provides a (nearly)
-complete interface to the XDOC system, including:</p>
+<p>This book loads very quickly and requires no ttags, and gives you:</p>
 
 <ul>
 
-<li>@(see defxdoc) and @(see defsection), which are the basic commands for
-adding documentation &mdash; the XDOC alternatives to ACL2's @(see defdoc)
+<li>@(see defxdoc) and @(see defsection), the basic commands for adding
+documentation &mdash; these are the XDOC alternatives to ACL2's @(see defdoc)
 command.</li>
 
-<li>The @(see save) command, which can be used to create web-based manuals for
-your libraries.</li>
+<li>A new @(':doc') command.  The book installs a new <see topic='@(url
+ld-keyword-aliases)'>LD keyword alias</see> so that you (and your users) can
+see both ordinary ACL2 documentation and XDOC documentation from the terminal
+by just using @(':doc'), without thinking about which documentation system was
+used to document which topic.</li>
 
 </ul>
 
-<p>The @('xdoc/top') book hijacks the @(':doc') command by installing a new
-<see topic='@(url ld-keyword-aliases)'>LD keyword alias</see>.  This way,
-you (and your users) can see both ordinary ACL2 documentation and XDOC
-documentation from the terminal by just using @(':doc'), without having to know
-which documentation system was used to document which topic.</p>
-
-<box><p><b><color rgb='#ff0000'>NEW</color></b> (experimental): When writing
-documentation, you can now automatically have XDOC topics displayed as you
-submit new @(see defxdoc) forms&mdash;just add:</p>
-
-@({
- (include-book \"xdoc/debug\" :dir :system)
-})
-
-<p>to your @(see acl2::acl2-customization) file, or include it while you are
-developing your book.  Afterward, whenever you submit each @(see defxdoc) form,
-it will automatically be displayed in the terminal, showing you any markup
-problems and giving you a quick, text-mode preview.</p></box>")
+<p>Once you have documented your books, you may wish to create a manual that
+can be viewed from a web browser.  You can do this quite easily with XDOC's
+@(see save) command.  This command can be embedded in an ordinary ACL2 book, so
+that your manual is automatically regenerated when you build your
+project.</p>")
 
 (local (set-default-parents xdoc))
 
@@ -251,9 +253,8 @@ e') for sending s-expressions to the @('*shell*') window.</p>
 
 <h3>Hyperlinks</h3>
 
-<p><i>Internal links</i> between documentation topics and <i>Emacs
-tags-search links</i> into the source code are handled by the @(see
-preprocessor).</p>
+<p><i>Internal links</i> between documentation topics and <i>Emacs tags-search
+links</i> into the source code are handled by the @(see preprocessor).</p>
 
 <p>You can add <i>external links</i> to web pages with ordinary HTML-style
 links, e.g.,</p>
@@ -371,8 +372,8 @@ etc.</p>
 
 <h3>Adding Examples or Code Fragments</h3>
 
-<p>There's a special syntax to put in \"raw\" text.  This is especially
-useful for examples and code fragments.</p>
+<p>There's a special syntax to put in \"raw\" text.  This is especially useful
+for examples and code fragments.</p>
 
 <ul>
 <li><tt>@@('...')</tt> inserts @('...') into @('<tt>') tags.</li>
@@ -458,43 +459,301 @@ need to be escaped.</p>")
 (defxdoc save
   :short "Saves the XDOC database into files for web browsers, etc."
 
-  :long "<p>Once you have documented your library with @(see defxdoc), you may
+  :long "<p>Once you have documented your books with @(see defxdoc), you may
 wish to create a manual that can be viewed from a web browser.</p>
 
-<h3>Saving a Manual</h3>
-
-<p>The @('xdoc::save') command allows you to export all currently-loaded
-documented topics from ACL2.  Here's a basic example:</p>
+<h4>Basic Example</h4>
 
 @({
- ;; get documentation loaded
- (include-book \"my-library1\")
- (include-book \"my-library2\")
- ;; save the manual
- (xdoc::save \"/home/jared/mylib-manual\")
+ ;; my-manual.lisp - a book that creates a manual
+ (in-package \"MYPKG\")
+
+ (include-book \"my-library1\") ;; load books I want in the manual
+ (include-book \"my-library2\") ;; (documented with xdoc)
+
+ (include-book \"xdoc/save\" :dir :system)  ;; load xdoc::save
+
+ (defxdoc acl2::top           ;; create a \"top\" topic
+   :short \"My Manual\"
+   :long \"<p>This manual explains how to use my books...</p>\")
+
+ (xdoc::save \"./mylib-manual\")  ;; write the manual
 })
 
-<p>The only required argument is the name of a directory where the
-documentation should be saved.  If the directory does not exist, it will be
-created.  If there are files in the directory, they <color rgb=\"#ff0000\">may
-be overwritten</color>.</p>
-
-<h3>Types of Manuals</h3>
-
-<p>XDOC can actually generate two kinds of manuals.</p>
+<p>Notes about this example:</p>
 
 <ul>
-<li>By default, a @(see fancy-manual) is produced.</li>
 
-<li>Alternately, you can create a @(see classic-manual) by using
-@(':type :classic') in your save command.</li> </ul>")
+<li>The @('xdoc::save') command will export all currently-loaded, documented
+topics.  Because of this, you can mostly control what goes into the manual
+<b>just by including books</b>, but see below for additional notes about how to
+control what goes in a manual.</li>
+
+<li>The @('save') command is a macro that expands into @(see
+acl2::embedded-event-form)s.  Typically, you just put it into a new book (e.g.,
+@('my-manual.lisp') above) so that your manual will be regenerated as part of
+building your project.</li>
+
+<li>The @('save') requires certain <see topic='@(url defttag)'>trust
+tags</see>.  You may need to enable trust tags in your build system to certify
+the @('my-manual') book.  For instance, @('cert.pl') users may need a
+@('.acl2') file with a line such as:
+
+@({
+    ; cert-flags: ? t :ttags :all
+})</li>
+
+<li>After saving a manual, you should be able to view it by going to, e.g.,
+@('mylib-manual/index.html') in your web browser.  If you want to share your
+manual with others, you should read about @(see deploying-manuals).</li>
+
+</ul>
+
+
+<h4>General Form</h4>
+
+@({
+    (save <target-dir>
+          [:type      type]      ;; default is :fancy
+          [:import    import]    ;; default is t
+          <classic-options>)
+})
+
+<p>The only (required) argument to the @('save') command is the name of a
+directory where the want the manual to go.  As might be expected:</p>
+
+<ul>
+
+<li>If the target directory does not exist, it will be created.</li>
+
+<li>Any existing files in the target directory <color rgb=\"#ff0000\">may be
+overwritten</color>.</li>
+
+</ul>
+
+<p>XDOC can generate two kinds of manuals.  By default, it generates a
+so-called <i>fancy</i> manual, with a rich JavaScript interface that has, e.g.,
+jump-to and search capabilities.  Alternately you can generate a much more
+plain @(see classic-manual) by using @(':type :classic'), but we may move to
+deprecate classic manuals in the future.</p>
+
+
+<h3>Avoiding Unwanted Documentation</h3>
+
+<p>By default, the @('save') command will automatically import:</p>
+<ul>
+<li>the documentation for the ACL2 theorem prover</li>
+<li>any @(see defdoc) style documentation from books you have loaded</li>
+<li>the documentation for @('xdoc') itself.</li>
+</ul>
+
+<p>You can turn off <b>most</b> of this by setting @(':import nil') in your
+@('save') command.</p>
+
+<p>However, you may find that even after setting @(':import nil'), some
+extraneous documentation is still being included!  For instance, you may find
+documentation from libraries like @(see str) and @(see oslib) in your
+output.</p>
+
+<p>This is because @('xdoc/save') includes some supporting books that are,
+themselves, documented.  If you really want precise control over what goes into
+your manual, then, you may want to do something like this:</p>
+
+@({
+ ;; nothing-extra-manual.lisp - manual with nothing extra
+ (in-package \"MYPKG\")
+
+ (include-book \"my-library1\") ;; load books I want in the manual
+ (include-book \"my-library2\") ;; (documented with xdoc)
+
+ (make-event ;; save current documentation
+  `(defconst *just-my-documentation*
+     ',(xdoc::get-xdoc-table (w state))))
+
+ (include-book \"xdoc/save\" :dir :system)
+
+ ;; clobber any docs that were added due to xdoc/save
+ (table xdoc::xdoc 'xdoc::doc *just-my-documentation*)
+
+ (defxdoc acl2::top           ;; create a \"top\" topic
+   :short \"My Manual\"
+   :long \"<p>This manual explains how to use my books...</p>\")
+
+ (xdoc::save \"./mylib-manual\" :import nil)
+})")
+
+
+(defxdoc deploying-manuals
+  :parents (save)
+  :short "How to distribute XDOC manuals for other people to use."
+
+  :long "<p>After you have documented your books with XDOC and created a
+manual, you may wish to share your manual with coworkers, collaborators,
+customers, sponsors, etc.  The best way to do this may depend on many
+factors.</p>
+
+<p>By default, the manuals created by @(see save) use only client-side
+JavaScript code.  This makes deployment very easy: you can just copy the files
+to wherever you like, and you don't even need a web server.</p>
+
+<p>This approach&mdash;just copying the default manual&mdash;is well-suited
+for:</p>
+
+<ul>
+<li>Browsing from your local hard-drive, or</li>
+<li>Browsing from a fast NFS drive or intranet server</li>
+</ul>
+
+<p>But the default manuals will <b>perform badly on slow connections</b>.  So,
+if your users are going to read the manual over, e.g., VPNs or public web
+sites, then you may wish to read on.</p>
+
+
+<h3>Server-Supported Manuals</h3>
+
+<p>The basic reason that the default manuals are slow is that they work by
+simply loading the data for <b>every</b> topic, at startup.  As of October
+2013, this comes to around 25 MB of data for the basic @('centaur/doc.lisp')
+manual.  It's no big deal to load 25 MB from a local hard drive or a fast
+intranet connection, but it can be quite slow over the internet.</p>
+
+<p>The XDOC manuals created by @('save') can be reconfigured to just load the
+@(':long') sections as they are accessed.  This results in a much
+faster-loading manual, and is how, for instance, the <a
+href='http://fv.centtech.com/acl2/latest/doc/'>online XDOC manual</a> at
+Centaur is deployed.</p>
+
+<p>This option requires a small amount of configuration, and you may need to
+coordinate with your network administrator to get certain software
+installed.</p>
+
+<p>If you want to use our scripts directly, you will need a web server that
+supports <a href='http://www.perl.org'>Perl</a> scripts with the CGI, DBI, and
+DBD::SQLite modules installed.  If for some reason this poses a problem, you
+may find that you can easily port these scripts to other popular languages,
+like PHP or Ruby, with SQLite support.</p>
+
+
+<h4>Step 1: Create the Database</h4>
+
+<p>In the manual directory you created with the @(see save) command, you should
+find a Perl script named @('xdata2sql.pl').  When you run this script, you
+should see something like the following output:</p>
+
+@({
+$ cd my-library/manual
+$ perl xdata2sql.pl
+-------------------------------------------------------------------------------
+
+xdata2sql.pl: Convert xdata.js into xdata.db (an sqlite3 database)
+
+   NOTE: Most folks don't need to run this at all!
+         If you just want to:
+          - browse an XDOC manual on your local hard drive, or
+          - share an XDOC manual on your fast intranet
+         then ignore this script and just see index.html.
+
+The main use for this script is to share XDOC manuals on the internet.  In this
+scenario, just having the web browser load in the entire (generally 20+ MB)
+xdata.js file is not very practical, because some users will have slow
+connections and will take too long to load the file.
+
+There are many ways to solve this.  Our approach is to convert xdata.js into an
+sqlite3 database, and then use a server-side script that will allow us to
+access topics only as they are requested.
+
+-------------------------------------------------------------------------------
+
+; Converting xdata.js
+
+; Reading file
+; Checking file
+; Parsing JSON data.
+; Creating new xdata.db.
+; Creating xdoc_data table.
+; Populating xdoc_data table.
+; All done.
+
+To actually use the database, see xdataget.pl.
+})
+
+<p>After this step, you should have a new file named @('xdata.db') in your
+manual directory.  This is an SQLite3 database that has the information for
+your XDOC topics.  It should be roughly as large as @('xdata.js').</p>
+
+<p>If you are missing some required Perl modules, then instead of the above
+output you may see a message such as</p>
+
+@({
+    Can't locate DBI.pm in @INC ...
+})
+
+<p>In this case, you may need to ask your systems administrator to install the
+missing modules.</p>
+
+
+<h4>Step 2: Set up the Web Server</h4>
+
+<p>Once you have create the @('xdata.db') file, you will need to copy both it
+and a different script, @('xdataget.pl'), to some directory in your web
+server.</p>
+
+<p>Typically, for @('xdataget.pl') to work at all, it will need to have its
+executable bit set, and it may need to be in a special directory within your
+web server, typically named @('cgi-bin').</p>
+
+<p>To make sure the script is working, you should now load it in your web
+browser by going to, e.g., @('http://my-server/cgi-bin/xdataget.pl').  If
+everything is working, you should see a page that looks like this:</p>
+
+@({
+     {\"results\":[
+
+     ]}
+})
+
+<p>If, instead, you see a message like <i>Internal Server Error</i>, then you
+may have a permissions problem, or your web server's version of Perl may be
+missing a require library, or something else may be wrong; ask your systems
+administrator for help.</p>
+
+<p>You may also wish to load, e.g.,:</p>
+
+@({
+    http://my-server/cgi-bin/xdataget.pl?keys=ACL2____TOP
+})
+
+<p>and make sure that you can see some text from your top topic.</p>
+
+
+<h4>Step 3: Configure the Manual to use the Server</h4>
+
+<p>The final step is to edit the file @('config.js') in your manual.
+This file contains comments with the example syntax.  Basically you
+just need to change:</p>
+
+@({
+    var XDATAGET = \"\";
+})
+
+<p>To have the right URL for your xdataget.pl script, e.g., into:</p>
+
+@({
+    var XDATAGET = \"http://my-server/cgi-bin/xdataget.pl\";
+})
+
+<p>At this point, your manual should load topic data dynamically as needed.
+The result should be much faster for users on slow connections.</p>")
 
 
 (defxdoc classic-manual
   :parents (save)
-  :short "Structure of a @(':type :classic') manual."
+  :short "Description of @(':type :classic') manuals."
 
-  :long "<p>If you run @(see save) with @(':type :classic'), it will write out
+  :long "<box><p><b>Note</b>: we generally discourage the use of classic
+manuals.  We may deprecate them in the future.</p></box>
+
+<p>If you run @(see save) with @(':type :classic'), it will write out
 a manual in the \"classic\" format.  In this case, the resulting manual
 directory will include:</p>
 
@@ -543,20 +802,6 @@ href=\"http://xml.apache.org/xalan-c/\">Apache Xalan</a> to download.  We have
 accomodated the various versions of Xalan that we know about and use, but we
 welcome modifications to file <tt>support/Makefile-trans</tt> if you wish to
 use a version we do not currently support.</p>")
-
-
-(defxdoc fancy-manual
-  :parents (save)
-  :short "Structure of a @(':type :fancy') manual."
-
-  :long "<p>By default, @(see save) will create a manual in the new, \"fancy\"
-format, which extensively uses JavaScript to provide rich documentation with
-dynamic navigation, quick jump-to links, and so forth.</p>
-
-<p>In many ways, a fancy manual is simpler than a @(see classic-manual).
-Instead of generating thousands of files ahead of time, we basically just write
-the XDOC database out into JSON format and then use JavaScript to do all of the
-layout and organization.</p>")
 
 
 (defxdoc emacs-links
@@ -706,59 +951,6 @@ program, you might need to edit the default file associations of your operating
 system or window manager.</p>")
 
 
-(defxdoc go.xdoc-link
-  :parents (emacs-links)
-  :short "Trivial web service provided by @('fv.centtech.com') for resolving
-@(see emacs-links)."
-
-  :long "<p>Historically, @(see emacs-links) were implemented by writing out a
-separate @('xdoc-link') file for every tags-search that we wanted to support.
-To avoid writing out these thousands of files, we now just implement a simple
-web service at @('fv.centtech.com').</p>
-
-<p>The basic idea is that if you just go to:</p>
-
-@('http://fv.centtech.com/cgi-bin/go.xdoc-link?name=append')
-
-<p>Then it will generate an appropriate @('.xdoc-link') file that is flagged
-with the right mime-type.</p>
-
-<p>If you prefer to use your own web server, you can recreate this service by
-putting the following, trivial script into your cgi-bin:</p>
-
-@({
-    #!/usr/bin/perl
-
-    use warnings;
-    use strict;
-    use CGI qw(:standard);
-
-    my $name = param(\"name\") || \"APPEND\";
-
-    $| = 1;
-
-    print <<END;
-    Content-Type: application/x-acl2-xdoc-link .xdoc-link
-
-    ; This is an XDOC Link file.
-    ; Ordinarily, you should not see this file.
-    ;
-    ; If you are viewing this file in a web browser, you probably
-    ; have not configured your web browser to send .xdoc-link files
-    ; to Emacs.
-    ;
-    ; If you are viewing this file in Emacs, you probably have not
-    ; loaded xdoc.el from the xdoc/ directory.
-    ;
-    ; Please see the XDOC manual for more information.
-
-    $name
-
-    END
-})")
-
-
-
 (defxdoc extract-keyword-from-args
   :parents (defsection) ; bozo hrmn, where should this go, really?
   :short "Get the value for a keyword argument like @(':foo value')."
@@ -804,21 +996,9 @@ with keyword arguments.  See also @(see extract-keyword-from-args).</p>
 
 
 (defxdoc defsection
-  :short "Fancy @('(encapsulate nil ...)') with a name and @(see xdoc)
-support."
+  :short "Fancy @('(encapsulate nil ...)') with a name and @(see xdoc) support."
 
-  :long "<p>The main reasons to use @('defsection') instead of @('(encapsulate
-nil ...)')</p>
-
-<ul>
- <li>It is easier to identify in the @(':pbt') history,</li>
- <li>It indents more nicely than @('encapsulate') in a vanilla emacs,</li>
- <li>It settles the question of where to put the @(see defxdoc) command, and</li>
- <li>It can automatically add the definitions/theorems you supply into the
-     documentation for your section.</li>
-</ul>
-
-<p>General form:</p>
+  :long "<h4>General Form</h4>
 
 @({
  (defsection name
@@ -830,7 +1010,7 @@ nil ...)')</p>
     ... events ...)
 })
 
-<p>Example:</p>
+<h4>Example</h4>
 
 @({
  (defsection foo
@@ -844,8 +1024,34 @@ nil ...)')</p>
    (defthm foo-thm2 ...))
 })
 
-<box><p>Note: this example might be better written as a @(see cutil::define),
-which is much like a @('defsection') but has additional features.</p></box>
+<p>Note: this particular example might be better written as a @(see
+cutil::define), which is much like a @('defsection') but has additional
+features.</p>
+
+<h3>Overview</h3>
+
+<p>Like an @(see encapsulate), a @('defsection') introduces a new scope for
+@(see local) events.  This is often useful when you are trying to prove a
+theorem that requires some lemmas: by proving the lemmas locally, you can
+prevent them from affecting the rest of your book.</p>
+
+<p>It is often useful to organize books into sections.  There are a few minor
+reasons you might prefer using @('defsection') for this, instead of plain
+@('encapsulate')s.  For instance,</p>
+
+<ul>
+
+<li>It is easier to identify in the @(':pbt') history, and</li>
+
+<li>It indents more nicely than @('encapsulate') in a vanilla emacs.</li>
+
+</ul>
+
+<p>But the main reasons to use @('defsection') are its documentation features.
+The definitions and theorems within a section can be <b>automatically</b>
+included in the documentation page for that section.  This helps to avoid
+copying-and-pasting code into the manual, and keeps it up-to-date as the code
+changes.</p>
 
 
 <h3>Ordinary Sections</h3>
@@ -856,9 +1062,8 @@ defxdoc) command; otherwise no documentation will be generated.</p>
 
 <p>By default, the @(':long') string you give will be automatically extended
 with a \"Definitions and Theorems\" part that lists all the (non-local)
-definitions and theorems introduced in the section.  This makes it easy to keep
-the documentation up-to-date as you add and remove theorems to the section.  In
-the above example, the @(':long') field would be extended with:</p>
+definitions and theorems introduced in the section.  In the above example, the
+@(':long') field would be extended with:</p>
 
 @({
  <h3>Definition and Theorems</h3>
