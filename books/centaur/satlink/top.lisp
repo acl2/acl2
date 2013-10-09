@@ -219,13 +219,14 @@ Street, Suite 500, Boston, MA 02110-1335, USA.</p>")
       env$)
 
   (b* ((len (length line))
-       ((when (zp len))
-        ;; We'll just ignore blank lines
+       ((when (< len 2))
+        ;; We'll ignore blank lines and lines that don't have a "x " at the
+        ;; beginning, where x is "s" or "v".
         (mv nil saw-unsat-p saw-sat-p saw-zero-p env$))
        (char (char line 0))
-       ((when (or (eql char #\c) ;; Comment line
-                  (eql char #\t) ;; Timing line
-                  ))
+       ((unless (and (or (eql char #\s)  ;; Result
+                         (eql char #\v)) ;; Variable assignment
+                     (eql (char line 1) #\Space)))
         ;; Ignore it
         (mv nil saw-unsat-p saw-sat-p saw-zero-p env$))
        ((when (eql char #\s))
@@ -235,14 +236,8 @@ Street, Suite 500, Boston, MA 02110-1335, USA.</p>")
                (mv nil t saw-sat-p saw-zero-p env$))
               (t
                (prog2$
-                (cw "SATLINK: Don't recognize this line: ~s0~%" line)
-                (mv t saw-unsat-p saw-sat-p saw-zero-p env$)))))
-       ((when (str::strprefixp "Solved by" line))
-        ;; Ignore glucose 2.2 feature
-        (mv nil saw-unsat-p saw-sat-p saw-zero-p env$))
-       ((unless (eql char #\v))
-        (cw "SATLINK: Don't recognize this line: ~s0~%" line)
-        (mv t saw-unsat-p saw-sat-p saw-zero-p env$))
+                (cw "SATLINK: Unrecognized result line: ~s0~%" line)
+                (mv nil saw-unsat-p saw-sat-p saw-zero-p env$)))))
        ;; Else it's a variable line
        ((when saw-zero-p)
         (cw "SATLINK: Variable lines after already saw zero: ~s0~%" line)
@@ -294,8 +289,11 @@ Street, Suite 500, Boston, MA 02110-1335, USA.</p>")
         (cw "SATLINK: solver says UNSAT but is giving us variables?")
         (mv :failed env$))
        ((when saw-unsat-p)
-        (mv :unsat env$)))
-    (mv :sat env$)))
+        (mv :unsat env$))
+       ((when saw-sat-p)
+        (mv :sat env$)))
+    ;; Didn't see either sat or unsat.
+    (mv :failed env$)))
 
 
 (define satlink-run-impl
