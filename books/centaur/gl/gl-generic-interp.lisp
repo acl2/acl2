@@ -3178,10 +3178,9 @@
                                            bfr-eval-test-when-true
                                            bfr-eval-when-not-bfr-not
                                            bfr-eval-test-when-false
-                                           glcp-generic-geval-ev-of-gl-force-check-call
-                                           glcp-generic-geval-ev-of-gl-force-check-strong-call
-                                           glcp-generic-geval-ev-of-gl-force-true-call
-                                           glcp-generic-geval-ev-of-gl-force-false-call
+                                           glcp-generic-geval-ev-of-gl-force-check-fn-call
+                                           glcp-generic-geval-ev-of-gl-force-true-fn-call
+                                           glcp-generic-geval-ev-of-gl-force-false-fn-call
                                            glcp-generic-geval-ev-of-equal-call
                                            glcp-generic-geval-ev-of-not-call
                                            car-glcp-generic-geval-list
@@ -3208,10 +3207,9 @@
                                  bfr-eval-test-when-true
                                  bfr-eval-when-not-bfr-not
                                  bfr-eval-test-when-false
-                                 glcp-generic-geval-ev-of-gl-force-check-call
-                                 glcp-generic-geval-ev-of-gl-force-check-strong-call
-                                 glcp-generic-geval-ev-of-gl-force-true-call
-                                 glcp-generic-geval-ev-of-gl-force-false-call
+                                 glcp-generic-geval-ev-of-gl-force-check-fn-call
+                                 glcp-generic-geval-ev-of-gl-force-true-fn-call
+                                 glcp-generic-geval-ev-of-gl-force-false-fn-call
                                  glcp-generic-geval-ev-of-equal-call
                                  glcp-generic-geval-ev-of-not-call
                                  car-glcp-generic-geval-list
