@@ -48831,25 +48831,24 @@ Lisp definition."
             ,(protect-mv
               `(let* ((end-run-time (get-internal-run-time))
                       (end-real-time (get-internal-real-time))
-                      (real-elapsed (/ (- end-real-time ,g-start-real-time)
-                                       internal-time-units-per-second))
-                      (run-elapsed (/ (- end-run-time ,g-start-run-time)
-                                      internal-time-units-per-second))
-                      (real-elapsed-str (format nil "~,2F" real-elapsed))
-                      (run-elapsed-str (format nil "~,2F" run-elapsed))
+
                       #+ccl
                       (allocated (- (ccl::total-bytes-allocated)
-                                    ,g-start-alloc)))
+                                    ,g-start-alloc))
+                      (float-units-sec (float internal-time-units-per-second))
+
+                      (real-elapsed (/ (- end-real-time ,g-start-real-time) float-units-sec))
+                      (run-elapsed (/ (- end-run-time ,g-start-run-time) float-units-sec)))
                  (when
                      (not (or (and ,g-real-mintime
-                                   (< real-elapsed ,g-real-mintime))
+                                   (< real-elapsed (float ,g-real-mintime)))
                               (and ,g-run-mintime
-                                   (< run-elapsed ,g-run-mintime))
+                                   (< run-elapsed (float ,g-run-mintime)))
                               #+ccl
                               (and ,g-minalloc
                                    (< allocated ,g-minalloc))))
-                   (let* ((alist (list* (cons #\t real-elapsed-str)
-                                        (cons #\c run-elapsed-str)
+                   (let* ((alist (list* (cons #\t (format nil "~,2F" real-elapsed))
+                                        (cons #\c (format nil "~,2F" run-elapsed))
                                         (cons #\a
                                               #+ccl
                                               (format nil "~:D" allocated)
