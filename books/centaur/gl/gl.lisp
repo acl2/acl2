@@ -555,8 +555,9 @@ simulation.</p>"
                      (and stable-under-simplificationp
                           '(:in-theory (enable bfr-sat-bdd))))))))
 
-;; Default to BDD mode.
-(gl-bdd-mode)
+;; BDD mode is on by default -- the above defattaches are set up in bfr.lisp
+;; and bfr-sat.lisp, respectively.
+;; (gl-bdd-mode)
 
 (defsection g-int
   :parents (shape-specs)

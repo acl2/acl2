@@ -60,9 +60,8 @@
                            (x prop))))))
 
 
-(acl2::defattach
- (bfr-sat bfr-sat-bdd
-          :hints (("goal" :in-theory '(bfr-sat-bdd-unsat)))))
+(acl2::defattach (bfr-sat bfr-sat-bdd
+                          :hints (("goal" :in-theory '(bfr-sat-bdd-unsat)))))
 
 (in-theory (disable bfr-sat-bdd-unsat bfr-sat-unsat))
 
