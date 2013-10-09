@@ -16169,6 +16169,308 @@
                      "")))
           (t (value nil)))))
 
+(defun symbol-package-name-set (syms acc)
+  (declare (xargs :guard (and (symbol-listp syms)
+                              (true-listp acc))))
+  (cond ((endp syms) acc)
+        (t (symbol-package-name-set
+            (cdr syms)
+            (add-to-set-equal (symbol-package-name (car syms))
+                              acc)))))
+
+(defun names-of-symbols-in-package (syms package acc)
+  (declare (xargs :guard (symbol-listp syms)))
+  (cond ((endp syms) acc)
+        (t (names-of-symbols-in-package
+            (cdr syms)
+            package
+            (if (equal (symbol-package-name (car syms))
+                       package)
+                (cons (symbol-name (car syms)) acc)
+              acc)))))
+
+(defun symbol-list-to-package-alist1 (syms packages acc)
+  (declare (xargs :guard (and (symbol-listp syms)
+                              (true-listp packages)
+                              (alistp acc))))
+  (cond ((endp packages) acc)
+        (t (symbol-list-to-package-alist1
+            syms
+            (cdr packages)
+            (acons (car packages)
+                   (names-of-symbols-in-package syms (car packages) nil)
+                   acc)))))
+
+(defun symbol-list-to-package-alist (syms)
+
+; To verify guards:
+
+; (defthm true-listp-symbol-package-name-set
+;   (equal (true-listp (symbol-package-name-set syms acc))
+;          (true-listp acc)))
+
+  (declare (xargs :guard (symbol-listp syms)))
+  (symbol-list-to-package-alist1 syms
+                                 (symbol-package-name-set syms nil)
+                                 nil))
+
+(defun bookdata-alist1 (full-book-name
+                        collect-p
+                        trips
+                        books consts fns labels macros stobjs theories thms)
+
+; See maybe-write-bookdata.
+
+  (cond
+   ((endp trips)
+    (list :books    books
+          :consts   (symbol-list-to-package-alist consts)
+          :fns      (symbol-list-to-package-alist fns)
+          :labels   (symbol-list-to-package-alist labels)
+          :macros   (symbol-list-to-package-alist macros)
+          :stobjs   (symbol-list-to-package-alist stobjs)
+          :theories (symbol-list-to-package-alist theories)
+          :thms     (symbol-list-to-package-alist thms)))
+   (t
+    (let ((trip (car trips)))
+      (cond
+       ((and (eq (car trip) 'INCLUDE-BOOK-PATH)
+             (eq (cadr trip) 'GLOBAL-VALUE))
+        (bookdata-alist1
+         full-book-name
+         (or (null (cddr trip)) ; for portcullis commands
+             (equal (car (cddr trip))
+                    full-book-name))
+         (cdr trips)
+         (cond ((and collect-p
+                     (cddr trip)
+                     (not (equal (car (cddr trip)) ; full-book-name
+                                 full-book-name)))
+                (cons (car (cddr trip)) ; full-book-name
+                      books))
+               (t books))
+         consts fns labels macros stobjs theories thms))
+       ((not collect-p)
+        (bookdata-alist1
+         full-book-name nil (cdr trips)
+         books consts fns labels macros stobjs theories thms))
+       (t
+        (let ((name (name-introduced trip nil)))
+          (cond
+           (name
+            (case (cadr trip)
+              (FORMALS
+               (bookdata-alist1
+                full-book-name t (cdr trips)
+                books consts
+                (cons name fns)
+                labels macros stobjs theories thms))
+              (THEOREM
+               (bookdata-alist1
+                full-book-name t (cdr trips)
+                books consts
+                fns labels macros stobjs theories
+                (cons name thms)))
+              (CONST
+               (bookdata-alist1
+                full-book-name t (cdr trips)
+                books
+                (cons name consts)
+                fns labels macros stobjs theories thms))
+              (STOBJ
+               (bookdata-alist1
+                full-book-name t (cdr trips)
+                books consts fns labels macros
+                (cons name stobjs)
+                theories thms))
+              (LABEL
+               (bookdata-alist1
+                full-book-name t (cdr trips)
+                books consts fns
+                (cons name labels)
+                macros stobjs theories thms))
+              (THEORY
+               (bookdata-alist1
+                full-book-name t (cdr trips)
+                books consts fns labels macros stobjs
+                (cons name theories)
+                thms))
+              (MACRO-BODY
+               (bookdata-alist1
+                full-book-name t (cdr trips)
+                books consts fns labels
+                (cons name macros)
+                stobjs theories thms))
+              (GLOBAL-VALUE
+
+; Then name-introduced is a full book name, but we extend books
+; above already using include-book-path.
+
+               (assert$
+                (eq (car trip) 'CERTIFICATION-TUPLE)
+                (bookdata-alist1
+                 full-book-name t (cdr trips)
+                 books consts fns labels macros stobjs theories thms)))
+              (otherwise
+               (er hard 'bookdata-alist1
+                   "Unexpected case for the cadr of ~x0"
+                   trip))))
+           (t (bookdata-alist1
+               full-book-name t (cdr trips)
+               books consts fns labels macros stobjs theories thms))))))))))
+
+(defun bookdata-alist (full-book-name wrld)
+  (assert$
+   (null (global-val 'INCLUDE-BOOK-PATH wrld))
+   (let* ((boot-strap-wrld
+           (lookup-world-index 'command
+                               (relative-to-absolute-command-number 0 wrld)
+                               wrld))
+          (boot-strap-len (length boot-strap-wrld))
+          (wrld-len (length wrld))
+          (new-trips (first-n-ac-rev (- wrld-len boot-strap-len) wrld nil)))
+     (bookdata-alist1 full-book-name t new-trips
+                      nil nil nil nil nil nil nil nil))))
+
+(defun maybe-write-bookdata (full-book-name wrld ctx state)
+
+; Let full-book-name be a full book name, say foo.lisp.  Then when state global
+; 'write-bookdata is non-nil, successful certification of full-book-name will
+; cause a file foo__bookdata.out to be written.  That file will be of the form
+; (full-book-name . kwd-values), where kwd-values is a keyword-value-listp that
+; associates keywords with lists as follows.  In each case, only events in the
+; world after including the book are considered, hence not events that are
+; merely local or events events within other books, but including events from
+; the the portcullis (certification world) for foo.lisp.  The keyword :books is
+; associated with the list of full book names of included books.  Each other
+; keyword is associated with an alist that associates each key, a package name,
+; with a list of symbol-names for symbols in that package that are introduced
+; for that keyword, as follows.
+
+; :CONSTS   - constant symbol introduced by defconst
+; :FNS      - function symbol: introduced by defun, defuns, or defchoose;
+;             or constrained
+; :LABELS   - symbol introduced by deflabel
+; :MACROS   - macro name introduced by defmacro
+; :STOBJS   - stobj name introduced by defstobj or defabsstobj
+; :THEORIES - theory name introduced by deftheory
+; :THMS     - theorem name introduced by defthm or defaxiom
+
+  (cond
+   ((null (f-get-global 'write-bookdata state))
+    state)
+   (t (let ((outfile (concatenate
+                      'string
+                      (subseq full-book-name 0 (- (length full-book-name) 5))
+                      "__bookdata.out")))
+        (mv-let
+         (channel state)
+         (open-output-channel outfile :object state)
+         (cond ((null channel)
+                (prog2$ (er hard ctx
+                            "Error in maybe-write-bookdata: Unable to open ~
+                             file ~x0 for output."
+                            outfile)
+                        state))
+               (t (pprogn
+                   (print-object$-ser (cons full-book-name
+                                            (bookdata-alist full-book-name
+                                                            wrld))
+                                      nil ; serialize-character
+                                      channel
+                                      state)
+                   (close-output-channel channel state)))))))))
+
+(defdoc bookdata
+  ":Doc-Section books
+
+  generating data about books~/
+
+  ACL2 provides a primitive capability for writing out a file of data
+  associated with a book.  This information might be useful, for example, in
+  building a database that allows you to search for name conflicts.  If you use
+  this capability and have ideas for enhancing it, please feel free to send
+  them to the ACL2 developers.
+
+  If the book has the name ~c[BK], then the output file is named
+  ~c[BK__bookdata.out].  That file is generated in the same directory as
+  ~c[BK], by certifying ~c[BK] when ~il[state] global ~c['write-bookdata] has a
+  non-~c[nil] value, for example as follows.
+  ~bv[]
+  (assign write-bookdata t)
+  (certify-book \"BK\" ...)
+  ~ev[]
+  The resulting file will contain a single form of the following shape,
+  according to the description that follows below.
+  ~bv[]
+  (\"...BK.lisp\"
+   :BOOKS    book-val
+   :CONSTS   consts-val
+   :FNS      fns-val
+   :LABELS   labels-val
+   :MACROS   macros-val
+   :STOBJS   stobjs-val
+   :THEORIES theories-val
+   :THMS     thms-val)
+  ~ev[]
+
+  The values above are based on ~il[events] introduced by including ~c[BK],
+  but only those that are either from its certification ~il[world]
+  (~pl[portcullis]) or are introduced non-~ilc[local]ly by ~c[BK], not by a
+  book that is included in ~c[BK].  The value ~c[book-val] is a list of full
+  book names (~pl[full-book-name]) of the books included by ~c[BK].  Each other
+  keyword's value is is an association list (alist).  This alist associates
+  each of its keys, a package name, with a list of ~il[symbol-name]s for
+  symbols in that package that are introduced for that keyword.  For example,
+  ~c[fns-val] may be the alist
+  ~bv[]
+  ((\"ACL2\" \"F1\" \"F2\")
+   (\"MY-PKG\" \"G1\" \"G2\"))
+  ~ev[]
+  if the function symbols introduced by the book (not by its included books)
+  are ~c[F1] and ~c[F2] in the ~c[\"ACL2\"] package, and ~c[G1] and ~c[G2] in
+  the ~c[\"MY-PKG\"] package.  We next explain what kinds of symbols are
+  introduced for each keyword.
+  ~bq[]
+
+  o ~c[:CONSTS]~nl[]
+    constant symbol introduced by ~c[defconst]
+
+  o ~c[:FNS]~nl[]
+    function symbol: introduced by ~c[defun], ~c[defuns], or ~c[defchoose]; or
+    constrained (by an ~ilc[encapsulate] event)
+
+  o ~c[:LABELS]~nl[]
+    symbol introduced by ~c[deflabel]
+
+  o ~c[:MACROS]~nl[]
+    macro name introduced by ~c[defmacro]
+
+  o ~c[:STOBJS]~nl[]
+    ~c[stobj] name introduced by ~c[defstobj] or ~c[defabsstobj]
+
+  o ~c[:THEORIES]~nl[]
+    theory name introduced by ~c[deftheory]
+
+  o ~c[:THMS]~nl[]
+    theorem name introduced by ~c[defthm] (perhaps by way of macro calls that
+    expand to calls of ~c[defthm], for example ~pl[defequiv] or ~c[defaxiom]
+  ~eq[]
+
+  Our hope is that people in the ACL2 community will generate and use this data
+  to improve the ACL2 community books (~pl[community-books]).  Here is an
+  example illustrating how to generate bookdata files for those books as a
+  byproduct of a regression run.  Below, we write ~c[{DIR}] as an abbreviation
+  for the ACL2 sources directory, and assume that this command is run from that
+  directory.  Of course, you may wish to use ~c[make] options like ~c[-j 8] and
+  ~c[make] variable settings like ~c[ACL2={DIR}/my-saved_acl2];
+  ~pl[books-certification] for details.
+
+  ~bv[]
+   make regression-fresh \\
+   ACL2_CUSTOMIZATION={DIR}/acl2-customization-files/bookdata.lisp
+  ~ev[]~/~/")
+
 (defun certify-book-fn (user-book-name k compile-flg defaxioms-okp
                                        skip-proofs-okp ttags ttagsx ttagsxp
                                        acl2x write-port pcert state)
@@ -16843,6 +17145,8 @@
 ; processing.
 
                                         (pprogn
+                                         (maybe-write-bookdata
+                                          full-book-name wrld2 ctx state)
                                          (mv-let
                                           (new-bad-fns all-bad-fns)
                                           (cond

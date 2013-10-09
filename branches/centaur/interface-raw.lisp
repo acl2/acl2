@@ -4357,12 +4357,12 @@
                    (t
                     (er hard ctx
                         "Unable to complete load of compiled file for book~|~ ~ ~
-                       ~s0,~|as already noted by a warning.~@1~@2"
+                         ~s0,~|as already noted by a warning.~@1~@2"
                         file see-doc stack-msg)))))
           (reason-msg
            (warning$ ctx "Compiled file"
                      "Unable to load compiled file for book~|  ~s0~|because ~
-                    ~@1.~@2~@3"
+                      ~@1.~@2~@3"
                      file
                      reason-msg
                      see-doc
@@ -4415,7 +4415,11 @@
       ((not cfile)
        (missing-compiled-book ctx
                               file
-                              "that book is not certified"
+                              (if (probe-file (convert-book-name-to-cert-name
+                                               file t))
+                                  "that book is not certified (but note that ~
+                                   its .cert file exists and is not readable)"
+                                "that book is not certified")
                               load-compiled-file
                               state))
       ((and (not ofile-exists)
