@@ -448,6 +448,17 @@
       (mv acc state)))
 
 
+(defun process-tsee-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
+
+; @(tsee foo) is basically <tt>@(see ...)</tt>.
+
+  (b* ((acc            (str::revappend-chars "<tt>" acc))
+       ((mv acc state) (process-see-directive arg base-pkg state acc))
+       (acc            (str::revappend-chars "</tt>" acc)))
+    (mv acc state)))
+
+
+
 ;; (defconst *xdoc-link-file-message*
 ;;   "; This is an XDOC Link file.
 ;; ; Ordinarily, you should not see this file.
@@ -668,6 +679,7 @@
     (url       (process-url-directive     arg state acc))
     (see       (process-see-directive     arg base-pkg state acc))
     (csee      (process-see-cap-directive arg base-pkg state acc))
+    (tsee      (process-tsee-directive    arg base-pkg state acc))
     (sym       (process-sym-directive     arg base-pkg state acc))
     (csym      (process-sym-cap-directive arg base-pkg state acc))
     (otherwise

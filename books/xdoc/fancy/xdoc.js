@@ -161,16 +161,18 @@ function please_wait() {
 // load xindex first, then once it's complete we load xdata.  The format of
 // xindex is described in xdoc_index.js.  The XDATA table is simpler:
 //
-//   xdata:         KEY -> {"pnames" : [array of xml encoded nice parent names],
-//                          "from"   : "xml encoded string for topic location",
-//                          "long"   : "xml encoded long topic description"}
+//   xdata:         KEY -> {"pnames"  : [array of xml encoded nice parent names],
+//                          "from"    : "xml encoded string for topic location",
+//                          "basepkg" : "base package name (not encoded)",
+//                          "long"    : "xml encoded long topic description"}
 //
 // Except that we represent each entry with an array, instead of a hash, to
 // save a tiny amount of space.
 
 var XD_PNAMES = 0;
 var XD_FROM = 1;
-var XD_LONG = 2;
+var XD_BASEPKG = 2;
+var XD_LONG = 3;
 
 function key_title(key)
 {
@@ -552,6 +554,8 @@ function dat_expand(dat_id)
             }
         }
     });
+
+    $(".basepkg").powerTip({placement:'sw',smartPlacement: true});
 }
 
 function dat_collapse(dat_id)
@@ -577,15 +581,28 @@ function dat_long_topic(key)
     var from = xdata[key][XD_FROM];
     var fromp = (from == "Unknown")
                    ? ""
-                   : "<p class='from'>" + xdata[key][XD_FROM] + "</p>";
+                   : "<p class='from'>" + from + "</p>";
+
+    var basepkg = htmlEncode(xdata[key][XD_BASEPKG]);
+    var basediv = (basepkg == "ACL2")
+                    ? ""
+                    : "<div class='basepkg' data-powertip='"
+                         + "<p>In links and code snippets here, symbols are "
+                         + "shown relative to the <b>" + basepkg
+	                 + "</b> package.</p><p>You may need <b>" + basepkg
+	                 + "::</b> prefixes to call these functions, etc.</p>'>"
+                         + "<b>" + basepkg + "</b><br/>Package</div>";
+
     var shortp;
     if (key != TOP_KEY) {
+	div.append(basediv);
 	div.append("<h1>" + topic_name(key) + "</h1>" + fromp);
 	shortp = jQuery("<p></p>");
     } else {
 	div.append("<h1><img src='xdoc-logo.png'/></h1>");
 	shortp = jQuery("<p align='center'></p>");
     }
+
     shortp.append(render_html(topic_short(key)));
     div.append(shortp);
     div.append(render_html(xdata[key][XD_LONG]));
@@ -622,6 +639,7 @@ function dat_load_key(key)
         dat_id_table = [];
         dat_load_parents(key);
         $("#data").append(dat_long_topic(key));
+	$(".basepkg").powerTip({placement:'sw',smartPlacement: true});
         $("title").html(key_title(key));
     });
 }
