@@ -626,11 +626,13 @@ function dat_long_topic(key)
     return div;
 }
 
-function dat_load_key(key)
+function dat_load_key(key, scroll_to)
 {
     // BOZO consider doing something to find the key in the navigation
     // hierarchy somewhere, to make the navigation follow along with you?
     var keys = [key];
+    //console.log("dat_load_key " + key + ", scroll to " + scroll_to);
+
     xdata_when_ready(keys,
     function() {
         $("#parents").html("");
@@ -641,8 +643,16 @@ function dat_load_key(key)
         $("#data").append(dat_long_topic(key));
 	$(".basepkg").powerTip({placement:'sw',smartPlacement: true});
         $("title").html(key_title(key));
+	setTimeout("dat_really_scroll_to(" + scroll_to + ")", 10);
     });
 }
+
+function dat_really_scroll_to(top) {
+    //console.log(" -- really scrolling to " + top);
+    $("#right").scrollTop(top);
+}
+
+
 
 
 
@@ -717,6 +727,8 @@ function search_submit() {
     var str = $("#searchbox").val();
     var str_url = encodeURIComponent(str);
     var str_html = "XDOC Search &mdash; " + htmlEncode(str);
+    //console.log("submitting search for " + str);
+    history_save_place();
     window.history.pushState({"search":str}, str_html, "?search=" + str_url);
     search_go(str);
 }
@@ -929,7 +941,9 @@ function onDataLoaded()
 	var str = params["search"];
 	var str_url = encodeURIComponent(str);
 	var str_html = htmlEncode(str);
-	window.history.replaceState({"search":str}, str_html, "?search=" + str_url);
+	//console.log("onDataLoaded: search for " + str + " --> 0");
+	window.history.replaceState({search:str,rtop:0},
+				    str_html, "?search=" + str_url);
 	search_go(str);
     }
 
@@ -939,12 +953,15 @@ function onDataLoaded()
 	    $("#right").html("Illegal topic name, rejecting to prevent XSS attacks.");
 	    return;
 	}
-	window.history.replaceState({"key":key}, key_title(key), "?topic=" + key);
-	dat_load_key(key);
+	//console.log("onDataLoaded: key " + key + " --> 0");
+	window.history.replaceState({key:key,rtop:0},
+				    key_title(key), "?topic=" + key);
+	dat_load_key(key, 0);
     }
 
     window.addEventListener('popstate',
                             function(event) {
+				event.preventDefault();
                                 action_go_back(event.state);
                             });
 }
@@ -997,24 +1014,65 @@ function srclink(key)
     encodeURIComponent(srclink_header + rawname));
 }
 
-function action_go_key(key)
-{
+function action_go_key(key) {
+
+    // Warning: if you change this, check for all uses of replaceState,
+    // pushState, and popState, and update them to match.
+
     if (!xdata_loaded) {
         please_wait();
         return;
     }
-    window.history.pushState({"key":key}, key_title(key), "?topic=" + key);
-    dat_load_key(key);
+
+    //console.log("action_go_key, going to new key " + key + " --> 0");
+    history_save_place();
+    window.history.pushState({key:key,rtop:0}, key_title(key),
+			     "?topic=" + key);
+    dat_load_key(key, 0);
+}
+
+function history_save_place() {
+    var curr_state = history.state;
+    var rtop = $("#right").scrollTop();
+    //console.log("saving place: " + curr_state.key + " --> " + rtop);
+    curr_state.rtop = rtop;
+    window.history.replaceState(curr_state);
 }
 
 function action_go_back(data) {
+
+    // Warning: if you change this, check for all uses of replaceState,
+    // pushState, and popState, and update them to match.
+
+    //console.log("Going back with data = " + data);
+
+    if (!data) {
+	// Browsers may do this when the page is initially loaded,
+	// so ignore this event.
+	// console.log("Empty data, so returning early.");
+	return;
+    }
+
+    //console.log("action_go_back data: search = " + data.search
+    //            + ", key = " + data.key + ", rtop = " + data.rtop);
+
+    // I want to do something like history_save_place() here, so that
+    // the forward button would also remember its place.  But that doesn't
+    // worked.  All solutions to this problem look very complex, e.g.,
+    // see http://stackoverflow.com/questions/14541398.  So, I give up,
+    // no forward-button re-scrolling for you.
+
     if ("search" in data) {
 	var str = data["search"];
 	search_go(str);
     }
-    var key = ("key" in data) ? data["key"] : null;
-    if (key) {
-        dat_load_key(key);
+
+    else if ("key" in data) {
+	var key = data.key;
+	var rtop = data.rtop || 0;
+	if (key) {
+	    dat_load_key(key, rtop);
+	}
     }
 }
 
