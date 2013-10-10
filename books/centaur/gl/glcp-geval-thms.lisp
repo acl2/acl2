@@ -38,6 +38,19 @@
                       (glcp-generic-geval-list x env)))))
 
   (acl2::def-functional-instance
+   glcp-generic-geval-mk-g-number-correct
+   mk-g-number-correct
+   ((generic-geval-ev glcp-generic-geval-ev)
+    (generic-geval-ev-lst glcp-generic-geval-ev-lst)
+    (generic-geval glcp-generic-geval)
+    (generic-geval-list glcp-generic-geval-list))
+   :hints ('(:in-theory (e/d* (glcp-generic-geval-ev-of-fncall-args
+                               glcp-generic-geval-apply-agrees-with-glcp-generic-geval-ev)
+                              (glcp-generic-geval-apply))
+             :expand ((glcp-generic-geval x env)
+                      (glcp-generic-geval-list x env)))))
+
+  (acl2::def-functional-instance
    glcp-generic-geval-cons
    generic-geval-cons
    ((generic-geval-ev glcp-generic-geval-ev)

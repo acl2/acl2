@@ -27,6 +27,7 @@
           shape-spec-obj-in-range
           shape-spec-env-slice
           shape-spec-iff-env-slice
+          acl2::logcons$inline
 
           if gl-cp-hint shape-spec-obj-in-range return-last use-by-hint equal
       acl2::typespec-check implies iff not cons gl-aside gl-ignore gl-error gl-hide
