@@ -1941,7 +1941,7 @@
   (~pl[acl2-built-ins]) as well as topics for notions important to programming
   with ACL2.  If you don't find what you're looking for, see the Index or see
   individual topics that may be more directly appropriate; for example,
-  ~pl[events] for top-level event constructorsr like ~ilc[defun].~/~/")
+  ~pl[events] for top-level event constructors like ~ilc[defun].~/~/")
 
 (deflabel acl2-built-ins
   :doc
@@ -4353,8 +4353,8 @@
   ~ev[]
 
   For efficiency we recommend using the ~c[-equal] equality variant, for
-  example ~ilc[member-equal] or ~ilc[member ... :TEST 'equal], in certain
-  contexts: ~ilc[defmacro], ~ilc[defpkg], ~ilc[defconst], and
+  example ~ilc[member-equal] or ~c[(]~ilc[member]~c[ ... :TEST 'equal)], in
+  certain contexts: ~ilc[defmacro], ~ilc[defpkg], ~ilc[defconst], and
   ~ilc[value-triple] forms.  However, the implementation of equality variants
   has been designed so that when defining a function, one may choose freely in
   a definition an equality variant of primitive ~c[F], to get efficient
@@ -4502,11 +4502,11 @@
 
   ~bq[]
   For efficiency we recommend using the ~c[-equal] equality variant, for
-  example ~ilc[member-equal] or ~ilc[member ... :TEST 'equal], in certain
-  contexts: ~ilc[defmacro], ~ilc[defpkg], ~ilc[defconst], and
+  example ~ilc[member-equal] or ~c[(]~ilc[member]~c[ ... :TEST 'equal)], in
+  certain contexts: ~ilc[defmacro], ~ilc[defpkg], ~ilc[defconst], and
   ~ilc[value-triple] forms.~eq[]
 
-  ACL2 reliies on the underlying Common Lisp for evaluation.  It also processes
+  ACL2 relies on the underlying Common Lisp for evaluation.  It also processes
   events in the ACL2 logic.  In order to guarantee consistency of its logical
   and Common Lisp evaluations, ACL2 uses a ``safe mode'' to avoid ill-guarded
   calls.  In particular, consider the use of ~ilc[mbe] in execution of a call
@@ -6350,7 +6350,7 @@
 
   ":Doc-Section Miscellaneous
 
-  to disallow ~ilc[force]d ~ilc[case-split]s~/
+  to disallow forced case-splits~/
   ~bv[]
   General Form:
   ACL2 !>:disable-forcing   ; disallow forced case splits
@@ -6366,21 +6366,32 @@
   :in-theory (disable (:executable-counterpart force))
   :in-theory (disable (force))
   ~ev[]
-  "
+  The following example shows how this works.  First evaluate these forms.
+  ~bv[]
+  (defstub f1 (x) t)
+  (defstub f2 (x) t)
+  (defaxiom ax (implies (case-split (f2 x)) (f1 x)))
+  (thm (f1 x))
+  ~ev[]
+  You will see the application of the rule, ~c[ax], in the proof of the
+  ~ilc[thm] call above.  However, if you first evaluate ~c[(disable-forcing)],
+  then there will be no application of ~c[ax].  To restore forced case
+  splitting, ~pl[enable-forcing]."
+
   '(in-theory (disable (:executable-counterpart force))))
 
 (defmacro enable-forcing nil
 
   ":Doc-Section Miscellaneous
 
-  to allow ~ilc[force]d ~ilc[case split]s~/
+  to allow forced case splits~/
   ~bv[]
   General Form:
   ACL2 !>:enable-forcing    ; allowed forced case splits
   ~ev[]
-  ~l[force] and ~pl[case-split] for a discussion of ~il[force]d case splits,
-  which are turned back on by this command.  (~l[disable-forcing] for how to
-  turn them off.)~/
+  ~l[force] and ~pl[case-split] for a discussion of forced case splits, which
+  are turned back on by this command.  ~l[disable-forcing] for an example
+  showing how to turn off forced case splits.~/
 
   ~c[Enable-forcing] is actually a macro that ~il[enable]s the executable
   counterpart of the function symbol ~c[force]; ~pl[force].  When you want to
@@ -12878,9 +12889,10 @@
 
   General Form:
   (mutual-recursion def1 ... defn)
+  ~ev[]
   where each ~c[defi] is a call of ~ilc[defun], ~ilc[defund], ~ilc[defun-nx],
   or ~c[defund-nx].
-  ~ev[]
+
   When mutually recursive functions are introduced it is necessary
   to do the termination analysis on the entire clique of definitions.
   Each ~ilc[defun] form specifies its own measure, either with the ~c[:measure]
@@ -48832,14 +48844,14 @@ Lisp definition."
             ,(protect-mv
               `(let* ((end-run-time (get-internal-run-time))
                       (end-real-time (get-internal-real-time))
-
-                      #+ccl
+                      #+ccl ; evaluate before doing computations below:
                       (allocated (- (ccl::total-bytes-allocated)
                                     ,g-start-alloc))
                       (float-units-sec (float internal-time-units-per-second))
-
-                      (real-elapsed (/ (- end-real-time ,g-start-real-time) float-units-sec))
-                      (run-elapsed (/ (- end-run-time ,g-start-run-time) float-units-sec)))
+                      (real-elapsed (/ (- end-real-time ,g-start-real-time)
+                                       float-units-sec))
+                      (run-elapsed (/ (- end-run-time ,g-start-run-time)
+                                      float-units-sec)))
                  (when
                      (not (or (and ,g-real-mintime
                                    (< real-elapsed (float ,g-real-mintime)))

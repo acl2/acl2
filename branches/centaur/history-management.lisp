@@ -10660,7 +10660,7 @@
 ; typically ~bv/~ev and ~bf/~ev for printing to html and the like (but not the
 ; terminal or texinfo).  Thus, :par-off is treated like :par except that there
 ; is no special treatment in the case of consecutive newlines.  Thus :par-off
-; is really treated lke t, except that ln becomes :par in recursive calls when
+; is really treated like t, except that ln becomes :par in recursive calls when
 ; the end of a preformatted environment is encountered.  The argument vp
 ; (verbatim pair) never changes, and is nil when ln is not :par or :par-off.
 ; But vp is a pair (begin-markers . end-markers), for example, (("BV" "BF")
