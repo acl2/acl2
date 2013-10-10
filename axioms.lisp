@@ -1941,7 +1941,7 @@
   (~pl[acl2-built-ins]) as well as topics for notions important to programming
   with ACL2.  If you don't find what you're looking for, see the Index or see
   individual topics that may be more directly appropriate; for example,
-  ~pl[events] for top-level event constructorsr like ~ilc[defun].~/~/")
+  ~pl[events] for top-level event constructors like ~ilc[defun].~/~/")
 
 (deflabel acl2-built-ins
   :doc
@@ -4506,7 +4506,7 @@
   contexts: ~ilc[defmacro], ~ilc[defpkg], ~ilc[defconst], and
   ~ilc[value-triple] forms.~eq[]
 
-  ACL2 reliies on the underlying Common Lisp for evaluation.  It also processes
+  ACL2 relies on the underlying Common Lisp for evaluation.  It also processes
   events in the ACL2 logic.  In order to guarantee consistency of its logical
   and Common Lisp evaluations, ACL2 uses a ``safe mode'' to avoid ill-guarded
   calls.  In particular, consider the use of ~ilc[mbe] in execution of a call
@@ -12878,9 +12878,10 @@
 
   General Form:
   (mutual-recursion def1 ... defn)
+  ~ev[]
   where each ~c[defi] is a call of ~ilc[defun], ~ilc[defund], ~ilc[defun-nx],
   or ~c[defund-nx].
-  ~ev[]
+
   When mutually recursive functions are introduced it is necessary
   to do the termination analysis on the entire clique of definitions.
   Each ~ilc[defun] form specifies its own measure, either with the ~c[:measure]
@@ -48832,25 +48833,24 @@ Lisp definition."
             ,(protect-mv
               `(let* ((end-run-time (get-internal-run-time))
                       (end-real-time (get-internal-real-time))
-                      (real-elapsed (/ (- end-real-time ,g-start-real-time)
-                                       internal-time-units-per-second))
-                      (run-elapsed (/ (- end-run-time ,g-start-run-time)
-                                      internal-time-units-per-second))
-                      (real-elapsed-str (format nil "~,2F" real-elapsed))
-                      (run-elapsed-str (format nil "~,2F" run-elapsed))
-                      #+ccl
+                      #+ccl ; evaluate before doing computations below:
                       (allocated (- (ccl::total-bytes-allocated)
-                                    ,g-start-alloc)))
+                                    ,g-start-alloc))
+                      (float-units-sec (float internal-time-units-per-second))
+                      (real-elapsed (/ (- end-real-time ,g-start-real-time)
+                                       float-units-sec))
+                      (run-elapsed (/ (- end-run-time ,g-start-run-time)
+                                      float-units-sec)))
                  (when
                      (not (or (and ,g-real-mintime
-                                   (< real-elapsed ,g-real-mintime))
+                                   (< real-elapsed (float ,g-real-mintime)))
                               (and ,g-run-mintime
-                                   (< run-elapsed ,g-run-mintime))
+                                   (< run-elapsed (float ,g-run-mintime)))
                               #+ccl
                               (and ,g-minalloc
                                    (< allocated ,g-minalloc))))
-                   (let* ((alist (list* (cons #\t real-elapsed-str)
-                                        (cons #\c run-elapsed-str)
+                   (let* ((alist (list* (cons #\t (format nil "~,2F" real-elapsed))
+                                        (cons #\c (format nil "~,2F" run-elapsed))
                                         (cons #\a
                                               #+ccl
                                               (format nil "~:D" allocated)
