@@ -144,8 +144,9 @@ h1 { margin-bottom: 0; }
 body          { background-color: white;}
 #data_wrapper { background-color: #ffffff; }
 
-h1,h2    {  color: #A64300; }
-h3,h4,h5 {  color: #FF6700; }
+h1, h2, h1 .tt, h2 .tt  {  color: #A64300; }
+h3, h4, h5, h3 .tt, h4 .tt, h5 .tt {  color: #FF6700; }
+
 
 .box          { border-color: black; }
 #data_wrapper { border-color: #034569; }
