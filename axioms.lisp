@@ -4353,8 +4353,8 @@
   ~ev[]
 
   For efficiency we recommend using the ~c[-equal] equality variant, for
-  example ~ilc[member-equal] or ~ilc[member ... :TEST 'equal], in certain
-  contexts: ~ilc[defmacro], ~ilc[defpkg], ~ilc[defconst], and
+  example ~ilc[member-equal] or ~c[(]~ilc[member]~c[ ... :TEST 'equal)], in
+  certain contexts: ~ilc[defmacro], ~ilc[defpkg], ~ilc[defconst], and
   ~ilc[value-triple] forms.  However, the implementation of equality variants
   has been designed so that when defining a function, one may choose freely in
   a definition an equality variant of primitive ~c[F], to get efficient
@@ -4502,8 +4502,8 @@
 
   ~bq[]
   For efficiency we recommend using the ~c[-equal] equality variant, for
-  example ~ilc[member-equal] or ~ilc[member ... :TEST 'equal], in certain
-  contexts: ~ilc[defmacro], ~ilc[defpkg], ~ilc[defconst], and
+  example ~ilc[member-equal] or ~c[(]~ilc[member]~c[ ... :TEST 'equal)], in
+  certain contexts: ~ilc[defmacro], ~ilc[defpkg], ~ilc[defconst], and
   ~ilc[value-triple] forms.~eq[]
 
   ACL2 relies on the underlying Common Lisp for evaluation.  It also processes
@@ -6350,7 +6350,7 @@
 
   ":Doc-Section Miscellaneous
 
-  to disallow ~ilc[force]d ~ilc[case-split]s~/
+  to disallow forced case-splits~/
   ~bv[]
   General Form:
   ACL2 !>:disable-forcing   ; disallow forced case splits
@@ -6366,21 +6366,32 @@
   :in-theory (disable (:executable-counterpart force))
   :in-theory (disable (force))
   ~ev[]
-  "
+  The following example shows how this works.  First evaluate these forms.
+  ~bv[]
+  (defstub f1 (x) t)
+  (defstub f2 (x) t)
+  (defaxiom ax (implies (case-split (f2 x)) (f1 x)))
+  (thm (f1 x))
+  ~ev[]
+  You will see the application of the rule, ~c[ax], in the proof of the
+  ~ilc[thm] call above.  However, if you first evaluate ~c[(disable-forcing)],
+  then there will be no application of ~c[ax].  To restore forced case
+  splitting, ~pl[enable-forcing]."
+
   '(in-theory (disable (:executable-counterpart force))))
 
 (defmacro enable-forcing nil
 
   ":Doc-Section Miscellaneous
 
-  to allow ~ilc[force]d ~ilc[case split]s~/
+  to allow forced case splits~/
   ~bv[]
   General Form:
   ACL2 !>:enable-forcing    ; allowed forced case splits
   ~ev[]
-  ~l[force] and ~pl[case-split] for a discussion of ~il[force]d case splits,
-  which are turned back on by this command.  (~l[disable-forcing] for how to
-  turn them off.)~/
+  ~l[force] and ~pl[case-split] for a discussion of forced case splits, which
+  are turned back on by this command.  ~l[disable-forcing] for an example
+  showing how to turn off forced case splits.~/
 
   ~c[Enable-forcing] is actually a macro that ~il[enable]s the executable
   counterpart of the function symbol ~c[force]; ~pl[force].  When you want to

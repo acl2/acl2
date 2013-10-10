@@ -21362,6 +21362,9 @@
 ; Fixed a bug in save-gprof.lsp, reported by Camm Maguire (who might be the
 ; first person to use this in many years).
 
+; Incorporated fix to time$ from Jared Davis and Sol Swords, to speed up time$
+; in (especially) the case that printing is not done.
+
   :doc
   ":Doc-Section release-notes
 
