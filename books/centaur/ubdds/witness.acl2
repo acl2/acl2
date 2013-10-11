@@ -21,4 +21,4 @@
 (in-package "ACL2")
 (ld "tools/flag-package.lsp" :dir :system)
 ; cert-flags: ? t :ttags :all
-(certify-book "witness" ? t :ttags :all)
+

@@ -1,4 +1,4 @@
 (in-package "ACL2")
-(include-book "finite-set-theory/osets/portcullis" :dir :system)
+(include-book "std/osets/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all
-(certify-book "hons-alphorder-merge" ? t :ttags :all)
+

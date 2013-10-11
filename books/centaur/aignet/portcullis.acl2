@@ -19,4 +19,4 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (ld "package.lsp")
-(certify-book "portcullis" ? t)
+; cert-flags: ? t
