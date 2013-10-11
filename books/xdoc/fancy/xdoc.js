@@ -1036,7 +1036,7 @@ function history_save_place() {
     var rtop = $("#right").scrollTop();
     //console.log("saving place: " + curr_state.key + " --> " + rtop);
     curr_state.rtop = rtop;
-    window.history.replaceState(curr_state);
+    window.history.replaceState(curr_state, "");
 }
 
 function action_go_back(data) {
