@@ -20,4 +20,3 @@
 
 (in-package "ACL2")
 ; cert-flags: ? t :ttags :all
-(certify-book "unsound-read" ? t :ttags :all)

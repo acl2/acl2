@@ -18,130 +18,97 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
-(include-book "bstar")
+(in-package "STD")
+(include-book "xdoc/top" :dir :system)
+(include-book "tools/bstar" :dir :system)
+(local (include-book "str/explode-atom" :dir :system))
+(local (include-book "../typed-lists/symbol-listp"))
 
+(defxdoc defconsts
+  :parents (std/util defconst)
+  :short "An enhanced variant of @(see defconst) that lets you use @(see state)
+and other @(see stobj)s, and directly supports calling @(see mv)-returning
+functions to define multiple constants."
 
-(defdoc defconsts
-  ":Doc-Section defconst
-Define multiple constants~/
+  :long "<p>Examples:</p>
 
-Examples:
-~bv[]
- (include-book \"tools/defconsts\" :dir :system)
+@({
+ (include-book \"std/util/defconsts\" :dir :system)
 
  (defconsts *foo* 1)
  (defconsts (*foo*) 1)
  (defconsts (*foo* *bar*) (mv 1 2))
  (defconsts (*foo* *bar* &) (mv 1 2 3))
 
+ (defconsts (& *shell* state) (getenv$ \"SHELL\" state))
+
  (defconsts (*hundred* state)
    (mv-let (col state)
            (fmt \"Hello, world!\" nil *standard-co* state nil)
            (declare (ignore col))
            (mv 100 state)))
-~ev[]
+})
 
-General form:
-~bv[]
- (defconsts consts body)
-~ev[]
+<p>General form:</p>
+@({
+ (defconsts names body)
+})
 
-where ~c[consts] is a single symbol or a list of N symbols, and body is a form
-that returns N values.
+<p>where @('names') may be a single symbol or a list of @('n') symbols, and
+body is a form that returns @('n') values.</p>
 
-Each symbol in ~c[consts] should either be:
-  - A \"starred\" name like ~c[*foo*],
-  - A non-starred name which names a stobj (e.g., ~c[state]), or
-  - ~c[&], which means \"skip this return value.\"
+<p>Each symbol in @('names') should either be:</p>
 
-We introduce a ~c[defconst] form that binds each starred name to the
-corresponding value returned by ~c[body].~/
+<ul>
+<li>A \"starred\" name like @('*foo*'),</li>
+<li>The name of a stobj (e.g., @(see state)), or</li>
+<li>The symbol @('&'), which means \"ignore this return value.\"</li>
+</ul>
 
-Because these bindings are introduced with a ~ilc[make-event], ~c[defconsts]
-acts more like ~c[defconst-fast] than ~c[defconst].  This has certain
-performance implications, e.g., the expansion of these constants will be stored
-in the certificate file instead of being recomputed.~/")
+<p>We introduce a @(see defconst) form that binds each starred name to the
+corresponding value returned by @('body').</p>
 
+<h3>Defconst versus Defconsts</h3>
 
-(local (defthm true-listp-when-symbol-listp
-         (implies (symbol-listp x)
-                  (true-listp x))))
+<p><color rgb='#ff0000'><b>NOTE</b></color>: @('defconsts') differs from @(see
+defconst) in an important way.  When you use these forms in a book:</p>
 
-(local (defthm len-of-revappend
-         (equal (len (revappend x y))
-                (+ (len x) (len y)))))
+<ul>
 
-(local (defthm symbolp-of-car-when-symbol-listp
-         (implies (symbol-listp x)
-                  (symbolp (car x)))))
+<li>Results from @('defconsts') are <b>stored in the @(see
+acl2::certificate)</b>, while</li>
 
-(local (defthm symbol-listp-of-cdr-when-symbol-listp
-         (implies (symbol-listp x)
-                  (symbol-listp (cdr x)))))
+<li>Results from @('defconst') are <b>recomputed at @(see include-book)
+time</b>.</li>
 
-(local (defthm symbol-listp-of-revappend
-         (implies (and (force (symbol-listp x))
-                       (force (symbol-listp y)))
-                  (symbol-listp (revappend x y)))))
+</ul>
 
-(local (defthm symbol-listp-of-remove
-         (implies (force (symbol-listp x))
-                  (symbol-listp (remove a x)))))
+<p>This has some performance implications:</p>
 
-(local (defthm symbol-listp-of-last
-         (implies (force (symbol-listp x))
-                  (symbol-listp (last x)))))
+<ul>
 
-(local (defthm symbol-listp-of-set-difference-eq
-         (implies (force (symbol-listp x))
-                  (symbol-listp (set-difference-eq x y)))))
+<li>Computations that take a long time but produce \"small\" results (e.g.,
+checking the primality of a large number) might best be done as @('defconsts')
+to avoid repeating the computation.</li>
 
-; Bah.  Re-prove character-listp-of-explode-atom here instead of just including
-; unicode/explode-atom, because otherwise acl2's Makefile-generic wouldn't be
-; able to cope with "circular" tools/ and unicode/ dependencies.
+<li>Computations that are fast but produce \"large\" results (e.g.,
+@('(make-list 10000)'), might best be done as @('defconst'), to avoid storing
+this large list in the certificate.</li>
 
-(local (defthm character-listp-of-explode-nonnegative-integer
-         (equal (character-listp (explode-nonnegative-integer n base acc))
-                (character-listp acc))))
+</ul>")
 
-(local (defthm character-listp-of-append
-         (implies (and (character-listp x)
-                       (character-listp y))
-                  (character-listp (append x y)))))
-
-(local (defthm character-listp-of-explode-atom
-         (implies (force (print-base-p base))
-                  (character-listp (explode-atom x base)))
-         :hints(("Goal" :in-theory (disable explode-nonnegative-integer)))))
-
-(local (in-theory (disable explode-atom)))
-
-
-
-(defund defconsts-check-names (x)
-  ;; Same as symbol-listp but causes warnings
+(defun defconsts-check-names (x)
+  ;; Same as symbol-listp but causes errors
   (declare (xargs :guard t))
-  (if (atom x)
-      (or (not x)
-          (er hard? 'defconsts-check-names "Names are not a true-listp."))
-    (and (or (symbolp (car x))
-             (er hard? 'defconsts-check-names
-                 "Not a valid name for defconsts: ~x0.~%" (car x)))
-         (defconsts-check-names (cdr x)))))
-
-(local (defthm symbol-listp-when-defconsts-check-names
-         (implies (defconsts-check-names x)
-                  (symbol-listp x))
-         :hints(("Goal" :in-theory (enable defconsts-check-names)))))
-
-(local (defthm symbolp-when-defconsts-check-names-singleton
-         (implies (defconsts-check-names (list x))
-                  (symbolp x))
-         :hints(("Goal" :in-theory (enable defconsts-check-names)))))
-
-
-
+  (mbe :logic (symbol-listp x)
+       :exec
+       (if (atom x)
+           (or (not x)
+               (er hard? 'defconsts-check-names "Names are not a true-listp."))
+         (and (or (symbolp (car x))
+                  (er hard? 'defconsts-check-names
+                      "Not a valid name for defconsts: ~x0.~%" (car x)))
+              (defconsts-check-names (cdr x))))))
 
 (defund defconsts-const-name-p (x)
   ;; Recognize *foo*
@@ -153,89 +120,94 @@ in the certificate file instead of being recomputed.~/")
          (eql (char name (- nl 1)) #\*))))
 
 (defund defconsts-collect-stobj-names (x)
+  ;; Collect names other than *foo* and &.
   (declare (xargs :guard (symbol-listp x)))
   (cond ((atom x)
          nil)
         ((or (defconsts-const-name-p (car x))
-             (eq (car x) #\&))
+             (eq (car x) '&))
          (defconsts-collect-stobj-names (cdr x)))
         (t
          (cons (car x)
                (defconsts-collect-stobj-names (cdr x))))))
 
-
-(defund defconsts-strip-stars1 (x)
-  ;; *foo* --> foo
-  (declare (xargs :guard (symbolp x)
-                  :guard-hints(("Goal" :in-theory (enable defconsts-const-name-p)))))
-  (if (defconsts-const-name-p x)
-      (let* ((name    (symbol-name x))
-             (nl      (length name))
-             (nostars (subseq name 1 (- nl 1))))
-        (intern-in-package-of-symbol nostars x))
-    x))
-
-(defthm symbolp-of-defconsts-strip-stars1
-  (implies (symbolp x)
-           (symbolp (defconsts-strip-stars1 x)))
-  :hints(("Goal" :in-theory (enable defconsts-strip-stars1))))
-
-
-(defund defconsts-strip-stars (x)
+(defsection defconsts-strip-stars
   ;; (*foo* *bar* baz) --> (foo bar baz)
-  (declare (xargs :guard (symbol-listp x)))
-  (if (atom x)
-      nil
-    (cons (defconsts-strip-stars1 (car x))
-          (defconsts-strip-stars (cdr x)))))
 
-(defthm symbol-listp-of-defconsts-strip-stars
-  (implies (symbol-listp x)
-           (symbol-listp (defconsts-strip-stars x)))
-  :hints(("Goal" :in-theory (enable defconsts-strip-stars))))
+  (defund defconsts-strip-stars1 (x)
+    ;; *foo* --> foo
+    (declare (xargs :guard (symbolp x)
+                    :guard-hints(("Goal" :in-theory (enable defconsts-const-name-p)))))
+    (if (defconsts-const-name-p x)
+        (let* ((name    (symbol-name x))
+               (nl      (length name))
+               (nostars (subseq name 1 (- nl 1))))
+          (intern-in-package-of-symbol nostars x))
+      (and (mbt (symbolp x))
+           x)))
 
-(defthm len-of-defconsts-strip-stars
-  (equal (len (defconsts-strip-stars x))
-         (len x))
-  :hints(("Goal" :in-theory (enable defconsts-strip-stars))))
+  (defund defconsts-strip-stars (x)
+    (declare (xargs :guard (symbol-listp x)))
+    (if (atom x)
+        nil
+      (cons (defconsts-strip-stars1 (car x))
+            (defconsts-strip-stars (cdr x)))))
+
+  (local (in-theory (enable defconsts-strip-stars)))
+  
+  (defthm symbol-listp-of-defconsts-strip-stars
+    (symbol-listp (defconsts-strip-stars x)))
+
+  (defthm len-of-defconsts-strip-stars
+    (equal (len (defconsts-strip-stars x))
+           (len x))))
 
 
-(defund defconsts-make-n-fresh-symbols (n)
-  (declare (xargs :guard (natp n)))
-  (if (zp n)
-      nil
-    (cons (intern-in-package-of-symbol
-           (concatenate 'string "defconsts-ignore-"
-                        (coerce (explode-atom n 10) 'string))
-           'foo)
-          (defconsts-make-n-fresh-symbols (- n 1)))))
+(defsection defconsts-make-n-fresh-symbols
 
-(defthm symbol-listp-of-defconsts-make-n-fresh-symbols
-  (symbol-listp (defconsts-make-n-fresh-symbols n))
-  :hints(("Goal" :in-theory (enable defconsts-make-n-fresh-symbols))))
+  (defund defconsts-make-n-fresh-symbols (n)
+    (declare (xargs :guard (natp n)))
+    (if (zp n)
+        nil
+      (cons (intern-in-package-of-symbol
+             (concatenate 'string "defconsts-ignore-"
+                          (coerce (explode-atom n 10) 'string))
+             'foo)
+            (defconsts-make-n-fresh-symbols (- n 1)))))
 
-(defthm len-of-defconsts-make-n-fresh-symbols
-  (equal (len (defconsts-make-n-fresh-symbols n))
-         (nfix n))
-  :hints(("Goal" :in-theory (enable defconsts-make-n-fresh-symbols))))
+  (local (in-theory (enable defconsts-make-n-fresh-symbols)))
 
-(defund defconsts-replace-amps (x fresh-syms)
-  ;; (*foo* *bar* & & baz) --> (*foo* *bar* fresh-syms3 fresh-syms4 baz)
-  (declare (xargs :guard (and (symbol-listp x)
-                              (symbol-listp fresh-syms)
-                              (= (len fresh-syms) (len x)))))
-  (cond ((atom x)
-         nil)
-        ((eq (car x) '&)
-         (cons (car fresh-syms) (defconsts-replace-amps (cdr x) (cdr fresh-syms))))
-        (t
-         (cons (car x) (defconsts-replace-amps (cdr x) (cdr fresh-syms))))))
+  (defthm symbol-listp-of-defconsts-make-n-fresh-symbols
+    (symbol-listp (defconsts-make-n-fresh-symbols n)))
 
-(defthm symbol-listp-of-defconsts-replace-amps
-  (implies (and (symbol-listp x)
-                (symbol-listp fresh-syms))
-           (symbol-listp (defconsts-replace-amps x fresh-syms)))
-  :hints(("Goal" :in-theory (enable defconsts-replace-amps))))
+  (defthm len-of-defconsts-make-n-fresh-symbols
+    (equal (len (defconsts-make-n-fresh-symbols n))
+           (nfix n))))
+
+
+(defsection defconsts-replace-amps
+  ;; (*foo* *bar* & & baz) --> (*foo* *bar* fresh-syms3 fresh-syms4 baz)  
+
+  (defund defconsts-replace-amps (x fresh-syms)
+    (declare (xargs :guard (and (symbol-listp x)
+                                (symbol-listp fresh-syms)
+                                (= (len fresh-syms) (len x)))))
+    (cond ((atom x)
+           nil)
+          ((eq (car x) '&)
+           (cons (car fresh-syms)
+                 (defconsts-replace-amps (cdr x) (cdr fresh-syms))))
+          (t
+           (cons (car x)
+                 (defconsts-replace-amps (cdr x) (cdr fresh-syms))))))
+
+  (local (in-theory (enable defconsts-replace-amps)))
+
+  (defthm symbol-listp-of-defconsts-replace-amps
+    (implies (and (symbol-listp x)
+                  (symbol-listp fresh-syms))
+             (symbol-listp (defconsts-replace-amps x fresh-syms)))))
+
 
 (defund defconsts-make-defconsts (x)
   ;; (*foo* *bar* & & baz)
@@ -254,8 +226,7 @@ in the certificate file instead of being recomputed.~/")
 
 
 (defund defconsts-fn (consts body)
-  (declare (xargs :guard t
-                  :guard-debug t))
+  (declare (xargs :guard t))
   (b* (;; Goofy thing to allow (defconsts *foo* ...) instead of (defconsts (*foo*) ...)
        (consts (if (atom consts)
                    (list consts)
@@ -291,7 +262,7 @@ in the certificate file instead of being recomputed.~/")
 
        ;; If there are any stobjs, we need to return
        ;;    (mv nil '(progn (defconst ...)) state ... stobjs ...)
-       (stobjs         (defconsts-collect-stobj-names (remove '& consts)))
+       (stobjs         (defconsts-collect-stobj-names consts))
        (stobjs-nostate (remove 'state stobjs))
        (ret            (if stobjs
                            (append (list 'mv nil event 'state)
@@ -434,19 +405,19 @@ in the certificate file instead of being recomputed.~/")
 
 (local
  (encapsulate
-   ()
-   (defconsts *oops*
-     __function__)
+  ()
+  (defconsts *oops*
+    __function__)
 
-   (defconsts (*oops2* state)
-     (mv __function__ state))
+  (defconsts (*oops2* state)
+    (mv __function__ state))
 
-   ;; If you change how summaries work, these won't be right.  But, the point
-   ;; is to make sure with some test here that __function__ is working.  So, if
-   ;; you change summaries, just change these tests to make them work.
-   (defthm f1 (equal *oops* '|(DEFCONSTS *OOPS* ...)|)
-     :rule-classes nil)
-   (defthm f2 (equal *oops2* '|(DEFCONSTS (*OOPS2* ...) ...)|)
-     :rule-classes nil)))
+  ;; If you change how summaries work, these won't be right.  But, the point
+  ;; is to make sure with some test here that __function__ is working.  So, if
+  ;; you change summaries, just change these tests to make them work.
+  (defthm f1 (equal *oops* 'ACL2::|(DEFCONSTS *OOPS* ...)|)
+    :rule-classes nil)
+  (defthm f2 (equal *oops2* 'ACL2::|(DEFCONSTS (*OOPS2* ...) ...)|)
+    :rule-classes nil)))
 
 

@@ -51,6 +51,8 @@
 (include-book "4v-sexpr/top")
 (include-book "aig/top")
 
+(include-book "milawa/doc" :dir :system)
+
 (include-book "aignet/aig-sim")
 (include-book "aignet/copying")
 (include-book "aignet/from-hons-aig-fast")
@@ -114,8 +116,7 @@
 (include-book "regression/common")
 
 (include-book "std/top" :dir :system)
-(include-book "std/lists/resize-list" :dir :system)
-(include-book "std/lists/nth" :dir :system)
+(include-book "std/io/unsound-read" :dir :system)
 
 (include-book "ubdds/lite")
 (include-book "ubdds/param")

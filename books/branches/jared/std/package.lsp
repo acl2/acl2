@@ -54,6 +54,7 @@
                defrule
                defruled
                define
+               defconsts
                xdoc
 ;               defaggregate
 ;               defenum

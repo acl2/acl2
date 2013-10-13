@@ -20,4 +20,3 @@
 
 (in-package "ACL2")
 ; cert-flags: ? t :ttags :all
-(certify-book "serialize-tests2" ? t :ttags :all)

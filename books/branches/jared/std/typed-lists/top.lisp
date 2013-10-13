@@ -31,7 +31,7 @@
 (defsection std/typed-lists
   :parents (std)
   :short "A library about the built-in typed lists, like @(see
-character-listp), @(see nat-listp), string-listp), etc."
+character-listp), @(see nat-listp), @(see string-listp), etc."
 
   :long "<p>The @('std/typed-lists') library provides basic lemmas about
 built-in ACL2 functions.</p>
