@@ -182,7 +182,9 @@ constructing large parts of the BDD that aren't really needed.</p>
 
 (defxdoc aig-constructors
   :parents (aig)
-  :short "Low-level functions for constructing AIGs.")
+  :short "Low-level functions for constructing AIGs."
+  :long "<p>Note that you can enable/disable these together using the <see
+topic='@(url rulesets)'>ruleset</see> @('aig-constructors').</p>")
 
 (defxdoc aig-other
   :parents (aig)

@@ -6,6 +6,8 @@
 (include-book "var-bounds")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "clause-processors/find-matching" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+
 
 (defsection glcp-generic-geval-alist
 

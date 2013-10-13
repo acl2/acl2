@@ -42,6 +42,7 @@
 (include-book "sexpr-loop-debug")
 (include-book "sexpr-rewrites")
 (include-book "sexpr-to-faig")
+(include-book "sexpr-purebool-p")
 (include-book "sexpr-vars")
 (include-book "svarmap")
 

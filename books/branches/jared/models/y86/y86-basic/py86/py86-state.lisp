@@ -917,19 +917,12 @@
 ;;; The following lemmas probably won't be needed once we can traffic in stobjs
 ;;; when doing alist-based reasoning.
 
-(encapsulate
- ()
-
- (local (include-book "arithmetic-5/top" :dir :system))
-
- (local (include-book "rtl/rel8/lib/top" :dir :system))
-
- (defthm logior-<=-expt-2-to-n
+(defthm logior-<=-expt-2-to-n
    (implies (and (natp x) (natp y)
                  (< x (expt 2 n))
                  (< y (expt 2 n)))
             (< (logior x y) (expt 2 n)))
-   :rule-classes :linear))
+   :rule-classes :linear)
 
 (defthm logior-bound-2^32
   (implies (and (natp x)

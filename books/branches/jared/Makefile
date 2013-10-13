@@ -210,14 +210,20 @@
 
 # The xdoc manual is built in centaur/manual/, top page index.html, as
 # a byproduct of building centaur/doc.cert with ACL2(h) using
-# USE_QUICKLISP=1 on the `make' command line.  This has been tested
-# using CCL on Linux, but may work for other OS/Lisp combinations.
-# See also centaur/README.html.  ACL2(h) is required for that build of
-# the xdoc manual, because it is required for some of the books
-# included in centaur/doc.lisp.  You can create a manual for your own
-# books using ACL2 or ACL2(h); see topic SAVE (parent topic XDOC) in
-# the xdoc manual, either in centaur/manual/ or on the web at
-# http://fv.centtech.com/acl2/latest/doc/.
+# USE_QUICKLISP=1 on the `make' command line, for example as follows:
+#   make -j 8 regression-fresh \
+#     USE_QUICKLISP=1 \
+#     ACL2_BOOK_CERTS=centaur/doc.cert \
+#     ACL2=/projects/acl2/devel/ccl-saved_acl2h
+# Note the use of target regression-fresh or regression, rather than
+# regression-everything, which would make additional books as well.
+# This has been tested using CCL on Linux, but may work for other
+# OS/Lisp combinations.  See also centaur/README.html.  ACL2(h) is
+# required for that build of the xdoc manual, because it is required
+# for some of the books included in centaur/doc.lisp.  You can create
+# a manual for your own books using ACL2 or ACL2(h); see topic SAVE
+# (parent topic XDOC) in the xdoc manual, either in centaur/manual/ or
+# on the web at http://fv.centtech.com/acl2/latest/doc/.
 
 # STATUS / TODO LIST / MISSING FEATURES / BOZOS:
 #
@@ -453,7 +459,8 @@ ADDED_BOOKS := \
   workshops/2009/sumners/support/examples.cert \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
-  $(filter rtl/rel7/%, $(OK_CERTS))
+  $(filter rtl/rel7/%, $(OK_CERTS)) \
+  $(filter rtl/rel8/%, $(OK_CERTS))
 
 # The following has taken only a couple of minutes on a decent Linux
 # system in 2013.  However, ACL2 built on GCL 2.6.8 and Mac OS 10.6
@@ -551,8 +558,8 @@ ifeq ($(ACL2_HAS_REALS), )
 # The following dependency is to be ignored in ACL2(r), where the
 # relevant include-book in arithmetic-3/extra/ext.lisp is guarded by
 # #-:non-standard-analysis.
-arithmetic-3/extra/ext.cert: rtl/rel8/arithmetic/top.cert \
-                             rtl/rel8/arithmetic/extra-rules.cert
+arithmetic-3/extra/ext.cert: rtl/rel9/arithmetic/top.cert \
+                             rtl/rel9/arithmetic/extra-rules.cert
 
 endif # ifeq ($(ACL2_HAS_REALS), )
 

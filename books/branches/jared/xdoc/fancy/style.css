@@ -115,6 +115,22 @@ h1 { margin-bottom: 0; }
     padding: 0;
 }
 
+.basepkg {
+    float: right;
+    background-color: #990000;
+    width: 5em;
+    text-align: center;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin: 0;
+    margin-right: -5em;
+    border-color: #ffd0b0;
+    border-width: 3px;
+    border-style: solid;
+    border-radius: 5px;
+    background-color: #ffffff;
+}
+
 
 /* ---------------------------- COLORS -------------------------------- */
 
@@ -128,8 +144,9 @@ h1 { margin-bottom: 0; }
 body          { background-color: white;}
 #data_wrapper { background-color: #ffffff; }
 
-h1,h2    {  color: #A64300; }
-h3,h4,h5 {  color: #FF6700; }
+h1, h2, h1 .tt, h2 .tt  {  color: #A64300; }
+h3, h4, h5, h3 .tt, h4 .tt, h5 .tt {  color: #FF6700; }
+
 
 .box          { border-color: black; }
 #data_wrapper { border-color: #034569; }
@@ -166,7 +183,7 @@ h3,h4,h5 {  color: #FF6700; }
 
 body { font-family: "Georgia", "Bookman Old Style", serif; }
 
-#parents, #toolbar, h1, h2, h3, h4, h5, .sf {
+#parents, #toolbar, .basepkg, h1, h2, h3, h4, h5, .sf {
     font-family: "Geneva", "Verdana", sans-serif;
 }
 

@@ -207,7 +207,8 @@
 ;;
 
 ;needed for the guards to the ts- functions (perhaps prove the needed lemmas in a separate book?) (e.g., loganding the cadar of a type-alistp does such and such)
-(local (include-book "rtl/rel8/support/support/logand" :dir :system)) 
+; (Matt K., 10/2013: Changed rel8 to rel9.)
+(local (include-book "rtl/rel9/support/support/logand" :dir :system)) 
 
 ;Checks that TS represents a non-nil type.
 ;was a macro...

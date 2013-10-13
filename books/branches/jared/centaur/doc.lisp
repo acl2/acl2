@@ -36,17 +36,7 @@
 (include-book "misc/memory-mgmt")
 (value-triple (set-max-mem (* 10 (expt 2 30))))
 
-; [Jared]: I suspect the following comment may be out of date?  But this
-; seems harmless enough anyway...
-;
-;   The following are included automatically by the xdoc::save command below,
-;   but we include them explicitly to support the hons `make' target in the
-;   books/ directory (and hence the regression-hons `make' target in the
-;   acl2-sources directory).
-
-(include-book "xdoc/save-fancy" :dir :system)
-(include-book "xdoc/defxdoc-raw" :dir :system)
-(include-book "xdoc/topics" :dir :system)
+(include-book "xdoc/save" :dir :system)
 
 (include-book "4v-sexpr/top")
 (include-book "aig/top")
@@ -374,8 +364,9 @@ functions.")
 ; have XDOC topics for their parents.  So, get them all loaded and converted
 ; into proper XDOC topics, then move them around where we want them.
 
-
 (local (xdoc::import-acl2doc))
+
+(include-book "xdoc/topics" :dir :system)
 
 #!XDOC
 (defun change-parents-fn (name new-parents all-topics)

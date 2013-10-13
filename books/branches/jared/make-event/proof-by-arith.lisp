@@ -31,7 +31,7 @@
 #||
 (include-book "arithmetic/top-with-meta" :dir :system)
 (include-book "arithmetic-3/top" :dir :system)
-(include-book "rtl/rel8/arithmetic/top" :dir :system)
+(include-book "rtl/rel9/arithmetic/top" :dir :system)
 
 ;; [Jared] trying to remove rtl/rel5
 ;; (include-book "rtl/rel5/arithmetic/top" :dir :system)
@@ -56,7 +56,7 @@
 
   '(("arithmetic/top-with-meta")
     ("arithmetic-3/top")
-    ("rtl/rel8/arithmetic/top")
+    ("rtl/rel9/arithmetic/top")
     ("arithmetic-3/top"
      (set-default-hints
       '((nonlinearp-default-hint
@@ -149,7 +149,8 @@
        hist
        pspv))))
   ;; [Jared]: trying to remove rtl/rel5
-  ("rtl/rel8/arithmetic/top")
+  ;; [Matt K.]: changed rel8 to rel9
+  ("rtl/rel9/arithmetic/top")
   ("arithmetic-3/bind-free/top"
    (set-default-hints
     '((nonlinearp-default-hint

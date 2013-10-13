@@ -70,7 +70,8 @@
 (encapsulate
  ()
 
-(local (include-book "rtl/rel8/lib/top" :dir :system))
+; (Matt K., 10/2013: Changed rel8 to rel9.)
+(local (include-book "rtl/rel9/support/lib3/log" :dir :system))
 
 (defthm logior-logand-2^24-2
   (implies (and (integerp x1)

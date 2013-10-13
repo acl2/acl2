@@ -31,6 +31,9 @@
 (defun bfr-aig () (declare (xargs :guard t)) t)
 (defun bfr-bdd () (declare (xargs :guard t)) nil)
 
+;; Default to using BDDs
+(defattach bfr-mode bfr-bdd)
+
 (defmacro bfr-case (&key aig bdd)
   `(if (bfr-mode)
        ,aig ,bdd))

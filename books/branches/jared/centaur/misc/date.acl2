@@ -22,4 +22,4 @@
 (in-package "ACL2")
 (include-book "str/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all
-(certify-book "date" ? t :ttags :all)
+

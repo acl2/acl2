@@ -191,7 +191,8 @@
 
 (encapsulate
  ()
- (local (include-book "rtl/rel8/arithmetic/top" :dir :system))
+; (Matt K., 10/2013: Changed rel8 to rel9.)
+ (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
  (defthm _ADDRESS-P-of-floor
    (implies (MEM::|_ADDRESS-P| ADDR DEPTH)
@@ -605,7 +606,8 @@
 
 (encapsulate
  ()
- (local (include-book "rtl/rel8/arithmetic/top" :dir :system))
+; (Matt K., 10/2013: Changed rel8 to rel9.)
+ (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
  (defthm test
   (implies (and (force (bit-listp rbl))

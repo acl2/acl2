@@ -92,7 +92,8 @@
 
 
 (defsection aig-eval-thms
-  :extension aig-eval
+  :parents (aig-eval)
+  :short "Basic theorems about @(see aig-eval)."
 
   (local (in-theory (enable aig-eval)))
 
@@ -118,7 +119,8 @@
 
 
 (defsection aig-eval-alist-thms
-  :extension aig-eval-alist
+  :parents (aig-eval-alist)
+  :short "Basic theorems about @(see aig-eval-alist)."
 
   (defcong aig-alist-equiv alist-equiv (aig-eval-alist x env) 1
     :hints((witness)))
@@ -147,7 +149,8 @@
 
 
 (defsection aig-restrict-thms
-  :extension aig-restrict
+  :parents (aig-restrict)
+  :short "Basic theorems about @(see aig-restrict)."
 
   (local (in-theory (enable aig-restrict)))
 
@@ -163,7 +166,8 @@
 
 
 (defsection aig-restrict-alist-thms
-  :extension aig-restrict-alist
+  :parents (aig-restrict-alist)
+  :short "Basic theorems about @(see aig-restrict-alist)."
 
   (local (in-theory (enable aig-restrict-alist)))
 
@@ -191,7 +195,7 @@
 
 
 (defsection aig-restrict-aig-restrict
-  :extension aig-restrict
+  :extension aig-restrict-thms
 
   ;; This belongs in aig-restrict-thms, but needs our aig-restrict-alist
   ;; reasoning to work.
@@ -203,7 +207,7 @@
 
 
 (defsection aig-restrict-alist-aig-restrict-alist
-  :extension aig-restrict-alist
+  :extension aig-restrict-alist-thms
 
   ;; Similarly we need aig-restrict-aig-restrict to prove this.
 
@@ -216,7 +220,8 @@
 
 
 (defsection aig-partial-eval-thms
-  :extension aig-partial-eval
+  :parents (aig-partial-eval)
+  :short "Basic theorems about @(see aig-partial-eval)."
 
   (local (in-theory (enable aig-partial-eval)))
 
@@ -241,7 +246,8 @@
 
 
 (defsection aig-partial-eval-alist-thms
-  :extension aig-partial-eval-alist
+  :parents (aig-partial-eval-alist)
+  :short "Basic theorems about @(see aig-partial-eval-alist)."
 
   (local (in-theory (enable aig-partial-eval-alist)))
 
@@ -273,7 +279,8 @@
 
 
 (defsection aig-compose-thms
-  :extension aig-compose
+  :parents (aig-compose)
+  :short "Basic theorems about @(see aig-compose)."
 
   (local (in-theory (enable aig-compose)))
 
@@ -299,7 +306,8 @@
 
 
 (defsection aig-compose-alist-thms
-  :extension aig-compose-alist
+  :parents (aig-compose-alist)
+  :short "Basic theorems about @(see aig-compose-alist)."
 
   (local (in-theory (enable aig-compose-alist)))
 
@@ -377,7 +385,8 @@
 
 
 (defsection faig-eval-thms
-  :extension faig-eval
+  :parents (faig-eval)
+  :short "Basic theorems about @(see faig-eval)."
 
   (defcong aig-env-equiv equal (faig-eval x env) 2
     :hints(("Goal" :in-theory (enable faig-eval))))
@@ -395,7 +404,8 @@
 
 
 (defsection faig-equiv-thms
-  :extension faig-equiv
+  :parents (faig-equiv)
+  :short "Basic theorems about @(see faig-equiv)."
 
   (local (in-theory (enable faig-eval)))
 
@@ -408,7 +418,8 @@
 
 
 (defsection faig-alist-equiv-thms
-  :extension faig-alist-equiv
+  :parents (faig-alist-equiv)
+  :short "Basic theorems about @(see faig-alist-equiv)."
 
   (defcong faig-alist-equiv iff (hons-assoc-equal x al) 2
     :hints((witness)))
@@ -422,7 +433,8 @@
 
 
 (defsection faig-eval-alist-thms
-  :extension faig-eval-alist
+  :parents (faig-eval-alist)
+  :short "Basic theorems about @(see faig-eval-alist)."
 
   (defthm faig-eval-alist-append
     (equal (faig-eval-alist (append a b) env)
@@ -450,7 +462,8 @@
 
 
 (defsection faig-restrict-thms
-  :extension faig-restrict
+  :parents (faig-restrict)
+  :short "Basic theorems about @(see faig-restrict)."
 
   (local (in-theory (enable faig-restrict)))
 
@@ -478,7 +491,8 @@
 
 
 (defsection faig-restrict-alist-thms
-  :extension faig-restrict-alist
+  :parents (faig-restrict-alist)
+  :short "Basic theorems about @(see faig-restrict-alist)."
 
   (defcong alist-equiv equal (faig-restrict-alist x env) 2
     :hints(("Goal" :induct t)))
@@ -514,7 +528,8 @@
 
 
 (defsection faig-partial-eval-thms
-  :extension faig-partial-eval
+  :parents (faig-partial-eval)
+  :short "Basic theorems about @(see faig-partial-eval)."
 
   (local (in-theory (enable faig-partial-eval)))
 
@@ -538,7 +553,8 @@
 
 
 (defsection faig-partial-eval-alist-thms
-  :extension faig-partial-eval-alist
+  :parents (faig-partial-eval-alist)
+  :short "Basic theorems about @(see faig-partial-eval-alist)."
 
   (defthm faig-eval-alist-of-faig-partial-eval-alist
     (equal (faig-eval-alist (faig-partial-eval-alist x al1) al2)
@@ -572,7 +588,8 @@
 
 
 (defsection faig-compose-thms
-  :extension faig-compose
+  :parents (faig-compose)
+  :short "Basic theorems about @(see faig-compose)."
 
   (local (in-theory (enable faig-compose)))
 
@@ -596,7 +613,8 @@
 
 
 (defsection faig-compose-alist-thms
-  :extension faig-compose-alist
+  :parents (faig-compose-alist)
+  :short "Basic theorems about @(see faig-compose-alist)."
 
   (defthm faig-eval-alist-of-faig-compose-alist
     (equal (faig-eval-alist (faig-compose-alist x al1) al2)
@@ -676,7 +694,8 @@ constant false, whereas the car of @('y') is @('t'), constant true.</p>
 
 
 (defsection faig-fix-thms
-  :extension faig-fix
+  :parents (faig-fix)
+  :short "Basic theorems about @(see faig-fix)."
 
   (defthm faig-eval-faig-fix
     (equal (faig-eval (faig-fix x) env)
@@ -698,7 +717,8 @@ constant false, whereas the car of @('y') is @('t'), constant true.</p>
 
 
 (defsection faig-fix-alist-thms
-  :extension faig-fix-alist
+  :parents (faig-fix-alist)
+  :short "Basic theorems about @(see faig-fix-alist)."
 
   (defthm hons-assoc-equal-faig-fix-alist
     (equal (hons-assoc-equal x (faig-fix-alist a))

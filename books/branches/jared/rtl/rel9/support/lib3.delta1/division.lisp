@@ -181,7 +181,9 @@
 
 (encapsulate ()
 
-(local (include-book "rtl/rel8/lib/arith" :dir :system))
+; Matt K., 10/6/2013, avoiding dependence on rel8:
+; (local (include-book "rtl/rel8/lib/arith" :dir :system))
+(local (include-book "../lib2/arith"))
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (defund delta0 (j n)

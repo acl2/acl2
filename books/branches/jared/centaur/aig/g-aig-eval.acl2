@@ -21,4 +21,4 @@
 (in-package "ACL2")
 (include-book "../gl/portcullis")
 ; cert-flags: ? t :ttags :all
-(certify-book "g-aig-eval" ? t :ttags :all)
+

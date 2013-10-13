@@ -44,9 +44,13 @@
         ((when (and false-sat false-succ))
          (make-fast-alist false-ctrex)
          ;; (acl2::sneaky-save 'gl-mbe-ctrex false-ctrex)
-         (er hard? 'gl-mbe "GL-MBE assertion failed. Ctrex: ~x0 Args: ~x1 ~
-                            ~x2. Other: ~x3~%"
-             false-ctrex
+         (ec-call
+          (glcp-print-single-ctrex false-ctrex
+                                   "Error:"
+                                   "GL-MBE violation"
+                                   config bvar-db state))
+         (er hard? 'gl-mbe "GL-MBE assertion failed.  Args: (~x0 ~x1).
+                            Diagnostic info: ~x2~%"
              ;; BOZO this is all assuming aig/alist-ctrex mode
              (gobj->term spec (list false-ctrex))
              (gobj->term impl (list false-ctrex))

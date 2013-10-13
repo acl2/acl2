@@ -74,3 +74,33 @@
         (t
          (prog2$ (er hard? 'hexify "Unexpected argument ~x0.~%" x)
                  ""))))
+
+(defun binify (x)
+  ;; Dumb printing utility.  X should be a natural, string, or symbol;
+  ;; otherwise we'll just cause an error.
+  ;;
+  ;; Normally X is a natural.  We turn it into a binary string that has an
+  ;; underscore inserted every four characters, which makes it easier to read
+  ;; long binary values.
+  ;;
+  ;; As a special convenience, if X is a string we just return it unchanged, and
+  ;; if X is a symbol we just return its name.
+  ;;
+  ;; Typical usage is (cw "foo: ~x0~%" (str::binify foo))
+  (declare (xargs :guard t))
+  (cond ((integerp x)
+         (b* ((xsign (< x 0))
+              (xabs (abs x))
+              (chars (explode-atom xabs 2))
+              (nice-chars (list* #\# #\u #\b 
+                                 (append (and xsign '(#\-))
+                                         (cons (first chars)
+                                               (insert-underscores (nthcdr 1 chars)))))))
+           (implode nice-chars)))
+        ((symbolp x)
+         (symbol-name x))
+        ((stringp x)
+         x)
+        (t
+         (prog2$ (er hard? 'binify "Unexpected argument ~x0.~%" x)
+                 ""))))

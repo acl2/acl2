@@ -23,4 +23,4 @@
 (include-book "std/portcullis" :dir :system)
 (include-book "centaur/gl/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all
-(certify-book "rotate" ? t :ttags :all)
+

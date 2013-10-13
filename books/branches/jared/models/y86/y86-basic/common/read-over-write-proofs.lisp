@@ -16,7 +16,7 @@
 ; consider using one of these libraries:
 
 ; (local (include-book "arithmetic-5/top" :dir :system))
-; (local (include-book "rtl/rel8/lib/top" :dir :system))
+; (local (include-book "rtl/rel9/lib/top" :dir :system))
 
 ; That would perhaps take considerable work, however, because wm08 uses lognot,
 ; which doesn't appear in many lemmas in the above libraries.  Less important

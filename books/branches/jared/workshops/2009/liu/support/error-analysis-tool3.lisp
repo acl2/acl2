@@ -69,7 +69,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "rtl/rel8/arithmetic/top" :dir :system)
+; (Matt K., 10/2013: Changed rel8 to rel9.)
+(include-book "rtl/rel9/arithmetic/top" :dir :system)
 
 (defthmd over-estimate-rule-var-leaf
   (implies (and (syntaxp (symbolp x))

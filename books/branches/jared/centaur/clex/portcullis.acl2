@@ -20,4 +20,4 @@
 
 (ld "package.lsp")
 ; cert-flags: ? t :ttags :all
-(certify-book "portcullis" ? t :ttags :all)
+

@@ -228,7 +228,8 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
          ,@(and parents `(:parents ,parents))
          ,@(and short   `(:short ,short))
          ,@(and long    `(:long ,long))
-         ,theory-hint
+         ,@(and theory-hint
+                `(,theory-hint))
          ,thm))))
 
 (defmacro defrule (name &rest args)

@@ -22,9 +22,10 @@
            (ACL2::INTEGER-RANGE-P lower- upper x))
   :hints (("Goal" :in-theory (enable ACL2::INTEGER-RANGE-P))))
 
-(local (include-book "rtl/rel8/arithmetic/expo" :dir :system))
-(local (include-book "rtl/rel8/arithmetic/expt" :dir :system))
-(local (include-book "rtl/rel8/arithmetic/top" :dir :system))
+; (Matt K., 10/2013: Changed rel8 to rel9.)
+(local (include-book "rtl/rel9/arithmetic/expo" :dir :system))
+(local (include-book "rtl/rel9/arithmetic/expt" :dir :system))
+(local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
 (local (in-theory (enable expt-split)))
 

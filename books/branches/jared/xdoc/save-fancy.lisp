@@ -349,6 +349,9 @@
        (acc (json-encode-string from-xml acc))
        (acc (cons #\, acc))
 
+       (acc (json-encode-string (symbol-package-name base-pkg) acc))
+       (acc (cons #\, acc))
+
        (acc (json-encode-string long-str acc))
        (acc (cons #\] acc)))
     (mv acc state)))

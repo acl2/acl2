@@ -160,8 +160,9 @@
 
 (encapsulate
  ()
- (local (include-book "rtl/rel8/arithmetic/floor" :dir :system))
- (local (include-book "rtl/rel8/arithmetic/fl" :dir :system))
+; (Matt K., 10/2013: Changed rel8 to rel9.)
+ (local (include-book "rtl/rel9/arithmetic/floor" :dir :system))
+ (local (include-book "rtl/rel9/arithmetic/fl" :dir :system))
 
     ;add to rtl?
     ;bzo loops
@@ -202,7 +203,8 @@
   (equal (+ (- x) (* 2 x) y)
          (+ x y)))
 
-(local (include-book "rtl/rel8/arithmetic/denominator" :dir :system))
+; (Matt K., 10/2013: Changed rel8 to rel9.)
+(local (include-book "rtl/rel9/arithmetic/denominator" :dir :system))
 
 (defthm denominator-of-unary-/
  (implies (and (integerp x) ;generalize?

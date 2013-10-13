@@ -137,7 +137,7 @@
 
 (in-theory (disable term-keys))
 
-(defun pattern-match-list (list terms)
+(defun gensym::pattern-match-list (list terms)
   (declare (type t list terms))
   (if (and (consp list) (consp (car list)))
       (let ((pattern (caar list))
@@ -145,7 +145,7 @@
 	(met ((hit alist) (pattern-match-rec pattern terms nil))
 	     (declare (ignore alist))
 	     (if hit (mv terms type-p)
-	       (pattern-match-list (cdr list) terms))))
+	       (gensym::pattern-match-list (cdr list) terms))))
     (mv nil nil)))
 
 (defun pattern-match-args (fn args terms)
@@ -163,7 +163,7 @@
 	   (pattern-match-args fn args (cdr terms))))
 	 (t
 	  (or (and (equal fn (car term))
-		   (met ((subterm type-p) (pattern-match-list args (cdr term)))
+		   (met ((subterm type-p) (gensym::pattern-match-list args (cdr term)))
 			(and subterm (cons (cons fn subterm) type-p))))
 	      (pattern-match-args fn args (cdr term))
 	      (pattern-match-args fn args (cdr terms))))))

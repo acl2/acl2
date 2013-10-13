@@ -21,4 +21,4 @@
 
 (in-package "ACL2")
 (ld "package.lsp")
-(certify-book "portcullis" ? t)
+; cert-flags: ? t
