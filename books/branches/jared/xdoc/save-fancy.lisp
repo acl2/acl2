@@ -479,6 +479,7 @@
                                                 "view_tree.png"
                                                 "config.js"
                                                 "xdoc.js"
+                                                "xslt.js"
                                                 "xdoc_index.js"
                                                 "xdataget.pl"
                                                 "xdata2sql.pl"
