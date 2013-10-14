@@ -21,7 +21,7 @@
 
 (in-package "ACL2")
 (include-book "std/util/define" :dir :system)
-(include-book "tools/defconsts" :dir :system)
+(include-book "std/util/defconsts" :dir :system)
 (include-book "tools/advise" :dir :system)
 
 #!STD

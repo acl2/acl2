@@ -164,7 +164,7 @@
 (include-book "std/util/defmapappend-tests" :dir :system)
 (include-book "std/util/defprojection-tests" :dir :system)
 (include-book "std/util/defredundant-tests" :dir :system)
-(include-book "std/util/tools/assert-return-thms" :dir :system)
+(include-book "std/util/extensions/assert-return-thms" :dir :system)
 (include-book "centaur/misc/tshell-tests" :dir :system)
 
 (include-book "defrstobj/groundwork/demo1")

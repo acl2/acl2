@@ -21,7 +21,7 @@
 
 (in-package "ACL2")
 (include-book "load-stobj")
-(include-book "tools/defconsts" :dir :system)
+(include-book "std/util/defconsts" :dir :system)
 (include-book "misc/assert" :dir :system)
 
 ; These are basic tests of DEF-LOAD-STOBJ-ARRAY.

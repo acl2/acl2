@@ -11,7 +11,7 @@
 ; documentation topic "set-write-acl2x" and book
 ; "make-event/double-cert-test-1.lisp".
 
-(include-book "tools/defconsts" :dir :system)
+(include-book "std/util/defconsts" :dir :system)
 
 (defun foo (state)
   (declare (xargs :stobjs (state)
