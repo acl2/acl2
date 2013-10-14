@@ -33,40 +33,6 @@ var xdata = [];
 //
 // --------------------------------------------------------------------------
 
-// Initialize an XSLT processor for XDOC --> HTML conversion
-var xslt_processor = new XSLTProcessor();
-{
-    var xslt_plain = $.base64.decode(xslt_base64);
-    var xslt_dom = $.parseXML(xslt_plain);
-    xslt_processor.importStylesheet(xslt_dom);
-}
-
-function wrap_xdoc_fragment(str) {
-    var wrap = "<!DOCTYPE xdoc [";
-    wrap += "<!ENTITY mdash \"&#8212;\">";
-    wrap += "<!ENTITY rarr \"&#8594;\">";
-    wrap += "<!ENTITY nbsp \"&#160;\">";
-    wrap += "]>";
-    wrap += "<root>" + str + "</root>";
-    return wrap;
-}
-
-function render_text (str) { // XDOC Markup (string) --> Plain Text Fragment
-    var xml = $.parseXML(wrap_xdoc_fragment(str));
-    var dom = xslt_processor.transformToFragment(xml,document);
-    var str = $(dom).text();
-
-    // It's not clear to me whether this is good or bad.  The basic problem
-    // is that strings like "short" strings might legitimately have quotes
-    // or apostrophes in them.  This is no problem if we're going to stick the
-    // render_text into a paragraph or something like that.  But it *is* a
-    // problem if we're going to stick it into an attribute like a tooltip
-    // or similar.  So, just to avoid problems like that, make sure the resulting
-    // string is free of " and ' characters.
-    return String(str)
-             .replace(/"/g, '&quot;')
-             .replace(/'/g, '&apos;');
-}
 
 var short_plaintext_cache = {};
 function topic_short_plaintext(key) {
@@ -76,12 +42,6 @@ function topic_short_plaintext(key) {
     var ret = render_text(topic_short(key));
     short_plaintext_cache[key] = ret;
     return ret;
-}
-
-function render_html (str) { // XDOC Markup (string) --> HTML DOM Fragment
-    var xml = $.parseXML(wrap_xdoc_fragment(str));
-    var dom = xslt_processor.transformToFragment(xml,document);
-    return dom;
 }
 
 function htmlEncode(value){
@@ -411,7 +371,6 @@ function nav_flat() {
     }
     $("#flat").html("<p>Loading...</p>");
     nav_flat_ever_shown = true;
-
     setTimeout(nav_flat_really_install, 10);
 }
 
@@ -1024,7 +983,7 @@ function action_go_key(key) {
         return;
     }
 
-    //console.log("action_go_key, going to new key " + key + " --> 0");
+    console.log("action_go_key, going to new key " + key + " --> 0");
     history_save_place();
     window.history.pushState({key:key,rtop:0}, key_title(key),
 			     "?topic=" + key);
@@ -1034,9 +993,12 @@ function action_go_key(key) {
 function history_save_place() {
     var curr_state = history.state;
     var rtop = $("#right").scrollTop();
-    //console.log("saving place: " + curr_state.key + " --> " + rtop);
-    curr_state.rtop = rtop;
-    window.history.replaceState(curr_state, "");
+    if (curr_state) {
+	// Safari doesn't seem to implement history.state
+	//console.log("saving place: " + curr_state.key + " --> " + rtop);
+	curr_state["rtop"] = rtop;
+	window.history.replaceState(curr_state, "");
+    }
 }
 
 function action_go_back(data) {
@@ -1069,7 +1031,7 @@ function action_go_back(data) {
 
     else if ("key" in data) {
 	var key = data.key;
-	var rtop = data.rtop || 0;
+	var rtop = ("rtop" in data) ? data["rtop"] : 0;
 	if (key) {
 	    dat_load_key(key, rtop);
 	}
