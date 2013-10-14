@@ -17632,7 +17632,7 @@
   in CLTL pp. 60 and 145, the ~il[guard] is checked, and then the ~c[body] is
   evaluated.  The result is used in place of the original form.
 
-  In ACL2, macros do not have access to the ACL2 state ~ilc[state].  (If
+  In ACL2, macros do not have access to the ACL2 state, ~ilc[state].  (If
   ~ilc[state] or any user-defined stobj (~pl[stobj]) is a macro argument, it is
   treated as an ordinary variable, bound at macro-expansion time to a piece of
   syntax.)  This is in part a reflection of CLTL, p. 143, ``More generally, an

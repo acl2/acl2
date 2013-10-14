@@ -16214,23 +16214,37 @@
                                  (symbol-package-name-set syms nil)
                                  nil))
 
-(defun bookdata-alist1 (full-book-name
-                        collect-p
-                        trips
-                        books consts fns labels macros stobjs theories thms)
+(defun bookdata-alist1 (full-book-name collect-p trips port-pkgs
+                                       port-books books
+                                       port-consts consts
+                                       port-fns fns
+                                       port-labels labels
+                                       port-macros macros
+                                       port-stobjs stobjs
+                                       port-theories theories
+                                       port-thms thms)
 
 ; See maybe-write-bookdata.
 
   (cond
    ((endp trips)
-    (list :books    books
-          :consts   (symbol-list-to-package-alist consts)
-          :fns      (symbol-list-to-package-alist fns)
-          :labels   (symbol-list-to-package-alist labels)
-          :macros   (symbol-list-to-package-alist macros)
-          :stobjs   (symbol-list-to-package-alist stobjs)
-          :theories (symbol-list-to-package-alist theories)
-          :thms     (symbol-list-to-package-alist thms)))
+    (list :pkgs          port-pkgs
+          :port-books    port-books
+          :books         books
+          :port-consts   (symbol-list-to-package-alist port-consts)
+          :consts        (symbol-list-to-package-alist consts)
+          :port-fns      (symbol-list-to-package-alist port-fns)
+          :fns           (symbol-list-to-package-alist fns)
+          :port-labels   (symbol-list-to-package-alist port-labels)
+          :labels        (symbol-list-to-package-alist labels)
+          :port-macros   (symbol-list-to-package-alist port-macros)
+          :macros        (symbol-list-to-package-alist macros)
+          :port-stobjs   (symbol-list-to-package-alist port-stobjs)
+          :stobjs        (symbol-list-to-package-alist stobjs)
+          :port-theories (symbol-list-to-package-alist port-theories)
+          :theories      (symbol-list-to-package-alist theories)
+          :port-thms     (symbol-list-to-package-alist port-thms)
+          :thms          (symbol-list-to-package-alist thms)))
    (t
     (let ((trip (car trips)))
       (cond
@@ -16238,22 +16252,61 @@
              (eq (cadr trip) 'GLOBAL-VALUE))
         (bookdata-alist1
          full-book-name
-         (or (null (cddr trip)) ; for portcullis commands
-             (equal (car (cddr trip))
-                    full-book-name))
+         (cond ((null (cddr trip))
+                'port)
+               (t (equal (car (cddr trip))
+                         full-book-name)))
          (cdr trips)
-         (cond ((and collect-p
+         port-pkgs
+         (cond ((and (eq collect-p 'port)
                      (cddr trip)
-                     (not (equal (car (cddr trip)) ; full-book-name
+                     (not (equal (car (cddr trip))
                                  full-book-name)))
-                (cons (car (cddr trip)) ; full-book-name
-                      books))
+                (cons (car (cddr trip))
+                      port-books))
+               (t port-books))
+         (cond ((and (eq collect-p t)
+                     (cddr trip))
+                (assert$ ; collect-p = t, so we are already in full-book-name
+                 (not (equal (car (cddr trip))
+                             full-book-name))
+                 (cons (car (cddr trip))
+                       books)))
                (t books))
-         consts fns labels macros stobjs theories thms))
+         port-consts consts
+         port-fns fns
+         port-labels labels
+         port-macros macros
+         port-stobjs stobjs
+         port-theories theories
+         port-thms thms))
        ((not collect-p)
         (bookdata-alist1
-         full-book-name nil (cdr trips)
-         books consts fns labels macros stobjs theories thms))
+         full-book-name nil (cdr trips) port-pkgs
+         port-books books
+         port-consts consts
+         port-fns fns
+         port-labels labels
+         port-macros macros
+         port-stobjs stobjs
+         port-theories theories
+         port-thms thms))
+       ((and (eq (car trip) 'EVENT-LANDMARK)
+             (eq (cadr trip) 'GLOBAL-VALUE)
+             (eq (access-event-tuple-type (cddr trip)) 'DEFPKG))
+        (bookdata-alist1
+         full-book-name collect-p (cdr trips)
+         (assert$ (eq collect-p 'port) ; defpkg cannot be in the current book
+                  (cons (access-event-tuple-namex (cddr trip))
+                        port-pkgs))
+         port-books books
+         port-consts consts
+         port-fns fns
+         port-labels labels
+         port-macros macros
+         port-stobjs stobjs
+         port-theories theories
+         port-thms thms))
        (t
         (let ((name (name-introduced trip nil)))
           (cond
@@ -16261,46 +16314,116 @@
             (case (cadr trip)
               (FORMALS
                (bookdata-alist1
-                full-book-name t (cdr trips)
-                books consts
-                (cons name fns)
-                labels macros stobjs theories thms))
+                full-book-name collect-p (cdr trips) port-pkgs
+                port-books books
+                port-consts consts
+                (if (eq collect-p 'port)
+                    (cons name port-fns)
+                  port-fns)
+                (if (eq collect-p 'port)
+                    fns
+                  (cons name fns))
+                port-labels labels
+                port-macros macros
+                port-stobjs stobjs
+                port-theories theories
+                port-thms thms))
               (THEOREM
                (bookdata-alist1
-                full-book-name t (cdr trips)
-                books consts
-                fns labels macros stobjs theories
-                (cons name thms)))
+                full-book-name collect-p (cdr trips) port-pkgs
+                port-books books
+                port-consts consts
+                port-fns fns
+                port-labels labels
+                port-macros macros
+                port-stobjs stobjs
+                port-theories theories
+                (if (eq collect-p 'port)
+                    (cons name port-thms)
+                  port-thms)
+                (if (eq collect-p 'port)
+                    thms
+                  (cons name thms))))
               (CONST
                (bookdata-alist1
-                full-book-name t (cdr trips)
-                books
-                (cons name consts)
-                fns labels macros stobjs theories thms))
+                full-book-name collect-p (cdr trips) port-pkgs
+                port-books books
+                (if (eq collect-p 'port)
+                    (cons name port-consts)
+                  port-consts)
+                (if (eq collect-p 'port)
+                    consts
+                  (cons name consts))
+                port-fns fns
+                port-labels labels
+                port-macros macros
+                port-stobjs stobjs
+                port-theories theories
+                port-thms thms))
               (STOBJ
                (bookdata-alist1
-                full-book-name t (cdr trips)
-                books consts fns labels macros
-                (cons name stobjs)
-                theories thms))
+                full-book-name collect-p (cdr trips) port-pkgs
+                port-books books
+                port-consts consts
+                port-fns fns
+                port-labels labels
+                port-macros macros
+                (if (eq collect-p 'port)
+                    (cons name port-stobjs)
+                  port-stobjs)
+                (if (eq collect-p 'port)
+                    stobjs
+                  (cons name stobjs))
+                port-theories theories
+                port-thms thms))
               (LABEL
                (bookdata-alist1
-                full-book-name t (cdr trips)
-                books consts fns
-                (cons name labels)
-                macros stobjs theories thms))
+                full-book-name collect-p (cdr trips) port-pkgs
+                port-books books
+                port-consts consts
+                port-fns fns
+                (if (eq collect-p 'port)
+                    (cons name port-labels)
+                  port-labels)
+                (if (eq collect-p 'port)
+                    labels
+                  (cons name labels))
+                port-macros macros
+                port-stobjs stobjs
+                port-theories theories
+                port-thms thms))
               (THEORY
                (bookdata-alist1
-                full-book-name t (cdr trips)
-                books consts fns labels macros stobjs
-                (cons name theories)
-                thms))
+                full-book-name collect-p (cdr trips) port-pkgs
+                port-books books
+                port-consts consts
+                port-fns fns
+                port-labels labels
+                port-macros macros
+                port-stobjs stobjs
+                (if (eq collect-p 'port)
+                    (cons name port-theories)
+                  theories)
+                (if (eq collect-p 'port)
+                    theories
+                  (cons name theories))
+                port-thms thms))
               (MACRO-BODY
                (bookdata-alist1
-                full-book-name t (cdr trips)
-                books consts fns labels
-                (cons name macros)
-                stobjs theories thms))
+                full-book-name collect-p (cdr trips) port-pkgs
+                port-books books
+                port-consts consts
+                port-fns fns
+                port-labels labels
+                (if (eq collect-p 'port)
+                    (cons name port-macros)
+                  port-macros)
+                (if (eq collect-p 'port)
+                    macros
+                  (cons name macros))
+                port-stobjs stobjs
+                port-theories theories
+                port-thms thms))
               (GLOBAL-VALUE
 
 ; Then name-introduced is a full book name, but we extend books
@@ -16309,15 +16432,29 @@
                (assert$
                 (eq (car trip) 'CERTIFICATION-TUPLE)
                 (bookdata-alist1
-                 full-book-name t (cdr trips)
-                 books consts fns labels macros stobjs theories thms)))
+                 full-book-name collect-p (cdr trips) port-pkgs
+                 port-books books
+                 port-consts consts
+                 port-fns fns
+                 port-labels labels
+                 port-macros macros
+                 port-stobjs stobjs
+                 port-theories theories
+                 port-thms thms)))
               (otherwise
                (er hard 'bookdata-alist1
                    "Unexpected case for the cadr of ~x0"
                    trip))))
            (t (bookdata-alist1
-               full-book-name t (cdr trips)
-               books consts fns labels macros stobjs theories thms))))))))))
+               full-book-name collect-p (cdr trips) port-pkgs
+               port-books books
+               port-consts consts
+               port-fns fns
+               port-labels labels
+               port-macros macros
+               port-stobjs stobjs
+               port-theories theories
+               port-thms thms))))))))))
 
 (defun bookdata-alist (full-book-name wrld)
   (assert$
@@ -16329,7 +16466,8 @@
           (boot-strap-len (length boot-strap-wrld))
           (wrld-len (length wrld))
           (new-trips (first-n-ac-rev (- wrld-len boot-strap-len) wrld nil)))
-     (bookdata-alist1 full-book-name t new-trips
+     (bookdata-alist1 full-book-name 'port new-trips nil
+                      nil nil nil nil nil nil nil nil
                       nil nil nil nil nil nil nil nil))))
 
 (defun maybe-write-bookdata (full-book-name wrld ctx state)
@@ -16404,57 +16542,73 @@
   according to the description that follows below.
   ~bv[]
   (\"...BK.lisp\"
-   :BOOKS    book-val
-   :CONSTS   consts-val
-   :FNS      fns-val
-   :LABELS   labels-val
-   :MACROS   macros-val
-   :STOBJS   stobjs-val
-   :THEORIES theories-val
-   :THMS     thms-val)
+   :PKGS     port-pkgs
+   :BOOKS    (port-book-val book-val)
+   :CONSTS   (port-consts-val consts-val)
+   :FNS      (port-fns-val fns-val)
+   :LABELS   (port-labels-val labels-val)
+   :MACROS   (port-macros-val macros-val)
+   :STOBJS   (port-stobjs-val stobjs-val)
+   :THEORIES (port-theories-val theories-val)
+   :THMS     (port-thms-val thms-val))
   ~ev[]
 
-  The values above are based on ~il[events] introduced by including ~c[BK],
-  but only those that are either from its certification ~il[world]
-  (~pl[portcullis]) or are introduced non-~ilc[local]ly by ~c[BK], not by a
-  book that is included in ~c[BK].  The value ~c[book-val] is a list of full
-  book names (~pl[full-book-name]) of the books included by ~c[BK].  Each other
-  keyword's value is is an association list (alist).  This alist associates
-  each of its keys, a package name, with a list of ~il[symbol-name]s for
-  symbols in that package that are introduced for that keyword.  For example,
-  ~c[fns-val] may be the alist
+  The values above are based on ~il[events] introduced by including ~c[BK].
+  For various values of ~il[xxx] as described below, ~c[port-]~i[xxx]~c[-val]
+  is a list of values corresponding to ~il[events] introduced in the
+  certification ~il[world] for ~c[BK] (~pl[portcullis]), and ~i[xxx]~c[-val] is
+  a list of values corresponding to ~il[events] introduced non-~ilc[local]ly by
+  ~c[BK].  These lists include only ``top-level'' events, not those that are
+  introduced by a book included either in ~c[BK] or its certification world.
+
+  ~c[Port-pkgs] is a list of names of packages introduced in the certification
+  world (at the top level, not in an included book).  Note that no packages are
+  introduced in a book itself, so we don't include a ``~c[pkgs]'' result.  Both
+  ~c[port-book-val] and ~c[book-val] are lists of full book
+  names (~pl[full-book-name]) of included books.  For the other keywords
+  ~c[:xxx], the lists ~c[port-]~i[xxx]~c[-val] and ~i[xxx]~c[-val] are actually
+  association lists (~pl[alistp]) such that each key is a package name, which
+  is associated with a list of ~il[symbol-name]s for symbols in that package
+  that are introduced for that keyword.  For example, ~c[fns-val] may be the
+  alist
   ~bv[]
   ((\"ACL2\" \"F1\" \"F2\")
    (\"MY-PKG\" \"G1\" \"G2\"))
   ~ev[]
-  if the function symbols introduced by the book (not by its included books)
-  are ~c[F1] and ~c[F2] in the ~c[\"ACL2\"] package, and ~c[G1] and ~c[G2] in
-  the ~c[\"MY-PKG\"] package.  We next explain what kinds of symbols are
-  introduced for each keyword.
+  if the function symbols introduced in the book are ~c[F1] and ~c[F2] in the
+  ~c[\"ACL2\"] package, as well as ~c[G1] and ~c[G2] in the ~c[\"MY-PKG\"]
+  package.
+
+  We next explain what kinds of symbols are introduced for each keyword
+  ~c[:xxx].  Each such symbol would appear in the list ~c[port-]~i[xxx]~c[-val]
+  or ~i[xxx]~c[-val], depending respectively on whether the symbol is
+  introduced at the top level of the certification world for ~c[BK] or ~c[BK]
+  itself.
   ~bq[]
 
   o ~c[:CONSTS]~nl[]
-    constant symbol introduced by ~c[defconst]
+  constant symbol introduced by ~c[defconst]
 
   o ~c[:FNS]~nl[]
-    function symbol: introduced by ~c[defun], ~c[defuns], or ~c[defchoose]; or
-    constrained (by an ~ilc[encapsulate] event)
+  function symbol: introduced by ~c[defun], ~c[defuns], or ~c[defchoose]; or
+  constrained (by an ~ilc[encapsulate] event)
 
   o ~c[:LABELS]~nl[]
-    symbol introduced by ~c[deflabel]
+  symbol introduced by ~c[deflabel]
 
   o ~c[:MACROS]~nl[]
-    macro name introduced by ~c[defmacro]
+  macro name introduced by ~c[defmacro]
 
   o ~c[:STOBJS]~nl[]
-    ~c[stobj] name introduced by ~c[defstobj] or ~c[defabsstobj]
+  ~c[stobj] name introduced by ~c[defstobj] or ~c[defabsstobj]
 
   o ~c[:THEORIES]~nl[]
-    theory name introduced by ~c[deftheory]
+  theory name introduced by ~c[deftheory]
 
-  o ~c[:THMS]~nl[]
-    theorem name introduced by ~c[defthm] (perhaps by way of macro calls that
-    expand to calls of ~c[defthm], for example ~pl[defequiv] or ~c[defaxiom]
+  o ~c[:THMS]~nl[] theorem name, which may be introduced by ~c[defthm] or a
+  macro call expanding to a call of ~c[defthm], such as ~pl[defequiv] or
+  ~c[defaxiom]; but may be introduced by ~ilc[defpkg], for example, with name
+  ~c[\"MYPKG-PACKAGE\"] if the package name is ~c[\"MYPKG\"]
   ~eq[]
 
   Our hope is that people in the ACL2 community will generate and use this data
