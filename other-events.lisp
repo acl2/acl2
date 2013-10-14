@@ -16554,7 +16554,7 @@
   ~ev[]
 
   The values above are based on ~il[events] introduced by including ~c[BK].
-  For various values of ~il[xxx] as described below, ~c[port-]~i[xxx]~c[-val]
+  For various values of ~c[xxx] as described below, ~c[port-]~i[xxx]~c[-val]
   is a list of values corresponding to ~il[events] introduced in the
   certification ~il[world] for ~c[BK] (~pl[portcullis]), and ~i[xxx]~c[-val] is
   a list of values corresponding to ~il[events] introduced non-~ilc[local]ly by
