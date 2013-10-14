@@ -35505,7 +35505,18 @@
 (defun get-internal-time ()
   (if (f-get-global 'get-internal-time-as-realtime *the-live-state*)
       (get-internal-real-time)
-    (get-internal-run-time)))
+    #-gcl
+    (get-internal-run-time)
+    #+gcl
+    (multiple-value-bind
+     (top child)
+
+; Note that binding two variables here is OK, as per CL HyperSpec, even if
+; get-internal-run-time returns more than two values.  Starting around
+; mid-October 2013, GCL 2.6.10pre returns four values.
+
+     (get-internal-run-time)
+     (+ top child))))
 
 (defdoc get-internal-time
   ":Doc-Section Miscellaneous
@@ -35518,13 +35529,13 @@
   ~pl[time-tracker], ~pl[time-tracker-tau], and ~pl[pstack].
 
   By default, these utilities all use an underlying notion of run time provided
-  by the host Common Lisp implementation: specifically, Common Lisp function
-  ~c[get-internal-run-time].  However, Common Lisp also provides function
-  ~c[get-internal-run-time], which returns the real time (wall clock time).
-  While the latter is specified to measure elapsed time, the former is left to
-  the implementation, which might well only measure time spent in the Lisp
-  process.  Consider the following example, which is a bit arcane but basically
-  sleeps for 2 seconds.
+  by the host Common Lisp implementation: specifically, the Common Lisp
+  function ~c[get-internal-run-time].  However, Common Lisp also provides the
+  function ~c[get-internal-real-time], which returns the real time (wall clock
+  time).  While the latter is specified to measure elapsed time, the former is
+  left to the implementation, which might well only measure time spent in the
+  Lisp process.  Consider the following example, which is a bit arcane but
+  basically sleeps for 2 seconds.
   ~bv[]
     (defttag t) ; to allow sys-call
     (make-event
@@ -35536,8 +35547,8 @@
   ~bv[]
     Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
   ~ev[]
-  However, you can instruct ACL2 to switch to using elapsed time (run time), in
-  summaries and elsewhere, by evaluating the following form.
+  However, you can instruct ACL2 to switch to using elapsed time (real time),
+  in summaries and elsewhere, by evaluating the following form.
   ~bv[]
     (assign get-internal-time-as-realtime t)
   ~ev[]
@@ -35555,7 +35566,12 @@
   available inside the ACL2 loop; ~pl[read-run-time].
 
   We are open to changing the default to elapsed wall-clock time (realtime),
-  and may do so in future ACL2 releases.~/~/")
+  and may do so in future ACL2 releases.
+
+  Implementation note (GCL only): If the host Lisp is Gnu Common Lisp, then
+  ~c[get-internal-run-time] has a multiple value return, and the first two
+  values (runtime and child runtime) are added together to produce a result for
+  ~c[get-internal-time].~/~/")
 
 (defun read-run-time (state-state)
 
@@ -48636,6 +48652,16 @@ Lisp definition."
   ~c[~~st] ~-[] the real time taken, in seconds
 
   ~c[~~sc] ~-[] the run time (cpu time) taken, in seconds
+
+  The following apply only when the host Lisp is GCL.  The two system times
+  will likely be ~c[nil] unless the GCL version is 2.6.10 or later.  Note the
+  upper-case characters for child times.
+
+  ~c[~~sC] ~-[] the child run time (cpu time) taken, in seconds
+
+  ~c[~~ss] ~-[] the system time taken, in seconds
+
+  ~c[~~sS] ~-[] the child system time taken, in seconds
   ~eq[]
 
   We turn now to an example that illustrates how ~c[time$] can be called in
@@ -48836,13 +48862,17 @@ Lisp definition."
           'time$ ,g-args))
         (t
          (let* ((,g-start-real-time (get-internal-real-time))
-                (,g-start-run-time (get-internal-run-time))
+                (,g-start-run-time
+                 #-gcl (get-internal-run-time)
+                 #+gcl (multiple-value-list (get-internal-run-time)))
                 #+ccl
                 (,g-start-alloc (CCL::total-bytes-allocated)))
            (our-multiple-value-prog1
             ,x
             ,(protect-mv
-              `(let* ((end-run-time (get-internal-run-time))
+              `(let* ((end-run-time
+                       #-gcl (get-internal-run-time)
+                       #+gcl (multiple-value-list (get-internal-run-time)))
                       (end-real-time (get-internal-real-time))
                       #+ccl ; evaluate before doing computations below:
                       (allocated (- (ccl::total-bytes-allocated)
@@ -48850,8 +48880,24 @@ Lisp definition."
                       (float-units-sec (float internal-time-units-per-second))
                       (real-elapsed (/ (- end-real-time ,g-start-real-time)
                                        float-units-sec))
-                      (run-elapsed (/ (- end-run-time ,g-start-run-time)
-                                      float-units-sec)))
+                      (run-elapsed (/ #-gcl (- end-run-time ,g-start-run-time)
+                                      #+gcl (- (car end-run-time)
+                                               (car ,g-start-run-time))
+                                      float-units-sec))
+                      #+gcl
+                      (child-run-elapsed (/ (- (cadr end-run-time)
+                                               (cadr ,g-start-run-time))
+                                            float-units-sec))
+                      #+gcl
+                      (sys-elapsed (and (cddr end-run-time)
+                                        (/ (- (caddr end-run-time)
+                                              (caddr ,g-start-run-time))
+                                           float-units-sec)))
+                      #+gcl
+                      (child-sys-elapsed (and (cdddr end-run-time)
+                                              (/ (- (cadddr end-run-time)
+                                                    (cadddr ,g-start-run-time))
+                                                 float-units-sec))))
                  (when
                      (not (or (and ,g-real-mintime
                                    (< real-elapsed (float ,g-real-mintime)))
@@ -48860,8 +48906,22 @@ Lisp definition."
                               #+ccl
                               (and ,g-minalloc
                                    (< allocated ,g-minalloc))))
-                   (let* ((alist (list* (cons #\t (format nil "~,2F" real-elapsed))
-                                        (cons #\c (format nil "~,2F" run-elapsed))
+                   (let* ((alist (list* (cons #\t (format nil "~,2F"
+                                                          real-elapsed))
+                                        (cons #\c (format nil "~,2F"
+                                                          run-elapsed))
+                                        #+gcl
+                                        (cons #\C (format nil "~,2F"
+                                                          child-run-elapsed))
+                                        #+gcl
+                                        (cons #\s (and sys-elapsed
+                                                       (format nil "~,2F"
+                                                               sys-elapsed)))
+                                        #+gcl
+                                        (cons #\S (and child-sys-elapsed
+                                                       (format
+                                                        nil "~,2F"
+                                                        child-sys-elapsed)))
                                         (cons #\a
                                               #+ccl
                                               (format nil "~:D" allocated)
@@ -48882,7 +48942,19 @@ Lisp definition."
                                       "; ~Xfe took ~|; ~st seconds realtime, ~
                                        ~sc seconds runtime~|; (~sa bytes ~
                                        allocated).~%"
-                                      #-ccl
+                                      #+gcl
+                                      (cond
+                                       (child-sys-elapsed
+                                        "; ~Xfe took ~|; ~st seconds ~
+                                         realtime,~|; ~sc seconds runtime, ~
+                                         ~sC seconds child runtime,~|; ~ss ~
+                                         seconds systime, ~sS seconds child ~
+                                         systime.~%")
+                                       (t ; "seconds" => "sec" to fit on 1 line
+                                        "; ~Xfe took ~|; ~st sec ~
+                                         realtime, ~sc sec runtime, ~sC ~
+                                         sec child runtime.~%"))
+                                      #-(or ccl gcl)
                                       "; ~Xfe took~|; ~st seconds realtime, ~
                                        ~sc seconds runtime.~%")))
                      (fmt-to-comment-window

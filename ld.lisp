@@ -21394,6 +21394,17 @@
   file, the error message now distinguishes between the case that this file is
   missing and the case that read permission is missing.
 
+  (GCL only) Time reporting has been improved when the host Lisp is Gnu Common
+  Lisp.  A key change was made in the computation of runtime (for example, to
+  report in event summaries), so that it includes the ``child runtime''.
+  ~l[get-internal-time].  Also, the utility ~ilc[time$] now gives improved
+  information by including child runtime information, which can be significant;
+  for example, it probably includes compile time, while the ``seconds runtime''
+  statistic (still) does not.  Recent versions of GCL might also provide system
+  runtime and child system runtime.  ~l[time$].  Thanks to Camm Maguire for
+  suggesting these improvements to ~c[time$] and providing an initial
+  implementation for them.
+
   ~st[NEW FEATURES]
 
   We have added a tool for writing out useful information about a book's event
