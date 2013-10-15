@@ -774,7 +774,6 @@
   functions that were memoized by calls of ~ilc[memoize].  Also
   ~pl[restore-memoization-settings].~/~/
 
-  :cite hons-and-memoization
   :cited-by hons-and-memoization"
 
   '(with-output
@@ -806,7 +805,6 @@
   Calls of this macro restore the memoization settings saved by
   ~ilc[save-and-clear-memoization-settings].~/~/
 
-  :cite hons-and-memoization
   :cited-by hons-and-memoization"
 
   `(with-output
