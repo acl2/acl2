@@ -251,6 +251,8 @@
 ### Section: Preliminaries
 ##############################
 
+export ACL2_SYSTEM_BOOKS := $(CURDIR)
+$(info ACL2_SYSTEM_BOOKS is $(ACL2_SYSTEM_BOOKS))
 ifneq ($(ACL2_JOBS), )
 ${error Error: variable ACL2_JOBS is obsolete -- use -j instead -- see :DOC book-makefiles }
 endif # ifneq ($(ACL2_JOBS), )

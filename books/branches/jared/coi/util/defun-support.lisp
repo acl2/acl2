@@ -1498,7 +1498,7 @@
    (true-listp (make-congruence-hint fn-induct args alt-args hint)))
   :hints (("Goal" :in-theory (enable make-congruence-hint))))
 
-(defund make-congruence-theorem (fn fn-induct args congruence hint )
+(defund make-congruence-theorem (n fn fn-induct args congruence hint )
   (declare (type (satisfies congruence-hint) hint)
 	   (type (satisfies symbol-listp) args)
 	   (type (satisfies congruence-spec) congruence))
@@ -1508,7 +1508,7 @@
       (let ((arg-equiv (arg-equiv pattern pattern))
 	    (alt-arg   (arg-equiv pattern alt-args))
 	    (arg       (arg-equiv pattern args)))
-	(let ((thm-name (symbol-fns::suffix arg-equiv '-implies- equiv '- fn)))
+	(let ((thm-name (symbol-fns::suffix arg-equiv '- n '-implies- equiv '- fn)))
 	  (let ((hint (make-congruence-hint fn-induct args alt-args hint)))
 	    (let ((hints (and hint `(:hints ,hint))))
 	      `(defthm ,thm-name
@@ -1519,14 +1519,15 @@
 		 :rule-classes :congruence
 		 ,@hints))))))))
 
-(defun make-congruence-theorems (fn fn-induct args pairs )
-  (declare (type (satisfies congruence-pairing) pairs)
+(defun make-congruence-theorems (n fn fn-induct args pairs )
+  (declare (type integer n)
+	   (type (satisfies congruence-pairing) pairs)
 	   (type (satisfies symbol-listp) args))
   (if (consp pairs)
       (let ((pattern (cdar pairs))
 	    (hint    (caar pairs)))
-	(cons (make-congruence-theorem fn fn-induct args pattern hint )
-	      (make-congruence-theorems fn fn-induct args (cdr pairs) )))
+	(cons (make-congruence-theorem n fn fn-induct args pattern hint )
+	      (make-congruence-theorems (1+ n) fn fn-induct args (cdr pairs) )))
     nil))
 
 (defun process-congruence-arguments (fn args hints specs rec)
@@ -1538,7 +1539,7 @@
 	    (hints (flatten-wf-congruence-hint-list hints)))
 	(let ((pairs (pair-hints-with-patterns-and-split hints specs)))
 	  (let ((fn-induct (and rec (symbol-fns::suffix fn '-induction))))
-	    (let ((events (make-congruence-theorems fn fn-induct args pairs)))
+	    (let ((events (make-congruence-theorems 1 fn fn-induct args pairs)))
 	      (and events `((encapsulate
 				()
 			      ,@events
