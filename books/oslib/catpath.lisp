@@ -20,7 +20,7 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "OSLIB")
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 
 (define catpath ((basedir stringp

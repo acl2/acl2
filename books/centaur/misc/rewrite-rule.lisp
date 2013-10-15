@@ -20,7 +20,7 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 
 ;; Accessors for rewrite rules, since otherwise the proof obligations become
 ;; giant cadaddrpillars.

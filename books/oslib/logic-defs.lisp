@@ -20,7 +20,7 @@
 
 (in-package "OSLIB")
 (include-book "oslib/read-acl2-oracle" :dir :system)
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "tools/include-raw" :dir :system)
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 

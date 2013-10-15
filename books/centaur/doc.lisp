@@ -41,6 +41,8 @@
 (include-book "4v-sexpr/top")
 (include-book "aig/top")
 
+(include-book "milawa/doc" :dir :system)
+
 (include-book "aignet/aig-sim")
 (include-book "aignet/copying")
 (include-book "aignet/from-hons-aig-fast")
@@ -104,8 +106,7 @@
 (include-book "regression/common")
 
 (include-book "std/top" :dir :system)
-(include-book "std/lists/resize-list" :dir :system)
-(include-book "std/lists/nth" :dir :system)
+(include-book "std/io/unsound-read" :dir :system)
 
 (include-book "ubdds/lite")
 (include-book "ubdds/param")
@@ -158,12 +159,12 @@
 ;; these books.
 
 (include-book "defrstobj/basic-tests")
-(include-book "cutil/deflist-tests" :dir :system)
-(include-book "cutil/defalist-tests" :dir :system)
-(include-book "cutil/defmapappend-tests" :dir :system)
-(include-book "cutil/defprojection-tests" :dir :system)
-(include-book "cutil/defredundant-tests" :dir :system)
-(include-book "cutil/tools/assert-return-thms" :dir :system)
+(include-book "std/util/deflist-tests" :dir :system)
+(include-book "std/util/defalist-tests" :dir :system)
+(include-book "std/util/defmapappend-tests" :dir :system)
+(include-book "std/util/defprojection-tests" :dir :system)
+(include-book "std/util/defredundant-tests" :dir :system)
+(include-book "std/util/extensions/assert-return-thms" :dir :system)
 (include-book "centaur/misc/tshell-tests" :dir :system)
 
 (include-book "defrstobj/groundwork/demo1")

@@ -29,11 +29,12 @@
 (include-book "strings/top")
 (include-book "misc/top")
 (include-book "osets/top")
+(include-book "util/top")
 
 (defsection std
   :short "Standard libraries for ACL2."
 
-  :long "<p>The @('std') library is meant to become <i>ACL2, Batteries
+  :long "<p>The <b>std</b> library is meant to become <i>ACL2, Batteries
 Included</i>.  Its features a wide variety of books that work well together to
 provide a well-thought-out, documented, coherent reasoning strategy.</p>
 
@@ -47,10 +48,8 @@ but please be aware that things may change out from under you.</p>
    <see topic='@(url std/typed-lists)'>typed-lists</see>, and
    <see topic='@(url std/io)'>input/output</see>.
 Each of these libraries provides many lemmas for reasoning about built-in
-ACL2 functions, and also many additional functions.</p>
-
-<p>The @('Std') books also play well with libraries like @(see str), and @(see
-cutil).  We are working to further integrate these libraries, and may soon
-incorporate some of them into @(see std), itself.</p>")
+ACL2 functions, and also many additional functions.  There is also a very
+convenient @(see std/util) macro library, with macros that automate many
+otherwise-tedious tasks.</p>")
 
 

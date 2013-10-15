@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "CLEX")
-(include-book "cutil/defprojection" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 (include-book "str/eqv" :dir :system)
 
 (defprojection charlist-fix (x)

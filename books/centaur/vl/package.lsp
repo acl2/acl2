@@ -21,7 +21,7 @@
 (in-package "ACL2")
 
 (include-book "std/osets/portcullis" :dir :system)
-(include-book "cutil/portcullis" :dir :system)
+(include-book "std/portcullis" :dir :system)
 (include-book "oslib/portcullis" :dir :system)
 (include-book "centaur/bridge/portcullis" :dir :system)
 (include-book "centaur/getopt/portcullis" :dir :system)
@@ -33,7 +33,7 @@
   (set-difference-eq
    ;; Things to add:
    (multi-union-eq
-    cutil::*cutil-exports*
+    std::*std-exports*
     getopt::*getopt-exports*
     sets::*sets-exports*
     acl2::*acl2-exports*
@@ -64,10 +64,10 @@
       lbfix
       never-memoize
 
-      cutil::mksym
-      cutil::mksym-package-symbol
-      cutil::extract-keyword-from-args
-      cutil::throw-away-keyword-parts
+      std::mksym
+      std::mksym-package-symbol
+      std::extract-keyword-from-args
+      std::throw-away-keyword-parts
 
       value
       file-measure

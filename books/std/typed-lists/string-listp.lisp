@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "cutil/deflist" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 
 (in-theory (disable string-listp))
 
@@ -28,9 +28,9 @@
   :short "Lemmas about @(see string-listp) available in the @(see
 std/typed-lists) library."
   :long "<p>Most of these are generated automatically with @(see
-cutil::deflist).</p>"
+std::deflist).</p>"
 
-  (cutil::deflist string-listp (x)
+  (std::deflist string-listp (x)
     (stringp x)
     :true-listp t
     :elementp-of-nil nil

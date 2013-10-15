@@ -19,5 +19,5 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(ld "cutil/package.lsp" :dir :system)
+(ld "std/package.lsp" :dir :system)
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)

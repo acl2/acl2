@@ -41,7 +41,7 @@ see @(see demo2).</p>
 
 <ul>
 
-<li>It introduces @('demo-p'), an ordinary @(see cutil::defaggregate) with
+<li>It introduces @('demo-p'), an ordinary @(see std::defaggregate) with
 various fields and well-formedness conditions.  These @('demo-p') structures
 can be passed around throughout your program just like any ordinary ACL2
 object.</li>

@@ -18,5 +18,5 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "cutil/portcullis" :dir :system)
-(certify-book "portcullis" ? t)
+(include-book "std/portcullis" :dir :system)
+

@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "cutil/defrule" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "std/lists/top" :dir :system)
 (include-book "str/arithmetic" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)

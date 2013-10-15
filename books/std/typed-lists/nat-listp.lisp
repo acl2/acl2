@@ -20,7 +20,7 @@
 
 (in-package "ACL2")
 (include-book "arithmetic/nat-listp" :dir :system)
-(include-book "cutil/deflist" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 
 (in-theory (disable nat-listp
                     nat-listp-of-append-weak))
@@ -31,11 +31,11 @@
 library."
 
   :long "<p>Most of these are generated automatically with @(see
-cutil::deflist).</p>
+std::deflist).</p>
 
 <p>BOZO some additional lemmas are found in @('arithmetic/nat-listp').</p>"
 
-  (cutil::deflist nat-listp (x)
+  (std::deflist nat-listp (x)
     (natp x)
     :true-listp t
     :elementp-of-nil nil

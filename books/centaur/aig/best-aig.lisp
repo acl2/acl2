@@ -20,7 +20,7 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "std/osets/top" :dir :system)
 (include-book "centaur/vl/util/cwtime" :dir :system)
 

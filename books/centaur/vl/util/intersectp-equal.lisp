@@ -20,7 +20,7 @@
 
 (in-package "VL")
 (include-book "std/lists/list-defuns" :dir :system)
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 (local (include-book "arithmetic"))
 
 

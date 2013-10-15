@@ -100,6 +100,10 @@
     mbe
     mbt
     case-split
+
+    ;; xdoc integration
+    milawa
+    defxdoc
 ))
 
 (defmacro MILAWA::include-book (&rest args)

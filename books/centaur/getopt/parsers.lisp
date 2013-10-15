@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "GETOPT")
-(include-book "cutil/top" :dir :system)
+(include-book "std/util/top" :dir :system)
 (include-book "str/strval" :dir :system)
 
 

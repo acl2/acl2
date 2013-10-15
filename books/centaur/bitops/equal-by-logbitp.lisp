@@ -24,7 +24,7 @@
 ; agree on every bit.
 
 (in-package "ACL2")
-(include-book "cutil/wizard" :dir :system)
+(include-book "std/util/wizard" :dir :system)
 (local (include-book "integer-length"))
 (local (in-theory (disable floor mod logbitp evenp oddp)))
 (local (in-theory (disable logcons logcar logcdr integer-length)))

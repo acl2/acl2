@@ -248,9 +248,9 @@
 (acl2::def-b*-binder
  rewrite-rule
  #!acl2
- (cutil::da-patbind-fn 'rewrite-rule
-                       #!GL '(rune hyps lhs rhs equiv subclass heuristic-info)
-                       args forms rest-expr))
+ (std::da-patbind-fn 'rewrite-rule
+                     #!GL '(rune hyps lhs rhs equiv subclass heuristic-info)
+                     args forms rest-expr))
 ;; Note: careful with this; variable names that are imported symbols yield
 ;; names in the other package.  In particular, since we import single-letter
 ;; variables from the ACL2 package, use multiletter variables.

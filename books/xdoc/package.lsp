@@ -26,7 +26,7 @@
                        *common-lisp-symbols-from-main-lisp-package*)
              ;; Things to add:
              '(b* quit exit value defxdoc defxdoc-raw macro-args
-                  xdoc-extend defsection defsection-progn cutil lnfix
+                  xdoc-extend defsection defsection-progn lnfix
                   set-default-parents
                   getprop formals justification def-bodies current-acl2-world def-body
                   access theorem untranslated-theorem guard xdoc xdoc! unquote

@@ -18,11 +18,11 @@
 
 (in-package "ACL2")
 
-(include-book "cutil/defaggregate" :dir :system)
-(include-book "cutil/deflist" :dir :system)
-(include-book "cutil/defalist" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/deflist" :dir :system)
+(include-book "std/util/defalist" :dir :system)
 (include-book "tools/bstar" :dir :system)
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 ;(include-book "countereg-gen/top" :dir :system)
 (include-book "defprimitive")
 (include-book "regex/regex-ui" :dir :system)
@@ -31,7 +31,7 @@
 
 (defconst *debug* 4)
 
-(cutil::deflist string-list-p (x)
+(std::deflist string-list-p (x)
   (stringp x)
   :elementp-of-nil nil
   :true-listp t
@@ -45,7 +45,7 @@
            (stringp x))
   :rule-classes (:rewrite :forward-chaining))
 
-(cutil::deflist word-list-p (x)
+(std::deflist word-list-p (x)
   (word-p x)
   :elementp-of-nil nil
   :true-listp t
@@ -57,14 +57,14 @@
 
 ;;;; Representation of terminals
 ;;;;----------------------------
-(cutil::defaggregate terminal
+(std::defaggregate terminal
   ((class stringp)
    (gender)
    (word word-p))
   :tag :terminal
   :parents (earley-parser))
 
-(cutil::deflist terminal-list-p (x)
+(std::deflist terminal-list-p (x)
   (terminal-p x)
   :elementp-of-nil nil
   :true-listp t
@@ -72,19 +72,19 @@
 
 ;;;; Representation of context-free grammar
 ;;;;---------------------------------------
-(cutil::deflist string-list-list-p (x)
+(std::deflist string-list-list-p (x)
   (string-list-p x)
   :elementp-of-nil t
   :true-listp t
   :parents (earley-parser))
 
-(cutil::defalist rule-list-p (x)
+(std::defalist rule-list-p (x)
   :key (stringp x)
   :val (string-list-list-p x)
   :true-listp t
   :parents (earley-parser))
 
-(cutil::defaggregate grammar
+(std::defaggregate grammar
   ((rules rule-list-p)) ; rules should be treated as a hons alist
   :parents (earley-parser)
   :tag :rules)
@@ -99,7 +99,7 @@
 
 ;;;; Representation of dictionary
 ;;;;-----------------------------
-(cutil::defalist dictionary-p (x)
+(std::defalist dictionary-p (x)
   :key (stringp x)
   :val (terminal-list-p x)
   :true-listp t
@@ -118,7 +118,7 @@
 
 ;;;; Representation of lexicon
 ;;;;--------------------------
-(cutil::defaggregate lexicon
+(std::defaggregate lexicon
   ((dictionary dictionary-p) ; dictionary should be treated as a hons alist
    (part-of-speech string-list-p))
   :tag :lexicon
@@ -289,7 +289,7 @@
   )
  )
 
-(cutil::deflist pstate-list-p (x)
+(std::deflist pstate-list-p (x)
   (pstate-p x)
   :elementp-of-nil nil
   :true-listp t 
@@ -297,7 +297,7 @@
   :parents (earley-parser))
 
 
-(cutil::defaggregate pstate
+(std::defaggregate pstate
 ; consider renaming to cstate, short for "Chart state", or "staat", which is
 ; phoenetically similar to "state"
   :short "A Parser State (pstate)"
@@ -580,7 +580,7 @@
 
 ;;;; Representation of charts
 ;;;;-------------------------
-(cutil::defaggregate chart
+(std::defaggregate chart
   (pstates)
   :require ((pstate-list-p-of-chart->pstates
              (pstate-list-p pstates)))
@@ -645,13 +645,13 @@
 
 ;;;; Representation of chart listings
 ;;;;---------------------------------
-(cutil::deflist chart-list-p (x)
+(std::deflist chart-list-p (x)
   (chart-p x)
   :elementp-of-nil nil
   :true-listp t
   :parents (earley-parser))
 
-;; (cutil::defaggregate chart-listing
+;; (std::defaggregate chart-listing
 ;;   (charts)
 ;;   :require ((chart-list-p-of-chart-listing->charts
 ;;              (chart-list-p charts)))

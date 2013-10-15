@@ -30,11 +30,6 @@
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "data-structures/no-duplicates" :dir :system))
 
-;; (local
-;;  ;; [Jared] BOZO added after cutil updates are bringing in list-fix.. this
-;;  ;; book is just not ready for list-fix stuff... probably easy to update
-;;  (in-theory (disable append-of-nil)))
-
 (defun 4v-val-alistp (x)
   (declare (xargs :guard t))
   (if (atom x)

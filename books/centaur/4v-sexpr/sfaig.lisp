@@ -23,7 +23,7 @@
 (include-book "sexpr-to-faig")
 (include-book "sexpr-vars-1pass")
 (include-book "g-sexpr-eval") ;; BOZO for varmap stuff, split this out
-(local (include-book "cutil/defprojection" :dir :system))
+(local (include-book "std/util/defprojection" :dir :system))
 
 (local (in-theory (disable*  4v-sexpr-eval
                              4v-sexpr-alist-extract
@@ -211,7 +211,7 @@ equivalent sexpr environments."
   ///
   (local (in-theory (enable sfaiglist)))
 
-  (local (cutil::defprojection 4v-list-fix (x)
+  (local (std::defprojection 4v-list-fix (x)
            (4v-fix x)
            :optimize nil))
 

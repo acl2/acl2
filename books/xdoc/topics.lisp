@@ -115,7 +115,7 @@ project.</p>")
   :short "Add documentation to the @(see xdoc) database."
 
   :long "<box><p>Note: @('defxdoc') is very basic.  You will usually want to
-use @(see defsection) or @(see cutil::define) instead.</p></box>
+use @(see defsection) or @(see std::define) instead.</p></box>
 
 <p>@('Defxdoc') is the XDOC alternative to ACL2's built-in @('defdoc')
 command.</p>
@@ -1024,9 +1024,8 @@ with keyword arguments.  See also @(see extract-keyword-from-args).</p>
    (defthm foo-thm2 ...))
 })
 
-<p>Note: this particular example might be better written as a @(see
-cutil::define), which is much like a @('defsection') but has additional
-features.</p>
+<box><p>Note: this example might be better written as a @(see std::define),
+which is much like a @('defsection') but has additional features.</p></box>
 
 <h3>Overview</h3>
 

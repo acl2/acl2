@@ -1,1 +1,2 @@
-(ld "cutil/package.lsp" :dir :system)
+(include-book "std/portcullis" :dir :system)
+

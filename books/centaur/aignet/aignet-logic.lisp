@@ -21,15 +21,16 @@
 (in-package "AIGNET")
 ;; (include-book "centaur/aignet/idp" :dir :system)
 (include-book "litp")
-(include-book "cutil/defmvtypes" :dir :system)
-(include-book "cutil/defprojection" :dir :system)
+(include-book "std/util/defmvtypes" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
+(include-book "std/util/deflist" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "data-structures/list-defthms" :dir :system)
 (include-book "std/lists/equiv" :dir :system)
 (include-book "tools/defmacfun" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
-(include-book "cutil/defaggregate" :dir :system)
-(include-book "cutil/define" :dir :system)
 (include-book "tools/flag" :dir :system)
 (include-book "std/misc/two-nats-measure" :dir :system)
 (include-book "clause-processors/unify-subst" :dir :system)
@@ -546,18 +547,18 @@
 
 
 
-(cutil::deflist node-listp (x)
-                (node-p x)
-                :true-listp t)
+(std::deflist node-listp (x)
+              (node-p x)
+              :true-listp t)
 
 (define proper-node-p (x)
   (and (node-p x)
        (not (const-node-p x)))
   :enabled t)
 
-(cutil::deflist proper-node-listp (x)
-                (proper-node-p x)
-                :true-listp t)
+(std::deflist proper-node-listp (x)
+              (proper-node-p x)
+              :true-listp t)
 
 (defthmd proper-node-listp-implies-node-listp
   (implies (proper-node-listp x)

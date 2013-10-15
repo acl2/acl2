@@ -19,11 +19,11 @@
 (in-package "ACL2")
 
 (include-book "str/top" :dir :system)
-(include-book "cutil/defaggregate" :dir :system)
-(include-book "cutil/deflist" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 (include-book "std/lists/repeat" :dir :system) ; redundant
 (include-book "tools/bstar" :dir :system)
-(include-book "tools/defconsts" :dir :system)
+(include-book "std/util/defconsts" :dir :system)
 (include-book "xdoc/top" :dir :system)
 
 (include-book "object-representations")

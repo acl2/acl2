@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "natstr")
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -1162,7 +1162,7 @@ an accumulator."
    (define base64-decode-easy ((x stringp))
      (b* (((mv ok orig) (base64-decode x))
           ((unless ok)
-           (cutil::raise "Whoops")
+           (raise "Whoops")
            ""))
        orig))
 

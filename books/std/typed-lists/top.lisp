@@ -31,7 +31,7 @@
 (defsection std/typed-lists
   :parents (std)
   :short "A library about the built-in typed lists, like @(see
-character-listp), @(see nat-listp), string-listp), etc."
+character-listp), @(see nat-listp), @(see string-listp), etc."
 
   :long "<p>The @('std/typed-lists') library provides basic lemmas about
 built-in ACL2 functions.</p>
@@ -51,7 +51,7 @@ that deal with the typed lists you are interested in.  For instance,</p>
 })
 
 <p>Most of the typed-lists library is generated automatically by @(see
-cutil::deflist).  You may find this macro useful for introducing your own,
+std::deflist).  You may find this macro useful for introducing your own,
 custom typed lists.</p>
 
 <p>BOZO this library is not very complete.  We should probably add books

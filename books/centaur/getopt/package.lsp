@@ -20,7 +20,7 @@
 
 (in-package "ACL2")
 
-(include-book "cutil/portcullis" :dir :system)
+(include-book "std/portcullis" :dir :system)
 (include-book "oslib/portcullis" :dir :system)
 
 (defpkg "GETOPT"
@@ -29,7 +29,7 @@
                        *common-lisp-symbols-from-main-lisp-package*)
              '(union delete))
             sets::*sets-exports*
-            cutil::*cutil-exports*
+            std::*std-exports*
             '(;; Things we want to "export", for nicer use from other
               ;; packages.
               getopt
@@ -66,15 +66,15 @@
               enable*
               disable*
               e/d*
-              cutil::formal
-              cutil::formal-p
-              cutil::formal->opts
-              cutil::formal->name
-              cutil::formallist-p
-              cutil::formallist->names
-              cutil::look-up-formals
-              cutil::look-up-return-vals
-              cutil::tuplep)))
+              std::formal
+              std::formal-p
+              std::formal->opts
+              std::formal->name
+              std::formallist-p
+              std::formallist->names
+              std::look-up-formals
+              std::look-up-return-vals
+              std::tuplep)))
 
 #!GETOPT
 (defconst *getopt-exports*

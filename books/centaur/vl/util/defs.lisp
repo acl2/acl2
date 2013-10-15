@@ -29,8 +29,8 @@
 ; about general concepts which the ordinary ACL2 user may have written
 ; other, conflicting theorems about.
 
-(include-book "cutil/top" :dir :system)
-(include-book "tools/defconsts" :dir :system)
+(include-book "std/util/top" :dir :system)
+(include-book "std/util/defconsts" :dir :system)
 (include-book "std/misc/two-nats-measure" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
 (include-book "centaur/bitops/integer-length" :dir :system)

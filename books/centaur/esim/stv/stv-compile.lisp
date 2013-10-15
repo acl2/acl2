@@ -29,8 +29,8 @@
 ;; (include-book "../follow-backwards")
 (include-book "centaur/misc/vecs-ints" :dir :system)
 (include-book "centaur/misc/tuplep" :dir :system)
-(include-book "cutil/defmvtypes" :dir :system)
-(include-book "cutil/defprojection" :dir :system)
+(include-book "std/util/defmvtypes" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 (include-book "str/natstr" :dir :system)
 (include-book "std/lists/final-cdr" :dir :system)
 (include-book "centaur/vl/util/defs" :dir :system)
@@ -786,7 +786,7 @@ given a list of instance names and the name of the state bit."
                        "!"
                        (stv-forge-state-bit (cdr instnames) st-name))))
 
-(cutil::defprojection stv-forge-state-bits (instnames x)
+(std::defprojection stv-forge-state-bits (instnames x)
   (stv-forge-state-bit instnames x)
   :guard (atom-listp x)
   :result-type atom-listp)
@@ -818,11 +818,11 @@ given a list of instance names and the name of the state bit."
   (stv-forge-state-bit (stv-path-to-override-decision-instnames path)
                        "S"))
 
-(cutil::defprojection stv-paths-to-override-value-stbits (x)
+(std::defprojection stv-paths-to-override-value-stbits (x)
   (stv-path-to-override-value-stbit x)
   :guard t)
 
-(cutil::defprojection stv-paths-to-override-decision-stbits (x)
+(std::defprojection stv-paths-to-override-decision-stbits (x)
   (stv-path-to-override-decision-stbit x)
   :guard t)
 

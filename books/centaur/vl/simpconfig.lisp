@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "cutil/defaggregate" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
 
 (defaggregate vl-simpconfig
   :parents (vl-simplify)

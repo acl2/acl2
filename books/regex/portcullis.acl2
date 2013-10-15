@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-(include-book "cutil/portcullis" :dir :system)
+(include-book "std/portcullis" :dir :system)
 (ld "tools/flag-package.lsp" :dir :system)
 
 ; We need the following for provisional certification, so that ACL2

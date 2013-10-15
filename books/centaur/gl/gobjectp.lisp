@@ -24,7 +24,7 @@
 (include-book "tools/pattern-match" :dir :system)
 (include-book "bvecs")
 (include-book "gobject-types")
-;;(in-theory (disable cutil::tag-forward-to-consp))
+;;(in-theory (disable std::tag-forward-to-consp))
 
 ;; Mostly obsolete.  Some general utility stuff at the bottom.
 

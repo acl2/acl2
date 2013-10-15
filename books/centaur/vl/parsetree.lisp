@@ -2494,7 +2494,7 @@ variety.  Each @('vl-arguments-p') structure is an aggregate of two fields:</p>
   (local (in-theory (enable vl-arguments->namedp vl-arguments->args)))
 
   (defmacro patbind-vl-arguments (args forms rest-expr)
-    (cutil::da-patbind-fn 'vl-arguments '(namedp args) args forms rest-expr))
+    (std::da-patbind-fn 'vl-arguments '(namedp args) args forms rest-expr))
 
   (defthm booleanp-of-vl-arguments-p
     (booleanp (vl-arguments-p x))
@@ -4407,9 +4407,9 @@ include delays, etc.</p>")
           :in-theory (union-theories
                       (union-theories (current-theory :here)
                                       '(vl-module-p vl-module))
-                      (b* (((cutil::agginfo agg)
-                            (cutil::get-aggregate 'vl-module world)))
-                          (cutil::da-accessor-names 'vl-module agg.fields))))))
+                      (b* (((std::agginfo agg)
+                            (std::get-aggregate 'vl-module world)))
+                          (std::da-accessor-names 'vl-module agg.fields))))))
 
 (define vl-module->hands-offp ((x vl-module-p))
   :inline t

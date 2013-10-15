@@ -22,7 +22,7 @@
 (include-book "regex-parse")
 (include-book "regex-exec")
 (include-book "str/case-conversion" :dir :system)
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 (local (include-book "tools/mv-nth" :dir :system))
 (local (include-book "misc/assert" :dir :system))
 
@@ -475,9 +475,9 @@
          regex dictionary:</p>
 
 @({
- (include-book \"cutil/defalist\" :dir :system)
+ (include-book \"std/util/defalist\" :dir :system)
 
- (cutil::defalist dictionary-p (x)
+ (std::defalist dictionary-p (x)
    :key (stringp x)
    :val (acl2-number-listp x)
    :true-listp t)
@@ -504,7 +504,7 @@
         <p>Which enables ACL2 to admit our lookup function:</p>
 
 @({
- (include-book \"cutil/define\" :dir :system)
+ (include-book \"std/util/define\" :dir :system)
 
  (define dictionary-lookup ((key stringp)
                             (dictionary dictionary-p))

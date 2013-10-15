@@ -65,25 +65,24 @@
 
 (defxdoc osets
   :parents (std)
-  :short "ACL2 Ordered Sets Library."
+  :short "A finite set theory implementation for ACL2 based on fully ordered
+lists.  Some major features of this approach are that set equality is just
+@(see equal), and set operations like @(see union), @(see intersect), and so
+forth have O(n) implementations."
 
-  :long "<p>This is a finite set theory implementation for ACL2 based on fully
-ordered lists.  Some nice features of this approach are that set equality is
-just @(see equal), and set operations like @(see union), @(see intersect), and
-so forth have O(n) implementations.</p>
+  :long "<p>Osets mostly hides the fact that sets are represented as ordered
+lists.  You should not have to reason about the set order unless you are trying
+to exploit it to make some function faster.  Instead, we generally try to
+reason about sets with a membership-based approach, via @(see in) and @(see
+subset).</p>
 
-<p>Osets mostly hides the fact that sets are represented as ordered lists.  You
-should not have to reason about the set order unless you are trying to exploit
-it to make some function faster.  Instead, we generally try to reason about
-sets with a membership-based approach, via @(see in) and @(see subset).</p>
-
-<p>The library offers some automation for pick-a-point style reasoning, see for
-instance @(see all-by-membership), @(see pick-a-point-subset-strategy), and
-@(see double-containment).</p>
+<p>The osets library offers some automation for pick-a-point style reasoning,
+see for instance @(see all-by-membership), @(see pick-a-point-subset-strategy),
+and @(see double-containment).</p>
 
 <p>You can load the library with:</p>
 @({
- (include-book \"finite-set-theory/osets/sets\" :dir :system)
+ (include-book \"std/osets/top\" :dir :system)
 })
 
 <p>Besides this @(see xdoc::xdoc) documentation, you may be interested in the

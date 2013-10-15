@@ -85,11 +85,11 @@
 ;; We'll look up the theorem in the world, so it doesn't need to be stored
 ;; here.
 ;; Constrained-terms is an alist mapping variables to terms.
-(cutil::defaggregate constraint-rule
+(std::defaggregate constraint-rule
   (thmname lit-alist syntaxp))
 
 ;; this is the tuple referred to above
-(cutil::defaggregate constraint-tuple
+(std::defaggregate constraint-tuple
   (rule existing-lits matching-lit common-vars existing-vars sig-table))
 
 

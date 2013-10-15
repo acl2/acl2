@@ -26,11 +26,11 @@
 (include-book "esim-primitives")
 (include-book "esim-paths")
 (local (include-book "esim-sexpr-support-thms"))
-(include-book "cutil/define" :dir :system)
-(include-book "cutil/defaggregate" :dir :system)
-(include-book "cutil/defprojection" :dir :system)
-(include-book "cutil/defalist" :dir :system)
-(include-book "cutil/defmapappend" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
+(include-book "std/util/defalist" :dir :system)
+(include-book "std/util/defmapappend" :dir :system)
 (include-book "centaur/vl/toe/toe-emodwire" :dir :system)
 
 #||
@@ -78,7 +78,7 @@
 ; Our core transform will do this for a list of paths into some module.  At any
 ; point, some of these paths may be terminal.
 
-(cutil::defaggregate ecutnames
+(std::defaggregate ecutnames
   ((original      symbolp :rule-classes :type-prescription)
    (value         symbolp :rule-classes :type-prescription)
    (value-reg     symbolp :rule-classes :type-prescription)
@@ -87,7 +87,7 @@
    (mux           symbolp :rule-classes :type-prescription)
    ))
 
-(cutil::deflist ecutname-list-p (x)
+(std::deflist ecutname-list-p (x)
   (ecutnames-p x)
   :guard t)
 
@@ -100,7 +100,7 @@
           x.decision-reg
           x.mux)))
 
-(cutil::defmapappend ecutname-list->flat-names (x)
+(std::defmapappend ecutname-list->flat-names (x)
   (ecutnames->flat-names x)
   :guard (ecutname-list-p x))
 
@@ -134,13 +134,13 @@
    :decision-reg  (ecut-make-sym x "<override_decision_reg>")
    :mux           (ecut-make-sym x "<override_mux>")))
 
-(cutil::defprojection ecut-wire-list-names (x)
+(std::defprojection ecut-wire-list-names (x)
   (ecut-wire-names x)
   :guard (symbol-listp x)
   :result-type ecutname-list-p)
 
 
-(cutil::defalist ecut-wirename-alistp (x)
+(std::defalist ecut-wirename-alistp (x)
   :key (symbolp x)
   :val (ecutnames-p x)
   :keyp-of-nil t

@@ -21,7 +21,7 @@
 
 (in-package "ACL2")
 (include-book "tools/include-raw" :dir :system)
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "str/strprefixp" :dir :system) ;; used in the raw code
 ;; (depends-on "tshell-raw.lsp")
 

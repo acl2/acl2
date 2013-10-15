@@ -19,8 +19,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "CLEX")
-(include-book "cutil/define" :dir :system)
-(include-book "cutil/deflist" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 (include-book "xdoc/names" :dir :system)
 (include-book "str/case-conversion" :dir :system)
 (local (include-book "arithmetic"))

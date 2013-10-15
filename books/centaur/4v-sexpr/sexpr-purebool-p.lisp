@@ -232,7 +232,7 @@ efficient than calling @('4v-sexpr-purebool-check') repeatedly.</p>"
             :use ((:instance 4v-sexpr-purebool-p-to-faig-purebool-p))))))
 
 
-(cutil::deflist 4v-sexpr-purebool-list-p (x)
+(std::deflist 4v-sexpr-purebool-list-p (x)
   (4v-sexpr-purebool-p x)
   :guard t
   :parents (4v-sexpr-purebool-p)

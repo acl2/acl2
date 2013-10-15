@@ -21,7 +21,7 @@
 
 (in-package "AIGNET")
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (set-tau-auto-mode nil)
 

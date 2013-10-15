@@ -21,7 +21,7 @@
 ; July 2011, Jared added lots of documentation.
 
 (in-package "ACL2")
-(include-book "cutil/define" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "../misc/hons-alphorder-merge")
 
 ; aig-base.lisp

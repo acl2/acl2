@@ -106,7 +106,7 @@ requiring all of the variables in an s-expression to be natural numbers; see
   :short "@(call 4v-nsexpr-p) recognizes an alist where every value is
 an @(see 4v-nsexpr-p)."
 
-;; BOZO use cutil::defalist?
+;; BOZO use std::defalist?
 
   (defun 4v-nsexpr-alist-p (x)
     "Alist whose values are sexprs with natp variables."

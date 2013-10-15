@@ -155,8 +155,8 @@ example-lexer) for some examples of using it.</p>"
     (declare (xargs :mode :program))
     (b* ((__function__ 'def-sin-progress)
          (name-s  (symbol-name name))
-         (formals (cutil::look-up-formals name world))
-         (returns (cutil::look-up-return-vals name world))
+         (formals (std::look-up-formals name world))
+         (returns (std::look-up-return-vals name world))
          ((unless (member 'sin formals))
           (raise "~x0 does not take ~x1 as an argument." name 'sin))
          ((unless (member 'sin returns))
@@ -164,10 +164,10 @@ example-lexer) for some examples of using it.</p>"
          ;; Try to pick good return-value names.  This works if the user
          ;; introduced their function with DEFINE and named their return
          ;; values.  Otherwise, just generate crappy names.
-         (info (cdr (assoc name (cutil::get-defines world))))
+         (info (cdr (assoc name (std::get-defines world))))
          (return-names
           (if info
-              (cutil::returnspeclist->names (cdr (assoc :returns info)))
+              (std::returnspeclist->names (cdr (assoc :returns info)))
             (generate-awful-names-for-return-values returns 0)))
          (return-names
           ;; Rename the output SIN to NEW-SIN, so we can target it.

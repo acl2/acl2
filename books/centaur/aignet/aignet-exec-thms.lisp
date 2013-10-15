@@ -22,7 +22,7 @@
 ;; (include-book "centaur/aignet/idp" :dir :system)
 (include-book "litp")
 (include-book "snodes")
-(include-book "cutil/defmvtypes" :dir :system)
+(include-book "std/util/defmvtypes" :dir :system)
 (include-book "data-structures/list-defthms" :dir :system)
 (include-book "tools/defmacfun" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)

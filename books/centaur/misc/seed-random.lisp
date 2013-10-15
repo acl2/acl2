@@ -146,7 +146,7 @@ session by just calling ~c[(seed-random 'seed)].~/~/"
 (local
  (progn
 
-   (include-book "tools/defconsts" :dir :system)
+   (include-book "std/util/defconsts" :dir :system)
    (include-book "tools/bstar" :dir :system)
    (include-book "misc/assert" :dir :system)
 
