@@ -846,6 +846,14 @@
 	    (generate-congruences pred (cdr congruences)))))
     nil))
 
+(defun double-rewrite-congruences (args congruences)
+  (if (consp args)
+      (let ((hit (assoc (car args) congruences)))
+	(if hit `(cons (cons 'double-rewrite (cons ,(car args) ,*nil*))
+		       ,(double-rewrite-congruences (cdr args) congruences))
+	  `(cons ,(car args) ,(double-rewrite-congruences (cdr args) congruences))))
+    *nil*))
+
 (defun defequiv-fn (term lhs rhs pred context equiv congruences chaining keywords)
   (declare (xargs :mode :program))
   (let* ((context-macro (if keywords context (safe-symbol (list context "-macro") context)))
@@ -858,6 +866,7 @@
          (args--       (cdr term))
          (lhs-args     (remove rhs args))
          (lhs-args--   (remove rhs args--))
+	 (drw-args     (double-rewrite-congruences lhs-args-- congruences))
          (new-rhs      (safe-symbol (list rhs "_replacement") fn-witness))
          (rhs-args--   (replace-term rhs new-rhs args--))
          (lhs-rhs--    (replace-term lhs rhs lhs-args--))
@@ -887,7 +896,7 @@
       ,@(generate-congruences `(,context-fn ,@lhs-args--) congruences)
 
       (defmacro ,context-macro (,lhs &key ,@(make-keyargs (remove lhs lhs-args--)))
-        `(,',context-fn ,@(list ,@lhs-args--)))
+        `(,',context-fn ,@,drw-args))
 
       (defthm ,fix-fn-context-reduction
         (implies
