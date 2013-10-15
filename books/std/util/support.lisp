@@ -25,7 +25,7 @@
 
 (defxdoc support
   :parents (std/util)
-  :short "Miscellaneous supporting functions.")
+  :short "Miscellaneous supporting functions used by the @(see std/util) library.")
 
 (defsection tuplep
   :parents (support)
@@ -64,7 +64,7 @@ list to be nil-terminated."
 
 
 (defsection raise
-  :parents (support define)
+  :parents (support define er)
   :short "Shorthand for causing hard errors."
 
   :long "<p>@(call raise) is equivalent to @('(er hard? ...)'), but it

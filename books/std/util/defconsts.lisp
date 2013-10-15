@@ -27,8 +27,8 @@
 (defxdoc defconsts
   :parents (std/util defconst)
   :short "An enhanced variant of @(see defconst) that lets you use @(see state)
-and other @(see stobj)s, and directly supports calling @(see mv)-returning
-functions to define multiple constants."
+and other @(see acl2::stobj)s, and directly supports calling @(see
+mv)-returning functions to define multiple constants."
 
   :long "<p>Examples:</p>
 

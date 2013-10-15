@@ -189,12 +189,13 @@ to this @('define') only and not to any @('other-events').</dd>
 
 <dt>@(':inline val')</dt>
 
-<dd>Generates an inline function instead of an ordinary function, in a manner
-similar to @(see defun-inline).</dd>
+<dd>By default the function will not be inlined.  But if @(':inline t') is
+provided, we will create an inline function as in @(see defun-inline).  (The
+function will have an ugly name like @('foo$inline'), so we'll also set up a
+@('foo') macro and appropriate macro aliases.  See @(see defun-inline) for
+details.</dd>
 
-<dt>@(':parents parent-list')</dt>
-<dt>@(':short str')</dt>
-<dt>@(':long str')</dt>
+<dt>@(':parents'), @(':short'), @(':long')</dt>
 
 <dd>These are @(see defxdoc)-style options for documenting the function.  They
 are passed to a @('defsection') for this definition.</dd>
