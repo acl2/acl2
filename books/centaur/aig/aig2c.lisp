@@ -288,8 +288,14 @@ each AIG node, for a single AIG."
        (c-rhs (cdar input-init))            ;; C code fragment to initialize this var
        (c-lhs (cdr (hons-get var tempmap))) ;; C variable name for this AIG var
        ((unless c-lhs)
-        (raise "Variable ~x0 not bound in tempmap!" c-lhs)
-        code)
+        ;; I originally wanted to cause an error here, and say that the
+        ;; variable isn't bound in the tempmap.  But it's not really an error.
+        ;; The tempmap is constructed by walking over the AIG and assigning a
+        ;; name for every node.  It's perfectly possible that an input variable
+        ;; simply isn't used in the AIG.  So there's no reason to cause an
+        ;; error: we just need to not try to initialize variables that don't
+        ;; exist.
+        (aig2c-prologue (cdr input-init) tempmap config code))
 
        ;; Now print, e.g., "int temp_123 = init;"
        (code (str::revappend-chars "  "  code))
@@ -540,6 +546,10 @@ each AIG node, for a single AIG."
                  (sets::difference all-aig-vars (sets::mergesort input-vars)))
             ""))
 
+       (- (or (sets::subset (sets::mergesort input-vars) all-aig-vars)
+              (cw "Note: Some inputs are never used: ~x0.~%"
+                  (sets::difference (sets::mergesort input-vars) all-aig-vars))))
+
        ;; I originally thought I might check for unique input-c-names and
        ;; unique output-c-names.  This would be important if we were going to
        ;; avoid prologue and epilogue parts.  But by separating out the
@@ -607,7 +617,8 @@ each AIG node, for a single AIG."
 
 (aig2c-compile `(("foo" . ,(aig-and 'a 'b)))
                `((a . "inputs.a")
-                 (b . "inputs.b"))
+                 (b . "inputs.b")
+                 (c . "inputs.c"))
                :config (make-aig2c-config))
 
 
