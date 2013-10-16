@@ -21405,6 +21405,10 @@
   suggesting these improvements to ~c[time$] and providing an initial
   implementation for them.
 
+  Fixed a bug in an ACL2 system function, ~c[our-truename], which returns the
+  ``true name'' for a file name, when supplied with an optional second
+  argument.  Thanks to Camm Maguire for bringing this bug to our attention.
+
   ~st[NEW FEATURES]
 
   We have added a tool for writing out useful information about a book's event

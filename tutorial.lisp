@@ -4556,7 +4556,7 @@
 
    Since the definition terminates with an ~c[endp] test and otherwise ~c[cdr]s
    the argument, the author of ~c[rev] was clearly expecting ~c[x] to be a
-   ~c[true-listp].  (Indeed, the ``~il[guard]'' ~warn[] for ~c[rev] must require include
+   ~c[true-listp].  (Indeed, the ``~il[guard]'' ~warn[] for ~c[rev] must include
    ~c[(true-listp x)] since that is ~c[endp]'s guard.)  So you're naturally
    justified in limiting your thoughts about ~c[(rev x)] to ~c[x] that are
    true-lists.  This gives rise to the theorem:
@@ -4567,15 +4567,15 @@
               (true-listp (rev x))))
    ~ev[]
    This is the kind of thinking illustrated in the earlier ~c[append] example
-   (~pl[practice-formulating-strong-rules-1]) and, to paraphrase Z in ~i[Men in Black],
-   it exemplifies ``everything we've come to expect from years of training with
-   typed languages.''
+   (~pl[practice-formulating-strong-rules-1]), and, to paraphrase Z in
+   ~i[Men in Black], it exemplifies ``everything we've come to expect from
+   years of training with typed languages.''
 
    But logically speaking, the definition of ~c[rev] does not require ~c[x] to
    be a ~c[true-listp].  It can be any object at all: ACL2 functions are total.
    ~c[Rev] either returns ~c[nil] or the result of appending a singleton list
-   onto the right end of its recursive result.  That ~c[append] always returns
-   a ~c[true-listp] since the singleton list is a true
+   onto the right end of its recursive result.  That call of ~c[append] always
+   returns a ~c[true-listp] since the singleton list is a true
    list.  (~l[practice-formulating-strong-rules-1].)
 
    So this is a theorem and a very useful :~ilc[rewrite] ~warn[] rule:
@@ -4891,7 +4891,7 @@
    We know, from ~c[member-nats-below-weak-better], that if ~c[(natp j)] is true,
    the ~c[member] is equivalent to ~c[(and (natp k) (<= k j))].  So now consider
    what we know if ~c[(natp j)] is false.  If we can think of some term it's equivalent
-   to nd that term is simpler than the ~c[member] expression, we have a strong rule.
+   to and that term is simpler than the ~c[member] expression, we have a strong rule.
 
    But by inspection of the definition of ~c[nats-below], we see that when
    ~c[(natp j)] is false, ~c[(nats-below j)] is the list ~c[(0)] because ~c[(zp j)]
@@ -7475,7 +7475,7 @@
    is ~i[lhs] and the right-hand side is ~c[NIL].  If the conclusion is not an
    ~c[EQUAL], an ~c[IFF], or a ~c[NOT] then the conclusion itself will be the
    left-hand side and the right-hand side will be ~c[T].  If your lemma was
-   created by looking a Key Checkpoints while using The Method, the left-hand
+   created by looking at Key Checkpoints while using The Method, the left-hand
    side should match some term in that checkpoint.
 
    Remember, the left-hand side is the ``trigger'' that will make the rule
@@ -7890,11 +7890,11 @@
    is successful, ACL2 will have a new rewrite rule in the database, even though you
    did not ~i[explicitly] tell it to add a rule.
 
-   A common mistake for the new users is to forget that the above command adds
-   a rewrite rule.  This often results in a tangle of rules that lead nowhere
-   or to infinite rewriting that you will have to interrupt.  It is also good
-   to remember that the command ~i[only] adds a rule.  It does not magically
-   make ACL2 aware of all the mathematical consequences of the formula: it just
+   A common mistake for new users is to forget that the above command adds a
+   rewrite rule.  This often results in a tangle of rules that lead nowhere or
+   to infinite rewriting that you will have to interrupt.  It is also good to
+   remember that the command ~i[only] adds a rule.  It does not magically make
+   ACL2 aware of all the mathematical consequences of the formula: it just
    makes a rewrite rule.
 
    When you prove a theorem with ~c[defthm] you are ~i[programming] ACL2.

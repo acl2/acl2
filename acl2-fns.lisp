@@ -1411,7 +1411,11 @@ notation causes an error and (b) the use of ,. is not permitted."
                      "Unable to obtain the truename of file ~x0.~@1"
                      filename
                      (if (qfuncall msgp namestringp)
-                         (qfuncall msg "  ~@0" namestringp)
+
+; It is tempting to write (qfuncall msg "  ~@0" namestringp) just below, but
+; msg is a macro, so we construct the appropriate message ourselves.
+
+                         (list "  ~@0" (cons #\0 namestringp))
                        "")))))
           (t (namestring truename)))))
 
