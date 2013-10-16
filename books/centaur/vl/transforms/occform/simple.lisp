@@ -351,76 +351,6 @@ endmodule
 ||#
 
 
-(def-vl-modgen vl-make-1-bit-mux (approxp)
-  :short "Generate a 1-bit multiplexor module."
-  :body
-  (b* ((name (cat "VL_1_BIT_" (if approxp "APPROX_MUX" "MUX")))
-
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-
-       ((mv sbar-expr   sbar-netdecl)                   (vl-primitive-mkwire "sbar"))
-       ((mv sa-expr     sa-netdecl)                     (vl-primitive-mkwire "s_a"))
-       ((mv sbarb-expr  sbarb-netdecl)                  (vl-primitive-mkwire "sbarb"))
-
-       (sbar-inst   (vl-simple-inst *vl-1-bit-not* "mk_sbar"  sbar-expr  sel-expr))
-       (sa-inst     (vl-simple-inst *vl-1-bit-and* "mk_sa"    sa-expr    sel-expr  a-expr))
-       (sbarb-inst  (vl-simple-inst *vl-1-bit-and* "mk_sbarb" sbarb-expr sbar-expr b-expr))
-
-       (ports     (list out-port sel-port a-port b-port))
-       (portdecls (list out-portdecl sel-portdecl a-portdecl b-portdecl))
-       (nets1     (list out-netdecl sel-netdecl a-netdecl b-netdecl sbar-netdecl sa-netdecl sbarb-netdecl))
-       (insts1    (list sbar-inst sa-inst sbarb-inst))
-
-       ((when approxp)
-        ;; less exact version: out = sa | sbarb
-        (b* ((out-inst (vl-simple-inst *vl-1-bit-or* "mk_out" out-expr sa-expr sbarb-expr)))
-          (list (make-honsed-vl-module :name      name
-                                       :origname  name
-                                       :ports     ports
-                                       :portdecls portdecls
-                                       :netdecls  nets1
-                                       :modinsts  (cons out-inst insts1)
-                                       :minloc    *vl-fakeloc*
-                                       :maxloc    *vl-fakeloc*)
-                *vl-1-bit-not*
-                *vl-1-bit-and*
-                *vl-1-bit-or*)))
-
-       ((mv ab-expr ab-netdecl)     (vl-primitive-mkwire "ab"))
-       ((mv main-expr main-netdecl) (vl-primitive-mkwire "main"))
-
-       (ab-inst   (vl-simple-inst *vl-1-bit-and* "mk_ab"   ab-expr   a-expr    b-expr))
-       (main-inst (vl-simple-inst *vl-1-bit-or*  "mk_main" main-expr sa-expr   sbarb-expr))
-       (out-inst  (vl-simple-inst *vl-1-bit-or*  "mk_out"  out-expr  main-expr ab-expr)))
-
-    (list (make-honsed-vl-module :name      name
-                                 :origname  name
-                                 :ports     ports
-                                 :portdecls portdecls
-                                 :netdecls  (list* main-netdecl ab-netdecl nets1)
-                                 :modinsts  (list* out-inst main-inst ab-inst insts1)
-                                 :minloc    *vl-fakeloc*
-                                 :maxloc    *vl-fakeloc*)
-          *vl-1-bit-not*
-          *vl-1-bit-and*
-          *vl-1-bit-or*)))
-
-(defconsts *vl-1-bit-mux*
-  (car (vl-make-1-bit-mux nil)))
-
-(defconsts *vl-1-bit-approx-mux*
-  (car (vl-make-1-bit-mux t)))
-
-#||
-(vl-pps-modulelist (list *vl-1-bit-mux*
-                         *vl-1-bit-approx-mux*))
-||#
-
-
-
 (def-vl-modgen vl-make-n-bit-mux (n approxp)
   :short "Generate a wide multiplexor module."
 
@@ -449,18 +379,36 @@ possible; in this case @('X ? 1 : 1') and @('X ? 0 : 0') produce 1 and 0,
 respectively.  But when @('approxp') is T, we conservatively produce X in these
 cases, instead.</p>
 
-<p>Our gate-based approximation combines the inputs bit-by-bit.  For each pair
-of bits, @('a[i]') and @('b[i]'), we basically assign:</p>
+<p>For some years we implemented both kinds of muxes using gates, roughly as</p>
 
 <ul>
  <li>@('out[i] = (sel & a[i]) | (~sel & b[i])'), for approx muxes, or</li>
  <li>@('out[i] = (sel & a[i]) | (~sel & b[i]) | (a[i] & b[i])') otherwise</li>
 </ul>
 
+<p>But we later (October 2013) realized a bizarre inconsistency in the way that
+approx-muxes handled things.  In particular:</p>
+
+<ul>
+
+<li>If both a[i] and b[i] are 0, then the approx-mux expression produces a good
+0 output (because the AND gates propagate the zero.)  However,</li>
+
+<li>If both a[i] and b[i] are 1, then the approx-mux expression produces an X
+because the AND gates can't optimize things.</li>
+
+</ul>
+
+<p>Since our general intent is to model arbitrary mux implementations with
+approx muxes, this optimistic treatment for 0 seems suspicious or incorrect.
+We ultimately decided to adopt both kinds of muxes as new VL @(see primitives)
+rather than implement them with gates.  See @(see *vl-1-bit-approx-mux*) and
+@(see *vl-1-bit-mux*) for details.</p>
+
 <p>You might expect that it's better to set @('approxp') to NIL and get the
-behavior that is closest to Verilog.  But Sol has reported that the more
-conservative version produces better AIGs since the output doesn't depend upon
-the inputs when the select is X.  So, we generally set @('approxp') to T.</p>"
+behavior that is closest to Verilog.  But the more conservative version may
+generally produce smaller AIGs since the output doesn't depend upon the inputs
+when the select is X.  So, we generally set @('approxp') to T.</p>"
 
   :guard (and (posp n)
               (booleanp approxp))
@@ -469,10 +417,7 @@ the inputs when the select is X.  So, we generally set @('approxp') to T.</p>"
   (b* ((onebitmux (if approxp *vl-1-bit-approx-mux* *vl-1-bit-mux*))
 
        ((when (= n 1))
-        (list onebitmux
-              *vl-1-bit-or*
-              *vl-1-bit-not*
-              *vl-1-bit-and*))
+        (list onebitmux))
 
        (name (cat "VL_" (natstr n) "_BIT_" (if approxp "APPROX_MUX" "MUX")))
 
@@ -495,11 +440,7 @@ the inputs when the select is X.  So, we generally set @('approxp') to T.</p>"
                              :modinsts  insts
                              :minloc    *vl-fakeloc*
                              :maxloc    *vl-fakeloc*)))
-    (list mod
-          onebitmux
-          *vl-1-bit-and*
-          *vl-1-bit-or*
-          *vl-1-bit-not*)))
+    (list mod onebitmux)))
 
 #||
 (vl-pps-modulelist (vl-make-n-bit-mux 5 t))

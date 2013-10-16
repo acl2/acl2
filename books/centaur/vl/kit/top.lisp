@@ -24,6 +24,7 @@
 (include-book "model")
 (include-book "shell")
 (include-book "oslib/argv" :dir :system)
+(include-book "centaur/esim/stv/stv2c/top" :dir :system)
 (include-book "centaur/misc/intern-debugging" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (local (include-book "../util/arithmetic"))
@@ -41,6 +42,7 @@ Commands:
   json    Convert Verilog designs into JSON files (for easy parsing)
   lint    Find potential bugs in a Verilog design
   model   Translate Verilog designs for the ACL2 theorem prover
+  stv2c   Translate symbolic runs of Verilog designs into C++
   shell   Interactive VL shell (for experts)
 
 Use 'vl help <command>' for help on a specific command.
@@ -80,6 +82,7 @@ commands.</p>
           (cons "json"  *vl-json-help*)
           (cons "lint"  *vl-lint-help*)
           (cons "model" *vl-model-help*)
+          (cons "stv2c" acl2::*stv2c-help*)
           (cons "shell" *vl-shell-help*)))
 
   (encapsulate
@@ -190,6 +193,11 @@ toolkit with their own commands.</p>
 
        ((when (equal cmd "model"))
         (b* ((state (vl-model args)))
+          (exit-ok)
+          state))
+
+       ((when (equal cmd "stv2c"))
+        (b* ((state (acl2::stv2c args)))
           (exit-ok)
           state))
 

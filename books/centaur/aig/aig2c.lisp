@@ -288,7 +288,7 @@ each AIG node, for a single AIG."
        (c-rhs (cdar input-init))            ;; C code fragment to initialize this var
        (c-lhs (cdr (hons-get var tempmap))) ;; C variable name for this AIG var
        ((unless c-lhs)
-        (raise "Variable ~x0 not bound in tempmap!")
+        (raise "Variable ~x0 not bound in tempmap!" c-lhs)
         code)
 
        ;; Now print, e.g., "int temp_123 = init;"
