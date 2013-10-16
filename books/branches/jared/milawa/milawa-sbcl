@@ -1,0 +1,77 @@
+#!/bin/sh
+
+SBCL="sbcl"
+
+if [ "$#" -ne "1" ]
+then
+	echo "Usage: milawa-sbcl <IMAGE-FILE>"
+	echo "Where <IMAGE-FILE> is the name of an SBCL image to use, typically a"
+	echo "\".sbcl-image\" file, such as \"milawa.sbcl-image\"."
+	exit 1
+fi
+
+if [ -z "`which $SBCL`" ]
+then
+	echo "Error: SBCL not found."
+	echo ""
+	echo "Possible causes:"
+	echo "  - SBCL is not installed?"
+	echo "  - SBCL is not in your current \$PATH?"
+	echo "  - SBCL is in your path, but is not named '$SBCL'?"
+	echo "  - SBCL is in your path and is named '$SBCL', but is not executable?"
+	echo ""
+	echo "Possible fixes:"
+	echo "  - Add a symlink to SBCL named '$SBCL' somewhere in your \$PATH?"
+	echo "  - Edit the milawa-sbcl shell script and change SBCL=\"...\" to the name"
+	echo "    of your SBCL executable?"
+	echo "  - Make sure you can start SBCL by typing '$SBCL'"
+	echo ""
+fi
+
+if [ -n "`hostname | grep nemesis`" ]
+then
+    exec $SBCL --dynamic-space-size 2048 --control-stack-size 256 --noinform --core $1
+elif [ -n "`hostname | grep moros`" ]
+then
+    exec $SBCL --dynamic-space-size 2048 --control-stack-size 256 --noinform --core $1
+elif [ -n "`hostname | grep jordan`" ]
+then
+    exec $SBCL --dynamic-space-size 2048 --control-stack-size 256 --noinform --core $1
+elif [ -n "`hostname | grep lhug`" ]
+then
+    exec $SBCL --dynamic-space-size 16384 --control-stack-size 1024 --noinform --core $1
+elif [ -n "`hostname | grep shadowfax`" ]
+then
+    exec $SBCL --dynamic-space-size 256 --control-stack-size 1024 --noinform --core $1
+elif [ -n "`hostname | grep warren`" ]
+then
+    exec $SBCL --dynamic-space-size 1800 --control-stack-size 256 --noinform --core $1
+else
+    echo "Error: host not yet configured."
+    echo ""
+    echo "What is this about?"
+    echo "  SBCL allows the amount of available heap and memory space to be "
+    echo "  configured via command-line parameters, --dynamic-space-size (for "
+    echo "  the size of the heap), and --control-stack-size (for the size of "
+    echo "  the control stack."
+    echo ""
+    echo "How to fix it?"
+    echo "  Before using milawa-sbcl, please determine the appropriate values "
+    echo "  for these parameters on this host, `hostname`.  Then, edit the "
+    echo "  milawa-sbcl script and add a section for your host, which invokes "
+    echo "  sbcl with the proper settings."
+    echo ""
+    echo "How to determine these settings?"
+    echo ""
+    echo "  Just run:"
+    echo "    sbcl --dynamic-space-size [N] --control-stack-size [M]"
+    echo ""
+    echo "  For your choice of N and M.  I don't know what the minimums are, "
+    echo "  but probably you want a control-stack of at least 256, and a "
+    echo "  dynamic space size of at least 1500.  More is better."
+    echo ""
+    echo "  At any rate, if sbcl dies with a message about 'cannot allocate "
+    echo "  memory', or says that the dynamic-space-size is too large, you "
+    echo "  will need to lower the settings."
+    echo ""
+fi

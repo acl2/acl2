@@ -1,0 +1,34 @@
+#!/bin/sh
+
+ALLEGRO="acl"
+
+if [ "$#" -ne "1" ]
+then
+	echo "Usage: milawa-acl <IMAGE-FILE>"
+	echo "Where <IMAGE-FILE> is the name of an Allegro image to use, typically a"
+	echo "\".acl-image\" file, such as \"milawa.acl-image\"."
+	exit 1
+fi
+
+if [ -z "`which $ALLEGRO`" ]
+then
+	echo "Error: Allegro not found."
+	echo ""
+	echo "Possible causes:"
+	echo "  - Allegro Common Lisp is not installed?"
+	echo "  - Allegro is not in your current \$PATH?"
+	echo "  - Allegro is in your path, but is not named '$ALLEGRO'?"
+	echo "  - Allegro is in your path and is named '$ALLEGRO', but is not executable?"
+	echo ""
+	echo "Possible fixes:"
+	echo "  - Add a symlink to Allegro named '$ALLEGRO' somewhere in your \$PATH?"
+	echo "  - Edit the milawa-acl shell script and change ALLEGRO=\"...\" to the name"
+	echo "    of your Allegro executable?"
+	echo "  - Make sure you can start Allegro by typing '$ALLEGRO'"
+	echo ""
+fi
+
+ulimit -s 65535
+exec $ALLEGRO -I $1
+
+

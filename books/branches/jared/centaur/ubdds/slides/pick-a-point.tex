@@ -1,0 +1,292 @@
+
+\subsection{Pick-a-point proofs}
+\begin{frame}
+\frametitle{Reasoning about UBDDs}
+
+Why do we care?
+
+\SmallSkip
+No ACL2 reasoning is needed for equivalence checking
+\begin{itemize} 
+\item Build a UBDD for the circuit (execution)
+\item Build a UBDD for the specification (execution)
+\item Check if they are equal (execution)
+\end{itemize}
+
+\SmallSkip
+
+But there are other, critical uses of UBDDs
+\begin{itemize}
+\item Parameterization --- partitions an input space into UBDDs
+\item AIG conversion --- builds a UBDD from an AIG
+\item G System --- represents symbolic objects as lists of UBDDs
+\end{itemize}
+
+\end{frame}
+
+
+
+
+\begin{frame}[fragile]
+\frametitle{The direct approach}
+
+The ``recursion and induction'' approach does not work very well
+
+\SmallSkip
+Some problems
+\begin{itemize}
+\item Finding workable induction schemes
+\item Case-splits in UBDD construction (\Code{q-car}, \Code{q-cdr}, \Code{q-cons})
+\end{itemize}
+
+\SmallSkip
+It also ``feels wrong''
+\begin{itemize}
+\item Structural, low-level view of Boolean functions
+\item Not applicable to other representations (AIGs, ...)
+\end{itemize}
+
+\SmallSkip
+Similar to the problem of reasoning about ordered sets
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\begin{verbatim}
+(defthm q-and-equiv
+  (implies (and (normp x)
+                (normp y))
+           (equal (q-and x y)
+                  (q-ite x y nil))))
+\end{verbatim}
+ACL2 can do the proof directly (0.7s)
+\begin{itemize}
+\item Merges induction schemes of \Code{normp} and \Code{q-ite}
+\item *1/22 inductive subgoals
+\item Many subsequent case splits
+\end{itemize}
+
+
+\end{frame}
+
+\begin{frame}[fragile]
+\begin{verbatim}
+(defun q-xor (x y)
+  (cond ((atom x)
+         (if x (q-not y) y))
+        ((atom y)
+         (if y (q-not x) x))
+        ((hons-equal x y)
+         nil)
+        (t
+         (qcons (q-xor (car x) (car y))
+                (q-xor (cdr x) (cdr y))))))
+
+(defthm q-xor-equiv
+  (implies (and (normp x)
+                (normp y))
+           (equal (q-xor x y)
+                  (q-ite x (q-not y) y))))
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\small{\begin{verbatim}
+Subgoal *1/7.97.164.8'
+(IMPLIES (AND (CONSP X)
+              Y (CONSP Y)
+              (NOT (EQUAL X (Q-NOT Y)))
+              (NOT (EQUAL (Q-NOT Y) Y))
+              (EQUAL (Q-ITE (CAR X) (CAR (Q-NOT Y)) NIL)
+                     T)
+              (NOT (EQUAL (Q-ITE (CDR X) (CDR (Q-NOT Y)) (CDR Y))
+                          T))
+              (NOT (CAR Y))
+              (CDR Y)
+              (CONSP (CDR Y))
+              (EQUAL (Q-XOR (CDR X) (CDR Y))
+                     (Q-ITE (CDR X) (Q-NOT (CDR Y)) (CDR Y)))
+              (NORMP (CAR X))
+              (NORMP (CDR X))
+              (CONSP (CAR X))
+              (NORMP (CDR Y))
+              (NOT (EQUAL (Q-NOT Y) T)))
+         (NOT (Q-NOT Y)))
+\end{verbatim}}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Pick-a-point proofs}
+
+{\bf Prove}: $(A \cup B) \cap C = (A \cap C) \cup (B \cap C)$
+
+\SmallSkip
+{\bf Proof}: Let $x$ be an arbitrary element.  We will show $x$ is in $(A \cup B)
+\cap C$ exactly when it is in $(A \cap C) \cup (B \cap C)$.
+
+\begin{eqnarray*}
+x \in \Red{(A \cup B)} \cap \Green{C}
+  &\leftrightarrow& \Red{(x \in A \cup B)} \wedge \Green{x \in C} \\
+  &\leftrightarrow& \Red{(x \in A \vee x \in B)} \wedge \Green{x \in C}
+\end{eqnarray*}
+\begin{eqnarray*}
+x \in \Red{(A \cap C)} \cup \Green{(B \cap C)}
+  &\leftrightarrow& \Red{x \in A \cap C} \vee \Green{x \in B \cap C} \\
+  &\leftrightarrow& \Red{(x \in A \wedge x \in C)} \vee \Green{(x \in B \wedge x \in C)} \\
+  &\leftrightarrow& (\Red{x \in A} \vee \Green{x \in B}) \wedge x \in C
+\end{eqnarray*}
+Q.E.D.
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Pick-a-point proofs of UBDDs}
+
+{\bf Sets} \[x = y \leftrightarrow \forall a : \mathit{has}(x, a) = \mathit{has}(y, a)\]
+
+\SmallSkip
+{\bf UBDDs} \[x = y \leftrightarrow \forall a : \mathit{eval\textrm{-}bdd}(x,
+a) = \mathit{eval\textrm{-}bdd}(y, a)\]
+
+\SmallSkip
+Some familiar set-theory operations
+\begin{itemize}
+\item \Code{NIL}, the empty set
+\item \Code{T}, the universal set
+\item \Code{Q-NOT}, set complement
+\item \Code{Q-AND}, set intersection
+\item \Code{Q-OR}, set union
+\end{itemize}
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{Osets-style automation}
+
+Suppose \Code{(bdd-lhs)}, \Code{(bdd-rhs)}, and \Code{(bdd-hyp)} satisfy
+\begin{verbatim}
+  (implies (and (bdd-hyp)
+                (normp (bdd-lhs))
+                (normp (bdd-rhs)))
+           (equal (eval-bdd (bdd-lhs) vals) 
+                  (eval-bdd (bdd-rhs) vals)))
+\end{verbatim}
+
+\SmallSkip
+Then, we can prove
+\begin{verbatim}
+  (implies (and (bdd-hyp) 
+                (normp (bdd-lhs))
+                (normp (bdd-rhs)))
+           (equal (bdd-lhs) (bdd-rhs)))
+\end{verbatim}
+
+\SmallSkip
+A default hint functionally instantiates this theorem when our goal is to show
+two \Code{normp}'s are equal (and other approaches have failed)
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Preparing for pick-a-point proofs}
+
+For ordered sets
+\begin{itemize}
+\item \Code{(setp (union x y))}
+\item \Code{(in a (union x y))} $=$ \Code{(in a x)} $\vee$ \Code{(in a y)}
+\end{itemize}
+
+\SmallSkip
+
+For UBDDs
+\begin{itemize}
+\item \Code{(normp x)}, \Code{(normp y)} $\rightarrow$ \Code{(normp (q-or x y))}
+\item \Code{(eval-bdd (q-or x y) a)} $=$ \Code{(eval-bdd x a)} $\vee$ \Code{(eval-bdd y a)}
+\end{itemize}
+
+\SmallSkip
+These proofs are done in the ``recursion and induction'' style
+
+They tend to be easy
+
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+
+{\footnotesize \begin{verbatim}
+(add-bdd-fn q-and)
+
+(defthm q-and-equiv
+  (implies (and (normp x)
+                (normp y))
+           (equal (q-and x y)
+                  (q-ite x y nil))))
+
+We now appeal to EQUAL-BY-EVAL-BDDS in an attempt to show that (Q-AND X Y)
+and (Q-ITE X Y NIL) are equal because all of their evaluations under
+EVAL-BDD are the same.  (You can disable EQUAL-BY-EVAL-BDDS to avoid
+this.  See :doc EQUAL-BY-EVAL-BDDS for more details.)
+
+We augment the goal with the hypothesis provided by the :USE hint.
+The hypothesis can be derived from EQUAL-BY-EVAL-BDDS via functional
+instantiation, provided we can establish the constraint generated;
+the constraint can be simplified using case analysis.  We are left
+with the following two subgoals.
+\end{verbatim}}
+
+\end{frame}
+
+
+
+
+\begin{frame}[fragile]
+
+{\footnotesize \begin{verbatim}
+
+Subgoal 2
+(IMPLIES (AND (IMPLIES (AND (AND (NORMP X) (NORMP Y))
+                            (NORMP (Q-AND X Y))
+                            (NORMP (Q-ITE X Y NIL)))
+                       (EQUAL (EQUAL (Q-AND X Y) (Q-ITE X Y NIL))
+                              T))
+              (NORMP X)
+              (NORMP Y))
+         (EQUAL (Q-AND X Y) (Q-ITE X Y NIL))).
+
+But simplification reduces this to T, using the :executable-counterparts
+of EQUAL and NORMP, primitive type reasoning, the :rewrite rules NORMP-
+OF-Q-AND and NORMP-OF-Q-ITE and the :type-prescription rule NORMP.
+
+\end{verbatim}}
+\end{frame}
+
+
+\begin{frame}[fragile]
+
+{\footnotesize \begin{verbatim}
+Subgoal 1
+(IMPLIES (AND (NORMP X)
+              (NORMP Y)
+              (EQUAL (LEN ARBITRARY-VALUES)
+                     (MAX (MAX-DEPTH (Q-AND X Y))
+                          (MAX-DEPTH (Q-ITE X Y NIL))))
+              (BOOLEAN-LISTP ARBITRARY-VALUES)
+              (NORMP (Q-AND X Y))
+              (NORMP (Q-ITE X Y NIL)))
+         (EQUAL (EVAL-BDD (Q-AND X Y) ARBITRARY-VALUES)
+                (EVAL-BDD (Q-ITE X Y NIL) ARBITRARY-VALUES))).
+
+But simplification reduces this to T, using the :definition MAX, the
+:executable-counterpart of NORMP, primitive type reasoning, the :rewrite
+rules EVAL-BDD-OF-NON-CONSP-CHEAP, EVAL-BDD-OF-Q-AND, EVAL-BDD-OF-Q-
+ITE, NORMP-OF-Q-AND and NORMP-OF-Q-ITE and the :type-prescription rule
+NORMP.
+
+Q.E.D.
+\end{verbatim}}
+\end{frame}

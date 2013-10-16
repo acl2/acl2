@@ -1,0 +1,83 @@
+val () = Runtime.LoadF "tiny.spec";
+
+(* ------------------------------------------------------------------------ *)
+
+local
+   val bitsOptionString =
+      fn SOME n => BitsN.toString n
+       | NONE => "-"
+   val evalS = Runtime.evalQ o Lib.stringToQuote
+   fun readBits s =
+      case evalS s of
+         Eval.Values.Bits n => SOME n
+       | _ => NONE
+   fun getBits s err =
+      fn () => Option.valOf (readBits s) handle Option.Option => raise Fail err
+in
+   val readPC = getBits "PC" "readPC"
+   val readStrobe = getBits "OutStrobe" "readStrobe"
+   fun readMap m addr = readBits (m ^ "(" ^ Int.toString addr ^ ")")
+   fun readMem m addr n =
+      let
+         val read = readMap m
+         fun iter a n =
+            if n = 0
+               then a
+            else let
+                    val p = n - 1
+                 in
+                    iter ((addr + p, read (addr + p)) :: a) p
+                 end
+      in
+         iter [] n
+      end
+   fun printMem m addr n =
+      List.app
+         (fn (i, d) => print (Int.toString i ^ ": " ^ bitsOptionString d ^"\n"))
+         (readMem m addr n)
+   val printRegs =
+      List.app
+        (fn i =>
+           print ("R(" ^ Int.toString i ^ "): " ^
+                  bitsOptionString (readMap "R" i) ^ "\n"))
+end
+
+(* ------------------------------------------------------------------------ *)
+
+fun initialize () =
+   General.ignore
+     (Runtime.reset ()
+      ; Runtime.evalQ `initialize (test_prog)`)
+
+(* ------------------------------------------------------------------------ *)
+
+fun run () =
+   let
+      fun loop () =
+         let
+            val pc = readPC ()
+            val strobe = readStrobe ()
+            val () = print (BitsN.toString pc)
+            val () = General.ignore (Runtime.evalQ `Next`)
+            val npc = readPC ()
+            val nstrobe = readStrobe ()
+            val () = if nstrobe <> strobe
+                        then print (" [" ^ BitsN.toString nstrobe ^ "]")
+                     else ()
+            val () = print "\n"
+         in
+            if npc = pc then () else loop ()
+         end
+   in
+      loop(); print "Done.\n"
+   end
+
+(*
+Runtime.reset()
+initialize()
+run()
+
+printRegs (List.tabulate (5, I))
+printMem "IM" 0 9
+printMem "DM" 1000 12
+*)

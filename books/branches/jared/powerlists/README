@@ -1,0 +1,44 @@
+This directory contains some events related to Misra's theory of
+powerlists (see Misra's paper "Powerlists: A Structure for Parallel
+Recursion" in ACM Transactions on Programming Languages and Systems
+(TOPLAS), November 1994).  In essense, powerlists are lists with
+constructors and destructors designed to operate well with divide and
+conquer parallel algorithms.  These constructors build a new powerlist
+L from a pair of powerlists L1 and L2 of equal length.  The length of
+the new powerlist L will be twice the length of L1 (equivalently twice
+the length of L2).  Misra proposes two such constructors, namely tie
+and zip: Tie constructs L by placing the elements of L2 after the
+elements of L1, and zip constructs L by shuffling the elements of L1
+and L2.
+
+All the books here were created by Ruben Gamboa and are described in
+his paper, "Defthms About Zip and Tie," (UTCS tech report TR97-02) and
+in his dissertation (University of Texas, Austin, May 1999).  A
+version of the paper was also submitted to JAR, but it appears to have
+vanished into a black hole.
+
+This directory contains the following books:
+
+    * defpkg.lisp	    -- Defines the powerlist package.
+    * algebra.lisp	    -- Basic theory of powerlists.
+    * simple.lisp	    -- Easy theorems about powerlists,
+			       mostly examples from Misra's paper.
+    * sort.lisp		    -- Proof obligations for a sort routine.
+    * merge-sort.lisp	    -- Proof of the correctness of an abstract 
+			       merge sort.
+    * batcher-sort.lisp	    -- A proof of correctness of the Batcher
+			       sort.  This proof departs from the one
+			       given by Misra in significant ways.
+    * bitonic-sort.lisp	    -- A proof of the correctness of a
+			       particular instance of bitonic sort,
+			       closely following Misra's proof.
+    * gray-code.lisp	    -- Properties of a gray code generator,
+			       based on Misra's proof.
+    * prefix-sum.lisp	    -- Proof of various parallel prefix sum 
+			       algorithms.  This departs significantly 
+			       from Misra's proof.
+    * cla-adder.lisp	    -- Solution to a challenge posed by Misra,
+			       to use the results about prefix sums to 
+			       show the correctness of a
+			       carry-lookahead adder.
+

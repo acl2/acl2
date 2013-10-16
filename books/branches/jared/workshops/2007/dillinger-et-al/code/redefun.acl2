@@ -1,0 +1,4 @@
+(in-package "ACL2")
+(include-book "defcode" :ttags ((defcode)))
+; cert-flags: ? t :ttags ((defcode))
+(certify-book "redefun" ? t :ttags ((defcode)))

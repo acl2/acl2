@@ -1,0 +1,274 @@
+<html>
+
+<head>
+<title>Centaur Books &mdash; README</title>
+
+<style>
+<!--
+
+body { width: 55em; color: #000000; background-color: #a7bcd1; margin: 0;}
+.content { background-color: #ffffff; margin: 0;
+   padding-top: 1em; padding-bottom: 1em; padding-right: 3em; padding-left: 1em;
+   border-right-style: solid; border-right-width: 2px; border-right-color: #000000; }
+h1 { margin-top: 0px; margin-bottom: 0px;}
+h1,h2,h3,h4,h5,dt { font-family: sans-serif; font-weight: bold; color: #677c91; }
+h3 { margin-top: 2em; }
+b { color: #374c51; }
+h1 { text-align: center; }
+h3 { margin-left: 1em; }
+h4,h5 { margin-left: 3em; }
+p,ul,dl,ol { margin-left: 3em; }
+dd { margin-left: 3em; margin-top: .2em;}
+dd + dd { margin-top: .5em;}
+dt { margin-top: 1em; }
+a:hover { background-color: #ffff90; }
+li { margin-top: .5em; }
+pre { margin-left: 5em; }
+dd pre { margin-left: 2em; }
+
+-->
+</style>
+
+</head>
+
+<body>
+<div class="content">
+<table width="100%" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td valign="middle"><h1>Centaur Books</h1></td>
+<td width="174"><img src="centaur-logo.jpg" alt="Centaur Logo" width="174" height="77"/></td>
+</tr>
+</table>
+
+<h3>Introduction</h3>
+
+<p>The <i>Centaur Books</i> are
+a <a href="http://www.gnu.org/philosophy/free-sw.html">free</a> set of
+<a href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2</a>
+libraries for formal hardware verification.</p>
+
+<p>They include:</p>
+
+<ul>
+
+<li><b>VL</b> &mdash; a Verilog parser and simplification tool.</li>
+
+<li><b>E</b> &mdash; a deeply embedded hardware description language with a
+well-defined semantics.</li>
+
+<li><b>ESIM</b> &mdash; a symbolic simulator for E modules.</li>
+
+<li><b>GL</b> &mdash; a symbolic simulator for ACL2 functions and framework for
+bit-blasting ACL2 theorems.</li>
+
+<li>Many supporting libraries, e.g., for representing Boolean or four-valued
+logic expressions, debugging ESIM runs with waveforms, reasoning about
+arithmetic, and so forth.</li>
+
+</ul>
+
+<p><a href="http://www.centtech.com/">Centaur Technology</a> is a small company
+in Austin, TX.  We
+design <a href="http://www.via.com.tw/en/products/processors/">x86
+processors</a> for our parent company, <a href="http://www.via.com.tw/">VIA
+Technologies</a>.  We have used these books to prove correctness properties of
+several execution units, and to develop other tools such as an equivalence
+checker, a linter, etc.</p>
+
+
+<h3>Prerequisites</h3>
+
+<p><b style="color: #ff0000;">Warning:</b> We expect these books to be much
+less stable than ordinary ACL2 books because we are actively using them and
+often need to extend them.</p>
+
+<dl>
+
+<dt>Recommended Hardware</dt>
+
+<dd>You will at least want a fast <b>dual-core</b> machine with <b>8 GB</b> of
+memory.  Having additional cores is very useful for quickly re-certifying books
+in parallel, but careful here: with more cores you'll need even more memory to
+avoid swapping death.  A good target might be at least
+<b>4 GB per core</b>.</dd>
+
+<dd>We used to recommend even more memory than this.  Ample memory was
+especially important when we carried out large proofs using BDDs, but these
+days we often use SAT instead, and SAT is far less memory intensive.  Even so,
+today many of our real hardware proofs are made faster (or possible) by having
+32 or more GB of memory.  Also, many of our tools, e.g., our Verilog parser,
+are written in a memory-hungry way because that's just the kind of environment
+we work in.</dd>
+
+
+<dt>Recommended Operating System</dt>
+
+<dd>We use <b>64-bit Linux</b>.  Other unix derivatives like Darwin, FreeBSD,
+etc., might work reasonably well, but Linux is our main platform.  Windows
+probably won't work.  You will need ordinary tools like perl, make, etc.</dd>
+
+
+<dt>Clozure Common Lisp Configuration</dt>
+
+<dd>We use 64-bit <a href="http://ccl.clozure.com/">Clozure Common Lisp</a>.
+Other Lisps probably won't work.</dd>
+
+<dd>We usually use a fairly recent SVN snapshot.</dd>
+
+<dd><b style="color: #ff0000;">CCL Configuration before building ACL2:</b> We
+use <a href="ccl-config.lsp">ccl-config.lsp</a> to do some extra configuration
+that increases the stack sizes and tunes the garbage collector for better
+performance.</dd>
+
+<dd>We configure our <tt>PATH</tt> so that we can launch CCL by
+typing <tt>ccl</tt>.</dd>
+
+
+<dt>ACL2(h) Configuration</dt>
+
+<dd>You will need to
+build <a href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2</a> with Hons
+enabled.  The recommended way to build is,  with:</dd>
+
+<dd><pre>
+$ # rebuild ccl using ccl-config.lsp
+$ cd [...]/acl2/
+$ make LISP=ccl ACL2_HONS=h ACL2_SIZE=3000000
+</pre></dd>
+
+<dd>Using a large <tt>ACL2_SIZE</tt> can help avoid performance problems due to
+filling up the ACL2 package with too many symbols.</dd>
+
+<dd>We configure our <tt>PATH</tt> so that we can launch ACL2(h) by
+typing <tt>acl2</tt>.</dd>
+
+
+<dt>cert.pl Configuration</dt>
+
+<dd>We generally use <tt>cert.pl</tt> to certify books.  This script is located
+in the <tt>acl2/books</tt> directory.  We recommend that you configure
+your <tt>PATH</tt> so you can invoke it by just typing <tt>cert.pl</tt>.</dd>
+
+<dt>(Optional) GTKWave Configuration</dt>
+
+<dd>You can skip this if you aren't doing hardware verification.</dd>
+
+<dd>We often use <a href="http://gtkwave.sourceforge.net/">GTKWave</a> for
+debugging waveforms.  Other VCD file viewers may also work.</dd>
+
+<dd>We configure our <tt>PATH</tt> so that we can run GTKWave by
+typing <tt>gtkwave</tt>.</dd>
+
+
+<dt>(Optional) Glucose Configuration</dt>
+
+<dd>We often use the <a href="http://www.lri.fr/~simon/?page=glucose">Glucose</a>
+Sat Solver.</dd>
+
+<dd>We configure out <tt>PATH</tt> so that we can run Glucose (sometimes called
+<tt>glucose.sh</tt>) by typing <tt>glucose</tt>.</dd>
+
+
+<dt>(Optional) Lingeling Configuration</dt>
+
+<dd>We sometimes use the <a href="http://fmv.jku.at/lingeling/">Lingeling</a>
+Sat Solver.</dd>
+
+<dd>We configure our path so that we can run the Lingeling executable by
+typing <tt>lingeling</tt>.</dd>
+
+</dl>
+
+
+<h3>Building the Books</h3>
+
+<p>Once you have the above prerequisites, you will be ready to certify the ACL2
+books.  The preferred command to do this is:</p>
+
+<pre>
+$ # get ccl, reconfigure it, build acl2, set up your path as explained above.
+$ cd [...]/acl2/books/
+$ make USE_QUICKLISP=1 -j 4    # -j 4 for a quad-core processor
+</pre>
+
+<p>The USE_QUICKLISP=1 instructs <tt>make</tt> to download and install
+<a href="http://www.quicklisp.org">Quicklisp</a>, which is sort of a Common
+Lisp equivalent to CPAN for Perl, RubyGems for Ruby, etc.  This is necessary
+for certain books.</p>
+
+<p>Depending on your hardware this may take ten minutes up to hours.  For
+reference, it takes about an hour on an 8-core AMD-FX8350 with 32 GB of memory
+running FreeBSD, using -j 8.</p>
+
+
+<h3>Next Steps</h3>
+
+<p>After building the books with the <tt>make</tt> command above, you should
+obtain an <b>XDOC Manual</b> with documentation for the Centaur books, and also
+has the regular documentation for ACL2 and other Community Books like str,
+osets, ihs, etc.</p>
+
+<p>To view the manual, point your web browser
+at <a href="manual/index.html">manual/index.html</a>&mdash;this link will be
+broken until you generate the manual.  (We also keep
+a <a href="http://fv.centtech.com/acl2/latest/doc/">public copy</a> of the
+manual on our web site, but we only update it at each ACL2 release, so it's
+generally best to use a local copy that matches your specific version of the
+books.)</p>
+
+<p>If you are specifically interested in hardware verification, there is also a
+preliminary <b>tutorial</b> that walks through the verification of a trivial
+ALU module.  To get started, see:</p>
+
+<pre>
+books/centaur/tutorial/intro.lisp
+</pre>
+
+<h3>Contact Information</h3>
+
+<p>If you have questions, comments, or bug reports about these books, please
+email Jared Davis and Sol Swords, <tt>{jared,sswords}@centtech.com</tt>.</p>
+
+<p>Unfortunately we can't offer any serious technical support.  We may be able
+to answer some questions on an informal, "low bandwidth" basis, in our spare
+time.</p>
+
+
+<h3>License Information</h3>
+
+<p>Copyright &copy; 2008-2013 Centaur Technology and others
+(see <b style="color: #009000">**</b>)</p>
+
+<dl>
+
+<dt>Contact Information</dt>
+<dd>Centaur Technology Formal Verification Group<br/>
+7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.<br/>
+<a href="http://www.centtech.com/">http://www.centtech.com/</a></dd>
+
+<dt>Copyright Notice</dt>
+
+<dd>This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option) any
+later version.  This program is distributed in the hope that it will be useful
+but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+more details.  You should have received a copy of the GNU General Public
+License along with this program; if not, write to the Free Software Foundation,
+Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.</dd>
+</dl>
+
+<p><b style="color: #009000;">**</b> All of the Centaur books are licensed
+under the GPL "2 or later."  Most are copyright by Centaur Technology, but some
+are copyrights of others, e.g., the books in ubdds/ are copyright by Bob Boyer
+and Warren Hunt; see the individual headers on each file for more information.
+Many of these books also depend on other ACL2 libraries that are copyright by
+their respective owners.  To the best of our knowledge, we believe all
+libraries we include are also licensed under the GPL "2 or later" or compatible
+licenses.</p>
+
+
+</div>
+</body>
+</html>

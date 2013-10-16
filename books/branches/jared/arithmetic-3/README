@@ -1,0 +1,580 @@
+This directory is essentially deprecated.  Please see
+../arithmetic-5/README for information about which arithmetic books to
+use.
+
+=================================================================
+
+README for Arithmetic-3
+
+Author: Robert Bellarmine Krug
+
+Read at least Section 1.A.
+
+Also, see Section 0 of ../arithmetic-5/README for information about which
+arithmetic books to use.
+
+=================================================================
+
+Contents
+
+1. HOW TO USE THE ARITHMETIC-3 BOOKS.
+  1.A. In Brief 
+  1.B. Choosing a Normal Form.
+  1.C. Mini-theories.
+
+2. HOW TO PROVE THEOREMS USING ACL2.
+  2.A. Introduction.
+  2.B. How to Use the Theorem Prover --- ``The Method''.
+  2.C. Structured Theory Development.
+  2.D. A Few Notes.
+
+=================================================================
+
+
+1. HOW TO USE THE ARITHMETIC-3 BOOKS.
+
+  1.A. In Brief
+
+First certify the books in arithmetic-3.
+
+Then, after starting ACL2, execute the following two forms:
+
+(include-book "arithmetic-3/top" :dir :system)
+
+(set-default-hints '((nonlinearp-default-hint stable-under-simplificationp 
+                                              hist pspv)))
+
+Note 1: If you are having difficulty proving a ``simple'' theorem
+and the arithemtic book's rules seem to be getting in the way, You can
+execute
+
+(set-minimal-arithmetic-theory)
+
+This will disable almost all of the arithmetic book's rules, leaving
+you with a small set.
+
+Execute (set-default-arithmetic-theory) to return to the default
+starting point of the arithemtic books.
+
+Note 2: Occasionally non-linear arithmetic will go off into the weeds
+and consume too much time.  If you notice that ACL2 is taking too long
+on a particular goal or theorem, you can try executing
+(set-default-hints nil) before retrying the problematic theorem.  This
+will result in a theory which ``knows'' less about multiplication, so
+one should examine any failed goals with this in mind.  One should
+also remember to re-enable the nonlinearp-default-hint afterwards.
+
+
+  1.B. Choosing a Normal Form.
+
+
+The major goal of this library is to provide a set of rewrite rules
+which will drive systems of arithmetic expressions into a useful
+normal form.  There are, however, at least two barriers to achieving
+this goal.  First, as Kurt G\"odel showed, integer arithmetic is
+formally undecidable; i.e., there is no algorithm which will fully
+normalize all systems of arithmetic expressions.  Second, there is no
+reason to believe that there is one ``best'' normal form.  We
+therefore provide the ability to choose any one of several alternative
+normal forms.
+
+Before we go any further we should mention that there is, in general,
+no reason to use the information in the rest of this section.  We
+believe that the default setup is sufficient for most purposes.
+On occasion one will run across a lemma which requires a
+different normal form and it is for these occasions that we provide
+the following; however, for many users it will be sufficient to just
+include the appropriate books and to execute 
+(set-default-hints '(nonlinearp-default-hint stable-under-simplificationp 
+                                             hist pspv))
+as described above.
+
+
+Gather/Scatter-exponents:
+
+There are (at least) two ways of normalizing the (almost) equivalent
+terms:
+(expt x (+ m n)) and 
+(* (expt x m) (expt x n)).
+(Question: Under what conditions are these two terms not equivalent?)
+
+One can choose the first of these as the normal form and gather
+exponents, or one can choose the second as the normal form and scatter
+exponents.  That is, one can choose to rewrite (expt x (+ m n)) to 
+(* (expt x m) (expt x n)) --- to scatter exponents; or to rewrite
+(* (expt x m) (expt x n)) to (expt x (+ m n)) --- to gather exponents.
+By default, exponents are gathered when the book Bind-free/top is
+loaded.
+
+To switch to scattering exponents, execute (scatter-exponents)
+at the top level prompt.  To resume gathering exponents, execute
+(gather-exponents).  These two forms are macros which expand to the
+appropriate set of commands.  (To see their expansions, one can
+execute 
+:trans (scatter-exponents) or
+:trans (gather-exponents) at the top-level. 
+
+It is slightly more
+complex to switch theories within a :hints form.  One can use
+:in-theory (e/d (scatter-exponents-theory)
+                (gather-exponents-theory))
+and
+:in-theory (e/d (gather-exponents-theory)
+                (scatter-exponents-theory
+                 prefer-positive-exponents-scatter-exponents-theory))
+to switch to scattering exponents or gathering exponents respectively.
+
+
+Prefer-positive-addends:
+
+This theory (enabled by default) moves negative addends to the other
+side of an equality or inequality.  A simple example is:
+(< (+ a (- b) c)
+   (+ d (* -3 e)))
+ ===>
+(< (+ a c (* 3 e))
+   (+ b d)).
+Execute (do-not-prefer-positive-addends) at the top-level to disable
+this theory and (prefer-positive-addends) to re-enable it.  To switch
+theories within a :hints form, one can use:
+:in-theory (disable prefer-positive-addends-theory)
+and
+:in-theory (enable prefer-positive-addends-theory)
+to disable or enable this theory.
+
+
+Prefer-positive-exponents:
+
+This theory (disabled by default) moves factors with negative
+exponents to the other side of an equality or inequality.  A simple
+example is:
+(equal (* a (/ b) c)
+       (* d (expt e -3)))
+===>
+(equal (* a c (expt e 3))
+       (* b d)).
+
+One can enable this with (prefer-positive-exponents) and disable it
+with (do-not-prefer-positive-exponents) at the top level prompt.
+
+Note that (prefer-positive-exponents) is a specialization of
+(scatter-exponents).  It therefore switches to scattering exponents if
+this has not been done previously.  Thus, one may need to execute
+(gather-exponents) after (do-not-prefer-positive-exponents) if one was
+originally gathering exponents and wished to resume doing so.  To
+switch theories within a :hints form, one can use:
+:in-theory (e/d (scatter-exponents-theory
+                 prefer-positive-exponents-scatter-exponents-theory)
+                (gather-exponents-theory))
+and
+:in-theory (disable prefer-positive-exponents-scatter-exponents-theory)
+or
+:in-theory (e/d (gather-exponents-theory)
+                (scatter-exponents-theory
+                 prefer-positive-exponents-scatter-exponents-theory)).
+
+
+  1.C. Mini-theories.
+
+
+The book mini-theories contains several useful lemmatta not enabled by
+default.  We recommend that you look briefly at this book.  Here we
+describe two of the lemmas which are included.
+
+Two lemmas --- |(- x)| and |(/ x)| --- are included for those who like
+to replace subtraction with multiplication by -1 and division by
+exponentiation.  If you enable these, be sure to disable their
+inverses, |(* -1 x)| and |(expt x -1)|, or you will get infinite
+rewrite loops.
+
+=================================================================
+
+
+In this mini-essay, we assume a basic familiarity with ACL2.
+
+
+2. HOW TO PROVE THEOREMS USING ACL2.
+
+
+  2.A. Introduction.
+
+
+When using ACL2, it is important to take an organized approach to the
+proof process.  Sections 1.B. and 1.C. are a summary of the material
+to be found in Chapter 9 of Computer-Aided Reasoning: An Approach and
+Chapter 6 of Computer-Aided Reasoning: ACL2 Case Studies.  I highly
+recommend these two books to the serious ACL2 user.  In section 2.D. we
+address a few issues that are too often overlooked by the ACL2 user.
+
+Here, we mention a few simple points about using ACL2.
+
+1. ACL2 is automatic only in the sense that you cannot steer it once
+it begins a proof attempt.  You can only interrupt it.
+
+2. You are responsible for guiding it, usually by proving the
+necessary lemmas.
+
+3. Never prove a lemma without also thinking about how it will be
+used.
+
+4. To lead ACL2 to a proof, you usually must know the proof yourself.
+
+
+  2.B. How to Use the Theorem Prover --- ``The Method''
+
+
+In this section, we outline `The Method''.  While it is only one of
+many possible styles of working with ACL2, we have found it to be a
+useful starting point from which to develop one's own method.  In the
+following section we will discuss some of its weaknesses and how to
+get around them.
+
+Let us imagine that we want to prove some theorem, MAIN; that in
+order to do so it is sufficient to use lemmas A, B, and C; and that
+each of these lemmas can be proved using sub-lemmas as depicted in the
+proof tree below.
+
+                             MAIN
+                               |
+                               |
+            --------------------------------------
+            |                  |                 |
+            |                  |                 |
+            A                  B                 C
+            |                  |                 |
+            |                  |                 |
+       -----------         ---------        -----------
+       |    |    |         |       |        |         |
+       |    |    |         |       |        |         |
+       A1   A2   A3        B1      B2       C1        C2
+            |
+            |
+        ---------
+        |       |
+        |       |
+       A1a     A2b
+
+
+One will not usually have worked out the proof (or even necessity) of
+every lemma before trying to prove MAIN.  In fact, most users work out
+the detailed structure of the proof tree during their interaction with
+ACL2.  Merely keeping track of what has been proved and what remains
+to be proved is daunting enough.  It is this book-keeping task that
+``The Method'' is designed to assist.
+
+The goal of the procedure we outline here is to produce a sequence of
+defthm commands which will lead ACL2 to a proof of MAIN.  The
+procedure will produce a post-order traversal of the tree (A1, A1a,
+A1b, A2, A3, A, B2, B2, B, C1, C2, C, MAIN).
+
+We use ACL2 in conjunction with a text editor such as Emacs where we
+can run ACL2 as a process in a *shell* buffer, and maintain a second
+buffer for input commands, referred to as the script buffer.
+
+When we are done, the script buffer will contain the postorder
+traversal of the proof tree.  But, as we construct the proof the
+script buffer is logically divided into two parts by an imaginary line
+we call the barrier.  The part above the barrier consists of the
+commands that have been carried out, while the part below the buffer
+contains the commands we intend to carry out later.  The barrier is,
+by convention, denoted by the s-expression (I-am-here).
+
+Initially, the script buffer should contain only the theorem
+MAIN with the barrier at the top of the buffer; i.e., the done list
+is empty and the to-do list contains only MAIN.  Here is ``The
+Method''.
+
+1. Think about the proof of the first theorem in the to-do list.
+Have the necessary lemmas been proved?  If so, go to step 2.
+Otherwise add them to the front of the to-do list and repeat step 2.
+
+2. Try proving the first theorem with ACL2 and let the output stream
+into the *shell* buffer.  Abort the proof if it runs too long.
+
+3. If ACL2 succeeded, advance the barrier past the successful command
+and go to step 2.  Otherwise go to step 4.
+
+4. Inspect the output of the failed proof attempt from the beginning
+rather than from the end,  You should look for the first place the
+proof attempt deviated from your imagined proof.  Modify the script
+appropriately --- this usually means adding lemmas to the front of the
+to-do list although you may need to add hints to the current theorem.
+Sometimes, especially if the reason for the failure is that the
+theorem is false, this may mean modifying the script both above and
+below the barrier.  Go to step 2.
+
+
+  2.C. Structured Theory Development.
+
+
+There are several shortcomings of ``The Method''.  In this section,
+we describe some of these shortcomings and discuss an elaboration of
+``The Method'' which should lessen their influence.
+
+First, ``The Method'' provides no guidance for developing the over-all
+structure of a substantial proof effort.  It is too easy to lose one's
+way in the middle of the proof effort and, moreover, once the proof is
+complete it can be quite difficult to comprehend its structure.  Such
+comprehension is important for presenting the proof to others, and is
+also useful for modifying the proof --- either in order to clean it up or
+in order to prove a related theorem.
+
+Second, use of ``The Method'' is prone to lead to the following:
+One desires to prove a certain lemma, but it requires a lemma in support
+of its proof, which leads to another lemma to be proved in support of
+\emph{that} one, and so on.  At some point the effort seems misguided,
+but by then the evolving proof structure is far from clear and it is
+difficult to decide how far to back up.  Even if a decision is made to
+back up to a particular lemma, is it clear which lemmas already proved
+may be discarded?
+
+Finally, even if the above process is successful for a while, it can
+ultimately be problematic in an even more frustrating way.  Suppose
+that one attempts to prove some goal theorem, and from the failed
+proof attempt one identifies rewrite rules that appear to be helpful,
+say, L1 and L2.  Suppose further that additional rewrite rules are
+proved on the way to proving L1 and L2.  When one again attempts to
+prove the original goal theorem, those additional rules can send the
+proof attempt in a new direction and prevent L1 and L2 from being
+used.
+
+We describe here a modular, top-down methodology which reflects common
+proof development practice in the mathematical community and is
+designed to lessen the above described problems.
+
+Here is an outline describing many proofs, both mechanically checked
+ones, and others.
+
+1. To prove the main theorem Main:
+
+2. It should suffice to prove lemmas A, B, and C.  (Main Reduction)
+
+3. We need to draw upon a body of other, previously completed
+work.  (Proof Support)
+
+4. We may also need a few additional, minor, lemmas.  (Proof Hacking)
+
+The outline may be reflected in the following structure of a top-level
+book, which (at least initially) can use defaxiom or skip-proofs as
+shown in order to defer the proofs of the main lemmas.
+
+(include-book ``lib'')      ; 3. Support
+
+(defaxiom A ...)            ; 2. Main Reduction
+(defaxiom B ...)
+(defaxiom C ...)
+
+<minor lemmas>              ; 4. Proof Hacking
+
+(defthm MAIN ...)           ; 1. Goal
+
+This use of defaxiom has the advantage that one can verify that lemmas
+A, B, and C are actually the ones needed to prove MAIN without having
+to do a lot of work to prove them.  In step four of our description of
+``The Method'', we said that one should add any new lemmas to the
+front of the to-do list and then go directly to step one.  Here, we
+recommend adding these new lemmas using skip-proofs (or as axioms) and
+making sure that they are what is needed before continuing.
+
+For purposes of illustration assume that we next want to prove lemma
+C.  Above, we suggested that this be done by adding any necessary
+sub-lemmas in front of this main lemma.  Here, we suggest that one of
+two techniques be used.  If the proof of C requires only two or three
+lemmas, and each of these requires no further sub-lemmas, prove C
+within the scope of an encapsulate as in:
+
+(encapsulate
+  ()
+
+  (local
+    (defthm C1
+      ...))
+
+  (local
+    (defthm C2
+      ...))
+
+  (defthm C
+    ...)
+
+  ).
+
+Note that by making lemmas C2 and C2 local to the encapsulate they
+will not be seen outside of the context in which they were designed to
+be used, and so will not change the behavior of any events later in
+the script.  Their influence has been limited and the chances for
+surprises has been lessened.
+
+If the proof of lemma C is more complex --- if it requires more than a
+couple of lemmas or if those sub-lemmas themselves require sub-lemmas
+--- lemma C should be proved in a separate book named C.lisp and the
+following should appear in the main script:
+
+(encapsulate
+  ()
+
+  (local (include-book "C"))
+
+  (defthm C
+    ...)
+
+  ).
+
+The book C.lisp should then be recursively treated as described here
+with lemma C playing the role of MAIN.  This delegation of the work to
+prove C to another book makes the file MAIN.lisp much easier to read,
+and the hierarchy of book inclusions reflects the overall structure of
+the proof.  (See certify-book and include-book in the documentation.
+We assume here that C.lisp will be certified at some point during the
+proof development cycle.)
+
+Note that we are using two types of books:
+
+2. Lemma Books: Book name is the same as the name of the final theorem
+proved in the book.  Main lemmas can be postponed to be proved in
+subsidiary lemma books, temporarily replaced by defaxiom in the
+present book.
+
+2. Library Books: Other than a lemma book, typically it contains
+generally useful definitions and lemmas.
+
+Our top-down methodology suggests a focus on developing reasonably
+short lemma books.  The trick to keeping their length under control is
+first to identify the main lemmas in support of the book's goal
+theorem, then pushing their proofs into subsidiary lemma sub-books,
+especially when supporting sub-lemmas may be required.  Each main lemma
+is handled as illustrated above with sub-books A, B, and C:  an
+encapsulate event contains first a local include-book of the
+corresponding lemma sub-book, and second the main lemma.
+
+An important aspect of this approach is that the way in which a
+sub-lemma is proved in such a sub-book will not affect the
+certification of the parent book.  That is, the use of local around
+the include-book of a lemma sub-book allows the sub-book to be
+changed, other than changing its goal theorem, without affecting the
+certification of the parent book.  This modularity can prevent replay
+problems often encountered when using less structured approaches to
+mechanically-assisted proof.
+
+Although our focus here has been on lemma books, there is still a role
+for library books.  It can be useful from time to time to browse ones
+current collection of books and to pull out the most general of these
+lemmas and put them into one or more library books.  This is how the
+library books in books/arithmetic, for instance, were developed.
+
+
+  2.D. A Few Notes.
+
+
+We finish this part with some more simple points which are easy to
+overlook:
+
+1. Definitions, both recursive and non-recursive, should be disabled
+as soon as possible.  Non-recursive functions, which can be regarded
+as abbreviations, will be opened up by ACL2 at the first opportunity
+and so will rarely be used as intended if they are enabled.
+
+Recursive definitions will not disappear in the same way, and so the
+desirability of disabling them is not as readily apparent.  However,
+if they are enabled ACL2 will open them up each time they are seen,
+attempt to rewrite them, and then close them back up again unless the
+rewritten definition is ``better'' than the unopened definition.
+Unless one is proving simple facts about the function this is often a
+large waste of time.  We have seen proofs go from taking more than 30
+minutes to under 15 seconds by disabling (an admittedly large number
+of complicated and mutually) recursive function definitions.
+
+2. In addition to the ``obvious'' facts about a function which one
+should prove before disabling it, one should prove lemmas about the
+simple cases which can arise surprisingly often.  In the case of
+arithmetic functions this would include such cases as repeated
+arguments, e.g., (logand x x) = x, and base cases, e.g., (expt x 0) =
+(if (equal x 0) 0 1), (expt x 1) = (fix x), and (expt x -1) = (/ x).
+
+3. Once one is comfortable with the use of rewrite rules, one should
+next explore the use of type-prescription rules and linear lemmas.
+Type-prescription rules can be a bit tricky to get used to, but it is
+well worth the effort.
+
+One common problem newer users encounter is with the way hypotheses of
+type-prescription rules are relieved --- type reasoning alone must be
+sufficient.  The primitive types in ACL2 are:
+
+*TS-ZERO*                  ;;; {0}
+*TS-POSITIVE-INTEGER*      ;;; positive integers
+*TS-POSITIVE-RATIO*        ;;; positive non-integer rationals
+*TS-NEGATIVE-INTEGER*      ;;; negative integers
+*TS-NEGATIVE-RATIO*        ;;; negative non-integer rationals
+*TS-COMPLEX-RATIONAL*      ;;; complex rationals
+*TS-NIL*                   ;;; {nil}
+*TS-T*                     ;;; {t}
+*TS-NON-T-NON-NIL-SYMBOL*  ;;; symbols other than nil, t
+*TS-PROPER-CONS*           ;;; null-terminated non-empty lists
+*TS-IMPROPER-CONS*         ;;; conses that are not proper
+*TS-STRING*                ;;; strings
+*TS-CHARACTER*             ;;; characters.
+
+If ones hypotheses deal only with these types (or there union such as
+integerp or true-listp) one is usually OK.  Otherwise, the necessary
+facts must be present explicitly in the hypotheses of the goal
+being proved, or else themselves be relievable by other
+type-prescription rules.  In particular, rewriting is not used.
+(For example, the presence of (< 4 x) as a hypothesis is not
+sufficient for type-reasoning to establish (< 3 x).)
+
+4. The use of defaxiom (or skip-proofs) is a good way to avoid wasting
+time proving useless lemmas.
+
+5. False theorems are surprisingly hard to prove.  Even the most
+experienced ACL2 user will regularly write a false theorem.  When a
+proof just will not go through, examine the output of the failed proof
+attempt with an eye to test cases which may reveal a problem.
+
+6. (From the documentation)
+
+Stack overflows are most often caused by looping rewrite rules. In  
+some Lisps, especially GCL, stack overflows often manifest themselves
+as segmentation faults, causing the entire ACL2 image to crash.
+Finding looping rewrite rules can be tricky, especially if you are
+using books supplied by other people.
+
+A wonderful trick is the following. When there is a stack overflow
+during a proof, abort and then try it again after turning on rewrite
+stack monitoring with :brr t. When the stack overflows again, exit to
+raw Lisp. How you exit to raw Lisp depends on which Lisp you are
+using. In Allegro Common Lisp, for example, the stack overflow will
+leave you in an interactive break. You must exit this break, e.g.,
+with :continue 1. This will leave you in the top-level ACL2 command
+loop. You must exit this environment with :q. That will leave you in
+raw Allegro.
+
+After getting into raw Lisp, execute
+  (cw-gstack)
+
+The loop in the rewriter will probably be evident!
+
+If you are in GCL the stack overflow will probably cause a 
+segmentation fault and abort the Lisp job. This makes it harder to
+debug but here is what you do. First, re-create the situation just
+prior to submitting the form that will cause the stack overflow. You
+can do this without suffering through all the proofs by using the
+:ld-skip-proofsp option of ld to reload your scripts. Before you
+submit the form that causes the stack overflow, exit the ACL2 command
+loop with :q. In raw GCL type
+ (si::use-fast-links nil)
+
+This will slow GCL down but make it detect and signal stack overflows
+rather than overwrite the system memory. Now reenter the ACL2 command
+loop with (lp).
+
+Now carry on as described above, turning on rewrite stack monitoring
+with :brr t and provoking the stack overflow. When it occurs, you will
+be in an interactive break. Exit to raw Lisp with two successive :q's,
+one to get out of the error break and the next to get out of the
+top-level ACL2 command loop. Then in raw GCL execute the cw-gstack
+above.
+
+Suggestion: Once you have found the loop and fixed it, you should
+execute the ACL2 command :brr nil, so that you don't slow down
+subsequent proof attempts. If you are in GCL, you should also get into
+raw Lisp and execute (si::use-fast-links t).
