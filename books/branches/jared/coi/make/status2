@@ -1,7 +1,0 @@
-#!/bin/sh
-# This script helps you see which of your files are out of sync with CVS.  You can just
-# invoke it using ./status2
-
-make -f Makelibs status | grep -v "Up-to-date"
-
-

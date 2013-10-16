@@ -1,3 +1,0 @@
-(ld "../powerlists/defpkg.lsp")
-
-(certify-book "eval-poly" ? t)

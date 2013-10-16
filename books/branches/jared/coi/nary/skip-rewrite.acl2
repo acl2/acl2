@@ -1,9 +1,0 @@
-#|-*-Lisp-*-=================================================================|#
-#|                                                                           |#
-#| coi: Computational Object Inference                                       |#
-#|                                                                           |#
-#|===========================================================================|#
-
-(in-package "ACL2")
-; cert-flags: ? t :skip-proofs-okp t
-(certify-book "skip-rewrite" ? t :skip-proofs-okp t)

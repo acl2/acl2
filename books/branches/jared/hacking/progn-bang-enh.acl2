@@ -1,3 +1,0 @@
-(in-package "ACL2")
-; cert-flags: ? t :ttags ((defcode))
-(certify-book "progn-bang-enh" ? t :ttags ((defcode)))
