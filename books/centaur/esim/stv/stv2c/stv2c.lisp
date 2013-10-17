@@ -16,6 +16,10 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 
+; Added 10/17/2013 by Matt K.: Making this hons-only, because the proof of
+; RETURN-TYPE-OF-STV2C-OUTPUT-STUFF-AUX seems to bog down in ACL2 as opposed to
+; ACL2(h), perhaps because worse-than needs to be memoized.
+; cert_param: (hons-only)
 
 ; stv2c.lisp -- translates STVs into C++ functions
 ;
