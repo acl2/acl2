@@ -718,7 +718,7 @@ successful runs Linux machines, I use a ulimit of 65535.</p>
 <p>I only have access to a copy of Allegro on 32-bit linux, and it runs out of
 memory in Level 10 on Nemesis.  I have tried to address this by using Allegro's
 <a
-href='http://www.allegrocache.org/support/tech_corner/lisp-heap-051508.lhtm'l>build-lisp-image</a>
+href='http://www.allegrocache.org/support/tech_corner/lisp-heap-051508.lhtml'>build-lisp-image</a>
 function to create a copy of Allegro with a larger Lisp heap size, e.g.,</p>
 
 @({
