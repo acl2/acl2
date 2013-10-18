@@ -109,9 +109,7 @@
   (consp x))
 
 (assert! (let ((topic (xdoc::find-topic 'm0 (xdoc::get-xdoc-table (w state)))))
-           (and topic
-                (equal (cdr (assoc :parents topic))
-                       '(acl2::undocumented)))))
+           (not topic)))
 
 (xdoc::set-default-parents foo bar)
 
