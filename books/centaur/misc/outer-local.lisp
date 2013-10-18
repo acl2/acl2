@@ -127,7 +127,7 @@ like them to, at least in the presence of nonlocal IN-THEORY events.</p>")
               ;; Haven't popped off all the outer-local contexts -- error.
               (er hard? 'with-outer-local
                   "Found the previous event while still in an outer-local context")))
-          (reverse event-stack-top)))
+          event-stack-top))
        ((unless (eql event-depth (+ 1 context-depth)))
         ;; Skip this event since we've already captured it as part of a
         ;; (+ 1 context-depth) event.
