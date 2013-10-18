@@ -581,7 +581,7 @@ foreach my $cert (@certs) {
 	}
     }
 }
-if (%stubs) {
+if (%stubs && ! $quiet) {
     print "Relocation warnings:\n";
     print "--------------------------\n";
     my @stubbooks = sort(keys %stubs);
