@@ -56,7 +56,7 @@ list (e.g., @('nat-listp')), and proves basic theorems about it.</p>
         negatedp            ; nil by default
         true-listp          ; nil by default
         mode                ; current defun-mode by default
-        parents             ; '(acl2::undocumented) by default
+        parents             ; nil by default
         short               ; nil by default
         long                ; nil by default
         rest                ; nil by default
@@ -137,10 +137,11 @@ the current default defun-mode is for ACL2, i.e., if you are already in program
 mode, it will default to program mode, etc.</p>
 
 <p>The optional @(':parents'), @(':short'), and @(':long') keywords are as in
-@(see defxdoc).  Typically you only need to specify @(':parents'), and suitable
-documentation will be automatically generated for @(':short') and @(':long').
-If you don't like this documentation, you can supply your own @(':short')
-and/or @(':long') to override it.</p>
+@(see defxdoc).  Typically you only need to specify @(':parents'), perhaps
+implicitly with @(see xdoc::set-default-parents), and suitable documentation
+will be automatically generated for @(':short') and @(':long').  If you don't
+like this documentation, you can supply your own @(':short') and/or @(':long')
+to override it.</p>
 
 <p>The optional @(':rest') keyword can be used to add additional events after
 the automatic deflist events.  This is mainly a nice place to put theorems that
@@ -1061,14 +1062,18 @@ list.</p>"
                         (already-definedp 'nil)
                         (elementp-of-nil ':unknown)
                         mode
-                        (parents '(acl2::undocumented))
+                        (parents 'nil parents-p)
                         (short 'nil)
                         (long 'nil)
                         (true-listp 'nil)
                         (rest 'nil))
-  `(make-event (let ((mode (or ',mode (default-defun-mode (w state)))))
+  `(make-event (let ((mode (or ',mode (default-defun-mode (w state))))
+                     (parents (if ',parents-p
+                                  ',parents
+                                (or (xdoc::get-default-parents (w state))
+                                    '(acl2::undocumented)))))
                  (deflist-fn ',name ',formals ',element ',negatedp
                    ',guard ',verify-guards ',guard-debug ',guard-hints
-                   ',already-definedp ',elementp-of-nil mode ',parents ',short
+                   ',already-definedp ',elementp-of-nil mode parents ',short
                    ',long ',true-listp ',rest))))
 

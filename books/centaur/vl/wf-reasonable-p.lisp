@@ -739,7 +739,10 @@ a fatal warning is added that mentions this."
            (vl-module->name x))))
 
 
-(defsection vl-modulelist-check-reasonable
+(defprojection vl-modulelist-check-reasonable (x)
+  (vl-module-check-reasonable x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
   :parents (reasonable)
   :short "@(call vl-modulelist-check-reasonable) annotates each module in
 @('x') with any warnings regarding whether it is @(see reasonable);
@@ -749,14 +752,9 @@ furthermore, any unreasonable modules are annotated with a fatal warning."
 vl-propagate-errors) to safely eliminate any unreasonable modules and their
 dependents.</p>"
 
-  (defprojection vl-modulelist-check-reasonable (x)
-    (vl-module-check-reasonable x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p)
-
-  (defthm vl-modulelist->names-of-vl-modulelist-check-reasonable
-    (equal (vl-modulelist->names (vl-modulelist-check-reasonable x))
-           (vl-modulelist->names x))
-    :hints(("Goal" :induct (len x)))))
+  :rest ((defthm vl-modulelist->names-of-vl-modulelist-check-reasonable
+           (equal (vl-modulelist->names (vl-modulelist-check-reasonable x))
+                  (vl-modulelist->names x))
+           :hints(("Goal" :induct (len x))))))
 
 

@@ -47,84 +47,60 @@ they write by throwing away any leading @('VL_') or @('VL_WARN_') part.  By
 convention a plain @('LINT_IGNORE') with no further information means just
 ignore all warnings.</p>")
 
+(local (xdoc::set-default-parents lint-warning-suppression))
 
-(defsection vl-mash-warning-string
-  :parents (lint-warning-suppression)
+
+(define vl-mash-warning-string
   :short "Do basic string mashing to allow the user to refer to warnings in
 either upper or lower case, treating - and _ as equivalent, and with or without
 @('vl_warn_') prefixes."
-
-  (defund vl-mash-warning-string (x)
-    (declare (xargs :guard (stringp x)))
-    (b* ((x (str::upcase-string x))
-         (x (str::strsubst "-" "_" x))
-         (x (if (str::strprefixp "_" x)
-                (subseq x 1 nil)
-              x))
-         (x (if (str::strprefixp "VL_" x)
-                (ec-call (subseq x 3 nil))
-              x))
-         (x (if (str::strprefixp "WARN_" x)
-                (ec-call (subseq x 5 nil))
-              x)))
-      x))
-
-  (local (in-theory (enable vl-mash-warning-string)))
-
-  (defthm stringp-of-vl-mash-warning-string
-    (stringp (vl-mash-warning-string x))
-    :rule-classes :type-prescription))
-
+  ((x stringp))
+  :returns (new-x stringp :rule-classes :type-prescription)
+  (b* ((x (str::upcase-string x))
+       (x (str::strsubst "-" "_" x))
+       (x (if (str::strprefixp "_" x)
+              (subseq x 1 nil)
+            x))
+       (x (if (str::strprefixp "VL_" x)
+              (ec-call (subseq x 3 nil))
+            x))
+       (x (if (str::strprefixp "WARN_" x)
+              (ec-call (subseq x 5 nil))
+            x)))
+    x))
 
 (defprojection vl-mash-warning-strings (x)
   (vl-mash-warning-string x)
   :guard (string-listp x)
-  :parents (lint-warning-suppression)
   :rest ((defthm string-listp-of-vl-mash-warning-strings
            (string-listp (vl-mash-warning-strings x))
            :hints(("Goal" :induct (len x))))))
 
 
-
-(defund vl-lint-ignore-att-p (x)
-  ;; Recognize strings that start with lint-ignore or lint_ignore, case insensitive
-  (declare (xargs :guard (stringp x)))
+(define vl-lint-ignore-att-p ((x stringp))
+  :short "Recognize strings that start with lint-ignore or lint_ignore, case
+          insensitive"
   (let ((x (str::strsubst "-" "_" x)))
     (str::istrprefixp "lint_ignore" x)))
 
+(define vl-lint-ignore-att-mash ((x (and (stringp x)
+                                         (vl-lint-ignore-att-p x))))
+  ;; Note: the guard ensures that x starts with lint_ignore
+  (b* ((x (str::strsubst "-" "_" x))
+       ((when (equal (length x) (length "lint_ignore")))
+        ;; The empty string after lint_ignore means, "ignore all warnings"
+        "")
+       (x (ec-call (subseq x (length "lint_ignore") nil))))
+    (vl-mash-warning-string x)))
 
-(defsection vl-lint-ignore-att-mash
-  :parents (lint-warning-suppression)
-
-  (defund vl-lint-ignore-att-mash (x)
-    (declare (xargs :guard (and (stringp x)
-                                (vl-lint-ignore-att-p x))))
-    ;; Note: the guard ensures that x starts with lint_ignore
-    (b* ((x (str::strsubst "-" "_" x))
-         ((when (equal (length x) (length "lint_ignore")))
-          ;; The empty string after lint_ignore means, "ignore all warnings"
-          "")
-         (x (ec-call (subseq x (length "lint_ignore") nil))))
-      (vl-mash-warning-string x))))
-
-
-(defsection vl-warning-type-mash
-  :parents (lint-warning-suppression)
-
-  (defund vl-warning-type-mash (x)
-    (declare (xargs :guard (symbolp x)))
-    (vl-mash-warning-string (symbol-name x)))
-
-  (defthm stringp-of-vl-warning-type-mash
-    (stringp (vl-warning-type-mash x))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (enable vl-warning-type-mash)))))
+(define vl-warning-type-mash ((x symbolp))
+  :returns (mashed stringp :rule-classes :type-prescription)
+  (vl-mash-warning-string (symbol-name x)))
 
 
-
-(defund vl-lint-attname-says-ignore (attname mashed-warning-type)
-  (declare (xargs :guard (and (stringp attname)
-                              (stringp mashed-warning-type))))
+(define vl-lint-attname-says-ignore ((attname stringp)
+                                     (mashed-warning-type stringp))
+  :returns (ignorep booleanp :rule-classes :type-prescription)
   (b* (((unless (vl-lint-ignore-att-p attname))
         nil)
        (mashed-att (vl-lint-ignore-att-mash attname))
@@ -132,23 +108,24 @@ either upper or lower case, treating - and _ as equivalent, and with or without
         ;; Ignore everything!
         t))
     ;; Otherwise, only ignore certain warning types
-    (equal mashed-att mashed-warning-type)))
+    (equal mashed-att mashed-warning-type))
+  ///
+  (local
+   (assert!
+    (let ((wmash (vl-warning-type-mash :vl-warn-oddexpr)))
+      (and (vl-lint-attname-says-ignore "lint_ignore" wmash)
+           (vl-lint-attname-says-ignore "lint_ignore_" wmash)
+           (vl-lint-attname-says-ignore "LINT_IGNORE" wmash)
+           (vl-lint-attname-says-ignore "LINT_IGNORE_ODDEXPR" wmash)
+           (vl-lint-attname-says-ignore "LINT_IGNORE_oddexpr" wmash)
+           (vl-lint-attname-says-ignore "LINT_IGNORE_VL_ODDEXPR" wmash)
+           (vl-lint-attname-says-ignore "LiNt_IgNoRe_Vl_WaRn_OdDeXpR" wmash)
+           (not (vl-lint-attname-says-ignore "LINT_IGNORE_FOO" wmash))
+           (not (vl-lint-attname-says-ignore "LINT_IGNORE_VL_FOO" wmash)))))))
 
-(local (assert!
-        (let ((wmash (vl-warning-type-mash :vl-warn-oddexpr)))
-          (and (vl-lint-attname-says-ignore "lint_ignore" wmash)
-               (vl-lint-attname-says-ignore "lint_ignore_" wmash)
-               (vl-lint-attname-says-ignore "LINT_IGNORE" wmash)
-               (vl-lint-attname-says-ignore "LINT_IGNORE_ODDEXPR" wmash)
-               (vl-lint-attname-says-ignore "LINT_IGNORE_oddexpr" wmash)
-               (vl-lint-attname-says-ignore "LINT_IGNORE_VL_ODDEXPR" wmash)
-               (vl-lint-attname-says-ignore "LiNt_IgNoRe_Vl_WaRn_OdDeXpR" wmash)
-               (not (vl-lint-attname-says-ignore "LINT_IGNORE_FOO" wmash))
-               (not (vl-lint-attname-says-ignore "LINT_IGNORE_VL_FOO" wmash))))))
-
-(defund vl-lint-atts-say-ignore (atts mashed-warning-type)
-  (declare (xargs :guard (and (vl-atts-p atts)
-                              (stringp mashed-warning-type))))
+(define vl-lint-atts-say-ignore ((atts vl-atts-p)
+                                 (mashed-warning-type stringp))
+  :returns (ignorep booleanp :rule-classes :type-prescription)
   (if (atom atts)
       nil
     (or (vl-lint-attname-says-ignore (caar atts) mashed-warning-type)
@@ -162,8 +139,10 @@ either upper or lower case, treating - and _ as equivalent, and with or without
 ; arguments of the warning and look for attributes that say to ignore the
 ; warning, and most of the time this should pretty much just work.
 
-(defund vl-lint-scan-for-ignore (x mwtype)
-  (declare (xargs :guard (stringp mwtype)))
+(define vl-lint-scan-for-ignore
+  ((x "Arbitrary stuff that might occur in a warning's args.")
+   (mwtype stringp))
+  :returns (ignorep booleanp :rule-classes :type-prescription)
   (b* (((when (atom x))
         nil)
        ((when (symbolp (car x)))
@@ -212,141 +191,88 @@ either upper or lower case, treating - and _ as equivalent, and with or without
     (or (vl-lint-scan-for-ignore (car x) mwtype)
         (vl-lint-scan-for-ignore (cdr x) mwtype))))
 
+(define vl-lint-suppress-warnings ((x vl-warninglist-p))
+  :returns (new-x vl-warninglist-p :hyp :guard)
+  (b* (((when (atom x))
+        nil)
+       ((vl-warning x1) (car x))
+       ((when (vl-lint-scan-for-ignore x1.args (vl-warning-type-mash x1.type)))
+        (vl-lint-suppress-warnings (cdr x))))
+    (cons (car x) (vl-lint-suppress-warnings (cdr x)))))
 
-(defsection vl-lint-suppress-warnings
-  :parents (lint-warning-suppression)
-
-  (defund vl-lint-suppress-warnings (x)
-    (declare (xargs :guard (vl-warninglist-p x)))
-    (b* (((when (atom x))
-          nil)
-         ((vl-warning x1) (car x))
-         ((when (vl-lint-scan-for-ignore x1.args (vl-warning-type-mash x1.type)))
-          (vl-lint-suppress-warnings (cdr x))))
-      (cons (car x) (vl-lint-suppress-warnings (cdr x)))))
-
-  (local (in-theory (enable vl-lint-suppress-warnings)))
-
-  (defthm vl-warninglist-p-of-vl-lint-suppress-warings
-    (implies (vl-warninglist-p x)
-             (vl-warninglist-p (vl-lint-suppress-warnings x)))))
-
-
-
-(defsection vl-module-suppress-lint-warnings
-  :parents (lint-warning-suppression)
-
-  (defund vl-module-suppress-lint-warnings (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (change-vl-module x
-                      :warnings (vl-lint-suppress-warnings (vl-module->warnings x))))
-
-  (local (in-theory (enable vl-module-suppress-lint-warnings)))
-
-  (defthm vl-module-p-of-vl-module-suppress-lint-warnings
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-suppress-lint-warnings x))))
-
+(define vl-module-suppress-lint-warnings ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard)
+  (change-vl-module x
+                    :warnings (vl-lint-suppress-warnings (vl-module->warnings x)))
+  ///
   (defthm vl-module->name-of-vl-module-suppress-lint-warnings
     (equal (vl-module->name (vl-module-suppress-lint-warnings x))
            (vl-module->name x))))
 
 
-(defsection vl-modulelist-suppress-lint-warnings
-  :parents (lint-warning-suppression)
-
-  (defprojection vl-modulelist-suppress-lint-warnings (x)
-    (vl-module-suppress-lint-warnings x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p)
-
-  (defthm vl-modulelist->names-of-vl-modulelist-suppress-lint-warnings
-    (equal (vl-modulelist->names (vl-modulelist-suppress-lint-warnings x))
-           (vl-modulelist->names x))
-    :hints(("Goal" :induct (len x)))))
+(defprojection vl-modulelist-suppress-lint-warnings (x)
+  (vl-module-suppress-lint-warnings x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-suppress-lint-warnings
+     (equal (vl-modulelist->names (vl-modulelist-suppress-lint-warnings x))
+            (vl-modulelist->names x))
+     :hints(("Goal" :induct (len x))))))
 
 
-
-; We'll also allow you to globally suppress warnings.
-
-(defsection vl-warninglist-lint-ignoreall
-  :parents (lint-warning-suppression)
-
-  (defund vl-warninglist-lint-ignoreall (x mashed-ignore-list)
-    (declare (xargs :guard (and (vl-warninglist-p x)
-                                (string-listp mashed-ignore-list))))
-    (b* (((when (atom x))
-          nil)
-         (type1 (vl-warning->type (car x)))
-         (type1-mash (vl-warning-type-mash type1))
-         ((when (member-equal type1-mash mashed-ignore-list))
-          (vl-warninglist-lint-ignoreall (cdr x) mashed-ignore-list)))
-      (cons (car x)
-            (vl-warninglist-lint-ignoreall (cdr x) mashed-ignore-list))))
-
-  (local (in-theory (enable vl-warninglist-lint-ignoreall)))
-
-  (defthm vl-warninglist-p-of-vl-warninglist-lint-ignoreall
-    (implies (force (vl-warninglist-p x))
-             (vl-warninglist-p (vl-warninglist-lint-ignoreall x mashed-ignore-list)))))
+(define vl-warninglist-lint-ignoreall
+  :short "Globally suppress certain kinds of warnings."
+  ((x vl-warninglist-p)
+   (mashed-ignore-list string-listp))
+  :returns (new-warnings vl-warninglist-p :hyp (force (vl-warninglist-p x)))
+  (b* (((when (atom x))
+        nil)
+       (type1 (vl-warning->type (car x)))
+       (type1-mash (vl-warning-type-mash type1))
+       ((when (member-equal type1-mash mashed-ignore-list))
+        (vl-warninglist-lint-ignoreall (cdr x) mashed-ignore-list)))
+    (cons (car x)
+          (vl-warninglist-lint-ignoreall (cdr x) mashed-ignore-list))))
 
 
-(defsection vl-module-lint-ignoreall
-  :parents (lint-warning-suppression)
-
-  (defund vl-module-lint-ignoreall (x mashed-ignore-list)
-    (declare (xargs :guard (and (vl-module-p x)
-                                (string-listp mashed-ignore-list))))
-    (b* (((vl-module x) x)
-         (new-warnings (vl-warninglist-lint-ignoreall x.warnings mashed-ignore-list)))
-      (change-vl-module x :warnings new-warnings)))
-
-  (local (in-theory (enable vl-module-lint-ignoreall)))
-
-  (defthm vl-module-p-of-vl-module-lint-ignoreall
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-lint-ignoreall x mashed-ignore-list))))
-
+(define vl-module-lint-ignoreall
+  ((x                  vl-module-p)
+   (mashed-ignore-list string-listp))
+  :returns (new-x vl-module-p :hyp (force (vl-module-p x)))
+  (b* (((vl-module x) x)
+       (new-warnings (vl-warninglist-lint-ignoreall x.warnings mashed-ignore-list)))
+    (change-vl-module x :warnings new-warnings))
+  ///
   (defthm vl-module->name-of-vl-module-lint-ignoreall
     (equal (vl-module->name (vl-module-lint-ignoreall x mashed-ignore-list))
            (vl-module->name x))))
 
 
-(defsection vl-modulelist-lint-ignoreall-aux
-  :parents (lint-warning-suppression)
-
-  (defprojection vl-modulelist-lint-ignoreall-aux (x mashed-ignore-list)
-    (vl-module-lint-ignoreall x mashed-ignore-list)
-    :guard (and (vl-modulelist-p x)
-                (string-listp mashed-ignore-list))
-    :result-type vl-modulelist-p)
-
-  (defthm vl-modulelist->names-of-vl-modulelist-lint-ignoreall-aux
-    (equal (vl-modulelist->names (vl-modulelist-lint-ignoreall-aux x mashed-ignore-list))
-           (vl-modulelist->names x))
-    :hints(("Goal" :induct (len x)))))
+(defprojection vl-modulelist-lint-ignoreall-aux (x mashed-ignore-list)
+  (vl-module-lint-ignoreall x mashed-ignore-list)
+  :guard (and (vl-modulelist-p x)
+              (string-listp mashed-ignore-list))
+  :result-type vl-modulelist-p
+  :rest
+  ((defthm vl-modulelist->names-of-vl-modulelist-lint-ignoreall-aux
+     (equal (vl-modulelist->names
+             (vl-modulelist-lint-ignoreall-aux x mashed-ignore-list))
+            (vl-modulelist->names x))
+     :hints(("Goal" :induct (len x))))))
 
 
-(defsection vl-modulelist-lint-ignoreall
-  :parents (lint-warning-suppression)
-
-; The user-ignore-list here is just a list of user-level ignore strings.  That
-; is, we'll mash them all first.  The user can say all kinds of things, like
-; "oddexpr" or "vl_oddexpr" or "warn_oddexpr" or "warn-oddexpr" etc., to make
-; oddexpr warnings go away.
-
-  (defund vl-modulelist-lint-ignoreall (x user-ignore-list)
-    (declare (xargs :guard (and (vl-modulelist-p x)
-                                (string-listp user-ignore-list))))
-    (b* ((mashed-ignore-list (vl-mash-warning-strings user-ignore-list)))
-      (vl-modulelist-lint-ignoreall-aux x mashed-ignore-list)))
-
-  (local (in-theory (enable vl-modulelist-lint-ignoreall)))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-lint-ignoreall
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-lint-ignoreall x user-ignore-list))))
-
+(define vl-modulelist-lint-ignoreall
+  ((x                vl-modulelist-p)
+   (user-ignore-list string-listp
+                     "A list of user-level ignore strings.  We'll mash these
+                      first.  That is, the user can say all kinds of things,
+                      like \"oddexpr\" or \"vl_oddexpr\" or \"warn_oddexpr\"
+                      or \"warn-oddexpr\" etc., to suppress oddexpr warnings."))
+  :returns (new-mods vl-modulelist-p :hyp (force (vl-modulelist-p x)))
+  (b* ((mashed-ignore-list (vl-mash-warning-strings user-ignore-list)))
+    (vl-modulelist-lint-ignoreall-aux x mashed-ignore-list))
+  ///
   (defthm vl-modulelist->names-of-vl-modulelist-lint-ignoreall
     (equal (vl-modulelist->names (vl-modulelist-lint-ignoreall x user-ignore-list))
            (vl-modulelist->names x))))

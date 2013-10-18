@@ -70,7 +70,7 @@ traditional functions with no such requirement, e.g.,:</p>
          valp-of-nil       ; :unknown by default
          true-listp        ; nil by default
          mode              ; current defun-mode by default
-         parents           ; '(acl2::undocumented) by default
+         parents           ; nil by default
          short             ; nil by default
          long              ; nil by default
          )
@@ -125,10 +125,11 @@ used when @('(key-recognizer nil ...)') (similarly @('(val-recognzier nil
 recognizer in program mode.  In this case, no theorems are introduced.</p>
 
 <p>The optional @(':parents'), @(':short'), and @(':long') keywords are as in
-@(see defxdoc).  Typically you only need to specify @(':parents'), and suitable
-documentation will be automatically generated for @(':short') and @(':long').
-If you don't like this documentation, you can supply your own @(':short')
-and/or @(':long') to override it.</p>")
+@(see defxdoc).  Typically you only need to specify @(':parents'), perhaps
+implicitly with @(see xdoc::set-default-parents), and suitable documentation
+will be automatically generated for @(':short') and @(':long').  If you don't
+like this documentation, you can supply your own @(':short') and/or @(':long')
+to override it.</p>")
 
 (defun defalist-fn (name formals key val
                          guard verify-guards
@@ -725,14 +726,18 @@ valp) ")."))))
                          (keyp-of-nil ':unknown)
                          (valp-of-nil ':unknown)
                          mode
-                         (parents '(acl2::undocumented))
+                         (parents 'nil parents-p)
                          (short 'nil)
                          (long 'nil)
                          (true-listp 'nil))
-  `(make-event (let ((mode (or ',mode (default-defun-mode (w state)))))
+  `(make-event (let ((mode (or ',mode (default-defun-mode (w state))))
+                     (parents (if ',parents-p
+                                  ',parents
+                                (or (xdoc::get-default-parents (w state))
+                                    '(acl2::undocumented)))))
                  (defalist-fn ',name ',formals ',key ',val
                    ',guard ',verify-guards
                    ',keyp-of-nil ',valp-of-nil
                    mode
-                   ',parents ',short ',long ',true-listp))))
+                   parents ',short ',long ',true-listp))))
 

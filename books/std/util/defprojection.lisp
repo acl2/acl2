@@ -69,7 +69,7 @@ define a new function that applies @('f') to every element in a list.</p>
         mode                    ; current defun-mode by default
         optimize                ; t by default
         result-type             ; nil by default
-        parents                 ; '(acl2::undocumented) by default
+        parents                 ; nil by default
         short                   ; nil by default
         long                    ; nil by default
         parallelize             ; nil by default
@@ -139,10 +139,11 @@ want the projection to be optimized with @('nreverse').  This will result in a
 slightly slower transformation function, but avoids a ttag.</p>
 
 <p>The optional @(':parents'), @(':short'), and @(':long') keywords are as in
-@(see defxdoc).  Typically you only need to specify @(':parents'), and suitable
-documentation will be automatically generated for @(':short') and @(':long').
-If you don't like this documentation, you can supply your own @(':short')
-and/or @(':long') to override it.</p>
+@(see defxdoc).  Typically you only need to specify @(':parents'), perhaps
+implicitly with @(see xdoc::set-default-parents), and suitable documentation
+will be automatically generated for @(':short') and @(':long').  If you don't
+like this documentation, you can supply your own @(':short') and/or @(':long')
+to override it.</p>
 
 <p>The optional @(':parallelize') keyword can be set to @('t') if you want to
 try to speed up the execution of new function using parallelism.  This is
@@ -641,15 +642,19 @@ you use this.</p>")
                               (guard 't)
                               (verify-guards 't)
                               mode
-                              (parents '(acl2::undocumented))
+                              (parents 'nil parents-p)
                               (short 'nil)
                               (long 'nil)
                               (rest 'nil)
                               (parallelize 'nil))
-  `(make-event (let ((mode (or ',mode (default-defun-mode (w state)))))
+  `(make-event (let ((mode    (or ',mode (default-defun-mode (w state))))
+                     (parents (if ',parents-p
+                                  ',parents
+                                (or (xdoc::get-default-parents (w state))
+                                    '(acl2::undocumented)))))
                  (defprojection-fn ',name ',formals ',element
                    ',nil-preservingp ',already-definedp
                    ',guard ',verify-guards
                    mode ',optimize ',result-type
-                   ',parents ',short ',long ',rest
+                   parents ',short ',long ',rest
                    ',parallelize))))

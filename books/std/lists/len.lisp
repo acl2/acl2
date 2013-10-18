@@ -22,8 +22,8 @@
 (include-book "xdoc/top" :dir :system)
 (local (include-book "arithmetic/top" :dir :system))
 
-(defsection std/lists/append
-  :parents (std/lists append)
+(defsection std/lists/len
+  :parents (std/lists len)
   :short "Lemmas about @(see len) available in the @(see std/lists) library."
 
   (defthm len-when-atom

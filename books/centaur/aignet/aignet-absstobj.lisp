@@ -450,8 +450,9 @@
 
 
 (defxdoc aignet
-  :short "AIGNET is an and-inverter graph implementation: a representation for
-both Boolean functions and finite-state machines."
+  :parents (acl2::boolean-reasoning)
+  :short "An efficient, @(see acl2::stobj)-based And-Inverter Graph (AIG)
+representation for Boolean functions and finite-state machines."
   :long
   "<p>An and-inverter graph (AIG) at its most basic is a DAG whose nodes are either
 AND gates, outputs, or inputs.  Outputs have 1 descendant, ANDs have 2, and

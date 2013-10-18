@@ -347,6 +347,17 @@ BOZO finish this readme
 
 
 (define stv2c ((argv string-listp) &key (state 'state))
+  :parents (symbolic-test-vectors)
+  :short "Naive compiler from symbolic test vectors into C++ code."
+
+  :long "<p>This is a tool for converting symbolic test vectors into C++
+programs.  Practically speaking, this is just a way to incorporate a Verilog
+design into some other program.</p>
+
+<p>Our translation is naive in several ways, and we generally don't try to
+optimize much of anything.  In the future, we may work to try to improve
+performance.</p>"
+
   (b* (((mv errmsg opts start-files)
         (parse-stv2c-opts argv))
        ((when errmsg)

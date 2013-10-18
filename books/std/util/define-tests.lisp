@@ -101,3 +101,44 @@
   (define bar12 (x &optional y)
     :mode :program
     (+ 3 x y)))
+
+
+
+
+(define m0 (x)
+  (consp x))
+
+(assert! (let ((topic (xdoc::find-topic 'm0 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(acl2::undocumented)))))
+
+(xdoc::set-default-parents foo bar)
+
+(define m1 (x)
+  (consp x))
+
+(assert! (let ((topic (xdoc::find-topic 'm1 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(foo bar)))))
+
+(define m2 (x)
+  (consp x)
+  :parents (bar))
+
+(assert! (let ((topic (xdoc::find-topic 'm2 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(bar)))))
+
+(define m3 (x)
+  (consp x)
+  :parents nil)
+
+(assert! (let ((topic (xdoc::find-topic 'm3 (xdoc::get-xdoc-table (w state)))))
+           (not topic)))
+
+
+
+

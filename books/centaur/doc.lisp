@@ -639,6 +639,9 @@ functions.")
  (er-progn (xdoc::save "./manual"
                        ;; Don't import again since we just imported.
                        :import nil
+                       ;; Allow redefinition so that we don't have to get
+                       ;; everything perfect (until it's release time)
+                       :redef-okp t
                        ;; For classic mode only...
                        :expand-level 2)
            (value `(value-triple :manual))))

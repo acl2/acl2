@@ -150,48 +150,23 @@ attributes is left up to the implementation.</p>"
 ; parse tree.
 
 (defmacro def-vl-subst (name &key type body)
-  `(encapsulate
-    ()
-    (defxdoc ,name
-      :parents (substitution)
-      :short ,(cat "Substitute into a @(see " (symbol-name type) ").")
-      :long ,(cat "@(def " (symbol-name name) ")"))
-
-    (defund ,name (x sigma)
-      (declare (xargs :guard (and (,type x)
-                                  (vl-sigma-p sigma)))
-               (ignorable x sigma))
-      ,body)
-
-    (defthm ,(intern-in-package-of-symbol
-              (cat (symbol-name type) "-OF-" (symbol-name name))
-              name)
-      (implies (and (force (,type x))
-                    (force (vl-sigma-p sigma)))
-               (,type (,name x sigma)))
-      :hints(("Goal" :in-theory (enable ,name))))))
+  `(define ,name
+     :parents (substitution)
+     :short ,(cat "Substitute into a @(see " (symbol-name type) ").")
+     ((x     ,type)
+      (sigma vl-sigma-p))
+     :returns (new-x ,type :hyp :fguard)
+     (declare (ignorable x sigma))
+     ,body))
 
 (defmacro def-vl-subst-list (name &key type element)
-  `(encapsulate
-    ()
-    (defxdoc ,name
-      :parents (substitution)
-      :short ,(cat "Substitute into a @(see " (symbol-name type) ").")
-      :long ,(cat "@(def " (symbol-name name) ")"))
-
-    (defprojection ,name (x sigma)
-      (,element x sigma)
-      :guard (and (,type x)
-                  (vl-sigma-p sigma))
-      :nil-preservingp nil)
-
-    (defthm ,(intern-in-package-of-symbol
-              (cat (symbol-name type) "-OF-" (symbol-name name))
-              name)
-      (implies (and (force (,type x))
-                    (force (vl-sigma-p sigma)))
-               (,type (,name x sigma)))
-      :hints(("Goal" :induct (len x))))))
+  `(defprojection ,name (x sigma)
+     (,element x sigma)
+     :guard (and (,type x)
+                 (vl-sigma-p sigma))
+     :nil-preservingp nil
+     :parents (substitution)
+     :result-type ,type))
 
 (def-vl-subst vl-maybe-expr-subst
   :type vl-maybe-expr-p
@@ -464,11 +439,6 @@ attributes is left up to the implementation.</p>"
   :short "Substitute into a @(see vl-stmt-p)"
   :long "@(def vl-stmt-subst)")
 
-(defxdoc vl-stmtlist-subst
-  :parents (substitution)
-  :short "Substitute into a @(see vl-stmtlist-p)"
-  :long "@(def vl-stmtlist-subst)")
-
 (mutual-recursion
 
  (defund vl-stmt-subst (x sigma)
@@ -508,52 +478,53 @@ attributes is left up to the implementation.</p>"
 
 (defprojection vl-stmtlist-subst (x sigma)
   (vl-stmt-subst x sigma)
-  :already-definedp t)
+  :already-definedp t
+  :parents (substitution))
 
 (encapsulate
- ()
- (local (defthm lemma-1
-          (implies (and (force (vl-maybe-delayoreventcontrol-p x))
+  ()
+  (local (defthm lemma-1
+           (implies (and (force (vl-maybe-delayoreventcontrol-p x))
+                         (force (vl-sigma-p sigma)))
+                    (iff (vl-maybe-delayoreventcontrol-subst x sigma)
+                         x))
+           :hints(("Goal"
+                   :in-theory (e/d (vl-maybe-delayoreventcontrol-subst
+                                    vl-maybe-delayoreventcontrol-p)
+                                   (return-type-of-vl-delayoreventcontrol-subst))
+                   :use ((:instance return-type-of-vl-delayoreventcontrol-subst))))))
+
+  (local (defthm lemma-2
+           (implies (and (not (vl-atomicstmt-p x))
+                         (vl-stmtlist-p (vl-stmtlist-subst (vl-compoundstmt->stmts x) sigma))
+                         (vl-stmt-p x)
+                         (vl-sigma-p sigma))
+                    (vl-compoundstmt-basic-checksp
+                     (vl-compoundstmt->type x)
+                     (vl-exprlist-subst (vl-compoundstmt->exprs x) sigma)
+                     (vl-stmtlist-subst (vl-compoundstmt->stmts x) sigma)
+                     (vl-compoundstmt->name x)
+                     (vl-blockitemlist-subst (vl-compoundstmt->decls x) sigma)
+                     (vl-maybe-delayoreventcontrol-subst (vl-compoundstmt->ctrl x) sigma)
+                     (vl-compoundstmt->sequentialp x)
+                     (vl-compoundstmt->casetype x)))
+           :hints(("goal"
+                   :in-theory (e/d (vl-compoundstmt-basic-checksp)
+                                   (vl-compoundstmt-basic-checksp-of-vl-compoundstmt))
+                   :use ((:instance vl-compoundstmt-basic-checksp-of-vl-compoundstmt))))))
+
+  (defthm-vl-flag-stmt-p vl-stmt-p-of-vl-stmt-subst
+    (stmt (implies (and (force (vl-stmt-p x))
                         (force (vl-sigma-p sigma)))
-                   (iff (vl-maybe-delayoreventcontrol-subst x sigma)
-                        x))
-          :hints(("Goal"
-                  :in-theory (e/d (vl-maybe-delayoreventcontrol-subst
-                                   vl-maybe-delayoreventcontrol-p)
-                                  (vl-delayoreventcontrol-p-of-vl-delayoreventcontrol-subst))
-                  :use ((:instance vl-delayoreventcontrol-p-of-vl-delayoreventcontrol-subst))))))
+                   (vl-stmt-p (vl-stmt-subst x sigma))))
+    (list (implies (and (force (vl-stmtlist-p x))
+                        (force (vl-sigma-p sigma)))
+                   (vl-stmtlist-p (vl-stmtlist-subst x sigma))))
+    :hints(("Goal"
+            :induct (vl-flag-stmt-p flag x)
+            :expand ((vl-stmt-subst x sigma)))))
 
- (local (defthm lemma-2
-          (implies (and (not (vl-atomicstmt-p x))
-                        (vl-stmtlist-p (vl-stmtlist-subst (vl-compoundstmt->stmts x) sigma))
-                        (vl-stmt-p x)
-                        (vl-sigma-p sigma))
-                   (vl-compoundstmt-basic-checksp
-                    (vl-compoundstmt->type x)
-                    (vl-exprlist-subst (vl-compoundstmt->exprs x) sigma)
-                    (vl-stmtlist-subst (vl-compoundstmt->stmts x) sigma)
-                    (vl-compoundstmt->name x)
-                    (vl-blockitemlist-subst (vl-compoundstmt->decls x) sigma)
-                    (vl-maybe-delayoreventcontrol-subst (vl-compoundstmt->ctrl x) sigma)
-                    (vl-compoundstmt->sequentialp x)
-                    (vl-compoundstmt->casetype x)))
-          :hints(("goal"
-                  :in-theory (e/d (vl-compoundstmt-basic-checksp)
-                                  (vl-compoundstmt-basic-checksp-of-vl-compoundstmt))
-                  :use ((:instance vl-compoundstmt-basic-checksp-of-vl-compoundstmt))))))
-
- (defthm-vl-flag-stmt-p vl-stmt-p-of-vl-stmt-subst
-   (stmt (implies (and (force (vl-stmt-p x))
-                       (force (vl-sigma-p sigma)))
-                  (vl-stmt-p (vl-stmt-subst x sigma))))
-   (list (implies (and (force (vl-stmtlist-p x))
-                       (force (vl-sigma-p sigma)))
-                  (vl-stmtlist-p (vl-stmtlist-subst x sigma))))
-   :hints(("Goal"
-           :induct (vl-flag-stmt-p flag x)
-           :expand ((vl-stmt-subst x sigma)))))
-
- (verify-guards vl-stmt-subst))
+  (verify-guards vl-stmt-subst))
 
 (def-vl-subst vl-always-subst
   :type vl-always-p

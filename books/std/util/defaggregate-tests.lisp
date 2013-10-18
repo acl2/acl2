@@ -219,3 +219,30 @@
            (and (equal emp.name "foo")
                 (equal emp.salary 25))))
 
+
+
+
+
+(defaggregate m0 (a b c))
+
+(assert! (let ((topic (xdoc::find-topic 'm0-p (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(acl2::undocumented)))))
+
+(xdoc::set-default-parents foo bar)
+
+(defaggregate m1 (a b c))
+
+(assert! (let ((topic (xdoc::find-topic 'm1-p (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(foo bar)))))
+
+(defaggregate m2 (a b c) :parents (bar))
+
+(assert! (let ((topic (xdoc::find-topic 'm2-p (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(bar)))))
+

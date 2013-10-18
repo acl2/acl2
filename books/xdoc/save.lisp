@@ -28,14 +28,47 @@
 (include-book "save-fancy")
 (include-book "save-classic")
 (include-book "oslib/mkdir" :dir :system)
+(program)
 
 #|
 (include-book "topics")  ;; Fool dependency scanner, since we may include it
 |#
 
+(defun collect-multiply-defined-topics (x seen-fal)
+  (b* (((when (atom x))
+        (fast-alist-free seen-fal)
+        nil)
+       (name1 (cdr (assoc :name (car x))))
+       ((when (hons-get name1 seen-fal))
+        (cons name1 (collect-multiply-defined-topics (cdr x) seen-fal))))
+    (collect-multiply-defined-topics (cdr x) (hons-acons name1 t seen-fal))))
+
+(defun make-redef-error (name x)
+  (b* (((when (atom x))
+        nil)
+       (topic1 (car x))
+       ((unless (equal name (cdr (assoc :name topic1))))
+        (make-redef-error name (cdr x)))
+       (report-line
+        (list :from (cdr (assoc :from topic1))
+              :short (cdr (assoc :short topic1)))))
+    (cons report-line (make-redef-error name (cdr x)))))
+
+(defun make-redef-errors (names x)
+  (if (atom names)
+      nil
+    (cons (cons (car names) (make-redef-error (car names) x))
+          (make-redef-errors (cdr names) x))))
+
+(defun redef-errors (x)
+  (make-redef-errors
+   (mergesort (collect-multiply-defined-topics x (len x)))
+   x))
+
 (defmacro save (dir &key
-                    (type ':fancy)
-                    (import 't)
+                    (type      ':fancy)
+                    (import    't)
+                    (redef-okp 'nil)
                     ;; Classic options (ignored for type :fancy)
                     (index-pkg 'acl2::foo)
                     (expand-level '1))
@@ -51,6 +84,16 @@
      (make-event
       (b* (((mv all-xdoc-topics state) (all-xdoc-topics state))
            (- (cw "(len all-xdoc-topics): ~x0~%" (len all-xdoc-topics)))
+           (redef-report (redef-errors (mergesort all-xdoc-topics)))
+           (- (or (not redef-report)
+                  (cw "Redefined topics report: ~x0.~%" redef-report)))
+           (- (or ,redef-okp
+                  (not redef-report)
+                  (er hard? 'save
+                      "Some XDOC topics have multiple definitions.  The above ~
+                       report may help you to fix these errors.  Or, you can ~
+                       just call XDOC::SAVE with :REDEF-OKP T to bypass this ~
+                       error (and use the most recent version of each topic.)")))
            ((mv & & state) (assign acl2::writes-okp t))
            (state
             ,(if (eq type :fancy)

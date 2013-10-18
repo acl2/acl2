@@ -261,7 +261,6 @@ command, along the following lines:</p>
     (find-orphaned-topics (cdr x) topics-fal acc)))
 
 
-
 (mutual-recursion
 
  (defun make-hierarchy-aux (path dir topics-fal index-pkg all id expand-level acc state)

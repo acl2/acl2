@@ -1137,7 +1137,8 @@ implement.</p>"
   (std::defprojection 4v-onehot-sexpr-list-prime (vars x)
     (4v-onehot-sexpr-prime vars x)
     :already-definedp t
-    :nil-preservingp nil)
+    :nil-preservingp nil
+    :parents nil)
 
 
   ;; (defthm 4v-sexpr-vars-of-4v-onehot-sexpr-prime

@@ -390,7 +390,8 @@ for the mutually-recursive use of @('defwellformed').</p>")
 
     (deflist ,list-name ,formals
       (,element ,@formals)
-      :already-definedp t)))
+      :already-definedp t
+      :parents nil)))
 
 
 ;; Supporting mutual recursion takes some work
