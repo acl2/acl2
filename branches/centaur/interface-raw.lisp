@@ -1341,6 +1341,13 @@
             ((eq rst t) tst)
             (t `(and ,tst ,rst))))))
 
+(defvar *guard-checking-on-form-invariant-risk*
+  '(if (member-eq '(f-get-global 'guard-checking-on
+                                 *the-live-state*)
+                  '(nil :none))
+       :none
+     :all))
+
 (defun oneify-cltl-code (defun-mode def stobj-flag wrld
                           &optional trace-rec-for-none)
 
@@ -1532,6 +1539,9 @@
 ; because we promise not to introduce a top-level flet in that case.
 
               (oneify body nil wrld))
+             (invariant-risk
+              (getprop fn 'invariant-risk nil 'current-acl2-world
+                       wrld))
              (super-stobjs-in ; At a "leaf" of a stobj-based computation?
               (if stobj-flag
 
@@ -1575,6 +1585,20 @@
 
                                t)
                               (t temp))))
+                    ((and (eq defun-mode :program)
+                          invariant-risk)
+
+; If fn could lead to a call of a function that violates an invariant, for
+; example a call of a stobj updater that violates its guards, then we don't
+; want to call the raw Lisp version of fn.  We arrange this by coercing
+; guard-checking values, replacing nil by :none and t by :all.  This measure is
+; only necessary for :program mode functions: guard-verified functions should
+; never lead to calls that violate guards; and since :logic mode definitions
+; cannot contain calls of :program mode functions, :ideal functions should lead
+; only to calls of *1* :logic-mode functions until reaching a guard-compliant
+; call of a guard-verified function.  Also see put-invariant-risk.
+
+                     *guard-checking-on-form-invariant-risk*)
                     (t '(f-get-global 'guard-checking-on *the-live-state*))))
              (skip-early-exit-code-when-none
               (and (eq defun-mode :logic) ; :program handled elsewhere
@@ -1591,7 +1615,7 @@
              (guard-checking-is-really-on-form
 
 ; This variable should only be used in the scope of the binding expression for
-; early-exit-form.
+; early-exit-code.
 
               (cond (super-stobjs-in
 
@@ -1602,11 +1626,17 @@
                     (skip-early-exit-code-when-none
 
 ; As mentioned above, guard-checking-is-really-on-form is only used for
-; defining early-exit-form.  But evaluation of early-exit-form is skipped when
+; defining early-exit-code.  But evaluation of early-exit-code is skipped when
 ; 'guard-checking-on has value :none in the present case, where
 ; skip-early-exit-code-when-none is true.
 
                      guard-checking-on-form)
+; The following case is an optimization of the one just after it.
+                    ((eq guard-checking-on-form
+                         *guard-checking-on-form-invariant-risk*)
+                     '(member-eq (f-get-global 'guard-checking-on
+                                               *the-live-state*)
+                                 '(t :all)))
                     (t `(and ,guard-checking-on-form
                              (not (eq ,guard-checking-on-form :none))))))
              (fail_guard ; form for reporting guard failure
@@ -1618,10 +1648,7 @@
                                        '(nil :none))
                             :live-stobj)
                            (t
-
-; Suppress "See :DOC set-guard-checking" printed by ev-fncall-guard-er-msg.
-
-                            :no-extra)))))
+                            :live-stobj-gc-on)))))
              (fail_safe ; form for reporting guard or safe mode failure
               (oneify-fail-form 'ev-fncall-guard-er fn formals guard
                                 super-stobjs-in wrld t))
@@ -1666,9 +1693,9 @@
 ; evaluation in (raw) Common Lisp when a guard is violated on a function that
 ; is already defined in Common Lisp.  A function considered here that is at
 ; risk for such divergence has a non-T guard, is being defined in the
-; boot-strap, and is not in the ACL2 package (which is unknown to Common Lisp).
-; So as we generate code here, we restrict the additional guard-check in
-; safe-mode to such functions.
+; boot-strap, and is not in the "ACL2" or "ACL2-PC" package (which are unknown
+; to Common Lisp).  So as we generate code here, we restrict the additional
+; guard-check in safe-mode to such functions.
 
               (and (not guard-is-t) ; we are trusting guards on the primitives!
                    boot-strap-p
@@ -1943,8 +1970,8 @@
                                     `(((and ,guard-checking-is-really-on-form
                                             (not ,*1*guard))
                                        ,fail_guard)))))
-                           ,@(cond
-                              ((eq defun-mode :program)
+                           ,@(and
+                              (eq defun-mode :program)
 
 ; In the boot-strap world we have :program mode functions whose definitions are
 ; different in raw Lisp from the logic, such as ev and get-global.  If we allow
@@ -1965,30 +1992,48 @@
 ; such a function is in :logic mode then either it is non-executable or
 ; :common-lisp-compliant (see check-none-ideal), hence is handled above.
 
-                               (cond
-                                (boot-strap-p
-                                 `((,safe-form
-                                    ,(cond
-                                      (program-only
-                                       fail_program-only-safe)
-                                      (t
-                                       `(return-from ,*1*fn ,*1*body))))))
-                                (t
-                                 (cond
-                                  (program-only
-                                   `((,safe-form
-                                      ,fail_program-only-safe)
-                                     ((member-eq ,guard-checking-on-form
-                                                 '(:none :all))
-                                      (return-from ,*1*fn ,*1*body))))
+                              (cond
+                               (boot-strap-p
+                                `((,safe-form
+                                   ,(cond
+                                     (program-only
+                                      fail_program-only-safe)
+                                     (t
+                                      `(return-from ,*1*fn ,*1*body))))
+                                  ,@(and
+                                     invariant-risk
+                                     `((t (return-from ,*1*fn ,*1*body))))))
+                               (t
+                                (cond
+                                 (program-only
+                                  `((,safe-form
+                                     ,fail_program-only-safe)
+                                    (,(cond
+                                       ((eq
+                                         guard-checking-on-form
+                                         *guard-checking-on-form-invariant-risk*)
+; optimization; should be same as invariant-risk
+                                        t)
+                                       (t
+                                        `(member-eq ,guard-checking-on-form
+                                                    '(:none :all))))
+                                     (return-from ,*1*fn ,*1*body))))
 
 ; We will not be laying down a labels call, so we go ahead and stay in the *1*
 ; world here in the case of safe-mode.
 
-                                  (t `(((or (member-eq ,guard-checking-on-form
-                                                       '(:none :all))
-                                            ,safe-form)
-                                        (return-from ,*1*fn ,*1*body))))))))))))
+                                 (t `((,(cond
+                                         ((eq
+                                           guard-checking-on-form
+                                           *guard-checking-on-form-invariant-risk*)
+; optimization; should be same as invariant-risk
+                                          t)
+                                         (t
+                                          `(or (member-eq
+                                                ,guard-checking-on-form
+                                                '(:none :all))
+                                               ,safe-form)))
+                                       (return-from ,*1*fn ,*1*body)))))))))))
                   (and cond-clauses
                        (list (cons 'cond cond-clauses)))))))
              (main-body-before-final-call
@@ -2011,8 +2056,18 @@
                (cond ((and skip-early-exit-code-when-none
                            early-exit-code) ; else nil; next case provides nil
                       (cond (super-stobjs-in early-exit-code) ; optimization
-                            (t `((when (not (eq ,guard-checking-on-form :none))
-                                   ,@early-exit-code)))))
+; The following case is an optimization of the one just after it; test
+; should be the same as invariant-risk.
+                            ((eq guard-checking-on-form
+                                 *guard-checking-on-form-invariant-risk*)
+                             `((when (member-eq
+                                      (f-get-global 'guard-checking-on
+                                                    *the-live-state*)
+                                      '(t :all))
+                                 ,@early-exit-code)))
+                            (t
+                             `((when (not (eq ,guard-checking-on-form :none))
+                                 ,@early-exit-code)))))
                      (t early-exit-code))
                (cond (trace-rec-for-none
                       `((return-from ,*1*fn ,*1*body)))
@@ -2025,8 +2080,17 @@
                                  (eq ,guard-checking-on-form t))
                         (warn-for-guard-body ',fn))))))
              (*1*-body-forms (cond ((eq defun-mode :program)
-                                    (append main-body-before-final-call
-                                            `((,fn ,@formals))))
+                                    (append
+                                     main-body-before-final-call
+                                     (if invariant-risk
+                                         `((error "Implementation error in ~
+                                                   oneify-cltl-code for ~
+                                                   invariant-risk case, ~
+                                                   function ~s!~%Please ~
+                                                   contact the ACL2 ~
+                                                   implementors."
+                                                  ',fn))
+                                       `((,fn ,@formals)))))
                                    (trace-rec-for-none
                                     main-body-before-final-call)
                                    (t
@@ -6855,6 +6919,59 @@
                (collect-monadic-booleans (cdr fns) ens wrld)))
         (t (collect-monadic-booleans (cdr fns) ens wrld))))
 
+(defun check-invariant-risk-state-p ()
+
+; See the comment about this function in initialize-invariant-risk.
+
+  (let ((bad
+         (loop for tuple in *super-defun-wart-table*
+               when
+               (and (not (member-eq (car tuple)
+                                    (global-val 'untouchable-fns
+                                                (w *the-live-state*))))
+                    (member-eq 'state (caddr tuple))
+
+; The next two conjuncts say that there is some non-state input.
+
+                    (cadr tuple)
+                    (not (equal (cadr tuple) '(state)))
+                    (not (member-eq (car tuple)
+
+; It is important that for each of the following functions, its calls during
+; evaluation in the ACL2 loop cannot cause state-p to become false of the live
+; state -- unless of course one makes changes using ttags, such as removing
+; symbols from the list of untouchable.  If that claim is false of any of these
+; function symbols, then it should be added to the value of
+; *boot-strap-invariant-risk-symbols* so that it can be given an
+; 'invariant-risk property by initialize-invariant-risk.  Also see
+; put-invariant-risk.
+
+                                    '(READ-CHAR$
+                                      READ-BYTE$
+                                      READ-OBJECT
+                                      PRINC$
+                                      WRITE-BYTE$
+                                      PRINT-OBJECT$-SER
+                                      MAKUNBOUND-GLOBAL
+                                      PUT-GLOBAL
+                                      EXTEND-T-STACK
+                                      SHRINK-T-STACK
+                                      ASET-T-STACK
+                                      SHRINK-32-BIT-INTEGER-STACK
+                                      OPEN-INPUT-CHANNEL
+                                      OPEN-OUTPUT-CHANNEL
+                                      GET-OUTPUT-STREAM-STRING$-FN
+                                      CLOSE-INPUT-CHANNEL
+                                      CLOSE-OUTPUT-CHANNEL))))
+               collect (car tuple))))
+    (or (subsetp-eq bad
+                    *boot-strap-invariant-risk-symbols*)
+        (error "It is necessary to modify ~s to include the following ~
+                list:~%~s"
+               '*boot-strap-invariant-risk-symbols*
+               (set-difference-eq bad
+                                  *boot-strap-invariant-risk-symbols*)))))
+
 (defun check-built-in-constants ()
 
 ; Certain defconsts are problematic because they build in values that one
@@ -6881,6 +6998,11 @@
 ; hackish way of doing it, where we actually specify ahead of time which nume
 ; will be assigned, is not as outlandish as it might at first seem.  We check
 ; that the actual assignment is correct (using this function) after booting.
+
+; First we do a check on *boot-strap-invariant-risk-symbols* and
+; *boot-strap-invariant-risk-symbols*.
+
+  (check-invariant-risk-state-p)
 
   (let ((str "The defconst of ~x0 is ~x1 but should be ~x2.  To fix ~
               the error, change the offending defconst to the value ~

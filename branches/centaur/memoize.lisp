@@ -860,7 +860,6 @@
   ~c[nil], then it must be ~c[t], which causes all memoization done for a
   top-level call of ~c[fn] to be forgotten when that top-level call exits.~/
 
-  :cite hons-and-memoization
   :cited-by hons-and-memoization"
 
   (declare (xargs :guard (booleanp recursive))
@@ -945,7 +944,6 @@
   ~pl[save-and-clear-memoization-settings] and
   ~pl[restore-memoization-settings].~/
 
-  :cite hons-and-memoization
   :cited-by hons-and-memoization"
 
   (declare (xargs :guard t))

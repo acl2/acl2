@@ -1394,6 +1394,14 @@
                                 (add-to-set-eq (caar wrld) ans)))
         (t (collect-world-globals (cdr wrld) ans))))
 
+(defconst *boot-strap-invariant-risk-symbols*
+
+; The following should contain all function symbols that might violate an ACL2
+; invariant.  See check-invariant-risk-state-p.
+
+  '(extend-32-bit-integer-stack
+    aset-32-bit-integer-stack))
+
 (defun primordial-world-globals (operating-system)
 
 ; This function is the standard place to initialize a world global.
@@ -1439,7 +1447,7 @@
                  (initial-global-enabled-structure
                   "ARITHMETIC-ENABLED-ARRAY-"))
            (let ((globals
-                  '((event-index nil)
+                  `((event-index nil)
                     (command-index nil)
                     (event-number-baseline 0)
                     (embedded-event-lst nil)
@@ -1521,6 +1529,8 @@
                          lp acl2-defaults-table let let*
                          complex complex-rationalp
 
+                         ,@*boot-strap-invariant-risk-symbols*
+
                          ))
                     (ttags-seen nil)
                     (untouchable-fns nil)
@@ -1561,6 +1571,62 @@
 ; them unknown-constraints and hence defeats attachability.
 
           ))
+
+(defun initialize-invariant-risk (wrld)
+
+; We put a non-nil 'invariant-risk property on every function that might
+; violate some ACL2 invariant, if called on arguments that fail to satisfy that
+; function's guard.  Also see put-invariant-risk.
+
+; At one point we thought we should do this for all functions that have raw
+; code and have state as a formal:
+
+;;; (initialize-invariant-risk-1
+;;;  *primitive-program-fns-with-raw-code*
+;;;  (initialize-invariant-risk-1
+;;;   *primitive-logic-fns-with-raw-code*
+;;;   wrld
+;;;   wrld)
+;;;  wrld)
+
+; where:
+
+;;; (defun initialize-invariant-risk-1 (fns wrld wrld0)
+;;; 
+;;; ; We could eliminate wrld0 and do our lookups in wrld, but the extra
+;;; ; properties in wrld not in wrld0 are all 'invariant-risk, so looking up
+;;; ; 'formals properties in wrld0 may be more efficient.
+;;; 
+;;;   (cond ((endp fns) wrld)
+;;;         (t (initialize-invariant-risk-1
+;;;             (cdr fns)
+;;;             (if (member-eq 'state
+;;; 
+;;; ; For robustness we do not call formals here, because it causes an error in
+;;; ; the case that it is not given a known function symbol, as can happen (for
+;;; ; example) with a member of the list *primitive-program-fns-with-raw-code*.
+;;; ; In that case, the following getprop will return nil, in which case the
+;;; ; above member-eq test is false, which works out as expected.
+;;; 
+;;;                            (getprop (car fns) 'formals nil
+;;;                                      'current-acl2-world wrld0))
+;;;                 (putprop (car fns) 'invariant-risk (car fns) wrld)
+;;;               wrld)
+;;;             wrld0))))
+
+; But we see almost no way to violate an invariant by misguided updates of the
+; (fictional) live state.  For example, state-p1 specifies that the
+; global-table is an ordered-symbol-alistp, but there is no way to get one's
+; hands directly on the global-table; and state-p1 also specifies that
+; plist-worldp holds of the logical world, and we ensure that by making set-w
+; and related functions untouchable.  The only two exceptions are
+; extend-32-bit-integer-stack and aset-32-bit-integer-stack, as we check
+; elsewhere with the function check-invariant-risk-state-p.  If new exceptions
+; arise, then we should add them to the value of
+; *boot-strap-invariant-risk-symbols*.
+
+  (putprop-x-lst2 *boot-strap-invariant-risk-symbols* 'invariant-risk
+                  *boot-strap-invariant-risk-symbols* wrld))
 
 ;; RAG - I added the treatment of *non-standard-primitives*
 
@@ -1626,8 +1692,9 @@
 
                       (putprop
                        'state 'stobj '(*the-live-state*)
-                       (primordial-world-globals
-                        operating-system))))))))))))))))))
+                       (initialize-invariant-risk
+                        (primordial-world-globals
+                         operating-system)))))))))))))))))))
       t))))
 
 (defun same-name-twice (l)
@@ -16214,23 +16281,37 @@
                                  (symbol-package-name-set syms nil)
                                  nil))
 
-(defun bookdata-alist1 (full-book-name
-                        collect-p
-                        trips
-                        books consts fns labels macros stobjs theories thms)
+(defun bookdata-alist1 (full-book-name collect-p trips port-pkgs
+                                       port-books books
+                                       port-consts consts
+                                       port-fns fns
+                                       port-labels labels
+                                       port-macros macros
+                                       port-stobjs stobjs
+                                       port-theories theories
+                                       port-thms thms)
 
 ; See maybe-write-bookdata.
 
   (cond
    ((endp trips)
-    (list :books    books
-          :consts   (symbol-list-to-package-alist consts)
-          :fns      (symbol-list-to-package-alist fns)
-          :labels   (symbol-list-to-package-alist labels)
-          :macros   (symbol-list-to-package-alist macros)
-          :stobjs   (symbol-list-to-package-alist stobjs)
-          :theories (symbol-list-to-package-alist theories)
-          :thms     (symbol-list-to-package-alist thms)))
+    (list :pkgs          port-pkgs
+          :port-books    port-books
+          :books         books
+          :port-consts   (symbol-list-to-package-alist port-consts)
+          :consts        (symbol-list-to-package-alist consts)
+          :port-fns      (symbol-list-to-package-alist port-fns)
+          :fns           (symbol-list-to-package-alist fns)
+          :port-labels   (symbol-list-to-package-alist port-labels)
+          :labels        (symbol-list-to-package-alist labels)
+          :port-macros   (symbol-list-to-package-alist port-macros)
+          :macros        (symbol-list-to-package-alist macros)
+          :port-stobjs   (symbol-list-to-package-alist port-stobjs)
+          :stobjs        (symbol-list-to-package-alist stobjs)
+          :port-theories (symbol-list-to-package-alist port-theories)
+          :theories      (symbol-list-to-package-alist theories)
+          :port-thms     (symbol-list-to-package-alist port-thms)
+          :thms          (symbol-list-to-package-alist thms)))
    (t
     (let ((trip (car trips)))
       (cond
@@ -16238,22 +16319,61 @@
              (eq (cadr trip) 'GLOBAL-VALUE))
         (bookdata-alist1
          full-book-name
-         (or (null (cddr trip)) ; for portcullis commands
-             (equal (car (cddr trip))
-                    full-book-name))
+         (cond ((null (cddr trip))
+                'port)
+               (t (equal (car (cddr trip))
+                         full-book-name)))
          (cdr trips)
-         (cond ((and collect-p
+         port-pkgs
+         (cond ((and (eq collect-p 'port)
                      (cddr trip)
-                     (not (equal (car (cddr trip)) ; full-book-name
+                     (not (equal (car (cddr trip))
                                  full-book-name)))
-                (cons (car (cddr trip)) ; full-book-name
-                      books))
+                (cons (car (cddr trip))
+                      port-books))
+               (t port-books))
+         (cond ((and (eq collect-p t)
+                     (cddr trip))
+                (assert$ ; collect-p = t, so we are already in full-book-name
+                 (not (equal (car (cddr trip))
+                             full-book-name))
+                 (cons (car (cddr trip))
+                       books)))
                (t books))
-         consts fns labels macros stobjs theories thms))
+         port-consts consts
+         port-fns fns
+         port-labels labels
+         port-macros macros
+         port-stobjs stobjs
+         port-theories theories
+         port-thms thms))
        ((not collect-p)
         (bookdata-alist1
-         full-book-name nil (cdr trips)
-         books consts fns labels macros stobjs theories thms))
+         full-book-name nil (cdr trips) port-pkgs
+         port-books books
+         port-consts consts
+         port-fns fns
+         port-labels labels
+         port-macros macros
+         port-stobjs stobjs
+         port-theories theories
+         port-thms thms))
+       ((and (eq (car trip) 'EVENT-LANDMARK)
+             (eq (cadr trip) 'GLOBAL-VALUE)
+             (eq (access-event-tuple-type (cddr trip)) 'DEFPKG))
+        (bookdata-alist1
+         full-book-name collect-p (cdr trips)
+         (assert$ (eq collect-p 'port) ; defpkg cannot be in the current book
+                  (cons (access-event-tuple-namex (cddr trip))
+                        port-pkgs))
+         port-books books
+         port-consts consts
+         port-fns fns
+         port-labels labels
+         port-macros macros
+         port-stobjs stobjs
+         port-theories theories
+         port-thms thms))
        (t
         (let ((name (name-introduced trip nil)))
           (cond
@@ -16261,46 +16381,116 @@
             (case (cadr trip)
               (FORMALS
                (bookdata-alist1
-                full-book-name t (cdr trips)
-                books consts
-                (cons name fns)
-                labels macros stobjs theories thms))
+                full-book-name collect-p (cdr trips) port-pkgs
+                port-books books
+                port-consts consts
+                (if (eq collect-p 'port)
+                    (cons name port-fns)
+                  port-fns)
+                (if (eq collect-p 'port)
+                    fns
+                  (cons name fns))
+                port-labels labels
+                port-macros macros
+                port-stobjs stobjs
+                port-theories theories
+                port-thms thms))
               (THEOREM
                (bookdata-alist1
-                full-book-name t (cdr trips)
-                books consts
-                fns labels macros stobjs theories
-                (cons name thms)))
+                full-book-name collect-p (cdr trips) port-pkgs
+                port-books books
+                port-consts consts
+                port-fns fns
+                port-labels labels
+                port-macros macros
+                port-stobjs stobjs
+                port-theories theories
+                (if (eq collect-p 'port)
+                    (cons name port-thms)
+                  port-thms)
+                (if (eq collect-p 'port)
+                    thms
+                  (cons name thms))))
               (CONST
                (bookdata-alist1
-                full-book-name t (cdr trips)
-                books
-                (cons name consts)
-                fns labels macros stobjs theories thms))
+                full-book-name collect-p (cdr trips) port-pkgs
+                port-books books
+                (if (eq collect-p 'port)
+                    (cons name port-consts)
+                  port-consts)
+                (if (eq collect-p 'port)
+                    consts
+                  (cons name consts))
+                port-fns fns
+                port-labels labels
+                port-macros macros
+                port-stobjs stobjs
+                port-theories theories
+                port-thms thms))
               (STOBJ
                (bookdata-alist1
-                full-book-name t (cdr trips)
-                books consts fns labels macros
-                (cons name stobjs)
-                theories thms))
+                full-book-name collect-p (cdr trips) port-pkgs
+                port-books books
+                port-consts consts
+                port-fns fns
+                port-labels labels
+                port-macros macros
+                (if (eq collect-p 'port)
+                    (cons name port-stobjs)
+                  port-stobjs)
+                (if (eq collect-p 'port)
+                    stobjs
+                  (cons name stobjs))
+                port-theories theories
+                port-thms thms))
               (LABEL
                (bookdata-alist1
-                full-book-name t (cdr trips)
-                books consts fns
-                (cons name labels)
-                macros stobjs theories thms))
+                full-book-name collect-p (cdr trips) port-pkgs
+                port-books books
+                port-consts consts
+                port-fns fns
+                (if (eq collect-p 'port)
+                    (cons name port-labels)
+                  port-labels)
+                (if (eq collect-p 'port)
+                    labels
+                  (cons name labels))
+                port-macros macros
+                port-stobjs stobjs
+                port-theories theories
+                port-thms thms))
               (THEORY
                (bookdata-alist1
-                full-book-name t (cdr trips)
-                books consts fns labels macros stobjs
-                (cons name theories)
-                thms))
+                full-book-name collect-p (cdr trips) port-pkgs
+                port-books books
+                port-consts consts
+                port-fns fns
+                port-labels labels
+                port-macros macros
+                port-stobjs stobjs
+                (if (eq collect-p 'port)
+                    (cons name port-theories)
+                  theories)
+                (if (eq collect-p 'port)
+                    theories
+                  (cons name theories))
+                port-thms thms))
               (MACRO-BODY
                (bookdata-alist1
-                full-book-name t (cdr trips)
-                books consts fns labels
-                (cons name macros)
-                stobjs theories thms))
+                full-book-name collect-p (cdr trips) port-pkgs
+                port-books books
+                port-consts consts
+                port-fns fns
+                port-labels labels
+                (if (eq collect-p 'port)
+                    (cons name port-macros)
+                  port-macros)
+                (if (eq collect-p 'port)
+                    macros
+                  (cons name macros))
+                port-stobjs stobjs
+                port-theories theories
+                port-thms thms))
               (GLOBAL-VALUE
 
 ; Then name-introduced is a full book name, but we extend books
@@ -16309,15 +16499,29 @@
                (assert$
                 (eq (car trip) 'CERTIFICATION-TUPLE)
                 (bookdata-alist1
-                 full-book-name t (cdr trips)
-                 books consts fns labels macros stobjs theories thms)))
+                 full-book-name collect-p (cdr trips) port-pkgs
+                 port-books books
+                 port-consts consts
+                 port-fns fns
+                 port-labels labels
+                 port-macros macros
+                 port-stobjs stobjs
+                 port-theories theories
+                 port-thms thms)))
               (otherwise
                (er hard 'bookdata-alist1
                    "Unexpected case for the cadr of ~x0"
                    trip))))
            (t (bookdata-alist1
-               full-book-name t (cdr trips)
-               books consts fns labels macros stobjs theories thms))))))))))
+               full-book-name collect-p (cdr trips) port-pkgs
+               port-books books
+               port-consts consts
+               port-fns fns
+               port-labels labels
+               port-macros macros
+               port-stobjs stobjs
+               port-theories theories
+               port-thms thms))))))))))
 
 (defun bookdata-alist (full-book-name wrld)
   (assert$
@@ -16329,7 +16533,8 @@
           (boot-strap-len (length boot-strap-wrld))
           (wrld-len (length wrld))
           (new-trips (first-n-ac-rev (- wrld-len boot-strap-len) wrld nil)))
-     (bookdata-alist1 full-book-name t new-trips
+     (bookdata-alist1 full-book-name 'port new-trips nil
+                      nil nil nil nil nil nil nil nil
                       nil nil nil nil nil nil nil nil))))
 
 (defun maybe-write-bookdata (full-book-name wrld ctx state)
@@ -16404,57 +16609,73 @@
   according to the description that follows below.
   ~bv[]
   (\"...BK.lisp\"
-   :BOOKS    book-val
-   :CONSTS   consts-val
-   :FNS      fns-val
-   :LABELS   labels-val
-   :MACROS   macros-val
-   :STOBJS   stobjs-val
-   :THEORIES theories-val
-   :THMS     thms-val)
+   :PKGS     port-pkgs
+   :BOOKS    (port-book-val book-val)
+   :CONSTS   (port-consts-val consts-val)
+   :FNS      (port-fns-val fns-val)
+   :LABELS   (port-labels-val labels-val)
+   :MACROS   (port-macros-val macros-val)
+   :STOBJS   (port-stobjs-val stobjs-val)
+   :THEORIES (port-theories-val theories-val)
+   :THMS     (port-thms-val thms-val))
   ~ev[]
 
-  The values above are based on ~il[events] introduced by including ~c[BK],
-  but only those that are either from its certification ~il[world]
-  (~pl[portcullis]) or are introduced non-~ilc[local]ly by ~c[BK], not by a
-  book that is included in ~c[BK].  The value ~c[book-val] is a list of full
-  book names (~pl[full-book-name]) of the books included by ~c[BK].  Each other
-  keyword's value is is an association list (alist).  This alist associates
-  each of its keys, a package name, with a list of ~il[symbol-name]s for
-  symbols in that package that are introduced for that keyword.  For example,
-  ~c[fns-val] may be the alist
+  The values above are based on ~il[events] introduced by including ~c[BK].
+  For various values of ~c[xxx] as described below, ~c[port-]~i[xxx]~c[-val]
+  is a list of values corresponding to ~il[events] introduced in the
+  certification ~il[world] for ~c[BK] (~pl[portcullis]), and ~i[xxx]~c[-val] is
+  a list of values corresponding to ~il[events] introduced non-~ilc[local]ly by
+  ~c[BK].  These lists include only ``top-level'' events, not those that are
+  introduced by a book included either in ~c[BK] or its certification world.
+
+  ~c[Port-pkgs] is a list of names of packages introduced in the certification
+  world (at the top level, not in an included book).  Note that no packages are
+  introduced in a book itself, so we don't include a ``~c[pkgs]'' result.  Both
+  ~c[port-book-val] and ~c[book-val] are lists of full book
+  names (~pl[full-book-name]) of included books.  For the other keywords
+  ~c[:xxx], the lists ~c[port-]~i[xxx]~c[-val] and ~i[xxx]~c[-val] are actually
+  association lists (~pl[alistp]) such that each key is a package name, which
+  is associated with a list of ~il[symbol-name]s for symbols in that package
+  that are introduced for that keyword.  For example, ~c[fns-val] may be the
+  alist
   ~bv[]
   ((\"ACL2\" \"F1\" \"F2\")
    (\"MY-PKG\" \"G1\" \"G2\"))
   ~ev[]
-  if the function symbols introduced by the book (not by its included books)
-  are ~c[F1] and ~c[F2] in the ~c[\"ACL2\"] package, and ~c[G1] and ~c[G2] in
-  the ~c[\"MY-PKG\"] package.  We next explain what kinds of symbols are
-  introduced for each keyword.
+  if the function symbols introduced in the book are ~c[F1] and ~c[F2] in the
+  ~c[\"ACL2\"] package, as well as ~c[G1] and ~c[G2] in the ~c[\"MY-PKG\"]
+  package.
+
+  We next explain what kinds of symbols are introduced for each keyword
+  ~c[:xxx].  Each such symbol would appear in the list ~c[port-]~i[xxx]~c[-val]
+  or ~i[xxx]~c[-val], depending respectively on whether the symbol is
+  introduced at the top level of the certification world for ~c[BK] or ~c[BK]
+  itself.
   ~bq[]
 
   o ~c[:CONSTS]~nl[]
-    constant symbol introduced by ~c[defconst]
+  constant symbol introduced by ~c[defconst]
 
   o ~c[:FNS]~nl[]
-    function symbol: introduced by ~c[defun], ~c[defuns], or ~c[defchoose]; or
-    constrained (by an ~ilc[encapsulate] event)
+  function symbol: introduced by ~c[defun], ~c[defuns], or ~c[defchoose]; or
+  constrained (by an ~ilc[encapsulate] event)
 
   o ~c[:LABELS]~nl[]
-    symbol introduced by ~c[deflabel]
+  symbol introduced by ~c[deflabel]
 
   o ~c[:MACROS]~nl[]
-    macro name introduced by ~c[defmacro]
+  macro name introduced by ~c[defmacro]
 
   o ~c[:STOBJS]~nl[]
-    ~c[stobj] name introduced by ~c[defstobj] or ~c[defabsstobj]
+  ~c[stobj] name introduced by ~c[defstobj] or ~c[defabsstobj]
 
   o ~c[:THEORIES]~nl[]
-    theory name introduced by ~c[deftheory]
+  theory name introduced by ~c[deftheory]
 
-  o ~c[:THMS]~nl[]
-    theorem name introduced by ~c[defthm] (perhaps by way of macro calls that
-    expand to calls of ~c[defthm], for example ~pl[defequiv] or ~c[defaxiom]
+  o ~c[:THMS]~nl[] theorem name, which may be introduced by ~c[defthm] or a
+  macro call expanding to a call of ~c[defthm], such as ~pl[defequiv] or
+  ~c[defaxiom]; but may be introduced by ~ilc[defpkg], for example, with name
+  ~c[\"MYPKG-PACKAGE\"] if the package name is ~c[\"MYPKG\"]
   ~eq[]
 
   Our hope is that people in the ACL2 community will generate and use this data
@@ -22605,6 +22826,22 @@
     (cons `(defconst ,(defconst-name (car names)) ,index)
           (defstobj-defconsts (cdr names) (1+ index)))))
 
+(defun put-defstobj-invariant-risk (field-templates wrld)
+
+; See put-invariant-risk.
+
+  (cond ((endp field-templates) wrld)
+        (t (let* ((field-template (car field-templates))
+                  (type (nth 1 field-template)))
+             (put-defstobj-invariant-risk
+              (cdr field-templates)
+              (cond ((or (eq type t)
+                         (and (eq (car type) 'array)
+                              (eq (cadr type) t)))
+                     wrld)
+                    (t (let ((updater (nth 4 field-template)))
+                         (putprop updater 'invariant-risk updater wrld)))))))))
+
 (defun defstobj-fn (name args state event-form)
 
 ; Warning: If this event ever generates proof obligations (other than those
@@ -22625,7 +22862,8 @@
          (enforce-redundancy
           event-form ctx wrld0
           (let* ((template (defstobj-template name args wrld1))
-                 (field-names (strip-accessor-names (caddr template)))
+                 (field-templates (caddr template))
+                 (field-names (strip-accessor-names field-templates))
                  (defconsts (defstobj-defconsts field-names 0))
                  (field-const-names (strip-cadrs defconsts))
                  (ax-def-lst (defstobj-axiomatic-defs name template wrld1))
@@ -22724,53 +22962,55 @@
                  ((doc-pair (translate-doc name doc ctx state)))
                  (let* ((wrld2 (w state))
                         (wrld3
-                         (update-doc-database
-                          name doc doc-pair
-                          (putprop
-                           name 'congruent-stobj-rep
-                           (and congruent-to
-                                (congruent-stobj-rep congruent-to wrld2))
+                         (put-defstobj-invariant-risk
+                          field-templates
+                          (update-doc-database
+                           name doc doc-pair
                            (putprop
+                            name 'congruent-stobj-rep
+                            (and congruent-to
+                                 (congruent-stobj-rep congruent-to wrld2))
+                            (putprop
 
 ; Here I declare that name is Common Lisp compliant.  Below I similarly declare
 ; the-live-var.  All elements of the namex list of an event must have the same
 ; symbol-class.
 
-                            name 'symbol-class :common-lisp-compliant
-                            (put-stobjs-in-and-outs
-                             name template
+                             name 'symbol-class :common-lisp-compliant
+                             (put-stobjs-in-and-outs
+                              name template
 
 ; Rockwell Addition: It is convenient for the recognizer to be in a
 ; fixed position in this list, so I can find out its name.
 
-                             (putprop
-                              name 'stobj
-                              (cons the-live-var
-                                    (list*
-                                     recog-name
-                                     creator-name
-                                     (append (remove1-eq
-                                              creator-name
-                                              (remove1-eq recog-name
+                              (putprop
+                               name 'stobj
+                               (cons the-live-var
+                                     (list*
+                                      recog-name
+                                      creator-name
+                                      (append (remove1-eq
+                                               creator-name
+                                               (remove1-eq recog-name
 
 ; See the comment in the binding of names above.
 
-                                                          names))
-                                             field-const-names)))
-                              (putprop-x-lst1
-                               names 'stobj-function name
+                                                           names))
+                                              field-const-names)))
                                (putprop-x-lst1
-                                field-const-names 'stobj-constant name
-                                (putprop
-                                 the-live-var 'stobj-live-var name
+                                names 'stobj-function name
+                                (putprop-x-lst1
+                                 field-const-names 'stobj-constant name
                                  (putprop
-                                  the-live-var 'symbol-class
-                                  :common-lisp-compliant
+                                  the-live-var 'stobj-live-var name
                                   (putprop
-                                   name
-                                   'accessor-names
-                                   (accessor-array name field-names)
-                                   wrld2))))))))))))
+                                   the-live-var 'symbol-class
+                                   :common-lisp-compliant
+                                   (putprop
+                                    name
+                                    'accessor-names
+                                    (accessor-array name field-names)
+                                    wrld2)))))))))))))
 
 ; The property 'stobj marks a single-threaded object name.  Its value is a
 ; non-nil list containing all the names associated with this object.  The car
@@ -24855,11 +25095,12 @@
   (cond
    ((endp methods) nil)
    (t (cons (let ((method (car methods)))
-              (mv-let (name formals guard-post logic stobjs)
+              (mv-let (name formals guard-post logic exec stobjs)
                       (mv (access absstobj-method method :NAME)
                           (access absstobj-method method :FORMALS)
                           (access absstobj-method method :GUARD-POST)
                           (access absstobj-method method :LOGIC)
+                          (access absstobj-method method :EXEC)
                           (remove1 st$c (collect-non-x
                                          nil
                                          (access absstobj-method method
@@ -24868,7 +25109,13 @@
                               (declare (xargs ,@(and stobjs
                                                      `(:STOBJS ,stobjs))
                                               :GUARD ,guard-post))
-                              (,logic ,@formals))))
+
+; We use mbe, rather than just its :logic component, because we want to track
+; functions that might be called in raw Lisp, in particular for avoiding the
+; violation of important invariants; see put-invariant-risk.
+
+                              (mbe :logic (,logic ,@formals)
+                                   :exec (,exec ,@formals)))))
             (defabsstobj-axiomatic-defs st$c (cdr methods))))))
 
 (defun defabsstobj-raw-def (method)
@@ -25119,6 +25366,26 @@
                        (access absstobj-method (car methods) :exec))
                  (make-absstobj-logic-exec-pairs (cdr methods))))))
 
+(defun put-defabsstobj-invariant-risk (st-name methods wrld)
+
+; See put-invariant-risk.
+
+  (cond ((endp methods) wrld)
+        (t (let* ((method (car methods))
+                  (guard (access absstobj-method method :GUARD-POST)))
+             (put-defabsstobj-invariant-risk
+              st-name
+              (cdr methods)
+              (cond ((or (equal guard *t*)
+                         (not (member-eq st-name
+                                         (access absstobj-method method
+                                                 :STOBJS-OUT))))
+                     wrld)
+                    (t (putprop (access absstobj-method method :NAME)
+                                'invariant-risk
+                                (access absstobj-method method :NAME)
+                                wrld))))))))
+
 (defun defabsstobj-fn1 (st-name st$c recognizer creator corr-fn exports
                                 protect-default congruent-to missing-only doc
                                 ctx state event-form)
@@ -25275,39 +25542,42 @@
                     (er-let* ((doc-pair (translate-doc st-name doc ctx state)))
                       (let* ((wrld2 (w state))
                              (wrld3
-                              (update-doc-database
-                               st-name doc doc-pair
-                               (putprop
-                                st-name 'congruent-stobj-rep
-                                (and congruent-to
-                                     (congruent-stobj-rep congruent-to wrld2))
+                              (put-defabsstobj-invariant-risk
+                               st-name
+                               methods
+                               (update-doc-database
+                                st-name doc doc-pair
                                 (putprop
-                                 st-name 'absstobj-info
-                                 (make absstobj-info
-                                       :st$c st$c
-                                       :logic-exec-pairs logic-exec-pairs)
+                                 st-name 'congruent-stobj-rep
+                                 (and congruent-to
+                                      (congruent-stobj-rep congruent-to wrld2))
                                  (putprop
-                                  st-name 'symbol-class
-                                  :common-lisp-compliant
-                                  (put-absstobjs-in-and-outs
-                                   st-name methods
-                                   (putprop
-                                    st-name 'stobj
-                                    (cons the-live-var
+                                  st-name 'absstobj-info
+                                  (make absstobj-info
+                                        :st$c st$c
+                                        :logic-exec-pairs logic-exec-pairs)
+                                  (putprop
+                                   st-name 'symbol-class
+                                   :common-lisp-compliant
+                                   (put-absstobjs-in-and-outs
+                                    st-name methods
+                                    (putprop
+                                     st-name 'stobj
+                                     (cons the-live-var
 
 ; Names is in the right order; it does not need adjustment as is the case for
 ; corresponding code in defstobj-fn.  See the comment about
 ; chk-acceptable-defabsstobj1 in chk-acceptable-defabsstobj.
 
-                                          names)
-                                    (putprop-x-lst1
-                                     names 'stobj-function st-name
-                                     (putprop
-                                      the-live-var 'stobj-live-var st-name
+                                           names)
+                                     (putprop-x-lst1
+                                      names 'stobj-function st-name
                                       (putprop
-                                       the-live-var 'symbol-class
-                                       :common-lisp-compliant
-                                       wrld2)))))))))))
+                                       the-live-var 'stobj-live-var st-name
+                                       (putprop
+                                        the-live-var 'symbol-class
+                                        :common-lisp-compliant
+                                        wrld2))))))))))))
                         (pprogn
                          (set-w 'extension wrld3 state)
                          (er-progn

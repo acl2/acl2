@@ -1571,6 +1571,11 @@
             (and safe-mode
                  (acl2-system-namep fn w)
                  (not (equal (symbol-package-name fn) "ACL2"))))
+           (stobj-primitive-p
+            (let ((st (getprop fn 'stobj-function nil
+                               'current-acl2-world w)))
+              (and st
+                   (member-eq st (stobjs-in fn w)))))
            (guard-checking-off
             (and gc-off
 
@@ -1579,16 +1584,14 @@
 ; consider also changing oneify-cltl-code.
 
                  (not safe-mode-requires-check)
-                 (not (let ((st (getprop fn 'stobj-function nil
-                                         'current-acl2-world w)))
-                        (and st
-                             (assoc-eq st latches)
-                             (member-eq st (stobjs-in fn w)))))))
-           (extra (and gc-off
-                       (cond (safe-mode-requires-check t)
-                             ((not guard-checking-off)
-                              :live-stobj)
-                             (t nil)))))
+                 (not stobj-primitive-p)))
+           (extra (if gc-off
+                      (cond (safe-mode-requires-check t)
+                            ((not guard-checking-off)
+                             :live-stobj)
+                            (t nil))
+                    (and stobj-primitive-p
+                         :live-stobj-gc-on))))
 
 ; Keep this in sync with *primitive-formals-and-guards*.
 
@@ -2565,12 +2568,19 @@
 ; validate their arguments.
 
            (msg "~|This error is being reported even though guard-checking ~
-                 has been turned off, because the stobj argument of ~x0 is ~
-                 the ``live'' ~p1 and ACL2 does not support non-compliant ~
-                 live stobj manipulation."
+                 has been turned off, because a stobj argument of ~x0 is the ~
+                 ``live'' ~p1 and ACL2 does not support non-compliant live ~
+                 stobj manipulation."
                 fn
                 (find-first-non-nil stobjs-in)))
-          ((eq extra :no-extra) "")
+          ((eq extra :live-stobj-gc-on)
+           (msg "~|This error will be reported even if guard-checking is ~
+                 turned off, because a stobj argument of ~x0 is the ``live'' ~
+                 ~p1 and ACL2 does not support non-compliant live stobj ~
+                 manipulation."
+                fn
+                (find-first-non-nil stobjs-in)))
+          ((eq extra :no-extra) "") ; :no-extra is unused as of late 10/2013
           (extra *safe-mode-guard-er-addendum*)
           (t "~|See :DOC set-guard-checking for information about suppressing ~
               this check with (set-guard-checking :none), as recommended for ~
@@ -5955,6 +5965,20 @@
                         (t (mv nil val bindings)))))
               (t (mv trans-or-erp trans-or-val trans-or-bindings))))))
 
+(defun inside-defabsstobj (wrld)
+
+; We use this function to allow certain violations of normal checks in
+; translate11 while executing events on behalf of defabsstobj.  In particular,
+; we avoid the normal translation checks in the :exec components of mbe calls
+; that are laid down for defabsstobj; see defabsstobj-axiomatic-defs.
+
+  (eq (caar (global-val 'embedded-event-lst wrld))
+
+; It seems reasonable to expect 'defabsstobj below instead of 'defstobj, but
+; 'defstobj is what we actually get.
+
+      'defstobj))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -7968,7 +7992,11 @@
 ; just a special case.
 
                 (trans-er-let*
-                 ((targ2 (translate11 arg2 stobjs-out bindings known-stobjs
+                 ((targ2 (translate11 arg2
+                                      (if (inside-defabsstobj wrld)
+                                          t
+                                        stobjs-out)
+                                      bindings known-stobjs
                                       flet-alist x ctx wrld state-vars))
                   (targ3 (translate11 arg3 stobjs-out bindings known-stobjs
                                       flet-alist x ctx wrld state-vars)))
