@@ -16,7 +16,7 @@
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
 ; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78701 U.S.A.
+; Austin, TX 78712 U.S.A.
 
 ; Because of the last form in this file, this file should not be loaded as part
 ; of an executable ACL2 image.

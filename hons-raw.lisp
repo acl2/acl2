@@ -18,7 +18,7 @@
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
 ; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78701 U.S.A.
+; Austin, TX 78712 U.S.A.
 
 ; hons-raw.lisp -- Raw lisp implementation of hash cons and fast alists.  Note
 ; that the memoization and watch functionality previously provided by this file

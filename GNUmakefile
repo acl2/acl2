@@ -18,7 +18,7 @@
 # email:       Kaufmann@cs.utexas.edu         and Moore@cs.utexas.edu
 # Department of Computer Science
 # University of Texas at Austin
-# Austin, TX 78701 U.S.A.
+# Austin, TX 78712 U.S.A.
 
 #  Example invocations for users:
 

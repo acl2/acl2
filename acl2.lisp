@@ -16,7 +16,7 @@
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
 ; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78701 U.S.A.
+; Austin, TX 78712 U.S.A.
 
 ; Acknowledgments:  Bob Boyer contributed crucially to the design and
 ; implementation of early versions of ACL2.  Many others, largely at CLI, have
