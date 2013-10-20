@@ -1,0 +1,36 @@
+#labels Phase-Implementation
+A few ideas for ways to improve the books
+
+=== Documentation ===
+
+There is always more work to be done on documentation.
+
+Many libraries have no documentation at all.  Even a brief page that just says what the library is, where it's located, and briefly what it provides would be a real service (and a way to learn about what's available).  
+
+Improving the existing documentation by adding examples, links to other materials, clarifying things, etc., would also be valuable.
+
+=== Interoperability ===
+
+Sometimes, libraries have name clashes that make them incompatible with one another.  A hard to achieve (but laudable) initial goal might be to simply include all the (non-workshop) books together.
+
+Beyond that, truly integrating libraries to make them play well together might be a lot of work, but could be valuable.
+
+=== System function guards ===
+
+It would be nice to have additional ACL2 theorem prover functions brought into logic mode and guard-verified.  Some functions that might be nice:
+
+  * output functions like fmt
+  * genvar
+  * find-first-bad-arg
+  * cons-tag-trees
+  * strip-branches
+  * clausify
+  * if-tautologyp
+  * expand-some-non-rec-fns (if you'd like a challenge involving mutual-recursion)
+  * rewrite-solidify
+  * loop-stopperp
+  * equal-mod-alist (this one's termination is trivial,  but its guards are undefined)
+
+There may be cases in which a built-in definition needs modification, e.g. by adding guards or changing a null test to an endp test; Matt Kaufmann is interesting in cooperating by incorporating such modifications into the ACL2 sources.
+
+New proofs along these lines can be included in system/top.lisp.  The ACL2 build/maintenance process ensures that all built-in functions that are guard-verified after executing (include-book "system/top" :dir :system) are in fact guard-verified in the normal ACL2 build.
