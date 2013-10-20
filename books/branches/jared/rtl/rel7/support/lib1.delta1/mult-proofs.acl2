@@ -1,4 +1,0 @@
-#+acl2-par
-; a proof goes into an infinite loop with waterfall-parallelism enabled
-(set-waterfall-parallelism nil)
-(certify-book "mult-proofs" ? t)

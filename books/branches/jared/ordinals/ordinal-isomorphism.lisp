@@ -491,16 +491,16 @@ to tell acl2 to use our relation for termination proofs. |#
   
     (local
      (defthm e0-ord-<-o<-help1a
-       (implies (and (consp x)
+       (implies (and (equal (o-first-expt (atoc (cdr x)))
+			    (atoc (cadr x)))
+                     (not (e0-ord-< (car x) (cadr x)))
+                     (not (e0-ord-< (cadr x) (car x)))
+                     (consp x)
 		     (consp y)
 		     (e0-ordinalp (car x))
 		     (not (equal (car x) 0))
 		     (e0-ordinalp (cdr x))
-		     (not (e0-ord-< (car x) (cadr x)))
-		     (e0-ordinalp y)
-		     (equal (o-first-expt (atoc (cdr x)))
-			    (atoc (cadr x)))
-		     (not (e0-ord-< (cadr x) (car x))))
+                     (e0-ordinalp y))
 		(equal (o-first-expt (o+ (make-ord (atoc (car x)) 1 0)
                                          (atoc (cdr x))))
 		       (atoc (car x))))
@@ -542,8 +542,14 @@ to tell acl2 to use our relation for termination proofs. |#
 
   (local
    (defthm e0-ord-<-o<-help2a
-     (implies (and (consp x)
-		   (consp y)
+     (implies (and (equal (o-first-expt (o+ (make-ord (atoc (car x)) 1 0)
+                                            (cdr x)))
+			  (atoc (car x)))
+		   (equal (o-first-expt (o+ (make-ord (atoc (car y)) 1 0)
+                                            (atoc (cdr y))))
+			  (atoc (car y)))
+                   (equal (car x) (car y))
+		   (not (e0-ord-< (car x) (car y)))
 		   (e0-ordinalp (car x))
 		   (not (equal (car x) 0))
 		   (e0-ordinalp (cdr x))
@@ -552,16 +558,10 @@ to tell acl2 to use our relation for termination proofs. |#
 		   (not (equal (car y) 0))
 		   (e0-ordinalp (cdr y))
 		   (not (e0-ord-< (car y) (cadr y)))
-		   (equal (o-first-expt (o+ (make-ord (atoc (car x)) 1 0)
-                                            (cdr x)))
-			  (atoc (car x)))
-		   (equal (o-first-expt (o+ (make-ord (atoc (car y)) 1 0)
-                                            (atoc (cdr y))))
-			  (atoc (car y)))
-		   (not (e0-ord-< (car x) (car y)))
-		   (consp (cdr y))
+                   (consp (cdr y))
 		   (o-infp (atoc (cdr y)))
-		   (equal (car x) (car y)))
+                   (consp x)
+		   (consp y))
 	      (o< (o+ (make-ord (atoc (car x)) 1 0)
 		      (cdr x))
 		  (o+ (make-ord (atoc (car x)) 1 0)
@@ -593,10 +593,10 @@ to tell acl2 to use our relation for termination proofs. |#
 
   (local
    (defthm e0-ord-<-o<-lemma
-     (implies (and (consp x)
-		   (consp y)
-		   (e0-ordinalp x)
-		   (e0-ordinalp y))
+     (implies (and (e0-ordinalp x)
+		   (e0-ordinalp y)
+                   (consp x)
+		   (consp y))
 	      (and (equal (o-first-expt (atoc x))
 			  (atoc (car x)))
 		   (equal (o-first-expt (atoc y))
@@ -664,9 +664,9 @@ to tell acl2 to use our relation for termination proofs. |#
 
 (local
  (defthm atoc-not-<
-   (implies (and (e0-ordinalp a)
-		 (e0-ordinalp b)
-		 (not (e0-ord-< a b)))
+   (implies (and (not (e0-ord-< a b))
+                 (e0-ordinalp a)
+		 (e0-ordinalp b))
 	    (not (o< (atoc a)
 		     (atoc b))))
    :instructions(pro
