@@ -1457,7 +1457,20 @@ NOTES/ISSUES
      (translate1 inv-form :stobjs-out '((:stobjs-out . :stobjs-out))
                  t 'top-level (w state) state))
     (state
-     (if (or erp (not (eq bindings bindings)))
+     (if (or erp
+
+; Change by Matt K., 10/17/2013: When testing a tentative fix for a soundness
+; bug, I found a guard violation below because EQ was being called instead of
+; EQUAL; so I changed EQ to EQUAL.  (Implementation details: That bug involved
+; doing extra guard-checking for certain :program mode functions in order to
+; avoid violating stobj recognizers.  In this case definv-fn was marked as such
+; a function because it depended on ld-fn, which had been marked as such a
+; function because it took state.  The ultimate fix didn't give this special
+; treatment for state, so the change from EQ to EQUAL below is no longer
+; necessary.  But it seems that since the call of EQ was ill-guarded, it is
+; still good to fix.)
+
+             (not (equal bindings bindings)))
          (die :illegal-term
               "Error in macro-expansion: ~p0" inv-form
               state)
