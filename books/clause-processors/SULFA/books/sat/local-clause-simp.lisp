@@ -101,6 +101,28 @@
        (cons (car clause) ans)
        $sat)))))
 
+; Added by Matt K. 10/20/2013: With the soundness bug fix committed today, we
+; get a failure when certifying
+; books/clause-processors/SULFA/books/sat-tests/benchmark.lisp, because
+; guard-checking is, in essence, being coerced to :none or :all so that *1*
+; functions are called all the way down to stobj updaters with non-trivial
+; guards.  The following function, sat::add-cnf-clause, calls updater
+; sat::update-num-f-clauses, so has this coerced behavior, as do functions all
+; the way up the call stack to acl2::sat.  Because the *1* function for
+; sat::add-cnf-clause is being called with guard-checking treated as :all or
+; :none, the *1* function is being called for print-object$-ser, and that leads
+; to a guard violation because (judging from the channel's name) there is an
+; attempt to write to an input channel.  I'm working around this problem by
+; introducing the following :program mode wrapper for print-object$-ser.  Note
+; that with one obscure exception (32-bit-integer-stack), fields of the state
+; do not get this special guard-coercion treatment; so the workaround is
+; successful.  Of course, it might be better to provide a "real" fix, to avoid
+; writing to an input channel; but I'm not inclined to put in the effort, since
+; I don't know the details of this work.
+
+(defun print-object$-ser-wrapper (x serialize-character channel state)
+  (print-object$-ser x serialize-character channel state))
+
 ;; Add a clause to the SAT input channel
 (defun add-cnf-clause (clause $sat state)
   (declare (xargs :stobjs $sat))
@@ -112,8 +134,8 @@
      (mv $sat state))
     (clause
      (let* (($sat (update-num-f-clauses (1+ (num-f-clauses $sat)) $sat))
-            (state (print-object$-ser clause nil (sat-input-channel $sat)
-                                      state)))
+            (state (print-object$-ser-wrapper clause nil (sat-input-channel $sat)
+                                              state)))
        (mv $sat state)))
     (t 
      ;; At this point we have reduced the clause to false!
@@ -123,12 +145,12 @@
       (f-var $sat)
       (++f-var $sat)
       (let* (($sat (update-num-f-clauses (+ 2 (num-f-clauses $sat)) $sat))
-             (state (print-object$-ser (list f-var)
-                                       nil
-                                       (sat-input-channel $sat)
-                                       state))
-             (state (print-object$-ser (list (- f-var))
-                                       nil
-                                       (sat-input-channel $sat)
-                                       state)))
+             (state (print-object$-ser-wrapper (list f-var)
+                                               nil
+                                               (sat-input-channel $sat)
+                                               state))
+             (state (print-object$-ser-wrapper (list (- f-var))
+                                               nil
+                                               (sat-input-channel $sat)
+                                               state)))
         (mv $sat state)))))))
