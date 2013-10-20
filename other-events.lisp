@@ -27390,9 +27390,9 @@
 
   For this topic we assume that you already understand the basics of
   single-threaded objects in ACL2.  ~l[stobj], and in particular,
-  ~pl[defstobj].  The latter topic defers discussion of the ability to specify
-  a stobj field that is itself a stobj or an array of stobjs.  That discussion
-  is the subject of the present ~il[documentation] topic.
+  ~pl[defstobj].  The latter topic mentions briefly that a stobj field can
+  itself be a stobj or an array of stobjs.  That discussion is the subject of
+  the present ~il[documentation] topic.
 
   Our presentation is in four sections.  First we augment the documentation for
   ~ilc[defstobj] by explaining how stobjs may be specified for fields in a new
@@ -27403,12 +27403,13 @@
   The final section provides precise documentation for ~c[stobj-let].
 
   See also ACL2 community book ~c[demos/modeling/nested-stobj-toy-isa.lisp] for
-  a worked example, which applies nested stobj structures to defining
-  interpreters.  A variety of small additional examples may be found in ACL2
-  community book ~c[misc/nested-stobj-tests.lisp].  For further discussion, you
-  are welcome to read the ``Essay on Nested Stobjs'', a long comment in ACL2
-  source file ~c[other-events.lisp].  However, this documentation topic is
-  intended to be self-contained for those familiar with ~il[stobj]s.
+  a worked example, which applies nested stobj structures to the problem of
+  defining interpreters.  A variety of small additional examples may be found
+  in ACL2 community book ~c[misc/nested-stobj-tests.lisp].  For further
+  discussion, you are welcome to read the ``Essay on Nested Stobjs'', a long
+  comment in ACL2 source file ~c[other-events.lisp].  However, this
+  documentation topic is intended to be self-contained for those familiar with
+  ~il[stobj]s.
 
   SECTION: Extension of ~ilc[defstobj] to permit ~il[stobj]s within stobjs
 
@@ -27774,8 +27775,8 @@
             (t (mom.kid1-fld1 op mom))))
   ~ev[]
   The following checker function uses a ~c[stobj-let] form like the ones above,
-  a major difference being that the producer variable is not a stobj, since it
-  does not modify the input stobj, ~c[mom].
+  a major difference being that the producer variable is not a stobj, since the
+  producer does not modify any stobjs.
   ~bv[]
     (defun check-update-mom (index val1 val2 last-op mom)
         (declare (xargs :stobjs mom
