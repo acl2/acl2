@@ -5450,6 +5450,36 @@
          (collect-old-nameps (cdr names) wrld))
         (t (cons (car names) (collect-old-nameps (cdr names) wrld)))))
 
+(defun put-invariant-risk1 (new-fns body-fns wrld)
+  (cond
+   ((endp body-fns) wrld)
+   (t (let ((risk-fn
+
+; Risk-fn can be :built-in or a function symbol; see put-invariant-risk.
+
+             (getprop (car body-fns) 'invariant-risk nil 'current-acl2-world
+                      wrld)))
+        (cond (risk-fn (putprop-x-lst1 new-fns 'invariant-risk risk-fn wrld))
+              (t (put-invariant-risk1 new-fns (cdr body-fns) wrld)))))))
+
+(defun put-invariant-risk (names bodies non-executablep wrld)
+
+; We want to avoid the following situation: the raw Lisp version of some
+; function occurring in bodies leads to an ill-guarded function call that
+; causes an ACL2 invariant to become false.
+
+; Each updater f with non-t guard that is introduced by defstobj or defabsstobj
+; gets an 'invariant-risk property of f.  A built-in function may get an
+; 'invariant-risk property of :built-in (see initialize-invariant-risk), though
+; that could easily be changed so that it too has itself as the value of that
+; property.  The present function, put-invariant-risk, propagates these
+; 'invariant-risk properties up through callers.
+
+  (cond (non-executablep wrld)
+        (t (put-invariant-risk1 names
+                                (all-fnnames1-exec t bodies nil)
+                                wrld))))
+
 (defun defuns-fn-short-cut (names docs pairs guards split-types-terms bodies
                                   non-executablep wrld state)
 
@@ -5475,14 +5505,18 @@
          (wrld1 (if boot-strap-flg
                     wrld0
                   (putprop-x-lst2 names 'unnormalized-body bodies wrld0)))
-         (wrld2 (update-doc-database-lst
-                 names docs pairs
-                 (putprop-x-lst2-unless
-                  names 'guard guards *t*
+         (wrld2 (put-invariant-risk
+                 names
+                 bodies
+                 non-executablep
+                 (update-doc-database-lst
+                  names docs pairs
                   (putprop-x-lst2-unless
-                   names 'split-types-term split-types-terms *t*
-                   (putprop-x-lst1
-                    names 'symbol-class :program wrld1))))))
+                   names 'guard guards *t*
+                   (putprop-x-lst2-unless
+                    names 'split-types-term split-types-terms *t*
+                    (putprop-x-lst1
+                     names 'symbol-class :program wrld1)))))))
     (value (cons wrld2 nil))))
 
 ; Now we develop the output for the defun event.
@@ -8748,8 +8782,12 @@
                              (putprop-hereditarily-constrained-fnnames-lst
                               names bodies wrld9)))
            (wrld10 (update-w big-mutrec
-                             (update-doc-database-lst names docs pairs
-                                                       wrld9a)))
+                             (put-invariant-risk
+                              names
+                              bodies
+                              non-executablep
+                              (update-doc-database-lst names docs pairs
+                                                       wrld9a))))
            (wrld11 (update-w big-mutrec
                              (putprop-x-lst1 names 'congruences nil wrld10)))
            (wrld11a (update-w big-mutrec

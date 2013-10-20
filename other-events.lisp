@@ -1394,6 +1394,14 @@
                                 (add-to-set-eq (caar wrld) ans)))
         (t (collect-world-globals (cdr wrld) ans))))
 
+(defconst *boot-strap-invariant-risk-symbols*
+
+; The following should contain all function symbols that might violate an ACL2
+; invariant.  See check-invariant-risk-state-p.
+
+  '(extend-32-bit-integer-stack
+    aset-32-bit-integer-stack))
+
 (defun primordial-world-globals (operating-system)
 
 ; This function is the standard place to initialize a world global.
@@ -1439,7 +1447,7 @@
                  (initial-global-enabled-structure
                   "ARITHMETIC-ENABLED-ARRAY-"))
            (let ((globals
-                  '((event-index nil)
+                  `((event-index nil)
                     (command-index nil)
                     (event-number-baseline 0)
                     (embedded-event-lst nil)
@@ -1521,6 +1529,8 @@
                          lp acl2-defaults-table let let*
                          complex complex-rationalp
 
+                         ,@*boot-strap-invariant-risk-symbols*
+
                          ))
                     (ttags-seen nil)
                     (untouchable-fns nil)
@@ -1561,6 +1571,62 @@
 ; them unknown-constraints and hence defeats attachability.
 
           ))
+
+(defun initialize-invariant-risk (wrld)
+
+; We put a non-nil 'invariant-risk property on every function that might
+; violate some ACL2 invariant, if called on arguments that fail to satisfy that
+; function's guard.  Also see put-invariant-risk.
+
+; At one point we thought we should do this for all functions that have raw
+; code and have state as a formal:
+
+;;; (initialize-invariant-risk-1
+;;;  *primitive-program-fns-with-raw-code*
+;;;  (initialize-invariant-risk-1
+;;;   *primitive-logic-fns-with-raw-code*
+;;;   wrld
+;;;   wrld)
+;;;  wrld)
+
+; where:
+
+;;; (defun initialize-invariant-risk-1 (fns wrld wrld0)
+;;; 
+;;; ; We could eliminate wrld0 and do our lookups in wrld, but the extra
+;;; ; properties in wrld not in wrld0 are all 'invariant-risk, so looking up
+;;; ; 'formals properties in wrld0 may be more efficient.
+;;; 
+;;;   (cond ((endp fns) wrld)
+;;;         (t (initialize-invariant-risk-1
+;;;             (cdr fns)
+;;;             (if (member-eq 'state
+;;; 
+;;; ; For robustness we do not call formals here, because it causes an error in
+;;; ; the case that it is not given a known function symbol, as can happen (for
+;;; ; example) with a member of the list *primitive-program-fns-with-raw-code*.
+;;; ; In that case, the following getprop will return nil, in which case the
+;;; ; above member-eq test is false, which works out as expected.
+;;; 
+;;;                            (getprop (car fns) 'formals nil
+;;;                                      'current-acl2-world wrld0))
+;;;                 (putprop (car fns) 'invariant-risk (car fns) wrld)
+;;;               wrld)
+;;;             wrld0))))
+
+; But we see almost no way to violate an invariant by misguided updates of the
+; (fictional) live state.  For example, state-p1 specifies that the
+; global-table is an ordered-symbol-alistp, but there is no way to get one's
+; hands directly on the global-table; and state-p1 also specifies that
+; plist-worldp holds of the logical world, and we ensure that by making set-w
+; and related functions untouchable.  The only two exceptions are
+; extend-32-bit-integer-stack and aset-32-bit-integer-stack, as we check
+; elsewhere with the function check-invariant-risk-state-p.  If new exceptions
+; arise, then we should add them to the value of
+; *boot-strap-invariant-risk-symbols*.
+
+  (putprop-x-lst2 *boot-strap-invariant-risk-symbols* 'invariant-risk
+                  *boot-strap-invariant-risk-symbols* wrld))
 
 ;; RAG - I added the treatment of *non-standard-primitives*
 
@@ -1626,8 +1692,9 @@
 
                       (putprop
                        'state 'stobj '(*the-live-state*)
-                       (primordial-world-globals
-                        operating-system))))))))))))))))))
+                       (initialize-invariant-risk
+                        (primordial-world-globals
+                         operating-system)))))))))))))))))))
       t))))
 
 (defun same-name-twice (l)
@@ -22759,6 +22826,22 @@
     (cons `(defconst ,(defconst-name (car names)) ,index)
           (defstobj-defconsts (cdr names) (1+ index)))))
 
+(defun put-defstobj-invariant-risk (field-templates wrld)
+
+; See put-invariant-risk.
+
+  (cond ((endp field-templates) wrld)
+        (t (let* ((field-template (car field-templates))
+                  (type (nth 1 field-template)))
+             (put-defstobj-invariant-risk
+              (cdr field-templates)
+              (cond ((or (eq type t)
+                         (and (eq (car type) 'array)
+                              (eq (cadr type) t)))
+                     wrld)
+                    (t (let ((updater (nth 4 field-template)))
+                         (putprop updater 'invariant-risk updater wrld)))))))))
+
 (defun defstobj-fn (name args state event-form)
 
 ; Warning: If this event ever generates proof obligations (other than those
@@ -22779,7 +22862,8 @@
          (enforce-redundancy
           event-form ctx wrld0
           (let* ((template (defstobj-template name args wrld1))
-                 (field-names (strip-accessor-names (caddr template)))
+                 (field-templates (caddr template))
+                 (field-names (strip-accessor-names field-templates))
                  (defconsts (defstobj-defconsts field-names 0))
                  (field-const-names (strip-cadrs defconsts))
                  (ax-def-lst (defstobj-axiomatic-defs name template wrld1))
@@ -22878,53 +22962,55 @@
                  ((doc-pair (translate-doc name doc ctx state)))
                  (let* ((wrld2 (w state))
                         (wrld3
-                         (update-doc-database
-                          name doc doc-pair
-                          (putprop
-                           name 'congruent-stobj-rep
-                           (and congruent-to
-                                (congruent-stobj-rep congruent-to wrld2))
+                         (put-defstobj-invariant-risk
+                          field-templates
+                          (update-doc-database
+                           name doc doc-pair
                            (putprop
+                            name 'congruent-stobj-rep
+                            (and congruent-to
+                                 (congruent-stobj-rep congruent-to wrld2))
+                            (putprop
 
 ; Here I declare that name is Common Lisp compliant.  Below I similarly declare
 ; the-live-var.  All elements of the namex list of an event must have the same
 ; symbol-class.
 
-                            name 'symbol-class :common-lisp-compliant
-                            (put-stobjs-in-and-outs
-                             name template
+                             name 'symbol-class :common-lisp-compliant
+                             (put-stobjs-in-and-outs
+                              name template
 
 ; Rockwell Addition: It is convenient for the recognizer to be in a
 ; fixed position in this list, so I can find out its name.
 
-                             (putprop
-                              name 'stobj
-                              (cons the-live-var
-                                    (list*
-                                     recog-name
-                                     creator-name
-                                     (append (remove1-eq
-                                              creator-name
-                                              (remove1-eq recog-name
+                              (putprop
+                               name 'stobj
+                               (cons the-live-var
+                                     (list*
+                                      recog-name
+                                      creator-name
+                                      (append (remove1-eq
+                                               creator-name
+                                               (remove1-eq recog-name
 
 ; See the comment in the binding of names above.
 
-                                                          names))
-                                             field-const-names)))
-                              (putprop-x-lst1
-                               names 'stobj-function name
+                                                           names))
+                                              field-const-names)))
                                (putprop-x-lst1
-                                field-const-names 'stobj-constant name
-                                (putprop
-                                 the-live-var 'stobj-live-var name
+                                names 'stobj-function name
+                                (putprop-x-lst1
+                                 field-const-names 'stobj-constant name
                                  (putprop
-                                  the-live-var 'symbol-class
-                                  :common-lisp-compliant
+                                  the-live-var 'stobj-live-var name
                                   (putprop
-                                   name
-                                   'accessor-names
-                                   (accessor-array name field-names)
-                                   wrld2))))))))))))
+                                   the-live-var 'symbol-class
+                                   :common-lisp-compliant
+                                   (putprop
+                                    name
+                                    'accessor-names
+                                    (accessor-array name field-names)
+                                    wrld2)))))))))))))
 
 ; The property 'stobj marks a single-threaded object name.  Its value is a
 ; non-nil list containing all the names associated with this object.  The car
@@ -25009,11 +25095,12 @@
   (cond
    ((endp methods) nil)
    (t (cons (let ((method (car methods)))
-              (mv-let (name formals guard-post logic stobjs)
+              (mv-let (name formals guard-post logic exec stobjs)
                       (mv (access absstobj-method method :NAME)
                           (access absstobj-method method :FORMALS)
                           (access absstobj-method method :GUARD-POST)
                           (access absstobj-method method :LOGIC)
+                          (access absstobj-method method :EXEC)
                           (remove1 st$c (collect-non-x
                                          nil
                                          (access absstobj-method method
@@ -25022,7 +25109,13 @@
                               (declare (xargs ,@(and stobjs
                                                      `(:STOBJS ,stobjs))
                                               :GUARD ,guard-post))
-                              (,logic ,@formals))))
+
+; We use mbe, rather than just its :logic component, because we want to track
+; functions that might be called in raw Lisp, in particular for avoiding the
+; violation of important invariants; see put-invariant-risk.
+
+                              (mbe :logic (,logic ,@formals)
+                                   :exec (,exec ,@formals)))))
             (defabsstobj-axiomatic-defs st$c (cdr methods))))))
 
 (defun defabsstobj-raw-def (method)
@@ -25273,6 +25366,26 @@
                        (access absstobj-method (car methods) :exec))
                  (make-absstobj-logic-exec-pairs (cdr methods))))))
 
+(defun put-defabsstobj-invariant-risk (st-name methods wrld)
+
+; See put-invariant-risk.
+
+  (cond ((endp methods) wrld)
+        (t (let* ((method (car methods))
+                  (guard (access absstobj-method method :GUARD-POST)))
+             (put-defabsstobj-invariant-risk
+              st-name
+              (cdr methods)
+              (cond ((or (equal guard *t*)
+                         (not (member-eq st-name
+                                         (access absstobj-method method
+                                                 :STOBJS-OUT))))
+                     wrld)
+                    (t (putprop (access absstobj-method method :NAME)
+                                'invariant-risk
+                                (access absstobj-method method :NAME)
+                                wrld))))))))
+
 (defun defabsstobj-fn1 (st-name st$c recognizer creator corr-fn exports
                                 protect-default congruent-to missing-only doc
                                 ctx state event-form)
@@ -25429,39 +25542,42 @@
                     (er-let* ((doc-pair (translate-doc st-name doc ctx state)))
                       (let* ((wrld2 (w state))
                              (wrld3
-                              (update-doc-database
-                               st-name doc doc-pair
-                               (putprop
-                                st-name 'congruent-stobj-rep
-                                (and congruent-to
-                                     (congruent-stobj-rep congruent-to wrld2))
+                              (put-defabsstobj-invariant-risk
+                               st-name
+                               methods
+                               (update-doc-database
+                                st-name doc doc-pair
                                 (putprop
-                                 st-name 'absstobj-info
-                                 (make absstobj-info
-                                       :st$c st$c
-                                       :logic-exec-pairs logic-exec-pairs)
+                                 st-name 'congruent-stobj-rep
+                                 (and congruent-to
+                                      (congruent-stobj-rep congruent-to wrld2))
                                  (putprop
-                                  st-name 'symbol-class
-                                  :common-lisp-compliant
-                                  (put-absstobjs-in-and-outs
-                                   st-name methods
-                                   (putprop
-                                    st-name 'stobj
-                                    (cons the-live-var
+                                  st-name 'absstobj-info
+                                  (make absstobj-info
+                                        :st$c st$c
+                                        :logic-exec-pairs logic-exec-pairs)
+                                  (putprop
+                                   st-name 'symbol-class
+                                   :common-lisp-compliant
+                                   (put-absstobjs-in-and-outs
+                                    st-name methods
+                                    (putprop
+                                     st-name 'stobj
+                                     (cons the-live-var
 
 ; Names is in the right order; it does not need adjustment as is the case for
 ; corresponding code in defstobj-fn.  See the comment about
 ; chk-acceptable-defabsstobj1 in chk-acceptable-defabsstobj.
 
-                                          names)
-                                    (putprop-x-lst1
-                                     names 'stobj-function st-name
-                                     (putprop
-                                      the-live-var 'stobj-live-var st-name
+                                           names)
+                                     (putprop-x-lst1
+                                      names 'stobj-function st-name
                                       (putprop
-                                       the-live-var 'symbol-class
-                                       :common-lisp-compliant
-                                       wrld2)))))))))))
+                                       the-live-var 'stobj-live-var st-name
+                                       (putprop
+                                        the-live-var 'symbol-class
+                                        :common-lisp-compliant
+                                        wrld2))))))))))))
                         (pprogn
                          (set-w 'extension wrld3 state)
                          (er-progn

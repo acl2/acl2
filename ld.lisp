@@ -21365,6 +21365,63 @@
 ; Incorporated fix to time$ from Jared Davis and Sol Swords, to speed up time$
 ; in (especially) the case that printing is not done.
 
+; Here is an example sent by Sol Swords to illustrate the soundness bug
+; pertaining to violating stobj recognizers.
+
+;   (defstobj st (fld :type (satisfies integerp) :initially 0))
+;   
+;   (defun integerp-of-fld (st)
+;      (declare (xargs :stobjs st))
+;      (mbe :logic t
+;           :exec (integerp (fld st))))
+;   
+;   (defun screw-up-st (st)
+;      (declare (xargs :mode :program :stobjs st))
+;      (update-fld nil st))
+;   
+;   (make-event
+;     (let ((st (screw-up-st st)))
+;       (mv nil '(value-triple :screwed-up-st) state st)))
+;   
+;   (defun-sk exists-non-integer-fld ()
+;      (exists st
+;              (not (integerp-of-fld st))))
+;   
+;   (defthm no-non-integer-flds
+;      (not (exists-non-integer-fld)))
+;   
+;   (defun non-integer-fld-clauseproc (clause hints st)
+;      (declare (xargs :stobjs st)
+;               (ignore hints))
+;      (if (and (equal clause '((exists-non-integer-fld)))
+;               (not (integerp-of-fld st)))
+;          (mv nil nil) ;; proved
+;        (mv nil (list clause))))
+;   
+;   (defevaluator my-ev my-ev-lst ((exists-non-integer-fld) (if a b c)))
+;   
+;   (defthm non-integer-fld-clauseproc-ok
+;      (implies (and (pseudo-term-listp clause)
+;                    (alistp a)
+;                    (my-ev (conjoin-clauses
+;                            (clauses-result
+;                             (non-integer-fld-clauseproc clause hints st)))
+;                           a))
+;               (my-ev (disjoin clause) a))
+;      :rule-classes :clause-processor)
+;   
+;   (defthm does-exist-non-integer-fld
+;      (exists-non-integer-fld)
+;      :hints (("goal" :clause-processor
+;               (non-integer-fld-clauseproc clause nil st))))
+;   
+;   (defthm bug
+;      nil
+;      :hints (("goal" :use (does-exist-non-integer-fld
+;                            no-non-integer-flds)
+;               :in-theory nil))
+;      :rule-classes nil)
+
   :doc
   ":Doc-Section release-notes
 
@@ -21418,6 +21475,13 @@
   ~st[HEURISTIC IMPROVEMENTS]
 
   ~st[BUG FIXES]
+
+  It had been possible to update a ~il[stobj] (either an ordinary stobj or an
+  abstract stobjs) so that it no longer satisfies its recognizer predicate.
+  This soundness bug has been fixed.  Thanks to Jared Davis and Sol Swords for
+  pointing out this bug, making useful observations about the issue, and
+  sending proofs of ~c[nil], one of which may be found in a Lisp comment in the
+  ACL2 sources at ~c[(deflabel note-6-4 ...)].
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 

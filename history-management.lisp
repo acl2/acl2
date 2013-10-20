@@ -2610,6 +2610,7 @@
                  TYPE-PRESCRIPTIONS
                  GUARD
                  SPLIT-TYPES-TERM
+                 INVARIANT-RISK
                  ABSOLUTE-EVENT-NUMBER
 
 ; It is tempting to add CONGRUENT-STOBJ-REP to this list.  But it is a property
