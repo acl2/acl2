@@ -520,7 +520,8 @@ CLEAN_FILES_EXPLICIT := \
    nonstd/workshops/1999/calculus/book/tree.lisp
 
 MORECLEAN_FILES_EXPLICIT := \
-   centaur/manual
+   centaur/manual \
+   system/doc/manual
 
 .PHONY: clean_books clean
 
