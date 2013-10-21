@@ -125,54 +125,25 @@ original version of X into its attributes.</p>"
 
 
 (defmacro def-vl-origexprs (name &key type body)
-  (let* ((name-s       (symbol-name name))
-         (type-s       (symbol-name type))
-         (thm-type-s   (cat type-s "-OF-" name-s))
-         (thm-type     (intern-in-package-of-symbol thm-type-s name))
-         (short (cat "Add @('VL_ORIG_EXPR') annotations throughout "
-                            "a @(see " type-s ")"))
-         (long         (cat "<p><b>Signature:</b> @(call " name-s ") returns @('x-prime').</p>")))
-    `(defsection ,name
+  (let* ((type-s (symbol-name type))
+         (short  (cat "Add @('VL_ORIG_EXPR') annotations throughout a @(see "
+                      type-s ")")))
+    `(define ,name ((x ,type))
+       :returns (new-x ,type :hyp :fguard)
        :parents (origexprs)
        :short ,short
-       :long ,long
-
-      (defund ,name (x)
-        "Returns X-PRIME"
-        (declare (xargs :guard (,type x)))
-        ,body)
-
-      (local (in-theory (enable ,name)))
-
-      (defthm ,thm-type
-        (implies (force (,type x))
-                 (,type (,name x)))))))
-
+       ,body)))
 
 (defmacro def-vl-origexprs-list (name &key type element)
-  (let* ((name-s (symbol-name name))
-         (type-s (symbol-name type))
-         (thm-type-s (cat (symbol-name type) "-OF-" (symbol-name name) "-1"))
-         (thm-type   (intern-in-package-of-symbol thm-type-s name))
-         (short      (cat "Add @('VL_ORIG_EXPR') annotations throughout "
-                          "a @(see " type-s ")"))
-         (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
-@('x-prime').</p>")))
-
-    `(defsection ,name
+  (let* ((type-s (symbol-name type))
+         (short  (cat "Add @('VL_ORIG_EXPR') annotations throughout a @(see "
+                      type-s ")")))
+    `(defprojection ,name (x)
+       (,element x)
+       :guard (,type x)
+       :result-type ,type
        :parents (origexprs)
-       :short ,short
-       :long ,long
-
-      (defprojection ,name (x)
-        (,element x)
-        :guard (,type x))
-
-      (defthm ,thm-type
-        (implies (force (,type x))
-                 (,type (,name x)))
-        :hints(("Goal" :induct (len x)))))))
-
+       :short ,short)))
 
 (def-vl-origexprs vl-assign-origexprs
   :type vl-assign-p

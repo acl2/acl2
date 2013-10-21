@@ -193,6 +193,21 @@ than a @(see *esim-xnor*).</p>"
   :o ((|out|))
   :x (:out ((|out| . (iff |a| |b|)))))
 
+(def-esim-primitive *esim-safe-mux*
+  :short "Primitive E module for a (more conservative) mux."
+  :long "<p>We use this to implement @(see vl::*vl-1-bit-approx-mux*).</p>"
+  :i ((|sel|) (|a|) (|b|))
+  :o ((|out|))
+  :x (:out ((|out| . (ite* |sel| |a| |b|)))))
+
+(def-esim-primitive *esim-unsafe-mux*
+  :short "Primitive E module for a (less conservative) mux."
+  :long "<p>We use this to implement @(see vl::*vl-1-bit-mux*).</p>"
+  :i ((|sel|) (|a|) (|b|))
+  :o ((|out|))
+  :x (:out ((|out| . (ite |sel| |a| |b|)))))
+
+
 ;; Note: VL now generates RES modules directly, see the vl/toe directory.
 ;; BOZO perhaps rework how that's done, and perhaps WOR, WAND, etc.
 

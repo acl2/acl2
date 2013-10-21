@@ -20,6 +20,7 @@
 
 (in-package "STD")
 (include-book "defalist")
+(include-book "misc/assert" :dir :system)
 
 ;; Basic tests to make sure defalist seems to be working.
 
@@ -201,3 +202,47 @@
                   :keyp-of-nil t
                   :valp-of-nil t))))
 
+
+
+(local (progn
+
+(defalist m0 (x)
+  :key (nonep x)
+  :val (anyp x))
+
+(assert! (let ((topic (xdoc::find-topic 'm0 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(acl2::undocumented)))))
+
+(xdoc::set-default-parents foo bar)
+
+(defalist m1 (x)
+  :key (nonep x)
+  :val (anyp x))
+
+(assert! (let ((topic (xdoc::find-topic 'm1 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(foo bar)))))
+
+(defalist m2 (x)
+  :key (nonep x)
+  :val (anyp x)
+  :parents (bar))
+
+(assert! (let ((topic (xdoc::find-topic 'm2 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(bar)))))
+
+(defalist m3 (x)
+  :key (nonep x)
+  :val (anyp x)
+  :parents nil)
+
+(assert! (let ((topic (xdoc::find-topic 'm3 (xdoc::get-xdoc-table (w state)))))
+           (not topic)))
+
+
+))

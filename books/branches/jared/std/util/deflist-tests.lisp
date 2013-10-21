@@ -339,3 +339,45 @@
   :elementp-of-nil nil
   :already-definedp t)
 
+
+
+
+
+
+(deflist m0 (x)
+  (consp x))
+
+(assert! (let ((topic (xdoc::find-topic 'm0 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(acl2::undocumented)))))
+
+(xdoc::set-default-parents foo bar)
+
+(deflist m1 (x)
+  (consp x))
+
+(assert! (let ((topic (xdoc::find-topic 'm1 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(foo bar)))))
+
+(deflist m2 (x)
+  (consp x)
+  :parents (bar))
+
+(assert! (let ((topic (xdoc::find-topic 'm2 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(bar)))))
+
+(deflist m3 (x)
+  (consp x)
+  :parents nil)
+
+(assert! (let ((topic (xdoc::find-topic 'm3 (xdoc::get-xdoc-table (w state)))))
+           (not topic)))
+
+
+
+

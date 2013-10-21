@@ -628,11 +628,16 @@ some kind of separator!</p>
                          (declare (ignorable __function__))
                          ,body))
 
-       (non-exec (cdr (assoc :non-executable kwd-alist)))
+       (non-exec                          (cdr (assoc :non-executable kwd-alist)))
        ((mv xargs kwd-alist)              (get-xargs-from-kwd-alist kwd-alist))
        ((mv returns kwd-alist)            (get-returns kwd-alist))
        ((mv before-events kwd-alist)      (get-before-events-from-kwd-alist kwd-alist))
+       (parents-p                         (assoc :parents kwd-alist))
        ((mv parents short long kwd-alist) (get-xdoc-stuff kwd-alist))
+       (parents
+        (if parents-p
+            parents
+          (xdoc::get-default-parents world)))
        ((mv enabled-p inline-p prepwork kwd-alist)
         (get-defun-params kwd-alist))
 

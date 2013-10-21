@@ -192,3 +192,42 @@
 
 
 ||#
+
+
+
+
+(defprojection m0 (x)
+  (cons 1 x))
+
+(assert! (let ((topic (xdoc::find-topic 'm0 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(acl2::undocumented)))))
+
+(xdoc::set-default-parents foo bar)
+
+(defprojection m1 (x)
+  (cons 1 x))
+
+(assert! (let ((topic (xdoc::find-topic 'm1 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(foo bar)))))
+
+(defprojection m2 (x)
+  (cons 1 x)
+  :parents (bar))
+
+(assert! (let ((topic (xdoc::find-topic 'm2 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(bar)))))
+
+
+(defprojection m3 (x)
+  (cons 1 x)
+  :parents nil)
+
+(assert! (let ((topic (xdoc::find-topic 'm3 (xdoc::get-xdoc-table (w state)))))
+           (not topic)))
+

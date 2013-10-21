@@ -47,7 +47,7 @@
 
 (defconst *throwaway-tags*
   (list "b" "i" "u" "tt" "color" "sf" "a" "box" "img"
-        "page" "long"))
+        "page"))
 
 (defun merge-text (x acc codes)
   ;; CODES is number of open <code> tags -- we don't normalize whitespace
@@ -245,10 +245,10 @@
                          (t
                           list-nums)))
              (acc (cond
-                   ((equal name "parent")
-                    (b* ((acc (maybe-newline acc))
-                         (acc (str::revappend-chars "Parent topic: " acc)))
-                      acc))
+                   ;; ((equal name "parent")
+                   ;;  (b* ((acc (maybe-newline acc))
+                   ;;       (acc (str::revappend-chars "Parent: " acc)))
+                   ;;    acc))
                    ((equal name "li")
                     (b* ((bullet (if (eq (get-list-type open-tags) :bulleted)
                                      "* "
@@ -261,12 +261,12 @@
                          (acc     (append spaces acc))
                          (acc     (str::revappend-chars bullet acc)))
                       acc))
-                   ((member-equal name '("h4" "h5" "short" "p" "li" "dt" "dd" "br"
+                   ((member-equal name '("h4" "h5" "p" "li" "dt" "dd" "br"
                                          "index_head" "index_body" "blockquote"))
                     ;; This kind of tag has some level of indenting associated
                     ;; with it, so make sure we indent over to the right level.
                     (auto-indent (maybe-newline acc) open-tags))
-                   ((member-equal name '("code"))
+                   ((member-equal name '("code" "short" "long"))
                     (auto-indent (maybe-doublespace acc) open-tags))
                    ((member-equal name '("h1" "h2" "h3"))
                     (auto-indent (maybe-triplespace acc) open-tags))
@@ -290,7 +290,7 @@
                           list-nums))
              (acc (cond
                    ((member-equal name '("h1" "h2" "h3" "h4" "h5" "p" "dl" "ul" "ol"
-                                         "short" "code" "parent" "index" "index_body"
+                                         "short" "code" "index" "index_body"
                                          "blockquote"))
                     (auto-indent (maybe-doublespace acc) open-tags))
                    ((member-equal name '("li" "dd" "dt" "index_head"))
@@ -325,7 +325,10 @@
   (b* ((name (cdr (assoc :name x)))
 ;       (- (cw "Preprocessing...~%"))
        ;; Use NIL as the topics-fal as a simple way to suppress autolinks...
-       ((mv text state) (preprocess-topic x all-topics nil nil state))
+       ((mv text state)
+        (preprocess-topic
+         (acons :parents nil x) ;; horrible hack so we can control this better
+         all-topics nil nil state))
 ;       (- (cw "Text is ~x0.~%" text))
 ;       (- (cw "Parsing xml...~%"))
        ((mv err tokens) (parse-xml text))
@@ -348,6 +351,15 @@
        (state (princ$ (symbol-package-name name) *standard-co* state))
        (state (princ$ "::" *standard-co* state))
        (state (princ$ (symbol-name name) *standard-co* state))
+       (from  (cdr (assoc :from x)))
+       (state (if from
+                  (princ$ (str::cat " -- " from) *standard-co* state)
+                state))
+       (parents (cdr (assoc :parents x)))
+       (state (if parents
+                  (fms "Parents: ~&0.~%" (list (cons #\0 parents))
+                       *standard-co* state nil)
+                (newline *standard-co* state)))
        (state (newline *standard-co* state))
        (state (princ$ terminal *standard-co* state))
        (state (newline *standard-co* state)))
@@ -372,7 +384,7 @@
 ;;          (cdr xml-tokens))
 ;;         (t
 ;;          (skip-through-close-long (cdr xml-tokens)))))
-    
+
 ;; (defun eliminate-long (xml-tokens)
 ;;   (cond ((atom xml-tokens)
 ;;          nil)
@@ -457,8 +469,8 @@
        (state (summarize-nearby-topics suggested-topics state))
        (state (newline *standard-co* state)))
     state))
-      
-             
+
+
 (defun colon-xdoc-fn (name all-topics state)
   (declare (xargs :guard (symbolp name)))
   (b* ((xdoc-entry (find-topic name all-topics))
@@ -466,7 +478,7 @@
        ((when (not xdoc-entry))
         (let ((state (suggest-alternatives name all-topics state)))
           (value :invisible)))
-       
+
        (state (display-topic xdoc-entry all-topics state)))
     (value :invisible)))
 

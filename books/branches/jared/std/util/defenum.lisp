@@ -31,7 +31,7 @@
  (defenum name
    elements
    &key mode         ; current defun-mode by default
-        parents      ; '(acl2::undocumented) by default
+        parents      ; nil by default
         short        ; nil by default
         long         ; nil by default
         )
@@ -58,9 +58,7 @@ the current default defun-mode is for ACL2, i.e., if you are already in program
 mode, it will default to program mode, etc.</p>
 
 <p>The optional @(':parents'), @(':short'), and @(':long') parameters are like
-those in @(see xdoc::defxdoc).  The definition of the function and theorems
-about it will automatically be appended to anything you put into
-@(':long').</p>
+those in @(see xdoc::defxdoc).</p>
 
 <h3>Performance Notes</h3>
 
@@ -189,11 +187,15 @@ fast alist or other schemes, based on the elements it is given.</p>")
 (defmacro defenum (name members
                         &key
                         mode
-                        (parents '(undocumented))
+                        (parents 'nil parents-p)
                         (short 'nil)
                         (long 'nil))
-  `(make-event (let ((mode (or ',mode (default-defun-mode (w state)))))
-                 (defenum-fn ',name ',members mode ',parents ',short ',long state))))
+  `(make-event (let ((mode (or ',mode (default-defun-mode (w state))))
+                     (parents (if ',parents-p
+                                  ',parents
+                                (or (xdoc::get-default-parents (w state))
+                                    '(acl2::undocumented)))))
+                 (defenum-fn ',name ',members mode parents ',short ',long state))))
 
 
 ;; Primitive tests

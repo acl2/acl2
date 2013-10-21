@@ -732,6 +732,170 @@ probably not much else.</p>
                            :atts      atts
                            :esim      acl2::*esim-xnor*)))
 
+(defxdoc *vl-1-bit-approx-mux*
+  :parents (primitives)
+  :short "Primitive 1-bit (more conservative) multiplexor module."
+  :long "<p>The Verilog definition of this module is:</p>
+
+@({
+module VL_1_BIT_APPROX_MUX (out, sel, a, b) ;
+  output out;
+  input sel;
+  input a;
+  input b;
+  assign out = sel ? a : b;
+endmodule
+})
+
+<p>VL takes this as a primitive, and we use it to implement @('?:')
+expressions.  The corresponding @(see esim) primitive is @(see
+acl2::*esim-safe-mux*).</p>
+
+<p>The esim semantics are a <b>conservative, inexact approximation</b> of the
+Verilog semantics, for two reasons.</p>
+
+<h3>1. Z Input Handling</h3>
+
+<p>In Verilog, the expression @('sel ? a : b') produces a @('Z') value when the
+selected input is @('Z').  But our corresponding esim primitive produces X in
+this case.</p>
+
+<p>Occasionally, @('?:') operators with @('Z') inputs are used in Verilog
+designs to model efficient muxes, based on tri-state buffers, where the selects
+are expected to be one-hot.  For instance:</p>
+
+@({
+    assign out = sel1 ? data1 : 1'bz;
+    assign out = sel2 ? data2 : 1'bz;
+    assign out = sel3 ? data3 : 1'bz;
+})
+
+<p>Such a circuit could not be modeled correctly using approx-muxes; the esim
+semantics would always produce an X on the output.  To avoid this, VL tries to
+recognize @('?:') operators that literally are of the form @('a ?  b : Z'),
+using a simple kind of pattern-matching, and in these cases it uses a different
+primitive, @(see *vl-1-bit-zmux*), instead of approx muxes.</p>
+
+<p>But in general, the Verilog semantics do not really correspond to any kind
+of hardware that you would implement.  For instance, an AND/OR style mux would
+always drive its output, regardless of whether its inputs were driven.  So the
+ESIM semantics, which treat the output as X instead of Z in this case, are
+arguably more realistic and safer than the Verilog semantics.</p>
+
+<h3>2. X Select Handling</h3>
+
+<p>In Verilog, when @('sel') evaluates to X or Z, the expression @('sel ? a :
+b') may still produce a good 1 or 0 value when both data inputs @('a') and
+@('b') share this value.</p>
+
+<p>For certain kinds of mux implementations, this seems overly optimistic, and
+our esim semantics for an approx mux is that whenever @('sel') is X, we output
+is X, even if the inputs agree.  For more discussion about this issue and the
+tradeoffs involved, see @(see acl2::4v-ite).</p>
+
+<p>For special cases where this approximation is not acceptable, VL implements
+a special @('VL_X_SELECT') that can be used to override this behavior.  @('?:')
+operators that are annotated with this attribute will be implemented in a less
+conservative way, as @(see *vl-1-bit-mux*) primitives.  See @(see
+vl-mux-occform) for more information.</p>")
+
+(defconsts *vl-1-bit-approx-mux*
+  (b* ((name "VL_1_BIT_APPROX_MUX")
+       (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr   (make-vl-nonatom :op :vl-qmark
+                                                        :args (list sel-expr a-expr b-expr)
+                                                        :finalwidth 1
+                                                        :finaltype :vl-unsigned)
+                               :loc *vl-fakeloc*)))
+    (make-honsed-vl-module :name      name
+                           :origname  name
+                           :ports     (list out-port     sel-port     a-port     b-port)
+                           :portdecls (list out-portdecl sel-portdecl a-portdecl b-portdecl)
+                           :netdecls  (list out-netdecl  sel-netdecl  a-netdecl  b-netdecl)
+                           :assigns   (list assign)
+                           :minloc    *vl-fakeloc*
+                           :maxloc    *vl-fakeloc*
+                           :atts      atts
+                           :esim      acl2::*esim-safe-mux*)))
+
+
+(defxdoc *vl-1-bit-mux*
+  :parents (primitives)
+  :short "Primitive 1-bit (less conservative) multiplexor module."
+  :long "<p>The Verilog definition of this module is:</p>
+
+@({
+module VL_1_BIT_MUX (out, sel, a, b) ;
+  output out;
+  input sel;
+  input a;
+  input b;
+  assign out = sel ? a : b;
+endmodule
+})
+
+<p>VL takes this as a primitive.  The corresponding @(see esim) primitive is
+@(see acl2::*esim-unsafe-mux*).</p>
+
+<p>Ordinarily, VL <b>will not use this module</b>.  Instead, @('?:') operators
+will be implemented using either @(see *vl-1-bit-approx-mux*) or @(see
+*vl-1-bit-zmux*) modules.</p>
+
+<p>The only reason we have this module at all is that, occasionally, you may
+find that an approx mux is too conservative.  If this causes you problems, you
+may instruct VL to instead produce a less-conservative @('*vl-1-bit-mux*') by
+adding a @('VL_X_SELECT') attribute; see @(see vl-mux-occform) for more
+information.</p>
+
+<p>In the ESIM semantics, a @('*vl-1-bit-mux*') is identical to a
+@('*vl-1-bit-approx-mux*') except in the cases where the select is unknown (X
+or Z) and the data inputs agree on some good, Boolean value.  For instance:</p>
+
+<ul>
+<li> X ? 1 : 1 </li>
+<li> X ? 0 : 0 </li>
+</ul>
+
+<p>In these cases, an approx-mux produces @('X'), whereas a non-approx mux will
+produce the shared value of the data inputs.</p>
+
+<p>This less-conservative behavior may not necessarily be a realistic model of
+how some physical muxes will operate, and may lead to somewhat slower symbolic
+simulation performance in certain cases.  For additional discussion of these
+issues, see @(see *vl-1-bit-approx-mux*) and @(see acl2::4v-ite).</p>
+
+<p>Note that, like an approx-mux, a @('vl-1-bit-mux') still produces X when the
+selected data input is Z.</p>")
+
+(defconsts *vl-1-bit-mux*
+  (b* ((name "VL_1_BIT_MUX")
+       (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
+       (assign (make-vl-assign :lvalue out-expr
+                               :expr   (make-vl-nonatom :op :vl-qmark
+                                                        :args (list sel-expr a-expr b-expr)
+                                                        :finalwidth 1
+                                                        :finaltype :vl-unsigned)
+                               :loc *vl-fakeloc*)))
+    (make-honsed-vl-module :name      name
+                           :origname  name
+                           :ports     (list out-port     sel-port     a-port     b-port)
+                           :portdecls (list out-portdecl sel-portdecl a-portdecl b-portdecl)
+                           :netdecls  (list out-netdecl  sel-netdecl  a-netdecl  b-netdecl)
+                           :assigns   (list assign)
+                           :minloc    *vl-fakeloc*
+                           :maxloc    *vl-fakeloc*
+                           :atts      atts
+                           :esim      acl2::*esim-unsafe-mux*)))
+
 
 (defxdoc *vl-1-bit-zmux*
   :parents (primitives)

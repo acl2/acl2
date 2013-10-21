@@ -1027,7 +1027,9 @@ optimization altogether.</p>")
                          (equal (symbol-package-name tag) "KEYWORD"))))
         (mv (raise "~x0: Tag must be a keyword symbol or NIL, found ~x1" name tag) state))
 
-       (parents (or (cdr (assoc :parents kwd-alist)) '(acl2::undocumented)))
+       (parents (or (cdr (assoc :parents kwd-alist))
+                    (xdoc::get-default-parents (w state))
+                    '(acl2::undocumented)))
        ((unless (symbol-listp parents))
         (mv (raise "~x0: :parents must be a list of symbols." name) state))
 

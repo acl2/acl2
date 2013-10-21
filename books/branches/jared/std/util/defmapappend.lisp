@@ -43,7 +43,7 @@
          transform-exec          ; nil by default
          transform-true-list-p   ; nil by default
          mode                    ; default defun-mode by default
-         parents                 ; '(undocumented) by default
+         parents                 ; nil by default
          short                   ; nil by default
          long                    ; nil by default
          rest                    ; nil by default
@@ -151,7 +151,7 @@ reverse, and then reverses it at the very end, avoiding even the intermediate
 computation of the lists emitted by @('transform').</p>
 
 <p>The optional @(':parents'), @(':short'), and @(':long') options are as in
-@(see xdoc), and are analagous to those of @(see deflist) or @(see
+@(see xdoc), and are analogous to those of @(see deflist) or @(see
 defprojection).</p>
 
 <p>The optional @(':rest') option is as in @(see deflist), and allows you to
@@ -337,16 +337,20 @@ add theorems into the same section.</p>")
                              (guard 't)
                              (verify-guards 't)
                              mode
-                             (parents '(acl2::undocumented))
+                             (parents 'nil parents-p)
                              (short 'nil)
                              (long 'nil)
                              (rest 'nil))
-  `(make-event (let ((mode (or ',mode (default-defun-mode (w state)))))
+  `(make-event (let ((mode    (or ',mode (default-defun-mode (w state))))
+                     (parents (if ',parents-p
+                                  ',parents
+                                (or (xdoc::get-default-parents (w state))
+                                    '(acl2::undocumented)))))
                  (defmapappend-fn ',name ',formals ',transform
                    ',guard ',verify-guards
                    ',transform-exec ',transform-true-list-p
                    mode
-                   ',parents ',short ',long
+                   parents ',short ',long
                    ',rest))))
 
 

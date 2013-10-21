@@ -73,9 +73,13 @@ ordinary lists of literals.  See @(see lit-listp).</li>
 
 <p>The semantics of these formulas are given by @(see eval-formula).</p>")
 
-(defsection eval-formula
+
+(define eval-formula
   :parents (cnf)
   :short "Semantics of CNF formulas."
+
+  ((formula lit-list-listp) env$)
+  :returns (bit bitp)
 
   :long "<p>We define a simple evaluator for CNF formulas that uses an
 environment to assign values to the identifiers.</p>
@@ -85,35 +89,34 @@ bit array.  Our evaluators produce a <b>BIT</b> (i.e., 0 or 1) instead of a
 BOOL (i.e., T or NIL) to make it directly compatible with the bitarr
 stobj.</p>"
 
-  (define eval-var ((var varp) env$)
-    :returns (bit bitp)
-    :inline t
-    (mbe :logic (get-bit (var->index var) env$)
-         ;; We'll pay the price of a bounds check just to make the guards
-         ;; here much easier to satisfy.
-         :exec (if (< (the (integer 0 *) (var->index var))
-                      (the (integer 0 *) (bits-length env$)))
-                   (get-bit (var->index var) env$)
-                 0)))
+  :prepwork
+  ((define eval-var ((var varp) env$)
+     :returns (bit bitp)
+     :inline t
+     (mbe :logic (get-bit (var->index var) env$)
+          ;; We'll pay the price of a bounds check just to make the guards
+          ;; here much easier to satisfy.
+          :exec (if (< (the (integer 0 *) (var->index var))
+                       (the (integer 0 *) (bits-length env$)))
+                    (get-bit (var->index var) env$)
+                  0)))
 
-  (define eval-lit ((lit litp) env$)
-    :returns (bit bitp)
-    (b-xor (lit->neg lit)
-           (eval-var (lit->var lit) env$)))
+   (define eval-lit ((lit litp) env$)
+     :returns (bit bitp)
+     (b-xor (lit->neg lit)
+            (eval-var (lit->var lit) env$)))
 
-  (define eval-clause ((clause lit-listp) env$)
-    :returns (bit bitp)
-    (if (atom clause)
-        0
-      (b-ior (eval-lit (car clause) env$)
-             (eval-clause (cdr clause) env$))))
+   (define eval-clause ((clause lit-listp) env$)
+     :returns (bit bitp)
+     (if (atom clause)
+         0
+       (b-ior (eval-lit (car clause) env$)
+              (eval-clause (cdr clause) env$)))))
 
-  (define eval-formula ((formula lit-list-listp) env$)
-    :returns (bit bitp)
-    (if (atom formula)
-        1
-      (b-and (eval-clause (car formula) env$)
-             (eval-formula (cdr formula) env$)))))
+  (if (atom formula)
+      1
+    (b-and (eval-clause (car formula) env$)
+           (eval-formula (cdr formula) env$))))
 
 
 

@@ -2327,6 +2327,13 @@
   (pseudo-termp val))
 
 ;-----------------------------------------------------------------
+; INVARIANT-RISK
+
+(defun pseudo-invariant-riskp (sym val)
+  (declare (ignore sym val))
+  t)
+
+;-----------------------------------------------------------------
 ; STOBJ
 
 (defun pseudo-stobjp (sym val)
@@ -2671,7 +2678,8 @@
                 (pseudo-def-bodiesp sym val)))
           (DEFAXIOM-SUPPORTER (defaxiom-supporterp sym val))
           (DEFCHOOSE-AXIOM (pseudo-defchoose-axiomp sym val))
-          (ELIMINATE-DESTRUCTORS-RULE (pseudo-eliminate-destructors-rulep sym val))
+          (ELIMINATE-DESTRUCTORS-RULE
+           (pseudo-eliminate-destructors-rulep sym val))
           (FORMALS
            (or (eq val *acl2-property-unbound*)
                (pseudo-formalsp sym val)))
@@ -2686,6 +2694,8 @@
            (pseudo-hereditarily-constrained-fnnamesp sym val))
           (INDUCTION-MACHINE (pseudo-induction-machinep sym val))
           (INDUCTION-RULES (pseudo-induction-rulesp sym val))
+          (INVARIANT-RISK (or (eq val *acl2-property-unbound*)
+                              (pseudo-invariant-riskp sym val)))
           (JUSTIFICATION (pseudo-justificationp sym val))
           (LABEL (labelp sym val))
           (LEMMAS (pseudo-lemmasp sym val))

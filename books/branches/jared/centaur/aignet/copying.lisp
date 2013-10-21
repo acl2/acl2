@@ -1588,6 +1588,7 @@ nodes.</p>"
 (defsection aignet-copy-init
   :parents (aignet-logic)
   :short "Set the initial state of an FSM to the all-0 convention."
+
   :long "<p>Some algorithms assume that an FSM's initial state is the one where
 all registers are 0.  This normalizes an FSM that does not follow this
 convention into one that does.  Given the aignet and an initial state vector,
@@ -1595,7 +1596,10 @@ this produces a new aignet that has registers toggled so that when its initial
 value is 0, its sequential simulations produce the same values as the input
 aignet when its initial value is the specified vector:</p>
 
-@(def id-eval-seq-of-aignet-copy-init)"
+@(def id-eval-seq-of-aignet-copy-init)
+
+<p>This operation is similar to @(see aignet-complete-copy).</p>"
+
   (local (in-theory (enable lookup-stype-in-bounds)))
   (local (defthm resize-list-0
            (equal (resize-list lst 0 default)
@@ -1730,23 +1734,9 @@ aignet when its initial value is the specified vector:</p>
   (define aignet-copy-init (aignet initsts &key
                                        ((gatesimp natp) '9)
                                        (aignet2 'aignet2))
+    :parents nil
     :guard (<= (num-regs aignet) (bits-length initsts))
     :returns aignet2
-    :parents (aignet)
-    :short "Copy an aignet, \"normalizing\" the order of nodes"
-    :long "<p>Copies aignet into aignet2, in the following order:</p>
-<ul><li>Primary inputs
-</li><li>Registers
-</li><li>Gates
-</li><li>Primary outputs
-</li><li>Next states
-</li>
-</ul>
-
-<p>Every node in the original aignet has a copy in aignet2, so no particular
-pruning is done.  However, if strashing or a higher level of simplification is
-used than was used when constructing the original aignet, there may be fewer
-nodes.</p>"
     (b* (((local-stobjs copy strash)
           (mv copy strash aignet2)))
       (aignet-copy-init-aux aignet initsts copy gatesimp strash aignet2))

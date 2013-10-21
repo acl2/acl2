@@ -484,38 +484,25 @@ these functions.</p>")
 
          (rec            (mksym type '-p))
          (chk            (mksym type '-lvaluecheck))
-         (wrn-thm        (mksym 'vl-warninglist-p-of- chk))
          (rec-s          (symbol-name rec))
-         (chk-s          (symbol-name chk))
 
          (short (cat "Check well-formedness of lvalues in a @(see " rec-s ")."))
 
-         (long (cat "<p><b>Signature</b> @(call " chk-s ") returns
-@('warnings-prime').</p>
+         (long (cat "<p>We check the lvalues throughout @('x') for well-formedness
+in the sense of @(see vl-expr-lvaluep), and generate non-fatal warnings for any
+problematic lvalues encountered.</p>" long)))
 
-<p>We are given @('x'), a @(see " rec-s "), and @('warnings'), an ordinary
-@(see warnings) accumulator.  We check the lvalues throughout @('x') for
-well-formedness in the sense of @(see vl-expr-lvaluep), and generate non-fatal
-warnings for any problematic lvalues encountered.</p>"
-
-long)))
-
-    `(defsection ,chk
+    `(define ,chk
+       ((x ,rec)
+        ,@extra-formals
+        (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
+       :returns (new-warnings vl-warninglist-p
+                              :hyp (force (vl-warninglist-p warnings)))
        :parents (,rec lvaluecheck)
        :short ,short
        :long ,long
-
-       (define ,chk (x ,@extra-formals warnings)
-         (declare (xargs :guard (and (,rec x)
-                                     ,guard
-                                     (vl-warninglist-p warnings))))
-         ,body)
-
-       (local (in-theory (enable ,chk)))
-
-       (defthm ,wrn-thm
-         (implies (force (vl-warninglist-p warnings))
-                  (vl-warninglist-p (,chk x ,@extra-formals warnings)))))))
+       :guard ,guard
+       ,body)))
 
 (def-vl-lvaluecheck
   :type vl-assign

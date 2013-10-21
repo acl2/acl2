@@ -20,33 +20,73 @@
 
 (in-package "STD")
 (include-book "defmapappend")
+(include-book "misc/assert" :dir :system)
+
+(deflist nat-listp (x)
+  (natp x)
+  :elementp-of-nil nil)
+
+(defund nats (n)
+  (declare (xargs :guard (natp n)))
+  (if (zp n)
+      nil
+    (cons n (nats (- n 1)))))
+
+(defthm nat-listp-of-nats
+  (nat-listp (nats n))
+  :hints(("Goal" :in-theory (enable nats))))
+
+(defprojection map-nats (x)
+  (nats x)
+  :guard (nat-listp x)
+  :optimize nil)
+
+(defmapappend append-nats (x)
+  (nats x)
+  :guard (nat-listp x))
+
+(value-triple (map-nats (nats 5)))
+(value-triple (append-nats (nats 5)))
 
 
-(local
- (encapsulate
-   ()
-   (deflist nat-listp (x)
-     (natp x)
-     :elementp-of-nil nil)
 
-   (defund nats (n)
-     (declare (xargs :guard (natp n)))
-     (if (zp n)
-         nil
-       (cons n (nats (- n 1)))))
+(defmapappend m0 (x)
+  (nats x)
+  :guard (nat-listp x))
 
-   (defthm nat-listp-of-nats
-     (nat-listp (nats n))
-     :hints(("Goal" :in-theory (enable nats))))
+(assert! (let ((topic (xdoc::find-topic 'm0 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(acl2::undocumented)))))
 
-   (defprojection map-nats (x)
-     (nats x)
-     :guard (nat-listp x)
-     :optimize nil)
+(xdoc::set-default-parents foo bar)
 
-   (defmapappend append-nats (x)
-     (nats x)
-     :guard (nat-listp x))
+(defmapappend m1 (x)
+  (nats x)
+  :guard (nat-listp x))
 
-   (value-triple (map-nats (nats 5)))
-   (value-triple (append-nats (nats 5)))))
+(assert! (let ((topic (xdoc::find-topic 'm1 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(foo bar)))))
+
+(defmapappend m2 (x)
+  (nats x)
+  :guard (nat-listp x)
+  :parents (bar))
+
+(assert! (let ((topic (xdoc::find-topic 'm2 (xdoc::get-xdoc-table (w state)))))
+           (and topic
+                (equal (cdr (assoc :parents topic))
+                       '(bar)))))
+
+
+(defmapappend m3 (x)
+  (nats x)
+  :guard (nat-listp x)
+  :parents nil)
+
+(assert! (let ((topic (xdoc::find-topic 'm3 (xdoc::get-xdoc-table (w state)))))
+           (not topic)))
+
+
