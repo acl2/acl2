@@ -1,4 +1,0 @@
-lemmas-out.lisp
-defs-out.lisp
-defs-eq.lisp
-check.txt
