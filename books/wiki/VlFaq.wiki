@@ -1,0 +1,20 @@
+#summary Some FAQ's about VL
+
+= Introduction =
+
+Some FAQ's from using VL (see :xdoc topic "Vl").  General "authored" by people new to VL.  Anyone should feel free to expand this list, and the VL maintainer(s) will consider bringing these notes into the official documentation as appropriate.
+
+
+= Questions =
+
+Questions
+
+  * What's a "single identifier" in an always block, as in the following fatal warning?
+
+     {{{Expected all left-hand sides to be single identifiers, but found q[6:0] <= d[6:0];}}}
+
+  The indexes into {{{q}}} and {{{d}}} are throwing off VL.  That can be fixed by making your assignment from q to d, as in:
+
+    {{{q <= d}}}
+
+  
