@@ -23,6 +23,7 @@
 (include-book "symbolic-arithmetic-fns")
 ;; (include-book "defapply")
 
+
 (def-eval-g eval-g-base
   (BINARY-*
    cons if
@@ -59,6 +60,8 @@
    logbitp
    binary-logand
    binary-logior
+   acl2::binary-logxor
+   acl2::binary-logeqv
    lognot
    ash
    integer-length
@@ -76,7 +79,8 @@
    ;; FORCE CASE-SPLIT
    ;; DOUBLE-REWRITE
 
-   logapp int-set-sign maybe-integer))
+   logapp int-set-sign maybe-integer
+   binary--))
 
 
 (in-theory (disable eval-g-base))

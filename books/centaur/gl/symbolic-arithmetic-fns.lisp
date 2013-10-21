@@ -23,6 +23,12 @@
 (include-book "tools/mv-nth" :dir :system)
 (include-book "ihs/logops-definitions" :dir :system)
 
+
+(defun binary-- (x y)
+  (declare (xargs :guard (and (acl2-numberp x)
+                              (acl2-numberp y))))
+  (- x y))
+
 (defund int-set-sign (negp i)
   (declare (xargs :guard (integerp i)))
   (let ((i (lifix i)))
@@ -420,6 +426,8 @@
         (bfr-scons c r)))))
 
 
+
+
 ;; ;; Symbolically computes the FLOOR and MOD for positive divisor B (when MINUS-B
 ;; ;; is the negation of B.)
 ;; (defund floor-mod-ss (a b minus-b)
@@ -586,6 +594,28 @@
         (bfr-sterm (bfr-or af bf))
       (b* ((c (bfr-or af bf))
            (r (bfr-logior-ss ar br)))
+        (bfr-scons c r)))))
+
+(defund bfr-logxor-ss (a b)
+  (declare (xargs :guard t
+                  :measure (+ (len a) (len b))))
+  (b* (((mv af ar aend) (first/rest/end a))
+       ((mv bf br bend) (first/rest/end b)))
+    (if (and aend bend)
+        (bfr-sterm (bfr-xor af bf))
+      (b* ((c (bfr-xor af bf))
+           (r (bfr-logxor-ss ar br)))
+        (bfr-scons c r)))))
+
+(defund bfr-logeqv-ss (a b)
+  (declare (xargs :guard t
+                  :measure (+ (len a) (len b))))
+  (b* (((mv af ar aend) (first/rest/end a))
+       ((mv bf br bend) (first/rest/end b)))
+    (if (and aend bend)
+        (bfr-sterm (bfr-not (bfr-xor af bf)))
+      (b* ((c (bfr-not (bfr-xor af bf)))
+           (r (bfr-logeqv-ss ar br)))
         (bfr-scons c r)))))
 
 

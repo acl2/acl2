@@ -65,6 +65,8 @@
       logbitp
       binary-logand
       binary-logior
+      acl2::binary-logxor
+      acl2::binary-logeqv
       lognot
       ash
       integer-length
@@ -86,7 +88,7 @@
 
       ;; force checks
       gl-force-check-fn gl-force-false-fn gl-force-true-fn
-      ))
+      binary--))
 
 (in-theory (disable glcp-generic-geval))
 
