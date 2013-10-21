@@ -11258,7 +11258,7 @@
               (newline channel state)
               (value :invisible)))))
 
-(defun doc-fn (name state)
+(defun legacy-doc-fn (name state)
   (cond
    ((not (symbolp name))
     (er soft :doc
@@ -11299,7 +11299,7 @@
                   (declare (ignore col))
                   (cond ((and (symbolp (caddr temp))
                               (access-doc-string-database (caddr temp) state))
-                         (doc-fn (caddr temp) state))
+                         (legacy-doc-fn (caddr temp) state))
                         (t (value :invisible))))))))
             (t (pprogn (print-doc doc-tuple 0 (doc-prefix state)
                                   (doc-markup-table state)
@@ -11313,6 +11313,13 @@
                                   channel state)
                        (newline channel state)
                        (end-doc channel state)))))))))
+
+(defun doc-fn (name state)
+  (pprogn (princ$ (cadr (assoc name *acl2-system-documentation*))
+                  *standard-co*
+                  state)
+          (newline *standard-co* state)
+          (value :invisible)))
 
 (defun more-fn (ln state)
   (io? temporary nil (mv erp val state)
@@ -12043,7 +12050,13 @@
   on the same line.  The initial value of ~c[print-doc-start-column] is
   15.")
 
+(defmacro legacy-doc (name)
+  (list 'legacy-doc-fn name 'state))
+
 (defmacro doc (name)
+
+; This documentation is out of date!  It is more properly associated with
+; legacy-doc, which we expect to remove.
 
   ":Doc-Section Documentation
 
@@ -12220,7 +12233,7 @@
             (f-put-global 'more-doc-state nil state)
             (end-doc channel state)))
           ((symbolp x)
-           (doc-fn x state))
+           (legacy-doc-fn x state))
           ((stringp x)
            (let ((doc-tuples
                   (get-docs-apropos x
