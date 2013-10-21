@@ -29,6 +29,7 @@
 (include-book "g-lessthan")
 (include-book "g-logand")
 (include-book "g-logior")
+(include-book "g-logeqv")
 (include-book "g-lognot")
 (include-book "g-logbitp")
 (include-book "g-unary--")

@@ -899,6 +899,51 @@
             :induct (bfr-logior-ss v1 v2)
             :expand ((bfr-logior-ss v1 v2))))))
 
+(defsection bfr-logxor-ss
+  (defthm bfr-logxor-ss-correct
+    (equal (bfr-list->s (bfr-logxor-ss a b) env)
+           (logxor (bfr-list->s a env)
+                   (bfr-list->s b env)))
+    :hints(("Goal"
+            :induct (scdr2-ind a b)
+            :in-theory (e/d (acl2::logxor**))
+            :expand ((bfr-logxor-ss a b)))))
+
+  (defthm pbfr-list-depends-on-of-bfr-logxor-ss
+    (implies (and (not (pbfr-list-depends-on n p v1))
+                  (not (pbfr-list-depends-on n p v2)))
+             (not (pbfr-list-depends-on n p (bfr-logxor-ss v1 v2))))
+    :hints(("Goal" :in-theory (e/d (pbfr-list-depends-on bfr-logxor-ss)
+                                   ((pbfr-list-depends-on)
+                                    (pbfr-depends-on)
+                                    (:d bfr-logxor-ss)))
+            :induct (bfr-logxor-ss v1 v2)
+            :expand ((bfr-logxor-ss v1 v2))))))
+
+(defsection bfr-logeqv-ss
+  (defthm bfr-logeqv-ss-correct
+    (equal (bfr-list->s (bfr-logeqv-ss a b) env)
+           (logeqv (bfr-list->s a env)
+                   (bfr-list->s b env)))
+    :hints(("Goal"
+            :induct (scdr2-ind a b)
+            :in-theory (e/d (acl2::binary-logeqv
+                             acl2::logior**
+                             acl2::lognot**
+                             acl2::logand**))
+            :expand ((bfr-logeqv-ss a b)))))
+
+  (defthm pbfr-list-depends-on-of-bfr-logeqv-ss
+    (implies (and (not (pbfr-list-depends-on n p v1))
+                  (not (pbfr-list-depends-on n p v2)))
+             (not (pbfr-list-depends-on n p (bfr-logeqv-ss v1 v2))))
+    :hints(("Goal" :in-theory (e/d (pbfr-list-depends-on bfr-logeqv-ss)
+                                   ((pbfr-list-depends-on)
+                                    (pbfr-depends-on)
+                                    (:d bfr-logeqv-ss)))
+            :induct (bfr-logeqv-ss v1 v2)
+            :expand ((bfr-logeqv-ss v1 v2))))))
+
 
 ;; ------
 
