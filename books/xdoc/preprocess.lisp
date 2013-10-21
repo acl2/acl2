@@ -348,53 +348,62 @@
         (t
          n)))
 
-(defun parse-directive (x n xl base-pkg kpa) ;; ==> (MV ERROR COMMAND ARG N-PRIME)
+
+; Basic preprocessor directives:
+
+(defun parse-directive (x n xl base-pkg kpa) ;; ==> (MV ERROR COMMAND ARG ARG-RAW N-PRIME)
   ;; Every directive has the form @(command arg)
   ;; Where command and arg are symbols.
   ;; We assume @( has just been read, and N is now pointing right after the open paren.
+  ;; We try to read the command and arg.
+  ;; Historically, on success, we returned the ARG as a symbol alone.
+  ;; Now, to support fancier @(see Foo) capitalization preservation, we need to also
+  ;; return the raw argument.
   (declare (type string x))
   (b* ((n                    (skip-past-ws x n xl))
        ;; We want to get nice error messages here, because if there'a a directive we
        ;; really do expect it to be a valid symbol.
        ((mv error command n) (parse-symbol x n xl (pkg-witness "XDOC") kpa t))
        ((when error)
-        (mv error nil nil n))
+        (mv error nil nil nil n))
        (n                    (skip-past-ws x n xl))
+       (arg-start-n          n)
        ((mv error arg n)     (parse-symbol x n xl base-pkg kpa t)))
       (cond
        ;; Some error parsing arg.  Add a little more context.
        (error (mv (str::cat "In " (symbol-name command) " directive: " error)
-                  nil nil n))
+                  nil nil nil n))
 
        ;; Ends with ), good.
        ((and (< n xl)
              (eql (char x n) #\)))
-        (mv nil command arg (+ n 1)))
+        (mv nil command arg (subseq x arg-start-n n) (+ n 1)))
 
        (t
         (mv (str::cat "In " (symbol-name command) " directive, expected ) after "
                       (symbol-name arg)
                       ". Near " (error-context x n xl) ".")
-            nil nil n)))))
+            nil nil nil n)))))
 
-;; (let ((x "body foo)"))
-;;   (parse-directive x 0 (length x) 'acl2::foo))
+#||
+(let ((x "body Foo)"))
+  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state)))
 
-;; (let ((x "body foo) bar"))
-;;   (parse-directive x 0 (length x) 'acl2::foo))
+(let ((x "body foo) bar"))
+  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state)))
 
-;; (let ((x "body xdoc::foo) bar"))
-;;   (parse-directive x 0 (length x) 'acl2::foo))
+(let ((x "body xdoc::foo) bar"))
+  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state)))
 
-;; (let ((x "xdoc::body xdoc::foo) bar"))
-;;   (parse-directive x 0 (length x) 'acl2::foo))
+(let ((x "xdoc::body xdoc::foo) bar"))
+  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state)))
 
-;; (let ((x "acl2::body xdoc::foo) bar"))
-;;   (parse-directive x 0 (length x) 'acl2::foo))
+(let ((x "acl2::body xdoc::foo) bar"))
+  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state)))
 
-;; (let ((x "acl2::body)xdoc::foo) bar"))
-;;   (parse-directive x 0 (length x) 'acl2::foo))
-
+(let ((x "acl2::body)xdoc::foo) bar"))
+  (parse-directive x 0 (length x) 'acl2::foo (known-package-alist state)))
+||#
 
 
 
@@ -423,18 +432,45 @@
   (b* ((acc            (sym-mangle-cap arg base-pkg acc)))
       (mv acc state)))
 
+(defun want-to-preserve-case-p (arg arg-raw base-pkg)
+  ;; Decide whether we want to preserve the case on a link like @(see Foo).
+  ;;  - ARG is the true symbol we're trying to link to.
+  ;;  - ARG-RAW is some string that the user typed to refer to ARG.
+  ;;  - BASE-PKG is the package we're printing relative to.
+  (and
+   ;; The symbol being linked to must be in the same package, because otherwise
+   ;; we're going to print a foo:: prefix and lowercasing everything seems
+   ;; quite reasonable.
+   (in-package-p arg base-pkg)
+   ;; You had better not have typed any sort of :: stuff, because if you did,
+   ;; then you wrote a link like @(see foo::Bar), and we are just going to
+   ;; downcase you.
+   (not (position #\: arg-raw))
+   ;; You had better have at least one lowercase letter somewhere, because
+   ;; otherwise it's likely that you're a macro that wrote @(see GUARD) and we
+   ;; don't want to let you shout at us.
+   (str::string-has-some-down-alpha-p arg-raw 0 (length arg-raw))
+   ;; We'll require some upper case character too, because otherwise we may as
+   ;; well use our default mechanism and capitalize, e.g., ACL2.
+   (str::string-has-some-up-alpha-p arg-raw 0 (length arg-raw))
+   ;; For good measure, let's make sure you are really naming our symbol.  This
+   ;; should hopefully prevent any kind of mistakes from symbols with bars or
+   ;; backslash escape characters.
+   (str::istreqv arg-raw (symbol-name arg))))
 
-(defun process-see-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
+(defun process-see-directive (arg arg-raw base-pkg state acc) ;; ===> (MV ACC STATE)
 
-; @(see foo) just expands into a link with a lowercase name.
-
+; @(see foo) just expands into a link with a (usually) lowercase name, but we go to
+; some trouble to preserve case for things like @(see Guard).
+ 
   (b* ((acc            (str::revappend-chars "<see topic=\"" acc))
        (acc            (file-name-mangle arg acc))
        (acc            (str::revappend-chars "\">" acc))
-       (acc            (sym-mangle arg base-pkg acc))
+       (acc            (if (want-to-preserve-case-p arg arg-raw base-pkg)
+                           (str::revappend-chars (str::trim arg-raw) acc)
+                         (sym-mangle arg base-pkg acc)))
        (acc            (str::revappend-chars "</see>" acc)))
       (mv acc state)))
-
 
 (defun process-see-cap-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
 
@@ -447,13 +483,12 @@
        (acc            (str::revappend-chars "</see>" acc)))
       (mv acc state)))
 
-
-(defun process-tsee-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
+(defun process-tsee-directive (arg arg-raw base-pkg state acc) ;; ===> (MV ACC STATE)
 
 ; @(tsee foo) is basically <tt>@(see ...)</tt>.
 
   (b* ((acc            (str::revappend-chars "<tt>" acc))
-       ((mv acc state) (process-see-directive arg base-pkg state acc))
+       ((mv acc state) (process-see-directive arg arg-raw base-pkg state acc))
        (acc            (str::revappend-chars "</tt>" acc)))
     (mv acc state)))
 
@@ -659,7 +694,7 @@
       (mv acc state)))
 
 
-(defun process-directive (command arg dir topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
+(defun process-directive (command arg arg-raw dir topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
 
 ; Command and Arg are the already-parsed symbols we have read from the
 ; documentation string.  Carry out whatever directive we've been asked to do.
@@ -677,9 +712,9 @@
     (call      (process-call-directive    arg base-pkg state acc))
     (ccall     (process-ccall-directive   arg base-pkg state acc))
     (url       (process-url-directive     arg state acc))
-    (see       (process-see-directive     arg base-pkg state acc))
+    (see       (process-see-directive     arg arg-raw base-pkg state acc))
     (csee      (process-see-cap-directive arg base-pkg state acc))
-    (tsee      (process-tsee-directive    arg base-pkg state acc))
+    (tsee      (process-tsee-directive    arg arg-raw base-pkg state acc))
     (sym       (process-sym-directive     arg base-pkg state acc))
     (csym      (process-sym-cap-directive arg base-pkg state acc))
     (otherwise
@@ -1107,13 +1142,13 @@ baz
                        (preprocess-aux x (+ end 2) xl dir topics-fal base-pkg kpa state acc)))
 
 
-                    ((mv error command arg n) (parse-directive x (+ n 2) xl base-pkg kpa))
+                    ((mv error command arg arg-raw n) (parse-directive x (+ n 2) xl base-pkg kpa))
                     ((when error)
                      (prog2$ (and (xdoc-verbose-p)
                                   (cw "; xdoc error: ~x0.~%" error))
                              (mv acc state)))
                     ((mv acc state)
-                     (process-directive command arg dir topics-fal base-pkg state acc)))
+                     (process-directive command arg arg-raw dir topics-fal base-pkg state acc)))
                  (preprocess-aux x n xl dir topics-fal base-pkg kpa state acc)))
 
               (t

@@ -183,8 +183,44 @@
 
 ; Matt K., 10/6/2013, avoiding dependence on rel8:
 ; (local (include-book "rtl/rel8/lib/arith" :dir :system))
+
+;; bozo, jared, yuck: changing the order of these includes breaks the proof of div-table-1!!
 (local (include-book "../lib2/arith"))
 (local (include-book "arithmetic-5/top" :dir :system))
+
+(local (deftheory jared-disables-1
+         '(SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-RATIONALP-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NON-0-BASE)
+           (:TYPE-PRESCRIPTION EXPT-2-POSITIVE-INTEGER-TYPE))))
+
+(local (deftheory jared-disables-2
+         '((:TYPE-PRESCRIPTION NOT-INTEGERP-3B)
+           (:TYPE-PRESCRIPTION EXPT-POSITIVE-INTEGER-TYPE)
+           (:TYPE-PRESCRIPTION EXPT-2-POSITIVE-RATIONAL-TYPE)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-4E))))
+
+(local (deftheory jared-disables-3
+         '((:TYPE-PRESCRIPTION NOT-INTEGERP-4B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-4B-EXPT)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-3B-EXPT)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B-EXPT)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B-EXPT)
+           a14
+           (:TYPE-PRESCRIPTION RATIONALP-EXPT-TYPE-PRESCRIPTION)
+           RATIONALP-X
+           (:TYPE-PRESCRIPTION EXPT-POSITIVE-INTEGER-TYPE))))
 
 (defund delta0 (j n)
   (1+ (/ j (expt 2 n))))
@@ -255,31 +291,31 @@
   (check-div-rows (expt 2 m) rho m n table))
 
 (local-defthm check-div-row-lemma
-  (implies (and (natp j)
+  (implies (and (check-div-row i j rho m n row)
+                (natp j)
                 (natp k)
-                (< k j)
-                (check-div-row i j rho m n row))
+                (< k j))
            (check-div-entry i k rho m n (ifix (nth k row))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable check-div-row))))
 
 (local-defthm check-div-rows-lemma
-  (implies (and (natp i)
+  (implies (and (check-div-rows i rho m n rows)
+                (natp i)
                 (natp k)
-                (< k i)
-                (check-div-rows i rho m n rows))
+                (< k i))
            (check-div-row k (expt 2 n) rho m n (nth k rows)))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable check-div-rows))))
 
 (local-defthm check-div-table-lemma
-  (implies (and (natp m)
-                (natp n)
-                (natp i)
-                (natp j)
+  (implies (and (admissible-div-table-p rho m n table)
                 (< i (expt 2 m))
                 (< j (expt 2 n))
-                (admissible-div-table-p rho m n table))
+                (natp m)
+                (natp n)
+                (natp i)
+                (natp j))
            (check-div-entry i j rho m n (lookup i j table)))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable lookup admissible-div-table-p)
@@ -341,7 +377,12 @@
            (< (* (expt 2 rho) p)
               (* (1+ k) d)))
   :rule-classes ()
-  :hints (("Goal" :use (check-div-table-lemma div-table-1))))
+  :hints (("Goal"
+           :use (check-div-table-lemma div-table-1)
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3
+                                ))))
 
 (local-defthm div-table-4
   (implies (and (natp m)
@@ -435,8 +476,13 @@
                          (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                             (delta0 j n))))))
   :rule-classes ()
-  :hints (("Goal" :use (div-table-6
-                        div-table-5))))
+  :hints (("Goal"
+           :use (div-table-6
+                 div-table-5)
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3)
+           )))
 
 (local-defthm div-table-8
   (implies (and (natp m)
@@ -464,7 +510,12 @@
                    (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                       (delta0 j n)))))
   :rule-classes ()
-  :hints (("Goal" :use (div-table-7))))
+  :hints (("Goal"
+           :use (div-table-7)
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3)
+           )))
 
 (local-defthm div-table-9
   (implies (and (natp m)
@@ -491,8 +542,12 @@
                 (* (expt 2 rho)
                    (+ (pi0 i m) (/ (expt 2 (- m 3)))))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable pi0 delta0)
-                  :use (div-table-2 div-table-8))))
+  :hints (("Goal" :use (div-table-2 div-table-8)
+           ;; 21.74 baseline; 15.17 disbales1; 3.11 disables 1+2, 2.23 disbales 1-3
+           :in-theory (e/d (pi0 delta0)
+                            (jared-disables-1
+                             jared-disables-2
+                             jared-disables-3)))))
 
 (local-defthm div-table-10
   (implies (and (natp m)
@@ -521,8 +576,11 @@
                  (rationalp (pi0 i m))
                  (>= (+ (pi0 i m) (/ (expt 2 (- m 3)))) 0)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable pi0 delta0)
-                  :use (div-table-2))))
+  :hints (("Goal" :use (div-table-2)
+           :in-theory (e/d (pi0 delta0)
+                            (jared-disables-1
+                             ;jared-disables-2
+                             jared-disables-3)))))
 
 (local-defthm div-table-11
   (implies (and (natp m)
@@ -547,7 +605,12 @@
                 (or (< i (expt 2 (1- m))) (= i (1- (expt 2 m)))))
            (>= (1+ k) 0))
   :rule-classes ()
-  :hints (("Goal" :use (div-table-10 div-table-8))))
+  :hints (("Goal"
+           :use (div-table-10 div-table-8)
+           :in-theory (disable jared-disables-1
+                                ;jared-disables-2
+                                jared-disables-3)
+           )))
 
 (local-defthm div-table-12
   (implies (and (natp m)
@@ -602,7 +665,11 @@
                 (* (expt 2 rho)
                    (+ (pi0 i m) (/ (expt 2 (- m 3)))))))
   :rule-classes ()
-  :hints (("Goal" :use (div-table-9 div-table-12))))
+  :hints (("Goal" :use (div-table-9 div-table-12)
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3)
+           )))
 
 (local-defthm div-table-14
   (implies (and (natp m)
@@ -642,7 +709,11 @@
             (> (* (1+ k) d)
                (* (expt 2 rho) p)))
   :rule-classes ()
-  :hints (("Goal" :use (div-table-14 div-table-13))))
+  :hints (("Goal" :use (div-table-14 div-table-13)
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3)
+           )))
 
 (local-defthm div-table-16
   (implies (and (natp m)
@@ -670,8 +741,12 @@
                              (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                                 (+ (delta0 j n) (/ (expt 2 n)))))))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable lower)
-                  :use (div-table-4 div-table-2))))
+  :hints (("Goal"
+           :in-theory (e/d (lower)
+                            (jared-disables-1
+                             ;jared-disables-2
+                             jared-disables-3))
+           :use (div-table-4 div-table-2))))
 
 (local-defthm div-table-17
   (implies (and (natp m)
@@ -714,8 +789,13 @@
                          (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                             (+ (delta0 j n) (/ (expt 2 n))))))))
   :rule-classes ()
-  :hints (("Goal" :use (div-table-16
-                        div-table-17))))
+  :hints (("Goal"
+           :use (div-table-16
+                 div-table-17)
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3)
+           )))
 
 (local-defthm div-table-19
   (implies (and (natp m)
@@ -744,7 +824,11 @@
                    (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                       (+ (delta0 j n) (/ (expt 2 n)))))))
   :rule-classes ()
-  :hints (("Goal" :use (div-table-18))))
+  :hints (("Goal"
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3)
+           :use (div-table-18))))
 
 (local-defthm div-table-20
   (implies (and (natp m)
@@ -773,8 +857,12 @@
                  (>= (delta0 j n) 1)
                  (rationalp (pi0 i m))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable pi0 delta0)
-                  :use (div-table-2))))
+  :hints (("Goal"
+           :in-theory (e/d (pi0 delta0)
+                            (jared-disables-1
+                             jared-disables-2
+                             jared-disables-3))
+           :use (div-table-2))))
 
 (local-defthm div-table-21
   (implies (and (natp m)
@@ -784,8 +872,16 @@
            (<= (+ (pi0 i m) 4) 
                (* (/ (expt 2 (- m 2))) (- (expt 2 m) 2))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable pi0)
-                  :use ((:instance *-weakly-monotonic (x (/ (expt 2 (- m 2)))) (y i) (y+ (- (expt 2 m) 2)))))))
+  :hints (("Goal"
+           :in-theory (e/d (pi0)
+                            (jared-disables-1
+                             ;jared-disables-2
+                             ;jared-disables-3
+                             ))
+           :use ((:instance *-weakly-monotonic
+                            (x (/ (expt 2 (- m 2))))
+                            (y i)
+                            (y+ (- (expt 2 m) 2)))))))
 
 (local-defthm expt-plus
   (implies (and (integerp m) (integerp n))
@@ -810,7 +906,10 @@
                 (<= (pi0 i m)
                     (- (/ (expt 2 (- m 3)))))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable pi0)
+  :hints (("Goal" :in-theory (e/d (pi0)
+                                   (jared-disables-1
+                                    jared-disables-2
+                                    jared-disables-3))
                   :use (div-table-22 div-table-21))))
 
 (local-defthm div-table-24
@@ -850,7 +949,23 @@
                         (:instance *-weakly-monotonic-negative-multiplier
                                    (x (* (expt 2 rho) (+ (pi0 i m) (/ (expt 2 (- m 3))))))
                                    (y (/ (+ (delta0 j n) (/ (expt 2 n)))))
-                                   (y+ (/ d)))))))
+                                   (y+ (/ d))))
+           :in-theory (disable jared-disables-1
+                                jared-disables-3
+                                NOT-INTEGERP-4E
+                                NOT-INTEGERP-3B
+                                NOT-INTEGERP-2B
+                                NOT-INTEGERP-1B
+                                NOT-INTEGERP-3E
+                                NOT-INTEGERP-2E
+                                NOT-INTEGERP-1E
+                                ;; ---
+                                not-integerp-4a-expt
+                                not-integerp-2a-expt
+                                not-integerp-1d-expt
+                                not-integerp-3d-expt
+                                )
+           )))
 
 (local-defthm div-table-26
   (implies (and (rationalp x)
@@ -898,7 +1013,11 @@
                                             (+ (delta0 j n) (/ (expt 2 n))))))
                                    (z (* (expt 2 rho) 
                                          (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
-                                            d))))))))
+                                            d)))))
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3)
+           )))
 
 (local-defthm div-table-28
   (implies (and (natp m)
@@ -933,7 +1052,10 @@
                                    (y+ (1+ k))
                                    (y (* (expt 2 rho)
                                          (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
-                                            d))))))))
+                                            d)))))
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3))))
 
 (local-defthm div-table-29
   (implies (and (natp m)
@@ -967,7 +1089,10 @@
                         (:instance *-strongly-monotonic 
                                    (x (expt 2 rho))
                                    (y+ (+ (pi0 i m) (/ (expt 2 (- m 3)))))
-                                   (y p))))))
+                                   (y p)))
+           :in-theory (disable jared-disables-1
+                                jared-disables-3)
+           )))
 
 (local-defthm div-table-30
   (implies (and (natp m)
@@ -996,7 +1121,11 @@
                   p)))
   :rule-classes ()
   :hints (("Goal" :use (div-table-28
-                        div-table-29))))
+                        div-table-29)
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3)
+           )))
 
 (local-defthm div-table-31
   (implies (and (natp m)
@@ -1022,7 +1151,12 @@
   :rule-classes ()
   :hints (("Goal" :use (div-table-3
                         div-table-15
-                        div-table-30))))
+                        div-table-30)
+           :in-theory (disable jared-disables-1
+                                ;;jared-disables-2
+                                ;;jared-disables-3
+                                )
+           )))
 
 (local-defthm div-table-3-1
   (implies (and (natp rho)
@@ -1033,7 +1167,12 @@
            (>= (* (expt 2 rho) p)
                (* (1- k) d)))
   :rule-classes ()
-  :hints (("Goal" :use (check-div-table-lemma div-table-1))))
+  :hints (("Goal" :use (check-div-table-lemma div-table-1)
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3
+                                )
+           )))
 
 (local-defthm div-table-4-1
   (implies (and (natp m)
@@ -1082,8 +1221,15 @@
                 (< i (expt 2 (1- m))))
             (<= k (1+ (fl (* (expt 2 rho) (/ (pi0 i m) (+ (delta0 j n) (expt 2 (- n)))))))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable upper)
-                  :use (div-table-4-1 div-table-2))))
+  :hints (("Goal"
+           :use (div-table-4-1 div-table-2)
+           :in-theory (e/d (upper)
+                            (jared-disables-1
+                             jared-disables-2
+                             jared-disables-3))
+           )))
+
+(local (in-theory (disable jared-disables-1)))
 
 (local-defthm div-table-6-1
   (implies (and (natp m)
@@ -1221,7 +1367,12 @@
   :rule-classes ()
   :hints (("Goal" :use (div-table-9-1
                         div-table-10-1
-                        div-table-11-1))))
+                        div-table-11-1)
+           :in-theory (disable jared-disables-1
+                                ;;jared-disables-2
+                                jared-disables-3
+                                )
+           )))
 
 (local-defthm div-table-13-1
   (implies (and (natp m)
@@ -1253,7 +1404,12 @@
                         (:instance div-table-26
                                    (x (* (expt 2 rho) (/ p d)))
                                    (y (* (expt 2 rho) (/ (pi0 i m) (+ (delta0 j n) (expt 2 (- n))))))
-                                   (z (1- k)))))))
+                                   (z (1- k))))
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3
+                                )
+           )))
 
 (local-defthm div-table-14-1
   (implies (and (natp m)
@@ -1285,7 +1441,12 @@
                         (:instance *-weakly-monotonic
                                    (x d)
                                    (y (1- k))
-                                   (y+ (* (expt 2 rho) (/ p d))))))))
+                                   (y+ (* (expt 2 rho) (/ p d)))))
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3
+                                )
+           )))
 
 (local-defthm div-table-15-1
   (implies (and (natp m)
@@ -1311,7 +1472,8 @@
             (<= k (1+ (fl (* (expt 2 rho) (/ (pi0 i m) (delta0 j n)))))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable upper)
-                  :use (div-table-4-1 div-table-2))))
+                  :use (div-table-4-1 div-table-2)
+                  )))
 
 (local-defthm div-table-16-1
   (implies (and (natp m)
@@ -1409,7 +1571,8 @@
                         (:instance *-weakly-monotonic-negative-multiplier 
                                    (x (* (expt 2 rho) (pi0 i m)))
                                    (y+ (/ (delta0 j n)))
-                                   (y (/ d)))))))
+                                   (y (/ d))))
+           )))
 
 (local-defthm div-table-21-1
   (implies (and (natp m)
@@ -1452,7 +1615,12 @@
   :rule-classes ()
   :hints (("Goal" :use (div-table-19-1
                         div-table-20-1
-                        div-table-21-1))))
+                        div-table-21-1)
+           :in-theory (disable jared-disables-1
+                                ;;jared-disables-2
+                                jared-disables-3
+                                )
+           )))
 
 (local-defthm div-table-23-1
   (implies (and (natp m)
@@ -1484,7 +1652,13 @@
                         (:instance div-table-26
                                    (x (* (expt 2 rho) (/ p d)))
                                    (y (* (expt 2 rho) (/ (pi0 i m) (delta0 j n))))
-                                   (z (1- k)))))))
+                                   (z (1- k))))
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3
+                                )
+
+           )))
 
 (local-defthm div-table-24-1
   (implies (and (natp m)
@@ -1516,7 +1690,15 @@
                         (:instance *-weakly-monotonic
                                    (x d)
                                    (y (1- k))
-                                   (y+ (* (expt 2 rho) (/ p d))))))))
+                                   (y+ (* (expt 2 rho) (/ p d)))))
+           :in-theory (e/d (;jared-disables-1
+                             )
+                            (jared-disables-1
+                             jared-disables-2
+                             jared-disables-3
+                             ))
+
+           )))
 
 (local-defthm div-table-25-1
   (implies (and (natp m)
@@ -1571,7 +1753,12 @@
   :rule-classes ()
   :hints (("Goal" :use (div-table-25-1
                         div-table-31
-                        div-table-2))))
+                        div-table-2)
+           :in-theory (disable jared-disables-1
+                                jared-disables-2
+                                jared-disables-3
+                                )
+           )))
 
 (local-defthm div-table-27-1
   (implies (and (natp n)
@@ -1606,15 +1793,70 @@
                 (<= (- d) (- (* (expt 2 rho) p) (* d k)))
                 (< (- (* (expt 2 rho) p) (* d k)) d)))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable lookup)
-                  :use ((:instance div-table-26-1 (k (lookup i j table)))
-                        div-table-27-1))))
+  :hints (("Goal"
+           :use ((:instance div-table-26-1 (k (lookup i j table)))
+                 div-table-27-1)
+           :in-theory (e/d (lookup)
+                            (jared-disables-1
+                             jared-disables-2
+                             jared-disables-3
+                             )
+                            ))))
 
 )
+
 
 ;;**********************************************************************************
 
 (include-book "arithmetic-5/top" :dir :system)
+
+(local (deftheory jared-disables-1
+         '(SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-RATIONALP-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NON-0-BASE)
+           )))
+
+(local (deftheory jared-disables-2
+         '((:TYPE-PRESCRIPTION NOT-INTEGERP-3B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-4E))))
+
+(local (deftheory jared-disables-3
+         '((:TYPE-PRESCRIPTION NOT-INTEGERP-4B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-4B-EXPT)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-3B-EXPT)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B-EXPT)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B-EXPT)
+           (:TYPE-PRESCRIPTION RATIONALP-EXPT-TYPE-PRESCRIPTION)
+           )))
+
+(local (deftheory jared-disables-4
+         '(not-integerp-1a
+           not-integerp-2a
+           not-integerp-3a
+           not-integerp-4a
+           not-integerp-1d
+           not-integerp-2d
+           not-integerp-3d
+           not-integerp-4d
+           not-integerp-1f
+           not-integerp-2f
+           not-integerp-3f
+           not-integerp-4f
+           default-plus-1
+           default-plus-2
+           default-times-1
+           default-times-2)))
 
 ;; Assume that dmin < dmax and pmin < pmax.  Consider the closed rectangle
 ;;   R = {(d,p) | dmin <= d <= dmax and pmin <= p <= pmax}
@@ -1915,7 +2157,9 @@
              (and (rationalp d1)
                   (< pmin (* h d1)))))
   :rule-classes ()
-  :hints (("Goal" :use (:instance converse-4 (a1 pmin) (a2 p) (a3 (* h d)) (a4 (* h dmax))))))
+  :hints (("Goal"
+           :use (:instance converse-4 (a1 pmin) (a2 p) (a3 (* h d)) (a4 (* h dmax)))
+           )))
 
 (local-defthm converse-7
   (implies (and (rationalp a1)
@@ -1966,7 +2210,12 @@
            (let ((d1 (/ (+ (/ pmin h) dmax) 2)))
              (<= dmin d1)))
   :rule-classes ()
-  :hints (("Goal" :use (converse-9
+  :hints (("Goal"
+           :in-theory (disable jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4)
+           :use (converse-9
                         (:instance converse-7 (a1 dmin) (a2 (/ pmin h)) (a3 dmax))))))
 
 (local-defthm converse-11
@@ -1989,7 +2238,8 @@
                 (< p (* h d)))
            (< pmin (* h dmax)))
   :rule-classes ()
-  :hints (("Goal" :use (:instance converse-4 (a1 pmin) (a2 p) (a3 (* h d)) (a4 (* h dmax))))))
+  :hints (("Goal"
+           :use (:instance converse-4 (a1 pmin) (a2 p) (a3 (* h d)) (a4 (* h dmax))))))
 
 (local-defthm converse-12
   (implies (and (rationalp dmin)
@@ -2011,8 +2261,13 @@
                 (< p (* h d)))
            (< (/ pmin h) dmax))
   :rule-classes ()
-  :hints (("Goal" :use (converse-11
-                        (:instance converse-9 (dmin dmax))))))
+  :hints (("Goal"
+           :in-theory (disable jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4)
+           :use (converse-11
+                 (:instance converse-9 (dmin dmax))))))
 
 (local-defthm converse-13
   (implies (and (rationalp dmin)
@@ -2036,6 +2291,9 @@
              (< d1 dmax)))
   :rule-classes ()
   :hints (("Goal" :use (converse-12))))
+
+
+
 
 (defthm d1-p1-lemma
   (implies (and (rationalp dmin)
@@ -2063,7 +2321,12 @@
                   (< p1 pmax)
                   (< p1 (* h d1)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable d1 p1)
+  :hints (("Goal" :in-theory (e/d (d1 p1)
+                                  (jared-disables-1
+                                   jared-disables-2
+                                   jared-disables-3
+                                   jared-disables-4
+                                   ))
                   :use (converse-1 converse-2 converse-5 converse-6 converse-10 converse-13))))
 
 (local-defthm converse-14
@@ -2121,7 +2384,10 @@
                 (<= pmax (* h dmin)))
            (< h 0))
   :rule-classes ()
-  :hints (("Goal" :use (:instance converse-15 (a1 p) (a2 pmax) (a3 (* h dmin)) (a4 (* h d))))))
+  :hints (("Goal"
+           :use (:instance converse-15 (a1 p) (a2 pmax) (a3 (* h dmin)) (a4 (* h d)))
+           :in-theory (enable jared-disables-1)
+           )))
 
 (local-defthm converse-17
   (implies (and (rationalp pmax)
@@ -2164,7 +2430,12 @@
              (and (rationalp d2)
                   (< dmin d2))))
   :rule-classes ()
-  :hints (("Goal" :use (converse-18
+  :hints (("Goal"
+           :in-theory (disable jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4)
+           :use (converse-18
                         (:instance converse-7 (a1 dmin) (a2 (/ pmax h)) (a3 dmax))))))
 
 (local-defthm converse-20
@@ -2187,7 +2458,9 @@
                 (< h 0))
            (> pmax (* h dmax)))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance converse-4 (a1 (* h dmax)) (a2 (* h d)) (a3 p) (a4 pmax))))))
+  :hints (("Goal"
+           :use ((:instance converse-4 (a1 (* h dmax)) (a2 (* h d)) (a3 p) (a4 pmax)))
+           )))
 
 (local-defthm converse-21
   (implies (and (rationalp dmin)
@@ -2244,7 +2517,12 @@
                   (< dmin d2)
                   (< d2 dmax))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable d2)
+  :hints (("Goal" :in-theory (e/d (d2)
+                                  (jared-disables-1
+                                   jared-disables-2
+                                   jared-disables-3
+                                   jared-disables-4
+                                   ))
                   :use (converse-21
                         converse-19
                         (:instance converse-22 (a1 dmax) (a2 dmax) (a3 (/ pmax h)))))))
@@ -2273,7 +2551,11 @@
                   (< d2 dmax)
                   (> pmax (* h d2)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable d2)
+  :hints (("Goal" :in-theory (e/d (d2)
+                                  (jared-disables-1
+                                   jared-disables-2
+                                   jared-disables-3
+                                   jared-disables-4))
                   :use (converse-21
                         converse-23
                         (:instance converse-17 (pmax (d2 dmin pmin dmax pmax h)) (dmin (/ pmax h)))
@@ -2301,7 +2583,11 @@
                   (< d2 dmax)
                   (> pmax (* h d2)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable d2 p2)
+  :hints (("Goal" :in-theory (e/d (d2 p2)
+                                  (jared-disables-1
+                                   jared-disables-2
+                                   jared-disables-3
+                                   jared-disables-4))
                   :use (converse-24 converse-14 converse-16))))
 
 (local-defthm converse-26
@@ -2385,7 +2671,15 @@
                   (< p2 pmax)
                   (> p2 (* h d2)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable p2)
+  :hints (("Goal" :in-theory (e/d (p2)
+                                  (jared-disables-1
+                                   jared-disables-2
+                                   jared-disables-3
+                                   jared-disables-4
+                                   rationalp-x
+                                   default-less-than-1
+                                   default-less-than-2
+                                   ))
                   :use (converse-27 converse-26 converse-25))))
 
 (local-defthm converse-28
@@ -2455,7 +2749,12 @@
                   (iff (< p (* h d))
                        (> (/ p h) d)))))
   :rule-classes ()
-  :hints (("Goal" :use (:instance converse-29 (a (/ p h)) (b d)))))
+  :hints (("Goal"
+           :in-theory (disable jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4)
+           :use (:instance converse-29 (a (/ p h)) (b d)))))
 
 (local-defthm converse-31
   (implies (and (rationalp dmin)
@@ -2492,7 +2791,16 @@
                   (< p3 pmax)
                   (= p3 (* h d3)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable d3 p3)
+  :hints (("Goal" :in-theory (e/d (d3 p3)
+                                  (jared-disables-1  
+                                   jared-disables-2
+                                   jared-disables-3
+                                   jared-disables-4
+                                   default-less-than-1
+                                   default-less-than-2
+                                   rationalp-x
+                                   remove-strict-inequalities
+                                   ))
                   :use ((:instance converse-30 (p p2) (d d1))
                         (:instance converse-30 (p p2) (d d2))))))
 
@@ -2531,7 +2839,11 @@
                   (< p3 pmax)
                   (= p3 (* h d3)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable d3 p3)
+  :hints (("Goal" :in-theory (e/d (d3 p3)
+                                  (jared-disables-1
+                                   jared-disables-2
+                                   jared-disables-3
+                                   jared-disables-4))
                   :use ((:instance converse-30 (p p1) (d d1))
                         (:instance converse-30 (p p1) (d d2))))))
 
@@ -2606,7 +2918,15 @@
                   (< p4 (* hmax d4))
                   (> p4 (* hmin d4)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable d4 p4)
+  :hints (("Goal" :in-theory (e/d (d4 p4)
+                                  (;jared-disables-1
+                                   jared-disables-2
+                                   jared-disables-3
+                                   jared-disables-4
+                                   default-less-than-1
+                                   default-less-than-2
+                                   rationalp-x
+                                   ))
                   :use ((:instance d1-p1-lemma (d d1) (p p1) (h hmax))
                         (:instance d2-p2-lemma (d d2) (p p2) (h hmin))
                         (:instance d3-p3-lemma (d1 (d1 dmin pmin dmax pmax hmax))
@@ -2614,7 +2934,6 @@
                                                (d2 (d2 dmin pmin dmax pmax hmin))
                                                (p2 (p2 dmin pmin dmax pmax hmin))
                                                (h (/ (+ hmin hmax) 2)))))))
-
 
 
 (local-defthm converse-33
@@ -2750,18 +3069,23 @@
                      (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
                         (+ (delta0 j n) (/ (expt 2 n))))))))
   :rule-classes ()
-  :hints (("Goal" :use (converse-38
-                        converse-39
-                        (:instance cg-unique 
-                                   (x (* (expt 2 rho) 
-                                         (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
-                                            (+ (delta0 j n) (/ (expt 2 n))))))
-                                   (n (1+ k)))
-                        (:instance cg-unique 
-                                   (x (* (expt 2 rho) 
-                                         (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
-                                            (+ (delta0 j n)))))
-                                   (n (1+ k)))))))
+  :hints (("Goal"
+           :in-theory (disable ;jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4)
+           :use (converse-38
+                 converse-39
+                 (:instance cg-unique 
+                            (x (* (expt 2 rho) 
+                                  (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
+                                     (+ (delta0 j n) (/ (expt 2 n))))))
+                            (n (1+ k)))
+                 (:instance cg-unique 
+                            (x (* (expt 2 rho) 
+                                  (/ (+ (pi0 i m) (/ (expt 2 (- m 3))))
+                                     (+ (delta0 j n)))))
+                            (n (1+ k)))))))
 
 (local-defthm converse-41
   (implies (and (natp m)
@@ -2779,7 +3103,12 @@
            (< (* (/ (1+ k) (expt 2 rho)) (delta0 j n))
               (+ (pi0 i m) (/ (expt 2 (- m 3))))))           
   :rule-classes ()
-  :hints (("Goal" :use (converse-39
+  :hints (("Goal"
+           :in-theory (disable ;jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4)
+           :use (converse-39
                         (:instance converse-8
                                    (pmin (1+ k))
                                    (h (/ (delta0 j n) (expt 2 rho)))
@@ -2805,7 +3134,13 @@
            (< (* (/ (1+ k) (expt 2 rho)) x)
               (+ (pi0 i m) (/ (expt 2 (- m 3))))))      
   :rule-classes ()
-  :hints (("Goal" :use (converse-39
+  :hints (("Goal"
+           :in-theory (disable ;jared-disables-1
+                       jared-disables-2
+                       jared-disables-3
+                       jared-disables-4)
+
+           :use (converse-39
                         (:instance converse-8
                                    (pmin (1+ k))
                                    (h (/ x (expt 2 rho)))
@@ -2891,7 +3226,8 @@
                   (< p d)
                   (> p (* (/ (1+ k) (expt 2 rho)) d)))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance converse-45 (k (lookup (i-witness rho m n table) (j-witness rho m n table) table)))
+  :hints (("Goal"
+           :use ((:instance converse-45 (k (lookup (i-witness rho m n table) (j-witness rho m n table) table)))
                         (:instance converse-39 (i (i-witness rho m n table))
                                                (j (j-witness rho m n table)))
                         (:instance d4-p4-lemma (dmin (delta0 (j-witness rho m n table) n))
@@ -2905,7 +3241,11 @@
                                                (hmin (/ (1+ (lookup (i-witness rho m n table) (j-witness rho m n table) table))
                                                         (expt 2 rho)))
                                                (hmax 1)))
-                  :in-theory (enable div-accessible-p d-witness p-witness))))
+                  :in-theory (e/d (div-accessible-p d-witness p-witness)
+                                  (;jared-disables-1
+                                   jared-disables-2
+                                   jared-disables-3
+                                   jared-disables-4)))))
 
 (local-defthm converse-47
   (let* ((i (i-witness rho m n table))
@@ -2950,7 +3290,12 @@
                                                (hmin (/ (1+ (lookup (i-witness rho m n table) (j-witness rho m n table) table))
                                                         (expt 2 rho)))
                                                (hmax 1)))
-                  :in-theory (enable div-accessible-p d-witness p-witness))))
+                  :in-theory (e/d (div-accessible-p d-witness p-witness)
+                                  (;jared-disables-1
+                                   jared-disables-2
+                                   jared-disables-3
+                                   jared-disables-4)))))
+                                   
 
 (local-defthm converse-48
   (let* ((i (i-witness rho m n table))
@@ -2978,7 +3323,13 @@
                   (< p d)
                   (> p (* (/ (1+ k) (expt 2 rho)) d)))))
   :rule-classes ()
-  :hints (("Goal" :use (converse-46 
+  :hints (("Goal"
+           :in-theory (disable
+                       jared-disables-1
+                       jared-disables-2
+                       jared-disables-3
+                       jared-disables-4)
+           :use (converse-46 
                         converse-47
                         (:instance converse-44 (i (i-witness rho m n table))
                                                (j (j-witness rho m n table))
@@ -3031,7 +3382,13 @@
                           (/ (pi0 i m)
                              (+ (delta0 j n) (/ (expt 2 n)))))))))
   :rule-classes ()
-  :hints (("Goal" :use (converse-39
+  :hints (("Goal"
+           :in-theory (disable 
+                       ;jared-disables-1
+                       jared-disables-2
+                       jared-disables-3
+                       jared-disables-4)
+           :use (converse-39
                         converse-49
                         (:instance fl-unique 
                                    (x (* (expt 2 rho) 
@@ -3060,7 +3417,12 @@
            (> (* (/ (1- k) (expt 2 rho)) (delta0 j n))
               (pi0 i m)))
   :rule-classes ()
-  :hints (("Goal" :use (converse-39
+  :hints (("Goal"
+           :in-theory (disable ;jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4)
+           :use (converse-39
                         (:instance converse-8
                                    (dmin (1- k))
                                    (h (/ (delta0 j n) (expt 2 rho)))
@@ -3084,7 +3446,8 @@
            (> (* (/ (1- k) (expt 2 rho)) (+ (delta0 j n) (expt 2 (- n))))
               (pi0 i m)))
   :rule-classes ()
-  :hints (("Goal" :use (converse-39
+  :hints (("Goal"
+           :use (converse-39
                         (:instance converse-8
                                    (dmin (1- k))
                                    (h (/ (+ (delta0 j n) (expt 2 (- n))) (expt 2 rho)))
@@ -3112,7 +3475,12 @@
   :rule-classes ()
   :hints (("Goal" :use (converse-50
                         converse-51
-                        converse-52))))
+                        converse-52)
+           :in-theory (disable jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4)
+           )))
 
 (local-defthm converse-54
   (implies (and (integerp rho)
@@ -3150,7 +3518,8 @@
                   (> p (- d))
                   (< p (* (/ (1- k) (expt 2 rho)) d)))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance converse-54 (k (lookup (i-witness rho m n table) (j-witness rho m n table) table)))
+  :hints (("Goal"
+           :use ((:instance converse-54 (k (lookup (i-witness rho m n table) (j-witness rho m n table) table)))
                         (:instance converse-39 (i (i-witness rho m n table))
                                                (j (j-witness rho m n table)))
                         (:instance d4-p4-lemma (dmin (delta0 (j-witness rho m n table) n))
@@ -3164,7 +3533,14 @@
                                                (hmax (/ (1- (lookup (i-witness rho m n table) (j-witness rho m n table) table))
                                                         (expt 2 rho)))
                                                (hmin -1)))
-                  :in-theory (enable div-accessible-p d-witness p-witness))))
+                  :in-theory (e/d (div-accessible-p d-witness p-witness)
+                                  (;jared-disables-1
+                                   jared-disables-2
+                                   jared-disables-3
+                                   jared-disables-4
+                                   default-expt-2
+                                   default-minus)))))
+
 
 (local-defthm converse-56
   (let* ((i (i-witness rho m n table))
@@ -3194,7 +3570,8 @@
                   (> p (- d))
                   (< p (* (/ (1- k) (expt 2 rho)) d)))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance converse-54 (k (lookup (i-witness rho m n table) (j-witness rho m n table) table)))
+  :hints (("Goal"
+           :use ((:instance converse-54 (k (lookup (i-witness rho m n table) (j-witness rho m n table) table)))
                         (:instance converse-39 (i (i-witness rho m n table))
                                                (j (j-witness rho m n table)))
                         (:instance d4-p4-lemma (dmin (delta0 (j-witness rho m n table) n))
@@ -3208,7 +3585,14 @@
                                                (hmax (/ (1- (lookup (i-witness rho m n table) (j-witness rho m n table) table))
                                                         (expt 2 rho)))
                                                (hmin -1)))
-                  :in-theory (enable div-accessible-p d-witness p-witness))))
+                  :in-theory (e/d (div-accessible-p d-witness p-witness)
+                                  (;jared-disables-1
+                                   jared-disables-2
+                                   jared-disables-3
+                                   jared-disables-4
+                                   default-expt-2
+                                   default-minus)))))
+
 
 (local-defthm converse-57
   (let* ((i (i-witness rho m n table))
@@ -3237,11 +3621,19 @@
                   (> p (- d))
                   (< p (* (/ (1- k) (expt 2 rho)) d)))))
   :rule-classes ()
-  :hints (("Goal" :use (converse-55 
-                        converse-56
-                        (:instance converse-53 (i (i-witness rho m n table))
-                                               (j (j-witness rho m n table))
-                                               (k (lookup (i-witness rho m n table) (j-witness rho m n table) table)))))))
+  :hints (("Goal"
+           :use (converse-55 
+                 converse-56
+                 (:instance converse-53 (i (i-witness rho m n table))
+                            (j (j-witness rho m n table))
+                            (k (lookup (i-witness rho m n table) (j-witness rho m n table) table))))
+           :in-theory (disable ;jared-disables-1
+                       jared-disables-2
+                       jared-disables-3
+                       jared-disables-4
+                       default-expt-2
+                       default-minus)
+           )))
 
 (local-defthm converse-58
   (implies (and (integerp a)
@@ -3290,6 +3682,8 @@
   :rule-classes ()
   :hints (("Goal" :use ((:instance converse-8 (pmin p) (dmin (* (/ (1- k) (expt 2 rho)) d)) (h (expt 2 rho)))))))
 
+
+
 (local-defthm converse-62
   (let* ((i (i-witness rho m n table))
          (j (j-witness rho m n table))
@@ -3317,15 +3711,33 @@
                   (< (abs p) d)
                   (> (abs (- (* (expt 2 rho) p) (* k d))) d))))
   :rule-classes ()
-  :hints (("Goal" :use (converse-57
-                        (:instance converse-39 (i (i-witness rho m n table))
-                                               (j (j-witness rho m n table)))
-                        (:instance converse-60 (p (p-witness rho m n table))
-                                               (d (d-witness rho m n table))
-                                               (k (lookup (i-witness rho m n table) (j-witness rho m n table) table)))
-                        (:instance converse-61 (p (p-witness rho m n table))
-                                               (d (d-witness rho m n table))
-                                               (k (lookup (i-witness rho m n table) (j-witness rho m n table) table)))))))
+  :hints (("Goal"
+           :use (converse-57
+                 (:instance converse-39 (i (i-witness rho m n table))
+                            (j (j-witness rho m n table)))
+                 (:instance converse-60 (p (p-witness rho m n table))
+                            (d (d-witness rho m n table))
+                            (k (lookup (i-witness rho m n table) (j-witness rho m n table) table)))
+                 (:instance converse-61 (p (p-witness rho m n table))
+                            (d (d-witness rho m n table))
+                            (k (lookup (i-witness rho m n table) (j-witness rho m n table) table))))
+           :in-theory (disable 
+                       natp
+                       abs
+                       jared-disables-1
+                       jared-disables-2
+                       jared-disables-3
+                       jared-disables-4
+                       default-expt-2
+                       default-less-than-2
+                       default-less-than-1
+                       acl2-numberp-x
+                       rationalp-x
+                       NOT-INTEGERP-3A-EXPT
+                       NOT-INTEGERP-4a-expt
+                       NOT-INTEGERP-1a-EXPT
+                       NOT-INTEGERP-2a-EXPT
+                       default-minus))))
 
 (local-defthm converse-63
   (implies (and (integerp a)
@@ -3400,15 +3812,33 @@
                   (< (abs p) d)
                   (> (abs (- (* (expt 2 rho) p) (* k d))) d))))
   :rule-classes ()
-  :hints (("Goal" :use (converse-48
-                        (:instance converse-39 (i (i-witness rho m n table))
-                                               (j (j-witness rho m n table)))
-                        (:instance converse-65 (p (p-witness rho m n table))
-                                               (d (d-witness rho m n table))
-                                               (k (lookup (i-witness rho m n table) (j-witness rho m n table) table)))
-                        (:instance converse-66 (p (p-witness rho m n table))
-                                               (d (d-witness rho m n table))
-                                               (k (lookup (i-witness rho m n table) (j-witness rho m n table) table)))))))
+  :hints (("Goal"
+           :in-theory (disable 
+                       natp
+                       abs
+                       jared-disables-1
+                       jared-disables-2
+                       jared-disables-3
+                       jared-disables-4
+                       default-expt-2
+                       default-less-than-2
+                       default-less-than-1
+                       acl2-numberp-x
+                       rationalp-x
+                       NOT-INTEGERP-3A-EXPT
+                       NOT-INTEGERP-4a-expt
+                       NOT-INTEGERP-1a-EXPT
+                       NOT-INTEGERP-2a-EXPT
+                       default-minus)
+           :use (converse-48
+                 (:instance converse-39 (i (i-witness rho m n table))
+                            (j (j-witness rho m n table)))
+                 (:instance converse-65 (p (p-witness rho m n table))
+                            (d (d-witness rho m n table))
+                            (k (lookup (i-witness rho m n table) (j-witness rho m n table) table)))
+                 (:instance converse-66 (p (p-witness rho m n table))
+                            (d (d-witness rho m n table))
+                            (k (lookup (i-witness rho m n table) (j-witness rho m n table) table)))))))
 
 (local-defthm converse-68
   (let* ((i (i-witness rho m n table))
@@ -3434,8 +3864,17 @@
                   (< p (+ (pi0 i m) (expt 2 (- 3 m))))
                   (< (abs p) d))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable d-witness p-witness div-accessible-p)
-                  :use ((:instance converse-39 (i (i-witness rho m n table))
+  :hints (("Goal" :in-theory (e/d (d-witness p-witness div-accessible-p)
+                                  (;jared-disables-1
+                                   jared-disables-2
+                                   jared-disables-3
+                                   jared-disables-4
+                                   default-expt-2
+                                   default-minus
+                                   ;natp
+                                   ;abs
+                                   ))
+           :use ((:instance converse-39 (i (i-witness rho m n table))
                                                (j (j-witness rho m n table)))
                         (:instance d4-p4-lemma 
                                    (dmin (delta0 (j-witness rho m n table) n))
@@ -3474,7 +3913,17 @@
                         (>= k (expt 2 rho))
                         (> (abs (- (* (expt 2 rho) p) (* d k))) d)))))
   :rule-classes ()
-  :hints (("Goal" :use (div-witness-lemma converse-62 converse-67 converse-68))))
+  :hints (("Goal"
+           :use (div-witness-lemma converse-62 converse-67 converse-68)
+           :in-theory (disable
+                       jared-disables-1
+                       jared-disables-2
+                       jared-disables-3
+                       jared-disables-4
+                       default-expt-2
+                       default-minus
+                       )
+           )))
 
 
 
@@ -3573,8 +4022,13 @@
                 (< j (expt 2 n))
                 (check-exists-div-entry i j rho m n))
            (check-div-entry i j rho m n (srt-entry i j rho m n)))
-  :hints (("Goal" :in-theory (enable upper srt-entry check-exists-div-entry check-div-entry)
-                  :use (lemma-2-3-1 lemma-2-3-2))))
+  :hints (("Goal"
+           :in-theory (e/d (upper srt-entry check-exists-div-entry check-div-entry)
+                           (jared-disables-1
+                            jared-disables-2
+                            jared-disables-3
+                            jared-disables-4))
+           :use (lemma-2-3-1 lemma-2-3-2))))
 
 (defun srt-row-induct (j k)
   (if (not (zp j))
@@ -3666,7 +4120,11 @@
                 (< j (expt 2 n))
                 (check-div-entry i j rho m n entry))
            (check-exists-div-entry i j rho m n))           
-  :hints (("Goal" :in-theory (enable upper check-exists-div-entry check-div-entry)
+  :hints (("Goal" :in-theory (e/d (upper check-exists-div-entry check-div-entry)
+                                  (jared-disables-1
+                                   jared-disables-2
+                                   jared-disables-3
+                                   jared-disables-4))
                   :use (lemma-2-3-1 lemma-2-3-2))))
 
 (local-defthm lemma-2-3-10
@@ -4054,7 +4512,7 @@
                         i-bounds-29
                         i-bounds-12
                         (:instance bits-bvecp (x (fl (* (expt 2 (- m 2)) p))) (i (1- m)) (j 0) (k m)))
-                  :in-theory (disable BITS-BVECP-SIMPLE bits-bvecp))))
+                  :in-theory (disable BITS-BVECP-SIMPLE bits-bvecp abs natp))))
 
 (local-defthm j-bounds-1
   (implies (and (rationalp d)
@@ -4248,7 +4706,12 @@
                         table%-constraint
                         (:instance lemma-2-2 (m (m%)) (n (n%)) (rho (rho%)) (table (table%)) (d (d%)) (p (p% (1- k))) (i (i% k))
                                              (j (j%)) (k (h% k))))
-                  :in-theory (enable p%-def h%-def bvecp))))
+                  :in-theory (e/d (p%-def h%-def bvecp)
+                                  (jared-disables-1
+                                       jared-disables-2
+                                       jared-disables-3
+                                       jared-disables-4))
+                  )))
 
 (local-defthm theorem-1-2
   (implies (zp k)
@@ -4326,3 +4789,4 @@
                         (:instance theorem-1-3 (k (1- k)))
                         (:instance theorem-1-6 (k (1- k)))
                         (:instance div-table-1 (m (m%)) (n (n%)) (i (i% k)) (j (j%)) (p (p% (1- k))) (d (d%)))))))
+

@@ -472,6 +472,9 @@ my $acl2file = (-f "$file.acl2") ? "$file.acl2"
 
 my $usercmds = $acl2file ? read_file_except_certify($acl2file) : "";
 
+# Don't hideously underapproximate timings in event summaries
+$instrs .= "(acl2::assign acl2::get-internal-time-as-realtime acl2::t)\n";
+
 $instrs .= "; instructions from .acl2 file $acl2file:\n";
 $instrs .= "$usercmds\n";
 

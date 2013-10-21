@@ -901,8 +901,8 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
                                      imp-lhs
                                      (if (vl-plural-p imp-lhs) "are" "is")
                                      (if (vl-plural-p imp-lhs)
-                                         "explicit declarations for these wires."
-                                       "an explicit declaration of this wire."))
+                                         "explicit declarations for these wires"
+                                       "an explicit declaration of this wire"))
                          :fatalp nil
                          :fn 'vl-make-implicit-wires-aux)
                         warnings)))

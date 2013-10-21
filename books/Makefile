@@ -349,7 +349,7 @@ $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/$(EGREP_EXTRA_EXCLUDE_STRING))' \
+    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
   > Makefile-books; \
   ls -l Makefile-books)
@@ -460,9 +460,7 @@ ADDED_BOOKS := \
   parallel/proofs/ideal-speedup.cert \
   workshops/2009/sumners/support/examples.cert \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
-  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
-  $(filter rtl/rel7/%, $(OK_CERTS)) \
-  $(filter rtl/rel8/%, $(OK_CERTS))
+  workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert
 
 # The following has taken only a couple of minutes on a decent Linux
 # system in 2013.  However, ACL2 built on GCL 2.6.8 and Mac OS 10.6
@@ -760,7 +758,7 @@ ifdef ACL2_COMP
 # another Lisp.  We also skip multi-lisp compilation for books that
 # depend on centaur/ books when we see a multi-lisp compilation
 # failure for books in their directories.  (Thus, even though
-# security/des/ depends on GL and hence centaur/, we don't exclude
+# projects/security/des/ depends on GL and hence centaur/, we don't exclude
 # its books.)
 $(info For building compiled (.$(ACL2_COMP_EXT)) files, excluding centaur books)
 OK_CERTS := $(filter-out centaur/%, \
@@ -976,23 +974,12 @@ critpath.txt: $(OK_CERTS)
 	time ./critpath.pl -m 2 --targets Makefile-books > critpath.txt
 
 
-# The following are handy targets for building subsets of the books,
-# and they show how others are easy to add.  It's OK for the community
-# to make updates to this set of targets through addition, deletion,
-# or modification.  (But it's probably best to leave the "all" and
-# "everything" targets unchanged unless there is a strong reason to
-# change those.)
+# Targets for building whole directories of books.
 
-.PHONY: centaur coi workshops \
+.PHONY: workshops \
         workshop1999 workshop2000 workshop2001 workshop2002 \
         workshop2003 workshop2004 workshop2006 workshop2007 \
-        workshop2009 workshop2011
-
-centaur: $(filter centaur/%, $(OK_CERTS))
-
-coi: $(filter coi/%, $(OK_CERTS))
-
-xdoc: $(filter xdoc/%, $(OK_CERTS))
+        workshop2009 workshop2011 workshop2013
 
 workshops: $(filter workshops/%, $(OK_CERTS))
 workshop1999: $(filter workshops/1999/%, $(OK_CERTS))
@@ -1007,19 +994,74 @@ workshop2009: $(filter workshops/2009/%, $(OK_CERTS))
 workshop2011: $(filter workshops/2011/%, $(OK_CERTS))
 workshop2013: $(filter workshops/2013/%, $(OK_CERTS))
 
+.PHONY: centaur
+centaur: $(filter centaur/%, $(OK_CERTS))
 
-# We define a set of books that support rapid prototyping and
-# reasoning about such prototypes in ACL2.  We consider these books to
-# constitute a "standard" approach to using ACL2 to model real
-# problems.  The below target includes many more books than just those
-# that make up this approach, but we leave it for now, because our
-# main motivation in having such a target is to provide a quick target
-# that certifies at least the books that consititute this approach.
-# Regardless, this target should always include the "std" directory.
+.PHONY: coi
+coi: $(filter coi/%, $(OK_CERTS))
+
+.PHONY: xdoc
+xdoc: $(filter xdoc/%, $(OK_CERTS))
 
 .PHONY: std
+std: $(filter std/%, $(OK_CERTS))
 
-std: $(filter std/% cutil/% str/%, $(OK_CERTS))
+.PHONY: str
+str: $(filter str/%, $(OK_CERTS))
+
+.PHONY: arithmetic
+arithmetic: $(filter arithmetic/%, $(OK_CERTS))
+
+.PHONY: arithmetic-2
+arithmetic-2: $(filter arithmetic-2/%, $(OK_CERTS))
+
+.PHONY: arithmetic-3
+arithmetic-3: $(filter arithmetic-3/%, $(OK_CERTS))
+
+.PHONY: arithmetic-5
+arithmetic-5: $(filter arithmetic-5/%, $(OK_CERTS))
+
+.PHONY: ihs
+ihs: $(filter ihs/%, $(OK_CERTS))
+
+.PHONY: tools
+tools: $(filter tools/%, $(OK_CERTS))
+
+.PHONY: misc
+misc: $(filter-out misc/misc2/%, $(filter misc/%, $(OK_CERTS)))
+
+.PHONY: data-structures
+data-structures: $(filter-out data-structures/memories/%, $(filter data-structures/%, $(OK_CERTS)))
+
+.PHONY: basic
+basic: arithmetic arithmetic-2 arithmetic-3 arithmetic-5 ihs std str xdoc tools misc data-structures
+
+
+# Projects targets:
+
+.PHONY: paco
+paco: $(filter projects/paco/%, $(OK_CERTS))
+
+.PHONY: taspi
+taspi: $(filter projects/taspi/%, $(OK_CERTS))
+
+.PHONY: jfkr
+jfkr: $(filter projects/security/jfkr/%, $(OK_CERTS))
+
+.PHONY: des
+des: $(filter projects/security/des/%, $(OK_CERTS))
+
+.PHONY: sha-2
+sha-2: $(filter projects/security/sha-2/%, $(OK_CERTS))
+
+.PHONY: security
+security: jfkr des sha-2
+
+.PHONY: wp-gen
+wp-gen: $(filter projects/wp-gen/%, $(OK_CERTS))
+
+
+
 
 # Warning: ACL2's GNUmakefile uses the following "short-test" target
 # to implement its own target, "certify-books-short".  So please be

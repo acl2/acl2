@@ -1,3 +1,0 @@
-Collect all definitions into a file such that books in lib/ will not need 
-to include things from support/support/*.lisp 
-

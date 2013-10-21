@@ -26,6 +26,78 @@
 
 (include-book "sqrt")
 
+
+(local (deftheory jared-disables-1
+         '(SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-RATIONALP-BASE)
+           (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NON-0-BASE)
+           )))
+
+(local (deftheory jared-disables-2
+         '((:TYPE-PRESCRIPTION NOT-INTEGERP-3B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-4E))))
+
+(local (deftheory jared-disables-3
+         '((:TYPE-PRESCRIPTION NOT-INTEGERP-4B)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-4B-EXPT)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-3B-EXPT)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B-EXPT)
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B-EXPT)
+           (:TYPE-PRESCRIPTION RATIONALP-EXPT-TYPE-PRESCRIPTION)
+           )))
+
+(local (deftheory jared-disables-4
+         '(not-integerp-1a
+           not-integerp-2a
+           not-integerp-3a
+           not-integerp-4a
+           not-integerp-1d
+           not-integerp-2d
+           not-integerp-3d
+           not-integerp-4d
+           not-integerp-1f
+           not-integerp-2f
+           not-integerp-3f
+           not-integerp-4f
+           default-plus-1
+           default-plus-2
+           default-times-1
+           default-times-2
+           default-less-than-1
+           default-less-than-2
+           default-expt-2
+           default-minus)))
+
+(local (deftheory jared-disables-5
+         '(EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT
+           EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT
+           EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT
+           EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT
+           EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B
+           not-integerp-1a-expt
+           not-integerp-2a-expt
+           not-integerp-3a-expt
+           not-integerp-4a-expt
+           not-integerp-1d-expt
+           not-integerp-2d-expt
+           not-integerp-3d-expt
+           not-integerp-4d-expt
+           default-expt-1
+           EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE
+           EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A
+           EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)))
+
 (local-defthm lemma-4-1-1
   (implies (and (not (zp k))
                 (not (zp rho))
@@ -88,13 +160,20 @@
              (and (< q 1)
                   (<= 1/2 q))))
   :rule-classes ()
-  :hints (("Goal" :use (lemma-4-1-3
-                        (:instance *-weakly-monotonic (x (expt 2 (* k rho)))
-                                                      (y 1/2)
-                                                      (y+ (* (expt 2 (- (* k rho))) s)))
-                        (:instance *-strongly-monotonic (x (expt 2 (* k rho)))
-                                                        (y+ 1)
-                                                        (y (* (expt 2 (- (* k rho))) s)))))))
+  :hints (("Goal"
+           :in-theory (disable jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4
+                               jared-disables-5
+                               )
+           :use (lemma-4-1-3
+                 (:instance *-weakly-monotonic (x (expt 2 (* k rho)))
+                            (y 1/2)
+                            (y+ (* (expt 2 (- (* k rho))) s)))
+                 (:instance *-strongly-monotonic (x (expt 2 (* k rho)))
+                            (y+ 1)
+                            (y (* (expt 2 (- (* k rho))) s)))))))
 
 (local-defthm lemma-4-1-7
   (let* ((l (fl (* (expt 2 (* k rho)) x)))
@@ -116,7 +195,12 @@
                     (expt (1- (* q (expt 2 (* k rho)))) 2))
                  l)))
   :rule-classes ()
-  :hints (("Goal" :use (lemma-4-1-3))))
+  :hints (("Goal"
+           :in-theory (disable jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4)
+           :use (lemma-4-1-3))))
 
 (local-defthm lemma-4-1-8
   (let* ((l (fl (* (expt 2 (* k rho)) x)))
@@ -233,14 +317,15 @@
                  (* (expt 2 (- (* k rho)))
                     (1+ l)))))
   :rule-classes ()
-  :hints (("Goal" :use (lemma-4-1-11
-                        (:instance *-weakly-monotonic 
-                         (x (expt 2 (* k rho)))
-                         (y (* (expt 2 (- (* k rho)))
-                               (1+ (fl (* (expt 2 (* k rho)) x)))))
-                         (y+  (expt (+ (* (expt 2 (- (* k rho))) s)
-                                       (expt 2 (- (* k rho))))
-                                    2)))))))
+  :hints (("Goal"
+           :use (lemma-4-1-11
+                 (:instance *-weakly-monotonic 
+                            (x (expt 2 (* k rho)))
+                            (y (* (expt 2 (- (* k rho)))
+                                  (1+ (fl (* (expt 2 (* k rho)) x)))))
+                            (y+  (expt (+ (* (expt 2 (- (* k rho))) s)
+                                          (expt 2 (- (* k rho))))
+                                       2)))))))
 
 (local-defthm lemma-4-1-13
   (let* ((l (fl (* (expt 2 (* k rho)) x))))
@@ -274,11 +359,12 @@
               (<= (* (expt 2 (- (* k rho))) l)
                   x)))
   :rule-classes ()
-  :hints (("Goal" :use (lemma-4-1-13
-                        (:instance *-weakly-monotonic (x (expt 2 (* k rho)))
-                                                      (y (* (fl (* (expt 2 (* k rho)) x)) 
-                                                            (expt 2 (- (* k rho)))))
-                                                      (y+ x))))))
+  :hints (("Goal"
+           :use (lemma-4-1-13
+                 (:instance *-weakly-monotonic (x (expt 2 (* k rho)))
+                            (y (* (fl (* (expt 2 (* k rho)) x)) 
+                                  (expt 2 (- (* k rho)))))
+                            (y+ x))))))
 
 (local-defthm lemma-4-1-15
   (implies (and (not (zp k))
@@ -408,10 +494,16 @@
        (>= (x**) (expt (- (q0**) (expt 2 (- (* (k**) (rho**))))) 2))
        (< (x**) (expt (+ (q0**) (expt 2 (- (* (k**) (rho**))))) 2)))
   :rule-classes ()
-  :hints (("Goal" :use (k**-rho**-constraint
-                        x**-constraint
-                        s**-constraint
-                        (:instance lemma-4-1-a-1 (k (k**)) (rho (rho**)) (x (x**)) (s (s**)))))))
+  :hints (("Goal"
+           :in-theory (disable jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4
+                               jared-disables-5)
+           :use (k**-rho**-constraint
+                 x**-constraint
+                 s**-constraint
+                 (:instance lemma-4-1-a-1 (k (k**)) (rho (rho**)) (x (x**)) (s (s**)))))))
 
 (local-defthm cg-sqrt-1
   (implies (and (rationalp x)
@@ -446,8 +538,15 @@
                       (1+ l)))
              (> q 1/2)))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance cg-sqrt-1 (x (* (expt 2 (- (* k rho))) s))
-                                             (y 1/2))))))
+  :hints (("Goal"
+           :in-theory (disable jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4
+                               jared-disables-5
+                               )
+           :use ((:instance cg-sqrt-1 (x (* (expt 2 (- (* k rho))) s))
+                            (y 1/2))))))
 
 (local-defthm lemma-4-1-19
   (let* ((l (fl (* (expt 2 (* k rho)) x)))
@@ -472,8 +571,10 @@
                       (1+ l)))
              (> s (expt 2 (1- (* k rho))))))
   :rule-classes ()
-  :hints (("Goal" :use (lemma-4-1-18
-                        (:instance *-strongly-monotonic (x (expt 2 (* k rho))) (y 1/2) (y+ q))))))
+  :hints (("Goal"
+           :in-theory (disable jared-disables-5)
+           :use (lemma-4-1-18
+                 (:instance *-strongly-monotonic (x (expt 2 (* k rho))) (y 1/2) (y+ q))))))
 
 (local-defthm lemma-4-1-20
   (let* ((l (fl (* (expt 2 (* k rho)) x)))
@@ -498,7 +599,15 @@
                       (1+ l)))
              (>= s1 (expt 2 (1- (* k rho))))))
   :rule-classes ()
-  :hints (("Goal" :use (lemma-4-1-19))))
+  :hints (("Goal"
+           :in-theory (disable ;jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4
+                               ;jared-disables-5
+                               )
+           :use (lemma-4-1-19))))
+
 
 (local-defthm lemma-4-1-21
   (let* ((l (fl (* (expt 2 (* k rho)) x)))
@@ -524,8 +633,14 @@
                       (1+ l)))
              (>= q1 1/2)))
   :rule-classes ()
-  :hints (("Goal" :use (lemma-4-1-20
-                        (:instance *-weakly-monotonic (x (expt 2 (- (* k rho)))) (y (expt 2 (1- (* k rho)))) (y+ (1- s)))))))
+  :hints (("Goal"
+           :in-theory (disable jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4
+                               )
+           :use (lemma-4-1-20
+                 (:instance *-weakly-monotonic (x (expt 2 (- (* k rho)))) (y (expt 2 (1- (* k rho)))) (y+ (1- s)))))))
 
 (local-defthm lemma-4-1-22
   (let* ((l (fl (* (expt 2 (* k rho)) x)))
@@ -578,7 +693,8 @@
                       (1+ l)))
              (>= q1 (expt 2 (- (* k rho))))))
   :rule-classes ()
-  :hints (("Goal" :use (lemma-4-1-21))))
+  :hints (("Goal"
+           :use (lemma-4-1-21))))
 
 (local-defthm lemma-4-1-24
   (let* ((l (fl (* (expt 2 (* k rho)) x)))
@@ -605,10 +721,16 @@
              (<= (expt (- q1 (expt 2 (- (* k rho)))) 2)
                  (expt (- q (expt 2 (- (* k rho)))) 2))))
   :rule-classes ()
-  :hints (("Goal" :use (lemma-4-1-23
-                        lemma-4-1-22
-                        (:instance cg-sqrt-1 (x (- (* (expt 2 (- (* k rho))) s) (expt 2 (- (* k rho))))) 
-                                             (y (- (* (expt 2 (- (* k rho))) (1- s)) (expt 2 (- (* k rho))))))))))
+  :hints (("Goal"
+           :in-theory (disable ;jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4
+                               jared-disables-5)
+           :use (lemma-4-1-23
+                 lemma-4-1-22
+                 (:instance cg-sqrt-1 (x (- (* (expt 2 (- (* k rho))) s) (expt 2 (- (* k rho))))) 
+                            (y (- (* (expt 2 (- (* k rho))) (1- s)) (expt 2 (- (* k rho))))))))))
 
 (local-defthm lemma-4-1-25
   (let* ((l (fl (* (expt 2 (* k rho)) x)))
@@ -668,10 +790,17 @@
                       (1+ l)))
              (<= (expt (- q1 (expt 2 (- (* k rho)))) 2) x)))
   :rule-classes ()
-  :hints (("Goal" :use (lemma-4-1-24
-                        lemma-4-1-a-1
-                        (:instance lemma-4-1-26 (y (expt (- (* (expt 2 (- (* k rho))) s) (expt 2 (- (* k rho)))) 2))
-                                                (z (expt (- (* (expt 2 (- (* k rho))) (1- s)) (expt 2 (- (* k rho)))) 2)))))))
+  :hints (("Goal"
+           ;; 7.62 --> 2.87
+           :in-theory (disable jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4
+                               jared-disables-5)
+           :use (lemma-4-1-24
+                 lemma-4-1-a-1
+                 (:instance lemma-4-1-26 (y (expt (- (* (expt 2 (- (* k rho))) s) (expt 2 (- (* k rho)))) 2))
+                            (z (expt (- (* (expt 2 (- (* k rho))) (1- s)) (expt 2 (- (* k rho)))) 2)))))))
 
 (local-defthm lemma-4-1-b-1
   (implies (and (not (zp k))
@@ -699,11 +828,18 @@
                       (>= x (expt (- q1 (expt 2 (- (* k rho)))) 2))
                       (< x (expt (+ q1 (expt 2 (- (* k rho)))) 2)))))))
   :rule-classes ()
-  :hints (("Goal" :use (lemma-4-1-a-1
-                        lemma-4-1-25
-                        lemma-4-1-27
-                        lemma-4-1-22
-                        lemma-4-1-21))))
+  :hints (("Goal"
+           :in-theory (disable ;jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4
+                               jared-disables-5
+                               )
+           :use (lemma-4-1-a-1
+                 lemma-4-1-25
+                 lemma-4-1-27
+                 lemma-4-1-22
+                 lemma-4-1-21))))
 
 (defun s1** ()
   (if (or (= (mod (s**) 2) 1)
@@ -719,11 +855,17 @@
        (>= (x**) (expt (- (q1**) (expt 2 (- (* (k**) (rho**))))) 2))
        (< (x**) (expt (+ (q1**) (expt 2 (- (* (k**) (rho**))))) 2)))
   :rule-classes ()
-  :hints (("Goal" :use (s1**
-                        k**-rho**-constraint
-                        x**-constraint
-                        s**-constraint
-                        (:instance lemma-4-1-b-1 (k (k**)) (rho (rho**)) (x (x**)) (s (s**)))))))
+  :hints (("Goal"
+           :in-theory (disable jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4
+                               jared-disables-5)
+           :use (s1**
+                 k**-rho**-constraint
+                 x**-constraint
+                 s**-constraint
+                 (:instance lemma-4-1-b-1 (k (k**)) (rho (rho**)) (x (x**)) (s (s**)))))))
 
 (encapsulate (((h** *) => *) ((q** *) => *))
 
@@ -771,17 +913,26 @@
   :hints (("Goal" :use (q**-constraint k**-rho**-constraint)))
   :rule-classes (:type-prescription :rewrite))
 
-(local-defthm lemma-4-1-28
-  (implies (and (integerp s)
-                (= (q** (k**)) (* (expt 2 (- (* (k**) (rho**)))) s))
-                (not (zp k))
-                (>= k (k**)))
-           (rationalp (q** k)))
-  :rule-classes (:type-prescription :rewrite)
-  :hints (("Goal" :use (k**-rho**-constraint h**-constraint))
-          ("Goal'" :induct (natp-induct k))
-          ("Subgoal *1/2" :use q**-constraint)
-          ("Subgoal *1/1" :use (:instance h**-constraint (k (1- k))))))
+(local 
+ (encapsulate
+  ()
+  (local (in-theory (disable ;jared-disables-1
+                             jared-disables-2
+                             jared-disables-3
+                             jared-disables-4
+                             jared-disables-5
+                             )))
+  (defthm lemma-4-1-28
+    (implies (and (integerp s)
+                  (= (q** (k**)) (* (expt 2 (- (* (k**) (rho**)))) s))
+                  (not (zp k))
+                  (>= k (k**)))
+             (rationalp (q** k)))
+    :rule-classes (:type-prescription :rewrite)
+    :hints (("Goal" :use (k**-rho**-constraint h**-constraint))
+            ("Goal'" :induct (natp-induct k))
+            ("Subgoal *1/2" :use q**-constraint)
+            ("Subgoal *1/1" :use (:instance h**-constraint (k (1- k))))))))
 
 (local-defthm lemma-4-1-28-2
   (implies (and (not (zp k))
@@ -804,8 +955,37 @@
            (integerp (* (expt 2 (* k (rho**)))
                         (q** k))))
   :rule-classes ()
-  :hints (("Goal" :use (k**-rho**-constraint h**-constraint q**-constraint
-                        (:instance lemma-4-1-29 (a (* (expt 2 (* (1- k) (rho**))) (q** (1- k)))) (b (expt 2 (rho**))))))))
+  :hints (("Goal"
+        
+
+; Wow, slowest theorem ever.  Baseline on my AMD-8350 with a 16 GB memory threshold
+; in ACL2(h) is 651 seconds.
+
+           :in-theory (disable jared-disables-1
+                               jared-disables-2
+                               jared-disables-3
+                               jared-disables-4
+                               jared-disables-5
+                               ;; down to 171 secs with the above
+                               default-mod-1
+                               default-mod-ratio
+                               abs
+                               zp-open
+                               ;; the above were splitting.  removing them gets it to 6s
+                               ;; then this one shows up heavily in accumulated persistence
+                               LEMMA-4-1-28
+                               ;; and removing it (the type prescription mainly) gets us
+                               ;; down to .35 seconds.
+                               )
+
+; Hooray, not the slowest theorem ever, anymore.
+
+           :use (k**-rho**-constraint
+                 h**-constraint
+                 q**-constraint
+                 (:instance lemma-4-1-29
+                            (a (* (expt 2 (* (1- k) (rho**))) (q** (1- k))))
+                            (b (expt 2 (rho**))))))))
 
 (local-defthm lemma-4-1-30-1
   (integerp (* (expt 2 (* (k**) (rho**)))
@@ -820,16 +1000,26 @@
   :hints (("Goal" :in-theory (theory 'minimal-theory)
                   :use (lemma-4-1-30-1 k**-rho**-constraint h**-constraint q**-constraint))))
 
-(local-defthm lemma-4-1-31
-  (implies (and (not (zp k))
-                (>= k (k**)))
-           (integerp (* (expt 2 (* k (rho**)))
-                        (q** k))))
-  :rule-classes (:type-prescription :rewrite)
-  :hints (("Goal" :use (k**-rho**-constraint h**-constraint))
-          ("Goal'" :induct (natp-induct k))
-          ("Subgoal *1/2" :use (lemma-4-1-30-2 lemma-4-1-30))
-          ("Subgoal *1/1" :use (:instance h**-constraint (k (1- k))))))
+(local 
+ (encapsulate ()
+  (local (in-theory (disable jared-disables-1
+                             jared-disables-2
+                             jared-disables-3
+                             jared-disables-4
+                             jared-disables-5
+                             LEMMA-4-1-28
+                             )))
+
+  (defthm lemma-4-1-31
+    (implies (and (not (zp k))
+                  (>= k (k**)))
+             (integerp (* (expt 2 (* k (rho**)))
+                          (q** k))))
+    :rule-classes (:type-prescription :rewrite)
+    :hints (("Goal" :use (k**-rho**-constraint h**-constraint))
+            ("Goal'" :induct (natp-induct k))
+            ("Subgoal *1/2" :use (lemma-4-1-30-2 lemma-4-1-30))
+            ("Subgoal *1/1" :use (:instance h**-constraint (k (1- k))))))))
 
 (local-defthmd q**-rewrite
   (implies (and (not (zp k))
@@ -839,6 +1029,14 @@
                      (* (expt 2 (- (* k (rho**))))
                         (h** k)))))
   :hints (("Goal" :use (q**-constraint))))
+
+; well, this seems good enough for the rest.  i won't pay much attention to whether
+; it speeds things up...
+(local (in-theory (disable jared-disables-2
+                           jared-disables-3
+                           jared-disables-4
+                           LEMMA-4-1-28
+                           )))
 
 (local-defthm lemma-4-1-32
   (implies (and (not (zp k))

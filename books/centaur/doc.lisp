@@ -41,7 +41,7 @@
 (include-book "4v-sexpr/top")
 (include-book "aig/top")
 
-(include-book "milawa/doc" :dir :system)
+(include-book "projects/doc" :dir :system)
 
 (include-book "aignet/aig-sim")
 (include-book "aignet/copying")
