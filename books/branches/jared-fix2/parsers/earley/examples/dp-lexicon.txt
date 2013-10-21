@@ -1,0 +1,2 @@
+mary :class <noun>
+runs :class <verb>

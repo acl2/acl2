@@ -1,0 +1,105 @@
+-------------------------------------------------------------------------------
+
+                               MILAWA README
+
+-------------------------------------------------------------------------------
+
+Milawa is a "self-verifying" theorem prover for an ACL2-like logic, developed
+by Jared Davis for his Ph.D. dissertation.  For information about Milawa, see
+its web site (http://www.cs.utexas.edu/~jared/milawa/Web/).
+
+This directory contains the Milawa source code, which is now part of the ACL2
+Community Books project (https://code.google.com/p/acl2-books/).
+
+-------------------------------------------------------------------------------
+
+                             BUILD INSTRUCTIONS
+
+Milawa is not built during the "make" of the ordinary ACL2 Community Books,
+because building it takes several hours, requires a lot of memory and hard disk
+space, and requires both Clozure Common Lisp (CCL) and ACL2(h).
+
+Instead, to build Milawa, you should:
+
+1. Build CCL and ACL2(h) according to the instructions in:
+       acl2-books/centaur/README.html
+
+2. Then run these commands:
+
+     $ cd acl2-books/milawa/ACL2
+     $ make -j <n>                 # n is how many jobs to run in parallel
+
+    Where <n> is appropriate for your computer, e.g.:
+
+     - As large as possible, but
+     - No more than your number of CPU cores, to avoid excessive
+       task switching overhead.
+     - No more than (Physical_Memory / 4 GB), to avoid death by swapping.
+
+A successful build should result in:
+
+  - Several new ACL2 images in acl2-books/milawa/ACL2/acl2-images/,
+    including one called "user-symmetry"
+
+  - ACL2 certificates (.cert) or "ACL2 Milawa Provisional Certificates"
+    (.mpcert) for files throughout the milawa/ACL2 directory
+
+  - Thousands of proof files throughout the milawa/Proofs directory.
+
+These proof files are the "boostrapping proofs" that can now be checked by the
+Milawa kernel.  There are many options here: Milawa has two kernels:
+
+  - The original kernel, a Common Lisp program that has historically been run
+    successfully on at least CCL, SBCL, CMUCL, and (for the very patient)
+    CLISP, on certain platforms.  In this case, the proof files can be
+    processed directly.
+
+  - The new kernel, either a Common Lisp or Jitawa Lisp program, that can be
+    run on at least CCL, SBCL, and Jitawa (a verified Lisp by Magnus Myreen).
+    In this case, the proof files first need to be further collected and
+    compressed.
+
+Magnus Myreen has used the HOL4 system to prove an unbelievably impressive
+theorem: if you run the simplified Milawa kernel on the Jitawa runtime on an
+64-bit X86 system, it can only accept theorems of formulas that are
+semantically true.  This theorem connects the logical semantics, down through
+the kernel's source code, through the Jitawa Lisp implementation, down to a
+formal HOL model of the x86 machine code!
+
+Since there are so many options for checking the proofs, we do not try to
+explain how to do carry this out in this README.  Instead, see the Milawa web
+site for instructions.
+
+-------------------------------------------------------------------------------
+
+                               FILE GUIDE
+
+Files
+
+  Sources/COPYING
+    -- Obligatory copy of the GNU General Public License
+
+  Sources/milawa.lsp
+    -- The core proof checker (complete and stand-alone), as of my
+       dissertation
+
+  Sources/milawa2.lsp
+    -- Simplified version of milawa.lsp, for use with Magnus's
+       verified Jitawa Lisp runtime
+
+  Sources/report-time.rb
+    -- Tool for seeing which events took longest to process
+
+
+Subdirectories:
+
+  Sources/ACL2/
+    -- Main directory: ACL2 proofs + User Interface + Bootstrapping
+    -- Basically everything you want is here
+
+  Sources/Proofs/
+    -- Proof files that have been generated during the bootstrapping
+       process.  These are the files for our "final checks".
+
+
+-------------------------------------------------------------------------------

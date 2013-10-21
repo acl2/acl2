@@ -1,0 +1,23 @@
+The .lisp files in this directory can be certified on a Unix system by
+executing make, assuming that this directory is directly under
+books/case-studies in an ACL2 distribution,
+
+Contents of this directory:
+
+README           This file
+certify.lsp      (ld "certify.lsp") to certify books aof and knuth-arch
+aof.lisp         Axioms and rules for Archimedean Ordered Fields
+knuth-arch.lisp  Theorems about Knuth's Generalized 91 Recursion
+
+Answers to the exercises in the case study:
+  exercise1.lisp
+  exercise2.lisp
+  exercise3.lisp    
+  exercise4a.lisp
+  exercise4b.lisp
+  exercise5.lisp
+  exercise6a.lisp    
+  exercise6b.lisp    
+  exercise7a.lisp    
+  exercise7b.lisp    
+

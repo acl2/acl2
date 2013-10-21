@@ -1,0 +1,3 @@
+(include-book "good-statep")
+
+(certify-book "m1" ? t)

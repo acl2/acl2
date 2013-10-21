@@ -1,0 +1,100 @@
+
+                         ACL2 XDOC FANCY VIEWER
+                           License Information
+
+Copyright for main source files:
+
+   XDOC Documentation System for ACL2
+   Copyright (C) 2009-2013 Centaur Technology
+
+   Contact:
+     Centaur Technology Formal Verification Group
+     7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+     http://www.centtech.com/
+
+   This program is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by the Free
+   Software Foundation; either version 2 of the License, or (at your option)
+   any later version.
+
+   This program is distributed in the hope that it will be useful but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+   more details.
+
+   You should have received a copy of the GNU General Public License along with
+   this program; if not, write to the Free Software Foundation, Inc., 51
+   Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+
+   Original author: Jared Davis <jared@centtech.com>
+
+
+Copyrights for Supporting Libraries: (within the "lib" directory)
+
+   Hogan:
+     Copyright 2011 Twitter, Inc.
+     Released under Apache License
+     http://twitter.github.io/hogan.js/
+
+   jQuery:
+     Copyright 2005, 2013 jQuery Foundation, Inc. and other contributors
+     Released under the MIT license.
+     http://jquery.com/
+
+   jquery.base64.js:
+     Copyright 2012 Yannick Albert
+     Released under MIT license.
+     https://github.com/yckart/jquery.base64.js
+
+   PowerTip:
+     Copyright 2013 Steven Benner
+     Released under MIT license.
+     http://stevenbenner.github.com/jquery-powertip/
+
+   LazyLoad:
+     Copyright 2011 Ryan Grove
+     Released under MIT license.
+     https://github.com/rgrove/lazyload
+
+   Typeahead:
+     Copyright 2013 Twitter, Inc. and other contributors
+     Released under MIT license.
+     https://github.com/twitter/typeahead
+
+
+Copyrights for other supporting files:
+
+   Original XDOC Images
+     Copyright 2009-2013 Centaur Technology
+     License: GNU General Public License
+
+     - leaf.png
+     - plus.png
+     - minus.png
+     - expand_subtopics.png
+     - collapse_subtopics.png
+     - favicon.png
+     - xdoc-home.png
+     - xdoc-logo.png
+
+   Oxygen Icon Set Images
+     http://www.oxygen-icons.org/
+     Released under GNU General Public License
+     Accessed 2012-08-13 from:
+       http://kde-look.org/content/show.php/Oxygen+Icons?content=74184
+
+     - view_flat.png   (adapted)
+     - view_tree.png   (adapted)
+
+   External Link Image:
+     Released under GNU General Public License
+     Accessed 2013-07-26 from
+       http://commons.wikimedia.org/wiki/File:Icon_External_Link.png
+
+     - Icon_External_Link.png
+
+
+   ACL2 Tour Images (.gif files within the images/ directory)
+     Copyright 2012 Regents of the University of Texas
+     Released under a BSD-style license (distributed with ACL2)
+

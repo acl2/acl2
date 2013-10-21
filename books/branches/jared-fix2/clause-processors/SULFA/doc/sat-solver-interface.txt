@@ -1,0 +1,152 @@
+
+------------------------ SAT Solver Interface --------------------------
+
+We use a simple interface to a SAT solver, that uses the following
+commands and inputs and outputs simple LISP S-expressions.  
+Different SAT solvers, including incremental ones, can be put
+"under the hood."
+
+The SAT solver must be implemented as a PERL script 
+"../scripts/sexpr-sat-solver".  By default, this PERL script is generated 
+from "sexpr-sat-solver.isf", which takes into account the SAT_SOLVER and 
+SAT_SOLVER_TYPE variables.  To install a new script "under the hood", first 
+delete "sexpr-sat-solver" and delete the lines in "scripts/Makefile" 
+that generate "sexpr-sat-solver".  Now you can write your own
+version of "sexpr-sat-solver".
+
+All executions take the form:
+
+"sexpr-sat-solver [-dir <dir>] <input-filename> <command> ..."
+
+Where <dir> is an optional directory that takes the place of the current
+directory (all other filenames are relative to <dir> and any temporary files
+should occur in <dir>).  The <input-filename> is the file in which the
+input clauses will occur.  
+
+Every command is proceeded with the <input-filename>, but that does not
+mean that simultanious inputs need be supported.  The execution will 
+always begin with a "--new-problem" command, then continue with other 
+commands with the same <dir> and <input-filename> until the
+next "--new-problem".  The reason for continually informing the solver 
+of the <input-filename> is so that the solver does not need to store 
+information from one command to the next.
+
+---Commands---
+--new-problem:  Begin a new SAT problem.  
+
+--push : Prepare for a rollback to this point (see pop).  Note: only a
+single push need be supported.
+
+--pop: Remove all clauses that have appeared since the last push.
+
+--solve <# variables> <# clauses> <output-filename>: Solve the current SAT 
+problem.  Put the solution in the file <output-filename>.  The number of
+Boolean variables in the entire problem is given by <# variables> and the
+number of clauses is given by <# clauses>.
+
+--end-sat-problem:  No more input will be given without a call to
+new-sat-problem.  So all temporary files and processes should be 
+removed.
+
+
+---Input S Expressions---
+The input S-expression is a sequence of clauses, each clause is
+a LISP list of integers, representing either a Boolean variable 
+or its negation.  For example:
+
+(1 2)
+(-1 2)
+(-2) 
+
+Is an unsatisfiable sequence of clauses representing:
+(and (or b1 b2) (or (not b1) b2) (not b2)).
+
+
+---Output S Expressions---
+The output S-expression is two lists.  The first is either
+(unsat) if the formula is unsatisfiable or (sat . <instance>)
+if the formula is satisfiable, where instance is a list
+of LISP booleans (ts or nils) representing whether each
+variable in that satisfying insance is t or nil.  The
+second S-expression is a list with the time required by the
+SAT solver.  For example:
+
+(sat t nil t)
+(time "0.5")
+
+Is a valid output, which says that the formula is satisfiable
+with the instance <b1=true, b2=false, b3=true> and that the
+solver required 0.5 seconds to reach a conclusion.
+
+
+
+---Example Run---
+(Note this was written by hand, so it may contain some typos
+or other minor errors).
+
+We begin the problem by calling:
+
+sexpr-sat-solver -dir sat-temp-files input.sexpr --new-problem
+
+Now the following new clauses are added to the file input.sexpr.
+
+(1 2)
+(-1 2)
+
+To solve the problem we call:
+
+sexpr-sat-solver -dir sat-temp-files input.sexpr --solve 2 2 output.sexpr
+
+The sat solver produces the following output in output.sexpr:
+
+(sat nil t)
+(time "0.0")
+
+Representing that the problem is satifiable under the instance
+{1:=false, 2:=true} and that solving the problem required "0.0"
+seconds.
+
+Now we use the push functionality:
+
+sexpr-sat-solver -dir sat-temp-files input.sexpr --push
+
+Before adding to the file input.sexpr:
+
+(-2)
+
+Now when we solve the problem:
+
+sexpr-sat-solver -dir sat-temp-files input.sexpr --solve 2 3 output.sexpr
+
+We get the output.sexpr:
+
+(unsat)
+(time "0.0")
+
+Stating that the problem is now unsatisfiable.  If we then do a pop
+and a solve:
+
+sexpr-sat-solver -dir sat-temp-files input.sexpr --pop
+sexpr-sat-solver -dir sat-temp-files input.sexpr --solve 2 2 output.sexpr
+
+We're back to the problem we had when we did the push, so output.sexpr
+is:
+
+(sat nil t)
+(time "0.0")
+
+We can add new clauses to input.sexpr:
+
+(1 -2)
+(3 -1)
+
+And the problem continues as if we never added the clauses during the pop.
+
+sexpr-sat-solver -dir sat-temp-files input.sexpr --solve 2 3 output.sexpr
+
+Now output.sexpr is (I think only one satisfying instance is possible now):
+
+(sat t t t)
+(time "0.0")
+
+

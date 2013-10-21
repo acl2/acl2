@@ -1,0 +1,62 @@
+     Implementation in ACL2 of Well-Founded Polynomial Orderings
+
+The code under this directory explains the ideas behind section 3 in
+an abstract setting, hiding implementation details and properties
+which are not detailed in the corresponding paper. It has been tested
+under ACL2 2.6/GCL 2.4.
+
+* *.acl2:
+
+Package definitions (TER, MON, UPOL and NPOL) and certification commands.
+
+* term.lisp:
+
+Terms (TER package). An encapsulation of the term ordering, the
+ordinal embedding and their properties (mainly the well-foundedness of
+the term ordering). See [1] for implementation details.
+
+* monomial.lisp:
+
+Monomials (MON package). The monomial ordering, the ordinal embedding
+and their properties (mainly the well-foundedness of the monomial
+ordering.
+
+* upol.lisp:
+
+Unnormalized polynomials (UPOL package). It just implements the
+recognizers for unnormalized polynomials and objects in normal
+form. The remaining functions of the polynomial encapsulation
+presented in section 2 are not needed to implement the polynomial
+ordering.
+
+* ordinal-ordering.lisp:
+
+Some useful theorems about the ordinal ordering, e0-ord-<. It is
+proved that e0-ord-< is a partial strict order.
+
+* npol-ordering-1.lisp:
+
+Normalized polynomials (NPOL package). It explains how the monomial
+ordering is lifted to normalized polynomials. It is assumed that the
+monomial ordinal embedding does not produce zero.
+
+* npol-ordering-2.lisp:
+
+Normalized polynomials (NPOL package). It explains how the monomial
+ordering is lifted to normalized polynomials. In this case it is not
+assumed that the monomial ordinal embedding is not zero. It is shown
+that it is always possible to build a modified ordinal embedding
+holding this property without imposing any additional constraint. This
+approach has the advantage of separating two concerns: the development
+of monomial orderings and the development of induced polynomial
+orderings.
+
+Encapsulated events are developed in (event names may have changed):
+
+[1] Medina Bulo, I., Alonso Jiménez, J. A., Palomo Lozano, F.:
+    Automatic Verification of Polynomial Rings Fundamental Properties in ACL2.  
+    The University of Texas at Austin, Department of Computer Sciences.	
+    Technical Report 0029 (2000)
+
+Inmaculada Medina Bulo		Francisco Palomo Lozano
+inmaculada.medina@uca.es	francisco.palomo@uca.es

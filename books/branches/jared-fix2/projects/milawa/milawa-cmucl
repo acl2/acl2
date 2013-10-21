@@ -1,0 +1,76 @@
+#!/bin/bash
+
+CMUCL="lisp"
+
+if [ "$#" -ne "1" ]
+then
+	echo "Usage: milawa-cmucl <IMAGE-FILE>"
+	echo "Where <IMAGE-FILE> is the name of an CMUCL image to use, typically a"
+	echo "\".cmucl-image\" file, such as \"milawa.cmucl-image\"."
+	exit 1
+fi
+
+if [ -z "`which $CMUCL`" ]
+then
+	echo "Error: CMUCL not found."
+	echo ""
+	echo "Possible causes:"
+	echo "  - CMUCL is not installed?"
+	echo "  - CMUCL is not in your current \$PATH?"
+	echo "  - CMUCL is in your path, but is not named '$CMUCL'?"
+	echo "  - CMUCL is in your path and is named '$CMUCL', but is not executable?"
+	echo ""
+	echo "Possible fixes:"
+	echo "  - Add a symlink to CMUCL named '$CMUCL' somewhere in your \$PATH?"
+	echo "  - Edit the milawa-cmucl shell script and change CMUCL=\"...\" to the name"
+	echo "    of your CMUCL executable?"
+	echo "  - Make sure you can start CMUCL by typing '$CMUCL'"
+	echo ""
+fi
+
+if [ -n "`hostname | grep nemesis`" ]
+then
+    exec $CMUCL -batch -dynamic-space-size 1520 -core $1
+elif [ -n "`hostname | grep lhug`" ]
+then
+    exec $CMUCL -batch -dynamic-space-size 1632 -core $1
+elif [ -n "`hostname | grep jordan`" ]
+then
+    exec $CMUCL -batch -dynamic-space-size 1632 -core $1
+elif [ -n "`hostname | grep moros`" ]
+then
+    exec $CMUCL -batch -dynamic-space-size 1632 -core $1
+elif [ -n "`hostname | grep shadowfax`" ]
+then
+    exec $CMUCL -batch -dynamic-space-size 2800 -core $1
+elif [ -n "`hostname | grep warren`" ]
+then
+    exec $CMUCL -batch -dynamic-space-size 1150 -core $1
+else
+    echo "Error: host not yet configured."
+    echo ""
+    echo "What is this about?"
+    echo "  CMUCL allows the amount of available heap space available to be "
+    echo "  configured via the command-line parameter -dynamic-space-size.  We"
+    echo "  need to know how much space to try to allocate."
+    echo ""
+    echo "How to fix it?"
+    echo "  Before using milawa-cmucl, please determine the appropriate values "
+    echo "  for these parameters on this host, `hostname`.  Then, edit the "
+    echo "  milawa-cmucl script and add a section for your host, which invokes "
+    echo "  cmucl with the proper settings."
+    echo ""
+    echo "How to determine these settings?"
+    echo ""
+    echo "  Just run:"
+    echo "    $CMUCL -dynamic-space-size [N]"
+    echo ""
+    echo "  For your choice of N.  I don't know what the minimums are, "
+    echo "  but probably you want a control-stack of at least 1500.  More "
+    echo "  is better."
+    echo ""
+    echo "  At any rate, if cmucl segfaults right away, then you'll need "
+    echo "  to use a lower setting."
+    echo ""
+fi
+

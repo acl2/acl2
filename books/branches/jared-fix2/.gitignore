@@ -1,0 +1,17 @@
+Makefile-books
+Makefile-cache
+Makefile-deps
+Makefile-features
+Makefile-tmp
+*.cert
+*.out
+*.time
+*.lx64fsl
+*.port
+*~
+*.sao
+temp-emacs-file
+workxxx.*
+*.pcert0
+*.pcert1
+*.acl2x

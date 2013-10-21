@@ -1,0 +1,26 @@
+(in-package "ACL2")
+
+(defconst *import-symbols*
+  (set-difference-eq
+   (union-eq *acl2-exports*
+	     *common-lisp-symbols-from-main-lisp-package*)
+     '(null + * - < = / commutativity-of-* associativity-of-* 
+	    commutativity-of-+ associativity-of-+ distributivity)))
+
+(defpkg "FLD"
+  *import-symbols*)
+
+(defpkg "FUTER"
+  *import-symbols*)
+
+(defpkg "FUMON"
+  (union-eq *import-symbols*
+	    '(FLD::fdp FUTER::terminop)))
+
+(defpkg "FUPOL"
+  (union-eq *import-symbols*
+	    '(FUTER::naturalp FUTER::terminop FUMON::monomio FUMON::coeficiente
+			    FUMON::termino FUMON::monomiop)))
+
+(certify-book "fusuma" ? t)
+

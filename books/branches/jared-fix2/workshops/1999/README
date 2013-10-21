@@ -1,0 +1,55 @@
+The subdirectories correspond to chapters in "Computer Aided Reasoning: ACL2
+Case Studies," ed. M. Kaufmann, P. Manolios, and J S. Moore, Kluwer Academic
+Publishers, 2000.
+
+On a Unix-like system, you can certify the books in all subdirectories by
+typing make in the present directory, assuming that the present directory is
+the books/case-studies/ subdirectory of an ACL2 distribution.  (Exceptions: see
+the README files in the ACL2(r) studies in calculus/ and analysis/.)  Each
+individual case study's set of books is independent of books in the other case
+studies, and can be certified by typing make in its subdirectory, or by
+following instructions in its README file.  Books whose certification is
+up-to-date will not be re-certified by typing make, but executing "make clean"
+on Unix-like systems will remove all evidence of previous certification.
+
+
+Subdirectory	Authors			Chapter / Title
+------------	-------        		---------------
+
+graph		J Moore			5. An Exercise in Graph Theory
+
+calculus	Matt Kaufmann		6. Modular Proof: The Fundamental
+					   Theorem of Calculus
+
+mu-calculus	Panagiotis Manolios	7. Mu-Calculus Model-Checking
+
+simulator	David Greve,		8. High-Speed, Analyzable Simulators
+		Matthew Wilding,
+		David Hardin
+
+pipeline	Jun Sawada		9. Verification of a Simple Pipelined
+					   Machine Model
+
+de-hdl		Warren Hunt, Jr.	10. The DE Language
+
+vhdl		Dominique Borrione,	11. Using macros to mimic VHDL
+		Philippe Georgelin,
+		Vanderlei Rodrigues
+
+ste		Damir A. Jamsek		12. Symbolic Trajectory Evaluation
+
+multiplier	David M. Russinoff,	13. RTL Verification: 
+		Arthur Flatau		    A Floating-Point Multiplier
+
+embedded	Piergiorgio Bertoli,	14. Design Verification of a
+		Paolo Traverso		    Safety-Critical Embedded Verifier
+
+compiler	Wolfgang Goerigk	15. Compiler Verification Revisited
+
+ivy		William McCune,		16. Ivy: A Preprocessor and Proof Checker
+		Olga Shumsky                for First-Order Logic
+
+knuth-91	John Cowles		17. Knuth's Generalization of
+                                            McCarthy's 91 Function
+
+analysis	Ruben Gamboa		18. Continuity and Differentiability

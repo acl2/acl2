@@ -1,0 +1,4 @@
+
+This directory contains a bootstrap theory in which we build our ``real''
+work (in lib).  It contains a bunch of messy stuff I do not want to have
+to think about again.

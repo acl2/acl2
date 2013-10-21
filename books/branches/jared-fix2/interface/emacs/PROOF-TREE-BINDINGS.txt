@@ -1,0 +1,66 @@
+See the ACL2 documentation topic PROOF-TREE for an introduction to
+proof trees in ACL2:
+
+http://www.cs.utexas.edu/users/moore/acl2/current/PROOF-TREE.html
+
+The key bindings set up when you start proof trees are shown below.
+See file *note PROOF-TREE-EMACS.txt for how to get started with proof trees.
+
+        C-z h               help
+        C-z ?               help
+
+Provides information about proof-tree/checkpoint tool.  Use `C-h d' to
+get more detailed information for specific functions.
+
+        C-z c               Go to checkpoint
+
+Go to a checkpoint, as displayed in the "prooftree" buffer with the
+character c in the first column.  With non-zero prefix argument: move
+the point in the ACL2 buffer (emacs variable *mfm-buffer*) to the first
+checkpoint displayed in the "prooftree" buffer, suspend the proof tree
+(see suspend-proof-tree), and move the cursor below that checkpoint in
+the "prooftree" buffer.  Without a prefix argument, go to the first
+checkpoint named below the point in the "prooftree" buffer (or if there
+is none, to the first checkpoint).  Note however that unless the proof
+tree is suspended or the ACL2 proof is complete or interrupted, the
+cursor will be generally be at the bottom of the "prooftree" buffer
+each time it is modified, which causes the first checkpoint to be the
+one that is found.
+
+If the prefix argument is 0, move to the first checkpoint but do not
+keep suspended.
+
+        C-z g               Goto subgoal
+
+Go to the specified subgoal in the ACL2 buffer (emacs variable
+*mfm-buffer*) that lies closest to the end of that buffer - except if
+the current buffer is "prooftree" when this command is invoked, the
+subgoal is the one from the proof whose tree is displayed in that
+buffer.  A default is obtained, when possible, from the current line of
+the current buffer.
+
+        C-z r               Resume proof tree
+
+Resume original proof tree display, re-creating buffer "prooftree" if
+necessary.  See also suspend-proof-tree.  With prefix argument: push the
+mark, do not modify the windows, and move point to end of *mfm-buffer*.
+
+        C-z s               Suspend proof tree
+
+Freeze the contents of the "prooftree" buffer, until resume-proof-tree
+is invoked.  Unlike stop-proof-tree, the only effect of
+suspend-proof-tree is to stop putting characters into the "prooftree"
+buffer; in particular, strings destined for that buffer continue NOT to
+be put into the primary buffer, which is the value of the emacs variable
+*mfm-buffer*.
+
+       C-z o                Select other frame
+       C-z b                Switch to "prooftree" buffer
+       C-z B                Switch to frame called "prooftree-frame"
+
+These commands move between buffers and frames, as indicated.  The
+first of these has nothing specifically to do with proof trees, but is
+handy if you have at least two emacs frames displayed.  The second
+takes you to the "prooftree" buffer (in the current frame), while the
+third takes you to the frame called "prooftree-frame", creating it if
+it does not already exist.
