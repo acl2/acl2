@@ -1,0 +1,2 @@
+(ld "tools/flag-package.lsp" :dir :system)
+(certify-book "generalize" ? t)

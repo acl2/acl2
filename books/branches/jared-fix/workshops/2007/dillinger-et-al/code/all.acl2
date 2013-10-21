@@ -1,0 +1,4 @@
+(in-package "ACL2")
+;(ld "hacker-pkg.lsp")
+; cert-flags: ? t :ttags ((defcode) (table-guard))
+(certify-book "all" ? t :ttags ((defcode) (table-guard)))

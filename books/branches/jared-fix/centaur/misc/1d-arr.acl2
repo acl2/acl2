@@ -1,0 +1,4 @@
+(in-package "ACL2")
+(include-book "xdoc/portcullis" :dir :system)
+; cert-flags: ? t :ttags :all
+(certify-book "1d-arr" ? t :ttags :all)

@@ -1,0 +1,8 @@
+Type "make" to generate and certify files in the current directory that should
+agree with the files in the results/ subdirectory, essentially:
+
+model.lisp      simplified version of input file model-raw.lisp
+model-eq.lisp   proofs of equivalence of model-raw and model functions
+bvecp.lisp      proofs of bvecp lemmas about model functions, originally proved
+                for model-raw functions
+

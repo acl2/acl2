@@ -1,0 +1,4 @@
+(value :q)
+(lp)
+(ld "defpkg.lsp")
+(certify-book "kalman-defs" ? t)

@@ -1,0 +1,2 @@
+Because there are generated .lisp files, this directory is excluded
+from certification based on cert.pl.
