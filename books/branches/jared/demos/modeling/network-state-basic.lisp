@@ -5,8 +5,9 @@
 ; defn, defaggregate, etc.).
 
 ; The concepts in this book are based off Rager's JFKr model, which can be
-; found in books/security/jfkr.lisp and is explained in "An Executable Model
-; for JFKr", by David Rager, which was included in the 2009 ACL2 Workshop.
+; found in books/projects/security/jfkr.lisp and is explained in "An Executable
+; Model for JFKr", by David Rager, which was included in the 2009 ACL2
+; Workshop.
 
 ; Copyright David Rager 2012.
 

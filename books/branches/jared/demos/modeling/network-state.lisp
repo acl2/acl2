@@ -6,8 +6,8 @@
 ; defaggregate, b*, guards, defun+ and its output signatures, etc.).
 
 ; The concepts in this book are based off David Rager's JFKr model, which can
-; be found in books/security/jfkr.lisp and is explained in "An Executable Model
-; for JFKr", which was included in the 2009 ACL2 Workshop.
+; be found in books/projects/security/jfkr.lisp and is explained in "An
+; Executable Model for JFKr", which was included in the 2009 ACL2 Workshop.
 
 ; Copyright David Rager 2012.
 

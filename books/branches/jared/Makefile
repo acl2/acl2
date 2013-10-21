@@ -349,7 +349,7 @@ $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/$(EGREP_EXTRA_EXCLUDE_STRING))' \
+    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
   > Makefile-books; \
   ls -l Makefile-books)
@@ -757,7 +757,7 @@ ifdef ACL2_COMP
 # another Lisp.  We also skip multi-lisp compilation for books that
 # depend on centaur/ books when we see a multi-lisp compilation
 # failure for books in their directories.  (Thus, even though
-# security/des/ depends on GL and hence centaur/, we don't exclude
+# projects/security/des/ depends on GL and hence centaur/, we don't exclude
 # its books.)
 $(info For building compiled (.$(ACL2_COMP_EXT)) files, excluding centaur books)
 OK_CERTS := $(filter-out centaur/%, \
@@ -1036,8 +1036,29 @@ data-structures: $(filter-out data-structures/memories/%, $(filter data-structur
 basic: arithmetic arithmetic-2 arithmetic-3 arithmetic-5 ihs std str xdoc tools misc data-structures
 
 
+# Projects targets:
 
-# arithmetic: 24 seconds
+.PHONY: paco
+paco: $(filter projects/paco/%, $(OK_CERTS))
+
+.PHONY: taspi
+taspi: $(filter projects/taspi/%, $(OK_CERTS))
+
+.PHONY: jfkr
+jfkr: $(filter projects/security/jfkr/%, $(OK_CERTS))
+
+.PHONY: des
+des: $(filter projects/security/des/%, $(OK_CERTS))
+
+.PHONY: sha-2
+sha-2: $(filter projects/security/sha-2/%, $(OK_CERTS))
+
+.PHONY: security
+security: jfkr des sha-2
+
+.PHONY: wp-gen
+wp-gen: $(filter projects/wp-gen/%, $(OK_CERTS))
+
 
 
 
