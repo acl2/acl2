@@ -135,6 +135,18 @@ rather than write something like:</p>
        (kwd-alist (acons arg1 value kwd-alist)))
     (extract-keywords ctx legal-kwds (cddr args) kwd-alist))))
 
+(defsection getarg
+  :parents (support)
+  :short "Get a value from the keyword-value alist produced by @(see
+extract-keywords), with default-value support."
+
+  (defun getarg (arg default alist)
+    (declare (xargs :mode :program))
+    (b* ((look (assoc arg alist)))
+      (if look
+          (cdr look)
+        default))))
+
 (defsection split-///
   :parents (support)
   :short "Split an argument list into pre- and post-@('///') contents."
@@ -153,7 +165,6 @@ rather than write something like:</p>
          ((mv pre post)
           (split-/// ctx (cdr x))))
       (mv (cons (car x) pre) post))))
-
 
 (defsection ends-with-period-p
   :parents (support)

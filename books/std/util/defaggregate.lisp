@@ -480,10 +480,10 @@ optimization altogether.</p>")
        (rule-classes (or (cdr (assoc :rule-classes x.opts))
                          :rewrite))
        (thmname (intern-in-package-of-symbol
-                 (concatenate 'string "RETURN-TYPE-OF-"
-                              (symbol-name basename)
-                              "->"
-                              (symbol-name x.name))
+                 (str::cat "RETURN-TYPE-OF-"
+                           (symbol-name basename)
+                           "->"
+                           (symbol-name x.name))
                  basename))
        (req (list thmname x.guard :rule-classes rule-classes)))
     (list req)))
@@ -1087,7 +1087,7 @@ optimization altogether.</p>")
                               :efields efields))
 
        (booleanp-of-foop (intern-in-package-of-symbol
-                          (concatenate 'string "BOOLEANP-OF-" (symbol-name foop))
+                          (str::cat "BOOLEANP-OF-" (symbol-name foop))
                           name))
 
        (event
@@ -1127,7 +1127,7 @@ optimization altogether.</p>")
 
                 (defthm ,(intern-in-package-of-symbol
                           ;; This seems like a stronger replacement for the above?
-                          (concatenate 'string "CONSP-OF-" (symbol-name make-foo))
+                          (str::cat "CONSP-OF-" (symbol-name make-foo))
                           name)
                   (consp (,make-foo ,@field-names))
                   :rule-classes :type-prescription
@@ -1201,7 +1201,7 @@ optimization altogether.</p>")
                                              name)))))
 
                 (defthm ,(intern-in-package-of-symbol
-                          (concatenate 'string "CONSP-WHEN-" (symbol-name foop))
+                          (str::cat "CONSP-WHEN-" (symbol-name foop))
                           name)
                   (implies (,foop ,x)
                            (consp ,x))

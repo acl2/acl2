@@ -525,6 +525,8 @@ function dat_collapse(dat_id)
     $("#_dat_long" + dat_id).hide();
 }
 
+var warned_about_history_state = false;
+
 function dat_long_topic(key)
 {
     // Assumes xdata[key] is ready
@@ -532,6 +534,16 @@ function dat_long_topic(key)
     dat_id_table[dat_id] = {"key":key, "ever_expanded":false};
 
     var div = jQuery("<div></div>");
+
+    var curr_state = history.state;
+    if (!curr_state && !warned_about_history_state) {
+	div.append(
+	    "<p>Warning: your browser does not implement the history.state "
+	    + "API, so your back button will lose your place.  You may wish "
+	    + "to use a browser like Firefox or Chrome, instead.</p>");
+	warned_about_history_state = true;
+    }
+
     if (!topic_exists(key)) {
         div.append("<h3>Error: " + key + " not found</h3>");
         return div;

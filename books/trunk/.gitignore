@@ -15,3 +15,6 @@ workxxx.*
 *.pcert0
 *.pcert1
 *.acl2x
+startjob.*
+centaur/manual/
+

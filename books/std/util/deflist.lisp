@@ -34,36 +34,44 @@
 (include-book "std/lists/repeat" :dir :system)
 (include-book "std/lists/rev" :dir :system)
 (include-book "maybe-defthm")
+(include-book "support")
+(set-state-ok t)
 
 (defxdoc deflist
   :parents (std/util)
   :short "Introduce a recognizer for a typed list."
 
-  :long "<p>Deflist allows you to quickly introduce a recognizer for a typed
-list (e.g., @('nat-listp')), and proves basic theorems about it.</p>
+  :long "<p>Deflist lets you to quickly introduce recognizers for typed lists
+like @(see nat-listp).  It defines the new recognizer function, sets up a basic
+theory with rules about @(see len), @(see append), @(see member), etc., and
+generates basic, automatic @(see xdoc) documentation.</p>
 
-<p>General form:</p>
+<h4>General Form</h4>
 
 @({
  (deflist name formals
    element
-   &key guard               ; t by default
-        verify-guards       ; t by default
-        guard-hints         ; nil by default
-        guard-debug         ; nil by default
-        already-definedp    ; nil by default
-        elementp-of-nil     ; :unknown by default
-        negatedp            ; nil by default
-        true-listp          ; nil by default
-        mode                ; current defun-mode by default
-        parents             ; nil by default
-        short               ; nil by default
-        long                ; nil by default
-        rest                ; nil by default
-        )
+   [keyword options]
+   [/// other events]
+   )
+
+ Options                  Defaults
+   :negatedp                nil
+   :true-listp              nil
+   :elementp-of-nil         :unknown
+   :guard                   t
+   :verify-guards           t
+   :guard-hints             nil
+   :guard-debug             nil
+   :mode                    current defun-mode
+   :already-definedp        nil
+   :verbosep                nil
+   :parents                 nil
+   :short                   nil
+   :long                    nil
 })
 
-<p>Basic example:</p>
+<h4>Basic Examples</h4>
 
 <p>The following introduces a new function, @('my-integer-listp'), which
 recognizes lists whose every element satisfies @('integerp'), and also
@@ -74,14 +82,13 @@ introduces many theorems about this new function.</p>
    (integerp x))
 })
 
-<p>Note that <b>x</b> is treated in a special way: it refers to the whole list
-in formals and guards, but refers to individual elements of the list in the
-@(':element') portion.  This is similar to how other macros like @(see
-defalist), @(see defprojection), and @(see defmapappend) handle @('x').</p>
+<p><b><color rgb='#ff0000'>Note</color></b>: @('x') is treated in a special
+way.  It refers to the whole list in formals and guards, but refers to
+individual elements of the list in the @('element') portion.  This is similar
+to how other macros like @(see defalist), @(see defprojection), and @(see
+defmapappend) handle @('x').</p>
 
-<p>More examples:</p>
-
-<p>Recognizer for lists with no natural numbers:</p>
+<p>Here is a recognizer for lists with no natural numbers:</p>
 
 @({
  (deflist nat-free-listp (x)
@@ -89,7 +96,7 @@ defalist), @(see defprojection), and @(see defmapappend) handle @('x').</p>
    :negatedp t)
 })
 
-<p>Recognizer for lists whose elements must exceed some minimum:</p>
+<p>Here is a recognizer for lists whose elements must exceed some minimum:</p>
 
 @({
  (deflist all-greaterp (min x)
@@ -97,7 +104,6 @@ defalist), @(see defprojection), and @(see defmapappend) handle @('x').</p>
    :guard (and (natp min)
                (nat-listp x)))
 })
-
 
 <h3>Usage and Optional Arguments</h3>
 
@@ -108,15 +114,8 @@ restriction on the formals is that you may not use the names @('pkg::a'),
 @('pkg::n'), or @('pkg::y'), because we use these variables in the theorems we
 generate.</p>
 
-<p>The optional @(':guard'), @(':verify-guards'), @(':guard-debug'), and
-@(':guard-hints') are options for the @(see defun) we introduce.  In other
-words, these are for the guards of the new list recognizer, not the element
-recognizer.</p>
-
-<p>The optional @(':already-definedp') keyword can be set if you have already
-defined the function.  This can be used to generate all of the ordinary
-@('deflist') theorems without generating a @('defund') event, and is useful
-when you are dealing with mutually recursive recognizers.</p>
+<p>The optional @(':negatedp') keyword can be used to recognize a list whose
+every element does not satisfy elementp.</p>
 
 <p>The optional @(':true-listp') keyword can be used to require that the new
 recognizer is \"strict\" and will only accept lists that are
@@ -128,13 +127,23 @@ behavior or another; see @(see strict-list-recognizers) for details.</p>
 ...)') is always known to be @('t') or @('nil').  When it is provided,
 @('deflist') can generate slightly better theorems.</p>
 
-<p>The optional @(':negatedp') keyword can be used to recognize a list whose
-every element does not satisfy elementp.</p>
+<p>The optional @(':guard'), @(':verify-guards'), @(':guard-debug'), and
+@(':guard-hints') are options for the @(see defun) we introduce.  These are for
+the guards of the new list recognizer, not the element recognizer.</p>
+
+<p>The optional @(':already-definedp') keyword can be set if you have already
+defined the function.  This can be used to generate all of the ordinary
+@('deflist') theorems without generating a @('defund') event, and is useful
+when you are dealing with mutually recursive recognizers.</p>
 
 <p>The optional @(':mode') keyword can be set to @(':logic') or @(':program')
 to introduce the recognizer in logic or program mode.  The default is whatever
 the current default defun-mode is for ACL2, i.e., if you are already in program
 mode, it will default to program mode, etc.</p>
+
+<p>The optional @(':verbosep') flag can be set to @('t') if you want deflist to
+print everything it's doing.  This may be useful if you run into any failures,
+or if you are simply curious about what is being introduced.</p>
 
 <p>The optional @(':parents'), @(':short'), and @(':long') keywords are as in
 @(see defxdoc).  Typically you only need to specify @(':parents'), perhaps
@@ -143,13 +152,27 @@ will be automatically generated for @(':short') and @(':long').  If you don't
 like this documentation, you can supply your own @(':short') and/or @(':long')
 to override it.</p>
 
-<p>The optional @(':rest') keyword can be used to add additional events after
-the automatic deflist events.  This is mainly a nice place to put theorems that
-are related to your deflist.  Note that these events will be submitted in a
-theory where your list recognizer is <i>enabled</i>, since they typically
-should be about the new recognizer.  They will also be included in the same
-@(see defsection), so they will be included in the automatically generated
-xdoc, if applicable.</p>")
+<h3>Support for Other Events</h3>
+
+<p>Deflist implements the same @('///') syntax as other macros like @(see
+define).  This allows you to put related events near the definition and have
+them included in the automatic documentation.  As with define, the new
+recognizer is enabled during the @('///') section.  Here is an example:</p>
+
+@({
+ (deflist even-integer-list-p (x)
+   (even-integer-p x)
+   :true-listp t
+   ///
+   (defthm integer-listp-when-even-integer-list-p
+     (implies (even-integer-list-p x)
+              (integer-listp x))))
+})
+
+<p>Deprecated.  The optional @(':rest') keyword was a precursor to @('///').
+It is still implemented, but its use is now discouraged.  If both @(':rest')
+and @('///') events are used, we arbitrarily put the @(':rest') events
+first.</p>")
 
 (defxdoc strict-list-recognizers
   :parents (deflist)
@@ -453,15 +476,25 @@ of which recognizers require true-listp and which don't.</p>")
     acl2::binary-append-without-guard))
 
 
+(defconst *deflist-valid-keywords*
+  '(:negatedp
+    :guard
+    :verify-guards
+    :guard-debug
+    :guard-hints
+    :already-definedp
+    :elementp-of-nil
+    :mode
+    :parents
+    :short
+    :long
+    :true-listp
+    :rest
+    :verbosep))
 
-(defun deflist-fn (name formals element negatedp
-                        guard verify-guards guard-debug guard-hints
-                        already-definedp elementp-of-nil mode
-                        parents short long true-listp rest)
+(defun deflist-fn (name formals element kwd-alist other-events state)
   (declare (xargs :mode :program))
-  (b* (((unless (symbolp name))
-        (er hard 'deflist "Name must be a symbol, but is ~x0." name))
-
+  (b* ((__function__ 'deflist)
        (mksym-package-symbol name)
 
        ;; Special variables that are reserved by deflist.
@@ -472,47 +505,63 @@ of which recognizers require true-listp and which don't.</p>")
 
        ((unless (and (symbol-listp formals)
                      (no-duplicatesp formals)))
-        (er hard 'deflist "The formals must be a list of unique symbols, but ~
-                           are ~x0." formals))
-
+        (raise "The formals must be a list of unique symbols, but are ~x0."
+               formals))
        ((unless (member x formals))
-        (er hard 'deflist "The formals must contain ~x0, but are ~x1.~%" x formals))
-
+        (raise "The formals must contain ~x0, but are ~x1.~%" x formals))
        ((unless (and (not (member a formals))
                      (not (member n formals))
                      (not (member y formals))))
-        (er hard 'deflist "As a special restriction, formals may not mention ~
-                           ~x0, ~x1, or ~x2, but the formals are ~x3." a n y formals))
-
+        (raise "As a special restriction, formals may not mention ~x0, ~x1, ~
+                or ~x2, but the formals are ~x3." a n y formals))
        ((unless (and (consp element)
                      (symbolp (car element))))
-        (er hard 'deflist "The element recognizer must be a function applied ~
-                           to the formals, but is ~x0." element))
+        (raise "The element recognizer must be a function applied to the ~
+                formals, but is ~x0." element))
+
        (elementp     (car element))
        (elem-formals (cdr element))
 
+       (negatedp         (getarg :negatedp         nil      kwd-alist))
+       (true-listp       (getarg :true-listp       nil      kwd-alist))
+       (verify-guards    (getarg :verify-guards    t        kwd-alist))
+       (guard            (getarg :guard            t        kwd-alist))
+       (guard-debug      (getarg :guard-debug      nil      kwd-alist))
+       (guard-hints      (getarg :guard-hints      nil      kwd-alist))
+       (already-definedp (getarg :already-definedp nil      kwd-alist))
+       (elementp-of-nil  (getarg :elementp-of-nil  :unknown kwd-alist))
+       (short            (getarg :short            nil      kwd-alist))
+       (long             (getarg :long             nil      kwd-alist))
+
+       (rest             (append
+                          (getarg :rest nil kwd-alist)
+                          other-events))
+
+       (mode             (getarg :mode
+                                 (default-defun-mode (w state))
+                                 kwd-alist))
+
+       (parents-p (assoc :parents kwd-alist))
+       (parents   (cdr parents-p))
+       (parents   (if parents-p
+                      parents
+                    (or (xdoc::get-default-parents (w state))
+                        '(acl2::undocumented))))
+
        ((unless (booleanp negatedp))
-        (er hard 'deflist ":negatedp must be a boolean, but is ~x0." negatedp))
-
+        (raise ":negatedp must be a boolean, but is ~x0." negatedp))
        ((unless (booleanp true-listp))
-        (er hard 'deflist ":true-listp must be a boolean, but is ~x0." true-listp))
-
+        (raise ":true-listp must be a boolean, but is ~x0." true-listp))
        ((unless (booleanp verify-guards))
-        (er hard 'deflist ":verify-guards must be a boolean, but is ~x0."
-            verify-guards))
-
+        (raise ":verify-guards must be a boolean, but is ~x0." verify-guards))
        ((unless (or (eq mode :logic)
                     (eq mode :program)))
-        (er hard 'deflist ":mode must be one of :logic or :program, but is ~
-                           ~x0." mode))
-
+        (raise ":mode must be one of :logic or :program, but is ~x0." mode))
        ((unless (or (eq mode :logic)
                     (not already-definedp)))
-        (er hard 'deflist ":mode :program and already-definedp cannot be used ~
-                           together."))
-
+        (raise ":mode :program and already-definedp cannot be used together."))
        ((unless (member elementp-of-nil '(t nil :unknown)))
-        (er hard 'deflist ":elementp-of-nil must be t, nil, or :unknown"))
+        (raise ":elementp-of-nil must be t, nil, or :unknown"))
 
        (short (or short
                   (and parents
@@ -529,10 +578,11 @@ of which recognizers require true-listp and which don't.</p>")
                  (and parents
                       (if true-listp
                           "<p>This is an ordinary @(see std::deflist).  It is
-\"strict\" in that it requires @('x') to be a \"properly\" nil-terminated
-list.</p>"
+                           \"strict\" in that it requires @('x') to be a
+                           \"properly\" nil-terminated list.</p>"
                         "<p>This is an ordinary @(see std::deflist).  It is
-\"loose\" in that it does not care whether @('x') is nil-terminated.</p>"))))
+                         \"loose\" in that it does not care whether @('x') is
+                         nil-terminated.</p>"))))
 
        (def (if already-definedp
                 nil
@@ -569,21 +619,37 @@ list.</p>"
        (events
         `((logic)
           (set-inhibit-warnings ;; implicitly local
-           "theory" "free" "non-rec" "double-rewrite")
+           "theory" "free" "non-rec" "double-rewrite" "subsume" "disable")
 
-          ;; We start with the basic requirements about elementp.  Note that these
-          ;; theorems are done in the user's current theory.  It's up to the user
-          ;; to be able to prove these.
-          (local (defthm deflist-local-booleanp-element-thm
-                   (or (equal ,element t)
-                       (equal ,element nil))
-                   :rule-classes :type-prescription))
+          (value-triple
+           (cw "~|~%Deflist: attempting to show, using your current theory, ~
+                that ~x0 is always Boolean valued.~%" ',element))
+
+          (with-output
+            :stack :pop
+            :off (acl2::summary acl2::observation)
+            (local (defthm deflist-local-booleanp-element-thm
+                     (or (equal ,element t)
+                         (equal ,element nil))
+                     :rule-classes :type-prescription)))
 
           ,@(and (not (eq elementp-of-nil  :unknown))
-                 `((local (maybe-defthm-as-rewrite
-                           deflist-local-elementp-of-nil-thm
-                           (equal (,elementp ,@(subst ''nil x elem-formals))
-                                  ',elementp-of-nil)))))
+                 `((value-triple
+                    (cw "~|~%Deflist: attempting to justify, using your ~
+                         current theory, :ELEMENTP-OF-NIL ~x0.~%"
+                        ',elementp-of-nil))
+
+                   (with-output
+                     :stack :pop
+                     :off (acl2::summary)
+                     (local (maybe-defthm-as-rewrite
+                             deflist-local-elementp-of-nil-thm
+                             (equal (,elementp ,@(subst ''nil x elem-formals))
+                                    ',elementp-of-nil))))))
+
+          (value-triple
+           (cw "~|~%Deflist: introducing ~x0 and proving deflist theorems.~%"
+               ',name))
 
           ,@def
 
@@ -715,7 +781,9 @@ list.</p>"
                    ;; and we get nowhere.  Solution: try to explicitly use the
                    ;; member rule if we get stuck.
                    (and stable-under-simplificationp
-                        '(:use ((:instance
+                        '(:in-theory (disable
+                                      ,(mksym elementp '-when-member-equal-of- name))
+                          :use ((:instance
                                  ,(mksym elementp '-when-member-equal-of- name)
                                  (,a (car ,x))
                                  (,x ,y)))))))
@@ -999,6 +1067,7 @@ list.</p>"
                             (,name ,@(subst `(list-fix ,x) x formals)))
                      :hints(("Goal"
                              :do-not-induct t
+                             :in-theory (disable ,(mksym name '-when-subsetp-equal))
                              :use ((:instance ,(mksym name '-when-subsetp-equal)
                                               (,x (mergesort ,x))
                                               (,y (list-fix ,x)))
@@ -1048,32 +1117,39 @@ list.</p>"
        ;; now do the rest of the events with name enabled, so they get included
        ;; in the section
        . ,(and rest
-               `((local (in-theory (enable ,name)))
-                 . ,rest)))))
+               `((value-triple (cw "Deflist: submitting /// events.~%"))
+                 (with-output
+                   :stack :pop
+                   (progn
+                     (local (in-theory (enable ,name)))
+                     . ,rest)))))))
 
 
-(defmacro deflist (name formals element
-                        &key
-                        (negatedp 'nil)
-                        (guard 't)
-                        (guard-debug 'nil)
-                        (guard-hints 'nil)
-                        (verify-guards 't)
-                        (already-definedp 'nil)
-                        (elementp-of-nil ':unknown)
-                        mode
-                        (parents 'nil parents-p)
-                        (short 'nil)
-                        (long 'nil)
-                        (true-listp 'nil)
-                        (rest 'nil))
-  `(make-event (let ((mode (or ',mode (default-defun-mode (w state))))
-                     (parents (if ',parents-p
-                                  ',parents
-                                (or (xdoc::get-default-parents (w state))
-                                    '(acl2::undocumented)))))
-                 (deflist-fn ',name ',formals ',element ',negatedp
-                   ',guard ',verify-guards ',guard-debug ',guard-hints
-                   ',already-definedp ',elementp-of-nil mode parents ',short
-                   ',long ',true-listp ',rest))))
+(defmacro deflist (name &rest args)
+  (b* ((__function__ 'deflist)
+       ((unless (symbolp name))
+        (raise "Name must be a symbol."))
+       (ctx (list 'deflist name))
+       ((mv main-stuff other-events) (split-/// ctx args))
+       ((mv kwd-alist formals-elem)
+        (extract-keywords ctx *deflist-valid-keywords* main-stuff nil))
+       ((unless (tuplep 2 formals-elem))
+        (raise "Wrong number of arguments to deflist."))
+       ((list formals element) formals-elem)
+       (verbosep (getarg :verbosep nil kwd-alist)))
+    `(with-output
+       :stack :push
+       ,@(if verbosep
+             nil
+           '(:gag-mode t :off (acl2::summary
+                               acl2::observation
+                               acl2::prove
+                               acl2::proof-tree
+                               acl2::event)))
+       (make-event
+        `(progn ,(deflist-fn ',name ',formals ',element ',kwd-alist
+                   ',other-events state)
+                (value-triple '(deflist ,',name)))))))
+
+
 

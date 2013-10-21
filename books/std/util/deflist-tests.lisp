@@ -214,7 +214,6 @@
   :verify-guards nil)
 
 
-
 ;; Additional arguments
 
 (deflist biglist1p (min x)
@@ -266,10 +265,30 @@
    (str::isubstrp "@(def |STD|::|RATLIST-IS-RATIONAL-LISTP|)"
                   (cdr (assoc :long topic)))))
 
+(deflist ratlist2 (x)
+  (rationalp x)
+  :true-listp t
+  :guard t
+  :parents (rationalp)
+  ///
+  (defthm ratlist2-is-rational-listp
+    (equal (ratlist2 x)
+           (rational-listp x))))
+
+(deflist ratlist3
+  :parents (rationalp)
+  :true-listp t
+  :guard t
+  (x)
+  (rationalp x)
+  ///
+  (defthm ratlist3-is-rational-listp
+    (equal (ratlist3 x)
+           (rational-listp x))))
 
 
 
-;; Hard cases for elementp stuff 
+;; Hard cases for elementp stuff
 
 (local (in-theory (theory 'minimal-theory)))
 

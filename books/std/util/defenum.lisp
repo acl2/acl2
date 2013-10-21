@@ -19,7 +19,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STD")
-(include-book "deflist")
+(include-book "support")
+(include-book "str/cat" :dir :system)
 (set-state-ok t)
 
 (defxdoc defenum
@@ -110,28 +111,37 @@ fast alist or other schemes, based on the elements it is given.</p>")
 ; (ACL2::TS-UNION ACL2::*TS-POSITIVE-INTEGER*
 ;                 ACL2::*TS-NON-T-NON-NIL-SYMBOL*)
 
+(defun dumb-collect-duplicates (x acc)
+  (declare (xargs :mode :program))
+  (cond ((atom x)
+         acc)
+        ((and (member-equal (car x) (cdr x))
+              (not (member-equal (car x) acc)))
+         (dumb-collect-duplicates (cdr x)
+                                  (cons (car x) acc)))
+        (t
+         (dumb-collect-duplicates (cdr x) acc))))
 
 (defun defenum-fn (name members mode parents short long state)
   (declare (xargs :mode :program))
-  (b* (((unless (symbolp name))
-        (er hard 'deflist "Name must be a symbol, but is ~x0." name))
+  (b* ((__function__ 'defenum)
+       ((unless (symbolp name))
+        (raise "Name must be a symbol, but is ~x0." name))
 
        (?mksym-package-symbol name)
        (x (intern-in-package-of-symbol "X" name))
 
        ((unless (consp members))
-        (er hard 'defenum "There must be at least one member."))
+        (raise "There must be at least one member."))
 
-       ((unless (uniquep members))
-        (er hard 'defenum
-            "The members must be a list of unique, but there are ~
-             duplicate entries for ~x0."
-            (duplicated-members members)))
+       ((unless (no-duplicatesp-equal members))
+        (raise "The members must be a list of unique, but there are duplicate ~
+                entries for ~x0."
+               (reverse (dumb-collect-duplicates members nil))))
 
        ((unless (or (eq mode :logic)
                     (eq mode :program)))
-        (er hard 'defenum
-            ":mode must be one of :logic or :program, but is ~x0." mode))
+        (raise ":mode must be one of :logic or :program, but is ~x0." mode))
 
        (body (cons 'or (defenum-members-to-tests members x)))
        (def `(defund ,name (,x)
