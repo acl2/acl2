@@ -1,0 +1,47 @@
+This directory supports building an ACL2 manual with the XDOC system.
+However, instead of opening the resulting manual/index.html in your
+browser, you might prefer to open the combined manual, which includes
+documentation not only for the ACL2 system but also for the ACL2
+community books.  The top-level Makefile in the books/ directory has
+instructions for how to build that combined manual.
+
+This directory contains files that allow you to produce the following:
+
+manual/	    	      	    ; ACL2 manual as an XDOC document
+rendered-doc.lisp	    ; ACL2 manual as ACL2 source file doc.lisp
+
+Here is how to rebuild manual/, which is the ACL2 XDOC manual, where
+the first step is optional:
+
+  ../../clean.pl
+  rm -rf manual acl2-manual.cert rendered-doc.lisp
+  ../../cert.pl acl2-manual --acl2 <your_acl2>
+
+To rebuild ACL2 source file doc.lisp to reflect the current contents
+of acl2-doc.lisp:
+
+  rm -f rendered-doc.lisp
+  ../../cert.pl render-doc.lisp --acl2 <your_acl2>
+  cp -p rendered-doc.lisp ../../../doc.lisp
+
+Alternatively, you may accomplish both of the above by standing in the
+ACL2 development directory, building ACL2, and then running:
+
+  make DOC ACL2=<your_acl2>
+
+Permanent contents of this directory:
+
+README                      ; this file
+acl2-customization.lsp
+acl2-doc.lisp               ; ACL2 documentation (in XDOC format)
+acl2-manual.lisp            ; certification creates manual/
+cert.acl2
+render-doc.lisp             ; certification creates rendered-doc.lisp
+tool.tgz                    ; see below
+unversioned-files-extra.txt ; svn support (see ../../README-svn)
+
+File tool.tgz contains files that were used to create the initial
+version of acl2-doc.lisp.  Moving forward, acl2-doc.lisp is to be
+modified by hand by the ACL2 community (specifically, by members of
+the acl2-books project).
+
