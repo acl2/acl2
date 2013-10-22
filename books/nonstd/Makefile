@@ -94,7 +94,7 @@ SAVED_DIR := $(shell pwd)
 STD_DIR := $(shell cd .. ; pwd)
 
 $(info Making links to ../*.pl files...)
-LINKS0 := $(shell for file in $(wildcard ../*.pl) ; \
+LINKS0 := $(shell for file in ../make_cert $(wildcard ../*.pl) ; \
 	do \
 	if [ ! -e $${file\#../} ] ; then ln -s $$file . ; fi ; \
 	done)
@@ -137,6 +137,10 @@ BAD_LINKS += std/top.*
 BAD_LINKS += misc/symbol-btree.* \
 	     misc/rtl-untranslate.* \
 	     misc/untranslate-patterns.*
+
+# The book tools/defconsts.lisp includes std/util/defconsts, but
+# std/util/ is not yet supported in ACL2(r).
+BAD_LINKS += tools/defconsts.*
 
 ifneq ($(BAD_LINKS), )
 REMOVE_LINKS := $(shell rm -f $(BAD_LINKS))
