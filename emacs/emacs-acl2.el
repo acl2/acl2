@@ -160,8 +160,6 @@
 (defvar *acl2-sources-dir*)
 
 ; Attempt to set *acl2-sources-dir*.
-; WARNING: If you change this form, then also change the same form in
-; browse-doc.el.
 (if (and (not (boundp '*acl2-sources-dir*))
 	 (file-name-absolute-p load-file-name))
     (let ((pattern (if (string-match "[\\]" load-file-name)
