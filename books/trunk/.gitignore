@@ -1,7 +1,3 @@
-Makefile-books
-Makefile-cache
-Makefile-deps
-Makefile-features
 Makefile-tmp
 *.cert
 *.out

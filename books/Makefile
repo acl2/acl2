@@ -258,6 +258,7 @@ ${error Error: variable ACL2_JOBS is obsolete -- use -j instead -- see :DOC book
 endif # ifneq ($(ACL2_JOBS), )
 
 ACL2 ?= acl2
+BUILD_DIR := $(ACL2_SYSTEM_BOOKS)/build
 
 SHELL := $(shell which bash)
 STARTJOB ?= $(SHELL)
@@ -351,41 +352,41 @@ endif # ifneq ($(EXCLUDED_PREFIXES), )
 # to stop at the root.
 $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
-  rm -f Makefile-books; \
+  rm -f $(BUILD_DIR)/Makefile-books; \
   time find . -name "*.lisp" \
     | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
-  > Makefile-books; \
-  ls -l Makefile-books)
+  > $(BUILD_DIR)/Makefile-books; \
+  ls -l $(BUILD_DIR)/Makefile-books)
 #$(info $(REBUILD_MAKEFILE_BOOKS))
 
 $(info Scanning for dependencies...)
 REBUILD_MAKEFILE_DEPS := $(shell \
-  rm -f Makefile-deps Makefile-deps.out; \
-  time (./cert.pl \
+  rm -f $(BUILD_DIR)/Makefile-deps $(BUILD_DIR)/Makefile-deps.out; \
+  time ($(BUILD_DIR)/cert.pl \
           --quiet \
-          --static-makefile Makefile-deps \
-          --cache Makefile-cache \
+          --static-makefile $(BUILD_DIR)/Makefile-deps \
+          --cache $(BUILD_DIR)/Makefile-cache \
           --acl2-books `pwd` \
-          --targets Makefile-books \
+          --targets $(BUILD_DIR)/Makefile-books \
           1>&2) ;\
   echo 'MFDEPS_DEBUG := $$(shell echo Reading book deps ' \
        'Makefile-deps created on' `date` '1>&2)' \
-    >> Makefile-deps; \
-  ls -l Makefile-deps)
+    >> $(BUILD_DIR)/Makefile-deps; \
+  ls -l $(BUILD_DIR)/Makefile-deps)
 #$(info $(REBUILD_MAKEFILE_DEPS))
 $(info Done scanning.)
 
 endif # ifndef NO_RESCAN
 
-include Makefile-deps
+include $(BUILD_DIR)/Makefile-deps
 
 $(info Determining ACL2 features (for ACL2 = $(ACL2)))
 ACL2_FEATURES := $(shell \
-  rm -f Makefile-features ; \
-  ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c \
+  rm -f $(BUILD_DIR)/Makefile-features ; \
+  cd $(BUILD_DIR); ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c \
      "$(ACL2) < cert_features.lsp &> Makefile-features.out" ;\
-  ls -l Makefile-features)
+  ls -l $(BUILD_DIR)/Makefile-features)
 
 $(info Determining whether Glucose is installed)
 # If glucose doesn't exist, then the error message saying it can't be
@@ -398,7 +399,7 @@ endif # ifdef GLUCOSE_EXISTS
 
 # Only conditionally include Makefile-features, so that make clean works even
 # if ACL2 isn't built.
--include Makefile-features
+-include $(BUILD_DIR)/Makefile-features
 $(info ACL2_HAS_HONS     := $(ACL2_HAS_HONS))
 $(info ACL2_HAS_PARALLEL := $(ACL2_HAS_PARALLEL))
 $(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
@@ -511,12 +512,12 @@ OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
 # script will remove things like .cert and .fasl files.
 
 CLEAN_FILES_EXPLICIT := \
-   Makefile-comp \
-   Makefile-comp-pre \
-   Makefile-deps \
-   Makefile-books \
-   Makefile-features \
-   Makefile-cache \
+   $(BUILD_DIR)/Makefile-comp \
+   $(BUILD_DIR)/Makefile-comp-pre \
+   $(BUILD_DIR)/Makefile-deps \
+   $(BUILD_DIR)/Makefile-books \
+   $(BUILD_DIR)/Makefile-features \
+   $(BUILD_DIR)/Makefile-cache \
    serialize/test.sao \
    bdd/benchmarks.lisp \
    nonstd/workshops/1999/calculus/book/tree.lisp
@@ -529,7 +530,7 @@ MORECLEAN_FILES_EXPLICIT := \
 
 clean_books:
 	@echo "Using clean.pl to remove certificates, etc."
-	./clean.pl
+	$(BUILD_DIR)/clean.pl
 
 # We test that directory centaur/quicklisp exists because it probably
 # doesn't for nonstd/, and we include this makefile from that
@@ -776,22 +777,22 @@ $(info Scanning for "make comp" dependencies...)
 # cert.pl call above, since we don't want to redefine the CERT_PL_xxx
 # variables.  But note that we don't use the ACL2_COMP_xxx variables.
 REBUILD_MAKEFILE_COMP := $(shell \
-  rm -f Makefile-comp Makefile-comp.out; \
-  time ((./cert.pl \
+  rm -f $(BUILD_DIR)/Makefile-comp $(BUILD_DIR)/Makefile-comp.out; \
+  time (($(BUILD_DIR)/cert.pl \
           --quiet \
-          --static-makefile Makefile-comp-pre \
-          --cache Makefile-cache \
+          --static-makefile $(BUILD_DIR)/Makefile-comp-pre \
+          --cache $(BUILD_DIR)/Makefile-cache \
           --acl2-books `pwd` \
-          --targets Makefile-books \
+          --targets $(BUILD_DIR)/Makefile-books \
           --no-boilerplate \
           --var-prefix ACL2_COMP) \
           1>&2) ;\
-          (cat Makefile-comp-pre | sed "s/[.]cert/.$(ACL2_COMP_EXT)/g" > \
-           Makefile-comp) 1>&2 ;\
+          (cat $(BUILD_DIR)/Makefile-comp-pre | sed "s/[.]cert/.$(ACL2_COMP_EXT)/g" > \
+           $(BUILD_DIR)/Makefile-comp) 1>&2 ;\
   echo 'MFDEPS_DEBUG := $$(shell echo Reading book comp ' \
        'Makefile-comp created on' `date` '1>&2)' \
-    >> Makefile-comp; \
-  ls -l Makefile-comp)
+    >> $(BUILD_DIR)/Makefile-comp; \
+  ls -l $(BUILD_DIR)/Makefile-comp)
 $(info Done scanning.)
 
 endif # ifndef NO_RESCAN
@@ -975,7 +976,7 @@ everything:
 # BOZO I probably broke this, we shouldn't use --targets, we should use ok_certs...
 critpath.txt: $(OK_CERTS)
 	echo "Building critpath.txt..."
-	time ./critpath.pl -m 2 --targets Makefile-books > critpath.txt
+	time $(BUILD_DIR)/critpath.pl -m 2 --targets Makefile-books > critpath.txt
 
 
 # Targets for building whole directories of books.

@@ -76,7 +76,7 @@ export ACL2_CUSTOMIZATION ?= NONE
 export STARTJOB ?= $(SHELL)
 
 # MAKE_CERT_PL must point to wherever make_cert_help.pl lives.
-export MAKE_CERT_PL ?= $(ACL2_SYSTEM_BOOKS)/make_cert_help.pl
+export MAKE_CERT_PL ?= $(ACL2_SYSTEM_BOOKS)/build/make_cert_help.pl
 
 
 # A cert file is made using the two-pass scheme iff the .acl2x file is

@@ -491,10 +491,10 @@ if (! $acl2_books) {
 	if (-d $tmp_acl2_books) {
 	    $acl2_books = $tmp_acl2_books;
 	} else {
-	    $acl2_books = $RealBin;
+	    $acl2_books = "$RealBin/..";
 	}
     } else {
-	$acl2_books = $RealBin;
+	$acl2_books = "$RealBin/..";
     }
 }
 
@@ -550,7 +550,7 @@ if ($params_file && open (my $params, "<", $params_file)) {
     }
     close($params);
 }
-	
+
 
 store_cache($cache, $cache_file);
 
@@ -620,11 +620,11 @@ unless ($no_makefile) {
     print $mf $mf_intro_string;
 
     unless ($no_boilerplate) {
-	print $mf "ACL2_SYSTEM_BOOKS ?= " . canonical_path($RealBin) . "\n";
+	print $mf "ACL2_SYSTEM_BOOKS ?= " . canonical_path("$RealBin/..") . "\n";
 	if ($bin_dir) {
 	    print $mf "export ACL2_BIN_DIR := ${bin_dir}\n";
 	}
-	print $mf "include \$(ACL2_SYSTEM_BOOKS)/make_cert\n\n";
+	print $mf "include \$(ACL2_SYSTEM_BOOKS)/build/make_cert\n\n";
     }
 
     foreach my $incl (@includes) {
@@ -634,7 +634,7 @@ unless ($no_makefile) {
     print $mf "\n.PHONY: all-cert-pl-certs\n\n";
     print $mf "# Depends on all certificate files.\n";
     print $mf "all-cert-pl-certs:\n\n";
-    
+
     # declare $var_prefix_CERTS to be the list of certificates
     print $mf $var_prefix . "_CERTS :=";
 
@@ -642,7 +642,7 @@ unless ($no_makefile) {
 	print $mf " \\\n     $cert";
 	# if (cert_get_param($cert, \%depmap, "acl2x")) {
 	#     my $acl2xfile = cert_to_acl2x($cert);
-	#     print $mf " \\\n     $acl2xfile"; 
+	#     print $mf " \\\n     $acl2xfile";
 	# }
     }
 
@@ -800,7 +800,7 @@ unless ($no_makefile) {
 	my $useacl2x = cert_get_param($cert, \%depmap, "acl2x") || 0;
 	# BOZO acl2x implies no pcert
 	my $pcert_ok = (! $useacl2x && cert_get_param($cert, \%depmap, "pcert")) || 0;
-	
+
 	my $bookdeps = cert_bookdeps($cert, \%depmap);
 	my $portdeps = cert_portdeps($cert, \%depmap);
 	my $srcdeps = cert_srcdeps($cert, \%depmap);
@@ -854,7 +854,7 @@ unless ($no_makefile) {
     }
 
     close($mf);
-    
+
     unless ($no_build) {
 	my $make_cmd = join(' ', (("$make -j $jobs -f $mf_name"
 				   . ($keep_going ? " -k" : "")),
