@@ -165,6 +165,9 @@ moreclean: clean-links
 clean: clean-more-nonstd
 
 clean-more-nonstd:
+	if [ ! -e clean.pl ] ; then \
+	  ln -s ../clean.pl clean.pl ; \
+	fi
 	rm -f workshops/1999/calculus/book/tree.lisp
 
 clean-links:
