@@ -621,6 +621,8 @@ functions.")
 
      (xdoc::change-parents keyword (keywordp))))
 
+(comp t)
+
 (local (xdoc::fix-the-hierarchy))
 
 (local (deflabel doc-rebuild-label))
