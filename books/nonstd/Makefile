@@ -93,10 +93,13 @@ EXCLUDED_PREFIXES += nsa/inverse-trig.cert \
 SAVED_DIR := $(shell pwd)
 STD_DIR := $(shell cd .. ; pwd)
 
-$(info Making links to ../*.pl files...)
-LINKS0 := $(shell for file in ../make_cert $(wildcard ../*.pl) ; \
+STD_BUILD_FILES := $(wildcard ../build/*.pl) ../build/make_cert
+
+$(info Making links to ../build files...)
+LINKS0 := $(shell cd build ; \
+	for file in $(STD_BUILD_FILES) ; \
 	do \
-	if [ ! -e $${file\#../} ] ; then ln -s $$file . ; fi ; \
+	if [ ! -e $${file\#../build/} ] ; then ln -s ../$$file . ; fi ; \
 	done)
 
 $(info Making links in subdirectories: $(LINKDIRS))
@@ -160,19 +163,26 @@ all: $(EXTRA_TARGETS)
 # Warning: targets like all-fasl have not been updated to work for
 # nonstd.
 
+# Test target:
+dummy2:
+	@echo "Dummy target: do nothing"
+
 moreclean: clean-links
 
 clean: clean-more-nonstd
 
 clean-more-nonstd:
-	if [ ! -e clean.pl ] ; then \
-	  ln -s ../clean.pl clean.pl ; \
+	if [ ! -e build/clean.pl ] ; then \
+	  cd build ; ln -s ../../build/clean.pl clean.pl ; \
+	fi
+	if [ ! -e build/cert.pl ] ; then \
+	  cd build ; ln -s ../../build/cert.pl cert.pl ; \
 	fi
 	rm -f workshops/1999/calculus/book/tree.lisp
 
 clean-links:
 	@echo 'Cleaning links *.pl:'
-	@(for file in $(wildcard *.pl) ; do \
+	@(for file in $(wildcard build/make_cert build/*.pl) ; do \
 	 if [ -L $$file ] ; then rm -f $$file ; fi ; done) >& /dev/null
 	@echo "Cleaning links from directories:"
 	@for book_dir in $(LINKDIRS) ; \
