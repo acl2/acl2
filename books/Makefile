@@ -303,10 +303,14 @@ endif # USE_QUICKLISP
 
 .PHONY: quicklisp_clean
 
+# We check for QUICKLISP_DIR since this Makefile is included by
+# nonstd/Makefile, and there is no nonstd/$(QUICKLISP_DIR) directory.
 quicklisp_clean:
-	@echo "Removing downloaded quicklisp files (if any)"
-	@cd $(QUICKLISP_DIR); rm -rf setup.lisp quicklisp.lisp asdf.lisp \
-          cache dists local-projects tmp install.out quicklisp Makefile-tmp
+	@if [ -d $(QUICKLISP_DIR) ] ; then \
+	  echo "Removing downloaded quicklisp files (if any)" ; \
+	  cd $(QUICKLISP_DIR); rm -rf setup.lisp quicklisp.lisp asdf.lisp \
+          cache dists local-projects tmp install.out quicklisp Makefile-tmp ; \
+	fi
 
 clean: quicklisp_clean
 
