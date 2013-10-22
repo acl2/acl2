@@ -81,14 +81,23 @@
 
 (defttag :open-output-channel!)
 
-(acl2::defconsts state
-  (b* ((- (cw "Writing rendered-doc.lisp~%"))
-       ((mv channel state) (open-output-channel! "rendered-doc.lisp"
+(defun set-current-package-state (pkg state)
+  (mv-let (erp val state)
+          (acl2::set-current-package pkg state)
+          (declare (ignore val))
+          (assert$ (null erp)
+                   state)))
+
+(acl2::defconsts
+ (& & state)
+ (state-global-let*
+  ((current-package "ACL2" set-current-package-state))
+  (b* ((- (cw "Writing rendered-doc.lsp~%"))
+       ((mv channel state) (open-output-channel! "rendered-doc.lsp"
                                                  :character state))
        ((unless channel)
-        (er hard? 'rendered-doc.lisp
-            "can't open rendered-doc.lisp for output.")
-        state)
+        (cw "can't open rendered-doc.lsp for output.")
+        (acl2::silent-error state))
        (state (princ$ "; Documentation for the ACL2 Theorem Prover
 ; WARNING: GENERATED FILE, DO NOT HAND EDIT!
 ; The contents of this file are derived from ACL2 Community Book
@@ -126,11 +135,11 @@
 (in-package \"ACL2\")
 
 (defconst *acl2-system-documentation* '"
-                    channel state))
+                      channel state))
        (state (fms! "~x0"
                     (list (cons #\0 *rendered*))
                     channel state nil))
        (state (fms! ")" nil channel state nil))
        (state (newline channel state))
        (state (close-output-channel channel state)))
-    state))
+      (value nil))))
