@@ -3042,7 +3042,7 @@ Subtopics
 
   [Break-on-error]
       Break when encountering a hard or soft error caused by ACL2")
- (ACL2::BOOKS
+ (BOOKS
   "Parents: ACL2::ACL2 and ACL2::NOTE1.
 
   Files of ACL2 event forms
@@ -3172,7 +3172,7 @@ Subtopics
 
   [Book-compiled-file]
       Creating and loading of compiled and expansion files for [books]")
- (ACL2::THEORIES
+ (THEORIES
   "Parent: ACL2::ACL2.
 
   Sets of [rune]s to [enable]/[disable] in concert
@@ -3404,7 +3404,7 @@ Subtopics
 
   [Active-runep]
       Check that a [rune] exists and is [enable]d")
- (ACL2::SWITCHES-PARAMETERS-AND-MODES
+ (SWITCHES-PARAMETERS-AND-MODES
   "Parent: ACL2::ACL2.
 
   A variety of ways to modify the ACL2 environment
@@ -3762,7 +3762,7 @@ Subtopics
 
   [ACL2-customization]
       File of initial commands for ACL2 to run at [startup]")
- (ACL2::STOBJ
+ (STOBJ
   "Parent: ACL2::ACL2.
 
   Single-threaded objects or ``von Neumann bottlenecks''
@@ -3914,7 +3914,7 @@ Subtopics
 
   [Declare-stobjs]
       Declaring a formal parameter name to be a single-threaded object")
- (ACL2::SERIALIZE
+ (SERIALIZE
   "Parent: ACL2::ACL2.
 
   Routines for saving ACL2 objects to files, and later restoring them
@@ -3953,7 +3953,7 @@ Subtopics
 
   [Serialize-alternatives]
       Alternatives to the [serialize] routines")
- (ACL2::RULE-CLASSES
+ (RULE-CLASSES
   "Parent: ACL2::ACL2.
 
   Adding rules to the database
@@ -4322,7 +4322,7 @@ Subtopics
 
   [Built-in-clause]
       To build a clause into the simplifier")
- (ACL2::RELEASE-NOTES
+ (RELEASE-NOTES
   "Parent: ACL2::ACL2.
 
   Pointers to what has changed
@@ -4603,7 +4603,7 @@ Subtopics
 
   [I-close]
       ACL2(r) test for whether two numbers are infinitesimally close")
- (ACL2::|Pages Written Especially for the Tours|
+ (|Pages Written Especially for the Tours|
   "Parent: ACL2::ACL2.
 
   Pages Written Especially for the Tours
@@ -5064,7 +5064,7 @@ Subtopics
 
   [Checkpoint-forced-goals]
       Cause forcing goals to be checkpointed in proof trees")
- (ACL2::PROOF-CHECKER
+ (PROOF-CHECKER
   "Parent: ACL2::ACL2.
 
   Support for low-level interaction
@@ -5140,7 +5140,7 @@ Subtopics
 
   [Define-pc-help]
       Define a macro command whose purpose is to print something")
- (ACL2::PROGRAMMING
+ (PROGRAMMING
   "Parent: ACL2::ACL2.
 
   Programming in ACL2
@@ -5249,7 +5249,7 @@ Subtopics
 
   [ACL2-built-ins]
       Built-in ACL2 functions")
- (ACL2::PARALLELISM
+ (PARALLELISM
   "Parent: ACL2::ACL2.
 
   Experimental extension for parallel execution and proofs
@@ -5304,7 +5304,7 @@ Subtopics
 
   [Compiling-ACL2p]
       Compiling ACL2(p)")
- (ACL2::OTHER
+ (OTHER
   "Parent: ACL2::ACL2.
 
   Other commonly used top-level functions
@@ -5471,7 +5471,7 @@ Subtopics
 
   [Accumulated-persistence]
       To get statistics on which [rune]s are being tried")
- (ACL2::MISCELLANEOUS
+ (MISCELLANEOUS
   "Parent: ACL2::ACL2.
 
   A miscellany of documented functions and concepts (often cited in
@@ -6045,7 +6045,48 @@ Subtopics
 
   [&allow-other-keys]
       See [macro-args].")
- (ACL2::IO
+ (LEGACY-DOCUMENTATION
+  "Parent: ACL2::ACL2.
+
+  Parent section for the legacy \"documentation\" topic (likely to be
+  deleted soon)
+
+
+Subtopics
+
+  [More-doc]
+      A continuation of the :[doc] [documentation]
+
+  [More!]
+      Another response to ``(type :more for more, :more! for the rest)''
+
+  [More]
+      Your response to :[doc] or :[more]'s ``(type :more...)''
+
+  [Markup]
+      The markup language for ACL2 [documentation] strings
+
+  [Help]
+      Brief survey of ACL2 features
+
+  [Docs]
+      Available [documentation] topics (by section)
+
+  [Doc-string]
+      Formatted [documentation] strings
+
+  [Doc!]
+      All the [documentation] for a name (type :doc! name)
+
+  [Broken-link]
+      Placeholder for link to documentation from community books
+
+  [Args]
+      args, [guard], type, [constraint], etc., of a function symbol
+
+  [*terminal-markup-table*]
+      A [markup] table used for printing to the terminal")
+ (IO
   "Parent: ACL2::ACL2.
 
   Input/output facilities in ACL2
@@ -6387,7 +6428,7 @@ Subtopics
 
   [*standard-ci*]
       An ACL2 character-based analogue of CLTL's *standard-input*")
- (ACL2::INTRODUCTION-TO-THE-TAU-SYSTEM
+ (INTRODUCTION-TO-THE-TAU-SYSTEM
   "Parent: ACL2::ACL2.
 
   A decision procedure for runtime types
@@ -6649,7 +6690,7 @@ Subtopics
 
   [Dealing-with-tau-problems]
       Some advice on dealing with problems caused by the tau system")
- (ACL2::HONS-AND-MEMOIZATION
+ (HONS-AND-MEMOIZATION
   "Parent: ACL2::ACL2.
 
   Hash cons, function memoization, and applicative hash tables
@@ -7132,7 +7173,7 @@ Subtopics
 
   [Clear-hash-tables]
       Deprecated feature")
- (ACL2::HISTORY
+ (HISTORY
   "Parent: ACL2::ACL2.
 
   Functions that display or change history
@@ -7240,7 +7281,7 @@ Subtopics
 
   [Gcs]
       See [get-command-sequence].")
- (ACL2::FORWARD-CHAINING-REPORTS
+ (FORWARD-CHAINING-REPORTS
   "Parent: ACL2::ACL2.
 
   To see reports about the forward chaining process
@@ -7543,7 +7584,7 @@ Subtopics
 
   [Fc-report]
       To report on the forward chaining activity in the most recent proof")
- (ACL2::EVENTS
+ (EVENTS
   "Parent: ACL2::ACL2.
 
   Functions that extend the logic
@@ -7773,200 +7814,58 @@ Subtopics
  (DOCUMENTATION
   "Parent: ACL2::ACL2.
 
-  Functions that display documentation
+  ACL2 system (and books) documentation
 
-  This section explains the ACL2 online documentation system. Thus,
-  most of it assumes that you are typing at the terminal, inside an
-  ACL2 session. If you are reading this description in another
-  setting (for example, in a web browser, in Emacs info, or on
-  paper), simply ignore the parts of this description that involve
-  typing at the terminal.
+  Here, we explain documentation for ACL2 and its community books.
 
-  ACL2 users are welcome to contribute additional documentation. See
-  the web page http://www.cs.utexas.edu/users/moore/acl2/contrib/.
+  If you are using a release copy of ACL2, then we recommend that you
+  use a web browser to view the combined acl2+books manual. You can
+  view it on the web here:
 
-  For an introduction to the ACL2 online documentation system, type
-  :[more] below. Whenever the documentation system concludes with
-  ``(type :more for more, :more! for the rest)'' you may type :[more]
-  to see the next block of documentation.
+  http://fv.centtech.com/acl2/latest/doc/
 
-  Topics related to documentation are documented individually:
+  However, you can also get documentation at the terminal by typing
+  :[doc] followed by the topic name, for example
 
-  To view the documentation in a web browser, open a browser to file
-  doc/HTML/acl2-doc.html under your ACL2 source directory, or just go
-  to the ACL2 home page at
-  http://www.cs.utexas.edu/users/moore/acl2/.
+    :doc rewrite
 
-  Alternatively, follow a link on the ACL2 home page to a manual, known
-  as the xdoc manual, which incorporates (but rearranges) the ACL2
-  documentation as well as documentation from many ACL2 community
-  books. You can build a local copy of that manual; see for example
+  or
+
+    (doc 'rewrite)
+
+  ACL2 users are welcome to contribute to the ACL2 system
+  documentation. See community book books/system/doc/acl2-doc.lisp.
+
+  You can build a local copy of the combined manual; see for example
   the section ``BUILDING THE XDOC MANUAL'' in the community books
-  Makefile for instructions.
+  Makefile for instructions. While we don't recommend building the
+  ACL2 manual without the community books, you may do so; see the
+  README file in community books directory books/system/doc/.
 
-  To use Emacs Info (inside Emacs), first load distributed file
-  emacs/emacs-acl2.el (perhaps inside your .emacs file) and then
-  execute meta-x acl2-info. In order to see true links to external
-  web pages, you may find the following addition to your .emacs file
-  to be helpful.
+  The ACL2 system documentation includes topics not only for names of
+  functions, macros, and constants, but also names of certain
+  important ideas. For example, see [rewrite] and see [meta] to learn
+  about :[rewrite] rules and :[meta] rules, respectively. See [hints]
+  to learn about the structure of the :[hints] argument to the
+  prover.
 
-    ; For emacs-version 22 or (presumably) later, you can probably set
-    ; arrange that in Emacs Info, URLs become links, in the sense that
-    ; if you hit <RETURN> while standing on a URL, then you will be
-    ; taken to that location in a web browser.  If this does not happen
-    ; automatically, then evaluating the `setq' form below might work
-    ; if you have firefox.  If that does not work, then you can probably
-    ; figure out what to do as follows.  First type
-    ;   control-h v browse-url-browser-function
-    ; and then from the resulting help page,
-    ; hit <return> on the link ``customize'' in:
-    ; ``You can customize this variable''
-    ; and then follow instructions.
-    (setq browse-url-browser-function (quote browse-url-firefox))
-
-  There is a print version of the documentation, though we recommend
-  using one of the other methods (web, Emacs Info, or online) to
-  browse it. If you really want the print version, you can find it
-  here:
-  http://www.cs.utexas.edu/users/moore/publications/acl2-book.ps.gz.
-
-  Below we focus on how to access the online documentation, but some of
-  the discussion is relevant to other formats.
-
-  The ACL2 online documentation feature allows you to see extensive
-  documentation on many ACL2 functions and ideas. You may use the
-  documentation facilities to document your own ACL2 functions and
-  theorems.
-
-  If there is some name you wish to know more about, then type
-
-    ACL2 !>:doc name
-
-  in the top-level loop. If the name is documented, a brief blurb will
-  be printed. If the name is not documented, but is ``similar'' to
-  some documented names, they will be listed. Otherwise, nil is
-  returned.
-
-  Every name that is documented contains a one-line description, a few
-  notes, and some details. :[Doc] will print the one-liner and the
-  notes. When :[doc] has finished it stops with the message ``(type
-  :more for more, :more! for the rest)'' to remind you that details
-  are available. If you then type
-
-    ACL2 !>:more
-
-  a block of the continued text will be printed, again concluding with
-  ``(type :more for more, :more! for the rest)'' if the text
-  continues further, or concluding with ``*-'' if the text has been
-  exhausted. By continuing to type :[more] until exhausting the text
-  you can read successive blocks. Alternatively, you can type
-  :[more!] to get all the remaining blocks.
-
-  If you want to get the details and don't want to see the elementary
-  stuff typed by :[doc] name, type:
-
-    ACL2 !>:MORE-DOC name
-
-  We have documented not just function names but names of certain
-  important ideas too. For example, see [rewrite] and see [meta] to
-  learn about :[rewrite] rules and :[meta] rules, respectively. See
-  [hints] to learn about the structure of the :[hints] argument to
-  the prover. The [deflabel] event (see [deflabel]) is a way to
-  introduce a logical name for no reason other than to attach
-  documentation to it; also see [defdoc].
-
-  How do you know what names are documented? There is a documentation
-  database which is querried with the :[docs] command.
-
-  The documentation database is divided into sections. The sections are
-  listed by
-
-    ACL2 !>:docs *
-
-  Each section has a name, sect, and by typing
-
-    ACL2 !>:docs sect
-
-  or equivalently
-
-    ACL2 !>:doc sect
-
-  you will get an enumeration of the topics within that section. Those
-  topics can be further explored by using :[doc] (and :[more]) on
-  them. In fact the section name itself is just a documented name.
-  :[more] generally gives an informal overview of the general subject
-  of the section.
-
-    ACL2 !>:docs **
-
-  will list all documented topics, by section. This fills several pages
-  but might be a good place to start.
-
-  If you want documentation on some topic, but none of our names or
-  brief descriptions seem to deal with that topic, you can invoke a
-  command to search the text in the database for a given string. This
-  is like the GNU Emacs ``[apropos]'' command.
-
-    ACL2 !>:docs \"functional inst\"
-
-  will list every documented topic whose :[doc] or :[more-doc] text
-  includes the substring \"functional inst\", where case and the exact
-  number of spaces are irrelevant.
-
-  If you want documentation on an ACL2 function or macro and the
-  documentation database does not contain any entries for it, there
-  are still several alternatives.
+  If you want documentation on an ACL2 function or macro that is not
+  documented, there are still several alternatives.
 
     ACL2 !>:args fn
 
   will print the arguments and some other relevant information about
   the named function or macro. This information is all gleaned from
-  the definition (not from the documentation database) and hence this
-  is a definitive way to determine if fn is defined as a function or
-  macro.
+  the definition and hence this is a definitive way to determine if
+  fn is defined as a function or macro.
 
   You might also want to type:
 
     ACL2 !>:pc fn
 
-  which will print the [command] which introduced fn. You should see
+  which will print the [command] that introduced fn. You should see
   [command-descriptor] for details on the kinds of input you can give
   the :[pc] command.
-
-  The entire ACL2 documentation database is user extensible. That is,
-  if you document your function definitions or theorems, then that
-  documentation is made available via the database and its query
-  commands.
-
-  The implementation of our online documentation system makes use of
-  Common Lisp's ``documentation strings.'' While Common Lisp permits
-  a documentation string to be attached to any defined concept,
-  Common Lisp assigns no interpretation to these strings. ACL2
-  attaches special significance to documentation strings that begin
-  with the characters ``:Doc-Section''. When such a documentation
-  string is seen, it is stored in the database and may be displayed
-  via :[doc], :[more], :[docs], etc. Such documentation strings must
-  follow rigid syntactic rules to permit their processing by our
-  commands. These are spelled out elsewhere; see [doc-string].
-
-  A description of the structure of the documentation database may also
-  be found; see [doc-string].
-
-  Finally: To build the HTML documentation, proceed with the following
-  sequence of steps.
-
-      1. In the doc/ subdirectory of the ACL2 distribution, start ACL2 and
-      then evaluate (certify-book \"write-acl2-html\").
-
-      2. Exit ACL2 and start it up again (or, evaluate :[u]).
-
-      3. Include the documented [books] within your ACL2 loop using
-      [include-book].
-
-      4. Evaluate (include-book \"../doc/write-acl2-html\" :dir :system).
-
-      5. Call macro write-html-file, following the instructions at the end
-      of distributed file doc/write-acl2-html.lisp.
 
 
 Subtopics
@@ -7974,42 +7873,9 @@ Subtopics
   [Nqthm-to-ACL2]
       ACL2 analogues of Nqthm functions and commands
 
-  [More-doc]
-      A continuation of the :[doc] [documentation]
-
-  [More!]
-      Another response to ``(type :more for more, :more! for the rest)''
-
-  [More]
-      Your response to :[doc] or :[more]'s ``(type :more...)''
-
-  [Markup]
-      The markup language for ACL2 [documentation] strings
-
-  [Help]
-      Brief survey of ACL2 features
-
-  [Docs]
-      Available [documentation] topics (by section)
-
-  [Doc-string]
-      Formatted [documentation] strings
-
-  [Doc!]
-      All the [documentation] for a name (type :doc! name)
-
   [Doc]
-      Brief [documentation] (type :doc name)
-
-  [Broken-link]
-      Placeholder for link to documentation from community books
-
-  [Args]
-      args, [guard], type, [constraint], etc., of a function symbol
-
-  [*terminal-markup-table*]
-      A [markup] table used for printing to the terminal")
- (ACL2::BREAK-REWRITE
+      [Documentation] at the terminal")
+ (BREAK-REWRITE
   "Parent: ACL2::ACL2.
 
   The read-eval-print loop entered to [monitor] rewrite rules
@@ -8291,7 +8157,7 @@ Subtopics
 
   [Break-lemma]
       A quick introduction to breaking rewrite rules in ACL2")
- (ACL2::BDD
+ (BDD
   "Parent: ACL2::ACL2.
 
   Ordered binary decision diagrams with rewriting
@@ -8339,7 +8205,7 @@ Subtopics
 
   [Bdd-algorithm]
       Summary of the BDD algorithm in ACL2")
- (ACL2::ACL2-TUTORIAL
+ (ACL2-TUTORIAL
   "Parent: ACL2::ACL2.
 
   Tutorial introduction to ACL2
@@ -8439,7 +8305,7 @@ Subtopics
 
   [ACL2-as-standalone-program]
       Calling ACL2 from another program")
- (ACL2::ABOUT-ACL2
+ (ABOUT-ACL2
   "Parent: ACL2::ACL2.
 
   About ACL2
@@ -8550,7 +8416,7 @@ Subtopics
   for more information.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::ZERO-TEST-IDIOMS
+ (ZERO-TEST-IDIOMS
   "Parent: ACL2::PROGRAMMING.
 
   How to test for 0
@@ -8717,7 +8583,7 @@ Subtopics
   the primary raw lisp definition to check (= i 0) as the first
   terminating condition (because the primary code is executed only on
   integers).")
- (ACL2::|You Must Think about the Use of a Formula as a Rule|
+ (|You Must Think about the Use of a Formula as a Rule|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   You Must Think about the Use of a Formula as a Rule
@@ -8902,7 +8768,7 @@ Subtopics
   Value is a function symbol that is known to be a well-founded
   relation in the sense that a rule of class :[well-founded-relation]
   has been proved about it. See [well-founded-relation].")
- (ACL2::|What is a Mechanical Theorem Prover(Q) (cont)|
+ (|What is a Mechanical Theorem Prover(Q) (cont)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   What is a Mechanical Theorem Prover? (cont)
@@ -8913,7 +8779,7 @@ Subtopics
   Click [here] to continue downward.
 
   []")
- (ACL2::|What is a Mechanical Theorem Prover(Q)|
+ (|What is a Mechanical Theorem Prover(Q)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   What is a Mechanical Theorem Prover?
@@ -8933,7 +8799,7 @@ Subtopics
   to wait) limit the problems they can solve.
 
   []")
- (ACL2::|What is a Mathematical Logic(Q)|
+ (|What is a Mathematical Logic(Q)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   What is a Mathematical Logic?
@@ -8954,7 +8820,7 @@ Subtopics
   So, if you want to determine if some formula is true, prove it.
 
   []")
- (ACL2::|What is Required of the User(Q)|
+ (|What is Required of the User(Q)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   What is Required of the User?
@@ -8983,7 +8849,7 @@ Subtopics
   responsibility.
 
   []")
- (ACL2::|What Is ACL2(Q)|
+ (|What Is ACL2(Q)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   What Is ACL2?
@@ -9029,7 +8895,7 @@ Subtopics
   See [wormhole] for a discussion of wormholes. (Wormhole-p state)
   returns (mv nil t state) when evaluated inside a wormhole, else (mv
   nil nil state).")
- (ACL2::WORMHOLE-IMPLEMENTATION
+ (WORMHOLE-IMPLEMENTATION
   "Parent: ACL2::MISCELLANEOUS.
 
   Notes on how wormholes are implemented
@@ -10700,7 +10566,7 @@ Subtopics
   Note that with-fast-alist will cause logically tail-recursive
   functions not to execute tail-recursively if its cleanup phase
   happens after the tail-recursive call returns.")
- (ACL2::WHY-BRR
+ (WHY-BRR
   "Parent: ACL2::MISCELLANEOUS.
 
   An explanation of why ACL2 has an explicit [brr] mode
@@ -10919,7 +10785,7 @@ Subtopics
   [untrace$]; upon completion, wet then applies [trace$] to re-trace
   any functions that it had untraced, using their original trace
   specs.")
- (ACL2::WELL-FOUNDED-RELATION
+ (WELL-FOUNDED-RELATION
   "Parent: ACL2::RULE-CLASSES.
 
   Show that a relation is well-founded on a set
@@ -11102,7 +10968,7 @@ Subtopics
   waterfall
 
   See [set-waterfall-printing].")
- (ACL2::WATERFALL-PARALLELISM-FOR-BOOK-CERTIFICATION
+ (WATERFALL-PARALLELISM-FOR-BOOK-CERTIFICATION
   "Parent: ACL2::PARALLELISM.
 
   For ACL2(p): using waterfall parallelism during book certification
@@ -11135,8 +11001,7 @@ Subtopics
   For ACL2(p): configuring the parallel execution of the waterfall
 
   See [set-waterfall-parallelism].")
- (ACL2::WATERFALL
-      "Parent: ACL2::MISCELLANEOUS.
+ (WATERFALL "Parent: ACL2::MISCELLANEOUS.
 
   See [hints-and-the-waterfall].")
  (WALKABOUT
@@ -11237,7 +11102,7 @@ Subtopics
     :5
     F
     :")
- (ACL2::VERSION
+ (VERSION
   "Parent: ACL2::MISCELLANEOUS.
 
   ACL2 Version Number
@@ -11518,7 +11383,7 @@ Subtopics
 
   See [guard-obligation] if you want to obtain guard proof obligations
   for use in a program.")
- (ACL2::VERIFY-GUARDS-EAGERNESS
+ (VERIFY-GUARDS-EAGERNESS
   "Parent: ACL2::SWITCHES-PARAMETERS-AND-MODES.
 
   See [set-verify-guards-eagerness].")
@@ -11980,7 +11845,7 @@ Subtopics
   error occurs and the value of :check is a string or indeed any
   ``message'' suitable for printing by [fmt] when supplied as a value
   for tilde-directive ~@, then that string or message is printed.")
- (ACL2::|Using the Associativity of App to Prove a Trivial Consequence|
+ (|Using the Associativity of App to Prove a Trivial Consequence|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Using the Associativity of App to Prove a Trivial Consequence
@@ -11997,13 +11862,13 @@ Subtopics
   Below we show the proof
 
   []")
- (ACL2::|Undocumented Topic|
+ (|Undocumented Topic|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Undocumented Topic
 
   This topic has not yet been documented. Sorry")
- (ACL2::USING-TABLES-EFFICIENTLY
+ (USING-TABLES-EFFICIENTLY
   "Parent: TABLE.
 
   Notes on how to use tables efficiently
@@ -12088,7 +11953,7 @@ Subtopics
 
   [Make-event]
       Evaluate (expand) a given form and then evaluate the result")
- (ACL2::USING-ENABLED-RULES
+ (USING-ENABLED-RULES
   "Parent: ACL2::MISCELLANEOUS.
 
   Avoiding :use [hints] for [enable]d :[rewrite] rules
@@ -12162,7 +12027,7 @@ Subtopics
 
   In general, then, a solution is to disable the rewrite rule that you
   are supplying in a :use hint.")
- (ACL2::USING-COMPUTED-HINTS-8
+ (USING-COMPUTED-HINTS-8
   "Parents: ACL2::MISCELLANEOUS and ACL2::USING-COMPUTED-HINTS.
 
   Some Final Comments
@@ -12201,7 +12066,7 @@ Subtopics
   If you start using computed hints extensively, please contact the
   developers of ACL2 and let us know what you are doing with them and
   how we can help.")
- (ACL2::USING-COMPUTED-HINTS-7
+ (USING-COMPUTED-HINTS-7
   "Parents: ACL2::MISCELLANEOUS and ACL2::USING-COMPUTED-HINTS.
 
   Using the stable-under-simplificationp flag
@@ -12414,7 +12279,7 @@ Subtopics
                nil))
             (t
              nil)))")
- (ACL2::USING-COMPUTED-HINTS-6
+ (USING-COMPUTED-HINTS-6
   "Parents: ACL2::MISCELLANEOUS and ACL2::USING-COMPUTED-HINTS.
 
   Using the computed-hint-replacement feature
@@ -12664,7 +12529,7 @@ Subtopics
 
   So we succeeded in getting a hint to fire indefinitely but allow a
   full simplification between rounds.")
- (ACL2::USING-COMPUTED-HINTS-5
+ (USING-COMPUTED-HINTS-5
   "Parents: ACL2::MISCELLANEOUS and ACL2::USING-COMPUTED-HINTS.
 
   Debugging Computed Hints
@@ -12725,7 +12590,7 @@ Subtopics
   yourself using this utility let us know and we'll consider putting
   it into the system itself. But it does illustrate that you can use
   computed hints to do unusual things.")
- (ACL2::USING-COMPUTED-HINTS-4
+ (USING-COMPUTED-HINTS-4
   "Parents: ACL2::MISCELLANEOUS and ACL2::USING-COMPUTED-HINTS.
 
   Computing the Hints
@@ -12863,7 +12728,7 @@ Subtopics
            (:INSTANCE ALL-SWAPS-HAVE-THE-PROPERTY (X (SWAP A)))))
 
   had been present.")
- (ACL2::USING-COMPUTED-HINTS-3
+ (USING-COMPUTED-HINTS-3
   "Parents: ACL2::MISCELLANEOUS and ACL2::USING-COMPUTED-HINTS.
 
   Hints as a Function of the Goal (not its Name)
@@ -12981,7 +12846,7 @@ Subtopics
   in \"[1]Subgoal 1\". In this case, no harm is done. The hint won't
   fire on \"[1]Subgoal 1\" because it is a child of \"[1]Subgoal 1\" and
   the hint fired on that.")
- (ACL2::USING-COMPUTED-HINTS-2
+ (USING-COMPUTED-HINTS-2
   "Parents: ACL2::MISCELLANEOUS and ACL2::USING-COMPUTED-HINTS.
 
   One Hint to Every Top-Level Goal in a Forcing Round
@@ -13082,7 +12947,7 @@ Subtopics
   Recall again that in all the examples above we have exhibited the
   test in a computed hint of the form (if test '(:key1 val1 ...)
   nil).")
- (ACL2::USING-COMPUTED-HINTS-1
+ (USING-COMPUTED-HINTS-1
   "Parents: ACL2::MISCELLANEOUS and ACL2::USING-COMPUTED-HINTS.
 
   Driving Home the Basics
@@ -13129,7 +12994,7 @@ Subtopics
 
     (defthm main (big-thm a b c)
       :hints (my-special-hint))")
- (ACL2::USING-COMPUTED-HINTS
+ (USING-COMPUTED-HINTS
   "Parent: ACL2::MISCELLANEOUS.
 
   How to use computed hints
@@ -13174,7 +13039,7 @@ Subtopics
 
   [Add-default-hints]
       Add to the default hints")
- (ACL2::USER-DEFINED-FUNCTIONS-TABLE
+ (USER-DEFINED-FUNCTIONS-TABLE
   "Parent: ACL2::SWITCHES-PARAMETERS-AND-MODES.
 
   An advanced [table] used to replace certain system functions
@@ -13254,8 +13119,7 @@ Subtopics
   untranslation routine encounters the constant (QUOTE (A B C D)), it
   will replace it with *a*, and the usual untranlation routine will
   print this as *A*.")
- (ACL2::USE
-      "Parent: ACL2::MISCELLANEOUS.
+ (USE "Parent: ACL2::MISCELLANEOUS.
 
   Hints keyword :USE
 
@@ -13352,7 +13216,7 @@ Subtopics
   Untrace$ undoes the effect of [trace$]. See [trace$]. The value
   returned by untrace$ gives the list of functions for which tracing
   is being removed.")
- (ACL2::UNSUPPORTED-WATERFALL-PARALLELISM-FEATURES
+ (UNSUPPORTED-WATERFALL-PARALLELISM-FEATURES
   "Parent: ACL2::PARALLEL-PROOF.
 
   Proof features not supported with waterfall-parallelism enabled
@@ -13512,7 +13376,7 @@ Subtopics
   user should be aware that any changes made to the memoization state
   while waterfall parallelism is enabled will be lost once waterfall
   parallelism is disabled.")
- (ACL2::UNSUPPORTED-PARALLELISM-FEATURES
+ (UNSUPPORTED-PARALLELISM-FEATURES
   "Parent: ACL2::PARALLELISM.
 
   ACL2 features not supported in ACL2(p)
@@ -13751,7 +13615,7 @@ Subtopics
   Union$ is similar to the Common Lisp primitive union. However, Common
   Lisp does not specify the order of elements in the result of a call
   of union.")
- (ACL2::UNCERTIFIED-BOOKS
+ (UNCERTIFIED-BOOKS
   "Parent: ACL2::BOOKS.
 
   Invalid [certificate]s and uncertified [books]
@@ -13975,7 +13839,7 @@ Subtopics
   The keyword [command] :u is the same as :[ubt] :[max], but with
   related queries suppressed appropriately. :[Oops] will undo the
   last :u. See [ubt], see [ubu], see [ubt!], and see [ubu!].")
- (ACL2::|The WARNING about the Trivial Consequence|
+ (|The WARNING about the Trivial Consequence|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The WARNING about the Trivial Consequence
@@ -13994,7 +13858,7 @@ Subtopics
   some warnings. The basic assumption in ACL2 is that the user
   understands what he or she is doing but may need a little reminding
   just to manage a complicated set of facts.")
- (ACL2::|The Tours|
+ (|The Tours|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Tours
@@ -14036,7 +13900,7 @@ Subtopics
   For readers using our :DOC or our TexInfo format in Emacs: The tours
   will probably be unsatisfying because we use gif files and assume
   you can navigate ``back.''")
- (ACL2::|The Time Taken to do the Associativity of App Proof|
+ (|The Time Taken to do the Associativity of App Proof|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Time Taken to do the Associativity of App Proof
@@ -14051,7 +13915,7 @@ Subtopics
   Basically, this proof flashes across your screen before you can read
   it; you see the Q.E.D. and don't bother to scroll back to read it.
   You have more important things to do than read successful proofs.")
- (ACL2::|The Theorem that App is Associative|
+ (|The Theorem that App is Associative|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Theorem that App is Associative
@@ -14081,7 +13945,7 @@ Subtopics
   will get an explanation of the subformula or its processing.
 
   []")
- (ACL2::|The Summary of the Proof of the Trivial Consequence|
+ (|The Summary of the Proof of the Trivial Consequence|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Summary of the Proof of the Trivial Consequence
@@ -14091,7 +13955,7 @@ Subtopics
 
   It is a good idea, when the Q.E.D. flys by, to see if there were any
   Warnings.")
- (ACL2::|The Simplification of the Induction Conclusion (Step 9)|
+ (|The Simplification of the Induction Conclusion (Step 9)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Simplification of the Induction Conclusion (Step 9)
@@ -14109,7 +13973,7 @@ Subtopics
   Click on the link above to apply the Axiom that (EQUAL (CONS x y)
   (CONS u v)) is equal to the conjunction of (EQUAL x u) and (EQUAL y
   v). In this case, (EQUAL x u) is trivial, (EQUAL (CAR A) (CAR A)).")
- (ACL2::|The Simplification of the Induction Conclusion (Step 8)|
+ (|The Simplification of the Induction Conclusion (Step 8)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Simplification of the Induction Conclusion (Step 8)
@@ -14127,7 +13991,7 @@ Subtopics
   time, we'll do the whole expansion at once, including the
   simplification of the resulting IF. This is how ACL2 actually does
   it.")
- (ACL2::|The Simplification of the Induction Conclusion (Step 7)|
+ (|The Simplification of the Induction Conclusion (Step 7)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Simplification of the Induction Conclusion (Step 7)
@@ -14144,7 +14008,7 @@ Subtopics
                     (APP A (APP B C)))).
 
   Click on the link above to apply the Axiom (IF T x y) = x.")
- (ACL2::|The Simplification of the Induction Conclusion (Step 6)|
+ (|The Simplification of the Induction Conclusion (Step 6)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Simplification of the Induction Conclusion (Step 6)
@@ -14161,7 +14025,7 @@ Subtopics
                     (APP A (APP B C)))).
 
   Click on the link above to apply the Axiom (CDR (CONS x y)) = y.")
- (ACL2::|The Simplification of the Induction Conclusion (Step 5)|
+ (|The Simplification of the Induction Conclusion (Step 5)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Simplification of the Induction Conclusion (Step 5)
@@ -14178,7 +14042,7 @@ Subtopics
                     (APP A (APP B C)))).
 
   Click on the link above to apply the Axiom (CAR (CONS x y)) = x.")
- (ACL2::|The Simplification of the Induction Conclusion (Step 4)|
+ (|The Simplification of the Induction Conclusion (Step 4)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Simplification of the Induction Conclusion (Step 4)
@@ -14195,7 +14059,7 @@ Subtopics
                     (APP A (APP B C)))).
 
   Click on the link above to apply the Axiom (CONSP (CONS x y)) = T.")
- (ACL2::|The Simplification of the Induction Conclusion (Step 3)|
+ (|The Simplification of the Induction Conclusion (Step 3)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Simplification of the Induction Conclusion (Step 3)
@@ -14209,7 +14073,7 @@ Subtopics
                     (APP A (APP B C)))).
 
   Click on the link above to expand the definition of APP here.")
- (ACL2::|The Simplification of the Induction Conclusion (Step 2)|
+ (|The Simplification of the Induction Conclusion (Step 2)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Simplification of the Induction Conclusion (Step 2)
@@ -14225,7 +14089,7 @@ Subtopics
                     (APP A (APP B C)))).
 
   Click on the link above to apply the Axiom (IF T x y) = x.")
- (ACL2::|The Simplification of the Induction Conclusion (Step 12)|
+ (|The Simplification of the Induction Conclusion (Step 12)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Simplification of the Induction Conclusion (Step 12)
@@ -14239,7 +14103,7 @@ Subtopics
   lot happens in simplification.
 
   You may click [here] to return to the main proof.")
- (ACL2::|The Simplification of the Induction Conclusion (Step 11)|
+ (|The Simplification of the Induction Conclusion (Step 11)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Simplification of the Induction Conclusion (Step 11)
@@ -14253,7 +14117,7 @@ Subtopics
   Click on the link above to use the definition of IMPLIES. Since the
   conclusion of the implication is now identically T, the implication
   simplifies to T.")
- (ACL2::|The Simplification of the Induction Conclusion (Step 10)|
+ (|The Simplification of the Induction Conclusion (Step 10)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Simplification of the Induction Conclusion (Step 10)
@@ -14268,7 +14132,7 @@ Subtopics
   Click on the link above to use the Induction Hypothesis (which is the
   second of the two hypotheses above and which is identical to the
   rewritten conclusion).")
- (ACL2::|The Simplification of the Induction Conclusion (Step 1)|
+ (|The Simplification of the Induction Conclusion (Step 1)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Simplification of the Induction Conclusion (Step 1)
@@ -14289,7 +14153,7 @@ Subtopics
   several subsequent ones are done during the simplification of the
   body of APP but we want to illustrate the basic principles of
   simplification without bothering with every detail.")
- (ACL2::|The Simplification of the Induction Conclusion (Step 0)|
+ (|The Simplification of the Induction Conclusion (Step 0)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Simplification of the Induction Conclusion (Step 0)
@@ -14302,7 +14166,7 @@ Subtopics
                     (APP A (APP B C)))).
 
   Click on the link above to replace (APP A B) by its definition.")
- (ACL2::|The Rules used in the Associativity of App Proof|
+ (|The Rules used in the Associativity of App Proof|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Rules used in the Associativity of App Proof
@@ -14316,7 +14180,7 @@ Subtopics
   For what it is worth, IMPLIES and AND are actually [macros] [] that
   are expanded into IF expressions before the proof ever begins. The
   use of macros is not reported among the rules.")
- (ACL2::|The Q.E.D. Message|
+ (|The Q.E.D. Message|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Q.E.D. Message
@@ -14324,7 +14188,7 @@ Subtopics
   Q.E.D. stands for ``quod erat demonstrandum'' which is Latin for
   ``which was to be demonstrated'' and is the signal that a proof is
   completely done.")
- (ACL2::|The Proof of the Associativity of App|
+ (|The Proof of the Associativity of App|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Proof of the Associativity of App
@@ -14375,7 +14239,7 @@ Subtopics
     scheme produces the following two [nontautological subgoals].
 
   []")
- (ACL2::|The Justification of the Induction Scheme|
+ (|The Justification of the Induction Scheme|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Justification of the Induction Scheme
@@ -14383,7 +14247,7 @@ Subtopics
   This paragraph explains why the induction selected is legal. The
   explanation is basically the same as the explanation for why the
   recursion in (APP A B) terminates.")
- (ACL2::|The Instantiation of the Induction Scheme|
+ (|The Instantiation of the Induction Scheme|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Instantiation of the Induction Scheme
@@ -14395,7 +14259,7 @@ Subtopics
   associativity conjecture (instantiated as shown in the scheme).
 
   This produces two actual goals, the induction step and the base case.")
- (ACL2::|The Induction Step in the App Example|
+ (|The Induction Step in the App Example|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Induction Step in the App Example
@@ -14417,7 +14281,7 @@ Subtopics
 
   Under those hypotheses we have to prove the associativity conjecture
   for A itself.")
- (ACL2::|The Induction Scheme Selected for the App Example|
+ (|The Induction Scheme Selected for the App Example|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Induction Scheme Selected for the App Example
@@ -14434,7 +14298,7 @@ Subtopics
   It is a conjunction ([and] []) of two formulas.
 
   The first is the induction step and the second is the base case.")
- (ACL2::|The First Application of the Associativity Rule|
+ (|The First Application of the Associativity Rule|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The First Application of the Associativity Rule
@@ -14450,7 +14314,7 @@ Subtopics
     Current Conjecture:
     (equal (app (app [(app (app x1 x2) (app x3 x4))] (app x5 x6)) x7)
            (app x1 (app (app x2 x3) (app (app x4 x5) (app x6 x7)))))")
- (ACL2::|The Final Simplification in the Base Case (Step 3)|
+ (|The Final Simplification in the Base Case (Step 3)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Final Simplification in the Base Case (Step 3)
@@ -14463,7 +14327,7 @@ Subtopics
   T (not shown) and we are done with Subgoal *1/1'.
 
   You may click [here] to return to the main proof.")
- (ACL2::|The Final Simplification in the Base Case (Step 2)|
+ (|The Final Simplification in the Base Case (Step 2)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Final Simplification in the Base Case (Step 2)
@@ -14474,7 +14338,7 @@ Subtopics
                     (APP B C))).
 
   Click on the link above to use the Axiom (EQUAL x x) = t")
- (ACL2::|The Final Simplification in the Base Case (Step 1)|
+ (|The Final Simplification in the Base Case (Step 1)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Final Simplification in the Base Case (Step 1)
@@ -14486,7 +14350,7 @@ Subtopics
 
   Click on the link above to expand the definition of APP. Again, we
   come out through the false branch because of the hypothesis.")
- (ACL2::|The Final Simplification in the Base Case (Step 0)|
+ (|The Final Simplification in the Base Case (Step 0)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Final Simplification in the Base Case (Step 0)
@@ -14499,7 +14363,7 @@ Subtopics
   Click on the link above to replace (APP A B) by its definition. Note
   that the hypothesis (NOT (CONSP A)) allows us to simplify the IF in
   APP to its false branch this time.")
- (ACL2::|The Falling Body Model|
+ (|The Falling Body Model|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Falling Body Model
@@ -14516,7 +14380,7 @@ Subtopics
   predict how long it takes a cannonball to fall from the top of a
   200 foot tower (3.5 seconds). This might be important if your
   product is designed to drop cannonballs on moving targets.")
- (ACL2::|The Expansion of ENDP in the Induction Step (Step 2)|
+ (|The Expansion of ENDP in the Induction Step (Step 2)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Expansion of ENDP in the Induction Step (Step 2)
@@ -14531,7 +14395,7 @@ Subtopics
   Note that this is Subgoal *1/2'.
 
   You may click [here] to return to the main proof.")
- (ACL2::|The Expansion of ENDP in the Induction Step (Step 1)|
+ (|The Expansion of ENDP in the Induction Step (Step 1)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Expansion of ENDP in the Induction Step (Step 1)
@@ -14546,7 +14410,7 @@ Subtopics
   The bold text is the instantiated definition of ENDP.
 
   Now click on the link above to simplify (NOT (NOT (CONSP A)))")
- (ACL2::|The Expansion of ENDP in the Induction Step (Step 0)|
+ (|The Expansion of ENDP in the Induction Step (Step 0)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Expansion of ENDP in the Induction Step (Step 0)
@@ -14560,7 +14424,7 @@ Subtopics
 
   Click on the link above (the open parenthesis before ENDP) to replace
   (ENDP A) by its definition.")
- (ACL2::|The Event Summary|
+ (|The Event Summary|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Event Summary
@@ -14608,7 +14472,7 @@ Subtopics
   first.
 
   You should now return to [the Walking Tour].")
- (ACL2::|The End of the Walking Tour|
+ (|The End of the Walking Tour|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The End of the Walking Tour
@@ -14638,7 +14502,7 @@ Subtopics
   Matt Kaufmann and J Strother Moore
 
   [] []")
- (ACL2::|The End of the Proof of the Associativity of App|
+ (|The End of the Proof of the Associativity of App|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The End of the Proof of the Associativity of App
@@ -14662,7 +14526,7 @@ Subtopics
      ASSOCIATIVITY-OF-APP
 
   []")
- (ACL2::|The End of the Flying Tour|
+ (|The End of the Flying Tour|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The End of the Flying Tour
@@ -14675,7 +14539,7 @@ Subtopics
   Matt Kaufmann and J Moore
 
   []")
- (ACL2::|The Base Case in the App Example|
+ (|The Base Case in the App Example|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Base Case in the App Example
@@ -14691,7 +14555,7 @@ Subtopics
      * A is empty
 
   and we have to prove the conjecture for A.")
- (ACL2::|The Associativity of App|
+ (|The Associativity of App|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Associativity of App
@@ -14726,7 +14590,7 @@ Subtopics
   evaluate to true.
 
   []")
- (ACL2::|The Admission of App|
+ (|The Admission of App|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   The Admission of App
@@ -14768,7 +14632,7 @@ Subtopics
  (TYPESPEC-CHECK "Parent: ACL2::MISCELLANEOUS.
 
   See [meta-extract].")
- (ACL2::TYPE-SPEC
+ (TYPE-SPEC
   "Parent: DECLARE.
 
   Type specifiers in declarations
@@ -14842,7 +14706,7 @@ Subtopics
   containing an integer, (i), then the first inequality is made
   strict. An analogous remark holds for the (j) case. The RATIONAL
   and REAL type specifiers are similarly generalized.")
- (ACL2::TYPE-SET-INVERTER
+ (TYPE-SET-INVERTER
   "Parent: ACL2::RULE-CLASSES.
 
   Exhibit a new decoding for an ACL2 type-set
@@ -14897,7 +14761,7 @@ Subtopics
   hypothesis (integerp x) then the context used while working on that
   conjecture will include the assignment to x of the type-set
   *ts-integer*.")
- (ACL2::TYPE-SET
+ (TYPE-SET
   "Parent: ACL2::MISCELLANEOUS.
 
   How type information is encoded in ACL2
@@ -15039,7 +14903,7 @@ Subtopics
   Thus, the type-set s is represented by (+ 1 2 64 128 256) = 451. The
   complement of s, i.e., the set of all objects other than the
   natural numbers and the symbols, is -452.")
- (ACL2::TYPE-PRESCRIPTION
+ (TYPE-PRESCRIPTION
   "Parent: ACL2::RULE-CLASSES.
 
   Make a rule that specifies the type of a term
@@ -15232,7 +15096,7 @@ Subtopics
  (TYPE "Parent: ACL2::PROGRAMMING.
 
   See [declare].")
- (ACL2::TUTORIAL5-MISCELLANEOUS-EXAMPLES
+ (TUTORIAL5-MISCELLANEOUS-EXAMPLES
   "Parent: ACL2::ANNOTATED-ACL2-SCRIPTS.
 
   Miscellaneous ACL2 examples
@@ -15255,7 +15119,7 @@ Subtopics
 
   [File-reading-example]
       Example of reading files in ACL2")
- (ACL2::TUTORIAL4-DEFUN-SK-EXAMPLE
+ (TUTORIAL4-DEFUN-SK-EXAMPLE
   "Parent: ACL2::ANNOTATED-ACL2-SCRIPTS.
 
   Example of quantified notions
@@ -15350,7 +15214,7 @@ Subtopics
 
     (thm (implies (not (two-bigger-p x)) (not (some-bigger-p x)))
          :hints ((\"Goal\" :in-theory (disable two-bigger-p))))")
- (ACL2::TUTORIAL3-PHONEBOOK-EXAMPLE
+ (TUTORIAL3-PHONEBOOK-EXAMPLE
   "Parent: ACL2::ANNOTATED-ACL2-SCRIPTS.
 
   A Phonebook Specification
@@ -16056,7 +15920,7 @@ Subtopics
                     (alistp bk))
                (phonenums-unique (change-phone nm pnum bk)))
       :hints ((\"Goal\" :in-theory (enable range))))")
- (ACL2::TUTORIAL2-EIGHTS-PROBLEM
+ (TUTORIAL2-EIGHTS-PROBLEM
   "Parent: ACL2::ANNOTATED-ACL2-SCRIPTS.
 
   The Eights Problem Example
@@ -16168,7 +16032,7 @@ Subtopics
   Unfortunately, understanding the mechanics of the proof requires
   knowing something about the way [defun-sk] works. See [defun-sk] or
   see [Tutorial4-Defun-Sk-Example] for more on that subject.")
- (ACL2::TUTORIAL1-TOWERS-OF-HANOI
+ (TUTORIAL1-TOWERS-OF-HANOI
   "Parent: ACL2::ANNOTATED-ACL2-SCRIPTS.
 
   The Towers of Hanoi Example
@@ -16392,7 +16256,7 @@ Subtopics
     ACL2 !>
 
   We're guessing they won't finish any time soon.")
- (ACL2::TTREE
+ (TTREE
   "Parent: ACL2::MISCELLANEOUS.
 
   Tag-trees
@@ -16460,7 +16324,7 @@ Subtopics
   It also serves to illustrate the inherent flaw in asking a session
   whether or how it is ``tainted'', justifying the ``TTAG NOTE''
   approach (see [defttag]).")
- (ACL2::TRUST-TAG "Parent: ACL2::MISCELLANEOUS.
+ (TRUST-TAG "Parent: ACL2::MISCELLANEOUS.
 
   See [defttag].")
  (TRUNCATE
@@ -17404,7 +17268,7 @@ Subtopics
   ordinary one, and vice-versa. However, if new-tp is supplied and
   not nil, then it should be the new type (the symbol macro or
   atomic-macro, in any package), or else there is no change.")
- (ACL2::TIPS
+ (TIPS
   "Parent: ACL2::ACL2-TUTORIAL.
 
   Some hints for using the ACL2 prover
@@ -18331,7 +18195,7 @@ Subtopics
   of the ACL2 evaluator function ev-rec. This is normal; the curious
   are invited, at their own risk, to see [return-last] for an
   explanation.")
- (ACL2::TIDBITS
+ (TIDBITS
   "Parent: ACL2::ACL2-TUTORIAL.
 
   Some basic hints for using ACL2
@@ -18558,7 +18422,7 @@ Subtopics
   [defthm], [in-theory], [encapsulate], and [include-book], except
   for events executed on behalf of an [include-book] or the second
   pass of an [encapsulate].")
- (ACL2::THEORY-FUNCTIONS
+ (THEORY-FUNCTIONS
   "Parent: ACL2::THEORIES.
 
   Functions for obtaining or producing [theories]
@@ -18654,7 +18518,7 @@ Subtopics
   mentioning the single free variable [world]. When theory
   expressions are evaluated by [in-theory] or the :[in-theory] hint,
   [world] is bound to the current ACL2 [world].")
- (ACL2::THEORIES-AND-PRIMITIVES
+ (THEORIES-AND-PRIMITIVES
   "Parent: ACL2::THEORIES.
 
   Warnings from disabling certain built-in functions
@@ -18756,7 +18620,7 @@ Subtopics
                   RATIONALP REALPART STRINGP SYMBOL-NAME
                   SYMBOL-PACKAGE-NAME SYMBOLP NOT)
     ACL2 !>")
- (ACL2::THE-METHOD
+ (THE-METHOD
   "Parent: ACL2::MISCELLANEOUS.
 
   How to find proofs
@@ -18898,7 +18762,7 @@ Subtopics
 
   THE is defined in Common Lisp. See any Common Lisp documentation for
   more information.")
- (ACL2::TERM-TABLE
+ (TERM-TABLE
   "Parent: ACL2::SWITCHES-PARAMETERS-AND-MODES.
 
   A table used to validate meta rules
@@ -19073,7 +18937,7 @@ Subtopics
   that constants that are very large cons structures do not cause
   significant slowdown as ACL2 attempts to walk through them while
   computing their pseudo-function application count.)")
- (ACL2::TERM
+ (TERM
   "Parent: ACL2::MISCELLANEOUS.
 
   The three senses of well-formed ACL2 expressions or formulas
@@ -20147,7 +20011,7 @@ Subtopics
 
   [Using-tables-efficiently]
       Notes on how to use tables efficiently")
- (ACL2::|Symbolic Execution of Models|
+ (|Symbolic Execution of Models|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Symbolic Execution of Models
@@ -20167,7 +20031,7 @@ Subtopics
   the parameters are known.
 
   []")
- (ACL2::|Suggested Inductions in the Associativity of App Example|
+ (|Suggested Inductions in the Associativity of App Example|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Suggested Inductions in the Associativity of App Example
@@ -20188,7 +20052,7 @@ Subtopics
     (app a (app b c))
 
   The variable recursively decomposed is indicated in bold.")
- (ACL2::|Subsumption of Induction Candidates in App Example|
+ (|Subsumption of Induction Candidates in App Example|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Subsumption of Induction Candidates in App Example
@@ -20356,7 +20220,7 @@ Subtopics
     P $* >& foo.out
 
   For a different, more direct solution, see [sys-call+].")
- (ACL2::SYNTAXP-EXAMPLES
+ (SYNTAXP-EXAMPLES
   "Parent: SYNTAXP.
 
   Examples pertaining to syntaxp hypotheses
@@ -20791,7 +20655,7 @@ Subtopics
 
   [Syntaxp-examples]
       Examples pertaining to syntaxp hypotheses")
- (ACL2::SYNTAX
+ (SYNTAX
   "Parent: ACL2::MISCELLANEOUS.
 
   The syntax of ACL2 is that of Common Lisp
@@ -20887,7 +20751,7 @@ Subtopics
   The [guard] for symbol specifies that its arguments are symbols.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::SUBVERSIVE-RECURSIONS
+ (SUBVERSIVE-RECURSIONS
   "Parent: ACL2::MISCELLANEOUS.
 
   Why we restrict [encapsulate]d recursive functions
@@ -21046,7 +20910,7 @@ Subtopics
   be subversive; an induction scheme is thus stored for f. (This
   restriction to measured formal positions of recursive calls, for
   determining subversive definitions, is new in Version_3.5 of ACL2.)")
- (ACL2::SUBVERSIVE-INDUCTIONS
+ (SUBVERSIVE-INDUCTIONS
   "Parent: ACL2::MISCELLANEOUS.
 
   Why we restrict [encapsulate]d recursive functions
@@ -21168,7 +21032,7 @@ Subtopics
   for more information.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::STRONG-REWRITE-RULES
+ (STRONG-REWRITE-RULES
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Formulating good rewrite rules
@@ -21469,7 +21333,7 @@ Subtopics
   break. Thus, you can actually turn off proof tree display in the
   middle of a proof by interrupting ACL2 and submitting the form
   (stop-proof-tree) in raw Lisp.")
- (ACL2::STOBJS
+ (STOBJS
      "Parent: ACL2::MISCELLANEOUS.
 
   Xargs keyword :STOBJS
@@ -21478,7 +21342,7 @@ Subtopics
  (STOBJ-LET "Parent: ACL2::STOBJ.
 
   See [nested-stobjs].")
- (ACL2::STOBJ-EXAMPLE-3
+ (STOBJ-EXAMPLE-3
   "Parent: ACL2::STOBJ.
 
   Another example of a single-threaded object
@@ -21709,7 +21573,7 @@ Subtopics
   This completes the tour through the documentation of [stobj]s.
   However, you may now wish to read the documentation for the event
   that introduces a new single-threaded object; see [defstobj].")
- (ACL2::STOBJ-EXAMPLE-2
+ (STOBJ-EXAMPLE-2
   "Parent: ACL2::STOBJ.
 
   An example of the use of arrays in single-threaded objects
@@ -21798,7 +21662,7 @@ Subtopics
   'cltl-command (w state))).
 
   To continue the stobj tour, see [stobj-example-3].")
- (ACL2::STOBJ-EXAMPLE-1-PROOFS
+ (STOBJ-EXAMPLE-1-PROOFS
   "Parent: ACL2::STOBJ.
 
   Some proofs involving the counters stobj
@@ -21943,7 +21807,7 @@ Subtopics
   involving stobjs.
 
   We now recommend that you see [stobj-example-2].")
- (ACL2::STOBJ-EXAMPLE-1-IMPLEMENTATION
+ (STOBJ-EXAMPLE-1-IMPLEMENTATION
   "Parent: ACL2::STOBJ.
 
   The implementation of the counters stobj
@@ -22016,7 +21880,7 @@ Subtopics
   [defun]s.
 
   We now recommend that you look at [stobj-example-1-proofs].")
- (ACL2::STOBJ-EXAMPLE-1-DEFUNS
+ (STOBJ-EXAMPLE-1-DEFUNS
   "Parent: ACL2::STOBJ.
 
   The defuns created by the counters stobj
@@ -22128,7 +21992,7 @@ Subtopics
   have undeclared stobj formals other than state.
 
   You may return to [stobj-example-1] here.")
- (ACL2::STOBJ-EXAMPLE-1
+ (STOBJ-EXAMPLE-1
   "Parent: ACL2::STOBJ.
 
   An example of the use of single-threaded objects
@@ -22611,7 +22475,7 @@ Subtopics
 
   [Error-triples]
       A common ACL2 programming idiom")
- (ACL2::STARTUP
+ (STARTUP
   "Parent: ACL2::ACL2-TUTORIAL.
 
   How to start using ACL2; the ACL2 [command] loop
@@ -22816,7 +22680,7 @@ Subtopics
   ([set-splitter-output] nil) has been invoked, then the value of
   (splitter-output) is nil. Otherwise, such reporting is on and the
   value is non-nil.")
- (ACL2::SPLITTER
+ (SPLITTER
   "Parent: ACL2::MISCELLANEOUS.
 
   Reporting of rules whose application may have caused case splits
@@ -22975,7 +22839,7 @@ Subtopics
   expression, i.e., in a call of a [lambda] expression. But splits
   caused by other processes, notably destructor elimination (see
   [elim]), will typically not be attributed to splitters.")
- (ACL2::SPECIOUS-SIMPLIFICATION
+ (SPECIOUS-SIMPLIFICATION
   "Parent: ACL2::MISCELLANEOUS.
 
   Nonproductive proof steps
@@ -23087,7 +22951,7 @@ Subtopics
   hypothesis. By disabling that rule, at least for the subgoal in
   question, you may allow the simplifier to make progress on the
   subgoal.")
- (ACL2::SPECIFIC-KINDS-OF-FORMULAS-AS-REWRITE-RULES
+ (SPECIFIC-KINDS-OF-FORMULAS-AS-REWRITE-RULES
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Advice about how to handle commonly occurring formulas as rewrite
@@ -23174,7 +23038,7 @@ Subtopics
   If you got to this documentation page from the tutorial discussion of
   rewrite rules, use your browser's Back Button now to return to
   [introduction-to-rewrite-rules-part-2].")
- (ACL2::SPECIAL-CASES-FOR-REWRITE-RULES
+ (SPECIAL-CASES-FOR-REWRITE-RULES
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Convenient short forms for rewrite rule formulas
@@ -23300,7 +23164,7 @@ Subtopics
                              (fib-with-step-count (- x 2))
                              (mv (+ a b)
                                  (+ 1 cnt1 cnt2)))))))")
- (ACL2::SOLUTION-TO-SIMPLE-EXAMPLE
+ (SOLUTION-TO-SIMPLE-EXAMPLE
   "Parent: ACL2::ANNOTATED-ACL2-SCRIPTS.
 
   Solution to a simple example
@@ -23346,7 +23210,7 @@ Subtopics
     (defthm leaf-p-iff-member-fringe
       (iff (leaf-p atm x)
            (member-equal atm (fringe x))))")
- (ACL2::SLOW-ARRAY-WARNING
+ (SLOW-ARRAY-WARNING
   "Parent: ACL2::ARRAYS.
 
   A warning or error issued when [arrays] are used inefficiently
@@ -23449,7 +23313,7 @@ Subtopics
   it, the caller's version of the array is obsolete. If the caller is
   going to make further use of the array, it must obtain the latest
   version, i.e., that produced by the function.")
- (ACL2::SLOW-ALIST-WARNING
+ (SLOW-ALIST-WARNING
   "Parent: ACL2::HONS-AND-MEMOIZATION.
 
   Warnings issued when [fast-alists] are used inefficiently
@@ -23582,10 +23446,10 @@ Subtopics
   Sixth member of the list
 
   See any Common Lisp documentation for details.")
- (ACL2::SINGLE-THREADED-OBJECTS "Parent: ACL2::PROGRAMMING.
+ (SINGLE-THREADED-OBJECTS "Parent: ACL2::PROGRAMMING.
 
   See [stobj].")
- (ACL2::SIMPLE
+ (SIMPLE
   "Parent: ACL2::MISCELLANEOUS.
 
   :[definition] and :[rewrite] rules used in preprocessing
@@ -23650,7 +23514,7 @@ Subtopics
   The [guard] for signed-byte-p is T.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::SIGNATURE
+ (SIGNATURE
   "Parent: ACL2::MISCELLANEOUS.
 
   How to specify the arity of a constrained function
@@ -23909,7 +23773,7 @@ Subtopics
       "Parent: ACL2::OTHER.
 
   See [accumulated-persistence].")
- (ACL2::SHARP-U-READER
+ (SHARP-U-READER
   "Parent: ACL2::OTHER.
 
   Allow underscore characters in numbers
@@ -23959,7 +23823,7 @@ Subtopics
   is prepended to that string. The resulting string is then handed to
   the Lisp reader in order to obtain the final result, which must be
   a number or else an error occurs.")
- (ACL2::SHARP-DOT-READER
+ (SHARP-DOT-READER
   "Parent: ACL2::OTHER.
 
   Read-time evaluation of constants
@@ -23995,14 +23859,14 @@ Subtopics
   `#.*foo*', the *foo* must already be defined in the [world] in
   which you issue the certify-book command. The reason is that
   certify-book reads the entire book before evaluating its forms.")
- (ACL2::SHARP-COMMA-READER
+ (SHARP-COMMA-READER
   "Parent: ACL2::OTHER.
 
   DEPRECATED read-time evaluation of constants
 
   The use of `#,' has been deprecated. Please use `#.' instead; see
   [sharp-dot-reader].")
- (ACL2::SHARP-BANG-READER
+ (SHARP-BANG-READER
   "Parent: ACL2::OTHER.
 
   Package prefix that is not restricted to symbols
@@ -27854,7 +27718,7 @@ Subtopics
   The :verbosep flag just controls whether to print some low-level
   details related to timing and memory usage as the file is being
   read.")
- (ACL2::SERIALIZE-IN-BOOKS
+ (SERIALIZE-IN-BOOKS
   "Parent: ACL2::SERIALIZE.
 
   Using serialization efficiently in books
@@ -27895,7 +27759,7 @@ Subtopics
   serialize-read, which is available only by loading an additional
   book. So, if the above scheme is not performing well for you, you
   may wish to see the community book serialize/unsound-read.")
- (ACL2::SERIALIZE-ALTERNATIVES
+ (SERIALIZE-ALTERNATIVES
   "Parent: ACL2::SERIALIZE.
 
   Alternatives to the [serialize] routines
@@ -27971,8 +27835,7 @@ Subtopics
 
   Search is a Common Lisp function (actually, a macro in ACL2). See any
   Common Lisp documentation for more information.")
- (ACL2::SAVING-AND-RESTORING
-      "Parent: ACL2::MISCELLANEOUS.
+ (SAVING-AND-RESTORING "Parent: ACL2::MISCELLANEOUS.
 
   See [save-exec].")
  (SAVE-EXEC
@@ -28258,7 +28121,7 @@ Subtopics
   memoization settings into an ACL2 [table], and the second
   unmemoizes all functions that were memoized by calls of [memoize].
   Also see [restore-memoization-settings].")
- (ACL2::|Running Models|
+ (|Running Models|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Running Models
@@ -28286,7 +28149,7 @@ Subtopics
   programming language.
 
   []")
- (ACL2::|Rewrite Rules are Generated from DEFTHM Events|
+ (|Rewrite Rules are Generated from DEFTHM Events|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Rewrite Rules are Generated from DEFTHM Events
@@ -28315,7 +28178,7 @@ Subtopics
     (app x (app y z))!
 
   []")
- (ACL2::|Revisiting the Admission of App|
+ (|Revisiting the Admission of App|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Revisiting the Admission of App
@@ -28349,7 +28212,7 @@ Subtopics
      APP
 
   []")
- (ACL2::RUNE
+ (RUNE
   "Parent: ACL2::THEORIES.
 
   A rule name
@@ -28496,7 +28359,7 @@ Subtopics
   or [disable]d, and they do not have associated [corollary]
   formulas. In short, despite the fact that the user may sometimes
   see fake runes printed, they should never be typed.")
- (ACL2::RULER-EXTENDERS
+ (RULER-EXTENDERS
   "Parent: ACL2::SWITCHES-PARAMETERS-AND-MODES.
 
   Control for ACL2's termination and induction analyses
@@ -28906,7 +28769,7 @@ Subtopics
   variants of tree-of-nils-p is the one shown for the first variant,
   which is reasonable because both definitions now produce
   essentially the same termination analysis.")
- (ACL2::RULE-NAMES
+ (RULE-NAMES
   "Parent: ACL2::THEORIES.
 
   How rules are named.
@@ -29002,7 +28865,7 @@ Subtopics
   This limit can be changed; see [set-rewrite-stack-limit].
 
   For a related limit, see [backchain-limit].")
- (ACL2::REWRITE
+ (REWRITE
   "Parent: ACL2::RULE-CLASSES.
 
   Make some :rewrite rules (possibly conditional ones)
@@ -29709,7 +29572,7 @@ Subtopics
 
   See [ACL2-pc::retrieve], or use (help retrieve) inside the
   interactive [proof-checker] loop. Also see [unsave].")
- (ACL2::RESTRICT
+ (RESTRICT
    "Parent: ACL2::MISCELLANEOUS.
 
   Hints keyword :RESTRICT
@@ -29857,7 +29720,7 @@ Subtopics
   appear in your proof logs.
 
   See [forward-chaining-reports] for details.")
- (ACL2::REORDER
+ (REORDER
     "Parent: ACL2::MISCELLANEOUS.
 
   Hints keyword :REORDER
@@ -30156,7 +30019,7 @@ Subtopics
 
   Remove-duplicates is defined by Common Lisp. See any Common Lisp
   documentation for more information.")
- (ACL2::REMOVE-DIVE-INTO-MACRO
+ (REMOVE-DIVE-INTO-MACRO
   "Parent: ACL2::SWITCHES-PARAMETERS-AND-MODES.
 
   Removes association of [proof-checker] diving function with macro
@@ -30308,7 +30171,7 @@ Subtopics
   more information.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::REGRESSION "Parent: ACL2::BOOKS.
+ (REGRESSION "Parent: ACL2::BOOKS.
 
   See [books-certification].")
  (REGENERATE-TAU-DATABASE
@@ -30379,7 +30242,7 @@ Subtopics
   alternative proof strategies or measure performance.
 
   We welcome user observations and experience on this issue.")
- (ACL2::REFINEMENT
+ (REFINEMENT
   "Parent: ACL2::RULE-CLASSES.
 
   Record that one equivalence relation refines another
@@ -30431,7 +30294,7 @@ Subtopics
   individual :[rewrite] rules can be disabled.
 
   More will be written about this as we develop the techniques.")
- (ACL2::REDUNDANT-EVENTS
+ (REDUNDANT-EVENTS
   "Parents: ACL2::MISCELLANEOUS and ACL2::NOTE1.
 
   Allowing a name to be introduced ``twice''
@@ -30734,7 +30597,7 @@ Subtopics
     (encapsulate ()
       (deflabel try2) ; ``Increment'' to try3 next time, and so on.
       (defun foo (x) x))")
- (ACL2::REDUNDANT-ENCAPSULATE
+ (REDUNDANT-ENCAPSULATE
   "Parent: ENCAPSULATE.
 
   Redundancy of [encapsulate] [events]
@@ -30932,7 +30795,7 @@ Subtopics
   interrupted a proof (with control-c). However, redo-flat will not
   produce the desired result after an interrupt if you have enabled
   the debugger using (set-debugger-enable t),")
- (ACL2::REDEFINING-PROGRAMS
+ (REDEFINING-PROGRAMS
   "Parent: ACL2::PROGRAMMING.
 
   An explanation of why we restrict redefinitions
@@ -31055,7 +30918,7 @@ Subtopics
   believe it is necessary simply to impose the same restrictions on
   the redefinition of :[program] mode functions as we do on :[logic]
   mode functions.")
- (ACL2::REDEFINED-NAMES
+ (REDEFINED-NAMES
   "Parent: ACL2::MISCELLANEOUS.
 
   To collect the names that have been redefined
@@ -31444,7 +31307,7 @@ Subtopics
   To turn the heuristic back on:
 
     (defattach quick-and-dirty-srs quick-and-dirty-srs-builtin)")
- (ACL2::QUANTIFIERS-USING-RECURSION
+ (QUANTIFIERS-USING-RECURSION
   "Parent: ACL2::QUANTIFIERS.
 
   Recursion for implementing quantification
@@ -31472,7 +31335,7 @@ Subtopics
     (defthm all-p-append
       (equal (all-p (append x1 x2))
              (and (all-p x1) (all-p x2))))")
- (ACL2::QUANTIFIERS-USING-DEFUN-SK-EXTENDED
+ (QUANTIFIERS-USING-DEFUN-SK-EXTENDED
   "Parent: ACL2::QUANTIFIERS.
 
   Quantification example with details
@@ -31542,7 +31405,7 @@ Subtopics
              (and (forall-p x1) (forall-p x2)))
       :hints ((\"Goal\" :use (forall-p-append-forward
                             forall-p-append-reverse))))")
- (ACL2::QUANTIFIERS-USING-DEFUN-SK
+ (QUANTIFIERS-USING-DEFUN-SK
   "Parent: ACL2::QUANTIFIERS.
 
   Quantification example
@@ -31589,7 +31452,7 @@ Subtopics
 
   Also see [quantifiers-using-defun-sk-extended] for an elaboration on
   this example.")
- (ACL2::QUANTIFIERS
+ (QUANTIFIERS
   "Parent: DEFUN-SK.
 
   Issues about quantification in ACL2
@@ -31638,7 +31501,7 @@ Subtopics
 
   [Quantifiers-using-defun-sk]
       Quantification example")
- (ACL2::QUANTIFIER-TUTORIAL
+ (QUANTIFIER-TUTORIAL
   "Parent: DEFUN-SK.
 
   A Beginner's Guide to Reasoning about Quantification in ACL2
@@ -32260,7 +32123,7 @@ Subtopics
 
   The question is whether (implies (some-M) (min-M2)) is a theorem. Can
   you prove it? Can you disprove it?")
- (ACL2::Q
+ (Q
   "Parent: ACL2::OTHER.
 
   Quit ACL2 (type :q) --- reenter with (lp)
@@ -32279,7 +32142,7 @@ Subtopics
 
   Unlike all other keyword commands, typing :q is not equivalent to
   invoking the function q. There is no function q.")
- (ACL2::|Proving Theorems about Models|
+ (|Proving Theorems about Models|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Proving Theorems about Models
@@ -32311,7 +32174,7 @@ Subtopics
   our little mc.
 
   []")
- (ACL2::|Popping out of an Inductive Proof|
+ (|Popping out of an Inductive Proof|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Popping out of an Inductive Proof
@@ -32319,7 +32182,7 @@ Subtopics
   Recall that our induction scheme (click [here] to revisit it) had two
   cases, the induction step (Subgoal *1/2) and the base case (Subgoal
   *1/1). Both have been proved!")
- (ACL2::|Perhaps|
+ (|Perhaps|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Perhaps
@@ -32807,7 +32670,7 @@ Subtopics
   pseudo-termp.
 
   Metafunctions may use pseudo-termp as a [guard].")
- (ACL2::PROVISIONAL-CERTIFICATION
+ (PROVISIONAL-CERTIFICATION
   "Parent: ACL2::BOOKS.
 
   Certify a book in stages for improved parallelism
@@ -33130,7 +32993,7 @@ Subtopics
   ``Proofs-co'' stands for ``proofs character output.'' The initial
   value of proofs-co is the same as the value of [*standard-co*] (see
   [*standard-co*]).")
- (ACL2::PROOF-TREE-EXAMPLES
+ (PROOF-TREE-EXAMPLES
   "Parent: PROOF-TREE.
 
   Proof tree example
@@ -33405,7 +33268,7 @@ Subtopics
   However, if the proof by induction of *1 necessitates further proofs
   by induction or a forcing round, then this ``pruning'' will not yet
   be done.")
- (ACL2::PROOF-TREE-DETAILS
+ (PROOF-TREE-DETAILS
   "Parent: PROOF-TREE.
 
   Proof tree details not covered elsewhere
@@ -33449,11 +33312,11 @@ Subtopics
 
   5. The usual [failure] message is printed as part of the prooftree
   display when a proof has failed.")
- (ACL2::PROOF-SUPPORTERS-ALIST
+ (PROOF-SUPPORTERS-ALIST
       "Parent: ACL2::MISCELLANEOUS.
 
   See [dead-events].")
- (ACL2::PROOF-OF-WELL-FOUNDEDNESS
+ (PROOF-OF-WELL-FOUNDEDNESS
   "Parent: ACL2::MISCELLANEOUS.
 
   A proof that [o<] is well-founded on [o-p]s
@@ -33627,7 +33490,7 @@ Subtopics
   descending sequence of [o-p]s has the property that each member has
   od less than or equal to the od, n, of the first member of the
   sequence. This contradicts Lemma Main. Q.E.D.")
- (ACL2::PROOF-CHECKER-COMMANDS
+ (PROOF-CHECKER-COMMANDS
   "Parent: ACL2::PROOF-CHECKER.
 
   List of commands for the proof-checker
@@ -34001,7 +33864,7 @@ Subtopics
 
   [ACL2-pc::=]
       (atomic macro) attempt an equality (or equivalence) substitution")
- (ACL2::PROMPT
+ (PROMPT
   "Parent: ACL2::MISCELLANEOUS.
 
   The prompt printed by [ld]
@@ -34021,7 +33884,7 @@ Subtopics
 
     (install-new-raw-prompt) ; install prompt with [RAW LISP] as described above
     (install-old-raw-prompt) ; revert to original prompt from host Common Lisp")
- (ACL2::PROGRAMMING-WITH-STATE
+ (PROGRAMMING-WITH-STATE
   "Parent: STATE.
 
   Programming using the von Neumannesque ACL2 [state] object
@@ -34566,7 +34429,7 @@ Subtopics
   state.
 
   We invite suggestions for additional advanced topics.")
- (ACL2::PROGRAMMING-KNOWLEDGE-TAKEN-FOR-GRANTED
+ (PROGRAMMING-KNOWLEDGE-TAKEN-FOR-GRANTED
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Background knowledge in ACL2 programming for theorem prover tutorial
@@ -35187,7 +35050,7 @@ Subtopics
   useful. Please contact the ACL2 developers if you want versions of
   these functions to be executable from inside the ACL2
   read-eval-print loop.")
- (ACL2::PRINTING-TO-STRINGS
+ (PRINTING-TO-STRINGS
   "Parent: ACL2::IO.
 
   Printing to strings instead of files or standard output
@@ -35244,7 +35107,7 @@ Subtopics
   get-output-stream-string$, which allows for accumulating the
   results of more than one printing call into a single string but
   requires the use of [state].")
- (ACL2::PRINT-SUMMARY-USER
+ (PRINT-SUMMARY-USER
   "Parent: ACL2::SWITCHES-PARAMETERS-AND-MODES.
 
   See [finalize-event-user].")
@@ -35406,7 +35269,7 @@ Subtopics
   Finally, we note that while print-gv is a utility for debugging guard
   violations, in contrast, see [guard-debug] for a utility to assist
   in debugging failed proofs arising from guard verification.")
- (ACL2::PRINT-DOC-START-COLUMN
+ (PRINT-DOC-START-COLUMN
   "Parent: ACL2::MISCELLANEOUS.
 
   Printing the one-liner
@@ -35425,7 +35288,7 @@ Subtopics
   is nil, :[doc] just starts the one-liner two spaces from the end of
   the name, on the same line. The initial value of
   print-doc-start-column is 15.")
- (ACL2::PRINT-CONTROL
+ (PRINT-CONTROL
   "Parent: ACL2::IO.
 
   Advanced controls of ACL2 printing
@@ -35582,7 +35445,7 @@ Subtopics
 
   See [fmt] for more sophisticated printing routines, and see [io] for
   general information about input and output.")
- (ACL2::PRACTICE-FORMULATING-STRONG-RULES-6
+ (PRACTICE-FORMULATING-STRONG-RULES-6
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Rules suggested by (MEMBER (FOO A) (NATS-BELOW (BAR B)))
@@ -35687,7 +35550,7 @@ Subtopics
 
   Use your browser's Back Button now to return to
   [practice-formulating-strong-rules].")
- (ACL2::PRACTICE-FORMULATING-STRONG-RULES-5
+ (PRACTICE-FORMULATING-STRONG-RULES-5
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Rules suggested by (SUBSETP (FOO A) (APPEND (BAR B) (MUM C)))
@@ -35745,7 +35608,7 @@ Subtopics
 
   Use your browser's Back Button now to return to
   [practice-formulating-strong-rules].")
- (ACL2::PRACTICE-FORMULATING-STRONG-RULES-4
+ (PRACTICE-FORMULATING-STRONG-RULES-4
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Rules suggested by (SUBSETP (APPEND (FOO A) (BAR B)) (MUM C))
@@ -35778,7 +35641,7 @@ Subtopics
 
   Use your browser's Back Button now to return to
   [practice-formulating-strong-rules].")
- (ACL2::PRACTICE-FORMULATING-STRONG-RULES-3
+ (PRACTICE-FORMULATING-STRONG-RULES-3
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Rules suggested by (MEMBER (FOO A) (APPEND (BAR B) (MUM C)))
@@ -35903,7 +35766,7 @@ Subtopics
 
   Use your browser's Back Button now to return to
   [practice-formulating-strong-rules].")
- (ACL2::PRACTICE-FORMULATING-STRONG-RULES-2
+ (PRACTICE-FORMULATING-STRONG-RULES-2
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Rules suggested by (TRUE-LISTP (REV (FOO A)))
@@ -35950,7 +35813,7 @@ Subtopics
 
   Use your browser's Back Button now to return to
   [practice-formulating-strong-rules].")
- (ACL2::PRACTICE-FORMULATING-STRONG-RULES-1
+ (PRACTICE-FORMULATING-STRONG-RULES-1
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Rules suggested by (TRUE-LISTP (APPEND (FOO A) (BAR B)))
@@ -36047,7 +35910,7 @@ Subtopics
 
   Use your browser's Back Button now to return to
   [practice-formulating-strong-rules].")
- (ACL2::PRACTICE-FORMULATING-STRONG-RULES
+ (PRACTICE-FORMULATING-STRONG-RULES
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   A few simple checkpoints suggesting strong rules
@@ -36208,7 +36071,7 @@ Subtopics
               ...
               (LET ((STATE formk))
                    result-form)))")
- (ACL2::POST-INDUCTION-KEY-CHECKPOINTS
+ (POST-INDUCTION-KEY-CHECKPOINTS
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Reading post-induction key checkpoints
@@ -36311,7 +36174,7 @@ Subtopics
 
   Position is defined by Common Lisp. See any Common Lisp documentation
   for more information.")
- (ACL2::PORTCULLIS
+ (PORTCULLIS
   "Parent: ACL2::BOOKS.
 
   The gate guarding the entrance to a certified book
@@ -36982,7 +36845,7 @@ Subtopics
 
   See [parallelism-at-the-top-level] for restrictions on evaluating
   parallelism primitives from within the ACL2 top-level loop.")
- (ACL2::PARALLELISM-TUTORIAL
+ (PARALLELISM-TUTORIAL
   "Parent: ACL2::PARALLEL-PROGRAMMING.
 
   A tutorial on how to use the parallelism library.
@@ -37264,7 +37127,7 @@ Subtopics
   termination occurring when an argument evaluates to a non-nil
   value, in which case the value returned is t. Finally, [por] also
   supports the use of a [granularity] form.")
- (ACL2::PARALLELISM-PERFORMANCE
+ (PARALLELISM-PERFORMANCE
   "Parent: ACL2::PARALLEL-PROGRAMMING.
 
   Performance issues for parallel execution
@@ -37301,13 +37164,13 @@ Subtopics
     (time$ (length (sets::pmergesort-exec *x* 0)))
     (set-parallel-execution nil)
     (time$ (length (sets::pmergesort-exec *x* 0)))")
- (ACL2::PARALLELISM-BUILD
+ (PARALLELISM-BUILD
   "Parent: ACL2::MISCELLANEOUS.
 
   Building an ACL2 executable with parallel execution enabled
 
   See [compiling-ACL2p].")
- (ACL2::PARALLELISM-AT-THE-TOP-LEVEL
+ (PARALLELISM-AT-THE-TOP-LEVEL
   "Parent: ACL2::PARALLEL-PROGRAMMING.
 
   Parallel execution in the ACL2 top-level loop
@@ -37361,7 +37224,7 @@ Subtopics
   primitives directly in the top-level loop, to have sufficient
   resources (especially, threads) available, and to avoid explicitly
   disabling parallel execution (see [set-parallel-execution]).")
- (ACL2::PARALLEL-PUSHING-OF-SUBGOALS-FOR-INDUCTION
+ (PARALLEL-PUSHING-OF-SUBGOALS-FOR-INDUCTION
   "Parent: ACL2::PARALLEL-PROOF.
 
   Consequences of how parallelized proofs of subgoals are pushed for
@@ -37405,7 +37268,7 @@ Subtopics
   :[otf-flg] is t, in the sense that the abort does not happen
   immediately, but also rather like the case that :[otf-flg] is nil,
   in the sense that the abort does occur before getting to Subgoal 3.")
- (ACL2::PARALLEL-PROOF
+ (PARALLEL-PROOF
   "Parent: ACL2::PARALLELISM.
 
   Parallel proof in ACL2(p)
@@ -37457,7 +37320,7 @@ Subtopics
 
   [ACL2p-key-checkpoints]
       Key checkpoints in ACL2(p)")
- (ACL2::PARALLEL-PROGRAMMING
+ (PARALLEL-PROGRAMMING
   "Parent: ACL2::PARALLELISM.
 
   Parallel programming in ACL2(p)
@@ -37549,7 +37412,7 @@ Subtopics
 
   [Deflock]
       Define a wrapper macro that provides mutual exclusion in ACL2(p)")
- (ACL2::PARALLEL-EXECUTION
+ (PARALLEL-EXECUTION
   "Parent: ACL2::PARALLEL-PROGRAMMING.
 
   For ACL2(p): configure parallel execution
@@ -37557,7 +37420,7 @@ Subtopics
   See [set-parallel-execution] for how to configure parallel execution
   for calls of [plet], [pargs], [pand], [por] (but not
   [spec-mv-let]).")
- (ACL2::PARALLEL
+ (PARALLEL
   "Parent: ACL2::MISCELLANEOUS.
 
   Evaluating forms in parallel
@@ -37654,7 +37517,7 @@ Subtopics
   The Common Lisp language allows its pairlis function to construct an
   alist in any order! So we have to define our own version: See
   [pairlis$].")
- (ACL2::PACKAGE-REINCARNATION-IMPORT-RESTRICTIONS
+ (PACKAGE-REINCARNATION-IMPORT-RESTRICTIONS
   "Parent: ACL2::MISCELLANEOUS.
 
   Re-defining undone [defpkg]s
@@ -37712,7 +37575,7 @@ Subtopics
 
   If you are at an ACL2 prompt (as opposed to a raw Lisp break), then
   you may type :p! in place of (p!); see [keyword-commands].")
- (ACL2::|Overview of the Simplification of the Induction Step to T|
+ (|Overview of the Simplification of the Induction Step to T|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Overview of the Simplification of the Induction Step to T
@@ -37739,7 +37602,7 @@ Subtopics
     :rewrite rules CDR-CONS and CAR-CONS and primitive type reasoning.
 
   []")
- (ACL2::|Overview of the Simplification of the Induction Conclusion|
+ (|Overview of the Simplification of the Induction Conclusion|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Overview of the Simplification of the Induction Conclusion
@@ -37750,7 +37613,7 @@ Subtopics
   proved.
 
   Click [here] to step through the proof of Subgoal *1/2'.")
- (ACL2::|Overview of the Simplification of the Base Case to T|
+ (|Overview of the Simplification of the Base Case to T|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Overview of the Simplification of the Base Case to T
@@ -37773,7 +37636,7 @@ Subtopics
     primitive type reasoning.
 
   []")
- (ACL2::|Overview of the Proof of a Trivial Consequence|
+ (|Overview of the Proof of a Trivial Consequence|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Overview of the Proof of a Trivial Consequence
@@ -37816,7 +37679,7 @@ Subtopics
   You might explore the links before moving on.
 
   []")
- (ACL2::|Overview of the Final Simplification in the Base Case|
+ (|Overview of the Final Simplification in the Base Case|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Overview of the Final Simplification in the Base Case
@@ -37824,7 +37687,7 @@ Subtopics
   The But is our signal that the goal is proved.
 
   Click [here] to step through the proof. It is very simple.")
- (ACL2::|Overview of the Expansion of ENDP in the Induction Step|
+ (|Overview of the Expansion of ENDP in the Induction Step|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Overview of the Expansion of ENDP in the Induction Step
@@ -37836,7 +37699,7 @@ Subtopics
 
   Click [here] if you would like to step through the simplification of
   Subgoal *1/2.")
- (ACL2::|Overview of the Expansion of ENDP in the Base Case|
+ (|Overview of the Expansion of ENDP in the Base Case|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Overview of the Expansion of ENDP in the Base Case
@@ -37844,7 +37707,7 @@ Subtopics
   Subgoal *1/1 is the Base Case of our induction. It simplifies to
   Subgoal *1/1' by expanding the ENDP term in the hypothesis, just as
   we saw in the earlier proof of Subgoal *1/2.")
- (ACL2::|Other Requirements|
+ (|Other Requirements|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Other Requirements
@@ -37870,7 +37733,7 @@ Subtopics
     * SBCL (Steel Bank Common Lisp)
 
   []")
- (ACL2::|On the Naming of Subgoals|
+ (|On the Naming of Subgoals|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   On the Naming of Subgoals
@@ -38037,7 +37900,7 @@ Subtopics
 
   [Add-override-hints]
       Add to the [override-hints]")
- (ACL2::OUTPUT-TO-FILE
+ (OUTPUT-TO-FILE
   "Parent: ACL2::IO.
 
   Redirecting output to a file
@@ -38089,7 +37952,7 @@ Subtopics
                    :proofs-co (@ tmp-channel)
                    :standard-co (@ tmp-channel))
     (close-output-channel (@ tmp-channel) state)")
- (ACL2::OTF-FLG
+ (OTF-FLG
   "Parent: ACL2::MISCELLANEOUS.
 
   Allow more than one initial subgoal to be pushed for induction
@@ -38128,7 +37991,7 @@ Subtopics
   The :otf-flg may be supplied to [defun] via the [xargs] declare
   option. When you supply an :otf-flg hint to defun, the flag is
   effective for the termination proofs and the guard proofs, if any.")
- (ACL2::ORDINALS
+ (ORDINALS
   "Parent: ACL2::MISCELLANEOUS.
 
   Ordinals in ACL2
@@ -38803,7 +38666,7 @@ Subtopics
   observation during [include-book]. If you want to avoid printing
   from observation-cw during [include-book], then you need to manage
   that yourself.")
- (ACL2::OBDD
+ (OBDD
   "Parent: ACL2::MISCELLANEOUS.
 
   Ordered binary decision diagrams with rewriting
@@ -39123,7 +38986,7 @@ Subtopics
   when dealing with ordinals (also see [make-ord]).
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::|Numbers in ACL2|
+ (|Numbers in ACL2|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Numbers in ACL2
@@ -39170,7 +39033,7 @@ Subtopics
                    (t 'negative-non-integral-rational)))
             ((complex-rationalp x) 'complex-rational)
             (t 'NaN)))")
- (ACL2::|Nontautological Subgoals|
+ (|Nontautological Subgoals|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Prover output omits some details
@@ -39180,7 +39043,7 @@ Subtopics
   virtually always more than is necessary for the ACL2 user. In
   particular, the output often omits subgoals that are sufficiently
   trivial, including tautologies.")
- (ACL2::|Name the Formula Above|
+ (|Name the Formula Above|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Name the Formula Above
@@ -39230,7 +39093,7 @@ Subtopics
   more information.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::NU-REWRITER
+ (NU-REWRITER
   "Parent: ACL2::MISCELLANEOUS.
 
   Rewriting NTH/UPDATE-NTH expressions
@@ -39345,7 +39208,7 @@ Subtopics
   for more information.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::NTH-ALIASES-TABLE
+ (NTH-ALIASES-TABLE
   "Parent: ACL2::SWITCHES-PARAMETERS-AND-MODES.
 
   A [table] used to associate names for nth/update-nth printing
@@ -39573,7 +39436,7 @@ Subtopics
                        However, see :DOC ld-skip-proofsp for
                        information about how to quickly recover the
                        state.")
- (ACL2::NOTE9
+ (NOTE9
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 1.9 (Fall, 1996) Notes
@@ -39648,7 +39511,7 @@ Subtopics
   A bug in ok$, go$ and eval$ was fixed.
 
   Clausify now optimizes (mv-nth 'k (list x0 ... xk ... xn)) to xk.")
- (ACL2::NOTE8-UPDATE
+ (NOTE8-UPDATE
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 1.8 (Summer, 1995) Notes
@@ -39700,7 +39563,7 @@ Subtopics
 
   [Put-assoc-equal] has been added to the logic (it used to have
   :[defun-mode] :[program], and has been documented.")
- (ACL2::NOTE8
+ (NOTE8
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 1.8 (May, 1995) Notes
@@ -40034,7 +39897,7 @@ Subtopics
   Some functions related to the-fn and wormhole1 now have [defun-mode]
   :[program], but this change is almost certain to be inconsequential
   to all users.")
- (ACL2::NOTE7
+ (NOTE7
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 1.7 (released October 1994) Notes
@@ -40227,7 +40090,7 @@ Subtopics
     ffnnames-subsetp-lst --> ffnnames-subsetp-listp
     boolean-lstp     --> boolean-listp
     subst-expr1-lst-okp  --> subst-expr1-ok-listp")
- (ACL2::NOTE6
+ (NOTE6
   "Parent: ACL2::RELEASE-NOTES.
 
   Acl2 Version 1.6 Notes
@@ -40344,7 +40207,7 @@ Subtopics
 
   The choice of which variable to use as the measured variable in a
   recursive definition has been very slightly changed.")
- (ACL2::NOTE5
+ (NOTE5
   "Parent: ACL2::RELEASE-NOTES.
 
   Acl2 Version 1.5 Notes
@@ -40591,7 +40454,7 @@ Subtopics
   causing a to rewrite more quickly to c when (equiv a b) and (equiv
   b c) are both known and c is the canonical representative of the
   three.")
- (ACL2::NOTE4
+ (NOTE4
   "Parent: ACL2::RELEASE-NOTES.
 
   Acl2 Version 1.4 Notes
@@ -40748,7 +40611,7 @@ Subtopics
   A number of [events] that had been inadvertently disallowed in
   [books] are now permitted in [books]. These are: [defcong], defcor,
   [defequiv], [defrefinement], [defstub], and [verify-termination].")
- (ACL2::NOTE3
+ (NOTE3
   "Parent: ACL2::RELEASE-NOTES.
 
   Acl2 Version 1.3 Notes
@@ -40846,7 +40709,7 @@ Subtopics
   if the rewriter is trying to prove (rationalp (foo a b c)) it is
   now smart enough to try lemmas that match with (integerp (foo a b
   c)).")
- (ACL2::NOTE2
+ (NOTE2
   "Parent: ACL2::RELEASE-NOTES.
 
   Acl2 Version 1.2 Notes
@@ -40877,7 +40740,7 @@ Subtopics
   is subsumed by'' a given lemma instance. The :by hint also lets you
   say ``this goal can't be proved yet but skip it and see how the
   rest of the proof goes.'' See [hints].")
- (ACL2::NOTE1
+ (NOTE1
   "Parent: ACL2::RELEASE-NOTES.
 
   Acl2 Version 1.1 Notes
@@ -40905,7 +40768,7 @@ Subtopics
 
   [Guard]
       Restricting the domain of a function")
- (ACL2::NOTE-6-4
+ (NOTE-6-4
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 6.4 (xxx, 20xx) Notes
@@ -40974,10 +40837,21 @@ Subtopics
 
   CHANGES AT THE SYSTEM LEVEL
 
+  The ACL2 system [documentation] has been reworked for the [xdoc]
+  framework developed by Jared Davis. While the ACL2 manual can still
+  be built, it is now possible for the ACL2 community to contribute
+  to the ACL2 system documentation, in community book
+  books/system/doc/acl2-doc.lisp; see comments near the top of that
+  book. Now that both the ACL2 system documentation and much of the
+  community books documentation are written in [xdoc] format, we hope
+  the ACL2 community will add links from the ACL2 system
+  documentation topics to book documentation topics. Thanks to Jared
+  for all his work contributing to this enhancement.
+
   EMACS SUPPORT
 
   EXPERIMENTAL/ALTERNATE VERSIONS")
- (ACL2::NOTE-6-3
+ (NOTE-6-3
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 6.3 (October, 2013) Notes
@@ -41259,7 +41133,7 @@ Subtopics
   (SBCL only) Fixed a bug that was causing a Lisp break after turning
   on [waterfall-parallelism]. Thanks to David Rager for confirming
   that our proposed fix is correct.")
- (ACL2::NOTE-6-2
+ (NOTE-6-2
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 6.2 (June, 2013) Notes
@@ -41595,7 +41469,7 @@ Subtopics
   non-standard analysis support for the [real]s (as for ACL2(r)), now
   builds and can certify the community nonstd/ books. Thanks to David
   Rager for his contribution to this capability.")
- (ACL2::NOTE-6-1
+ (NOTE-6-1
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 6.1 (February, 2013) Notes
@@ -41811,7 +41685,7 @@ Subtopics
   in the implementations of [accumulated-persistence] and
   [forward-chaining-reports], which are not supported in ACL2(p) (see
   [unsupported-waterfall-parallelism-features]).")
- (ACL2::NOTE-6-0
+ (NOTE-6-0
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 6.0 (December, 2012) Notes
@@ -42204,7 +42078,7 @@ Subtopics
       pushed for proof by induction, the key checkpoint would be
       printed once for each such goal during the proof, and also once
       for each such goal in the summary at the end.")
- (ACL2::NOTE-5-0
+ (NOTE-5-0
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 5.0 (August, 2012) Notes
@@ -43192,13 +43066,13 @@ Subtopics
       likely be best for 64-bit CCL; for some Lisps, performance may
       be much worse, probably depending in part on the underlying
       implementation of hash tables.")
- (ACL2::|NOTE-4-3(R)|
+ (|NOTE-4-3(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 4.3(r) (July, 2011) Notes
 
   Please see [note-4-3] for changes in Version 4.3 of ACL2.")
- (ACL2::NOTE-4-3
+ (NOTE-4-3
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 4.3 (July, 2011) Notes
@@ -43842,13 +43716,13 @@ Subtopics
 
       [History] commands such as :[pe] and :[pbt] now display ``M'' or
       ``m'' to indicate memoized functions. See [pc].")
- (ACL2::|NOTE-4-2(R)|
+ (|NOTE-4-2(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 4.2(r) (January, 2011) Notes
 
   Please see [note-4-2] for changes in Version 4.2 of ACL2.")
- (ACL2::NOTE-4-2
+ (NOTE-4-2
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 4.2 (January, 2011) Notes
@@ -44322,13 +44196,13 @@ Subtopics
   than an enhancement to the [hons] version that can reduce sizes of
   [certificate] files, by applying [hons-copy] to introduce structure
   sharing (ACL2 source function make-certificate-file1).")
- (ACL2::|NOTE-4-1(R)|
+ (|NOTE-4-1(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 4.1(r) (September, 2010) Notes
 
   Please see [note-4-1] for changes in Version 4.1 of ACL2.")
- (ACL2::NOTE-4-1
+ (NOTE-4-1
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 4.1 (September, 2010) Notes
@@ -44477,7 +44351,7 @@ Subtopics
       gc$ would no longer call the garbage collector, which had been
       invoked by raw Lisp code. Now, evaluation of (memoize 'gc$-fn)
       causes an error.")
- (ACL2::NOTE-4-0-WORMHOLE-CHANGES
+ (NOTE-4-0-WORMHOLE-CHANGES
   "Parent: ACL2::NOTE-4-0.
 
   How to convert calls of wormhole for Version 4.0
@@ -44538,13 +44412,13 @@ Subtopics
 
   In any case, and especially if your wormhole call had a pseudo-flag
   other than t, we recommend that you see [wormhole].")
- (ACL2::|NOTE-4-0(R)|
+ (|NOTE-4-0(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 4.0(r) (July, 2010) Notes
 
   Please see [note-4-0] for changes in Version 4.0 of ACL2.")
- (ACL2::NOTE-4-0
+ (NOTE-4-0
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 4.0 (July, 2010) Notes
@@ -45364,7 +45238,7 @@ Subtopics
 
   [Note-4-0-wormhole-changes]
       How to convert calls of wormhole for Version 4.0")
- (ACL2::NOTE-3-6-1
+ (NOTE-3-6-1
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.6.1 (September, 2009) Notes
@@ -45410,13 +45284,13 @@ Subtopics
   defined using [mutual-recursion]). Thanks to Daron Vroon for
   bringing this bug to our attention, pointing out the swapped
   arguments.")
- (ACL2::|NOTE-3-6(R)|
+ (|NOTE-3-6(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.6(r) (August, 2009) Notes
 
   Please also see [note-3-6] for changes in Version 3.6 of ACL2.")
- (ACL2::NOTE-3-6
+ (NOTE-3-6
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.6 (August, 2009) Notes
@@ -45738,7 +45612,7 @@ Subtopics
       the thousandth time, cf. watch. Haven't changed it in weeks,
       which means that (a) it is getting tolerable or (b) I've run
       out of gas.")
- (ACL2::|NOTE-3-5(R)|
+ (|NOTE-3-5(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.5(r) (May, 2009) Notes
@@ -45809,7 +45683,7 @@ Subtopics
   natural and useful versions of the IVT, MVT, etc. It also supports
   the introduction of inverse functions, e.g., logarithms. Finally,
   the library has much more extensive support for differentiation.")
- (ACL2::NOTE-3-5
+ (NOTE-3-5
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.5 (May, 2009) Notes
@@ -46548,7 +46422,7 @@ Subtopics
   The ACL2 [state] can now be queried with (@ hons-enabled) so that a
   result of t says that one is in the experimental hons version,
   while nil says the opposite.")
- (ACL2::|NOTE-3-4(R)|
+ (|NOTE-3-4(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.4(r) (August, 2008) Notes
@@ -46561,7 +46435,7 @@ Subtopics
   books/nonstd/nsa/, and then only when required by books in other
   directories. Also fixed the ``clean'' target to clean links rather
   than to make links.")
- (ACL2::NOTE-3-4
+ (NOTE-3-4
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.4 (August, 2008) Notes
@@ -47120,13 +46994,13 @@ Subtopics
   commands to `clean' books will delete such files (specifically,
   books/Makefile-generic has been changed to delete
   temp-emacs-file.lsp).")
- (ACL2::|NOTE-3-3(R)|
+ (|NOTE-3-3(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.3(r) (November, 2007) Notes
 
   Please also see [note-3-3] for changes to Version 3.3 of ACL2.")
- (ACL2::NOTE-3-3
+ (NOTE-3-3
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.3 (November, 2007) Notes
@@ -47510,13 +47384,13 @@ Subtopics
 
   The distributed books directory, (@ distributed-books-dir), is now
   printed in the start-up message.")
- (ACL2::|NOTE-3-2-1(R)|
+ (|NOTE-3-2-1(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.2.1(r) (June, 2007) Notes
 
   Please also see [note-3-2-1] for changes to Version 3.2.1 of ACL2.")
- (ACL2::NOTE-3-2-1
+ (NOTE-3-2-1
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.2.1 (June, 2007) Notes
@@ -47688,7 +47562,7 @@ Subtopics
   corollary formula (implies (f x) (and (g x) (h x))), where this was
   not formerly the case. Thanks to Dave Greve for bringing this issue
   to our attention.")
- (ACL2::|NOTE-3-2(R)|
+ (|NOTE-3-2(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.2(r) (April, 2007) Notes
@@ -47709,7 +47583,7 @@ Subtopics
   comprehend the reals rather than only the rationals.
 
   Please also see [note-3-2] for changes to Version 3.2 of ACL2.")
- (ACL2::NOTE-3-2
+ (NOTE-3-2
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.2 (April, 2007) Notes
@@ -48143,7 +48017,7 @@ Subtopics
   raw-mode back to nil:
 
     (progn! (set-raw-mode t) ...)")
- (ACL2::|NOTE-3-1(R)|
+ (|NOTE-3-1(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.1(r) (December, 2006) Notes
@@ -48152,7 +48026,7 @@ Subtopics
   of non-standard analysis in particular.
 
   Please also see [note-3-1] for changes to Version 3.1 of ACL2.")
- (ACL2::NOTE-3-1
+ (NOTE-3-1
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.1 (December, 2006) Notes
@@ -48164,7 +48038,7 @@ Subtopics
   Please see [note-3-0-2] for a description of changes since Version
   3.0.1, and also see [note-3-0-1] for additional changes since
   Version 3.0.")
- (ACL2::NOTE-3-0-2
+ (NOTE-3-0-2
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.0.2 (December, 2006) Notes
@@ -48498,7 +48372,7 @@ Subtopics
   Added a new event, [assert-event], for checking that forms evaluate
   to non-nil values. Thanks to Peter Dillinger for suggesting and
   collaborating on this addition.")
- (ACL2::|NOTE-3-0-1(R)|
+ (|NOTE-3-0-1(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.0.1(r) (August, 2006) Notes
@@ -48507,7 +48381,7 @@ Subtopics
   of non-standard analysis in particular.
 
   Please also see [note-3-0-1] for changes to Version 3.0.1 of ACL2.")
- (ACL2::NOTE-3-0-1
+ (NOTE-3-0-1
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.0.1 (August, 2006) Notes
@@ -48764,7 +48638,7 @@ Subtopics
   its argument could not be a variable, a constant, or (more
   interestingly) a [lambda] application (i.e., a [let] or [mv-let]
   expression).")
- (ACL2::|NOTE-3-0(R)|
+ (|NOTE-3-0(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.0(r) (June, 2006) Notes
@@ -48773,7 +48647,7 @@ Subtopics
   of non-standard analysis in particular.
 
   Please also see [note-3-0] for changes to Version 3.0 of ACL2.")
- (ACL2::NOTE-3-0
+ (NOTE-3-0
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 3.0 (June, 2006) Notes
@@ -48793,7 +48667,7 @@ Subtopics
   distributed and workshop books. For now, we have simply added the
   new contributions according to the old-style distribution
   methodology.")
- (ACL2::NOTE-2-9-5
+ (NOTE-2-9-5
   "Parent: ACL2::RELEASE-NOTES.
 
   Changes in Version 3.0 since Version 2.9.4
@@ -49046,7 +48920,7 @@ Subtopics
 
   The file books/README.html has been renamed to books/Readme.html,
   since some browsers don't show the former in the directory listing.")
- (ACL2::NOTE-2-9-4
+ (NOTE-2-9-4
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.9.4 (February, 2006) Notes
@@ -49386,7 +49260,7 @@ Subtopics
 
   A new function, [reset-kill-ring], has been provided for the rare
   user who encounters memory limitations. See [reset-kill-ring].")
- (ACL2::NOTE-2-9-3-PPR-CHANGE
+ (NOTE-2-9-3-PPR-CHANGE
   "Parent: ACL2::NOTE-2-9-3.
 
   Change in pretty-printing for ACL2 Version_2.9.3
@@ -49665,7 +49539,7 @@ Subtopics
 
   The new way is not how one would print it by hand! But then, neither
   is the old way.")
- (ACL2::NOTE-2-9-3
+ (NOTE-2-9-3
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.9.3 (August, 2005) Notes
@@ -49896,7 +49770,7 @@ Subtopics
 
   [Note-2-9-3-ppr-change]
       Change in pretty-printing for ACL2 Version_2.9.3")
- (ACL2::NOTE-2-9-2
+ (NOTE-2-9-2
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.9.2 (April, 2005) Notes
@@ -50103,7 +49977,7 @@ Subtopics
   The documentation has been improved for explaining how [rune]s are
   assigned; see [rune]. Thanks to Robert Krug for pointing out
   inaccuracies in the existing documentation.")
- (ACL2::NOTE-2-9-1
+ (NOTE-2-9-1
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.9.1 (December, 2004) Notes
@@ -50270,7 +50144,7 @@ Subtopics
 
   Finally, the ``-s'' flag may now be omitted when running ``make
   dependencies.''")
- (ACL2::|NOTE-2-9(R)|
+ (|NOTE-2-9(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.9(r) (October, 2004) Notes
@@ -50279,7 +50153,7 @@ Subtopics
   than a minor modification or two in books/nonstd/ books.
 
   Please also see [note-2-9] for changes to Version_2.9 of ACL2.")
- (ACL2::NOTE-2-9
+ (NOTE-2-9
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.9 (October, 2004) Notes
@@ -50743,7 +50617,7 @@ Subtopics
   corresponding function; see [macro-aliases-table]. Also,
   [disabledp] now has a [guard] of t but causes a hard error on an
   inappropriate argument.")
- (ACL2::NOTE-2-8-SYSTEM
+ (NOTE-2-8-SYSTEM
   "Parent: ACL2::NOTE-2-8.
 
   ACL2 Version 2.8 Notes on System-level Changes
@@ -50765,7 +50639,7 @@ Subtopics
   ACL2 now runs on MCL 5.0. Thanks to Pascal Costanza for updates to
   the instructions in file mcl-acl2-startup.lisp and for an update to
   the ACL2 sources (parameter *compiled-file-extension*).")
- (ACL2::NOTE-2-8-RULES
+ (NOTE-2-8-RULES
   "Parent: ACL2::NOTE-2-8.
 
   ACL2 Version 2.8 Notes on Changes in Rules, Definitions, and
@@ -50804,7 +50678,7 @@ Subtopics
   Thanks to Eric Smith for raising a question leading to these
   additions, as well as to Joe Hendrix and Vernon Austel for helpful
   suggestions.")
- (ACL2::NOTE-2-8-PROOFS
+ (NOTE-2-8-PROOFS
   "Parent: ACL2::NOTE-2-8.
 
   ACL2 Version 2.8 Notes on Changes in Proof Engine
@@ -50880,7 +50754,7 @@ Subtopics
   involving linear arithmetic reasoning: linear arithmetic now uses
   the conclusions of [forward-chaining] rules, and [type-set] now
   uses a small amount of linear reasoning when deciding inequalities.")
- (ACL2::NOTE-2-8-PROOF-CHECKER
+ (NOTE-2-8-PROOF-CHECKER
   "Parent: ACL2::NOTE-2-8.
 
   ACL2 Version 2.8 Notes on Proof-checker Changes
@@ -50911,7 +50785,7 @@ Subtopics
   Both of these problems have been remedied. Thanks to John Erickson
   for bringing the lack of documentation of the second argument to
   our attention.")
- (ACL2::NOTE-2-8-OTHER
+ (NOTE-2-8-OTHER
   "Parent: ACL2::NOTE-2-8.
 
   ACL2 Version 2.8 Notes on Miscellaneous Changes
@@ -50964,13 +50838,13 @@ Subtopics
 
   A new release of the rtl library has been included: books/rtl/rel4/.
   See the README file in that directory.")
- (ACL2::NOTE-2-8-ORDINALS
+ (NOTE-2-8-ORDINALS
   "Parent: ACL2::NOTE-2-8.
 
   ACL2 Version 2.8 Notes on Changes to the Ordinals
 
   Please see [ordinals].")
- (ACL2::NOTE-2-8-NEW-FUNCTIONALITY
+ (NOTE-2-8-NEW-FUNCTIONALITY
   "Parent: ACL2::NOTE-2-8.
 
   ACL2 Version 2.8 Notes on New Functionality
@@ -51116,14 +50990,14 @@ Subtopics
   Robert Krug has contributed a new set of arithmetic books to the
   standard distribution, books/arithmetic-3/. See the README file in
   that directory. Thanks, Robert.")
- (ACL2::NOTE-2-8-GUARDS
+ (NOTE-2-8-GUARDS
   "Parent: ACL2::NOTE-2-8.
 
   ACL2 Version 2.8 Notes on Guard-related Changes
 
   All the guard-related changes may be found elsewhere; in particular,
   see [note-2-8-bug-fixes].")
- (ACL2::NOTE-2-8-BUG-FIXES
+ (NOTE-2-8-BUG-FIXES
   "Parent: ACL2::NOTE-2-8.
 
   ACL2 Version 2.8 Notes on Bug Fixes
@@ -51470,7 +51344,7 @@ Subtopics
 
   Modernized some of the proof-tree emacs and infix printing stuff,
   thanks to suggestions made by Camm Maguire.")
- (ACL2::|NOTE-2-8(R)|
+ (|NOTE-2-8(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.8(r) (March, 2003) Notes
@@ -51481,7 +51355,7 @@ Subtopics
   are file system changes that cause problems with link pathnames.
 
   Please also see [note-2-8] for changes to Version_2.8 of ACL2.")
- (ACL2::NOTE-2-8
+ (NOTE-2-8
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.8 (March, 2004) Notes
@@ -51683,7 +51557,7 @@ Subtopics
 
   [Note-2-8-bug-fixes]
       ACL2 Version 2.8 Notes on Bug Fixes")
- (ACL2::NOTE-2-7-SYSTEM
+ (NOTE-2-7-SYSTEM
   "Parent: ACL2::NOTE-2-7.
 
   ACL2 Version 2.7 Notes on System-level Changes
@@ -51752,7 +51626,7 @@ Subtopics
 
   Compiler info messages sent to error stream were eliminated for
   CMUCL.")
- (ACL2::NOTE-2-7-RULES
+ (NOTE-2-7-RULES
   "Parent: ACL2::NOTE-2-7.
 
   ACL2 Version 2.7 Notes on Changes in Rules and Constants
@@ -51770,7 +51644,7 @@ Subtopics
   [eq], or [eql]: the rule was stored as though EQV were [equal].
   (See [note-2-6-rules].) This change has been extended to rules of
   class :[definition].")
- (ACL2::NOTE-2-7-PROOFS
+ (NOTE-2-7-PROOFS
   "Parent: ACL2::NOTE-2-7.
 
   ACL2 Version 2.7 Notes on Changes in Proof Engine
@@ -51871,14 +51745,14 @@ Subtopics
   contextual information is now always kept when it involves a
   constrained constant, i.e., a zero-ary function introduced in the
   signature of an [encapsulate].")
- (ACL2::NOTE-2-7-PROOF-CHECKER
+ (NOTE-2-7-PROOF-CHECKER
   "Parent: ACL2::NOTE-2-7.
 
   ACL2 Version 2.7 Notes on Proof-checker Changes
 
   Output from the [proof-checker] can now be inhibited by supplying the
   symbol proof-checker in the list given to [set-inhibit-output-lst].")
- (ACL2::NOTE-2-7-OTHER
+ (NOTE-2-7-OTHER
   "Parent: ACL2::NOTE-2-7.
 
   ACL2 Version 2.7 Notes on Miscellaneous Changes
@@ -52051,7 +51925,7 @@ Subtopics
   should be used in function definitions (as before). This change
   eliminates a warning put out by the Allegro Common Lisp compiler
   for top-level value forms in [books].")
- (ACL2::NOTE-2-7-NEW-FUNCTIONALITY
+ (NOTE-2-7-NEW-FUNCTIONALITY
   "Parent: ACL2::NOTE-2-7.
 
   ACL2 Version 2.7 Notes on New Functionality
@@ -52209,7 +52083,7 @@ Subtopics
   in the ACL2 package, indicating that the usual check should be
   suppressed on the number of commands that have been executed to
   create the world in which [certify-book] was called.")
- (ACL2::NOTE-2-7-GUARDS
+ (NOTE-2-7-GUARDS
   "Parent: ACL2::NOTE-2-7.
 
   ACL2 Version 2.7 Notes on Guard-related Changes
@@ -52234,7 +52108,7 @@ Subtopics
     (type (unsigned-byte 4) x)
     ==> [old] (AND (INTEGERP X) (<= 0 X) (<= X 15))
     ==> [new] (UNSIGNED-BYTE-P 4 X)")
- (ACL2::NOTE-2-7-BUG-FIXES
+ (NOTE-2-7-BUG-FIXES
   "Parent: ACL2::NOTE-2-7.
 
   ACL2 Version 2.7 Notes on Bug Fixes
@@ -52529,7 +52403,7 @@ Subtopics
   applied to defined (as opposed to constrained) functions. This has
   been fixed. Thanks to Francisco J. Martin-Mateos (ChesKo) for
   pointing out this problem by sending a clear example.")
- (ACL2::|NOTE-2-7(R)|
+ (|NOTE-2-7(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.7(r) (November, 2002) Notes
@@ -52548,7 +52422,7 @@ Subtopics
   books/nonstd/Makefile.
 
   Please see [note-2-7] for changes to Version_2.7 of ACL2.")
- (ACL2::NOTE-2-7
+ (NOTE-2-7
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.7 (November, 2002) Notes
@@ -52664,7 +52538,7 @@ Subtopics
 
   [Note-2-7-bug-fixes]
       ACL2 Version 2.7 Notes on Bug Fixes")
- (ACL2::NOTE-2-6-SYSTEM
+ (NOTE-2-6-SYSTEM
   "Parent: ACL2::NOTE-2-6.
 
   ACL2 Version 2.6 Notes on System-level Changes
@@ -52708,7 +52582,7 @@ Subtopics
   [symbol-package-name]. At a low level, the (undocumented) constant
   *main-lisp-package-name* is now \"COMMON-LISP\"; before, it was
   \"LISP\" for GCL.")
- (ACL2::NOTE-2-6-RULES
+ (NOTE-2-6-RULES
   "Parent: ACL2::NOTE-2-6.
 
   ACL2 Version 2.6 Notes on Changes in Rules and Constants
@@ -52775,7 +52649,7 @@ Subtopics
   primary change is to replace calls of [rationalp] with calls of
   [real/rationalp], which should have no effect on users of standard
   ACL2.")
- (ACL2::NOTE-2-6-PROOFS
+ (NOTE-2-6-PROOFS
   "Parent: ACL2::NOTE-2-6.
 
   ACL2 Version 2.6 Notes on Changes in Proof Engine
@@ -52882,7 +52756,7 @@ Subtopics
   permutative rewrite rules are applied; see [loop-stopper]. Thanks
   to Robert Krug for suggesting this improvement and providing part
   of the implemtation.")
- (ACL2::NOTE-2-6-PROOF-CHECKER
+ (NOTE-2-6-PROOF-CHECKER
   "Parent: ACL2::NOTE-2-6.
 
   ACL2 Version 2.6 Notes on Proof-checker Changes
@@ -52903,7 +52777,7 @@ Subtopics
   A new [proof-checker] command, runes, has been added. It reports the
   [rune]s that have participated in the interactive proof up to the
   current point.")
- (ACL2::NOTE-2-6-OTHER
+ (NOTE-2-6-OTHER
   "Parent: ACL2::NOTE-2-6.
 
   ACL2 Version 2.6 Notes on Other (Minor) Changes
@@ -53015,7 +52889,7 @@ Subtopics
 
   Inefficiencies in GCL fixnum computations were remedied for macros +f
   and *f. Thanks to Rob Sumners for pointing out this issue.")
- (ACL2::NOTE-2-6-NEW-FUNCTIONALITY
+ (NOTE-2-6-NEW-FUNCTIONALITY
   "Parent: ACL2::NOTE-2-6.
 
   ACL2 Version 2.6 Notes on New Functionality
@@ -53196,7 +53070,7 @@ Subtopics
   to the existing collection of books about arithmetic,
   books/arithmetic/. For a discussion of the distributed books see
   the link to README.html in the installation instructions.")
- (ACL2::NOTE-2-6-GUARDS
+ (NOTE-2-6-GUARDS
   "Parent: ACL2::NOTE-2-6.
 
   ACL2 Version 2.6 Notes on Guard-related Changes
@@ -53251,7 +53125,7 @@ Subtopics
   function [substitute] (and its subroutine substitute-ac). This
   omission has been corrected; also, the guard is slightly stronger
   than the documentation had claimed (and that has been corrected).")
- (ACL2::|NOTE-2-6(R)|
+ (|NOTE-2-6(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.6(r) (November, 2001) Notes
@@ -53260,7 +53134,7 @@ Subtopics
 
   Please see [note-2-6] for changes to Version 2.6 of ACL2. We hope to
   write more documentation for ACL2(r) in the future.")
- (ACL2::NOTE-2-6
+ (NOTE-2-6
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.6 (November, 2001) Notes
@@ -53299,7 +53173,7 @@ Subtopics
 
   [Note-2-6-guards]
       ACL2 Version 2.6 Notes on Guard-related Changes")
- (ACL2::|NOTE-2-5(R)|
+ (|NOTE-2-5(R)|
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.5(r) (June, 2000) Notes
@@ -53308,7 +53182,7 @@ Subtopics
 
   Please see [note-2-5] for changes to Version 2.5 of ACL2. We hope to
   write more documentation for ACL2(r) in the future.")
- (ACL2::NOTE-2-5
+ (NOTE-2-5
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.5 (June, 2000) Notes
@@ -53633,7 +53507,7 @@ Subtopics
 
   Functions duplicates, add-to-set-equal, intersection-eq, evens, and
   odds are now :[logic] mode functions.")
- (ACL2::NOTE-2-4
+ (NOTE-2-4
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.4 (August, 1999) Notes
@@ -53674,7 +53548,7 @@ Subtopics
   Common Lisp. Jun Sawada, who has been a great help with keeping
   ACL2 up and running at UT on various platforms, was especially
   helpful. Thanks Jun.")
- (ACL2::NOTE-2-3
+ (NOTE-2-3
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.3 (October, 1998) Notes
@@ -53719,7 +53593,7 @@ Subtopics
   A bug was fixed in cross fertilization. The bug caused the system to
   report that it had substituted one term for another when in fact no
   substitution occurred. The bug was noticed by Bill McCune.")
- (ACL2::NOTE-2-2
+ (NOTE-2-2
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.2 (August, 1998) Notes
@@ -53776,7 +53650,7 @@ Subtopics
   loaded correctly and efficiently).
 
   Minor bugs in the documentation were fixed.")
- (ACL2::NOTE-2-1
+ (NOTE-2-1
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.1 (December, 1997) Notes
@@ -53788,7 +53662,7 @@ Subtopics
   Less important notes:
 
   Minor bugs in the documentation were fixed.")
- (ACL2::NOTE-2-0
+ (NOTE-2-0
   "Parent: ACL2::RELEASE-NOTES.
 
   ACL2 Version 2.0 (July, 1997) Notes
@@ -53827,7 +53701,7 @@ Subtopics
   more information.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::NORMED
+ (NORMED
   "Parent: ACL2::HONS-AND-MEMOIZATION.
 
   Normed objects are ACL2 Objects that are \"canonical\" or \"unique\" in a
@@ -53890,7 +53764,7 @@ Subtopics
   collection that allows normed conses to be reclaimed. For other
   Lisps, the only option is to occasionally, manually clear out these
   Hons Space tables with [hons-clear].")
- (ACL2::NORMALIZE
+ (NORMALIZE
   "Parent: ACL2::MISCELLANEOUS.
 
   Xargs keyword :NORMALIZE
@@ -53915,13 +53789,13 @@ Subtopics
   a nonnegative integer and j is a positive integer.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::NONLINEARP
+ (NONLINEARP
   "Parent: ACL2::MISCELLANEOUS.
 
   Hints keyword :NONLINEARP
 
   See [hints].")
- (ACL2::NON-LINEAR-ARITHMETIC
+ (NON-LINEAR-ARITHMETIC
   "Parent: ACL2::MISCELLANEOUS.
 
   Non-linear Arithmetic
@@ -54139,7 +54013,7 @@ Subtopics
   done in an efficient way. The use of a small, specialized, theory
   helps avoid the repeated application of rewrite rules to already
   stabilized terms.")
- (ACL2::NON-EXECUTABLE
+ (NON-EXECUTABLE
   "Parent: ACL2::MISCELLANEOUS.
 
   Xargs keyword :NON-EXECUTABLE
@@ -54237,7 +54111,7 @@ Subtopics
     ; violation for that; we just get the error expected from using non-exec.
     (defun h2 ()
       (non-exec (/ 0)))")
- (ACL2::NO-THANKS
+ (NO-THANKS
   "Parent: ACL2::MISCELLANEOUS.
 
   Hints keyword :NO-THANKS
@@ -54288,7 +54162,7 @@ Subtopics
   Ninth member of the list
 
   See any Common Lisp documentation for details.")
- (ACL2::NIL-GOAL
+ (NIL-GOAL
   "Parent: ACL2::MISCELLANEOUS.
 
   How to proceed when the prover generates a goal of nil
@@ -54362,7 +54236,7 @@ Subtopics
 
   This is useful for prohibiting the memoization of functions that are
   known to involve destructive functions like nreverse.")
- (ACL2::NESTED-STOBJS
+ (NESTED-STOBJS
   "Parent: ACL2::STOBJ.
 
   Using [stobj]s that contain stobjs
@@ -54950,7 +54824,7 @@ Subtopics
   natural numbers.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::NAME
+ (NAME
   "Parent: ACL2::MISCELLANEOUS.
 
   Syntactic rules on logical names
@@ -54994,7 +54868,7 @@ Subtopics
   certain manipulations with many symbols of that package. So, we
   stay away from them, except for allowing certain variables as
   indicated above.")
- (ACL2::|Models of Computer Hardware and Software|
+ (|Models of Computer Hardware and Software|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Models of Computer Hardware and Software
@@ -55029,7 +54903,7 @@ Subtopics
   what a typical state contains.
 
   []")
- (ACL2::|Models in Engineering|
+ (|Models in Engineering|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Models in Engineering
@@ -55047,7 +54921,7 @@ Subtopics
   is built and analyze its properties. Usually, testing and analyzing
   a model is cheaper and faster than fabricating and refabricating
   the product.")
- (ACL2::|Modeling in ACL2|
+ (|Modeling in ACL2|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Modeling in ACL2
@@ -55353,7 +55227,7 @@ Subtopics
   ACL2 does not support the Common Lisp construct values, whose logical
   meaning seems difficult to characterize. Mv is the ACL2 analogue of
   that construct.")
- (ACL2::MUTUAL-RECURSION-PROOF-EXAMPLE
+ (MUTUAL-RECURSION-PROOF-EXAMPLE
   "Parent: ACL2::TUTORIAL5-MISCELLANEOUS-EXAMPLES.
 
   A small proof about mutually recursive functions
@@ -55741,7 +55615,7 @@ Subtopics
   alist in which the successive fmt variables #\\0, #\\1, ..., #\\k are
   bound to the successive elements of (arg1 ... argk).")
  (MORE-DOC
-  "Parent: DOCUMENTATION.
+  "Parent: ACL2::LEGACY-DOCUMENTATION.
 
   A continuation of the :[doc] [documentation]
 
@@ -55764,7 +55638,7 @@ Subtopics
   you can get the next block of the continuation by typing :[more] or
   all of the remaining blocks by typing :[more!]. See [more].")
  (MORE!
-  "Parent: DOCUMENTATION.
+  "Parent: ACL2::LEGACY-DOCUMENTATION.
 
   Another response to ``(type :more for more, :more! for the rest)''
 
@@ -55785,7 +55659,7 @@ Subtopics
   then type simply :more! you will see all of the details, while if
   you type :[more] you will be fed the next block of details.")
  (MORE
-  "Parents: DOCUMENTATION and ACL2::NOTE1.
+  "Parents: ACL2::LEGACY-DOCUMENTATION and ACL2::NOTE1.
 
   Your response to :[doc] or :[more]'s ``(type :more...)''
 
@@ -56006,8 +55880,7 @@ Subtopics
   lemmas we thought it best to provide a general (if arcane)
   mechanism and hope that the ACL2 community will develop the special
   cases that we find most convenient.")
- (ACL2::MODE
-      "Parent: ACL2::MISCELLANEOUS.
+ (MODE "Parent: ACL2::MISCELLANEOUS.
 
   Xargs keyword :MODE
 
@@ -56128,7 +56001,7 @@ Subtopics
       "Parent: ACL2::MISCELLANEOUS.
 
   See [meta-extract].")
- (ACL2::META-EXTRACT
+ (META-EXTRACT
   "Parent: ACL2::MISCELLANEOUS.
 
   Meta reasoning using valid terms extracted from context or [world]
@@ -56449,7 +56322,7 @@ Subtopics
   whether guard-checking may cause an error. A useful instance of the
   hypothesis displayed above will be one in which st is that modified
   state.")
- (ACL2::META
+ (META
   "Parent: ACL2::RULE-CLASSES.
 
   Make a :meta rule (a hand-written simplifier)
@@ -57118,7 +56991,7 @@ Subtopics
 
   Member is defined by Common Lisp. See any Common Lisp documentation
   for more information.")
- (ACL2::MEASURE
+ (MEASURE
     "Parent: ACL2::MISCELLANEOUS.
 
   Xargs keyword :MEASURE
@@ -57226,7 +57099,7 @@ Subtopics
       (declare (ignorable x)
                (xargs :guard (equal x t)))
       (and (mbt x) y))")
- (ACL2::MBE1
+ (MBE1
   "Parent: ACL2::ACL2-BUILT-INS.
 
   Attach code for execution
@@ -57410,8 +57283,8 @@ Subtopics
   more information.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::MARKUP
-  "Parent: DOCUMENTATION.
+ (MARKUP
+  "Parent: ACL2::LEGACY-DOCUMENTATION.
 
   The markup language for ACL2 [documentation] strings
 
@@ -57683,7 +57556,7 @@ Subtopics
   be in that font and be an invisible link.
 
     ~c[:]~ilc[doc]")
- (ACL2::MANAGING-ACL2-PACKAGES
+ (MANAGING-ACL2-PACKAGES
   "Parent: DEFPKG.
 
   User-contributed documentation on packages
@@ -57819,7 +57692,7 @@ Subtopics
   return an equal but not eq alist. (In these cases, we still try to
   avoid at least some consing by reusing the \"longest normed tail\" of
   the alist.)")
- (ACL2::MAKE-EVENT-DETAILS
+ (MAKE-EVENT-DETAILS
   "Parent: MAKE-EVENT.
 
   Details on [make-event] expansion
@@ -58748,7 +58621,7 @@ Subtopics
   code 0.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::MACRO-COMMAND
+ (MACRO-COMMAND
   "Parent: ACL2::PROOF-CHECKER.
 
   Compound command for the proof-checker
@@ -58868,7 +58741,7 @@ Subtopics
     ACL2 !>
 
   Also see [trans].")
- (ACL2::MACRO-ALIASES-TABLE
+ (MACRO-ALIASES-TABLE
   "Parent: ACL2::SWITCHES-PARAMETERS-AND-MODES.
 
   A [table] used to associate function names with macro names
@@ -59017,7 +58890,7 @@ Subtopics
   documentation for more information.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::LOOP-STOPPER
+ (LOOP-STOPPER
   "Parent: ACL2::MISCELLANEOUS.
 
   Limit application of permutative rewrite rules
@@ -59271,7 +59144,7 @@ Subtopics
   The [guard] for binary-logior requires its arguments to be integers.
   Logior is defined in Common Lisp. See any Common Lisp documentation
   for more information.")
- (ACL2::LOGICAL-NAME
+ (LOGICAL-NAME
   "Parent: ACL2::MISCELLANEOUS.
 
   A name created by a logical event
@@ -59343,7 +59216,7 @@ Subtopics
   event within the book in question becomes redundant by the
   definition of the name prior to the assumption of the book. See
   [redundant-events].")
- (ACL2::LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-REWRITING-REPEATEDLY
+ (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-REWRITING-REPEATEDLY
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Further information on expanding definitions via rewriting
@@ -59433,7 +59306,7 @@ Subtopics
 
   Now use your browser's Back Button to return to the example proof in
   [logic-knowledge-taken-for-granted].")
- (ACL2::LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-REWRITING
+ (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-REWRITING
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   A brief explanation of rewriting from the logical perspective
@@ -59674,7 +59547,7 @@ Subtopics
 
   Now use your browser's Back Button to return to the example proof in
   [logic-knowledge-taken-for-granted].")
- (ACL2::LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-Q3-ANSWER
+ (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-Q3-ANSWER
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   The inductive step of the rev-rev proof -- Answer to Question 2
@@ -59709,7 +59582,7 @@ Subtopics
 
   Now use your browser's Back Button to return to the end of quiz in
   [logic-knowledge-taken-for-granted].")
- (ACL2::LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-Q2-ANSWER
+ (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-Q2-ANSWER
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   The inductive step of the rev-rev proof -- Answer to Question 2
@@ -59844,7 +59717,7 @@ Subtopics
   When you understand why Subgoals (i) and (ii) are sufficient, use
   your browser's Back Button to return to
   [logic-knowledge-taken-for-granted] and go to question Q3.")
- (ACL2::LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-Q1-ANSWER
+ (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-Q1-ANSWER
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   The inductive step of the rev-rev proof -- Answer to Question 1
@@ -59930,7 +59803,7 @@ Subtopics
   When you understand why Choice (iv) is the correct answer, use your
   browser's Back Button to return to
   [logic-knowledge-taken-for-granted] and go to question Q2.")
- (ACL2::LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-PROPOSITIONAL-CALCULUS
+ (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-PROPOSITIONAL-CALCULUS
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   A brief explanation of propositional calculus
@@ -60175,7 +60048,7 @@ Subtopics
 
   Now please use your browser's Back Button to return to the example
   proof in [logic-knowledge-taken-for-granted].")
- (ACL2::LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-INSTANCE
+ (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-INSTANCE
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   A brief explanation of substitution instances
@@ -60209,7 +60082,7 @@ Subtopics
 
   Please use your browser's Back Button to return to the page that
   mentioned ``instance.''")
- (ACL2::LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-INDUCTIVE-PROOF
+ (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-INDUCTIVE-PROOF
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   A brief explanation of induction
@@ -60359,7 +60232,7 @@ Subtopics
   working your way through the introduction to the theorem prover,
   please use your browser's Back Button to return to the example
   proof in [logic-knowledge-taken-for-granted].")
- (ACL2::LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-EVALUATION
+ (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-EVALUATION
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Evaluation during proofs
@@ -60393,7 +60266,7 @@ Subtopics
 
   Now use your browser's Back Button to return to the example proof in
   [logic-knowledge-taken-for-granted].")
- (ACL2::LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-EQUALS-FOR-EQUALS
+ (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-EQUALS-FOR-EQUALS
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Substitution of equals for equals
@@ -60442,7 +60315,7 @@ Subtopics
 
   Now use your browser's Back Button to return to the example proof in
   [logic-knowledge-taken-for-granted].")
- (ACL2::LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-BASE-CASE
+ (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-BASE-CASE
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   A brief explanation of base cases
@@ -60464,7 +60337,7 @@ Subtopics
 
   Now use your browser's Back Button to return to the example proof in
   [logic-knowledge-taken-for-granted].")
- (ACL2::LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED
+ (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Background knowledge in ACL2 logic for theorem prover tutorial
@@ -60779,7 +60652,7 @@ Subtopics
   The [guard] for binary-logand requires its arguments to be integers.
   Logand is defined in Common Lisp. See any Common Lisp documentation
   for more information.")
- (ACL2::LOCAL-INCOMPATIBILITY
+ (LOCAL-INCOMPATIBILITY
   "Parent: ACL2::MISCELLANEOUS.
 
   When non-local [events] won't replay in isolation
@@ -60955,7 +60828,7 @@ Subtopics
 
   List is defined in Common Lisp. See any Common Lisp documentation for
   more information.")
- (ACL2::LINEAR-ARITHMETIC
+ (LINEAR-ARITHMETIC
   "Parent: ACL2::MISCELLANEOUS.
 
   A description of the linear arithmetic decision procedure
@@ -61032,7 +60905,7 @@ Subtopics
 
   See also [non-linear-arithmetic] for a description of an extension to
   the linear-arithmetic procedure described here.")
- (ACL2::LINEAR
+ (LINEAR
   "Parent: ACL2::RULE-CLASSES.
 
   Make some arithmetic inequality rules
@@ -61390,7 +61263,7 @@ Subtopics
   that differs from its simple ACL2 definition.)
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::LEMMA-INSTANCE
+ (LEMMA-INSTANCE
   "Parent: ACL2::MISCELLANEOUS.
 
   An object denoting an instance of a theorem
@@ -62640,7 +62513,7 @@ Subtopics
   keyword.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::KEYWORD-COMMANDS
+ (KEYWORD-COMMANDS
   "Parent: ACL2::MISCELLANEOUS.
 
   How keyword commands are processed
@@ -62697,7 +62570,7 @@ Subtopics
  (KEYWORD "Parent: ACL2::MISCELLANEOUS.
 
   See [keywordp].")
- (ACL2::KEEP
+ (KEEP
   "Parent: ACL2::BOOKS.
 
   How we know if [include-book] read the correct files
@@ -62725,7 +62598,7 @@ Subtopics
   since certification.
 
   See [include-book] to continue the guided tour through [books].")
- (ACL2::IRRELEVANT-FORMALS
+ (IRRELEVANT-FORMALS
   "Parent: ACL2::PROGRAMMING.
 
   Formals that are used but only insignificantly
@@ -62795,10 +62668,10 @@ Subtopics
   For those who really want to turn off this feature, we have provided
   a way to use the [ACL2-defaults-table] for this purpose; see
   [set-irrelevant-formals-ok].")
- (ACL2::IPRINTING "Parent: ACL2::IO.
+ (IPRINTING "Parent: ACL2::IO.
 
   See [set-iprint].")
- (ACL2::IPRINT "Parent: ACL2::IO.
+ (IPRINT "Parent: ACL2::IO.
 
   See [set-iprint].")
  (INVISIBLE-FNS-TABLE
@@ -62844,7 +62717,7 @@ Subtopics
   then arg and (ufni arg) are considered to have the same ``weight''
   and will be permuted so as to end up as adjacent tips in the fn
   nest. See [loop-stopper].")
- (ACL2::INTRODUCTORY-CHALLENGES
+ (INTRODUCTORY-CHALLENGES
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Challenge problems for the new ACL2 user
@@ -62882,7 +62755,7 @@ Subtopics
   When you've done the problems and compared your solutions to ours,
   use your browser's Back Button now to return to
   [introduction-to-the-theorem-prover].")
- (ACL2::INTRODUCTORY-CHALLENGE-PROBLEM-4-ANSWER
+ (INTRODUCTORY-CHALLENGE-PROBLEM-4-ANSWER
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Answer to challenge problem 4 for the new user of ACL2
@@ -63452,7 +63325,7 @@ Subtopics
 
   Use your browser's Back Button now to return to
   [introductory-challenge-problem-4].")
- (ACL2::INTRODUCTORY-CHALLENGE-PROBLEM-4
+ (INTRODUCTORY-CHALLENGE-PROBLEM-4
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Challenge problem 4 for the new user of ACL2
@@ -63508,7 +63381,7 @@ Subtopics
 
   Then, use your browser's Back Button to return to
   [introductory-challenges].")
- (ACL2::INTRODUCTORY-CHALLENGE-PROBLEM-3-ANSWER
+ (INTRODUCTORY-CHALLENGE-PROBLEM-3-ANSWER
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Answer to challenge problem 3 for the new user of ACL2
@@ -63625,7 +63498,7 @@ Subtopics
 
   Use your browser's Back Button now to return to
   [introductory-challenge-problem-3].")
- (ACL2::INTRODUCTORY-CHALLENGE-PROBLEM-3
+ (INTRODUCTORY-CHALLENGE-PROBLEM-3
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Challenge problem 3 for the new user of ACL2
@@ -63656,7 +63529,7 @@ Subtopics
 
   Then, use your browser's Back Button to return to
   [introductory-challenges].")
- (ACL2::INTRODUCTORY-CHALLENGE-PROBLEM-2-ANSWER
+ (INTRODUCTORY-CHALLENGE-PROBLEM-2-ANSWER
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Answer to challenge problem 2 for the new user of ACL2
@@ -63696,7 +63569,7 @@ Subtopics
 
   Use your browser's Back Button now to return to
   [introductory-challenge-problem-2].")
- (ACL2::INTRODUCTORY-CHALLENGE-PROBLEM-2
+ (INTRODUCTORY-CHALLENGE-PROBLEM-2
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Challenge problem 2 for the new user of ACL2
@@ -63714,7 +63587,7 @@ Subtopics
 
   Then, use your browser's Back Button to return to
   [introductory-challenges].")
- (ACL2::INTRODUCTORY-CHALLENGE-PROBLEM-1-ANSWER
+ (INTRODUCTORY-CHALLENGE-PROBLEM-1-ANSWER
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Answer to challenge problem 1 for the new user of ACL2
@@ -63755,7 +63628,7 @@ Subtopics
 
   Use your browser's Back Button now to return to
   [introductory-challenge-problem-1].")
- (ACL2::INTRODUCTORY-CHALLENGE-PROBLEM-1
+ (INTRODUCTORY-CHALLENGE-PROBLEM-1
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Challenge problem 1 for the new user of ACL2
@@ -63784,7 +63657,7 @@ Subtopics
 
   Then, use your browser's Back Button to return to
   [introductory-challenges].")
- (ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER
+ (INTRODUCTION-TO-THE-THEOREM-PROVER
   "Parent: ACL2::ACL2-TUTORIAL.
 
   How the theorem prover works -- level 0
@@ -64293,7 +64166,7 @@ Subtopics
 
   [Architecture-of-the-prover]
       A simple overview of how the prover works")
- (ACL2::INTRODUCTION-TO-THE-DATABASE
+ (INTRODUCTION-TO-THE-DATABASE
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   How to update the database
@@ -64534,7 +64407,7 @@ Subtopics
   If you are reading this as part of the tutorial introduction to the
   theorem prover, use your browser's Back Button now to return to
   [introduction-to-the-theorem-prover].")
- (ACL2::INTRODUCTION-TO-REWRITE-RULES-PART-2
+ (INTRODUCTION-TO-REWRITE-RULES-PART-2
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   How to arrange rewrite rules
@@ -64785,7 +64658,7 @@ Subtopics
   If you are working your way through the tutorial introduction to the
   theorem prover, use your browser's Back Button to return to
   [introduction-to-the-theorem-prover].")
- (ACL2::INTRODUCTION-TO-REWRITE-RULES-PART-1
+ (INTRODUCTION-TO-REWRITE-RULES-PART-1
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Introduction to ACL2's notion of rewrite rules
@@ -64967,7 +64840,7 @@ Subtopics
   [introduction-to-the-theorem-prover]. If you are reading just about
   how to make effective rewrite rules, go on to
   [introduction-to-rewrite-rules-part-2].")
- (ACL2::INTRODUCTION-TO-KEY-CHECKPOINTS
+ (INTRODUCTION-TO-KEY-CHECKPOINTS
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   What questions to ask at key checkpoints
@@ -65134,7 +65007,7 @@ Subtopics
   If you are reading this as part of the tutorial introduction to the
   theorem prover, use your browser's Back Button now to return to
   [introduction-to-the-theorem-prover].")
- (ACL2::INTRODUCTION-TO-HINTS
+ (INTRODUCTION-TO-HINTS
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   How to provide hints to the theorem prover
@@ -65239,7 +65112,7 @@ Subtopics
   If you are reading this as part of the tutorial introduction to the
   theorem prover, use your browser's Back Button now to return to
   [introduction-to-the-theorem-prover].")
- (ACL2::INTRODUCTION-TO-A-FEW-SYSTEM-CONSIDERATIONS
+ (INTRODUCTION-TO-A-FEW-SYSTEM-CONSIDERATIONS
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   The mechanics of interaction with the theorem prover
@@ -65656,7 +65529,7 @@ Subtopics
   for the package instead of the package. The witness symbol is any
   symbol (expressible in ACL2) and uniquely specifies a package
   necessarily known to ACL2.")
- (ACL2::INTERESTING-APPLICATIONS
+ (INTERESTING-APPLICATIONS
   "Parent: ACL2::ACL2-TUTORIAL.
 
   Some industrial examples of ACL2 use
@@ -65825,7 +65698,7 @@ Subtopics
   Unlike [equal], int= requires its arguments to be numbers (or else
   causes a [guard] violation; see [guard]). Generally, int= is
   executed more efficiently than [equal] or [=] on integers.")
- (ACL2::INSTRUCTIONS
+ (INSTRUCTIONS
   "Parent: ACL2::PROOF-CHECKER.
 
   Instructions to the proof checker
@@ -66407,7 +66280,7 @@ Subtopics
     ******** FAILED ********
     Time: 869/100 seconds
     ACL2 !>")
- (ACL2::INDUCTION
+ (INDUCTION
   "Parent: ACL2::RULE-CLASSES.
 
   Make a rule that suggests a certain induction
@@ -66996,7 +66869,7 @@ Subtopics
   time the hypothesis is [force]d, then ACL2 does not delay the
   attempt to prove that hypothesis but undertakes the attempt more or
   less immediately.")
- (ACL2::IMMED-FORCED "Parent: ACL2::MISCELLANEOUS.
+ (IMMED-FORCED "Parent: ACL2::MISCELLANEOUS.
 
   See [splitter].")
  (IMAGPART
@@ -67033,7 +66906,7 @@ Subtopics
   do [guard] verification at some point, and you expect the guard to
   guarantee that the illegal call is never executed. See [prog2$] for
   an example.")
- (ACL2::IGNORED-ATTACHMENT
+ (IGNORED-ATTACHMENT
   "Parent: ACL2::MISCELLANEOUS.
 
   Why attachments are sometimes not used
@@ -67170,7 +67043,7 @@ Subtopics
   not nil).
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::IF-INTRO "Parent: ACL2::MISCELLANEOUS.
+ (IF-INTRO "Parent: ACL2::MISCELLANEOUS.
 
   See [splitter].")
  (IF*
@@ -67430,7 +67303,7 @@ Subtopics
   [error-triples]) that indicates an error, and any form that
   ``causes an error'' will do the same job. Note that the text of the
   file after the (i-am-here) need not be machine readable.")
- (ACL2::|How To Find Out about ACL2 Functions (cont)|
+ (|How To Find Out about ACL2 Functions (cont)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   How To Find Out about ACL2 Functions (cont)
@@ -67461,7 +67334,7 @@ Subtopics
   Now let's continue with app.
 
   []")
- (ACL2::|How To Find Out about ACL2 Functions|
+ (|How To Find Out about ACL2 Functions|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   How To Find Out about ACL2 Functions
@@ -67487,7 +67360,7 @@ Subtopics
   otherwise, app (cdr x) and y and then cons (car x) onto that.''
 
   []")
- (ACL2::|How Long Does It Take to Become an Effective User(Q)|
+ (|How Long Does It Take to Become an Effective User(Q)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   How Long Does It Take to Become an Effective User?
@@ -67508,7 +67381,7 @@ Subtopics
   ``toy'' projects before tackling a ``grand challenge.''
 
   []")
- (ACL2::|Hey Wait!  Is ACL2 Typed or Untyped(Q)|
+ (|Hey Wait!  Is ACL2 Typed or Untyped(Q)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Hey Wait! Is ACL2 Typed or Untyped?
@@ -67739,7 +67612,7 @@ Subtopics
   call it when the hash tables involved are minimally populated,
   i.e., at the start of your application, or soon after a
   [hons-clear].")
- (ACL2::HONS-NOTE
+ (HONS-NOTE
   "Parent: ACL2::HONS-AND-MEMOIZATION.
 
   Notes about [hons], especially pertaining to expensive resizing
@@ -68127,7 +68000,7 @@ Subtopics
 
   Generally speaking, these extra operations make hons much slower than
   cons, even when given normed arguments.")
- (ACL2::HINTS-AND-THE-WATERFALL
+ (HINTS-AND-THE-WATERFALL
   "Parent: ACL2::MISCELLANEOUS.
 
   How [hints] fit into the ACL2 proof waterfall
@@ -68342,7 +68215,7 @@ Subtopics
 
   Also see [override-hints] for an advanced feature that allows
   modification of the hint selected for a goal.")
- (ACL2::HINTS
+ (HINTS
   "Parent: ACL2::MISCELLANEOUS.
 
   Advice to the theorem proving process
@@ -69194,13 +69067,13 @@ Subtopics
 
   See [eviscerate-hide-terms] for how to affect the printing of hide
   terms.")
- (ACL2::HIDDEN-DEFPKG
+ (HIDDEN-DEFPKG
   "Parent: DEFPKG.
 
   Handling defpkg events that are local
 
   See [hidden-death-package]")
- (ACL2::HIDDEN-DEATH-PACKAGE
+ (HIDDEN-DEATH-PACKAGE
   "Parent: DEFPKG.
 
   Handling [defpkg] [events] that are [local]
@@ -69261,7 +69134,7 @@ Subtopics
   \"hidden death package\" instead of \"hidden defpkg\". The description
   seemed to fit. Thanks, Holly!)")
  (HELP
-  "Parent: DOCUMENTATION.
+  "Parent: ACL2::LEGACY-DOCUMENTATION.
 
   Brief survey of ACL2 features
 
@@ -69320,13 +69193,13 @@ Subtopics
     ACL2 Error in TOP-LEVEL:  Evaluation aborted.
 
     ACL2 !>")
- (ACL2::HANDS-OFF
+ (HANDS-OFF
   "Parent: ACL2::MISCELLANEOUS.
 
   Hints keyword :HANDS-OFF
 
   See [hints].")
- (ACL2::|Guiding the ACL2 Theorem Prover|
+ (|Guiding the ACL2 Theorem Prover|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Guiding the ACL2 Theorem Prover
@@ -69350,7 +69223,7 @@ Subtopics
   failed proofs.
 
   []")
- (ACL2::|Guessing the Type of a Newly Admitted Function|
+ (|Guessing the Type of a Newly Admitted Function|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Guessing the Type of a Newly Admitted Function
@@ -69371,7 +69244,7 @@ Subtopics
   addition of the definitional axiom, but by several new rules.
 
   You should now return to [the Walking Tour].")
- (ACL2::|Guards|
+ (|Guards|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Guards
@@ -69407,7 +69280,7 @@ Subtopics
 
   For a thorough discussion of guards, see the paper [km97] in the ACL2
   [bibliography].")
- (ACL2::GUARDS-FOR-SPECIFICATION
+ (GUARDS-FOR-SPECIFICATION
   "Parent: GUARD.
 
   Guards as a specification device
@@ -69462,7 +69335,7 @@ Subtopics
   style document, then please see [guard-miscellany]. This concludes
   our discussion of guards with miscellaneous remarks, and also
   contains pointers to related topics.")
- (ACL2::GUARDS-AND-EVALUATION
+ (GUARDS-AND-EVALUATION
   "Parent: GUARD.
 
   The relationship between guards and evaluation
@@ -69834,7 +69707,7 @@ Subtopics
 
   To continue the discussion of guards, see [guards-for-specification]
   to read about the use of guards as a specification device.")
- (ACL2::GUARD-QUICK-REFERENCE
+ (GUARD-QUICK-REFERENCE
   "Parent: GUARD.
 
   Brief summary of guard checking and guard verification
@@ -69968,7 +69841,7 @@ Subtopics
 
   See the source code for [verify-guards-formula] for an example of how
   to use guard-obligation.")
- (ACL2::GUARD-MISCELLANY
+ (GUARD-MISCELLANY
   "Parent: GUARD.
 
   Miscellaneous remarks about guards
@@ -70049,7 +69922,7 @@ Subtopics
   to this rule is the case that :guard and :stobjs are specified in
   the same [xargs] form, in which case the :stobjs form will be
   treated as through it comes before the :guard form.")
- (ACL2::GUARD-INTRODUCTION
+ (GUARD-INTRODUCTION
   "Parent: GUARD.
 
   Introduction to [guard]s in ACL2
@@ -70094,13 +69967,13 @@ Subtopics
 
   Let us turn next to the issue of the relationship between guards and
   evaluation. See [guards-and-evaluation].")
- (ACL2::GUARD-HINTS
+ (GUARD-HINTS
   "Parent: ACL2::MISCELLANEOUS.
 
   Xargs keyword :GUARD-HINTS
 
   See [xargs].")
- (ACL2::GUARD-EXAMPLE
+ (GUARD-EXAMPLE
   "Parents: ACL2::TUTORIAL5-MISCELLANEOUS-EXAMPLES and GUARD.
 
   A brief transcript illustrating [guard]s in ACL2
@@ -70394,7 +70267,7 @@ Subtopics
     ACL2 Error in (VERIFY-GUARDS FOO): The guards for FOO cannot
     be verified because the theorem has the wrong syntactic
     form.  See :DOC verify-guards.")
- (ACL2::GUARD-EVALUATION-TABLE
+ (GUARD-EVALUATION-TABLE
   "Parent: GUARD.
 
   A table that shows combinations of [defun-mode]s and [guard]-checking
@@ -70508,7 +70381,7 @@ Subtopics
   If you want the speed of executing raw Lisp code and you have
   non-trivial guards on functions that you want to call at the
   top-level, use nil rather than :none.")
- (ACL2::GUARD-EVALUATION-EXAMPLES-SCRIPT
+ (GUARD-EVALUATION-EXAMPLES-SCRIPT
   "Parent: GUARD.
 
   A script to show combinations of [defun-mode]s and [guard]-checking
@@ -70663,7 +70536,7 @@ Subtopics
     ; to go into raw Lisp: although :none generally avoids execution of raw Lisp
     ; counterparts, it allows this when the guard is T and guards have been
     ; verified.")
- (ACL2::GUARD-EVALUATION-EXAMPLES-LOG
+ (GUARD-EVALUATION-EXAMPLES-LOG
   "Parent: GUARD.
 
   Log showing combinations of [defun-mode]s and [guard]-checking
@@ -71388,7 +71261,7 @@ Subtopics
     <1 (ACL2_*1*_ACL2::FACT 1)
     1
     ACL2 >")
- (ACL2::GUARD-DEBUG
+ (GUARD-DEBUG
   "Parent: GUARD.
 
   Generate markers to indicate sources of guard proof obligations
@@ -71720,7 +71593,7 @@ Subtopics
   Also see [atom-listp].
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::GOAL-SPEC
+ (GOAL-SPEC
   "Parent: ACL2::MISCELLANEOUS.
 
   To indicate where a hint is to be used
@@ -71873,7 +71746,7 @@ Subtopics
  (GET-OUTPUT-STREAM-STRING$ "Parent: ACL2::ACL2-BUILT-INS.
 
   See [io].")
- (ACL2::GET-INTERNAL-TIME
+ (GET-INTERNAL-TIME
   "Parent: ACL2::MISCELLANEOUS.
 
   Runtime vs. realtime in ACL2 timings
@@ -71949,7 +71822,7 @@ Subtopics
   precisely, it returns an error triple (mv erp val state) (see
   [error-triples]) such that if erp is not nil, then val is the
   desired list of commands.")
- (ACL2::GENERALIZING-KEY-CHECKPOINTS
+ (GENERALIZING-KEY-CHECKPOINTS
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Getting rid of unnecessary specificity
@@ -72040,7 +71913,7 @@ Subtopics
   If you have been working your way through the tutorial introduction
   to the theorem prover, use your browser's Back Button now to return
   to [introduction-to-key-checkpoints].")
- (ACL2::GENERALIZED-BOOLEANS
+ (GENERALIZED-BOOLEANS
   "Parent: ACL2::COMMON-LISP.
 
   Potential soundness issues related to ACL2 predicates
@@ -72181,7 +72054,7 @@ Subtopics
  (GCS "Parent: ACL2::HISTORY.
 
   See [get-command-sequence].")
- (ACL2::GCL
+ (GCL
   "Parent: ACL2::MISCELLANEOUS.
 
   Tips on building and using ACL2 based on Gnu Common Lisp
@@ -72363,7 +72236,7 @@ Subtopics
   take any of the following values:
 
     (gag-mode) ; generally evaluates to t, nil, or :goals")
- (ACL2::|Functions for Manipulating these Objects|
+ (|Functions for Manipulating these Objects|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Functions for Manipulating these Objects
@@ -72393,7 +72266,7 @@ Subtopics
   ACL2.
 
   []")
- (ACL2::|Free Variables in Top-Level Input|
+ (|Free Variables in Top-Level Input|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Free Variables in Top-Level Input
@@ -72434,7 +72307,7 @@ Subtopics
   ACL2 provides a way for you to use state to save values of
   computations at the top-level and refer to them later. See [assign]
   [] and [@] [].")
- (ACL2::|Flawed Induction Candidates in App Example|
+ (|Flawed Induction Candidates in App Example|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Flawed Induction Candidates in App Example
@@ -72452,7 +72325,7 @@ Subtopics
 
     (equal (app (app a b) c)
            (app a (app b c)))")
- (ACL2::FUTURE-WORK-RELATED-TO-THE-TAU-SYSTEM
+ (FUTURE-WORK-RELATED-TO-THE-TAU-SYSTEM
   "Parent: ACL2::INTRODUCTION-TO-THE-TAU-SYSTEM.
 
   Some tau system problems that we hope someone will address
@@ -72559,7 +72432,7 @@ Subtopics
   problem --- might be easier to implement within the tau framework
   than more generally in ACL2. (Many users have wanted such an
   assistant to suggest lemmas for the rewriter.)")
- (ACL2::FURTHER-INFORMATION-ON-REWRITING
+ (FURTHER-INFORMATION-ON-REWRITING
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   A grab bag of advice and information on rewriting
@@ -72681,7 +72554,7 @@ Subtopics
   If you were reading this topic as part of the tutorial introduction
   to the theorem prover, use your browser's Back Button now to return
   to [introduction-to-rewrite-rules-part-2].")
- (ACL2::FUNCTIONAL-INSTANTIATION-IN-ACL2R
+ (FUNCTIONAL-INSTANTIATION-IN-ACL2R
   "Parent: ACL2::MISCELLANEOUS.
 
   Additional requirements for :functional-instance hints in ACL2(r)
@@ -72703,7 +72576,7 @@ Subtopics
   function symbol must be bound either to a non-classical function
   symbol or to a lambda (or, if allowed, pseudo-lambda) expression
   with a non-classical body.")
- (ACL2::FUNCTIONAL-INSTANTIATION-EXAMPLE
+ (FUNCTIONAL-INSTANTIATION-EXAMPLE
   "Parent: ACL2::TUTORIAL5-MISCELLANEOUS-EXAMPLES.
 
   A small proof demonstrating functional instantiation
@@ -72873,7 +72746,7 @@ Subtopics
   mentioning the single free variable [world]. When theory
   expressions are evaluated by [in-theory] or the :[in-theory] hint,
   [world] is bound to the current ACL2 [world].")
- (ACL2::FULL-BOOK-NAME
+ (FULL-BOOK-NAME
   "Parent: ACL2::BOOKS.
 
   Book naming conventions assumed by ACL2
@@ -72916,7 +72789,7 @@ Subtopics
   If you are using ACL2 on a system in which file names do not have
   this form, please contact the authors and we'll see what we can do
   about generalizing ACL2's conventions.")
- (ACL2::FREQUENTLY-ASKED-QUESTIONS-BY-NEWCOMERS
+ (FREQUENTLY-ASKED-QUESTIONS-BY-NEWCOMERS
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Some questions newcomers frequently ask
@@ -73516,7 +73389,7 @@ Subtopics
   If you are reading this as part of the tutorial introduction to the
   theorem prover, use your browser's Back Button now to return to
   [introduction-to-the-theorem-prover].")
- (ACL2::FREE-VARIABLES-TYPE-PRESCRIPTION
+ (FREE-VARIABLES-TYPE-PRESCRIPTION
   "Parent: ACL2::FREE-VARIABLES.
 
   Matching for free variable in [type-prescription] rules
@@ -73607,7 +73480,7 @@ Subtopics
 
      ONCEP-TP
     ACL2 !>")
- (ACL2::FREE-VARIABLES-EXAMPLES-REWRITE
+ (FREE-VARIABLES-EXAMPLES-REWRITE
   "Parent: ACL2::FREE-VARIABLES-EXAMPLES.
 
   Examples pertaining to free variables in [rewrite] rules
@@ -74096,7 +73969,7 @@ Subtopics
 
     ; Proof fails in this case!
     (thm (equal (g (h1 a)) (h2 a)))")
- (ACL2::FREE-VARIABLES-EXAMPLES-FORWARD-CHAINING
+ (FREE-VARIABLES-EXAMPLES-FORWARD-CHAINING
   "Parent: ACL2::FREE-VARIABLES-EXAMPLES.
 
   Examples pertaining to free variables in [forward-chaining] rules
@@ -74263,7 +74136,7 @@ Subtopics
     (thm (implies (and (op1 a0) (op1 a1) (op1 a2)
                        (op1 a3) (op1 a4) (op1 a5) (op1 a6))
                   (op7 a4 a6 a5 a6 a6 a6 a6)))")
- (ACL2::FREE-VARIABLES-EXAMPLES
+ (FREE-VARIABLES-EXAMPLES
   "Parent: ACL2::FREE-VARIABLES.
 
   Examples pertaining to free variables in rules
@@ -74284,7 +74157,7 @@ Subtopics
 
   [Free-variables-examples-forward-chaining]
       Examples pertaining to free variables in [forward-chaining] rules")
- (ACL2::FREE-VARIABLES
+ (FREE-VARIABLES
   "Parents: ACL2::RULE-CLASSES and ACL2::REWRITE.
 
   Free variables in rules
@@ -74504,7 +74377,7 @@ Subtopics
   Fourth member of the list
 
   See any Common Lisp documentation for details.")
- (ACL2::FORWARD-CHAINING
+ (FORWARD-CHAINING
   "Parent: ACL2::RULE-CLASSES.
 
   Make a rule to forward chain when a certain trigger arises
@@ -74664,7 +74537,7 @@ Subtopics
   effects are not directly visible on the goal being simplified.
   Tools are available to help you discover what forward chaining has
   occurred see [forward-chaining-reports].")
- (ACL2::FORCING-ROUND
+ (FORCING-ROUND
   "Parent: ACL2::MISCELLANEOUS.
 
   A section of a proof dealing with [force]d assumptions
@@ -74766,7 +74639,7 @@ Subtopics
   [enable]d ``again.'' The right way to think about this is that the
   [rune] is ``still'' [enable]d. That is, it is [enable]d globally
   and each forcing round resumes with the global [enable]d structure.")
- (ACL2::FORCED "Parent: ACL2::MISCELLANEOUS.
+ (FORCED "Parent: ACL2::MISCELLANEOUS.
 
   See [force].")
  (FORCE
@@ -74890,7 +74763,7 @@ Subtopics
   proof (but see [set-case-split-limitations]), allowing force
   ultimately to function as intended. Moreover, forcing can be
   disabled, as described above; also see [disable-forcing].")
- (ACL2::FORALL
+ (FORALL
   "Parent: DEFUN-SK.
 
   Universal quantifier
@@ -75738,7 +75611,7 @@ Subtopics
   First member of the list
 
   See any Common Lisp documentation for details.")
- (ACL2::FINDING-DOCUMENTATION
+ (FINDING-DOCUMENTATION
   "Parent: ACL2::MISCELLANEOUS.
 
   Searching the documentation
@@ -75761,7 +75634,7 @@ Subtopics
   the following web page: http://fv.centtech.com/acl2/latest/doc/.
   You can build a local copy of this manual from the ACL2 Community
   Books, following instructions in their Makefile.")
- (ACL2::FIND-RULES-OF-RUNE
+ (FIND-RULES-OF-RUNE
   "Parent: ACL2::MISCELLANEOUS.
 
   Find the rules named rune
@@ -75906,7 +75779,7 @@ Subtopics
 
   You might find it helpful to use [trace$] to get a sense of ctx and
   body, for example, (trace$ finalize-event-user).")
- (ACL2::FILE-READING-EXAMPLE
+ (FILE-READING-EXAMPLE
   "Parent: ACL2::TUTORIAL5-MISCELLANEOUS-EXAMPLES.
 
   Example of reading files in ACL2
@@ -75975,7 +75848,7 @@ Subtopics
   most recent event.
 
   See [forward-chaining-reports] for details.")
- (ACL2::FAST-ALISTS
+ (FAST-ALISTS
   "Parent: ACL2::HONS-AND-MEMOIZATION.
 
   Alists with hidden hash tables for faster execution
@@ -76126,7 +75999,7 @@ Subtopics
   It is safe to call fast-alist-free on any argument, including fast
   alists that have already been freed and objects which are not
   alists at all.")
- (ACL2::FAILURE
+ (FAILURE
   "Parent: ACL2::MISCELLANEOUS.
 
   How to deal with a proof failure
@@ -76175,7 +76048,7 @@ Subtopics
   (Academic Press, 1988).
 
   If the failure occurred during a forcing round, see [failed-forcing].")
- (ACL2::FAILED-FORCING
+ (FAILED-FORCING
   "Parent: ACL2::MISCELLANEOUS.
 
   How to deal with a proof [failure] in a forcing round
@@ -76375,7 +76248,7 @@ Subtopics
   [state]. Thus, you may use these globals to hang onto useful data
   structures even though you may undo back past where you computed
   and saved them.")
- (ACL2::|Evaluating App on Sample Input|
+ (|Evaluating App on Sample Input|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Evaluating App on Sample Input
@@ -76417,10 +76290,10 @@ Subtopics
 
   See [guard-debug] for a discussion of this function, which is useful
   for debugging failures during [guard] verification.")
- (ACL2::EXTERNAL-FORMAT "Parent: ACL2::IO.
+ (EXTERNAL-FORMAT "Parent: ACL2::IO.
 
   See [character-encoding].")
- (ACL2::EXTENDED-METAFUNCTIONS
+ (EXTENDED-METAFUNCTIONS
   "Parent: ACL2::MISCELLANEOUS.
 
   State and context sensitive metafunctions
@@ -76820,13 +76693,13 @@ Subtopics
   valid radix for ACL2 (2, 8, 10, or 16).
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::EXPAND
+ (EXPAND
      "Parent: ACL2::MISCELLANEOUS.
 
   Hints keyword :EXPAND
 
   See [hints].")
- (ACL2::EXIT-BOOT-STRAP-MODE
+ (EXIT-BOOT-STRAP-MODE
   "Parent: ACL2::MISCELLANEOUS.
 
   The end of pre-history
@@ -76847,7 +76720,7 @@ Subtopics
   Quit entirely out of Lisp
 
   Same as [good-bye].")
- (ACL2::EXISTS
+ (EXISTS
   "Parent: DEFUN-SK.
 
   Existential quantifier
@@ -76889,7 +76762,7 @@ Subtopics
   mentioning the single free variable [world]. When theory
   expressions are evaluated by [in-theory] or the :[in-theory] hint,
   [world] is bound to the current ACL2 [world].")
- (ACL2::EXECUTABLE-COUNTERPART
+ (EXECUTABLE-COUNTERPART
   "Parent: ACL2::MISCELLANEOUS.
 
   A rule for computing the value of a function
@@ -76965,7 +76838,7 @@ Subtopics
   result in a ``trap.'' In that case, the rewriter will return the
   term (hide (bar 'a)) so that it never has to go through this
   process again. See [hide].")
- (ACL2::EXAMPLE-INDUCTIONS
+ (EXAMPLE-INDUCTIONS
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Some examples of induction schemes in ACL2
@@ -77025,7 +76898,7 @@ Subtopics
   induction in which we make different inductive hypotheses depending
   on which case we're in. This example also illustrates the handling
   of auxiliary variables or accumulators.")
- (ACL2::EXAMPLE-INDUCTION-SCHEME-WITH-MULTIPLE-INDUCTION-STEPS
+ (EXAMPLE-INDUCTION-SCHEME-WITH-MULTIPLE-INDUCTION-STEPS
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Induction scheme with more than one induction step
@@ -77079,7 +76952,7 @@ Subtopics
     (include-book \"arithmetic-5/top\" :dir :system)
 
   should be executed before defining bexpt.")
- (ACL2::EXAMPLE-INDUCTION-SCHEME-WITH-ACCUMULATORS
+ (EXAMPLE-INDUCTION-SCHEME-WITH-ACCUMULATORS
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Induction scheme with accumulators
@@ -77152,7 +77025,7 @@ Subtopics
                   (p (cdr x) (fact k))
                   (p (cdr x) a))
              (p x a))")
- (ACL2::EXAMPLE-INDUCTION-SCHEME-UPWARDS
+ (EXAMPLE-INDUCTION-SCHEME-UPWARDS
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Induction upwards
@@ -77195,7 +77068,7 @@ Subtopics
                (< i max))
           (cons i (count-up (+ 1 i) max))
           nil)).")
- (ACL2::EXAMPLE-INDUCTION-SCHEME-ON-SEVERAL-VARIABLES
+ (EXAMPLE-INDUCTION-SCHEME-ON-SEVERAL-VARIABLES
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Induction on several variables
@@ -77230,7 +77103,7 @@ Subtopics
           (if (zp n)
               (car x)
               (nth (- n 1) (cdr x))))).")
- (ACL2::EXAMPLE-INDUCTION-SCHEME-ON-LISTS
+ (EXAMPLE-INDUCTION-SCHEME-ON-LISTS
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Induction on lists
@@ -77267,7 +77140,7 @@ Subtopics
           y
           (cons (car x)
                 (app (cdr x) y)))).")
- (ACL2::EXAMPLE-INDUCTION-SCHEME-NAT-RECURSION
+ (EXAMPLE-INDUCTION-SCHEME-NAT-RECURSION
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Induction on natural numbers
@@ -77314,7 +77187,7 @@ Subtopics
 
   even though the formal parameter of this definition of fact is k, not
   n.")
- (ACL2::EXAMPLE-INDUCTION-SCHEME-DOWN-BY-2
+ (EXAMPLE-INDUCTION-SCHEME-DOWN-BY-2
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Induction downwards 2 steps at a time
@@ -77361,7 +77234,7 @@ Subtopics
           (if (equal n 1)
               'odd
               (parity (- n 2))))).")
- (ACL2::EXAMPLE-INDUCTION-SCHEME-BINARY-TREES
+ (EXAMPLE-INDUCTION-SCHEME-BINARY-TREES
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Induction on binary trees
@@ -77394,7 +77267,7 @@ Subtopics
           (list x)
           (app (flatten (car x))
                (flatten (cdr x))))).")
- (ACL2::EVISCERATE-HIDE-TERMS
+ (EVISCERATE-HIDE-TERMS
   "Parent: ACL2::IO.
 
   To print (hide ...) as <hidden>
@@ -77456,7 +77329,7 @@ Subtopics
   own printing, for example during a proof attempt. There are global
   evisc-tuples that control ACL2's printing; see [set-evisc-tuple]
   and see [without-evisc].")
- (ACL2::EVISC-TABLE
+ (EVISC-TABLE
   "Parent: ACL2::EVENTS.
 
   Support for abbreviated output
@@ -77596,7 +77469,7 @@ Subtopics
   for more information.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::EVALUATOR-RESTRICTIONS
+ (EVALUATOR-RESTRICTIONS
   "Parent: ACL2::META.
 
   Some restrictions on the use of evaluators in meta-level rules
@@ -77923,7 +77796,7 @@ Subtopics
 
   To see why this restriction is sufficient, see a comment in the ACL2
   source code entitled ``; Essay on Correctness of Meta Reasoning.''")
- (ACL2::ESCAPE-TO-COMMON-LISP
+ (ESCAPE-TO-COMMON-LISP
   "Parent: ACL2::MISCELLANEOUS.
 
   Escaping to Common Lisp
@@ -77935,7 +77808,7 @@ Subtopics
   the price of purity. To execute a form in Common Lisp as opposed to
   ACL2, exit [lp] with :[q], submit the desired forms to the Common
   Lisp read-eval-print loop, and reenter ACL2 with (lp).")
- (ACL2::ERROR1
+ (ERROR1
   "Parent: ACL2::ACL2-BUILT-INS.
 
   Print an error message and cause a ``soft error''
@@ -77966,7 +77839,7 @@ Subtopics
     ACL2 Error in MY-CONTEXT:  Printing 4: four
 
     ACL2 !>")
- (ACL2::ERROR-TRIPLES-AND-PARALLELISM
+ (ERROR-TRIPLES-AND-PARALLELISM
   "Parent: ACL2::PARALLEL-PROGRAMMING.
 
   How to avoid error triples in ACL2(p)
@@ -78016,7 +77889,7 @@ Subtopics
   Chances are that you are somehow returning an error triple when an
   ordinary value is needed. If this turns out not to be the case,
   please let the ACL2 implementors know.")
- (ACL2::ERROR-TRIPLES
+ (ERROR-TRIPLES
   "Parent: STATE.
 
   A common ACL2 programming idiom
@@ -78136,7 +78009,7 @@ Subtopics
       ==> {macroexpands, in essence, to:}
     (ERROR1     CTX FMT-STRING
                 (LIST (CONS #\\0 ARG1) (CONS #\\1 ARG2) ... (CONS #\\k ARGk)))")
- (ACL2::EQUIVALENT-FORMULAS-DIFFERENT-REWRITE-RULES
+ (EQUIVALENT-FORMULAS-DIFFERENT-REWRITE-RULES
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   Logically equivalent formulas can generate radically different rules
@@ -78207,7 +78080,7 @@ Subtopics
 
   Use your browser's Back Button now to return to
   [introduction-to-rewrite-rules-part-1].")
- (ACL2::EQUIVALENCE
+ (EQUIVALENCE
   "Parent: ACL2::RULE-CLASSES.
 
   Mark a relation as an equivalence relation
@@ -78485,7 +78358,7 @@ Subtopics
     (defcong == == (app x y) 1)
 
     (defthm rev-rev (== (rev (rev x)) x))")
- (ACL2::EQUALITY-VARIANTS-DETAILS
+ (EQUALITY-VARIANTS-DETAILS
   "Parent: ACL2::EQUALITY-VARIANTS.
 
   Details about [equality-variants]
@@ -78661,7 +78534,7 @@ Subtopics
     <1 (ACL2_*1*_ACL2::MEM-EQ (C D))
 
     Since F is non-recursive, its admission is trivial.")
- (ACL2::EQUALITY-VARIANTS
+ (EQUALITY-VARIANTS
   "Parent: ACL2::PROGRAMMING.
 
   Versions of a function using different equality tests
@@ -78830,7 +78703,7 @@ Subtopics
   particular, it is possible that an eq test will not even require
   the cost of a function call but will be as fast as a single machine
   instruction.")
- (ACL2::ENTER-BOOT-STRAP-MODE
+ (ENTER-BOOT-STRAP-MODE
   "Parent: ACL2::MISCELLANEOUS.
 
   The first millisecond of the Big Bang
@@ -79199,7 +79072,7 @@ Subtopics
   Note that all the names are implicitly quoted. If you wish to enable
   a computed list of names, lst, use the theory expression
   (union-theories (current-theory :here) lst).")
- (ACL2::EMBEDDED-EVENT-FORM
+ (EMBEDDED-EVENT-FORM
   "Parent: ACL2::MISCELLANEOUS.
 
   Forms that may be embedded in other [events]
@@ -79343,7 +79216,7 @@ Subtopics
   hence foo is accepted in [defun] mode :[logic]. Yet, no proof has
   been performed in order to admit foo, and in fact, it is not hard
   to prove a contradiction from this definition!")
- (ACL2::EMACS
+ (EMACS
   "Parent: ACL2::ACL2-TUTORIAL.
 
   Emacs support for ACL2
@@ -79356,7 +79229,7 @@ Subtopics
 
   If you are not comfortable with Emacs, you may prefer to use an
   Eclipse-based interface; see [ACL2-sedan].")
- (ACL2::ELIM
+ (ELIM
   "Parent: ACL2::RULE-CLASSES.
 
   Make a destructor elimination rule
@@ -79645,7 +79518,7 @@ Subtopics
     <1 (ACL2_*1*_ACL2::FOO (2 3 4 5))
     (2 3 4 5)
     ACL2 >")
- (ACL2::EARLY-TERMINATION
+ (EARLY-TERMINATION
   "Parent: ACL2::PARALLEL-PROGRAMMING.
 
   Early termination for [pand] and [por].
@@ -79756,7 +79629,7 @@ Subtopics
   (in-theory (enable . enables-0)) (in-theory (disable . disables-0))
   [etc.] (in-theory (enable . enables-n)) (in-theory (disable .
   disables-n))")
- (ACL2::DYNAMICALLY-MONITOR-REWRITES "Parent: ACL2::OTHER.
+ (DYNAMICALLY-MONITOR-REWRITES "Parent: ACL2::OTHER.
 
   See [dmr].")
  (DOUBLE-REWRITE
@@ -79985,7 +79858,7 @@ Subtopics
 
     (thm (foo (bar y)))")
  (DOCS
-  "Parent: DOCUMENTATION.
+  "Parent: ACL2::LEGACY-DOCUMENTATION.
 
   Available [documentation] topics (by section)
 
@@ -80027,8 +79900,8 @@ Subtopics
                       string matching we ignore distinctions of case and
                       the amount and kind (but not presence) of white
                       space.  We also treat hyphen as whitespace.")
- (ACL2::DOC-STRING
-  "Parent: DOCUMENTATION.
+ (DOC-STRING
+  "Parent: ACL2::LEGACY-DOCUMENTATION.
 
   Formatted [documentation] strings
 
@@ -80261,7 +80134,7 @@ Subtopics
   you did write \"Doc-Section \\\"MY-PKG\\\" ...\" it would read in as a
   weird symbol.")
  (DOC!
-  "Parent: DOCUMENTATION.
+  "Parent: ACL2::LEGACY-DOCUMENTATION.
 
   All the [documentation] for a name (type :doc! name)
 
@@ -80276,78 +80149,36 @@ Subtopics
  (DOC
   "Parent: DOCUMENTATION.
 
-  Brief [documentation] (type :doc name)
+  [Documentation] at the terminal
 
-  NOTE: The :doc command only makes sense at the terminal. Most users
-  will probably access the ACL2 documentation in other ways; see
-  [documentation]. In particular, consider using the xdoc manual at
-  the following location on the web, for topics documented in ACL2
-  community [books] as well as the ACL2 system (though the latter are
-  rearranged):
+  The :doc command only makes sense at the terminal. Most users will
+  probably access the ACL2 documentation in other ways; see
+  [documentation]. In particular, consider using the acl2+books
+  manual at the following location on the web, for topics documented
+  in the ACL2 community [books] or in the ACL2 system (where the
+  latter are rearranged):
 
   http://fv.centtech.com/acl2/latest/doc/
 
     Examples:
     ACL2 !>:doc DEFTHM          ; print documentation of DEFTHM
     ACL2 !>:doc logical-name    ; print documentation of LOGICAL-NAME
-    ACL2 !>:doc \"MY-PKG\"        ; print documentation of \"MY-PKG\"
-
-    Related Topics:
-    :more                      ; continues last :doc or :more-doc text
-    :more-doc name             ; prints more documentation for name
-    :docs **                   ; lists all documented symbols
-    :docs \"compil\"             ; documented symbols apropos \"compil\"
-    :DOC documentation         ; describes how documentation works
 
     General Form:
-    ACL2>:doc logical-name
-
-  where [logical-name] is a logical name (see [logical-name]) for which
-  you hope there is [documentation]. Chances are there is no
-  [documentation] at the moment, but we are working on adding
-  [documentation] strings for all the user level ACL2 functions.
-
-  For a general discussion of our treatment of documentation strings,
-  see [documentation].
-
-  This is the first cut at online [documentation]. Users can be
-  particularly helpful by sending mail on the inadequacies of the
-  system. Address it just to Moore and put [Documentation] in the
-  subject line. There are several things that trouble me about what
-  I've done here.
-
-  First, many concepts aren't documented. Ultimately, I'd like to .
-  document (a) every CLTL primitive (e.g., [case] and [coerce]) and
-  (b) every ACL2 extension (e.g., [aref1] and getprop). But so far I
-  have focussed on documenting (c) the ACL2 system primitives (e.g.,
-  [defthm] and what [hints] look like). My priorities are (c), then
-  (b), and then (a), following the philosophy that the most unstable
-  features should get online [documentation] in these early releases.
-  Having gotten the basic [documentation] in place, I'll document new
-  things as they are added, and in response to your pleas I'll try to
-  add [documentation] to old things that are widely regarded as
-  important.
-
-  Second, I worry that the existing [documentation] is unhelpful
-  because it provides too much or too little detail, or it provides
-  the detail too far away from where it is needed. Please be on the
-  lookout for this. Did you get what you needed when you appealed to
-  :doc or :[more-doc]? If not, what was it you needed? Would more
-  cross-references [help]? Did you get lost in maze of
-  cross-references?")
- (ACL2::DO-NOT-INDUCT
+    ACL2>:doc name")
+ (DO-NOT-INDUCT
   "Parent: ACL2::MISCELLANEOUS.
 
   Hints keyword :DO-NOT-INDUCT
 
   See [hints].")
- (ACL2::DO-NOT
+ (DO-NOT
      "Parent: ACL2::MISCELLANEOUS.
 
   Hints keyword :DO-NOT
 
   See [hints].")
- (ACL2::DMR
+ (DMR
   "Parents: ACL2::OTHER, ACL2::BREAK-REWRITE and ACCUMULATED-PERSISTENCE.
 
   Dynamically monitor rewrites and other prover activity
@@ -80517,7 +80348,7 @@ Subtopics
   [parallelism]): when waterfall-parallelism has been set to a
   non-nil value (see [set-waterfall-parallelism]), statistics about
   parallel execution are printed instead of the usual information.")
- (ACL2::DIVE-INTO-MACROS-TABLE
+ (DIVE-INTO-MACROS-TABLE
   "Parent: ACL2::SWITCHES-PARAMETERS-AND-MODES.
 
   Right-associated function information for the [proof-checker]
@@ -80935,7 +80766,7 @@ Subtopics
   because the [in-theory] event will always be executed.
 
   See [defun] for documentation of defun.")
- (ACL2::DEFUN-SK-EXAMPLE
+ (DEFUN-SK-EXAMPLE
   "Parent: DEFUN-SK.
 
   A simple example using [defun-sk]
@@ -81407,7 +81238,7 @@ Subtopics
   these (for inline), but it must respect the second of these (for
   notinline). Fortunately, Common Lisp implementations often do
   respect the first of these as well.")
- (ACL2::DEFUN-MODE-CAVEAT
+ (DEFUN-MODE-CAVEAT
   "Parent: ACL2::COMMON-LISP.
 
   Potential soundness issue for functions with [defun-mode] :[program]
@@ -81500,7 +81331,7 @@ Subtopics
   develop (or dismiss) this style of formal system development. BUT
   BE ON THE LOOKOUT FOR SCREWUPS DUE TO DAMAGE CAUSED BY THE
   EXECUTION OF YOUR FUNCTIONS HAVING :[program] MODE!")
- (ACL2::DEFUN-MODE
+ (DEFUN-MODE
   "Parent: ACL2::MISCELLANEOUS.
 
   Determines whether a function definition is a logical act
@@ -82958,7 +82789,7 @@ Subtopics
   rule-classes specified, if it is not already there. All other
   arguments to the generated defthm form are as specified by the
   other keyword arguments above.")
- (ACL2::DEFPUN
+ (DEFPUN
   "Parent: ACL2::EVENTS.
 
   Define a tail-recursive function symbol
@@ -83604,7 +83435,7 @@ Subtopics
 
   See [defdoc] for a means of attaching a [documentation] string to a
   name without marking the current [history] with that name.")
- (ACL2::DEFINITION
+ (DEFINITION
   "Parent: ACL2::RULE-CLASSES.
 
   Make a rule that acts like a function definition
@@ -84853,7 +84684,7 @@ Subtopics
   regardless of the settings above:
 
     ACL2 P>")
- (ACL2::DEFAULT-HINTS-TABLE
+ (DEFAULT-HINTS-TABLE
   "Parent: ACL2::SWITCHES-PARAMETERS-AND-MODES.
 
   A [table] used to provide [hints] for proofs
@@ -86210,7 +86041,7 @@ Subtopics
   expr2 may even cause an error, for example in :[program] mode if
   the expression expr2 has been constructed in a manner that could
   cause a guard violation unless test holds of expr1.")
- (ACL2::DECLARE-STOBJS
+ (DECLARE-STOBJS
   "Parent: ACL2::STOBJ.
 
   Declaring a formal parameter name to be a single-threaded object
@@ -86322,7 +86153,7 @@ Subtopics
 
   [Type-spec]
       Type specifiers in declarations")
- (ACL2::DEALING-WITH-TAU-PROBLEMS
+ (DEALING-WITH-TAU-PROBLEMS
   "Parent: ACL2::INTRODUCTION-TO-THE-TAU-SYSTEM.
 
   Some advice on dealing with problems caused by the tau system
@@ -86468,7 +86299,7 @@ Subtopics
   either to disable the tau system (locally or globally by disabling
   (:executable-counterpart tau-system)) or change the legacy hints to
   use the new subgoal names.")
- (ACL2::DEALING-WITH-KEY-COMBINATIONS-OF-FUNCTION-SYMBOLS
+ (DEALING-WITH-KEY-COMBINATIONS-OF-FUNCTION-SYMBOLS
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   How to get rid of key combinations of function symbols
@@ -86646,7 +86477,7 @@ Subtopics
   If you have been reading the tutorial introduction to the theorem
   prover, use your browser's Back Button now to return to
   [introduction-to-key-checkpoints].")
- (ACL2::DEAD-EVENTS
+ (DEAD-EVENTS
   "Parent: ACL2::OTHER.
 
   Using proof supporters to identify dead code and unused theorems
@@ -86724,7 +86555,7 @@ Subtopics
 
   You might also find the code in the above book to be helpful for
   writing your own utilities based on the proof-supporters-alist.")
- (ACL2::|Corroborating Models|
+ (|Corroborating Models|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Corroborating Models
@@ -86772,7 +86603,7 @@ Subtopics
   The user of a model must understand its limitations.
 
   []")
- (ACL2::|Conversion|
+ (|Conversion|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Conversion to Uppercase
@@ -86789,7 +86620,7 @@ Subtopics
   rational and 123 and 0123 are two different ways to write the same
   natural number). The symbol has three characters in its name, the
   middle one of which is a lower case b.")
- (ACL2::|Common Lisp as a Modeling Language|
+ (|Common Lisp as a Modeling Language|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Common Lisp as a Modeling Language
@@ -86824,7 +86655,7 @@ Subtopics
   purpose of models is to permit analysis.
 
   Click [here] to continue.")
- (ACL2::|Common Lisp|
+ (|Common Lisp|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Common Lisp
@@ -87014,7 +86845,7 @@ Subtopics
     ; the wormhole is exited.
     (my-fmt-to-comment-window \"Here is ~x0 for your inspection~%\"
                               (list (cons #\\0 (car 'foo))))")
- (ACL2::CUSTOM-KEYWORD-HINTS
+ (CUSTOM-KEYWORD-HINTS
   "Parent: ACL2::MISCELLANEOUS.
 
   User-defined hints
@@ -87178,7 +87009,7 @@ Subtopics
   This is a low-level system function at the present time. See [pr] and
   see [pr!] instead. Also see [rule-classes] for the use of the
   symbol :corollary in specifying a rule class.")
- (ACL2::COPYRIGHT
+ (COPYRIGHT
   "Parent: ACL2::MISCELLANEOUS.
 
   ACL2 copyright, license, sponsorship
@@ -87204,7 +87035,7 @@ Subtopics
   U.S.A.
 
   Please also see [acknowledgments].")
- (ACL2::CONSTRAINT
+ (CONSTRAINT
   "Parent: ACL2::MISCELLANEOUS.
 
   Restrictions on certain functions introduced in [encapsulate]
@@ -87678,7 +87509,7 @@ Subtopics
   Recognizer for [cons] pairs
 
   (consp x) is true if and only if x is a [cons] pair.")
- (ACL2::CONSERVATIVITY-OF-DEFCHOOSE
+ (CONSERVATIVITY-OF-DEFCHOOSE
   "Parent: DEFCHOOSE.
 
   Proof of conservativity of [defchoose]
@@ -88130,7 +87961,7 @@ Subtopics
   documentation for more information.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::CONGRUENCE
+ (CONGRUENCE
   "Parent: ACL2::RULE-CLASSES.
 
   The relations to maintain while simplifying arguments
@@ -88316,7 +88147,7 @@ Subtopics
 
   Concatenate is a Common Lisp function. See any Common Lisp
   documentation for more information.")
- (ACL2::COMPUTED-HINTS
+ (COMPUTED-HINTS
   "Parent: ACL2::MISCELLANEOUS.
 
   Computing advice to the theorem proving process
@@ -88545,7 +88376,7 @@ Subtopics
   hood). Note however that a [compress1] call is replaced by a hard
   error if the header specifies an :order of :none or nil and the
   array's length exceeds the [maximum-length] field of its [header].")
- (ACL2::COMPOUND-RECOGNIZER
+ (COMPOUND-RECOGNIZER
   "Parent: ACL2::RULE-CLASSES.
 
   Make a rule used by the typing mechanism
@@ -88820,7 +88651,7 @@ Subtopics
     (equal (complex x y)
            (complex (if (rationalp x) x 0)
                     (if (rationalp y) y 0)))")
- (ACL2::COMPILING-ACL2P
+ (COMPILING-ACL2P
   "Parent: ACL2::PARALLELISM.
 
   Compiling ACL2(p)
@@ -88852,7 +88683,7 @@ Subtopics
   the Lisp executable ccl:
 
     make large DOC ACL2_PAR=t LISP=ccl")
- (ACL2::COMPILATION
+ (COMPILATION
   "Parent: ACL2::PROGRAMMING.
 
   Compiling ACL2 functions
@@ -88898,7 +88729,7 @@ Subtopics
 
   See [book-compiled-file] for more discussion about compilation and
   [books].")
- (ACL2::COMP-GCL
+ (COMP-GCL
   "Parents: COMP and ACL2::PROGRAMMING.
 
   Compile some ACL2 functions leaving .c and .h files
@@ -89041,7 +88872,7 @@ Subtopics
   http://acl2-books.googlecode.com/.
 
   To certify the community books, see [regression].")
- (ACL2::COMMON-LISP
+ (COMMON-LISP
   "Parent: ACL2::MISCELLANEOUS.
 
   Relation to Common Lisp, including deviations from the spec
@@ -89089,7 +88920,7 @@ Subtopics
 
   [Defun-mode-caveat]
       Potential soundness issue for functions with [defun-mode] :[program]")
- (ACL2::COMMAND-LINE
+ (COMMAND-LINE
   "Parent: ACL2::OTHER.
 
   Handling of command-line arguments when ACL2 is invoked
@@ -89104,7 +88935,7 @@ Subtopics
 
   [Save-exec]
       Save an executable image and a wrapper script")
- (ACL2::COMMAND-DESCRIPTOR
+ (COMMAND-DESCRIPTOR
   "Parent: ACL2::MISCELLANEOUS.
 
   An object describing a particular [command] typed by the user
@@ -89188,7 +89019,7 @@ Subtopics
               the command found by (:search pat :max 0), i.e., the most
               recent command matching pat that was part of the user's
               session, not part of the system initialization.")
- (ACL2::COMMAND
+ (COMMAND
   "Parent: ACL2::MISCELLANEOUS.
 
   Forms you type at the top-level, but...
@@ -89326,7 +89157,7 @@ Subtopics
 
   Deprecated. Calls [clear-memoize-tables] and then [hons-clear] or
   [hons-wash], whichever makes sense for the underlying Common Lisp.")
- (ACL2::CLAUSE-PROCESSOR
+ (CLAUSE-PROCESSOR
   "Parent: ACL2::RULE-CLASSES.
 
   Make or apply a :clause-processor rule (goal-level simplifier)
@@ -89623,7 +89454,7 @@ Subtopics
       Fischer, and G. Sutcliffe, editors), CEUR Workshop Proceedings
       Vol. 212, Phnom Penh, Cambodia, pp. 7-26, November 2006,
       http://ceur-ws.org/Vol-212/.")
- (ACL2::CLAUSE-IDENTIFIER
+ (CLAUSE-IDENTIFIER
   "Parent: ACL2::MISCELLANEOUS.
 
   The internal form of a [goal-spec]
@@ -89691,7 +89522,7 @@ Subtopics
   will occur once the command (checkpoint-forced-goals t) has been
   executed. To return to the default behavior, use the command
   (checkpoint-forced-goals nil).")
- (ACL2::CHECK-SUM
+ (CHECK-SUM
   "Parent: ACL2::ACL2-BUILT-INS.
 
   Assigning ``often unique'' integers to files and objects
@@ -89729,7 +89560,7 @@ Subtopics
 
   ACL2 uses check sums to increase security in the [books] mechanism;
   see [certificate].")
- (ACL2::CHARACTERS
+ (CHARACTERS
   "Parent: ACL2::ACL2-BUILT-INS.
 
   Characters in ACL2
@@ -89809,7 +89640,7 @@ Subtopics
   list of [characters].
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::CHARACTER-ENCODING
+ (CHARACTER-ENCODING
   "Parent: ACL2::IO.
 
   How bytes are parsed into characters
@@ -89985,8 +89816,7 @@ Subtopics
   more information.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::CERTIFYING-BOOKS
-      "Parent: ACL2::BOOKS.
+ (CERTIFYING-BOOKS "Parent: ACL2::BOOKS.
 
   See [books-certification].")
  (CERTIFY-BOOK!
@@ -90227,7 +90057,7 @@ Subtopics
   certify-book, see [set-write-ACL2x].
 
   This completes the tour through the [documentation] of [books].")
- (ACL2::CERTIFICATE
+ (CERTIFICATE
   "Parent: ACL2::BOOKS.
 
   How a book is known to be admissible and where its [defpkg]s reside
@@ -90544,7 +90374,7 @@ Subtopics
   same file, the ``real'' name and the ``tricky'' name. This can
   cause ACL2 to include the same book twice, not recognizing the
   second one as redundant.")
- (ACL2::CASES
+ (CASES
       "Parent: ACL2::MISCELLANEOUS.
 
   Hints keyword :CASES
@@ -90806,7 +90636,7 @@ Subtopics
   expected to succeed, but if it fails then the input string is
   returned unchanged, and to be conservative, the value returned is
   nil in this case if dir-p is true.")
- (ACL2::CALLING-LD-IN-BAD-CONTEXTS
+ (CALLING-LD-IN-BAD-CONTEXTS
   "Parent: LD.
 
   Errors caused by calling [ld] in inappropriate contexts
@@ -90930,8 +90760,7 @@ Subtopics
   [car] of the [caaar]
 
   See any Common Lisp documentation for details.")
- (ACL2::BY
-      "Parent: ACL2::MISCELLANEOUS.
+ (BY "Parent: ACL2::MISCELLANEOUS.
 
   Hints keyword :BY
 
@@ -90963,7 +90792,7 @@ Subtopics
   butlast is optional, but in ACL2 it is required.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::BUILT-IN-CLAUSE
+ (BUILT-IN-CLAUSE
   "Parent: ACL2::RULE-CLASSES.
 
   To build a clause into the simplifier
@@ -91206,7 +91035,7 @@ Subtopics
   anticipate that a set of convenient primitives will gradually
   evolve within the ACL2 community. It is to encourage this evolution
   that brr@ provides access to the *'d data.")
- (ACL2::BRR-COMMANDS
+ (BRR-COMMANDS
   "Parent: ACL2::BREAK-REWRITE.
 
   [Break-Rewrite] Commands
@@ -91323,8 +91152,8 @@ Subtopics
   from brr if you have interrupted and aborted brr processing during
   the proof. These issues do not affect the behavior or soundness of
   the theorem prover.")
- (ACL2::BROKEN-LINK
-  "Parent: DOCUMENTATION.
+ (BROKEN-LINK
+  "Parent: ACL2::LEGACY-DOCUMENTATION.
 
   Placeholder for link to documentation from community books
 
@@ -91335,7 +91164,7 @@ Subtopics
   documentation from the books, which you can find here:
 
   http://fv.centtech.com/acl2/latest/doc/")
- (ACL2::BREAKS
+ (BREAKS
   "Parent: ACL2::ACL2-BUILT-INS.
 
   Common Lisp breaks
@@ -91424,7 +91253,7 @@ Subtopics
   break-on-error, all three of those keyword values are treated
   equivalently (and, all are ignored for non-ANSI GCL; see
   [set-debugger-enable]).")
- (ACL2::BREAK-LEMMA
+ (BREAK-LEMMA
   "Parent: ACL2::BREAK-REWRITE.
 
   A quick introduction to breaking rewrite rules in ACL2
@@ -91511,7 +91340,7 @@ Subtopics
   (break$) will have that effect. (Exception: break$ is disabled
   after evaluation of (set-debugger-enable :never); see
   [set-debugger-enable].) Break$ returns nil.")
- (ACL2::BOUNDERS
+ (BOUNDERS
   "Parent: TAU-SYSTEM.
 
   Intervals, bounder functions, and bounder correctness
@@ -91894,7 +91723,7 @@ Subtopics
   Common Lisp function boole.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::BOOKS-CERTIFICATION-CLASSIC
+ (BOOKS-CERTIFICATION-CLASSIC
   "Parent: ACL2::BOOKS.
 
   Classic ACL2 `make'-based certification of [books]
@@ -92153,7 +91982,7 @@ Subtopics
   message to that list. Also consider trying another version of GNU
   `make'; for example, we have found that versions 3.81 and 3.82
   sometimes cause errors on Linux where version 3.80 does not.")
- (ACL2::BOOKS-CERTIFICATION
+ (BOOKS-CERTIFICATION
   "Parent: ACL2::BOOKS.
 
   Certifying ACL2 community [books]
@@ -92415,7 +92244,7 @@ Subtopics
   sometimes cause errors on Linux where version 3.80 does not. Note
   however that Version 3.80 does not print certain informational
   messages that are printed by later versions.")
- (ACL2::BOOKDATA
+ (BOOKDATA
   "Parent: ACL2::BOOKS.
 
   Generating data about books
@@ -92516,7 +92345,7 @@ Subtopics
 
     make regression-fresh \\
     ACL2_CUSTOMIZATION={DIR}/acl2-customization-files/bookdata.lisp")
- (ACL2::BOOK-NAME
+ (BOOK-NAME
   "Parent: ACL2::BOOKS.
 
   Conventions associated with book names
@@ -92601,10 +92430,10 @@ Subtopics
   if you are on the guided tour, wait until the tour gets there).
 
   See [book-contents] to continue the guided tour.")
- (ACL2::BOOK-MAKEFILES "Parent: ACL2::BOOKS.
+ (BOOK-MAKEFILES "Parent: ACL2::BOOKS.
 
   See [books-certification].")
- (ACL2::BOOK-EXAMPLE
+ (BOOK-EXAMPLE
   "Parent: ACL2::BOOKS.
 
   How to create, certify, and use a simple book
@@ -92771,7 +92600,7 @@ Subtopics
   continue the ``guided tour'' through the rest of the
   [documentation] of [books]. See [book-name], following the pointer
   given at the conclusion.")
- (ACL2::BOOK-CONTENTS
+ (BOOK-CONTENTS
   "Parent: ACL2::BOOKS.
 
   Restrictions on the forms inside [books]
@@ -92846,7 +92675,7 @@ Subtopics
   how do we know that the forms in a book will be admissible in the
   host logical [world] of an [include-book]? See [certificate] for
   answers to these questions.")
- (ACL2::BOOK-COMPILED-FILE
+ (BOOK-COMPILED-FILE
   "Parent: ACL2::BOOKS.
 
   Creating and loading of compiled and expansion files for [books]
@@ -92943,7 +92772,7 @@ Subtopics
   whenever any include-book aborts, so do all of its parent
   include-books, up the chain. Such an abort causes an error when the
   include-book form specifies a :load-compiled-file value of t.")
- (ACL2::BIND-FREE-EXAMPLES
+ (BIND-FREE-EXAMPLES
   "Parent: BIND-FREE.
 
   Examples pertaining to [bind-free] hypotheses
@@ -93471,14 +93300,14 @@ Subtopics
   non-numeric inputs as 0.
 
   Calls of the macro [*] expand to calls of binary-*; see [*].")
- (ACL2::BIBLIOGRAPHY
+ (BIBLIOGRAPHY
   "Parent: ACL2::MISCELLANEOUS.
 
   Reports about ACL2
 
   For a list of notes and reports about ACL2, see
   http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html.")
- (ACL2::BDD-INTRODUCTION
+ (BDD-INTRODUCTION
   "Parent: ACL2::BDD.
 
   Examples illustrating the use of BDDs in ACL2
@@ -93704,7 +93533,7 @@ Subtopics
     ACL2 !>
 
   See [if*] for another example.")
- (ACL2::BDD-ALGORITHM
+ (BDD-ALGORITHM
   "Parent: ACL2::BDD.
 
   Summary of the BDD algorithm in ACL2
@@ -94192,13 +94021,13 @@ Subtopics
   the result of running the algorithm on its arguments. We believe
   that these uses of hash tables are standard. They are also
   discussed in Moore's paper on BDDs; see [bdd] for the reference.")
- (ACL2::BACKTRACK
+ (BACKTRACK
   "Parent: ACL2::MISCELLANEOUS.
 
   Hints keyword :BACKTRACK
 
   See [hints].")
- (ACL2::BACKCHAIN-LIMIT-RW
+ (BACKCHAIN-LIMIT-RW
   "Parent: ACL2::MISCELLANEOUS.
 
   Hints keyword :BACKCHAIN-LIMIT-RW
@@ -94348,7 +94177,7 @@ Subtopics
 
     (backchain-limit wrld :ts) ; backchain limit for type-set reasoning
     (backchain-limit wrld :rewrite) ; backchain limit for rewriting")
- (ACL2::|Analyzing Common Lisp Models|
+ (|Analyzing Common Lisp Models|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   Analyzing Common Lisp Models
@@ -94387,7 +94216,7 @@ Subtopics
   concatenation of sequences is involved in your model, then you may
   well need the theorem above in order to that your model has some
   particular property.")
- (ACL2::|An Example of ACL2 in Use|
+ (|An Example of ACL2 in Use|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   An Example of ACL2 in Use
@@ -94435,7 +94264,7 @@ Subtopics
   context.
 
   []")
- (ACL2::|An Example Common Lisp Function Definition|
+ (|An Example Common Lisp Function Definition|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   An Example Common Lisp Function Definition
@@ -94465,7 +94294,7 @@ Subtopics
   and Common Lisp will print the result (A B C D E).
 
   []")
- (ACL2::|About the Prompt|
+ (|About the Prompt|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   About the Prompt
@@ -94534,7 +94363,7 @@ Subtopics
   [default-print-prompt] [].
 
   You should now return to [the Walking Tour].")
- (ACL2::|About the Admission of Recursive Definitions|
+ (|About the Admission of Recursive Definitions|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   About the Admission of Recursive Definitions
@@ -94565,7 +94394,7 @@ Subtopics
   relation.
 
   You should now return to [the Walking Tour].")
- (ACL2::|About the ACL2 Home Page|
+ (|About the ACL2 Home Page|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   About the ACL2 Home Page
@@ -94595,7 +94424,7 @@ Subtopics
   tour.
 
   []")
- (ACL2::|About Types|
+ (|About Types|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   About Types
@@ -94641,7 +94470,7 @@ Subtopics
   entirely and that is what we recommend for now.
 
   You should now return to [the Walking Tour].")
- (ACL2::|About Models|
+ (|About Models|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   About Models
@@ -94923,7 +94752,7 @@ Subtopics
   alist is the semantic value of name when aset1 is executed. Thus,
   if the condition is not true, aset1 prints a slow array warning to
   the comment window. See [slow-array-warning].")
- (ACL2::ARRAYS-EXAMPLE
+ (ARRAYS-EXAMPLE
   "Parent: ACL2::ARRAYS.
 
   An example illustrating ACL2 arrays
@@ -94993,7 +94822,7 @@ Subtopics
 
     XXX
     ACL2 !>")
- (ACL2::ARRAYS
+ (ARRAYS
   "Parent: ACL2::PROGRAMMING.
 
   An introduction to ACL2 arrays
@@ -95481,7 +95310,7 @@ Subtopics
   The function operates in constant time if alist is the semantic
   value of name. See [arrays].")
  (ARGS
-  "Parent: DOCUMENTATION.
+  "Parent: ACL2::LEGACY-DOCUMENTATION.
 
   args, [guard], type, [constraint], etc., of a function symbol
 
@@ -95535,7 +95364,7 @@ Subtopics
   is not, aref1 must do a linear search through alist. In that case
   the correct answer is returned but a slow array comment is printed
   to the comment window. See [slow-array-warning].")
- (ACL2::ARCHITECTURE-OF-THE-PROVER
+ (ARCHITECTURE-OF-THE-PROVER
   "Parent: ACL2::INTRODUCTION-TO-THE-THEOREM-PROVER.
 
   A simple overview of how the prover works
@@ -95633,7 +95462,7 @@ Subtopics
 
   Append is a Common Lisp function. See any Common Lisp documentation
   for more information.")
- (ACL2::ANNOTATED-ACL2-SCRIPTS
+ (ANNOTATED-ACL2-SCRIPTS
   "Parent: ACL2::ACL2-TUTORIAL.
 
   Examples of ACL2 scripts
@@ -95731,7 +95560,7 @@ Subtopics
 
   And is a Common Lisp macro. See any Common Lisp documentation for
   more information.")
- (ACL2::ALTERNATIVE-INTRODUCTION
+ (ALTERNATIVE-INTRODUCTION
   "Parent: ACL2::ACL2-TUTORIAL.
 
   Introduction to ACL2
@@ -96403,7 +96232,7 @@ Subtopics
   (alistp x) has a [guard] of t.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::ADVANCED-FEATURES
+ (ADVANCED-FEATURES
   "Parent: ACL2::ACL2-TUTORIAL.
 
   Some advanced features of ACL2
@@ -97135,7 +96964,7 @@ Subtopics
   that add-include-book-dir event will not be visible after the book
   is included. (Note: The above behavior is generally preserved in
   raw-mode (see [set-raw-mode]),though by means other than a table.)")
- (ACL2::ADD-DIVE-INTO-MACRO
+ (ADD-DIVE-INTO-MACRO
   "Parent: ACL2::SWITCHES-PARAMETERS-AND-MODES.
 
   Associate [proof-checker] diving function with macro name
@@ -97319,10 +97148,10 @@ Subtopics
   information.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::ACL2S "Parent: ACL2::MISCELLANEOUS.
+ (ACL2S "Parent: ACL2::MISCELLANEOUS.
 
   See [ACL2-sedan].")
- (ACL2::ACL2P-KEY-CHECKPOINTS
+ (ACL2P-KEY-CHECKPOINTS
   "Parent: ACL2::PARALLEL-PROOF.
 
   Key checkpoints in ACL2(p)
@@ -97365,7 +97194,7 @@ Subtopics
   [Set-waterfall-printing]
       For ACL2(p): configuring the printing that occurs within the
       parallelized waterfall")
- (ACL2::ACL2-USER
+ (ACL2-USER
   "Parent: ACL2::PROGRAMMING.
 
   A package the ACL2 user may prefer
@@ -97403,7 +97232,7 @@ Subtopics
   stabilizing on the ``frequently used'' names from \"ACL2\", we intend
   never to define a symbol whose [symbol-package-name] is
   \"ACL2-USER\".")
- (ACL2::ACL2-SEDAN
+ (ACL2-SEDAN
   "Parent: ACL2::ACL2-TUTORIAL.
 
   ACL2 Sedan interface
@@ -97441,7 +97270,7 @@ Subtopics
   list of numbers.
 
   To see the ACL2 definition of this function, see [pf].")
- (ACL2::ACL2-HELP
+ (ACL2-HELP
   "Parent: ACL2::OTHER.
 
   The acl2-help mailing list
@@ -97451,7 +97280,7 @@ Subtopics
   questions about ACL2, for example, about projects completed using
   ACL2, you may prefer the acl2 mailing list,
   acl2@utlists.utexas.edu, which tends to have wider distribution.")
- (ACL2::ACL2-DEFAULTS-TABLE
+ (ACL2-DEFAULTS-TABLE
   "Parent: ACL2::OTHER.
 
   A [table] specifying certain defaults, e.g., the default [defun-mode]
@@ -97767,7 +97596,7 @@ Subtopics
   need to do so using [command]s that are not inside [books]. It may
   be useful to set your favorite defaults in your
   [ACL2-customization] file; see [ACL2-customization].")
- (ACL2::ACL2-CUSTOMIZATION
+ (ACL2-CUSTOMIZATION
   "Parents: ACL2::SWITCHES-PARAMETERS-AND-MODES and ACL2::PROGRAMMING.
 
   File of initial commands for ACL2 to run at [startup]
@@ -97860,7 +97689,7 @@ Subtopics
   acl2-counts of the numerator and denominator. The acl2-count of a
   complex rational is one greater than the sum of the acl2-counts of
   the real and imaginary parts.")
- (ACL2::ACL2-BUILT-INS
+ (ACL2-BUILT-INS
   "Parent: ACL2::PROGRAMMING.
 
   Built-in ACL2 functions
@@ -99055,7 +98884,7 @@ Subtopics
 
   [*]
       Multiplication macro")
- (ACL2::ACL2-AS-STANDALONE-PROGRAM
+ (ACL2-AS-STANDALONE-PROGRAM
   "Parent: ACL2::ACL2-TUTORIAL.
 
   Calling ACL2 from another program
@@ -99150,7 +98979,7 @@ Subtopics
   Certainly refinements are possible -- for example the above doesn't
   distinguish between unprovable and ill-formed input. But it's a
   start.")
- (ACL2::|ACL2 is an Untyped Language|
+ (|ACL2 is an Untyped Language|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   ACL2 is an Untyped Language
@@ -99175,7 +99004,7 @@ Subtopics
 
   You can think of (app x y) as building a binary tree by replacing the
   right-most tip of the tree x with the tree y.")
- (ACL2::|ACL2 as an Interactive Theorem Prover (cont)|
+ (|ACL2 as an Interactive Theorem Prover (cont)|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   ACL2 as an Interactive Theorem Prover (cont)
@@ -99206,7 +99035,7 @@ Subtopics
   a rewrite rule.
 
   []")
- (ACL2::|ACL2 as an Interactive Theorem Prover|
+ (|ACL2 as an Interactive Theorem Prover|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   ACL2 as an Interactive Theorem Prover
@@ -99217,7 +99046,7 @@ Subtopics
   The user usually guides ACL2 by suggesting that it first prove key
   lemmas. Lemmas are just theorems used in the proofs of other
   theorems.")
- (ACL2::|ACL2 System Architecture|
+ (|ACL2 System Architecture|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   ACL2 System Architecture
@@ -99241,7 +99070,7 @@ Subtopics
   Utilities [] link of the ACL2 home page.
 
   []")
- (ACL2::|ACL2 Symbols|
+ (|ACL2 Symbols|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   ACL2 Symbols
@@ -99286,7 +99115,7 @@ Subtopics
   (See [defpkg] [].) If the [current-package] [] is \"SMITH\" then
   SMITH::ABC may be more briefly written as just ABC. [Intern] []
   ``creates'' a symbol of a given name in a given package.")
- (ACL2::|ACL2 Strings|
+ (|ACL2 Strings|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   ACL2 Strings
@@ -99303,7 +99132,7 @@ Subtopics
   lexicographically. We suggest you See [programming] [] where we
   list all of the primitive ACL2 functions. Alternatively, see any
   Common Lisp language documentation.")
- (ACL2::|ACL2 Conses or Ordered Pairs|
+ (|ACL2 Conses or Ordered Pairs|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   ACL2 Conses or Ordered Pairs
@@ -99333,7 +99162,7 @@ Subtopics
   terminates with nil. A ``true list'' (see [true-listp] []) is
   either nil or a proper cons. (A b c . 7) is an improper cons and
   hence not a true list.")
- (ACL2::|ACL2 Characters|
+ (|ACL2 Characters|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   ACL2 Characters
@@ -99351,7 +99180,7 @@ Subtopics
 
   The function [characterp] [] recognizes characters. For more details,
   See [characters] [].")
- (ACL2::ACKNOWLEDGMENTS
+ (ACKNOWLEDGMENTS
   "Parent: ACL2::MISCELLANEOUS.
 
   Some contributors to the well-being of ACL2
@@ -99504,7 +99333,7 @@ Subtopics
 
       Richard Stallman contributed a texinfo patch, to be found in the file
       doc/texinfo.tex.")
- (ACL2::ACCUMULATED-PERSISTENCE-SUBTLETIES
+ (ACCUMULATED-PERSISTENCE-SUBTLETIES
   "Parent: ACCUMULATED-PERSISTENCE.
 
   Some subtle aspects of the counting done by [accumulated-persistence]
@@ -100079,7 +99908,7 @@ Subtopics
   Logically speaking, (a!) = nil. But imagine that it is defined in
   such a way that it causes a stack overflow or other resource
   exhaustion when called.")
- (ACL2::|A Walking Tour of ACL2|
+ (|A Walking Tour of ACL2|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   A Walking Tour of ACL2
@@ -100105,7 +99934,7 @@ Subtopics
   links still of interest.
 
   []")
- (ACL2::|A Typical State|
+ (|A Typical State|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   A Typical State
@@ -100126,11 +99955,11 @@ Subtopics
   concatenate, reverse, sort, search, count, etc.
 
   []")
- (ACL2::|A Trivial Proof|
+ (|A Trivial Proof|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   A Trivial Proof")
- (ACL2::|A Tiny Warning Sign|
+ (|A Tiny Warning Sign|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   A Tiny Warning Sign
@@ -100144,7 +99973,7 @@ Subtopics
   should go back rather than follow the link marked with this sign.
   But you are welcome to explore the online documentation as well.
   Good luck.")
- (ACL2::|A Sketch of How the Rewriter Works|
+ (|A Sketch of How the Rewriter Works|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   A Sketch of How the Rewriter Works
@@ -100173,7 +100002,7 @@ Subtopics
   to how to use the theorem prover, see
   [introduction-to-the-theorem-prover], which we will recommend you
   work through after you have finished the two tours.")
- (ACL2::|A Flying Tour of ACL2|
+ (|A Flying Tour of ACL2|
   "Parent: ACL2::|Pages Written Especially for the Tours|.
 
   A Flying Tour of ACL2
@@ -100416,8 +100245,8 @@ Subtopics
     (binary-+ x (binary-+ y (binary-+ 4 z))).
 
   See [binary-+].")
- (ACL2::*TERMINAL-MARKUP-TABLE*
-  "Parent: DOCUMENTATION.
+ (*TERMINAL-MARKUP-TABLE*
+  "Parent: ACL2::LEGACY-DOCUMENTATION.
 
   A [markup] table used for printing to the terminal
 
@@ -100554,7 +100383,7 @@ Subtopics
  (&ALLOW-OTHER-KEYS "Parent: ACL2::MISCELLANEOUS.
 
   See [macro-args].")
- (ACL2::ACL2
+ (ACL2
   "Parent: TOP.
 
   ACL2 documentation (system only, not including the community books)
@@ -100615,6 +100444,10 @@ Subtopics
       A miscellany of documented functions and concepts (often cited in
       more accessible [documentation])
 
+  [Legacy-documentation]
+      Parent section for the legacy \"documentation\" topic (likely to be
+      deleted soon)
+
   [Io]
       Input/output facilities in ACL2
 
@@ -100634,7 +100467,7 @@ Subtopics
       Functions that extend the logic
 
   [Documentation]
-      Functions that display documentation
+      ACL2 system (and books) documentation
 
   [Break-rewrite]
       The read-eval-print loop entered to [monitor] rewrite rules

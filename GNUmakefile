@@ -515,13 +515,17 @@ DOC: clean-doc
 	$(MAKE) doc.lisp acl2-manual
 
 doc.lisp: books/system/doc/acl2-doc.lisp
-	  rm -f doc.lisp
+	  mv -f doc.lisp doc.lisp.backup
 	  cd books/system/doc ; ../../cert.pl render-doc.lisp
-	  cp -p books/system/doc/rendered-doc.lisp doc.lisp
+	  cp -p books/system/doc/rendered-doc.lsp doc.lisp
 
 acl2-manual: books/system/doc/acl2-doc.lisp
-	     $(MAKE) clean-doc
-	     cd books/system/doc ; ../../cert.pl acl2-manual
+	if [ -e books/system/doc/manual ]; then \
+	  echo "Error in making target acl2-manual:" ; \
+	  echo "please run \"make clean-doc\" first." ; \
+	  exit 1 ; \
+	fi
+	cd books/system/doc ; ../../cert.pl acl2-manual
 
 .PHONY: LEGACY-DOC HTML EMACS_TEX EMACS_ONLY STATS
 
@@ -797,7 +801,7 @@ devel-check:
 clean-doc:
 	cd books/system/doc ; ../../clean.pl
 	rm -rf books/system/doc/manual
-	rm -f books/system/doc/rendered-doc.lisp
+	rm -f books/system/doc/rendered-doc.lsp
 
 .PHONY: clean-legacy-doc
 clean-legacy-doc:
