@@ -22836,7 +22836,8 @@
              (put-defstobj-invariant-risk
               (cdr field-templates)
               (cond ((or (eq type t)
-                         (and (eq (car type) 'array)
+                         (and (consp type)
+                              (eq (car type) 'array)
                               (eq (cadr type) t)))
                      wrld)
                     (t (let ((updater (nth 4 field-template)))
