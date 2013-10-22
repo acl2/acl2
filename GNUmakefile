@@ -760,10 +760,10 @@ certify-books-short:
 	uname -a
 ifndef ACL2
 	cd books ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 short-test
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 basic
 else
 	cd books ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) short-test
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) basic
 endif
 
 # The following target assumes that we are using an image built with
