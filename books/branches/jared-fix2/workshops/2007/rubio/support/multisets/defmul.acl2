@@ -1,9 +1,0 @@
-(in-package "ACL2")
-
-(defpkg "MUL" (union-eq *acl2-exports*
-			       (union-eq
-				*common-lisp-symbols-from-main-lisp-package*
-				'(remove-one multiset-diff ctoa atoc))))
-
-
-(certify-book "defmul" ? t)

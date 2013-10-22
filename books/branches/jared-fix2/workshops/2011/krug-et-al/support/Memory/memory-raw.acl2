@@ -1,3 +1,0 @@
-; cert-flags: ? t :ttags (memory)
-(certify-book "memory-raw" ? t :ttags (memory))
-

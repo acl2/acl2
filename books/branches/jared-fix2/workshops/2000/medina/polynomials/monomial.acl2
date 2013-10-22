@@ -1,3 +1,0 @@
-(in-package "ACL2")
-(ld "certification.lsp")
-(certify-book "monomial" ? t)

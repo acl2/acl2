@@ -1,2 +1,0 @@
-(ld "package.lsp")
-; cert-flags: ? t :ttags :all

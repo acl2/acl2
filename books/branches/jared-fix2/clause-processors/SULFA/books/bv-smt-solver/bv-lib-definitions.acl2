@@ -1,3 +1,0 @@
-(in-package "ACL2")
-; cert-flags: ? t :skip-proofs-okp t
-(certify-book "bv-lib-definitions" ? t :skip-proofs-okp t)

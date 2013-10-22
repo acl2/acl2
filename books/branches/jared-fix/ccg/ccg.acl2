@@ -1,3 +1,0 @@
-; cert-flags: ? t :ttags (:ccg)
-
-(certify-book "ccg" ? t :ttags (:ccg))
