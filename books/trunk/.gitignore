@@ -3,6 +3,7 @@ Makefile-tmp
 *.out
 *.time
 *.lx64fsl
+*.fx64fsl
 *.port
 *~
 *.sao

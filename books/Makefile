@@ -1065,6 +1065,9 @@ security: jfkr des sha-2
 .PHONY: wp-gen
 wp-gen: $(filter projects/wp-gen/%, $(OK_CERTS))
 
+.PHONY: concurrent-programs
+concurrent-programs: $(filter projects/concurrent-programs/%, $(OK_CERTS))
+
 
 
 

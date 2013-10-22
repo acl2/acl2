@@ -156,7 +156,7 @@
 ; We do our timings on CCL on Lisp2.
 
 (include-book ;; Line break fools dependency scanner.
- "finite-set-theory/osets/sort" :dir :system)
+ "std/osets/top" :dir :system)
 
 
 :q

@@ -400,3 +400,161 @@ details.</p>
 <p>You should have received a copy of the GNU General Public License along with
 this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.</p>")
+
+
+
+(defxdoc concurrent-programs
+  :parents (projects)
+  :short "ACL2 proofs establishing the fairness of the Bakery Algorithm and the
+coherence of the German Cache Protocol.")
+
+
+(defxdoc german-protocol
+  :parents (concurrent-programs)
+  :short "An ACL2 proof of coherence of the German Cache Protocol.  The
+protocol is translated directly into ACL2 from the murphy code provided in
+ccp.m.  The proof involves formalizing coherence and strengthening the property
+into an inductive invariant."
+
+  :long "<p>The directory @('projects/concurrent-programs/german-protocol')
+contains the ACL2 source files for the German Protocol proof by Sandip Ray.
+These ACL2 books may be built by running, e.g., @('make concurrent-programs')
+from the @('books/') directory.</p>
+
+<p>This set of books define an invariant that is strong enough to verify the
+coherence of the German Cache Protocol.  The proof shows how to come up with a
+sufficient inductive invariant by iterative strengthening starting from the
+desired base property.  The proof also demonstrates how to define invariant
+predicates for multiprocess systems both using quantification over process
+indices and recursive functions, thus providing a tutorial demonstration of how
+to reason about concurrent protocols.</p>
+
+<h3>Background and Description</h3>
+
+<p>Anna Slobodova gave this problem to the author when she was looking for
+doing cache protocol proofs with ACL2.  The key is that some predicates
+involved, especially the key coherence property, could be naturally stated as
+quantified formulas, and the question was how we could use the standard
+quantification approaches together with (possibly) recursive functions to
+derive a proof in the way the human would do.</p>
+
+<p>I looked at the protocol and decided to do a proof on my own of the protocol
+in ACL2.  Previously a similar proof was done in ACL2 via predicate
+abstraction, and this proof was primarily intended to show how predicate
+abstraction could save labor over a standard ACL2 proof.  However, the ACL2
+proof itself was not devoid of interest, since it showed how one typically
+iterates over a partial invariant to define a concrete inductive invariant for
+a protocol-level system.  The proof did spring some surprises, for instance as
+documented in the definition of some fragments of the invariant required in the
+proof.</p>
+
+<p>However, the chief contribution of the proof is to provide a tutorial
+introduction to coming up with an inductive invariant for a complicated
+multiprocess protocol.  Towards this end, substantial on-the-fly commentary of
+the proof is provided in the form of comments, documenting the thought process
+involved in the proof.</p>
+
+<p>For questions and concerns about these books, contact
+@('sandip@cs.utexas.edu').</p>
+
+<h3>Copyright Information</h3>
+
+<p>An ACL2 Proof of Coherence of the German Protocol<br/>
+Copyright (C) 2006 Sandip Ray</p>
+
+<p>This program is free software; you can redistribute it and/ormodify it under
+the terms of the GNU General Public Licenseas published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version. This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.</p>")
+
+
+(defxdoc bakery-algorithm
+  :parents (concurrent-programs)
+  :short "This set of books shows how one can use stuttering trace containment
+with fairness constraints to verify concurrent protocols.  We apply the method
+here to prove the correctness of an implementation of the Bakery algorithm.
+The implementation is interesting in the sense that it depends critically on
+fair selection of processes to ensure absence of deadlock.  We show how the
+requisite notions can be formalized as generic theories and used in the proof
+of refinements."
+
+  :long "<p>The directory @('projects/concurrent-programs/bakery') contains the
+ACL2 source files for the Bakery Algorithm proof by Sandip Ray.  These ACL2
+books may be built by running, e.g., @('make concurrent-programs') from the
+@('books/') directory.</p>
+
+<p>This set of books shows how the notion of stuttering trace containment can
+be used with a formalization of fairness effectively to verify concurrent
+protocols via single-step theorems.  We consider an implementation of the
+Bakery algorithm, which is a well-known mutual exclusion protocol from the
+literature.  The implementation makes critical use of fairness assumptions to
+ensure progress.  Fairness is formalized by encapsulating the appropriate
+notion of fair environments in ACL2.  The result is a proof that the
+implementation is a refinement up to fairness of a simple atomic mutex
+protocol.</p>
+
+<h3>Background</h3>
+
+<p>This work was done by the author in 2000 following up the ideas of Manolios,
+Namjoshi and Sumners on well-founded bisimulations (WEBs).  The verification
+was inspired by a WEB proof done by Sumners to verify a concurrent deque
+implementation.  To follow up that work, this work investigates how fairness
+constraints can be used together with refinement proofs and strives to
+determine an effective, formal, and usable notion of fairness.  The notion we
+develop here is a version of what is known in the literature as weak fairness.
+We show how that notion is sufficient and useful for verifying the
+protocol.</p>
+
+<h3>History and Acknowledgements</h3>
+
+<p>This set of books represents the author's first non-trivial proof (and
+research) project with ACL2.  The proof was first done in 2000-01 using ACL2
+versions 2.5 and 2.6.  Rob Sumners helped significantly in this work, and
+contributed a version of the records book together with an early version of
+fairness.lisp.  The notion of fairness was then refined by Sumners and the
+results reported in a paper in ACL2 2003.  The work also led to the
+understanding of the essence and difficulty of invariant proofs for concurrent
+programs, which eventually led to the investigation of the use of predicate
+abstraction to automate the process.</p>
+
+<p>In addition to the technical interest of using refinements with fairness,
+the books should also be interesting just from the perspective of proof
+development in ACL2 by new users.  The proof was embarked on when the author
+was a novice ACL2 user, having done no more than some of the exercises in ACL2.
+So the implementors of ACL2 looking at how a novice works on a reasonably large
+proof project might have an understanding of how to make ACL2 more palatable to
+such users.  The proof scripts are provided essentially the way the author
+created them on the first shot, with little extra massaging (other than a few
+things to make the proofs work with the current version of ACL2).  [The reason
+for the latter is of course the perpetual disinclination of the author to look
+at successful proofs.]</p>
+
+<p>The author is thankful to Rob Sumners for significant advice and help with
+ACL2.</p>
+
+<p>For questions and concerns about these books, contact
+sandip@cs.utexas.edu.</p>
+
+<h3>Copyright Information</h3>
+
+<p>A Verification of the Bakery Algorithm<br/>
+Copyright (C) 2006 Sandip Ray</p>
+
+<p>Contains several key contributions by Rob Sumners, in particular a version
+of the records book and a specific formalization of fairness.</p>
+
+<p>This program is free software; you can redistribute it and/ormodify it under
+the terms of the GNU General Public Licenseas published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version. This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.</p>")
+

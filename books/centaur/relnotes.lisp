@@ -23,7 +23,8 @@
 
 (defxdoc note-6-4-books
   :parents (note-6-4)
-  :short "ACL2 Community Books, Version 6.4 (???month???, 2013) Release Notes"
+  :short "Release notes for the ACL2 Community Books for ACL2 6.4 (???month???,
+2013)."
 
 ; BOZO this is pretty disorganized.  That probably doesn't matter until it's
 ; time to release.
@@ -92,9 +93,10 @@ in ACL2 6.3, so they have been deleted.</p>
 
 <h3>Book Reorganization</h3>
 
-<p>We have moved several books to new homes.  Users of these libraries will
-need to update their @(see include-book) commands, and in some cases, packages
-may have also changed.</p>
+<p>We have moved several books to new homes in an effort to clean up the
+top-level books/ directory.  Users of these libraries will need to update their
+@(see include-book) commands, and in some cases, packages may have also
+changed.</p>
 
 <p>The table below shows which libraries have moved and where they have moved
 to.  Books with stubs may continue to work until the next release, but you will
@@ -116,10 +118,10 @@ need to update your @('include-book')s eventually.</p>
     No        security                 projects/security
     No        security/suite-b         projects/security/sha-2
     No        wp-gen                   projects/wp-gen
+    No        concurrent-programs      projects/concurrent-programs
 
   ----------------------------------------------------------------------
 })
-
 
 <h3>Deprecated Books</h3>
 
@@ -140,6 +142,13 @@ of rel9.  If you can't directly upgrade to @('rel9'), you may try replacing</p>
     (include-book \"rtl/rel9/arithmetic/top\" :dir :system)
 })
 
+
+
+<h3>Scripts Moved</h3>
+
+<p>Many build scripts have been relocated from the top-level @('books')
+directory, into a new @('books/build') subdirectory.  You may need to update
+paths to these files in your Makefiles or other build scripts.</p>
 
 
 <h3>New Features and Enhancements</h3>
@@ -176,7 +185,7 @@ to avoid confusion.  @(see xdoc::save) more nicely warns about redefined
 topics.</p>
 
 <p>The @(see std/util) macros now respect @(see
-xdoc::set-default-parents).</li>
+xdoc::set-default-parents).</p>
 
 <p>@('centaur/tutorial').  The multiplier proof by decomposition now has
 comments.</p>

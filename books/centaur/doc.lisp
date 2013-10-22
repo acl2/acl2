@@ -38,6 +38,8 @@
 
 (include-book "xdoc/save" :dir :system)
 
+(include-book "relnotes")
+
 (include-book "4v-sexpr/top")
 (include-book "aig/top")
 
