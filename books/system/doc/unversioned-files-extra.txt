@@ -1,1 +1,3 @@
 rendered-doc.lsp
+manual
+TAGS
