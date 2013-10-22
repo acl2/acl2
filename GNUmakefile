@@ -511,16 +511,24 @@ proofs: compile-ok
 
 .PHONY: DOC acl2-manual
 
+# We make doc.lisp last so that the possible "rebuild" message shows
+# up at the end.
 DOC: clean-doc
-	$(MAKE) doc.lisp acl2-manual
+	$(MAKE) acl2-manual doc.lisp
 
 doc.lisp: books/system/doc/acl2-doc.lisp
-	  mv -f doc.lisp doc.lisp.backup
-	  cd books/system/doc ; ../../cert.pl render-doc.lisp
-	  cp -p books/system/doc/rendered-doc.lsp doc.lisp
+	cp -p doc.lisp doc.lisp.backup
+	cd books/system/doc ; ../../cert.pl render-doc.lisp
+	cp -p books/system/doc/rendered-doc.lsp doc.lisp
+	@diff doc.lisp doc.lisp.backup >& /dev/null ; \
+	  if [ $$? != 0 ] ; then \
+	    echo "NOTE: doc.lisp has changed." ; \
+	    echo "      If you use :DOC at the terminal, then" ; \
+	    echo "      you might wish to rebuild your ACL2 executable." ; \
+	  fi
 
 acl2-manual: books/system/doc/acl2-doc.lisp
-	if [ -e books/system/doc/manual ]; then \
+	@if [ -e books/system/doc/manual ]; then \
 	  echo "Error in making target acl2-manual:" ; \
 	  echo "please run \"make clean-doc\" first." ; \
 	  exit 1 ; \
