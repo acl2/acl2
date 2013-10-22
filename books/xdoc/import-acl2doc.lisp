@@ -1,5 +1,5 @@
 ; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2011 Centaur Technology
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,136 +18,126 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2") ;; So the acl2 topic comes from the acl2 package.
+(in-package "ACL2")
 (include-book "write-acl2-xdoc")
 (set-state-ok t)
 (program)
 
-(defdoc broken-link
-  ;; Keep topic name in sync with write-acl2-xdoc.lisp
-  ":Doc-Section Documentation
-Placeholder for undocumented topics~/
+; Historically this file was used to read in the DEFDOC style ACL2
+; documentation from the ACL2 Sources, and also from any books.  However,
+; starting in revision 2168, the ACL2 system documentation is now in XDOC
+; format and available in the system/doc books.  So now we can just load it
+; instead of jumping through hoops to import it.
 
-This topic is used as a placeholder in XDOC when an imported ACL2
-documentation topic (~pl[documentation]) topic, written in the classic
-~il[doc-string] format, links to an underfined topic.~/~/")
+(include-book "system/doc/acl2-doc-wrap" :dir :system)
 
-#||
-
-;; To test broken-link handling, uncomment this and regenerate the manual.  We
-;; should be warned about the broken links, and they should take us to the
-;; broken-link topic.
-
-(defdoc broken-link-test
-  ":Doc-Section broken-link
-Test of broken links.  IL: ~il[test-broken-link]. ILC: ~ilc[test-broken-link].
-L: ~l[test-broken-link].  PL: ~pl[test-broken-link]~/
-
-This is a silly topic intended to test our linking to missing documentation.
-
-IL: ~il[test-broken-link]
-ILC: ~ilc[test-broken-link]
-L: ~l[test-broken-link]
-PL: ~pl[test-broken-link]~/~/")
-
-||#
-
-; Initial import of acl2 system documentation.  We do this before including any
-; books other than the basic portcullis, because we don't want any libraries
-; loaded when we import the system-level documentation.
-;
-; One other minor fixup: In ACL2, a top-level topic has a parent of itself.  We
-; change all such top-level topics so that they have a parent of acl2::acl2.
+; Hack for broken links to be reported differently in the community manual.
 
 #!XDOC
-(progn
-  (defun remove-alist-key (key x)
-    (cond ((atom x)
-           nil)
-          ((atom (car x))
-           (remove-alist-key key (cdr x)))
-          ((equal (caar x) key)
-           (remove-alist-key key (cdr x)))
-          (t
-           (cons (car x) (remove-alist-key key (cdr x))))))
+(defun remove-topics-by-name (topics names)
+  (cond ((atom topics)
+         nil)
+        ((member (cdr (assoc :name (car topics))) names)
+         (remove-topics-by-name (cdr topics) names))
+        (t
+         (cons (car topics) (remove-topics-by-name (cdr topics) names)))))
 
-  (defun change-self-parent-to-acl2 (topic)
-    (let ((name    (cdr (assoc :name topic)))
-          (parents (cdr (assoc :parents topic))))
-      (if (member name parents)
-          (acons :parents
-                 (cons 'acl2::acl2 (remove-equal name parents))
-                 (remove-alist-key :parents topic))
-        topic)))
-
-  (defun change-self-parents-to-acl2 (topics)
-    (if (atom topics)
-        nil
-      (cons (change-self-parent-to-acl2 (car topics))
-            (change-self-parents-to-acl2 (cdr topics)))))
-
-  (defun add-from-acl2 (topics)
-    (if (atom topics)
-        nil
-      (cons (acons :from "ACL2 Sources" (car topics))
-            (add-from-acl2 (cdr topics)))))
-
-  (defun all-topic-names (topics)
-    (if (atom topics)
-        nil
-      (cons (cdr (assoc :name (car topics)))
-            (all-topic-names (cdr topics)))))
-
-  (defun remove-topics-by-name (topics names)
-    (cond ((atom topics)
-           nil)
-          ((member (cdr (assoc :name (car topics))) names)
-           (remove-topics-by-name (cdr topics) names))
-          (t
-           (cons (car topics) (remove-topics-by-name (cdr topics) names)))))
-
-  (make-event
-   (mv-let (er val state)
-     (time$ (acl2::write-xdoc-alist)
-            :msg "; Importing ground-zero acl2 :doc topics: ~st sec, ~sa bytes~%"
-            :mintime 1)
-     (declare (ignore er val))
-     (let* ((topics (acl2::f-get-global 'acl2::xdoc-alist state))
-            (topics (change-self-parents-to-acl2 topics))
-            (topics (add-from-acl2 topics)))
-       (value `(defconst *acl2-ground-zero-topics* ',topics))))))
-
-(include-book "base")
-(include-book "tools/bstar" :dir :system)
-
-;; Actually install the ground-zero topics
 #!XDOC
 (table xdoc 'doc
+       (remove-topics-by-name (get-xdoc-table world)
+                              '(acl2::acl2 acl2::broken-link)))
 
-; Something subtle about this is, what do we do if there is both an ACL2 :doc
-; topic and an XDOC topic?
-;
-; Originally we appended the *acl2-ground-zero-topics* to (get-xdoc-table
-; world), which meant that built-in ACL2 documentation "won" and overwrote the
-; xdoc documentation.  But when I documented the system/io.lisp book, I found
-; that this wasn't what I wanted, because it meant stupid tiny little
-; placeholder documentation for things like read-char$ was overwriting the much
-; nicer XDOC documentation for it.
-;
-; Arguably we should do some kind of smart merge, but, well, this *is* xdoc
-; after all.  So I'm just going to say ACL2 loses, and if someone cares enough
-; to come up with something better, power to them.
-
-       (append (get-xdoc-table world)
-               *acl2-ground-zero-topics*))
-
-(defxdoc acl2
+(defxdoc acl2::acl2
   :short "Documentation for the <a
   href=\"http://www.cs.utexas.edu/users/moore/acl2\">ACL2 Theorem Prover</a>."
   :long "<p>This is a parent topic for most <see topic=\"@(url
 documentation)\">ACL2 documentation</see> that is written in the classic @(see
 doc-string) format.  (We take some liberties with the hierarchy to integrate
 certain topics into more appropriate places.)</p>")
+
+(defxdoc acl2::broken-link
+;; BOZO does this even make any sense?  Are we using this for anything but
+;; defdoc documentation?
+  :parents (documentation)
+  :short "Placeholder for broken links."
+  :long "<p>Whoops!</p>
+<p>This topic is used as a placeholder in XDOC when an imported ACL2 @(see
+documentation) topic, in the old @('defdoc') style format, links to an
+undefined topic.</p>")
+
+;; ; Initial import of acl2 system documentation.  We do this before including any
+;; ; books other than the basic portcullis, because we don't want any libraries
+;; ; loaded when we import the system-level documentation.
+;; ;
+;; ; One other minor fixup: In ACL2, a top-level topic has a parent of itself.  We
+;; ; change all such top-level topics so that they have a parent of acl2::acl2.
+
+;; (defun remove-alist-key (key x)
+;;   (cond ((atom x)
+;;          nil)
+;;         ((atom (car x))
+;;          (remove-alist-key key (cdr x)))
+;;         ((equal (caar x) key)
+;;          (remove-alist-key key (cdr x)))
+;;         (t
+;;          (cons (car x) (remove-alist-key key (cdr x))))))
+
+;; (defun change-self-parent-to-acl2 (topic)
+;;   (let ((name    (cdr (assoc :name topic)))
+;;         (parents (cdr (assoc :parents topic))))
+;;     (if (member name parents)
+;;         (acons :parents
+;;                (cons 'acl2::acl2 (remove-equal name parents))
+;;                (remove-alist-key :parents topic))
+;;       topic)))
+
+;; (defun change-self-parents-to-acl2 (topics)
+;;   (if (atom topics)
+;;       nil
+;;     (cons (change-self-parent-to-acl2 (car topics))
+;;           (change-self-parents-to-acl2 (cdr topics)))))
+
+;; (defun add-from-acl2 (topics)
+;;   (if (atom topics)
+;;       nil
+;;     (cons (acons :from "ACL2 Sources" (car topics))
+;;           (add-from-acl2 (cdr topics)))))
+
+;; (make-event
+;;  (mv-let (er val state)
+;;    (time$ (acl2::write-xdoc-alist)
+;;           :msg "; Importing ground-zero acl2 :doc topics: ~st sec, ~sa bytes~%"
+;;           :mintime 1)
+;;    (declare (ignore er val))
+;;    (let* ((topics (acl2::f-get-global 'acl2::xdoc-alist state))
+;;           (topics (change-self-parents-to-acl2 topics))
+;;           (topics (add-from-acl2 topics)))
+;;      (value `(defconst *acl2-ground-zero-topics* ',topics)))))
+
+(include-book "base")
+(include-book "tools/bstar" :dir :system)
+
+;; ;; Actually install the ground-zero topics
+;; #!XDOC
+;; (table xdoc 'doc
+
+;; ; Something subtle about this is, what do we do if there is both an ACL2 :doc
+;; ; topic and an XDOC topic?
+;; ;
+;; ; Originally we appended the *acl2-ground-zero-topics* to (get-xdoc-table
+;; ; world), which meant that built-in ACL2 documentation "won" and overwrote the
+;; ; xdoc documentation.  But when I documented the system/io.lisp book, I found
+;; ; that this wasn't what I wanted, because it meant stupid tiny little
+;; ; placeholder documentation for things like read-char$ was overwriting the much
+;; ; nicer XDOC documentation for it.
+;; ;
+;; ; Arguably we should do some kind of smart merge, but, well, this *is* xdoc
+;; ; after all.  So I'm just going to say ACL2 loses, and if someone cares enough
+;; ; to come up with something better, power to them.
+
+;;        (append (get-xdoc-table world)
+;;                *acl2-ground-zero-topics*))
+
 
 (include-book "system/origin" :dir :system)
 
@@ -241,6 +231,13 @@ certain topics into more appropriate places.)</p>")
        ((mv rest state)
         (extend-topics-with-origins (cdr topics) state)))
     (mv (cons first rest) state)))
+
+#!XDOC
+(defun all-topic-names (topics)
+  (if (atom topics)
+      nil
+    (cons (cdr (assoc :name (car topics)))
+          (all-topic-names (cdr topics)))))
 
 #!XDOC
 (defmacro import-acl2doc ()

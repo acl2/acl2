@@ -24,8 +24,11 @@
 (set-state-ok t)
 (program)
 
-(table xdoc 'doc nil)     ; throw away potentially GPL'd docs from the above
-(include-book "acl2-doc") ; load only pure bsd-licensed system documentation
+;; Load the ACL2 system documentation and throw away any other topics (which
+;; might be GPL'd) to ensure that only pure BSD-licensed topics are included.
+
+(include-book "acl2-doc-wrap")
+(table xdoc 'doc acl2::*acl2-sources-xdoc-topics*)
 
 (value-triple (len (get-xdoc-table (w state))))
 

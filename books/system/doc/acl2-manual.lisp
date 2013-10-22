@@ -1,21 +1,5 @@
 (in-package "ACL2")
-(include-book "acl2-doc")
-
-#!XDOC
-(defun change-topic-origins
-  (from    ; new origin string to use, e.g., "ACL2 Sources"
-   topics  ; list of xdoc topics to modify
-   )
-  (if (atom topics)
-      nil
-    (cons (acons :from from (delete-assoc :from (car topics)))
-          (change-topic-origins from (cdr topics)))))
-
-(make-event
- (let* ((topics (xdoc::get-xdoc-table (w state)))
-        (topics (xdoc::change-topic-origins "ACL2 Sources" topics)))
-   `(defconst *acl2-doc-topics-only*
-      ',topics)))
+(include-book "acl2-doc-wrap")
 
 ;; Load in XDOC support books and XDOC documentation
 (include-book "xdoc/all" :dir :system)
@@ -24,7 +8,7 @@
 
 ;; Remove any documentation from XDOC and just get the ACL2 topics.
 (table xdoc::xdoc 'xdoc::doc
-       *acl2-doc-topics-only*)
+       *acl2-sources-xdoc-topics*)
 
 (defttag :smash-raw)
 (progn!
@@ -38,7 +22,9 @@
 
 (defxdoc top
   :short "ACL2 manual (not including documentation for the community books)"
-  :long "<p>This manual is generated from ACL2 documentation only; it excludes documentation from the community books.</p>")
+
+  :long "<p>This manual is generated from ACL2 documentation only; it excludes
+  documentation from the community books.</p>")
 
 (xdoc::save "./manual"
             :import nil)
