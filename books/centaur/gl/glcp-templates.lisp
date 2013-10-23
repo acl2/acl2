@@ -911,12 +911,23 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                 hyp alist . ,*glcp-common-inputs*)))
             ((when er)
              (mv hyp-bfr nil bvar-db1 . ,*glcp-common-retvals*))
+            ((mv vac-check-sat vac-check-succeeded &)
+             (if (glcp-config->check-vacuous config)
+                 (bfr-sat hyp-bfr)
+               (mv nil t nil)))
             ((when (and (glcp-config->abort-vacuous config)
-                        (not hyp-bfr)))
+                        (not vac-check-succeeded)))
+             (mv hyp-bfr nil bvar-db1
+                 "Vacuity check did not finish"
+                 . ,(cdr *glcp-common-retvals*)))
+            ((when (and (glcp-config->abort-vacuous config)
+                        (not vac-check-sat)))
              (mv hyp-bfr nil bvar-db1
                  "Hypothesis is not satisfiable"
                  . ,(cdr *glcp-common-retvals*)))
-            (- (and (not hyp-bfr)
+            (- (and (not vac-check-succeeded)
+                    (cw "Note: vacuity check did not finish~%")))
+            (- (and (not vac-check-sat)
                     (cw "Note: hypothesis is not satisfiable~%")))
             ((mv concl-bfr . ,(subst 'bvar-db1 'bvar-db *glcp-common-retvals*))
              (interp-concl
