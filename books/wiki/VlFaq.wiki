@@ -1,4 +1,4 @@
-#summary Some FAQ's about VL
+#summary Some FAQ's about VL and hardware verification in ACL2
 
 = Introduction =
 
