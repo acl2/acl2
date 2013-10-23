@@ -17,4 +17,34 @@ Questions
 
     {{{q <= d}}}
 
-  
+  * How can I use stv-debug to debug one of many calls of stv-run inside a def-gl-thm?
+
+
+  There are three key observations to answering this question: (1) use with-local-state so you can call stv-debug, (2) get out of the context of a defthm so that you actually get *the-live-state* for with-local-state, and (3) use top-level so you can actually run the call of with-local-state.  E.g.:
+
+{{{
+(top-level
+ (b* ((circuit1-input1 3) ; relevant
+      (circuit1-input2 4) ; relevant
+      (circuit1-input3 0) ; irrelevant but need something
+      (in-alist (circuit1-stv-autoins))
+      (out-alist (stv-run (circuit1-stv)
+                          in-alist))
+      (circuit2-input1 (cdr (assoc 'circuit1-output1 out-alist)))
+      (circuit2-input2 (cdr (assoc 'circuit1-output2 out-alist)))
+      (in-alist2 (circuit2-stv-autoins))
+      (out-alist2 (stv-run (circuit2-stv)
+                           in-alist2))
+      (circuit1-input3 (cdr (assoc 'circuit2-output1 out-alist2)))
+      (in-alist3 (circuit1-stv-autoins))
+      (out-alist3 (with-local-state
+                   (mv-let
+                     (out-alist3 state)
+                     (stv-debug (circuit1-stv) ; stv-debug :)
+                                in-alist3)
+                     out-alist3)))
+      (res (cdr (assoc 'circuit2-final-result out-alist3))))
+   res))
+}}}
+
+Note that the above code is pseudo-code derived from code that actually worked, so I (Rager) can imagine that there are typos.
