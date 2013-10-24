@@ -1069,6 +1069,31 @@ wp-gen: $(filter projects/wp-gen/%, $(OK_CERTS))
 concurrent-programs: $(filter projects/concurrent-programs/%, $(OK_CERTS))
 
 
+# Dependencies based on running the following in the milawa/ACL2 directory:
+#   grep "include-book" `find . -name "*.lisp"` | grep :dir
+# We want to make sure these are certified before trying to build Milawa,
+# so that we don't have to integrate its Make system into this Makefile
+MILAWA_DEPS := misc/untranslate-patterns.cert \
+               misc/hons-help2.cert \
+               misc/definline.cert \
+               str/top.cert \
+               arithmetic-3/floor-mod/floor-mod.cert \
+               tools/include-raw.cert \
+               centaur/misc/seed-random.cert \
+               ihs/logops-lemmas.cert
+
+.PHONY: milawa-test-basic
+
+milawa-test-basic: $(MILAWA_DEPS)
+	cd projects/milawa/ACL2; $(MAKE) ACL2=$(ACL2) acl2-images/utilities-symmetry
+
+.PHONY: milawa-test-extended
+milawa-test-extended: milawa-test-basic
+	cd projects/milawa/ACL2; $(MAKE) ACL2=$(ACL2) all
+
+.PHONY: milawa-clean
+milawa-clean:
+	cd projects/milawa/ACL2; $(MAKE) clean
 
 
 # Warning: ACL2's GNUmakefile uses the following "short-test" target

@@ -20,7 +20,6 @@ PWD := $(shell pwd)
 PATH := $(PWD)/acl2-images:$(PATH)
 WAIT := $(PWD)/wait.pl
 
-
 # We really only need to tell cert.pl about the high level books we care about.
 # This is a little haphazard, but basically we don't want to include the
 # bootstrap/ dir or use some find command since it might be slow.
@@ -44,7 +43,7 @@ FILES_FOR_PCERTSCAN := \
   bootstrap/user/multiply
 
 $(info Calculating cert dependencies...)
-DO_CERT_DEPS := $(shell ../../cert.pl $(FILES_FOR_CERTPL) \
+DO_CERT_DEPS := $(shell ../../../build/cert.pl $(FILES_FOR_CERTPL) \
            --quiet \
            --static-makefile Makefile-deps \
            --var-prefix BOOKS_TOP \
@@ -68,8 +67,6 @@ include Makefile-pdeps
 
 .PHONY: all clean clean_proofs
 
-all: $(BOOKS_TOP_CERTS)
-
 # We could use cert.pl to clean up the certs, but it misses a few because of
 # images; this once led me to be pretty confused because an old cert was being
 # inappropriately included, leading to a strange error.  So I think it's better
@@ -79,7 +76,7 @@ clean:
 	@echo "Note: this doesn't clean up ../Proofs, which contains the saved"
 	@echo "      proofs for bootstrapping.  To also clean these files, "
 	@echo "      run 'make clean clean_proofs'."
-	@../../clean.pl
+	@../../../build/clean.pl
 	@rm -f `find . -name "*.mpcert"`
 	@rm -f `find . -name "*.out"`
 	@rm -f `find . -name "*.time"`
