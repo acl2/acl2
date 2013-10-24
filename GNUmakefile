@@ -516,9 +516,13 @@ proofs: compile-ok
 DOC: clean-doc
 	$(MAKE) acl2-manual doc.lisp
 
-doc.lisp: books/system/doc/acl2-doc.lisp
-	cp -p doc.lisp doc.lisp.backup
-	cd books/system/doc ; ../../cert.pl render-doc.lisp
+# Warning: The dependency list just below isn't complete, since it
+# doesn't consider what _those_ files depend on.
+doc.lisp: books/system/doc/acl2-doc.lisp books/system/doc/render-doc.lisp
+	if [ -f doc.lisp ] ; then \
+	  cp -p doc.lisp doc.lisp.backup ; \
+	fi
+	cd books/system/doc ; ../../build/cert.pl render-doc.lisp
 	cp -p books/system/doc/rendered-doc.lsp doc.lisp
 	@diff doc.lisp doc.lisp.backup >& /dev/null ; \
 	  if [ $$? != 0 ] ; then \
@@ -533,7 +537,7 @@ acl2-manual: books/system/doc/acl2-doc.lisp
 	  echo "please run \"make clean-doc\" first." ; \
 	  exit 1 ; \
 	fi
-	cd books/system/doc ; ../../cert.pl acl2-manual
+	cd books/system/doc ; ../../build/cert.pl acl2-manual
 
 .PHONY: LEGACY-DOC HTML EMACS_TEX EMACS_ONLY STATS
 
@@ -807,7 +811,7 @@ devel-check:
 
 .PHONY: clean-doc
 clean-doc:
-	cd books/system/doc ; ../../clean.pl
+	cd books/system/doc ; ../../build/clean.pl
 	rm -rf books/system/doc/manual
 	rm -f books/system/doc/rendered-doc.lsp
 
