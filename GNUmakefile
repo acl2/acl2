@@ -513,8 +513,11 @@ proofs: compile-ok
 
 # We make doc.lisp last so that the possible "rebuild" message shows
 # up at the end.
-DOC: clean-doc
-	$(MAKE) acl2-manual doc.lisp
+DOC: acl2-manual
+	$(MAKE) doc.lisp
+
+acl2-manual: clean-doc books/system/doc/acl2-doc.lisp
+	cd books/system/doc ; ../../build/cert.pl acl2-manual
 
 # Warning: The dependency list just below isn't complete, since it
 # doesn't consider what _those_ files depend on.
@@ -530,14 +533,6 @@ doc.lisp: books/system/doc/acl2-doc.lisp books/system/doc/render-doc.lisp
 	    echo "      If you use :DOC at the terminal, then" ; \
 	    echo "      you might wish to rebuild your ACL2 executable." ; \
 	  fi
-
-acl2-manual: books/system/doc/acl2-doc.lisp
-	@if [ -e books/system/doc/manual ]; then \
-	  echo "Error in making target acl2-manual:" ; \
-	  echo "please run \"make clean-doc\" first." ; \
-	  exit 1 ; \
-	fi
-	cd books/system/doc ; ../../build/cert.pl acl2-manual
 
 .PHONY: LEGACY-DOC HTML EMACS_TEX EMACS_ONLY STATS
 

@@ -7470,7 +7470,7 @@
   the proved formula and stored in the database.  The user specifies which
   kinds of rules are to be built, by providing a list of rule class ~i[names]
   or, more generally, rule class ~i[objects], which name the kind of rule to
-  build and optionally specify varioius attributes of the desired rule.
+  build and optionally specify various attributes of the desired rule.
   The rule class names are ~c[:]~ilc[REWRITE], ~c[:]~ilc[BUILT-IN-CLAUSE],
   ~c[:]~ilc[CLAUSE-PROCESSOR], ~c[:]~ilc[COMPOUND-RECOGNIZER],
   ~c[:]~ilc[CONGRUENCE], ~c[:]~ilc[DEFINITION], ~c[:]~ilc[ELIM],

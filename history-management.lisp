@@ -11315,9 +11315,17 @@
                        (end-doc channel state)))))))))
 
 (defun doc-fn (name state)
-  (pprogn (princ$ (cadr (assoc name *acl2-system-documentation*))
-                  *standard-co*
-                  state)
+  (pprogn (let ((entry (assoc name *acl2-system-documentation*)))
+            (cond (entry (mv-let
+                          (col state)
+                          (fmt1 "Parent~#0~[~/s~]: ~&0.~|~%"
+                                (list (cons #\0 (cadr entry)))
+                                0 *standard-co* state nil)
+                          (declare (ignore col))
+                          (princ$ (caddr entry) *standard-co* state)))
+                  (t (fms "There is no documentation for topic ~x0.~|"
+                          (list (cons #\0 name))
+                          *standard-co* state nil))))
           (newline *standard-co* state)
           (value :invisible)))
 
