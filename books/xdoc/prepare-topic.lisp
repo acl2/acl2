@@ -223,7 +223,7 @@
 
        ((mv acc state) (if (not topics)
                            (mv acc state)
-                         (index-topics topics "Subtopics" dir topics-fal base-pkg state acc)))
+                         (index-topics (reverse topics) "Subtopics" dir topics-fal base-pkg state acc)))
 
        (acc    (str::revappend-chars "</topic>" acc))
        (acc    (cons #\Newline acc))

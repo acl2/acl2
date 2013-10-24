@@ -50,16 +50,7 @@
           (mv nil state)))
 
        (merged-tokens (reverse (merge-text tokens nil 0)))
-       (acc (if (atom parents)
-                nil
-              (str::explode
-               (reverse
-                (fms-to-string "Parent~s0: ~&1.~%"
-                               (list (cons #\0 (if (consp (cdr parents))
-                                                   "s"
-                                                 ""))
-                                     (cons #\1 parents)))))))
-       (acc (tokens-to-terminal merged-tokens 70 nil nil acc))
+       (acc (tokens-to-terminal merged-tokens 70 nil nil nil))
        (terminal (str::trim (str::rchars-to-string acc))))
 
 ; Originally the first value returned was (cons name terminal).  But we prefer
@@ -67,7 +58,7 @@
 ; we decide to associate additional information with name, then we may have a
 ; more convincing reason to make this change.
 
-    (mv (list name terminal) state)))
+    (mv (list name parents terminal) state)))
 
 (defun render-topics (x all-topics state)
   (b* (((when (atom x))
@@ -75,12 +66,6 @@
        ((mv first state) (render-topic (car x) all-topics state))
        ((mv rest state) (render-topics (cdr x) all-topics state)))
     (mv (cons first rest) state)))
-
-(acl2::defconsts (*rendered* state)
-  (b* ((all-topics (get-xdoc-table (w state)))
-       ((mv rendered state)
-        (render-topics all-topics all-topics state)))
-    (mv rendered state)))
 
 (defttag :open-output-channel!)
 
@@ -91,11 +76,35 @@
           (assert$ (null erp)
                    state)))
 
+(defun split-acl2-topics (alist acl2-topics acl2-pc-topics)
+
+; Added by Matt K.  It seems good to me for there to be an intuitive sense of
+; the order of topics when one is searching using the Emacs interface to the
+; documentation, specifically, the "," key.  So we put the "ACL2-PC" package
+; topics at the end, since to me they seem less likely to be what one is
+; searching for.
+
+  (cond ((endp alist)
+         (append (acl2::merge-sort-symbol-alistp acl2-topics)
+                 (acl2::merge-sort-symbol-alistp acl2-pc-topics)))
+        ((equal (symbol-package-name (caar alist)) "ACL2-PC")
+         (split-acl2-topics (cdr alist)
+                            acl2-topics
+                            (cons (car alist) acl2-pc-topics)))
+        (t
+         (split-acl2-topics (cdr alist)
+                            (cons (car alist) acl2-topics)
+                            acl2-pc-topics))))
+
 (acl2::defconsts
  (& & state)
  (state-global-let*
   ((current-package "ACL2" set-current-package-state))
-  (b* ((- (cw "Writing rendered-doc.lsp~%"))
+  (b* ((all-topics (get-xdoc-table (w state)))
+       ((mv rendered state)
+        (render-topics all-topics all-topics state))
+       (rendered (split-acl2-topics rendered nil nil))
+       (- (cw "Writing rendered-doc.lsp~%"))
        ((mv channel state) (open-output-channel! "rendered-doc.lsp"
                                                  :character state))
        ((unless channel)
@@ -140,7 +149,7 @@
 (defconst *acl2-system-documentation* '"
                       channel state))
        (state (fms! "~x0"
-                    (list (cons #\0 *rendered*))
+                    (list (cons #\0 rendered))
                     channel state nil))
        (state (fms! ")" nil channel state nil))
        (state (newline channel state))
