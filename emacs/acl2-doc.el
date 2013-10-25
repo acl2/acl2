@@ -404,6 +404,8 @@ previous i command."
 		"No more matches; try again to start from the beginning"))))))
 
 (defun acl2-doc-search-buffer ()
+;;; Return the search buffer, which contains all :doc topics, creating it first
+;;; (with those topics inserted) if necessary.
   (or (get-buffer *acl2-doc-search-buffer-name*)
       (let ((buf (get-buffer-create *acl2-doc-search-buffer-name*))
             (alist *acl2-doc-alist*))
@@ -417,33 +419,23 @@ previous i command."
 	  (setq buffer-read-only t))
 	buf)))
 
-(defun acl2-doc-search (str &optional regexp-p)
-  "Search forward from the top of the manual for a given string.
-If no input is supplied (i.e. <RETURN> is entered at the prompt),
-then search forward from the end of the previous search, using a
-regular expression search if the previous search was done that way.
-Otherwise, if a prefix argument is supplied, do a regular expression search.
-In each case, the topic is displayed in which the text is found,
-with the cursor immediately after the text, and with the topic name
-displayed in the minibuffer."
-
-  (interactive "sSearch: 
-P")
-
+(defun acl2-doc-search-aux (str regexp-p)
+  (when (equal str "")
+    (error "Input a search string, or type \"S\" to continue previous search"))
   (let* ((buf (acl2-doc-search-buffer))
-	 (continue-p (equal str ""))
+	 (continue-p (equal regexp-p :continue))
+	 (str (cond
+	       ((not continue-p) str)
+	       (t (or *acl2-doc-search-string*
+		      (error "There is no previous search to continue")))))
+	 (regexp-p (if continue-p
+		       *acl2-doc-search-regexp-p*
+		     regexp-p))
 	 (pair
 	  (with-current-buffer
 	      buf
-	    (cond
-	     (continue-p
-	      (cond
-	       (*acl2-doc-search-string*
-		(setq regexp-p *acl2-doc-search-regexp-p*)
-		(setq str *acl2-doc-search-string*))
-	       (t (error "No search has been done, so none to continue"))))
-	     (t
-	      (goto-char (point-min))))
+	    (when (not continue-p)
+	      (goto-char (point-min)))
 	    (cond
 	     ((if regexp-p
 		  (re-search-forward str nil t)
@@ -459,7 +451,7 @@ P")
 			    (buffer-substring beg (point))))))))
 	     (t nil)))))
     (cond (pair
-; The first two assignments are redundant if continue-p is true.
+	   ;; The first two assignments are redundant if continue-p is true.
 	   (setq *acl2-doc-search-string* str)
 	   (setq *acl2-doc-search-regexp-p* regexp-p)
 	   (acl2-doc-display (intern (cdr pair)))
@@ -472,12 +464,33 @@ P")
 		      (error "Try again for wrapped search"))
 	  (t (error "Not found: %s" str)))))
 
-(defun acl2-doc-search! ()
-  "Find next occurrence, using regexp search if and only if it was used when
-in the original corresponding search."
+(defun acl2-doc-search (str)
+
+  "Search forward from the top of the manual for the input
+string.  If the search succeeds, then go to that topic with the
+cursor put immediately after the found text, with the topic name
+displayed in the minibuffer."
+
+  (interactive "sSearch: ")
+  (acl2-doc-search-aux str nil))
+
+(defun acl2-doc-re-search (str)
+
+  "Perform a regular expression search, forward from the top of
+the manual, for the input string.  If the search succeeds, then
+go to that topic with the cursor put immediately after the found
+text, with the topic name displayed in the minibuffer."
+
+  (interactive "sRegular Expression Search: ")
+  (acl2-doc-search-aux str t))
+
+(defun acl2-doc-search-next ()
+
+  "Find the next occurrence for the most recent search or regular
+expression search."
 
   (interactive)
-  (acl2-doc-search ""))
+  (acl2-doc-search-aux nil :continue))
 
 (define-key global-map "\C-Xaa" 'acl2-doc)
 (define-key global-map "\C-XaA" 'acl2-doc-initialize)
@@ -488,9 +501,10 @@ in the original corresponding search."
 (define-key acl2-doc-mode-map "," 'acl2-doc-index-next)
 (define-key acl2-doc-mode-map "I" 'acl2-doc-initialize)
 (define-key acl2-doc-mode-map "l" 'acl2-doc-last)
+(define-key acl2-doc-mode-map "n" 'acl2-doc-search-next)
 (define-key acl2-doc-mode-map "r" 'acl2-doc-return)
 (define-key acl2-doc-mode-map "s" 'acl2-doc-search)
-(define-key acl2-doc-mode-map "S" 'acl2-doc-search!)
+(define-key acl2-doc-mode-map "S" 'acl2-doc-re-search)
 (define-key acl2-doc-mode-map "t" 'acl2-doc-top)
 (define-key acl2-doc-mode-map "u" 'acl2-doc-up)
 (define-key acl2-doc-mode-map "q" 'acl2-doc-quit)

@@ -516,7 +516,8 @@ proofs: compile-ok
 DOC: acl2-manual
 	$(MAKE) doc.lisp
 
-acl2-manual: clean-doc books/system/doc/acl2-doc.lisp
+acl2-manual:
+	rm -rf books/system/doc/manual books/system/doc/acl2-manual.cert
 	cd books/system/doc ; ../../build/cert.pl acl2-manual
 
 # Warning: The dependency list just below isn't complete, since it
@@ -525,6 +526,7 @@ doc.lisp: books/system/doc/acl2-doc.lisp books/system/doc/render-doc.lisp
 	if [ -f doc.lisp ] ; then \
 	  cp -p doc.lisp doc.lisp.backup ; \
 	fi
+	rm -f books/system/doc/rendered-doc.lsp
 	cd books/system/doc ; ../../build/cert.pl render-doc.lisp
 	cp -p books/system/doc/rendered-doc.lsp doc.lisp
 	@diff doc.lisp doc.lisp.backup >& /dev/null ; \

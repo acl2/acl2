@@ -3245,10 +3245,11 @@ buffer.
     i             acl2-doc-index
     ,             acl2-doc-index-next
     l             acl2-doc-last
+    n             acl2-doc-search-next
     q             acl2-doc-quit
     r             acl2-doc-return
     s             acl2-doc-search
-    S             acl2-doc-search!
+    S             acl2-doc-re-search
     t             acl2-doc-top
     u             acl2-doc-up
 
@@ -3276,6 +3277,10 @@ buffer.
     l             acl2-doc-last
        Go to the last topic visited.
 
+    n             acl2-doc-search-next
+       Find the next occurrence for the most recent search or regular
+       expression search.
+
     q             acl2-doc-quit
        Quit the ACL2-Doc browser.
 
@@ -3283,16 +3288,16 @@ buffer.
        Return to the last topic visited, popping the stack of such topics.
 
     s             acl2-doc-search
-       Search forward from the top of the manual for a given string.
-       If no input is supplied (i.e. <RETURN> is entered at the prompt),
-       then search forward from the end of the previous search, using a
-       regular expression search if the previous search was done that way.
-       Otherwise, if a prefix argument is supplied, do a regular expression
-       search.
+       Search forward from the top of the manual for the input
+       string.  If the search succeeds, then go to that topic with the
+       cursor put immediately after the found text, with the topic name
+       displayed in the minibuffer.
 
-    S             acl2-doc-search!
-       Find next occurrence, using regexp search if and only if it was used when
-       in the original corresponding search.
+    S             acl2-doc-re-search
+       Perform a regular expression search, forward from the top of
+       the manual, for the input string.  If the search succeeds, then
+       go to that topic with the cursor put immediately after the found
+       text, with the topic name displayed in the minibuffer.
 
     t             acl2-doc-top
        Go to the top topic.
