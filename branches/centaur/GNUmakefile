@@ -18,7 +18,7 @@
 # email:       Kaufmann@cs.utexas.edu         and Moore@cs.utexas.edu
 # Department of Computer Science
 # University of Texas at Austin
-# Austin, TX 78701 U.S.A.
+# Austin, TX 78712 U.S.A.
 
 #  Example invocations for users:
 
@@ -110,8 +110,10 @@
 #                  ; (2) acl2-book must be gzipped, i.e., if necessary first do
 #                         gzip /projects/acl2/v2-9/doc/TEX/acl2-book.ps
 #                         gzip /projects/acl2/v2-9/doc/TEX/acl2-book.dvi
-#   make DOC       ; Build html and emacs info files
+#   make DOC       ; Build xdoc manual and rebuild source file doc.lisp
+#   make LEGACY-DOC ; Build html and emacs info files
 #   make clean-doc ; Remove files created by make DOC
+#   make clean-legacy-doc ; Remove files created by make LEGACY-DOC
 #   make red       ; Just build full-size saved_acl2, but do so without pass 2
 #   make proofs    ; Assuming sources are compiled, initialize without skipping
 #                  ; proofs during pass 2.  Does not save an image.  Uses same
@@ -223,7 +225,8 @@ ACL2_SIZE =
 ACL2_IGNORE ?= -k
 
 # The order of the files below is unimportant.
-
+# NOTE: We deliberately exclude doc.lisp, which does not contribute to
+# proclaiming or TAGS.
 sources := axioms.lisp memoize.lisp hons.lisp boot-strap-pass-2.lisp\
            basis.lisp parallel.lisp translate.lisp\
            type-set-a.lisp linear-a.lisp\
@@ -506,9 +509,34 @@ proofs: compile-ok
 	@$(MAKE) check_init_ok
 	rm -f workxxx
 
-.PHONY: DOC HTML EMACS_TEX EMACS_ONLY STATS
+.PHONY: DOC acl2-manual
 
-DOC: HTML EMACS_TEX STATS
+# We make doc.lisp last so that the possible "rebuild" message shows
+# up at the end.
+DOC: acl2-manual
+	$(MAKE) doc.lisp
+
+acl2-manual: clean-doc books/system/doc/acl2-doc.lisp
+	cd books/system/doc ; ../../build/cert.pl acl2-manual
+
+# Warning: The dependency list just below isn't complete, since it
+# doesn't consider what _those_ files depend on.
+doc.lisp: books/system/doc/acl2-doc.lisp books/system/doc/render-doc.lisp
+	if [ -f doc.lisp ] ; then \
+	  cp -p doc.lisp doc.lisp.backup ; \
+	fi
+	cd books/system/doc ; ../../build/cert.pl render-doc.lisp
+	cp -p books/system/doc/rendered-doc.lsp doc.lisp
+	@diff doc.lisp doc.lisp.backup >& /dev/null ; \
+	  if [ $$? != 0 ] ; then \
+	    echo "NOTE: doc.lisp has changed." ; \
+	    echo "      If you use :DOC at the terminal, then" ; \
+	    echo "      you might wish to rebuild your ACL2 executable." ; \
+	  fi
+
+.PHONY: LEGACY-DOC HTML EMACS_TEX EMACS_ONLY STATS
+
+LEGACY-DOC: HTML EMACS_TEX STATS
 
 # Use ACL2_DOC_UNDOCUMENTED_FILE if you want to support broken links
 # (by having them point to a page acknowledging that the link is
@@ -739,10 +767,10 @@ certify-books-short:
 	uname -a
 ifndef ACL2
 	cd books ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 short-test
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 basic
 else
 	cd books ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) short-test
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) basic
 endif
 
 # The following target assumes that we are using an image built with
@@ -771,8 +799,19 @@ devel-check:
 	fi \
 	done
 
+# Note that clean-doc does NOT delete source file doc.lisp,
+# because it's important that there is always a doc.lisp present when
+# building ACL2.  If we want to refresh doc.lisp, we can do so
+# without running the clean-doc target.
+
 .PHONY: clean-doc
 clean-doc:
+	cd books/system/doc ; ../../build/clean.pl
+	rm -rf books/system/doc/manual
+	rm -f books/system/doc/rendered-doc.lsp
+
+.PHONY: clean-legacy-doc
+clean-legacy-doc:
 	cd doc ; rm -f *.o *~* *#* TAGS *.c *.h *.data gazonk.* workxxx \
 	  *.lbin *.sbin *.fasl *.wfasl *.fas *.lib *.sparcf *.ufsl *.64ufasl *.ufasl *.x86f *.dfsl *.fn *.cert
 	rm -rf doc/EMACS

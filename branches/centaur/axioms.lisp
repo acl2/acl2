@@ -16,7 +16,7 @@
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
 ; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78701 U.S.A.
+; Austin, TX 78712 U.S.A.
 
 ; This file, axioms.lisp, serves two purposes.  First, it describes
 ; the theory of ACL2 by enumerating the axioms and definitions.
@@ -7470,7 +7470,7 @@
   the proved formula and stored in the database.  The user specifies which
   kinds of rules are to be built, by providing a list of rule class ~i[names]
   or, more generally, rule class ~i[objects], which name the kind of rule to
-  build and optionally specify varioius attributes of the desired rule.
+  build and optionally specify various attributes of the desired rule.
   The rule class names are ~c[:]~ilc[REWRITE], ~c[:]~ilc[BUILT-IN-CLAUSE],
   ~c[:]~ilc[CLAUSE-PROCESSOR], ~c[:]~ilc[COMPOUND-RECOGNIZER],
   ~c[:]~ilc[CONGRUENCE], ~c[:]~ilc[DEFINITION], ~c[:]~ilc[ELIM],

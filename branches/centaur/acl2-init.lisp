@@ -16,7 +16,7 @@
 ; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
 ; Department of Computer Science
 ; University of Texas at Austin
-; Austin, TX 78701 U.S.A.
+; Austin, TX 78712 U.S.A.
 
 ; This file cannot be compiled because it changes packages in the middle.
 
@@ -666,9 +666,13 @@ implementations.")
                                    (let ((result nil))
                                      (dolist
                                        (x *acl2-files*)
-                                       (setq result
-                                             (cons (format nil fmt-str x)
-                                                   result)))
+
+; Since we don't want to edit doc.lisp, don't go there with tags.
+
+                                       (when (not (equal x "doc.lisp"))
+                                         (setq result
+                                               (cons (format nil fmt-str x)
+                                                     result))))
                                      (reverse result)))))
 
 ; We want to be sure to include the *-raw.lisp files even if we are not
@@ -874,7 +878,8 @@ implementations.")
 ; form.
 
     (dolist (fl *acl2-files*)
-      (proclaim-file (format nil "~a.lisp" fl) str))
+      (when (not (equal fl "doc.lisp")) ; no need to proclaim that one!
+        (proclaim-file (format nil "~a.lisp" fl) str)))
     (when str ; equivalently, when outfilename is non-nil
       (close str))))
 

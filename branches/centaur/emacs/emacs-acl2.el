@@ -116,7 +116,10 @@
   ;      subexpression.  See ACL2 documentation for PROOF-CHECKER.
   ; "control-t control-d" is like "control-t d" above, but for DIVE instead
   ;      (used with "pp" instead of "p")
-; Support for Dynamic Monitoring of Rewrites (dmr)
+; Load other tools
+  ; Support for Dynamic Monitoring of Rewrites (dmr)
+  ; Support for ACL2-Doc browser
+  ; Support for xdoc-link-mode, used by acl2+books XDOC manual
 ; Miscellaneous
   ; "meta-x acl2-info" brings up ACL2 documentation in pleasant emacs-info
   ;      format.
@@ -160,16 +163,18 @@
 (defvar *acl2-sources-dir*)
 
 ; Attempt to set *acl2-sources-dir*.
+; WARNING: If you change this form, then also change the same form in
+; acl2-doc.el.
 (if (and (not (boundp '*acl2-sources-dir*))
-	 (file-name-absolute-p load-file-name))
+         (file-name-absolute-p load-file-name))
     (let ((pattern (if (string-match "[\\]" load-file-name)
-		       "\[^\\]+\\*$"
-		     "/[^/]+/*$"))
-	  (dir (file-name-directory load-file-name)))
+                       "\[^\\]+\\*$"
+                     "/[^/]+/*$"))
+          (dir (file-name-directory load-file-name)))
       (let ((posn (string-match pattern dir)))
-	(if posn
-	    (setq *acl2-sources-dir*
-		  (substring dir 0 (1+ posn)))))))
+        (if posn
+            (setq *acl2-sources-dir*
+                  (substring dir 0 (1+ posn)))))))
 
 ; The following causes, for every event, the event name to be given
 ; the same color (in font-lock mode) as when defun is called.  If you
@@ -896,10 +901,19 @@ of the current s-expression in the enclosing list"
     n))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Support for Dynamic Monitoring of Rewrites (dmr)
+;;; Load other tools
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Support for Dynamic Monitoring of Rewrites (dmr)
 (load (concat (acl2-sources-dir) "emacs/monitor.el"))
+
+; Support for ACL2-Doc browser
+(load (concat (acl2-sources-dir) "emacs/acl2-doc.el"))
+
+; Support for xdoc-link-mode, used by acl2+books XDOC manual
+(let ((xdoc-el-file (concat (acl2-sources-dir) "books/xdoc/xdoc.el")))
+  (if (file-exists-p xdoc-el-file)
+      (load xdoc-el-file)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Miscellaneous
