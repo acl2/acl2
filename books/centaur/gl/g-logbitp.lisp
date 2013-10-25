@@ -103,7 +103,7 @@
 (def-g-binary-op logbitp
   (b* ((i-num (if (general-numberp i) i 0))
        (j-num (if (general-numberp j) j 0)))
-    (g-logbitp-of-numbers i-num j-num)))
+    (gret (g-logbitp-of-numbers i-num j-num))))
 
 ;; (def-gobjectp-thm logbitp
 ;;   :hints `(("Goal" :in-theory

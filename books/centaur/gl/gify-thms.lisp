@@ -19,8 +19,11 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-(include-book "gify-clause-proc")
+;; (include-book "gify-clause-proc")
 (include-book "std/misc/two-nats-measure" :dir :system)
+(include-book "generic-geval")
+(include-book "gtypes")
+(include-book "general-objects")
 (local (include-book "gtype-thms"))
 (local (include-book "gobjectp-thms"))
 (local (include-book "general-object-thms"))
@@ -137,11 +140,6 @@
 ;; (defthm hyp-fix-bfr-p
 ;;   (bfr-p (hyp-fix x hyp)))
 
-(defthm hyp-fix-correct
-    (implies (bfr-eval hyp env)
-             (equal (bfr-eval (hyp-fix x hyp) env)
-                    (bfr-eval x env)))
-    :hints(("Goal" :in-theory (enable bfr-and))))
 
 (defthm natp-of-nfix
   (natp (nfix x)))
@@ -190,30 +188,20 @@
     mk-g-boolean-correct
     mk-g-concrete-correct
     g-concrete-quote-correct
-    gtests-nonnil-correct
-    gtests-obj-correct
-    gobj-ite-merge-correct
     general-concrete-obj-correct))
 
 
 (def-ruleset! g-correct-lemmas '(bfr-eval-bfr-binary-and
                                  bfr-eval-bfr-binary-or
                                  bfr-eval-bfr-not
-                                 hyp-fix-correct
                                  gl-aside
                                  gl-error-is-nil
-                                 gtests-g-test-marker
                                  bfr-equiv-is-an-equivalence
                                  bfr-equiv-implies-equal-bfr-eval-1
-                                 bfr-eval-g-hyp-marker
                                  bfr-and-of-nil
                                  bfr-or-of-t
                                  (g-keyword-symbolp)
-                                 gl-aside gl-error-is-nil
-                                 gobj-depends-on-of-g-if-marker
-                                 gobj-depends-on-of-g-or-marker
-                                 gobj-depends-on-g-if-meta
-                                 gobj-depends-on-g-or-meta))
+                                 gl-aside gl-error-is-nil))
 
 ;; (defthm bfr-fix-x-is-x-when-bfr-p
 ;;   (implies (bfr-p x)
@@ -223,8 +211,7 @@
 ;;   (gobjectp (mk-g-ite c x y)))
 
 
-(def-ruleset! g-guard-lemmas '(gtestsp-gtests
-                               natp-compound-recognizer
+(def-ruleset! g-guard-lemmas '(natp-compound-recognizer
                                ;; gobj-fix-when-gobjectp
                                natp-of-nfix gl-aside
                                ;; bfr-p-bfr-fix

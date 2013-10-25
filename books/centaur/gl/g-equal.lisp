@@ -27,6 +27,7 @@
 (local (include-book "symbolic-arithmetic"))
 (local (include-book "hyp-fix-logic"))
 (local (include-book "var-bounds"))
+(include-book "centaur/misc/outer-local" :dir :system)
 (set-inhibit-warnings "theory")
 
 (local (defthm eval-g-base-apply-of-equal
@@ -95,67 +96,71 @@
               (equal (components-to-number-fn rn rd 0 id)
                      (components-to-number-fn rn rd 0 1))))))
 
-(defun equal-of-numbers (a b hyp)
-  (declare (xargs :guard (and (general-numberp a)
-                              (general-numberp b))))
-  (b* (((mv arn ard ain aid)
-        (general-number-components a))
-       ((mv brn brd bin bid)
-        (general-number-components b)))
-    (g-if (mk-g-boolean (bfr-and (bfr-=-uu ard brd)
-                               (bfr-=-uu aid bid)))
-          (mk-g-boolean (bfr-and (bfr-or (bfr-=-uu nil ard)
-                                     (bfr-=-ss arn brn))
-                               (bfr-or (bfr-=-uu nil aid)
-                                     (bfr-=-ss ain bin))))
-          (g-apply 'equal (gl-list a b)))))
+(local
+ (define equal-of-numbers ((a general-numberp)
+                           (b general-numberp)
+                           hyp)
+   :guard-hints (("goal" :in-theory (enable g-if-fn)))
+   (b* (((mv arn ard ain aid)
+         (general-number-components a))
+        ((mv brn brd bin bid)
+         (general-number-components b)))
+     (g-if-mbe (gret (mk-g-boolean (bfr-and (bfr-=-uu ard brd)
+                                            (bfr-=-uu aid bid))))
+               (gret (mk-g-boolean (bfr-and (bfr-or (bfr-=-uu nil ard)
+                                                    (bfr-=-ss arn brn))
+                                            (bfr-or (bfr-=-uu nil aid)
+                                                    (bfr-=-ss ain bin)))))
+               (gret (g-apply 'equal (gl-list a b)))))
+   ///
+   (acl2::outer-local
+    (def-hyp-congruence equal-of-numbers
+      :hints(("Goal" :in-theory (enable equal-of-numbers))))
 
+    (local (include-book "arithmetic/top-with-meta" :dir :system))
+    (defthm equal-of-numbers-correct
+      (implies (and (general-numberp a)
+                    (general-numberp b)
+                    (bfr-hyp-eval hyp (car env)))
+               (equal (eval-g-base (mv-nth 0 (equal-of-numbers a b hyp)) env)
+                      (equal (eval-g-base a env)
+                             (eval-g-base b env))))
+      :hints(("Goal" :in-theory
+              (e/d* ((:ruleset general-object-possibilities)
+                     boolean-list-bfr-eval-list)))))
 
-(local (include-book "arithmetic/top-with-meta" :dir :system))
-(local (defthm equal-of-numbers-correct
-         (implies (and (general-numberp a)
-                       (general-numberp b)
-                       (bfr-eval hyp (car env)))
-                  (equal (eval-g-base (equal-of-numbers a b hyp) env)
-                         (equal (eval-g-base a env)
-                                (eval-g-base b env))))
-         :hints(("Goal" :in-theory
-                 (e/d* ((:ruleset general-object-possibilities)
-                        boolean-list-bfr-eval-list))))))
+    (defthm dependencies-of-equal-of-numbers
+      (implies (and (not (gobj-depends-on k p a))
+                    (not (gobj-depends-on k p b))
+                    (general-numberp a)
+                    (general-numberp b))
+               (not (gobj-depends-on k p (mv-nth 0 (equal-of-numbers a b hyp)))))))))
 
-(local (defthm dependencies-of-equal-of-numbers
-         (implies (and (not (gobj-depends-on k p a))
-                       (not (gobj-depends-on k p b))
-                       (general-numberp a)
-                       (general-numberp b))
-                  (not (gobj-depends-on k p (equal-of-numbers a b hyp))))))
-
-(in-theory (Disable equal-of-numbers))
-
+(acl2::finish-with-outer-local)
 
 (def-g-fn equal
   ;; Once we've ruled out the case where they're both atoms, start by recurring
   ;; down to non-ITEs on both a and b:
   `(let ((a x) (b y))
-     (cond ((hqual a b) t)
+     (cond ((hqual a b) (gret t))
            ((and (general-concretep a) (general-concretep b))
-            (hons-equal (general-concrete-obj a) (general-concrete-obj b)))
+            (gret (hons-equal (general-concrete-obj a) (general-concrete-obj b))))
            ((and (consp a) (eq (tag a) :g-ite))
             (if (zp clk)
-                (g-apply 'equal (gl-list a b))
+                (gret (g-apply 'equal (gl-list a b)))
               (let* ((test (g-ite->test a))
                      (then (g-ite->then a))
                      (else (g-ite->else a)))
-                (g-if test
+                (g-if (gret test)
                       (,gfn then b hyp clk config bvar-db state)
                       (,gfn else b hyp clk config bvar-db state)))))
            ((and (consp b) (eq (tag b) :g-ite))
             (if (zp clk)
-                (g-apply 'equal (gl-list a b))
+                (gret (g-apply 'equal (gl-list a b)))
               (let* ((test (g-ite->test b))
                      (then (g-ite->then b))
                      (else (g-ite->else b)))
-                (g-if test
+                (g-if (gret test)
                       (,gfn a then hyp clk config bvar-db state)
                       (,gfn a else hyp clk config bvar-db state)))))
            ((or (atom a)
@@ -163,24 +168,33 @@
             (cond ((or (atom b)
                        (not (member-eq (tag b) '(:g-var :g-apply))))
                    (cond ((general-booleanp a)
-                          (and (general-booleanp b)
-                               (mk-g-boolean (bfr-iff (general-boolean-value a)
-                                                      (general-boolean-value b)))))
+                          (gret (and (general-booleanp b)
+                                     (mk-g-boolean (bfr-iff (general-boolean-value a)
+                                                            (general-boolean-value b))))))
                          ((general-numberp a)
-                          (and (general-numberp b)
-                               (equal-of-numbers a b hyp)))
+                          (if (general-numberp b)
+                              (equal-of-numbers a b hyp)
+                            (gret nil)))
                          ((general-consp a)
-                          (and (general-consp b)
-                               (g-if (,gfn (general-consp-car a)
-                                           (general-consp-car b)
-                                           hyp clk config bvar-db state)
-                                     (,gfn (general-consp-cdr a)
-                                           (general-consp-cdr b)
-                                           hyp clk config bvar-db state)
-                                     nil)))
-                         (t nil)))
-                  (t (g-apply 'equal (gl-list a b)))))
-           (t (g-apply 'equal (gl-list a b))))))
+                          (if (general-consp b)
+                              (g-if (,gfn (general-consp-car a)
+                                          (general-consp-car b)
+                                          hyp clk config bvar-db state)
+                                    (,gfn (general-consp-cdr a)
+                                          (general-consp-cdr b)
+                                          hyp clk config bvar-db state)
+                                    (gret nil))
+                            (gret nil)))
+                         (t (gret nil))))
+                  (t (gret (g-apply 'equal (gl-list a b))))))
+           (t (gret (g-apply 'equal (gl-list a b))))))
+  :hyp-hints `(("goal" :induct ,gcall
+                :in-theory (disable (:d ,gfn)
+                                    sets::double-containment
+                                    eval-g-base-alt-def
+                                    equal-of-booleans-rewrite)
+                :expand ((:free (hyp) ,gcall)
+                         (:free (hyp) ,(subst 'x 'y gcall))))))
 
 ;; (cond ((and (general-concretep a) (general-concretep b))
 ;;             (hqual (general-concrete-obj a) (general-concrete-obj b)))
@@ -274,7 +288,7 @@
 ;;                                      (:ruleset gl-tag-forward)))))))
 
 (encapsulate nil
-  (local (in-theory (e/d* ()
+  (local (in-theory (e/d* (g-if-fn g-or-fn)
                           (general-concretep-def
                            equal-of-booleans-rewrite
                            iff-implies-equal-not
@@ -307,14 +321,11 @@
 
 
 (def-gobj-dependency-thm equal
-    :hints `((acl2::just-induct-and-expand
-              (,gfn x y hyp clk config bvar-db state))
+    :hints `((acl2::just-induct-and-expand ,gcall)
              '(:in-theory (disable ,gfn))
              (and stable-under-simplificationp
-                  `(:expand ((,',gfn x y hyp clk config bvar-db state)
-                             (,',gfn x x hyp clk config bvar-db state)
-                             (,',gfn x y hyp clk config bvar-db state)
-                             (,',gfn x x hyp clk config bvar-db state)
+                  `(:expand (,',gcall
+                             ,',(subst 'x 'y gcall)
                              (eval-g-base x env)
                              (eval-g-base y env)
                              (eval-g-base nil env)
@@ -324,69 +335,66 @@
 
 
 (encapsulate nil
-
+  
   (local
-   (in-theory (e/d** (
-                      possibilities-for-x-1
+   (in-theory (e/d* (
+                     possibilities-for-x-1
 
-                      possibilities-for-x-2
-                      possibilities-for-x-3
-                      possibilities-for-x-4
-                      possibilities-for-x-5
-                      possibilities-for-x-6
-                      possibilities-for-x-7
-                      possibilities-for-x-8
-                      possibilities-for-x-9
+                     possibilities-for-x-2
+                     possibilities-for-x-3
+                     possibilities-for-x-4
+                     possibilities-for-x-5
+                     possibilities-for-x-6
+                     possibilities-for-x-7
+                     possibilities-for-x-8
+                     possibilities-for-x-9
 
-                      g-if-geval-meta-correct-eval-g-base
-                      g-or-geval-meta-correct-eval-g-base
-                      eval-g-base-g-apply
-                      eval-g-base-of-gl-cons
-                      mk-g-boolean-correct-for-eval-g-base
-                      geval-g-if-marker-eval-g-base
-                      geval-g-or-marker-eval-g-base
+                     eval-g-base-g-apply
+                     eval-g-base-of-gl-cons
+                     mk-g-boolean-correct-for-eval-g-base
 
-                      gobj-depends-on-of-g-apply
-                      gobj-depends-on-of-gl-cons
-                      gobj-list-depends-on-of-gl-cons
+                     gobj-depends-on-of-g-apply
+                     gobj-depends-on-of-gl-cons
+                     gobj-list-depends-on-of-gl-cons
 
-                      general-concretep-not-general-consp
-                      general-concretep-not-general-booleanp
-                      general-concretep-not-general-numberp
-                      general-concrete-obj-when-consp-for-eval-g-base
-                      general-concrete-obj-when-numberp
-                      general-concrete-obj-when-booleanp
-                      general-concrete-obj-when-atom
-                      general-booleanp-of-atom
+                     general-concretep-not-general-consp
+                     general-concretep-not-general-booleanp
+                     general-concretep-not-general-numberp
+                     general-concrete-obj-when-consp-for-eval-g-base
+                     general-concrete-obj-when-numberp
+                     general-concrete-obj-when-booleanp
+                     general-concrete-obj-when-atom
+                     general-booleanp-of-atom
 
-                      (:type-prescription bfr-eval)
-                      (:type-prescription components-to-number-fn)
-                      (:rules-of-class :executable-counterpart :here)
-                      booleanp-compound-recognizer
+                     (:type-prescription bfr-eval)
+                     (:type-prescription components-to-number-fn)
+                     (:rules-of-class :executable-counterpart :here)
+                     booleanp-compound-recognizer
 
-                      gtests-g-test-marker
+                     bfr-eval-bfr-binary-and
+                     bfr-eval-bfr-not
+                     bfr-eval-bfr-binary-or
+                     bfr-eval-booleanp
+                     gtests-nonnil-correct-for-eval-g-base
 
-                      bfr-eval-bfr-binary-and
-                      bfr-eval-bfr-not
-                      bfr-eval-bfr-binary-or
-                      bfr-eval-booleanp
-                      gtests-nonnil-correct-for-eval-g-base
-                      hyp-fix-correct
-                      bfr-eval-g-hyp-marker
+                     cons-equal
+                     eval-g-base-apply-of-equal
+                     bfr-eval-bfr-iff
+                     equal-of-numbers-correct
+                     general-numberp-of-atom
 
-                      cons-equal
-                      eval-g-base-apply-of-equal
-                      bfr-eval-bfr-iff
-                      equal-of-numbers-correct
-                      general-numberp-of-atom
-
-                      eval-g-base-list-of-gl-cons
-                      hons-equal
-                      general-concrete-obj-of-atomic-constants
-                      general-concretep-of-atomic-constants)
-                     ((general-concrete-obj)
-                      (general-concretep)
-                      (kwote-lst)))))
+                     eval-g-base-list-of-gl-cons
+                     hons-equal
+                     general-concrete-obj-of-atomic-constants
+                     general-concretep-of-atomic-constants)
+                    ((general-concrete-obj)
+                     (general-concretep)
+                     (kwote-lst)
+                     logcons
+                     sets::double-containment
+                     bfr-list->s
+                     bfr-list->u
+                     eval-g-base-alt-def))))
 
   (local
    (make-event
@@ -396,36 +404,33 @@
 
 
 
-    (def-g-correct-thm equal eval-g-base
-    :hints `((acl2::just-induct-and-expand
-              (,gfn x y hyp clk config bvar-db state))
+  (def-g-correct-thm equal eval-g-base
+    :hints `((acl2::just-induct-and-expand ,gcall)
              (and stable-under-simplificationp
-                  `(:expand ((,',gfn x y hyp clk config bvar-db state)
-                             (,',gfn x x hyp clk config bvar-db state)
-                             (,',gfn x y hyp clk config bvar-db state)
-                             (,',gfn x x hyp clk config bvar-db state)
+                  `(:expand (,',gcall
+                             ,',(subst 'x 'y gcall)
                              (eval-g-base x env)
                              (eval-g-base y env)
                              (eval-g-base nil env)
                              (eval-g-base-list nil env)
                              (eval-g-base t env))
-                    :do-not-induct t))
-             ;; (case-match id
-             ;;   ((('0 '1) (n . &) . &)
-             ;;    (if (member n '(3 4))
-             ;;        `(:in-theory
-             ;;          (disable possibilities-for-x-1
-             ;;                   possibilities-for-x-2
-             ;;                   possibilities-for-x-3
-             ;;                   possibilities-for-x-4
-             ;;                   possibilities-for-x-5
-             ;;                   possibilities-for-x-7
-             ;;                   possibilities-for-x-8
-             ;;                   possibilities-for-x-9)
-             ;;          :expand ((,',gfn x y hyp clk config bvar-db state)
-             ;;                   (eval-g-base ,(if (eql n 3) 'x 'y) env)
-             ;;                   (eval-g-base nil env)
-             ;;                   (eval-g-base t env)))
-             ;;      '(:use ((:instance possibilities-for-x)
-             ;;              (:instance possibilities-for-x (x y)))))))
-             )))
+                    :do-not-induct t)))
+    ;; (case-match id
+    ;;   ((('0 '1) (n . &) . &)
+    ;;    (if (member n '(3 4))
+    ;;        `(:in-theory
+    ;;          (disable possibilities-for-x-1
+    ;;                   possibilities-for-x-2
+    ;;                   possibilities-for-x-3
+    ;;                   possibilities-for-x-4
+    ;;                   possibilities-for-x-5
+    ;;                   possibilities-for-x-7
+    ;;                   possibilities-for-x-8
+    ;;                   possibilities-for-x-9)
+    ;;          :expand ((,',gfn x y hyp clk config bvar-db state)
+    ;;                   (eval-g-base ,(if (eql n 3) 'x 'y) env)
+    ;;                   (eval-g-base nil env)
+    ;;                   (eval-g-base t env)))
+    ;;      '(:use ((:instance possibilities-for-x)
+    ;;              (:instance possibilities-for-x (x y)))))))
+    ))

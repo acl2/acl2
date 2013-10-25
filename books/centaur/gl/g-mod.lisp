@@ -90,7 +90,7 @@
 (def-g-binary-op mod
   (b* ((x-num (if (general-numberp x) x 0))
        (y-num (if (general-numberp y) y 0)))
-    (g-mod-of-numbers x-num y-num)))
+    (gret (g-mod-of-numbers x-num y-num))))
 
 ;; (def-gobjectp-thm mod
 ;;   :hints `(("goal" :in-theory (e/d* (general-concretep-atom)

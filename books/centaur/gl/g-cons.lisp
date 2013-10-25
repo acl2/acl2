@@ -27,19 +27,22 @@
 
 (def-g-fn cdr
   `(if (atom x)
-       nil
+       (gret nil)
      (pattern-match x
        ((g-ite test then else)
         (if (zp clk)
-            (g-apply 'cdr (gl-list x))
-          (g-if test (,gfn then . ,params)
+            (gret (g-apply 'cdr (gl-list x)))
+          (g-if (gret test)
+                (,gfn then . ,params)
                 (,gfn else . ,params))))
-       ((g-boolean &) nil)
-       ((g-number &) nil)
-       ((g-apply & &) (g-apply 'cdr (gl-list x)))
-       ((g-var &) (g-apply 'cdr (gl-list x)))
-       ((g-concrete obj) (mk-g-concrete (ec-call (cdr obj))))
-       ((cons & b) b))))
+       ((g-boolean &) (gret nil))
+       ((g-number &) (gret nil))
+       ((g-apply & &) (gret (g-apply 'cdr (gl-list x))))
+       ((g-var &) (gret (g-apply 'cdr (gl-list x))))
+       ((g-concrete obj) (gret (mk-g-concrete (ec-call (cdr obj)))))
+       ((cons & b) (gret b))
+       (& ;; unreachable
+        (gret nil)))))
 
 ;; (def-gobjectp-thm cdr
 ;;   :hints `(("goal" :in-theory (disable (:definition ,gfn))
@@ -58,25 +61,33 @@
 
 (def-g-correct-thm cdr eval-g-base
   :hints `(("goal" :in-theory (e/d (eval-g-base general-concrete-obj)
-                                   ((:definition ,gfn)))
+                                   ((:definition ,gfn)
+                                    logcons bfr-list->s
+                                    bfr-list->u
+                                    eval-g-base-alt-def
+                                    equal-of-booleans-rewrite
+                                    default-car sets::double-containment))
             :induct (,gfn x . ,params)
             :expand ((,gfn x . ,params)))))
 
 
 (def-g-fn car
   `(if (atom x)
-       nil
+       (gret nil)
      (pattern-match x
        ((g-ite test then else)
         (if (zp clk)
-            (g-apply 'car (gl-list x))
-          (g-if test (,gfn then . ,params) (,gfn else . ,params))))
-       ((g-boolean &) nil)
-       ((g-number &) nil)
-       ((g-apply & &) (g-apply 'car (gl-list x)))
-       ((g-var &) (g-apply 'car (gl-list x)))
-       ((g-concrete obj) (mk-g-concrete (ec-call (car obj))))
-       ((cons a &) a))))
+            (gret (g-apply 'car (gl-list x)))
+          (g-if (gret  test)
+                (,gfn then . ,params)
+                (,gfn else . ,params))))
+       ((g-boolean &) (gret nil))
+       ((g-number &) (gret nil))
+       ((g-apply & &) (gret (g-apply 'car (gl-list x))))
+       ((g-var &) (gret (g-apply 'car (gl-list x))))
+       ((g-concrete obj) (gret (mk-g-concrete (ec-call (car obj)))))
+       ((cons a &) (gret a))
+       (& (gret nil)))))
 
 ;; (def-gobjectp-thm car
 ;;   :hints `(("goal" :in-theory (disable (:definition ,gfn))
@@ -94,19 +105,23 @@
 
 (def-g-correct-thm car eval-g-base
   :hints `(("goal" :in-theory (e/d (eval-g-base general-concrete-obj)
-                                   ((:definition ,gfn)))
+                                   ((:definition ,gfn)
+                                    eval-g-base-alt-def
+                                    logcons))
             :induct (,gfn x . ,params)
             :expand ((,gfn x . ,params)))))
 
 
 
 (def-g-fn cons
-  `(gl-cons x y))
+  `(gret (gl-cons x y)))
 
 ;; (def-gobjectp-thm cons)
 
 (verify-g-guards cons)
 
-(def-gobj-dependency-thm cons)
+(def-gobj-dependency-thm cons
+  :hints `(("Goal" :in-theory (enable ,gfn))))
 
-(def-g-correct-thm cons eval-g-base)
+(def-g-correct-thm cons eval-g-base
+  :hints `(("Goal" :in-theory (enable ,gfn))))

@@ -29,6 +29,7 @@
 (include-book "centaur/misc/evaluator-metatheorems" :dir :system)
 (include-book "centaur/misc/interp-function-lookup" :dir :system)
 (include-book "centaur/ubdds/witness" :dir :system)
+(include-book "hyp-fix")
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "gtype-thms"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -64,11 +65,13 @@
    (acl2::return-last a b c)
    (force x)
    (bfr-eval x env)
+   (bfr-hyp-eval x env)
    (acl2::typespec-check ts x)
    (iff a b)
    (binary-+ a b)
    (unary-- a)
-   (len x)))
+   (len x)
+   (return-last a b c)))
 
 (defchoose run-gified-ev-falsify (a) (x)
   (not (run-gified-ev x a)))
@@ -236,11 +239,15 @@
 (defun run-gified-case-breakdown (body)
   (case-match body
     (('if ('eql 'fn ('quote fnname))
-         ('cons ''t
-                ('cons (gfnname . args) ''nil))
+         ('(LAMBDA (MV)
+                   ((LAMBDA (RES HYP)
+                            (CONS 'T (CONS RES (CONS HYP 'NIL))))
+                    (MV-NTH '0 MV)
+                    (MV-NTH '1 MV)))
+          (gfnname . args))
        rest)
      (mv nil fnname gfnname args rest))
-    (& (mv "Malformed case" nil nil nil nil))))
+    (& (mv (acl2::msg "Malformed case: ~x0" body) nil nil nil nil))))
 
 
 (local
@@ -251,7 +258,10 @@
               (equal (run-gified-ev body a)
                      (let ((fn (cdr (assoc-equal 'fn a))))
                        (if (equal fn fnname)
-                           (list t (run-gified-ev (cons gfnname args) a))
+                           (list t
+                                 (mv-nth 0 (run-gified-ev (cons gfnname args)
+                                                          a))
+                                 (mv-nth 1 (run-gified-ev (cons gfnname args) a)))
                          (run-gified-ev rest a))))))
    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
@@ -296,8 +306,8 @@
 (defun run-gified-check-geval-thm (thm acl2::gfn acl2::fn geval)
   (case-match thm
     (('implies
-      '(bfr-eval hyp (car env))
-      ('equal (the-geval (!gfn . gformals) . '(env))
+      '(bfr-hyp-eval hyp (car env))
+      ('equal (the-geval ('mv-nth ''0 (!gfn . gformals)) . '(env))
               (!fn . evals)))
      (let ((nformals (len gformals)))
        (if (<= 5 nformals)
@@ -355,8 +365,8 @@
      (run-gified-check-geval-thm thm gfn fn geval)
      (implies (not erp)
               (equal thm
-                     `(implies (bfr-eval hyp (car env))
-                               (equal (,geval (,gfn . ,formals) env)
+                     `(implies (bfr-hyp-eval hyp (car env))
+                               (equal (,geval (mv-nth '0 (,gfn . ,formals)) env)
                                       (,fn . ,(make-evals-of-formals
                                                (take (- (len formals) 5)
                                                      formals)
@@ -581,9 +591,9 @@
                      (not (eq gfn 'quote))
                      (not (eq fn 'quote))
                      (equal (len formals) (len args))
-                     (bfr-eval hyp (car env)))
+                     (bfr-hyp-eval hyp (car env)))
                 (equal (run-gified-ev
-                        `(,geval (,gfn . ,args) env)
+                        `(,geval (mv-nth '0 (,gfn . ,args)) env)
                         a)
                        (run-gified-ev
                         `(,fn . ,(make-evals-of-formals
@@ -647,12 +657,12 @@
        (implies
         (and (not erp)
              (run-gified-ev-theoremp (disjoin thm))
-             (bfr-eval hyp (car env))
+             (bfr-hyp-eval hyp (car env))
              (not (equal geval 'quote))
              (not (equal gfn 'quote))
              (not (equal fn 'quote))
              (equal (len args) (len formals)))
-        (equal (run-gified-ev `(,geval (,gfn . ,args) env)
+        (equal (run-gified-ev `(,geval (mv-nth '0 (,gfn . ,args)) env)
                               a)
                (run-gified-ev `(,fn
                                 . ,(make-evals-of-formals
@@ -678,19 +688,20 @@
        (implies
         (and (not erp)
              (run-gified-ev-theoremp (disjoin thm))
-             (bfr-eval hyp (car env))
+             (bfr-hyp-eval hyp (car env))
              (not (equal geval 'quote))
              (not (equal gfn 'quote))
              (not (equal fn 'quote))
              (equal (len args) (len formals)))
         (equal (run-gified-ev (list geval
                                     (list 'quote
-                                          (run-gified-ev
-                                           (cons
-                                            gfn
-                                            (acl2::kwote-lst
-                                             (run-gified-ev-lst args a)))
-                                           nil))
+                                          (mv-nth 0
+                                                  (run-gified-ev
+                                                   (cons
+                                                    gfn
+                                                    (acl2::kwote-lst
+                                                     (run-gified-ev-lst args a)))
+                                                   nil)))
                                     (list 'quote
                                           (cdr (assoc-equal 'env a))))
                               nil)
@@ -1263,7 +1274,18 @@
 
 (defun run-gified-process-body (body eval-alist evalfn geval-alist gevalfn
                                      clauses)
-  (if (equal body '(cons 'nil (cons 'nil 'nil)))
+  (if (equal body
+             '((LAMBDA (HYP)
+                       (CONS 'NIL (CONS 'NIL (CONS HYP 'NIL))))
+               ((LAMBDA (HYP) HYP)
+                (RETURN-LAST 'ACL2::MBE1-RAW
+                             HYP
+                             (RETURN-LAST 'PROGN
+                                          (ACL2::THROW-NONEXEC-ERROR ':NON-EXEC
+                                                                     '(BFR-HYP-FIX HYP))
+                                          (BFR-HYP-FIX HYP)))))
+             ;; (cons 'nil (cons 'nil 'nil))
+             )
       ;; done.
       (mv nil clauses)
     (b* (((mv erp fnname gfnname args rest)
@@ -1379,39 +1401,41 @@
                         ;; (:REWRITE RUN-GIFIED-EV-CONSTRAINT-10)
                         (:META ACL2::CANCEL_TIMES-EQUAL-CORRECT)
                         (:META ACL2::CANCEL_PLUS-EQUAL-CORRECT)
-                        (:REWRITE RUN-GIFIED-EV-CONSTRAINT-3)
+                        ; (:REWRITE RUN-GIFIED-EV-CONSTRAINT-3)
                         (:REWRITE ACL2::SYMBOLP-ASSOC-EQUAL)
                         (:DEFINITION ACL2::LIST-FIX)
                         (:REWRITE GEVAL-LIST-DEF-THM-CORRECT)
                         (:DEFINITION SYMBOL-LISTP)
                         (:REWRITE CHEAP-DEFAULT-CDR)
                         (:TYPE-PRESCRIPTION SYMBOL-LISTP))))
-   (local
-    (in-theory (set-difference-theories
-                (current-theory :here)
-                (list ; (EV-CONSTRAINT-FOR RUN-GIFIED-EV GOBJ-LISTP)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV BFR-EVAL)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV FORCE)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV MV-LIST)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV RETURN-LAST)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV HIDE)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV PAIRLIS$)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV SYMBOLP)
-; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
-;  (replaced assoc-eq by assoc-equal).]
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV ASSOC-EQUAL)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV CONSP)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV NTH)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV IF)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV IMPLIES)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV EQUAL)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV EQL)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV CAR)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV ACL2::USE-THESE-HINTS)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV USE-BY-HINT)
-                      (EV-CONSTRAINT-FOR RUN-GIFIED-EV NOT)))))
+;;    (local
+;;     (in-theory (set-difference-theories
+;;                 (current-theory :here)
+;;                 (list ; (EV-CONSTRAINT-FOR RUN-GIFIED-EV GOBJ-LISTP)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV BFR-EVAL)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV BFR-HYP-EVAL)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV FORCE)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV MV-LIST)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV RETURN-LAST)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV HIDE)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV PAIRLIS$)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV SYMBOLP)
+;; ; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;; ;  (replaced assoc-eq by assoc-equal).]
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV ASSOC-EQUAL)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV CONSP)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV NTH)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV IF)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV IMPLIES)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV EQUAL)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV EQL)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV CAR)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV ACL2::USE-THESE-HINTS)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV USE-BY-HINT)
+;;                       (EV-CONSTRAINT-FOR RUN-GIFIED-EV NOT)))))
 
    (defthm run-gified-process-body-correct
+
      (mv-let (erp clauses)
        (run-gified-process-body body eval-alist evalfn geval-alist gevalfn
                                 in-clauses)
@@ -1431,16 +1455,28 @@
                      (not (equal gevalfn 'quote))
                      (not (equal geval-list 'quote))
                      (mv-nth 0 (run-gified-ev body a))
-                     (bfr-eval (cdr (assoc-equal 'hyp a))
+                     (bfr-hyp-eval (cdr (assoc-equal 'hyp a))
                                (cadr (assoc-equal 'env a))))
-                (equal (run-gified-ev
-                        `(,gevalfn (mv-nth '1 ,body) env)
-                        a)
-                       (run-gified-ev
-                        `(,evalfn (cons fn (acl2::kwote-lst
-                                            (,geval-list actuals env)))
-                                  'nil)
-                        a))))
+                (and
+                 (equal (run-gified-ev
+                         `(,gevalfn (mv-nth '1 ,body) env)
+                         a)
+                        (run-gified-ev
+                         `(,evalfn 
+                           (cons fn (acl2::kwote-lst
+                                     (,geval-list actuals env)))
+                           'nil)
+                         a))
+                 ;; (equal (run-gified-ev
+                 ;;         `(,gevalfn (mv-nth '2 ,body) env)
+                 ;;         a)
+                 ;;        (run-gified-ev
+                 ;;         `(,evalfn (list 'mv-nth ''1
+                 ;;                         (cons fn (acl2::kwote-lst
+                 ;;                                   (,geval-list actuals env))))
+                 ;;                   'nil)
+                 ;;         a))
+                 )))
      :hints (("goal" :induct (run-gified-process-body body eval-alist evalfn
                                                       geval-alist gevalfn
                                                       in-clauses)
@@ -1495,7 +1531,7 @@
                    (not (equal gevalfn 'quote))
                    (not (equal geval-list 'quote))
                    (mv-nth 0 (run-gified-ev body a))
-                   (bfr-eval (cdr (assoc-equal 'hyp a))
+                   (bfr-hyp-eval (cdr (assoc-equal 'hyp a))
                              (cadr (assoc-equal 'env a))))
               (equal (run-gified-ev
                       (list gevalfn
@@ -1522,7 +1558,7 @@
   (b* (((mv ok subst)
         (acl2::simple-one-way-unify-lst
          '((implies
-            (if (bfr-eval hyp (car env))
+            (if (bfr-hyp-eval hyp (car env))
                 okp-term
               'nil)
             (equal lhs-term rhs-term)))
@@ -1715,7 +1751,7 @@
                  :clause-processor
                  (acl2::simple-generalize-cp
                   clause '(((MV-NTH '1 (ACL2::SIMPLE-ONE-WAY-UNIFY-LST
-                                        '((IMPLIES (IF (BFR-EVAL HYP (CAR ENV))
+                                        '((IMPLIES (IF (BFR-HYP-EVAL HYP (CAR ENV))
                                                        OKP-TERM
                                                        'NIL)
                                                    (EQUAL LHS-TERM RHS-TERM)))

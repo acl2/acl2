@@ -67,17 +67,17 @@
                 (strip-correct-lemmas (table-alist 'gl-function-info world))))
        (def-g-fn ,fn
          `(if (atom ,',x)
-              (,',fn ,',x)
+              (gret (,',fn ,',x))
             (pattern-match ,',x
-              ((g-concrete obj) (,',fn obj))
+              ((g-concrete obj) (gret (,',fn obj)))
               ((g-ite test then else)
                (if (zp clk)
-                   (g-apply ',',fn (list ,',x))
-                 (g-if test
+                   (gret (g-apply ',',fn (list ,',x)))
+                 (g-if (gret test)
                        (,gfn then . ,params)
                        (,gfn else . ,params))))
-              ((g-apply & &) (g-apply ',',fn (list ,',x)))
-              ((g-var &) (g-apply ',',fn (list ,',x)))
+              ((g-apply & &) (gret (g-apply ',',fn (list ,',x))))
+              ((g-var &) (gret (g-apply ',',fn (list ,',x))))
               . ,',cases)))
        (local (in-theory (disable ,gfn)))
        (local (defthm ,booleanp-thmname
@@ -132,7 +132,7 @@
 ;;                     . ,',gobj-hints)))
        (encapsulate nil
          (local (in-theory
-                 (e/d** (minimal-theory
+                 (e/d* (minimal-theory
                          (:executable-counterpart-theory :here)
                          ;; (:ruleset g-gobjectp-lemmas)
                          ;; gobjectp-tag-rw-to-types
@@ -154,9 +154,9 @@
                          ; gobjectp-g-ite-branches
 ;                         bfr-or
                          ;; gobjectp-g-test-marker
-                         gtests-g-test-marker
+                         ;; gtests-g-test-marker
                          natp
-                         gtestsp-gtests
+                         ;; gtestsp-gtests
                          ;; gtests-wfp
                          ;; hyp-fix-bfr-p
                          ;; gobjectp-g-branch-marker
@@ -170,6 +170,8 @@
                          ;; (gobjectp)
                          ;; (gobject-hierarchy)
                          (general-concretep)
+                         logcons
+                         eval-g-base-alt-def
 ;;                          (assume-true-under-hyp)
 ;;                          (assume-false-under-hyp)
                          ))))
@@ -194,10 +196,10 @@
                                   eval-g-base-apply
                                   nth-open-when-constant-idx
                                   eval-g-base-of-gl-cons
-                                  geval-g-if-marker-eval-g-base
-                                  geval-g-or-marker-eval-g-base
-                                  g-if-geval-meta-correct-eval-g-base
-                                  g-or-geval-meta-correct-eval-g-base
+                                  ;; geval-g-if-marker-eval-g-base
+                                  ;; geval-g-or-marker-eval-g-base
+                                  ;; g-if-geval-meta-correct-eval-g-base
+                                  ;; g-or-geval-meta-correct-eval-g-base
                                   eval-g-base-atom
                                   eval-g-base-list
                                   ;; booleanp-gobjectp
@@ -240,30 +242,30 @@
 
 
 (def-g-predicate booleanp
-  (((g-boolean &) t)
-   (& nil)))
+  (((g-boolean &) (gret t))
+   (& (gret nil))))
 
 (def-g-predicate not
-  (((g-boolean bdd) (mk-g-boolean (bfr-not bdd)))
-   (& nil))
+  (((g-boolean bdd) (gret (mk-g-boolean (bfr-not bdd))))
+   (& (gret nil)))
   :formals (p))
 
 (def-g-predicate symbolp
-  (((g-boolean &) t)
-   (& nil)))
+  (((g-boolean &) (gret t))
+   (& (gret nil))))
 
 (def-g-predicate acl2-numberp
-  (((g-number &) t)
-   (& nil)))
+  (((g-number &) (gret t))
+   (& (gret nil))))
 
-(def-g-predicate stringp ((& nil)))
+(def-g-predicate stringp ((& (gret nil))))
 
-(def-g-predicate characterp ((& nil)))
+(def-g-predicate characterp ((& (gret nil))))
 
 (def-g-predicate consp
-  (((g-boolean &) nil)
-   ((g-number &) nil)
-   (& t)))
+  (((g-boolean &) (gret nil))
+   ((g-number &) (gret nil))
+   (& (gret t))))
 
 
 
@@ -275,11 +277,11 @@
         (break-g-number num)
         (declare (ignore arn))
         (if (equal ard '(t))
-            (mk-g-boolean
-             (bfr-or (bfr-=-ss ain nil)
-                   (bfr-=-uu aid nil)))
-          (g-apply 'integerp (list x)))))
-     (& nil))
+            (gret (mk-g-boolean
+                   (bfr-or (bfr-=-ss ain nil)
+                           (bfr-=-uu aid nil))))
+          (gret (g-apply 'integerp (list x))))))
+     (& (gret nil)))
     :encap ((local (in-theory (enable bfr-eval-bfr-binary-or
                                       bfr-or-of-t
                                       bfr-=-uu-correct
@@ -299,10 +301,10 @@
       (mv-let (arn ard ain aid)
         (break-g-number num)
         (declare (ignore arn ard))
-        (mk-g-boolean
-         (bfr-or (bfr-=-ss ain nil)
-               (bfr-=-uu aid nil)))))
-     (& nil))
+        (gret (mk-g-boolean
+               (bfr-or (bfr-=-ss ain nil)
+                       (bfr-=-uu aid nil))))))
+     (& (gret nil)))
     :encap ((local (in-theory (enable bfr-eval-bfr-binary-or
                                       bfr-=-uu-correct
                                       bfr-=-ss-correct

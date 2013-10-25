@@ -101,9 +101,11 @@
  (b* (((er &) (in-theory nil))
       ((er thm) (get-guard-verification-theorem 'glcp-generic-interp-term state)))
    (value
-    `(defthm glcp-generic-interp-guards-ok
-       ,thm
-       :rule-classes nil))))
+    `(progn
+       (defconst *glcp-generic-interp-guard-thm* ',thm)
+       (defthm glcp-generic-interp-guards-ok
+         ,thm
+         :rule-classes nil)))))
 
 
 (defun strip-cadrs (x)
@@ -1096,7 +1098,7 @@ The definition body, ~x1, is not a pseudo-term."
                     (strip-cadrs bindings)))
         (interp-st (create-interp-st))
         (interp-st (update-is-obligs obligs interp-st))
-        (interp-st (update-is-constraint t interp-st))
+        (interp-st (update-is-constraint (bfr-constr-init) interp-st))
         (interp-st (update-is-constraint-db
                     (gbc-db-make-fast
                      (table-alist 'gl-bool-constraints (w state)))
@@ -1352,6 +1354,8 @@ The definition body, ~x1, is not a pseudo-term."
        ;;    ((mv erp val state)
        ;;     (value (list val-clause cov-clause obligs1))))
        ;; (mv erp val state bvar-db bvar-db1))
+
+
 
 
 (local

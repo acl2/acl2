@@ -20,6 +20,7 @@
 
 (in-package "GL")
 (include-book "hyp-fix")
+; cert-param: (reloc_stub)
 (local (in-theory (disable (force))))
 
 ;; The interface for these three functions is summed up by the theorem below.
@@ -42,92 +43,92 @@
 ;;          (hyp-fix x hyp)))
 
 
-(encapsulate nil
-  (local (bfr-reasoning-mode t))
-  (defthm hyp-fix-correct
-    (implies (bfr-eval hyp env)
-             (equal (bfr-eval (hyp-fix x hyp) env)
-                    (bfr-eval x env)))
-    :hints ((and stable-under-simplificationp
-                 (member-equal '(not (bfr-mode)) clause)
-                 '(:in-theory (enable bfr-eval)))))
+;; (encapsulate nil
+;;   (local (bfr-reasoning-mode t))
+;;   (defthm hyp-fix-correct
+;;     (implies (bfr-eval hyp env)
+;;              (equal (bfr-eval (hyp-fix x hyp) env)
+;;                     (bfr-eval x env)))
+;;     :hints ((and stable-under-simplificationp
+;;                  (member-equal '(not (bfr-mode)) clause)
+;;                  '(:in-theory (enable bfr-eval)))))
 
 
-  (defthmd hyp-ops-correct
-    (implies (bfr-eval hyp env)
-             (and (implies (true-under-hyp (hyp-fix x hyp) hyp)
-                           (bfr-eval x env))
-                  (implies (false-under-hyp (hyp-fix x hyp) hyp)
-                           (not (bfr-eval x env)))))
-    :hints (("goal" :use ((:instance hyp-fix-correct))
-             :in-theory (disable hyp-fix-correct)))))
-
-
-
-(defthm hyp-fixedp-hyp-fix
-  (hyp-fixedp (hyp-fix x hyp) hyp)
-  :hints(("Goal" :in-theory (enable bfr-binary-and))))
-
-(defthm hyp-fix-of-hyp-fixedp
-  (implies (hyp-fixedp x hyp)
-           (equal (hyp-fix x hyp)
-                  x)))
-
-(defthm pbfr-depends-on-of-hyp-fix
-  (implies (not (pbfr-depends-on k p x))
-           (not (pbfr-depends-on k p (hyp-fix x hyp))))
-  :hints(("Goal" :in-theory (enable hyp-fix))))
-
-
-;; (local (bfr-reasoning-mode t))
-
-
-;; (defthmd true-under-hyp-rw
-;;   (implies (and (bfr-p x) (bfr-p hyp) hyp)
-;;            (equal (true-under-hyp (hyp-fix x hyp) hyp)
-;;                   (equal (q-implies hyp x) t))))
+;;   (defthmd hyp-ops-correct
+;;     (implies (bfr-eval hyp env)
+;;              (and (implies (true-under-hyp (hyp-fix x hyp) hyp)
+;;                            (bfr-eval x env))
+;;                   (implies (false-under-hyp (hyp-fix x hyp) hyp)
+;;                            (not (bfr-eval x env)))))
+;;     :hints (("goal" :use ((:instance hyp-fix-correct))
+;;              :in-theory (disable hyp-fix-correct)))))
 
 
 
-;; (defthmd false-under-hyp-rw
-;;   (implies (and (bfr-p x) (bfr-p hyp) hyp)
-;;            (equal (false-under-hyp (hyp-fix x hyp) hyp)
-;;                   (equal (q-implies hyp (bfr-not x)) t))))
+;; (defthm hyp-fixedp-hyp-fix
+;;   (hyp-fixedp (hyp-fix x hyp) hyp)
+;;   :hints(("Goal" :in-theory (enable bfr-binary-and))))
+
+;; (defthm hyp-fix-of-hyp-fixedp
+;;   (implies (hyp-fixedp x hyp)
+;;            (equal (hyp-fix x hyp)
+;;                   x)))
+
+;; (defthm pbfr-depends-on-of-hyp-fix
+;;   (implies (not (pbfr-depends-on k p x))
+;;            (not (pbfr-depends-on k p (hyp-fix x hyp))))
+;;   :hints(("Goal" :in-theory (enable hyp-fix))))
 
 
-;; (defthmd true-under-hyp-when-hyp-fixedp-rw
-;;   (implies (and (bfr-p x) (bfr-p hyp) hyp (hyp-fixedp x hyp))
-;;            (equal (true-under-hyp x hyp)
-;;                   (equal (q-implies hyp x) t))))
+;; ;; (local (bfr-reasoning-mode t))
 
 
-;; (defthmd false-under-hyp-when-hyp-fixedp-rw
-;;   (implies (and (bfr-p x) (bfr-p hyp) hyp (hyp-fixedp x hyp))
-;;            (equal (false-under-hyp x hyp)
-;;                   (equal (q-implies hyp (bfr-not x)) t))))
-
-
-
-(in-theory (disable hyp-fix))
-
-
-
-(defthmd true-under-hyp-point
-  (implies (and (true-under-hyp x hyp)
-                (hyp-fixedp x hyp)
-                (bfr-eval hyp v))
-           (bfr-eval x v)))
-
-(defthmd false-under-hyp-point
-  (implies (and (false-under-hyp x hyp)
-                (hyp-fixedp x hyp)
-                (bfr-eval hyp v))
-           (not (bfr-eval x v))))
+;; ;; (defthmd true-under-hyp-rw
+;; ;;   (implies (and (bfr-p x) (bfr-p hyp) hyp)
+;; ;;            (equal (true-under-hyp (hyp-fix x hyp) hyp)
+;; ;;                   (equal (q-implies hyp x) t))))
 
 
 
+;; ;; (defthmd false-under-hyp-rw
+;; ;;   (implies (and (bfr-p x) (bfr-p hyp) hyp)
+;; ;;            (equal (false-under-hyp (hyp-fix x hyp) hyp)
+;; ;;                   (equal (q-implies hyp (bfr-not x)) t))))
 
-(add-bfr-fn-pat hyp-fix)
+
+;; ;; (defthmd true-under-hyp-when-hyp-fixedp-rw
+;; ;;   (implies (and (bfr-p x) (bfr-p hyp) hyp (hyp-fixedp x hyp))
+;; ;;            (equal (true-under-hyp x hyp)
+;; ;;                   (equal (q-implies hyp x) t))))
+
+
+;; ;; (defthmd false-under-hyp-when-hyp-fixedp-rw
+;; ;;   (implies (and (bfr-p x) (bfr-p hyp) hyp (hyp-fixedp x hyp))
+;; ;;            (equal (false-under-hyp x hyp)
+;; ;;                   (equal (q-implies hyp (bfr-not x)) t))))
+
+
+
+;; (in-theory (disable hyp-fix))
+
+
+
+;; (defthmd true-under-hyp-point
+;;   (implies (and (true-under-hyp x hyp)
+;;                 (hyp-fixedp x hyp)
+;;                 (bfr-eval hyp v))
+;;            (bfr-eval x v)))
+
+;; (defthmd false-under-hyp-point
+;;   (implies (and (false-under-hyp x hyp)
+;;                 (hyp-fixedp x hyp)
+;;                 (bfr-eval hyp v))
+;;            (not (bfr-eval x v))))
+
+
+
+
+
 
 ;; (defthm false-under-hyp-hyp-fix-bfr-not
 ;;   (implies (and (bfr-p c) (hyp-fixedp c hyp) (bfr-p hyp) hyp)
@@ -148,24 +149,24 @@
 
 
 
-(in-theory (disable true-under-hyp false-under-hyp hyp-fix))
+;; (in-theory (disable true-under-hyp false-under-hyp hyp-fix))
 
 
 
-(encapsulate nil
-  (local (bfr-reasoning-mode t))
-  (defthmd hyp-fixed-ops-correct
-    (implies (and (bfr-eval hyp env)
-                  (hyp-fixedp x hyp))
-             (and (implies (true-under-hyp x hyp)
-                           (bfr-eval x env))
-                  (implies (false-under-hyp x hyp)
-                           (not (bfr-eval x env)))))
-    :hints(("Goal" :in-theory (enable hyp-ops-correct
-                                      true-under-hyp
-                                      false-under-hyp)))))
+;; (encapsulate nil
+;;   (local (bfr-reasoning-mode t))
+;;   (defthmd hyp-fixed-ops-correct
+;;     (implies (and (bfr-eval hyp env)
+;;                   (hyp-fixedp x hyp))
+;;              (and (implies (true-under-hyp x hyp)
+;;                            (bfr-eval x env))
+;;                   (implies (false-under-hyp x hyp)
+;;                            (not (bfr-eval x env)))))
+;;     :hints(("Goal" :in-theory (enable hyp-ops-correct
+;;                                       true-under-hyp
+;;                                       false-under-hyp)))))
 
-(in-theory (disable hyp-fixedp hyp-fixed-ops-correct hyp-ops-correct))
+;; (in-theory (disable hyp-fixedp hyp-fixed-ops-correct hyp-ops-correct))
 
 
 

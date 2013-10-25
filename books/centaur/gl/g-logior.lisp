@@ -96,7 +96,7 @@
 (def-g-binary-op binary-logior
   (b* ((i-num (if (general-numberp i) i 0))
        (j-num (if (general-numberp j) j 0)))
-    (g-binary-logior-of-numbers i-num j-num)))
+    (gret (g-binary-logior-of-numbers i-num j-num))))
 
 
 

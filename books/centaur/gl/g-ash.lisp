@@ -112,7 +112,7 @@
 (def-g-binary-op ash
   (b* ((i-num (if (general-numberp i) i 0))
        (c-num (if (general-numberp c) c 0)))
-    (g-ash-of-numbers i-num c-num)))
+    (gret (g-ash-of-numbers i-num c-num))))
 
 
 ;; (def-gobjectp-thm ash
@@ -167,6 +167,14 @@
                               general-concretep-def
                               rationalp-implies-acl2-numberp
                               ash
+                              logcons
+                              default-car default-cdr
+                              equal-of-booleans-rewrite
+                              bfr-list->s
+                              bfr-list->u
+                              hons-assoc-equal
+                              ;; eval-g-base-alt-def
+                              sets::double-containment
                               (:rules-of-class :type-prescription :here))
                              ((:type-prescription bfr-eval)))
      :do-not-induct t)

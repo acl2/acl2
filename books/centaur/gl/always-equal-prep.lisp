@@ -77,51 +77,51 @@
 ;; This is used as a helper function for the top-level
 ;; ctrex-for-always-equal-under-hyp, but it is actually complete; the top-level
 ;; function just tries to find an easier answer first.
-(defun ctrex-for-always-equal-under-hyp1 (x y hyp)
+(defun ctrex-for-always-equal-under-hyp1 (x y hypbdd)
   (declare (xargs :guard t))
   (cond ((hqual x y) (mv nil nil))
-        ((eq hyp nil) (mv nil nil))
-        ((atom hyp) (mv (not (hqual x y))
+        ((eq hypbdd nil) (mv nil nil))
+        ((atom hypbdd) (mv (not (hqual x y))
                         (ctrex-for-always-equal x y)))
         ((and (atom x) (atom y))
-         (mv (not (eq hyp nil))
-             (ctrex-for-always-equal hyp nil)))
-        ((eq (cdr hyp) nil)
+         (mv (not (eq hypbdd nil))
+             (ctrex-for-always-equal hypbdd nil)))
+        ((eq (cdr hypbdd) nil)
          (mv-let (ok env)
            (ctrex-for-always-equal-under-hyp1
             (if (consp x) (car x) x)
             (if (consp y) (car y) y)
-            (car hyp))
+            (car hypbdd))
            (mv ok (cons t env))))
-        ((eq (car hyp) nil)
+        ((eq (car hypbdd) nil)
          (mv-let (ok env)
            (ctrex-for-always-equal-under-hyp1
             (if (consp x) (cdr x) x)
             (if (consp y) (cdr y) y)
-            (cdr hyp))
+            (cdr hypbdd))
            (mv ok (cons nil env))))
-        (t (let ((x1 (acl2::q-and hyp x))
-                 (y1 (acl2::q-and hyp y)))
+        (t (let ((x1 (acl2::q-and hypbdd x))
+                 (y1 (acl2::q-and hypbdd y)))
              (mv (not (hqual x1 y1))
                  (ctrex-for-always-equal x1 y1))))))
 
-(defun ctrex-for-always-equal-under-hyp1-ind (x y hyp env)
+(defun ctrex-for-always-equal-under-hyp1-ind (x y hypbdd env)
   (cond ((hqual x y) env)
-        ((eq hyp nil) env)
-        ((atom hyp) env)
+        ((eq hypbdd nil) env)
+        ((atom hypbdd) env)
         ((and (atom x) (atom y))
          env)
-        ((eq (cdr hyp) nil)
+        ((eq (cdr hypbdd) nil)
          (ctrex-for-always-equal-under-hyp1-ind
           (if (consp x) (car x) x)
           (if (consp y) (car y) y)
-          (car hyp)
+          (car hypbdd)
           (cdr env)))
-        ((eq (car hyp) nil)
+        ((eq (car hypbdd) nil)
          (ctrex-for-always-equal-under-hyp1-ind
           (if (consp x) (cdr x) x)
           (if (consp y) (cdr y) y)
-          (cdr hyp)
+          (cdr hypbdd)
           (cdr env)))
         (t env)))
 
@@ -132,17 +132,17 @@
                            equal-of-booleans-rewrite)))
 
 (defthm ctrex-for-always-equal-under-hyp1-correct
-  (implies (and (acl2::ubddp x) (acl2::ubddp y) (acl2::ubddp hyp)
+  (implies (and (acl2::ubddp x) (acl2::ubddp y) (acl2::ubddp hypbdd)
                   (not (equal (acl2::eval-bdd x env)
                               (acl2::eval-bdd y env)))
-                  (acl2::eval-bdd hyp env))
-             (let ((env (mv-nth 1 (ctrex-for-always-equal-under-hyp1 x y hyp))))
+                  (acl2::eval-bdd hypbdd env))
+             (let ((env (mv-nth 1 (ctrex-for-always-equal-under-hyp1 x y hypbdd))))
                (and (not (equal (acl2::eval-bdd x env)
                                 (acl2::eval-bdd y env)))
-                    (acl2::eval-bdd hyp env))))
+                    (acl2::eval-bdd hypbdd env))))
     :hints ((acl2::just-induct-and-expand
-             (ctrex-for-always-equal-under-hyp1-ind x y hyp env)
-             :expand-others ((ctrex-for-always-equal-under-hyp1 x y hyp)))
+             (ctrex-for-always-equal-under-hyp1-ind x y hypbdd env)
+             :expand-others ((ctrex-for-always-equal-under-hyp1 x y hypbdd)))
             (and stable-under-simplificationp
                  (let ((call (acl2::find-call-lst 'ctrex-for-always-equal
                                                   clause)))
@@ -152,8 +152,8 @@
                           :in-theory (disable
                                       ctrex-for-always-equal-correct)))))
             (and (equal (car clause)
-                        '(not (equal (acl2::q-binary-and hyp x)
-                                     (acl2::q-binary-and hyp y))))
+                        '(not (equal (acl2::q-binary-and hypbdd x)
+                                     (acl2::q-binary-and hypbdd y))))
                  (acl2::bdd-reasoning))
             (and stable-under-simplificationp
                  '(;; :in-theory (e/d (acl2::eval-bdd acl2::ubddp)
@@ -164,19 +164,19 @@
                             (acl2::eval-bdd x nil)
                             (acl2::eval-bdd y env)
                             (acl2::eval-bdd y nil)
-                            (acl2::eval-bdd hyp env)
-                            (acl2::eval-bdd hyp nil))))))
+                            (acl2::eval-bdd hypbdd env)
+                            (acl2::eval-bdd hypbdd nil))))))
 
 (defthm ctrex-for-always-equal-under-hyp1-flag-correct
-  (implies (and (acl2::ubddp x) (acl2::ubddp y) (acl2::ubddp hyp))
-           (iff (mv-nth 0 (ctrex-for-always-equal-under-hyp1 x y hyp))
-                (let ((env (mv-nth 1 (ctrex-for-always-equal-under-hyp1 x y hyp))))
+  (implies (and (acl2::ubddp x) (acl2::ubddp y) (acl2::ubddp hypbdd))
+           (iff (mv-nth 0 (ctrex-for-always-equal-under-hyp1 x y hypbdd))
+                (let ((env (mv-nth 1 (ctrex-for-always-equal-under-hyp1 x y hypbdd))))
                   (and (not (equal (acl2::eval-bdd x env)
                                    (acl2::eval-bdd y env)))
-                       (acl2::eval-bdd hyp env)))))
+                       (acl2::eval-bdd hypbdd env)))))
     :hints ((acl2::just-induct-and-expand
-             (ctrex-for-always-equal-under-hyp1-ind x y hyp env)
-             :expand-others ((ctrex-for-always-equal-under-hyp1 x y hyp)))
+             (ctrex-for-always-equal-under-hyp1-ind x y hypbdd env)
+             :expand-others ((ctrex-for-always-equal-under-hyp1 x y hypbdd)))
             (and stable-under-simplificationp
                  (let ((call (acl2::find-call-lst 'ctrex-for-always-equal
                                                   clause)))
@@ -186,8 +186,8 @@
                           :in-theory (disable
                                       ctrex-for-always-equal-correct)))))
             (and stable-under-simplificationp
-                 (member-equal '(not (equal (acl2::q-binary-and hyp x)
-                                            (acl2::q-binary-and hyp y)))
+                 (member-equal '(not (equal (acl2::q-binary-and hypbdd x)
+                                            (acl2::q-binary-and hypbdd y)))
                                clause)
                  (acl2::bdd-reasoning))
             (and stable-under-simplificationp
@@ -197,25 +197,25 @@
                              (acl2::eval-bdd x (cons a b))))))))
 
 
-(defun ctrex-for-always-equal-under-hyp (x y hyp)
-  (declare (xargs :guard t :measure (acl2-count hyp)))
+(defun ctrex-for-always-equal-under-hyp (x y hypbdd)
+  (declare (xargs :guard t :measure (acl2-count hypbdd)))
   (cond ((hqual x y) (mv nil nil))
-        ((eq hyp nil) (mv nil nil))
-        ((atom hyp) (mv (not (hqual x y))
+        ((eq hypbdd nil) (mv nil nil))
+        ((atom hypbdd) (mv (not (hqual x y))
                         (ctrex-for-always-equal x y)))
-        ((eq (cdr hyp) nil)
+        ((eq (cdr hypbdd) nil)
          (mv-let (ok env)
            (ctrex-for-always-equal-under-hyp
             (if (consp x) (car x) x)
             (if (consp y) (car y) y)
-            (car hyp))
+            (car hypbdd))
            (mv ok (cons t env))))
-        ((eq (car hyp) nil)
+        ((eq (car hypbdd) nil)
          (mv-let (ok env)
            (ctrex-for-always-equal-under-hyp
             (if (consp x) (cdr x) x)
             (if (consp y) (cdr y) y)
-            (cdr hyp))
+            (cdr hypbdd))
            (mv ok (cons nil env))))
         ;; The bad case here is when x and y are equal wherever the hyp holds
         ;; and unequal everywhere else.
@@ -228,31 +228,31 @@
                  (ctrex-for-always-equal-under-hyp
                   (if (consp x) (car x) x)
                   (if (consp y) (car y) y)
-                  (car hyp)))
+                  (car hypbdd)))
                 ((when ok) (mv t (cons t env)))
                 ((mv ok env)
                  (ctrex-for-always-equal-under-hyp1
                   (if (consp x) (cdr x) x)
                   (if (consp y) (cdr y) y)
-                  (cdr hyp))))
+                  (cdr hypbdd))))
              (mv ok (cons nil env))))))
 
-(defun ctrex-for-always-equal-under-hyp-ind (x y hyp env)
-  (declare (xargs :measure (acl2-count hyp)))
+(defun ctrex-for-always-equal-under-hyp-ind (x y hypbdd env)
+  (declare (xargs :measure (acl2-count hypbdd)))
   (cond ((hqual x y) env)
-        ((eq hyp nil) env)
-        ((atom hyp) env)
-        ((eq (cdr hyp) nil)
+        ((eq hypbdd nil) env)
+        ((atom hypbdd) env)
+        ((eq (cdr hypbdd) nil)
          (ctrex-for-always-equal-under-hyp-ind
             (if (consp x) (car x) x)
             (if (consp y) (car y) y)
-            (car hyp)
+            (car hypbdd)
             (cdr env)))
-        ((eq (car hyp) nil)
+        ((eq (car hypbdd) nil)
          (ctrex-for-always-equal-under-hyp-ind
             (if (consp x) (cdr x) x)
             (if (consp y) (cdr y) y)
-            (cdr hyp)
+            (cdr hypbdd)
             (cdr env)))
         ;; The bad case here is when x and y are equal wherever the hyp holds
         ;; and unequal everywhere else.
@@ -264,7 +264,7 @@
         (t (ctrex-for-always-equal-under-hyp-ind
             (if (consp x) (car x) x)
             (if (consp y) (car y) y)
-            (car hyp) (cdr env)))))
+            (car hypbdd) (cdr env)))))
 
 
 (local (in-theory (disable ctrex-for-always-equal-under-hyp
@@ -330,7 +330,7 @@
                     ((when call)
                      `(:use ((:instance ctrex-for-always-equal-under-hyp1-correct
                               (x ,(second call)) (y ,(third call))
-                              (hyp ,(fourth call)) (env (cdr env))))
+                              (hypbdd ,(fourth call)) (env (cdr env))))
                        :in-theory (disable
                                    ctrex-for-always-equal-under-hyp1-correct))))
                  nil))
@@ -367,22 +367,22 @@
 ;;          ((when (hqual xa ya)) (always-equal-uu xd yd)))
 ;;       (mv nil (ctrex-for-always-equal xa ya)))))
 
-(defun always-equal-ss-under-hyp (x y hyp)
+(defun always-equal-ss-under-hyp (x y hypbdd)
   (declare (xargs :guard t :measure (+ (acl2-count x) (acl2-count y))))
   (b* (((mv xa xd xend) (first/rest/end x))
        ((mv ya yd yend) (first/rest/end y))
        ((when (hqual xa ya))
         (if (and xend yend)
             (mv t nil)
-          (always-equal-ss-under-hyp xd yd hyp)))
+          (always-equal-ss-under-hyp xd yd hypbdd)))
        (xa (acl2::ubdd-fix xa))
        (ya (acl2::ubdd-fix ya))
-       ((mv diffp res) (ctrex-for-always-equal-under-hyp xa ya hyp)))
+       ((mv diffp res) (ctrex-for-always-equal-under-hyp xa ya hypbdd)))
     (if diffp
         (mv nil res)
       (if (and xend yend)
           (mv t nil)
-        (always-equal-ss-under-hyp xd yd hyp)))))
+        (always-equal-ss-under-hyp xd yd hypbdd)))))
 
 
 
@@ -532,7 +532,7 @@
                               (glcp-config-p config)
                               (general-numberp a)
                               (general-numberp b))
-                  :stobjs (bvar-db state)))
+                  :stobjs (hyp bvar-db state)))
   (b* (((mv arn ard ain aid)
         (general-number-components a))
        ((mv brn brd bin bid)
@@ -547,7 +547,7 @@
                           (equal brd '(T))
                           (equal bid '(T))))
                 (g-apply 'equal (gl-list a b))))
-       (uhyp (acl2::ubdd-fix hyp))
+       (uhyp (acl2::ubdd-fix (bfr-hyp->bfr hyp)))
        ((mv requal rctrex)
         (always-equal-ss-under-hyp arn brn uhyp))
        ((unless requal)
@@ -621,7 +621,7 @@
          (implies (and (not (bfr-mode))
                        (general-numberp a)
                        (general-numberp b)
-                       (bfr-eval hyp (car env)))
+                       (bfr-hyp-eval hyp (car env)))
                   (equal (eval-g-base (always-equal-of-numbers
                                        a b hyp config bvar-db state) env)
                          (equal (eval-g-base a env)
@@ -639,7 +639,7 @@
                               (glcp-config-p config)
                               (general-booleanp a)
                               (general-booleanp b))
-                  :stobjs (bvar-db state)))
+                  :stobjs (hyp bvar-db state)))
   (b* ((av (general-boolean-value a))
        (bv (general-boolean-value b))
        ((when (hqual av bv)) t)
@@ -647,7 +647,7 @@
        (bv (acl2::ubdd-fix bv))
        ((when (hqual av bv)) t)
        ((mv unequal ctrex) (ctrex-for-always-equal-under-hyp
-                          av bv (acl2::ubdd-fix hyp)))
+                          av bv (acl2::ubdd-fix (bfr-hyp->bfr hyp))))
        ((unless unequal) t))
     (ec-call
      (glcp-print-single-ctrex ctrex
@@ -683,11 +683,18 @@
                         (:instance ACL2::EVAL-BDD-UBDD-FIX (x b)
                                    (acl2::env gl::env)))))))
 
+(local (defthm eval-bdd-of-bfr-constr->bfr
+         (implies (not (bfr-mode))
+                  (equal (acl2::eval-bdd (bfr-constr->bfr hyp) env)
+                         (bfr-hyp-eval hyp env)))
+         :hints(("Goal" :in-theory (enable bfr-hyp-eval bfr-eval
+                                           bfr-constr->bfr)))))
+
 (local (defthm always-equal-of-booleans-correct
          (implies (and (not (bfr-mode))
                        (general-booleanp a)
                        (general-booleanp b)
-                       (bfr-eval hyp (car env)))
+                       (bfr-hyp-eval hyp (car env)))
                   (equal (eval-g-base (always-equal-of-booleans a b hyp config bvar-db state) env)
                          (equal (eval-g-base a env)
                                 (eval-g-base b env))))
@@ -711,180 +718,108 @@
 
 
 
-(defun g-always-equal-core (a b hyp clk config bvar-db state)
-  (declare (xargs :measure (+ (acl2-count a) (Acl2-count b))
-                  :guard (and (not (bfr-mode))
-                              (natp clk)
-                              (glcp-config-p config))
-                  :verify-guards nil
-                  :stobjs (bvar-db state)))
-  (cond ((hqual a b) t)
-        ((and (general-concretep a) (general-concretep b))
-         (hons-equal (general-concrete-obj a) (general-concrete-obj b)))
-        ((zp clk)
-         (g-apply 'equal (gl-list a b)))
-        ((or (atom a)
-             (not (member-eq (tag a) '(:g-ite :g-var :g-apply))))
-         (cond ((or (atom b)
-                    (not (member-eq (tag b) '(:g-ite :g-var :g-apply))))
-                (cond
-                 ((general-booleanp a)
-                  (and (general-booleanp b)
-                       (always-equal-of-booleans a b hyp config bvar-db state)))
-                 ((general-booleanp b) nil)
-                 ((general-numberp a)
-                  (and
-                   (general-numberp b)
-                   (always-equal-of-numbers a b hyp config bvar-db state)))
-                 ((general-numberp b) nil)
-                 ((general-consp a)
-                  (and
-                   (general-consp b)
-                   (let ((car-equal
-                          (g-always-equal-core
-                           (general-consp-car a)
-                           (general-consp-car b)
-                           hyp clk config bvar-db state)))
-                     (if (eq car-equal t)
-                         (g-always-equal-core
-                          (general-consp-cdr a)
-                          (general-consp-cdr b)
-                          hyp clk config bvar-db state)
-                       (g-if car-equal
-                             (g-apply 'equal (gl-list a b))
-                             nil)))))
-                 (t nil)))
-               ((eq (tag b) :g-ite)
-                (if (zp clk)
-                    (g-apply 'equal (gl-list a b))
-                  (let* ((test (g-ite->test b))
-                         (then (g-ite->then b))
-                         (else (g-ite->else b)))
-                    (g-if test
-                          (g-always-equal-core a then hyp clk config bvar-db state)
-                          (g-always-equal-core a else hyp clk config bvar-db state)))))
-               (t (g-apply 'equal (gl-list a b)))))
-        ((eq (tag a) :g-ite)
-         (if (zp clk)
-             (g-apply 'equal (gl-list a b))
-           (let* ((test (g-ite->test a))
-                  (then (g-ite->then a))
-                  (else (g-ite->else a)))
-             (g-if test
-                   (g-always-equal-core then b hyp clk config bvar-db state)
-                   (g-always-equal-core else b hyp clk config bvar-db state)))))
-        (t (g-apply 'equal (gl-list a b)))))
+(define g-always-equal-core (a b hyp clk config bvar-db state)
+  :measure (+ (acl2-count a) (Acl2-count b))
+  :guard (and (not (bfr-mode))
+              (natp clk)
+              (glcp-config-p config))
+  :verify-guards nil
+  (let* ((hyp (lbfr-hyp-fix hyp)))
+    (cond ((hqual a b) (gret t))
+          ((and (general-concretep a) (general-concretep b))
+           (gret (hons-equal (general-concrete-obj a) (general-concrete-obj b))))
+          ((zp clk)
+           (gret (g-apply 'equal (gl-list a b))))
+          ((or (atom a)
+               (not (member-eq (tag a) '(:g-ite :g-var :g-apply))))
+           (cond ((or (atom b)
+                      (not (member-eq (tag b) '(:g-ite :g-var :g-apply))))
+                  (cond
+                   ((general-booleanp a)
+                    (gret (and (general-booleanp b)
+                               (always-equal-of-booleans a b hyp config bvar-db state))))
+                   ((general-booleanp b) (gret nil))
+                   ((general-numberp a)
+                    (gret (and
+                           (general-numberp b)
+                           (always-equal-of-numbers a b hyp config bvar-db state))))
+                   ((general-numberp b) (gret nil))
+                   ((general-consp a)
+                    (if (general-consp b)
+                        (b* (((gret car-equal)
+                              (g-always-equal-core
+                               (general-consp-car a)
+                               (general-consp-car b)
+                               hyp clk config bvar-db state)))
+                          (if (eq car-equal t)
+                              (g-always-equal-core
+                               (general-consp-cdr a)
+                               (general-consp-cdr b)
+                               hyp clk config bvar-db state)
+                            (g-if-mbe (gret car-equal)
+                                      (gret (g-apply 'equal (gl-list a b)))
+                                      (gret nil))))
+                      (gret nil)))
+                   (t (gret nil))))
+                 ((eq (tag b) :g-ite)
+                  (if (zp clk)
+                      (gret (g-apply 'equal (gl-list a b)))
+                    (let* ((test (g-ite->test b))
+                           (then (g-ite->then b))
+                           (else (g-ite->else b)))
+                      (g-if-mbe (gret test)
+                                (g-always-equal-core a then hyp clk config bvar-db state)
+                                (g-always-equal-core a else hyp clk config bvar-db state)))))
+                 (t (gret (g-apply 'equal (gl-list a b))))))
+          ((eq (tag a) :g-ite)
+           (if (zp clk)
+               (gret (g-apply 'equal (gl-list a b)))
+             (let* ((test (g-ite->test a))
+                    (then (g-ite->then a))
+                    (else (g-ite->else a)))
+               (g-if-mbe (gret test)
+                         (g-always-equal-core then b hyp clk config bvar-db state)
+                         (g-always-equal-core else b hyp clk config bvar-db state)))))
+          (t (gret (g-apply 'equal (gl-list a b))))))
+  ///
+  (def-hyp-congruence g-always-equal-core
+    :hints(("Goal" :in-theory (disable always-equal-of-numbers
+                                       always-equal-of-booleans
+                                       (:d g-always-equal-core))
+            :induct (g-always-equal-core a b hyp clk config bvar-db state)
+            :expand ((:free (hyp) (g-always-equal-core a b hyp clk config bvar-db state))
+                     (:free (hyp) (g-always-equal-core a a hyp clk config bvar-db state)))))))
+    
 
-
-;; (cond ((and (general-concretep a) (general-concretep b))
-;;          (hqual (general-concrete-obj a) (general-concrete-obj b)))
-;;       ((zp clk)
-;;          (g-apply 'equal (list a b)))
-;;         (t (pattern-match a
-;;              ((g-ite test then else)
-;;               (g-if test
-;;                     (g-always-equal-core then b hyp clk config bvar-db state)
-;;                     (g-always-equal-core else b hyp clk config bvar-db state)))
-;;              (& (pattern-match b
-;;                   ((g-ite test then else)
-;;                    (g-if test
-;;                          (g-always-equal-core a then hyp clk config bvar-db state)
-;;                          (g-always-equal-core a else hyp clk config bvar-db state)))
-;;                   ((g-var &)
-;;                    (or (equal a b)
-;;                        (g-apply 'equal (list a b))))
-;;                   ((g-apply fn args)
-;;                    (pattern-match a
-;;                      ((g-apply !fn aargs)
-;;                       (g-if (g-always-equal-core aargs args hyp clk config bvar-db state)
-;;                             t
-;;                             (g-apply 'equal (list a b))))
-;;                      (& (g-apply 'equal (list a b)))))
-;;                   (& (pattern-match a
-;;                        ((g-var &) (g-apply 'equal (list a b)))
-;;                        ((g-apply & &) (g-apply 'equal (list a b)))
-;;                        (& (cond
-;;                            ((hqual a b) t)
-;;                            ((general-booleanp a)
-;;                             (and (general-booleanp b)
-;;                                  (always-equal-of-booleans a b hyp)))
-;;                            ((general-booleanp b) nil)
-;;                            ((general-numberp a)
-;;                             (and
-;;                              (general-numberp b)
-;;                              (always-equal-of-numbers a b hyp)))
-;;                            ((general-numberp b) nil)
-;;                            ((general-consp a)
-;;                             (and
-;;                              (general-consp b)
-;;                              (let ((car-equal
-;;                                     (g-always-equal-core
-;;                                      (general-consp-car a)
-;;                                      (general-consp-car b)
-;;                                      hyp clk config bvar-db state)))
-;;                                (if (eq car-equal t)
-;;                                    (g-always-equal-core
-;;                                     (general-consp-cdr a)
-;;                                     (general-consp-cdr b)
-;;                                     hyp clk config bvar-db state)
-;;                                  (g-if car-equal
-;;                                        (g-apply 'equal (list a b))
-;;                                        nil)))))
-;;                            (t nil)))))))))))
-
-;; (defthm g-always-equal-core-gobjectp
-;;   (implies (and (not (bfr-mode))
-;;                 (bfr-p hyp))
-;;            (gobjectp (g-always-equal-core x y hyp clk config bvar-db state)))
-;;   :hints (("Goal" :in-theory (e/d* (booleanp-gobjectp)
-;;                                    ((:definition g-always-equal-core)
-;;                                     general-boolean-value
-;;                                     general-boolean-value-cases
-;;                                     gobj-fix-when-not-gobjectp
-;;                                     gobj-fix-when-gobjectp
-;;                                     gobjectp-def
-;;                                     general-concretep-def
-;;                                     hyp-fix
-;;                                     ctrex-for-always-equal
-;;                                     (:type-prescription booleanp)
-;;                                     (:type-prescription gobj-fix)
-;;                                     (:ruleset gl-tag-rewrites)
-;;                                     (:rules-of-class :type-prescription :here)
-;;                                     equal-of-booleans-rewrite
-;;                                     (force)))
-;;            :induct (g-always-equal-core x y hyp clk config bvar-db state)
-;;            :expand ((g-always-equal-core x y hyp clk config bvar-db state)
-;;                     (g-always-equal-core x x hyp clk config bvar-db state))
-;;            :do-not-induct t)))
 
 
 (encapsulate nil
-  (local (in-theory (e/d* ()
-                         (g-always-equal-core
-                          equal-of-booleans-rewrite
-                          iff-implies-equal-not
-                          (:type-prescription true-under-hyp)
-                          (:type-prescription false-under-hyp)
-                          (:type-prescription general-booleanp)
-                          (:type-prescription general-numberp)
-                          (:type-prescription acl2::ubddp)
-                          (:type-prescription general-concretep)
-                          (:type-prescription bfr-=-uu)
-                          ;; (:type-prescription assume-true-under-hyp2)
-                          ;; (:type-prescription assume-false-under-hyp2)
-                          ;(:type-prescription assume-true-under-hyp)
-                          ;(:type-prescription assume-false-under-hyp)
-                          (:meta mv-nth-cons-meta)
-                          zp-open default-<-2 default-<-1
-                          (:type-prescription zp)
-                          (:type-prescription hyp-fix)
-                          default-car default-cdr
-                          general-concretep-def
-                          ctrex-for-always-equal
-                          hyp-fix
-                          (:rules-of-class :type-prescription :here)
-                          not)
-                         ((:type-prescription general-number-components)))))
+  (local (in-theory (e/d* (g-if-fn g-or-fn)
+                          (g-always-equal-core
+                           equal-of-booleans-rewrite
+                           iff-implies-equal-not
+                           (:type-prescription true-under-hyp)
+                           (:type-prescription false-under-hyp)
+                           (:type-prescription general-booleanp)
+                           (:type-prescription general-numberp)
+                           (:type-prescription acl2::ubddp)
+                           (:type-prescription general-concretep)
+                           (:type-prescription bfr-=-uu)
+                           ;; (:type-prescription assume-true-under-hyp2)
+                           ;; (:type-prescription assume-false-under-hyp2)
+;(:type-prescription assume-true-under-hyp)
+;(:type-prescription assume-false-under-hyp)
+                           (:meta mv-nth-cons-meta)
+                           zp-open default-<-2 default-<-1
+                           (:type-prescription zp)
+                           (:type-prescription hyp-fix)
+                           default-car default-cdr
+                           general-concretep-def
+                           ctrex-for-always-equal
+                           hyp-fix
+                           (:rules-of-class :type-prescription :here)
+                           not)
+                          ((:type-prescription general-number-components)))))
   (verify-guards g-always-equal-core))
 
 
@@ -892,7 +827,7 @@
   (implies (and (not (gobj-depends-on k p x))
                 (not (gobj-depends-on k p y)))
            (not (gobj-depends-on
-                 k p (g-always-equal-core x y hyp clk config bvar-db state))))
+                 k p (mv-nth 0 (g-always-equal-core x y hyp clk config bvar-db state)))))
   :hints('(:in-theory (e/d ((:i g-always-equal-core))
                            (gobj-depends-on
                             general-concrete-obj-when-consp-for-eval-g-base)))
@@ -903,71 +838,42 @@
 
   (local (include-book "clause-processors/just-expand" :dir :system))
   (local
-   (in-theory (e/d** (possibilities-for-x-1
+   (in-theory (e/d* (possibilities-for-x-1
                       possibilities-for-x-2
                       possibilities-for-x-3
                       possibilities-for-x-4
                       possibilities-for-x-5
                       possibilities-for-x-6
                       possibilities-for-x-7
-                      possibilities-for-x-8
+                      ;; possibilities-for-x-8
                       possibilities-for-x-9
-
-                      g-if-geval-meta-correct-eval-g-base
-                      g-or-geval-meta-correct-eval-g-base
-                      eval-g-base-g-apply
-                      eval-g-base-of-gl-cons
+                      (:i g-always-equal-core)
                       eval-g-base-non-cons
-                      general-boolean-value-cases
-                      bfr-eval-booleanp
-                      mk-g-boolean-correct-for-eval-g-base
-                      geval-g-if-marker-eval-g-base
-                      geval-g-or-marker-eval-g-base
-
-                      general-concretep-not-general-consp
-                      general-concretep-not-general-booleanp
-                      general-concretep-not-general-numberp
-                      general-concrete-obj-when-consp-for-eval-g-base
-                      general-concrete-obj-when-numberp
-                      general-concrete-obj-when-booleanp
-                      general-concrete-obj-when-atom
                       general-concretep-atom
-                      general-numberp-of-atom
-                      general-booleanp-of-atom
-
-                      (:type-prescription bfr-eval)
-                      (:type-prescription components-to-number-fn)
-                      (:rules-of-class :executable-counterpart :here)
-                      booleanp-compound-recognizer
-
-                      gtests-g-test-marker
-
-                      bfr-eval-bfr-binary-and
-                      bfr-eval-bfr-not
-                      bfr-eval-bfr-binary-or
-                      gtests-nonnil-correct-for-eval-g-base
-                      hyp-fix-correct
-                      always-equal-of-numbers-correct
-                      always-equal-of-booleans-correct
-
-                      bfr-eval-g-hyp-marker
-                      cons-equal
-
-                      eval-g-base-apply-of-equal-kwote-lst
-                      eval-g-base-list-of-gl-cons
-
-                      general-concrete-obj-of-atomic-constants
-                      general-concretep-of-atomic-constants
-                      hons-equal acl2::always-equal
-                      (:induction g-always-equal-core))
+                      (:rules-of-class :executable-counterpart :here))
                      ((general-concrete-obj)
                       (general-concretep)
-                      (kwote-lst)))))
+                      (kwote-lst)
+                      kwote kwote-lst
+                      acl2::member-of-cons
+                      always-equal-of-numbers
+                      always-equal-of-booleans
+                      eval-g-base-alt-def
+                      member-equal
+                      eval-g-base-ev-of-equal-call
+                      eval-g-base-ev-of-variable
+                      eval-g-base-list
+                      bfr-list->s
+                      bfr-list->u
+                      bfr-eval-booleanp
+                      acl2::subsetp-member
+                      components-to-number-alt-def
+                      general-concretep-def))))
 
   (defthm g-always-equal-core-correct
     (implies (and (not (bfr-mode))
-                  (bfr-eval hyp (car env)))
-             (equal (eval-g-base (g-always-equal-core x y hyp clk config bvar-db state) env)
+                  (bfr-hyp-eval hyp (car env)))
+             (equal (eval-g-base (mv-nth 0 (g-always-equal-core x y hyp clk config bvar-db state)) env)
                     (acl2::always-equal (eval-g-base x env)
                                         (eval-g-base y env))))
     :hints ((acl2::just-induct-and-expand

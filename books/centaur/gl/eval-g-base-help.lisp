@@ -21,9 +21,11 @@
 (in-package "GL")
 (include-book "eval-g-base")
 (include-book "g-if")
-(include-book "gify-clause-proc")
+;; (include-book "gify-clause-proc")
 (include-book "general-object-thms")
 (include-book "tools/def-functional-instance" :dir :system)
+
+(set-ignore-ok t)
 
 (acl2::def-functional-instance
  eval-g-base-alt-def
@@ -69,27 +71,67 @@
   (generic-geval eval-g-base)
   (generic-geval-list eval-g-base-list)))
 
-(local
- (progn
-
-   ;; These should only be necessary to prove the meta rules for g-if.
-
-   (acl2::def-functional-instance
-    mk-g-ite-correct-for-eval-g-base
-    mk-g-ite-correct
-    ((generic-geval-ev eval-g-base-ev)
-     (generic-geval-ev-lst eval-g-base-ev-lst)
-     (generic-geval eval-g-base)
+(acl2::def-functional-instance
+ bfr-assume-of-gtests-possibly-true-for-eval-g-base
+ bfr-assume-of-gtests-possibly-true
+ ((generic-geval-ev eval-g-base-ev)
+  (generic-geval-ev-lst eval-g-base-ev-lst)
+  (generic-geval eval-g-base)
   (generic-geval-list eval-g-base-list)))
 
+(acl2::def-functional-instance
+ bfr-assume-of-gtests-possibly-false-for-eval-g-base
+ bfr-assume-of-gtests-possibly-false
+ ((generic-geval-ev eval-g-base-ev)
+  (generic-geval-ev-lst eval-g-base-ev-lst)
+  (generic-geval eval-g-base)
+  (generic-geval-list eval-g-base-list)))
 
-   (acl2::def-functional-instance
-    gobj-ite-merge-correct-for-eval-g-base
-    gobj-ite-merge-correct
-    ((generic-geval-ev eval-g-base-ev)
-     (generic-geval-ev-lst eval-g-base-ev-lst)
-     (generic-geval eval-g-base)
-  (generic-geval-list eval-g-base-list)))))
+;; (local
+;;  (progn
+
+;;    ;; These should only be necessary to prove the meta rules for g-if.
+
+(acl2::def-functional-instance
+  g-if-fn-correct-for-eval-g-base
+  g-if-fn-correct
+  ((generic-geval-ev eval-g-base-ev)
+   (generic-geval-ev-lst eval-g-base-ev-lst)
+   (generic-geval eval-g-base)
+   (generic-geval-list eval-g-base-list)))
+
+(acl2::def-functional-instance
+  g-or-fn-correct-for-eval-g-base
+  g-or-fn-correct
+  ((generic-geval-ev eval-g-base-ev)
+   (generic-geval-ev-lst eval-g-base-ev-lst)
+   (generic-geval eval-g-base)
+   (generic-geval-list eval-g-base-list)))
+
+(acl2::def-functional-instance
+  mk-g-ite-correct-for-eval-g-base
+  mk-g-ite-correct
+  ((generic-geval-ev eval-g-base-ev)
+   (generic-geval-ev-lst eval-g-base-ev-lst)
+   (generic-geval eval-g-base)
+   (generic-geval-list eval-g-base-list)))
+
+
+(acl2::def-functional-instance
+  gobj-ite-merge-correct-for-eval-g-base
+  gobj-ite-merge-correct
+  ((generic-geval-ev eval-g-base-ev)
+   (generic-geval-ev-lst eval-g-base-ev-lst)
+   (generic-geval eval-g-base)
+   (generic-geval-list eval-g-base-list)))
+
+(acl2::def-functional-instance
+  mk-g-bdd-ite-correct-for-eval-g-base
+  mk-g-bdd-ite-correct
+  ((generic-geval-ev eval-g-base-ev)
+   (generic-geval-ev-lst eval-g-base-ev-lst)
+   (generic-geval eval-g-base)
+   (generic-geval-list eval-g-base-list)))
 
 (acl2::def-functional-instance
  eval-g-base-g-apply
@@ -203,4 +245,4 @@
 
 
 
-(def-geval-meta eval-g-base evgb-ev evgb-ev-lst)
+;; (def-geval-meta eval-g-base evgb-ev evgb-ev-lst)

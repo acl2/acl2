@@ -27,20 +27,20 @@
 (def-g-fn acl2::make-fast-alist
   `(let ((x acl2::alist))
      (if (general-concretep x)
-         (mk-g-concrete
-          (acl2::make-fast-alist (general-concrete-obj x)))
+         (gret (mk-g-concrete
+                (acl2::make-fast-alist (general-concrete-obj x))))
        (pattern-match x
          ((g-ite test then else)
           (if (zp clk)
-              x
-            (g-if test
+              (gret x)
+            (g-if (gret test)
                   (,gfn then . ,params)
                   (,gfn else . ,params))))
-         ((g-apply & &) x)
-         ((g-var &) x)
-         ((g-boolean &) x)
-         ((g-number &) x)
-         (& (acl2::make-fast-alist x))))))
+         ((g-apply & &) (gret x))
+         ((g-var &) (gret x))
+         ((g-boolean &) (gret x))
+         ((g-number &) (gret x))
+         (& (gret (acl2::make-fast-alist x)))))))
 
 ;; (def-gobjectp-thm acl2::make-fast-alist)
 

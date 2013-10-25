@@ -1124,25 +1124,26 @@ Warning: Clock ran out in ~x0~%" ',(gl-fnsym top-fn))
           (geval-thm-names (cdr names) eval))))
 
 (defmacro correctness-lemmas (eval)
-  (let ((ev-fn (incat eval (symbol-name eval) "-GIFY-EV"))
-        (evlst-fn (incat eval (symbol-name eval) "-GIFY-EV-LST")))
+  ;; (let ((ev-fn (incat eval (symbol-name eval) "-GIFY-EV"))
+  ;;       (evlst-fn (incat eval (symbol-name eval) "-GIFY-EV-LST")))
     `(make-event
       (mv-let (events theory)
         (correctness-lemmas-for-new-apply
          ',eval (w state))
         (cons 'progn
               (append events
-                      `((def-geval-meta ,',eval ,',ev-fn ,',evlst-fn))
+                      ;; `((def-geval-meta ,',eval ,',ev-fn ,',evlst-fn))
                       `((def-ruleset! ,',(ruleset-for-eval eval)
-                          '(,@',(geval-thm-names
-                                 '(g-or-geval-meta-correct
-                                   g-if-geval-meta-correct
-                                   geval-g-if-marker
-                                   geval-g-or-marker
-                                   geval-g-test-marker
-                                   geval-g-branch-marker)
-                                 eval)
-                              . ,theory)))))))))
+                          '(,@'nil
+                            ;; ,(geval-thm-names
+                            ;;   '(g-or-geval-meta-correct
+                            ;;     g-if-geval-meta-correct
+                            ;;     geval-g-if-marker
+                            ;;     geval-g-or-marker
+                            ;;     geval-g-test-marker
+                            ;;     geval-g-branch-marker)
+                            ;;   eval)
+                            . ,theory))))))))
 
 (defun find-definition-nume (pairs)
   (if (atom pairs)

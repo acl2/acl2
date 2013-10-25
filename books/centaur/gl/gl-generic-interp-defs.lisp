@@ -103,8 +103,8 @@
 (acl2::def-meta-extract glcp-generic-geval-ev glcp-generic-geval-ev-lst)
 
 (encapsulate
-  (((glcp-generic-run-gified * * * * * bvar-db state)
-    => (mv * *)
+  (((glcp-generic-run-gified * * hyp * * bvar-db state)
+    => (mv * * hyp)
     :formals (fn actuals hyp clk config bvar-db state)
     :guard (and (symbolp fn)
                 (true-listp actuals)
@@ -123,12 +123,14 @@
   ;;          (generic-geval x env)))
 
   (local (defun glcp-generic-run-gified (fn actuals hyp clk config bvar-db state)
-           (declare (xargs :stobjs (bvar-db state)
+           (declare (xargs :stobjs (hyp bvar-db state)
                            :guard (and (symbolp fn)
                                        (natp clk)))
                     (ignorable fn actuals hyp clk config bvar-db state))
-           (mv nil nil)))
+           (let ((hyp (lbfr-hyp-fix hyp)))
+             (mv nil nil hyp))))
 
+  (def-hyp-congruence glcp-generic-run-gified)
   ;; (local (acl2::defevaluator-fast
   ;;         glcp-generic-ev glcp-generic-ev-lst
   ;;         ((if a b c)
@@ -147,8 +149,10 @@
   ;;          (gl-error x))
   ;;         :namedp t))
 
+  
+
   (defthm glcp-generic-run-gified-correct
-    (implies (and (bfr-eval hyp (car env))
+    (implies (and (bfr-hyp-eval hyp (car env))
                   ;; (gobj-listp actuals)
                   (mv-nth 0 (glcp-generic-run-gified fn actuals hyp
                                                      clk config bvar-db state)))
@@ -842,10 +846,9 @@
 ;;                                  :hide nil))
 
 
-(defund try-equivalences (x bvars pathcond contexts p bvar-db state)
-  (declare (xargs :guard (and (contextsp contexts)
-                              (non-exec (ec-call (bvar-listp bvars bvar-db))))
-                  :stobjs (bvar-db state)))
+(define try-equivalences (x bvars pathcond
+                            (contexts contextsp) p bvar-db state)
+  :guard (non-exec (ec-call (bvar-listp bvars bvar-db)))
   (b* (((when (atom bvars)) (mv nil nil))
        (bvar (car bvars))
        (equiv-term (get-bvar->term bvar bvar-db))
@@ -869,11 +872,11 @@
 
 
 
-(defund try-equivalences-loop (x pathcond contexts clk p bvar-db state)
-  (declare (xargs :guard (and (natp clk)
-                              (contextsp contexts))
-                  :stobjs (bvar-db state)
-                  :measure (nfix clk)))
+(define try-equivalences-loop (x pathcond
+                                 (contexts contextsp)
+                                 (clk natp)
+                                 p bvar-db state)
+  :measure (nfix clk)
   (b* (((when (zp clk)) (mv "try-equivalences ran out of clock -- equiv loop?"
                             x))
        (equivs (get-term->equivs x bvar-db))

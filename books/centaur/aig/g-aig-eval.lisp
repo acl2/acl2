@@ -28,13 +28,13 @@
 (include-book "../gl/gify-thms")
 (include-book "../gl/eval-f-i-cp")
 (include-book "../gl/bvecs")
-(include-book "../gl/gify-clause-proc")
+(include-book "../gl/hyp-fix")
+;; (include-book "../gl/gify-clause-proc")
 (local (include-book "../gl/general-object-thms"))
 (local (include-book "eval-restrict"))
 (include-book "parallel/without-waterfall-parallelism" :dir :system)
 
-(local (in-theory (disable gl::generic-geval gl::generic-geval-alt-def
-                           gl::geval-for-meta-gtests-nonnil-correct)))
+(local (in-theory (disable gl::generic-geval gl::generic-geval-alt-def)))
 
 (defun atom-key-gobj-val-alistp (x)
   (declare (xargs :guard t))
@@ -83,26 +83,30 @@
                                       gl::general-number-components-ev))
               :induct (hons-assoc-equal key x))))))
 
-(defun gobj-alist-to-bfr-alist (x hyp)
-  (declare (xargs :guard (atom-key-gobj-val-alistp x)))
-  (if (atom x)
-      (mv nil nil)
-    (b* ((test (gl::gtests (cdar x) hyp))
-         ((mv rst rst-unknown)
-          (gobj-alist-to-bfr-alist (cdr x) hyp)))
-      (mv (hons-acons! (caar x) (gl::gtests-nonnil test) rst)
-          (gl::bfr-or (let ((unk (gl::gtests-unknown test)))
-                        (and unk
+(define gobj-alist-to-bfr-alist ((x atom-key-gobj-val-alistp)
+                                 gl::hyp)
+  (b* ((gl::hyp (gl::lbfr-hyp-fix gl::hyp)))
+    (if (atom x)
+        (mv nil nil gl::hyp)
+      (b* (((mv nonnil unknown & gl::hyp) (gl::gtests (cdar x) gl::hyp))
+           ((mv rst rst-unknown gl::hyp)
+            (gobj-alist-to-bfr-alist (cdr x) gl::hyp)))
+        (mv (hons-acons! (caar x) nonnil rst)
+            (gl::bfr-or (and unknown
                              (prog2$ (cw "Unknown: ~x0~%" (caar x))
-                                     unk)))
-                      rst-unknown)))))
+                                     unknown))
+                        rst-unknown)
+            gl::hyp))))
+  ///
+  (gl::def-hyp-congruence gobj-alist-to-bfr-alist))
 
 (local
  (defthm hons-assoc-equal-gobj-alist-to-bfr-alist-iff
    (implies (atom-key-gobj-val-alistp x)
             (iff (hons-assoc-equal key (mv-nth 0 (gobj-alist-to-bfr-alist
                                                   x hyp)))
-                 (hons-assoc-equal key x)))))
+                 (hons-assoc-equal key x)))
+   :hints(("Goal" :in-theory (enable gobj-alist-to-bfr-alist)))))
 
 (defthm deps-of-gobj-alist-to-bfr-alist
   (implies (and (not (gl::gobj-depends-on k p x))
@@ -112,7 +116,8 @@
                 (not (gl::pbfr-depends-on
                       k p (mv-nth 1 (gobj-alist-to-bfr-alist x hyp))))))
   :hints(("Goal" :induct (gobj-alist-to-bfr-alist x hyp)
-          :in-theory (enable gl::pbfr-list-depends-on)
+          :in-theory (enable gl::pbfr-list-depends-on
+                             gobj-alist-to-bfr-alist)
           :expand ((gl::gobj-depends-on k p x)))))
 
 
@@ -187,7 +192,7 @@
 
    (defthm eval-gobj-alist
      (implies (and (atom-key-gobj-val-alistp x)
-                   (gl::bfr-eval hyp (car env))
+                   (gl::bfr-hyp-eval hyp (car env))
                    (not (gl::bfr-eval (mv-nth 1 (gobj-alist-to-bfr-alist x hyp))
                                       (car env))))
               (iff (cdr (hons-assoc-equal
@@ -201,6 +206,7 @@
      :hints (("goal" :in-theory
               (e/d
                (hons-assoc-equal
+                gobj-alist-to-bfr-alist
                 gl::not-keyword-symbolp-car-impl)
                (member-eq hons-assoc-equal
                           gl::general-number-components-ev
@@ -227,7 +233,7 @@
 
    (defthm aig-eval-eval-gobj-alist
      (implies (and (atom-key-gobj-val-alistp x)
-                   (gl::bfr-eval hyp (car env))
+                   (gl::bfr-hyp-eval hyp (car env))
                    (not (gl::bfr-eval 
                          (mv-nth 1 (gobj-alist-to-bfr-alist x hyp))
                          (car env))))
@@ -241,7 +247,7 @@
 
    (defthm aig-eval-list-eval-gobj-alist
      (implies (and (atom-key-gobj-val-alistp x)
-                   (gl::bfr-eval hyp (car env))
+                   (gl::bfr-hyp-eval hyp (car env))
                    (not (gl::bfr-eval 
                          (mv-nth 1 (gobj-alist-to-bfr-alist x hyp))
                          (car env))))
@@ -528,22 +534,23 @@
 
 (in-theory (disable aig-bfrify-list))
 
-(defun aig-eval-list-symbolic
-  (x al tries maybe-wash-args hyp clk)
+(define aig-eval-list-symbolic
+  (x al tries maybe-wash-args gl::hyp clk)
   (declare (xargs :guard t)
            (ignore clk))
-  (let ((tries (if (gl::general-concretep tries)
-                   (gl::general-concrete-obj tries)
-                 (er hard? 'aig-eval-list-symbolic "Expected tries to be concrete~%"))))
+  (let* ((gl::hyp (gl::lbfr-hyp-fix gl::hyp))
+         (tries (if (gl::general-concretep tries)
+                    (gl::general-concrete-obj tries)
+                  (er hard? 'aig-eval-list-symbolic "Expected tries to be concrete~%"))))
     (if (and (atom-key-gobj-val-alistp al)
              (gl::general-concretep x))
-        (b* (((mv bfr-al badp) (gobj-alist-to-bfr-alist al hyp))
+        (b* (((mv bfr-al badp gl::hyp) (gobj-alist-to-bfr-alist al gl::hyp))
              (- (and badp
                      (cw "The alist is not well-formed for aig-eval-list-symbolic~%")
                      ))
-             (ans
+             ((gl::gret ans)
               (if (eq badp t)
-                  (gl::g-apply 'aig-eval-list (gl::gl-list x al))
+                  (gl::gret (gl::g-apply 'aig-eval-list (gl::gl-list x al)))
                 (if badp
                     (gl::gobj-ite-merge
                      badp
@@ -556,26 +563,31 @@
                            (g-boolean-list bdd)
                          (prog2$ (cw "BDDification failed to produce an exact result~%")
                                  (gl::g-apply 'aig-eval-list (gl::gl-list x al)))))
-                     hyp)
-                  (b* ((x-obj (gl::general-concrete-obj x))
-                       ((mv bdd exact)
-                        (aig-bfrify-list tries x-obj bfr-al maybe-wash-args)))
-                    (if exact
-                        (g-boolean-list bdd)
-                      (prog2$ (cw "BDDification failed to produce an exact result~%")
-                              (gl::g-apply 'aig-eval-list (gl::gl-list x al))))))))
+                     gl::hyp)
+                  (gl::gret
+                   (b* ((x-obj (gl::general-concrete-obj x))
+                        ((mv bdd exact)
+                         (aig-bfrify-list tries x-obj bfr-al maybe-wash-args)))
+                     (if exact
+                         (g-boolean-list bdd)
+                       (prog2$ (cw "BDDification failed to produce an exact result~%")
+                               (gl::g-apply 'aig-eval-list (gl::gl-list x al)))))))))
              (- (flush-hons-get-hash-table-link bfr-al)))
-          ans)
+          (gl::gret ans))
       (prog2$ (cw "AL is not an atom-key-gobj-val-alistp. cars: ~x0~%"
                   (ec-call (strip-cars al)))
-              (gl::g-apply 'aig-eval-list (gl::gl-list x al))))))
+              (gl::gret (gl::g-apply 'aig-eval-list (gl::gl-list x al))))))
 
+  ///
 
-(defthm deps-of-aig-eval-list-symbolic
-  (implies (and (not (gl::gobj-depends-on k p x))
-                (not (gl::gobj-depends-on k p al)))
-           (not (gl::gobj-depends-on k p (aig-eval-list-symbolic
-                                          x al tries maybe-wash-args hyp clk)))))
+  (defthm deps-of-aig-eval-list-symbolic
+    (implies (and (not (gl::gobj-depends-on k p x))
+                  (not (gl::gobj-depends-on k p al)))
+             (not (gl::gobj-depends-on
+                   k p (mv-nth 0 (aig-eval-list-symbolic
+                                  x al tries maybe-wash-args gl::hyp clk))))))
+
+  (gl::def-hyp-congruence aig-eval-list-symbolic))
 
 
 
@@ -594,12 +606,8 @@
 ;;                                         aig-bddify-list)))))
 
 (make-event
- `(defun ,(gl-fnsym 'aig-eval-list-with-bddify)
-    (x al tries maybe-wash-args hyp clk config gl::bvar-db state)
-    (declare (xargs :guard t
-                    :stobjs (gl::bvar-db state))
-             (ignore config gl::bvar-db state))
-    (aig-eval-list-symbolic x al tries maybe-wash-args hyp clk)))
+ `(gl::def-g-fn aig-eval-list-with-bddify
+    '(aig-eval-list-symbolic x env tries mwa gl::hyp gl::clk)))
 
 
 ;; (defthm gobjectp-g-aig-eval-list
@@ -609,7 +617,7 @@
 
 ;; (add-to-ruleset! gl::g-gobjectp-lemmas '(gobjectp-g-aig-eval-list))
 
-
+(gl::verify-g-guards aig-eval-list-with-bddify)
 
 (encapsulate nil
   (make-event 
@@ -637,6 +645,10 @@
 
    (gl::eval-g-functional-instance
     aig-eval-list-eval-gobj-alist
+    aig-eval-ev gl::generic-geval)
+
+   (gl::eval-g-functional-instance
+    gl::gobj-ite-merge-correct
     aig-eval-ev gl::generic-geval)
 
    (gl::eval-g-functional-instance
@@ -671,13 +683,14 @@
 
 (local
  (defthm g-aig-eval-list-correct1
-   (implies (bfr-eval hyp (car env))
-            (equal (aig-eval-ev (aig-eval-list-symbolic
-                                 x al tries maybe-wash-args hyp clk)
+   (implies (gl::bfr-hyp-eval hyp (car env))
+            (equal (aig-eval-ev (mv-nth 0 (aig-eval-list-symbolic
+                                           x al tries maybe-wash-args hyp clk))
                                 env)
                    (aig-eval-list (aig-eval-ev x env)
                                   (aig-eval-ev al env))))
-   :hints (("goal" :in-theory (e/d (eval-bdd-list-aig-q-compose-list)
+   :hints (("goal" :in-theory (e/d (eval-bdd-list-aig-q-compose-list
+                                    aig-eval-list-symbolic)
                                    (member-eq atom-key-gobj-val-alistp
                                               member-equal eval-bdd-list
                                               gl-thm::generic-geval-g-boolean-for-aig-eval-ev
@@ -693,7 +706,8 @@
 
 (gl::def-g-correct-thm ;;  g-aig-eval-list-with-bddify-correct
   aig-eval-list-with-bddify aig-eval-ev
-  :hints `(("goal" :in-theory (e/d (aig-eval-list-with-bddify)
+  :hints `(("goal" :in-theory (e/d (aig-eval-list-with-bddify
+                                    ,gl::gfn)
                                    (aig-eval-list-symbolic)))))
 
 ;; The theorems that we'll set as the preferred defs for the following

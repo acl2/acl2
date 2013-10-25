@@ -31,21 +31,21 @@
 (def-g-fn lognot
   `(let ((x i))
      (if (atom x)
-         (lognot (ifix x))
+         (gret (lognot (ifix x)))
        (pattern-match x
          ((g-ite test then else)
           (if (zp clk)
-              (g-apply 'lognot (gl-list x))
-            (g-if test
+              (gret (g-apply 'lognot (gl-list x)))
+            (g-if (gret test)
                   (,gfn then . ,params)
                   (,gfn else . ,params))))
          ((g-apply & &)
-          (g-apply 'lognot (gl-list x)))
+          (gret (g-apply 'lognot (gl-list x))))
          ((g-concrete obj)
-          (lognot (ifix obj)))
+          (gret (lognot (ifix obj))))
          ((g-var &)
-          (g-apply 'lognot (gl-list x)))
-         ((g-boolean &) -1)
+          (gret (g-apply 'lognot (gl-list x))))
+         ((g-boolean &) (gret -1))
          ((g-number num)
           (b* (((mv rn rd in id)
                 (break-g-number num))
@@ -53,10 +53,11 @@
                 (if (equal rd '(t))
                     (mv (bfr-or (bfr-=-ss in nil) (bfr-=-uu id nil)) t)
                   (mv nil nil))))
-            (if intp-known
-                (mk-g-number (bfr-lognot-s (bfr-ite-bss-fn intp rn nil)))
-              (g-apply 'lognot (gl-list x)))))
-         (& -1)))))
+            (gret
+             (if intp-known
+                 (mk-g-number (bfr-lognot-s (bfr-ite-bss-fn intp rn nil)))
+               (g-apply 'lognot (gl-list x))))))
+         (& (gret -1))))))
 
 
 

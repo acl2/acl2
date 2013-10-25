@@ -94,7 +94,7 @@
 (def-g-binary-op floor
   (b* ((i-num (if (general-numberp i) i 0))
        (j-num (if (general-numberp j) j 0)))
-    (g-floor-of-numbers i-num j-num)))
+    (gret (g-floor-of-numbers i-num j-num))))
 
 ;; (def-gobjectp-thm floor
 ;;   :hints `(("goal" :in-theory (e/d* (general-concretep-atom)
@@ -145,7 +145,12 @@
                               general-concretep-def
                               general-concretep-def
                               floor
+                              eval-g-base-alt-def
+                              logcons
+                              default-car default-cdr
+                              sets::double-containment
                               hons-assoc-equal
+                              equal-of-booleans-rewrite
                               rationalp-implies-acl2-numberp
                               (:rules-of-class :type-prescription :here))
                              ((:type-prescription bfr-eval)))

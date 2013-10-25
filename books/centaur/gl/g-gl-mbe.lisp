@@ -34,11 +34,11 @@
 
 
 (def-g-fn gl-mbe
-  `(b* ((equal? (glr acl2::always-equal spec impl . ,params))
-        (tests (gtests equal? hyp))
-        (false (bfr-and hyp
-                        (bfr-not (gtests-unknown tests))
-                        (bfr-not (gtests-nonnil tests))))
+  `(b* (((mv equal? hyp) (glr acl2::always-equal spec impl . ,params))
+        ((mv tests-nonnil tests-unknown & hyp) (gtests equal? hyp))
+        (false (bfr-and (bfr-hyp->bfr hyp)
+                        (bfr-not tests-unknown)
+                        (bfr-not tests-nonnil)))
         ((mv false-sat false-succ ?false-ctrex)
          (bfr-sat false))
         ((when (and false-sat false-succ))
@@ -55,21 +55,21 @@
              (gobj->term spec (list false-ctrex))
              (gobj->term impl (list false-ctrex))
              (gobj->term other-info (list false-ctrex)))
-         spec)
+         (gret spec))
         ((when (not false-succ))
          (er hard? 'gl-mbe "GL-MBE assertion failed to prove.")
-         spec)
-        (unk (bfr-and hyp (gtests-unknown tests)))
+         (gret spec))
+        (unk (bfr-and (bfr-hyp->bfr hyp) tests-unknown))
         ((mv unk-sat unk-succ ?unk-ctrex)
          (bfr-sat unk))
         ((when (and unk-sat unk-succ))
          ;; (acl2::sneaky-save 'gl-mbe-ctrex unk-ctrex)
          (er hard? 'gl-mbe "GL-MBE assertion failed with unknown.")
-         spec)
+         (gret spec))
         ((when (not unk-succ))
          (er hard? 'gl-mbe "GL-MBE assertion failed to prove absence of unknowns.")
-         spec))
-     impl))
+         (gret spec)))
+     (gret impl)))
 
 ;; (def-gobjectp-thm gl-mbe)
 
@@ -94,7 +94,8 @@
             :in-theory (disable (:d ,gfn)))))
 
 (def-g-correct-thm gl-mbe eval-g-base
-  :hints '(("goal" :do-not-induct t
+  :hints `(("goal" :do-not-induct t
+            :expand (,gcall)
             :in-theory (disable bfr-sat-unsat))
            (and stable-under-simplificationp
                 (let ((insts (instantiate-bfr-sat-hint clause '(car env))))

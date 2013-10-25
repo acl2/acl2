@@ -31,29 +31,30 @@
 
 (def-g-fn unary--
   `(if (atom x)
-       (- (fix x))
+       (gret (- (fix x)))
      (pattern-match x
        ((g-ite test then else)
         (if (zp clk)
-            (g-apply 'unary-- (gl-list x))
-          (g-if test
+            (gret (g-apply 'unary-- (gl-list x)))
+          (g-if (gret test)
                 (,gfn then . ,params)
                 (,gfn else . ,params))))
        ((g-apply & &)
-        (g-apply 'unary-- (gl-list x)))
+        (gret (g-apply 'unary-- (gl-list x))))
        ((g-concrete obj)
-        (- (fix obj)))
+        (gret (- (fix obj))))
        ((g-var &)
-        (g-apply 'unary-- (gl-list x)))
-       ((g-boolean &) 0)
+        (gret (g-apply 'unary-- (gl-list x))))
+       ((g-boolean &) (gret 0))
        ((g-number num)
         (mv-let (rn rd in id)
           (break-g-number num)
-          (mk-g-number (bfr-unary-minus-s rn)
-                       (rlist-fix rd)
-                       (bfr-unary-minus-s in)
-                       (rlist-fix id))))
-       (& 0))))
+          (gret
+           (mk-g-number (bfr-unary-minus-s rn)
+                        (rlist-fix rd)
+                        (bfr-unary-minus-s in)
+                        (rlist-fix id)))))
+       (& (gret 0)))))
 
 ;; (def-gobjectp-thm unary--
 ;;   :hints `(("Goal" :in-theory (e/d () ((:definition ,gfn)))

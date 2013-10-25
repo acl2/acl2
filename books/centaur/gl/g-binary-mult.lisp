@@ -100,7 +100,7 @@
 (def-g-binary-op binary-*
   (b* ((x-num (if (general-numberp x) x 0))
        (y-num (if (general-numberp y) y 0)))
-    (g-binary-*-of-numbers x-num y-num)))
+    (gret (g-binary-*-of-numbers x-num y-num))))
 
 (local (defthmd general-concretep-atom
          (implies (and (not (consp x)))
@@ -167,6 +167,7 @@
                               general-number-components-ev
                               general-concretep-def
                               general-concretep-def
+                              logcons bfr-list->s bfr-list->u
                               rationalp-implies-acl2-numberp
                               (:rules-of-class :type-prescription :here))
                              ((:type-prescription bfr-eval)))

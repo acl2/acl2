@@ -71,86 +71,135 @@
 (local (in-theory (disable eval-g-base-alt-def
                            )))
 (local (bfr-reasoning-mode t))
+
+(defun mk-xes (n i)
+  (if (zp n)
+      nil
+    (cons (intern$ (str::cat "X" (str::natstr i)) "ACL2")
+          (mk-xes (1- n) (1+ i)))))
+
+(mutual-recursion
+ (defun dumb-gify-body (x)
+   (cond ((atom x) `(mv ,x hyp))
+         ((eq (car x) 'quote) `(mv ,x hyp))
+         ((eq (car x) 'if)
+          `(g-if ,(dumb-gify-body (second x))
+                 ,(dumb-gify-body (third x))
+                 ,(dumb-gify-body (fourth x))))
+         ((consp (car x))
+          (b* ((result-exprs (dumb-gify-body-lst (cdr x)))
+               (vars (cadr (car x)))
+               (body (caddr (car x))))
+            `(b* ,(pairlis$ 
+                   (pairlis$ (acl2::repeat 'mv (len vars))
+                             (pairlis$ vars
+                                       (pairlis$ (acl2::repeat 'hyp (len vars))
+                                                 nil)))
+                   (pairlis$ result-exprs nil))
+               ,(dumb-gify-body body))))
+         (t (b* ((result-exprs (dumb-gify-body-lst (cdr x)))
+                 (vars (mk-xes (len (cdr x)) 0)))
+              `(b* ,(pairlis$ 
+                     (pairlis$ (acl2::repeat 'mv (len vars))
+                               (pairlis$ vars
+                                         (pairlis$ (acl2::repeat 'hyp (len vars))
+                                                   nil)))
+                     (pairlis$ result-exprs nil))
+                 (glr ,(car x)
+                      ,@vars
+                       hyp clk config bvar-db state))))))
+ (defun dumb-gify-body-lst (x)
+   (if (atom x)
+       nil
+     (cons (dumb-gify-body (car x))
+           (dumb-gify-body-lst (cdr x))))))
+               
+          
+
 (defmacro def-g-simple (name body)
-  `(progn (def-g-fn ,name ,body)
+  `(progn (def-g-fn ,name ',(dumb-gify-body body))
           (verify-g-guards ,name)
-          (def-gobj-dependency-thm ,name)
-          (def-g-correct-thm ,name eval-g-base)))
+          (def-gobj-dependency-thm ,name
+            :hints`(("Goal" :in-theory (enable ,gfn))))
+          (def-g-correct-thm ,name eval-g-base
+            :hints`(("Goal" :in-theory (enable ,gfn))))))
 
 ;; complex-rationalp is an odd bird since it doesn't have a definition
 ;; (and hence is included in the list of primitives), but is provably
 ;; equivalent to (not (equal (imagpart x) 0)).
 (def-g-simple complex-rationalp
-  `(glr equal
-        nil
-        (glr equal 0 (glr imagpart x hyp clk config bvar-db state) hyp clk config bvar-db state)
-        hyp clk config bvar-db state))
+  (equal 'nil (equal '0 (imagpart x))))
 
 
-(def-g-simple acl2::boolfix
-  `(g-if x t nil))
+(def-g-simple acl2::boolfix (if x 't 'nil))
 
-(def-g-simple implies
-  `(g-or (glr not p hyp clk config bvar-db state)
-         (glr acl2::boolfix q hyp clk config bvar-db state)))
+(def-g-simple implies (if (not p) 't (acl2::boolfix q)))
 
-(def-g-simple eq
-  `(glr equal x y hyp clk config bvar-db state))
+(def-g-simple eq (equal x y))
 
-(def-g-simple eql
-  `(glr equal x y hyp clk config bvar-db state))
+(def-g-simple eql (equal x y))
 
-(def-g-simple =
-  `(glr equal x y hyp clk config bvar-db state))
+(def-g-simple = (equal x y))
 
-(def-g-simple /=
-`(glr not (glr equal x y hyp clk config bvar-db state) hyp clk config bvar-db state))
+(def-g-simple /= (not (equal x y)))
 
-(def-g-simple null
-  `(glr equal x nil hyp clk config bvar-db state))
+(def-g-simple null (equal x 'nil))
 
-(def-g-simple atom
-  `(glr not (glr consp x hyp clk config bvar-db state) hyp clk config bvar-db state))
+(def-g-simple atom (not (consp x)))
 
-(def-g-simple endp
-  `(glr not (glr consp x hyp clk config bvar-db state) hyp clk config bvar-db state))
+(def-g-simple endp (not (consp x)))
 
-(def-g-simple zerop
-  `(glr equal x 0 hyp clk config bvar-db state))
+(def-g-simple zerop (equal x '0))
 
-(def-g-simple plusp
-  `(glr < 0 x hyp clk config bvar-db state))
+(def-g-simple plusp (< '0 x))
 
-(def-g-simple minusp
-  `(glr < x 0 hyp clk config bvar-db state))
+(def-g-simple minusp (< x '0))
 
-(def-g-simple listp
-  `(g-or (glr consp x hyp clk config bvar-db state)
-         (glr equal x nil hyp clk config bvar-db state)))
+(def-g-simple listp (if (consp x) 't (equal x 'nil)))
 
 ; Obsolete, now that prog2$ is defined in terms of return-last:
 ; (def-g-simple prog2$
 ;   'y)
 
 
-(def-g-fn hons-assoc-equal
-  `(if (zp clk)
-       (g-apply 'hons-assoc-equal (list acl2::key acl2::alist))
-     (g-if (glc atom acl2::alist)
-           nil
-           (let ((car (glc car acl2::alist)))
-             (g-if (g-if (glc consp car)
-                         (glc equal acl2::key (glc car car))
-                         nil)
-                 car
-                 (let ((clk (1- clk)))
-                   (glc hons-assoc-equal acl2::key (glc cdr acl2::alist)))))))
-  :measure (nfix clk))
+(with-output
+ :off (prove)
+ (def-g-fn hons-assoc-equal
+   `(if (zp clk)
+        (gret (g-apply 'hons-assoc-equal (list acl2::key acl2::alist)))
+      (g-if (glc atom acl2::alist)
+            (gret nil)
+            (b* (((gret car) (glc car acl2::alist)))
+              (g-if (g-if (glc consp car)
+                          (b* (((gret caar) (glc car car)))
+                            (glc equal acl2::key caar))
+                          (gret nil))
+                    (gret car)
+                    (b* ((clk (1- clk))
+                         ((gret cdr) (glc cdr acl2::alist)))
+                      (glc hons-assoc-equal acl2::key cdr))))))
+   :measure (nfix clk)
+   :hyp-hints `(("goal" :induct ,gcall
+                 :expand ((:free (hyp) ,gcall))
+                 :in-theory (disable (:d ,gfn))))))
 
-(verify-g-guards hons-assoc-equal)
+
 
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (acl2::use-trivial-ancestors-check))
+
+(with-output
+ :off (prove event)
+ (verify-g-guards hons-assoc-equal
+                  :hints `(("Goal" :in-theory
+                            (disable* ,gfn
+                                      mv-nth-cons-meta
+                                      sets::double-containment
+                                      equal-of-booleans-rewrite
+                                      bfr-assume-correct
+                                      (:rules-of-class :forward-chaining :here)
+                                      (:rules-of-class :type-prescription
+                                       :here))))))
 
 (local (include-book "centaur/misc/beta-reduce-full" :dir :system))
 
@@ -408,9 +457,11 @@
 (def-g-fn hons-acons
   `(if (and (general-concretep acl2::key)
             (concrete-key-alistp acl2::alist))
-       (hons-acons (canonicalize-general-concrete acl2::key)
-                   acl2::val acl2::alist)
-     (glc cons (glc cons acl2::key acl2::val) acl2::alist)))
+       (mv (hons-acons (canonicalize-general-concrete acl2::key)
+                       acl2::val acl2::alist)
+           hyp)
+     (b* (((gret pair) (glc cons acl2::key acl2::val)))
+       (glc cons pair acl2::alist))))
 
 (verify-g-guards hons-acons)
 
@@ -432,21 +483,26 @@
 
 ;;(local (in-theory (enable canonical-general-concretep-impl-gobjectp)))
 
-(def-gobj-dependency-thm hons-acons)
+(def-gobj-dependency-thm hons-acons
+  :hints `(("goal" :expand (,gcall))))
 
-(def-g-correct-thm hons-acons eval-g-base)
+(def-g-correct-thm hons-acons eval-g-base
+  :hints `(("goal" :expand (,gcall))))
 
 
 ;; Jared: changed hons-get-fn-do-hopy to hons-get for new hons
 (def-g-fn hons-get
   `(if (and (general-concretep acl2::key)
             (concrete-key-alistp acl2::alist))
-       (hons-get (canonicalize-general-concrete acl2::key) acl2::alist)
+       (mv (hons-get (canonicalize-general-concrete acl2::key) acl2::alist)
+           hyp)
      (glc hons-assoc-equal acl2::key acl2::alist)))
 
 (verify-g-guards hons-get)
 
-(def-gobj-dependency-thm hons-get)
+(def-gobj-dependency-thm hons-get
+  :hints `(("Goal" 
+            :in-theory (e/d (,gfn)))))
 
 
 (local
@@ -463,7 +519,8 @@
     eval-concrete-gobjectp
     eval-g-base generic-geval)))
 
-(def-g-correct-thm hons-get eval-g-base)
+(def-g-correct-thm hons-get eval-g-base
+  :hints`(("Goal" :in-theory (enable ,gfn))))
 
 
 ; Jared Note: removed hons-get-fn-do-not-hopy since it's no longer part
@@ -487,20 +544,24 @@
 ; Jared: changing flush-hons-get-hash-table-link to fast-alist-free
 
 (def-g-fn fast-alist-free
-  `(fast-alist-free acl2::alist))
+  `(gret (fast-alist-free acl2::alist)))
 
 (verify-g-guards fast-alist-free)
-(def-gobj-dependency-thm fast-alist-free)
-(def-g-correct-thm fast-alist-free eval-g-base)
+(def-gobj-dependency-thm fast-alist-free
+  :hints `(("Goal" :in-theory (enable ,gfn))))
+(def-g-correct-thm fast-alist-free eval-g-base
+  :hints `(("Goal" :in-theory (enable ,gfn))))
 
 
 
 (def-g-fn flush-hons-get-hash-table-link
-  `(flush-hons-get-hash-table-link acl2::alist))
+  `(gret (flush-hons-get-hash-table-link acl2::alist)))
 
 (verify-g-guards flush-hons-get-hash-table-link)
-(def-gobj-dependency-thm flush-hons-get-hash-table-link)
-(def-g-correct-thm flush-hons-get-hash-table-link eval-g-base)
+(def-gobj-dependency-thm flush-hons-get-hash-table-link
+  :hints `(("Goal" :in-theory (enable ,gfn))))
+(def-g-correct-thm flush-hons-get-hash-table-link eval-g-base
+  :hints `(("Goal" :in-theory (enable ,gfn))))
 
 
 

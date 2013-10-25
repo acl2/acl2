@@ -282,9 +282,9 @@
      (b* (((when (and (general-concretep size)
                       (general-concretep i)
                       (general-concretep j)))
-           (ec-call (logapp (general-concrete-obj size)
-                            (general-concrete-obj i)
-                            (general-concrete-obj j))))
+           (gret (ec-call (logapp (general-concrete-obj size)
+                                  (general-concrete-obj i)
+                                  (general-concrete-obj j)))))
           ((unless (or (atom size)
                        (not (member-eq (tag size) '(:g-ite :g-var :g-apply)))))
            (if (and (eq (tag size) :g-ite)
@@ -292,10 +292,10 @@
                (let* ((test (g-ite->test size))
                       (then (g-ite->then size))
                       (else (g-ite->else size)))
-                 (g-if test
+                 (g-if (gret test)
                        (,gfn then i j . ,params)
                        (,gfn else i j . ,params)))
-             (g-apply 'logapp (gl-list size i j))))
+             (gret (g-apply 'logapp (gl-list size i j)))))
           ((unless (or (atom i)
                        (not (member-eq (tag i) '(:g-ite :g-var :g-apply)))))
            (if (and (eq (tag i) :g-ite)
@@ -303,10 +303,10 @@
                (let* ((test (g-ite->test i))
                       (then (g-ite->then i))
                       (else (g-ite->else i)))
-                 (g-if test
+                 (g-if (gret test)
                        (,gfn size then j . ,params)
                        (,gfn size else j . ,params)))
-             (g-apply 'logapp (gl-list size i j))))
+             (gret (g-apply 'logapp (gl-list size i j)))))
           ((unless (or (atom j)
                        (not (member-eq (tag j) '(:g-ite :g-var :g-apply)))))
            (if (and (eq (tag j) :g-ite)
@@ -314,14 +314,14 @@
                (let* ((test (g-ite->test j))
                       (then (g-ite->then j))
                       (else (g-ite->else j)))
-                 (g-if test
+                 (g-if (gret test)
                        (,gfn size i then . ,params)
                        (,gfn size i else . ,params)))
-             (g-apply 'logapp (gl-list size i j))))
+             (gret (g-apply 'logapp (gl-list size i j)))))
           (size (if (general-numberp size) size 0))
           (i (if (general-numberp i) i 0))
           (j (if (general-numberp j) j 0)))
-       (g-logapp-of-numbers size i j))))
+       (gret (g-logapp-of-numbers size i j)))))
 
 (verify-g-guards logapp
                  :hints `(("Goal" :in-theory (disable* ,gfn
@@ -387,8 +387,8 @@
 
 
 
-(defun g-int-set-sign-of-number (negp y hyp)
-  (declare (xargs :guard (general-numberp y)))
+(define g-int-set-sign-of-number (negp y hyp)
+  :guard (general-numberp y)
   (b* (((mv yrn yrd yin yid)
         (general-number-components y))
        ((mv yintp yintp-known)
@@ -396,48 +396,47 @@
             (mv (bfr-or (bfr-=-ss yin nil)
                         (bfr-=-uu yid nil)) t)
           (mv nil nil)))
-       (negtest (gtests negp hyp))
+       ((mv negbfr unknown & hyp) (gtests negp hyp))
        ((unless (and yintp-known
-                     (not (gtests-unknown negtest))))
-        (g-apply 'int-set-sign (gl-list negp y)))
-       (negbfr (gtests-nonnil negtest))
+                     (not unknown)))
+        (gret (g-apply 'int-set-sign (gl-list negp y))))
        (ybits (bfr-ite-bss-fn yintp yrn nil))
        (ylen (bfr-integer-length-s ybits))
        (resbits (logapp-uss 1 ylen ybits (bfr-ite-bss-fn negbfr '(t) '(nil)))))
-    (mk-g-number (rlist-fix resbits))))
+    (gret (mk-g-number (rlist-fix resbits))))
+  ///
+  (def-hyp-congruence g-int-set-sign-of-number)
 
-(defthm deps-of-g-int-set-sign-of-number
-  (implies (and (not (gobj-depends-on k p negp))
-                (not (gobj-depends-on k p y))
-                (general-numberp y))
-           (not (gobj-depends-on k p (g-int-set-sign-of-number negp y hyp)))))
-
-
-(local (defthm bfr-integer-length-s-correct-v2n
-         (equal (bfr-list->u (bfr-integer-length-s x) env)
-                (integer-length (bfr-list->s x env)))
-         :hints(("Goal" :use ((:instance bfr-integer-length-s-correct))
-                 :in-theory (disable bfr-integer-length-s-correct)))))
-
-(local (defthm integer-length-zip
-         (implies (zip x)
-                  (equal (integer-length x) 0))))
+  (defthm deps-of-g-int-set-sign-of-number
+    (implies (and (not (gobj-depends-on k p negp))
+                  (not (gobj-depends-on k p y))
+                  (general-numberp y))
+             (not (gobj-depends-on k p (mv-nth 0 (g-int-set-sign-of-number negp y hyp))))))
 
 
-(defthm g-int-set-sign-of-number-correct
-  (implies (and (bfr-eval hyp (car env))
-                (general-numberp y))
-           (equal (eval-g-base (g-int-set-sign-of-number negp y hyp) env)
-                  (int-set-sign (eval-g-base negp env)
-                                (eval-g-base y env))))
-  :hints (("goal" :in-theory (e/d* ((:ruleset general-object-possibilities)
-                                    int-set-sign)
-                                   (general-numberp
-                                    bfr-list->s-when-gte-0
-                                    general-number-components))
-           :do-not-induct t)))
+  (local (defthm bfr-integer-length-s-correct-v2n
+           (equal (bfr-list->u (bfr-integer-length-s x) env)
+                  (integer-length (bfr-list->s x env)))
+           :hints(("Goal" :use ((:instance bfr-integer-length-s-correct))
+                   :in-theory (disable bfr-integer-length-s-correct)))))
 
-(in-theory (disable g-int-set-sign-of-number))
+  (local (defthm integer-length-zip
+           (implies (zip x)
+                    (equal (integer-length x) 0))))
+
+
+  (defthm g-int-set-sign-of-number-correct
+    (implies (and (bfr-hyp-eval hyp (car env))
+                  (general-numberp y))
+             (equal (eval-g-base (mv-nth 0 (g-int-set-sign-of-number negp y hyp)) env)
+                    (int-set-sign (eval-g-base negp env)
+                                  (eval-g-base y env))))
+    :hints (("goal" :in-theory (e/d* ((:ruleset general-object-possibilities)
+                                      int-set-sign)
+                                     (general-numberp
+                                      bfr-list->s-when-gte-0
+                                      general-number-components))
+             :do-not-induct t))))
 
 
 (def-g-binary-op int-set-sign
@@ -535,10 +534,11 @@
   `(b* (((when (and (general-concretep i)
                     (general-concretep x)
                     (general-concretep intp)))
-         (g-concrete-quote
-          (ec-call (maybe-integer (general-concrete-obj i)
-                                  (general-concrete-obj x)
-                                  (general-concrete-obj intp)))))
+         (gret
+          (g-concrete-quote
+           (ec-call (maybe-integer (general-concrete-obj i)
+                                   (general-concrete-obj x)
+                                   (general-concrete-obj intp))))))
         ;; ((unless (or (atom intp)
         ;;              (not (member-eq (tag intp) '(:g-ite :g-var :g-apply)))))
         ;;  (if (and (eq (tag intp) :g-ite)
@@ -557,10 +557,10 @@
              (let* ((test (g-ite->test i))
                     (then (g-ite->then i))
                     (else (g-ite->else i)))
-               (g-if test
+               (g-if (gret test)
                      (,gfn then x intp . ,params)
                      (,gfn else x intp . ,params)))
-           (g-apply 'maybe-integer (gl-list i x intp))))
+           (gret (g-apply 'maybe-integer (gl-list i x intp)))))
         ;; ((when (and (consp x) (eq (tag x) :g-ite)))
         ;;  (if (not (zp clk))
         ;;      (let* ((test (g-ite->test x))
@@ -573,10 +573,10 @@
         (i (if (general-numberp i) i 0))
         ((mv undef ifix) (g-ifix-of-number i))
         ((when undef)
-         (g-apply 'maybe-integer (gl-list i x intp))))
-     (g-if intp
-           ifix
-           (g-apply 'maybe-integer (gl-list i x intp)))))
+         (gret (g-apply 'maybe-integer (gl-list i x intp)))))
+     (g-if (gret intp)
+           (gret ifix)
+           (gret (g-apply 'maybe-integer (gl-list i x intp))))))
 
 
 

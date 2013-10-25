@@ -153,30 +153,38 @@
                   (equal (floor n 1) n))
          :hints(("Goal" :in-theory (enable floor)))))
 
-(defun code-char-s (n x acc hyp)
-  (declare (xargs :guard (and (natp n)
-                              (true-listp x)
-                              (< n 9)
-                              (natp acc)
-                              (<= acc (- 256 (ash 1 n))))
-                  :guard-hints ((and stable-under-simplificationp
-                                     '(:in-theory (enable ash expt))))))
-  (if (zp n)
-      (code-char acc)
-    (g-if (mk-g-boolean (nth (1- n) x))
-          (code-char-s (1- n) x (+ (ash 1 (1- n)) acc) hyp)
-          (code-char-s (1- n) x acc hyp))))
+(define code-char-s (n x acc hyp)
+  :guard (and (natp n)
+              (true-listp x)
+              (< n 9)
+              (natp acc)
+              (<= acc (- 256 (ash 1 n))))
+  :verify-guards nil
+  (b* ((hyp (lbfr-hyp-fix hyp)))
+    (if (zp n)
+        (gret (code-char acc))
+      (g-if-mbe (gret (mk-g-boolean (nth (1- n) x)))
+                (code-char-s (1- n) x (+ (ash 1 (1- n)) acc) hyp)
+                (code-char-s (1- n) x acc hyp))))
+  ///
+  (def-hyp-congruence code-char-s)
+  (verify-guards code-char-s
+    :hints (("goal" :in-theory (enable g-if-fn))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable ash expt)))))
 
-(defthm pbfr-depends-on-nth
-  (implies (not (pbfr-list-depends-on k p x))
-           (not (pbfr-depends-on k p (nth n x)))))
+  (local
 
-(defthm deps-of-code-char-s
-  (implies (not (pbfr-list-depends-on k p x))
-           (not (gobj-depends-on k p (code-char-s n x acc hyp))))
-  :hints (("goal" :induct (code-char-s n x acc hyp)
-           :in-theory (disable (:d code-char-s))
-           :expand ((code-char-s n x acc hyp)))))
+   (defthm pbfr-depends-on-nth
+     (implies (not (pbfr-list-depends-on k p x))
+              (not (pbfr-depends-on k p (nth n x))))))
+
+  (defthm deps-of-code-char-s
+    (implies (not (pbfr-list-depends-on k p x))
+             (not (gobj-depends-on k p (mv-nth 0 (code-char-s n x acc hyp)))))
+    :hints (("goal" :induct (code-char-s n x acc hyp)
+             :in-theory (disable (:d code-char-s))
+             :expand ((code-char-s n x acc hyp))))))
 
 ;; (local (defun first-n (n x)
 ;;          (if (zp n)
@@ -239,13 +247,13 @@
    (defthm code-char-s-correct1
      (implies (and (< (+ acc (bfr-list->u (first-n n x) (car env))) 256)
                    (integerp acc)
-                   (bfr-eval hyp (car env)))
-              (equal (eval-g-base (code-char-s n x acc hyp) env)
+                   (bfr-hyp-eval hyp (car env)))
+              (equal (eval-g-base (mv-nth 0 (code-char-s n x acc hyp)) env)
                      (code-char (+ acc (bfr-list->u (first-n n x) (car env))))))
      :hints (("goal" :induct (code-char-s n x acc hyp)
               :expand ((code-char-s n x acc hyp)
                        (code-char-s 0 x acc hyp))
-              :in-theory (e/d (ash) (floor (:definition code-char-s))))))
+              :in-theory (e/d (ash (:i code-char-s)) (floor)))))
 
    (defthm bfr-list->s-when-<=-0
      (implies (<= 0 (bfr-list->s x env))
@@ -290,10 +298,10 @@
    ;;                    (:free (a b) (v2n (cons a b)))))))
 
    (defthm code-char-s-correct
-     (implies (and (bfr-eval hyp (car env))
+     (implies (and (bfr-hyp-eval hyp (car env))
                    (<= 0 (bfr-list->s x (car env)))
                    (< (bfr-list->s x (car env)) 256))
-              (equal (eval-g-base (code-char-s 8 x 0 hyp) env)
+              (equal (eval-g-base (mv-nth 0 (code-char-s 8 x 0 hyp)) env)
                      (code-char (bfr-list->s x (car env)))))
      :hints(("Goal" :in-theory (disable code-char-s))))))
 
@@ -305,35 +313,51 @@
 ;;         nil
 ;;         (glr < x 256 hyp clk))
 
-(defun g-code-char-of-number (x hyp clk config bvar-db state)
-  (declare (xargs :guard (and (consp x)
-                              (g-number-p x)
-                              (glcp-config-p config)
-                              (natp clk))
-                  :stobjs (bvar-db state)
-                  :guard-hints(("Goal" :in-theory
-                                (disable code-char-s)))))
-  (mv-let (xrn xrd xin xid)
-    (break-g-number (g-number->num x))
-    (if (equal xrd '(t))
-        (g-if (g-if (mk-g-boolean (bfr-or (bfr-=-ss xin nil)
-                                          (bfr-=-uu xid nil)))
-                    (g-if (glr < x 0 hyp clk config bvar-db state)
-                          nil
-                          (glr < x 256 hyp clk config bvar-db state))
-                    nil)
-              (code-char-s 8 (rlist-fix xrn) 0 hyp)
-              (code-char 0))
-      (g-apply 'code-char (list x)))))
+(define g-code-char-of-number (x hyp clk config bvar-db state)
+  :guard (and (consp x)
+              (g-number-p x)
+              (glcp-config-p config)
+              (natp clk))
+  :verify-guards nil
+  ;; :guard-hints(("Goal" :in-theory
+  ;;               (e/d (g-if-fn) (code-char-s))))
+  (replace-g-ifs
+   (b* ((hyp (lbfr-hyp-fix hyp))
+        ((mv xrn xrd xin xid)
+         (break-g-number (g-number->num x))))
+     (if (equal xrd '(t))
+         (g-if (g-if (gret (mk-g-boolean (bfr-or (bfr-=-ss xin nil)
+                                                 (bfr-=-uu xid nil))))
+                     (g-if (glr < x 0 hyp clk config bvar-db state)
+                           (gret nil)
+                           (glr < x 256 hyp clk config bvar-db state))
+                     (gret nil))
+               (code-char-s 8 (rlist-fix xrn) 0 hyp)
+               (gret (code-char 0)))
+       (gret (g-apply 'code-char (list x))))))
+  ///
+  (def-hyp-congruence g-code-char-of-number)
+  (verify-guards g-code-char-of-number
+    :hints(("Goal" :in-theory
+            (e/d* (g-if-fn)
+                  (not code-char-s
+                   equal-of-booleans-rewrite
+                   sets::double-containment
+                   g-code-char-of-number
+                   mv-nth-cons-meta
+                   bfr-assume-correct
+                   true-listp len
+                   (:rules-of-class :forward-chaining :here)
+                   (:rules-of-class :type-prescription :here))))))
 
-(defthm deps-of-g-code-char-of-number
-  (implies (and (not (gobj-depends-on k p x))
-                (g-number-p x))
-           (not (gobj-depends-on k p (g-code-char-of-number x hyp clk config
-                                                            bvar-db state))))
-  :hints (("goal" :in-theory (e/d ((force))
-                                  (gobj-depends-on
-                                   code-char-s)))))
+  (defthm deps-of-g-code-char-of-number
+    (implies (and (not (gobj-depends-on k p x))
+                  (g-number-p x))
+             (not (gobj-depends-on k p (mv-nth 0 (g-code-char-of-number x hyp clk config
+                                                                        bvar-db state)))))
+    :hints (("goal" :in-theory (e/d ((force))
+                                    (gobj-depends-on
+                                     code-char-s))))))
 
 
 ;; (defun g-code-char-of-number (x hyp clk)
@@ -355,6 +379,8 @@
 ;;                           (code-char 0)))
 ;;               (code-char 0))
 ;;       (g-apply 'code-char (list x)))))
+
+
 
 (local
  (progn
@@ -401,13 +427,32 @@
    (encapsulate
      nil
      (set-ignore-ok t)
+     ;; (local (DEFTHM
+     ;;          G-IF-FN-CORRECT-FOR-EVAL-G-BASE-casesplit
+     ;;          (IMPLIES
+     ;;           (case-split (BFR-HYP-EVAL HYP (CAR ENV)))
+     ;;           (EQUAL (EVAL-G-BASE (MV-NTH 0 (G-IF-FN TEST THEN ELSE HYP))
+     ;;                               ENV)
+     ;;                  (IF (EVAL-G-BASE TEST ENV)
+     ;;                      (EVAL-G-BASE THEN ENV)
+     ;;                      (EVAL-G-BASE ELSE ENV))))))
+
+     ;; (local (defthm bfr-list->u-when-bfr-list->s
+     ;;          (implies (equal (bfr-list->s n env) 0)
+     ;;                   (equal (bfr-list->u n env) 0))
+     ;;          :hints(("Goal" :in-theory (enable bfr-list->s bfr-list->u s-endp scdr)
+     ;;                  :induct (len n)))))
+
+
      (defthm g-code-char-of-number-correct
-       (implies (and (bfr-eval hyp (car env))
+       (implies (and (bfr-hyp-eval hyp (car env))
                      (g-number-p x))
-                (equal (eval-g-base (g-code-char-of-number x hyp clk config
-                                                           bvar-db state) env)
+                (equal (eval-g-base (mv-nth 0 (g-code-char-of-number x hyp clk config
+                                                                     bvar-db state)) env)
                        (code-char (eval-g-base x env))))
-       :hints(("Goal" :in-theory (e/d (eval-g-base eval-g-base-list)
+       :hints(("Goal" :in-theory (e/d (eval-g-base
+                                       eval-g-base-list
+                                       g-code-char-of-number)
                                       (code-char-s
                                        equal-of-booleans-rewrite
                                        code-char-s-correct1
@@ -416,31 +461,33 @@
                                        bfr-list->s-when-<=-0
                                        eval-g-base-alt-def))
                :do-not-induct t
+               :expand ((:with eval-g-base (eval-g-base x env)))
                :do-not '(generalize fertilize eliminate-destructors))
               (and stable-under-simplificationp
                    (let ((lit (car (last clause))))
                      (case-match lit
                        (('equal ('eval-g-base
-                                 ('code-char-s
-                                  & x & hyp)
+                                 ('mv-nth ''0 ('code-char-s
+                                               & x & hyp))
                                  env)
                                 . &)
-                        `(:use ((:instance code-char-s-correct
-                                           (hyp ,hyp)
-                                           (env ,env)
-                                           (x ,x)))))))))))))
+                        (prog2$ (cw "using code-char-s-correct~%")
+                                `(:use ((:instance code-char-s-correct
+                                         (hyp ,hyp)
+                                         (env ,env)
+                                         (x ,x))))))))))))))
 
 
 (def-g-fn code-char
-  `(cond ((atom x) (g-code-char-concrete x))
+  `(cond ((atom x) (gret (g-code-char-concrete x)))
          ((g-number-p x) (g-code-char-of-number x hyp clk config bvar-db state))
          ((g-ite-p x)
           (if (zp clk)
-              (g-apply 'code-char (gl-list x))
-            (g-if (g-ite->test x)
+              (gret (g-apply 'code-char (gl-list x)))
+            (g-if (gret (g-ite->test x))
                   (,gfn (g-ite->then x) hyp clk config bvar-db state)
                   (,gfn (g-ite->else x) hyp clk config bvar-db state))))
-         (t (g-code-char-concrete x))))
+         (t (gret (g-code-char-concrete x)))))
 
 ;;(def-gobjectp-thm code-char)
 

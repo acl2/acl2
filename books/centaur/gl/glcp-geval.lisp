@@ -87,7 +87,7 @@
       acl2::logapp int-set-sign maybe-integer
 
       ;; force checks
-      gl-force-check-fn gl-force-false-fn gl-force-true-fn
+      gl-force-check-fn
       binary--))
 
 (in-theory (disable glcp-generic-geval))

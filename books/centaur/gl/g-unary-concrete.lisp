@@ -47,18 +47,18 @@
          (let ((x ',x)
                (fn ',fn))
            `(if (atom ,x)
-                (mk-g-concrete (ec-call (,fn ,x)))
+                (gret (mk-g-concrete (ec-call (,fn ,x))))
               (pattern-match ,x
                 ((g-concrete obj)
-                 (mk-g-concrete (ec-call (,fn obj))))
+                 (gret (mk-g-concrete (ec-call (,fn obj)))))
                 ((g-ite test then else)
                  (if (zp clk)
-                     (g-apply ',fn (gl-list ,x))
-                   (g-if test
+                     (gret (g-apply ',fn (gl-list ,x)))
+                   (g-if (gret test)
                          (,gfn then . ,params)
                          (,gfn else . ,params))))
-                ((g-apply & &) (g-apply ',fn (gl-list ,x)))
-                ((g-var &) (g-apply ',fn (gl-list ,x)))
+                ((g-apply & &) (gret (g-apply ',fn (gl-list ,x))))
+                ((g-var &) (gret (g-apply ',fn (gl-list ,x))))
                 ((g-number &) ,',number-case)
                 ((g-boolean &) ,',boolean-case)
                 (& ,',cons-case)))))
@@ -95,14 +95,14 @@
 (logic)
 
 (def-g-unary-concrete symbol-name
-  :number-case ""
-  :boolean-case (g-if x "T" "NIL")
-  :cons-case "")
+  :number-case (gret "")
+  :boolean-case (g-if (gret x) (gret "T") (gret "NIL"))
+  :cons-case (gret ""))
 
 (def-g-unary-concrete symbol-package-name
-  :number-case ""
-  :boolean-case "COMMON-LISP"
-  :cons-case ""
+  :number-case (gret "")
+  :boolean-case (gret "COMMON-LISP")
+  :cons-case (gret "")
   :hints ((and stable-under-simplificationp
                '(:use
                  ((:instance (:type-prescription bfr-eval)
@@ -113,9 +113,9 @@
 
 
 (def-g-unary-concrete char-code
-  :number-case 0
-  :boolean-case 0
-  :cons-case 0)
+  :number-case (gret 0)
+  :boolean-case (gret 0)
+  :cons-case (gret 0))
 
 (local
  (defthm pkg-witness-of-non-stringp
@@ -128,9 +128,9 @@
                           (acl2::s2 (pkg-witness x))))))))
 
 (def-g-unary-concrete pkg-witness
-  :number-case (mk-g-concrete (pkg-witness "ACL2"))
-  :boolean-case (mk-g-concrete (pkg-witness "ACL2"))
-  :cons-case (mk-g-concrete (pkg-witness "ACL2")))
+  :number-case (gret (mk-g-concrete (pkg-witness "ACL2")))
+  :boolean-case (gret (mk-g-concrete (pkg-witness "ACL2")))
+  :cons-case (gret (mk-g-concrete (pkg-witness "ACL2"))))
 
 
 
@@ -139,17 +139,17 @@
   (mv-let (rn rd in id)
     (break-g-number (g-number->num x))
     (declare (ignore in id))
-    (mk-g-number (rlist-fix rn) (rlist-fix rd)))
-  :boolean-case 0
-  :cons-case 0)
+    (gret (mk-g-number (rlist-fix rn) (rlist-fix rd))))
+  :boolean-case (gret 0)
+  :cons-case (gret 0))
 
 (def-g-unary-concrete imagpart
   :number-case
   (mv-let (rn rd in id)
     (break-g-number (g-number->num x))
     (declare (ignore rn rd))
-    (mk-g-number (rlist-fix in) (rlist-fix id)))
-  :boolean-case 0
-  :cons-case 0)
+    (gret (mk-g-number (rlist-fix in) (rlist-fix id))))
+  :boolean-case (gret 0)
+  :cons-case (gret 0))
 
 

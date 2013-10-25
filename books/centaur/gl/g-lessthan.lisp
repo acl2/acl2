@@ -122,7 +122,7 @@
 (def-g-binary-op <
   (b* ((x-num (if (general-numberp x) x 0))
        (y-num (if (general-numberp y) y 0)))
-    (g-<-of-numbers x-num y-num)))
+    (gret (g-<-of-numbers x-num y-num))))
 
 ;; (def-gobjectp-thm <
 ;; :hints `(("Goal" :in-theory (e/d* (booleanp-gobjectp

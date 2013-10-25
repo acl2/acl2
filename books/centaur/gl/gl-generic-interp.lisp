@@ -341,18 +341,19 @@
                    glcp-generic-interp-term
                    :flag-mapping
                    ((glcp-generic-interp-test . test)
+                    (glcp-generic-interp-term-equivs . equivs)
                     (glcp-generic-interp-term . term)
                     (glcp-generic-interp-fncall-ifs . fncall-ifs)
                     (glcp-generic-maybe-interp-fncall-ifs . maybe-fncall-ifs)
-                    (glcp-generic-interp-term-equivs . equivs)
+                    (glcp-generic-interp-fncall . fncall)
                     (glcp-generic-interp-if/or . if/or)
                     (glcp-generic-maybe-interp . maybe)
-                    (glcp-generic-interp-if . if)
                     (glcp-generic-interp-or . or)
+                    (glcp-generic-interp-if . if)
                     (glcp-generic-merge-branches . merge)
                     (glcp-generic-merge-branch-subterms . merge-sub)
                     (glcp-generic-merge-branch-subterm-lists . merge-list)
-                    (glcp-generic-interp-fncall . fncall)
+                    (glcp-generic-maybe-simplify-if-test . maybe-test-simp)
                     (glcp-generic-simplify-if-test . test-simp)
                     (glcp-generic-simplify-if-test-fncall . test-simp-fncall)
                     (glcp-generic-add-bvar-constraints . constraints)
@@ -440,7 +441,7 @@
 (defconst *glcp-ind-inputs*
   (subst 'st 'state *glcp-common-inputs*))
 (defconst *glcp-ind-retvals*
-  '(?erp ?interp-st1 ?bvar-db1 ?state1))
+  '(?erp ?pathcond1 ?interp-st1 ?bvar-db1 ?state1))
 
 (defconst *glcp-generic-interp-signatures*
   ;; flag call returns
@@ -482,7 +483,11 @@
         (glcp-generic-merge-branch-subterms test-bfr then else . ,*glcp-ind-inputs*))
     (merge-list
         (mv ?val . ,*glcp-ind-retvals*)
-        (glcp-generic-merge-branch-subterm-lists test-bfr then else . ,*glcp-ind-inputs*))
+        (glcp-generic-merge-branch-subterm-lists test-bfr then else
+                                                 . ,*glcp-ind-inputs*))
+    (maybe-test-simp
+     (mv ?val . ,*glcp-ind-retvals*)
+     (glcp-generic-maybe-simplify-if-test test-obj intro-bvars branchcond . ,*glcp-ind-inputs*))
     (test-simp
      (mv ?val . ,*glcp-ind-retvals*)
      (glcp-generic-simplify-if-test test-obj intro-bvars . ,*glcp-ind-inputs*))
@@ -552,20 +557,94 @@
   :body (equal (w state1) (w st))
   :expand-calls t)
 
+(def-glcp-interp-thm glcp-generic-interp-pathcond-preserved
+  :body (equal pathcond1 (bfr-hyp-fix pathcond))
+  :hints(("Goal" :in-theory (disable bfr-hyp-fix-when-hyp$ap)))
+  :expand-calls t)
+
+(local (defun def-glcp-pathcond-hyp-fix-thms (fns alist world)
+         (if (atom fns)
+             nil
+           (cons
+            (let* ((fn (car fns))
+                   (formals (subst 'st 'state (formals fn world)))
+                   (flag (cdr (assoc fn alist)))
+                   (call1 `(,fn . ,(subst '(bfr-hyp-fix pathcond) 'pathcond
+                                         formals)))
+                   (call2 `(,fn . ,formals)))
+              `(defthm ,(intern-in-package-of-symbol
+                         (concatenate 'string (symbol-name fn)
+                                      "-OF-BFR-HYP-FIX")
+                         fn)
+                 (equal ,call1 ,call2)
+                 :hints ((acl2::just-expand (,call1 ,call2)
+                                             :last-only t)
+                         '(:do-not nil))
+                 :flag ,flag))
+            (def-glcp-pathcond-hyp-fix-thms (cdr fns) alist world)))))
+
+(make-event
+ `(with-output
+   :off (prove)
+   (defthm-glcp-generic-interp-flg
+     ,@(def-glcp-pathcond-hyp-fix-thms
+         (getprop 'glcp-generic-interp-term
+                  'recursivep nil 'current-acl2-world (w state))
+         (caddr (assoc 'glcp-generic-interp-term
+                       (table-alist 'flag::flag-fns (w state))))
+         (w state))
+     :hints (("goal" :do-not '(preprocess simplify))))))
+
+(local (defun def-glcp-pathcond-congruences (fns world)
+         (if (atom fns)
+             nil
+           (cons
+            (let* ((fn (car fns))
+                   (formals (subst 'st 'state (formals fn world)))
+                   (call1 `(,fn . ,(subst 'pathcond1 'pathcond
+                                         formals)))
+                   (call2 `(,fn . ,formals))
+                   (bhf-thm (intern-in-package-of-symbol
+                             (concatenate 'string (symbol-name fn)
+                                          "-OF-BFR-HYP-FIX")
+                             fn)))
+              `(defthm ,(intern-in-package-of-symbol
+                         (concatenate 'string (symbol-name fn)
+                                      "-PATHCOND-CONGRUENCE")
+                         fn)
+                 (implies (bfr-hyp-equiv pathcond1 pathcond)
+                          (equal ,call1 ,call2))
+                 :hints (("goal" :use ((:instance ,bhf-thm)
+                                       (:instance ,bhf-thm
+                                        (pathcond pathcond1)))
+                          :in-theory (disable ,bhf-thm)))
+                 :rule-classes :congruence))
+            (def-glcp-pathcond-congruences (cdr fns) world)))))
+
+(make-event
+ `(with-output
+   :off (prove)
+   (progn
+     . ,(def-glcp-pathcond-congruences
+          (getprop 'glcp-generic-interp-term
+                   'recursivep nil 'current-acl2-world (w state))
+          (w state)))))
+
+
 
 
 (local
  (with-output :off (prove)
    (defthm-glcp-generic-interp-flg
      (defthm alistp-glcp-generic-rewrite
-       (b* (((mv ?successp ?term ?bindings ?erp ?interp-st1 ?bvar-db1 ?state1)
+       (b* (((mv ?successp ?term ?bindings ?erp ?pathcond1 ?interp-st1 ?bvar-db1 ?state1)
              (glcp-generic-rewrite fn actuals rwtype contexts pathcond clk config interp-st bvar-db st)))
          (alistp bindings))
        :hints ('(:expand ((glcp-generic-rewrite fn actuals rwtype contexts pathcond clk config interp-st
                                                 bvar-db st))))
        :flag rewrite)
      (defthm alistp-glcp-generic-apply-rules
-       (b* (((mv ?successp ?term ?bindings ?erp ?interp-st1 ?bvar-db1 ?state1)
+       (b* (((mv ?successp ?term ?bindings ?erp ?pathcond1 ?interp-st1 ?bvar-db1 ?state1)
              (glcp-generic-rewrite-apply-rules
               fn-rewrites rules fn actuals contexts pathcond clk config interp-st bvar-db st)))
          (alistp bindings))
@@ -573,7 +652,7 @@
                            fn-rewrites rules fn actuals contexts pathcond clk config interp-st bvar-db st))))
        :flag rules)
      (defthm alistp-glcp-generic-apply-rule
-       (b* (((mv ?successp ?term ?bindings ?erp ?interp-st1 ?bvar-db1 ?state1)
+       (b* (((mv ?successp ?term ?bindings ?erp ?pathcond1 ?interp-st1 ?bvar-db1 ?state1)
              (glcp-generic-rewrite-apply-rule
               rule fn actuals contexts pathcond clk config interp-st bvar-db st)))
          (alistp bindings))
@@ -582,7 +661,7 @@
                             rule fn actuals contexts pathcond clk config interp-st bvar-db st)))))
        :flag rule)
      (defthm alistp-glcp-generic-relieve-hyps
-       (b* (((mv ?successp ?bindings1 ?erp ?interp-st1 ?bvar-db1 ?state1)
+       (b* (((mv ?successp ?bindings1 ?erp ?pathcond1 ?interp-st1 ?bvar-db1 ?state1)
              (glcp-generic-relieve-hyps
               rune hyps bindings pathcond clk config interp-st bvar-db st)))
          (equal bindings1
@@ -591,7 +670,7 @@
                            rune hyps bindings pathcond clk config interp-st bvar-db st))))
        :flag hyps)
      (defthm alistp-glcp-generic-relieve-hyp
-       (b* (((mv ?successp ?bindings1 ?erp ?interp-st1 ?bvar-db1 ?state1)
+       (b* (((mv ?successp ?bindings1 ?erp ?pathcond1 ?interp-st1 ?bvar-db1 ?state1)
              (glcp-generic-relieve-hyp
               rune hyp bindings pathcond clk config interp-st bvar-db st)))
          (equal bindings1
@@ -671,6 +750,7 @@
 (local
  (defsection glcp-generic-geval-thms
    (local (in-theory (disable glcp-generic-geval-alt-def)))
+   (set-ignore-ok t)
 
    (acl2::def-functional-instance
      glcp-generic-geval-gobj-ite-merge-correct
@@ -1241,6 +1321,7 @@
                       (conjoin-clauses
                        (acl2::interp-defs-alist-clauses out-defs)))))))
 
+
    ;; (defthm glcp-generic-interp-function-lookup-theoremp-defs-history-fwd
    ;;   (b* (((mv erp & & out-defs)
    ;;         (acl2::interp-function-lookup fn in-defs overrides world)))
@@ -1388,7 +1469,7 @@
               (conjoin-clauses
                (acl2::interp-defs-alist-clauses
                 (nth *is-obligs*
-                     (mv-nth 2 (glcp-generic-interp-term-equivs
+                     (mv-nth 3 (glcp-generic-interp-term-equivs
                                 x alist contexts pathcond clk config 
                                 (update-nth *is-obligs* obligs interp-st)
                                 bvar-db st))))))
@@ -1474,55 +1555,56 @@
   (encapsulate nil
     (local (bfr-reasoning-mode t))
     (local (acl2::set-bdd-patterns '((hyp-fix . &) 't 'nil)))
+    (local (add-bfr-eval-pats (bfr-hyp-eval & env)))
     (defthm bfr-eval-gtests-unknown
-      (implies (and (not (hf (gtests-unknown (gtests test hyp))))
-                    (bfr-eval hyp env))
-               (not (bfr-eval (gtests-unknown (gtests test hyp)) env))))
+      (implies (and (not (hf (mv-nth 1 (gtests test hyp))))
+                    (bfr-hyp-eval hyp env))
+               (not (bfr-eval (mv-nth 1 (gtests test hyp)) env))))
 
     (defthm bfr-eval-gtests-unknown-or
-      (implies (and (not (hf (bfr-or (gtests-unknown (gtests test hyp)) other)))
-                    (bfr-eval hyp env))
-               (not (bfr-eval (gtests-unknown (gtests test hyp)) env))))
+      (implies (and (not (hf (bfr-or (mv-nth 1 (gtests test hyp)) other)))
+                    (bfr-hyp-eval hyp env))
+               (not (bfr-eval (mv-nth 1 (gtests test hyp)) env))))
 
 
     (defthm geval-of-interp-res-hyp-fix-unknown-false
       (implies (and (not (glcp-generic-geval interp-res env))
-                    (bfr-eval hyp (car env)))
+                    (bfr-hyp-eval hyp (car env)))
                (hyp-fix (bfr-or
-                         (gtests-unknown (gtests interp-res hyp))
                          (bfr-not
-                          (gtests-nonnil (gtests interp-res hyp))))
+                          (mv-nth 0 (gtests interp-res hyp)))
+                         (mv-nth 1 (gtests interp-res hyp)))
                         hyp)))
 
     (defthm geval-of-interp-res-hyp-fix-unknown-true
       (implies (and (glcp-generic-geval interp-res env)
-                    (bfr-eval hyp (car env)))
+                    (bfr-hyp-eval hyp (car env)))
                (hyp-fix (bfr-or
-                         (gtests-unknown (gtests interp-res hyp))
-                         (gtests-nonnil (gtests interp-res hyp)))
+                         (mv-nth 1 (gtests interp-res hyp))
+                         (mv-nth 0 (gtests interp-res hyp)))
                         hyp)))
 
     (defthm gtests-nonnil-or-not
       (implies
        (and
-        (bfr-eval hyp (car env))
+        (bfr-hyp-eval hyp (car env))
         (not
          (hyp-fix
           (bfr-or
-           (gtests-unknown (gtests test hyp))
-           (gtests-nonnil (gtests test hyp)))
+           (mv-nth 1 (gtests test hyp))
+           (mv-nth 0 (gtests test hyp)))
           hyp)))
        (hyp-fix
         (bfr-or
-         (gtests-unknown (gtests test hyp))
-         (bfr-not (gtests-nonnil (gtests test hyp))))
+         (mv-nth 1 (gtests test hyp))
+         (bfr-not (mv-nth 0 (gtests test hyp))))
         hyp)))
 
     (defthmd gtests-known-and-true
-      (implies (and (bfr-eval hyp (car env))
-                    (equal (gtests-unknown (gtests gobj hyp)) nil)
+      (implies (and (bfr-hyp-eval hyp (car env))
+                    (equal (mv-nth 1 (gtests gobj hyp)) nil)
                     (equal (glcp-generic-geval gobj env) nil))
-               (not (equal (gtests-nonnil (gtests gobj hyp)) t)))
+               (not (equal (mv-nth 0 (gtests gobj hyp)) t)))
       :hints (("goal" :use ((:instance
                              geval-of-interp-res-hyp-fix-unknown-false
                              (interp-res gobj)))
@@ -2001,7 +2083,7 @@
 
   (defthm try-equivalences-correct
     (b* (((mv ok repl) (try-equivalences x bvars pathcond contexts p bvar-db state)))
-      (implies (and (bfr-eval pathcond (car env))
+      (implies (and (bfr-hyp-eval pathcond (car env))
                     (glcp-generic-bvar-db-env-ok bvar-db p (next-bvar$a bvar-db) env)
                     ok
                     (bvar-listp bvars bvar-db)
@@ -2042,7 +2124,7 @@
   (defthm try-equivalences-loop-correct
     (b* (((mv ?er repl)
           (try-equivalences-loop x pathcond contexts clk p bvar-db state)))
-      (implies (and (bfr-eval pathcond (car env))
+      (implies (and (bfr-hyp-eval pathcond (car env))
                     (glcp-generic-bvar-db-env-ok bvar-db p (next-bvar$a bvar-db) env)
                     (proper-contextsp contexts))
                (glcp-generic-eval-context-equiv* contexts
@@ -2063,7 +2145,7 @@
   (defthm try-equivalences-loop-special
     (b* (((mv ?er repl)
           (try-equivalences-loop x pathcond contexts clk p bvar-db state)))
-      (implies (and (bfr-eval pathcond (car env))
+      (implies (and (bfr-hyp-eval pathcond (car env))
                     (glcp-generic-bvar-db-env-ok bvar-db p (next-bvar$a bvar-db) env)
                     (proper-contextsp contexts)
                     (glcp-generic-eval-context-equiv*
@@ -2180,7 +2262,7 @@
                                              nil)))))
 
   (defthm glcp-interp-accs-ok-final-implies-start
-    (b* (((mv & & interp-st1 bvar-db1 &)
+    (b* (((mv & & & interp-st1 bvar-db1 &)
           (glcp-generic-interp-term-equivs
            x alist contexts pathcond clk config 
            interp-st bvar-db st)))
@@ -2355,8 +2437,8 @@
            (not (gbc-db-depends-on k p (nth *is-constraint-db* interp-st))))
     :add-bindings ((nn (next-bvar$a bvar-db1)))
     :add-concls ((not (gbc-db-depends-on k p (nth *is-constraint-db* interp-st1)))
-                 (implies (not (pbfr-depends-on k p (nth *is-constraint* interp-st)))
-                          (not (pbfr-depends-on k p (nth *is-constraint*
+                 (implies (not (bfr-constr-depends-on k p (nth *is-constraint* interp-st)))
+                          (not (bfr-constr-depends-on k p (nth *is-constraint*
                                                          interp-st1))))
                  (not (bvar-db-depends-on k p nn bvar-db1)))
     :special
@@ -2388,6 +2470,8 @@
                                      (equal (len then) (len else)))
                  :body (not (gobj-list-depends-on k p val))
                  :hints ('(:in-theory (enable len))))
+     (maybe-test-simp :add-hyps (not (gobj-depends-on k p test-obj))
+                      :body (not (pbfr-depends-on k p val)))
      (test-simp :add-hyps (not (gobj-depends-on k p test-obj))
                 :body (not (pbfr-depends-on k p val)))
      (constraints :add-hyps (not (gobj-depends-on k p lit)))
@@ -2441,7 +2525,86 @@
             ;; (and (id-on-the-way-to id '((0 1) (29 93 95 41) . 0))
             ;;      (cw "~x0~%" (acl2::prettyify-clause clause nil (w state)))
             ;;      )
-            )))
+            ))
+
+  ;; (def-glcp-interp-thm constraint-dependencies-of-glcp-generic-interp
+  ;;   :hyps (and ;; (not erp)
+  ;;          (not (bvar-in-range k bvar-db1))
+  ;;          (not (bfr-depends-on k p))
+  ;;          (bfr-eval p env)
+  ;;          (equal p (glcp-config->param-bfr config))
+  ;;          (not (bvar-db-depends-on k p (next-bvar$a bvar-db) bvar-db))
+  ;;          (not (gbc-db-depends-on k p (nth *is-constraint-db* interp-st)))
+  ;;          (not (bfr-constr-depends-on k p (nth *is-constraint* interp-st))))
+  ;;   :add-bindings ((nn (next-bvar$a bvar-db1)))
+  ;;   :add-concls ((not (bfr-constr-depends-on k p (nth *is-constraint*
+  ;;                                                     interp-st1))))
+  ;;   :special
+  ;;   ((test :add-hyps (not (gobj-alist-depends-on k p alist)))
+  ;;    (equivs :add-hyps (not (gobj-alist-depends-on k p alist)))
+  ;;    (term :add-hyps (not (gobj-alist-depends-on k p alist)))
+  ;;    (if/or :add-hyps (not (gobj-alist-depends-on k p alist)))
+  ;;    (maybe :add-hyps (not (gobj-alist-depends-on k p alist)))
+  ;;    (if :add-hyps (not (gobj-alist-depends-on k p alist)))
+  ;;    (or :add-hyps (not (gobj-alist-depends-on k p alist)))
+  ;;    (merge :add-hyps (and (not (pbfr-depends-on k p test-bfr))
+  ;;                               (not (gobj-depends-on k p then))
+  ;;                               (not (gobj-depends-on k p else))))
+  ;;    (merge-sub :add-hyps (and (not (pbfr-depends-on k p test-bfr))
+  ;;                                   (not (gobj-depends-on k p then))
+  ;;                                   (not (gobj-depends-on k p else))))
+  ;;    (merge-list :add-hyps (and (not (pbfr-depends-on k p test-bfr))
+  ;;                                    (not (gobj-list-depends-on k p then))
+  ;;                                    (not (gobj-list-depends-on k p else))
+  ;;                                    (equal (len then) (len else)))
+  ;;                :hints ('(:in-theory (enable len))))
+  ;;    (maybe-test-simp :add-hyps (not (gobj-depends-on k p test-obj)))
+  ;;    (test-simp :add-hyps (not (gobj-depends-on k p test-obj)))
+  ;;    (constraints :add-hyps (not (gobj-depends-on k p lit)))
+  ;;    (constraint-substs :add-hyps (not (gobj-alist-list-depends-on
+  ;;                                       k p (alist-vals substs)))
+  ;;                       :hints('(:in-theory (enable
+  ;;                                            gobj-alist-list-depends-on
+  ;;                                            alist-vals))))
+  ;;    (test-simp-fncall :add-hyps (not (gobj-list-depends-on k p args)))
+  ;;    (fncall-ifs :add-hyps (not (gobj-list-depends-on k p actuals)))
+  ;;    (maybe-fncall-ifs :add-hyps (not (gobj-list-depends-on k p actuals)))
+  ;;    (fncall :add-hyps (not (gobj-list-depends-on k p actuals))
+  ;;            :hints ('(:in-theory (enable glcp-generic-geval-ev-of-fncall-args))))
+  ;;    (rewrite :add-hyps (not (gobj-list-depends-on k p actuals)))
+  ;;    (rules :add-hyps (not (gobj-list-depends-on k p actuals)))
+  ;;    (rule :add-hyps (not (gobj-list-depends-on k p actuals)))
+  ;;    (hyps :add-hyps (not (gobj-alist-depends-on k p bindings)))
+  ;;    (hyp :add-hyps (not (gobj-alist-depends-on k p bindings)))
+  ;;    (list :add-hyps (not (gobj-alist-depends-on k p alist))))
+  ;;   :expand-calls t
+  ;;   :hints (;;'(:error t)
+  ;;           ;; (case-match id
+  ;;           ;;   (('(0 1) '(29) . &)
+  ;;           ;;    (prog2$ (cw "empty~%")
+  ;;           ;;    (let ((state (f-put-global 'goals nil state)))
+  ;;           ;;      (value nil))))
+  ;;           ;;   (('(0 1) ('29 &) . &)
+  ;;           ;;    (prog2$ (cw "cons~%")
+  ;;           ;;    (let ((state (f-put-global 'goals (cons clause (@ goals))
+  ;;           ;;                               state)))
+  ;;           ;;      (value nil))))
+  ;;           ;;   (& (value nil)))
+  ;;           (let ((lit (car clause)))
+  ;;             (case-match lit
+  ;;               (('not ('acl2::flag-is . &) . &)
+  ;;                '(:computed-hint-replacement
+  ;;                  ('(:expand :lambdas))
+  ;;                  :clause-processor acl2::constant-prop-cp))))
+  ;;           (and stable-under-simplificationp
+  ;;                '(; :in-theory (enable acl2::expand-marked-meta)
+  ;;                  :do-not-induct t
+  ;;                  :do-not '(generalize)))
+  ;;           ;; (and (id-on-the-way-to id '((0 1) (29 93 95 41) . 0))
+  ;;           ;;      (cw "~x0~%" (acl2::prettyify-clause clause nil (w state)))
+  ;;           ;;      )
+  ;;           ))
+  )
 
 
 
@@ -2527,7 +2690,13 @@
 
 
 
+(defun-sk bfr-constr-vars-bounded (n p x)
+    (forall m
+            (implies (<= (nfix n) (nfix m))
+                     (not (bfr-constr-depends-on m p x))))
+    :rewrite :direct)
 
+(in-theory (disable bfr-constr-vars-bounded))
 
 (encapsulate nil
   (local (in-theory (disable ;; glcp-generic-interp-term-ok-obligs
@@ -2555,8 +2724,8 @@
            (equal nn (next-bvar$a bvar-db1))
            (equal p (glcp-config->param-bfr config))
            (gbc-db-vars-bounded k p (nth *is-constraint-db* interp-st)))
-    :add-concls ((implies (pbfr-vars-bounded k p (nth *is-constraint* interp-st))
-                          (pbfr-vars-bounded k p (nth *is-constraint* interp-st1)))
+    :add-concls ((implies (bfr-constr-vars-bounded k p (nth *is-constraint* interp-st))
+                          (bfr-constr-vars-bounded k p (nth *is-constraint* interp-st1)))
                  (bvar-db-vars-bounded k p nn bvar-db1)
                  (gbc-db-vars-bounded k p (nth *is-constraint-db* interp-st1)))
     :special
@@ -2587,6 +2756,8 @@
                                      (gobj-list-vars-bounded k p else)
                                      (equal (len then) (len else)))
                  :body (gobj-list-vars-bounded k p val))
+     (maybe-test-simp :add-hyps (gobj-vars-bounded k p test-obj)
+                      :body (pbfr-vars-bounded k p val))
      (test-simp :add-hyps (gobj-vars-bounded k p test-obj)
                 :body (pbfr-vars-bounded k p val))
 
@@ -2622,7 +2793,8 @@
                                        gbc-db-vars-bounded-in-terms-of-witness
                                        bvar-in-range))
             (and stable-under-simplificationp
-                 (member (caar (last clause)) '(pbfr-vars-bounded))
+                 (member (caar (last clause)) '(pbfr-vars-bounded
+                                                bfr-constr-vars-bounded))
                  `(:expand (,(car (last clause))))))
     :no-induction-hint t))
 
@@ -2763,6 +2935,13 @@
      (finish-or :add-hyps (and (pbfr-vars-bounded k p test-bfr)
                                (gobj-vars-bounded k p then-obj)
                                (gobj-alist-vars-bounded k p alist)))
+     (maybe-test-simp :add-hyps (gobj-vars-bounded k p test-obj)
+                      :hints ((and stable-under-simplificationp
+                                   '(:use ((:instance gobj-vars-bounded-when-g-var
+                                            (x test-obj) (k 0)
+                                            (p (glcp-config->param-bfr config))))
+                                     :in-theory (disable
+                                                 gobj-vars-bounded-when-g-var)))))
 
      (test-simp :add-hyps (gobj-vars-bounded k p test-obj)
                 :hints ((and stable-under-simplificationp
@@ -2808,7 +2987,9 @@
                              (:type-prescription hyp-fix)
                              hyp-fix-of-hyp-fixedp
                              pseudo-termp
+                             bfr-hyp-fix-when-hyp$ap
                              gbc-process-new-lit
+                             glcp-generic-interp-term
                              glcp-or-test-contexts
                              glcp-generic-geval-general-concrete-obj-correct
                              pseudo-term-listp
@@ -2819,6 +3000,7 @@
                              acl2::eval-bdd
                              hons-assoc-equal
                              proper-contextsp
+                             (bfr-hyp-init$a)
                              (proper-contextsp)
                              kwote-lst)))
 
@@ -2881,13 +3063,13 @@
 
   (local (defthmd bfr-eval-test-when-false
            (implies (and (not (hyp-fix x pathcond))
-                         (bfr-eval pathcond (car env)))
+                         (bfr-hyp-eval pathcond (car env)))
                     (not (bfr-eval x (car env))))
            :hints ((bfr-reasoning))))
 
   (local (defthmd bfr-eval-test-when-true
            (implies (and (not (hyp-fix (bfr-not x) pathcond))
-                         (bfr-eval pathcond (car env)))
+                         (bfr-hyp-eval pathcond (car env)))
                     (bfr-eval x (car env)))
            :hints ((bfr-reasoning))))
 
@@ -2898,7 +3080,7 @@
 
   (local (defthmd hyp-fix-bfr-not
            (implies (and (not (hyp-fix x pathcond))
-                         (bfr-eval pathcond (car env)))
+                         (bfr-hyp-eval pathcond (car env)))
                     (hyp-fix (bfr-not x) pathcond))
            :hints (("goal" :use (bfr-eval-test-when-true
                                  bfr-eval-test-when-false)))))
@@ -3002,7 +3184,7 @@
     :hints(("Goal" :in-theory (enable glcp-interp-accs-ok))))
 
   (def-glcp-interp-thm glcp-generic-interp-correct
-    :hyps (and (bfr-eval (nth *is-constraint* interp-st) (car env))
+    :hyps (and (bfr-hyp-eval (nth *is-constraint* interp-st) (car env))
                (acl2::interp-defs-alistp (nth *is-obligs* interp-st))
                (acl2::interp-defs-alistp (glcp-config->overrides config))
                ;; (glcp-generic-geval-ev-theoremp
@@ -3016,12 +3198,12 @@
                ;;  (next-bvar$a bvar-db1) env)
                (glcp-interp-accs-ok interp-st1 bvar-db1 config env)
                (equal (w state0) (w st)))
-    :add-concls ((bfr-eval (nth *is-constraint* interp-st1) (car env)))
+    :add-concls ((bfr-hyp-eval (nth *is-constraint* interp-st1) (car env)))
     :special
     ((test :add-hyps (and (pseudo-termp x)
                           (alistp alist))
            :body (implies (and (not erp)
-                               (bfr-eval pathcond (car env)))
+                               (bfr-hyp-eval pathcond (car env)))
                           (iff* (bfr-eval val (car env))
                                (glcp-generic-geval-ev x (glcp-generic-geval-alist
                                                          alist env)))))
@@ -3031,7 +3213,7 @@
                             (proper-contextsp contexts)
                             (contextsp contexts))
              :body (implies (and (not erp)
-                                 (bfr-eval pathcond (car env)))
+                                 (bfr-hyp-eval pathcond (car env)))
                             (glcp-generic-eval-context-equiv*
                              contexts
                              (glcp-generic-geval val env)
@@ -3042,7 +3224,7 @@
                           (proper-contextsp contexts)
                           (contextsp contexts))
            :body (implies (and (not erp)
-                               (bfr-eval pathcond (car env)))
+                               (bfr-hyp-eval pathcond (car env)))
                           (glcp-generic-eval-context-equiv*
                            contexts
                            (glcp-generic-geval val env)
@@ -3067,7 +3249,7 @@
                                                (proper-contextsp contexts)
                                                (contextsp contexts))
             :body (implies (and (not erp)
-                                (bfr-eval pathcond (car env)))
+                                (bfr-hyp-eval pathcond (car env)))
                            (glcp-generic-eval-context-equiv*
                             contexts
                             (glcp-generic-geval val env)
@@ -3084,7 +3266,7 @@
                            (proper-contextsp contexts)
                            (contextsp contexts))
             :body (implies (and (and (not erp)
-                                     (bfr-eval pathcond (car env)))
+                                     (bfr-hyp-eval pathcond (car env)))
                                 (bfr-eval branchcond (car env)))
                            (glcp-generic-eval-context-equiv*
                             contexts
@@ -3101,7 +3283,7 @@
                                          (proper-contextsp contexts)
                                          (contextsp contexts))
        :body (implies (and (not erp)
-                           (bfr-eval pathcond (car env)))
+                           (bfr-hyp-eval pathcond (car env)))
                       (glcp-generic-eval-context-equiv*
                        contexts
                        (glcp-generic-geval val env)
@@ -3120,7 +3302,7 @@
                         (proper-contextsp contexts)
                         (contextsp contexts))
          :body (implies (and (not erp)
-                             (bfr-eval pathcond (car env)))
+                             (bfr-hyp-eval pathcond (car env)))
                         (glcp-generic-eval-context-equiv*
                          contexts
                          (glcp-generic-geval val env)
@@ -3135,7 +3317,7 @@
      (merge :add-hyps (and (proper-contextsp contexts)
                            (contextsp contexts))
             :body (implies (and (not erp)
-                                (bfr-eval pathcond (car env)))
+                                (bfr-hyp-eval pathcond (car env)))
                            (glcp-generic-eval-context-equiv*
                             contexts
                             (glcp-generic-geval val env)
@@ -3149,7 +3331,7 @@
                                               kwote-lst)))))
 
      (merge-sub :body (implies (and (not erp)
-                                    (bfr-eval pathcond (car env)))
+                                    (bfr-hyp-eval pathcond (car env)))
                                (equal (glcp-generic-geval val env)
                                       (if (bfr-eval test-bfr (car env))
                                           (glcp-generic-geval then env)
@@ -3159,15 +3341,39 @@
 
      (merge-list :add-hyps (equal (len then) (len else))
                  :body (implies (and (not erp)
-                                     (bfr-eval pathcond (car env)))
+                                     (bfr-hyp-eval pathcond (car env)))
                                 (equal (glcp-generic-geval-list val env)
                                        (if (bfr-eval test-bfr (car env))
                                            (glcp-generic-geval-list then env)
                                          (glcp-generic-geval-list else env))))
                  :hints('(:in-theory (enable len))))
 
+     (maybe-test-simp :body (implies (and (not erp)
+                                          (bfr-hyp-eval pathcond (car env))
+                                          (bfr-eval branchcond (car env)))
+                                     (iff* (bfr-eval val (car env))
+                                           (glcp-generic-geval test-obj env)))
+                      :hints ((and stable-under-simplificationp
+                                   '(:expand ((:with glcp-generic-geval (glcp-generic-geval test-obj env)))
+                                     :in-theory (enable ;; glcp-generic-geval-of-consp
+                                                 ;; glcp-generic-geval-g-apply-p
+                                                 ;; glcp-generic-geval-g-ite-p
+                                                 bfr-eval-test-when-true
+                                                 bfr-eval-when-not-bfr-not
+                                                 bfr-eval-test-when-false
+                                                 glcp-generic-geval-ev-of-gl-force-check-fn-call
+                                                 glcp-generic-geval-ev-of-equal-call
+                                                 glcp-generic-geval-ev-of-not-call
+                                                 car-glcp-generic-geval-list
+                                                 cadr-glcp-generic-geval-list
+                                                 car-kwote-lst
+                                                 cadr-kwote-lst
+                                                 glcp-generic-geval-ev-of-quote
+                                                 hyp-fix-bfr-not
+                                                 acl2::expand-marked-meta)))))
+
      (test-simp :body (implies (and (not erp)
-                                    (bfr-eval pathcond (car env)))
+                                    (bfr-hyp-eval pathcond (car env)))
                                (iff* (bfr-eval val (car env))
                                     (glcp-generic-geval test-obj env)))
                 :hints ((and stable-under-simplificationp
@@ -3179,8 +3385,6 @@
                                            bfr-eval-when-not-bfr-not
                                            bfr-eval-test-when-false
                                            glcp-generic-geval-ev-of-gl-force-check-fn-call
-                                           glcp-generic-geval-ev-of-gl-force-true-fn-call
-                                           glcp-generic-geval-ev-of-gl-force-false-fn-call
                                            glcp-generic-geval-ev-of-equal-call
                                            glcp-generic-geval-ev-of-not-call
                                            car-glcp-generic-geval-list
@@ -3193,7 +3397,7 @@
 
      (test-simp-fncall
       :body (implies (and (not erp)
-                          (bfr-eval pathcond (car env)))
+                          (bfr-hyp-eval pathcond (car env)))
                      (iff* (bfr-eval val (car env))
                           (glcp-generic-geval-ev
                            (cons fn
@@ -3208,8 +3412,6 @@
                                  bfr-eval-when-not-bfr-not
                                  bfr-eval-test-when-false
                                  glcp-generic-geval-ev-of-gl-force-check-fn-call
-                                 glcp-generic-geval-ev-of-gl-force-true-fn-call
-                                 glcp-generic-geval-ev-of-gl-force-false-fn-call
                                  glcp-generic-geval-ev-of-equal-call
                                  glcp-generic-geval-ev-of-not-call
                                  car-glcp-generic-geval-list
@@ -3227,7 +3429,7 @@
                                 (proper-contextsp contexts)
                                 (contextsp contexts))
                  :body (implies (and (not erp)
-                                     (bfr-eval pathcond (car env)))
+                                     (bfr-hyp-eval pathcond (car env)))
                                 (glcp-generic-eval-context-equiv*
                                  contexts
                                  (glcp-generic-geval val env)
@@ -3240,7 +3442,7 @@
                                       (contextsp contexts))
                        :body (implies (and (bfr-eval branchcond (car env))
                                            (and (not erp)
-                                                (bfr-eval pathcond (car env))))
+                                                (bfr-hyp-eval pathcond (car env))))
                                       (glcp-generic-eval-context-equiv*
                                        contexts
                                        (glcp-generic-geval val env)
@@ -3254,7 +3456,7 @@
                             (proper-contextsp contexts)
                             (contextsp contexts))
              :body (implies (and (not erp)
-                                 (bfr-eval pathcond (car env)))
+                                 (bfr-hyp-eval pathcond (car env)))
                             (glcp-generic-eval-context-equiv*
                              contexts
                              (glcp-generic-geval val env)
@@ -3267,7 +3469,7 @@
                              (contextsp contexts)
                              (proper-contextsp contexts))
               :body (implies (and (not erp)
-                                  (bfr-eval pathcond (car env)))
+                                  (bfr-hyp-eval pathcond (car env)))
                              (implies successp
                                       (glcp-generic-eval-context-equiv*
                                        contexts
@@ -3284,7 +3486,7 @@
                            (contextsp contexts)
                            (proper-contextsp contexts))
             :body (implies (and (not erp)
-                                (bfr-eval pathcond (car env)))
+                                (bfr-hyp-eval pathcond (car env)))
                            (implies successp
                                     (glcp-generic-eval-context-equiv*
                                      contexts
@@ -3302,7 +3504,7 @@
                           (contextsp contexts)
                           (proper-contextsp contexts))
            :body (implies (and (not erp)
-                               (bfr-eval pathcond (car env)))
+                               (bfr-hyp-eval pathcond (car env)))
                           (implies successp
                                    (glcp-generic-eval-context-equiv*
                                     contexts
@@ -3319,7 +3521,7 @@
      (hyps :add-hyps (and (pseudo-term-listp hyps)
                           (alistp bindings))
            :body (implies (and (not erp)
-                               (bfr-eval pathcond (car env)))
+                               (bfr-hyp-eval pathcond (car env)))
                           (implies successp
                                    (glcp-generic-geval-ev
                                     (conjoin hyps)
@@ -3327,7 +3529,7 @@
      (hyp :add-hyps (and (pseudo-termp hyp)
                          (alistp bindings))
           :body (implies (and (not erp)
-                              (bfr-eval pathcond (car env)))
+                              (bfr-hyp-eval pathcond (car env)))
                          (implies successp
                                   (glcp-generic-geval-ev
                                    hyp (glcp-generic-geval-alist bindings env))))
@@ -3336,7 +3538,7 @@
      (list :add-hyps (and (pseudo-term-listp x)
                           (alistp alist))
            :body (implies (and (not erp)
-                               (bfr-eval pathcond (car env)))
+                               (bfr-hyp-eval pathcond (car env)))
                           (equal (glcp-generic-geval-list vals env)
                                  (glcp-generic-geval-ev-lst
                                   x (glcp-generic-geval-alist alist
@@ -3607,6 +3809,8 @@
 
 
 
+
+
 ;; (defthm bvar-db-env-ok-of-bvar-db-fix-env-lemma
 ;;   (implies (and (bvar-db-orderedp p bvar-db)
 ;;                 (bfr-eval p bfr-env)
@@ -3762,6 +3966,66 @@
            :expand ((bfr-vars-bounded min t))
            :in-theory (disable bvar-db-fix-env-eval-bfr-vars-bounded-unparam-rw)
            :do-not-induct t)))
+
+(encapsulate nil
+  (local (defthm bfr-hyp-eval-to-bfr-eval-of-bfr
+           (equal (bfr-hyp-eval x env)
+                  (bfr-eval (bfr-constr->bfr x) env))))
+
+  (local (in-theory (disable bfr-eval-of-bfr-constr->bfr)))
+
+  
+  (defthm pbfr-vars-bounded-of-bfr-constr->bfr
+    (implies (bfr-constr-vars-bounded k p x)
+             (pbfr-vars-bounded k p (bfr-constr->bfr x)))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+  (defthm bvar-db-fix-env-eval-bfr-vars-bounded-lemma-bfr-hyp-eval
+    (implies (and ; (bvar-db-orderedp p bvar-db)
+              (bfr-eval p env)
+              (bfr-vars-bounded min p)
+              (bfr-constr-vars-bounded min p x)
+              (<= (nfix n) (next-bvar$a bvar-db)))
+             (let* ((env-n (bvar-db-fix-env n min bvar-db p (bfr-param-env p env)
+                                            var-env)))
+               (equal (bfr-hyp-eval x env-n)
+                      (bfr-hyp-eval x (bfr-param-env p env))))))
+
+  (defthm bvar-db-fix-env-eval-bfr-vars-bounded-unparam-with-no-param-bfr-hyp-eval
+    (implies (and ; (bvar-db-orderedp p bvar-db)
+              (bfr-constr-vars-bounded min t x)
+              (<= (nfix n) (next-bvar$a bvar-db)))
+             (let* ((env-n (bvar-db-fix-env n min bvar-db t env var-env)))
+               (equal (bfr-hyp-eval x env-n)
+                      (bfr-hyp-eval x env)))))
+
+  (defthm bvar-db-fix-env-eval-bfr-vars-bounded-unparam-rw-bfr-hyp-eval
+    (implies (and ; (bvar-db-orderedp p bvar-db)
+              (bfr-eval p env)
+              (bfr-vars-bounded min p)
+              (bfr-constr-vars-bounded min t x)
+              (<= (nfix n) (next-bvar$a bvar-db)))
+             (let* ((env-n (bvar-db-fix-env n min bvar-db p (bfr-param-env p env)
+                                            var-env)))
+               (equal (bfr-hyp-eval x (bfr-unparam-env p env-n))
+                      (bfr-hyp-eval x env)))))
+
+  (defthm bvar-db-fix-env-eval-bfr-vars-bounded-unparam1-rw-bfr-hyp-eval
+    (implies (and ; (bvar-db-orderedp p bvar-db)
+              (bfr-eval p env)
+              (bfr-vars-bounded min p)
+              (bfr-constr-vars-bounded min t x)
+              (<= (nfix n) (next-bvar$a bvar-db)))
+             (let* ((env-n (bvar-db-fix-env n min bvar-db p (bfr-param-env p env)
+                                            var-env)))
+               (equal (bfr-hyp-eval x (bfr-unparam-env p env-n))
+                      (bfr-hyp-eval x env)))))
+
+    (defthm bfr-hyp-eval-of-bfr-unparam-of-param
+      (implies (bfr-eval p env)
+               (equal (bfr-hyp-eval x (bfr-unparam-env p (bfr-param-env p env)))
+                      (bfr-hyp-eval x env)))))
 
 
 
@@ -3932,7 +4196,7 @@
                          `((env . (cons ,bfr-env ,(nth 6 bfr-env))))
                        `((free-var . free-var))))
                     (bfr-eval pathcond bfr-env)
-                    (bfr-eval (is-constraint interp-st) bfr-env)
+                    (bfr-hyp-eval (is-constraint interp-st) bfr-env)
                     (not erp)
                     (acl2::interp-defs-alistp (is-obligs interp-st))
                     (acl2::interp-defs-alistp (glcp-config->overrides config))
@@ -3953,10 +4217,14 @@
                     (glcp-generic-geval-ev term (glcp-generic-geval-alist
                                                  alist env)))))
     :hints(("Goal" :in-theory (e/d (glcp-interp-accs-ok)
-                                   (glcp-generic-interp-correct-term))
+                                   (glcp-generic-interp-correct-term
+                                    (bfr-hyp-init$a)
+                                    eval-of-bfr-hyp-init$a))
             :use ((:instance glcp-generic-interp-correct-term
                    (x term) (contexts '(iff)) (st state)
-                   (config (glcp-config-update-term term config)))))))
+                   (config (glcp-config-update-term term config)))
+                  (:instance eval-of-bfr-hyp-init$a
+                   (hyp$a nil) (env (car env)))))))
 
   (defthm glcp-generic-interp-top-level-term-preserves-constraint
     (b* (((mv ?val ?erp ?interp-st1 ?bvar-db1 ?state1)
@@ -3967,7 +4235,7 @@
                               (eq (car bfr-env) 'bvar-db-fix-env))
                          `((env . (cons ,bfr-env ,(nth 6 bfr-env))))
                        `((free-var . free-var))))
-                    (bfr-eval (is-constraint interp-st) bfr-env)
+                    (bfr-hyp-eval (is-constraint interp-st) bfr-env)
                     (acl2::interp-defs-alistp (is-obligs interp-st))
                     (acl2::interp-defs-alistp (glcp-config->overrides config))
                     (glcp-generic-geval-ev-theoremp
@@ -3983,7 +4251,7 @@
                     (equal (w state0) (w state))
                     (pseudo-termp term)
                     (alistp alist))
-               (bfr-eval (nth *is-constraint* interp-st1) bfr-env)))
+               (bfr-hyp-eval (nth *is-constraint* interp-st1) bfr-env)))
     :hints(("Goal" :in-theory (e/d (glcp-interp-accs-ok)
                                    (glcp-generic-interp-correct-term))
             :use ((:instance glcp-generic-interp-correct-term
@@ -4120,8 +4388,8 @@
                     (bvar-db-orderedp p bvar-db)
                     (equal p (glcp-config->param-bfr config))
                     (gobj-alist-vars-bounded k p alist)
-                    (pbfr-vars-bounded k p (nth *is-constraint* interp-st)))
-               (pbfr-vars-bounded k p (nth *is-constraint* interp-st1)))))
+                    (bfr-constr-vars-bounded k p (nth *is-constraint* interp-st)))
+               (bfr-constr-vars-bounded k p (nth *is-constraint* interp-st1)))))
 
   (defthm bfr-vars-bounded-of-glcp-generic-interp-top-level-no-param
     (b* (((mv ?val ?erp ?interp-st1 ?bvar-db1 ?state1)
@@ -4393,6 +4661,7 @@
                     (glcp-generic-interp-concl
                      term alist pathcond clk config interp-st bvar-db1 nil state))))
 
+
   (defthm glcp-generic-interp-concl-correct
     (b* (((mv ?val ?erp ?interp-st1 ?bvar-db2 ?state1)
           (glcp-generic-interp-concl
@@ -4403,7 +4672,7 @@
                          `((env . (cons ,bfr-env ,(nth 6 bfr-env))))
                        `((free-var . free-var))))
                     (bfr-eval pathcond (bfr-unparam-env pathcond bfr-env))
-                    (bfr-eval (is-constraint interp-st) (bfr-unparam-env pathcond bfr-env))
+                    (bfr-hyp-eval (is-constraint interp-st) (bfr-unparam-env pathcond bfr-env))
                     (not erp)
                     (acl2::interp-defs-alistp (is-obligs interp-st))
                     (acl2::interp-defs-alistp (glcp-config->overrides config))
@@ -4427,7 +4696,10 @@
                            alist
                            (cons (bfr-unparam-env pathcond (car env))
                                  (cdr env)))))))
-    :hints(("Goal" :in-theory (enable genv-unparam)
+    :hints(("Goal" :in-theory (e/d (genv-unparam)
+                                   (eval-of-bfr-constr-init))
+            :use ((:instance eval-of-bfr-constr-init
+                   (env (car env))))
             :do-not-induct t))
     :otf-flg t)
 
@@ -4440,7 +4712,7 @@
                               (eq (car bfr-env) 'bvar-db-fix-env))
                          `((env . (cons ,bfr-env ,(nth 6 bfr-env))))
                        `((free-var . free-var))))
-                    (bfr-eval (is-constraint interp-st) (bfr-unparam-env pathcond bfr-env))
+                    (bfr-hyp-eval (is-constraint interp-st) (bfr-unparam-env pathcond bfr-env))
                     (acl2::interp-defs-alistp (is-obligs interp-st))
                     (acl2::interp-defs-alistp (glcp-config->overrides config))
                     (glcp-generic-geval-ev-theoremp
@@ -4457,8 +4729,11 @@
                     (equal (w state0) (w state))
                     (pseudo-termp term)
                     (alistp alist))
-               (bfr-eval (nth *is-constraint* interp-st1) bfr-env)))
-    :hints(("Goal" :in-theory (enable genv-unparam)
+               (bfr-hyp-eval (nth *is-constraint* interp-st1) bfr-env)))
+    :hints(("Goal" :in-theory (e/d (genv-unparam)
+                                   (eval-of-bfr-constr-init))
+            :use ((:instance eval-of-bfr-constr-init
+                   (env (car env))))
             :do-not-induct t))
     :otf-flg t)
 
@@ -4515,7 +4790,7 @@
           (glcp-generic-interp-concl
            term alist pathcond clk config interp-st bvar-db1 bvar-db state)))
       (implies (and (<= bound (next-bvar$a bvar-db1))
-                    (bfr-eval pathcond (car env))
+                    ;; (bfr-hyp-eval pathcond (car env))
                     (glcp-generic-bvar-db-env-ok bvar-db1 t bound
                                                  (cons (bfr-unparam-env pathcond (car env))
                                                        (cdr env))))
@@ -4588,7 +4863,21 @@
                     (gbc-db-vars-bounded k t (nth *is-constraint-db* interp-st))
                     (gobj-alist-vars-bounded k t alist))
                (and (pbfr-vars-bounded k pathcond val)
-                    (gbc-db-vars-bounded k pathcond (nth *is-constraint-db* interp-st1))))))
+                    (gbc-db-vars-bounded k pathcond (nth *is-constraint-db*
+                                                         interp-st1)))))
+    )
+
+  (defthm bfr-constr-vars-bounded-of-bfr-constr-init
+    (bfr-constr-vars-bounded k p (bfr-constr-init))
+    :hints(("Goal" :in-theory (enable bfr-constr-vars-bounded))))
+
+  (defthm bfr-constr-vars-bounded-of-bfr-constr-assume
+    (implies (and (bfr-constr-vars-bounded k p x)
+                  (pbfr-vars-bounded k p a))
+             (bfr-constr-vars-bounded k p (mv-nth 1 (bfr-constr-assume a x))))
+    :hints((and stable-under-simplificationp
+                `(:expand (,(car (last clause)))))))
+
 
   (defthm constraint-vars-bounded-of-glcp-generic-interp-concl
     (b* (((mv ?val ?erp ?interp-st1 ?bvar-db2 ?state1)
@@ -4600,8 +4889,9 @@
                     (bvar-db-orderedp t bvar-db1)
                     (gbc-db-vars-bounded k t (nth *is-constraint-db* interp-st))
                     (gobj-alist-vars-bounded k t alist)
-                    (pbfr-vars-bounded k t (nth *is-constraint* interp-st)))
-               (pbfr-vars-bounded k pathcond (nth *is-constraint* interp-st1)))))
+                    (bfr-constr-vars-bounded k t (nth *is-constraint* interp-st)))
+               (bfr-constr-vars-bounded k pathcond (nth *is-constraint*
+                                                        interp-st1)))))
 
   (defthm bvar-db-ordered-of-glcp-generic-interp-concl
     (b* (((mv ?val ?erp ?interp-st1 ?bvar-db2 ?state1)
@@ -4636,6 +4926,7 @@
   ;;          (and stable-under-simplificationp
   ;;               '(:in-theory (enable bfr-eval-consts)))))
 
+
   (defthm fix-env-correct-of-glcp-generic-interp-concl
     (b* (((mv ?val ?erp ?interp-st1 ?bvar-db2 ?state1)
           (glcp-generic-interp-concl
@@ -4647,6 +4938,8 @@
                                     var-env)))
       (implies (and (bfr-vars-bounded (next-bvar$a bvar-db1) pathcond)
                     (bfr-eval pathcond bfr-env)
+                    (bfr-hyp-eval (nth *is-constraint* interp-st) bfr-env)
+                    ;; (bfr-unparam-env pathcond bfr-env))
                     (bvar-db-orderedp t bvar-db1)
                     (gobj-alist-vars-bounded (next-bvar$a bvar-db1) t alist)
                     (glcp-generic-bvar-db-env-ok
@@ -4654,8 +4947,20 @@
                      (cons bfr-env var-env))
                     (gbc-db-vars-bounded (next-bvar$a bvar-db1) t (nth *is-constraint-db* interp-st)))
                (glcp-generic-bvar-db-env-ok
-                bvar-db2 pathcond (next-bvar$a bvar-db2) (cons bfr-env1 var-env))))
-    :hints (("goal" :do-not-induct t))))
+                bvar-db2 pathcond (next-bvar$a bvar-db2) (cons bfr-env1
+                                                               var-env))))
+    :otf-flg t
+    :hints (("goal" :do-not-induct t
+             :in-theory (disable ;;eval-of-bfr-constr-init
+                                 bfr-constr-assume-correct)
+             :use (;; (:instance eval-of-bfr-constr-init
+                   ;;  (env bfr-env))
+                   (:instance bfr-constr-assume-correct
+                    (hyp (bfr-constr-init))
+                    (x (bfr-to-param-space
+                        pathcond (bfr-constr->bfr (is-constraint interp-st))))
+                    (env (bfr-param-env pathcond bfr-env))))))
+    ))
 
 
 
@@ -4796,8 +5101,8 @@
           (glcp-generic-interp-hyp/concl
            hyp concl alist clk config interp-st next-bvar bvar-db bvar-db1 state)))
       (implies (and (not erp)
-                    (bfr-eval (nth *is-constraint* interp-st)
-                              (bfr-unparam-env hyp-bfr bfr-env))
+                    (bfr-hyp-eval (nth *is-constraint* interp-st)
+                                  (bfr-unparam-env hyp-bfr bfr-env))
                     (acl2::interp-defs-alistp (nth *is-obligs* interp-st))
                     (acl2::interp-defs-alistp (glcp-config->overrides config))
                     (glcp-generic-geval-ev-theoremp
@@ -4961,6 +5266,13 @@
     :hints (("goal" :use ((:instance bfr-eval-consts))
              :in-theory (disable bfr-eval-consts bfr-eval-booleanp))))
 
+  (defthm bfr-constr-vars-bounded-incr
+    (implies (and (bfr-constr-vars-bounded k p x)
+                  (<= (nfix k) (nfix m)))
+             (bfr-constr-vars-bounded m p x))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
   (defthm constraint-vars-bounded-of-glcp-generic-interp-hyp/concl
     (b* (((mv ?hyp-bfr ?concl-bfr ?concl-bvar-db ?erp ?interp-st1 ?hyp-bvar-db ?state1)
           (glcp-generic-interp-hyp/concl
@@ -4969,9 +5281,9 @@
                     (not erp)
                     (bfr-eval hyp-bfr env)
                     (gobj-alist-vars-bounded next-bvar t alist)
-                    (pbfr-vars-bounded next-bvar t (nth *is-constraint* interp-st))
+                    (bfr-constr-vars-bounded next-bvar t (nth *is-constraint* interp-st))
                     (gbc-db-vars-bounded next-bvar t (nth *is-constraint-db* interp-st)))
-               (pbfr-vars-bounded k hyp-bfr (nth *is-constraint* interp-st1))))
+               (bfr-constr-vars-bounded k hyp-bfr (nth *is-constraint* interp-st1))))
     :hints (("goal" :use ((:instance bfr-eval-consts))
              :in-theory (disable bfr-eval-consts bfr-eval-booleanp))))
 
@@ -5003,7 +5315,7 @@
              (implies (and (bind-free
                             `((env . (cons ,bfr-env (cdr env)))))
                            (bfr-eval pathcond bfr-env)
-                           (bfr-eval (is-constraint interp-st) bfr-env)
+                           (bfr-hyp-eval (is-constraint interp-st) bfr-env)
                            (not erp)
                            (acl2::interp-defs-alistp (is-obligs interp-st))
                            (acl2::interp-defs-alistp (glcp-config->overrides config))
@@ -5034,7 +5346,7 @@
                   term alist pathcond clk config interp-st bvar-db state)))
              (implies (and (bind-free
                             `((env . (cons ,bfr-env (cdr env)))))
-                           (bfr-eval (is-constraint interp-st) bfr-env)
+                           (bfr-hyp-eval (is-constraint interp-st) bfr-env)
                            (acl2::interp-defs-alistp (is-obligs interp-st))
                            (acl2::interp-defs-alistp (glcp-config->overrides config))
                            (glcp-generic-geval-ev-theoremp
@@ -5050,7 +5362,7 @@
                            (equal (w state0) (w state))
                            (pseudo-termp term)
                            (alistp alist))
-                      (bfr-eval (nth *is-constraint* interp-st1) bfr-env)))
+                      (bfr-hyp-eval (nth *is-constraint* interp-st1) bfr-env)))
            :hints (("goal" :use
                     glcp-generic-interp-top-level-term-preserves-constraint
                     :in-theory (disable glcp-generic-interp-top-level-term-preserves-constraint)))))
@@ -5069,8 +5381,8 @@
                      (conjoin-clauses
                       (acl2::interp-defs-alist-clauses
                        (nth *is-obligs* interp-st1))))
-                    (bfr-eval (nth *is-constraint* interp-st) (car env))
-                    (pbfr-vars-bounded next-bvar t (nth *is-constraint* interp-st))
+                    (bfr-hyp-eval (nth *is-constraint* interp-st) (car env))
+                    (bfr-constr-vars-bounded next-bvar t (nth *is-constraint* interp-st))
                     (glcp-generic-geval-ev-meta-extract-global-facts :state state0)
                     (equal (w state0) (w state))
                     (pseudo-termp hyp)
@@ -5086,7 +5398,7 @@
                           concl (glcp-generic-geval-alist alist env))))
                (and (bfr-eval hyp-bfr (bfr-unparam-env hyp-bfr fixed-env))
                     (not (bfr-eval concl-bfr fixed-env))
-                    (bfr-eval (nth *is-constraint* interp-st1) fixed-env) )))
+                    (bfr-hyp-eval (nth *is-constraint* interp-st1) fixed-env) )))
     :hints (("goal" :use ((:instance bfr-eval-consts)
                           (:instance bfr-eval-consts (env (car env))))
              :in-theory (disable bfr-eval-consts bfr-eval-booleanp)

@@ -29,17 +29,18 @@
   (cond ((and (consp acl2::sym)
               (g-boolean-p acl2::sym)
               (general-concretep acl2::str))
-         (mk-g-ite
-          acl2::sym
-          (mk-g-concrete
-           (ec-call (intern-in-package-of-symbol
-                     (general-concrete-obj acl2::str)
-                     t)))
-          (mk-g-concrete
-           (ec-call (intern-in-package-of-symbol
-                     (general-concrete-obj acl2::str)
-                     nil)))))
-        (t nil)))
+         (gret
+          (mk-g-ite
+           acl2::sym
+           (mk-g-concrete
+            (ec-call (intern-in-package-of-symbol
+                      (general-concrete-obj acl2::str)
+                      t)))
+           (mk-g-concrete
+            (ec-call (intern-in-package-of-symbol
+                      (general-concrete-obj acl2::str)
+                      nil))))))
+        (t (gret nil))))
 
 ;; (def-gobjectp-thm intern-in-package-of-symbol)
 

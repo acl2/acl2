@@ -22,9 +22,11 @@
 (include-book "g-primitives-help")
 (include-book "eval-g-base")
 (include-book "gtypes")
+(include-book "g-if")
 (local (include-book "gobjectp-thms"))
 
-(def-g-fn hide 'x)
+(def-g-fn hide '(gret x)
+  :replace-g-ifs nil)
 
 ;; (def-gobjectp-thm hide)
 

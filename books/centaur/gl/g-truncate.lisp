@@ -79,7 +79,7 @@
 (def-g-binary-op truncate
   (b* ((i-num (if (general-numberp i) i 0))
        (j-num (if (general-numberp j) j 0)))
-    (g-truncate-of-numbers i-num j-num)))
+    (gret (g-truncate-of-numbers i-num j-num))))
 
 
 (verify-g-guards

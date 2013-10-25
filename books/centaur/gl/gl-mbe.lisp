@@ -60,40 +60,28 @@ the specification is unaffected.</p>"
                     spec impl))
             spec)))
 
-(defun gl-force-check-fn (x strong)
+(defun gl-force-check-fn (x strong direction)
   (declare (xargs :guard t)
-           (ignore strong))
+           (ignore strong direction))
   x)
 
-(defmacro gl-force-check (x &key strong)
-  `(gl-force-check-fn ,x ,strong))
+(defmacro gl-force-check (x &key strong (direction ':both))
+  `(gl-force-check-fn ,x ,strong ,direction))
 
 (defmacro gl-force-check-strong (x)
-  `(gl-force-check-fn ,x t))
+  `(gl-force-check-fn ,x t :both))
 
-(defun gl-force-true-fn (x strong)
-  (declare (xargs :guard t)
-           (ignore strong))
-  x)
 
 (defmacro gl-force-true (x &key strong)
-  `(gl-force-true-fn ,x ,strong))
+  `(gl-force-check-fn ,x ,strong t))
 
 (defmacro gl-force-true-strong (x)
-  `(gl-force-true-fn ,x t))
-
-
-(defun gl-force-false-fn (x strong)
-  (declare (xargs :guard t)
-           (ignore strong))
-  x)
+  `(gl-force-check-fn ,x t t))
 
 (defmacro gl-force-false (x &key strong)
-  `(gl-force-false-fn ,x ,strong))
+  `(gl-force-check-fn ,x ,strong nil))
 
 (defmacro gl-force-false-strong (x)
-  `(gl-force-false-fn ,x t))
+  `(gl-force-check-fn ,x t nil))
 
 (table gl-uninterpreted-functions 'gl-force-check-fn t)
-(table gl-uninterpreted-functions 'gl-force-true-fn t)
-(table gl-uninterpreted-functions 'gl-force-false-fn t)

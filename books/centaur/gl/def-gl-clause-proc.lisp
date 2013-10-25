@@ -24,7 +24,7 @@
 (include-book "run-gified-cp")
 (include-book "glcp-templates")
 (include-book "generic-geval")
-(local (include-book "gify-thms"))
+;; (local (include-book "gify-thms"))
 (local (include-book "general-object-thms"))
 ;; (include-book "centaur/misc/defapply" :dir :system)
 
@@ -41,13 +41,16 @@
 (defun glcp-predef-cases-fn (names world)
   (declare (Xargs :mode :program))
   (if (atom names)
-      `((t (mv nil nil)))
+      `((t (let ((hyp (lbfr-hyp-fix hyp)))
+             (mv nil nil hyp))))
     (cons `(,(car names)
-            (mv t (glr ,(car names)
+            (b* (((gret res)
+                  (glr ,(car names)
                        ,@(make-list-of-nths
                           'actuals 0
                           (len (wgetprop (car names) 'formals)))
                        hyp clk config bvar-db state)))
+            (mv t res hyp)))
     (glcp-predef-cases-fn (cdr names) world))))
 
 
@@ -336,11 +339,8 @@
                                          (true-listp actuals)
                                          (glcp-config-p config)
                                          (natp clk))
-                             :guard-hints
-                             (("goal" :in-theory
-                               (e/d** ((:forward-chaining gobj-listp-true-listp)))
-                               :do-not '(preprocess)))
-                             :stobjs (bvar-db state))
+                             :verify-guards nil
+                             :stobjs (hyp bvar-db state))
                       (ignorable state))
              (case fn
                . ,(glcp-predef-cases-fn
@@ -394,6 +394,12 @@
             (eval-g-functional-instance
              general-concrete-obj-correct ,geval generic-geval)
 
+            (deflabel run-gified-hyp-cong-checkpoint)
+            (def-hyp-congruence ,run-gified)
+            (def-ruleset! run-gified-congruences
+              (set-difference-theories
+               (current-theory :here)
+               (current-theory 'run-gified-hyp-cong-checkpoint)))
 
             ;; Prove correctness of run-gified
             (defthm ,run-gified-deps
@@ -411,7 +417,7 @@
 
             ;; Prove correctness of run-gified
             (defthm ,run-gified-correct
-              (implies (and (bfr-eval hyp (car env))
+              (implies (and (bfr-hyp-eval hyp (car env))
                             (mv-nth 0 (,run-gified
                                        fn actuals hyp clk config bvar-db state)))
                        (equal (,geval (mv-nth 1 (,run-gified
@@ -450,14 +456,15 @@
                       '(,ctrex-thm
                         ,run-gified-correct
                         ,run-gified-deps
+                        (:ruleset run-gified-congruences)
                         ;; ,apply-concrete-lemma
                         ;; ,apply-concrete-state
                         ,(f-i-thmname 'generic-geval-gl-cons geval)
                         (:type-prescription ,run-gified)
                         ;; (:type-prescription ,apply-concrete)
-                        ,(f-i-thmname 'gobj-ite-merge-correct geval)
-                        ,(f-i-thmname 'gtests-nonnil-correct geval)
-                        ,(f-i-thmname 'gtests-obj-correct geval)
+                        ;; ,(f-i-thmname 'gobj-ite-merge-correct geval)
+                        ;; ,(f-i-thmname 'gtests-nonnil-correct geval)
+                        ;; ,(f-i-thmname 'gtests-obj-correct geval)
                         ,(f-i-thmname 'shape-spec-to-gobj-eval-env geval)
                         ,(f-i-thmname 'mk-g-boolean-correct geval)
                         ,(f-i-thmname 'mk-g-concrete-correct geval)
@@ -467,6 +474,12 @@
                         ,(f-i-thmname 'gobj-to-param-space-correct geval)
                         ,(f-i-thmname 'general-concrete-obj-correct geval))))))
 
+         (verify-guards ,run-gified
+           :hints (("goal" :in-theory
+                    (e/d** ((:forward-chaining gobj-listp-true-listp)
+                            hyp-p
+                            bfr-hyp-fix-when-hyp$ap))
+                    :do-not '(preprocess))))
          ;; Verify guards of the interpreter.
          (local (in-theory nil))
          (verify-guards
@@ -484,6 +497,8 @@
                    '(:clause-processor dumb-clausify-cp)
                    (let ((term (car (last clause))))
                      (case-match term
+                       ;; prevent the next pattern from matching run-gified congruences:
+                       (('equal (fn . &) (fn . &)) '(:do-not nil))
                        (('equal (fn . args) . &)
                         (if (member fn ',(set-difference-eq fn-names
                                                             (list geval-ev

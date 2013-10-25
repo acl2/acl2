@@ -3,6 +3,7 @@
 
 (include-book "glcp-geval")
 (include-book "gtype-thms")
+(include-book "gtests")
 (include-book "general-object-thms")
 
 (local
@@ -165,7 +166,24 @@
    ((generic-geval-ev glcp-generic-geval-ev)
     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
     (generic-geval glcp-generic-geval)
-    (generic-geval-list glcp-generic-geval-list))))
+    (generic-geval-list glcp-generic-geval-list)))
+
+
+   (acl2::def-functional-instance
+    bfr-assume-of-gtests-possibly-true-for-glcp-generic-geval
+    bfr-assume-of-gtests-possibly-true
+    ((generic-geval-ev glcp-generic-geval-ev)
+     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
+     (generic-geval glcp-generic-geval)
+     (generic-geval-list glcp-generic-geval-list)))
+
+   (acl2::def-functional-instance
+    bfr-assume-of-gtests-possibly-false-for-glcp-generic-geval
+    bfr-assume-of-gtests-possibly-false
+    ((generic-geval-ev glcp-generic-geval-ev)
+     (generic-geval-ev-lst glcp-generic-geval-ev-lst)
+     (generic-geval glcp-generic-geval)
+     (generic-geval-list glcp-generic-geval-list))))
 
 
 

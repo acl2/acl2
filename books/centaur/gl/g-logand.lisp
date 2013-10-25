@@ -96,7 +96,9 @@
 (def-g-binary-op binary-logand
   (b* ((i-num (if (general-numberp i) i 0))
        (j-num (if (general-numberp j) j 0)))
-    (g-binary-logand-of-numbers i-num j-num)))
+    (gret (g-binary-logand-of-numbers i-num j-num))))
+
+
 
 ;; (def-gobjectp-thm binary-logand
 ;;   :hints `(("Goal" :in-theory (e/d* ()
@@ -113,8 +115,11 @@
 
 (verify-g-guards
  binary-logand
- :hints `(("Goal" :in-theory (disable* ,gfn
-                                       general-concretep-def))))
+ :hints `(("Goal" :in-theory (e/d* (g-if-fn g-or-fn)
+                                   (,gfn
+                                    general-concretep-def)))))
+
+
 
 (def-gobj-dependency-thm binary-logand
   :hints `(("goal" :induct ,gcall
@@ -127,17 +132,25 @@
               (implies (not (acl2-numberp j))
                        (equal (logand i j) (logand i 0))))))
 
-(def-g-correct-thm binary-logand eval-g-base
-  :hints `(("Goal" :in-theory (e/d* (general-concretep-atom
-                                     (:ruleset general-object-possibilities)
-                                     not-general-numberp-not-acl2-numberp)
-                                    ((:definition ,gfn)
-                                     general-concretep-def
-                                     binary-logand
-                                     components-to-number-alt-def
-                                     hons-assoc-equal
-                                     default-car default-cdr
-                                     (:rules-of-class :type-prescription :here)))
-            :induct (,gfn i j . ,params)
-            :do-not-induct t
-            :expand ((,gfn i j . ,params)))))
+(local (include-book "clause-processors/just-expand" :dir :system))
+
+(with-output :off (prove)
+  (def-g-correct-thm binary-logand eval-g-base
+    :hints `(("Goal" :in-theory (e/d* (general-concretep-atom
+                                       (:ruleset general-object-possibilities)
+                                       not-general-numberp-not-acl2-numberp)
+                                      ((:definition ,gfn)
+                                       general-concretep-def
+                                       binary-logand
+                                       bfr-list->s
+                                       bfr-list->u
+                                       equal-of-booleans-rewrite
+                                       sets::double-containment
+                                       components-to-number-alt-def
+                                       hons-assoc-equal
+                                       default-car default-cdr
+                                       (:rules-of-class :type-prescription :here)))
+              :induct (,gfn i j . ,params)
+              :do-not-induct t
+              :expand ((,gfn i j . ,params))))))
+

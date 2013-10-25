@@ -91,7 +91,7 @@
 (def-g-binary-op rem
   (b* ((x-num (if (general-numberp x) x 0))
        (y-num (if (general-numberp y) y 0)))
-    (g-rem-of-numbers x-num y-num)))
+    (gret (g-rem-of-numbers x-num y-num))))
 
 (verify-g-guards
  rem

@@ -219,3 +219,26 @@
     (implies (not (pbfr-depends-on k p x))
              (not (pbfr-depends-on k p (bfr-check-false x pathcond))))))
 
+(defsection bfr-force-check
+  (defund bfr-force-check (x pathcond direction)
+    (declare (xargs :guard t))
+    (case direction
+      ((t) (bfr-check-true x pathcond))
+      ((nil) (bfr-check-false x pathcond))
+      (otherwise (bfr-constcheck x pathcond))))
+
+
+  (local (in-theory (enable bfr-force-check)))
+
+  (defthm bfr-eval-of-bfr-force-check
+    (implies (bfr-eval pathcond env)
+             (equal (bfr-eval (bfr-force-check x pathcond dir) env)
+                    (bfr-eval x env)))
+    :hints (("goal" :use ((:instance bfr-sat-unsat
+                           (prop x))
+                          (:instance bfr-sat-unsat
+                           (prop (bfr-and pathcond x)))))))
+
+  (defthm pbfr-depends-on-of-bfr-force-check
+    (implies (not (pbfr-depends-on k p x))
+             (not (pbfr-depends-on k p (bfr-force-check x pathcond dir))))))

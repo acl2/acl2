@@ -45,26 +45,46 @@
 ;;                                 :exec ,(car formals)))
 ;;           (mbe-gobj-fix-formals-list (cdr formals)))))
 
-(defmacro def-g-fn (fn body &key measure)
+(defmacro def-g-fn (fn body &key measure
+                       hyp-hints
+                       pres-hints
+                       hyp-fix-hints
+                       (replace-g-ifs 't))
   `(make-event
     (b* ((gfn (gl-fnsym ',fn))
          (world (w state))
          (formals (wgetprop ',fn 'formals))
          (params '(hyp clk config bvar-db state))
          (measure (or ',measure `(+ . ,(acl2-count-formals-list
-                                        formals)))))
+                                        formals))))
+         (?gcall (cons gfn
+                       (append formals params)))
+         (hyp-hints ,hyp-hints)
+         (pres-hints ,pres-hints)
+         (hyp-fix-hints ,hyp-fix-hints)
+         (body ,(if replace-g-ifs `(body-replace-g-ifs ,body) body)))
       `(progn
          (defun ,gfn (,@formals hyp clk config bvar-db state)
            (declare (xargs :guard (and (natp clk)
                                        (glcp-config-p config))
                            :measure ,measure
                            :verify-guards nil
-                           :stobjs (bvar-db state))
+                           :stobjs (hyp bvar-db state))
                     (ignorable ,@formals . ,params))
-             ,,body)
+           (let* ((hyp (lbfr-hyp-fix hyp)))
+             ,body))
+         (def-hyp-congruence ,gfn
+           :hints ,hyp-hints
+           :pres-hints ,pres-hints
+           :hyp-fix-hints ,hyp-fix-hints)
+
+         (in-theory (disable (:d ,gfn)))
+
          (table g-functions ',',fn ',gfn)))))
 
-(defmacro def-g-binary-op (fn body)
+
+
+(defmacro def-g-binary-op (fn body &key hyp-hints pres-hints hyp-fix-hints)
   `(make-event
     (let* ((fn ',fn)
            (world (w state))
@@ -74,25 +94,25 @@
       `(def-g-fn ,fn
          (let ((a ',a) (b ',b) (fn ',fn))
            `(cond ((and (general-concretep ,a) (general-concretep ,b))
-                   (mk-g-concrete
-                    (ec-call (,fn (general-concrete-obj ,a)
-                                  (general-concrete-obj ,b)))))
+                   (gret (mk-g-concrete
+                          (ec-call (,fn (general-concrete-obj ,a)
+                                        (general-concrete-obj ,b))))))
                   ((and (consp ,a) (eq (tag ,a) :g-ite))
                    (if (zp clk)
-                       (g-apply ',fn (gl-list ,a ,b))
+                       (gret (g-apply ',fn (gl-list ,a ,b)))
                      (let* ((test (g-ite->test ,a))
                             (then (g-ite->then ,a))
                             (else (g-ite->else ,a)))
-                       (g-if test
+                       (g-if (gret test)
                              (,gfn then ,b hyp clk config bvar-db state)
                              (,gfn else ,b hyp clk config bvar-db state)))))
                   ((and (consp ,b) (eq (tag ,b) :g-ite))
                    (if (zp clk)
-                       (g-apply ',fn (gl-list ,a ,b))
+                       (gret (g-apply ',fn (gl-list ,a ,b)))
                      (let* ((test (g-ite->test ,b))
                             (then (g-ite->then ,b))
                             (else (g-ite->else ,b)))
-                       (g-if test
+                       (g-if (gret test)
                              (,gfn ,a then hyp clk config bvar-db state)
                              (,gfn ,a else hyp clk config bvar-db state)))))
                   ((or (atom ,a)
@@ -100,8 +120,11 @@
                    (cond ((or (atom ,b)
                               (not (member-eq (tag ,b) '( :g-var :g-apply))))
                           ,',',body)
-                         (t (g-apply ',fn (gl-list ,a ,b)))))
-                  (t (g-apply ',fn (gl-list ,a ,b)))))))))
+                         (t (gret (g-apply ',fn (gl-list ,a ,b))))))
+                  (t (gret (g-apply ',fn (gl-list ,a ,b))))))
+         :hyp-hints ,',hyp-hints
+         :pres-hints ,',pres-hints
+         :hyp-fix-hints ,',hyp-fix-hints))))
 
 ;; (defun gobjectp-thmname (fn)
 ;;   (incat 'gl-thm::foo "GOBJECTP-" (symbol-name fn)))
@@ -172,8 +195,8 @@
        )
     `(encapsulate nil
        (defthm ,thmname
-         (implies (bfr-eval hyp (car env))
-                  (equal (,ev (,gfn ,@formals hyp clk config bvar-db state) env)
+         (implies (bfr-hyp-eval hyp (car env))
+                  (equal (,ev (mv-nth 0 (,gfn ,@formals hyp clk config bvar-db state)) env)
                          (,fn . ,(ev-formals-list ev formals))))
          :hints ,hints)
        (in-theory (disable ,gfn))
@@ -207,7 +230,9 @@
 (defmacro verify-g-guards (fn &key hints)
   `(make-event
     (let ((gfn (gl-fnsym ',fn)))
-      `(verify-guards ,gfn :hints ,,hints))))
+      `(encapsulate nil
+         (local (in-theory (enable g-if-fn g-or-fn)))
+         (verify-guards ,gfn :hints ,,hints)))))
 
 
 (defun not-gobj-depends-on-hyps (formals)
@@ -225,7 +250,7 @@
     `(encapsulate nil
        (defthm ,thmname
          (implies (and . ,(not-gobj-depends-on-hyps formals))
-                  (not (gobj-depends-on badvar parambfr ,gcall)))
+                  (not (gobj-depends-on badvar parambfr (mv-nth 0 ,gcall))))
          :hints ,hints)
        (table sym-counterpart-dep-thms ',fn ',thmname))))
 
@@ -242,3 +267,4 @@
 
 (defmacro def-gobj-dependency-thm (fn &key hints)
   (def-gobj-dependency-thm-macro fn hints))
+
