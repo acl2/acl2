@@ -3216,13 +3216,13 @@ Subtopics
   option is to read it at the terminal using the :[doc] command at
   the terminal.
 
-  In this topic we describe ACL2-Doc, a browser for reading the ACL2
-  system documentation inside Emacs. While ACL2-Doc is much like
-  Emacs Info, it is a separate system. In order to use this browser,
-  load the distributed file emacs/acl2-doc.el into Emacs. This will
-  happen automatically if you load emacs/emacs-acl2.el, which will
-  happen automatically if you put the following form in your ~/.emacs
-  file.
+  In this topic we describe how to read the documentation using
+  ACL2-Doc, a browser for reading the ACL2 system documentation
+  inside Emacs. While ACL2-Doc is much like Emacs Info, it is a
+  separate system. In order to use ACL2-Doc, load the distributed
+  file emacs/acl2-doc.el into Emacs. This will happen automatically
+  if you load emacs/emacs-acl2.el, which will happen automatically if
+  you put the following form in your ~/.emacs file.
 
     (load \"/Users/kaufmann/acl2/devel/emacs/emacs-acl2.el\")
 
@@ -3233,11 +3233,11 @@ Subtopics
   or else type: Control-x a a. If your browser session is somehow
   corrupted, instead use an upper-case `a' as follows: Control-x a A.
 
-At this point you will be in a buffer called acl2-doc, which will be
-displaying the top-level ACL2 topic in a special mode, the ACL2-Doc
-major mode. That mode provides key bindings for commands, as follows,
-and you can also see these by typing Control-h m while in that
-buffer.
+  At this point you will be in a buffer called \"acl2-doc\", which will
+  be displaying the top-level ACL2 topic in a special mode, the
+  ACL2-Doc major mode. That mode provides key bindings for commands,
+  as follows, and you can also see these by typing Control-h m while
+  in that buffer.
 
     I             acl2-doc-initialize
     <Return>      acl2-doc-go!
@@ -3305,10 +3305,31 @@ buffer.
     u             acl2-doc-up
        Go to the parent of the current topic.
 
-  Note that certain topic names are omitted: those whose symbols print
-  in ACL2 using |...|. Most of these are for the tours, which are
-  better viewed in a web browser anyhow. All of the rest, or nearly
-  all, are release notes for ACL2(r) from July, 2011 or earlier.")
+  Notes
+
+   1.
+        Many commands offer defaults, and many offer completion. The default
+        is determined by cursor position: if the cursor is sitting on
+        a letter of a documenatation topic name, or on whitespace
+        immediately after it, then that name will be offered as the
+        default.
+
+   2.
+        Square brackets indicate documentation topic names, for example:
+        [acl2-doc]. The square brackets are really there, for example
+        when you are searching using \"s\", \"S\", or \"n\". However, for
+        purposes of determining the default name (see above), the
+        only effect of the enclosing square brackets is to extend the
+        region in which the default is offered. For example, consider
+        the string \"[acl2-doc]\": the default name of \"acl2-doc\" is
+        offered if the cursor is on either square bracket.
+
+   3.
+        Certain topic names are omitted: those whose symbols print in ACL2
+        using |...|. Most of these are for the tours, which are
+        better viewed in a web browser anyhow. All of the rest, or
+        nearly all, are release notes for ACL2(r) from July, 2011 or
+        earlier.")
  (ACL2-HELP
   (OTHER)
   "The acl2-help mailing list
@@ -32360,9 +32381,28 @@ Subtopics
 
   A very common hint is the :use hint, which in general takes as its
   value a list of ``lemma instances'' (see [lemma-instance]) but
-  which allows a single lemma name as a special case:
+  which allows a single lemma name as a special case. Here are two
+  examples, one using a single lemma name and one using a lemma
+  instance:
 
-    :hints ((\"[1]Subgoal *1/1.2'\" :use lemma23))
+    ; Attach :use hint to the top-level goal, which is named \"Goal\":
+    :hints ((\"Goal\" :use lemma23))
+
+    ; Equivalent to the above: use the trivial instance (i.e., with the empty
+    ; substitution of lemma23:
+    :hints ((\"Goal\" :use ((:instance lemma23))))
+
+    ; Attach :use hint to the named subgoal, where the indicated lemma is used
+    ; with the substitution that maps x to 17 and y to (foo z):
+    :hints ((\"[1]Subgoal *1/1.2'\" :use ((:instance lemma23
+                                                     (x 17)
+                                                     (y (foo z))))))
+
+    ; Equivalent to the above: ACL2 allows you to omit the outer parentheses if
+    ; there is only one lemma used.
+    :hints ((\"[1]Subgoal *1/1.2'\" :use (:instance lemma23
+                                                    (x 17)
+                                                    (y (foo z)))))
 
   ACL2 also provides ``custom keyword'' hints (see
   [custom-keyword-hints]) and even more general ``computed hints''
@@ -32538,6 +32578,9 @@ Subtopics
   :do-not-induct hint is inherited by all subgoals generated.
 
   :USE
+  Examples of :USE hints are shown near the top of this documentation
+  topic.
+
   Value is a [lemma-instance] or a true list of [lemma-instance]s,
   indicating that the propositions denoted by the instances be added
   as hypotheses to the specified goal. See [lemma-instance]. Note
