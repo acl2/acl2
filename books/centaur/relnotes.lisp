@@ -119,6 +119,7 @@ need to update your @('include-book')s eventually.</p>
     No        security/suite-b         projects/security/sha-2
     No        wp-gen                   projects/wp-gen
     No        concurrent-programs      projects/concurrent-programs
+    No        deduction/passmore       projects/equational
 
   ----------------------------------------------------------------------
 })

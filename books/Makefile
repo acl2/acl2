@@ -1068,6 +1068,8 @@ wp-gen: $(filter projects/wp-gen/%, $(OK_CERTS))
 .PHONY: concurrent-programs
 concurrent-programs: $(filter projects/concurrent-programs/%, $(OK_CERTS))
 
+.PHONY: equational
+equational: $(filter projects/equational/%, $(OK_CERTS))
 
 # Dependencies based on running the following in the milawa/ACL2 directory:
 #   grep "include-book" `find . -name "*.lisp"` | grep :dir
@@ -1095,13 +1097,6 @@ milawa-test-extended: milawa-test-basic
 milawa-clean:
 	cd projects/milawa/ACL2; $(MAKE) clean
 
-
-# Warning: ACL2's GNUmakefile uses the following "short-test" target
-# to implement its own target, "certify-books-short".  So please be
-# careful about making major changes to "short-test" in this Makefile.
-short-test: $(filter cowles/% arithmetic/% meta/% xdoc/% ordinals/% \
-                     data-structures/% bdd/%, \
-                     $(OK_CERTS))
 
 # Warning: ACL2's GNUmakefile uses the following "certify-books"
 # target to implement its own target, "certify-books", which some

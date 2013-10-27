@@ -75,8 +75,8 @@
                  (old-topic    (xdoc::find-topic ',name all-topics)))
             (cond ((not old-topic)
                    (prog2$
-                    (cw "XDOC WARNING:  Ignoring attempt to extend topic ~x0, ~
-                         because no such topic is currently defined.~%"
+                    (er hard? 'xdoc-extend
+                        "Trying to extend topic ~x0, but this topic wasn't found."
                         ',name)
                     all-topics))
                    (t

@@ -686,7 +686,7 @@ foo
      :hints(("Goal" :in-theory (e/d (read-byte$ state-p1))))))
 
  (defsection object
-   :extension std/io/read-object$
+   :extension std/io/read-object
    (defthm state-preserved-by-read-object-when-eof
      (implies (and (mv-nth 0 (read-object channel state))
                    (state-p1 state)

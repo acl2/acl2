@@ -558,3 +558,35 @@ details.You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc., 51
 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.</p>")
 
+
+(defxdoc equational
+  :parents (projects)
+  :short "A modest resolution/paramodulation/factoring/merging prover written
+in the <a href='http://www.mcs.anl.gov/research/projects/AR/'>Argonne</a> style
+with Set-Of-Support, pick-given-ratio, mild term weighting, etc."
+
+  :long "<p>The directory @('projects/equational') contains the ACL2 source
+files for the Utrecht-Texas Equational Prover v0-0 by Grant O. Passmore.  These
+ACL2 books may be built by running, e.g., @('make equational') from the
+@('books/') directory.</p>
+
+<h3>Copyright Information</h3>
+
+<p>The Utrecht-Texas Equational Prover<br/>
+Copyright (C) 2006 Grant Olney Passmore (grant@math.utexas.edu)</p>
+
+<p>This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option) any
+later version.</p>
+
+<p>This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.</p>
+
+<p>You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
+Street, Fifth Floor, Boston, MA 02110-1301, USA.</p>")
+
+
