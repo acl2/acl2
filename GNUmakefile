@@ -705,9 +705,9 @@ endif
 regression:
 	uname -a
 ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2
+	cd books ; $(MAKE) $(ACL2_IGNORE) all ACL2=$(shell pwd)/saved_acl2
 else
-	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2)
+	cd books ; $(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2)
 endif
 
 .PHONY: regression-everything
@@ -724,10 +724,10 @@ regression-nonstd:
 	uname -a
 ifndef ACL2
 	cd books/nonstd ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2r
+	$(MAKE) $(ACL2_IGNORE) all ACL2=$(shell pwd)/saved_acl2r
 else
 	cd books/nonstd ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2)
+	$(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2)
 endif
 
 # Certify main books from scratch.

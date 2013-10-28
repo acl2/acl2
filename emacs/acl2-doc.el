@@ -222,7 +222,7 @@
 		    (max max-orig)
 		    (name (cond ((equal (aref name 0) ?:)
 				 (setq max (1- max))
-				 (substring 1 name))
+				 (substring name 1))
 				(t name)))
 		    (go t))
 	       (while (and go (< 1 max))

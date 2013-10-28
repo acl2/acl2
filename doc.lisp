@@ -518,7 +518,7 @@
 
   For statistics on ACL2 code size, see file doc/acl2-code-size.txt.
 
-  See [documentation] for how to access the user's manual.
+  See [documentation] for how to access the ACL2 User's Manual.
 
   See the home page at http://www.cs.utexas.edu/users/moore/acl2/ for
   additional information including tutorials, applications, mailing
@@ -1227,9 +1227,9 @@ Subtopics
   (TOP)
   "ACL2 documentation (system only, not including the community books)
 
-  This is the ACL2 documentation. For a manual that includes both the
-  ACL2 documentation and the ACL2 community books, see
-  http://fv.centtech.com/acl2/latest/doc/.
+  This is the ACL2 documentation. For an \"acl2+books\" combined manual
+  that includes both the ACL2 documentation and the ACL2 community
+  books, see http://fv.centtech.com/acl2/latest/doc/.
 
 
 Subtopics
@@ -8562,7 +8562,7 @@ Subtopics
   their substantial contributions to this methodology. See
   books/Makefile, in the community books, for more about ``Credits
   and History'', and for additional technical details not covered in
-  this topic (for example, how to build a local copy of the xdoc
+  this topic (for example, how to build a local copy of the XDOC
   manual for those who may wish to do that).
 
   For more information about installing ACL2, see the installation
@@ -9906,13 +9906,15 @@ Subtopics
   read-eval-print loop.")
  (BROKEN-LINK
   (DOCUMENTATION)
-  "Placeholder for link to documentation from community books
+  "Placeholder for link to documentation that resides in the community
+  books
 
-  You are looking at a manual that contains [documentation] from the
-  ACL2 sources, but not from the ACL2 community [books]. You probably
-  came to this page by following a link to a topic that is documented
-  in a book. You may wish to go to a manual that includes
-  documentation from the books, which you can find here:
+  You are looking at the ACL2 User's Manual, which contains
+  [documentation] from the ACL2 sources but not from the ACL2
+  community [books]. You probably came to this page by following a
+  link to a topic that is documented in a book. You may wish to go to
+  a manual that includes documentation from the books, which you can
+  find here:
 
   http://fv.centtech.com/acl2/latest/doc/")
  (BRR
@@ -20711,9 +20713,9 @@ Subtopics
   The :doc command only makes sense at the terminal. Most users will
   probably access the ACL2 documentation in other ways; see
   [documentation]. In particular, consider using the acl2+books
-  manual at the following location on the web, for topics documented
-  in the ACL2 community [books] or in the ACL2 system (where the
-  latter are rearranged):
+  combined manual at the following location on the web, for topics
+  documented in the ACL2 community [books] or in the ACL2 system
+  (where the latter are rearranged):
 
   http://fv.centtech.com/acl2/latest/doc/
 
@@ -21019,7 +21021,7 @@ Subtopics
   Here, we explain documentation for ACL2 and its community books.
 
   If you are using a release copy of ACL2, then we recommend that you
-  use a web browser to view the combined acl2+books manual. You can
+  use a web browser to view the acl2+books combined manual. You can
   view it on the web here:
 
   http://fv.centtech.com/acl2/latest/doc/
@@ -21041,11 +21043,12 @@ Subtopics
   ACL2 users are welcome to contribute to the ACL2 system
   documentation. See community book books/system/doc/acl2-doc.lisp.
 
-  You can build a local copy of the combined manual; see for example
-  the section ``BUILDING THE XDOC MANUAL'' in the community books
-  Makefile for instructions. While we don't recommend building the
-  ACL2 manual without the community books, you may do so; see the
-  README file in community books directory books/system/doc/.
+  You can build a local copy of the acl2+books combined manual; see for
+  example the section ``BUILDING THE XDOC MANUAL'' in the community
+  books Makefile for instructions. While we don't recommend building
+  just the ACL2 User's Manual (without the community books), you may
+  do so; see the README file in community books directory
+  books/system/doc/.
 
   The ACL2 system documentation includes topics not only for names of
   functions, macros, and constants, but also names of certain
@@ -21082,7 +21085,8 @@ Subtopics
       args, [guard], type, [constraint], etc., of a function symbol
 
   [Broken-link]
-      Placeholder for link to documentation from community books
+      Placeholder for link to documentation that resides in the community
+      books
 
   [Doc]
       [Documentation] at the terminal
@@ -25475,16 +25479,17 @@ Subtopics
   But how can you find documentation for books that are not included in
   the current ACL2 session?
 
-  The xdoc manual is a combined manual for the ACL2 sources and the
-  community books. It is built using documentation not only from the
-  ACL2 sources (which is rearranged) but also from the community
-  books (whether included in the current session or not), using an
-  ``xdoc processor'' created by Jared Davis. The ACL2 home page
-  (http://www.cs.utexas.edu/users/moore/acl2/) has a link to this
-  manual, which as of this writing may be found directly by visiting
-  the following web page: http://fv.centtech.com/acl2/latest/doc/.
-  You can build a local copy of this manual from the ACL2 Community
-  Books, following instructions in their Makefile.")
+  The XDOC (\"acl2+books\") manual is a combined manual for the ACL2
+  sources and the community books. It is built using documentation
+  not only from the ACL2 sources (which may be rearranged) but also
+  from the community books (whether included in the current session
+  or not), using an ``XDOC processor'' created by Jared Davis. The
+  ACL2 home page (http://www.cs.utexas.edu/users/moore/acl2/) has a
+  link to this manual, which as of this writing may be found directly
+  by visiting the following web page:
+  http://fv.centtech.com/acl2/latest/doc/. You can build a local copy
+  of this manual from the ACL2 Community Books, following
+  instructions in their Makefile.")
  (FIRST
   (ACL2-BUILT-INS)
   "First member of the list
@@ -32436,681 +32441,735 @@ Subtopics
 
   where [goal-spec] is as described elsewhere (see [goal-spec]) and the
   keys and their respective values are shown below with their
-  interpretations. (We also provide ``computed hints'' but discuss
-  them separately; see [computed-hints].)
-
-  :DO-NOT-INDUCT
-  Value is t, :otf-flg-override, :otf, name or nil, indicating whether
-  [induction] is permitted under the specified goal. If value is t or
-  :otf-flg-override, then the attempt to apply [induction] to the
-  indicated goal or any subgoal under the indicated goal will
-  immediately cause the theorem prover to report [failure], except
-  that if :otf-flg t is specified (see [otf-flg]) and value is t,
-  then the proof will continue until the time at which the goal
-  pushed for induction is finally considered. The latter behavior is
-  also what occurs if value is :otf. Thus, any non-nil value requires
-  the indicated goal to be proved entirely by simplification,
-  destructor elimination, and the other ``waterfall'' processes.
-  [Induction] to prove the indicated goal (or any subgoal) is not
-  permitted. See however the :induct hint below. If value is a symbol
-  other than t, :otf-flg-override, :otf or nil, the theorem prover
-  will give a ``bye'' to any subgoal that would otherwise be attacked
-  with induction. This will cause the theorem prover to fail
-  eventually but will collect the necessary subgoals. If value is
-  nil, this hint means [induction] is permitted. Since that is the
-  default, there is no reason to use the value nil. Note that a
-  :do-not-induct hint is ignored for any goal on which an :induct
-  hint is supplied. For an advanced example of the use of value :otf
-  with [override-hints], see community book
-  books/hints/basic-tests.lisp.
-
-  :DO-NOT
-  Value is a term having at most the single free variable [world],
-  which when evaluated (with [world] bound to the current ACL2
-  logical [world]) produces a list of symbols that is a subset of the
-  list
-
-    (preprocess ;propositional logic, simple rules
-     simplify   ;as above plus rewriting, linear arithmetic
-     eliminate-destructors
-     fertilize  ;use of equalities
-     generalize
-     eliminate-irrelevance).
-
-  The hint indicates that the ``processes'' named should not be used at
-  or below the goal in question. Thus, to prevent generalization and
-  fertilization, say, include the hint
-
-    :do-not '(generalize fertilize)
-
-  If value is a single symbol, as in
-
-    :do-not generalize,
-
-  it is taken to be '(value).
-
-  :EXPAND
-  Value is a true list of terms, each of which is of one of the forms
-  (let ((v1 t1)...) b) or (fn t1 ... tn), where fn is a defined
-  function symbol with formals v1, ..., vn, and body b. Such a term
-  is said to be ``expandable:'' it can be replaced by the result of
-  substituting the ti's for the vi's in b. The terms listed in the
-  :expand hint are expanded when they are encountered by the
-  simplifier while working on the specified goal or any of its
-  subgoals. We permit value to be a single such term instead of a
-  singleton list. Remarks: (1) Allowed are ``terms'' of the form
-  (:free (var1 var2 ... varn) pattern) where the indicated variables
-  are distinct and pattern is a term. Such ``terms'' indicate that we
-  consider the indicated variables to be instantiatable, in the
-  following sense: whenever the simplifier encounters a term that can
-  be obtained from pattern by instantiating the variables (var1 var2
-  ... varn), then it expands that term. (2) Also allowed are
-  ``terms'' of the form (:with name term), where name is a function
-  symbol, a macro name that denotes a function symbol (see
-  [macro-aliases-table]), or a [rune]. The corresponding rule of
-  class :rewrite, which is often a [definition] rule but need not be,
-  is then used in place of the current body for the function symbol
-  of term; see [show-bodies] and see [set-body]. If the rule is of
-  the form (implies hyp (equiv lhs rhs)), then after matching lhs to
-  the current term in a context that is maintaining equivalence
-  relation equiv, ACL2 will replace the current term with (if hyp rhs
-  (hide term)), or just rhs if the rule is just (equal lhs rhs). (3)
-  A combination of both :free and :with, as described above, is
-  legal. (4) The term :LAMBDAS is treated specially. It denotes the
-  list of all lambda applications (i.e., [let] expressions)
-  encountered during the proof. Conceptually, this use of :LAMBDAS
-  tells ACL2 to treat lambda applications as a notation for
-  substitutions, rather than as function calls whose opening is
-  subject to the ACL2 rewriter's heuristics (specifically, not
-  allowing lambda applications to open when they introduce ``too
-  many'' if terms).
-
-  :HANDS-OFF
-  Value is a true list of function symbols or lambda expressions,
-  indicating that under the specified goal applications of these
-  functions are not to be rewritten. Note however that subterms will
-  still be rewritten; see [hide] if that is not what is intended.
-  (The community book books/clause-processors/autohide.lisp from
-  Jared Davis may also be helpful in that case.) Value may also be a
-  single function symbol or lambda expression instead of a list.
-
-  :[in-theory]
-  Value is a ``theory expression,'' i.e., a term having at most the
-  single free variable [world] which when evaluated (with [world]
-  bound to the current ACL2 logical world (see [world])) will produce
-  a theory to use as the current theory for the goal specified. See
-  [theories].
-
-  Note that an :[in-theory] hint will always be evaluated relative to
-  the current ACL2 logical [world], not relative to the theory of a
-  previous goal. Consider the following example.
-
-    (defthm prop
-      (p (f (g x)))
-      :hints ((\"Goal\"      :in-theory (disable f))
-              (\"Subgoal 3\" :in-theory (enable  g))))
-
-  Consider in particular the theory in effect at Subgoal 3. This call
-  of the [enable] macro enables g relative to the [current-theory] of
-  the current logical [world], not relative to the theory produced by
-  the hint at Goal. Thus, the [disable] of f on behalf of the hint at
-  Goal will be lost at Subgoal 3, and f will be enabled at Subgoal 3
-  if was enabled globally when prop was submitted.
-
-  :INDUCT
-  Value is either t or a term containing at least one recursively
-  defined function symbol; if t, this hint indicates that the system
-  should proceed to apply its induction heuristic to the specified
-  goal produced (without trying simplification, etc.); if value is a
-  term other than t, then not only should the system apply induction
-  immediately, but it should analyze value rather than the goal to
-  generate its [induction] scheme. Merging and the other [induction]
-  heuristics are applied. Thus, if value contains several mergeable
-  [induction]s, the ``best'' will be created and chosen. E.g., the
-  :induct hint
-
-    (and (nth i a) (nth j a))
-
-  suggests simultaneous [induction] on i, j, and a.
-
-  If both an :induct and a :do-not-induct hint are supplied for a given
-  goal then the indicated [induction] is applied to the goal and the
-  :do-not-induct hint is inherited by all subgoals generated.
-
-  :USE
-  Examples of :USE hints are shown near the top of this documentation
-  topic.
-
-  Value is a [lemma-instance] or a true list of [lemma-instance]s,
-  indicating that the propositions denoted by the instances be added
-  as hypotheses to the specified goal. See [lemma-instance]. Note
-  that :use makes the given instances available as ordinary
-  hypotheses of the formula to be proved. The :instance form of a
-  [lemma-instance] permits you to instantiate the free variables of
-  previously proved theorems any way you wish; but it is up to you to
-  provide the appropriate instantiations because once the instances
-  are added as hypotheses their variables are no longer instantiable.
-  These new hypotheses participate fully in all subsequent rewriting,
-  etc. If the goal in question is in fact an instance of a previously
-  proved theorem, you may wish to use :by below. Note that [theories]
-  may be helpful when employing :use hints; see [minimal-theory].
-
-  Note that if the value is the name of a function symbol introduced by
-  [defun], then the ``normalized'' body of that definition is used,
-  for which ACL2 has propagated IF tests upward. This behavior
-  differs from that provided by a :by hint, where the original body
-  of the definition is used.
-
-  :[bdd]
-  This hint indicates that ordered binary decision diagrams (BDDs)
-  with rewriting are to be used to prove or simplify the goal. See
-  [bdd] for an introduction to the ACL2 BDD algorithm.
-
-  Value is a list of even length, such that every other element,
-  starting with the first, is one of the keywords :vars,
-  :bdd-constructors, :prove, or :literal. Each keyword that is
-  supplied should be followed by a value of the appropriate form, as
-  shown below; for others, a default is used. Although :vars must
-  always be supplied, we expect that most users will be content with
-  the defaults used for the other values.
-
-  :vars --- A list of ACL2 variables, which are to be treated as
-  Boolean variables. The prover must be able to check, using trivial
-  reasoning (see [type-set]), that each of these variables is Boolean
-  in the context of the current goal. Note that the prover will use
-  very simple heuristics to order any variables that do not occur in
-  :vars (so that they are ``greater than'' the variables that do
-  occur in :vars), and these heuristics are often far from optimal.
-  In addition, any variables not listed may fail to be assumed
-  Boolean by the prover, which is likely to seriously impede the
-  effectiveness of ACL2's BDD algorithm. Thus, users are encouraged
-  not to rely on the default order, but to supply a list of variables
-  instead. Finally, it is allowed to use a value of t for vars. This
-  means the same as a nil value, except that the BDD algorithm is
-  directed to fail unless it can guarantee that all variables in the
-  input term are known to be Boolean (in a sense discussed elsewhere;
-  see [bdd-algorithm]).
-
-  :literal --- An indication of which part of the current goal should
-  receive BDD processing. Possible values are:
-
-    :all     treat entire goal as a single literal (the default)
-    :conc    process the conclusion
-    n        process the hypothesis with index n (1, 2, ...)
-
-  :bdd-constructors --- When supplied, this value should be a list of
-  function symbols in the current ACL2 [world]; it is (cons) by
-  default, unless :bdd-constructors has a value in the
-  [ACL2-defaults-table] by default, in which case that value is the
-  default. We expect that most users will be content with the
-  default. See [bdd-algorithm] for information about how this value
-  is used.
-
-  :prove --- When supplied, this value should be t or nil; it is t by
-  default. When the goal is not proved and this value is t, the
-  entire proof will abort. Use the value nil if you are happy to the
-  proof to go on with the simplified term.
-
-  :CLAUSE-PROCESSOR
-
-  Value specifies the application of a user-defined simplifier to the
-  current goal. See [clause-processor], which provides necessary
-  background and hint syntax. Also see
-  [define-trusted-clause-processor] for a discussion of ``trusted
-  clause-processors'': goal-level simplifiers that may be external to
-  ACL2 and do not need to be proved correct in ACL2.
-
-  You can see all current :clause-processor rules by issuing the
-  command (print-clause-processor-rules), and you can see the names
-  of all trusted clause-processors by issuing the command (table
-  trusted-clause-processor-table).
-
-  :INSTRUCTIONS
-
-  Value is a list of [proof-checker] instructions; see [instructions].
-  Unlike other hint keywords described here, this one is actually a
-  custom keyword hint (see [custom-keyword-hints]) that generates a
-  suitable :[clause-processor] hint.
-
-  :CASES
-  Value is a non-empty list of terms. For each term in the list, a new
-  goal is created from the current goal by assuming that term; and
-  also, in essence, one additional new goal is created by assuming
-  all the terms in the list false. We say ``in essence'' because if
-  the disjunction of the terms supplied is a tautology, then that
-  final goal will be a tautology and hence will in fact never
-  actually be created.
-
-  :BY
-  Value is a [lemma-instance], nil, or a new event name. If the value
-  is a [lemma-instance] (see [lemma-instance]), then it indicates
-  that the goal (when viewed as a clause) is either equal to the
-  proposition denoted by the instance, or is subsumed by that
-  proposition when both are viewed as clauses. To view a formula as a
-  clause, union together the negations of the hypotheses and add the
-  conclusion. For example,
-
-    (IMPLIES (AND (h1 t1) (h2 t2)) (c t1))
-
-  may be viewed as the clause
-
-    {~(h1 t1) ~(h2 t2) (c t1)}.
-
-  Clause c1 is ``subsumed'' by clause c2 iff some instance of c2 is a
-  subset of c1. For example, the clause above is subsumed by {~(h1 x)
-  (c x)}, which when viewed as a formula is (implies (h1 x) (c x)).
-
-  Note that if the value is the name of a function symbol introduced by
-  [defun], then the original form of the body of that definition is
-  used. This behavior differs from that provided by a :use hint,
-  where the so-called ``normalized'' body, for which ACL2 has
-  propagated IF tests upward.
-
-  If the value is nil or a new name, the prover does not even attempt
-  to prove the goal to which this hint is attached. Instead the goal
-  is given a ``bye'', i.e., it is skipped and the proof attempt
-  continues as though the goal had been proved. If the prover
-  terminates without error then it reports that the proof would have
-  succeeded had the indicated goals been proved and it prints an
-  appropriate [defthm] form to define each of the :by names. The
-  ``name'' nil means ``make up a name.'' Here is an example
-  (admittedly contrived for illustration purposes).
-
-    ACL2 !>(thm (equal (append (append x y) z)
-                       (append x y z))
-                :hints ((\"Subgoal *1/2'\" :by nil)))
-
-    Name the formula above *1.
-
-    [[... output omitted here ...]]
-
-    [Note:  A hint was supplied for our processing of the goal below.
-    Thanks!]
-
-    Subgoal *1/2'
-    (IMPLIES (AND (CONSP X)
-                  (EQUAL (APPEND (APPEND (CDR X) Y) Z)
-                         (APPEND (CDR X) Y Z)))
-             (EQUAL (APPEND (APPEND X Y) Z)
-                    (APPEND X Y Z))).
-
-    But we have been asked to pretend that this goal is subsumed by the
-    yet-to-be-proved |THM Subgoal *1/2'|.
-
-    Subgoal *1/1
-    [[... proof goes on; further output omitted here ...]]
-
-  The system does not attempt to check the uniqueness of the :by names
-  (supplied or made up), since by the time those goals are proved the
-  namespace will be cluttered still further. Therefore, the final
-  list of ``appropriate'' [defthm] forms may be impossible to admit
-  without some renaming by the user. If you must invent new names,
-  remember to substitute the new ones for the old ones in the :by
-  hints themselves.
-
-  :RESTRICT
-  Warning: This is a sophisticated hint, suggested by Bishop Brock,
-  that is intended for advanced users. In particular, :restrict hints
-  are ignored by the preprocessor, so you might find it useful to
-  give the hint :do-not '(preprocess) when using any :restrict hints,
-  at least if the rules in question are abbreviations (see [simple]).
-
-  Value is an association list. Its members are of the form (x subst1
-  subst2 ...), where: x is either (1) a [rune] whose [car] is
-  :[rewrite] or :[definition] or (2) an event name corresponding to
-  one or more such [rune]s; and (subst1 subst2 ...) is a non-empty
-  list of substitutions, i.e., of association lists pairing variables
-  with terms. First consider the case that x is a :[rewrite] or
-  :[definition] [rune]. Recall that without this hint, the rule named
-  x is used by matching its left-hand side (call it lhs) against the
-  term currently being considered by the rewriter, that is, by
-  attempting to find a substitution s such that the instantiation of
-  lhs using s is equal to that term. If however the :restrict hint
-  contains (x subst1 subst2 ...), then this behavior will be modified
-  by restricting s so that it must extend subst1; and if there is no
-  such s, then s is restricted so that it must extend subst2; and so
-  on, until the list of substitutions is exhausted. If no such s is
-  found, then the rewrite or definition rule named x is not applied
-  to that term. Finally, if x is an event name corresponding to one
-  or more :[rewrite] or :[definition] [rune]s (that is, x is the
-  ``base symbol'' of such [rune]s; see [rune]), say [rune]s r1, ...
-  rn, then the meaning is the same except that (x subst1 subst2 ...)
-  is replaced by (ri subst1 subst2 ...) for each i. Once this
-  replacement is complete, the hint may not contain two members whose
-  [car] is the same [rune].
-
-  Note that the substitutions in :restrict hints refer to the variables
-  actually appearing in the goals, not to the variables appearing in
-  the rule being restricted.
-
-  Here is an example, supplied by Bishop Brock. Suppose that the
-  database includes the following rewrite rule, which is probably
-  kept [disable]d. (We ignore the question of how to prove this
-  rule.)
-
-    cancel-<-*$free:
-    (implies (and (rationalp x)
-                  (rationalp y)
-                  (rationalp z))
-             (equal (< y z)
-                    (if (< x 0)
-                        (> (* x y) (* x z))
-                      (if (> x 0)
-                          (< (* x y) (* x z))
-                        (hide (< y z))))))
-
-  Then ACL2 can prove the following theorem (unless other rules get in
-  the way), essentially by multiplying both sides by x.
-
-    (thm
-      (implies (and (rationalp x)
-                    (< 1 x))
-               (< (/ x) 1))
-      :hints
-      ((\"Goal\"
-        :in-theory (enable cancel-<-*$free)
-        :restrict ((cancel-<-*$free ((x x) (y (/ x)) (z 1)))))))
-
-  The :restrict hint above says that the variables x, y, and z in the
-  rewrite rule cancel-<-*$free above should be instantiated
-  respectively by x, (/ x), and 1. Thus (< y z) becomes (< (/ x) 1),
-  and this inequality is replaced by the corresponding instance of
-  the right-hand-side of cancel-<-*$free. Since the current
-  conjecture assumes (< 1 x), that instance of the right-hand side
-  simplifies to
-
-    (< (* x (/ x)) (* x 1))
-
-  which in turn simplifies to (< 1 x), a hypothesis in the present
-  theorem.
-
-  :NONLINEARP
-  Value is t or nil, indicating whether [non-linear-arithmetic] is
-  active. The default value is nil. See [non-linear-arithmetic].
-
-  :BACKCHAIN-LIMIT-RW
-  Value is a natural number or nil, indicating the level of
-  backchaining for [rewrite], [meta], and [linear] rules. This
-  overrides, for the current goal and (as with :[in-theory] hints)
-  descendent goals, the default [backchain-limit] (see
-  [set-backchain-limit]).
-
-  :REORDER
-  Value is a list of positive integers without duplicates,
-  corresponding to the numbering of subgoals generated for the
-  [goal-spec] \"G\", say \"G.k\" down to \"G.1\". Those subgoals are
-  reordered so that if value is (n1 n2 ... nk), then the goal now
-  numbered \"G.k\" will be the goal originally numbered \"G.n1\"; the
-  goal now numbered \"G.k-1\" will be the goal formerly numbered
-  \"G.n2\"; and so on, down the list of ni, after which the goals not
-  yet printed are printed in their original order. Note that
-  reordering for subgoals of a goal to be proved by induction, such
-  as *1, is not supported.
-
-  :CASE-SPLIT-LIMITATIONS
-  Value is the same as for [set-case-split-limitations]. The
-  simplifier will behave as though the value had instead been
-  supplied to set-case-split-limitations; see
-  [set-case-split-limitations]. This behavior will persist through
-  subgoals unless overridden by another :CASE-SPLIT-LIMITATIONS hint.
-
-  :NO-OP
-  Value is any object and is irrelevant. This hint does nothing. But
-  empty hints, such as (\"Goal\"), are illegal and there are occasions,
-  especially when writing custom keyword hints (see
-  [custom-keyword-hints]) and computed hints (see [computed-hints])
-  where it is convenient to be able to generate a non-empty no-op
-  hint. The standard idiom is (\"Goal\" :NO-OP T) but the T is
-  completely ignored. Unlike other hint keywords, multiple
-  occurrences of the keyword :NO-OP are tolerated.
-
-  :NO-THANKS
-  Value is any object. This hint does nothing, except that if value is
-  non-nil then the usual ``[Note: A hint was supplied... Thanks!]''
-  is not printed.
-
-  :ERROR
-  Value is typically a ``fmt message'' to be printed by the [fmt]
-  tilde-directive ~@ but may be any object. The effect of this hint
-  is to cause an error when the hint is translated. There is no
-  reason to include an :ERROR hint in any user-typein, since it will
-  only cause an error when the form is evaluated. :ERROR hints are
-  useful in the definition of functions that generate custom keyword
-  hints ([custom-keyword-hints]) and computed hints
-  ([computed-hints]). For example, if you wish to define a custom
-  keyword hint :my-hint val and you wish the hint to signal an error
-  if there is something inappropriate about val in the context of the
-  hint, use the following code to generate the hint
-
-    (list :ERROR (cons \"Your specified value, ~x0, is inappropriate\"
-                       (list (cons #0 val))))
-
-  which is equivalent to
-
-    (list :ERROR (msg \"Your specified value, ~x0, is inappropriate\"
-                      val))
-
-  which, if val has the value 123, would evaluate to the hint
-
-    (:ERROR (\"Your specified value, ~x0, is inappropriate\" (#0 . 123))).
-
-  Note that any time an :ERROR keyword is produced during hint
-  processing, including iterations of the expansions of custom
-  keyword hints or of [override-hints], an error will occur.
-
-  :OR
-  Value is a list (kwd-val-listp-1 ... kwd-val-listp-k), where each
-  kwd-val-listp-i is a list satisfying [keyword-value-listp], i.e.,
-  an alternating list of keywords and values. This hint causes an
-  attempt to prove the specified goal using hints kwd-val-listp-i in
-  sequence (first kwd-val-listp-1, then kwd-val-listp-2, and so on),
-  until the first of these succeeds. If none succeeds, then the
-  prover proceeds after heuristically choosing the ``best'' result,
-  taking into account the goals pushed in each case for proof by
-  induction.
-
-  The following (contrived but illustrative example illustrates how :or
-  hints work.
-
-    ACL2 !>(thm (f x)
-                :hints
-                ((\"Goal\"
-                  :expand ((nth x 3))
-                  :or ((:in-theory (disable car-cons))
-                       (:use cdr-cons :in-theory (enable append)))
-                  :do-not '(generalize))))
-
-    [Note:  A hint was supplied for our processing of the goal above.
-    Thanks!]
-
-    The :OR hint for Goal gives rise to two disjunctive branches.  Proving
-    any one of these branches would suffice to prove Goal.  We explore
-    them in turn, describing their derivations as we go.
-
-    ---
-    Subgoal D2
-    ( same formula as Goal ).
-
-    The first disjunctive branch (of 2) for Goal can be created by applying
-    the hint:
-    (\"Subgoal D2\" :EXPAND ((NTH X 3))
-                  :IN-THEORY (DISABLE CAR-CONS)
-                  :DO-NOT '(GENERALIZE)).
-
-
-    [Note:  A hint was supplied for our processing of the goal above.
-    Thanks!]
-
-    Normally we would attempt to prove this formula by induction.  However,
-    we prefer in this instance to focus on the original input conjecture
-    rather than this simplified special case.  We therefore abandon our
-    previous work on this conjecture and reassign the name *1 to the original
-    conjecture.  (See :DOC otf-flg.)  [Note:  Thanks again for the hint.]
-
-    ---
-    Subgoal D1
-    ( same formula as Goal ).
-
-    The second disjunctive branch (of 2) for Goal can be created by applying
-    the hint:
-    (\"Subgoal D1\" :EXPAND ((NTH X 3))
-                  :USE CDR-CONS
-                  :IN-THEORY (ENABLE APPEND)
-                  :DO-NOT '(GENERALIZE)).
-
-
-    [Note:  A hint was supplied for our processing of the goal above.
-    Thanks!]
-
-    ACL2 Warning [Use] in ( THM ...):  It is unusual to :USE an enabled
-    :REWRITE or :DEFINITION rule, so you may want to consider disabling
-    (:REWRITE CDR-CONS).
-
-
-    We augment the goal with the hypothesis provided by the :USE hint.
-    The hypothesis can be obtained from CDR-CONS.  We are left with the
-    following subgoal.
-
-    Subgoal D1'
-    (IMPLIES (EQUAL (CDR (CONS X Y)) Y)
-             (F X)).
-
-    By the simple :rewrite rule CDR-CONS we reduce the conjecture to
-
-    Subgoal D1''
-    (F X).
-
-  ... and so on. This example illustrates how ACL2 processes :or hints
-  in general. For each i from 1 to k, a so-called ``disjunctive''
-  subgoal is created by splicing kwd-val-listp-i into the other hint
-  values (if any) supplied for the given goal, in order. A
-  corresponding subgoal is created for each i, numbered in the usual
-  manner (hence, counting down) except that the ``D'' is prefixed to
-  each resulting goal.
-
-  :RW-CACHE-STATE
-  Value is an element of the list constant *legal-rw-cache-states*:
-  :atom (the default), nil, t, or :disabled. This hint applies to the
-  indicated goal and all its descendents, to set the so-called
-  ``rw-cache-state'' to the indicated value; see
-  [set-rw-cache-state].
-
-  :BACKTRACK
-  This is an advanced hint. You can probably accomplish its effect by
-  the use of ordinary computed hints; see [computed-hints]. But if
-  you are an expert, read on. (See [hints-and-the-waterfall] for some
-  relevant background.)
-
-  Value is a computed hint, which is an expression that evaluates
-  either to nil --- indicating that the :backtrack hint is to have no
-  effect --- or to a non-empty alternating list of :keyi :vali pairs,
-  as expected for a hint. However, unlike ordinary computed hints,
-  :backtrack hints are evaluated after a goal has been processed to
-  yield zero or more subgoals, not before. Moreover, variables
-  PROCESSOR and CLAUSE-LIST are allowed, but variable
-  STABLE-UNDER-SIMPLIFICATIONP is not. We explain in more detail
-  below, but first consider the following simple example. First we
-  define a standard list reversal function:
-
-    (defun rev (x)
-      (if (consp x)
-          (append (rev (cdr x)) (cons (car x) nil))
-        nil))
-
-  Now we prove:
-
-    (thm (true-listp (rev x)))
-
-  The successful proof includes the following output.
-
-    Subgoal *1/1'
-    (IMPLIES
-      (AND (CONSP X)
-           (TRUE-LISTP (REV (CDR X))))
-      (TRUE-LISTP (APPEND (REV (CDR X)) (LIST (CAR X))))).
-
-    The destructor terms (CAR X) and (CDR X) can be
-    eliminated by using CAR-CDR-ELIM to replace X
-    by (CONS X1 X2), (CAR X) by X1 and (CDR X) by
-    X2.  This produces the following goal.
-
-    Subgoal *1/1''
-    (IMPLIES (AND (CONSP (CONS X1 X2))
-                  (TRUE-LISTP (REV X2)))
-             (TRUE-LISTP (APPEND (REV X2) (LIST X1)))).
-
-  But suppose that we attach a :backtrack hint to the goal above at
-  which destructor elimination was applied:
-
-    (thm (true-listp (rev x))
-         :hints ((\"Subgoal *1/1'\"
-                  :backtrack
-                  (quote (:do-not '(eliminate-destructors))))))
-
-  Then when ACL2 applies destructor elimination as displayed above,
-  this time the :backtrack hint applies, evaluating to (:do-not
-  '(eliminate-destructors)). Since this list is not nil, the prover
-  decides not to keep the new subgoal, and instead supplies this
-  :do-not hint before attacking the goal again. In this example, ACL2
-  happens to use a technique later in its ``waterfall'' arsenal than
-  destructor elimination, namely, generalization:
-
-    Subgoal *1/1'
-    (IMPLIES
-      (AND (CONSP X)
-           (TRUE-LISTP (REV (CDR X))))
-      (TRUE-LISTP (APPEND (REV (CDR X)) (LIST (CAR X))))).
-
-    [Note:  A hint was supplied for our processing
-    of the goal above, because of a :backtrack hint
-    that is preventing destructor elimination.
-    Thanks!]
-
-    We generalize this conjecture, replacing
-    (REV (CDR X)) by RV.  This produces
-
-    Subgoal *1/1''
-    (IMPLIES (AND (CONSP X) (TRUE-LISTP RV))
-             (TRUE-LISTP (APPEND RV (LIST (CAR X))))).
-
-  We now provide a careful explanation of how :backtrack hints work,
-  but we suggest that you keep the example above in mind. If
-  ``:backtrack form'' is part of the hint that has been selected for
-  a goal, then form is evaluated when one of ACL2's clause processors
-  successfully applies to the current goal to produce a list of
-  subgoals. This evaluation takes place in an environment just like
-  that for any computed hint (see [computed-hints]), with the
-  following exceptions. First, the variable
-  STABLE-UNDER-SIMPLIFICATIONP is not allowed to occur free in form,
-  but instead the following new variables are allowed to occur free
-  and are bound for this evaluation as follows: PROCESSOR is bound to
-  the processor in the list *preprocess-clause-ledge* that has
-  applied to the goal, and CLAUSE-LIST is bound to the list of
-  clauses (each a list of literals that is implicitly disjoined)
-  returned by that clause processor. Second, the variables HIST and
-  PSPV are bound to the history and pspv returned by the clause
-  processor, not the ones that were passed to the clause processor.
-  If this evaluation returns an error, then the proof aborts, as for
-  any computed hint whose evaluation returns an error. If this
-  evaluation returns nil, then the :backtrack hint has no effect, and
-  the goal is replaced by the list of goals (the value of CLAUSE-LIST
-  described above), as usual. Otherwise, the clause processor is
-  deemed to have failed, and the goal clause is tried again starting
-  at the top of the waterfall after selecting the hint returned by
-  the above evaluation. That hint will normally be an alternating
-  list of hint keywords and their values, but if it is a custom
-  keyword hint (see [custom-keyword-hints]), then it will be handled
-  in the usual manner but with the first three variables above bound
-  to the symbol :OMITTED. Of course, if the new hint includes a value
-  for :BACKTRACK then this process can loop; care should be taken to
-  keep that from happening.
-
-  A final note about :BACKTRACK hints: since these are a form of
-  computed hints, [override-hints] (if any) are applied to their
-  evaluation result just as with any computed hint. That is, the
-  backtrack hint is successively modified with each override-hint, to
-  produce a final hint that is actually used (or, ignored if that
-  final hint is nil). See [override-hints].")
+  interpretations. We also provide ``computed hints'' but discuss
+  them separately; see [computed-hints]. The hint keywords below are
+  considered in alphabetical order.
+
+    :backchain-limit-rw
+
+        Value is a natural number or nil, indicating the level of
+        backchaining for [rewrite], [meta], and [linear] rules. This
+        overrides, for the current goal and (as with :[in-theory]
+        hints) descendent goals, the default [backchain-limit] (see
+        [set-backchain-limit]).
+
+    :backtrack
+
+        This is an advanced hint. You can probably accomplish its effect by
+        the use of ordinary computed hints; see [computed-hints]. But
+        if you are an expert, read on. (See [hints-and-the-waterfall]
+        for some relevant background.)
+
+        Value is a computed hint, which is an expression that evaluates
+        either to nil --- indicating that the :backtrack hint is to
+        have no effect --- or to a non-empty alternating list of
+        :keyi :vali pairs, as expected for a hint. However, unlike
+        ordinary computed hints, :backtrack hints are evaluated after
+        a goal has been processed to yield zero or more subgoals, not
+        before. Moreover, variables PROCESSOR and CLAUSE-LIST are
+        allowed, but variable STABLE-UNDER-SIMPLIFICATIONP is not. We
+        explain in more detail below, but first consider the
+        following simple example. First we define a standard list
+        reversal function:
+
+          (defun rev (x)
+            (if (consp x)
+                (append (rev (cdr x)) (cons (car x) nil))
+              nil))
+
+        Now we prove:
+
+          (thm (true-listp (rev x)))
+
+        The successful proof includes the following output.
+
+          Subgoal *1/1'
+          (IMPLIES
+            (AND (CONSP X)
+                 (TRUE-LISTP (REV (CDR X))))
+            (TRUE-LISTP (APPEND (REV (CDR X)) (LIST (CAR X))))).
+
+          The destructor terms (CAR X) and (CDR X) can be
+          eliminated by using CAR-CDR-ELIM to replace X
+          by (CONS X1 X2), (CAR X) by X1 and (CDR X) by
+          X2.  This produces the following goal.
+
+          Subgoal *1/1''
+          (IMPLIES (AND (CONSP (CONS X1 X2))
+                        (TRUE-LISTP (REV X2)))
+                   (TRUE-LISTP (APPEND (REV X2) (LIST X1)))).
+
+        But suppose that we attach a :backtrack hint to the goal above at
+        which destructor elimination was applied:
+
+          (thm (true-listp (rev x))
+               :hints ((\"Subgoal *1/1'\"
+                        :backtrack
+                        (quote (:do-not '(eliminate-destructors))))))
+
+        Then when ACL2 applies destructor elimination as displayed above,
+        this time the :backtrack hint applies, evaluating to (:do-not
+        '(eliminate-destructors)). Since this list is not nil, the
+        prover decides not to keep the new subgoal, and instead
+        supplies this :do-not hint before attacking the goal again.
+        In this example, ACL2 happens to use a technique later in its
+        ``waterfall'' arsenal than destructor elimination, namely,
+        generalization:
+
+          Subgoal *1/1'
+          (IMPLIES
+            (AND (CONSP X)
+                 (TRUE-LISTP (REV (CDR X))))
+            (TRUE-LISTP (APPEND (REV (CDR X)) (LIST (CAR X))))).
+
+          [Note:  A hint was supplied for our processing
+          of the goal above, because of a :backtrack hint
+          that is preventing destructor elimination.
+          Thanks!]
+
+          We generalize this conjecture, replacing
+          (REV (CDR X)) by RV.  This produces
+
+          Subgoal *1/1''
+          (IMPLIES (AND (CONSP X) (TRUE-LISTP RV))
+                   (TRUE-LISTP (APPEND RV (LIST (CAR X))))).
+
+        We now provide a careful explanation of how :backtrack hints work,
+        but we suggest that you keep the example above in mind. If
+        ``:backtrack form'' is part of the hint that has been
+        selected for a goal, then form is evaluated when one of
+        ACL2's clause processors successfully applies to the current
+        goal to produce a list of subgoals. This evaluation takes
+        place in an environment just like that for any computed hint
+        (see [computed-hints]), with the following exceptions. First,
+        the variable STABLE-UNDER-SIMPLIFICATIONP is not allowed to
+        occur free in form, but instead the following new variables
+        are allowed to occur free and are bound for this evaluation
+        as follows: PROCESSOR is bound to the processor in the list
+        *preprocess-clause-ledge* that has applied to the goal, and
+        CLAUSE-LIST is bound to the list of clauses (each a list of
+        literals that is implicitly disjoined) returned by that
+        clause processor. Second, the variables HIST and PSPV are
+        bound to the history and pspv returned by the clause
+        processor, not the ones that were passed to the clause
+        processor. If this evaluation returns an error, then the
+        proof aborts, as for any computed hint whose evaluation
+        returns an error. If this evaluation returns nil, then the
+        :backtrack hint has no effect, and the goal is replaced by
+        the list of goals (the value of CLAUSE-LIST described above),
+        as usual. Otherwise, the clause processor is deemed to have
+        failed, and the goal clause is tried again starting at the
+        top of the waterfall after selecting the hint returned by the
+        above evaluation. That hint will normally be an alternating
+        list of hint keywords and their values, but if it is a custom
+        keyword hint (see [custom-keyword-hints]), then it will be
+        handled in the usual manner but with the first three
+        variables above bound to the symbol :OMITTED. Of course, if
+        the new hint includes a value for :BACKTRACK then this
+        process can loop; care should be taken to keep that from
+        happening.
+
+        A final note about :BACKTRACK hints: since these are a form of
+        computed hints, [override-hints] (if any) are applied to
+        their evaluation result just as with any computed hint. That
+        is, the backtrack hint is successively modified with each
+        override-hint, to produce a final hint that is actually used
+        (or, ignored if that final hint is nil). See
+        [override-hints].
+
+    :[bdd]
+
+        This hint indicates that ACL2's built-in ordered binary decision
+        diagrams (BDDs) with rewriting are to be used to prove or
+        simplify the goal. See [bdd] for an introduction to the ACL2
+        BDD algorithm.
+
+        Value is a list of even length, such that every other element,
+        starting with the first, is one of the keywords :vars,
+        :bdd-constructors, :prove, or :literal. Each keyword that is
+        supplied should be followed by a value of the appropriate
+        form, as shown below; for others, a default is used. Although
+        :vars must always be supplied, we expect that most users will
+        be content with the defaults used for the other values.
+
+            :vars --- A list of ACL2 variables, which are to be treated as
+            Boolean variables. The prover must be able to check,
+            using trivial reasoning (see [type-set]), that each of
+            these variables is Boolean in the context of the current
+            goal. Note that the prover will use very simple
+            heuristics to order any variables that do not occur in
+            :vars (so that they are ``greater than'' the variables
+            that do occur in :vars), and these heuristics are often
+            far from optimal. In addition, any variables not listed
+            may fail to be assumed Boolean by the prover, which is
+            likely to seriously impede the effectiveness of ACL2's
+            BDD algorithm. Thus, users are encouraged not to rely on
+            the default order, but to supply a list of variables
+            instead. Finally, it is allowed to use a value of t for
+            vars. This means the same as a nil value, except that the
+            BDD algorithm is directed to fail unless it can guarantee
+            that all variables in the input term are known to be
+            Boolean (in a sense discussed elsewhere; see
+            [bdd-algorithm]).
+
+            :literal --- An indication of which part of the current goal should
+            receive BDD processing. Possible values are:
+
+              :all     treat entire goal as a single literal (the default)
+              :conc    process the conclusion
+              n        process the hypothesis with index n (1, 2, ...)
+
+            :bdd-constructors --- When supplied, this value should be a list of
+            function symbols in the current ACL2 [world]; it is
+            (cons) by default, unless :bdd-constructors has a value
+            in the [ACL2-defaults-table] by default, in which case
+            that value is the default. We expect that most users will
+            be content with the default. See [bdd-algorithm] for
+            information about how this value is used.
+
+            :prove --- When supplied, this value should be t or nil; it is t by
+            default. When the goal is not proved and this value is t,
+            the entire proof will abort. Use the value nil if you are
+            happy to the proof to go on with the simplified term.
+
+    :by
+
+        Value is a [lemma-instance], nil, or a new event name. If the value
+        is a [lemma-instance] (see [lemma-instance]), then it
+        indicates that the goal (when viewed as a clause) is either
+        equal to the proposition denoted by the instance, or is
+        subsumed by that proposition when both are viewed as clauses.
+        To view a formula as a clause, union together the negations
+        of the hypotheses and add the conclusion. For example,
+
+          (IMPLIES (AND (h1 t1) (h2 t2)) (c t1))
+
+        may be viewed as the clause
+
+          {~(h1 t1) ~(h2 t2) (c t1)}.
+
+        Clause c1 is ``subsumed'' by clause c2 iff some instance of c2 is a
+        subset of c1. For example, the clause above is subsumed by
+        {~(h1 x) (c x)}, which when viewed as a formula is (implies
+        (h1 x) (c x)).
+
+        Note that if the value is the name of a function symbol introduced by
+        [defun], then the original form of the body of that
+        definition is used. This behavior differs from that provided
+        by a :use hint, where the so-called ``normalized'' body, for
+        which ACL2 has propagated IF tests upward.
+
+        If the value is nil or a new name, the prover does not even attempt
+        to prove the goal to which this hint is attached. Instead the
+        goal is given a ``bye'', i.e., it is skipped and the proof
+        attempt continues as though the goal had been proved. If the
+        prover terminates without error then it reports that the
+        proof would have succeeded had the indicated goals been
+        proved and it prints an appropriate [defthm] form to define
+        each of the :by names. The ``name'' nil means ``make up a
+        name.'' Here is an example (admittedly contrived for
+        illustration purposes).
+
+          ACL2 !>(thm (equal (append (append x y) z)
+                             (append x y z))
+                      :hints ((\"Subgoal *1/2'\" :by nil)))
+
+          Name the formula above *1.
+
+          [[... output omitted here ...]]
+
+          [Note:  A hint was supplied for our processing of the goal below.
+          Thanks!]
+
+          Subgoal *1/2'
+          (IMPLIES (AND (CONSP X)
+                        (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                               (APPEND (CDR X) Y Z)))
+                   (EQUAL (APPEND (APPEND X Y) Z)
+                          (APPEND X Y Z))).
+
+          But we have been asked to pretend that this goal is subsumed by the
+          yet-to-be-proved |THM Subgoal *1/2'|.
+
+          Subgoal *1/1
+          [[... proof goes on; further output omitted here ...]]
+
+        The system does not attempt to check the uniqueness of the :by names
+        (supplied or made up), since by the time those goals are
+        proved the namespace will be cluttered still further.
+        Therefore, the final list of ``appropriate'' [defthm] forms
+        may be impossible to admit without some renaming by the user.
+        If you must invent new names, remember to substitute the new
+        ones for the old ones in the :by hints themselves.
+
+    :[case-split-limitations]
+
+        Value is the same as for [set-case-split-limitations]. The simplifier
+        will behave as though the value had instead been supplied to
+        set-case-split-limitations; see [set-case-split-limitations].
+        This behavior will persist through subgoals unless overridden
+        by another :CASE-SPLIT-LIMITATIONS hint.
+
+    :cases
+
+        Value is a non-empty list of terms. For each term in the list, a new
+        goal is created from the current goal by assuming that term;
+        and also, in essence, one additional new goal is created by
+        assuming all the terms in the list false. We say ``in
+        essence'' because if the disjunction of the terms supplied is
+        a tautology, then that final goal will be a tautology and
+        hence will in fact never actually be created.
+
+    :[clause-processor]
+
+        Value specifies the application of a user-defined simplifier to the
+        current goal. See [clause-processor], which provides
+        necessary background and hint syntax. Also see
+        [define-trusted-clause-processor] for a discussion of
+        ``trusted clause-processors'': goal-level simplifiers that
+        may be external to ACL2 and do not need to be proved correct
+        in ACL2.
+
+        You can see all current :clause-processor rules by issuing the
+        command (print-clause-processor-rules), and you can see the
+        names of all trusted clause-processors by issuing the command
+        (table trusted-clause-processor-table).
+
+    :do-not
+
+        Value is a term having at most the single free variable [world],
+        which when evaluated (with [world] bound to the current ACL2
+        logical [world]) produces a list of symbols that is a subset
+        of the list
+
+          (preprocess ;propositional logic, simple rules
+           simplify   ;as above plus rewriting, linear arithmetic
+           eliminate-destructors
+           fertilize  ;use of equalities
+           generalize
+           eliminate-irrelevance).
+
+        The hint indicates that the ``processes'' named should not be used at
+        or below the goal in question. Thus, to prevent
+        generalization and fertilization, say, include the hint
+
+          :do-not '(generalize fertilize)
+
+        If value is a single symbol, as in
+
+          :do-not generalize,
+
+        it is taken to be '(value).
+
+    :do-not-induct
+
+        Value is t, :otf-flg-override, :otf, name or nil, indicating whether
+        [induction] is permitted under the specified goal. If value
+        is t or :otf-flg-override, then the attempt to apply
+        [induction] to the indicated goal or any subgoal under the
+        indicated goal will immediately cause the theorem prover to
+        report [failure], except that if :otf-flg t is specified (see
+        [otf-flg]) and value is t, then the proof will continue until
+        the time at which the goal pushed for induction is finally
+        considered. The latter behavior is also what occurs if value
+        is :otf. Thus, any non-nil value requires the indicated goal
+        to be proved entirely by simplification, destructor
+        elimination, and the other ``waterfall'' processes.
+        [Induction] to prove the indicated goal (or any subgoal) is
+        not permitted. See however the :induct hint below. If value
+        is a symbol other than t, :otf-flg-override, :otf or nil, the
+        theorem prover will give a ``bye'' to any subgoal that would
+        otherwise be attacked with induction. This will cause the
+        theorem prover to fail eventually but will collect the
+        necessary subgoals. If value is nil, this hint means
+        [induction] is permitted. Since that is the default, there is
+        no reason to use the value nil. Note that a :do-not-induct
+        hint is ignored for any goal on which an :induct hint is
+        supplied. For an advanced example of the use of value :otf
+        with [override-hints], see community book
+        books/hints/basic-tests.lisp.
+
+    :error
+
+        Value is typically a ``fmt message'' to be printed by the [fmt]
+        tilde-directive ~@ but may be any object. The effect of this
+        hint is to cause an error when the hint is translated. There
+        is no reason to include an :ERROR hint in any user-typein,
+        since it will only cause an error when the form is evaluated.
+        :ERROR hints are useful in the definition of functions that
+        generate custom keyword hints ([custom-keyword-hints]) and
+        computed hints ([computed-hints]). For example, if you wish
+        to define a custom keyword hint :my-hint val and you wish the
+        hint to signal an error if there is something inappropriate
+        about val in the context of the hint, use the following code
+        to generate the hint
+
+          (list :ERROR (cons \"Your specified value, ~x0, is inappropriate\"
+                             (list (cons #0 val))))
+
+        which is equivalent to
+
+          (list :ERROR (msg \"Your specified value, ~x0, is inappropriate\"
+                            val))
+
+        which, if val has the value 123, would evaluate to the hint
+
+          (:ERROR (\"Your specified value, ~x0, is inappropriate\" (#0 . 123))).
+
+        Note that any time an :ERROR keyword is produced during hint
+        processing, including iterations of the expansions of custom
+        keyword hints or of [override-hints], an error will occur.
+
+    :expand
+
+        Value is a true list of terms, each of which is of one of the forms
+        (let ((v1 t1)...) b) or (fn t1 ... tn), where fn is a defined
+        function symbol with formals v1, ..., vn, and body b. Such a
+        term is said to be ``expandable:'' it can be replaced by the
+        result of substituting the ti's for the vi's in b. The terms
+        listed in the :expand hint are expanded when they are
+        encountered by the simplifier while working on the specified
+        goal or any of its subgoals. We permit value to be a single
+        such term instead of a singleton list. Remarks: (1) Allowed
+        are ``terms'' of the form (:free (var1 var2 ... varn)
+        pattern) where the indicated variables are distinct and
+        pattern is a term. Such ``terms'' indicate that we consider
+        the indicated variables to be instantiatable, in the
+        following sense: whenever the simplifier encounters a term
+        that can be obtained from pattern by instantiating the
+        variables (var1 var2 ... varn), then it expands that term.
+        (2) Also allowed are ``terms'' of the form (:with name term),
+        where name is a function symbol, a macro name that denotes a
+        function symbol (see [macro-aliases-table]), or a [rune]. The
+        corresponding rule of class :rewrite, which is often a
+        [definition] rule but need not be, is then used in place of
+        the current body for the function symbol of term; see
+        [show-bodies] and see [set-body]. If the rule is of the form
+        (implies hyp (equiv lhs rhs)), then after matching lhs to the
+        current term in a context that is maintaining equivalence
+        relation equiv, ACL2 will replace the current term with (if
+        hyp rhs (hide term)), or just rhs if the rule is just (equal
+        lhs rhs). (3) A combination of both :free and :with, as
+        described above, is legal. (4) The term :LAMBDAS is treated
+        specially. It denotes the list of all lambda applications
+        (i.e., [let] expressions) encountered during the proof.
+        Conceptually, this use of :LAMBDAS tells ACL2 to treat lambda
+        applications as a notation for substitutions, rather than as
+        function calls whose opening is subject to the ACL2
+        rewriter's heuristics (specifically, not allowing lambda
+        applications to open when they introduce ``too many'' if
+        terms).
+
+    :hands-off
+
+        Value is a true list of function symbols or lambda expressions,
+        indicating that under the specified goal applications of
+        these functions are not to be rewritten. Note however that
+        subterms will still be rewritten; see [hide] if that is not
+        what is intended. (The community book
+        books/clause-processors/autohide.lisp from Jared Davis may
+        also be helpful in that case.) Value may also be a single
+        function symbol or lambda expression instead of a list.
+
+    :[in-theory]
+
+        Value is a ``theory expression,'' i.e., a term having at most the
+        single free variable [world] which when evaluated (with
+        [world] bound to the current ACL2 logical world (see
+        [world])) will produce a theory to use as the current theory
+        for the goal specified. See [theories].
+
+        Note that an :[in-theory] hint will always be evaluated relative to
+        the current ACL2 logical [world], not relative to the theory
+        of a previous goal. Consider the following example.
+
+          (defthm prop
+            (p (f (g x)))
+            :hints ((\"Goal\"      :in-theory (disable f))
+                    (\"Subgoal 3\" :in-theory (enable  g))))
+
+        Consider in particular the theory in effect at Subgoal 3. This call
+        of the [enable] macro enables g relative to the
+        [current-theory] of the current logical [world], not relative
+        to the theory produced by the hint at Goal. Thus, the
+        [disable] of f on behalf of the hint at Goal will be lost at
+        Subgoal 3, and f will be enabled at Subgoal 3 if was enabled
+        globally when prop was submitted.
+
+    :induct
+
+        Value is either t or a term containing at least one recursively
+        defined function symbol; if t, this hint indicates that the
+        system should proceed to apply its induction heuristic to the
+        specified goal produced (without trying simplification,
+        etc.); if value is a term other than t, then not only should
+        the system apply induction immediately, but it should analyze
+        value rather than the goal to generate its [induction]
+        scheme. Merging and the other [induction] heuristics are
+        applied. Thus, if value contains several mergeable
+        [induction]s, the ``best'' will be created and chosen. E.g.,
+        the :induct hint
+
+          (and (nth i a) (nth j a))
+
+        suggests simultaneous [induction] on i, j, and a.
+
+        If both an :induct and a :do-not-induct hint are supplied for a given
+        goal then the indicated [induction] is applied to the goal
+        and the :do-not-induct hint is inherited by all subgoals
+        generated.
+
+    :[instructions]
+
+        Value is a list of [proof-checker] instructions; see [instructions].
+        Unlike other hint keywords described here, this one is
+        actually a custom keyword hint (see [custom-keyword-hints])
+        that generates a suitable :[clause-processor] hint.
+
+    :no-op
+
+        Value is any object and is irrelevant. This hint does nothing. But
+        empty hints, such as (\"Goal\"), are illegal and there are
+        occasions, especially when writing custom keyword hints (see
+        [custom-keyword-hints]) and computed hints (see
+        [computed-hints]) where it is convenient to be able to
+        generate a non-empty no-op hint. The standard idiom is
+        (\"Goal\" :NO-OP T) but the T is completely ignored. Unlike
+        other hint keywords, multiple occurrences of the keyword
+        :NO-OP are tolerated.
+
+    :no-thanks
+
+        Value is any object. This hint does nothing, except that if value is
+        non-nil then the usual ``[Note: A hint was supplied...
+        Thanks!]'' is not printed.
+
+    :nonlinearp
+
+        Value is t or nil, indicating whether [non-linear-arithmetic] is
+        active. The default value is nil. See
+        [non-linear-arithmetic].
+
+    :or
+
+        Value is a list (kwd-val-listp-1 ... kwd-val-listp-k), where each
+        kwd-val-listp-i is a list satisfying [keyword-value-listp],
+        i.e., an alternating list of keywords and values. This hint
+        causes an attempt to prove the specified goal using hints
+        kwd-val-listp-i in sequence (first kwd-val-listp-1, then
+        kwd-val-listp-2, and so on), until the first of these
+        succeeds. If none succeeds, then the prover proceeds after
+        heuristically choosing the ``best'' result, taking into
+        account the goals pushed in each case for proof by induction.
+
+        The following (contrived but illustrative example illustrates how :or
+        hints work.
+
+          ACL2 !>(thm (f x)
+                      :hints
+                      ((\"Goal\"
+                        :expand ((nth x 3))
+                        :or ((:in-theory (disable car-cons))
+                             (:use cdr-cons :in-theory (enable append)))
+                        :do-not '(generalize))))
+
+          [Note:  A hint was supplied for our processing of the goal above.
+          Thanks!]
+
+          The :OR hint for Goal gives rise to two disjunctive branches.  Proving
+          any one of these branches would suffice to prove Goal.  We explore
+          them in turn, describing their derivations as we go.
+
+          ---
+          Subgoal D2
+          ( same formula as Goal ).
+
+          The first disjunctive branch (of 2) for Goal can be created by applying
+          the hint:
+          (\"Subgoal D2\" :EXPAND ((NTH X 3))
+                        :IN-THEORY (DISABLE CAR-CONS)
+                        :DO-NOT '(GENERALIZE)).
+
+
+          [Note:  A hint was supplied for our processing of the goal above.
+          Thanks!]
+
+          Normally we would attempt to prove this formula by induction.  However,
+          we prefer in this instance to focus on the original input conjecture
+          rather than this simplified special case.  We therefore abandon our
+          previous work on this conjecture and reassign the name *1 to the original
+          conjecture.  (See :DOC otf-flg.)  [Note:  Thanks again for the hint.]
+
+          ---
+          Subgoal D1
+          ( same formula as Goal ).
+
+          The second disjunctive branch (of 2) for Goal can be created by applying
+          the hint:
+          (\"Subgoal D1\" :EXPAND ((NTH X 3))
+                        :USE CDR-CONS
+                        :IN-THEORY (ENABLE APPEND)
+                        :DO-NOT '(GENERALIZE)).
+
+
+          [Note:  A hint was supplied for our processing of the goal above.
+          Thanks!]
+
+          ACL2 Warning [Use] in ( THM ...):  It is unusual to :USE an enabled
+          :REWRITE or :DEFINITION rule, so you may want to consider disabling
+          (:REWRITE CDR-CONS).
+
+
+          We augment the goal with the hypothesis provided by the :USE hint.
+          The hypothesis can be obtained from CDR-CONS.  We are left with the
+          following subgoal.
+
+          Subgoal D1'
+          (IMPLIES (EQUAL (CDR (CONS X Y)) Y)
+                   (F X)).
+
+          By the simple :rewrite rule CDR-CONS we reduce the conjecture to
+
+          Subgoal D1''
+          (F X).
+
+        ... and so on. This example illustrates how ACL2 processes :or hints
+        in general. For each i from 1 to k, a so-called
+        ``disjunctive'' subgoal is created by splicing
+        kwd-val-listp-i into the other hint values (if any) supplied
+        for the given goal, in order. A corresponding subgoal is
+        created for each i, numbered in the usual manner (hence,
+        counting down) except that the ``D'' is prefixed to each
+        resulting goal.
+
+    :reorder
+
+        Value is a list of positive integers without duplicates,
+        corresponding to the numbering of subgoals generated for the
+        [goal-spec] \"G\", say \"G.k\" down to \"G.1\". Those subgoals are
+        reordered so that if value is (n1 n2 ... nk), then the goal
+        now numbered \"G.k\" will be the goal originally numbered
+        \"G.n1\"; the goal now numbered \"G.k-1\" will be the goal
+        formerly numbered \"G.n2\"; and so on, down the list of ni,
+        after which the goals not yet printed are printed in their
+        original order. Note that reordering for subgoals of a goal
+        to be proved by induction, such as *1, is not supported.
+
+    :restrict
+
+        Warning: This is a sophisticated hint, suggested by Bishop Brock,
+        that is intended for advanced users. In particular, :restrict
+        hints are ignored by the preprocessor, so you might find it
+        useful to give the hint :do-not '(preprocess) when using any
+        :restrict hints, at least if the rules in question are
+        abbreviations (see [simple]).
+
+        Value is an association list. Its members are of the form (x subst1
+        subst2 ...), where: x is either (1) a [rune] whose [car] is
+        :[rewrite] or :[definition] or (2) an event name
+        corresponding to one or more such [rune]s; and (subst1 subst2
+        ...) is a non-empty list of substitutions, i.e., of
+        association lists pairing variables with terms. First
+        consider the case that x is a :[rewrite] or :[definition]
+        [rune]. Recall that without this hint, the rule named x is
+        used by matching its left-hand side (call it lhs) against the
+        term currently being considered by the rewriter, that is, by
+        attempting to find a substitution s such that the
+        instantiation of lhs using s is equal to that term. If
+        however the :restrict hint contains (x subst1 subst2 ...),
+        then this behavior will be modified by restricting s so that
+        it must extend subst1; and if there is no such s, then s is
+        restricted so that it must extend subst2; and so on, until
+        the list of substitutions is exhausted. If no such s is
+        found, then the rewrite or definition rule named x is not
+        applied to that term. Finally, if x is an event name
+        corresponding to one or more :[rewrite] or :[definition]
+        [rune]s (that is, x is the ``base symbol'' of such [rune]s;
+        see [rune]), say [rune]s r1, ... rn, then the meaning is the
+        same except that (x subst1 subst2 ...) is replaced by (ri
+        subst1 subst2 ...) for each i. Once this replacement is
+        complete, the hint may not contain two members whose [car] is
+        the same [rune].
+
+        Note that the substitutions in :restrict hints refer to the variables
+        actually appearing in the goals, not to the variables
+        appearing in the rule being restricted.
+
+        Here is an example, supplied by Bishop Brock. Suppose that the
+        database includes the following rewrite rule, which is
+        probably kept [disable]d. (We ignore the question of how to
+        prove this rule.)
+
+          cancel-<-*$free:
+          (implies (and (rationalp x)
+                        (rationalp y)
+                        (rationalp z))
+                   (equal (< y z)
+                          (if (< x 0)
+                              (> (* x y) (* x z))
+                            (if (> x 0)
+                                (< (* x y) (* x z))
+                              (hide (< y z))))))
+
+        Then ACL2 can prove the following theorem (unless other rules get in
+        the way), essentially by multiplying both sides by x.
+
+          (thm
+            (implies (and (rationalp x)
+                          (< 1 x))
+                     (< (/ x) 1))
+            :hints
+            ((\"Goal\"
+              :in-theory (enable cancel-<-*$free)
+              :restrict ((cancel-<-*$free ((x x) (y (/ x)) (z 1)))))))
+
+        The :restrict hint above says that the variables x, y, and z in the
+        rewrite rule cancel-<-*$free above should be instantiated
+        respectively by x, (/ x), and 1. Thus (< y z) becomes (< (/
+        x) 1), and this inequality is replaced by the corresponding
+        instance of the right-hand-side of cancel-<-*$free. Since the
+        current conjecture assumes (< 1 x), that instance of the
+        right-hand side simplifies to
+
+          (< (* x (/ x)) (* x 1))
+
+        which in turn simplifies to (< 1 x), a hypothesis in the present
+        theorem.
+
+    :rw-cache-state
+
+        Value is an element of the list constant *legal-rw-cache-states*:
+        :atom (the default), nil, t, or :disabled. This hint applies
+        to the indicated goal and all its descendents, to set the
+        so-called ``rw-cache-state'' to the indicated value; see
+        [set-rw-cache-state].
+
+    :use
+
+        Examples of :USE hints are shown near the top of this documentation
+        topic.
+
+        Value is a [lemma-instance] or a true list of [lemma-instance]s,
+        indicating that the propositions denoted by the instances be
+        added as hypotheses to the specified goal. See
+        [lemma-instance]. Note that :use makes the given instances
+        available as ordinary hypotheses of the formula to be proved.
+        The :instance form of a [lemma-instance] permits you to
+        instantiate the free variables of previously proved theorems
+        any way you wish; but it is up to you to provide the
+        appropriate instantiations because once the instances are
+        added as hypotheses their variables are no longer
+        instantiable. These new hypotheses participate fully in all
+        subsequent rewriting, etc. If the goal in question is in fact
+        an instance of a previously proved theorem, you may wish to
+        use :by below. Note that [theories] may be helpful when
+        employing :use hints; see [minimal-theory].
+
+        Note that if the value is the name of a function symbol introduced by
+        [defun], then the ``normalized'' body of that definition is
+        used, for which ACL2 has propagated IF tests upward. This
+        behavior differs from that provided by a :by hint, where the
+        original body of the definition is used.")
  (HINTS-AND-THE-WATERFALL
   (MISCELLANEOUS)
   "How [hints] fit into the ACL2 proof waterfall
@@ -34544,7 +34603,7 @@ Subtopics
 
   Most ACL2 primitives are documented. Here is the definition of app
   again, with the documented topics highlighted. [] All of the links
-  below lead into the ACL2 reference manual. So follow these links if
+  below lead into the ACL2 User's Manual. So follow these links if
   you wish, but use your Back Button to return here!
 
     ([defun] app (x y)
@@ -37091,11 +37150,12 @@ Subtopics
   Technical Note: This tutorial introduction to the theorem prover
   takes liberties with the truth! We are trying to give you a useful
   predictive model of the system without burdening you with all the
-  details, which are discussed in the reference manual. For example,
-  using directives in the rule-classes you can rearrange the proved
-  formula into the form you want your rule to take, and you can make
-  ACL2 take advantage of equivalence relations eqv other than just
-  EQUAL and IFF. But we'll ignore these fine points for now.
+  details, which are discussed in the ACL2 User's Manual. For
+  example, using directives in the rule-classes you can rearrange the
+  proved formula into the form you want your rule to take, and you
+  can make ACL2 take advantage of equivalence relations eqv other
+  than just EQUAL and IFF. But we'll ignore these fine points for
+  now.
 
   We call the hyp terms the hypotheses of the rule. We call lhs the
   left-hand side of the rule, and we call rhs the right-hand side of
@@ -38179,8 +38239,8 @@ Subtopics
   kind of rule you'll want to generate is a rewrite rule.
 
   We recommend that you read the following topics in the following
-  order, without skipping anything but links into the reference
-  manual, which are marked by the little warning sign, ``[]''.
+  order, without skipping anything except links into the ACL2 User's
+  Manual, which are marked by the little warning sign, ``[]''.
 
   (1) See [introduction-to-rewrite-rules-part-1] to read about the use
   and design of rewrite rules.
@@ -38209,14 +38269,14 @@ Subtopics
 
   (8) See [frequently-asked-questions-by-newcomers] for a list of
   questions that new users frequently ask, answered mainly by
-  providing links into the reference manual. We recommend that you
+  providing links into the ACL2 User's Manual. We recommend that you
   skim through these questions and remember that you can find the
   answers here later. We are very interested in receiving suggestions
   for how to improve this FAQ and this tutorial. See the ACL2 home
   page, specifically the link ``Mailing Lists''.
 
-  Please read all of the material cited above (skipping only the
-  reference-manual links (``[]'')) before you try to use ACL2 on
+  Please read all of the material cited above (skipping only the ACL2
+  User's manual links (``[]'')) before you try to use ACL2 on
   problems of your own.
 
   By this point you should have read, at least, the following topics
@@ -62018,9 +62078,9 @@ Subtopics
   CHANGES AT THE SYSTEM LEVEL
 
   The ACL2 system [documentation] has been reworked for the [xdoc]
-  framework developed by Jared Davis. While the ACL2 manual can still
-  be built, it is now possible for the ACL2 community to contribute
-  to the ACL2 system documentation, in community book
+  framework developed by Jared Davis. While the ACL2 User's Manual
+  can still be built, it is now possible for the ACL2 community to
+  contribute to the ACL2 system documentation, in community book
   books/system/doc/acl2-doc.lisp; see comments near the top of that
   book. Now that both the ACL2 system documentation and much of the
   community books documentation are written in [xdoc] format, we hope
@@ -62029,6 +62089,9 @@ Subtopics
   for all his work contributing to this enhancement. Note that there
   is a replacement for the Emacs Info view of the [documentation];
   see [ACL2-doc].
+
+  See [note-6-4-books] for release notes about the books, corresponding
+  to the release of ACL2 Version 6.4.
 
   EMACS SUPPORT
 
@@ -90722,7 +90785,7 @@ Subtopics
   want to know more, take the ``Walking Tour.'' On your first
   reading, follow the two Tours linearly, clicking only on the icon
   of the Tour you're on. Beware of other links, which might jump you
-  from one tour to the other or into the reference manual! Once
+  from one tour to the other or into the ACL2 User's Manual! Once
   you've had a coherent overview of the system, you might quickly
   repeat both Tours to see if there are unvisited links you're
   interested in, using your brower's Back Button to return to your
