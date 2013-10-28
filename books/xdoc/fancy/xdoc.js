@@ -23,6 +23,7 @@
 "use strict";
 
 var TOP_KEY = "ACL2____TOP";
+var BROKEN_KEY = "ACL2____BROKEN-LINK";
 var xdata_loaded = false;
 var xdata = [];
 
@@ -544,8 +545,21 @@ function dat_long_topic(key)
 	warned_about_history_state = true;
     }
 
+    // Special handling for broken links.  We want to give XDOC manuals to have
+    // customized control over the broken-link message.  For instance, the pure
+    // ACL2-sources manual has a message along the lines of, "what you're looking
+    // for might be in the acl2-books docs; go try the Centaur manual."  Or the
+    // internal manuals within, say, Centaur, might want to say, "please report
+    // this broken link to Jared."
     if (!topic_exists(key)) {
-        div.append("<h3>Error: " + key + " not found</h3>");
+	// I think it's nice to change the title dynamically, to say what topic
+	// they tried to access, instead of just generically saying Broken-Link.
+        div.append("<h1>" + key + " Not Found</h1>");
+
+	if (topic_exists(BROKEN_KEY)) {
+	    div.append(render_html(xdata[BROKEN_KEY][XD_LONG]));
+	}
+
         return div;
     }
 
@@ -901,12 +915,16 @@ function onIndexLoaded()
     search_init();
 }
 
-
-
 function onDataLoaded()
 {
     xdata_loaded = true;
     var params = getPageParameters();
+
+    // Make sure that BROKEN_KEY gets loaded early on, so we can always just
+    // assume it is loaded.
+    if (topic_exists(BROKEN_KEY)) {
+	xdata_when_ready([BROKEN_KEY], function() { return; });
+    }
 
     if ("search" in params) {
 	var str = params["search"];

@@ -50,20 +50,21 @@
 (defxdoc acl2::acl2
   :short "Documentation for the <a
   href=\"http://www.cs.utexas.edu/users/moore/acl2\">ACL2 Theorem Prover</a>."
+
   :long "<p>This is a parent topic for most <see topic=\"@(url
 documentation)\">ACL2 documentation</see> that is written in the classic @(see
 doc-string) format.  (We take some liberties with the hierarchy to integrate
 certain topics into more appropriate places.)</p>")
 
 (defxdoc acl2::broken-link
-;; BOZO does this even make any sense?  Are we using this for anything but
-;; defdoc documentation?
   :parents (documentation)
-  :short "Placeholder for broken links."
-  :long "<p>Whoops!</p>
-<p>This topic is used as a placeholder in XDOC when an imported ACL2 @(see
-documentation) topic, in the old @('defdoc') style format, links to an
-undefined topic.</p>")
+  :short "Placeholder for broken links in a fancy xdoc manual."
+
+  :long "<p>Sorry friend, the topic you were trying to reach doesn't exist.</p>
+
+<p>Sometimes this happens because we make a link to the wrong package or just
+misspell something.  A quick search (or even <i>jump to</i>) might help you
+find what you want.</p>")
 
 ;; ; Initial import of acl2 system documentation.  We do this before including any
 ;; ; books other than the basic portcullis, because we don't want any libraries
