@@ -2,6 +2,19 @@
                          ACL2 XDOC FANCY VIEWER
                            License Information
 
+
+Scope of this LICENSE file:
+
+   An XDOC manual has both Viewer Files for displaying topics and Content Files
+   that store the actual topic data.  This LICENSE file describes the copyright
+   and licensing of the Viewer Files, only.
+
+   The topics in Content Files, such as xindex.js, xdata.js, and (in some
+   cases) xdata.db, are usually derived from ACL2 books and/or other source
+   code files.  These topics are typically subject to their own copyright and
+   licensing terms, which are beyond the scope of this LICENSE.
+
+
 Copyright for main source files:
 
    XDOC Documentation System for ACL2
