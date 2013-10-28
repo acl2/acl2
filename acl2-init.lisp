@@ -432,23 +432,6 @@ implementations.")
   #-(or gcl lispworks allegro cmu sbcl clisp ccl)
   (error "SYSTEM-CALL is not yet defined in this Lisp."))
 
-(defun copy-acl2 (dir)
-  (system-call
-   "cp"
-   (append '("makefile"
-             "acl2.lisp"
-             "acl2-check.lisp"
-             "acl2-fns.lisp"
-             "init.lisp"
-             "acl2-init.lisp")
-           (append (let ((result (list (format nil "~a" dir))))
-                     (dolist
-                      (x *acl2-files*)
-                      (setq result
-                            (cons (format nil "~a.lisp" x)
-                                  result)))
-                     result)))))
-
 (defun our-probe-file (filename)
 
 ; Use this function instead of probe-file if filename might be a directory.
