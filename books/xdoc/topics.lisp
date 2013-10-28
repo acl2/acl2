@@ -853,8 +853,8 @@ startup, you can just add a command to your @('.emacs') file like:</p>
  (load \"/path/to/acl2/books/xdoc/xdoc.el\")
 })
 
-<p>This file will be loaded automatically if instead you load the file
-of emacs utilities that comes with ACL2:</p>
+<p>This file will be loaded automatically if you load the file of emacs
+utilities that comes with ACL2:</p>
 
 @({
  (load \"/path/to/acl2/emacs/emacs-acl2.el\")
