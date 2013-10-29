@@ -15,6 +15,8 @@ Sometimes, libraries have name clashes that make them incompatible with one anot
 
 Beyond that, truly integrating libraries to make them play well together might be a lot of work, but could be valuable.
 
+A "bookdata" tool may be helpful for finding name conflicts in books.  This tool is included with ACL2 after Version 6.3, starting with acl2-devel svn copies obtained after October 4, 2013.  Dave Greve has begun (in October 2013) investigating the use of this tool to avoid name conflicts, but welcomes help.  See :DOC bookdata.
+
 === System function guards ===
 
 It would be nice to have additional ACL2 theorem prover functions brought into logic mode and guard-verified.  Some functions that might be nice:
