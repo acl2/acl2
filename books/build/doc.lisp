@@ -957,7 +957,7 @@ jobs.  To support this cluster, @('cert.pl') has certain features.</p>
 
 <h3>Support for PBS directives</h3>
 
-<p>For one, @('cert.pl') writes out a PBS script for each book is going to
+<p>For one, @('cert.pl') writes out a PBS script for each book it is going to
 certify.  These scripts look like ordinary shell scripts (so they work fine for
 use in non-cluster environments), but they contain special comments that the
 clustering software understands.</p>
