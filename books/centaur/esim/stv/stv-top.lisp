@@ -362,7 +362,7 @@ evaluate STVs.  A picture of the flow is:</p>
 <li>The <b>User-Level STV</b>, which is a symbolic test vector written in the
 @(see symbolic-test-vector-format),</li>
 
-<li>The <b>ESIM Module</b> to simulate, which is generally produce by VL.</li>
+<li>The <b>ESIM Module</b> to simulate, which is generally produced by VL.</li>
 
 <li>The <b>Simulation Input Alist</b>, which is an alist that should bind the
 simulation variables of the symbolic test vector to concrete, natural-numbered
