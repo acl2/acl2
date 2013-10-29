@@ -27,7 +27,7 @@
 (include-book "tools/mv-nth" :dir :system)
 (local (include-book "misc/invariants" :dir :system))
 (local (include-book "general-object-thms"))
-(local (include-book "hyp-fix-logic"))
+(local (include-book "hyp-fix"))
 
 (verify-guards
  general-concrete-obj

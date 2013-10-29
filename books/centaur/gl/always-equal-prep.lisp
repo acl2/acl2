@@ -22,7 +22,7 @@
 (include-book "symbolic-arithmetic-fns")
 (include-book "g-if")
 (include-book "eval-g-base")
-(local (include-book "hyp-fix-logic"))
+(local (include-book "hyp-fix"))
 (local (include-book "eval-g-base-help"))
 (local (include-book "clause-processors/find-subterms" :dir :system))
 (local (include-book "clause-processors/just-expand" :dir :system))

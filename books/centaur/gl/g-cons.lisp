@@ -23,7 +23,7 @@
 (include-book "g-primitives-help")
 (include-book "eval-g-base")
 (local (include-book "eval-g-base-help"))
-(local (include-book "hyp-fix-logic"))
+(local (include-book "hyp-fix"))
 
 (def-g-fn cdr
   `(if (atom x)

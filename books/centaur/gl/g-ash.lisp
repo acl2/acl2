@@ -26,7 +26,7 @@
 ;(include-book "tools/with-arith5-help" :dir :system)
 (local (include-book "symbolic-arithmetic"))
 (local (include-book "eval-g-base-help"))
-(local (include-book "hyp-fix-logic"))
+(local (include-book "hyp-fix"))
 (local (include-book "clause-processors/just-expand" :dir :system))
 (set-inhibit-warnings "theory")
 

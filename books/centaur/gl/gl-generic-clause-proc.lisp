@@ -34,7 +34,7 @@
 (include-book "constraint-db-deps")
 (local (include-book "gl-generic-interp"))
 (local (include-book "general-object-thms"))
-(local (include-book "hyp-fix-logic"))
+(local (include-book "hyp-fix"))
 (local (include-book "data-structures/no-duplicates" :dir :system))
 (local (include-book "centaur/misc/hons-sets" :dir :system))
 (local (include-book "tools/with-quoted-forms" :dir :system))

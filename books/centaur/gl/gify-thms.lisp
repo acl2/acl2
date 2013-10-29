@@ -27,7 +27,7 @@
 (local (include-book "gtype-thms"))
 (local (include-book "gobjectp-thms"))
 (local (include-book "general-object-thms"))
-(local (include-book "hyp-fix-logic"))
+(local (include-book "hyp-fix"))
 
 
 ;; These events are included here redundantly to avoid having to include all

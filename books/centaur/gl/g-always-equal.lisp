@@ -26,7 +26,7 @@
 (include-book "always-equal-prep")
 (include-book "g-equal")
 (local (include-book "eval-g-base-help"))
-(local (include-book "hyp-fix-logic"))
+(local (include-book "hyp-fix"))
 
 (def-g-fn acl2::always-equal
   ;; Once we've ruled out the case where they're both atoms, start by recurring

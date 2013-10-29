@@ -26,7 +26,7 @@
 (include-book "g-lessthan")
 (local (include-book "symbolic-arithmetic"))
 (local (include-book "eval-g-base-help"))
-(local (include-book "hyp-fix-logic"))
+(local (include-book "hyp-fix"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "tools/trivial-ancestors-check" :dir :system))

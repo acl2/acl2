@@ -25,7 +25,7 @@
 (include-book "eval-g-base")
 (local (include-book "symbolic-arithmetic"))
 (local (include-book "eval-g-base-help"))
-(local (include-book "hyp-fix-logic"))
+(local (include-book "hyp-fix"))
 
 (local (in-theory (disable acl2::revappend-removal)))
 

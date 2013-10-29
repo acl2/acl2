@@ -28,7 +28,7 @@
 (local (include-book "data-structures/no-duplicates" :dir :system))
 (local (include-book "general-object-thms"))
 (local (include-book "tools/with-quoted-forms" :dir :system))
-(local (include-book "hyp-fix-logic"))
+(local (include-book "hyp-fix"))
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "clause-processors/find-matching" :dir :system))
 (local (include-book "clause-processors/just-expand" :dir :system))
