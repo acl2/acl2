@@ -480,7 +480,7 @@ convenient function is</p>
 @({(g-int start by n)})
 
 <p>which generates a @(':g-number') form with @('n') bits, using
-indices that start at @('start') and increment by @('by').  This is
+indices that start at @('start') and increment by @('n').  This is
 particularly useful for interleaving the bits of numbers, as we did for the
 @('a-bus') and @('b-bus') bindings above:</p>
 
@@ -659,7 +659,7 @@ proof take?  How much memory did it use?  Try the @(see hons-summary) command
 get a sense of the memory usage.</p>
 
 
-<p><b>1d.</b> In the same ACL2 session, unto your proof of 1c and submit it
+<p><b>1d.</b> In the same ACL2 session, undo your proof of 1c and submit it
 again.  How long did it take this time?  Can you explain what happened?</p>
 
 
