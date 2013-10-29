@@ -7,7 +7,7 @@ There is always more work to be done on documentation.
 
 Many libraries have no documentation at all.  Even a brief page that just says what the library is, where it's located, and briefly what it provides would be a real service (and a way to learn about what's available).  
 
-Improving the existing documentation by adding examples, links to other materials, clarifying things, etc., would also be valuable.
+Improving the existing documentation by adding examples, links to other materials, clarifying things, etc., would also be valuable.  Note that the ACL2 User's Manual is now (as of late October, 2013) editable by the community as the book system/doc/acl2-doc.lisp.
 
 === Interoperability ===
 
