@@ -20,7 +20,7 @@
 
 (in-package "AIGNET")
 (include-book "from-hons-aig")
-(include-book "centaur/aig/aiger" :dir :system)
+(include-book "centaur/aig/aiger-help" :dir :system)
 (include-book "tools/defmacfun" :dir :system)
 (local (include-book "clause-processors/instantiate" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -536,7 +536,13 @@
 
 (defttag aignet-write-aiger)
 
-(define aignet-write-aiger ((fname stringp) aignet state)
+(define aignet-write-aiger
+  ((fname stringp "the aiger file to be written")
+   (aignet        "the network to write out")
+   state)
+  :parents (aignet)
+  :short "Write an aignet into a binary <a
+  href='http://fmv.jku.at/aiger/'>AIGER</a> file."
   (b* (((mv channel state)
         (open-output-channel! fname :byte state))
        ((unless channel)
@@ -1144,8 +1150,13 @@
                (and (state-p1 state)
                     (open-input-channel-p1 channel :byte state))))))
 
-(define aignet-read-aiger (fname aignet state)
-  (declare (xargs :guard (stringp fname)))
+(define aignet-read-aiger
+  ((fname stringp "the name of the aiger file to be read")
+   (aignet "will be emptied and replaced with the contents of the aiger file")
+   state)
+  :parents (aignet)
+  :short "Read an aignet from a binary <a
+  href='http://fmv.jku.at/aiger/'>AIGER</a> file."
   (b* (((mv channel state) (open-input-channel fname :byte state))
        ((when (not channel))
         (mv "Could not open input file" aignet state))
