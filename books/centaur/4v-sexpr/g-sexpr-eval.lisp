@@ -166,7 +166,7 @@
 
 
 
-(defun 4v-sexpr-eval-by-faig (x al)
+(defun 4v-sexpr-eval-by-faig (x al opt)
   (let* ((vars (alist-keys al))
          ;; hons-copy the varmap so that sexpr-to-faig-3v-opt memoization can happen
          (onoff-al (make-fast-alist (num-varmap vars 0)))
@@ -174,10 +174,10 @@
                         (4v-alist->faig-const-alist al) onoff-al)))
   (faig-const->4v
    (faig-eval
-    (4v-sexpr-to-faig x onoff-al)
+    (4v-sexpr-to-faig x onoff-al :optimize opt)
     faig-eval-al))))
 
-(defun 4v-sexpr-eval-by-faig-list (x al)
+(defun 4v-sexpr-eval-by-faig-list (x al opt)
   (let* ((vars (alist-keys al))
          ;; hons-copy the varmap so that 4v-sexpr-to-faig-opt memoization can happen
          (onoff-al (make-fast-alist (num-varmap vars 0)))
@@ -185,15 +185,15 @@
                         (4v-alist->faig-const-alist al) onoff-al)))
   (faig-const-list->4v-list
    (faig-eval-list
-    (4v-sexpr-to-faig-list x onoff-al)
+    (4v-sexpr-to-faig-list x onoff-al :optimize opt)
     faig-eval-al))))
 
 (defthmd 4v-sexpr-eval-by-faig-list-alt-def
-  (equal (4v-sexpr-eval-by-faig-list x al)
+  (equal (4v-sexpr-eval-by-faig-list x al opt)
          (if (atom x)
              nil
-           (cons (4v-sexpr-eval-by-faig (car x) al)
-                 (4v-sexpr-eval-by-faig-list (cdr x) al))))
+           (cons (4v-sexpr-eval-by-faig (car x) al opt)
+                 (4v-sexpr-eval-by-faig-list (cdr x) al opt))))
   :hints(("Goal" :in-theory (e/d () (faig-eval 4v-sexpr-to-faig-opt
                                                faig-const->4v
                                                4v->faig-const
@@ -408,7 +408,7 @@
    al))
 
 (defthm 4v-sexpr-eval-by-faig-is-4v-sexpr-eval
-  (equal (4v-sexpr-eval-by-faig x al)
+  (equal (4v-sexpr-eval-by-faig x al opt)
          (4v-sexpr-eval x al))
   :hints(("Goal" :in-theory (disable 4v-sexpr-eval
                                      4v-sexpr-to-faig-opt
@@ -422,7 +422,7 @@
 
 
 (defthm 4v-sexpr-eval-by-faig-list-is-4v-sexpr-eval-list
-  (equal (4v-sexpr-eval-by-faig-list x al)
+  (equal (4v-sexpr-eval-by-faig-list x al opt)
          (4v-sexpr-eval-list x al))
   :hints (("goal" :induct (len x)
            :in-theory (e/d (4v-sexpr-eval-by-faig-list-alt-def)
@@ -436,12 +436,22 @@
 
 (defthmd 4v-sexpr-eval-gl-def
   (equal (4v-sexpr-eval x env)
-         (4v-sexpr-eval-by-faig x env))
+         (4v-sexpr-eval-by-faig x env t))
+  :rule-classes ((:definition :install-body nil)))
+
+(defthmd 4v-sexpr-eval-gl-def-no-opt
+  (equal (4v-sexpr-eval x env)
+         (4v-sexpr-eval-by-faig x env nil))
   :rule-classes ((:definition :install-body nil)))
 
 (defthmd 4v-sexpr-eval-list-gl-def
   (equal (4v-sexpr-eval-list x env)
-         (4v-sexpr-eval-by-faig-list x env))
+         (4v-sexpr-eval-by-faig-list x env t))
+  :rule-classes ((:definition :install-body nil)))
+
+(defthmd 4v-sexpr-eval-list-gl-def-no-opt
+  (equal (4v-sexpr-eval-list x env)
+         (4v-sexpr-eval-by-faig-list x env nil))
   :rule-classes ((:definition :install-body nil)))
 
 (defthmd 4v-sexpr-eval-alist-gl-def
@@ -452,9 +462,13 @@
   :rule-classes ((:definition :install-body nil)))
 
 (gl::set-preferred-def 4v-sexpr-eval 4v-sexpr-eval-gl-def)
+;; To avoid sexpr-to-faig optimizations:
+;; (gl::set-preferred-def 4v-sexpr-eval 4v-sexpr-eval-gl-def-no-opt)
 (table gl::override-props '4v-sexpr-eval '((recursivep . nil)))
 
 (gl::set-preferred-def 4v-sexpr-eval-list 4v-sexpr-eval-list-gl-def)
+;; To avoid sexpr-to-faig optimizations:
+;; (gl::set-preferred-def 4v-sexpr-eval-list 4v-sexpr-eval-list-gl-def-no-opt)
 (table gl::override-props '4v-sexpr-eval-list '((recursivep . nil)))
 
 (gl::set-preferred-def 4v-sexpr-eval-alist 4v-sexpr-eval-alist-gl-def)
