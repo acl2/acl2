@@ -11231,11 +11231,11 @@
   (let ((lst (merge-sort-car->
               (find-likely-near-misses
                (normalize-string
-                (if (stringp name)
+                (if (stringp name) ; impossible after Version_6.3
                     name
                     (symbol-name name))
                 nil)
-               (global-val 'documentation-alist (w state))))))
+               *acl2-system-documentation*))))
     (er soft ctx
         "There is no documentation for ~x0.~#1~[~/  A similar documented name ~
          is ~&2.~/  Similar documented names are ~&2.~]~|~%NOTE: See also ~
@@ -11315,19 +11315,21 @@
                        (end-doc channel state)))))))))
 
 (defun doc-fn (name state)
-  (pprogn (let ((entry (assoc name *acl2-system-documentation*)))
-            (cond (entry (mv-let
-                          (col state)
-                          (fmt1 "Parent~#0~[~/s~]: ~&0.~|~%"
-                                (list (cons #\0 (cadr entry)))
-                                0 *standard-co* state nil)
-                          (declare (ignore col))
-                          (princ$ (caddr entry) *standard-co* state)))
-                  (t (fms "There is no documentation for topic ~x0.~|"
-                          (list (cons #\0 name))
-                          *standard-co* state nil))))
-          (newline *standard-co* state)
-          (value :invisible)))
+  (cond
+   ((not (symbolp name))
+    (er soft 'doc
+        "Documentation topics are symbols."))
+   (t (let ((entry (assoc name *acl2-system-documentation*)))
+        (cond (entry (mv-let
+                      (col state)
+                      (fmt1 "Parent~#0~[~/s~]: ~&0.~|~%"
+                            (list (cons #\0 (cadr entry)))
+                            0 *standard-co* state nil)
+                      (declare (ignore col))
+                      (pprogn (princ$ (caddr entry) *standard-co* state)
+                              (newline *standard-co* state)
+                              (value :invisible))))
+              (t (print-doc-dwim name :doc state)))))))
 
 (defun more-fn (ln state)
   (io? temporary nil (mv erp val state)

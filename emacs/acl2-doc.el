@@ -63,12 +63,16 @@
             (push entry ans))))
     (reverse ans)))
 
-; We introduce variables in acl2-doc-init-vars below, but for now we
-; declare *acl2-doc-file* since it is used in acl2-doc-alist (though
-; probably this isn't necessary).
-(defvar *acl2-doc-file*)
+; We deliberately avoid using the macro acl2-doc-init-vars to define the
+; following two variables, since they are handled outside acl2-doc-reset (hence
+; must also be handled outside acl2-doc-init-vars).
+(defvar *acl2-doc-file* "doc.lisp")
+(defvar *acl2-doc-top-name* 'ACL2)
 
 (defun acl2-doc-alist ()
+  (when (not (file-exists-p *acl2-doc-file*))
+    (error "File %s needs to be built.  See :DOC acl2-doc."
+	   *acl2-doc-file*))
   (let ((buf (find-file-noselect *acl2-doc-file*)))
     (with-current-buffer
         buf
@@ -78,7 +82,7 @@
         (forward-sexp 1)
         (forward-line 3)
         (prog1 (acl2-doc-fix-alist (read buf))
-          (message "%s" "Refreshed ACL2-Doc history"))))))
+          (message "Refreshed from %s" *acl2-doc-file*))))))
 
 (defmacro defv (var form)
   `(progn (defvar ,var)
@@ -86,8 +90,6 @@
 
 (defmacro acl2-doc-init-vars ()
   '(progn
-     (defv *acl2-doc-file*
-       (concat *acl2-sources-dir* "doc.lisp"))
      (defv *acl2-doc-alist*
        (acl2-doc-alist))
      (defv *acl2-doc-buffer-name*
@@ -267,15 +269,21 @@
 
 (defun acl2-doc (&optional clear)
   "Start or return to the ACL2-Doc browser; prefix argument clears state.
+See the documentation topic for ACL2-Doc for more information.  For
+example, after issuing this command, type
+  g ACL2-DOC
+to go see a buffer displaying documentation on ACL2-Doc; or, issue the command
+  :doc acl2-doc
+in the ACL2 read-eval-print loop.
 \\{acl2-doc-mode-map}"
   (interactive "P")
   (cond (clear
          (acl2-doc-reset)
-         (acl2-doc-go 'ACL2))
+         (acl2-doc-go *acl2-doc-top-name*))
         (*acl2-doc-history*
          (acl2-doc-display-basic (car *acl2-doc-history*)))
         (t
-         (acl2-doc-go 'ACL2))))
+         (acl2-doc-go *acl2-doc-top-name*))))
 
 (defun acl2-doc-last ()
   "Go to the last topic visited."
@@ -295,6 +303,15 @@
 	   (acl2-doc-display-basic entry)))
         (t (error "Nothing to return to"))))
 
+(defun acl2-doc-read-line ()
+
+; Return the current line, and go to the end of it.
+
+  (forward-line 0)
+  (let ((beg (point)))
+    (end-of-line)
+    (buffer-substring beg (point))))
+
 (defun acl2-doc-up ()
   "Go to the parent of the current topic."
   (interactive)
@@ -302,11 +319,19 @@
   (let ((first-parent
          (save-excursion
            (goto-char (point-min))
-           (search-forward "Parent list: (")
-           (acl2-doc-topic-at-point))))
-    (if (equal first-parent 'TOP)
-        (error "Already at the root node of the ACL2 manual")
-      (acl2-doc-display first-parent))))
+           (and (search-forward "Parent list: (" nil t)
+		(acl2-doc-topic-at-point)))))
+    (cond ((null first-parent)
+	   (cond ((save-excursion
+		    (goto-char (point-min))
+		    (forward-line 1)
+		    (member (acl2-doc-read-line)
+			    '("Parent list: NIL"
+			      "Parent list: ()")))
+		  (error "Already at the root node of the manual"))
+		 (t (error "Internal ACL2-Doc error in acl2-doc-up.
+Please report this error to the ACL2 implementors."))))
+	  (t (acl2-doc-display first-parent)))))
 
 (defun acl2-doc-update-top-history-entry ()
   (cond ((null *acl2-doc-history*)
@@ -327,11 +352,26 @@
 (defun acl2-doc-top ()
   "Go to the top topic."
   (interactive)
-  (acl2-doc-go 'ACL2))
+  (acl2-doc-go *acl2-doc-top-name*))
 
-(defun acl2-doc-initialize ()
-  "Restart the ACL2-Doc browser, clearing its state."
-  (interactive)
+(defun acl2-doc-initialize (&optional toggle)
+  "Restart the ACL2-Doc browser, clearing its state.
+With prefix argument, toggle between the ACL2 User's Manual (the
+default) and the acl2+books combined manual.  For the latter, it
+will be necessary first to create file
+books/system/doc/rendered-doc-combined.lsp; see :DOC acl2-doc."
+  (interactive "P")
+  (when toggle
+    (cond ((eq *acl2-doc-top-name* 'ACL2)
+	   (setq *acl2-doc-top-name* 'TOP)
+	   (setq *acl2-doc-file*
+		 (concat *acl2-sources-dir*
+			 "books/system/doc/rendered-doc-combined.lsp")))
+	  (t
+	   (setq *acl2-doc-top-name* 'ACL2)
+	   (setq *acl2-doc-file*
+		 (concat *acl2-sources-dir*
+			 "doc.lisp")))))
   (acl2-doc-reset)
   (acl2-doc-top))
 
@@ -344,15 +384,6 @@
           (while alist
             (insert (format "%s\n" (car (pop alist))))))
 	buf)))
-
-(defun acl2-doc-read-line ()
-
-; Return the current line, and go to the end of it.
-
-  (forward-line 0)
-  (let ((beg (point)))
-    (end-of-line)
-    (buffer-substring beg (point))))
 
 (defun acl2-doc-index (name)
   "Go to the specified topic or else one containing it as a substring;

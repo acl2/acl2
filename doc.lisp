@@ -1224,7 +1224,7 @@ Subtopics
       Richard Stallman contributed a texinfo patch, to be found in the file
       doc/texinfo.tex.")
  (ACL2
-  (TOP)
+  NIL
   "ACL2 documentation (system only, not including the community books)
 
   This is the ACL2 documentation. For an \"acl2+books\" combined manual
@@ -3259,6 +3259,10 @@ Subtopics
 
     I             acl2-doc-initialize
        Restart the ACL2-Doc browser, clearing its state.
+       With prefix argument, toggle between the ACL2 User's Manual (the
+       default) and the acl2+books combined manual.  For the latter, it
+       will be necessary first to create file
+       books/system/doc/rendered-doc-combined.lsp; see :DOC acl2-doc.
 
     <Return>      acl2-doc-go!
        Go to the topic occurring at the cursor position.
@@ -3307,29 +3311,66 @@ Subtopics
 
   Notes
 
-   1.
-        Many commands offer defaults, and many offer completion. The default
-        is determined by cursor position: if the cursor is sitting on
-        a letter of a documenatation topic name, or on whitespace
-        immediately after it, then that name will be offered as the
-        default.
+    * In order to browse the combined acl2+books manual using the \"c\"
+      command, rather than (by default) the ACL2 User's Manual
+      (without [books] documentation) you will need to build file
+      books/system/doc/rendered-doc-combined.lsp. The following steps
+      will create that file. For best results, use a directory
+      separate from your regular ACL2 installation unless you already
+      are using ACL2(h) (see [hons-and-memoization]). Specifically,
+      this separation can avoid subsequent problems when trying to
+      include [books] with ACL2 that were certified using ACL2(h)).
 
-   2.
-        Square brackets indicate documentation topic names, for example:
-        [acl2-doc]. The square brackets are really there, for example
-        when you are searching using \"s\", \"S\", or \"n\". However, for
-        purposes of determining the default name (see above), the
-        only effect of the enclosing square brackets is to extend the
-        region in which the default is offered. For example, consider
-        the string \"[acl2-doc]\": the default name of \"acl2-doc\" is
-        offered if the cursor is on either square bracket.
+       1. Build ACL2(h):
 
-   3.
-        Certain topic names are omitted: those whose symbols print in ACL2
-        using |...|. Most of these are for the tours, which are
-        better viewed in a web browser anyhow. All of the rest, or
-        nearly all, are release notes for ACL2(r) from July, 2011 or
-        earlier.")
+              make large ACL2_HONS=h
+
+       2. Build the manual, optionally supplying your \"make\" command with a
+          \"-j\" argument. If \"acl2h\" invokes the ACL2(h) executable
+          that you just built, then you may omit \"ACL2=acl2h\" below;
+          otherwise replace \"acl2h\" by a full pathname for that
+          executable.
+
+              cd books
+              make USE_QUICKLISP=1 ACL2_BOOK_CERTS=centaur/doc.cert ACL2=acl2h
+
+       3. Build the file books/system/doc/rendered-doc-combined.lsp as follows,
+          still standing in the books directory, modifying
+          \"ACL2=acl2h\" as above.
+
+              cd books
+              make ACL2_BOOK_CERTS=system/doc/render-doc-combined.cert ACL2=acl2h
+
+    * Many commands offer defaults, and many offer completion. The default
+      is determined by cursor position: if the cursor is sitting on a
+      letter of a documenatation topic name, or on whitespace
+      immediately after it, then that name will be offered as the
+      default.
+
+    * Square brackets indicate documentation topic names, for example:
+      [acl2-doc]. The square brackets are really there, for example
+      when you are searching using \"s\", \"S\", or \"n\". However, for
+      purposes of determining the default name (see above), the only
+      effect of the enclosing square brackets is to extend the region
+      in which the default is offered. For example, consider the
+      string \"[acl2-doc]\": the default name of \"acl2-doc\" is offered
+      if the cursor is on either square bracket.
+
+    * Certain topic names are omitted: those whose symbols print in ACL2
+      using |...|. Most of these are for the tours, which are better
+      viewed in a web browser anyhow. All of the rest, or nearly all,
+      are release notes for ACL2(r) from July, 2011 or earlier.
+
+    * Searching using the \"s\" or \"S\" command is carried out by searching
+      top-to-bottom in a hidden Emacs buffer that contains all of the
+      documentation. The topics are listed in the following order
+      according to topic name:
+
+       1. All topics whose names reside in the \"ACL2\" package;
+       2. All topics whose names reside in the \"ACL2-PC\" package; and, for the
+          acl2+books combined manual,
+       3. All other topics, sorted by [symbol-name] and then by
+          [symbol-package-name].")
  (ACL2-HELP
   (OTHER)
   "The acl2-help mailing list
@@ -25471,13 +25512,10 @@ Subtopics
   (MISCELLANEOUS)
   "Searching the documentation
 
-  The :[doc] and :[doc!] commands will display, at the terminal,
-  [documentation] topics defined in ACL2 or in [books] that have
-  already been included. The :[docs] command allows you to search the
-  [documentation] at the terminal. See [docs].
-
-  But how can you find documentation for books that are not included in
-  the current ACL2 session?
+  The :[doc] command will display, at the terminal, [documentation]
+  topics defined in ACL2 or in [books] that have already been
+  included. But how can you find documentation for books that are not
+  included in the current ACL2 session?
 
   The XDOC (\"acl2+books\") manual is a combined manual for the ACL2
   sources and the community books. It is built using documentation
