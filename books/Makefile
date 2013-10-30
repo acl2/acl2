@@ -475,9 +475,15 @@ ADDED_BOOKS := \
 
 ADDED_BOOKS += workshops/2013/hardin-hardin/support/APSP.cert
 
+ifneq ($(ACL2_HAS_HONS), )
+ADDED_BOOKS += milawa-test-basic
+endif
+
 # Now SLOW_BOOKS is defined as the list above, except that below, we
-# also include books that are too slow for both an ordinary regression
-# (target "all") and an "everything" regression.
+# also include in SLOW_BOOKS some books that are too slow for both an
+# ordinary regression (target "all") and an "everything" regression.
+# Then we remove SLOW_BOOKS from regressions, restoring its subset,
+# ADDED_BOOKS, for the "everything" target.
 
 SLOW_BOOKS := $(ADDED_BOOKS)
 
