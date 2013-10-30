@@ -17,93 +17,45 @@
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; 10/29/2013: Mods made by Matt Kaufmann to support Emacs-based ACL2-Doc browser
 
 (in-package "XDOC")
-(include-book "xdoc/display" :dir :system)
-(include-book "std/util/defconsts" :dir :system)
 (set-state-ok t)
+(include-book "render-doc-base")
 (program)
 
 ;; Load the ACL2 system documentation and throw away any other topics (which
 ;; might be GPL'd) to ensure that only pure BSD-licensed topics are included.
 
-(include-book "acl2-doc-wrap")
 (table xdoc 'doc acl2::*acl2-sources-xdoc-topics*)
 
 (value-triple (len (get-xdoc-table (w state))))
 
-(defun render-topic (x all-topics state)
-  ;; Adapted from display-topic
-  (b* ((name (cdr (assoc :name x)))
-       (parents (cdr (assoc :parents x)))
-       ((mv text state) (preprocess-topic
-                         (acons :parents nil x) ;; horrible hack
-                         all-topics nil nil state))
-       ((mv err tokens) (parse-xml text))
-
-       ((when err)
-        (cw "Error rendering xdoc topic ~x0:~%~%" name)
-        (b* ((state (princ$ err *standard-co* state))
-             (state (newline *standard-co* state))
-             (state (newline *standard-co* state)))
-          (er hard? 'make-topic-text "Failed to process topic ~x0.~%" name)
-          (mv nil state)))
-
-       (merged-tokens (reverse (merge-text tokens nil 0)))
-       (acc (tokens-to-terminal merged-tokens 70 nil nil nil))
-       (terminal (str::trim (str::rchars-to-string acc))))
-
-; Originally the first value returned was (cons name terminal).  But we prefer
-; to avoid the "." in the output file, to make its viewing more pleasant.  If
-; we decide to associate additional information with name, then we may have a
-; more convincing reason to make this change.
-
-    (mv (list name parents terminal) state)))
-
-(defun render-topics (x all-topics state)
-  (b* (((when (atom x))
-        (mv nil state))
-       ((mv first state) (render-topic (car x) all-topics state))
-       ((mv rest state) (render-topics (cdr x) all-topics state)))
-    (mv (cons first rest) state)))
-
 (defttag :open-output-channel!)
 
-(defun set-current-package-state (pkg state)
-  (mv-let (erp val state)
-          (acl2::set-current-package pkg state)
-          (declare (ignore val))
-          (assert$ (null erp)
-                   state)))
-
-(defun split-acl2-topics (alist acl2-topics acl2-pc-topics)
-
-; Added by Matt K.  It seems good to me for there to be an intuitive sense of
-; the order of topics when one is searching using the Emacs interface to the
-; documentation, specifically, the "," key.  So we put the "ACL2-PC" package
-; topics at the end, since to me they seem less likely to be what one is
-; searching for.
-
-  (cond ((endp alist)
-         (append (acl2::merge-sort-symbol-alistp acl2-topics)
-                 (acl2::merge-sort-symbol-alistp acl2-pc-topics)))
-        ((equal (symbol-package-name (caar alist)) "ACL2-PC")
-         (split-acl2-topics (cdr alist)
-                            acl2-topics
-                            (cons (car alist) acl2-pc-topics)))
-        (t
-         (split-acl2-topics (cdr alist)
-                            (cons (car alist) acl2-topics)
-                            acl2-pc-topics))))
+(defun remove-acl2-parent (topics acc)
+  (cond ((endp topics) (reverse acc))
+        (t (remove-acl2-parent
+            (cdr topics)
+            (cons (cond
+                   ((and (eq (cdr (assoc-eq :name (car topics)))
+                             'acl2::acl2)
+                         (equal (cdr (assoc-eq :parents (car topics)))
+                                '(acl2::top)))
+                    (put-assoc-eq :parents
+                                  nil
+                                  (car topics)))
+                   (t (car topics)))
+                  acc)))))
 
 (acl2::defconsts
  (& & state)
  (state-global-let*
   ((current-package "ACL2" set-current-package-state))
-  (b* ((all-topics (get-xdoc-table (w state)))
+  (b* ((all-topics (remove-acl2-parent (get-xdoc-table (w state)) nil))
        ((mv rendered state)
         (render-topics all-topics all-topics state))
-       (rendered (split-acl2-topics rendered nil nil))
+       (rendered (split-acl2-topics rendered nil nil nil))
        (- (cw "Writing rendered-doc.lsp~%"))
        ((mv channel state) (open-output-channel! "rendered-doc.lsp"
                                                  :character state))

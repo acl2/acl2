@@ -18,5 +18,6 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+(set-deferred-ttag-notes t state)
 (ld "xdoc/cert.acl2" :dir :system)
-; cert-flags: ? t :ttags :all
+; cert-flags: ? t :ttags :all :skip-proofs-okp t
