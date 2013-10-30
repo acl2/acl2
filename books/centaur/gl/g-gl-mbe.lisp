@@ -45,21 +45,21 @@
                                    "Error:"
                                    gmsg config bvar-db state))
          (er hard? 'gl-assert "~@0" gmsg)
-         (gret x))
+         (g-if (gret x) (gret t) (gret nil)))
         ((when (not false-succ))
          (er hard? 'gl-assert "Assertion failed to prove.~%~@0" gmsg)
-         (gret x))
+         (g-if (gret x) (gret t) (gret nil)))
         (unk (bfr-and (bfr-hyp->bfr hyp) x-unknown))
         ((mv unk-sat unk-succ ?unk-ctrex)
          (bfr-sat unk))
         ((when (and unk-sat unk-succ))
 
          (er hard? 'gl-assert "Assertion failed with unknown.~%~@0" gmsg)
-         (gret x))
+         (g-if (gret x) (gret t) (gret nil)))
         ((when (not unk-succ))
          (er hard? 'gl-assert "Assertion failed to prove absence of unknowns.~%~@0" gmsg)
-         (gret x)))
-     (gret x)))
+         (g-if (gret x) (gret t) (gret nil))))
+     (gret t)))
 
 ;; (def-gobjectp-thm gl-mbe)
 

@@ -22,6 +22,11 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "gl-util")
 
+
+;; This is turning into a dumping ground for logically-simple functions that
+;; have a special meaning under symbolic execution.  Maybe we should rename
+;; this file.
+
 (defun acl2::always-equal (x y)
   (declare (Xargs :guard t))
   (equal x y))
@@ -29,18 +34,19 @@
 (defsection gl-assert
   :parents (reference)
   :short "During GL symbolic execution, check that a condition holds and produce an error if not."
-  :long "<p>@('GL-ASSERT'), logically speaking, just returns its argument.  In
-concrete execution, it causes an error if that argument is false, and in
-symbolic execution, it forces a check that its argument is true and produces a
+  :long "<p>@('(GL-ASSERT X)'), logically speaking, just returns @('(IF X T
+NIL)').  In concrete execution, it causes an error if @('X') is false, and in
+symbolic execution, it forces a check that @('X') is true and produces a
 counterexample if not.</p>"
 
 
   (defun-inline gl-assert-fn (x msg gmsg)
     (declare (xargs :guard t)
              (ignore gmsg))
-    (mbe :logic x
-         :exec (or x
-                   (er hard? 'gl-assert "~@0" msg))))
+    (mbe :logic (and x t)
+         :exec (if x
+                   t
+                 (er hard? 'gl-assert "~@0" msg))))
 
   (defmacro gl-assert (x &key
                          (msg 'nil msgp)
@@ -52,6 +58,20 @@ counterexample if not.</p>"
                        (msgp msg)
                        (t (list 'quote (acl2::msg "GL-ASSERT failure: ~x0" x))))))
       `(gl-assert-fn ,x ,msg ,gmsg))))
+
+
+(defsection gl-concretize
+  :parents (reference)
+  :short "During GL symbolic execution, try to reduce a symbolic object to a concrete one."
+  :long "<p>@('(GL-CONCRETIZE X)'), logically speaking, just returns @('X').
+However, during symbolic simulation (in AIG mode), it tries to reduce @('X') to
+a concrete object by finding one object it could represent and trying to prove
+that it is always equal to that object.</p>"
+
+
+  (defun-inline gl-concretize (x)
+    (declare (xargs :guard t))
+    x))
 
 
 (defsection gl-mbe
@@ -86,6 +106,7 @@ performance.  However, because logically GL-MBE just returns X, the meaning of
 the specification is unaffected.</p>"
 
   (defun gl-mbe-fn (spec impl spec-form impl-form)
+    (declare (xargs :guard t))
     (mbe :logic spec
          :exec (prog2$
                 (or (equal spec impl)
@@ -139,3 +160,25 @@ the specification is unaffected.</p>"
 
 
 
+
+
+
+(defun gl-aside (x)
+  (declare (xargs :guard t)
+           (ignore x))
+  nil)
+
+(defun gl-ignore (x)
+  (declare (xargs :guard t)
+           (ignore x))
+  nil)
+
+(defund gl-error (x)
+  (declare (xargs :guard t)
+           (ignore x))
+  (prog2$ (er hard? 'gl-error "GL-ERROR call encountered; quitting~%")
+          nil))
+
+(defthm gl-error-is-nil
+  (equal (gl-error x) nil)
+  :hints(("Goal" :in-theory (enable gl-error))))

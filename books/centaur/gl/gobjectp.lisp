@@ -395,25 +395,6 @@
 ;; ||#
 
 
-(defun gl-aside (x)
-  (declare (xargs :guard t)
-           (ignore x))
-  nil)
-
-(defun gl-ignore (x)
-  (declare (xargs :guard t)
-           (ignore x))
-  nil)
-
-(defund gl-error (x)
-  (declare (xargs :guard t)
-           (ignore x))
-  (prog2$ (er hard? 'gl-error "GL-ERROR call encountered; quitting~%")
-          nil))
-
-(defthm gl-error-is-nil
-  (equal (gl-error x) nil)
-  :hints(("Goal" :in-theory (enable gl-error))))
 
 ;; (defun gl-lazy-and-fn (terms)
 ;;   (if (atom terms)

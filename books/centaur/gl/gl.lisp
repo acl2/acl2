@@ -60,6 +60,7 @@
 ;;; from centaur/aig/bddify.lisp.
 ; (include-book "bfr-aig-bddify")
 (include-book "g-gl-mbe")
+(include-book "g-concretize")
 
 (include-book "doc")
 (include-book "tutorial")
@@ -632,7 +633,7 @@ auto-bindings).</p>"
     (g-number (list (numlist start by n)))))
 
 ;; Fix for unsigned-byte-p's recursive definition in ihs books
-(table structural-decomp-defs 'unsigned-byte-p 'unsigned-byte-p)
+(table acl2::structural-decomp-defs 'unsigned-byte-p 'unsigned-byte-p)
 
 
 

@@ -24,6 +24,7 @@
 (include-book "generic-geval")
 (include-book "gtypes")
 (include-book "general-objects")
+(include-book "gl-mbe")
 (local (include-book "gtype-thms"))
 (local (include-book "gobjectp-thms"))
 (local (include-book "general-object-thms"))
