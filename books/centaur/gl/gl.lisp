@@ -47,7 +47,6 @@
 (include-book "g-intern")
 ;(include-book "centaur/aig/g-aig-eval" :dir :system)
 ;(include-book "g-make-fast-alist")
-;(include-book "g-gl-mbe")
 
 (include-book "gl-misc-defs")
 (include-book "eval-f-i-cp")
@@ -59,7 +58,7 @@
 ;;; include-book form, in order to avoid dependence on ttag :COUNT-BRANCHES-TO
 ;;; from centaur/aig/bddify.lisp.
 ; (include-book "bfr-aig-bddify")
-(include-book "g-gl-mbe")
+(include-book "g-assert")
 (include-book "g-concretize")
 
 (include-book "doc")
