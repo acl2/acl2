@@ -20,6 +20,39 @@
 
 (in-package "GL")
 (include-book "xdoc/top" :dir :system)
+(include-book "gl-util")
+
+(defun acl2::always-equal (x y)
+  (declare (Xargs :guard t))
+  (equal x y))
+
+(defsection gl-assert
+  :parents (reference)
+  :short "During GL symbolic execution, check that a condition holds and produce an error if not."
+  :long "<p>@('GL-ASSERT'), logically speaking, just returns its argument.  In
+concrete execution, it causes an error if that argument is false, and in
+symbolic execution, it forces a check that its argument is true and produces a
+counterexample if not.</p>"
+
+
+  (defun-inline gl-assert-fn (x msg gmsg)
+    (declare (xargs :guard t)
+             (ignore gmsg))
+    (mbe :logic x
+         :exec (or x
+                   (er hard? 'gl-assert "~@0" msg))))
+
+  (defmacro gl-assert (x &key
+                         (msg 'nil msgp)
+                         (gmsg 'nil gmsgp))
+    (let* ((msg (if msgp
+                    msg
+                  (list 'quote (acl2::msg "GL-ASSERT failure: ~x0" x))))
+           (gmsg (cond (gmsgp gmsg)
+                       (msgp msg)
+                       (t (list 'quote (acl2::msg "GL-ASSERT failure: ~x0" x))))))
+      `(gl-assert-fn ,x ,msg ,gmsg))))
+
 
 (defsection gl-mbe
   :parents (reference)
@@ -52,13 +85,31 @@ result, which cuts off the upper bits of X, improving symbolic execution
 performance.  However, because logically GL-MBE just returns X, the meaning of
 the specification is unaffected.</p>"
 
-  (defun gl-mbe (spec impl other-info)
-    (declare (xargs :guard t)
-             (ignore other-info))
-    (prog2$ (or (equal spec impl)
-                (er hard? 'gl-mbe "GL-MBE assertion failed: ~x0 not equal to ~x1~%"
-                    spec impl))
-            spec)))
+  (defun gl-mbe-fn (spec impl spec-form impl-form)
+    (mbe :logic spec
+         :exec (prog2$
+                (or (equal spec impl)
+                    (er hard?
+                        "GL-MBE failure: ~x0 and ~x1 unequal.~%Values: ~x2 versus ~x3."
+                        spec-form impl-form spec impl))
+                spec)))
+
+  (defthm gl-mbe-gl-def
+    (equal (gl-mbe-fn spec impl spec-form impl-form)
+           (if (gl-assert (acl2::always-equal spec impl)
+                          :msg (msg "GL-MBE failure: ~x0 and ~x1 unequal." spec-form impl-form))
+               impl
+             spec))
+    :rule-classes ((:definition :install-body nil)))
+
+  (set-preferred-def gl-mbe-fn gl-mbe-gl-def)
+
+  (defmacro gl-mbe (spec impl &optional other-info)
+    (declare (ignorable other-info))
+    (prog2$ (and other-info
+                 (cw "NOTE: The third argument of gl-mbe is deprecated.  Sorry for the confusion.~%"))
+            `(gl-mbe-fn ,spec ,impl ',spec ',impl))))
+
 
 (defun gl-force-check-fn (x strong direction)
   (declare (xargs :guard t)
@@ -85,3 +136,6 @@ the specification is unaffected.</p>"
   `(gl-force-check-fn ,x t nil))
 
 (table gl-uninterpreted-functions 'gl-force-check-fn t)
+
+
+

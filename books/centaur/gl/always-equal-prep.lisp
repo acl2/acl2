@@ -22,6 +22,7 @@
 (include-book "symbolic-arithmetic-fns")
 (include-book "g-if")
 (include-book "eval-g-base")
+(include-book "gl-mbe")
 (local (include-book "hyp-fix"))
 (local (include-book "eval-g-base-help"))
 (local (include-book "clause-processors/find-subterms" :dir :system))
@@ -45,10 +46,6 @@
 ;; just punt and produce an apply object.
 
 
-
-(defun acl2::always-equal (x y)
-  (declare (Xargs :guard t))
-  (equal x y))
 
 ;; X and Y should be unequal BDDs.  This produces an environment under which x
 ;; and y evaluate to opposite values.

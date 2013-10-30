@@ -20,60 +20,50 @@
 
 (in-package "GL")
 (include-book "bfr-sat")
-(include-book "g-always-equal")
 (include-book "gl-mbe")
+(include-book "g-primitives-help")
+(include-book "g-if")
+(include-book "eval-g-base")
+(include-book "ctrex-utils")
+(local (include-book "hyp-fix"))
 (local (include-book "eval-g-base-help"))
 
 
-;; [Jared] uses of sneaky-save for the time being.  I don't think we often care
-;; about this.  This scheme lets us include gl-mbe in the top-level gl.lisp,
-;; without needing a ttag.  We can always redefine the function if we need to
-;; debug something.
 
-;; (include-book "../misc/sneaky-load")
-
-
-(def-g-fn gl-mbe
-  `(b* (((mv equal? hyp) (glr acl2::always-equal spec impl . ,params))
-        ((mv tests-nonnil tests-unknown & hyp) (gtests equal? hyp))
+(def-g-fn gl-assert-fn$inline
+  `(b* (((mv x-nonnil x-unknown & hyp) (gtests x hyp))
         (false (bfr-and (bfr-hyp->bfr hyp)
-                        (bfr-not tests-unknown)
-                        (bfr-not tests-nonnil)))
+                        (bfr-not x-unknown)
+                        (bfr-not x-nonnil)))
         ((mv false-sat false-succ ?false-ctrex)
          (bfr-sat false))
         ((when (and false-sat false-succ))
          (make-fast-alist false-ctrex)
-         ;; (acl2::sneaky-save 'gl-mbe-ctrex false-ctrex)
+
          (ec-call
           (glcp-print-single-ctrex false-ctrex
                                    "Error:"
-                                   "GL-MBE violation"
-                                   config bvar-db state))
-         (er hard? 'gl-mbe "GL-MBE assertion failed.  Args: (~x0 ~x1).
-                            Diagnostic info: ~x2~%"
-             ;; BOZO this is all assuming aig/alist-ctrex mode
-             (gobj->term spec (list false-ctrex))
-             (gobj->term impl (list false-ctrex))
-             (gobj->term other-info (list false-ctrex)))
-         (gret spec))
+                                   gmsg config bvar-db state))
+         (er hard? 'gl-assert "~@0" gmsg)
+         (gret x))
         ((when (not false-succ))
-         (er hard? 'gl-mbe "GL-MBE assertion failed to prove.")
-         (gret spec))
-        (unk (bfr-and (bfr-hyp->bfr hyp) tests-unknown))
+         (er hard? 'gl-assert "Assertion failed to prove.~%~@0" gmsg)
+         (gret x))
+        (unk (bfr-and (bfr-hyp->bfr hyp) x-unknown))
         ((mv unk-sat unk-succ ?unk-ctrex)
          (bfr-sat unk))
         ((when (and unk-sat unk-succ))
-         ;; (acl2::sneaky-save 'gl-mbe-ctrex unk-ctrex)
-         (er hard? 'gl-mbe "GL-MBE assertion failed with unknown.")
-         (gret spec))
+
+         (er hard? 'gl-assert "Assertion failed with unknown.~%~@0" gmsg)
+         (gret x))
         ((when (not unk-succ))
-         (er hard? 'gl-mbe "GL-MBE assertion failed to prove absence of unknowns.")
-         (gret spec)))
-     (gret impl)))
+         (er hard? 'gl-assert "Assertion failed to prove absence of unknowns.~%~@0" gmsg)
+         (gret x)))
+     (gret x)))
 
 ;; (def-gobjectp-thm gl-mbe)
 
-(verify-g-guards gl-mbe)
+(verify-g-guards gl-assert-fn$inline)
 
 (local
  (defun instantiate-bfr-sat-hint (clause env)
@@ -88,12 +78,12 @@
                 (instantiate-bfr-sat-hint (cdr clause) env)))
          (& (instantiate-bfr-sat-hint (cdr clause) env)))))))
 
-(def-gobj-dependency-thm gl-mbe
+(def-gobj-dependency-thm gl-assert-fn$inline
   :hints `(("goal"
             :expand (,gcall)
             :in-theory (disable (:d ,gfn)))))
 
-(def-g-correct-thm gl-mbe eval-g-base
+(def-g-correct-thm gl-assert-fn$inline eval-g-base
   :hints `(("goal" :do-not-induct t
             :expand (,gcall)
             :in-theory (disable bfr-sat-unsat))
