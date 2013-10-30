@@ -17644,16 +17644,18 @@
                                  'current-acl2-world wrld)
                         runic-value)))
              (warning$ ctx ("Theory")
-                       "Although the theory expression ~x0 disables the ~
-                        :DEFINITION rule~#1~[~/s~] for ~v1, some expansions ~
-                        involving ~#1~[this function~/these functions~] may ~
-                        still occur.  See :DOC theories-and-primitives."
-                       expr
+                       "The :DEFINITION rule~#0~[ for ~v0 is~/s for ~v0 are~] ~
+                        left disabled by the theory expression ~x1, but ~
+                        because ~#0~[this function is~/these functions are~] ~
+                        built-in in some way, some expansions of ~
+                        ~#0~[its~/their~] calls may still occur.  See :DOC ~
+                        theories-and-primitives."
                        (strip-base-symbols
                         (set-difference-equal
                          (getprop 'definition-minimal-theory 'theory nil
                                   'current-acl2-world wrld)
                          runic-value))
+                       expr
                        *definition-minimal-theory*
                        '(assign verbose-theory-warning nil)))
             (t state))))
@@ -17670,16 +17672,18 @@
                                   'current-acl2-world wrld)
                          runic-value)))
               (warning$ ctx ("Theory")
-                       "Although the theory expression ~x0 disables the ~
-                        :EXECUTABLE-COUNTERPART rule~#1~[~/s~] for ~v1, some ~
-                        calls involving ~#1~[this function~/these functions~] ~
-                        may still be made.  See :DOC theories-and-primitives."
-                        expr
+                       "The :EXECUTABLE-COUNTERPART rule~#0~[ for ~v0 is~/s ~
+                        for ~v0 are~] left disabled by the theory expression ~
+                        ~x1, but because ~#0~[this funcction is~/these ~
+                        functions are~] built-in in some way, some ~
+                        evaluations of ~#0~[its~/their~] calls may still ~
+                        occur.  See :DOC theories-and-primitives."
                         (strip-base-symbols
                          (set-difference-equal
                           (getprop 'executable-counterpart-minimal-theory
                                    'theory nil 'current-acl2-world wrld)
                           runic-value))
+                        expr
                         *built-in-executable-counterparts*
                         '(assign verbose-theory-warning nil)))
              (t state))))

@@ -62094,6 +62094,10 @@ Subtopics
   second argument. Thanks to Camm Maguire for bringing this bug to
   our attention.
 
+  The wording in theory warnings has been improved, to avoid giving the
+  impression that you are newly disabling a built-in rule in the case
+  that it merely remains disabled.
+
   NEW FEATURES
 
   We have added a tool for writing out useful information about a
