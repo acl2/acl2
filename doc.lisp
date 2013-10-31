@@ -3309,43 +3309,52 @@ Subtopics
     u             acl2-doc-up
        Go to the parent of the current topic.
 
+  The Combined Manual
+
+  By default, ACL2-Doc displays the ACL2 User's Manual, which includes
+  documentation for the ACL2 system but not for the community books.
+  The combined acl2+books manual includes documentation for those
+  books as well. In order to browse the combined acl2+books manual
+  you can give a prefix argument to the \"I\" command, as indicated
+  above; but you will first need to build file
+  books/system/doc/rendered-doc-combined.lsp. The following steps
+  will create that file. For best results, use a directory separate
+  from your regular ACL2 installation unless you already are using
+  ACL2(h) (see [hons-and-memoization]). Specifically, this separation
+  can avoid subsequent problems when trying to include [books] with
+  ACL2 that were certified using ACL2(h)).
+
+   1. Build ACL2(h):
+
+          make large ACL2_HONS=h
+
+   2. Build the manual, optionally supplying your \"make\" command with a
+      \"-j\" argument. If \"acl2h\" invokes the ACL2(h) executable that
+      you just built, then you may omit \"ACL2=acl2h\" below; otherwise
+      replace \"acl2h\" by a full pathname for that executable.
+
+          cd books
+          make USE_QUICKLISP=1 ACL2_BOOK_CERTS=centaur/doc.cert ACL2=acl2h
+
+   3. Build the file books/system/doc/rendered-doc-combined.lsp as follows,
+      still standing in the books directory, modifying \"ACL2=acl2h\"
+      as above.
+
+          cd books
+          make ACL2_BOOK_CERTS=system/doc/render-doc-combined.cert ACL2=acl2h
+
   Notes
-
-    * In order to browse the combined acl2+books manual using the \"c\"
-      command, rather than (by default) the ACL2 User's Manual
-      (without [books] documentation) you will need to build file
-      books/system/doc/rendered-doc-combined.lsp. The following steps
-      will create that file. For best results, use a directory
-      separate from your regular ACL2 installation unless you already
-      are using ACL2(h) (see [hons-and-memoization]). Specifically,
-      this separation can avoid subsequent problems when trying to
-      include [books] with ACL2 that were certified using ACL2(h)).
-
-       1. Build ACL2(h):
-
-              make large ACL2_HONS=h
-
-       2. Build the manual, optionally supplying your \"make\" command with a
-          \"-j\" argument. If \"acl2h\" invokes the ACL2(h) executable
-          that you just built, then you may omit \"ACL2=acl2h\" below;
-          otherwise replace \"acl2h\" by a full pathname for that
-          executable.
-
-              cd books
-              make USE_QUICKLISP=1 ACL2_BOOK_CERTS=centaur/doc.cert ACL2=acl2h
-
-       3. Build the file books/system/doc/rendered-doc-combined.lsp as follows,
-          still standing in the books directory, modifying
-          \"ACL2=acl2h\" as above.
-
-              cd books
-              make ACL2_BOOK_CERTS=system/doc/render-doc-combined.cert ACL2=acl2h
 
     * Many commands offer defaults, and many offer completion. The default
       is determined by cursor position: if the cursor is sitting on a
-      letter of a documenatation topic name, or on whitespace
+      letter of a documentation topic name, or on a space character
       immediately after it, then that name will be offered as the
       default.
+
+    * Certain topic names are omitted: those whose symbols print in ACL2
+      using |...|. Most of these are for the tours, which are better
+      viewed in a web browser anyhow. All of the rest, or nearly all,
+      are release notes for ACL2(r) from July, 2011 or earlier.
 
     * Square brackets indicate documentation topic names, for example:
       [acl2-doc]. The square brackets are really there, for example
@@ -3354,12 +3363,39 @@ Subtopics
       effect of the enclosing square brackets is to extend the region
       in which the default is offered. For example, consider the
       string \"[acl2-doc]\": the default name of \"acl2-doc\" is offered
-      if the cursor is on either square bracket.
+      if the cursor is on either square bracket. But links have some
+      idiosyncrasies.
 
-    * Certain topic names are omitted: those whose symbols print in ACL2
-      using |...|. Most of these are for the tours, which are better
-      viewed in a web browser anyhow. All of the rest, or nearly all,
-      are release notes for ACL2(r) from July, 2011 or earlier.
+       1. Especially in the case of the combined manual, you may see links that
+          include package prefixes. Here, for example, is a sentence
+          from the documentation for [gl].
+
+              We call these structures [gl::symbolic-objects].
+
+          The \"gl\" package prefix allows commands to pick up
+          \"gl::symbolic-objects\" as the name to use as a default, so
+          that for example, hitting <Return> will take you to that
+          topic. But when reading the sentence, for best results you
+          should ignore package prefixes. So for example, you would
+          read the sentence above as follows.
+
+              We call these structures symbolic-objects.
+
+       2. Links that contain whitespace will not work. Consider the following
+          passage from the documentation for [gl].
+
+              GL requires ACL2(h) because it makes extensive use of
+              [hons-and-memoization]. Some optional parts of GL also require
+              [trust tags].
+
+          The first link will take you to the topic, [hons-and-memoization].
+          But the second link was actually written to be a link to
+          the documentation for [defttag].
+
+      Of course, the web-based browser avoids these idiosyncrasies (see
+      [xdoc::save]), hence may be more appropriate for those who have
+      no particular preference for using Emacs to browse the
+      documentation.
 
     * Searching using the \"s\" or \"S\" command is carried out by searching
       top-to-bottom in a hidden Emacs buffer that contains all of the
@@ -62128,14 +62164,19 @@ Subtopics
   community books documentation are written in [xdoc] format, we hope
   the ACL2 community will add links from the ACL2 system
   documentation topics to book documentation topics. Thanks to Jared
-  for all his work contributing to this enhancement. Note that there
-  is a replacement for the Emacs Info view of the [documentation];
-  see [ACL2-doc].
+  for all his work contributing to this enhancement.
 
   See [note-6-4-books] for release notes about the books, corresponding
   to the release of ACL2 Version 6.4.
 
   EMACS SUPPORT
+
+  There is now an Emacs utility for browsing the hypertext
+  documentation for ACL2 and the community books. This browser,
+  ACL2-Doc, essentially serves as a replacement for Emacs Info,
+  though it can be used not just for the ACL2 User's Manual but also
+  for the acl2+books combined manual. It is loaded automatically into
+  emacs if you load the file emacs/emacs-acl2.el. See [ACL2-doc].
 
   EXPERIMENTAL/ALTERNATE VERSIONS")
  (NOTE1

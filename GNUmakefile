@@ -522,7 +522,9 @@ acl2-manual:
 
 # Warning: The dependency list just below isn't complete, since it
 # doesn't consider what _those_ files depend on.
-doc.lisp: books/system/doc/acl2-doc.lisp books/system/doc/render-doc.lisp
+doc.lisp: books/system/doc/acl2-doc.lisp \
+	  books/system/doc/render-doc-base.lisp \
+	  books/system/doc/render-doc.lisp
 	if [ -f doc.lisp ] ; then \
 	  cp -p doc.lisp doc.lisp.backup ; \
 	fi
@@ -530,7 +532,7 @@ doc.lisp: books/system/doc/acl2-doc.lisp books/system/doc/render-doc.lisp
 	rm -f books/system/doc/render-doc.cert
 	cd books/system/doc ; ../../build/cert.pl render-doc.lisp
 	cp -p books/system/doc/rendered-doc.lsp doc.lisp
-	@diff doc.lisp doc.lisp.backup 2>&1 /dev/null ; \
+	@diff doc.lisp doc.lisp.backup 2>&1 > /dev/null ; \
 	  if [ $$? != 0 ] ; then \
 	    echo "NOTE: doc.lisp has changed." ; \
 	    echo "      If you use :DOC at the terminal, then" ; \
