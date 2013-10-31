@@ -21,6 +21,17 @@
 
 (in-package "XDOC")
 (include-book "xdoc/display" :dir :system)
+
+(defconst *pkg-witness-acl2*
+  (pkg-witness "ACL2"))
+
+(defun base-pkg-display-override-acl2-pkg (base-pkg)
+  (declare (ignore base-pkg)
+           (xargs :guard t))
+  *pkg-witness-acl2*)
+
+(defattach base-pkg-display-override base-pkg-display-override-acl2-pkg)
+
 (include-book "std/util/defconsts" :dir :system)
 (set-state-ok t)
 (program)

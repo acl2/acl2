@@ -206,25 +206,6 @@
 # should be something like: if you give a certify-book command, we use it;
 # otherwise we generate one using the cert-flags.
 
-# BUILDING THE XDOC MANUAL
-
-# The xdoc manual is built in centaur/manual/, top page index.html, as
-# a byproduct of building centaur/doc.cert with ACL2(h) using
-# USE_QUICKLISP=1 on the `make' command line, for example as follows:
-#   make -j 8 regression-fresh \
-#     USE_QUICKLISP=1 \
-#     ACL2_BOOK_CERTS=centaur/doc.cert \
-#     ACL2=/projects/acl2/devel/ccl-saved_acl2h
-# Note the use of target regression-fresh or regression, rather than
-# regression-everything, which would make additional books as well.
-# This has been tested using CCL on Linux, but may work for other
-# OS/Lisp combinations.  See also centaur/README.html.  ACL2(h) is
-# required for that build of the xdoc manual, because it is required
-# for some of the books included in centaur/doc.lisp.  You can create
-# a manual for your own books using ACL2 or ACL2(h); see topic SAVE
-# (parent topic XDOC) in the xdoc manual, either in centaur/manual/ or
-# on the web at http://fv.centtech.com/acl2/latest/doc/.
-
 # STATUS / TODO LIST / MISSING FEATURES / BOZOS:
 #
 #  [DONE] Requires perl on the client machine (I think we've agreed this is
@@ -1155,6 +1136,58 @@ chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
 	@rm -f $(@D)/workxxx.bkchk.$(*F)
 
 ##############################
+### Section: Building the XDOC combined manual
+##############################
+
+# The xdoc combined manual is built in centaur/manual/, top page
+# index.html, as a byproduct of building centaur/doc.cert with
+# ACL2(h).  The following target builds the combined manual; the one
+# after it builds it much more quickly but perhaps a bit less
+# reliably.  (Don't forget to define ACL2=<your_acl2>.)  You might
+# wish to issue the command below directly, so that the -j option is
+# passed to the call of make.
+combined-manual:
+	$(MAKE) USE_QUICKLISP=1 ACL2_BOOK_CERTS=centaur/doc.cert
+
+# For the Emacs-based ACL2-Doc browser (see :DOC acl2-doc), we need
+# file the file system/doc/rendered-doc-combined.lsp.  It can be
+# created by running make in this directory, for example as follows if
+# acl2h invokes your ACL2(h) image:
+
+#   make ACL2_BOOK_CERTS=system/doc/render-doc-combined.cert ACL2=acl2h
+
+# But that requires (or causes) centaur/doc.cert to be built, which
+# can be expensive.  A much faster way is to invoke make with the
+# following target.  Warning: At the moment this breaks (sorry).
+
+.PHONY: render-doc-combined-fast
+render-doc-combined-fast: \
+  str/defs.cert \
+  tools/defredundant.cert \
+  centaur/bitops/ihsext-basics.cert \
+  centaur/clex/example.cert \
+  system/doc/acl2-doc-wrap.cert
+	rm -f system/doc/rendered-doc-combined.lisp
+	$(MAKE) USE_QUICKLISP=1 ACL2_BOOK_CERTS=system/doc/acl2-doc-wrap.cert
+	@echo 'Making acl2+books combined manual...'
+	@cd system/doc/ ; \
+	(echo '(ld "combined-build-script.lsp")' | $(ACL2) 2>&1) > rendered-doc-combined.lisp.out
+	@if [ -f system/doc/rendered-doc-combined.lisp ] ; then \
+	  echo 'Successfully built system/doc/combined-build-script.lsp' ; \
+	else \
+	  echo 'FAILED to build system/doc/combined-build-script.lsp' ; \
+	  exit 1 ; \
+	fi
+
+# This has been tested using CCL on Linux, but may work for other
+# OS/Lisp combinations.  See also centaur/README.html.  ACL2(h) is
+# required for that build of the xdoc manual, because it is required
+# for some of the books included in centaur/doc.lisp.  You can create
+# a manual for your own books using ACL2 or ACL2(h); see topic SAVE
+# (parent topic XDOC) in the xdoc manual, either in centaur/manual/ or
+# on the web at http://fv.centtech.com/acl2/latest/doc/.
+
+##############################
 ### Section: Some notes
 ##############################
 
@@ -1199,9 +1232,6 @@ chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
 # workshops/2003/greve-wilding-vanfleet/deps.cert
 # workshops/2003/kaufmann/deps.cert
 # workshops/2011/verbeek-schmaltz/deps.cert
-
-
-
 
 # VL Toolkit
 

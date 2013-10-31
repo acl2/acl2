@@ -156,6 +156,20 @@
        (acc (str::revappend-chars "</see>" acc)))
     (str::rchars-to-string acc)))
 
+; Added by Matt K., the following is a hook to allow symbols to be printed with
+; respect to the ACL2 package.  This is useful for creating the file
+; system/doc/rendered-doc-combined.lisp.
+(encapsulate
+ ()
+ (logic)
+
+ (defstub base-pkg-display-override (base-pkg) t)
+
+ (defun base-pkg-display-override-default (base-pkg)
+   (declare (xargs :mode :logic :guard t))
+   base-pkg)
+
+ (defattach base-pkg-display-override base-pkg-display-override-default))
 
 (defun sym-mangle (x base-pkg acc)
 
@@ -164,7 +178,8 @@
 ; Characters to print are accumulated onto acc in reverse order.  BOZO think
 ; about adding keyword support?
 
-  (let* ((name-low (name-low (symbol-name x)))
+  (let* ((base-pkg (base-pkg-display-override base-pkg))
+         (name-low (name-low (symbol-name x)))
          (acc (if (in-package-p x base-pkg)
                   acc
                 (let ((pkg-low (name-low (symbol-package-name x))))
@@ -176,7 +191,8 @@
 
 ; Same as sym-mangle, but upper-case the first letter.
 
-  (b* ((name-low (name-low (symbol-name x))))
+  (b* ((base-pkg (base-pkg-display-override base-pkg))
+       (name-low (name-low (symbol-name x))))
     (if (in-package-p x base-pkg)
         (let* ((name-cap (str::upcase-first name-low)))
           (simple-html-encode-chars (explode name-cap) acc))
