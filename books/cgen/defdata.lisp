@@ -3027,12 +3027,12 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
        
     `((encapsulate
       ()
-      (local
-       (progn
-         (value-triple 
+      (value-triple 
           (prog2$ 
            (time-tracker :defdata-generic-record-lemmas :start)
            :invisible))
+      (local
+       (progn
          (in-theory (enable ,conx-pred))
          (defthm ,(modify-symbol "" conx-name "-IMPLIES1-LEMMA")
            (implies (,conx-pred v)

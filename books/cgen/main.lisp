@@ -512,9 +512,15 @@ processed, the annotation of edges is also returned"
                                    (put-assoc-equal var nil alst-C)
                                    incoming)))
        
-       ((undirected-2-rel? hyp);(~ x  y)
-;dont draw an edge
-        (build-vdependency-graph (cdr hyp-lst) alst alst-C incoming))
+; 15 Oct '13 --harshrc: Commented out the following, so that (= x y)
+; case is subsumed by the default case of cond i.e (R term1 ... termN)
+; Thus, instead of not drawing an edge, a undirected edge is added
+; between x and y.
+
+;;        ((undirected-2-rel? hyp);(~ x  y)
+;; ;dont draw an edge
+;;         (build-vdependency-graph (cdr hyp-lst) alst alst-C incoming))
+
        ((directed-2-rel? hyp);(= x (f y))
         (b* (((mv var term) (destruct-simple-hyp hyp))
              (fvars (remove-equal ;sloppy code
@@ -1267,8 +1273,21 @@ overridden by entries in override-alist"
     (put-additional-constraints. (cdr vs) term 
                                  (put-assoc-eq v cs% v-cs%-alst.)))))
 
+(def insert-before-key  (key entry alist)
+  (decl :sig ((symbol entry symbol-alist) -> symbol-alist)
+        :doc "insert entry before key in alist")
+  (if (endp alist)
+      nil
+    (if (eq key (caar alist))
+        (cons entry alist)
+      (cons (car alist)
+            (insert-before-key key entry (cdr alist))))))
+              
+         
+
 ;2 july '13 (type-info-lost-via-dest-elim issue)
 ; TODO: check if check for cycles is correct!
+; 15 Oct '13: ugly hack to reorder around dependency change.
 (def put-var-eq-constraint. (v1 v2 vl wrld R$ types-ht$ v-cs%-alst.)
   (decl :sig ((symbol symbol vl plist-world R$ types-ht$ symbol-cs%-alist) 
               -> symbol-cs%-alist)
@@ -1288,9 +1307,18 @@ overridden by entries in override-alist"
        ((when (eq v other-eqc)) v-cs%-alst.) ;avoid cycle!!
        (- (cw? (and (verbose-stats-flag vl)
                     (not (eq 'defdata::empty-eq-constraint eqc))) 
-               "CEgen/Note: Overwriting eq-constraint for ~x0 with ~x1~|" v other-v))
-       (cs% (change cs% eq-constraint other-v)))
-   (put-assoc-eq v cs% v-cs%-alst.)))
+               "CEgen/Note: Overwriting (variable) eq-constraint for ~x0 with ~x1~|" v other-v))
+       (cs% (change cs% eq-constraint other-v))
+       (v-cs%-alst. (put-assoc-eq v cs% v-cs%-alst.)))
+; 15 Oct '13 -- other-v should come before v in the order of keys in
+; v-cs%-alst. or at least in the let* binding. Since there two
+; variables are related by an equivalence relation, all entries
+; between them will also be in the same equivalence class, so it
+; suffices to remove the other-v entry and insert it just in front of
+; the entry of v.
+    (insert-before-key v (cons other-v other-cs%)
+                       (delete-assoc-eq other-v v-cs%-alst.))))
+
 
 (def put-eq-constraint. (v term vl v-cs%-alst.)
   (decl :sig ((symbol pseudo-term vl symbol-cs%-alist) 
@@ -1648,7 +1676,6 @@ thought about how to implement it.
         (mv 0 NIL)))))
                
      
-
 (def make-enumerator-calls-alist (v-cs%-alst vl wrld R$ types-ht$ ans.)
   (decl :sig ((symbol-cs%-alist fixnum plist-world R$ types-ht$ symbol-alist) 
               -> (mv erp symbol-alist))
@@ -1661,7 +1688,9 @@ enumerator call expression")
       (mv nil (rev ans.)) ;dont change the original dependency order
     (b* (((cons x cs%) (car v-cs%-alst))
          ((mv size calls) (cs%-enumcalls cs% vl wrld R$ types-ht$ (strip-cars ans.)))
-;simple bug July 9 2013: below comparison, replaced int= with equal, this could have been caught by type-checking/guard-verif
+
+; simple bug July 9 2013: below comparison, replaced int= with equal,
+; this could have been caught by type-checking/guard-verif
          ((when (equal size 0)) (mv t '()))) 
 ;    in
      (make-enumerator-calls-alist (cdr v-cs%-alst) vl wrld R$ types-ht$
@@ -1763,10 +1792,17 @@ enumerator type/expr to be displayed in verbose mode")
                        (kwote-symbol-doublet-list partial-A))
                      seed. BE.)))
            (defun next-sigma-current-gv (sampling-method seed. BE.)
-             (declare (xargs :guard T))
+             (declare (xargs :guard T :verify-guards t))
              ;(declare (type (unsigned-byte 31) seed.))
              (ec-call (next-sigma-current sampling-method seed. BE.))))))
          
+; Invariant: v-cs%-alst. should obey a dependency order such that the
+; final enum-call alist when converted to a let* will obey the
+; dependency order of evaluation. This is mostly satisfied, as
+; ord-vars does take care of this. But put-var-eq-constraint. might
+; change this, where an extra dependency is created because of type
+; information that was ignored during creation of ord-vs, so there is
+; an ugly hack in place to reorder in the middle of put-var-eq-constraint.
        
    (b* ((v-cs%-alst (collect-constraints% 
                      (cons (dumb-negate-lit concl) hyps)
@@ -1833,7 +1869,7 @@ enumerator type/expr to be displayed in verbose mode")
           ,(mv-list-ify (single-hypothesis terms)
                         mv-sig-alist)))
     (defun hypotheses-val-current-gv (A)
-      (declare (xargs :guard T))
+      (declare (xargs :guard T :verify-guards t))
       (ec-call (hypotheses-val-current A)))))
 
 (def make-conclusion-val-defuns (term ord-vars mv-sig-alist)
@@ -1847,7 +1883,7 @@ enumerator type/expr to be displayed in verbose mode")
         (declare (ignorable ,@ord-vars))
           ,(mv-list-ify term mv-sig-alist)))
     (defun conclusion-val-current-gv (A)
-      (declare (xargs :guard T))
+      (declare (xargs :guard T :verify-guards t))
       (ec-call (conclusion-val-current A)))))
 
 ;add the following for guard verif

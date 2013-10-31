@@ -8,12 +8,12 @@
 
 ;Data has separate package namespace 'defdata' and which implements
 ;custom data definitions, type constructors(product and union)
-(include-book "defdata" :load-compiled-file :comp)
-(include-book "splitnat" :load-compiled-file :comp)
-(include-book "switchnat" :load-compiled-file :comp)
+(include-book "defdata")
+(include-book "splitnat")
+(include-book "switchnat")
 (include-book "graph-tc" :ttags ((:hash-stobjs) (:redef+)))
-(include-book "library-support" :load-compiled-file :comp)
-(include-book "random-state" :load-compiled-file :comp)
+(include-book "library-support")
+(include-book "random-state")
 
 ;TODO.NOTE: constructors are now stored in globals and it 
 ;seems that include-book does not carry globals?? is it true?
@@ -1086,7 +1086,7 @@
   (disjoint-p <Type-name1> <Type-name2>)
   ~ev[]~/
   "
-   `(trans-eval '(is-disjoint$$ ',t1 ',t2 R$ types-ht$) 'is-disjoint state nil))
+   `(trans-eval '(defdata::is-disjoint$$ ',t1 ',t2 defdata::R$ defdata::types-ht$) 'disjoint-p state nil))
 ;  `(is-disjoint ',T1 ',T2 R$ types-ht$))
 
 
@@ -1117,7 +1117,7 @@
   (subtype-p <Type-name1> <Type-name2>)
   ~ev[]~/
   "
-   `(trans-eval '(is-subtype$$ ',t1 ',t2 R$ types-ht$) 'is-subtype state nil))
+   `(trans-eval '(defdata::is-subtype$$ ',t1 ',t2 defdata::R$ defdata::types-ht$) 'subtype-p state nil))
   ;`(is-subtype$$ ',T1 ',T2 R$ types-ht$))
 
 ;; (defun is-subtype (t1 t2 state)

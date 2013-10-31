@@ -8,7 +8,7 @@
 
 (set-verify-guards-eagerness 2)
 
-(include-book "num-list-fns" :load-compiled-file :comp)
+(include-book "num-list-fns")
 
 (local (include-book "num-list-thms"))
 (local (include-book "rem-and-floor"))

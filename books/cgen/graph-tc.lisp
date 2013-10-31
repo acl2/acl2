@@ -338,7 +338,7 @@
 
 (defconst *undefined-typename* :undef) ;'this-cannot-possibly-be-a-type-name-please-dont-even-think-of-it-no-nooooo)
 
-(defconst *initial-s-adj-val*
+(defconst *default-rg%*
   (acl2::make rg% 
               :reachable-set nil
               :can-reach-set nil
@@ -415,7 +415,7 @@
   (rgraph :type (array (satisfies rg%-p) (*initial-num-types*))
           :initially (RG% 0 NIL NIL NIL :UNDEF) :resizable t))
   
-
+;(equal *default-rg%* (RG% 0 NIL NIL NIL :UNDEF))
 
 (defthm rgraphp-implies-true-listp
   (implies (rgraphp x)
@@ -502,6 +502,8 @@
            (R$ (update-rgraphi u u% R$)))
         (mv nil u R$)))))
 
+
+ 
 (in-theory (enable rg%-p))
 
 (defun access-rg% (u% field)
@@ -609,7 +611,7 @@
 ; post-cond: G' is transitively-closed.
        
 
-;need parameterized type theorem for aa-tree, r-index-p instead of
+;need parameterized type theorem for aa-tree i.e r-index-p instead of
 ;rationalp
 (defun rg%-p2 (v N)
   (declare (xargs :guard T))
@@ -634,7 +636,11 @@
                 (aa-treep2 (access-rg% u% :can-reach-set) N)
                 (integerp (access-rg% u% :visited-code))
                 (<= 0 (access-rg% u% :visited-code)))))
-                
+               
+(defthm default-rg%-is-rg%-p2
+  (implies (natp N)
+           (rg%-p2 *default-rg%* N)))
+ 
 (in-theory (disable access-rg% rg%-p2))
 
 (defun rgraphp2 (x N)
@@ -798,7 +804,7 @@
                               (R-index-p u (rgraph-length R$))
                               (R-index-p v (rgraph-length R$))
                               )))
-  (b* (((when (is-subtype$ u v R$)) R$) 
+  (b* (((when (is-subtype$ u v R$)) R$) ;redundant and idempotent actions 
        (u% (rgraphi u R$))
        (v% (rgraphi v R$))
        (u-can-reach-set (access-rg% u% :can-reach-set))
@@ -825,7 +831,7 @@
                               (R-index-p u (rgraph-length R$))
                               (R-index-p v (rgraph-length R$))
                               )))
-  (b* (((when (is-disjoint$ u v R$)) R$)
+  (b* (((when (is-disjoint$ u v R$)) R$) ;redundant and idempotent actions 
        (u% (rgraphi u R$))
        (v% (rgraphi v R$))
        (u-can-reach-set (access-rg% u% :can-reach-set))
@@ -843,30 +849,67 @@
 ;4. Add a subtype edge 
 ;5. Add disjoint edge
 
-;pre-cond: T1 should not be in types-ht$
 (defun add-vertex$$ (T1 R$ types-ht$)
   (declare (xargs :guard (and (symbolp T1)
                               (R$p R$)
                               (types-ht$p types-ht$)
-                              (not (type-vertex-ht-boundp T1 types-ht$))
                               (= (types-count types-ht$) (num-types R$)))
                   :stobjs (R$ types-ht$)))
-  (b* ((types-count (types-count types-ht$))
-       (types-ht$ (update-types-count (1+ types-count) types-ht$))
-       ((mv erp u R$) (add-vertex$ T1 R$))
-       ((when erp) (mv erp R$ types-ht$))
-       (- (assert$ (not (type-vertex-ht-boundp T1 types-ht$)) nil))
-       (types-ht$ (type-vertex-ht-put T1 u types-ht$))
-       (- (assert$ (= (types-count types-ht$) (num-types R$)) nil)))
-    (mv nil R$ types-ht$)))
+  (if (type-vertex-ht-boundp T1 types-ht$)
+      (mv nil R$ types-ht$) ;include-book and other idempotent actions
+    (b* ((types-count (types-count types-ht$))
+         ((mv erp u R$) (add-vertex$ T1 R$))
+         (types-ht$ (update-types-count (1+ types-count) types-ht$))
+         ((when erp) (mv erp R$ types-ht$))
+         (types-ht$ (type-vertex-ht-put T1 u types-ht$))
+         (- (assert$ (= (types-count types-ht$) (num-types R$)) nil)))
+      (mv nil R$ types-ht$))))
  
+
+(defun remove-vertex$ (u R$)
+  "vertex * R$ -> (mv erp R$).
+   remove vertex from graph."
+  (declare (xargs :stobjs (R$)
+                  :guard (and (R$p2 (rgraph-length R$) R$)
+                              (R-index-p u (rgraph-length R$))
+                              (> (num-types R$) 0)
+                              )))
+                 
+  (b* ((num-types (num-types R$))
+;TODO: check if no edges are incident or leaving vertex 'u'
+       (R$ (update-rgraphi u *default-rg%* R$))
+       (R$ (update-num-types (1- num-types) R$)))
+    (mv nil R$)))
+
+
 (defun vertex-ht-valid-p (T1 N types-ht$)
   (declare (xargs :guard (types-ht$p types-ht$)
                   :stobjs (types-ht$)))
   (and (symbolp T1)
        (natp N)
        (type-vertex-ht-boundp T1 types-ht$)
-       (R-index-p (type-vertex-ht-get T1 types-ht$) N)))
+       (R-index-p (type-vertex-ht-get T1 types-ht$) N)))  
+
+(defun remove-vertex$$ (T1 R$ types-ht$)
+  (declare (xargs :guard (and (R$p2 (rgraph-length R$) R$)
+                              (> (num-types R$) 0)
+                              (types-ht$p types-ht$)
+                              (vertex-ht-valid-p T1 (rgraph-length R$) types-ht$)
+                              (= (types-count types-ht$) (num-types R$)))
+                  :stobjs (R$ types-ht$)))
+  (if (not (type-vertex-ht-boundp T1 types-ht$))
+      (mv nil R$ types-ht$) ;idempotent actions
+    (b* ((types-count (types-count types-ht$))
+         (types-ht$ (update-types-count (1- types-count) types-ht$))
+         (u (type-vertex-ht-get T1 types-ht$))
+         ((mv erp R$) (remove-vertex$ u R$))
+         ((when erp) (mv erp R$ types-ht$))
+         (types-ht$ (type-vertex-ht-rem T1 types-ht$))
+         (- (assert$ (= (types-count types-ht$) (num-types R$)) nil)))
+      (mv nil R$ types-ht$))))
+
+
+
                   
 
 ;pre-cond: T1 and T2 are bound in types-ht$  

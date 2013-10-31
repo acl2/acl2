@@ -6,7 +6,7 @@
 ;Author: Harsh Raju Chamarthi (harshrc)
 
 (in-package "DEFDATA")
-(include-book "utilities" :load-compiled-file :comp)
+(include-book "utilities")
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
 (defun make-n-upto-list (size ans)

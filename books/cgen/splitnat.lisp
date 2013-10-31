@@ -10,7 +10,7 @@
 (set-verify-guards-eagerness 2)
 (set-state-ok t)
 
-(include-book "num-list-fns" :load-compiled-file :comp)
+(include-book "num-list-fns")
 
 (local (include-book "num-list-thms"))
 

@@ -5,7 +5,7 @@
 
 (in-package "DEFDATA")
 
-(include-book "num-list-fns" :load-compiled-file :comp)
+(include-book "num-list-fns")
 
 (defthm pos-list--first
   (implies (and (pos-listp l)

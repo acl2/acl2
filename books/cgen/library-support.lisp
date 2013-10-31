@@ -6,9 +6,9 @@
 (in-package "ACL2")
 
 ;record implementation
-(include-book "defexec/other-apps/records/records" :dir :system :load-compiled-file :comp)
-(include-book "std/osets/top" :dir :system :load-compiled-file :comp)
-;(include-book "std/osets/top" :dir :system :load-compiled-file :comp)
+(include-book "defexec/other-apps/records/records" :dir :system)
+;(include-book "finite-set-theory/osets/sets" :dir :system)
+(include-book "std/osets/top" :dir :system)
 
 
 ;GETTING RECORDS TO behave nicely here are some
