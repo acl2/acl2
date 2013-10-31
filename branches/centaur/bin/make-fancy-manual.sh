@@ -6,7 +6,12 @@ if [ $# -lt 2 ] ; then
     echo "$0 \\"
     echo " /projects/acl2/devel/books/centaur \\"
     echo " /u/www/users/moore/acl2 \\"
-    echo " 2013-10-24b"
+    echo " 2013-10-25b"
+    echo "Example:"
+    echo "$0 \\"
+    echo " /projects/acl2/devel/books/system/doc \\"
+    echo " /u/www/users/moore/acl2 \\"
+    echo " 2013-10-25-acl2-only"
     exit 1
 fi
 
