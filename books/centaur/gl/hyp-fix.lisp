@@ -951,12 +951,13 @@
 
 (define maybe-shrink-hyp$c (hyp$c)
   (if (< (* 2 (calist-nkeys hyp$c)) (calist-len hyp$c))
-      (update-hyp-calist (shrink-constraint-alist (hyp-calist hyp$c)) hyp$c)
+      (b* ((hyp$c (update-hyp-calist (shrink-constraint-alist (hyp-calist hyp$c)) hyp$c)))
+        (update-calist-len (calist-nkeys hyp$c) hyp$c))
     hyp$c)
   ///
   (defthm maybe-shrink-hyp$c-preserves-calist-equiv
     (calist-equiv (nth 0 (maybe-shrink-hyp$c hyp$c))
-                            (nth 0 hyp$c))))
+                  (nth 0 hyp$c))))
 
 (define bfr-hyp-equiv (hyp1 hyp2)
   :verify-guards nil
