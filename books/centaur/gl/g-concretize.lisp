@@ -118,7 +118,7 @@
         ((unless (and hyp-succ hyp-sat))
          (cw "Note: Failed to find satisfying assignment for path cond~%")
          (gret x))
-        ((with-fast assign))
+        ((acl2::with-fast assign))
         ((mv ok xconc) (eval-g-base-or-err x (cons assign nil)))
         ((unless ok)
          (cw "Note: Failed to concretize ~x0~%" (gobj-abstract-top x))
