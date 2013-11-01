@@ -351,135 +351,6 @@
   Thus, you may use these globals to hang onto useful data structures
   even though you may undo back past where you computed and saved
   them.")
- (|A Flying Tour of ACL2|
-  (|Pages Written Especially for the Tours|)
-  "A Flying Tour of ACL2
-
-  []
-
-  On this tour you will learn a little about what ACL2 is for rather
-  than how ACL2 works. At the top and bottom bottom of the ``page''
-  there are ``flying tour'' icons. Click on either icon to go to the
-  next page of the tour.
-
-  The tour visits the following topics sequentially. But on your first
-  reading, don't navigate through the tour by clicking on these
-  links; they are shown as live links only so that later you can
-  determine what you've visited. Instead, just use the flying tour
-  icons.
-
-    The Flight Plan
-    * [This Documentation]
-    * [What is ACL2?]
-    * [Mathematical Logic]
-    * [Mechanical Theorem Proving]
-    * [Mathematical Models in General]
-    * [Mathematical Models of Computing Machines]
-         [Formalizing Models]
-         [Running Models]
-         [Symbolic Execution of Models]
-         [Proving Theorems about Models]
-    * Requirements of ACL2
-         [The User's Skills]
-         [Training]
-         [Host System]
-
-  On your first reading, don't explore other links you see in the tour.
-  Some of them lead to the Walking Tour, which you can take
-  coherently when you finish this tour. Others lead into the
-  extensive hyptertext documentation and you are liable to get lost
-  there unless you're trying to answer a specific question. We intend
-  the tour to take about 10 minutes of your time.
-
-  []")
- (|A Sketch of How the Rewriter Works|
-  (|Pages Written Especially for the Tours|)
-  "A Sketch of How the Rewriter Works
-
-  Below we show the first target term, extracted from the current
-  conjecture. Below it we show the associativity rule.
-
-  The variables of the rewrite rule are instantiated so that the
-  left-hand side of the rule matches the target:
-
-    variable          term from target
-      a                     x1
-      b                     x2
-      c                     (app x3 x4)
-
-  Then the target is replaced by the instantiated right-hand side of
-  the rule.
-
-  Sometimes rules have hypotheses. To make a long story short, if the
-  rule has hypotheses, then after matching the left-hand side, the
-  rewriter instantiates the hypotheses and rewrites them recursively.
-  This is called backchaining. If they all rewrite to true, then the
-  target is replaced as above.
-
-  We discuss the rewriter in more detail in the extended introduction
-  to how to use the theorem prover, see
-  [introduction-to-the-theorem-prover], which we will recommend you
-  work through after you have finished the two tours.")
- (|A Tiny Warning Sign|
-  (|Pages Written Especially for the Tours|)
-  "A Tiny Warning Sign
-
-  This warning sign, which usually appears as ``'', indicates that the
-  link it marks takes you into ACL2's online documentation.
-
-  The documentation is a vast graph of documented topics intended to
-  help the user of ACL2 rather than the potential user. If you are
-  exploring ACL2's home page to learn about the system, perhaps you
-  should go back rather than follow the link marked with this sign.
-  But you are welcome to explore the online documentation as well.
-  Good luck.")
- (|A Trivial Proof| (|Pages Written Especially for the Tours|)
-                    "A Trivial Proof")
- (|A Typical State|
-  (|Pages Written Especially for the Tours|)
-  "A Typical State
-
-  []
-
-  Observe that the states in typical models talk about
-
-    booleans    integers   vectors     records   caches
-    bits        symbols    arrays      stacks    files
-    characters  strings    sequences   tables    directories
-
-  These objects are discrete rather than continuous; furthermore they
-  are built incrementally or inductively by repeatedly using
-  primitive operations to put together smaller pieces.
-
-  The functions we need to manipulate these objects do things like
-  concatenate, reverse, sort, search, count, etc.
-
-  []")
- (|A Walking Tour of ACL2|
-  (|Pages Written Especially for the Tours|)
-  "A Walking Tour of ACL2
-
-  []
-
-  On this tour you will learn a little more about the ACL2 logic, the
-  theorem prover, and the user interface.
-
-  This time we will stick with really simple things, such as the
-  associativity of list concatenation.
-
-  We assume you have taken the Flying Tour but that you did not
-  necessarily follow all the ``off-tour'' links because we encouraged
-  you not to. With the Walking Tour we encourage you to visit
-  off-tour links --- provided they are not marked with the tiny
-  warning sign ([]). But they are ``branches'' in the tour that lead
-  to ``dead ends.'' When you reach a dead end, remember to use your
-  browser's Back Button to return to the Walking Tour to continue.
-
-  When you get to the end of the tour we'll give you a chance to repeat
-  quickly both the Flying and the Walking Tours to visit any off-tour
-  links still of interest.
-
-  []")
  (A!
   (MISCELLANEOUS)
   "To return to the top-level of ACL2's command loop
@@ -526,6 +397,200 @@
   seminars, installation instructions, and acknowledgements.
 
   See [copyright] for license and copyright information.")
+ (ABOUT_MODELS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "About Models
+
+  []
+
+  ACL2 is used to construct mathematical models of computer hardware
+  and software (i.e., ``digital systems'').
+
+  A mathematical model is a set of mathematical formulas used to
+  predict the behavior of some artifact.
+
+  The use of mathematical models allows faster and cheaper delivery of
+  better systems.
+
+  Models need not be complete or perfectly accurate to be useful to the
+  trained engineer.
+
+  Click [here] for more discussion of these assertions in an
+  engineering context.
+
+  []")
+ (ABOUT_THE_ACL2_HOME_PAGE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "About the ACL2 Home Page
+
+  []
+
+  The ACL2 Home Page is integrated into the ACL2 online documentation.
+  Over 4 megabytes of hypertext is available here.
+
+  The vast majority of the text is user-level documentation. For
+  example, to find out about [rewrite] [] rules you could click on
+  the link. (If you do that, remember to use your browser's Back
+  Button to come back here.)
+
+  The tiny warning signs [] mark links that lead out of the
+  introductory-level material and into the user documentation. We
+  advise against following such links upon your first reading of the
+  documentation.
+
+  At the end of the tours you will have a chance to revisit them
+  quickly to explore alternative paths more fully.
+
+  Finally, every page contains two icons at the bottom. The ACL2 icon
+  leads you back to the ACL2 Home Page. The Index icon allows you to
+  browse an alphabetical listing of all the topics in ACL2's online
+  documentation. But both icons take you off the main route of the
+  tour.
+
+  []")
+ (ABOUT_THE_ADMISSION_OF_RECURSIVE_DEFINITIONS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "About the Admission of Recursive Definitions
+
+  You can't just add any formula as an axiom or definition and expect
+  the logic to stay sound! For example, if we were permitted to
+  define (APP X Y) so that it was equal to (NOT (APP X Y)) then we
+  could prove anything. The purported ``definition'' of APP must have
+  several properties to be admitted to the logic as a new axiom.
+
+  The key property a recursive definition must have is that the
+  recursion terminate. This, along with some syntactic criteria,
+  ensures us that there exists a function satisfying the definition.
+
+  Termination must be proved before the definition is admitted. This is
+  done in general by finding a measure of the arguments of the
+  function and a well-founded relation such that the arguments ``get
+  smaller'' every time a recursive branch is taken.
+
+  For app the measure is the ``size'' of the first argument, x, as
+  determined by the primitive function [ACL2-count] []. The
+  well-founded relation used in this example is [o-p] [], which is
+  the standard ordering on the ordinals less than ``epsilon naught.''
+  These particular choices for app were made ``automatically'' by
+  ACL2. But they are in fact determined by various ``default''
+  settings. The user of ACL2 can change the defaults or specify a
+  ``hint'' to the [defun] [] command to specify the measure and
+  relation.
+
+  You should now return to [the Walking Tour].")
+ (ABOUT_THE_PROMPT
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "About the Prompt
+
+  The string ``ACL2 !>'' is the ACL2 prompt.
+
+  The prompt tells the user that an ACL2 [command] []is expected. In
+  addition, the prompt tells us a little about the current state of
+  the ACL2 command interpreter. We explain the prompt briefly below.
+  But first we talk about the command interpreter.
+
+  An ACL2 command is generally a Lisp expression to be evaluated. There
+  are some unusual commands (such as :[q] [] for quitting ACL2) which
+  cause other behavior. But most commands are read, evaluated, and
+  then have their results printed. Thus, we call the command
+  interpreter a ``read-eval-print loop.'' The ACL2 command
+  interpreter is named [ld] [] (after Lisp's ``load'').
+
+  When a command is read, all the symbols in it are converted to
+  uppercase. Thus, typing (defun app ...) is the same as typing
+  (DEFUN APP ...) or (defun App ...). There are ways to force
+  lowercase case characters into symbols but we won't discuss them
+  here. A consequence of Common Lisp's default uppercasing is that
+  you'll see a general lack of concern over the case used when
+  symbols are displayed in this documentation.
+
+  In addition, symbols ``belong'' to ``packages'' which give the user a
+  way to control namespaces. The prompt tells us which package is the
+  default one, namely \"ACL2\". That means when we call car, for
+  example, we are invoking the standard definition of that symbol. If
+  the packager were \"JONES\" then car would refer to the definition of
+  that symbol in that package (which may or may not be different
+  depending on what symbols were imported into that package.
+
+  A command like (defun app (x y) ...) causes ACL2 to evaluate the
+  [defun] [] function on app, (x y) and .... When that command is
+  evaluated it prints some information to the terminal explaining the
+  processing of the proposed definition. It returns the symbol APP as
+  its value, which is printed by the command interpreter. (Actually,
+  defun is not a function but a [macro] [] which expands to a form
+  that involves [state] [], a necessary precondition to printing
+  output to the terminal and to ``changing'' the set of axioms. But
+  we do not discuss this further here.)
+
+  The defun command is an example of a special kind of command called
+  an ``event.'' [Events] [] are those commands that change the
+  ``logical world'' by adding such things as axioms or theorems to
+  ACL2's database. See [world] []. But not every command is an event
+  command.
+
+  A command like (app '(1 2 3) '(4 5 6 7)) is an example of a
+  non-event. It is processed the same general way: the function app
+  is applied to the indicated arguments and the result is printed.
+  The function app does not print anything and does not change the
+  ``world.''
+
+  A third kind of command is one that display information about the
+  current logical world or that ``roll back'' to previous versions of
+  the world. Such commands are called ``[history]'' [] commands.
+
+  What does the ACL2 prompt tell us about the read-eval-print loop? The
+  prompt ``ACL2 !>'' tells us that the command will be read with
+  [current-package] [] set to \"ACL2\", that guard checking (see
+  [set-guard-checking] []) is on (``!''), and that we are at the
+  top-level (there is only one ``>''). For more about the prompt, see
+  [default-print-prompt] [].
+
+  You should now return to [the Walking Tour].")
+ (ABOUT_TYPES
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "About Types
+
+  The universe of ACL2 objects includes objects of many different
+  types. For example, t is a ``symbol'' and 3 is an ``integer.''
+  Roughly speaking the objects of ACL2 can be partitioned into the
+  following types:
+
+     [Numbers] 3, -22/7, #c(3
+    5/2) [Characters] #\\A, #\\a,
+    #\\Space [Strings] \"This is a
+    string.\" [Symbols] 'abc,
+    'smith::abc [Conses (or
+    Ordered Pairs)] '((a . 1) (b . 2))
+
+  When proving theorems it is important to know the types of object
+  returned by a term. ACL2 uses a complicated heuristic algorithm,
+  called [type-set] [], to determine what types of objects a term may
+  produce. The user can more or less program the type-set algorithm
+  by proving [type-prescription] [] rules.
+
+  ACL2 is an ``untyped'' logic in the sense that the syntax is not
+  typed: It is legal to apply a function symbol of n arguments to any
+  n terms, regardless of the types of the argument terms. Thus, it is
+  permitted to write such odd expressions as (+ t 3) which sums the
+  symbol t and the integer 3. Common Lisp does not prohibit such
+  expressions. We like untyped languages because they are simple to
+  describe, though proving theorems about them can be awkward
+  because, unless one is careful in the way one defines or states
+  things, unusual cases (like (+ t 3)) can arise.
+
+  To make theorem proving easier in ACL2, the axioms actually define a
+  value for such terms. The value of (+ t 3) is 3; under the ACL2
+  axioms, non-numeric arguments to + are treated as though they were
+  0.
+
+  You might immediately wonder about our claim that ACL2 is Common
+  Lisp, since (+ t 3) is ``an error'' (and will sometimes even
+  ``signal an error'') in Common Lisp. It is to handle this problem
+  that ACL2 has guards. We will discuss guards later in the Walking
+  Tour. However, many new users simply ignore the issue of guards
+  entirely and that is what we recommend for now.
+
+  You should now return to [the Walking Tour].")
  (ABS
   (ACL2-BUILT-INS)
   "The absolute value of a real number
@@ -1293,7 +1358,7 @@ Subtopics
   [Proof-tree]
       Proof tree displays
 
-  [Pages Written Especially for the Tours]
+  [Pages_Written_Especially_for_the_Tours]
       Pages Written Especially for the Tours
 
   [Real]
@@ -1319,199 +1384,6 @@ Subtopics
 
   [Trace]
       Tracing functions in ACL2")
- (|ACL2 Characters|
-  (|Pages Written Especially for the Tours|)
-  "ACL2 Characters
-
-  ACL2 accepts 256 distinct characters, which are the characters
-  obtained by applying the function [code-char] [] to each integer
-  from 0 to 255. Among these, Common Lisp designates certain ones as
-  *standard-characters*, namely those of the form (code-char n) where
-  n is from 33 to 126, together with #\\Newline and #\\Space. The
-  actual standard characters may be viewed by evaluating the constant
-  expression *standard-chars*.
-
-  The standard character constants are written by writing a hash mark
-  followed by a backslash (#\\) followed by the character.
-
-  The function [characterp] [] recognizes characters. For more details,
-  See [characters] [].")
- (|ACL2 Conses or Ordered Pairs|
-  (|Pages Written Especially for the Tours|)
-  "ACL2 Conses or Ordered Pairs
-
-  The function [cons] [] creates an ordered pair. [Car] [] and [cdr] []
-  return the first and second components, respectively, of an ordered
-  pair. The function [consp] [] recognizes ordered pairs.
-
-  Ordered pairs are used to represent lists and trees. See any Common
-  Lisp documentation for a discussion of how list constants are
-  written and for the many list processing functions available. Also,
-  see [programming] [] where we list all the ACL2 primitive
-  functions.
-
-  Here are some examples of list constants to suggest their syntax.
-
-    '(a . b)                ; a pair whose car is 'a and cdr is 'b
-    '(a . nil)              ; a pair whose car is 'a and cdr is nil
-    '(a)                    ; another way to write the same thing
-    '(a b)                  ; a pair whose car is 'a and cdr is '(b)
-    '(a b c)                ; a pair whose car is 'a and cdr is '(b c)
-                            ;  i.e., a list of three symbols, a, b, and c.
-    '((a . 1) (b . 2))      ; a list of two pairs
-
-  It is useful to distinguish ``proper'' conses from ``improper'' ones,
-  the former being those cons trees whose right-most branch
-  terminates with nil. A ``true list'' (see [true-listp] []) is
-  either nil or a proper cons. (A b c . 7) is an improper cons and
-  hence not a true list.")
- (|ACL2 Strings|
-  (|Pages Written Especially for the Tours|)
-  "ACL2 Strings
-
-  Strings of ACL2 [characters] are written as sequences of characters
-  delimited by ``double quotation marks'' (\"). To put a double
-  quotation mark in a string (or, any other character such as
-  backslash or newline that seems to cause problems), escape it by
-  preceding it with a backslash (\\).
-
-  The function [stringp] [] recognizes strings and [char] [] will fetch
-  the nth character of a string. There are many other primitives for
-  handling strings, such as [string<] [] for comparing two strings
-  lexicographically. We suggest you See [programming] [] where we
-  list all of the primitive ACL2 functions. Alternatively, see any
-  Common Lisp language documentation.")
- (|ACL2 Symbols|
-  (|Pages Written Especially for the Tours|)
-  "ACL2 Symbols
-
-  Common Lisp's symbols are a data type representing words. They are
-  frequently regarded as atomic objects in the sense that they are
-  not frequently broken down into their constituents. Often the only
-  important properties of symbols is that they are not numbers,
-  characters, strings, or lists and that two symbols are not equal if
-  they look different (!). Examples of symbols include PLUS and
-  SMITH::ABC. All function and variable names in ACL2 are symbols.
-  When symbols are used as constants they must be quoted, as in
-  'PLUS.
-
-  The symbol T is commonly used as the Boolean ``true.'' The symbol NIL
-  is commonly used both as the Boolean ``false'' and as the ``empty
-  list.'' Despite sometimes being called the ``empty list'' NIL is a
-  symbol not an ``empty cons.'' Unlike other symbols, T and NIL may
-  be used as constants without quoting them.
-
-  Usually, symbols are written as sequences of alphanumeric characters
-  other than those denoting numbers. Thus, A12, +1A and 1+ are
-  symbols but +12 is a number. Roughly speaking, when symbols are
-  read lower case characters are converted to upper case, so we
-  frequently do not distinguish ABC from Abc or abc. Click [here] for
-  information about case conversion when symbols are read. However,
-  any character can be used in a symbol, but some characters must be
-  ``escaped'' to allow the Lisp reader to parse the sequence as a
-  symbol. For example, |Abc| is a symbol whose first character is
-  capitalized and whose remaining characters are in lower case. |An
-  odd duck| is a symbol containing two #\\Space characters. See any
-  Common Lisp documentation for the syntactic rules for symbols.
-
-  Technically, a symbol is a special kind of pair consisting of a
-  package name (which is a string) and a symbol name (which is also a
-  string). (See [symbol-package-name] [] and see [symbol-name] [].)
-  The symbol SMITH::ABC is said to be in package \"SMITH\" and to have
-  the symbol name \"ABC\". The symbol ABC in package \"SMITH\" is
-  generally not equal to the symbol ABC in package \"JONES\". However,
-  it is possible to ``import'' symbols from one package into another
-  one, but in ACL2 this can only be done when the package is created.
-  (See [defpkg] [].) If the [current-package] [] is \"SMITH\" then
-  SMITH::ABC may be more briefly written as just ABC. [Intern] []
-  ``creates'' a symbol of a given name in a given package.")
- (|ACL2 System Architecture|
-  (|Pages Written Especially for the Tours|)
-  "ACL2 System Architecture
-
-  []
-
-  The user interacts with the theorem prover by giving it definitions,
-  theorems and advice. Most often the advice is about how to store
-  each proved theorem as a rule. Sometimes the advice is about how to
-  prove a specific theorem.
-
-  The database consists of all the rules ACL2 ``knows.'' It is possible
-  to include in the database all of the rules in some certified file
-  of other events. Such certified files are called [books] [].
-
-  Interesting proofs are usually built on top of many books, some of
-  which are written especially for that problem domain and others of
-  which are about oft-used domains, like arithmetic or list
-  processing. ACL2's distribution includes many books written by
-  users. See the ``books'' link under the Lemma Libraries and
-  Utilities [] link of the ACL2 home page.
-
-  []")
- (|ACL2 as an Interactive Theorem Prover|
-  (|Pages Written Especially for the Tours|)
-  "ACL2 as an Interactive Theorem Prover
-
-  The ACL2 theorem prover finds proofs in the ACL2 logic. It can be
-  automatic. But most often the user must help it.
-
-  The user usually guides ACL2 by suggesting that it first prove key
-  lemmas. Lemmas are just theorems used in the proofs of other
-  theorems.")
- (|ACL2 as an Interactive Theorem Prover (cont)|
-  (|Pages Written Especially for the Tours|)
-  "ACL2 as an Interactive Theorem Prover (cont)
-
-  []
-
-  When ACL2 proves a lemma, it is converted into one or more rules and
-  stored in a database. The theorem prover is rule-driven. By proving
-  lemmas you can configure ACL2 to behave in certain ways when it is
-  trying to prove formulas in a certain problem domain. The expert
-  user can make ACL2 do amazingly ``smart'' looking things.
-
-  But it would be wrong to think that ACL2 knows the mathematical
-  content of a formula just because it has proved it. What ACL2 knows
-  --- all ACL2 knows --- is what is encoded in its rules. There are
-  many types of rules (see [rule-classes] []).
-
-  Many formulas can be effectively coded as rules. But by the same
-  token, it is possible to encode a formula as a rule that is so
-  ineffective it cannot even prove itself!
-
-  The way a formula is stored as a rule is entirely up to the user.
-  That is, you determine how ACL2 should use each formula that it
-  proves.
-
-  The most common kind of rule is the rewrite rule. It is so common
-  that if you don't tell ACL2 how to store a formula, it stores it as
-  a rewrite rule.
-
-  []")
- (|ACL2 is an Untyped Language|
-  (|Pages Written Especially for the Tours|)
-  "ACL2 is an Untyped Language
-
-  The example
-
-    ACL2 !>(app '(a b c) 27)
-    (A B C . 27)
-
-  illustrates the fact that ACL2's logic is untyped (click [here] for a
-  brief discussion of the typed versus untyped nature of the logic).
-
-  The definition of app makes no restriction of the arguments to lists.
-  The definition says that if the first argument satisfies [endp] []
-  then return the second argument. In this example, when app has
-  recursed three times down the cdr of its first argument, '(a b c),
-  it reaches the final nil, which satisfies endp, and so 27 is
-  returned. It is naturally consed into the emerging list as the
-  function returns from successive recursive calls (since cons does
-  not require its arguments to be lists, either). The result is an
-  ``improper'' list, (a b c . 27).
-
-  You can think of (app x y) as building a binary tree by replacing the
-  right-most tip of the tree x with the tree y.")
  (ACL2-AS-STANDALONE-PROGRAM
   (ACL2-TUTORIAL)
   "Calling ACL2 from another program
@@ -3208,21 +3080,21 @@ Subtopics
   [ACL2-customization] file; see [ACL2-customization].")
  (ACL2-DOC
   (DOCUMENTATION)
-  "A custom Emacs browser for reading the ACL2 [documentation]
+  "A custom Emacs browser for reading ACL2 [documentation]
 
   As discussed elsewhere (see [documentation]), the web-based
   acl2+books manual is the preferred way to browse the combined
   documentation for the ACL2 system and community books. Another
   option is to read it at the terminal using the :[doc] command at
-  the terminal.
+  the terminal. But in this topic we describe how to read the
+  documentation using ACL2-Doc, a browser for reading the ACL2 system
+  documentation inside Emacs.
 
-  In this topic we describe how to read the documentation using
-  ACL2-Doc, a browser for reading the ACL2 system documentation
-  inside Emacs. While ACL2-Doc is much like Emacs Info, it is a
-  separate system. In order to use ACL2-Doc, load the distributed
-  file emacs/acl2-doc.el into Emacs. This will happen automatically
-  if you load emacs/emacs-acl2.el, which will happen automatically if
-  you put the following form in your ~/.emacs file.
+  While ACL2-Doc is much like Emacs Info, it is a separate system. In
+  order to use ACL2-Doc, load the distributed file emacs/acl2-doc.el
+  into Emacs. This will happen automatically if you load
+  emacs/emacs-acl2.el, which will happen automatically if you put the
+  following form in your ~/.emacs file.
 
     (load \"/Users/kaufmann/acl2/devel/emacs/emacs-acl2.el\")
 
@@ -3242,6 +3114,7 @@ Subtopics
     I             acl2-doc-initialize
     <Return>      acl2-doc-go!
     g             acl2-doc-go
+    h             acl2-doc-help
     i             acl2-doc-index
     ,             acl2-doc-index-next
     l             acl2-doc-last
@@ -3269,6 +3142,9 @@ Subtopics
 
     g             acl2-doc-go
        Go to the specified topic; performs completion.
+
+    h             acl2-doc-help
+       Go to the ACL2-DOC topic to read about how to use the ACL2-Doc browser.
 
     i             acl2-doc-index
        Go to the specified topic or else one containing it as a substring;
@@ -3311,18 +3187,26 @@ Subtopics
 
   The Combined Manual
 
-  By default, ACL2-Doc displays the ACL2 User's Manual, which includes
+  ACL2-Doc can display the ACL2 User's Manual, which includes
   documentation for the ACL2 system but not for the community books.
-  The combined acl2+books manual includes documentation for those
-  books as well. In order to browse the combined acl2+books manual
-  you can give a prefix argument to the \"I\" command, as indicated
-  above; but you will first need to build file
-  books/system/doc/rendered-doc-combined.lsp. The following steps
-  will create that file. For best results, use a directory separate
-  from your regular ACL2 installation unless you already are using
-  ACL2(h) (see [hons-and-memoization]). Specifically, this separation
-  can avoid subsequent problems when trying to include [books] with
-  ACL2 that were certified using ACL2(h)).
+  But ACL2-Doc can also display the combined acl2+books manual, which
+  includes documentation for those books as well. In order to browse
+  the combined acl2+books manual you will first need to build file
+  books/system/doc/rendered-doc-combined.lsp, which you can do as
+  described below. By default, when ACL2-Doc is first started in your
+  Emacs session it will display the acl2+books combined manual if the
+  above file exists; otherwise it will display the ACL2 User's Manual
+  (without the books documentation). To change which of these two
+  manuals you display, you can re-initialize by giving a prefix
+  argument to the \"I\" command, as indicated above. The following
+  steps will create the file needed to display the acl2+books
+  combined manual, which (as mentioned above) is
+  books/system/doc/rendered-doc-combined.lsp. For best results, use a
+  directory separate from your regular ACL2 installation unless you
+  already are using ACL2(h) (see [hons-and-memoization]).
+  Specifically, this separation can avoid subsequent problems when
+  trying to include [books] with ACL2 that were certified using
+  ACL2(h)).
 
    1. Build ACL2(h):
 
@@ -3366,9 +3250,11 @@ Subtopics
       if the cursor is on either square bracket. But links have some
       idiosyncrasies.
 
-       1. Especially in the case of the combined manual, you may see links that
-          include package prefixes. Here, for example, is a sentence
-          from the documentation for [gl].
+       1. Topic names, including links `[..]' to topic names, are printed
+          relative to the ACL2 package. Especially in the case of the
+          combined manual, you may therefore see links that include
+          package prefixes. Here, for example, is a sentence from the
+          documentation for [gl].
 
               We call these structures [gl::symbolic-objects].
 
@@ -3631,6 +3517,199 @@ Subtopics
       parallelized waterfall")
  (ACL2S (MISCELLANEOUS)
         "See [ACL2-sedan].")
+ (ACL2_AS_AN_INTERACTIVE_THEOREM_PROVER
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "ACL2 as an Interactive Theorem Prover
+
+  The ACL2 theorem prover finds proofs in the ACL2 logic. It can be
+  automatic. But most often the user must help it.
+
+  The user usually guides ACL2 by suggesting that it first prove key
+  lemmas. Lemmas are just theorems used in the proofs of other
+  theorems.")
+ (ACL2_AS_AN_INTERACTIVE_THEOREM_PROVER_{CONT}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "ACL2 as an Interactive Theorem Prover (cont)
+
+  []
+
+  When ACL2 proves a lemma, it is converted into one or more rules and
+  stored in a database. The theorem prover is rule-driven. By proving
+  lemmas you can configure ACL2 to behave in certain ways when it is
+  trying to prove formulas in a certain problem domain. The expert
+  user can make ACL2 do amazingly ``smart'' looking things.
+
+  But it would be wrong to think that ACL2 knows the mathematical
+  content of a formula just because it has proved it. What ACL2 knows
+  --- all ACL2 knows --- is what is encoded in its rules. There are
+  many types of rules (see [rule-classes] []).
+
+  Many formulas can be effectively coded as rules. But by the same
+  token, it is possible to encode a formula as a rule that is so
+  ineffective it cannot even prove itself!
+
+  The way a formula is stored as a rule is entirely up to the user.
+  That is, you determine how ACL2 should use each formula that it
+  proves.
+
+  The most common kind of rule is the rewrite rule. It is so common
+  that if you don't tell ACL2 how to store a formula, it stores it as
+  a rewrite rule.
+
+  []")
+ (ACL2_CHARACTERS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "ACL2 Characters
+
+  ACL2 accepts 256 distinct characters, which are the characters
+  obtained by applying the function [code-char] [] to each integer
+  from 0 to 255. Among these, Common Lisp designates certain ones as
+  *standard-characters*, namely those of the form (code-char n) where
+  n is from 33 to 126, together with #\\Newline and #\\Space. The
+  actual standard characters may be viewed by evaluating the constant
+  expression *standard-chars*.
+
+  The standard character constants are written by writing a hash mark
+  followed by a backslash (#\\) followed by the character.
+
+  The function [characterp] [] recognizes characters. For more details,
+  See [characters] [].")
+ (ACL2_CONSES_OR_ORDERED_PAIRS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "ACL2 Conses or Ordered Pairs
+
+  The function [cons] [] creates an ordered pair. [Car] [] and [cdr] []
+  return the first and second components, respectively, of an ordered
+  pair. The function [consp] [] recognizes ordered pairs.
+
+  Ordered pairs are used to represent lists and trees. See any Common
+  Lisp documentation for a discussion of how list constants are
+  written and for the many list processing functions available. Also,
+  see [programming] [] where we list all the ACL2 primitive
+  functions.
+
+  Here are some examples of list constants to suggest their syntax.
+
+    '(a . b)                ; a pair whose car is 'a and cdr is 'b
+    '(a . nil)              ; a pair whose car is 'a and cdr is nil
+    '(a)                    ; another way to write the same thing
+    '(a b)                  ; a pair whose car is 'a and cdr is '(b)
+    '(a b c)                ; a pair whose car is 'a and cdr is '(b c)
+                            ;  i.e., a list of three symbols, a, b, and c.
+    '((a . 1) (b . 2))      ; a list of two pairs
+
+  It is useful to distinguish ``proper'' conses from ``improper'' ones,
+  the former being those cons trees whose right-most branch
+  terminates with nil. A ``true list'' (see [true-listp] []) is
+  either nil or a proper cons. (A b c . 7) is an improper cons and
+  hence not a true list.")
+ (ACL2_IS_AN_UNTYPED_LANGUAGE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "ACL2 is an Untyped Language
+
+  The example
+
+    ACL2 !>(app '(a b c) 27)
+    (A B C . 27)
+
+  illustrates the fact that ACL2's logic is untyped (click [here] for a
+  brief discussion of the typed versus untyped nature of the logic).
+
+  The definition of app makes no restriction of the arguments to lists.
+  The definition says that if the first argument satisfies [endp] []
+  then return the second argument. In this example, when app has
+  recursed three times down the cdr of its first argument, '(a b c),
+  it reaches the final nil, which satisfies endp, and so 27 is
+  returned. It is naturally consed into the emerging list as the
+  function returns from successive recursive calls (since cons does
+  not require its arguments to be lists, either). The result is an
+  ``improper'' list, (a b c . 27).
+
+  You can think of (app x y) as building a binary tree by replacing the
+  right-most tip of the tree x with the tree y.")
+ (ACL2_STRINGS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "ACL2 Strings
+
+  Strings of ACL2 [characters] are written as sequences of characters
+  delimited by ``double quotation marks'' (\"). To put a double
+  quotation mark in a string (or, any other character such as
+  backslash or newline that seems to cause problems), escape it by
+  preceding it with a backslash (\\).
+
+  The function [stringp] [] recognizes strings and [char] [] will fetch
+  the nth character of a string. There are many other primitives for
+  handling strings, such as [string<] [] for comparing two strings
+  lexicographically. We suggest you See [programming] [] where we
+  list all of the primitive ACL2 functions. Alternatively, see any
+  Common Lisp language documentation.")
+ (ACL2_SYMBOLS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "ACL2 Symbols
+
+  Common Lisp's symbols are a data type representing words. They are
+  frequently regarded as atomic objects in the sense that they are
+  not frequently broken down into their constituents. Often the only
+  important properties of symbols is that they are not numbers,
+  characters, strings, or lists and that two symbols are not equal if
+  they look different (!). Examples of symbols include PLUS and
+  SMITH::ABC. All function and variable names in ACL2 are symbols.
+  When symbols are used as constants they must be quoted, as in
+  'PLUS.
+
+  The symbol T is commonly used as the Boolean ``true.'' The symbol NIL
+  is commonly used both as the Boolean ``false'' and as the ``empty
+  list.'' Despite sometimes being called the ``empty list'' NIL is a
+  symbol not an ``empty cons.'' Unlike other symbols, T and NIL may
+  be used as constants without quoting them.
+
+  Usually, symbols are written as sequences of alphanumeric characters
+  other than those denoting numbers. Thus, A12, +1A and 1+ are
+  symbols but +12 is a number. Roughly speaking, when symbols are
+  read lower case characters are converted to upper case, so we
+  frequently do not distinguish ABC from Abc or abc. Click [here] for
+  information about case conversion when symbols are read. However,
+  any character can be used in a symbol, but some characters must be
+  ``escaped'' to allow the Lisp reader to parse the sequence as a
+  symbol. For example, |Abc| is a symbol whose first character is
+  capitalized and whose remaining characters are in lower case. |An
+  odd duck| is a symbol containing two #\\Space characters. See any
+  Common Lisp documentation for the syntactic rules for symbols.
+
+  Technically, a symbol is a special kind of pair consisting of a
+  package name (which is a string) and a symbol name (which is also a
+  string). (See [symbol-package-name] [] and see [symbol-name] [].)
+  The symbol SMITH::ABC is said to be in package \"SMITH\" and to have
+  the symbol name \"ABC\". The symbol ABC in package \"SMITH\" is
+  generally not equal to the symbol ABC in package \"JONES\". However,
+  it is possible to ``import'' symbols from one package into another
+  one, but in ACL2 this can only be done when the package is created.
+  (See [defpkg] [].) If the [current-package] [] is \"SMITH\" then
+  SMITH::ABC may be more briefly written as just ABC. [Intern] []
+  ``creates'' a symbol of a given name in a given package.")
+ (ACL2_SYSTEM_ARCHITECTURE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "ACL2 System Architecture
+
+  []
+
+  The user interacts with the theorem prover by giving it definitions,
+  theorems and advice. Most often the advice is about how to store
+  each proved theorem as a rule. Sometimes the advice is about how to
+  prove a specific theorem.
+
+  The database consists of all the rules ACL2 ``knows.'' It is possible
+  to include in the database all of the rules in some certified file
+  of other events. Such certified files are called [books] [].
+
+  Interesting proofs are usually built on top of many books, some of
+  which are written especially for that problem domain and others of
+  which are about oft-used domains, like arithmetic or list
+  processing. ACL2's distribution includes many books written by
+  users. See the ``books'' link under the Lemma Libraries and
+  Utilities [] link of the ACL2 home page.
+
+  []")
  (ACONS
   (ACL2-BUILT-INS)
   "Constructor for association lists
@@ -5189,6 +5268,44 @@ Subtopics
 
   We now recommend that you visit [documentation] on additional
   examples. See [annotated-ACL2-scripts].")
+ (ANALYZING_COMMON_LISP_MODELS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Analyzing Common Lisp Models
+
+  To analyze a model you must be able to reason about the operations
+  and relations involved. Perhaps, for example, some aspect of the
+  model depends upon the fact that the concatenation operation is
+  associative.
+
+  In any Common Lisp you can confirm that
+
+    (app '(A B) (app '(C D) '(E F)))
+
+  and
+
+    (app (app '(A B) '(C D)) '(E F)))
+
+  both evaluate to the same thing, (A B C D E F).
+
+  But what distinguishes ACL2 (the logic) from applicative Common Lisp
+  (the language) is that in ACL2 you can prove that the concatenation
+  function app is associative when its arguments are true-lists,
+  whereas in Common Lisp all you can do is test that proposition.
+
+  That is, in ACL2 it makes sense to say that the following formula is
+  a ``theorem.''
+
+    Theorem Associativity of App
+    (implies (and (true-listp a)
+                  (true-listp b))
+             (equal (app (app a b) c)
+                    (app a (app b c))))
+
+  Theorems about the properties of models are proved by symbolically
+  manipulating the operations and relations involved. If the
+  concatenation of sequences is involved in your model, then you may
+  well need the theorem above in order to that your model has some
+  particular property.")
  (AND
   (ACL2-BUILT-INS)
   "Conjunction
@@ -5285,6 +5402,82 @@ Subtopics
 
   [Tutorial5-miscellaneous-examples]
       Miscellaneous ACL2 examples")
+ (AN_EXAMPLE_COMMON_LISP_FUNCTION_DEFINITION
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "An Example Common Lisp Function Definition
+
+  []
+
+  Consider the binary trees x and y below.
+
+  In Lisp, x is written as the list '(A B) or, equivalently, as '(A B .
+  NIL). Similarly, y may be written '(C D E). Suppose we wish to
+  replace the right-most tip of x by the entire tree y. This is
+  denoted (app x y), where app stands for ``append''.
+
+  We can define app with:
+
+    (defun app (x y)                           ; Concatenate x and y.
+      (declare (type (satisfies true-listp) x)); We expect x to end in NIL.
+      (cond ((endp x) y)                       ; If x is empty, return y.
+            (t (cons (car x)                   ; Else, copy first node
+                     (app (cdr x) y)))))       ;  and recur into next.
+
+  If you defined this function in some Common Lisp, then to run app on
+  the x and y above you could then type
+
+    (app '(A B) '(C D E))
+
+  and Common Lisp will print the result (A B C D E).
+
+  []")
+ (AN_EXAMPLE_OF_ACL2_IN_USE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "An Example of ACL2 in Use
+
+  []
+
+  To introduce you to ACL2 we will consider the app function discussed
+  in the [Common Lisp] page, except we will omit for the moment the
+  declare form, which in ACL2 is called a guard.
+
+  Guards are arbitrary ACL2 terms that express the ``intended domain''
+  of functions. In that sense, guards are akin to type signatures.
+  However, Common Lisp and ACL2 are untyped programming languages:
+  while the language supports several different data types and the
+  types of objects can be determined by predicates at runtime, any
+  type of object may be passed to any function. Thus, guards are
+  ``extra-logical.'' Recognizing both the practical and intellectual
+  value of knowing that your functions are applied to the kinds of
+  objects you intend, ACL2 imposes guards on Common Lisp and provides
+  a means of proving that functions are used as intended. But the
+  story is necessarily complicated and we do not recommend it to the
+  new user. Get used to the fact that any ACL2 function may be
+  applied to any objects and program accordingly. Read about guards
+  later.
+
+  Here is the definition again
+
+    (defun app (x y)
+      (cond ((endp x) y)
+            (t (cons (car x)
+                     (app (cdr x) y)))))
+
+  The next few stops along the Walking Tour will show you
+
+     * how to use the ACL2 documentation, * what happens when the above
+    definition is submitted to ACL2, * what happens when you evaluate calls of
+    app, * what one simple theorem about app looks like, * how ACL2
+    proves the theorem, and * how that theorem can be used in another proof.
+
+  Along the way we will talk about the definitional principle, types,
+  the ACL2 read-eval-print loop, and how the theorem prover works.
+
+  When we complete this part of the tour we will return briefly to the
+  notion of guards and revisit several of the topics above in that
+  context.
+
+  []")
  (APPEND
   (ACL2-BUILT-INS)
   "[concatenate] zero or more lists
@@ -6231,314 +6424,135 @@ Subtopics
   Also see [good-atom-listp].
 
   To see the ACL2 definition of this function, see [pf].")
- (|About Models|
-  (|Pages Written Especially for the Tours|)
-  "About Models
+ (A_FLYING_TOUR_OF_ACL2
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "A Flying Tour of ACL2
 
   []
 
-  ACL2 is used to construct mathematical models of computer hardware
-  and software (i.e., ``digital systems'').
+  On this tour you will learn a little about what ACL2 is for rather
+  than how ACL2 works. At the top and bottom bottom of the ``page''
+  there are ``flying tour'' icons. Click on either icon to go to the
+  next page of the tour.
 
-  A mathematical model is a set of mathematical formulas used to
-  predict the behavior of some artifact.
+  The tour visits the following topics sequentially. But on your first
+  reading, don't navigate through the tour by clicking on these
+  links; they are shown as live links only so that later you can
+  determine what you've visited. Instead, just use the flying tour
+  icons.
 
-  The use of mathematical models allows faster and cheaper delivery of
-  better systems.
+    The Flight Plan
+    * [This Documentation]
+    * [What is ACL2?]
+    * [Mathematical Logic]
+    * [Mechanical Theorem Proving]
+    * [Mathematical Models in General]
+    * [Mathematical Models of Computing Machines]
+         [Formalizing Models]
+         [Running Models]
+         [Symbolic Execution of Models]
+         [Proving Theorems about Models]
+    * Requirements of ACL2
+         [The User's Skills]
+         [Training]
+         [Host System]
 
-  Models need not be complete or perfectly accurate to be useful to the
-  trained engineer.
-
-  Click [here] for more discussion of these assertions in an
-  engineering context.
+  On your first reading, don't explore other links you see in the tour.
+  Some of them lead to the Walking Tour, which you can take
+  coherently when you finish this tour. Others lead into the
+  extensive hyptertext documentation and you are liable to get lost
+  there unless you're trying to answer a specific question. We intend
+  the tour to take about 10 minutes of your time.
 
   []")
- (|About Types|
-  (|Pages Written Especially for the Tours|)
-  "About Types
+ (A_SKETCH_OF_HOW_THE_REWRITER_WORKS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "A Sketch of How the Rewriter Works
 
-  The universe of ACL2 objects includes objects of many different
-  types. For example, t is a ``symbol'' and 3 is an ``integer.''
-  Roughly speaking the objects of ACL2 can be partitioned into the
-  following types:
+  Below we show the first target term, extracted from the current
+  conjecture. Below it we show the associativity rule.
 
-     [Numbers] 3, -22/7, #c(3
-    5/2) [Characters] #\\A, #\\a,
-    #\\Space [Strings] \"This is a
-    string.\" [Symbols] 'abc,
-    'smith::abc [Conses (or
-    Ordered Pairs)] '((a . 1) (b . 2))
+  The variables of the rewrite rule are instantiated so that the
+  left-hand side of the rule matches the target:
 
-  When proving theorems it is important to know the types of object
-  returned by a term. ACL2 uses a complicated heuristic algorithm,
-  called [type-set] [], to determine what types of objects a term may
-  produce. The user can more or less program the type-set algorithm
-  by proving [type-prescription] [] rules.
+    variable          term from target
+      a                     x1
+      b                     x2
+      c                     (app x3 x4)
 
-  ACL2 is an ``untyped'' logic in the sense that the syntax is not
-  typed: It is legal to apply a function symbol of n arguments to any
-  n terms, regardless of the types of the argument terms. Thus, it is
-  permitted to write such odd expressions as (+ t 3) which sums the
-  symbol t and the integer 3. Common Lisp does not prohibit such
-  expressions. We like untyped languages because they are simple to
-  describe, though proving theorems about them can be awkward
-  because, unless one is careful in the way one defines or states
-  things, unusual cases (like (+ t 3)) can arise.
+  Then the target is replaced by the instantiated right-hand side of
+  the rule.
 
-  To make theorem proving easier in ACL2, the axioms actually define a
-  value for such terms. The value of (+ t 3) is 3; under the ACL2
-  axioms, non-numeric arguments to + are treated as though they were
-  0.
+  Sometimes rules have hypotheses. To make a long story short, if the
+  rule has hypotheses, then after matching the left-hand side, the
+  rewriter instantiates the hypotheses and rewrites them recursively.
+  This is called backchaining. If they all rewrite to true, then the
+  target is replaced as above.
 
-  You might immediately wonder about our claim that ACL2 is Common
-  Lisp, since (+ t 3) is ``an error'' (and will sometimes even
-  ``signal an error'') in Common Lisp. It is to handle this problem
-  that ACL2 has guards. We will discuss guards later in the Walking
-  Tour. However, many new users simply ignore the issue of guards
-  entirely and that is what we recommend for now.
+  We discuss the rewriter in more detail in the extended introduction
+  to how to use the theorem prover, see
+  [introduction-to-the-theorem-prover], which we will recommend you
+  work through after you have finished the two tours.")
+ (A_TINY_WARNING_SIGN
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "A Tiny Warning Sign
 
-  You should now return to [the Walking Tour].")
- (|About the ACL2 Home Page|
-  (|Pages Written Especially for the Tours|)
-  "About the ACL2 Home Page
+  This warning sign, which usually appears as ``'', indicates that the
+  link it marks takes you into ACL2's online documentation.
+
+  The documentation is a vast graph of documented topics intended to
+  help the user of ACL2 rather than the potential user. If you are
+  exploring ACL2's home page to learn about the system, perhaps you
+  should go back rather than follow the link marked with this sign.
+  But you are welcome to explore the online documentation as well.
+  Good luck.")
+ (A_TRIVIAL_PROOF (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+                  "A Trivial Proof")
+ (A_TYPICAL_STATE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "A Typical State
 
   []
 
-  The ACL2 Home Page is integrated into the ACL2 online documentation.
-  Over 4 megabytes of hypertext is available here.
+  Observe that the states in typical models talk about
 
-  The vast majority of the text is user-level documentation. For
-  example, to find out about [rewrite] [] rules you could click on
-  the link. (If you do that, remember to use your browser's Back
-  Button to come back here.)
+    booleans    integers   vectors     records   caches
+    bits        symbols    arrays      stacks    files
+    characters  strings    sequences   tables    directories
 
-  The tiny warning signs [] mark links that lead out of the
-  introductory-level material and into the user documentation. We
-  advise against following such links upon your first reading of the
-  documentation.
+  These objects are discrete rather than continuous; furthermore they
+  are built incrementally or inductively by repeatedly using
+  primitive operations to put together smaller pieces.
 
-  At the end of the tours you will have a chance to revisit them
-  quickly to explore alternative paths more fully.
-
-  Finally, every page contains two icons at the bottom. The ACL2 icon
-  leads you back to the ACL2 Home Page. The Index icon allows you to
-  browse an alphabetical listing of all the topics in ACL2's online
-  documentation. But both icons take you off the main route of the
-  tour.
+  The functions we need to manipulate these objects do things like
+  concatenate, reverse, sort, search, count, etc.
 
   []")
- (|About the Admission of Recursive Definitions|
-  (|Pages Written Especially for the Tours|)
-  "About the Admission of Recursive Definitions
-
-  You can't just add any formula as an axiom or definition and expect
-  the logic to stay sound! For example, if we were permitted to
-  define (APP X Y) so that it was equal to (NOT (APP X Y)) then we
-  could prove anything. The purported ``definition'' of APP must have
-  several properties to be admitted to the logic as a new axiom.
-
-  The key property a recursive definition must have is that the
-  recursion terminate. This, along with some syntactic criteria,
-  ensures us that there exists a function satisfying the definition.
-
-  Termination must be proved before the definition is admitted. This is
-  done in general by finding a measure of the arguments of the
-  function and a well-founded relation such that the arguments ``get
-  smaller'' every time a recursive branch is taken.
-
-  For app the measure is the ``size'' of the first argument, x, as
-  determined by the primitive function [ACL2-count] []. The
-  well-founded relation used in this example is [o-p] [], which is
-  the standard ordering on the ordinals less than ``epsilon naught.''
-  These particular choices for app were made ``automatically'' by
-  ACL2. But they are in fact determined by various ``default''
-  settings. The user of ACL2 can change the defaults or specify a
-  ``hint'' to the [defun] [] command to specify the measure and
-  relation.
-
-  You should now return to [the Walking Tour].")
- (|About the Prompt|
-  (|Pages Written Especially for the Tours|)
-  "About the Prompt
-
-  The string ``ACL2 !>'' is the ACL2 prompt.
-
-  The prompt tells the user that an ACL2 [command] []is expected. In
-  addition, the prompt tells us a little about the current state of
-  the ACL2 command interpreter. We explain the prompt briefly below.
-  But first we talk about the command interpreter.
-
-  An ACL2 command is generally a Lisp expression to be evaluated. There
-  are some unusual commands (such as :[q] [] for quitting ACL2) which
-  cause other behavior. But most commands are read, evaluated, and
-  then have their results printed. Thus, we call the command
-  interpreter a ``read-eval-print loop.'' The ACL2 command
-  interpreter is named [ld] [] (after Lisp's ``load'').
-
-  When a command is read, all the symbols in it are converted to
-  uppercase. Thus, typing (defun app ...) is the same as typing
-  (DEFUN APP ...) or (defun App ...). There are ways to force
-  lowercase case characters into symbols but we won't discuss them
-  here. A consequence of Common Lisp's default uppercasing is that
-  you'll see a general lack of concern over the case used when
-  symbols are displayed in this documentation.
-
-  In addition, symbols ``belong'' to ``packages'' which give the user a
-  way to control namespaces. The prompt tells us which package is the
-  default one, namely \"ACL2\". That means when we call car, for
-  example, we are invoking the standard definition of that symbol. If
-  the packager were \"JONES\" then car would refer to the definition of
-  that symbol in that package (which may or may not be different
-  depending on what symbols were imported into that package.
-
-  A command like (defun app (x y) ...) causes ACL2 to evaluate the
-  [defun] [] function on app, (x y) and .... When that command is
-  evaluated it prints some information to the terminal explaining the
-  processing of the proposed definition. It returns the symbol APP as
-  its value, which is printed by the command interpreter. (Actually,
-  defun is not a function but a [macro] [] which expands to a form
-  that involves [state] [], a necessary precondition to printing
-  output to the terminal and to ``changing'' the set of axioms. But
-  we do not discuss this further here.)
-
-  The defun command is an example of a special kind of command called
-  an ``event.'' [Events] [] are those commands that change the
-  ``logical world'' by adding such things as axioms or theorems to
-  ACL2's database. See [world] []. But not every command is an event
-  command.
-
-  A command like (app '(1 2 3) '(4 5 6 7)) is an example of a
-  non-event. It is processed the same general way: the function app
-  is applied to the indicated arguments and the result is printed.
-  The function app does not print anything and does not change the
-  ``world.''
-
-  A third kind of command is one that display information about the
-  current logical world or that ``roll back'' to previous versions of
-  the world. Such commands are called ``[history]'' [] commands.
-
-  What does the ACL2 prompt tell us about the read-eval-print loop? The
-  prompt ``ACL2 !>'' tells us that the command will be read with
-  [current-package] [] set to \"ACL2\", that guard checking (see
-  [set-guard-checking] []) is on (``!''), and that we are at the
-  top-level (there is only one ``>''). For more about the prompt, see
-  [default-print-prompt] [].
-
-  You should now return to [the Walking Tour].")
- (|An Example Common Lisp Function Definition|
-  (|Pages Written Especially for the Tours|)
-  "An Example Common Lisp Function Definition
+ (A_WALKING_TOUR_OF_ACL2
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "A Walking Tour of ACL2
 
   []
 
-  Consider the binary trees x and y below.
+  On this tour you will learn a little more about the ACL2 logic, the
+  theorem prover, and the user interface.
 
-  In Lisp, x is written as the list '(A B) or, equivalently, as '(A B .
-  NIL). Similarly, y may be written '(C D E). Suppose we wish to
-  replace the right-most tip of x by the entire tree y. This is
-  denoted (app x y), where app stands for ``append''.
+  This time we will stick with really simple things, such as the
+  associativity of list concatenation.
 
-  We can define app with:
+  We assume you have taken the Flying Tour but that you did not
+  necessarily follow all the ``off-tour'' links because we encouraged
+  you not to. With the Walking Tour we encourage you to visit
+  off-tour links --- provided they are not marked with the tiny
+  warning sign ([]). But they are ``branches'' in the tour that lead
+  to ``dead ends.'' When you reach a dead end, remember to use your
+  browser's Back Button to return to the Walking Tour to continue.
 
-    (defun app (x y)                           ; Concatenate x and y.
-      (declare (type (satisfies true-listp) x)); We expect x to end in NIL.
-      (cond ((endp x) y)                       ; If x is empty, return y.
-            (t (cons (car x)                   ; Else, copy first node
-                     (app (cdr x) y)))))       ;  and recur into next.
-
-  If you defined this function in some Common Lisp, then to run app on
-  the x and y above you could then type
-
-    (app '(A B) '(C D E))
-
-  and Common Lisp will print the result (A B C D E).
+  When you get to the end of the tour we'll give you a chance to repeat
+  quickly both the Flying and the Walking Tours to visit any off-tour
+  links still of interest.
 
   []")
- (|An Example of ACL2 in Use|
-  (|Pages Written Especially for the Tours|)
-  "An Example of ACL2 in Use
-
-  []
-
-  To introduce you to ACL2 we will consider the app function discussed
-  in the [Common Lisp] page, except we will omit for the moment the
-  declare form, which in ACL2 is called a guard.
-
-  Guards are arbitrary ACL2 terms that express the ``intended domain''
-  of functions. In that sense, guards are akin to type signatures.
-  However, Common Lisp and ACL2 are untyped programming languages:
-  while the language supports several different data types and the
-  types of objects can be determined by predicates at runtime, any
-  type of object may be passed to any function. Thus, guards are
-  ``extra-logical.'' Recognizing both the practical and intellectual
-  value of knowing that your functions are applied to the kinds of
-  objects you intend, ACL2 imposes guards on Common Lisp and provides
-  a means of proving that functions are used as intended. But the
-  story is necessarily complicated and we do not recommend it to the
-  new user. Get used to the fact that any ACL2 function may be
-  applied to any objects and program accordingly. Read about guards
-  later.
-
-  Here is the definition again
-
-    (defun app (x y)
-      (cond ((endp x) y)
-            (t (cons (car x)
-                     (app (cdr x) y)))))
-
-  The next few stops along the Walking Tour will show you
-
-     * how to use the ACL2 documentation, * what happens when the above
-    definition is submitted to ACL2, * what happens when you evaluate calls of
-    app, * what one simple theorem about app looks like, * how ACL2
-    proves the theorem, and * how that theorem can be used in another proof.
-
-  Along the way we will talk about the definitional principle, types,
-  the ACL2 read-eval-print loop, and how the theorem prover works.
-
-  When we complete this part of the tour we will return briefly to the
-  notion of guards and revisit several of the topics above in that
-  context.
-
-  []")
- (|Analyzing Common Lisp Models|
-  (|Pages Written Especially for the Tours|)
-  "Analyzing Common Lisp Models
-
-  To analyze a model you must be able to reason about the operations
-  and relations involved. Perhaps, for example, some aspect of the
-  model depends upon the fact that the concatenation operation is
-  associative.
-
-  In any Common Lisp you can confirm that
-
-    (app '(A B) (app '(C D) '(E F)))
-
-  and
-
-    (app (app '(A B) '(C D)) '(E F)))
-
-  both evaluate to the same thing, (A B C D E F).
-
-  But what distinguishes ACL2 (the logic) from applicative Common Lisp
-  (the language) is that in ACL2 you can prove that the concatenation
-  function app is associative when its arguments are true-lists,
-  whereas in Common Lisp all you can do is test that proposition.
-
-  That is, in ACL2 it makes sense to say that the following formula is
-  a ``theorem.''
-
-    Theorem Associativity of App
-    (implies (and (true-listp a)
-                  (true-listp b))
-             (equal (app (app a b) c)
-                    (app a (app b c))))
-
-  Theorems about the properties of models are proved by symbolically
-  manipulating the operations and relations involved. If the
-  concatenation of sequences is involved in your model, then you may
-  well need the theorem above in order to that your model has some
-  particular property.")
  (BACKCHAIN-LIMIT
   (MISCELLANEOUS)
   "Limiting the effort expended on relieving hypotheses
@@ -12193,6 +12207,86 @@ Subtopics
 
   [Generalized-booleans]
       Potential soundness issues related to ACL2 predicates")
+ (COMMON_LISP
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Common Lisp
+
+  []
+
+  The logic of ACL2 is based on Common Lisp.
+
+  Common Lisp is the standard list processing programming language. It
+  is documented in: Guy L. Steele, Common Lisp The Language, Digital
+  Press, 12 Crosby Drive, Bedford, MA 01730, 1990. See also
+  http://www.cs.cmu.edu/Web/Groups/AI/html/cltl/cltl2.html.
+
+  ACL2 formalizes only a subset of Common Lisp. It includes such
+  familiar Lisp functions as cons, car and cdr for creating and
+  manipulating list structures, various arithmetic primitives such as
+  +, *, expt and <=, and intern and symbol-name for creating and
+  manipulating symbols. Control primitives include cond, case and if,
+  as well as function call, including recursion. New functions are
+  defined with defun and macros with defmacro. See [programming] []
+  for a list of the Common Lisp primitives supported by ACL2.
+
+  ACL2 supports five of Common Lisp's datatypes:
+
+  * the precisely represented, unbounded numbers (integers, rationals,
+  and the complex numbers with rational components, called the
+  ``complex rationals'' here),
+
+  * the characters with ASCII codes between 0 and 255
+
+  * strings of such characters
+
+  * symbols (including packages)
+
+  * conses
+
+  ACL2 is a very small subset of full Common Lisp. ACL2 does not
+  include the Common Lisp Object System (CLOS), higher order
+  functions, circular structures, and other aspects of Common Lisp
+  that are non-applicative. Roughly speaking, a language is
+  applicative if it follows the rules of function application. For
+  example, f(x) must be equal to f(x), which means, among other
+  things, that the value of f must not be affected by ``global
+  variables'' and the object x must not change over time.
+
+  []")
+ (COMMON_LISP_AS_A_MODELING_LANGUAGE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Common Lisp as a Modeling Language
+
+  In ACL2 we have adopted Common Lisp as the basis of our modeling
+  language. If you have already read our brief note on Common Lisp
+  and recall the example of app, please proceed. Otherwise click
+  [here] for an exceedingly brief introduction to Common Lisp and
+  then come back here.
+
+  In Common Lisp it is very easy to write systems of formulas that
+  manipulate discrete, inductively constructed data objects. In
+  building a model you might need to formalize the notion of
+  sequences and define such operations as concatenation, length,
+  whether one is a permutation of the other, etc. It is easy to do
+  this in Common Lisp. Furthermore, if you have a Common Lisp
+  ``theory of sequences'' you can run the operations and relations
+  you define. That is, you can execute the functions on concrete data
+  to see what results your formulas produce.
+
+  If you define the function app as shown above and then type
+
+    (app '(A B) '(C D E))
+
+  in any Common Lisp, the answer will be computed and will be (A B C D
+  E).
+
+  The executable nature of Common Lisp and thus of ACL2 is very handy
+  when producing models.
+
+  But executability is not enough for a modeling language because the
+  purpose of models is to permit analysis.
+
+  Click [here] to continue.")
  (COMMUNITY-BOOKS
   (BOOKS)
   "[books] contributed by the ACL2 community
@@ -14009,6 +14103,22 @@ Subtopics
         ((:functional-instance foo-id
                                (foo (lambda (x) (cons x x)))
                                (bar (lambda (x) (cons x x))))))))")
+ (CONVERSION
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Conversion to Uppercase
+
+  When symbols are read by Common Lisp they are converted to upper
+  case. Note carefully that this remark applies to the characters in
+  symbols. The characters in strings are not converted upper case.
+
+  To type a symbol containing lower case characters you can enclose the
+  symbol in vertical bars, as in |AbC| or you can put a ``backslash''
+  before each lower case character you wish to preserve, as in A\\bC.
+  |AbC| and A\\bC are two different ways of writing the same symbol
+  (just like 2/4 and 1/2 are two different ways of writing the same
+  rational and 123 and 0123 are two different ways to write the same
+  natural number). The symbol has three characters in its name, the
+  middle one of which is a lower case b.")
  (COPYRIGHT
   (MISCELLANEOUS)
   "ACL2 copyright, license, sponsorship
@@ -14041,6 +14151,53 @@ Subtopics
   This is a low-level system function at the present time. See [pr] and
   see [pr!] instead. Also see [rule-classes] for the use of the
   symbol :corollary in specifying a rule class.")
+ (CORROBORATING_MODELS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Corroborating Models
+
+  []
+
+  After producing a model, it must be corroborated against reality. The
+  Falling Body Model has been corroborated by a vast number of
+  experiments in which the time and distance were measured and
+  compared according to the formula. In general all models must be
+  corroborated by experiment.
+
+  The Falling Body Model can be derived from deeper models, namely
+  Newton's laws of motion and the assertion that, over the limited
+  distances concerned, graviation exerts a constant acceleration on
+  the object. When the model in question can be derived from other
+  models, it is the other models that are being corroborated by our
+  experiments.
+
+  Because nature is not formal, we cannot prove that our models of it
+  are correct. All we can do is test our models against nature's
+  behavior.
+
+  Such testing often exposes restrictions on the applicability of our
+  models. For example, the Falling Body Model is inaccurate if air
+  resistance is significant. Thus, we learn not to use that model to
+  predict how long it takes a feather to fall from a 200 foot tower
+  in the earth's atmosphere.
+
+  In addition, attempts at corroboration might reveal that the model is
+  actually incorrect. Careful measurements might expose the fact that
+  the gravitational force increases as the body falls closer to
+  earth. Very careful measurements might reveal relativistic effects.
+  Technically, the familiar Falling Body Model is just wrong, even
+  under excessive restrictions such as ``in a perfect vacuum'' and
+  ``over small distances.'' But it is an incredibly useful model
+  nonetheless.
+
+  There are several morals here.
+
+  Models need not be complete to be useful.
+
+  Models need not be perfectly accurate to be useful.
+
+  The user of a model must understand its limitations.
+
+  []")
  (COUNT
   (ACL2-BUILT-INS)
   "Count the number of occurrences of an item in a string or true-list
@@ -14332,149 +14489,6 @@ Subtopics
   Suggestion: Once you have found the loop and fixed it, you should
   execute the ACL2 command :[brr] nil, so that you don't slow down
   subsequent proof attempts.")
- (|Common Lisp|
-  (|Pages Written Especially for the Tours|)
-  "Common Lisp
-
-  []
-
-  The logic of ACL2 is based on Common Lisp.
-
-  Common Lisp is the standard list processing programming language. It
-  is documented in: Guy L. Steele, Common Lisp The Language, Digital
-  Press, 12 Crosby Drive, Bedford, MA 01730, 1990. See also
-  http://www.cs.cmu.edu/Web/Groups/AI/html/cltl/cltl2.html.
-
-  ACL2 formalizes only a subset of Common Lisp. It includes such
-  familiar Lisp functions as cons, car and cdr for creating and
-  manipulating list structures, various arithmetic primitives such as
-  +, *, expt and <=, and intern and symbol-name for creating and
-  manipulating symbols. Control primitives include cond, case and if,
-  as well as function call, including recursion. New functions are
-  defined with defun and macros with defmacro. See [programming] []
-  for a list of the Common Lisp primitives supported by ACL2.
-
-  ACL2 supports five of Common Lisp's datatypes:
-
-  * the precisely represented, unbounded numbers (integers, rationals,
-  and the complex numbers with rational components, called the
-  ``complex rationals'' here),
-
-  * the characters with ASCII codes between 0 and 255
-
-  * strings of such characters
-
-  * symbols (including packages)
-
-  * conses
-
-  ACL2 is a very small subset of full Common Lisp. ACL2 does not
-  include the Common Lisp Object System (CLOS), higher order
-  functions, circular structures, and other aspects of Common Lisp
-  that are non-applicative. Roughly speaking, a language is
-  applicative if it follows the rules of function application. For
-  example, f(x) must be equal to f(x), which means, among other
-  things, that the value of f must not be affected by ``global
-  variables'' and the object x must not change over time.
-
-  []")
- (|Common Lisp as a Modeling Language|
-  (|Pages Written Especially for the Tours|)
-  "Common Lisp as a Modeling Language
-
-  In ACL2 we have adopted Common Lisp as the basis of our modeling
-  language. If you have already read our brief note on Common Lisp
-  and recall the example of app, please proceed. Otherwise click
-  [here] for an exceedingly brief introduction to Common Lisp and
-  then come back here.
-
-  In Common Lisp it is very easy to write systems of formulas that
-  manipulate discrete, inductively constructed data objects. In
-  building a model you might need to formalize the notion of
-  sequences and define such operations as concatenation, length,
-  whether one is a permutation of the other, etc. It is easy to do
-  this in Common Lisp. Furthermore, if you have a Common Lisp
-  ``theory of sequences'' you can run the operations and relations
-  you define. That is, you can execute the functions on concrete data
-  to see what results your formulas produce.
-
-  If you define the function app as shown above and then type
-
-    (app '(A B) '(C D E))
-
-  in any Common Lisp, the answer will be computed and will be (A B C D
-  E).
-
-  The executable nature of Common Lisp and thus of ACL2 is very handy
-  when producing models.
-
-  But executability is not enough for a modeling language because the
-  purpose of models is to permit analysis.
-
-  Click [here] to continue.")
- (|Conversion|
-  (|Pages Written Especially for the Tours|)
-  "Conversion to Uppercase
-
-  When symbols are read by Common Lisp they are converted to upper
-  case. Note carefully that this remark applies to the characters in
-  symbols. The characters in strings are not converted upper case.
-
-  To type a symbol containing lower case characters you can enclose the
-  symbol in vertical bars, as in |AbC| or you can put a ``backslash''
-  before each lower case character you wish to preserve, as in A\\bC.
-  |AbC| and A\\bC are two different ways of writing the same symbol
-  (just like 2/4 and 1/2 are two different ways of writing the same
-  rational and 123 and 0123 are two different ways to write the same
-  natural number). The symbol has three characters in its name, the
-  middle one of which is a lower case b.")
- (|Corroborating Models|
-  (|Pages Written Especially for the Tours|)
-  "Corroborating Models
-
-  []
-
-  After producing a model, it must be corroborated against reality. The
-  Falling Body Model has been corroborated by a vast number of
-  experiments in which the time and distance were measured and
-  compared according to the formula. In general all models must be
-  corroborated by experiment.
-
-  The Falling Body Model can be derived from deeper models, namely
-  Newton's laws of motion and the assertion that, over the limited
-  distances concerned, graviation exerts a constant acceleration on
-  the object. When the model in question can be derived from other
-  models, it is the other models that are being corroborated by our
-  experiments.
-
-  Because nature is not formal, we cannot prove that our models of it
-  are correct. All we can do is test our models against nature's
-  behavior.
-
-  Such testing often exposes restrictions on the applicability of our
-  models. For example, the Falling Body Model is inaccurate if air
-  resistance is significant. Thus, we learn not to use that model to
-  predict how long it takes a feather to fall from a 200 foot tower
-  in the earth's atmosphere.
-
-  In addition, attempts at corroboration might reveal that the model is
-  actually incorrect. Careful measurements might expose the fact that
-  the gravitational force increases as the body falls closer to
-  earth. Very careful measurements might reveal relativistic effects.
-  Technically, the familiar Falling Body Model is just wrong, even
-  under excessive restrictions such as ``in a perfect vacuum'' and
-  ``over small distances.'' But it is an incredibly useful model
-  nonetheless.
-
-  There are several morals here.
-
-  Models need not be complete to be useful.
-
-  Models need not be perfectly accurate to be useful.
-
-  The user of a model must understand its limitations.
-
-  []")
  (DEAD-EVENTS
   (OTHER)
   "Using proof supporters to identify dead code and unused theorems
@@ -20589,9 +20603,18 @@ Subtopics
   The symbol associated with a macro should be a function symbol taking
   four arguments, in this order:
 
-     car-addr ; the first number in the list given to the [proof-checker]'s DV command raw-term ; the untranslated term into
-    which we will dive term ; the translated term into which we will dive
-    wrld ; the current ACL2 logical [world]
+    * car-addr
+          the first number in the list given to the [proof-checker]'s DV
+          command
+
+    * raw-term
+          the untranslated term into which we will dive
+
+    * term
+          the translated term into which we will dive
+
+    * wrld
+          the current ACL2 logical [world]
 
   The function will normally return a list of positive integers,
   representing the (one-based) address for diving into term that
@@ -21156,7 +21179,7 @@ Subtopics
 Subtopics
 
   [ACL2-doc]
-      A custom Emacs browser for reading the ACL2 [documentation]
+      A custom Emacs browser for reading ACL2 [documentation]
 
   [Args]
       args, [guard], type, [constraint], etc., of a function symbol
@@ -22420,9 +22443,9 @@ Subtopics
   rules as well (see [rule-classes]). We say little here about how
   this is all arranged by ACL2, other than to mention that [mbe] is
   utilized (so, you might see mention in proof logs) of the function
-  [return-last] that implements [mbe]. Such details, which probably
-  can be ignored by most users, may be found elsewhere; see
-  [equality-variants-details].
+  [return-last] that implements [mbe]. Such details, which involve a
+  notion of ``macro alias'' and probably can be ignored by most
+  users, may be found elsewhere; see [equality-variants-details].
 
   As a convenience to the user, the macro member-eq is provided that
   expands to a corresponding call of member with :TEST 'eq, as
@@ -22451,8 +22474,23 @@ Subtopics
   macro F-eq is also defined, so that a call of F-eq expands to a
   corresponding call of F with :TEST 'eq.
 
-     [add-to-set] [assoc] [delete-assoc] [intersection$] ; (see Note below) [intersectp] [member] [no-duplicatesp] position-ac [position] [put-assoc] [rassoc] [remove-duplicates] [remove1] [remove] [set-difference$] ; (see Note below) [subsetp] [union$] ; (see Note
-    below)
+    [add-to-set]
+    [assoc]
+    [delete-assoc]
+    [intersection$] ; (see Note below)
+    [intersectp]
+    [member]
+    [no-duplicatesp]
+    position-ac
+    [position]
+    [put-assoc]
+    [rassoc]
+    [remove-duplicates]
+    [remove1]
+    [remove]
+    [set-difference$] ; (see Note below)
+    [subsetp]
+    [union$] ; (see Note below)
 
   Note: Three of the macros above have names ending with the character,
   `$': [intersection$], [set-difference$], and [union$]. In each case
@@ -22563,6 +22601,11 @@ Subtopics
 
     (add-macro-alias member-eq member-equal)
     (add-macro-alias member member-equal)
+
+  Note however that these events do not affect printing of calls during
+  proofs: calls of member and member-eq will be macroexpanded away,
+  leaving you with calls of member-equal that are displayed in proof
+  output. For a way to change this behavior, see [add-macro-fn].
 
   We conclude this topic by exploring the following recommendation made
   in the [documentation] for [equality-variants].
@@ -23198,6 +23241,40 @@ Subtopics
   the price of purity. To execute a form in Common Lisp as opposed to
   ACL2, exit [lp] with :[q], submit the desired forms to the Common
   Lisp read-eval-print loop, and reenter ACL2 with (lp).")
+ (EVALUATING_APP_ON_SAMPLE_INPUT
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Evaluating App on Sample Input
+
+  []
+
+    ACL2 !>(app nil '(x y z))
+    (X Y Z)
+
+    ACL2 !>(app '(1 2 3) '(4 5 6 7))
+    (1 2 3 4 5 6 7)
+
+    ACL2 !>(app '(a b c d e f g) '(x y z))   ; click [here] for an explanation
+    (A B C D E F G X Y Z)
+
+    ACL2 !>(app (app '(1 2) '(3 4)) '(5 6))
+    (1 2 3 4 5 6)
+
+    ACL2 !>(app '(1 2) (app '(3 4) '(5 6)))
+    (1 2 3 4 5 6)
+
+    ACL2!>(let ((a '(1 2))
+                (b '(3 4))
+                (c '(5 6)))
+            (equal (app (app a b) c)
+                   (app a (app b c))))
+    T
+
+  As we can see from these examples, ACL2 functions can be executed
+  more or less as Common Lisp.
+
+  The last three examples suggest an interesting property of app.
+
+  []")
  (EVALUATOR-RESTRICTIONS
   (META)
   "Some restrictions on the use of evaluators in meta-level rules
@@ -24910,40 +24987,6 @@ Subtopics
 
   See [guard-debug] for a discussion of this function, which is useful
   for debugging failures during [guard] verification.")
- (|Evaluating App on Sample Input|
-  (|Pages Written Especially for the Tours|)
-  "Evaluating App on Sample Input
-
-  []
-
-    ACL2 !>(app nil '(x y z))
-    (X Y Z)
-
-    ACL2 !>(app '(1 2 3) '(4 5 6 7))
-    (1 2 3 4 5 6 7)
-
-    ACL2 !>(app '(a b c d e f g) '(x y z))   ; click [here] for an explanation
-    (A B C D E F G X Y Z)
-
-    ACL2 !>(app (app '(1 2) '(3 4)) '(5 6))
-    (1 2 3 4 5 6)
-
-    ACL2 !>(app '(1 2) (app '(3 4) '(5 6)))
-    (1 2 3 4 5 6)
-
-    ACL2!>(let ((a '(1 2))
-                (b '(3 4))
-                (c '(5 6)))
-            (equal (app (app a b) c)
-                   (app a (app b c))))
-    T
-
-  As we can see from these examples, ACL2 functions can be executed
-  more or less as Common Lisp.
-
-  The last three examples suggest an interesting property of app.
-
-  []")
  (F-GET-GLOBAL
   (ACL2-BUILT-INS)
   "Get the value of a global variable in [state]
@@ -25590,6 +25633,23 @@ Subtopics
   it converts every [atom] to nil.
 
   To see the ACL2 definition of this function, see [pf].")
+ (FLAWED_INDUCTION_CANDIDATES_IN_APP_EXAMPLE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Flawed Induction Candidates in App Example
+
+  Induction on a is unflawed: every occurrence of a in the conjecture
+
+    (equal (app (app a b) c)
+           (app a (app b c)))
+
+  is in a position being recursively decomposed!
+
+  Now look at the occurrences of b. The first (shown in bold below) is
+  in a position that is held constant in the recursion of (app a b).
+  It would be ``bad'' to induct on b here.
+
+    (equal (app (app a b) c)
+           (app a (app b c)))")
  (FLET
   (ACL2-BUILT-INS)
   "Local binding of function symbols
@@ -28049,6 +28109,46 @@ Subtopics
 
      ONCEP-TP
     ACL2 !>")
+ (FREE_VARIABLES_IN_TOP-LEVEL_INPUT
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Free Variables in Top-Level Input
+
+    ACL2 !>(equal (app (app a b) c)
+                  (app a (app b c))))
+
+    ACL2 Error in TOP-LEVEL:  Global variables, such as C, B, and A, are
+    not allowed. See :DOC ASSIGN and :DOC @.
+
+  ACL2 does not allow ``global variables'' in top-level input. There is
+  no ``top-level binding environment'' to give meaning to these
+  variables.
+
+  Thus, expressions involving no variables can generally be evaluated,
+
+    ACL2 !>(equal (app (app '(1 2) '(3 4)) '(5 6))
+                  (app '(1 2) (app '(3 4) '(5 6))))
+    (1 2 3 4 5 6)
+
+  but expressions containing variables cannot.
+
+  There is an exception to this rule. References to ``single-threaded
+  objects'' may appear in top-level forms. See [stobj] []. A
+  single-threaded object is an ACL2 object, usually containing many
+  fields, whose use is syntactically restricted so that it may be
+  given as input only to certain functions and must be returned as
+  output by certain functions. These restrictions allow single-
+  threaded objects to be efficiently manipulated. For example, only a
+  single copy of the object actually exists, even though from a
+  logical perspective one might expect the object to be ``copied on
+  write.''
+
+  The most commonly used single-threaded object in ACL2 is the ACL2
+  system state, whose current value is always held in the variable
+  [state] [].
+
+  ACL2 provides a way for you to use state to save values of
+  computations at the top-level and refer to them later. See [assign]
+  [] and [@] [].")
  (FREQUENTLY-ASKED-QUESTIONS-BY-NEWCOMERS
   (INTRODUCTION-TO-THE-THEOREM-PROVER)
   "Some questions newcomers frequently ask
@@ -28879,6 +28979,35 @@ Subtopics
   function symbol must be bound either to a non-classical function
   symbol or to a lambda (or, if allowed, pseudo-lambda) expression
   with a non-classical body.")
+ (FUNCTIONS_FOR_MANIPULATING_THESE_OBJECTS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Functions for Manipulating these Objects
+
+  []
+
+  Consider a typical ``stack'' of control frames.
+
+  Suppose the model required that we express the idea of ``the most
+  recent frame whose return program counter points into MAIN.''
+
+  The natural expression of this notion involves
+
+  function application --- ``fetch the return-pc of this frame''
+
+  case analysis --- ``if the pc is MAIN, then ...''
+
+  iteration or recursion --- ``pop this frame off and repeat.''
+
+  The designers of ACL2 have taken the position that a programming
+  language is the natural language in which to define such notions,
+  provided the language has a mathematical foundation so that models
+  can be analyzed and properties derived logically.
+
+  Common Lisp is the language supported by ACL2. To be precise, a small
+  applicative subset of Common Lisp is the language supported by
+  ACL2.
+
+  []")
  (FURTHER-INFORMATION-ON-REWRITING
   (INTRODUCTION-TO-THE-THEOREM-PROVER)
   "A grab bag of advice and information on rewriting
@@ -29106,92 +29235,6 @@ Subtopics
   problem --- might be easier to implement within the tau framework
   than more generally in ACL2. (Many users have wanted such an
   assistant to suggest lemmas for the rewriter.)")
- (|Flawed Induction Candidates in App Example|
-  (|Pages Written Especially for the Tours|)
-  "Flawed Induction Candidates in App Example
-
-  Induction on a is unflawed: every occurrence of a in the conjecture
-
-    (equal (app (app a b) c)
-           (app a (app b c)))
-
-  is in a position being recursively decomposed!
-
-  Now look at the occurrences of b. The first (shown in bold below) is
-  in a position that is held constant in the recursion of (app a b).
-  It would be ``bad'' to induct on b here.
-
-    (equal (app (app a b) c)
-           (app a (app b c)))")
- (|Free Variables in Top-Level Input|
-  (|Pages Written Especially for the Tours|)
-  "Free Variables in Top-Level Input
-
-    ACL2 !>(equal (app (app a b) c)
-                  (app a (app b c))))
-
-    ACL2 Error in TOP-LEVEL:  Global variables, such as C, B, and A, are
-    not allowed. See :DOC ASSIGN and :DOC @.
-
-  ACL2 does not allow ``global variables'' in top-level input. There is
-  no ``top-level binding environment'' to give meaning to these
-  variables.
-
-  Thus, expressions involving no variables can generally be evaluated,
-
-    ACL2 !>(equal (app (app '(1 2) '(3 4)) '(5 6))
-                  (app '(1 2) (app '(3 4) '(5 6))))
-    (1 2 3 4 5 6)
-
-  but expressions containing variables cannot.
-
-  There is an exception to this rule. References to ``single-threaded
-  objects'' may appear in top-level forms. See [stobj] []. A
-  single-threaded object is an ACL2 object, usually containing many
-  fields, whose use is syntactically restricted so that it may be
-  given as input only to certain functions and must be returned as
-  output by certain functions. These restrictions allow single-
-  threaded objects to be efficiently manipulated. For example, only a
-  single copy of the object actually exists, even though from a
-  logical perspective one might expect the object to be ``copied on
-  write.''
-
-  The most commonly used single-threaded object in ACL2 is the ACL2
-  system state, whose current value is always held in the variable
-  [state] [].
-
-  ACL2 provides a way for you to use state to save values of
-  computations at the top-level and refer to them later. See [assign]
-  [] and [@] [].")
- (|Functions for Manipulating these Objects|
-  (|Pages Written Especially for the Tours|)
-  "Functions for Manipulating these Objects
-
-  []
-
-  Consider a typical ``stack'' of control frames.
-
-  Suppose the model required that we express the idea of ``the most
-  recent frame whose return program counter points into MAIN.''
-
-  The natural expression of this notion involves
-
-  function application --- ``fetch the return-pc of this frame''
-
-  case analysis --- ``if the pc is MAIN, then ...''
-
-  iteration or recursion --- ``pop this frame off and repeat.''
-
-  The designers of ACL2 have taken the position that a programming
-  language is the natural language in which to define such notions,
-  provided the language has a mathematical foundation so that models
-  can be analyzed and properties derived logically.
-
-  Common Lisp is the language supported by ACL2. To be precise, a small
-  applicative subset of Common Lisp is the language supported by
-  ACL2.
-
-  []")
  (GAG-MODE
   (MISCELLANEOUS)
   "Verbosity of proof output
@@ -31690,6 +31733,41 @@ Subtopics
   of a [defun] form are met, as discussed above. The default
   [defun-mode] (see [default-defun-mode]) must be :[logic], or else
   this event is ignored.")
+ (GUARDS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Guards
+
+  Common Lisp functions are partial; they are not defined for all
+  possible inputs. But ACL2 functions are total. Roughly speaking,
+  the logical function of a given name in ACL2 is a completion of the
+  Common Lisp function of the same name obtained by adding some
+  arbitrary but ``natural'' values on arguments outside the
+  ``intended domain'' of the Common Lisp function.
+
+  ACL2 requires that every ACL2 function symbol have a ``guard,'' which
+  may be thought of as a predicate on the formals of the function
+  describing the intended domain. The guard on the primitive function
+  [car] [], for example, is (or (consp x) (equal x nil)), which
+  requires the argument to be either an ordered pair or nil. We will
+  discuss later how to specify a guard for a defined function; when
+  one is not specified, the guard is t which is just to say all
+  arguments are allowed.
+
+  But guards are entirely extra-logical: they are not involved in the
+  axioms defining functions. If you put a guard on a defined
+  function, the defining axiom added to the logic defines the
+  function on all arguments, not just on the guarded domain.
+
+  So what is the purpose of guards?
+
+  The key to the utility of guards is that we provide a mechanism,
+  called ``guard verification,'' for checking that all the guards in
+  a formula are true. See [verify-guards]. This mechanism will
+  attempt to prove that all the guards encountered in the evaluation
+  of a guarded function are true every time they are encountered.
+
+  For a thorough discussion of guards, see the paper [km97] in the ACL2
+  [bibliography].")
  (GUARDS-AND-EVALUATION
   (GUARD)
   "The relationship between guards and evaluation
@@ -32115,43 +32193,8 @@ Subtopics
   style document, then please see [guard-miscellany]. This concludes
   our discussion of guards with miscellaneous remarks, and also
   contains pointers to related topics.")
- (|Guards|
-  (|Pages Written Especially for the Tours|)
-  "Guards
-
-  Common Lisp functions are partial; they are not defined for all
-  possible inputs. But ACL2 functions are total. Roughly speaking,
-  the logical function of a given name in ACL2 is a completion of the
-  Common Lisp function of the same name obtained by adding some
-  arbitrary but ``natural'' values on arguments outside the
-  ``intended domain'' of the Common Lisp function.
-
-  ACL2 requires that every ACL2 function symbol have a ``guard,'' which
-  may be thought of as a predicate on the formals of the function
-  describing the intended domain. The guard on the primitive function
-  [car] [], for example, is (or (consp x) (equal x nil)), which
-  requires the argument to be either an ordered pair or nil. We will
-  discuss later how to specify a guard for a defined function; when
-  one is not specified, the guard is t which is just to say all
-  arguments are allowed.
-
-  But guards are entirely extra-logical: they are not involved in the
-  axioms defining functions. If you put a guard on a defined
-  function, the defining axiom added to the logic defines the
-  function on all arguments, not just on the guarded domain.
-
-  So what is the purpose of guards?
-
-  The key to the utility of guards is that we provide a mechanism,
-  called ``guard verification,'' for checking that all the guards in
-  a formula are true. See [verify-guards]. This mechanism will
-  attempt to prove that all the guards encountered in the evaluation
-  of a guarded function are true every time they are encountered.
-
-  For a thorough discussion of guards, see the paper [km97] in the ACL2
-  [bibliography].")
- (|Guessing the Type of a Newly Admitted Function|
-  (|Pages Written Especially for the Tours|)
+ (GUESSING_THE_TYPE_OF_A_NEWLY_ADMITTED_FUNCTION
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Guessing the Type of a Newly Admitted Function
 
   When a function is admitted to the logic, ACL2 tries to ``guess''
@@ -32170,8 +32213,8 @@ Subtopics
   addition of the definitional axiom, but by several new rules.
 
   You should now return to [the Walking Tour].")
- (|Guiding the ACL2 Theorem Prover|
-  (|Pages Written Especially for the Tours|)
+ (GUIDING_THE_ACL2_THEOREM_PROVER
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Guiding the ACL2 Theorem Prover
 
   []
@@ -32254,6 +32297,28 @@ Subtopics
 
   See [lp] for general information about the top-level [command]
   environment for ACL2.")
+ (HEY_WAIT!__IS_ACL2_TYPED_OR_UNTYPED{Q}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Hey Wait! Is ACL2 Typed or Untyped?
+
+  The example
+
+    ACL2 !>(app 7 27)
+
+    ACL2 Error in TOP-LEVEL:  The guard for the function symbol ENDP, which
+    is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
+    call (ENDP 7).
+
+  illustrates the fact that while ACL2 is an untyped language the ACL2
+  evaluator can be configured so as to check ``types'' at runtime. We
+  should not say ``types'' here but ``guards.'' Click [here] for a
+  discussion of guards.
+
+  The guard on [endp] [] requires its argument to be a true list. Since
+  7 is not a true list, and since ACL2 is checking guards in this
+  example, an error is signaled by ACL2. How do you know ACL2 is
+  checking guards? Because the prompt tells us (click [here]) with
+  its ``!''.")
  (HIDDEN-DEATH-PACKAGE
   (DEFPKG)
   "Handling [defpkg] [events] that are [local]
@@ -34627,30 +34692,8 @@ Subtopics
   cause persistently normed conses and fast alist keys to become
   un-normed, which might lead to less efficient re-norming and/or
   violations of the fast-alist discipline.")
- (|Hey Wait!  Is ACL2 Typed or Untyped(Q)|
-  (|Pages Written Especially for the Tours|)
-  "Hey Wait! Is ACL2 Typed or Untyped?
-
-  The example
-
-    ACL2 !>(app 7 27)
-
-    ACL2 Error in TOP-LEVEL:  The guard for the function symbol ENDP, which
-    is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments in the
-    call (ENDP 7).
-
-  illustrates the fact that while ACL2 is an untyped language the ACL2
-  evaluator can be configured so as to check ``types'' at runtime. We
-  should not say ``types'' here but ``guards.'' Click [here] for a
-  discussion of guards.
-
-  The guard on [endp] [] requires its argument to be a true list. Since
-  7 is not a true list, and since ACL2 is checking guards in this
-  example, an error is signaled by ACL2. How do you know ACL2 is
-  checking guards? Because the prompt tells us (click [here]) with
-  its ``!''.")
- (|How Long Does It Take to Become an Effective User(Q)|
-  (|Pages Written Especially for the Tours|)
+ (HOW_LONG_DOES_IT_TAKE_TO_BECOME_AN_EFFECTIVE_USER{Q}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "How Long Does It Take to Become an Effective User?
 
   []
@@ -34669,8 +34712,8 @@ Subtopics
   ``toy'' projects before tackling a ``grand challenge.''
 
   []")
- (|How To Find Out about ACL2 Functions|
-  (|Pages Written Especially for the Tours|)
+ (HOW_TO_FIND_OUT_ABOUT_ACL2_FUNCTIONS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "How To Find Out about ACL2 Functions
 
   []
@@ -34694,8 +34737,8 @@ Subtopics
   otherwise, app (cdr x) and y and then cons (car x) onto that.''
 
   []")
- (|How To Find Out about ACL2 Functions (cont)|
-  (|Pages Written Especially for the Tours|)
+ (HOW_TO_FIND_OUT_ABOUT_ACL2_FUNCTIONS_{CONT}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "How To Find Out about ACL2 Functions (cont)
 
   []
@@ -47176,6 +47219,76 @@ Subtopics
        "Xargs keyword :MODE
 
   See [xargs].")
+ (MODELING_IN_ACL2
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Modeling in ACL2
+
+  []
+
+  Below we define mc(s,n) to be the function that single-steps n times
+  from a given starting state, s. In Common Lisp, ``mc(s,n)'' is
+  written (mc s n).
+
+    (defun mc (s n)                     ; To step s n times:
+     (if (zp n)                         ; If n is 0
+         s                              ;    then return s
+         (mc (single-step s) (- n 1)))) ;    else step single-step(s)
+                                                          n-1 times.
+
+  This is an example of a formal model in ACL2.
+
+  []")
+ (MODELS_IN_ENGINEERING
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Models in Engineering
+
+  Frequently, engineers use mathematical models. Use of such models
+  frequently lead to
+
+  better designs,
+
+  faster completion of acceptable products, and
+
+  reduced overall cost,
+
+  because models allow the trained user to study the design before it
+  is built and analyze its properties. Usually, testing and analyzing
+  a model is cheaper and faster than fabricating and refabricating
+  the product.")
+ (MODELS_OF_COMPUTER_HARDWARE_AND_SOFTWARE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Models of Computer Hardware and Software
+
+  []
+
+  Computing machines, whether hardware or software or some
+  combintation, are frequently modeled as ``state machines.''
+
+  To so model a computing machine we must represent its states as
+  objects in our mathematical framework.
+
+  Transitions are functions or relations on state objects.
+
+  In what language shall we define these objects, functions, and
+  relations?
+
+  The mathematical languages we were taught in high school
+
+  algebra,
+
+  geometry,
+
+  trignometry, and
+
+  calculus
+
+  are often inappropriate for modeling digital systems. They primarily
+  let us talk about numbers and continuous functions.
+
+  To see what kind of expressive power we need, take a closer look at
+  what a typical state contains.
+
+  []")
  (MONITOR
   (BREAK-REWRITE)
   "To monitor the attempted application of a rule name
@@ -48100,76 +48213,6 @@ Subtopics
       body)
 
   Also see [mv?].")
- (|Modeling in ACL2|
-  (|Pages Written Especially for the Tours|)
-  "Modeling in ACL2
-
-  []
-
-  Below we define mc(s,n) to be the function that single-steps n times
-  from a given starting state, s. In Common Lisp, ``mc(s,n)'' is
-  written (mc s n).
-
-    (defun mc (s n)                     ; To step s n times:
-     (if (zp n)                         ; If n is 0
-         s                              ;    then return s
-         (mc (single-step s) (- n 1)))) ;    else step single-step(s)
-                                                          n-1 times.
-
-  This is an example of a formal model in ACL2.
-
-  []")
- (|Models in Engineering|
-  (|Pages Written Especially for the Tours|)
-  "Models in Engineering
-
-  Frequently, engineers use mathematical models. Use of such models
-  frequently lead to
-
-  better designs,
-
-  faster completion of acceptable products, and
-
-  reduced overall cost,
-
-  because models allow the trained user to study the design before it
-  is built and analyze its properties. Usually, testing and analyzing
-  a model is cheaper and faster than fabricating and refabricating
-  the product.")
- (|Models of Computer Hardware and Software|
-  (|Pages Written Especially for the Tours|)
-  "Models of Computer Hardware and Software
-
-  []
-
-  Computing machines, whether hardware or software or some
-  combintation, are frequently modeled as ``state machines.''
-
-  To so model a computing machine we must represent its states as
-  objects in our mathematical framework.
-
-  Transitions are functions or relations on state objects.
-
-  In what language shall we define these objects, functions, and
-  relations?
-
-  The mathematical languages we were taught in high school
-
-  algebra,
-
-  geometry,
-
-  trignometry, and
-
-  calculus
-
-  are often inappropriate for modeling digital systems. They primarily
-  let us talk about numbers and continuous functions.
-
-  To see what kind of expressive power we need, take a closer look at
-  what a typical state contains.
-
-  []")
  (NAME
   (MISCELLANEOUS)
   "Syntactic rules on logical names
@@ -48213,6 +48256,12 @@ Subtopics
   certain manipulations with many symbols of that package. So, we
   stay away from them, except for allowing certain variables as
   indicated above.")
+ (NAME_THE_FORMULA_ABOVE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Name the Formula Above
+
+  When the theorem prover explicitly assigns a name, like *1, to a
+  formula, it has decided to prove the formula by induction.")
  (NAT-LISTP
   (ACL2-BUILT-INS)
   "Recognizer for a true list of natural numbers
@@ -48400,11 +48449,18 @@ Subtopics
   The four lines under ``stobj-let'' just above can be understood as
   follows.
 
-     o Bindings: Bind child to (fld2 parent).  o Producer
-    variable(s) and producer: Then bind the variable, child, to the value of
-    the producer, (update-fld 3 child).  o Implicit update of parent: Update
-    fld2 of parent with the producer variable, child.  o Consumer:
-    Finally, return (update-fld3 'a parent).
+    * Bindings:
+          Bind child to (fld2 parent).
+
+    * Producer variable(s) and producer:
+          Then bind the variable, child, to the value of the producer,
+          (update-fld 3 child).
+
+    * Implicit update of parent:
+          Update fld2 of parent with the producer variable, child.
+
+    * Consumer:
+          Finally, return (update-fld3 'a parent).
 
   Thus, the logical expansion of the stobj-let form above is the
   following expression, though this is approximate (see below).
@@ -49247,6 +49303,15 @@ Subtopics
   a nonnegative integer and j is a positive integer.
 
   To see the ACL2 definition of this function, see [pf].")
+ (NONTAUTOLOGICAL_SUBGOALS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Prover output omits some details
+
+  The theorem prover's proof output is intended to suggest an outline
+  of the reasoning process employed by its proof engine, which is
+  virtually always more than is necessary for the ACL2 user. In
+  particular, the output often omits subgoals that are sufficiently
+  trivial, including tautologies.")
  (NORMALIZE (MISCELLANEOUS)
             "Xargs keyword :NORMALIZE
 
@@ -49825,7 +49890,7 @@ Subtopics
 
   Functions duplicates, add-to-set-equal, intersection-eq, evens, and
   odds are now :[logic] mode functions.")
- (|NOTE-2-5(R)|
+ (NOTE-2-5{R}
   (RELEASE-NOTES)
   "ACL2 Version 2.5(r) (June, 2000) Notes
 
@@ -49871,14 +49936,6 @@ Subtopics
 
   [Note-2-6-system]
       ACL2 Version 2.6 Notes on System-level Changes")
- (|NOTE-2-6(R)|
-  (RELEASE-NOTES)
-  "ACL2 Version 2.6(r) (November, 2001) Notes
-
-  Important changes to non-standard version: None since Version 2.5.
-
-  Please see [note-2-6] for changes to Version 2.6 of ACL2. We hope to
-  write more documentation for ACL2(r) in the future.")
  (NOTE-2-6-GUARDS
   (NOTE-2-6)
   "ACL2 Version 2.6 Notes on Guard-related Changes
@@ -50459,6 +50516,14 @@ Subtopics
   [symbol-package-name]. At a low level, the (undocumented) constant
   *main-lisp-package-name* is now \"COMMON-LISP\"; before, it was
   \"LISP\" for GCL.")
+ (NOTE-2-6{R}
+  (RELEASE-NOTES)
+  "ACL2 Version 2.6(r) (November, 2001) Notes
+
+  Important changes to non-standard version: None since Version 2.5.
+
+  Please see [note-2-6] for changes to Version 2.6 of ACL2. We hope to
+  write more documentation for ACL2(r) in the future.")
  (NOTE-2-7
   (RELEASE-NOTES)
   "ACL2 Version 2.7 (November, 2002) Notes
@@ -50574,24 +50639,6 @@ Subtopics
 
   [Note-2-7-system]
       ACL2 Version 2.7 Notes on System-level Changes")
- (|NOTE-2-7(R)|
-  (RELEASE-NOTES)
-  "ACL2 Version 2.7(r) (November, 2002) Notes
-
-  In source file axioms.lisp, in order for proofs to succeed, (make
-  proofs), the definitions of [ACL2-count] and explode-atom have been
-  modified slightly, and lemma standard-numberp-one [modified after
-  Version_3.4 to become standardp-one] has been given :rule-classes
-  nil.
-
-  All [skip-proofs] forms have been eliminated from the nonstd books,
-  thanks to Ruben Gamboa.
-
-  The directory books/sqrt/, which was intended for ACL2(r), has been
-  moved to books/nonstd/sqrt/ and added as appropriate to
-  books/nonstd/Makefile.
-
-  Please see [note-2-7] for changes to Version_2.7 of ACL2.")
  (NOTE-2-7-BUG-FIXES
   (NOTE-2-7)
   "ACL2 Version 2.7 Notes on Bug Fixes
@@ -51430,6 +51477,24 @@ Subtopics
 
   Compiler info messages sent to error stream were eliminated for
   CMUCL.")
+ (NOTE-2-7{R}
+  (RELEASE-NOTES)
+  "ACL2 Version 2.7(r) (November, 2002) Notes
+
+  In source file axioms.lisp, in order for proofs to succeed, (make
+  proofs), the definitions of [ACL2-count] and explode-atom have been
+  modified slightly, and lemma standard-numberp-one [modified after
+  Version_3.4 to become standardp-one] has been given :rule-classes
+  nil.
+
+  All [skip-proofs] forms have been eliminated from the nonstd books,
+  thanks to Ruben Gamboa.
+
+  The directory books/sqrt/, which was intended for ACL2(r), has been
+  moved to books/nonstd/sqrt/ and added as appropriate to
+  books/nonstd/Makefile.
+
+  Please see [note-2-7] for changes to Version_2.7 of ACL2.")
  (NOTE-2-8
   (RELEASE-NOTES)
   "ACL2 Version 2.8 (March, 2004) Notes
@@ -51631,16 +51696,6 @@ Subtopics
 
   [Note-2-8-system]
       ACL2 Version 2.8 Notes on System-level Changes")
- (|NOTE-2-8(R)|
-  (RELEASE-NOTES)
-  "ACL2 Version 2.8(r) (March, 2003) Notes
-
-  The Makefile has been modified by adding a new target, clean-links.
-  This can be used in order to remove all soft links, which is useful
-  if the directory is copied or moved to a new location or if there
-  are file system changes that cause problems with link pathnames.
-
-  Please also see [note-2-8] for changes to Version_2.8 of ACL2.")
  (NOTE-2-8-BUG-FIXES
   (NOTE-2-8)
   "ACL2 Version 2.8 Notes on Bug Fixes
@@ -52359,6 +52414,16 @@ Subtopics
   ACL2 now runs on MCL 5.0. Thanks to Pascal Costanza for updates to
   the instructions in file mcl-acl2-startup.lisp and for an update to
   the ACL2 sources (parameter *compiled-file-extension*).")
+ (NOTE-2-8{R}
+  (RELEASE-NOTES)
+  "ACL2 Version 2.8(r) (March, 2003) Notes
+
+  The Makefile has been modified by adding a new target, clean-links.
+  This can be used in order to remove all soft links, which is useful
+  if the directory is copied or moved to a new location or if there
+  are file system changes that cause problems with link pathnames.
+
+  Please also see [note-2-8] for changes to Version_2.8 of ACL2.")
  (NOTE-2-9
   (RELEASE-NOTES)
   "ACL2 Version 2.9 (October, 2004) Notes
@@ -52822,14 +52887,6 @@ Subtopics
   corresponding function; see [macro-aliases-table]. Also,
   [disabledp] now has a [guard] of t but causes a hard error on an
   inappropriate argument.")
- (|NOTE-2-9(R)|
-  (RELEASE-NOTES)
-  "ACL2 Version 2.9(r) (October, 2004) Notes
-
-  No changes have been made for support of non-standard analysis, other
-  than a minor modification or two in books/nonstd/ books.
-
-  Please also see [note-2-9] for changes to Version_2.9 of ACL2.")
  (NOTE-2-9-1
   (RELEASE-NOTES)
   "ACL2 Version 2.9.1 (December, 2004) Notes
@@ -54301,6 +54358,14 @@ Subtopics
 
   The file books/README.html has been renamed to books/Readme.html,
   since some browsers don't show the former in the directory listing.")
+ (NOTE-2-9{R}
+  (RELEASE-NOTES)
+  "ACL2 Version 2.9(r) (October, 2004) Notes
+
+  No changes have been made for support of non-standard analysis, other
+  than a minor modification or two in books/nonstd/ books.
+
+  Please also see [note-2-9] for changes to Version_2.9 of ACL2.")
  (NOTE-3-0
   (RELEASE-NOTES)
   "ACL2 Version 3.0 (June, 2006) Notes
@@ -54320,14 +54385,6 @@ Subtopics
   distributed and workshop books. For now, we have simply added the
   new contributions according to the old-style distribution
   methodology.")
- (|NOTE-3-0(R)|
-  (RELEASE-NOTES)
-  "ACL2 Version 3.0(r) (June, 2006) Notes
-
-  No significant changes have been made since Version 2.9 for support
-  of non-standard analysis in particular.
-
-  Please also see [note-3-0] for changes to Version 3.0 of ACL2.")
  (NOTE-3-0-1
   (RELEASE-NOTES)
   "ACL2 Version 3.0.1 (August, 2006) Notes
@@ -54584,7 +54641,7 @@ Subtopics
   its argument could not be a variable, a constant, or (more
   interestingly) a [lambda] application (i.e., a [let] or [mv-let]
   expression).")
- (|NOTE-3-0-1(R)|
+ (NOTE-3-0-1{R}
   (RELEASE-NOTES)
   "ACL2 Version 3.0.1(r) (August, 2006) Notes
 
@@ -54925,6 +54982,14 @@ Subtopics
   Added a new event, [assert-event], for checking that forms evaluate
   to non-nil values. Thanks to Peter Dillinger for suggesting and
   collaborating on this addition.")
+ (NOTE-3-0{R}
+  (RELEASE-NOTES)
+  "ACL2 Version 3.0(r) (June, 2006) Notes
+
+  No significant changes have been made since Version 2.9 for support
+  of non-standard analysis in particular.
+
+  Please also see [note-3-0] for changes to Version 3.0 of ACL2.")
  (NOTE-3-1
   (RELEASE-NOTES)
   "ACL2 Version 3.1 (December, 2006) Notes
@@ -54936,7 +55001,7 @@ Subtopics
   Please see [note-3-0-2] for a description of changes since Version
   3.0.1, and also see [note-3-0-1] for additional changes since
   Version 3.0.")
- (|NOTE-3-1(R)|
+ (NOTE-3-1{R}
   (RELEASE-NOTES)
   "ACL2 Version 3.1(r) (December, 2006) Notes
 
@@ -55377,26 +55442,6 @@ Subtopics
   raw-mode back to nil:
 
     (progn! (set-raw-mode t) ...)")
- (|NOTE-3-2(R)|
-  (RELEASE-NOTES)
-  "ACL2 Version 3.2(r) (April, 2007) Notes
-
-  Changed the default distributed [books] directory for ACL2(r) from
-  books/ to books/nonstd/. See [include-book], in particular the
-  discussion of ``Distributed Books Directory''.
-
-  Added directory books/arithmetic-3/ and its subdirectories to
-  books/nonstd/. (But a chunk of theorems from
-  arithmetic-3/extra/ext.lisp are ``commented out'' using
-  #-:non-standard-analysis because they depend on books/rtl/rel7/,
-  which is not yet in books/nonstd/; feel free to volunteer to remedy
-  this!)
-
-  Incorporated changes from Ruben Gamboa to some (linear and
-  non-linear) arithmetic routines in the theorem prover, to
-  comprehend the reals rather than only the rationals.
-
-  Please also see [note-3-2] for changes to Version 3.2 of ACL2.")
  (NOTE-3-2-1
   (RELEASE-NOTES)
   "ACL2 Version 3.2.1 (June, 2007) Notes
@@ -55568,11 +55613,31 @@ Subtopics
   corollary formula (implies (f x) (and (g x) (h x))), where this was
   not formerly the case. Thanks to Dave Greve for bringing this issue
   to our attention.")
- (|NOTE-3-2-1(R)|
+ (NOTE-3-2-1{R}
   (RELEASE-NOTES)
   "ACL2 Version 3.2.1(r) (June, 2007) Notes
 
   Please also see [note-3-2-1] for changes to Version 3.2.1 of ACL2.")
+ (NOTE-3-2{R}
+  (RELEASE-NOTES)
+  "ACL2 Version 3.2(r) (April, 2007) Notes
+
+  Changed the default distributed [books] directory for ACL2(r) from
+  books/ to books/nonstd/. See [include-book], in particular the
+  discussion of ``Distributed Books Directory''.
+
+  Added directory books/arithmetic-3/ and its subdirectories to
+  books/nonstd/. (But a chunk of theorems from
+  arithmetic-3/extra/ext.lisp are ``commented out'' using
+  #-:non-standard-analysis because they depend on books/rtl/rel7/,
+  which is not yet in books/nonstd/; feel free to volunteer to remedy
+  this!)
+
+  Incorporated changes from Ruben Gamboa to some (linear and
+  non-linear) arithmetic routines in the theorem prover, to
+  comprehend the reals rather than only the rationals.
+
+  Please also see [note-3-2] for changes to Version 3.2 of ACL2.")
  (NOTE-3-3
   (RELEASE-NOTES)
   "ACL2 Version 3.3 (November, 2007) Notes
@@ -55956,7 +56021,7 @@ Subtopics
 
   The distributed books directory, (@ distributed-books-dir), is now
   printed in the start-up message.")
- (|NOTE-3-3(R)|
+ (NOTE-3-3{R}
   (RELEASE-NOTES)
   "ACL2 Version 3.3(r) (November, 2007) Notes
 
@@ -56519,7 +56584,7 @@ Subtopics
   commands to `clean' books will delete such files (specifically,
   books/Makefile-generic has been changed to delete
   temp-emacs-file.lsp).")
- (|NOTE-3-4(R)|
+ (NOTE-3-4{R}
   (RELEASE-NOTES)
   "ACL2 Version 3.4(r) (August, 2008) Notes
 
@@ -57269,7 +57334,7 @@ Subtopics
   The ACL2 [state] can now be queried with (@ hons-enabled) so that a
   result of t says that one is in the experimental hons version,
   while nil says the opposite.")
- (|NOTE-3-5(R)|
+ (NOTE-3-5{R}
   (RELEASE-NOTES)
   "ACL2 Version 3.5(r) (May, 2009) Notes
 
@@ -57660,11 +57725,6 @@ Subtopics
       the thousandth time, cf. watch. Haven't changed it in weeks,
       which means that (a) it is getting tolerable or (b) I've run
       out of gas.")
- (|NOTE-3-6(R)|
-  (RELEASE-NOTES)
-  "ACL2 Version 3.6(r) (August, 2009) Notes
-
-  Please also see [note-3-6] for changes in Version 3.6 of ACL2.")
  (NOTE-3-6-1
   (RELEASE-NOTES)
   "ACL2 Version 3.6.1 (September, 2009) Notes
@@ -57710,6 +57770,11 @@ Subtopics
   defined using [mutual-recursion]). Thanks to Daron Vroon for
   bringing this bug to our attention, pointing out the swapped
   arguments.")
+ (NOTE-3-6{R}
+  (RELEASE-NOTES)
+  "ACL2 Version 3.6(r) (August, 2009) Notes
+
+  Please also see [note-3-6] for changes in Version 3.6 of ACL2.")
  (NOTE-4-0
   (RELEASE-NOTES)
   "ACL2 Version 4.0 (July, 2010) Notes
@@ -58529,11 +58594,6 @@ Subtopics
 
   [Note-4-0-wormhole-changes]
       How to convert calls of wormhole for Version 4.0")
- (|NOTE-4-0(R)|
-  (RELEASE-NOTES)
-  "ACL2 Version 4.0(r) (July, 2010) Notes
-
-  Please see [note-4-0] for changes in Version 4.0 of ACL2.")
  (NOTE-4-0-WORMHOLE-CHANGES
   (NOTE-4-0)
   "How to convert calls of wormhole for Version 4.0
@@ -58594,6 +58654,11 @@ Subtopics
 
   In any case, and especially if your wormhole call had a pseudo-flag
   other than t, we recommend that you see [wormhole].")
+ (NOTE-4-0{R}
+  (RELEASE-NOTES)
+  "ACL2 Version 4.0(r) (July, 2010) Notes
+
+  Please see [note-4-0] for changes in Version 4.0 of ACL2.")
  (NOTE-4-1
   (RELEASE-NOTES)
   "ACL2 Version 4.1 (September, 2010) Notes
@@ -58742,7 +58807,7 @@ Subtopics
       gc$ would no longer call the garbage collector, which had been
       invoked by raw Lisp code. Now, evaluation of (memoize 'gc$-fn)
       causes an error.")
- (|NOTE-4-1(R)|
+ (NOTE-4-1{R}
   (RELEASE-NOTES)
   "ACL2 Version 4.1(r) (September, 2010) Notes
 
@@ -59220,7 +59285,7 @@ Subtopics
   than an enhancement to the [hons] version that can reduce sizes of
   [certificate] files, by applying [hons-copy] to introduce structure
   sharing (ACL2 source function make-certificate-file1).")
- (|NOTE-4-2(R)|
+ (NOTE-4-2{R}
   (RELEASE-NOTES)
   "ACL2 Version 4.2(r) (January, 2011) Notes
 
@@ -59868,7 +59933,7 @@ Subtopics
 
       [History] commands such as :[pe] and :[pbt] now display ``M'' or
       ``m'' to indicate memoized functions. See [pc].")
- (|NOTE-4-3(R)|
+ (NOTE-4-3{R}
   (RELEASE-NOTES)
   "ACL2 Version 4.3(r) (July, 2011) Notes
 
@@ -62163,8 +62228,11 @@ Subtopics
   book. Now that both the ACL2 system documentation and much of the
   community books documentation are written in [xdoc] format, we hope
   the ACL2 community will add links from the ACL2 system
-  documentation topics to book documentation topics. Thanks to Jared
-  for all his work contributing to this enhancement.
+  documentation topics to book documentation topics. Note that :[doc]
+  still works at the terminal, but it is based on the new system, and
+  other terminal-based access to the documentation has been
+  eliminated (for example :more). Thanks to Jared for all his work
+  contributing to this enhancement.
 
   See [note-6-4-books] for release notes about the books, corresponding
   to the release of ACL2 Version 6.4.
@@ -62173,10 +62241,11 @@ Subtopics
 
   There is now an Emacs utility for browsing the hypertext
   documentation for ACL2 and the community books. This browser,
-  ACL2-Doc, essentially serves as a replacement for Emacs Info,
-  though it can be used not just for the ACL2 User's Manual but also
-  for the acl2+books combined manual. It is loaded automatically into
-  emacs if you load the file emacs/emacs-acl2.el. See [ACL2-doc].
+  ACL2-Doc, essentially serves as a replacement for Emacs Info, which
+  can no longer be used to browse the documentation. ACL2-Doc can be
+  used not just for the ACL2 User's Manual but also for the
+  acl2+books combined manual. It is loaded automatically into emacs
+  if you load the file emacs/emacs-acl2.el. See [ACL2-doc].
 
   EXPERIMENTAL/ALTERNATE VERSIONS")
  (NOTE1
@@ -62886,8 +62955,7 @@ Subtopics
   changed in order to support the following convention, for any
   ``foo'':
 
-     (foo-listp lst) represents the notion (for x in lst always foop
-    x).
+  (foo-listp lst) represents the notion (for x in lst always foop x).
 
   A complete list of these changes may be found at the end of this
   note. All of them except symbolp-listp and list-of-symbolp-listp
@@ -63865,37 +63933,8 @@ Subtopics
 
   Under the hood, we first [hons-copy] X to obtain a normed version,
   then count the number of unique conses in X using an EQ hash table.")
- (NUMERATOR
-  (ACL2-BUILT-INS)
-  "Dividend of a ratio in lowest terms
-
-  Completion Axiom (completion-of-numerator):
-
-    (equal (numerator x)
-           (if (rationalp x)
-               (numerator x)
-             0))
-
-  [Guard] for (numerator x):
-
-    (rationalp x)")
- (|Name the Formula Above|
-  (|Pages Written Especially for the Tours|)
-  "Name the Formula Above
-
-  When the theorem prover explicitly assigns a name, like *1, to a
-  formula, it has decided to prove the formula by induction.")
- (|Nontautological Subgoals|
-  (|Pages Written Especially for the Tours|)
-  "Prover output omits some details
-
-  The theorem prover's proof output is intended to suggest an outline
-  of the reasoning process employed by its proof engine, which is
-  virtually always more than is necessary for the ACL2 user. In
-  particular, the output often omits subgoals that are sufficiently
-  trivial, including tautologies.")
- (|Numbers in ACL2|
-  (|Pages Written Especially for the Tours|)
+ (NUMBERS_IN_ACL2
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Numbers in ACL2
 
   ACL2 numbers are precisely represented and unbounded. They can be
@@ -63940,6 +63979,20 @@ Subtopics
                    (t 'negative-non-integral-rational)))
             ((complex-rationalp x) 'complex-rational)
             (t 'NaN)))")
+ (NUMERATOR
+  (ACL2-BUILT-INS)
+  "Dividend of a ratio in lowest terms
+
+  Completion Axiom (completion-of-numerator):
+
+    (equal (numerator x)
+           (if (rationalp x)
+               (numerator x)
+             0))
+
+  [Guard] for (numerator x):
+
+    (rationalp x)")
  (O-FINP
   (ACL2-BUILT-INS)
   "Recognizes if an ordinal is finite
@@ -64371,6 +64424,16 @@ Subtopics
   same effects could be achieved with the break condition on the rule
   itself. Perhaps we should replace this concept with
   :eval-and-break-if? Time will tell.")
+ (ON_THE_NAMING_OF_SUBGOALS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "On the Naming of Subgoals
+
+  Subgoal *1/2 is the induction step from the scheme, obtained by
+  instantiating the scheme with our conjecture.
+
+  We number the cases ``backward'', so this is case ``2'' of the proof
+  of ``*1''. We number them backward so you can look at a subgoal
+  number and get an estimate for how close you are to the end.")
  (OOPS
   (HISTORY)
   "Undo a :u or :[ubt]
@@ -65111,6 +65174,31 @@ Subtopics
 
   [Wof]
       Direct standard output and proofs output to a file")
+ (OTHER_REQUIREMENTS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Other Requirements
+
+  []
+
+  ACL2 is distributed on the Web without fee.
+
+  There is a license agreement based on the 3-clause BSD license. See
+  the file LICENSE in the ACL2 distribution.
+
+  ACL2 currently runs on Unix, Linux, Windows, and Macintosh OS X
+  operating systems.
+
+  It can be built in any of the following Common Lisps:
+
+    * Allegro Common Lisp,
+    * CCL (formerly OpenMCL)
+    * CLISP,
+    * CMU Common Lisp,
+    * GCL (Gnu Common Lisp),
+    * LispWorks, and
+    * SBCL (Steel Bank Common Lisp)
+
+  []")
  (OUTPUT-TO-FILE
   (IO)
   "Redirecting output to a file
@@ -65317,50 +65405,15 @@ Subtopics
 
   [Set-override-hints!]
       Set the [override-hints] non-[local]ly")
- (|On the Naming of Subgoals|
-  (|Pages Written Especially for the Tours|)
-  "On the Naming of Subgoals
-
-  Subgoal *1/2 is the induction step from the scheme, obtained by
-  instantiating the scheme with our conjecture.
-
-  We number the cases ``backward'', so this is case ``2'' of the proof
-  of ``*1''. We number them backward so you can look at a subgoal
-  number and get an estimate for how close you are to the end.")
- (|Other Requirements|
-  (|Pages Written Especially for the Tours|)
-  "Other Requirements
-
-  []
-
-  ACL2 is distributed on the Web without fee.
-
-  There is a license agreement based on the 3-clause BSD license. See
-  the file LICENSE in the ACL2 distribution.
-
-  ACL2 currently runs on Unix, Linux, Windows, and Macintosh OS X
-  operating systems.
-
-  It can be built in any of the following Common Lisps:
-
-    * Allegro Common Lisp,
-    * CCL (formerly OpenMCL)
-    * CLISP,
-    * CMU Common Lisp,
-    * GCL (Gnu Common Lisp),
-    * LispWorks, and
-    * SBCL (Steel Bank Common Lisp)
-
-  []")
- (|Overview of the Expansion of ENDP in the Base Case|
-  (|Pages Written Especially for the Tours|)
+ (OVERVIEW_OF_THE_EXPANSION_OF_ENDP_IN_THE_BASE_CASE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Overview of the Expansion of ENDP in the Base Case
 
   Subgoal *1/1 is the Base Case of our induction. It simplifies to
   Subgoal *1/1' by expanding the ENDP term in the hypothesis, just as
   we saw in the earlier proof of Subgoal *1/2.")
- (|Overview of the Expansion of ENDP in the Induction Step|
-  (|Pages Written Especially for the Tours|)
+ (OVERVIEW_OF_THE_EXPANSION_OF_ENDP_IN_THE_INDUCTION_STEP
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Overview of the Expansion of ENDP in the Induction Step
 
   In this message the system is saying that Subgoal *1/2 has been
@@ -65370,15 +65423,15 @@ Subtopics
 
   Click [here] if you would like to step through the simplification of
   Subgoal *1/2.")
- (|Overview of the Final Simplification in the Base Case|
-  (|Pages Written Especially for the Tours|)
+ (OVERVIEW_OF_THE_FINAL_SIMPLIFICATION_IN_THE_BASE_CASE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Overview of the Final Simplification in the Base Case
 
   The But is our signal that the goal is proved.
 
   Click [here] to step through the proof. It is very simple.")
- (|Overview of the Proof of a Trivial Consequence|
-  (|Pages Written Especially for the Tours|)
+ (OVERVIEW_OF_THE_PROOF_OF_A_TRIVIAL_CONSEQUENCE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Overview of the Proof of a Trivial Consequence
 
   []
@@ -65419,8 +65472,8 @@ Subtopics
   You might explore the links before moving on.
 
   []")
- (|Overview of the Simplification of the Base Case to T|
-  (|Pages Written Especially for the Tours|)
+ (OVERVIEW_OF_THE_SIMPLIFICATION_OF_THE_BASE_CASE_TO_T
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Overview of the Simplification of the Base Case to T
 
   []
@@ -65441,8 +65494,8 @@ Subtopics
     primitive type reasoning.
 
   []")
- (|Overview of the Simplification of the Induction Conclusion|
-  (|Pages Written Especially for the Tours|)
+ (OVERVIEW_OF_THE_SIMPLIFICATION_OF_THE_INDUCTION_CONCLUSION
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Overview of the Simplification of the Induction Conclusion
 
   In this message the system is saying that Subgoal *1/2' has been
@@ -65451,8 +65504,8 @@ Subtopics
   proved.
 
   Click [here] to step through the proof of Subgoal *1/2'.")
- (|Overview of the Simplification of the Induction Step to T|
-  (|Pages Written Especially for the Tours|)
+ (OVERVIEW_OF_THE_SIMPLIFICATION_OF_THE_INDUCTION_STEP_TO_T
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Overview of the Simplification of the Induction Step to T
 
   []
@@ -65533,6 +65586,361 @@ Subtopics
   (eq a::sym pkg::sym). This ought not be a theorem because we did
   not import a::sym into \"pkg\". But in fact in AKCL it is a theorem
   because pkg::sym is read as a::sym because of the old imports.")
+ (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS
+  (ACL2)
+  "Pages Written Especially for the Tours
+
+  The ACL2 Home Page is generated from ACL2's online documentation
+  strings. (How else could we achieve the total integration of ACL2's
+  online documentation with the home page?) This page is just an
+  artifact of the structure of our documentation strings: each string
+  must belong to a ``major section'' of the documentation database.
+  This page is not structured to be used by a person browsing via the
+  Web. It contains, in an arbitrary order, the pages written
+  specificially for the Web user.
+
+  Furthermore, browsing the pages below via the ACL2 :DOC command or
+  via TexInfo is often unsatisfying because those browsers do not
+  support gif files and the notion of going ``back'' to a node just
+  visited. If you wish to look at the pages below, we strongly
+  recommend that you do so via a HTML-based Web browser. Indeed, you
+  should simply visit ACL2's Home Page and take one of the Tours.
+
+  Generally, the topics listed above will not be of use to the ACL2
+  user.
+
+
+Subtopics
+
+  [A_Flying_Tour_of_ACL2]
+      A Flying Tour of ACL2
+
+  [A_Sketch_of_How_the_Rewriter_Works]
+      A Sketch of How the Rewriter Works
+
+  [A_Tiny_Warning_Sign]
+      A Tiny Warning Sign
+
+  [A_Trivial_Proof]
+      A Trivial Proof
+
+  [A_Typical_State]
+      A Typical State
+
+  [A_Walking_Tour_of_ACL2]
+      A Walking Tour of ACL2
+
+  [ACL2_Characters]
+      ACL2 Characters
+
+  [ACL2_Conses_or_Ordered_Pairs]
+      ACL2 Conses or Ordered Pairs
+
+  [ACL2_Strings]
+      ACL2 Strings
+
+  [ACL2_Symbols]
+      ACL2 Symbols
+
+  [ACL2_System_Architecture]
+      ACL2 System Architecture
+
+  [ACL2_as_an_Interactive_Theorem_Prover]
+      ACL2 as an Interactive Theorem Prover
+
+  [ACL2_as_an_Interactive_Theorem_Prover_{cont}]
+      ACL2 as an Interactive Theorem Prover (cont)
+
+  [ACL2_is_an_Untyped_Language]
+      ACL2 is an Untyped Language
+
+  [About_Models]
+      About Models
+
+  [About_Types]
+      About Types
+
+  [About_the_ACL2_Home_Page]
+      About the ACL2 Home Page
+
+  [About_the_Admission_of_Recursive_Definitions]
+      About the Admission of Recursive Definitions
+
+  [About_the_Prompt]
+      About the Prompt
+
+  [An_Example_Common_Lisp_Function_Definition]
+      An Example Common Lisp Function Definition
+
+  [An_Example_of_ACL2_in_Use]
+      An Example of ACL2 in Use
+
+  [Analyzing_Common_Lisp_Models]
+      Analyzing Common Lisp Models
+
+  [Common_Lisp]
+      Common Lisp
+
+  [Common_Lisp_as_a_Modeling_Language]
+      Common Lisp as a Modeling Language
+
+  [Conversion]
+      Conversion to Uppercase
+
+  [Corroborating_Models]
+      Corroborating Models
+
+  [Evaluating_App_on_Sample_Input]
+      Evaluating App on Sample Input
+
+  [Flawed_Induction_Candidates_in_App_Example]
+      Flawed Induction Candidates in App Example
+
+  [Free_Variables_in_Top-Level_Input]
+      Free Variables in Top-Level Input
+
+  [Functions_for_Manipulating_these_Objects]
+      Functions for Manipulating these Objects
+
+  [Guards]
+      Guards
+
+  [Guessing_the_Type_of_a_Newly_Admitted_Function]
+      Guessing the Type of a Newly Admitted Function
+
+  [Guiding_the_ACL2_Theorem_Prover]
+      Guiding the ACL2 Theorem Prover
+
+  [Hey_Wait!__Is_ACL2_Typed_or_Untyped{Q}]
+      Hey Wait! Is ACL2 Typed or Untyped?
+
+  [How_Long_Does_It_Take_to_Become_an_Effective_User{Q}]
+      How Long Does It Take to Become an Effective User?
+
+  [How_To_Find_Out_about_ACL2_Functions]
+      How To Find Out about ACL2 Functions
+
+  [How_To_Find_Out_about_ACL2_Functions_{cont}]
+      How To Find Out about ACL2 Functions (cont)
+
+  [Modeling_in_ACL2]
+      Modeling in ACL2
+
+  [Models_in_Engineering]
+      Models in Engineering
+
+  [Models_of_Computer_Hardware_and_Software]
+      Models of Computer Hardware and Software
+
+  [Name_the_Formula_Above]
+      Name the Formula Above
+
+  [Nontautological_Subgoals]
+      Prover output omits some details
+
+  [Numbers_in_ACL2]
+      Numbers in ACL2
+
+  [On_the_Naming_of_Subgoals]
+      On the Naming of Subgoals
+
+  [Other_Requirements]
+      Other Requirements
+
+  [Overview_of_the_Expansion_of_ENDP_in_the_Base_Case]
+      Overview of the Expansion of ENDP in the Base Case
+
+  [Overview_of_the_Expansion_of_ENDP_in_the_Induction_Step]
+      Overview of the Expansion of ENDP in the Induction Step
+
+  [Overview_of_the_Final_Simplification_in_the_Base_Case]
+      Overview of the Final Simplification in the Base Case
+
+  [Overview_of_the_Proof_of_a_Trivial_Consequence]
+      Overview of the Proof of a Trivial Consequence
+
+  [Overview_of_the_Simplification_of_the_Base_Case_to_T]
+      Overview of the Simplification of the Base Case to T
+
+  [Overview_of_the_Simplification_of_the_Induction_Conclusion]
+      Overview of the Simplification of the Induction Conclusion
+
+  [Overview_of_the_Simplification_of_the_Induction_Step_to_T]
+      Overview of the Simplification of the Induction Step to T
+
+  [Perhaps]
+      Perhaps
+
+  [Popping_out_of_an_Inductive_Proof]
+      Popping out of an Inductive Proof
+
+  [Proving_Theorems_about_Models]
+      Proving Theorems about Models
+
+  [Revisiting_the_Admission_of_App]
+      Revisiting the Admission of App
+
+  [Rewrite_Rules_are_Generated_from_DEFTHM_Events]
+      Rewrite Rules are Generated from DEFTHM Events
+
+  [Running_Models]
+      Running Models
+
+  [Subsumption_of_Induction_Candidates_in_App_Example]
+      Subsumption of Induction Candidates in App Example
+
+  [Suggested_Inductions_in_the_Associativity_of_App_Example]
+      Suggested Inductions in the Associativity of App Example
+
+  [Symbolic_Execution_of_Models]
+      Symbolic Execution of Models
+
+  [The_Admission_of_App]
+      The Admission of App
+
+  [The_Associativity_of_App]
+      The Associativity of App
+
+  [The_Base_Case_in_the_App_Example]
+      The Base Case in the App Example
+
+  [The_End_of_the_Flying_Tour]
+      The End of the Flying Tour
+
+  [The_End_of_the_Proof_of_the_Associativity_of_App]
+      The End of the Proof of the Associativity of App
+
+  [The_End_of_the_Walking_Tour]
+      The End of the Walking Tour
+
+  [The_Event_Summary]
+      The Event Summary
+
+  [The_Expansion_of_ENDP_in_the_Induction_Step_{Step_0}]
+      The Expansion of ENDP in the Induction Step (Step 0)
+
+  [The_Expansion_of_ENDP_in_the_Induction_Step_{Step_1}]
+      The Expansion of ENDP in the Induction Step (Step 1)
+
+  [The_Expansion_of_ENDP_in_the_Induction_Step_{Step_2}]
+      The Expansion of ENDP in the Induction Step (Step 2)
+
+  [The_Falling_Body_Model]
+      The Falling Body Model
+
+  [The_Final_Simplification_in_the_Base_Case_{Step_0}]
+      The Final Simplification in the Base Case (Step 0)
+
+  [The_Final_Simplification_in_the_Base_Case_{Step_1}]
+      The Final Simplification in the Base Case (Step 1)
+
+  [The_Final_Simplification_in_the_Base_Case_{Step_2}]
+      The Final Simplification in the Base Case (Step 2)
+
+  [The_Final_Simplification_in_the_Base_Case_{Step_3}]
+      The Final Simplification in the Base Case (Step 3)
+
+  [The_First_Application_of_the_Associativity_Rule]
+      The First Application of the Associativity Rule
+
+  [The_Induction_Scheme_Selected_for_the_App_Example]
+      The Induction Scheme Selected for the App Example
+
+  [The_Induction_Step_in_the_App_Example]
+      The Induction Step in the App Example
+
+  [The_Instantiation_of_the_Induction_Scheme]
+      The Instantiation of the Induction Scheme
+
+  [The_Justification_of_the_Induction_Scheme]
+      The Justification of the Induction Scheme
+
+  [The_Proof_of_the_Associativity_of_App]
+      The Proof of the Associativity of App
+
+  [The_Q.E.D._Message]
+      The Q.E.D. Message
+
+  [The_Rules_used_in_the_Associativity_of_App_Proof]
+      The Rules used in the Associativity of App Proof
+
+  [The_Simplification_of_the_Induction_Conclusion_{Step_0}]
+      The Simplification of the Induction Conclusion (Step 0)
+
+  [The_Simplification_of_the_Induction_Conclusion_{Step_1}]
+      The Simplification of the Induction Conclusion (Step 1)
+
+  [The_Simplification_of_the_Induction_Conclusion_{Step_10}]
+      The Simplification of the Induction Conclusion (Step 10)
+
+  [The_Simplification_of_the_Induction_Conclusion_{Step_11}]
+      The Simplification of the Induction Conclusion (Step 11)
+
+  [The_Simplification_of_the_Induction_Conclusion_{Step_12}]
+      The Simplification of the Induction Conclusion (Step 12)
+
+  [The_Simplification_of_the_Induction_Conclusion_{Step_2}]
+      The Simplification of the Induction Conclusion (Step 2)
+
+  [The_Simplification_of_the_Induction_Conclusion_{Step_3}]
+      The Simplification of the Induction Conclusion (Step 3)
+
+  [The_Simplification_of_the_Induction_Conclusion_{Step_4}]
+      The Simplification of the Induction Conclusion (Step 4)
+
+  [The_Simplification_of_the_Induction_Conclusion_{Step_5}]
+      The Simplification of the Induction Conclusion (Step 5)
+
+  [The_Simplification_of_the_Induction_Conclusion_{Step_6}]
+      The Simplification of the Induction Conclusion (Step 6)
+
+  [The_Simplification_of_the_Induction_Conclusion_{Step_7}]
+      The Simplification of the Induction Conclusion (Step 7)
+
+  [The_Simplification_of_the_Induction_Conclusion_{Step_8}]
+      The Simplification of the Induction Conclusion (Step 8)
+
+  [The_Simplification_of_the_Induction_Conclusion_{Step_9}]
+      The Simplification of the Induction Conclusion (Step 9)
+
+  [The_Summary_of_the_Proof_of_the_Trivial_Consequence]
+      The Summary of the Proof of the Trivial Consequence
+
+  [The_Theorem_that_App_is_Associative]
+      The Theorem that App is Associative
+
+  [The_Time_Taken_to_do_the_Associativity_of_App_Proof]
+      The Time Taken to do the Associativity of App Proof
+
+  [The_Tours]
+      The Tours
+
+  [The_WARNING_about_the_Trivial_Consequence]
+      The WARNING about the Trivial Consequence
+
+  [Undocumented_Topic]
+      Undocumented Topic
+
+  [Using_the_Associativity_of_App_to_Prove_a_Trivial_Consequence]
+      Using the Associativity of App to Prove a Trivial Consequence
+
+  [What_Is_ACL2{Q}]
+      What Is ACL2?
+
+  [What_is_Required_of_the_User{Q}]
+      What is Required of the User?
+
+  [What_is_a_Mathematical_Logic{Q}]
+      What is a Mathematical Logic?
+
+  [What_is_a_Mechanical_Theorem_Prover{Q}]
+      What is a Mechanical Theorem Prover?
+
+  [What_is_a_Mechanical_Theorem_Prover{Q}_{cont}]
+      What is a Mechanical Theorem Prover? (cont)
+
+  [You_Must_Think_about_the_Use_of_a_Formula_as_a_Rule]
+      You Must Think about the Use of a Formula as a Rule")
  (PAIRLIS
   (ACL2-BUILT-INS)
   "See [pairlis$]
@@ -66581,6 +66989,12 @@ Subtopics
   :pe!.")
  (PEEK-CHAR$ (ACL2-BUILT-INS)
              "See [io].")
+ (PERHAPS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Perhaps
+
+  The theorem prover's proof is printed in real time. At the time it
+  prints ``Perhaps'' it does not know the proof will succeed.")
  (PF
   (HISTORY)
   "Print the formula corresponding to the given name
@@ -66785,6 +67199,13 @@ Subtopics
   for more information.
 
   To see the ACL2 definition of this function, see [pf].")
+ (POPPING_OUT_OF_AN_INDUCTIVE_PROOF
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Popping out of an Inductive Proof
+
+  Recall that our induction scheme (click [here] to revisit it) had two
+  cases, the induction step (Subgoal *1/2) and the base case (Subgoal
+  *1/1). Both have been proved!")
  (POR
   (PARALLEL-PROGRAMMING)
   "Parallel, Boolean version of [or]
@@ -70358,6 +70779,37 @@ Subtopics
 
   Props takes one argument, a symbol, and prints all of the properties
   that are on that symbol in the ACL2 [world].")
+ (PROVING_THEOREMS_ABOUT_MODELS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Proving Theorems about Models
+
+  []
+
+  But ACL2 is a logic. We can prove theorems about the model.
+
+    Theorem.  MC 'mult is a multiplier
+    (implies (and (natp x)
+                  (natp y))
+             (equal (lookup 'z (mc (s 'mult x y) (mclk x)))
+                    (* x y))).
+
+  This theorem says that a certain program running on the mc machine
+  will correctly multiply any two natural numbers.
+
+  It is a statement about an infinite number of test cases!
+
+  We know it is true about the model because we proved it.
+
+  Of course, models of actual machines usually only accept a finite
+  number of different inputs. For example, engineers at Advanced
+  Micro Devices (AMD), Centaur, and IBM have ACL2 models of floating
+  point units that operate on double precision IEEE floating point
+  numbers. These are finite models. But the size of their inputs is
+  sufficiently large that they are verified by the same mathematical
+  methods used to prove theorems about infinite state systems like
+  our little mc.
+
+  []")
  (PROVISIONAL-CERTIFICATION
   (BOOKS)
   "Certify a book in stages for improved parallelism
@@ -71114,405 +71566,6 @@ Subtopics
   advantage of under-the-hood Lisp (hashed) property lists.
 
   To see the ACL2 definition of this function, see [pf].")
- (|Pages Written Especially for the Tours|
-  (ACL2)
-  "Pages Written Especially for the Tours
-
-  The ACL2 Home Page is generated from ACL2's online documentation
-  strings. (How else could we achieve the total integration of ACL2's
-  online documentation with the home page?) This page is just an
-  artifact of the structure of our documentation strings: each string
-  must belong to a ``major section'' of the documentation database.
-  This page is not structured to be used by a person browsing via the
-  Web. It contains, in an arbitrary order, the pages written
-  specificially for the Web user.
-
-  Furthermore, browsing the pages below via the ACL2 :DOC command or
-  via TexInfo is often unsatisfying because those browsers do not
-  support gif files and the notion of going ``back'' to a node just
-  visited. If you wish to look at the pages below, we strongly
-  recommend that you do so via a HTML-based Web browser. Indeed, you
-  should simply visit ACL2's Home Page and take one of the Tours.
-
-  Generally, the topics listed above will not be of use to the ACL2
-  user.
-
-
-Subtopics
-
-  [A Flying Tour of ACL2]
-      A Flying Tour of ACL2
-
-  [A Sketch of How the Rewriter Works]
-      A Sketch of How the Rewriter Works
-
-  [A Tiny Warning Sign]
-      A Tiny Warning Sign
-
-  [A Trivial Proof]
-      A Trivial Proof
-
-  [A Typical State]
-      A Typical State
-
-  [A Walking Tour of ACL2]
-      A Walking Tour of ACL2
-
-  [ACL2 Characters]
-      ACL2 Characters
-
-  [ACL2 Conses or Ordered Pairs]
-      ACL2 Conses or Ordered Pairs
-
-  [ACL2 Strings]
-      ACL2 Strings
-
-  [ACL2 Symbols]
-      ACL2 Symbols
-
-  [ACL2 System Architecture]
-      ACL2 System Architecture
-
-  [ACL2 as an Interactive Theorem Prover]
-      ACL2 as an Interactive Theorem Prover
-
-  [ACL2 as an Interactive Theorem Prover (cont)]
-      ACL2 as an Interactive Theorem Prover (cont)
-
-  [ACL2 is an Untyped Language]
-      ACL2 is an Untyped Language
-
-  [About Models]
-      About Models
-
-  [About Types]
-      About Types
-
-  [About the ACL2 Home Page]
-      About the ACL2 Home Page
-
-  [About the Admission of Recursive Definitions]
-      About the Admission of Recursive Definitions
-
-  [About the Prompt]
-      About the Prompt
-
-  [An Example Common Lisp Function Definition]
-      An Example Common Lisp Function Definition
-
-  [An Example of ACL2 in Use]
-      An Example of ACL2 in Use
-
-  [Analyzing Common Lisp Models]
-      Analyzing Common Lisp Models
-
-  [Common Lisp]
-      Common Lisp
-
-  [Common Lisp as a Modeling Language]
-      Common Lisp as a Modeling Language
-
-  [Conversion]
-      Conversion to Uppercase
-
-  [Corroborating Models]
-      Corroborating Models
-
-  [Evaluating App on Sample Input]
-      Evaluating App on Sample Input
-
-  [Flawed Induction Candidates in App Example]
-      Flawed Induction Candidates in App Example
-
-  [Free Variables in Top-Level Input]
-      Free Variables in Top-Level Input
-
-  [Functions for Manipulating these Objects]
-      Functions for Manipulating these Objects
-
-  [Guards]
-      Guards
-
-  [Guessing the Type of a Newly Admitted Function]
-      Guessing the Type of a Newly Admitted Function
-
-  [Guiding the ACL2 Theorem Prover]
-      Guiding the ACL2 Theorem Prover
-
-  [Hey Wait! Is ACL2 Typed or Untyped(Q)]
-      Hey Wait! Is ACL2 Typed or Untyped?
-
-  [How Long Does It Take to Become an Effective User(Q)]
-      How Long Does It Take to Become an Effective User?
-
-  [How To Find Out about ACL2 Functions]
-      How To Find Out about ACL2 Functions
-
-  [How To Find Out about ACL2 Functions (cont)]
-      How To Find Out about ACL2 Functions (cont)
-
-  [Modeling in ACL2]
-      Modeling in ACL2
-
-  [Models in Engineering]
-      Models in Engineering
-
-  [Models of Computer Hardware and Software]
-      Models of Computer Hardware and Software
-
-  [Name the Formula Above]
-      Name the Formula Above
-
-  [Nontautological Subgoals]
-      Prover output omits some details
-
-  [Numbers in ACL2]
-      Numbers in ACL2
-
-  [On the Naming of Subgoals]
-      On the Naming of Subgoals
-
-  [Other Requirements]
-      Other Requirements
-
-  [Overview of the Expansion of ENDP in the Base Case]
-      Overview of the Expansion of ENDP in the Base Case
-
-  [Overview of the Expansion of ENDP in the Induction Step]
-      Overview of the Expansion of ENDP in the Induction Step
-
-  [Overview of the Final Simplification in the Base Case]
-      Overview of the Final Simplification in the Base Case
-
-  [Overview of the Proof of a Trivial Consequence]
-      Overview of the Proof of a Trivial Consequence
-
-  [Overview of the Simplification of the Base Case to T]
-      Overview of the Simplification of the Base Case to T
-
-  [Overview of the Simplification of the Induction Conclusion]
-      Overview of the Simplification of the Induction Conclusion
-
-  [Overview of the Simplification of the Induction Step to T]
-      Overview of the Simplification of the Induction Step to T
-
-  [Perhaps]
-      Perhaps
-
-  [Popping out of an Inductive Proof]
-      Popping out of an Inductive Proof
-
-  [Proving Theorems about Models]
-      Proving Theorems about Models
-
-  [Revisiting the Admission of App]
-      Revisiting the Admission of App
-
-  [Rewrite Rules are Generated from DEFTHM Events]
-      Rewrite Rules are Generated from DEFTHM Events
-
-  [Running Models]
-      Running Models
-
-  [Subsumption of Induction Candidates in App Example]
-      Subsumption of Induction Candidates in App Example
-
-  [Suggested Inductions in the Associativity of App Example]
-      Suggested Inductions in the Associativity of App Example
-
-  [Symbolic Execution of Models]
-      Symbolic Execution of Models
-
-  [The Admission of App]
-      The Admission of App
-
-  [The Associativity of App]
-      The Associativity of App
-
-  [The Base Case in the App Example]
-      The Base Case in the App Example
-
-  [The End of the Flying Tour]
-      The End of the Flying Tour
-
-  [The End of the Proof of the Associativity of App]
-      The End of the Proof of the Associativity of App
-
-  [The End of the Walking Tour]
-      The End of the Walking Tour
-
-  [The Event Summary]
-      The Event Summary
-
-  [The Expansion of ENDP in the Induction Step (Step 0)]
-      The Expansion of ENDP in the Induction Step (Step 0)
-
-  [The Expansion of ENDP in the Induction Step (Step 1)]
-      The Expansion of ENDP in the Induction Step (Step 1)
-
-  [The Expansion of ENDP in the Induction Step (Step 2)]
-      The Expansion of ENDP in the Induction Step (Step 2)
-
-  [The Falling Body Model]
-      The Falling Body Model
-
-  [The Final Simplification in the Base Case (Step 0)]
-      The Final Simplification in the Base Case (Step 0)
-
-  [The Final Simplification in the Base Case (Step 1)]
-      The Final Simplification in the Base Case (Step 1)
-
-  [The Final Simplification in the Base Case (Step 2)]
-      The Final Simplification in the Base Case (Step 2)
-
-  [The Final Simplification in the Base Case (Step 3)]
-      The Final Simplification in the Base Case (Step 3)
-
-  [The First Application of the Associativity Rule]
-      The First Application of the Associativity Rule
-
-  [The Induction Scheme Selected for the App Example]
-      The Induction Scheme Selected for the App Example
-
-  [The Induction Step in the App Example]
-      The Induction Step in the App Example
-
-  [The Instantiation of the Induction Scheme]
-      The Instantiation of the Induction Scheme
-
-  [The Justification of the Induction Scheme]
-      The Justification of the Induction Scheme
-
-  [The Proof of the Associativity of App]
-      The Proof of the Associativity of App
-
-  [The Q.E.D. Message]
-      The Q.E.D. Message
-
-  [The Rules used in the Associativity of App Proof]
-      The Rules used in the Associativity of App Proof
-
-  [The Simplification of the Induction Conclusion (Step 0)]
-      The Simplification of the Induction Conclusion (Step 0)
-
-  [The Simplification of the Induction Conclusion (Step 1)]
-      The Simplification of the Induction Conclusion (Step 1)
-
-  [The Simplification of the Induction Conclusion (Step 10)]
-      The Simplification of the Induction Conclusion (Step 10)
-
-  [The Simplification of the Induction Conclusion (Step 11)]
-      The Simplification of the Induction Conclusion (Step 11)
-
-  [The Simplification of the Induction Conclusion (Step 12)]
-      The Simplification of the Induction Conclusion (Step 12)
-
-  [The Simplification of the Induction Conclusion (Step 2)]
-      The Simplification of the Induction Conclusion (Step 2)
-
-  [The Simplification of the Induction Conclusion (Step 3)]
-      The Simplification of the Induction Conclusion (Step 3)
-
-  [The Simplification of the Induction Conclusion (Step 4)]
-      The Simplification of the Induction Conclusion (Step 4)
-
-  [The Simplification of the Induction Conclusion (Step 5)]
-      The Simplification of the Induction Conclusion (Step 5)
-
-  [The Simplification of the Induction Conclusion (Step 6)]
-      The Simplification of the Induction Conclusion (Step 6)
-
-  [The Simplification of the Induction Conclusion (Step 7)]
-      The Simplification of the Induction Conclusion (Step 7)
-
-  [The Simplification of the Induction Conclusion (Step 8)]
-      The Simplification of the Induction Conclusion (Step 8)
-
-  [The Simplification of the Induction Conclusion (Step 9)]
-      The Simplification of the Induction Conclusion (Step 9)
-
-  [The Summary of the Proof of the Trivial Consequence]
-      The Summary of the Proof of the Trivial Consequence
-
-  [The Theorem that App is Associative]
-      The Theorem that App is Associative
-
-  [The Time Taken to do the Associativity of App Proof]
-      The Time Taken to do the Associativity of App Proof
-
-  [The Tours]
-      The Tours
-
-  [The WARNING about the Trivial Consequence]
-      The WARNING about the Trivial Consequence
-
-  [Undocumented Topic]
-      Undocumented Topic
-
-  [Using the Associativity of App to Prove a Trivial Consequence]
-      Using the Associativity of App to Prove a Trivial Consequence
-
-  [What Is ACL2(Q)]
-      What Is ACL2?
-
-  [What is Required of the User(Q)]
-      What is Required of the User?
-
-  [What is a Mathematical Logic(Q)]
-      What is a Mathematical Logic?
-
-  [What is a Mechanical Theorem Prover(Q)]
-      What is a Mechanical Theorem Prover?
-
-  [What is a Mechanical Theorem Prover(Q) (cont)]
-      What is a Mechanical Theorem Prover? (cont)
-
-  [You Must Think about the Use of a Formula as a Rule]
-      You Must Think about the Use of a Formula as a Rule")
- (|Perhaps|
-  (|Pages Written Especially for the Tours|)
-  "Perhaps
-
-  The theorem prover's proof is printed in real time. At the time it
-  prints ``Perhaps'' it does not know the proof will succeed.")
- (|Popping out of an Inductive Proof|
-  (|Pages Written Especially for the Tours|)
-  "Popping out of an Inductive Proof
-
-  Recall that our induction scheme (click [here] to revisit it) had two
-  cases, the induction step (Subgoal *1/2) and the base case (Subgoal
-  *1/1). Both have been proved!")
- (|Proving Theorems about Models|
-  (|Pages Written Especially for the Tours|)
-  "Proving Theorems about Models
-
-  []
-
-  But ACL2 is a logic. We can prove theorems about the model.
-
-    Theorem.  MC 'mult is a multiplier
-    (implies (and (natp x)
-                  (natp y))
-             (equal (lookup 'z (mc (s 'mult x y) (mclk x)))
-                    (* x y))).
-
-  This theorem says that a certain program running on the mc machine
-  will correctly multiply any two natural numbers.
-
-  It is a statement about an infinite number of test cases!
-
-  We know it is true about the model because we proved it.
-
-  Of course, models of actual machines usually only accept a finite
-  number of different inputs. For example, engineers at Advanced
-  Micro Devices (AMD), Centaur, and IBM have ACL2 models of floating
-  point units that operate on double precision IEEE floating point
-  numbers. These are finite models. But the size of their inputs is
-  sufficiently large that they are verified by the same mathematical
-  methods used to prove theorems about infinite state systems like
-  our little mc.
-
-  []")
  (Q
   (OTHER)
   "Quit ACL2 (type :q) --- reenter with (lp)
@@ -73552,31 +73605,31 @@ Subtopics
   [Note-2-5]
       ACL2 Version 2.5 (June, 2000) Notes
 
-  [Note-2-5(r)]
+  [Note-2-5{r}]
       ACL2 Version 2.5(r) (June, 2000) Notes
 
   [Note-2-6]
       ACL2 Version 2.6 (November, 2001) Notes
 
-  [Note-2-6(r)]
+  [Note-2-6{r}]
       ACL2 Version 2.6(r) (November, 2001) Notes
 
   [Note-2-7]
       ACL2 Version 2.7 (November, 2002) Notes
 
-  [Note-2-7(r)]
+  [Note-2-7{r}]
       ACL2 Version 2.7(r) (November, 2002) Notes
 
   [Note-2-8]
       ACL2 Version 2.8 (March, 2004) Notes
 
-  [Note-2-8(r)]
+  [Note-2-8{r}]
       ACL2 Version 2.8(r) (March, 2003) Notes
 
   [Note-2-9]
       ACL2 Version 2.9 (October, 2004) Notes
 
-  [Note-2-9(r)]
+  [Note-2-9{r}]
       ACL2 Version 2.9(r) (October, 2004) Notes
 
   [Note-2-9-1]
@@ -73597,13 +73650,13 @@ Subtopics
   [Note-3-0]
       ACL2 Version 3.0 (June, 2006) Notes
 
-  [Note-3-0(r)]
+  [Note-3-0{r}]
       ACL2 Version 3.0(r) (June, 2006) Notes
 
   [Note-3-0-1]
       ACL2 Version 3.0.1 (August, 2006) Notes
 
-  [Note-3-0-1(r)]
+  [Note-3-0-1{r}]
       ACL2 Version 3.0.1(r) (August, 2006) Notes
 
   [Note-3-0-2]
@@ -73612,43 +73665,43 @@ Subtopics
   [Note-3-1]
       ACL2 Version 3.1 (December, 2006) Notes
 
-  [Note-3-1(r)]
+  [Note-3-1{r}]
       ACL2 Version 3.1(r) (December, 2006) Notes
 
   [Note-3-2]
       ACL2 Version 3.2 (April, 2007) Notes
 
-  [Note-3-2(r)]
+  [Note-3-2{r}]
       ACL2 Version 3.2(r) (April, 2007) Notes
 
   [Note-3-2-1]
       ACL2 Version 3.2.1 (June, 2007) Notes
 
-  [Note-3-2-1(r)]
+  [Note-3-2-1{r}]
       ACL2 Version 3.2.1(r) (June, 2007) Notes
 
   [Note-3-3]
       ACL2 Version 3.3 (November, 2007) Notes
 
-  [Note-3-3(r)]
+  [Note-3-3{r}]
       ACL2 Version 3.3(r) (November, 2007) Notes
 
   [Note-3-4]
       ACL2 Version 3.4 (August, 2008) Notes
 
-  [Note-3-4(r)]
+  [Note-3-4{r}]
       ACL2 Version 3.4(r) (August, 2008) Notes
 
   [Note-3-5]
       ACL2 Version 3.5 (May, 2009) Notes
 
-  [Note-3-5(r)]
+  [Note-3-5{r}]
       ACL2 Version 3.5(r) (May, 2009) Notes
 
   [Note-3-6]
       ACL2 Version 3.6 (August, 2009) Notes
 
-  [Note-3-6(r)]
+  [Note-3-6{r}]
       ACL2 Version 3.6(r) (August, 2009) Notes
 
   [Note-3-6-1]
@@ -73657,25 +73710,25 @@ Subtopics
   [Note-4-0]
       ACL2 Version 4.0 (July, 2010) Notes
 
-  [Note-4-0(r)]
+  [Note-4-0{r}]
       ACL2 Version 4.0(r) (July, 2010) Notes
 
   [Note-4-1]
       ACL2 Version 4.1 (September, 2010) Notes
 
-  [Note-4-1(r)]
+  [Note-4-1{r}]
       ACL2 Version 4.1(r) (September, 2010) Notes
 
   [Note-4-2]
       ACL2 Version 4.2 (January, 2011) Notes
 
-  [Note-4-2(r)]
+  [Note-4-2{r}]
       ACL2 Version 4.2(r) (January, 2011) Notes
 
   [Note-4-3]
       ACL2 Version 4.3 (July, 2011) Notes
 
-  [Note-4-3(r)]
+  [Note-4-3{r}]
       ACL2 Version 4.3(r) (July, 2011) Notes
 
   [Note-5-0]
@@ -74836,6 +74889,39 @@ Subtopics
   for more information.
 
   To see the ACL2 definition of this function, see [pf].")
+ (REVISITING_THE_ADMISSION_OF_APP
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Revisiting the Admission of App
+
+  []
+
+  Here is the definition of app again with certain parts highlighted.
+  If you are taking the Walking Tour, please read the text carefully
+  and click on each of the links below, except those marked []. Then
+  come back here.
+
+    [ACL2 !>](defun app (x y)
+      (cond ((endp x) y)
+            (t (cons (car x)
+                     (app (cdr x) y)))))
+
+
+    The [admission] of APP is trivial, using the
+    relation [o<] [] (which is known to be well-founded on
+    the domain recognized by [o-p] []) and the measure
+    ([ACL2-count] [] X).  We [observe] that the
+    [type] of APP is described by the theorem (OR
+    (CONSP (APP X Y)) (EQUAL (APP X Y) Y)).  We used primitive type
+    reasoning.
+
+    [Summary]
+    Form:  ( DEFUN APP ...)
+    Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+    Warnings:  None
+    Time:  0.03 seconds (prove: 0.00, print: 0.00, other: 0.03)
+     APP
+
+  []")
  (REWRITE
   (RULE-CLASSES)
   "Make some :rewrite rules (possibly conditional ones)
@@ -75019,6 +75105,34 @@ Subtopics
   This limit can be changed; see [set-rewrite-stack-limit].
 
   For a related limit, see [backchain-limit].")
+ (REWRITE_RULES_ARE_GENERATED_FROM_DEFTHM_EVENTS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Rewrite Rules are Generated from DEFTHM Events
+
+  []
+
+  By reading the documentation of [defthm] [] (and especially of its
+  :[rule-classes] [] argument) you would learn that when we submitted
+  the command
+
+    (defthm associativity-of-app
+      (equal (app (app a b) c)
+             (app a (app b c))))
+
+  we not only command the system to prove that app is an associative
+  function but
+
+    * we commanded it to use that fact as a rewrite rule.
+
+  That means that every time the system encounters a term of the form
+
+    (app (app x y) z)
+
+  it will replace it with
+
+    (app x (app y z))!
+
+  []")
  (RFIX
   (ACL2-BUILT-INS)
   "Coerce to a rational number
@@ -76003,69 +76117,8 @@ Subtopics
   or [disable]d, and they do not have associated [corollary]
   formulas. In short, despite the fact that the user may sometimes
   see fake runes printed, they should never be typed.")
- (|Revisiting the Admission of App|
-  (|Pages Written Especially for the Tours|)
-  "Revisiting the Admission of App
-
-  []
-
-  Here is the definition of app again with certain parts highlighted.
-  If you are taking the Walking Tour, please read the text carefully
-  and click on each of the links below, except those marked []. Then
-  come back here.
-
-    [ACL2 !>](defun app (x y)
-      (cond ((endp x) y)
-            (t (cons (car x)
-                     (app (cdr x) y)))))
-
-
-    The [admission] of APP is trivial, using the
-    relation [o<] [] (which is known to be well-founded on
-    the domain recognized by [o-p] []) and the measure
-    ([ACL2-count] [] X).  We [observe] that the
-    [type] of APP is described by the theorem (OR
-    (CONSP (APP X Y)) (EQUAL (APP X Y) Y)).  We used primitive type
-    reasoning.
-
-    [Summary]
-    Form:  ( DEFUN APP ...)
-    Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
-    Warnings:  None
-    Time:  0.03 seconds (prove: 0.00, print: 0.00, other: 0.03)
-     APP
-
-  []")
- (|Rewrite Rules are Generated from DEFTHM Events|
-  (|Pages Written Especially for the Tours|)
-  "Rewrite Rules are Generated from DEFTHM Events
-
-  []
-
-  By reading the documentation of [defthm] [] (and especially of its
-  :[rule-classes] [] argument) you would learn that when we submitted
-  the command
-
-    (defthm associativity-of-app
-      (equal (app (app a b) c)
-             (app a (app b c))))
-
-  we not only command the system to prove that app is an associative
-  function but
-
-    * we commanded it to use that fact as a rewrite rule.
-
-  That means that every time the system encounters a term of the form
-
-    (app (app x y) z)
-
-  it will replace it with
-
-    (app x (app y z))!
-
-  []")
- (|Running Models|
-  (|Pages Written Especially for the Tours|)
+ (RUNNING_MODELS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Running Models
 
   []
@@ -79118,20 +79171,21 @@ Subtopics
   users from using it for general code development, as :[program]
   mode is generally preferable.
 
-    -- Forms are in essence executed in raw Lisp.  Hence:
-       -- Syntax checking is turned off; and
-       -- Guard checking is completely disabled.
-    -- Table events, including [logic], are ignored, as are many
-       other [events], including [defthm] and [comp].
-    -- Soundness claims are weakened for any ACL2 session in which raw
-       mode was ever entered; see [defttag].
-    -- The normal undoing mechanism (see [ubt]) is not supported.
-    -- Unexpected behavior may occur when you return from raw-mode.
-       For example, if you redefine a :logic mode function whose guards
-       have not been verified, you will not see the change inside the
-       ACL2 loop because there, the raw Common Lisp definition is only
-       executed after guards have been verified; see [guards-and-evaluation]
-       and see [guard-evaluation-table].
+    * Forms are in essence executed in raw Lisp. Hence:
+        * Syntax checking is turned off; and
+        * Guard checking is completely disabled.
+
+    * Table events, including [logic], are ignored, as are many other
+      [events], including [defthm] and [comp].
+    * Soundness claims are weakened for any ACL2 session in which raw mode
+      was ever entered; see [defttag].
+    * The normal undoing mechanism (see [ubt]) is not supported.
+    * Unexpected behavior may occur when you return from raw-mode. For
+      example, if you redefine a :logic mode function whose guards
+      have not been verified, you will not see the change inside the
+      ACL2 loop because there, the raw Common Lisp definition is only
+      executed after guards have been verified; see
+      [guards-and-evaluation] and see [guard-evaluation-table].
 
   We conclude with some details.
 
@@ -80113,18 +80167,21 @@ Subtopics
   of :acl2x is nil by default. The interaction of [certify-book] with
   the corresponding .acl2x file is as follows.
 
-     o If :acl2x is t, then: - If set-write-acl2x has
-    been (most recently) called with a value of t for its first argument,
-    then ACL2 writes the corresponding .acl2x file.  - If
-    set-write-acl2x has been (most recently) called with a value of nil
-    for its first argument, or not called at all, then ACL2 insists on a
-    corresponding .acl2x file that is at least as recent as the corresponding
-    .lisp file, causing an error otherwise.  o If :acl2x is nil,
-    then: - If set-write-acl2x has been (most recently) called with a value
-    t for its first argument, or if argument :ttagsx is supplied, then
-    an error occurs.  - If the .acl2x file exists, then regardless of whether
-    or how set-write-acl2x has been called, ACL2 ignores the .acl2x file
-    but issues a warning about it.
+    o If :acl2x is t, then:
+      - If set-write-acl2x has been (most recently) called with a value of
+        t for its first argument,then ACL2 writes the corresponding
+        .acl2x file.
+      - If set-write-acl2x has been (most recently) called with a value of
+        nil for its first argument, or not called at all, then ACL2 insists
+        on a corresponding .acl2x file that is at least as recent as the
+        corresponding .lisp file, causing an error otherwise.
+     o If :acl2x is nil,then:
+      - If set-write-acl2x has been (most recently) called with a value
+        t for its first argument, or if argument :ttagsx is supplied,
+        then an error occurs.
+      - If the .acl2x file exists, then regardless of whether or how
+        set-write-acl2x has been called, ACL2 ignores the .acl2x file
+        but issues a warning about it.
 
   Suppose you use the two-runs approach: first write a .acl2x file,
   then certify using (reading) that .acl2x file. Then with scripts
@@ -83301,6 +83358,26 @@ Subtopics
   substitute is eql.
 
   To see the ACL2 definition of this function, see [pf].")
+ (SUBSUMPTION_OF_INDUCTION_CANDIDATES_IN_APP_EXAMPLE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Subsumption of Induction Candidates in App Example
+
+  After collecting induction suggestions from these three terms
+
+    (app a b)
+
+    (app b c)
+
+    (app a (app b c))
+
+  the system notices that the first and last suggest the same
+  decomposition of a: case split on whether a is empty (i.e., (endp
+  a)), and in the case where it is not empty, recursively process
+  (cdr a). So we are left with two ideas about how to induct:
+
+  Decompose a as we would to unwind (app a b).
+
+  Decompose b as we would to unwind (app b c).")
  (SUBVERSIVE-INDUCTIONS
   (MISCELLANEOUS)
   "Why we restrict [encapsulate]d recursive functions
@@ -83464,6 +83541,26 @@ Subtopics
   be subversive; an induction scheme is thus stored for f. (This
   restriction to measured formal positions of recursive calls, for
   determining subversive definitions, is new in Version_3.5 of ACL2.)")
+ (SUGGESTED_INDUCTIONS_IN_THE_ASSOCIATIVITY_OF_APP_EXAMPLE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Suggested Inductions in the Associativity of App Example
+
+  To find a plausible induction argument, the system studies the
+  recursions exhibited by the terms in the conjecture.
+
+  Roughly speaking, a call of a recursive function ``suggests'' an
+  induction if the argument position decomposed in recursion is
+  occupied by a variable.
+
+  In this conjecture, three terms suggest inductions:
+
+    (app a b)
+
+    (app b c)
+
+    (app a (app b c))
+
+  The variable recursively decomposed is indicated in bold.")
  (SWITCHES-PARAMETERS-AND-MODES
   (ACL2)
   "A variety of ways to modify the ACL2 environment
@@ -83890,6 +83987,25 @@ Subtopics
   package. For example, in GCL (symbol-package-name 'car) evaluates
   to \"COMMON-LISP\" even though the actual package name for the
   symbol, car, is \"LISP\".")
+ (SYMBOLIC_EXECUTION_OF_MODELS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "Symbolic Execution of Models
+
+  []
+
+  But ACL2 is more than a programming language.
+
+  Initialize x to 5 and let y be any legal value.
+
+  Because ACL2 is a mathematical language, we can simplify the
+  expression
+
+    (lookup 'z (mc (s 'mult 5 y) 29))
+
+  and get (+ y y y y y). This is symbolic execution because not all of
+  the parameters are known.
+
+  []")
  (SYMBOLP
   (ACL2-BUILT-INS)
   "Recognizer for symbols
@@ -84487,65 +84603,6 @@ Subtopics
   that Lisp function, which may well be the numeric value returned by
   the host operating system for the underlying system call. For more
   information, see [sys-call].")
- (|Subsumption of Induction Candidates in App Example|
-  (|Pages Written Especially for the Tours|)
-  "Subsumption of Induction Candidates in App Example
-
-  After collecting induction suggestions from these three terms
-
-    (app a b)
-
-    (app b c)
-
-    (app a (app b c))
-
-  the system notices that the first and last suggest the same
-  decomposition of a: case split on whether a is empty (i.e., (endp
-  a)), and in the case where it is not empty, recursively process
-  (cdr a). So we are left with two ideas about how to induct:
-
-  Decompose a as we would to unwind (app a b).
-
-  Decompose b as we would to unwind (app b c).")
- (|Suggested Inductions in the Associativity of App Example|
-  (|Pages Written Especially for the Tours|)
-  "Suggested Inductions in the Associativity of App Example
-
-  To find a plausible induction argument, the system studies the
-  recursions exhibited by the terms in the conjecture.
-
-  Roughly speaking, a call of a recursive function ``suggests'' an
-  induction if the argument position decomposed in recursion is
-  occupied by a variable.
-
-  In this conjecture, three terms suggest inductions:
-
-    (app a b)
-
-    (app b c)
-
-    (app a (app b c))
-
-  The variable recursively decomposed is indicated in bold.")
- (|Symbolic Execution of Models|
-  (|Pages Written Especially for the Tours|)
-  "Symbolic Execution of Models
-
-  []
-
-  But ACL2 is more than a programming language.
-
-  Initialize x to 5 and let y be any legal value.
-
-  Because ACL2 is a mathematical language, we can simplify the
-  expression
-
-    (lookup 'z (mc (s 'mult 5 y) 29))
-
-  and get (+ y y y y y). This is symbolic execution because not all of
-  the parameters are known.
-
-  []")
  (TABLE
   (EVENTS)
   "User-managed tables
@@ -86464,6 +86521,755 @@ Subtopics
   [defthm], [in-theory], [encapsulate], and [include-book], except
   for events executed on behalf of an [include-book] or the second
   pass of an [encapsulate].")
+ (THE_ADMISSION_OF_APP
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Admission of App
+
+  []
+
+  Here is what it looks like to submit the definition of app to ACL2:
+
+    ACL2 !>(defun app (x y)
+      (cond ((endp x) y)
+            (t (cons (car x)
+                     (app (cdr x) y)))))
+
+    The admission of APP is trivial, using the relation O< (which
+    is known to be well-founded on the domain recognized by O-P)
+    and the measure (ACL2-COUNT X).  We observe that the type of APP is
+    described by the theorem (OR (CONSP (APP X Y)) (EQUAL (APP X Y) Y)).
+    We used primitive type reasoning.
+
+    Summary
+    Form:  ( DEFUN APP ...)
+    Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+    Warnings:  None
+    Time:  0.03 seconds (prove: 0.00, print: 0.00, other: 0.03)
+     APP
+
+  The text between the lines above is one interaction with the ACL2
+  command loop. Interacting with the latest version of ACL2 may not
+  produce the very same output, but we trust you'll recognize the
+  basics.
+
+  Above you see the user's input and how the system responds. This
+  little example shows you what the syntax looks like and is a very
+  typical successful interaction with the definitional principle.
+
+  Let's look at it a little more closely.
+
+  []")
+ (THE_ASSOCIATIVITY_OF_APP
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Associativity of App
+
+  []
+
+    ACL2!>(let ((a '(1 2))
+                (b '(3 4))
+                (c '(5 6)))
+            (equal (app (app a b) c)
+                   (app a (app b c))))
+    T
+
+  Observe that, for the particular a, b, and c above, (app (app a b) c)
+  returns the same thing as (app a (app b c)). Perhaps app is
+  associative. Of course, to be associative means that the above
+  property must hold for all values of a, b, and c, not just the ones
+  tested above.
+
+  Wouldn't it be cool if you could type
+
+    ACL2!>(equal (app (app a b) c)
+                 (app a (app b c)))
+
+  and have ACL2 compute the value T? Well, you can't! If you try it,
+  you'll get an error message! The message says we can't evaluate
+  that form because it contains free variables, i.e., variables not
+  given values. Click [here] to see the message.
+
+  We cannot evaluate a form on an infinite number of cases. But we can
+  prove that a form is a theorem and hence know that it will always
+  evaluate to true.
+
+  []")
+ (THE_BASE_CASE_IN_THE_APP_EXAMPLE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Base Case in the App Example
+
+  This formula is the Base Case. It consists of two parts, a test
+  identifying the non-inductive case and the conjecture to prove.
+
+    (IMPLIES (ENDP A)                 ; Test
+             (:P A B C))              ; Conjecture
+
+  When we prove this we can assume
+
+     * A is empty
+
+  and we have to prove the conjecture for A.")
+ (THE_END_OF_THE_FLYING_TOUR
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The End of the Flying Tour
+
+  This completes the Flying Tour.
+
+  We recommend that you now take [A Walking Tour of ACL2].
+
+  Thanks.
+  Matt Kaufmann and J Moore
+
+  []")
+ (THE_END_OF_THE_PROOF_OF_THE_ASSOCIATIVITY_OF_APP
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The End of the Proof of the Associativity of App
+
+  []
+
+    That [completes] the proof of *1.
+
+    [Q.E.D.]
+
+    Summary
+    Form:  ( DEFTHM ASSOCIATIVITY-OF-APP ...)
+    [Rules]: ((:REWRITE CDR-CONS)
+            (:REWRITE CAR-CONS)
+            (:DEFINITION NOT)
+            (:DEFINITION ENDP)
+            (:FAKE-RUNE-FOR-TYPE-SET NIL)
+            (:DEFINITION APP))
+    Warnings:  None
+    Time:  0.27 seconds (prove: [0.10], print: 0.05, other: 0.12)
+     ASSOCIATIVITY-OF-APP
+
+  []")
+ (THE_END_OF_THE_WALKING_TOUR
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The End of the Walking Tour
+
+  This completes the Walking Tour.
+
+  We intend to document many other parts of the system this way, but we
+  just haven't gotten around to it.
+
+  To start the two tours over again from the beginning, click on the
+  icons below. If you are really interested in learning how to use
+  ACL2, we recommend that you repeat each tour at least once more to
+  explore branches of the tour that you might have missed.
+
+  If you want to learn how to use the theorem prover, we now recommend
+  that you devote the time necessary to work your way through the
+  extended introduction to how to use the prover.
+
+  See [introduction-to-the-theorem-prover].
+
+  This will explain how to interact with ACL2 and has some sample
+  problems for you to solve including some challenge proofs to make
+  ACL2 find.
+
+  We hope you enjoy ACL2. We do.
+
+  Matt Kaufmann and J Strother Moore
+
+  [] []")
+ (THE_EVENT_SUMMARY
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Event Summary
+
+  At the conclusion of most events (click [here] for a brief discussion
+  of events or see [events] []), ACL2 prints a summary. The summary
+  for app is:
+
+    Summary
+    Form:  ( DEFUN APP ...)
+    Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+    Warnings:  None
+    Time:  0.03 seconds (prove: 0.00, print: 0.00, other: 0.03)
+     APP
+
+  The ``rules'' listed are those used in function admission or proof
+  summarized. What is actually listed are ``runes'' (see [rune]) [])
+  which are list-structured names for rules in the ACL2 database or
+  ``[world]'' []. Using [theories] [] you can ``enable'' and
+  ``disable'' rules so as to make them available (or not) to the ACL2
+  theorem prover.
+
+  The ``warnings'' mentioned (none are listed for app) remind the
+  reader whether the event provoked any warnings. The warnings
+  themselves would have been printed earlier in the processing and
+  this part of the summary just names the earlier warnings printed.
+
+  The ``time'' indicates how much processing time was used and is
+  divided into three parts: the time devoted to proof, to printing,
+  and to syntactic checks, pre-processing and database updates.
+  Despite the fact that ACL2 is an applicative language it is
+  possible to measure time with ACL2 programs. The [state] []
+  contains a clock. The times are printed in decimal notation but are
+  actually counted in integral units. Note that by default, each time
+  is a runtime, also known as a cpu time, as opposed to being a real
+  time, also known as a wall clock time.
+
+  The final APP is the value of the defun command and was printed by
+  the read-eval-print loop. The fact that it is indented one space is
+  a subtle reminder that the command actually returned an ``error
+  triple'', consisting of a flag indicating (in this case) that no
+  error occurred, a value (in this case the symbol APP), and the
+  final [state] []). See [ld-post-eval-print] [] for some details. If
+  you really want to follow that link, however, you might see [ld] []
+  first.
+
+  You should now return to [the Walking Tour].")
+ (THE_EXPANSION_OF_ENDP_IN_THE_INDUCTION_STEP_{STEP_0}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Expansion of ENDP in the Induction Step (Step 0)
+
+    Subgoal *1/2
+    (IMPLIES (AND (NOT [(]ENDP A))
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             (EQUAL (APP (APP A B) C)
+                    (APP A (APP B C)))).
+
+  Click on the link above (the open parenthesis before ENDP) to replace
+  (ENDP A) by its definition.")
+ (THE_EXPANSION_OF_ENDP_IN_THE_INDUCTION_STEP_{STEP_1}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Expansion of ENDP in the Induction Step (Step 1)
+
+    Subgoal *1/2
+    (IMPLIES (AND [(]NOT (NOT (CONSP A)))
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             (EQUAL (APP (APP A B) C)
+                    (APP A (APP B C)))).
+
+  The bold text is the instantiated definition of ENDP.
+
+  Now click on the link above to simplify (NOT (NOT (CONSP A)))")
+ (THE_EXPANSION_OF_ENDP_IN_THE_INDUCTION_STEP_{STEP_2}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Expansion of ENDP in the Induction Step (Step 2)
+
+    Subgoal *1/2'
+    (IMPLIES (AND (CONSP A)
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             (EQUAL (APP (APP A B) C)
+                    (APP A (APP B C)))).
+
+  Note that this is Subgoal *1/2'.
+
+  You may click [here] to return to the main proof.")
+ (THE_FALLING_BODY_MODEL
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Falling Body Model
+
+  One particularly famous and very simple model is the equation of a
+  falling body: the distance d an object falls is proportional to the
+  square of the time t. If the time is measured in seconds and the
+  distance in feet, the equation relating these two is
+
+           2
+    d = 16t
+
+  This equation is a model of falling objects. It can be used to
+  predict how long it takes a cannonball to fall from the top of a
+  200 foot tower (3.5 seconds). This might be important if your
+  product is designed to drop cannonballs on moving targets.")
+ (THE_FINAL_SIMPLIFICATION_IN_THE_BASE_CASE_{STEP_0}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Final Simplification in the Base Case (Step 0)
+
+    Subgoal *1/1'
+    (IMPLIES (NOT (CONSP A))
+             (EQUAL (APP [(]APP A B) C)
+                    (APP A (APP B C)))).
+
+  Click on the link above to replace (APP A B) by its definition. Note
+  that the hypothesis (NOT (CONSP A)) allows us to simplify the IF in
+  APP to its false branch this time.")
+ (THE_FINAL_SIMPLIFICATION_IN_THE_BASE_CASE_{STEP_1}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Final Simplification in the Base Case (Step 1)
+
+    Subgoal *1/1'
+    (IMPLIES (NOT (CONSP A))
+             (EQUAL (APP B C)
+                    [(]APP A (APP B C)))).
+
+  Click on the link above to expand the definition of APP. Again, we
+  come out through the false branch because of the hypothesis.")
+ (THE_FINAL_SIMPLIFICATION_IN_THE_BASE_CASE_{STEP_2}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Final Simplification in the Base Case (Step 2)
+
+    Subgoal *1/1'
+    (IMPLIES (NOT (CONSP A))
+             [(]EQUAL (APP B C)
+                    (APP B C))).
+
+  Click on the link above to use the Axiom (EQUAL x x) = t")
+ (THE_FINAL_SIMPLIFICATION_IN_THE_BASE_CASE_{STEP_3}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Final Simplification in the Base Case (Step 3)
+
+    Subgoal *1/1'
+    (IMPLIES (NOT (CONSP A))
+             T)
+
+  Now that its conclusion is identically T the IMPLIES will simplify to
+  T (not shown) and we are done with Subgoal *1/1'.
+
+  You may click [here] to return to the main proof.")
+ (THE_FIRST_APPLICATION_OF_THE_ASSOCIATIVITY_RULE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The First Application of the Associativity Rule
+
+  So here we see our associativity rule being used!
+
+  The rewriter sweeps the conjecture in a leftmost innermost fashion,
+  applying rewrite rules as it goes.
+
+  The associativity rule is used many times in this sweep. The first
+  ``target'' is highlighted below. Click on it to see what happens:
+
+    Current Conjecture:
+    (equal (app (app [(app (app x1 x2) (app x3 x4))] (app x5 x6)) x7)
+           (app x1 (app (app x2 x3) (app (app x4 x5) (app x6 x7)))))")
+ (THE_INDUCTION_SCHEME_SELECTED_FOR_THE_APP_EXAMPLE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Induction Scheme Selected for the App Example
+
+    (AND
+       (IMPLIES (AND (NOT (ENDP A))         ; Induction Step: test
+                     (:P (CDR A) B C))      ;  and induction hypothesis
+                (:P A B C))                 ;  implies induction conclusion.
+       (IMPLIES (ENDP A) (:P A B C)))       ; Base Case
+
+  The formula beginning with this parenthesis is the induction scheme
+  suggested by (APP A B) applied to (P A B C).
+
+  It is a conjunction ([and] []) of two formulas.
+
+  The first is the induction step and the second is the base case.")
+ (THE_INDUCTION_STEP_IN_THE_APP_EXAMPLE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Induction Step in the App Example
+
+  This formula is the Induction Step. It basically consists of three
+  parts, a test identifying the inductive case, an induction
+  hypothesis and an induction conclusion.
+
+    (IMPLIES (AND (NOT (ENDP A))      ; Test
+                  (:P (CDR A) B C))   ; Induction Hypothesis
+             (:P A B C))              ; Induction Conclusion
+
+  When we prove this we can assume
+
+     * A is not empty, and that
+
+      * the associativity conjecture holds for a ``smaller'' version of A,
+        namely, (CDR A).
+
+  Under those hypotheses we have to prove the associativity conjecture
+  for A itself.")
+ (THE_INSTANTIATION_OF_THE_INDUCTION_SCHEME
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Instantiation of the Induction Scheme
+
+  The induction scheme just shown is just an abbreviation for our real
+  goal.
+
+  To obtain our actual goals we have to replace the schema :P by the
+  associativity conjecture (instantiated as shown in the scheme).
+
+  This produces two actual goals, the induction step and the base case.")
+ (THE_JUSTIFICATION_OF_THE_INDUCTION_SCHEME
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Justification of the Induction Scheme
+
+  This paragraph explains why the induction selected is legal. The
+  explanation is basically the same as the explanation for why the
+  recursion in (APP A B) terminates.")
+ (THE_PROOF_OF_THE_ASSOCIATIVITY_OF_APP
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Proof of the Associativity of App
+
+  []
+
+  Here is the theorem prover's output when it processes the defthm
+  command for the associativity of app. We have highlighted text for
+  which we offer some explanation, and broken the presentation into
+  several pages. (The most recent version of ACL2 may print slightly
+  different output but the basics are the same.) Just follow the
+  Walking Tour after exploring the explanations.
+
+  However, before exploring this output you should understand that ACL2
+  users rarely read successful proofs! Instead, they look at certain
+  subgoals printed in failed proofs, figure whether and how those
+  subgoals can be proved, and give ACL2 directions for proving them,
+  usually by simply proving other lemmas. Furthermore, to be a good
+  user of ACL2 you do not have to understand how the theorem prover
+  works. You just have to understand how to interact with it. We
+  explain this in great detail later. But basically all new users are
+  curious to know how ACL2 works and this little tour attempts to
+  give some answers, just to satisfy your curiosity.
+
+    ACL2!>(defthm associativity-of-app
+            (equal (app (app a b) c)
+                   (app a (app b c))))
+
+    Name the formula above [*1].
+
+    [Perhaps] we can prove *1 by induction.  Three induction schemes are
+    [suggested] by this conjecture.  [Subsumption] reduces that number to two.
+    However, one of these is [flawed] and so we are left with one viable
+    candidate.
+
+    We will induct according to a scheme suggested by (APP A B).  If we
+    let  (:P A B C) denote *1 above then the induction scheme we'll use
+    is
+    [(]AND
+       [(]IMPLIES (AND (NOT (ENDP A))
+                     (:P (CDR A) B C))
+                (:P A B C))
+       [(]IMPLIES (ENDP A) (:P A B C))).
+    This induction is [justified] by the same argument used to admit APP,
+    namely, the measure (ACL2-COUNT A) is decreasing according to the relation
+    O< (which is known to be well-founded on the domain recognized
+    by O-P).  When [applied] to the goal at hand the above induction
+    scheme produces the following two [nontautological subgoals].
+
+  []")
+ (THE_Q.E.D._MESSAGE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Q.E.D. Message
+
+  Q.E.D. stands for ``quod erat demonstrandum'' which is Latin for
+  ``which was to be demonstrated'' and is the signal that a proof is
+  completely done.")
+ (THE_RULES_USED_IN_THE_ASSOCIATIVITY_OF_APP_PROOF
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Rules used in the Associativity of App Proof
+
+  Note that under Rules we list the [runes] [] of all the rules used in
+  the proof. This list says that we used the rewrite rules CAR-CONS
+  and CDR-CONS, the definitions of the functions NOT, ENDP and APP,
+  and primitive type reasoning (which is how we simplified the IF and
+  EQUAL terms).
+
+  For what it is worth, IMPLIES and AND are actually [macros] [] that
+  are expanded into IF expressions before the proof ever begins. The
+  use of macros is not reported among the rules.")
+ (THE_SIMPLIFICATION_OF_THE_INDUCTION_CONCLUSION_{STEP_0}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Simplification of the Induction Conclusion (Step 0)
+
+    Subgoal *1/2'
+    (IMPLIES (AND (CONSP A)
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             (EQUAL (APP [(]APP A B) C)
+                    (APP A (APP B C)))).
+
+  Click on the link above to replace (APP A B) by its definition.")
+ (THE_SIMPLIFICATION_OF_THE_INDUCTION_CONCLUSION_{STEP_10}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Simplification of the Induction Conclusion (Step 10)
+
+    Subgoal *1/2'
+    (IMPLIES (AND (CONSP A)
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             [(]EQUAL (APP (APP (CDR A) B) C)
+                    (APP (CDR A) (APP B C)))).
+
+  Click on the link above to use the Induction Hypothesis (which is the
+  second of the two hypotheses above and which is identical to the
+  rewritten conclusion).")
+ (THE_SIMPLIFICATION_OF_THE_INDUCTION_CONCLUSION_{STEP_11}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Simplification of the Induction Conclusion (Step 11)
+
+    Subgoal *1/2'
+    [(]IMPLIES (AND (CONSP A)
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             T)
+
+  Click on the link above to use the definition of IMPLIES. Since the
+  conclusion of the implication is now identically T, the implication
+  simplifies to T.")
+ (THE_SIMPLIFICATION_OF_THE_INDUCTION_CONCLUSION_{STEP_12}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Simplification of the Induction Conclusion (Step 12)
+
+    Subgoal *1/2'
+    T
+
+  So, indeed, Subgoal *1/2' does simplify to T!
+
+  You can see that even in an example as simple as this one, quite a
+  lot happens in simplification.
+
+  You may click [here] to return to the main proof.")
+ (THE_SIMPLIFICATION_OF_THE_INDUCTION_CONCLUSION_{STEP_1}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Simplification of the Induction Conclusion (Step 1)
+
+    Subgoal *1/2'
+    (IMPLIES (AND (CONSP A)
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             (EQUAL (APP (IF [(]CONSP A)
+                             (CONS (CAR A) (APP (CDR A) B))
+                             B)
+                         C)
+                    (APP A (APP B C)))).
+
+  Note that the IF expression above is the simplified body of APP. But
+  we know the test (CONSP A) is true, by the first hypothesis. Click
+  on the link above to replace the test by T. Actually this step and
+  several subsequent ones are done during the simplification of the
+  body of APP but we want to illustrate the basic principles of
+  simplification without bothering with every detail.")
+ (THE_SIMPLIFICATION_OF_THE_INDUCTION_CONCLUSION_{STEP_2}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Simplification of the Induction Conclusion (Step 2)
+
+    Subgoal *1/2'
+    (IMPLIES (AND (CONSP A)
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             (EQUAL (APP [(]IF T
+                             (CONS (CAR A) (APP (CDR A) B))
+                             B)
+                         C)
+                    (APP A (APP B C)))).
+
+  Click on the link above to apply the Axiom (IF T x y) = x.")
+ (THE_SIMPLIFICATION_OF_THE_INDUCTION_CONCLUSION_{STEP_3}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Simplification of the Induction Conclusion (Step 3)
+
+    Subgoal *1/2'
+    (IMPLIES (AND (CONSP A)
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             (EQUAL [(]APP (CONS (CAR A) (APP (CDR A) B))
+                         C)
+                    (APP A (APP B C)))).
+
+  Click on the link above to expand the definition of APP here.")
+ (THE_SIMPLIFICATION_OF_THE_INDUCTION_CONCLUSION_{STEP_4}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Simplification of the Induction Conclusion (Step 4)
+
+    Subgoal *1/2'
+    (IMPLIES (AND (CONSP A)
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             (EQUAL (IF [(]CONSP (CONS (CAR A) (APP (CDR A) B)))
+                        (CONS (CAR (CONS (CAR A) (APP (CDR A) B)))
+                              (APP (CDR (CONS (CAR A) (APP (CDR A) B)))
+                                   C))
+                        C)
+                    (APP A (APP B C)))).
+
+  Click on the link above to apply the Axiom (CONSP (CONS x y)) = T.")
+ (THE_SIMPLIFICATION_OF_THE_INDUCTION_CONCLUSION_{STEP_5}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Simplification of the Induction Conclusion (Step 5)
+
+    Subgoal *1/2'
+    (IMPLIES (AND (CONSP A)
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             (EQUAL (IF T
+                        (CONS [(]CAR (CONS (CAR A) (APP (CDR A) B)))
+                              (APP (CDR (CONS (CAR A) (APP (CDR A) B)))
+                                   C))
+                        C)
+                    (APP A (APP B C)))).
+
+  Click on the link above to apply the Axiom (CAR (CONS x y)) = x.")
+ (THE_SIMPLIFICATION_OF_THE_INDUCTION_CONCLUSION_{STEP_6}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Simplification of the Induction Conclusion (Step 6)
+
+    Subgoal *1/2'
+    (IMPLIES (AND (CONSP A)
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             (EQUAL (IF T
+                        (CONS (CAR A)
+                              (APP [(]CDR (CONS (CAR A) (APP (CDR A) B)))
+                                   C))
+                        C)
+                    (APP A (APP B C)))).
+
+  Click on the link above to apply the Axiom (CDR (CONS x y)) = y.")
+ (THE_SIMPLIFICATION_OF_THE_INDUCTION_CONCLUSION_{STEP_7}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Simplification of the Induction Conclusion (Step 7)
+
+    Subgoal *1/2'
+    (IMPLIES (AND (CONSP A)
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             (EQUAL [(]IF T
+                        (CONS (CAR A)
+                              (APP (APP (CDR A) B)
+                                   C))
+                        C)
+                    (APP A (APP B C)))).
+
+  Click on the link above to apply the Axiom (IF T x y) = x.")
+ (THE_SIMPLIFICATION_OF_THE_INDUCTION_CONCLUSION_{STEP_8}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Simplification of the Induction Conclusion (Step 8)
+
+    Subgoal *1/2'
+    (IMPLIES (AND (CONSP A)
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             (EQUAL (CONS (CAR A)
+                          (APP (APP (CDR A) B)
+                               C))
+                    [(]APP A (APP B C)))).
+
+  Click on the link above to expand the definition of APP here. This
+  time, we'll do the whole expansion at once, including the
+  simplification of the resulting IF. This is how ACL2 actually does
+  it.")
+ (THE_SIMPLIFICATION_OF_THE_INDUCTION_CONCLUSION_{STEP_9}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Simplification of the Induction Conclusion (Step 9)
+
+    Subgoal *1/2'
+    (IMPLIES (AND (CONSP A)
+                  (EQUAL (APP (APP (CDR A) B) C)
+                         (APP (CDR A) (APP B C))))
+             [(]EQUAL (CONS (CAR A)
+                          (APP (APP (CDR A) B)
+                               C))
+                    (CONS (CAR A)
+                          (APP (CDR A) (APP B C))))).
+
+  Click on the link above to apply the Axiom that (EQUAL (CONS x y)
+  (CONS u v)) is equal to the conjunction of (EQUAL x u) and (EQUAL y
+  v). In this case, (EQUAL x u) is trivial, (EQUAL (CAR A) (CAR A)).")
+ (THE_SUMMARY_OF_THE_PROOF_OF_THE_TRIVIAL_CONSEQUENCE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Summary of the Proof of the Trivial Consequence
+
+  Note that at the conclusion of the proof, the system reminds you of
+  the earlier Warning.
+
+  It is a good idea, when the Q.E.D. flys by, to see if there were any
+  Warnings.")
+ (THE_THEOREM_THAT_APP_IS_ASSOCIATIVE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Theorem that App is Associative
+
+  []
+
+    ACL2!>(defthm associativity-of-app
+            (equal (app (app a b) c)
+                   (app a (app b c))))
+
+  The formula above says app is associative. The [defthm] [] command
+  instructs ACL2 to prove the formula and to name it
+  associativity-of-app. Actually, the defthm command also builds the
+  formula into the database as a [rewrite] [] rule, but we won't go
+  into that just yet.
+
+  What we will consider is how the ACL2 theorem prover proves this
+  formula.
+
+  If you proceed you will find the actual output of ACL2 in response to
+  the command above. Some of the text is highlighted for the purposes
+  of the tour. ACL2 does not highlight its output.
+
+  You will note that we sometimes highlight a single open parenthesis.
+  This is our way of drawing your attention to the subformula that
+  begins with that parenthesis. By clicking on the parenthesis you
+  will get an explanation of the subformula or its processing.
+
+  []")
+ (THE_TIME_TAKEN_TO_DO_THE_ASSOCIATIVITY_OF_APP_PROOF
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Time Taken to do the Associativity of App Proof
+
+  The time it took us to explain this proof may leave the impression
+  that the proof is complicated. In a way, it is. But it happens
+  quickly.
+
+  The time taken to do this proof is about 1/10 second. The rest of the
+  time (about 2/10 seconds) is spent in pre- and post-processing.
+
+  Basically, this proof flashes across your screen before you can read
+  it; you see the Q.E.D. and don't bother to scroll back to read it.
+  You have more important things to do than read successful proofs.")
+ (THE_TOURS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The Tours
+
+  ACL2 is a very large, multipurpose system. You can use it as a
+  programming language, a specification language, a modeling
+  language, a formal mathematical logic, or a semi-automatic theorem
+  prover, just to name its most common uses. It has been used on a
+  number of [industrial applications]. If you're uncertain as to
+  whether your project is appropriate for ACL2 we urge you to look
+  over this list or contact the ACL2 developers.
+
+  This home page includes all of ACL2's online documentation, which is
+  quite extensive (over 4 megabytes). To help ease your introduction
+  to ACL2, we have built two tours through this documentation.
+
+  If you are familiar with at least some of the [industrial
+  applications] of ACL2, then you will understand the distance
+  between the simple examples we talk about in these tours and the
+  kinds of things ACL2 users do with the system.
+
+  Newcomers to ACL2 should first take the ``Flying Tour.'' Then, if you
+  want to know more, take the ``Walking Tour.'' On your first
+  reading, follow the two Tours linearly, clicking only on the icon
+  of the Tour you're on. Beware of other links, which might jump you
+  from one tour to the other or into the ACL2 User's Manual! Once
+  you've had a coherent overview of the system, you might quickly
+  repeat both Tours to see if there are unvisited links you're
+  interested in, using your brower's Back Button to return to your
+  starting points.
+
+  If after all this you want to learn how to use the theorem prover
+  (!), see [introduction-to-the-theorem-prover].
+
+  To start a tour, click on the appropriate icon below.
+
+  [] []
+
+  For readers using our :DOC or our TexInfo format in Emacs: The tours
+  will probably be unsatisfying because we use gif files and assume
+  you can navigate ``back.''")
+ (THE_WARNING_ABOUT_THE_TRIVIAL_CONSEQUENCE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "The WARNING about the Trivial Consequence
+
+  This Warning alerts us to the fact that when treated as a rewrite
+  rule, the new rule TRIVIAL-CONSEQUENCE, rewrites terms of the same
+  form as a rule we have already proved, namely ASSOCIATIVITY-OF-APP.
+
+  When you see this warning you should think about your rules!
+
+  In the current case, it would be a good idea not to make
+  TRIVIAL-CONSEQUENCE a rule at all. We could do this with
+  :[rule-classes] [] nil.
+
+  ACL2 proceeds to try to prove the theorem, even though it printed
+  some warnings. The basic assumption in ACL2 is that the user
+  understands what he or she is doing but may need a little reminding
+  just to manage a complicated set of facts.")
  (THIRD
   (ACL2-BUILT-INS)
   "Third member of the list
@@ -90153,755 +90959,6 @@ Subtopics
   and REAL type specifiers are similarly generalized.")
  (TYPESPEC-CHECK (MISCELLANEOUS)
                  "See [meta-extract].")
- (|The Admission of App|
-  (|Pages Written Especially for the Tours|)
-  "The Admission of App
-
-  []
-
-  Here is what it looks like to submit the definition of app to ACL2:
-
-    ACL2 !>(defun app (x y)
-      (cond ((endp x) y)
-            (t (cons (car x)
-                     (app (cdr x) y)))))
-
-    The admission of APP is trivial, using the relation O< (which
-    is known to be well-founded on the domain recognized by O-P)
-    and the measure (ACL2-COUNT X).  We observe that the type of APP is
-    described by the theorem (OR (CONSP (APP X Y)) (EQUAL (APP X Y) Y)).
-    We used primitive type reasoning.
-
-    Summary
-    Form:  ( DEFUN APP ...)
-    Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
-    Warnings:  None
-    Time:  0.03 seconds (prove: 0.00, print: 0.00, other: 0.03)
-     APP
-
-  The text between the lines above is one interaction with the ACL2
-  command loop. Interacting with the latest version of ACL2 may not
-  produce the very same output, but we trust you'll recognize the
-  basics.
-
-  Above you see the user's input and how the system responds. This
-  little example shows you what the syntax looks like and is a very
-  typical successful interaction with the definitional principle.
-
-  Let's look at it a little more closely.
-
-  []")
- (|The Associativity of App|
-  (|Pages Written Especially for the Tours|)
-  "The Associativity of App
-
-  []
-
-    ACL2!>(let ((a '(1 2))
-                (b '(3 4))
-                (c '(5 6)))
-            (equal (app (app a b) c)
-                   (app a (app b c))))
-    T
-
-  Observe that, for the particular a, b, and c above, (app (app a b) c)
-  returns the same thing as (app a (app b c)). Perhaps app is
-  associative. Of course, to be associative means that the above
-  property must hold for all values of a, b, and c, not just the ones
-  tested above.
-
-  Wouldn't it be cool if you could type
-
-    ACL2!>(equal (app (app a b) c)
-                 (app a (app b c)))
-
-  and have ACL2 compute the value T? Well, you can't! If you try it,
-  you'll get an error message! The message says we can't evaluate
-  that form because it contains free variables, i.e., variables not
-  given values. Click [here] to see the message.
-
-  We cannot evaluate a form on an infinite number of cases. But we can
-  prove that a form is a theorem and hence know that it will always
-  evaluate to true.
-
-  []")
- (|The Base Case in the App Example|
-  (|Pages Written Especially for the Tours|)
-  "The Base Case in the App Example
-
-  This formula is the Base Case. It consists of two parts, a test
-  identifying the non-inductive case and the conjecture to prove.
-
-    (IMPLIES (ENDP A)                 ; Test
-             (:P A B C))              ; Conjecture
-
-  When we prove this we can assume
-
-     * A is empty
-
-  and we have to prove the conjecture for A.")
- (|The End of the Flying Tour|
-  (|Pages Written Especially for the Tours|)
-  "The End of the Flying Tour
-
-  This completes the Flying Tour.
-
-  We recommend that you now take [A Walking Tour of ACL2].
-
-  Thanks.
-  Matt Kaufmann and J Moore
-
-  []")
- (|The End of the Proof of the Associativity of App|
-  (|Pages Written Especially for the Tours|)
-  "The End of the Proof of the Associativity of App
-
-  []
-
-    That [completes] the proof of *1.
-
-    [Q.E.D.]
-
-    Summary
-    Form:  ( DEFTHM ASSOCIATIVITY-OF-APP ...)
-    [Rules]: ((:REWRITE CDR-CONS)
-            (:REWRITE CAR-CONS)
-            (:DEFINITION NOT)
-            (:DEFINITION ENDP)
-            (:FAKE-RUNE-FOR-TYPE-SET NIL)
-            (:DEFINITION APP))
-    Warnings:  None
-    Time:  0.27 seconds (prove: [0.10], print: 0.05, other: 0.12)
-     ASSOCIATIVITY-OF-APP
-
-  []")
- (|The End of the Walking Tour|
-  (|Pages Written Especially for the Tours|)
-  "The End of the Walking Tour
-
-  This completes the Walking Tour.
-
-  We intend to document many other parts of the system this way, but we
-  just haven't gotten around to it.
-
-  To start the two tours over again from the beginning, click on the
-  icons below. If you are really interested in learning how to use
-  ACL2, we recommend that you repeat each tour at least once more to
-  explore branches of the tour that you might have missed.
-
-  If you want to learn how to use the theorem prover, we now recommend
-  that you devote the time necessary to work your way through the
-  extended introduction to how to use the prover.
-
-  See [introduction-to-the-theorem-prover].
-
-  This will explain how to interact with ACL2 and has some sample
-  problems for you to solve including some challenge proofs to make
-  ACL2 find.
-
-  We hope you enjoy ACL2. We do.
-
-  Matt Kaufmann and J Strother Moore
-
-  [] []")
- (|The Event Summary|
-  (|Pages Written Especially for the Tours|)
-  "The Event Summary
-
-  At the conclusion of most events (click [here] for a brief discussion
-  of events or see [events] []), ACL2 prints a summary. The summary
-  for app is:
-
-    Summary
-    Form:  ( DEFUN APP ...)
-    Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
-    Warnings:  None
-    Time:  0.03 seconds (prove: 0.00, print: 0.00, other: 0.03)
-     APP
-
-  The ``rules'' listed are those used in function admission or proof
-  summarized. What is actually listed are ``runes'' (see [rune]) [])
-  which are list-structured names for rules in the ACL2 database or
-  ``[world]'' []. Using [theories] [] you can ``enable'' and
-  ``disable'' rules so as to make them available (or not) to the ACL2
-  theorem prover.
-
-  The ``warnings'' mentioned (none are listed for app) remind the
-  reader whether the event provoked any warnings. The warnings
-  themselves would have been printed earlier in the processing and
-  this part of the summary just names the earlier warnings printed.
-
-  The ``time'' indicates how much processing time was used and is
-  divided into three parts: the time devoted to proof, to printing,
-  and to syntactic checks, pre-processing and database updates.
-  Despite the fact that ACL2 is an applicative language it is
-  possible to measure time with ACL2 programs. The [state] []
-  contains a clock. The times are printed in decimal notation but are
-  actually counted in integral units. Note that by default, each time
-  is a runtime, also known as a cpu time, as opposed to being a real
-  time, also known as a wall clock time.
-
-  The final APP is the value of the defun command and was printed by
-  the read-eval-print loop. The fact that it is indented one space is
-  a subtle reminder that the command actually returned an ``error
-  triple'', consisting of a flag indicating (in this case) that no
-  error occurred, a value (in this case the symbol APP), and the
-  final [state] []). See [ld-post-eval-print] [] for some details. If
-  you really want to follow that link, however, you might see [ld] []
-  first.
-
-  You should now return to [the Walking Tour].")
- (|The Expansion of ENDP in the Induction Step (Step 0)|
-  (|Pages Written Especially for the Tours|)
-  "The Expansion of ENDP in the Induction Step (Step 0)
-
-    Subgoal *1/2
-    (IMPLIES (AND (NOT [(]ENDP A))
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             (EQUAL (APP (APP A B) C)
-                    (APP A (APP B C)))).
-
-  Click on the link above (the open parenthesis before ENDP) to replace
-  (ENDP A) by its definition.")
- (|The Expansion of ENDP in the Induction Step (Step 1)|
-  (|Pages Written Especially for the Tours|)
-  "The Expansion of ENDP in the Induction Step (Step 1)
-
-    Subgoal *1/2
-    (IMPLIES (AND [(]NOT (NOT (CONSP A)))
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             (EQUAL (APP (APP A B) C)
-                    (APP A (APP B C)))).
-
-  The bold text is the instantiated definition of ENDP.
-
-  Now click on the link above to simplify (NOT (NOT (CONSP A)))")
- (|The Expansion of ENDP in the Induction Step (Step 2)|
-  (|Pages Written Especially for the Tours|)
-  "The Expansion of ENDP in the Induction Step (Step 2)
-
-    Subgoal *1/2'
-    (IMPLIES (AND (CONSP A)
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             (EQUAL (APP (APP A B) C)
-                    (APP A (APP B C)))).
-
-  Note that this is Subgoal *1/2'.
-
-  You may click [here] to return to the main proof.")
- (|The Falling Body Model|
-  (|Pages Written Especially for the Tours|)
-  "The Falling Body Model
-
-  One particularly famous and very simple model is the equation of a
-  falling body: the distance d an object falls is proportional to the
-  square of the time t. If the time is measured in seconds and the
-  distance in feet, the equation relating these two is
-
-           2
-    d = 16t
-
-  This equation is a model of falling objects. It can be used to
-  predict how long it takes a cannonball to fall from the top of a
-  200 foot tower (3.5 seconds). This might be important if your
-  product is designed to drop cannonballs on moving targets.")
- (|The Final Simplification in the Base Case (Step 0)|
-  (|Pages Written Especially for the Tours|)
-  "The Final Simplification in the Base Case (Step 0)
-
-    Subgoal *1/1'
-    (IMPLIES (NOT (CONSP A))
-             (EQUAL (APP [(]APP A B) C)
-                    (APP A (APP B C)))).
-
-  Click on the link above to replace (APP A B) by its definition. Note
-  that the hypothesis (NOT (CONSP A)) allows us to simplify the IF in
-  APP to its false branch this time.")
- (|The Final Simplification in the Base Case (Step 1)|
-  (|Pages Written Especially for the Tours|)
-  "The Final Simplification in the Base Case (Step 1)
-
-    Subgoal *1/1'
-    (IMPLIES (NOT (CONSP A))
-             (EQUAL (APP B C)
-                    [(]APP A (APP B C)))).
-
-  Click on the link above to expand the definition of APP. Again, we
-  come out through the false branch because of the hypothesis.")
- (|The Final Simplification in the Base Case (Step 2)|
-  (|Pages Written Especially for the Tours|)
-  "The Final Simplification in the Base Case (Step 2)
-
-    Subgoal *1/1'
-    (IMPLIES (NOT (CONSP A))
-             [(]EQUAL (APP B C)
-                    (APP B C))).
-
-  Click on the link above to use the Axiom (EQUAL x x) = t")
- (|The Final Simplification in the Base Case (Step 3)|
-  (|Pages Written Especially for the Tours|)
-  "The Final Simplification in the Base Case (Step 3)
-
-    Subgoal *1/1'
-    (IMPLIES (NOT (CONSP A))
-             T)
-
-  Now that its conclusion is identically T the IMPLIES will simplify to
-  T (not shown) and we are done with Subgoal *1/1'.
-
-  You may click [here] to return to the main proof.")
- (|The First Application of the Associativity Rule|
-  (|Pages Written Especially for the Tours|)
-  "The First Application of the Associativity Rule
-
-  So here we see our associativity rule being used!
-
-  The rewriter sweeps the conjecture in a leftmost innermost fashion,
-  applying rewrite rules as it goes.
-
-  The associativity rule is used many times in this sweep. The first
-  ``target'' is highlighted below. Click on it to see what happens:
-
-    Current Conjecture:
-    (equal (app (app [(app (app x1 x2) (app x3 x4))] (app x5 x6)) x7)
-           (app x1 (app (app x2 x3) (app (app x4 x5) (app x6 x7)))))")
- (|The Induction Scheme Selected for the App Example|
-  (|Pages Written Especially for the Tours|)
-  "The Induction Scheme Selected for the App Example
-
-    (AND
-       (IMPLIES (AND (NOT (ENDP A))         ; Induction Step: test
-                     (:P (CDR A) B C))      ;  and induction hypothesis
-                (:P A B C))                 ;  implies induction conclusion.
-       (IMPLIES (ENDP A) (:P A B C)))       ; Base Case
-
-  The formula beginning with this parenthesis is the induction scheme
-  suggested by (APP A B) applied to (P A B C).
-
-  It is a conjunction ([and] []) of two formulas.
-
-  The first is the induction step and the second is the base case.")
- (|The Induction Step in the App Example|
-  (|Pages Written Especially for the Tours|)
-  "The Induction Step in the App Example
-
-  This formula is the Induction Step. It basically consists of three
-  parts, a test identifying the inductive case, an induction
-  hypothesis and an induction conclusion.
-
-    (IMPLIES (AND (NOT (ENDP A))      ; Test
-                  (:P (CDR A) B C))   ; Induction Hypothesis
-             (:P A B C))              ; Induction Conclusion
-
-  When we prove this we can assume
-
-     * A is not empty, and that
-
-      * the associativity conjecture holds for a ``smaller'' version of A,
-        namely, (CDR A).
-
-  Under those hypotheses we have to prove the associativity conjecture
-  for A itself.")
- (|The Instantiation of the Induction Scheme|
-  (|Pages Written Especially for the Tours|)
-  "The Instantiation of the Induction Scheme
-
-  The induction scheme just shown is just an abbreviation for our real
-  goal.
-
-  To obtain our actual goals we have to replace the schema :P by the
-  associativity conjecture (instantiated as shown in the scheme).
-
-  This produces two actual goals, the induction step and the base case.")
- (|The Justification of the Induction Scheme|
-  (|Pages Written Especially for the Tours|)
-  "The Justification of the Induction Scheme
-
-  This paragraph explains why the induction selected is legal. The
-  explanation is basically the same as the explanation for why the
-  recursion in (APP A B) terminates.")
- (|The Proof of the Associativity of App|
-  (|Pages Written Especially for the Tours|)
-  "The Proof of the Associativity of App
-
-  []
-
-  Here is the theorem prover's output when it processes the defthm
-  command for the associativity of app. We have highlighted text for
-  which we offer some explanation, and broken the presentation into
-  several pages. (The most recent version of ACL2 may print slightly
-  different output but the basics are the same.) Just follow the
-  Walking Tour after exploring the explanations.
-
-  However, before exploring this output you should understand that ACL2
-  users rarely read successful proofs! Instead, they look at certain
-  subgoals printed in failed proofs, figure whether and how those
-  subgoals can be proved, and give ACL2 directions for proving them,
-  usually by simply proving other lemmas. Furthermore, to be a good
-  user of ACL2 you do not have to understand how the theorem prover
-  works. You just have to understand how to interact with it. We
-  explain this in great detail later. But basically all new users are
-  curious to know how ACL2 works and this little tour attempts to
-  give some answers, just to satisfy your curiosity.
-
-    ACL2!>(defthm associativity-of-app
-            (equal (app (app a b) c)
-                   (app a (app b c))))
-
-    Name the formula above [*1].
-
-    [Perhaps] we can prove *1 by induction.  Three induction schemes are
-    [suggested] by this conjecture.  [Subsumption] reduces that number to two.
-    However, one of these is [flawed] and so we are left with one viable
-    candidate.
-
-    We will induct according to a scheme suggested by (APP A B).  If we
-    let  (:P A B C) denote *1 above then the induction scheme we'll use
-    is
-    [(]AND
-       [(]IMPLIES (AND (NOT (ENDP A))
-                     (:P (CDR A) B C))
-                (:P A B C))
-       [(]IMPLIES (ENDP A) (:P A B C))).
-    This induction is [justified] by the same argument used to admit APP,
-    namely, the measure (ACL2-COUNT A) is decreasing according to the relation
-    O< (which is known to be well-founded on the domain recognized
-    by O-P).  When [applied] to the goal at hand the above induction
-    scheme produces the following two [nontautological subgoals].
-
-  []")
- (|The Q.E.D. Message|
-  (|Pages Written Especially for the Tours|)
-  "The Q.E.D. Message
-
-  Q.E.D. stands for ``quod erat demonstrandum'' which is Latin for
-  ``which was to be demonstrated'' and is the signal that a proof is
-  completely done.")
- (|The Rules used in the Associativity of App Proof|
-  (|Pages Written Especially for the Tours|)
-  "The Rules used in the Associativity of App Proof
-
-  Note that under Rules we list the [runes] [] of all the rules used in
-  the proof. This list says that we used the rewrite rules CAR-CONS
-  and CDR-CONS, the definitions of the functions NOT, ENDP and APP,
-  and primitive type reasoning (which is how we simplified the IF and
-  EQUAL terms).
-
-  For what it is worth, IMPLIES and AND are actually [macros] [] that
-  are expanded into IF expressions before the proof ever begins. The
-  use of macros is not reported among the rules.")
- (|The Simplification of the Induction Conclusion (Step 0)|
-  (|Pages Written Especially for the Tours|)
-  "The Simplification of the Induction Conclusion (Step 0)
-
-    Subgoal *1/2'
-    (IMPLIES (AND (CONSP A)
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             (EQUAL (APP [(]APP A B) C)
-                    (APP A (APP B C)))).
-
-  Click on the link above to replace (APP A B) by its definition.")
- (|The Simplification of the Induction Conclusion (Step 1)|
-  (|Pages Written Especially for the Tours|)
-  "The Simplification of the Induction Conclusion (Step 1)
-
-    Subgoal *1/2'
-    (IMPLIES (AND (CONSP A)
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             (EQUAL (APP (IF [(]CONSP A)
-                             (CONS (CAR A) (APP (CDR A) B))
-                             B)
-                         C)
-                    (APP A (APP B C)))).
-
-  Note that the IF expression above is the simplified body of APP. But
-  we know the test (CONSP A) is true, by the first hypothesis. Click
-  on the link above to replace the test by T. Actually this step and
-  several subsequent ones are done during the simplification of the
-  body of APP but we want to illustrate the basic principles of
-  simplification without bothering with every detail.")
- (|The Simplification of the Induction Conclusion (Step 10)|
-  (|Pages Written Especially for the Tours|)
-  "The Simplification of the Induction Conclusion (Step 10)
-
-    Subgoal *1/2'
-    (IMPLIES (AND (CONSP A)
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             [(]EQUAL (APP (APP (CDR A) B) C)
-                    (APP (CDR A) (APP B C)))).
-
-  Click on the link above to use the Induction Hypothesis (which is the
-  second of the two hypotheses above and which is identical to the
-  rewritten conclusion).")
- (|The Simplification of the Induction Conclusion (Step 11)|
-  (|Pages Written Especially for the Tours|)
-  "The Simplification of the Induction Conclusion (Step 11)
-
-    Subgoal *1/2'
-    [(]IMPLIES (AND (CONSP A)
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             T)
-
-  Click on the link above to use the definition of IMPLIES. Since the
-  conclusion of the implication is now identically T, the implication
-  simplifies to T.")
- (|The Simplification of the Induction Conclusion (Step 12)|
-  (|Pages Written Especially for the Tours|)
-  "The Simplification of the Induction Conclusion (Step 12)
-
-    Subgoal *1/2'
-    T
-
-  So, indeed, Subgoal *1/2' does simplify to T!
-
-  You can see that even in an example as simple as this one, quite a
-  lot happens in simplification.
-
-  You may click [here] to return to the main proof.")
- (|The Simplification of the Induction Conclusion (Step 2)|
-  (|Pages Written Especially for the Tours|)
-  "The Simplification of the Induction Conclusion (Step 2)
-
-    Subgoal *1/2'
-    (IMPLIES (AND (CONSP A)
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             (EQUAL (APP [(]IF T
-                             (CONS (CAR A) (APP (CDR A) B))
-                             B)
-                         C)
-                    (APP A (APP B C)))).
-
-  Click on the link above to apply the Axiom (IF T x y) = x.")
- (|The Simplification of the Induction Conclusion (Step 3)|
-  (|Pages Written Especially for the Tours|)
-  "The Simplification of the Induction Conclusion (Step 3)
-
-    Subgoal *1/2'
-    (IMPLIES (AND (CONSP A)
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             (EQUAL [(]APP (CONS (CAR A) (APP (CDR A) B))
-                         C)
-                    (APP A (APP B C)))).
-
-  Click on the link above to expand the definition of APP here.")
- (|The Simplification of the Induction Conclusion (Step 4)|
-  (|Pages Written Especially for the Tours|)
-  "The Simplification of the Induction Conclusion (Step 4)
-
-    Subgoal *1/2'
-    (IMPLIES (AND (CONSP A)
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             (EQUAL (IF [(]CONSP (CONS (CAR A) (APP (CDR A) B)))
-                        (CONS (CAR (CONS (CAR A) (APP (CDR A) B)))
-                              (APP (CDR (CONS (CAR A) (APP (CDR A) B)))
-                                   C))
-                        C)
-                    (APP A (APP B C)))).
-
-  Click on the link above to apply the Axiom (CONSP (CONS x y)) = T.")
- (|The Simplification of the Induction Conclusion (Step 5)|
-  (|Pages Written Especially for the Tours|)
-  "The Simplification of the Induction Conclusion (Step 5)
-
-    Subgoal *1/2'
-    (IMPLIES (AND (CONSP A)
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             (EQUAL (IF T
-                        (CONS [(]CAR (CONS (CAR A) (APP (CDR A) B)))
-                              (APP (CDR (CONS (CAR A) (APP (CDR A) B)))
-                                   C))
-                        C)
-                    (APP A (APP B C)))).
-
-  Click on the link above to apply the Axiom (CAR (CONS x y)) = x.")
- (|The Simplification of the Induction Conclusion (Step 6)|
-  (|Pages Written Especially for the Tours|)
-  "The Simplification of the Induction Conclusion (Step 6)
-
-    Subgoal *1/2'
-    (IMPLIES (AND (CONSP A)
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             (EQUAL (IF T
-                        (CONS (CAR A)
-                              (APP [(]CDR (CONS (CAR A) (APP (CDR A) B)))
-                                   C))
-                        C)
-                    (APP A (APP B C)))).
-
-  Click on the link above to apply the Axiom (CDR (CONS x y)) = y.")
- (|The Simplification of the Induction Conclusion (Step 7)|
-  (|Pages Written Especially for the Tours|)
-  "The Simplification of the Induction Conclusion (Step 7)
-
-    Subgoal *1/2'
-    (IMPLIES (AND (CONSP A)
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             (EQUAL [(]IF T
-                        (CONS (CAR A)
-                              (APP (APP (CDR A) B)
-                                   C))
-                        C)
-                    (APP A (APP B C)))).
-
-  Click on the link above to apply the Axiom (IF T x y) = x.")
- (|The Simplification of the Induction Conclusion (Step 8)|
-  (|Pages Written Especially for the Tours|)
-  "The Simplification of the Induction Conclusion (Step 8)
-
-    Subgoal *1/2'
-    (IMPLIES (AND (CONSP A)
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             (EQUAL (CONS (CAR A)
-                          (APP (APP (CDR A) B)
-                               C))
-                    [(]APP A (APP B C)))).
-
-  Click on the link above to expand the definition of APP here. This
-  time, we'll do the whole expansion at once, including the
-  simplification of the resulting IF. This is how ACL2 actually does
-  it.")
- (|The Simplification of the Induction Conclusion (Step 9)|
-  (|Pages Written Especially for the Tours|)
-  "The Simplification of the Induction Conclusion (Step 9)
-
-    Subgoal *1/2'
-    (IMPLIES (AND (CONSP A)
-                  (EQUAL (APP (APP (CDR A) B) C)
-                         (APP (CDR A) (APP B C))))
-             [(]EQUAL (CONS (CAR A)
-                          (APP (APP (CDR A) B)
-                               C))
-                    (CONS (CAR A)
-                          (APP (CDR A) (APP B C))))).
-
-  Click on the link above to apply the Axiom that (EQUAL (CONS x y)
-  (CONS u v)) is equal to the conjunction of (EQUAL x u) and (EQUAL y
-  v). In this case, (EQUAL x u) is trivial, (EQUAL (CAR A) (CAR A)).")
- (|The Summary of the Proof of the Trivial Consequence|
-  (|Pages Written Especially for the Tours|)
-  "The Summary of the Proof of the Trivial Consequence
-
-  Note that at the conclusion of the proof, the system reminds you of
-  the earlier Warning.
-
-  It is a good idea, when the Q.E.D. flys by, to see if there were any
-  Warnings.")
- (|The Theorem that App is Associative|
-  (|Pages Written Especially for the Tours|)
-  "The Theorem that App is Associative
-
-  []
-
-    ACL2!>(defthm associativity-of-app
-            (equal (app (app a b) c)
-                   (app a (app b c))))
-
-  The formula above says app is associative. The [defthm] [] command
-  instructs ACL2 to prove the formula and to name it
-  associativity-of-app. Actually, the defthm command also builds the
-  formula into the database as a [rewrite] [] rule, but we won't go
-  into that just yet.
-
-  What we will consider is how the ACL2 theorem prover proves this
-  formula.
-
-  If you proceed you will find the actual output of ACL2 in response to
-  the command above. Some of the text is highlighted for the purposes
-  of the tour. ACL2 does not highlight its output.
-
-  You will note that we sometimes highlight a single open parenthesis.
-  This is our way of drawing your attention to the subformula that
-  begins with that parenthesis. By clicking on the parenthesis you
-  will get an explanation of the subformula or its processing.
-
-  []")
- (|The Time Taken to do the Associativity of App Proof|
-  (|Pages Written Especially for the Tours|)
-  "The Time Taken to do the Associativity of App Proof
-
-  The time it took us to explain this proof may leave the impression
-  that the proof is complicated. In a way, it is. But it happens
-  quickly.
-
-  The time taken to do this proof is about 1/10 second. The rest of the
-  time (about 2/10 seconds) is spent in pre- and post-processing.
-
-  Basically, this proof flashes across your screen before you can read
-  it; you see the Q.E.D. and don't bother to scroll back to read it.
-  You have more important things to do than read successful proofs.")
- (|The Tours|
-  (|Pages Written Especially for the Tours|)
-  "The Tours
-
-  ACL2 is a very large, multipurpose system. You can use it as a
-  programming language, a specification language, a modeling
-  language, a formal mathematical logic, or a semi-automatic theorem
-  prover, just to name its most common uses. It has been used on a
-  number of [industrial applications]. If you're uncertain as to
-  whether your project is appropriate for ACL2 we urge you to look
-  over this list or contact the ACL2 developers.
-
-  This home page includes all of ACL2's online documentation, which is
-  quite extensive (over 4 megabytes). To help ease your introduction
-  to ACL2, we have built two tours through this documentation.
-
-  If you are familiar with at least some of the [industrial
-  applications] of ACL2, then you will understand the distance
-  between the simple examples we talk about in these tours and the
-  kinds of things ACL2 users do with the system.
-
-  Newcomers to ACL2 should first take the ``Flying Tour.'' Then, if you
-  want to know more, take the ``Walking Tour.'' On your first
-  reading, follow the two Tours linearly, clicking only on the icon
-  of the Tour you're on. Beware of other links, which might jump you
-  from one tour to the other or into the ACL2 User's Manual! Once
-  you've had a coherent overview of the system, you might quickly
-  repeat both Tours to see if there are unvisited links you're
-  interested in, using your brower's Back Button to return to your
-  starting points.
-
-  If after all this you want to learn how to use the theorem prover
-  (!), see [introduction-to-the-theorem-prover].
-
-  To start a tour, click on the appropriate icon below.
-
-  [] []
-
-  For readers using our :DOC or our TexInfo format in Emacs: The tours
-  will probably be unsatisfying because we use gif files and assume
-  you can navigate ``back.''")
- (|The WARNING about the Trivial Consequence|
-  (|Pages Written Especially for the Tours|)
-  "The WARNING about the Trivial Consequence
-
-  This Warning alerts us to the fact that when treated as a rewrite
-  rule, the new rule TRIVIAL-CONSEQUENCE, rewrites terms of the same
-  form as a rule we have already proved, namely ASSOCIATIVITY-OF-APP.
-
-  When you see this warning you should think about your rules!
-
-  In the current case, it would be a good idea not to make
-  TRIVIAL-CONSEQUENCE a rule at all. We could do this with
-  :[rule-classes] [] nil.
-
-  ACL2 proceeds to try to prove the theorem, even though it printed
-  some warnings. The basic assumption in ACL2 is that the user
-  understands what he or she is doing but may need a little reminding
-  just to manage a complicated set of facts.")
  (U
   (HISTORY)
   "Undo last [command], without a query
@@ -91117,6 +91174,11 @@ Subtopics
   inconsistent) logical extension obtained by assuming the
   admissibility and validity of the definitions and conjectures in
   the book.")
+ (UNDOCUMENTED_TOPIC
+      (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+      "Undocumented Topic
+
+  This topic has not yet been documented. Sorry")
  (UNION$
   (ACL2-BUILT-INS)
   "Elements of one list that are not elements of another
@@ -92834,13 +92896,8 @@ Subtopics
 
   [Make-event]
       Evaluate (expand) a given form and then evaluate the result")
- (|Undocumented Topic|
-      (|Pages Written Especially for the Tours|)
-      "Undocumented Topic
-
-  This topic has not yet been documented. Sorry")
- (|Using the Associativity of App to Prove a Trivial Consequence|
-  (|Pages Written Especially for the Tours|)
+ (USING_THE_ASSOCIATIVITY_OF_APP_TO_PROVE_A_TRIVIAL_CONSEQUENCE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Using the Associativity of App to Prove a Trivial Consequence
 
   []
@@ -94062,6 +94119,107 @@ Subtopics
   [untrace$]; upon completion, wet then applies [trace$] to re-trace
   any functions that it had untraced, using their original trace
   specs.")
+ (WHAT_IS_ACL2{Q}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "What Is ACL2?
+
+  []
+
+  ACL2 is a mathematical logic together with a mechanical theorem
+  prover to help you reason in the logic.
+
+  The logic is just a subset of applicative [Common Lisp]. (This link
+  takes you off the main route of the tour. You'll see some Common
+  Lisp on the tour, so visit this later!)
+
+  The theorem prover is an ``industrial strength'' version of the
+  Boyer-Moore theorem prover, Nqthm.
+
+  Models of all kinds of computing systems can be built in ACL2, just
+  as in Nqthm, even though the formal logic is Lisp.
+
+  Once you've built an ACL2 model of a system, you can run it.
+
+  You can also use ACL2 to prove theorems about the model.
+
+  []")
+ (WHAT_IS_A_MATHEMATICAL_LOGIC{Q}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "What is a Mathematical Logic?
+
+  []
+
+  A mathematical logic is a formal system of formulas (axioms) and
+  rules for deriving other formulas, called theorems.
+
+  A proof is a derivation of a theorem. To see a concrete proof tree,
+  click [here].
+
+  Why should you care? The neat thing about Theorems is that they are
+  ``true.'' More precisely, if all the axioms are valid and the rules
+  are validity preserving, then anything derived from the axioms via
+  the rules is valid.
+
+  So, if you want to determine if some formula is true, prove it.
+
+  []")
+ (WHAT_IS_A_MECHANICAL_THEOREM_PROVER{Q}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "What is a Mechanical Theorem Prover?
+
+  []
+
+  A mechanical theorem prover is a computer program that finds proofs
+  of theorems.
+
+  The ideal mechanical theorem prover is automatic: you give it a
+  formula and it gives you a proof of that formula or tells you there
+  is no proof.
+
+  Unfortunately, automatic theorem provers can be built only for very
+  simple logics (e.g., propositional calculus) and even then
+  practical considerations (e.g., how many centuries you are willing
+  to wait) limit the problems they can solve.
+
+  []")
+ (WHAT_IS_A_MECHANICAL_THEOREM_PROVER{Q}_{CONT}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "What is a Mechanical Theorem Prover? (cont)
+
+  [] To get around this, mechanical theorem provers often require help
+  from the user.
+
+  Click [here] to continue downward.
+
+  []")
+ (WHAT_IS_REQUIRED_OF_THE_USER{Q}
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
+  "What is Required of the User?
+
+  []
+
+  It is not easy to build ACL2 models of complex systems. To do so, the
+  user must understand
+
+    * the system being modeled, and
+
+    * ACL2, at least as a programming language.
+
+  It is not easy to get ACL2 to prove hard theorems. To do so, the user
+  must understand
+
+    * the model,
+
+    * ACL2 as a mathematical logic, and
+
+    * be able to construct a proof (in interaction with ACL2).
+
+  ACL2 will help construct the proof but its primary role is to prevent
+  logical mistakes. The creative burden --- the mathematical insight
+  into why the model has the desired property --- is the user's
+  responsibility.
+
+  []")
  (WHY-BRR
   (MISCELLANEOUS)
   "An explanation of why ACL2 has an explicit [brr] mode
@@ -95786,107 +95944,6 @@ Subtopics
   :SKIP.")
  (WRITE-BYTE$ (ACL2-BUILT-INS)
               "See [io].")
- (|What Is ACL2(Q)|
-  (|Pages Written Especially for the Tours|)
-  "What Is ACL2?
-
-  []
-
-  ACL2 is a mathematical logic together with a mechanical theorem
-  prover to help you reason in the logic.
-
-  The logic is just a subset of applicative [Common Lisp]. (This link
-  takes you off the main route of the tour. You'll see some Common
-  Lisp on the tour, so visit this later!)
-
-  The theorem prover is an ``industrial strength'' version of the
-  Boyer-Moore theorem prover, Nqthm.
-
-  Models of all kinds of computing systems can be built in ACL2, just
-  as in Nqthm, even though the formal logic is Lisp.
-
-  Once you've built an ACL2 model of a system, you can run it.
-
-  You can also use ACL2 to prove theorems about the model.
-
-  []")
- (|What is Required of the User(Q)|
-  (|Pages Written Especially for the Tours|)
-  "What is Required of the User?
-
-  []
-
-  It is not easy to build ACL2 models of complex systems. To do so, the
-  user must understand
-
-    * the system being modeled, and
-
-    * ACL2, at least as a programming language.
-
-  It is not easy to get ACL2 to prove hard theorems. To do so, the user
-  must understand
-
-    * the model,
-
-    * ACL2 as a mathematical logic, and
-
-    * be able to construct a proof (in interaction with ACL2).
-
-  ACL2 will help construct the proof but its primary role is to prevent
-  logical mistakes. The creative burden --- the mathematical insight
-  into why the model has the desired property --- is the user's
-  responsibility.
-
-  []")
- (|What is a Mathematical Logic(Q)|
-  (|Pages Written Especially for the Tours|)
-  "What is a Mathematical Logic?
-
-  []
-
-  A mathematical logic is a formal system of formulas (axioms) and
-  rules for deriving other formulas, called theorems.
-
-  A proof is a derivation of a theorem. To see a concrete proof tree,
-  click [here].
-
-  Why should you care? The neat thing about Theorems is that they are
-  ``true.'' More precisely, if all the axioms are valid and the rules
-  are validity preserving, then anything derived from the axioms via
-  the rules is valid.
-
-  So, if you want to determine if some formula is true, prove it.
-
-  []")
- (|What is a Mechanical Theorem Prover(Q)|
-  (|Pages Written Especially for the Tours|)
-  "What is a Mechanical Theorem Prover?
-
-  []
-
-  A mechanical theorem prover is a computer program that finds proofs
-  of theorems.
-
-  The ideal mechanical theorem prover is automatic: you give it a
-  formula and it gives you a proof of that formula or tells you there
-  is no proof.
-
-  Unfortunately, automatic theorem provers can be built only for very
-  simple logics (e.g., propositional calculus) and even then
-  practical considerations (e.g., how many centuries you are willing
-  to wait) limit the problems they can solve.
-
-  []")
- (|What is a Mechanical Theorem Prover(Q) (cont)|
-  (|Pages Written Especially for the Tours|)
-  "What is a Mechanical Theorem Prover? (cont)
-
-  [] To get around this, mechanical theorem provers often require help
-  from the user.
-
-  Click [here] to continue downward.
-
-  []")
  (XARGS
   (MISCELLANEOUS)
   "Extra arguments, for example to give [hints] to [defun]
@@ -96045,8 +96102,8 @@ Subtopics
   or Q, but not both, is false (i.e., nil).
 
   To see the ACL2 definition of this function, see [pf].")
- (|You Must Think about the Use of a Formula as a Rule|
-  (|Pages Written Especially for the Tours|)
+ (YOU_MUST_THINK_ABOUT_THE_USE_OF_A_FORMULA_AS_A_RULE
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "You Must Think about the Use of a Formula as a Rule
 
   []

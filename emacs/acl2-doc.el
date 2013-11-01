@@ -69,6 +69,27 @@
 (defvar *acl2-doc-file* "doc.lisp")
 (defvar *acl2-doc-top-name* 'ACL2)
 
+(defun acl2-doc-initialize-manual-type (combined-p)
+  (let* ((combined-filename
+	  (and combined-p		; optimization
+	       (concat *acl2-sources-dir*
+		       "books/system/doc/rendered-doc-combined.lsp")))
+	 (combined-p
+	  (cond ((not combined-p) nil)
+		((file-exists-p combined-filename) t)
+		((eq combined-p :default) nil)
+		(t (error "File %s needs to be built. See :DOC acl2-doc."
+			  combined-filename)))))
+    (cond (combined-p
+	   (setq *acl2-doc-top-name* 'TOP)
+	   (setq *acl2-doc-file* combined-filename))
+	  (t
+	   (setq *acl2-doc-top-name* 'ACL2)
+	   (setq *acl2-doc-file*
+		 (concat *acl2-sources-dir* "doc.lisp"))))))
+
+(acl2-doc-initialize-manual-type :default)
+
 (defun acl2-doc-alist ()
   (when (not (file-exists-p *acl2-doc-file*))
     (error "File %s needs to be built.  See :DOC acl2-doc."
@@ -140,24 +161,39 @@
     (acl2-doc-mode)))
 
 (defun acl2-doc-print-topic (tuple)
+
+; Warning: Do not set the buffer to read-only here, because this
+; function may be called repeatedly for the same buffer, e.g., by
+; function acl2-doc-search-buffer.
+
   (insert (format "Topic: %s\nParent list: %s\n\n%s\n"
                   (nth 0 tuple)
                   (nth 1 tuple)
-                  (nth 2 tuple))))
+                  (nth 2 tuple)))
+  (set-buffer-modified-p nil)
+  (force-mode-line-update))
 
 (defun acl2-doc-display-basic (entry)
 
-; Entry is a history entry, hence of the form (point name parents string).
+;;; Entry is a history entry, hence of the form (point name parents
+;;; string).
 
-; The first form below is unnecessary if the caller is
-; acl2-doc-display, but it's cheap.
+;;; The first form below is unnecessary if the caller is
+;;; acl2-doc-display, but it's cheap.
 
   (switch-to-acl2-doc-buffer)
   (setq buffer-read-only nil)
   (erase-buffer)
   (acl2-doc-print-topic (cdr entry)) ; entry is (cons position tuple)
   (setq buffer-read-only t)
-  (goto-char (nth 0 entry)))
+  (goto-char (nth 0 entry))
+  (let ((name (car (cdr entry))))
+  (if (eq *acl2-doc-top-name* name)
+      (message "At the top node of the %s manual"
+	       (if (eq *acl2-doc-top-name* 'ACL2)
+		   "ACL2 User's"
+		 "acl2+books combined"))
+    (message "Topic: %s" name))))
 
 (defun acl2-doc-display (name)
 
@@ -362,16 +398,7 @@ will be necessary first to create file
 books/system/doc/rendered-doc-combined.lsp; see :DOC acl2-doc."
   (interactive "P")
   (when toggle
-    (cond ((eq *acl2-doc-top-name* 'ACL2)
-	   (setq *acl2-doc-top-name* 'TOP)
-	   (setq *acl2-doc-file*
-		 (concat *acl2-sources-dir*
-			 "books/system/doc/rendered-doc-combined.lsp")))
-	  (t
-	   (setq *acl2-doc-top-name* 'ACL2)
-	   (setq *acl2-doc-file*
-		 (concat *acl2-sources-dir*
-			 "doc.lisp")))))
+    (acl2-doc-initialize-manual-type (eq *acl2-doc-top-name* 'ACL2)))
   (acl2-doc-reset)
   (acl2-doc-top))
 
@@ -486,7 +513,6 @@ previous i command."
 	   (setq *acl2-doc-search-string* str)
 	   (setq *acl2-doc-search-regexp-p* regexp-p)
 	   (acl2-doc-display (intern (cdr pair)))
-	   (message "Topic: %s" (cdr pair))
 	   (goto-char (car pair))
 	   (acl2-doc-update-top-history-entry))
 	  (continue-p (with-current-buffer
@@ -523,6 +549,13 @@ expression search."
   (interactive)
   (acl2-doc-search-aux nil :continue))
 
+(defun acl2-doc-help ()
+
+  "Go to the ACL2-DOC topic to read about how to use the ACL2-Doc browser."
+
+  (interactive)
+  (acl2-doc-go 'ACL2-DOC))
+
 (define-key global-map "\C-Xaa" 'acl2-doc)
 (define-key global-map "\C-XaA" 'acl2-doc-initialize)
 
@@ -531,6 +564,7 @@ expression search."
 (define-key acl2-doc-mode-map "i" 'acl2-doc-index)
 (define-key acl2-doc-mode-map "," 'acl2-doc-index-next)
 (define-key acl2-doc-mode-map "I" 'acl2-doc-initialize)
+(define-key acl2-doc-mode-map "h" 'acl2-doc-help)
 (define-key acl2-doc-mode-map "l" 'acl2-doc-last)
 (define-key acl2-doc-mode-map "n" 'acl2-doc-search-next)
 (define-key acl2-doc-mode-map "r" 'acl2-doc-return)
