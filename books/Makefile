@@ -1139,45 +1139,14 @@ chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
 ### Section: Building the XDOC combined manual
 ##############################
 
-# The xdoc combined manual is built in centaur/manual/, top page
-# index.html, as a byproduct of building centaur/doc.cert with
-# ACL2(h).  The following target builds the combined manual; the one
-# after it builds it much more quickly but perhaps a bit less
-# reliably.  (Don't forget to define ACL2=<your_acl2>.)  You might
-# wish to issue the command below directly, so that the -j option is
-# passed to the call of make.
+# The xdoc combined manual is built in directory centaur/manual/, top
+# page index.html, as a byproduct of building centaur/doc.cert with
+# ACL2(h).  The following target builds the combined manual.  You
+# might wish to issue the command below directly, so that the -j
+# option is passed to the call of make.  Don't forget to include
+# ACL2=acl2h, where acl2h is your ACL2(h) executable.
 combined-manual:
 	$(MAKE) USE_QUICKLISP=1 ACL2_BOOK_CERTS=centaur/doc.cert
-
-# For the Emacs-based ACL2-Doc browser (see :DOC acl2-doc), we need
-# file the file system/doc/rendered-doc-combined.lsp.  It can be
-# created by running make in this directory, for example as follows if
-# acl2h invokes your ACL2(h) image:
-
-#   make ACL2_BOOK_CERTS=system/doc/render-doc-combined.cert ACL2=acl2h
-
-# But that requires (or causes) centaur/doc.cert to be built, which
-# can be expensive.  A much faster way is to invoke make with the
-# following target.  Warning: At the moment this breaks (sorry).
-
-.PHONY: render-doc-combined-fast
-render-doc-combined-fast: \
-  str/defs.cert \
-  tools/defredundant.cert \
-  centaur/bitops/ihsext-basics.cert \
-  centaur/clex/example.cert \
-  system/doc/acl2-doc-wrap.cert
-	rm -f system/doc/rendered-doc-combined.lisp
-	$(MAKE) USE_QUICKLISP=1 ACL2_BOOK_CERTS=system/doc/acl2-doc-wrap.cert
-	@echo 'Making acl2+books combined manual...'
-	@cd system/doc/ ; \
-	(echo '(ld "combined-build-script.lsp")' | $(ACL2) 2>&1) > rendered-doc-combined.lisp.out
-	@if [ -f system/doc/rendered-doc-combined.lisp ] ; then \
-	  echo 'Successfully built system/doc/combined-build-script.lsp' ; \
-	else \
-	  echo 'FAILED to build system/doc/combined-build-script.lsp' ; \
-	  exit 1 ; \
-	fi
 
 # This has been tested using CCL on Linux, but may work for other
 # OS/Lisp combinations.  See also centaur/README.html.  ACL2(h) is
@@ -1186,6 +1155,19 @@ render-doc-combined-fast: \
 # a manual for your own books using ACL2 or ACL2(h); see topic SAVE
 # (parent topic XDOC) in the xdoc manual, either in centaur/manual/ or
 # on the web at http://fv.centtech.com/acl2/latest/doc/.
+
+# In order to read the acl2+books combined manual in the Emacs-based
+# ACL2-Doc browser (see :DOC acl2-doc), the file
+# system/doc/rendered-doc-combined.lsp is required.  That requires (or
+# causes) centaur/doc.cert to be built, as above, which can be
+# time-consuming.  We expect to include
+# system/doc/rendered-doc-combined.lsp with releases and also,
+# perhaps, with occasional updates on the ACL2 website.  To build this
+# text-based file after building centaur/doc.cert as above, issue the
+# following command in this directory, where acl2h is an ACL2(h)
+# executable.
+
+#   make ACL2_BOOK_CERTS=system/doc/render-doc-combined.cert ACL2=acl2h
 
 ##############################
 ### Section: Some notes

@@ -32,11 +32,41 @@
 
 (defattach base-pkg-display-override base-pkg-display-override-acl2-pkg)
 
+(defun substitute? (new old seq)
+  (declare (xargs :guard (and (stringp seq)
+                              (characterp new))))
+
+; Wait for state-global-let* to be defined, so that we can provide a
+; local lemma.
+
+  (if (position old seq)
+      (substitute new old seq)
+    seq))
+
+(defun rendered-name-acl2-doc (name)
+  (declare (xargs :guard (stringp name)))
+  (substitute? #\_ #\Space
+               (substitute? #\{ #\(
+                            (substitute? #\} #\)
+                                         name))))
+
+(defattach rendered-name rendered-name-acl2-doc)
+
 (include-book "std/util/defconsts" :dir :system)
 (set-state-ok t)
 (program)
 
 (include-book "acl2-doc-wrap")
+
+(defun rendered-symbol (sym)
+  (intern-in-package-of-symbol
+   (string-upcase (rendered-name (symbol-name sym)))
+   sym))
+
+(defun rendered-symbol-lst (symlist)
+  (cond ((endp symlist) nil)
+        (t (cons (rendered-symbol (car symlist))
+                 (rendered-symbol-lst (cdr symlist))))))
 
 (defun render-topic (x all-topics state)
   ;; Adapted from display-topic
@@ -64,7 +94,10 @@
 ; we decide to associate additional information with name, then we may have a
 ; more convincing reason to make this change.
 
-    (mv (list name parents terminal) state)))
+    (mv (list (rendered-symbol name)
+              (rendered-symbol-lst parents)
+              terminal)
+        state)))
 
 (defun render-topics (x all-topics state)
   (b* (((when (atom x))

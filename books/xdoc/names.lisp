@@ -171,6 +171,23 @@
 
  (defattach base-pkg-display-override base-pkg-display-override-default))
 
+; Added by Matt K., the following can be used for allowing symbols to be
+; printed in a way that is likely to avoid the need for escaping with |...|.
+; This is useful for creating the file system/doc/rendered-doc-combined.lisp.
+(encapsulate
+ ()
+ (logic)
+
+ (encapsulate
+  (((rendered-name *) => * :formals (name) :guard (stringp name)))
+  (local (defun rendered-name (x) x)))
+
+ (defun rendered-name-default (name)
+   (declare (xargs :mode :logic :guard (stringp name)))
+   name)
+
+ (defattach rendered-name rendered-name-default))
+
 (defun sym-mangle (x base-pkg acc)
 
 ; This is our "standard" for displaying symbols in HTML (in lowercase).  We
@@ -179,7 +196,7 @@
 ; about adding keyword support?
 
   (let* ((base-pkg (base-pkg-display-override base-pkg))
-         (name-low (name-low (symbol-name x)))
+         (name-low (name-low (rendered-name (symbol-name x))))
          (acc (if (in-package-p x base-pkg)
                   acc
                 (let ((pkg-low (name-low (symbol-package-name x))))
@@ -192,7 +209,7 @@
 ; Same as sym-mangle, but upper-case the first letter.
 
   (b* ((base-pkg (base-pkg-display-override base-pkg))
-       (name-low (name-low (symbol-name x))))
+       (name-low (name-low (rendered-name (symbol-name x)))))
     (if (in-package-p x base-pkg)
         (let* ((name-cap (str::upcase-first name-low)))
           (simple-html-encode-chars (explode name-cap) acc))
