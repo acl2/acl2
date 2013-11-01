@@ -927,9 +927,10 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; it didn't, surely different lisps will define char-name differently.  So,
 ; we can't allow notation such as #\\346.
 
-  (let ((ch (read-char s)))
-    (cond ((member ch *acl2-read-character-terminators*)
-           (unread-char ch s)
+  (let* ((ch (read-char s nil nil)))
+    (cond ((or (null ch)
+               (member ch *acl2-read-character-terminators*))
+           (when ch (unread-char ch s))
            (cond
             ((characterp acc)
              acc)

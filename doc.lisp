@@ -62218,6 +62218,18 @@ Subtopics
   which may be found in a Lisp comment in the ACL2 sources at
   (deflabel note-6-4 ...).
 
+  Fixed a bug in the ACL2 character reader that was causing an
+  end-of-file error when reading from a string ending in \"#\\c\", for c
+  a character or non-terminating sequence of characters. Thanks to
+  Jared Davis for sending the following example, whose evaluation in
+  raw Lisp had caused an error.
+
+    (let* ((*readtable* *acl2-readtable*)
+           (stream (make-string-input-stream \"#\\\\a\"))
+           (x1 (read stream nil :EOF))
+           (x2 (read stream nil :EOF)))
+      (list x1 x2))
+
   CHANGES AT THE SYSTEM LEVEL
 
   The ACL2 system [documentation] has been reworked for the [xdoc]
