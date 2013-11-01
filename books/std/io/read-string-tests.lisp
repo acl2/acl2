@@ -47,6 +47,8 @@
 (test-ok "*foo*" (*FOO*))
 (test-ok "#\\a " (#\a))
 (test-ok "#\\Page " (#\Page))
+(test-ok "#\\a" (#\a)) ; Matt K.: Fixed in acl2-devel svn revision 1154
+(test-ok "#\\Page" (#\Page)) ; Matt K.: Fixed in acl2-devel svn revision 1154
 
 ;; Some things that had better fail:
 
@@ -54,13 +56,9 @@
 (test-fail "'#.(list 1 2 3)")
 (test-fail "#\wtf ")
 (test-fail "#\Return ")
-(test-fail "#1=(a . #1#)")
-
-
-;; BOZO the following currently fails when it really should succeed.  I emailed
-;; Matt about this.
-
-(test-fail "#\\a")
+; Matt K.: Commenting out the following, which apparently loops forever when
+; using ACL2 rather than ACL2(h).
+; (test-fail "#1=(a . #1#)")
 
 #||
 
