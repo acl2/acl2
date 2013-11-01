@@ -18,12 +18,18 @@
 (include-book "combine")
 (include-book "nthcdr-bytes")
 (include-book "read-file-bytes")
-; (include-book "read-file-characters-no-error") ; omitted due to weird license stuff
 (include-book "read-file-characters")
 (include-book "read-file-lines")
 (include-book "read-file-objects")
 (include-book "read-ints")
 (include-book "take-bytes")
+
+#||
+;; Books we won't actually include, but would like cert.pl to build for us.
+ (include-book "unsound-read")                 ;; omitted due to ttags
+ (include-book "read-string")                  ;; omitted due to ttags
+ (include-book "read-file-characters-no-error") ;; omitted due to weird license stuff
+||#
 
 
 (defxdoc std/io
