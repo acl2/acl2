@@ -94,7 +94,9 @@
   (when (not (file-exists-p *acl2-doc-file*))
     (error "File %s needs to be built.  See :DOC acl2-doc."
 	   *acl2-doc-file*))
-  (let ((buf (find-file-noselect *acl2-doc-file*)))
+  (let* ((buf0 (find-buffer-visiting *acl2-doc-file*))
+	 (buf (or buf0
+		  (find-file-noselect *acl2-doc-file*))))
     (with-current-buffer
         buf
       (save-excursion
@@ -103,6 +105,8 @@
         (forward-sexp 1)
         (forward-line 3)
         (prog1 (acl2-doc-fix-alist (read buf))
+	  (when (not buf0)
+	    (kill-buffer buf))
           (message "Refreshed from %s" *acl2-doc-file*))))))
 
 (defmacro defv (var form)

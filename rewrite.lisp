@@ -9534,8 +9534,8 @@
 ; but they need not be defined in the ACL2 system implementation.)  Then the
 ; top-level recursive function is called with a clock that is greater than all
 ; clocks that would ever be needed for termination under this story for actual
-; calls made.  Thus, every value returned by ev-fncall is provably equal to the
-; value returned by magic-ev-fncall.
+; calls made.  Thus, for every input term, the value returned by ev-fncall is
+; provably equal to the value returned by magic-ev-fncall.
 
 ; Thus, we now know that the following is a theorem of w':
 

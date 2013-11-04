@@ -12614,11 +12614,11 @@
                 old-raw-mode)
 
 ; Clearly the two arguments of iff can't both be non-nil, since the value of
-; 'raw-include-book-dir-alist is never nil in raw-mode.  Can they both be nil?
-; Assuming old-raw-mode is nil, then since (iff v old-raw-mode) is false, we
-; are about to go into raw mode.  Also, since we are not in the previous case,
-; we are not currently under include-book-fn.  But since we are currently not
-; in raw mode and not under include-book-fn, we expect
+; 'raw-include-book-dir-alist is never :ignore in raw-mode.  Can they both be
+; nil?  Assuming old-raw-mode is nil, then since (iff v old-raw-mode) is false,
+; we are about to go into raw mode.  Also, since we are not in the previous
+; case, we are not currently under include-book-fn.  But since we are currently
+; not in raw mode and not under include-book-fn, we expect
 ; old-raw-include-book-dir-alist to be :ignore, as per the Essay on
 ; Include-book-dir-alist: "We maintain the invariant that :ignore is the value
 ; [of 'include-book-dir-alist] except when in raw-mode or during evaluation of

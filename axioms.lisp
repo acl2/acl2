@@ -38380,10 +38380,10 @@
 
 (table acl2-defaults-table nil nil
 
-; Warning: If you add a new key to this table, there will probably be a
-; change you should make to a list in chk-embedded-event-form.  (Search there
-; for add-include-book-dir, and consider keeping that list alphabetical, just
-; for convenience.)
+; Warning: If you add or delete a new key, there will probably be a change you
+; should make to a list in chk-embedded-event-form.  (Search there for
+; add-include-book-dir, and consider keeping that list alphabetical, just for
+; convenience.)
 
 ; Developer suggestion: The following form provides an example of how to add a
 ; new key to the table guard, in this case,
