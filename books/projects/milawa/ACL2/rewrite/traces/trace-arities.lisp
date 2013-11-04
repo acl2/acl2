@@ -423,7 +423,7 @@
   :rule-classes :definition
   :hints(("Goal"
           :expand (rw.faster-flag-trace-arities 'term x ext-hypbox acc)
-          ::in-theory (enable rw.faster-trace-arities rw.faster-trace-list-arities))))
+          :in-theory (enable rw.faster-trace-arities rw.faster-trace-list-arities))))
 
 (defthmd definition-of-rw.faster-trace-list-arities
   (equal (rw.faster-trace-list-arities x ext-hypbox acc)
@@ -434,7 +434,7 @@
   :rule-classes :definition
   :hints(("Goal"
           :expand (rw.faster-flag-trace-arities 'list x ext-hypbox acc)
-          ::in-theory (enable rw.faster-trace-arities rw.faster-trace-list-arities))))
+          :in-theory (enable rw.faster-trace-arities rw.faster-trace-list-arities))))
 
 (defthm rw.faster-flag-trace-arities-of-term
   (equal (rw.faster-flag-trace-arities 'term x ext-hypbox acc)

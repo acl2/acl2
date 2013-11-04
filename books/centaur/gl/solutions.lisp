@@ -223,7 +223,7 @@
 ; To make this execute much faster, we'll want a higher memory ceiling.
 
 ; Added 8/24/13 by Matt K.: This book failed to certify because of a missing
-; :ttags for the include-book form below..  However, the difference between
+; :ttags for the include-book form below.  However, the difference between
 ; using the two forms below, and not, was trivial when I used time$ to time the
 ; proof of 1f below:
 ;
@@ -251,7 +251,17 @@
 ; invoke set-max-mem, didn't solve the problem, whether I added them just above
 ; or added them at the beginning of this book.
 
-#-cmucl
+; Added by Matt K., 11/3/2013: I killed an ACL2(h) certification run for this
+; book using GCL 2.6.10pre that had already taken about 1 hour 36 minutes,
+; which was using the first version of the next event.  So I tried
+; certification using the second version of that event, but after 20 minutes
+; working on that event, I killed that run, too.  So I'm avoiding the next form
+; for GCL; but I will mention this to the GCL implementor.  Note that this book
+; recently took less than 2 minutes to certify using ACL2(h) built on CCL, and
+; for v6-3 took about 9 minutes using ACL2(h) built on CMUCL, which is normally
+; a much slower lisp than GCL.
+
+#+(and (not cmucl) (not gcl))
 (def-gl-thm 1f
   :hyp (and (unsigned-byte-p 3000 x)
             (unsigned-byte-p 3000 y))
@@ -259,12 +269,11 @@
   :g-bindings (gl::auto-bindings (:mix (:nat x 3000)
                                        (:nat y 3000))))
 
-#+cmucl
+#+(and cmucl (not gcl))
 (def-gl-thm 1f
   :hyp (and (unsigned-byte-p 2000 x)
             (unsigned-byte-p 2000 y))
   :concl (equal (+ x y) (+ y x))
   :g-bindings (gl::auto-bindings (:mix (:nat x 2000)
                                        (:nat y 2000))))
-
 

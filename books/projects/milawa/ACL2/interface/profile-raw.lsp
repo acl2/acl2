@@ -305,6 +305,7 @@
 
                  )))
 
+#+ccl
 (ACL2::defun %profile ()
               (ACL2::progn
                (ACL2::redef-notinline rw.flag-crewrite)
@@ -387,6 +388,7 @@
                            :when :after)
                nil))
 
+#+ccl
 (ACL2::defun %profile.stop ()
               (ACL2::progn
                (CCL:unadvise rw.try-ground-simplify)
