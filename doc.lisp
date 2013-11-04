@@ -62199,6 +62199,14 @@ Subtopics
   impression that you are newly disabling a built-in rule in the case
   that it merely remains disabled.
 
+  As requested by Sol Swords, erroneous evaluations of system function
+  magic-ev-fncall that had produced a message, msg, will now also
+  return that message. The following example, sent by Sol,
+  illustrates the fix: before, evaluation of (magic-ev-fncall 'cons
+  '(a) state nil nil) printed a message (to the comment window) and
+  then returned (mv t nil), but now it returns mv t <msg>, shere
+  <msg> denotes the message (printed with the [fmt] ~@ directive).
+
   NEW FEATURES
 
   We have added a tool for writing out useful information about a
@@ -62229,6 +62237,11 @@ Subtopics
            (x1 (read stream nil :EOF))
            (x2 (read stream nil :EOF)))
       (list x1 x2))
+
+  (GCL only) Improved the automatic proclaiming mechanism used for GCL
+  builds, in particular to avoid computing a return type when a term
+  is detected that could come from a call of [non-exec], and to do a
+  more complete job for calls of [return-last].
 
   CHANGES AT THE SYSTEM LEVEL
 
@@ -78215,7 +78228,7 @@ Subtopics
   Here, the label is \"Use\". The argument list for set-inhibit-warnings
   is a list of such labels, each of which is a string. Any warning is
   suppressed if its label is a member of this list, where case is
-  ignored, . Thus, for example, the warning above will not be printed
+  ignored. Thus, for example, the warning above will not be printed
   after a call of set-inhibit-warnings that contains the string,
   \"Use\" (or any string that is [string-equal] to \"Use\", such as \"use\"
   or \"USE\"). In summary: the effect of this event is to suppress any
