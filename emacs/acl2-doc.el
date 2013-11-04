@@ -95,8 +95,13 @@
     (error "File %s needs to be built.  See :DOC acl2-doc."
 	   *acl2-doc-file*))
   (let* ((buf0 (find-buffer-visiting *acl2-doc-file*))
-	 (buf (or buf0
-		  (find-file-noselect *acl2-doc-file*))))
+
+;;; We could let buf = buf0 if buf0 is non-nil.  But if the file was
+;;; changed after loading it into buf0, then we would be operating on
+;;; a stale buffer.  So we ignore buf0 other than to decide whether to
+;;; delete the buffer just before returning from this function.
+
+	 (buf (find-file-noselect *acl2-doc-file*)))
     (with-current-buffer
         buf
       (save-excursion
