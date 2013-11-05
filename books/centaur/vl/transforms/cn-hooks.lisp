@@ -72,3 +72,31 @@
 (defattach vl-modulelist-pre-toe-hook identity)
 
 
+
+
+(encapsulate
+  (((vl-modulelist-constcheck-hook * *) => *
+    :formals (x limit)
+    :guard (and (vl-modulelist-p x)
+                (natp limit))))
+
+  (local (defun vl-modulelist-constcheck-hook (x limit)
+           (declare (ignorable limit))
+           x))
+
+  (defthm vl-modulelist-p-of-vl-modulelist-constcheck-hook
+    (implies (force (vl-modulelist-p x))
+             (vl-modulelist-p (vl-modulelist-constcheck-hook x limit))))
+
+  (defthm vl-modulelist->names-of-vl-modulelist-constcheck-hook
+    (equal (vl-modulelist->names (vl-modulelist-constcheck-hook x limit))
+           (vl-modulelist->names x))))
+
+(defun vl-modulelist-constcheck-hook-default (x limit)
+  (declare (xargs :guard (and (vl-modulelist-p x)
+                              (natp limit)))
+           (ignorable limit))
+  x)
+
+(defattach vl-modulelist-constcheck-hook
+  vl-modulelist-constcheck-hook-default)

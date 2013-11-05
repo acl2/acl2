@@ -97,7 +97,6 @@ href='http://en.wikipedia.org/wiki/Lint_%28software%29'>linter</a> is a tool
 that looks for possible bugs in a program.  We now implement such a linter for
 Verilog, reusing much of @(see vl).</p>")
 
-
 (defoptions vl-lintconfig
   :parents (lint)
   :short "Command-line options for running @('vl lint')."
@@ -185,6 +184,14 @@ Verilog, reusing much of @(see vl).</p>")
                 \"vl lint --readme\" for more information."
                 :parser getopt::parse-string
                 :merge cons)
+
+   (cclimit     natp
+                :argname "N"
+                "Limit for the const check.  This is a beta feature that is not
+                 yet released.  Setting N to 0 (the default) disables the
+                 check.  Otherwise, limit the scope of the check to at most N
+                 sub-expressions."
+                :default 0)
 
    (mem         posp
                 :alias #\m
@@ -489,6 +496,7 @@ shown.</p>"
        (mods (cwtime (vl-modulelist-oddexpr-check mods)))
        (mods (cwtime (vl-modulelist-oprewrite mods)))
        (mods (cwtime (vl-modulelist-exprsize mods)))
+       (mods (cwtime (vl-modulelist-constcheck-hook mods config.cclimit)))
        (mods (cwtime (vl-modulelist-qmarksize-check mods)))
 
        (- (cw "~%vl-lint: finding unused/unset wires...~%"))
@@ -729,11 +737,13 @@ shown.</p>"
         :vl-warn-selfassign
         :vl-warn-instances-same
         :vl-warn-case-sensitive-names
-        :vl-warn-same-rhs))
+        :vl-warn-same-rhs
+        :vl-const-expr))
 
 (defconst *smell-minor-warnings*
   (list :vl-warn-partselect-same
-        :vl-warn-instances-same-minor))
+        :vl-warn-instances-same-minor
+        :vl-const-expr-minor))
 
 (defconst *multidrive-warnings*
   (list :vl-warn-multidrive))
