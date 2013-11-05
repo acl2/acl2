@@ -46,6 +46,45 @@
             (setq *acl2-sources-dir*
                   (substring dir 0 (1+ posn)))))))
 
+(defmacro defv (var form)
+  `(progn (defvar ,var)
+	  (setq ,var ,form)))
+
+(defmacro acl2-doc-init-vars ()
+  '(progn
+     (defv *acl2-doc-buffer-name*
+       "acl2-doc")
+     (defv *acl2-doc-index-buffer-name*
+       "acl2-doc-index")
+     (defv *acl2-doc-index-name* nil)
+     (defv *acl2-doc-index-name-found-p* nil)
+     (defv *acl2-doc-search-buffer-name*
+       "acl2-doc-search")
+     (defv *acl2-doc-search-string* nil)
+     (defv *acl2-doc-search-regexp-p* nil)
+     (defv *acl2-doc-search-separator* "###---###---###---###---###")
+     (defv *acl2-doc-history* nil)
+     (defv *acl2-doc-return* nil)
+     (defv *acl2-doc-state* nil)))
+
+(acl2-doc-init-vars)
+
+; The following variables can be set before loading this file, for
+; example in a user's .emacs file.
+(defvar *acl2-doc-rendered-combined-pathname*
+  (concat *acl2-sources-dir*
+	  "books/system/doc/rendered-doc-combined.lsp"))
+(defvar *acl2-doc-rendered-pathname*
+  (concat *acl2-sources-dir*
+	  "doc.lisp"))
+(defvar *acl2-doc-rendered-combined-url*
+  "http://www.cs.utexas.edu/users/moore/acl2/manuals/current/rendered-doc-combined.lsp.gz")
+; Set the following to 'ACL2 to get to the ACL2 User's Manual at
+; startup, but to 'TOP to get to the acl2+books combined manual.  Here
+; we set it to nil, which goes to the acl2+books combined manual if it
+; exists, and otherwise offers a choice.
+(defvar *acl2-doc-top-default* nil)
+
 (defun acl2-doc-fix-alist (alist)
 
 ;;; We delete topics whose names start with a vertical bar.  Most of
@@ -63,45 +102,25 @@
             (push entry ans))))
     (reverse ans)))
 
-; We deliberately avoid using the macro acl2-doc-init-vars to define the
-; following two variables, since they are handled outside acl2-doc-reset (hence
-; must also be handled outside acl2-doc-init-vars).
-(defvar *acl2-doc-file* "doc.lisp")
-(defvar *acl2-doc-top-name* 'ACL2)
+(defun acl2-doc-alist-create (rendered-pathname)
+  (when (not (file-exists-p rendered-pathname))
+    (error "File %s is missing!" rendered-pathname))
+  (let* ((large-file-warning-threshold
 
-(defun acl2-doc-initialize-manual-type (combined-p)
-  (let* ((combined-filename
-	  (and combined-p		; optimization
-	       (concat *acl2-sources-dir*
-		       "books/system/doc/rendered-doc-combined.lsp")))
-	 (combined-p
-	  (cond ((not combined-p) nil)
-		((file-exists-p combined-filename) t)
-		((eq combined-p :default) nil)
-		(t (error "File %s needs to be built. See :DOC acl2-doc."
-			  combined-filename)))))
-    (cond (combined-p
-	   (setq *acl2-doc-top-name* 'TOP)
-	   (setq *acl2-doc-file* combined-filename))
-	  (t
-	   (setq *acl2-doc-top-name* 'ACL2)
-	   (setq *acl2-doc-file*
-		 (concat *acl2-sources-dir* "doc.lisp"))))))
+; As of November 2013, file books/system/doc/rendered-doc-combined.lsp is
+; nearly 15M.  We take a guess here that modern platforms can handle plenty
+; more than that, so we rather arbitrarily bump the threshold for a warning up
+; to approximately twice the current size.
 
-(acl2-doc-initialize-manual-type :default)
-
-(defun acl2-doc-alist ()
-  (when (not (file-exists-p *acl2-doc-file*))
-    (error "File %s needs to be built.  See :DOC acl2-doc."
-	   *acl2-doc-file*))
-  (let* ((buf0 (find-buffer-visiting *acl2-doc-file*))
+	  (max large-file-warning-threshold 30000000))
+	 (buf0 (find-buffer-visiting rendered-pathname))
 
 ;;; We could let buf = buf0 if buf0 is non-nil.  But if the file was
 ;;; changed after loading it into buf0, then we would be operating on
 ;;; a stale buffer.  So we ignore buf0 other than to decide whether to
 ;;; delete the buffer just before returning from this function.
 
-	 (buf (find-file-noselect *acl2-doc-file*)))
+	 (buf (find-file-noselect rendered-pathname)))
     (with-current-buffer
         buf
       (save-excursion
@@ -112,38 +131,93 @@
         (prog1 (acl2-doc-fix-alist (read buf))
 	  (when (not buf0)
 	    (kill-buffer buf))
-          (message "Refreshed from %s" *acl2-doc-file*))))))
+          (message "Refreshed from %s" rendered-pathname))))))
 
-(defmacro defv (var form)
-  `(progn (defvar ,var)
-	  (setq ,var ,form)))
+(defun acl2-doc-state-initialized-p ()
+  (not (null *acl2-doc-state*)))
 
-(defmacro acl2-doc-init-vars ()
-  '(progn
-     (defv *acl2-doc-alist*
-       (acl2-doc-alist))
-     (defv *acl2-doc-buffer-name*
-       "acl2-doc")
-     (defv *acl2-doc-index-buffer-name*
-       "acl2-doc-index")
-     (defv *acl2-doc-index-name* nil)
-     (defv *acl2-doc-index-name-found-p* nil)
-     (defv *acl2-doc-search-buffer-name*
-       "acl2-doc-search")
-     (defv *acl2-doc-search-string* nil)
-     (defv *acl2-doc-search-regexp-p* nil)
-     (defv *acl2-doc-search-separator* "###---###---###---###---###")
-     (defv *acl2-doc-history* nil)
-     (defv *acl2-doc-return* nil)))
+(defun acl2-doc-rendered-combined-fetch ()
+  (or (file-exists-p *acl2-doc-rendered-combined-pathname*)
+      (and (y-or-n-p
+	    (format "Download %s and install as %s? "
+		    *acl2-doc-rendered-combined-url*
+		    *acl2-doc-rendered-combined-pathname*))
+	   (let ((acl2-doc-rendered-combined-pathname-gzipped
+		  (concat *acl2-doc-rendered-combined-pathname*
+			  ".gz")))
+	     (url-copy-file
+	      *acl2-doc-rendered-combined-url*
+	      acl2-doc-rendered-combined-pathname-gzipped)
+	     (shell-command-to-string
+	      (format "gunzip %s"
+		      acl2-doc-rendered-combined-pathname-gzipped))
+	     (file-exists-p *acl2-doc-rendered-combined-pathname*)))))
 
-(acl2-doc-init-vars)
+(defun acl2-doc-state-create (top-name)
 
-(defun acl2-doc-reset ()
-  (when (get-buffer *acl2-doc-index-buffer-name*)
-    (kill-buffer *acl2-doc-index-buffer-name*))
-  (when (get-buffer *acl2-doc-search-buffer-name*)
-    (kill-buffer *acl2-doc-search-buffer-name*))
-  (acl2-doc-init-vars))
+;;; The given top-name is 'ACL2, 'TOP, or nil.  If nil, then we use
+;;; the current top-name if one exists; otherwise we use
+;;; *acl2-doc-top-default* if specified; otherwise we query.
+
+  (cond
+   ((eq top-name 'ACL2)
+    (list top-name
+	  (acl2-doc-alist-create *acl2-doc-rendered-pathname*)))
+   ((and (eq top-name 'TOP)
+	 (acl2-doc-rendered-combined-fetch))
+    (list top-name
+	  (acl2-doc-alist-create *acl2-doc-rendered-combined-pathname*)))
+   ((eq top-name 'TOP)
+    (error "Combined acl2+books manual not loaded for browsing"))
+   ((acl2-doc-rendered-combined-fetch)	; top-name is nil
+    (list 'TOP
+	  (acl2-doc-alist-create *acl2-doc-rendered-combined-pathname*)))
+   ((y-or-n-p
+     " Do you want to browse the ACL2 User's Manual even though it
+ does not include documentation for the ACL2 community books?
+ Note: If your answer is \"y\", then avoid this query by placing the form
+ (setq *acl2-doc-top-default* 'ACL2) in your .emacs file. ")
+    (list 'ACL2
+	  (acl2-doc-alist-create *acl2-doc-rendered-pathname*)))
+   (t
+    (error "No manual loaded for browsing"))))
+
+(defun acl2-doc-reset (top-name)
+
+;;; The given top-name is 'ACL2, 'TOP, or nil.  See acl2-doc-state-create.
+
+  (let* ((top-name (or top-name
+		      (cond
+		       ((acl2-doc-state-initialized-p)
+
+;;; The following expression is (acl2-doc-state-top-name), except that we
+;;; haven't yet defined that function because we haven't yet defined the
+;;; function acl2-doc-maybe-reset.
+
+			(nth 0 *acl2-doc-state*))
+		       (*acl2-doc-top-default*))))
+	 (new-state (acl2-doc-state-create top-name)))
+    (when (get-buffer *acl2-doc-index-buffer-name*)
+      (kill-buffer *acl2-doc-index-buffer-name*))
+    (when (get-buffer *acl2-doc-search-buffer-name*)
+      (kill-buffer *acl2-doc-search-buffer-name*))
+    (acl2-doc-init-vars)
+    (setq *acl2-doc-state* new-state)
+    t))
+
+(defun acl2-doc-maybe-reset ()
+  (cond ((not (acl2-doc-state-initialized-p))
+	 (acl2-doc-reset nil)
+	 t)
+	(t nil)))
+
+(defun acl2-doc-state-top-name ()
+  (acl2-doc-maybe-reset)
+  (nth 0 *acl2-doc-state*))
+
+(defun acl2-doc-state-alist ()
+  (acl2-doc-maybe-reset)
+  (nth 1 *acl2-doc-state*))
 
 (define-derived-mode acl2-doc-mode
   fundamental-mode
@@ -197,9 +271,9 @@
   (setq buffer-read-only t)
   (goto-char (nth 0 entry))
   (let ((name (car (cdr entry))))
-  (if (eq *acl2-doc-top-name* name)
+  (if (eq (acl2-doc-state-top-name) name)
       (message "At the top node of the %s manual"
-	       (if (eq *acl2-doc-top-name* 'ACL2)
+	       (if (eq (acl2-doc-state-top-name) 'ACL2)
 		   "ACL2 User's"
 		 "acl2+books combined"))
     (message "Topic: %s" name))))
@@ -211,7 +285,7 @@
 ;;; commands; use acl2-doc-display-basic instead, which does not mess
 ;;; with those history variables.
 
-  (let ((tuple (assoc name *acl2-doc-alist*)))
+  (let ((tuple (assoc name (acl2-doc-state-alist))))
     (cond (tuple (switch-to-acl2-doc-buffer)
                  (let ((new-entry (cons 0 tuple)))
                    (if *acl2-doc-history*
@@ -284,13 +358,13 @@
 (defun acl2-doc-completing-read (prompt silent-error-p)
   (let* ((completion-ignore-case t)
          (default (acl2-doc-topic-at-point))
-         (default (and (assoc default *acl2-doc-alist*)
+         (default (and (assoc default (acl2-doc-state-alist))
                        default))
          (value-read (completing-read
                       (if default
                           (format "%s (default %s): " prompt default)
                         (format "%s: " prompt))
-                      *acl2-doc-alist*
+                      (acl2-doc-state-alist)
                       nil nil nil nil
                       default)))
     (list (cond ((equal value-read default) ;; i.e., (symbolp value-read)
@@ -323,12 +397,13 @@ in the ACL2 read-eval-print loop.
 \\{acl2-doc-mode-map}"
   (interactive "P")
   (cond (clear
-         (acl2-doc-reset)
-         (acl2-doc-go *acl2-doc-top-name*))
+	 (acl2-doc-reset nil)
+         (acl2-doc-go (acl2-doc-state-top-name)))
         (*acl2-doc-history*
          (acl2-doc-display-basic (car *acl2-doc-history*)))
         (t
-         (acl2-doc-go *acl2-doc-top-name*))))
+	 (acl2-doc-maybe-reset)
+         (acl2-doc-go (acl2-doc-state-top-name)))))
 
 (defun acl2-doc-last ()
   "Go to the last topic visited."
@@ -397,7 +472,7 @@ Please report this error to the ACL2 implementors."))))
 (defun acl2-doc-top ()
   "Go to the top topic."
   (interactive)
-  (acl2-doc-go *acl2-doc-top-name*))
+  (acl2-doc-go (acl2-doc-state-top-name)))
 
 (defun acl2-doc-initialize (&optional toggle)
   "Restart the ACL2-Doc browser, clearing its state.
@@ -406,15 +481,16 @@ default) and the acl2+books combined manual.  For the latter, it
 will be necessary first to create file
 books/system/doc/rendered-doc-combined.lsp; see :DOC acl2-doc."
   (interactive "P")
-  (when toggle
-    (acl2-doc-initialize-manual-type (eq *acl2-doc-top-name* 'ACL2)))
-  (acl2-doc-reset)
+  (acl2-doc-reset
+   (and toggle
+	(acl2-doc-state-initialized-p)
+	(if (eq (acl2-doc-state-top-name) 'ACL2) 'TOP 'ACL2)))
   (acl2-doc-top))
 
 (defun acl2-doc-index-buffer ()
   (or (get-buffer *acl2-doc-index-buffer-name*)
       (let ((buf (get-buffer-create *acl2-doc-index-buffer-name*))
-            (alist *acl2-doc-alist*))
+            (alist (acl2-doc-state-alist)))
 	(with-current-buffer
 	    buf
           (while alist
@@ -428,7 +504,7 @@ performs completion."
                 "Find topic (then use \",\" for more) "
                 t))
   (let ((buf (acl2-doc-index-buffer))
-	(found-p (assoc name *acl2-doc-alist*)))
+	(found-p (assoc name (acl2-doc-state-alist))))
     (setq *acl2-doc-index-name-found-p* (consp found-p))
     (setq *acl2-doc-index-name* (symbol-name name))
     (cond
@@ -475,7 +551,7 @@ previous i command."
 ;;; (with those topics inserted) if necessary.
   (or (get-buffer *acl2-doc-search-buffer-name*)
       (let ((buf (get-buffer-create *acl2-doc-search-buffer-name*))
-            (alist *acl2-doc-alist*))
+            (alist (acl2-doc-state-alist)))
 	(with-current-buffer
 	    buf
           (while alist

@@ -3083,27 +3083,31 @@ Subtopics
   "A custom Emacs browser for reading ACL2 [documentation]
 
   As discussed elsewhere (see [documentation]), the web-based
-  acl2+books manual is the preferred way to browse the combined
-  documentation for the ACL2 system and community books. Another
-  option is to read it at the terminal using the :[doc] command at
-  the terminal. But in this topic we describe how to read the
-  documentation using ACL2-Doc, a browser for reading the ACL2 system
-  documentation inside Emacs.
+  acl2+books combined manual provides a way to browse the combined
+  documentation for the ACL2 system and community books. This
+  documentation can also be read at the terminal using the :[doc]
+  command, though documentation for [books] will only be included for
+  those books that have been included in the session. In this topic
+  we describe how to browse the documentation using ACL2-Doc, a
+  browser for reading the ACL2 system documentation inside Emacs.
 
   While ACL2-Doc is much like Emacs Info, it is a separate system. In
   order to use ACL2-Doc, load the distributed file emacs/acl2-doc.el
   into Emacs. This will happen automatically if you load
   emacs/emacs-acl2.el, which will happen automatically if you put the
-  following form in your ~/.emacs file.
+  following form in your ~/.emacs file, replacing DIR by a path to
+  your ACL2 installation.
 
-    (load \"/Users/kaufmann/acl2/devel/emacs/emacs-acl2.el\")
+    (load \"DIR/emacs/emacs-acl2.el\")
 
   Then to start the browser, either execute the Emacs command
 
     meta-x acl2-doc
 
-  or else type: Control-x a a. If your browser session is somehow
-  corrupted, instead use an upper-case `a' as follows: Control-x a A.
+  or else type: Control-x a a (or Control-x a A to initialize). By
+  default you will browse the acl2+books combined manual, though if
+  you are using an svn version between ACL2 releases then you may be
+  queried; more on that below.
 
   At this point you will be in a buffer called \"acl2-doc\", which will
   be displaying the top-level ACL2 topic in a special mode, the
@@ -3112,6 +3116,7 @@ Subtopics
   in that buffer.
 
     I             acl2-doc-initialize
+                  [Note: `I' is equivalent to executing Control-x a A anywhere.]
     <Return>      acl2-doc-go!
     g             acl2-doc-go
     h             acl2-doc-help
@@ -3136,6 +3141,8 @@ Subtopics
        default) and the acl2+books combined manual.  For the latter, it
        will be necessary first to create file
        books/system/doc/rendered-doc-combined.lsp; see :DOC acl2-doc.
+
+       [Note: `I' is equivalent to executing Control-x a A anywhere.]
 
     <Return>      acl2-doc-go!
        Go to the topic occurring at the cursor position.
@@ -3185,47 +3192,21 @@ Subtopics
     u             acl2-doc-up
        Go to the parent of the current topic.
 
-  The Combined Manual
+  The Two Manuals
 
   ACL2-Doc can display the ACL2 User's Manual, which includes
   documentation for the ACL2 system but not for the community books.
-  But ACL2-Doc can also display the combined acl2+books manual, which
-  includes documentation for those books as well. In order to browse
-  the combined acl2+books manual you will first need to build file
-  books/system/doc/rendered-doc-combined.lsp, which you can do as
-  described below. By default, when ACL2-Doc is first started in your
-  Emacs session it will display the acl2+books combined manual if the
-  above file exists; otherwise it will display the ACL2 User's Manual
-  (without the books documentation). To change which of these two
-  manuals you display, you can re-initialize by giving a prefix
-  argument to the \"I\" command, as indicated above. The following
-  steps will create the file needed to display the acl2+books
-  combined manual, which (as mentioned above) is
-  books/system/doc/rendered-doc-combined.lsp. For best results, use a
-  directory separate from your regular ACL2 installation unless you
-  already are using ACL2(h) (see [hons-and-memoization]).
-  Specifically, this separation can avoid subsequent problems when
-  trying to include [books] with ACL2 that were certified using
-  ACL2(h)).
+  But by default, ACL2-Doc will display the acl2+books combined
+  manual, which includes documentation for those books as well. To
+  change which of these two manuals you display, just give a prefix
+  argument to the \"I\" command, as indicated above.
 
-   1. Build ACL2(h):
-
-          make large ACL2_HONS=h
-
-   2. Build the manual, optionally supplying your \"make\" command with a
-      \"-j\" argument. If \"acl2h\" invokes the ACL2(h) executable that
-      you just built, then you may omit \"ACL2=acl2h\" below; otherwise
-      replace \"acl2h\" by a full pathname for that executable.
-
-          cd books
-          make USE_QUICKLISP=1 ACL2_BOOK_CERTS=centaur/doc.cert ACL2=acl2h
-
-   3. Build the file books/system/doc/rendered-doc-combined.lsp as follows,
-      still standing in the books directory, modifying \"ACL2=acl2h\"
-      as above.
-
-          cd books
-          make ACL2_BOOK_CERTS=system/doc/render-doc-combined.cert ACL2=acl2h
+  If you are using an svn version of ACL2 and the books, between
+  releases, then you may need to download an extra file in order to
+  browse the acl2+books combined manual. Most likely you will just
+  answer y when queried about downloading the file when first using
+  ACL2-Doc. If you want more details, see the last of the Notes
+  below.
 
   Notes
 
@@ -3234,11 +3215,6 @@ Subtopics
       letter of a documentation topic name, or on a space character
       immediately after it, then that name will be offered as the
       default.
-
-    * Certain topic names are omitted: those whose symbols print in ACL2
-      using |...|. Most of these are for the tours, which are better
-      viewed in a web browser anyhow. All of the rest, or nearly all,
-      are release notes for ACL2(r) from July, 2011 or earlier.
 
     * Square brackets indicate documentation topic names, for example:
       [acl2-doc]. The square brackets are really there, for example
@@ -3292,7 +3268,55 @@ Subtopics
        2. All topics whose names reside in the \"ACL2-PC\" package; and, for the
           acl2+books combined manual,
        3. All other topics, sorted by [symbol-name] and then by
-          [symbol-package-name].")
+          [symbol-package-name].
+
+    * You may be queried, regarding whether you want to browse the
+      acl2+books combined manual, which is preferred, or the ACL2
+      User's Manual, which omits documentation for the books. Both of
+      these manuals are based on files that you will have if you are
+      using a released version of ACL2 (after Version 6.3). But if
+      you are using an svn version (see
+      http://acl2-devel.googlecode.com), then in order to use the
+      acl2+books combined manual you will need an extra file. You can
+      build this file yourself, as described below but you may prefer
+      to download it when queried by Emacs: when you start ACL2-Doc,
+      you will be given the option of downloading it from
+      http://www.cs.utexas.edu/users/moore/acl2/manuals/current/rendered-doc-combined.lsp.gz
+      and extracting into directory system/doc/ of your community
+      books directory. Indeed, the system will do all this for you if
+      you answer y to its query. However, if you prefer to browse the
+      ACL2 User's Manual (without the books), you can put the
+      following form into your ~/.emacs file, above the form that
+      loads the code for ACL2-Doc (see above).
+
+          (defvar *acl2-doc-top-default* 'TOP)
+
+      If you prefer to build rendered-doc-combined.lsp yourself, you can
+      do so as follows. For best results, use a directory separate
+      from your regular ACL2 installation unless you already are
+      using ACL2(h) (see [hons-and-memoization]). Specifically, this
+      separation can avoid subsequent problems when trying to include
+      [books] with ACL2 that were certified using ACL2(h)).
+
+       1. Build ACL2(h):
+
+              make large ACL2_HONS=h
+
+       2. Build the manual, optionally supplying your \"make\" command with a
+          \"-j\" argument. If \"acl2h\" invokes the ACL2(h) executable
+          that you just built, then you may omit \"ACL2=acl2h\" below;
+          otherwise replace \"acl2h\" by a full pathname for that
+          executable.
+
+              cd books
+              make USE_QUICKLISP=1 ACL2_BOOK_CERTS=centaur/doc.cert ACL2=acl2h
+
+       3. Build the file books/system/doc/rendered-doc-combined.lsp as follows,
+          still standing in the books directory, modifying
+          \"ACL2=acl2h\" as above.
+
+              cd books
+              make ACL2_BOOK_CERTS=system/doc/render-doc-combined.cert ACL2=acl2h")
  (ACL2-HELP
   (OTHER)
   "The acl2-help mailing list
