@@ -3243,8 +3243,19 @@ Subtopics
 
               We call these structures symbolic-objects.
 
-       2. Links that contain whitespace will not work. Consider the following
-          passage from the documentation for [gl].
+       2. Topic names that originally contained spaces now have underscores in
+          place of the spaces. So for example, the topic [cert.pl]
+          contains a link to the topic originally named as follows.
+
+              1. Certifying Simple Books
+
+          This link shows up in the ACL2-Doc browser (and in output from the
+          :[doc] command at the terminal) as:
+          [1._Certifying_Simple_Books]. When you see a potential link
+          that does include whitespace, then it will not work,
+          probably because the original markup specified English text
+          that differs from the topic name. For example, consider the
+          following passage from the documentation for [gl].
 
               GL requires ACL2(h) because it makes extensive use of
               [hons-and-memoization]. Some optional parts of GL also require
@@ -3252,7 +3263,10 @@ Subtopics
 
           The first link will take you to the topic, [hons-and-memoization].
           But the second link was actually written to be a link to
-          the documentation for [defttag].
+          the documentation for [defttag]. The <Return> command will
+          not work on that second link; unfortunately, the
+          alternative is to use the g command and specify defttag in
+          the minibuffer.
 
       Of course, the web-based browser avoids these idiosyncrasies (see
       [xdoc::save]), hence may be more appropriate for those who have
