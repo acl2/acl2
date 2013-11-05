@@ -23517,11 +23517,13 @@ libraries and development sources, respectively.
 <p>
 
 A combined manual, known as the <A
-HREF=\"http://fv.centtech.com/acl2/6.3/doc/\">xdoc manual</A>, incorporates not
-only <A HREF=\"#User's-Manual\">The User's Manual</A> for ACL2 (with some
-topics rearranged) but also documentation for many books.  Thanks to Jared
-Davis for building the xdoc processor for creating this view of the
-documentation.
+HREF=\"http://fv.centtech.com/acl2/6.3/doc/\">acl2+books combined (xdoc)
+manual</A>, incorporates not only <A HREF=\"#User's-Manual\">The User's
+Manual</A> for ACL2 (with some topics rearranged) but also documentation for
+many books.  Thanks to Jared Davis for building the xdoc processor for creating
+this view of the documentation.  We frequently make available recent <a
+href=\"http://www.cs.utexas.edu/users/moore/acl2/manuals/\">svn copies of the
+manual</a>.
 
 <p>
 
