@@ -120,6 +120,41 @@
   :inline t)
 
 
+(defun nonneg-fix (x)
+  (declare (xargs :guard t))
+  (if (integerp x)
+      (if (< x 0)
+          (- x)
+        x)
+    0))
+
+(def-typed-record nonneg
+  :elem-p (natp x)
+  :elem-list-p (nat-listp x)
+  :elem-default 0
+  :elem-fix (nonneg-fix x))
+
+
+(defrstobj m4andahalf
+  (m4.5-regs :type (array (unsigned-byte 128) (64))
+           :initially 321
+           :typed-record ub128-tr-p)
+
+  (m4.5-mem :type (array (integer 0 *) (65536))
+          :initially 17
+          :typed-record nonneg-tr-p)
+
+  (m4.5-sregs :type (array (signed-byte 32) (11))
+            :initially 12
+            :typed-record sb32-tr-p)
+
+  (m4.5-flags :type (unsigned-byte 1234) :initially 127)
+
+  :inline t)
+  
+
+
+
 (defrstobj m5
 
   ;; Just a big test of a stobj with many array fields and many normal fields.

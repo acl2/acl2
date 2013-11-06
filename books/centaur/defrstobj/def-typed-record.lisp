@@ -102,7 +102,8 @@
 
          (booleanp-of-elem-p    (mksym 'booleanp-of-elem-p-for- tr-p))
          (elem-p-of-default     (mksym 'elem-p-of-default-for- tr-p))
-         (elem-fix-correct      (mksym 'elem-fix-correct-for- tr-p))
+         (elem-p-of-elem-fix    (mksym 'elem-p-of-elem-fix-for- tr-p))
+         (elem-fix-idempotent   (mksym 'elem-fix-idempotent-for- tr-p))
          (elem-list-p-when-atom (mksym 'elem-list-p-when-atom-for- tr-p))
          (elem-list-p-of-cons   (mksym 'elem-list-p-of-cons-for- tr-p)))
 
@@ -124,11 +125,13 @@
          ;; to write (symbolp nil) as a rewrite rule, or similar.
          :rule-classes :built-in-clause)
 
-       (defthmd ,elem-fix-correct
-         (equal ,elem-fix
-                (if ,elem-p
-                    x
-                  ,elem-default)))
+       (defthmd ,elem-p-of-elem-fix
+         (let ((x ,elem-fix))
+           ,elem-p))
+
+       (defthmd ,elem-fix-idempotent
+         (implies ,elem-p
+                  (equal ,elem-fix x)))
 
        (defthmd ,elem-list-p-when-atom
          (implies (atom x)
@@ -155,7 +158,8 @@
                                  booleanp
                                  ,booleanp-of-elem-p
                                  ,elem-p-of-default
-                                 ,elem-fix-correct
+                                 ,elem-fix-idempotent
+                                 ,elem-p-of-elem-fix
                                  ,elem-list-p-when-atom
                                  ,elem-list-p-of-cons)))
 
@@ -234,27 +238,30 @@
          (declare (xargs :guard (and (natp n)
                                      (true-listp arr))))
          (if (zp n)
-             (,tr-set 0 (nth 0 arr) rec)
-           (,array-to-tr (- n 1) arr (,tr-set n (nth n arr) rec))))
+             rec
+           (let ((n (- n 1)))
+             (,array-to-tr n arr (,tr-set n (nth n arr) rec)))))
 
        (defun ,tr-to-array (n rec arr)
          (declare (xargs :guard (and (natp n)
                                      (true-listp arr))))
          (if (zp n)
-             (update-nth 0 (,tr-get 0 rec) arr)
-           (,tr-to-array (- n 1) rec (update-nth n (,tr-get n rec) arr))))
+             arr
+           (let ((n (- n 1)))
+             (,tr-to-array n rec (update-nth n (,tr-get n rec) arr)))))
 
        (defun ,tr-delete-indices (n rec)
          (declare (xargs :guard (natp n)))
          (if (zp n)
-             (,tr-set 0 ,elem-default rec)
-           (,tr-delete-indices (- n 1) (,tr-set n ,elem-default rec))))
+             rec
+           (let ((n (- n 1)))
+             (,tr-delete-indices n (,tr-set n ,elem-default rec)))))
 
        (defun ,array-rec-pair-p (arr rec len)
-         (declare (xargs :guard (posp len)))
+         (declare (xargs :guard (natp len)))
          (and ,(subst 'arr 'x elem-list-p)
               (= (len arr) len)
-              (equal rec (,tr-delete-indices (- len 1) rec))))
+              (equal rec (,tr-delete-indices len rec))))
 
 
        (deflabel ,(mksym 'start-of- tr-p '-theorems))
@@ -393,7 +400,7 @@
        (defthm ,(mksym tr-get '-of- array-to-tr)
          (equal (,tr-get key (,array-to-tr n arr rec))
                 (if (and (natp key)
-                         (<= key (nfix n)))
+                         (< key (nfix n)))
                     ,(subst '(nth key arr) 'x elem-fix)
                   (,tr-get key rec)))
          :hints(("Goal" :use ((:functional-instance tr-get-of-array-to-tr
@@ -402,19 +409,19 @@
 
        (defthm ,(mksym 'len-of- tr-to-array)
          (equal (len (,tr-to-array n rec arr))
-                (max (+ 1 (nfix n)) (len arr)))
+                (max (nfix n) (len arr)))
          :hints(("Goal" :use ((:functional-instance len-of-tr-to-array
                                                     . ,fi-pairs)))))
 
        (defthm ,(mksym 'elem-list-p-of- tr-to-array)
          (implies (and ,(subst 'arr 'x elem-list-p)
-                       (< (nfix n) (len arr)))
+                       (<= (nfix n) (len arr)))
                   ,(subst `(,tr-to-array n rec arr) 'x elem-list-p))
          :hints(("Goal" :use ((:functional-instance elem-list-p-of-tr-to-array
                                                     . ,fi-pairs)))))
 
        (defthm ,(mksym tr-to-array '-idempotent)
-         (implies (and (force (posp (len arr1)))
+         (implies (and (force (natp (len arr1)))
                        (force ,(subst 'arr1 'x elem-list-p)))
                   (equal (,tr-to-array n rec1 (,tr-to-array n rec2 arr1))
                          (,tr-to-array n rec1 arr1)))
@@ -424,7 +431,7 @@
        (defthm ,(mksym tr-to-array '-of- tr-set)
          (implies (and (natp n)
                        (natp i)
-                       (<= i n)
+                       (< i n)
                        ,(subst 'val 'x elem-p)
                        ,(subst 'arr 'x elem-list-p))
                   (equal (,tr-to-array n (,tr-set i val rec) arr)
@@ -434,7 +441,7 @@
 
        (defthm ,(mksym tr-to-array '-of- array-to-tr)
          (implies (and (force (equal (len arr1) (len arr2)))
-                       (force (equal n (- (len arr1) 1)))
+                       (force (equal n (len arr1)))
                        (force (posp (len arr1)))
                        (force ,(subst 'arr1 'x elem-list-p))
                        (force ,(subst 'arr2 'x elem-list-p)))
@@ -461,7 +468,7 @@
        (defthm ,(mksym tr-delete-indices '-of- tr-set)
          (implies (and (natp n)
                        (natp i)
-                       (<= i n))
+                       (< i n))
                   (equal (,tr-delete-indices n (,tr-set i val rec))
                          (,tr-delete-indices n rec)))
          :hints(("Goal" :use ((:functional-instance tr-delete-indices-of-tr-set
@@ -485,8 +492,8 @@
        (defthmd ,(mksym 'equal-of- array-to-tr)
          (implies (and (,array-rec-pair-p arr1 rec1 len1)
                        (,array-rec-pair-p arr2 rec2 len2)
-                       (equal len1 (+ 1 len))
-                       (equal len2 (+ 1 len))
+                       (equal len1 len)
+                       (equal len2 len)
                        (natp len))
                   (equal (equal (,array-to-tr len arr1 rec1)
                                 (,array-to-tr len arr2 rec2))
@@ -505,7 +512,8 @@
                           (union-theories
                            '(,booleanp-of-elem-p
                              ,elem-p-of-default
-                             ,elem-fix-correct
+                             ,elem-fix-idempotent
+                             ,elem-p-of-elem-fix
                              ,elem-list-p-when-atom
                              ,elem-list-p-of-cons)
                            (set-difference-theories
@@ -572,5 +580,20 @@
      :elem-list-p  (ubp-listp 8 x)
      :elem-default 0
      :elem-fix     (ubp-fix 8 x))
+
+
+   (defun nonneg-fix (x)
+     (declare (xargs :guard t))
+     (if (integerp x)
+         (if (< x 0)
+             (- x)
+           x)
+       0))
+
+   (def-typed-record nonneg
+     :elem-p (natp x)
+     :elem-list-p (nat-listp x)
+     :elem-default 0
+     :elem-fix (nonneg-fix x))
 
    ))

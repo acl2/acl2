@@ -350,7 +350,7 @@
                  (not (,arr-rec-name ,stobj-name))
                  ;; This part shouldn't get executed:
                  (equal (,arr-rec-name ,stobj-name)
-                        (,tr-delete-indices (- (,length-name ,stobj-name) 1)
+                        (,tr-delete-indices (,length-name ,stobj-name)
                                             (,arr-rec-name ,stobj-name)))))
           (good-stp-conjuncts stobj-name (cdr ftas) wrld))))
 
@@ -401,15 +401,15 @@
     `(progn
 
        (defund-nx ,getter (,stobj-name)
-         (,array-to-tr (- (,length-name ,stobj-name) 1)
+         (,array-to-tr (,length-name ,stobj-name)
                        (nth ,offset ,stobj-name)
                        (,arr-rec-name ,stobj-name)))
 
        (defund-nx ,setter (val ,stobj-name)
          (let* ((arr (nth ,offset ,stobj-name))
                 (len (,length-name ,stobj-name))
-                (arr (,tr-to-array (- len 1) val arr))
-                (rec (,tr-delete-indices (- len 1) val))
+                (arr (,tr-to-array len val arr))
+                (rec (,tr-delete-indices len val))
                 (,stobj-name  (update-nth ,offset arr ,stobj-name))
                 (,stobj-name  (,update-arr-rec-name rec ,stobj-name)))
            ,stobj-name))
