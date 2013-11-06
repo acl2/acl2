@@ -1,0 +1,6 @@
+See thacker/README for discussion of an example that runs successfully
+through the translation process.
+
+Directories mips/ and x86-64/ contain examples from Anthony Fox that
+can not yet be run through the translator from L3 to ACL2.  See in
+particular mips/README.

@@ -1,0 +1,9 @@
+asdf.lisp
+cache/
+curl.log
+dists/
+local-projects/
+quicklisp.lisp
+quicklisp/
+setup.lisp
+tmp

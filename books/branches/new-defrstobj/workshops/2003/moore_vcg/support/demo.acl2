@@ -1,0 +1,7 @@
+(value :q)
+
+(lp)
+
+(include-book "utilities")
+
+(certify-book "demo" ? t)

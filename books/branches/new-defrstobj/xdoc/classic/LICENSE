@@ -1,0 +1,74 @@
+
+                   ACL2 XDOC CLASSIC VIEWER - SUPPORT FILES
+                            COPYRIGHT INFORMATION
+
+
+Most source files (Makefile-trans, *.xsl, *.html, *.js, *.css) have copyright
+information embedded within them; for most of these files the copyright is as
+follows:
+
+   XDOC Documentation System for ACL2
+   Copyright (C) 2009-2013 Centaur Technology
+
+   Contact:
+     Centaur Technology Formal Verification Group
+     7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+     http://www.centtech.com/
+
+   This program is free software; you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by the Free
+   Software Foundation; either version 2 of the License, or (at your option)
+   any later version.
+
+   This program is distributed in the hope that it will be useful but WITHOUT
+   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+   more details.
+
+   You should have received a copy of the GNU General Public License along with
+   this program; if not, write to the Free Software Foundation, Inc., 51
+   Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+
+   Original author: Jared Davis <jared@centtech.com>
+
+This copyright also applies to the following images, which are original
+drawings by Centaur Technology for XDOC:
+
+   - leaf.png
+   - minus.png
+   - plus.png
+
+
+However, the many image files supporting the ACL2 Tours have a different
+heritage and copyright.  These images (*.gif) were copied from ACL2, and their
+license is as follows:
+
+    Copyright (c) 2012 Regents of the University of Texas.
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    o Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+    o Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+    o Neither the name of the University of Texas, Austin nor the names of its
+      contributors may be used to endorse or promote products derived from this
+      software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+    LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+

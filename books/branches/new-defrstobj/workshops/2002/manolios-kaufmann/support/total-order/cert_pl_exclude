@@ -1,0 +1,10 @@
+cert_pl_exclude
+
+The presence of this file tells cert.pl not to try to build any of the books in
+this directory.
+
+Quoting from workshops/2002/manolios-kaufmann/support/Makefile:
+
+# Note: total-order is deliberately not included in DIRS because its
+# certification fails for ACL2 versions after 2.5.
+

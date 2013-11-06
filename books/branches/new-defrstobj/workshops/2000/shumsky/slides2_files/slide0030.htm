@@ -1,0 +1,148 @@
+<html xmlns:v="urn:schemas-microsoft-com:vml"
+xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:p="urn:schemas-microsoft-com:office:powerpoint"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=ProgId content=PowerPoint.Slide>
+<meta name=Generator content="Microsoft PowerPoint 9">
+<link id=Main-File rel=Main-File href="../slides2.htm">
+<link rel=Preview href=preview.wmf>
+<!--[if !mso]>
+<style>
+v\:* {behavior:url(#default#VML);}
+o\:* {behavior:url(#default#VML);}
+p\:* {behavior:url(#default#VML);}
+.shape {behavior:url(#default#VML);}
+v\:textbox {display:none;}
+</style>
+<![endif]-->
+<title>Developing a Framework for Simulation, Verification and Testing of SDL
+Specifications</title>
+<meta name=Description content="3-Nov-00: SDL Specifications Verification">
+<link rel=Stylesheet href="master03_stylesheet.css">
+<![if !ppt]>
+<style media=print>
+<!--.sld
+	{left:0px !important;
+	width:6.0in !important;
+	height:4.5in !important;
+	font-size:107% !important;}
+-->
+</style>
+<script src=script.js></script><script><!--
+gId="slide0030.htm"
+if( !IsNts() ) Redirect( "PPTSld", gId );
+//-->
+</script><!--[if vml]><script>g_vml = 1;
+</script><![endif]--><script for=window event=onload><!--
+if( !IsSldOrNts() ) return;
+if( MakeNotesVis() ) return;
+LoadSld( gId );
+MakeSldVis(0);
+//-->
+</script><![endif]><o:shapelayout v:ext="edit">
+ <o:idmap v:ext="edit" data="40"/>
+</o:shapelayout>
+</head>
+
+<body lang=EN-US style='margin:0px;background-color:white'
+onclick="DocumentOnClick()" onresize="_RSW()" onkeypress="_KPH()">
+
+<div id=SlideObj class=sld style='position:absolute;top:0px;left:0px;
+width:534px;height:400px;font-size:16px;background-color:white;clip:rect(0%, 101%, 101%, 0%);
+visibility:hidden'><p:slide coordsize="720,540"
+ colors="#FFFFFF,#000000,#808080,#000000,#00CC99,#3333CC,#CCCCFF,#B2B2B2"
+ masterhref="master03.xml">
+ <p:shaperange href="master03.xml#_x0000_s1025"/><![if !ppt]><p:shaperange
+  href="master03.xml#_x0000_s1028"/><p:shaperange
+  href="master03.xml#_x0000_s1029"/><![endif]><p:shaperange
+  href="master03.xml#_x0000_m1026"/><v:shape id="_x0000_s40962" type="#_x0000_m1026"
+  style='position:absolute;left:54pt;top:10.5pt;width:612pt;height:60pt'>
+  <v:fill o:detectmouseclick="f"/>
+  <v:stroke o:forcedash="f"/>
+  <o:lock v:ext="edit" text="f"/>
+  <v:textbox style='mso-fit-shape-to-text:t'/>
+  <p:placeholder type="title"/></v:shape><p:shaperange
+  href="master03.xml#_x0000_m1027"/><v:shape id="_x0000_s40963" type="#_x0000_m1027"
+  style='position:absolute;left:27pt;top:81pt;width:666pt;height:448.5pt'>
+  <v:fill o:detectmouseclick="f"/>
+  <v:stroke o:forcedash="f"/>
+  <o:lock v:ext="edit" text="f"/>
+  <v:textbox style='mso-fit-shape-to-text:t'/>
+  <p:placeholder type="body" position="1"/></v:shape>
+ <div v:shape="_x0000_s40962" class=T style='position:absolute;top:2.5%;
+ left:1.49%;width:97.19%;height:10.0%'>SDL Specifications Verification</div>
+ <div v:shape="_x0000_s40963" class=B><span style='position:absolute;
+ top:15.75%;left:8.42%;width:90.63%'><span style='font-size:75%'><span
+ style='mso-special-format:bullet;position:absolute;left:-4.13%'>•</span></span><span
+ style='font-size:75%'>Once the simulator is proved correct, we can prove </span></span><span
+ style='position:absolute;top:21.0%;left:8.42%;width:86.89%'><span
+ style='font-size:75%'>properties of specifications w.r.t. the simulator&#13;</span></span><span
+ style='position:absolute;top:27.25%;left:8.42%;width:102.99%'><span
+ style='font-size:75%'><span style='mso-special-format:bullet;position:absolute;
+ left:-3.63%'>•</span></span><span style='font-size:75%'>Our protocol is
+ correct if sender and receiver agree on the </span></span><span
+ style='position:absolute;top:32.75%;left:8.42%;width:86.89%'><span
+ style='font-size:75%'>id of the last successfully transmitted frame&#13;</span></span>
+ <div style='position:absolute;top:39.0%;left:4.68%;width:90.63%;height:4.0%'><span
+ style='mso-special-format:nobullet;display:none'>•</span><span
+ style='font-family:"Courier New";font-size:56%;color:#5F5F5F'><b>(defthm
+ sender-receiver-agree-1&#13;</b></span></div>
+ <div style='position:absolute;top:43.75%;left:4.68%;width:90.63%;height:4.0%'><span
+ style='mso-special-format:nobullet;display:none'>•</span><span
+ style='font-family:"Courier New";font-size:56%;color:#5F5F5F'><b><span
+ style="mso-spacerun: yes">  </span>(&lt;= (variable-value 'ackid &#13;</b></span></div>
+ <div style='position:absolute;top:48.75%;left:4.68%;width:104.3%;height:4.0%'><span
+ style='mso-special-format:nobullet;display:none'>•</span><span
+ style='font-family:"Courier New";font-size:56%;color:#5F5F5F'><b><span
+ style='mso-tab-count:4;width:28.76%'> </span><span style="mso-spacerun: yes"> 
+ </span>(instance 'receiver (simulate S O)))&#13;</b></span></div>
+ <div style='position:absolute;top:53.5%;left:4.68%;width:90.63%;height:4.0%'><span
+ style='mso-special-format:nobullet;display:none'>•</span><span
+ style='font-family:"Courier New";font-size:56%;color:#5F5F5F'><b><span
+ style="mso-spacerun: yes">      </span>(variable-value 'frameid &#13;</b></span></div>
+ <div style='position:absolute;top:58.25%;left:4.68%;width:103.55%;height:4.0%'><span
+ style='mso-special-format:nobullet;display:none'>•</span><span
+ style='font-family:"Courier New";font-size:56%;color:#5F5F5F'><b><span
+ style='mso-tab-count:2;width:9.65%'> </span><span style="mso-spacerun:
+ yes">               </span>(instance 'sender (simulate S O)))))&#13;</b></span></div>
+ <div style='position:absolute;top:63.0%;left:4.68%;width:90.63%;height:4.0%'><span
+ style='mso-special-format:nobullet;display:none'>•</span><span
+ style='font-family:"Courier New";font-size:56%;color:#5F5F5F'><b>(defthm
+ sender-receiver-agree-2&#13;</b></span></div>
+ <div style='position:absolute;top:68.0%;left:4.68%;width:90.63%;height:4.0%'><span
+ style='mso-special-format:nobullet;display:none'>•</span><span
+ style='font-family:"Courier New";font-size:56%;color:#5F5F5F'><b><span
+ style='mso-tab-count:1;width:4.13%'> </span>(let ((v1 (variable-value &#13;</b></span></div>
+ <div style='position:absolute;top:72.75%;left:4.68%;width:102.99%;height:4.0%'><span
+ style='mso-special-format:nobullet;display:none'>•</span><span
+ style='font-family:"Courier New";font-size:56%;color:#5F5F5F'><b><span
+ style='mso-tab-count:3;width:19.41%'> </span>'ackid (instance 'receiver
+ (simulate S O))))&#13;</b></span></div>
+ <div style='position:absolute;top:77.5%;left:4.68%;width:90.63%;height:4.0%'><span
+ style='mso-special-format:nobullet;display:none'>•</span><span
+ style='font-family:"Courier New";font-size:56%;color:#5F5F5F'><b><span
+ style="mso-spacerun: yes">         </span>(v2 (variable-value &#13;</b></span></div>
+ <div style='position:absolute;top:82.25%;left:4.68%;width:106.55%;height:4.0%'><span
+ style='mso-special-format:nobullet;display:none'>•</span><span
+ style='font-family:"Courier New";font-size:56%;color:#5F5F5F'><b><span
+ style='mso-tab-count:3;width:18.76%'> </span> 'frameid (instance 'sender
+ (simulate S O)))))&#13;</b></span></div>
+ <div style='position:absolute;top:87.25%;left:4.68%;width:90.63%;height:4.0%'><span
+ style='mso-special-format:nobullet;display:none'>•</span><span
+ style='font-family:"Courier New";font-size:56%;color:#5F5F5F'><b><span
+ style="mso-spacerun: yes">    </span>(implies (&lt; v1 v2) (= (+ 1 v1)
+ v2))))&#13;</b></span></div>
+ <div style='position:absolute;top:92.0%;left:4.68%;width:107.86%;height:5.5%'><span
+ style='position:absolute;top:0%;left:3.47%;width:96.52%'><span
+ style='font-size:75%'><span style='mso-special-format:bullet;position:absolute;
+ left:-3.59%'>•</span></span><span style='font-size:75%'>Defined access
+ functions to extract variables and instances</span></span></div>
+ </div>
+</p:slide></div>
+
+</body>
+
+</html>

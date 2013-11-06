@@ -1,0 +1,103 @@
+This file is a guide to this directory as well as to all of its
+subdirectories.  The files are sparsely commented, partly due to
+personal style, but also because of the FMCAD2000 and ACL2 2000
+Workshop papers that I consider as the documentation.
+
+This directory should be placed in subdirectory
+books/workshops/2000/manolios/pipeline/pipeline/ of your ACL2
+distribution.
+
+To make all the books in and below this directory, type make (in this
+directory).  Similarly, to certify only the books at or below a
+subdirectory, go to that subdirectory and type make.
+
+This directory contains the following files:
+
+Makefile:           The makefile for this directory.
+
+top/:
+
+  Makefile:           The makefile for this directory.
+  alist-thms.lisp:    Simple alist definitions and theorems.
+  defun-weak-sk.lisp: The weak defun-sk macro.
+  ihs.lisp:           The arithmetic book that comes with the standard distribution.
+  meta.lisp:          The arithmetic book that comes with the standard distribution.
+  nth-thms.lisp:      Theorems about nth and nth-update.
+
+deterministic-systems/: Directory dealing with the deterministic machines.
+
+  Makefile:               The makefile for this directory
+  det-encap-wfbisim.lisp: The proof of the constrained system used to remove
+                            quantification and case analysis.
+  det-macros.lisp:        Macros used to prove deterministic machines correct.
+  inst.lisp:              Definition of an instruction.
+
+  ma/:  Directory with proofs of Sawada's simple machine.
+
+    Makefile:          The makefile for this directory.
+    isa.lisp:	       The definition of ISA.
+    ma-isa-flush.lisp: The proof that MA refines ISA, but using flushing.
+    ma-isa.lisp:       The proof that MA refines ISA.
+    ma.lisp:	       The definition of MA.
+
+  128/: Directory with MA variant with 128-bit ALU and exceptions.
+
+    Makefile:          The makefile for this directory.
+    isa128.lisp:       The ISA variant with exceptions and 128-bit ALU.
+    ma128-isa128.lisp: The proof that MA128 refines ISA128.
+    ma128.lisp:        The MA machine corresponding to isa128.
+
+    serial/: Directory with machine whose ALU is based on a serial adder.
+      
+      Makefile:               The makefile for this directory.
+      serial.lisp:	      Definition and proof of correctness for the serial adder based ALU.
+      ma128serial.lisp:	      The MA machine based on the serial adder.
+      ma128serial-ma128.lisp: The proof that MA128serial refines MA128.
+
+    netlist/: Directory with machine whose ALU is described, in part, at the netlist level.
+
+      Makefile:                  The makefile for this directory.
+      netlist.lisp:	         Definition and proof of correctness for the netlist ALU.
+      ma128net.lisp:	         The MA machine based on the netlist adder.
+      ma128net-ma128serial.lisp: The proof that MA128net refines MA128serial.
+
+non-deterministic-systems/: Directory dealing with the non-deterministic machines.
+
+  Makefile:                   The makefile for this directory
+  non-det-encap-wfbisim.lisp: The proof of the constrained system used to remove
+                                quantification and case analysis.
+  non-det-macros.lisp:        Macros used to prove non-deterministic machines correct.
+  inst.lisp:                  Definition of an instruction (same as the deterministic version).
+
+  ma/:  Directory with proof of ma-isa, but using the non-deterministic macros.
+
+    Makefile:          The makefile for this directory.
+    isa.lisp:	       The definition of ISA with interrupts ignored.
+    ma.lisp:	       The definition of MA with interrupts ignored.
+    ma-isa.lisp:       The proof that MA refines ISA.
+
+  int/:  Directory with proofs of Sawada's simple machine.
+
+    Makefile:            The makefile for this directory.
+    isa-int.lisp:	 The ISA variant with interrupts.
+    ma-int.lisp:	 The MA variant with interrupts.
+    ma-int-isa-int.lisp: The proof that MA-int refines ISA-int.
+
+  128/: Directory with MA variant with 128-bit ALU and exceptions.
+
+    Makefile:                The makefile for this directory.
+    isa128int.lisp:          The ISA128 variant with interrupts.
+    ma128int.lisp:           The MA machine corresponding to isa128int.
+    ma128int-isa128int.lisp: The proof that MA128int refines ISA128int.
+
+    serial/: Directory with machine whose ALU is based on a serial adder.
+      
+      Makefile:                     The makefile for this directory.
+      ma128intserial.lisp:	    The MA128int machine based on the serial adder.
+      ma128intserial-ma128int.lisp: The proof that MA128intserial refines MA128int.
+
+    netlist/: Directory with machine whose ALU is described, in part, at the netlist level.
+
+      Makefile:                        The makefile for this directory.
+      ma128intnet.lisp:	               The MA128int machine based on the netlist adder.
+      ma128intnet-ma128intserial.lisp: The proof that MA128intnet refines MA128intserial.

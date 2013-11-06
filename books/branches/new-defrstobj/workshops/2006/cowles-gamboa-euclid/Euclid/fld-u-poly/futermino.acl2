@@ -1,0 +1,14 @@
+(in-package "ACL2")
+
+(defconst *import-symbols*
+  (set-difference-eq
+   (union-eq *acl2-exports*
+	     *common-lisp-symbols-from-main-lisp-package*)
+     '(null + * - < = / commutativity-of-* associativity-of-* 
+	    commutativity-of-+ associativity-of-+ distributivity)))
+
+(defpkg "FUTER"
+  *import-symbols*)
+
+(certify-book "futermino" ? t)
+

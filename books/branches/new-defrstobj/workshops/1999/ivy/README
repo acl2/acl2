@@ -1,0 +1,23 @@
+The present README and the Makefile in this directory are provided with ACL2.
+Subdirectory ivy-v2/ was originally fetched 4/13/00 from
+http://www.mcs.anl.gov/~mccune/acl2/ivy/ivy-v2.tar.gz.  The certifiable books
+are in directory ivy-v2/ivy-sources/, with exercises and solutions in
+ivy-v2/ivy-sources/exercises/.
+
+ivy-v2/README:
+                Explains "Modification for ACL2 distribution":  two
+                subdirectories have been tarred and gzipped.
+
+ivy-v2/ivy-sources/Makefile:
+                Avoids recertification of books whose .cert files are
+                up-to-date.  Original version is Makefile.original.
+
+ivy-v2/ivy-sources/README:
+                Modified in support of the above changes.
+                Original version is README.original.
+
+ivy-v2/ivy-sources/arithmetic.lisp:
+                Slight change to support location of book in ACL2 distribution.
+
+ivy-v2/ivy-sources/exercises/Makefile:
+                Used for certifying the solutions books.

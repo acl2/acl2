@@ -1,0 +1,12 @@
+(in-package "ACL2")
+(include-book "firewallspec")
+
+;; [Jared] BOZO wtf...?
+
+(include-book "consistency-test-passed" :uncertified-okp nil)
+:u
+(include-book "compatible" :uncertified-okp nil)
+:u
+
+; cert-flags: ? t :defaxioms-okp t
+(certify-book "firewallworks" ? t :defaxioms-okp t)
