@@ -314,7 +314,7 @@
                            (list type-term subterm)
                          (let ((vars (acl2::term-vars type-term)))
                            (acl2::substitute-into-term
-                            type-term (cons (cons 'acl2::* subterm)
+                            type-term (cons (cons 'acl2::x subterm)
                                             (pairlis$ vars vars)))))
                      type-term))
        ((acl2::cmp rest)
@@ -404,7 +404,7 @@
        ((mv ok subst) (acl2::simple-one-way-unify pat x alist))
        ((unless ok)
         (type-gen-lit x (cdr type-gens) state))
-       (var (cdr (assoc 'acl2::* subst)))
+       (var (cdr (assoc 'acl2::x subst)))
        ((unless (symbolp var))
         (type-gen-lit x (cdr type-gens) state))
        (gen (caddar type-gens))
