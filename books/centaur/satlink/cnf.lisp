@@ -115,8 +115,14 @@ stobj.</p>"
 
   (if (atom formula)
       1
-    (b-and (eval-clause (car formula) env$)
-           (eval-formula (cdr formula) env$))))
+    (mbe :logic
+         (b-and (eval-clause (car formula) env$)
+                (eval-formula (cdr formula) env$))
+         :exec
+         (let ((a (eval-clause (car formula) env$)))
+           (if (eql a 1)
+               (eval-formula (cdr formula) env$)
+             0)))))
 
 
 
