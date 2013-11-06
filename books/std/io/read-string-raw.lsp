@@ -25,8 +25,9 @@
   (handler-case
    (progn (unless (live-state-p state)
             (error "read-string requires a live state!"))
-          (let ((acc nil)
-                (*readtable* *acl2-readtable*))
+          (let ((acc         nil)
+                (*readtable* *acl2-readtable*)
+                (*package*   (find-package (current-package state))))
             (with-input-from-string
              (stream str)
              (loop do

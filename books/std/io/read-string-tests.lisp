@@ -29,7 +29,8 @@
                      (equal objects ',expect)))
           (value '(value-triple :success))))
       (er soft 'test-ok "Test failed for ~s0: expect ~x1 but got ~x2; msg is ~@3"
-          ',str ',expect objects errmsg))))
+          ',str ',expect objects
+          (or errmsg "NIL")))))
 
 (defmacro test-fail (str)
   `(make-event
@@ -60,26 +61,15 @@
 ; using ACL2 rather than ACL2(h).
 ; (test-fail "#1=(a . #1#)")
 
-#||
+(test-ok "a" (acl2::a))
+(test-ok "acl2::a" (acl2::a))
+(test-ok "std::foo" (std::foo))
 
-The following is odd, perhaps a bug in the EOF handling of ACL2's character
-reading routines?
+(defttag :more-tests)
 
-? (let* ((stream (make-string-input-stream "#\\a"))
-         (x1 (read stream nil :EOF))
-         (x2 (read stream nil :EOF)))
-    (list x1 x2))
-(#\a :EOF)
+(progn! (in-package "STD"))
 
-? (let* ((*readtable* *acl2-readtable*)
-         (stream (make-string-input-stream "#\\a"))
-         (x1 (read stream nil :EOF))
-         (x2 (read stream nil :EOF)))
-    (list x1 x2))
-> Error: Unexpected end of file on #<STRING-INPUT-STREAM  #x30200672BEDD>,
-> near position 3, within "#\\a"
-> While executing: CCL::READ-CHAR-INTERNAL, in process listener(1).
-> Type :POP to abort, :R for a list of available restarts.
-> Type :? for other options.
+(acl2::test-ok "a" (std::a))
+(acl2::test-ok "acl2::a" (acl2::a))
+(acl2::test-ok "std::foo" (std::foo))
 
-||#

@@ -24,6 +24,8 @@
 (in-package "XDOC")
 (include-book "autolink")
 (include-book "str/defs" :dir :system)
+(include-book "std/io/read-string" :dir :system)
+(include-book "unsound-eval")
 (local (include-book "misc/assert" :dir :system))
 (set-state-ok t)
 (program)
@@ -352,7 +354,7 @@
 ; Basic preprocessor directives:
 
 (defun parse-directive (x n xl base-pkg kpa) ;; ==> (MV ERROR COMMAND ARG ARG-RAW N-PRIME)
-  ;; Every directive has the form @(command arg)
+  ;; Every basic directive has the form @(command arg)
   ;; Where command and arg are symbols.
   ;; We assume @( has just been read, and N is now pointing right after the open paren.
   ;; We try to read the command and arg.
@@ -1090,8 +1092,112 @@ baz
     (subseq x start end)))
 
 
+; Support for Lisp Evaluation
+;
+; @(`(foo ...)`) evaluates foo and pretty-prints the result with <tt>s
+;
+; @(`(:code (foo ...))`) evaluates foo with <code>s
+;
+; @(`(:raw (foo ...))`) evaluates foo, which must return STR or (mv STR ...),
+; and inserts STR into the accumulator, verbatim, without any special
+; encoding.
+;
+; We might add other keywords later.
 
+(defun preprocess-eval-parse
+  (str       ;; the ... part of the @(`...`) form
+   base-pkg  ;; base package for this topic, which we need to parse relative to
+   state)
+  "Returns (mv errmsg? parsed-sexpr state)"
+  (b* ((curr-pkg         (current-package state))
+       ;; Switch to the base-pkg to do the parsing, so that we read the symbols
+       ;; in the string relative to the base-pkg that was used at the time...
+       ((mv err & state) (acl2::in-package-fn (symbol-package-name base-pkg) state))
+       ((when err)
+        (mv (msg "Error: can't switch to package ~s0 to parse @(`...`).  Input: ~s1"
+                 (symbol-package-name base-pkg) str)
+            nil
+            state))
+       ((mv err objects state) (acl2::read-string str))
+       ((mv & & state) (acl2::in-package-fn curr-pkg state))
+       ((when err)
+        (mv (msg "Error: failed to parse @(`...`): ~@0.  Input: ~s1" err str)
+            nil
+            state))
+       ((unless (equal (len objects) 1))
+        (mv (msg "Error: parsed ~x0 expressions (instead of 1) from @(`...`).  Input: ~s1."
+                 (len objects) str)
+            nil
+            state))
+       (sexpr (car objects)))
+    (mv nil sexpr state)))
 
+(defun preprocess-eval-main (sexpr topics-fal base-pkg kpa state acc)
+  "Returns (MV ERRMSG? ACC STATE)"
+  (declare (ignorable kpa))
+  (b* (((mv kind sexpr)
+        (if (and (consp sexpr)
+                 (consp (cdr sexpr))
+                 (not (cddr sexpr))
+                 (keywordp (first sexpr)))
+            (mv (first sexpr) (second sexpr))
+          (mv nil sexpr)))
+       ((mv err vals state) (acl2::unsound-eval sexpr))
+       ((when err)
+        (mv (msg "Error: failed to evaluate @(`...`): ~@0.  Input expression: ~x1" err sexpr)
+            acc state))
+       (ret (cond ((atom vals)
+                   ;; The use of ER here is special; this is just a sanity
+                   ;; check, this should be an impossible case, not triggerable
+                   ;; by the user, just due to how unsound-eval works.
+                   (er hard? 'preprocess-eval-main "unsound-eval returned an atom?"))
+                  ((atom (cdr vals))
+                   (car vals))
+                  (t
+                   (cons 'mv vals))))
+
+       ((unless kind)
+        (b* ((acc            (str::revappend-chars "<tt>" acc))
+             ((mv acc state) (xml-ppr-obj-aux ret topics-fal base-pkg state acc))
+             (acc            (str::revappend-chars "</tt>" acc)))
+          (mv nil acc state)))
+
+       ((when (eq kind :code))
+        (b* ((acc            (str::revappend-chars "<code>" acc))
+             ((mv acc state) (xml-ppr-obj-aux ret topics-fal base-pkg state acc))
+             (acc            (str::revappend-chars "</code>" acc)))
+          (mv nil acc state)))
+
+       ((when (eq kind :raw))
+        (b* ((str (car vals))
+             ((unless (stringp str))
+              (mv (msg "Error: @(`(:raw ...)`) must return a string as its first (or only) ~
+                        return value, but ~x0 returned ~x1."
+                       sexpr ret)
+                  acc state))
+             (acc (str::revappend-chars str acc)))
+          (mv nil acc state))))
+    (mv (msg "Error: @(`(~x0 ...)`) is not a known evaluation keyword.  Input sexpr: ~x1."
+             kind sexpr)
+        acc state)))
+
+(defun preprocess-eval (str topics-fal base-pkg kpa state acc)
+  "Returns (MV ACC STATE)"
+  (b* (((mv errmsg sexpr state) (preprocess-eval-parse str base-pkg state))
+       ((when errmsg)
+        (or (not (xdoc-verbose-p))
+            (cw "; xdoc error: ~@0~%" errmsg))
+        (fmt-and-encode-to-acc-aux "[~@0]" (list (cons #\0 errmsg))
+                                   base-pkg state acc))
+
+       ((mv errmsg acc state)
+        (preprocess-eval-main sexpr topics-fal base-pkg kpa state acc))
+       ((when errmsg)
+        (or (not (xdoc-verbose-p))
+            (cw "; xdoc error: ~@0~%" errmsg))
+        (fmt-and-encode-to-acc-aux "[~@0]" (list (cons #\0 errmsg))
+                                   base-pkg state acc)))
+    (mv acc state)))
 
 (defun preprocess-aux (x n xl dir topics-fal base-pkg kpa state acc)
   "Returns (MV ACC STATE)"
@@ -1141,6 +1247,17 @@ baz
                           (acc (str::revappend-chars "</code>" acc)))
                        (preprocess-aux x (+ end 2) xl dir topics-fal base-pkg kpa state acc)))
 
+                    ((when (and (< (+ n 2) xl)
+                                (eql (char x (+ n 2)) #\`)))
+                     ;; @(`...`) directive -- Lisp evaluation of the form.
+                     (b* ((end (str::strpos-fast "`)" x (+ n 2) 2 xl))
+                          ((unless end)
+                           (prog2$ (and (xdoc-verbose-p)
+                                        (cw "; xdoc error: no closing `) found for @(` ...~%"))
+                                   (mv acc state)))
+                          (str (subseq x (+ n 3) end))
+                          ((mv acc state) (preprocess-eval str topics-fal base-pkg kpa state acc)))
+                       (preprocess-aux x (+ end 2) xl dir topics-fal base-pkg kpa state acc)))
 
                     ((mv error command arg arg-raw n) (parse-directive x (+ n 2) xl base-pkg kpa))
                     ((when error)

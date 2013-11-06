@@ -27,42 +27,38 @@
 (set-state-ok t)
 (program)
 
-(defun fmt-to-str (x base-pkg state)
-
-; Use ACL2's fancy new string-printing stuff to pretty-print an object into a
-; string.
-
+(defun fmt-to-str-aux (string alist base-pkg state)
+  ;; Use ACL2's fancy new string-printing stuff to do pretty-printing
   (b* ((hard-right-margin   (f-get-global 'acl2::fmt-hard-right-margin state))
        (soft-right-margin   (f-get-global 'acl2::fmt-soft-right-margin state))
        (print-case          (f-get-global 'acl2::print-case state))
        (pkg                 (current-package state))
+       (base-pkg-name       (symbol-package-name base-pkg))
+       ((mv er ?val state)  (acl2::in-package-fn base-pkg-name state))
+       ((when er)
+        (er hard? 'fmt-to-str-aux "Error switching to package ~x0" base-pkg-name)
+        (mv "" state))
        (state               (set-fmt-hard-right-margin 68 state))
        (state               (set-fmt-soft-right-margin 62 state))
        (state               (set-print-case :downcase state))
-
-       ((mv er ?val state)  (acl2::in-package-fn (symbol-package-name base-pkg) state))
-       ((when er)
-        (er hard? 'fmt-to-str "Error switching to package ~x0~%"
-            (symbol-package-name base-pkg))
-        (mv "" state))
-
        ((mv channel state)  (open-output-channel :string :character state))
-       ((mv & state)        (fmt1 "~x0" (list (cons #\0 x)) 0 channel state nil))
-
-       ((mv er str state)  (get-output-stream-string$ channel state))
-       ((when er)
-        (er hard? 'fmt-to-str "Error with get-output-stream-string$???")
-        (mv "" state))
-
-       ((mv er ?val state) (acl2::in-package-fn pkg state))
-       ((when er)
-        (er hard? 'fmt-to-str "Error switching back to package ~x0~%" pkg)
-        (mv "" state))
-
+       ((mv ?col state)     (fmt1 string alist 0 channel state nil))
+       ((mv er1 str state)  (get-output-stream-string$ channel state))
+       ((mv er2 ?val state) (acl2::in-package-fn pkg state))
        (state               (set-fmt-hard-right-margin hard-right-margin state))
        (state               (set-fmt-soft-right-margin soft-right-margin state))
-       (state               (set-print-case print-case state)))
+       (state               (set-print-case print-case state))
+       ((when er1)
+        (er hard? 'fmt-to-str-aux "Error with get-output-stream-string$?")
+        (mv "" state))
+       ((when er2)
+        (er hard? 'fmt-to-str-aux "Error switching back to package ~x0" pkg)
+        (mv "" state)))
     (mv str state)))
+
+(defun fmt-to-str (x base-pkg state)
+  ;; Basic formatting of sexprs, no encoding or autolinking
+  (fmt-to-str-aux "~x0" (list (cons #\0 x)) base-pkg state))
 
 (defun simple-html-encode-str (x n xl acc)
 
@@ -79,8 +75,12 @@
                 (t   (cons char1 acc)))))
     (simple-html-encode-str x (+ 1 n) xl acc)))
 
-(defun fmt-and-encode-to-acc (x base-pkg state acc)
-  ;; Basic encoding of sexprs with no autolinking.
-  (b* (((mv str state) (fmt-to-str x base-pkg state))
+(defun fmt-and-encode-to-acc-aux (string alist base-pkg state acc)
+  ;; Basic formatting with automatic HTML encoding
+  (b* (((mv str state) (fmt-to-str-aux string alist base-pkg state))
        (acc (simple-html-encode-str str 0 (length str) acc)))
     (mv acc state)))
+
+(defun fmt-and-encode-to-acc (x base-pkg state acc)
+  ;; Basic encoding of sexprs with no autolinking.
+  (fmt-and-encode-to-acc-aux "~x0" (list (cons #\0 x)) base-pkg state acc))
