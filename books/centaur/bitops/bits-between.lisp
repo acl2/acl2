@@ -81,7 +81,7 @@
 (defsection bits-between
   :parents (bitops)
   :short "@(call bits-between) returns a proper, ordered set of all @('i') in
-@('[n, m)') such that @('(@(see logbitp) i x)')."
+@('[n, m)') such that @('(logbitp i x)')."
 
   :long "<p>This is a key function in the definition of @(see
 bitset-members).</p>"

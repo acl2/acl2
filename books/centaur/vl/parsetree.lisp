@@ -3070,7 +3070,7 @@ and @(see vl-paramdecl-p) objects, respectively.</p>"
   :short "Type of an item in an event control list."
   :long "<p>Any particular atom in the event control list might have a
 @('posedge'), @('negedge'), or have no edge specifier at all, e.g., for plain
-atoms like @('a') and @('b') in @('always @@(a or b)').</p>")
+atoms like @('a') and @('b') in @('always @(a or b)').</p>")
 
 (defaggregate vl-evatom
   :parents (modules)
@@ -3100,8 +3100,8 @@ applied to a Verilog expression.</p>")
 
 (defaggregate vl-eventcontrol
   :parents (modules)
-  :short "Representation of an event controller like @('@@(posedge clk)') or
-@('@@(a or b)')."
+  :short "Representation of an event controller like @('@(posedge clk)') or
+@('@(a or b)')."
   :tag :vl-eventcontrol
   :legiblep nil
 
@@ -3265,7 +3265,7 @@ respectivley.</p>")
    (ctrl   vl-maybe-delayoreventcontrol-p
            "Control that affects when the assignment is done, if any.  These
             controls can be a delay like @('#(6)') or an event control like
-            @('@@(posedge clk)').  The rules for this are covered in Section
+            @('@(posedge clk)').  The rules for this are covered in Section
             9.2 and appear to perhaps be different depending upon the type of
             assignment.  Further coverage seems to be available in Section
             9.7.7.")
@@ -3504,8 +3504,8 @@ type.</li>
 parallel (@('fork ... join')) blocks.  See the compound statement's
 @('sequentialp') field for the detailed type.</li>
 
-<li>Timing statements are used for things like @('@@(posedge clk) substmt'),
-@('@@(foo or bar) substmt'), and @('#6 substmt').</li>
+<li>Timing statements are used for things like @('@(posedge clk) substmt'),
+@('@(foo or bar) substmt'), and @('#6 substmt').</li>
 
 </ul>")
 
@@ -3992,7 +3992,7 @@ flops, and to set up other simulation events.  A simple example would be:</p>
 
 @({
 module mymod (a, b, ...) ;
-  always @@(posedge clk) myreg <= in;
+  always @(posedge clk) myreg <= in;
 endmodule
 })")
 

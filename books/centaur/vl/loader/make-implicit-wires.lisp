@@ -168,7 +168,7 @@ abar} = {foo, ~a}').</p>
 
 <p><b>#4</b>.  Mostly as expected, neither tool allows undeclared wires on
 either side of an assignment in an always block.  The tools even reject
-implicit wires in procedural continuous assignments, e.g., @('always @@(b)
+implicit wires in procedural continuous assignments, e.g., @('always @(b)
 assign w = a;').  But this seems arguably incorrect: is not a procedural
 continuous assignment also a continuous assignment, whose LHS should therefore
 be able to contain implicit wires?</p>

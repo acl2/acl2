@@ -31,10 +31,10 @@
 (make-event
 
 ; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.  
+; while performing its proofs.
 
- (if (and (hons-enabledp state) 
-          (f-get-global 'parallel-execution-enabled state)) 
+ (if (and (hons-enabledp state)
+          (f-get-global 'parallel-execution-enabled state))
      (er-progn (set-waterfall-parallelism nil)
                (value '(value-triple nil)))
    (value '(value-triple nil))))
@@ -303,8 +303,17 @@ path to an internal wire in a module."
 
   :long "<p><b>Signature:</b> @(call fast-canonicalize-path) returns @('(mv
 successp new-path)').  On success, @('new-path') is a member of one of the
-following:</p> <ul> <li>@('(@(see mod-internal-paths) mod)')</li>
-<li>@('(gpl :i mod)'), or </li> <li>@('(gpl :o mod)').</li> </ul>
+following:</p>
+
+<ul>
+
+<li>@('(mod-internal-paths mod)')</li>
+
+<li>@('(gpl :i mod)'), or </li>
+
+<li>@('(gpl :o mod)').</li>
+
+</ul>
 
 <p>To understand this function, note that the set of @(see mod-internal-paths)
 does not include any non-canonical paths (inputs or outputs of the target

@@ -33,7 +33,7 @@
 defined in @('mods')."
 
   :long "<p>We leave this function enabled.  In the logic, it is defined as
-nothing more than membership in @('(@(see vl-modulelist->names) mods)').</p>
+nothing more than membership in @('(vl-modulelist->names mods)').</p>
 
 <p>This function is not efficient.  It carries out an @('O(n)') search of the
 modules.  See @(see vl-fast-has-module) for a faster alternative.</p>"
@@ -209,8 +209,7 @@ module lookups.</p>"
 is defined in @('mods')."
 
   :long "<p>We leave this function enabled.  In the logic, it is defined as
-nothing more a subsetp-equal check in @('(@(see vl-modulelist->names)
-mods)').</p>
+nothing more a subsetp-equal check in @('(vl-modulelist->names mods)').</p>
 
 <p>This function is not efficient.  It carries out a linear search through the
 list of modules for each name in @('x'), making it quadratic.  See also @(see
