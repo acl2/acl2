@@ -210,7 +210,9 @@
 href='http://www.cs.utexas.edu/users/moore/acl2/'>ACL2 Theorem Prover</a> and
 the <a href='http://acl2-books.googlecode.com/'>ACL2 Community Books</a>"
 
-   :long "<h3>Introduction</h3>
+   :long "<p>This manual was generated on <b>@(`(:raw (oslib::date))`)</b>.</p>
+
+<h3>Introduction</h3>
 
 <p><a href='http://www.cs.utexas.edu/users/moore/acl2/'>ACL2</a> is an
 interactive theorem prover.  It combines a Lisp-based programming language for

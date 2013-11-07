@@ -107,7 +107,9 @@
 #   - USE_QUICKLISP
 #     Set this if you want to build Quicklisp (which is sort of like
 #     CPAN or RubyGems but for Lisp).  Required for certain books in
-#     oslib.
+#     oslib, and hence to build centaur/manual/.  This works in CCL
+#     and Allegro CL but may not work in some other Common Lisp
+#     implementations.
 
 # Jared Davis has summarized the improvements over the earlier
 # Makefile as follows.
@@ -1084,6 +1086,7 @@ milawa-test-extended: milawa-test-basic
 milawa-clean:
 	cd projects/milawa/ACL2; $(MAKE) clean
 
+clean: milawa-clean
 
 # Warning: ACL2's GNUmakefile uses the following "certify-books"
 # target to implement its own target, "certify-books", which some
