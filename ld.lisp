@@ -21369,27 +21369,27 @@
 ; pertaining to violating stobj recognizers.
 
 ;   (defstobj st (fld :type (satisfies integerp) :initially 0))
-;   
+;
 ;   (defun integerp-of-fld (st)
 ;      (declare (xargs :stobjs st))
 ;      (mbe :logic t
 ;           :exec (integerp (fld st))))
-;   
+;
 ;   (defun screw-up-st (st)
 ;      (declare (xargs :mode :program :stobjs st))
 ;      (update-fld nil st))
-;   
+;
 ;   (make-event
 ;     (let ((st (screw-up-st st)))
 ;       (mv nil '(value-triple :screwed-up-st) state st)))
-;   
+;
 ;   (defun-sk exists-non-integer-fld ()
 ;      (exists st
 ;              (not (integerp-of-fld st))))
-;   
+;
 ;   (defthm no-non-integer-flds
 ;      (not (exists-non-integer-fld)))
-;   
+;
 ;   (defun non-integer-fld-clauseproc (clause hints st)
 ;      (declare (xargs :stobjs st)
 ;               (ignore hints))
@@ -21397,9 +21397,9 @@
 ;               (not (integerp-of-fld st)))
 ;          (mv nil nil) ;; proved
 ;        (mv nil (list clause))))
-;   
+;
 ;   (defevaluator my-ev my-ev-lst ((exists-non-integer-fld) (if a b c)))
-;   
+;
 ;   (defthm non-integer-fld-clauseproc-ok
 ;      (implies (and (pseudo-term-listp clause)
 ;                    (alistp a)
@@ -21409,18 +21409,82 @@
 ;                           a))
 ;               (my-ev (disjoin clause) a))
 ;      :rule-classes :clause-processor)
-;   
+;
 ;   (defthm does-exist-non-integer-fld
 ;      (exists-non-integer-fld)
 ;      :hints (("goal" :clause-processor
 ;               (non-integer-fld-clauseproc clause nil st))))
-;   
+;
 ;   (defthm bug
 ;      nil
 ;      :hints (("goal" :use (does-exist-non-integer-fld
 ;                            no-non-integer-flds)
 ;               :in-theory nil))
 ;      :rule-classes nil)
+
+; Improved an error message produced in cases that could be due to a missing
+; stobj declaration or formal parameter.  Below is a test suite, where the
+; first four forms come from Jared Davis, who suggested making such an
+; improvement.
+
+;   (set-state-ok t)
+;   (defun f (x state)
+;     (mv x state))
+;
+;   ; Normal error:
+;   (defun test1 (state)
+;     (mv-let (a state)
+;             (f n state)
+;             (mv a state)))
+;
+;   ; New error (missing state):
+;   (defun test2 (n)
+;     (mv-let (a state)
+;             (f n state)
+;             (mv a state)))
+;
+;   (defstobj st1 fld1)
+;   (defstobj st2 fld2)
+;
+;   (defun f2 (x state st1 st2)
+;     (declare (xargs :stobjs (st1 st2)))
+;     (mv x st1 st2 state))
+;
+;   ; New error (missing state)
+;   (defun test2 (n st1 st2)
+;     (declare (xargs :stobjs (st1 st2)))
+;     (mv-let (a st1 st2 state)
+;             (f2 n state st1 st2)
+;             (mv a st1 st2 state)))
+;
+;   ; New error (missing user-defined stobjs)
+;   (defun test3 (n st1 st2 state)
+;     (mv-let (a st1 st2 state)
+;             (f2 n state st1 st2)
+;             (mv a st1 st2 state)))
+;
+;   ; New error (missing both state and user-defined stobjs)
+;   (defun test4 (n st1 st2)
+;     (mv-let (a st1 st2 state)
+;             (f2 n state st1 st2)
+;             (mv a st1 st2 state)))
+;
+;   (defun f3 (x state st1)
+;     (declare (xargs :stobjs (st1)))
+;     (mv x st1 state))
+;
+;   ; New error (missing both state and one user-defined stobj)
+;   (defun test5 (n st1)
+;     (mv-let (a st1 state)
+;             (f3 n state st1)
+;             (mv a st1 state)))
+;
+;   ; Traditional error (no mention of "may occur"):
+;   (defun test6 (n st1 st2 state)
+;     (declare (xargs :stobjs (st1 st2)))
+;     (mv-let (a st1 x state)
+;             (f2 n state st1 st2)
+;             (mv a st1 x state)))
 
   :doc
   ":Doc-Section release-notes

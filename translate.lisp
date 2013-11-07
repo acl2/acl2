@@ -5979,6 +5979,30 @@
 
       'defstobj))
 
+(defun missing-known-stobjs (stobjs-out stobjs-out2 known-stobjs acc)
+
+; See translate11-call for a discussion of the arguments of this function,
+; which is intended to return a list of stobj names that are unexpectedly
+; returned because they are not known to be stobjs in the current context.
+
+; It is always legal to return nil.  But if the result is non-nil, then the
+; members of stobjs-out and stobjs-out2 are positionally equal (where the
+; shorter one is extended by nils if necessary) except that in some positions,
+; stobjs-out may contain nil while stobjs-out2 contains a value missing from
+; known-stobjs.  In that case the value returned is the result of pushing all
+; such values onto acc.
+
+  (cond ((and (endp stobjs-out) (endp stobjs-out2))
+         (reverse acc))
+        ((eq (car stobjs-out) (car stobjs-out2))
+         (missing-known-stobjs (cdr stobjs-out) (cdr stobjs-out2) known-stobjs
+                               acc))
+        ((and (null (car stobjs-out))
+              (not (member-eq (car stobjs-out2) known-stobjs)))
+         (missing-known-stobjs (cdr stobjs-out) (cdr stobjs-out2) known-stobjs
+                               (cons (car stobjs-out2) acc)))
+        (t nil)))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -6883,14 +6907,42 @@
          (trans-er+ form ctx
                     "It is illegal to invoke ~@0 here because of a signature ~
                      mismatch.  This function call returns a result of shape ~
-                     ~x1~@2 where a result of shape ~x3 is required."
+                     ~x1~@2 where a result of shape ~x3 is required.~@4"
                     (if (consp fn) msg (msg "~x0" fn))
                     (prettyify-stobjs-out stobjs-out-call)
                     (if (and flg (not (eq flg :failed)))
                         " (after accounting for the replacement of some input ~
                          stobjs by congruent stobjs)"
                       "")
-                    (prettyify-stobjs-out stobjs-out)))
+                    (prettyify-stobjs-out stobjs-out)
+                    (let* ((missing (missing-known-stobjs stobjs-out
+                                                          stobjs-out2
+                                                          known-stobjs
+                                                          nil))
+                           (missing-user-stobjs (set-difference-eq missing
+                                                                   '(nil state)))
+                           (state-string
+                            "  This error may occur when the ACL2 state is ~
+                             not available in the current context, for ~
+                             example as a formal parameter of a defun.")
+                           (user-stobj-string
+                            "  This error may~@0 occur when ~&1 ~
+                             ~#1~[is~/are~] not declared to be ~#1~[a ~
+                             stobj~/stobjs~] in the current context."))
+                      (cond
+                       ((and missing-user-stobjs
+                             (member-eq 'state missing))
+                        (msg "~@0~@1"
+                             state-string
+                             (msg user-stobj-string
+                                  " also"
+                                  missing-user-stobjs)))
+                       (missing-user-stobjs
+                        (msg user-stobj-string
+                             ""
+                             missing-user-stobjs))
+                       (missing state-string)
+                       (t "")))))
         (t (trans-er-let*
 
 ; We handle the special translation of wormhole-eval both here, when stobjs-out
