@@ -21486,6 +21486,9 @@
 ;             (f2 n state st1 st2)
 ;             (mv a st1 x state)))
 
+; Slightly improved error message for illegal rewrite rules, following feedback
+; from David Rager.
+
   :doc
   ":Doc-Section release-notes
 

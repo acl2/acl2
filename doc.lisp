@@ -40507,24 +40507,27 @@ Subtopics
   (ld-error-action state) and the updater is (set-ld-error-action val
   state). Ld-error-action must be :continue, :return, :return!, or
   :error. The initial value of ld-error-action is :continue, which
-  means that the top-level ACL2 [command] loop will not exit when an
-  error is caused by user-typein. But the default value for
-  ld-error-action on calls of [ld] is :return!.
+  means that the top-level ACL2 [command] loop (see [lp]) will not
+  exit when an error is caused by user-typein. But the default value
+  for ld-error-action on calls of [ld] is :return!.
 
   The general-purpose ACL2 read-eval-print loop, [ld], reads forms from
   [standard-oi], evaluates them and prints the result to
-  [standard-co]. However, there are various flags that control [ld]'s
-  behavior and ld-error-action is one of them. Suppose that
-  [ld-error-triples] is t and a form evaluates to an error triple (mv
-  erp val state); see [error-triples]. If the ``error component'',
-  erp, is non-nil, then an error is said to have occurred. If an
-  error occurs, [ld]'s action depends on ld-error-action. If it is
-  :continue, [ld] just continues processing the forms in
-  [standard-oi]. If it is :return or :return!, [ld] stops and returns
-  as though it had emptied the channel. If it is :error, [ld] stops
-  and returns, signalling an error to its caller by returning an
-  error triple with non-nil error component, and reverting the
-  logical [world] to its value just before that call of [ld].
+  [standard-co]. Note that the ACL2 top-level loop (see [lp]) results
+  from an invocation of [ld].
+
+  However, there are various flags that control [ld]'s behavior and
+  ld-error-action is one of them. Suppose that [ld-error-triples] is
+  t and a form evaluates to an error triple (mv erp val state); see
+  [error-triples]. If the ``error component'', erp, is non-nil, then
+  an error is said to have occurred. If an error occurs, [ld]'s
+  action depends on ld-error-action. If it is :continue, [ld] just
+  continues processing the forms in [standard-oi]. If it is :return
+  or :return!, [ld] stops and returns as though it had emptied the
+  channel. If it is :error, [ld] stops and returns, signalling an
+  error to its caller by returning an error triple with non-nil error
+  component, and reverting the logical [world] to its value just
+  before that call of [ld].
 
   To see this effect of :ERROR for ld-error-action, consider the
   following example.
@@ -40619,14 +40622,17 @@ Subtopics
 
   The general-purpose ACL2 read-eval-print loop, [ld], reads forms from
   [standard-oi], evaluates them and prints the result to
-  [standard-co]. However, there are various flags that control [ld]'s
-  behavior and ld-error-triples is one of them. If this variable has
-  the value t then when a form evaluates to an error triple (mv erp
-  val state) (see [error-triples]) such that erp is non-nil, then an
-  error is deemed to have occurred. When an error occurs in
-  evaluating a form, [ld] rolls back the ACL2 [world] to the
-  configuration it had at the conclusion of the last error-free form.
-  Then [ld] takes the action determined by [ld-error-action].")
+  [standard-co]. Note that the ACL2 top-level loop (see [lp]) results
+  from an invocation of [ld].
+
+  However, there are various flags that control [ld]'s behavior and
+  ld-error-triples is one of them. If this variable has the value t
+  then when a form evaluates to an error triple (mv erp val state)
+  (see [error-triples]) such that erp is non-nil, then an error is
+  deemed to have occurred. When an error occurs in evaluating a form,
+  [ld] rolls back the ACL2 [world] to the configuration it had at the
+  conclusion of the last error-free form. Then [ld] takes the action
+  determined by [ld-error-action].")
  (LD-EVISC-TUPLE
   (MISCELLANEOUS)
   "Determines whether [ld] suppresses details when printing
@@ -40639,13 +40645,16 @@ Subtopics
 
   The general-purpose ACL2 read-eval-print loop, [ld], reads forms from
   [standard-oi], evaluates them and prints the result to
-  [standard-co]. However, there are various flags that control [ld]'s
-  behavior and ld-evisc-tuple is one of them. [Ld] may print the
-  forms it is evaluating and/or the results of evaluation. Depending
-  on the value of ld-evisc-tuple [ld] may ``eviscerate'' objects
-  before printing them. See [set-evisc-tuple] for a discussion of
-  evisceration and of how other evisc-tuples affect the printing of
-  error messages and warnings, as well as other output not from ld.")
+  [standard-co]. Note that the ACL2 top-level loop (see [lp]) results
+  from an invocation of [ld].
+
+  However, there are various flags that control [ld]'s behavior and
+  ld-evisc-tuple is one of them. [Ld] may print the forms it is
+  evaluating and/or the results of evaluation. Depending on the value
+  of ld-evisc-tuple [ld] may ``eviscerate'' objects before printing
+  them. See [set-evisc-tuple] for a discussion of evisceration and of
+  how other evisc-tuples affect the printing of error messages and
+  warnings, as well as other output not from ld.")
  (LD-KEYWORD-ALIASES
   (SWITCHES-PARAMETERS-AND-MODES)
   "Abbreviation of some keyword commands
@@ -40713,11 +40722,14 @@ Subtopics
 
   The general-purpose ACL2 read-eval-print loop, [ld], reads forms from
   [standard-oi], evaluates them and prints the result to
-  [standard-co]. However, there are various flags that control [ld]'s
-  behavior and ld-keyword-aliases is one of them. Ld-keyword-aliases
-  affects how keyword commands are parsed. Generally speaking, [ld]'s
-  command interpreter reads ``:fn x1 ... xn'' as ``(fn 'x1 ... 'xn)''
-  when :fn is a keyword and fn is the name of an n-ary function; see
+  [standard-co]. Note that the ACL2 top-level loop (see [lp]) results
+  from an invocation of [ld].
+
+  However, there are various flags that control [ld]'s behavior and
+  ld-keyword-aliases is one of them. Ld-keyword-aliases affects how
+  keyword commands are parsed. Generally speaking, [ld]'s command
+  interpreter reads ``:fn x1 ... xn'' as ``(fn 'x1 ... 'xn)'' when
+  :fn is a keyword and fn is the name of an n-ary function; see
   [keyword-commands]. But this parse is overridden, as described
   above, for the keywords bound in the ld-keyword-aliases [table].")
  (LD-MISSING-INPUT-OK
@@ -40749,11 +40761,14 @@ Subtopics
 
   The general-purpose ACL2 read-eval-print loop, [ld], reads forms from
   [standard-oi], evaluates them and prints the result to
-  [standard-co]. However, there are various flags that control [ld]'s
-  behavior and ld-post-eval-print is one of them. If this global
-  variable is t, [ld] prints the result. In the case of a form that
-  produces a multiple value, [ld] prints the list containing all the
-  values (which, logically speaking, is what the form returned). If
+  [standard-co]. Note that the ACL2 top-level loop (see [lp]) results
+  from an invocation of [ld].
+
+  However, there are various flags that control [ld]'s behavior and
+  ld-post-eval-print is one of them. If this global variable is t,
+  [ld] prints the result. In the case of a form that produces a
+  multiple value, [ld] prints the list containing all the values
+  (which, logically speaking, is what the form returned). If
   ld-post-eval-print is nil, [ld] does not print the values. This is
   most useful when [ld] is used to load a previously processed file.
 
@@ -40765,16 +40780,16 @@ Subtopics
   triples to signal errors. The convention is that if erp (the first
   value) is nil, then the function is returning val (the second
   value) as its conventional single result and possibly
-  side-effecting [state] (as with some output). If erp is t, then an
-  error has been caused, val is irrelevant and the error message has
-  been printed in the returned [state]. Example ACL2 functions that
-  follow this convention include [defun] and [in-package]. If such
-  ``error producing'' functions are evaluated while
-  ld-post-eval-print is set to t, then you would see them producing
-  lists of length 3. This is disconcerting to users accustomed to
-  Common Lisp (where these functions produce single results but
-  sometimes cause errors or side-effect [state]). For more
-  information about error triples, see [programming-with-state].
+  side-effecting [state] (as with some output). If erp is not nil,
+  then an error has been caused, val is irrelevant and the error
+  message has been printed in the returned [state]. Example ACL2
+  functions that follow this convention include [defun] and
+  [in-package]. If such ``error producing'' functions are evaluated
+  while ld-post-eval-print is set to t, then you would see them
+  producing lists of length 3. This is disconcerting to users
+  accustomed to Common Lisp (where these functions produce single
+  results but sometimes cause errors or side-effect [state]). For
+  more information about error triples, see [programming-with-state].
 
   When ld-post-eval-print is :command-conventions and a form produces
   an error triple (mv erp val state) as its value, [ld] prints
@@ -40809,13 +40824,16 @@ Subtopics
 
   The general-purpose ACL2 read-eval-print loop, [ld], reads forms from
   [standard-oi], evaluates them and prints the result to
-  [standard-co]. However, there are various flags that control [ld]'s
-  behavior and ld-pre-eval-filter is one of them. If the filter is
-  :all, then every form read is evaluated. If the filter is :query,
-  then after a form is read it is printed to [standard-co] and the
-  user is asked if the form is to be evaluated or skipped. If the
-  filter is a new name, then all forms are evaluated until that name
-  is introduced, at which time [ld] terminates normally.
+  [standard-co]. Note that the ACL2 top-level loop (see [lp]) results
+  from an invocation of [ld].
+
+  However, there are various flags that control [ld]'s behavior and
+  ld-pre-eval-filter is one of them. If the filter is :all, then
+  every form read is evaluated. If the filter is :query, then after a
+  form is read it is printed to [standard-co] and the user is asked
+  if the form is to be evaluated or skipped. If the filter is a new
+  name, then all forms are evaluated until that name is introduced,
+  at which time [ld] terminates normally.
 
   The :all filter is, of course, the normal one. :Query is useful if
   you want to replay selected the [command]s in some file. The new
@@ -40832,13 +40850,16 @@ Subtopics
 
   The general-purpose ACL2 read-eval-print loop, [ld], reads forms from
   [standard-oi], evaluates them and prints the result to
-  [standard-co]. However, there are various flags that control [ld]'s
-  behavior and ld-pre-eval-print is one of them. If this global
-  variable is t, then before evaluating the form just read from
-  [standard-oi], [ld] prints the form to [standard-co]. If the
-  variable is nil, no such printing occurs. The t option is useful if
-  you are reading from a file of [command]s and wish to assemble a
-  complete script of the session in [standard-co].
+  [standard-co]. Note that the ACL2 top-level loop (see [lp]) results
+  from an invocation of [ld].
+
+  However, there are various flags that control [ld]'s behavior and
+  ld-pre-eval-print is one of them. If this global variable is t,
+  then before evaluating the form just read from [standard-oi], [ld]
+  prints the form to [standard-co]. If the variable is nil, no such
+  printing occurs. The t option is useful if you are reading from a
+  file of [command]s and wish to assemble a complete script of the
+  session in [standard-co].
 
   The value :never of ld-pre-eval-print is rarely used. During the
   evaluation of [encapsulate] and of [certify-book] forms, subsidiary
@@ -40864,14 +40885,17 @@ Subtopics
 
   The general-purpose ACL2 read-eval-print loop, [ld], reads forms from
   [standard-oi], evaluates them and prints the result to
-  [standard-co]. However, there are various flags that control [ld]'s
-  behavior and ld-prompt is one of them. Ld-prompt determines whether
-  [ld] prints a [prompt] before reading the next form from
-  [standard-oi]. If ld-prompt is nil, [ld] prints no [prompt]. If
-  ld-prompt is t, the default [prompt] printer is used, which
-  displays information that includes the current package, default
-  [defun-mode], [guard] checking status (on or off), and
-  [ld-skip-proofsp]; see [default-print-prompt].
+  [standard-co]. Note that the ACL2 top-level loop (see [lp]) results
+  from an invocation of [ld].
+
+  However, there are various flags that control [ld]'s behavior and
+  ld-prompt is one of them. Ld-prompt determines whether [ld] prints
+  a [prompt] before reading the next form from [standard-oi]. If
+  ld-prompt is nil, [ld] prints no [prompt]. If ld-prompt is t, the
+  default [prompt] printer is used, which displays information that
+  includes the current package, default [defun-mode], [guard]
+  checking status (on or off), and [ld-skip-proofsp]; see
+  [default-print-prompt].
 
   If ld-prompt is neither nil nor t, then it should be a function name,
   fn, such that (fn channel state) will print the desired [prompt] to

@@ -77,8 +77,9 @@
       term ~x1 to itself!  This can happen even when you submit a rule whose ~
       left and right sides appear to be different, in the case that those two ~
       sides represent the same term (in particular, after macroexpansion).  ~
-      See :DOC rewrite.  You may wish to consider submitting a DEFTHM event ~
-      ending with :RULE-CLASSES NIL."
+      For general information about rewrite rules in ACL2, see :DOC rewrite. ~
+      ~ You may wish to consider submitting a DEFTHM event ending with ~
+      :RULE-CLASSES NIL."
      name
      lhs))
    ((or (variablep lhs)
@@ -87,7 +88,8 @@
         (eq (ffn-symb lhs) 'if))
     (msg
      "A :REWRITE rule generated from ~x0 is illegal because it rewrites the ~
-      ~@1 ~x2.  See :DOC rewrite."
+      ~@1 ~x2.  For general information about rewrite rules in ACL2, see :DOC ~
+      rewrite."
      name
      (cond ((variablep lhs) "variable symbol")
            ((fquotep lhs) "quoted constant")
