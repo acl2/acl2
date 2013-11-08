@@ -227,6 +227,12 @@ be laid out, and for instance you can prove that two @('point3d') structures
 will be equal exactly when their components are equal (which is not a theorem
 for legible structures.)</p>
 
+<p>A middle ground between legibility and illegibility is to use @(':legiblep
+:ordered'), which still uses an alist representation for readability, but
+requires a strict ordering and that no other keys be present.  Such structures
+provide the same regularity benefits as illegible structures, and performance
+between that of ordinary legible and illegible structures.</p>
+
 <h4>Honsed Aggregates</h4>
 
 <p>By default, @(':hons') is nil and the constructor for an aggregate will
@@ -503,20 +509,20 @@ optimization altogether.</p>")
    plain-fields ; just names, not extended formals
    require      ; requirements list
    honsp
-   legiblep)
+   layout)
   (da-make-constructor-raw basename tag plain-fields
                            `(and ,@(strip-cadrs require))
-                           honsp legiblep))
+                           honsp layout))
 
 (defun da-make-honsed-constructor
   (basename
    tag
    plain-fields
    require
-   legiblep)
+   layout)
   (da-make-honsed-constructor-raw basename tag plain-fields
                                   `(and ,@(strip-cadrs require))
-                                  legiblep))
+                                  layout))
 
 #||
 (da-make-constructor 'taco :taco '(shell meat cheese lettuce sauce)
@@ -566,10 +572,10 @@ optimization altogether.</p>")
 ;;                  (da-insert-debugging-statements-into-require (cdr require))))))
 
 ;; bozo removed debugp for now
-(defun da-make-recognizer (basename tag plain-fields require legiblep)
+(defun da-make-recognizer (basename tag plain-fields require layout)
   (da-make-recognizer-raw basename tag plain-fields
                           `(and ,@(strip-cadrs require))
-                          legiblep))
+                          layout))
 
 #||
 (da-make-recognizer 'taco :taco '(shell meat cheese lettuce sauce)
@@ -1052,8 +1058,9 @@ optimization altogether.</p>")
        (legiblep (if (assoc :legiblep kwd-alist)
                      (cdr (assoc :legiblep kwd-alist))
                    t))
-       ((unless (booleanp legiblep))
-        (mv (raise "~x0: :legiblep should be a boolean." name) state))
+       ((unless (or (booleanp legiblep)
+                    (eq legiblep :ordered)))
+        (mv (raise "~x0: :legiblep should be a boolean or :ordered." name) state))
 
        (honsp (cdr (assoc :hons kwd-alist)))
        ((unless (booleanp honsp))
@@ -1071,7 +1078,14 @@ optimization altogether.</p>")
        (x        (da-x name))
        (foop     (da-recognizer-name name))
        (make-foo (da-constructor-name name))
-       (legiblep (and legiblep (not honsp)))
+
+       (layout (cond ((or honsp (not legiblep))
+                       ;; forces illegible
+                       :illegible)
+                     ((eq legiblep :ordered)
+                      :ordered)
+                     (t
+                      :legible)))
 
        (foop-of-make-foo
         (intern-in-package-of-symbol (str::cat (symbol-name foop)
@@ -1110,10 +1124,10 @@ optimization altogether.</p>")
 
            ,@(if already-definedp
                  nil
-               (list (da-make-recognizer name tag field-names require legiblep)))
-           ,(da-make-constructor name tag field-names require honsp legiblep)
-           ,(da-make-honsed-constructor name tag field-names require legiblep)
-           ,@(da-make-accessors name tag field-names legiblep)
+               (list (da-make-recognizer name tag field-names require layout)))
+           ,(da-make-constructor name tag field-names require honsp layout)
+           ,(da-make-honsed-constructor name tag field-names require layout)
+           ,@(da-make-accessors name tag field-names layout)
 
            ,@(and
               (eq mode :logic)
