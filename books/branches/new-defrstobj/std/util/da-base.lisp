@@ -126,10 +126,14 @@ reasoning about @('car') in general.</p>"
 
 ; FIELDS MAPS.
 ;
-; We can lay out the components of the structure in either "legibly" by using
-; maps with named keys, or "illegibly" by using a tree structure.  Illegible
-; structures are more efficient, but are not very convenient when you are
-; trying to debug your code.  By default, we lay out the structure legibly.
+; We can lay out the components of the structure in one of three ways:
+;
+;   :legible    -- alist-based recognizer (any order permitted)
+;   :ordered    -- ordered alist-based recognizer (but still with names)
+;   :illegible  -- tree-based recognizer without names
+;
+; Illegible structures are most efficient, but are not very convenient when you
+; are trying to debug your code.  By default, we lay out the structure legibly.
 ;
 ; A "fields map" is an alist that binds each field name to an s-expression that
 ; describes how to access it.  For instance, suppose the fields are (A B C).
@@ -204,7 +208,7 @@ reasoning about @('car') in general.</p>"
       body)))
 
 #||
-
+(da-illegible-fields-map 'taco :taco '(shell meat cheese lettuce sauce))
 (da-illegible-pack-fields nil :taco '(shell meat cheese lettuce sauce))
 
 ;; (CONS :TACO (CONS (CONS SHELL MEAT)
@@ -236,6 +240,7 @@ reasoning about @('car') in general.</p>"
 
 #||
 
+(da-legible-fields-map 'taco :taco '(shell meat cheese lettuce sauce))
 (da-legible-pack-fields nil :taco '(shell meat cheese lettuce sauce))
 
 ;; (CONS :TACO (CONS (CONS 'SHELL SHELL)
@@ -246,24 +251,84 @@ reasoning about @('car') in general.</p>"
 
 ||#
 
-(defun da-fields-map (basename tag legiblep fields)
-  ;; Create a fields map of the appropriate type
-  (if legiblep
-      (da-legible-fields-map basename tag fields)
-    (da-illegible-fields-map basename tag fields)))
+(defun da-nthcdr-fn (n x)
+  (if (zp n)
+      x
+    `(cdr ,(da-nthcdr-fn (- n 1) x))))
 
-(defun da-pack-fields (honsp legiblep tag fields)
-  ;; Create a fields map of the appropriate type
-  (if legiblep
-      (da-legible-pack-fields honsp tag fields)
-    (da-illegible-pack-fields honsp tag fields)))
+(defmacro da-nth (n x)
+  `(car ,(da-nthcdr-fn n x)))
 
-(defun da-structure-checks (basename tag legiblep fields)
+(defun da-ordered-fields-map (n basename tag fields)
+  ;; Convert a linear list of fields into a map from field names to paths.
+  (if (consp fields)
+      (cons (cons (car fields)
+                  `(cdr (da-nth ,n ,(da-body basename tag))))
+            (da-ordered-fields-map (+ 1 n) basename tag (cdr fields)))
+    nil))
+
+(defun da-ordered-pack-fields-aux (honsp fields)
+  ;; Convert a linear list of fields into the pairs for a list operation
+  (if (consp fields)
+      `(,(if honsp 'hons 'cons)
+        (,(if honsp 'hons 'cons) ',(car fields) ,(car fields))
+        ,(da-ordered-pack-fields-aux honsp (cdr fields)))
+    nil))
+
+(defun da-ordered-pack-fields (honsp tag fields)
+  ;; Convert a linear list of fields into consing code for a ordered map
+  (let ((body (da-ordered-pack-fields-aux honsp fields)))
+    (if tag
+        `(,(if honsp 'hons 'cons) ,tag ,body)
+      body)))
+
+
+
+(defun da-ordered-structure-checks-aux (fields path)
+  ;; Path is something like (cdddr x).  It's how far down the structure
+  ;; we are, so far.
+  (if (consp fields)
+      (list* `(consp ,path)
+             `(consp (car ,path))
+             `(eq (caar ,path) ',(car fields))
+             (da-ordered-structure-checks-aux (cdr fields) `(cdr ,path)))
+    (list `(not ,path))))
+
+(defun da-ordered-structure-checks (basename tag fields)
+  ;; Here we want to check that the structure has the right names and
+  ;; cons structure.  I.e., (:taco (:shell . __) (:meat . __) ...)
+  (da-ordered-structure-checks-aux fields (da-body basename tag)))
+
+#||
+
+(da-ordered-fields-map 0 'taco nil '(shell meat cheese lettuce sauce))
+(da-ordered-pack-fields nil :taco '(shell meat cheese lettuce sauce))
+(da-ordered-structure-checks 'taco nil '(shell meat cheese lettuce sauce))
+
+||#
+
+
+(defun da-fields-map (basename tag layout fields)
+  ;; Create a fields map of the appropriate type
+  (case layout
+    (:legible (da-legible-fields-map basename tag fields))
+    (:ordered (da-ordered-fields-map 0 basename tag fields))
+    (:illegible (da-illegible-fields-map basename tag fields))))
+
+(defun da-pack-fields (honsp layout tag fields)
+  ;; Create a fields map of the appropriate type
+  (case layout
+    (:legible   (da-legible-pack-fields honsp tag fields))
+    (:ordered   (da-ordered-pack-fields honsp tag fields))
+    (:illegible (da-illegible-pack-fields honsp tag fields))))
+
+(defun da-structure-checks (basename tag layout fields)
   ;; Check that the object's cdr has the appropriate cons structure
-  (if legiblep
-      `((alistp ,(da-body basename tag))
-        (consp ,(da-body basename tag)))
-    (da-illegible-structure-checks basename tag fields)))
+  (case layout
+    (:legible `((alistp ,(da-body basename tag))
+                (consp ,(da-body basename tag))))
+    (:ordered   (da-ordered-structure-checks basename tag fields))
+    (:illegible (da-illegible-structure-checks basename tag fields))))
 
 (defun da-fields-map-let-bindings (map)
   ;; Convert a fields map into a list of let bindings
@@ -279,7 +344,7 @@ reasoning about @('car') in general.</p>"
 
 ; (FOO ...) CONSTRUCTOR.
 
-(defun da-make-constructor-raw (basename tag fields guard honsp legiblep)
+(defun da-make-constructor-raw (basename tag fields guard honsp layout)
   ;; Previously we allowed construction to be inlined, but we prefer to only
   ;; inline accessors.
   (let ((foo (da-constructor-name basename)))
@@ -302,9 +367,9 @@ reasoning about @('car') in general.</p>"
                              ;; This looks like it does nothing, but really it
                              ;; "undoes" the in-theory event above.
                              '(:in-theory (enable ))))))
-       ,(da-pack-fields honsp legiblep tag fields))))
+       ,(da-pack-fields honsp layout tag fields))))
 
-(defun da-make-honsed-constructor-raw (basename tag fields guard legiblep)
+(defun da-make-honsed-constructor-raw (basename tag fields guard layout)
   (let ((foo        (da-constructor-name basename))
         (honsed-foo (da-honsed-constructor-name basename)))
     `(defun ,honsed-foo ,fields
@@ -318,18 +383,18 @@ reasoning about @('car') in general.</p>"
                         (and stable-under-simplificationp
                              '(:in-theory (enable ))))))
        (mbe :logic (,foo . ,fields)
-            :exec ,(da-pack-fields t legiblep tag fields)))))
+            :exec ,(da-pack-fields t layout tag fields)))))
 
 
 
 ; (FOOP X) RECOGNIZER.
 
-(defun da-make-recognizer-raw (basename tag fields guard legiblep)
+(defun da-make-recognizer-raw (basename tag fields guard layout)
   ;; Previously we allowed recognizers to be inlined, but now we prefer to
   ;; only inline accessors.
   (let* ((foo-p      (da-recognizer-name basename))
          (x          (da-x basename))
-         (fields-map (da-fields-map basename tag legiblep fields))
+         (fields-map (da-fields-map basename tag layout fields))
          (let-binds  (da-fields-map-let-bindings fields-map)))
   `(defund ,foo-p (,x)
      (declare (xargs :guard t
@@ -355,7 +420,7 @@ reasoning about @('car') in general.</p>"
                 `((consp ,x)
                   (eq (car ,x) ,tag))
               nil)
-          ,@(da-structure-checks basename tag legiblep fields)
+          ,@(da-structure-checks basename tag layout fields)
           (let ,let-binds
             (declare (ACL2::ignorable ,@fields))
             ,guard)))))
@@ -402,8 +467,8 @@ reasoning about @('car') in general.</p>"
             (da-make-accessors-aux basename (cdr fields) map))
     nil))
 
-(defun da-make-accessors (basename tag fields legiblep)
-  (da-make-accessors-aux basename fields (da-fields-map basename tag legiblep fields)))
+(defun da-make-accessors (basename tag fields layout)
+  (da-make-accessors-aux basename fields (da-fields-map basename tag layout fields)))
 
 (defun da-make-accessor-of-constructor (basename field all-fields)
   (let ((foo->bar (da-accessor-name basename field))
@@ -633,12 +698,12 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
 
 (defun def-primitive-aggregate-fn (basename fields tag)
   (let ((honsp nil)
-        (legiblep t)
+        (layout :legible)
         (guard t))
     `(progn
-       ,(da-make-recognizer-raw basename tag fields guard legiblep)
-       ,(da-make-constructor-raw basename tag fields guard honsp legiblep)
-       ,@(da-make-accessors basename tag fields legiblep)
+       ,(da-make-recognizer-raw basename tag fields guard layout)
+       ,(da-make-constructor-raw basename tag fields guard honsp layout)
+       ,@(da-make-accessors basename tag fields layout)
        ,@(da-make-accessors-of-constructor basename fields)
        ,(da-make-binder basename fields)
        ,(da-make-changer-fn basename fields)

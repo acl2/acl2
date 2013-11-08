@@ -102,6 +102,7 @@
 
 (defaggregate taco
     (shell meat cheese lettuce sauce)
+    :legiblep :ordered
     :tag :taco
     :require ((integerp-of-taco->shell (integerp shell)
                                        :rule-classes ((:rewrite) (:type-prescription))))
@@ -128,14 +129,14 @@
 ;;  Basic binding tests
 
 (b* ((?my-taco (make-taco :shell 5
-                         :meat 'beef
-                         :cheese 'swiss
-                         :lettuce 'iceberg
-                         :sauce 'green))
+                          :meat 'beef
+                          :cheese 'swiss
+                          :lettuce 'iceberg
+                          :sauce 'green))
      ((taco x) my-taco)
      (five (+ 2 3)))
-    (list :x.shell x.shell
-          :x.lettuce x.lettuce
+    (list :shell x.shell
+          :lettuce x.lettuce
           :five five
           :my-taco my-taco))
 

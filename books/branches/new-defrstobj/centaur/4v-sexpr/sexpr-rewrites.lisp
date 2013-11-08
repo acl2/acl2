@@ -442,32 +442,36 @@ alist lookups, since the overhead will outweigh the benefit."
       :flag sexpr-list)))
 
 
-(defsection sexpr-rewrite1-args
+(define sexpr-rewrite-try-rules (args rewrites)
+  :returns (mv successp rhs sigma)
+  (b* (((when (atom rewrites)) (mv nil nil nil))
+       ((when (atom (car rewrites)))
+        (sexpr-rewrite-try-rules args (cdr rewrites)))
+       ((mv ok subst)
+        (sexpr-unify-list (caar rewrites) args nil))
+       ((when ok)
+        (mv t (cdar rewrites) subst)))
+    (sexpr-rewrite-try-rules args (cdr rewrites)))
+
   :parents (sexpr-rewriting-internals)
+
   :short "Given the args of a term and a list of possible rewrites for terms
 with the same top function symbol, tries each of the rewrites until one
 matches."
-  :long "Returns (mv new-x changedp), where changedp indicates that there was a
-rule that matched, and new-x is the rewritten term according to that rule.
-New-x and changedp are both nil if no rule matched."
-  ;; returns (mv new-x changedp)
-  (defund sexpr-rewrite1-args (args rewrites)
-    (declare (xargs :guard t))
-    (b* (((when (atom rewrites)) (mv nil nil))
-         ((when (atom (car rewrites)))
-          (sexpr-rewrite1-args args (cdr rewrites)))
-         ((mv ok subst)
-          (sexpr-unify-list (caar rewrites) args nil))
-         ((when ok)
-          (b* ((newx (4v-sexpr-compose-nofal (cdar rewrites) subst)))
-            (mv newx t))))
-      (sexpr-rewrite1-args args (cdr rewrites))))
 
-  (local (in-theory (enable sexpr-rewrite1-args)))
+  :long "<p>Returns (mv successp rhs sigma), where successp indicates that
+there was a rule that matched, rhs is the right-hand side of that rule, and
+sigma is the substitution alist, such that the composition of rhs and sigma is
+equivalent to some (implicit) function applied to the args.</p>
 
-  ;; This says whether the rewrites are ok, i.e. each LHS is 4v-sexpr-equiv to
-  ;; the corresponding RHS.  The LHSes are just lists of arguments, for which FN
-  ;; is the top-level function symbol.
+<p>Regarding the function symbol: Rewrite rules are stored by leading LHS
+function symbol, and omit this function symbol from the LHS.  So the LHS is
+just represented as a list of arguments.  A rewrite rule is correct if
+that (implicit) function symbol applied to the LHS args is sexpr-equivalent to
+the corresponding RHS.</p>"
+
+  ///
+
   ;; This isn't intended to be run, but to be proven, since 4v-sexpr-equiv is not
   ;; executable.  So we don't bother with a guard.
   (defun 4v-sexpr-fn-rewritesp (fn rewrites)
@@ -477,46 +481,85 @@ New-x and changedp are both nil if no rule matched."
            (4v-sexpr-equiv (cons fn (caar rewrites)) (cdar rewrites))
            (4v-sexpr-fn-rewritesp fn (cdr rewrites)))))
 
+  (defthm sexpr-rewrite-try-rules-correct
+    ;; not a great rewrite rule
+    (mv-let (successp rhs subst)
+      (sexpr-rewrite-try-rules args rewrites)
+      (implies (and successp
+                    (4v-sexpr-fn-rewritesp fn rewrites))
+               (4v-sexpr-equiv (4v-sexpr-compose rhs subst) (cons fn args)))))
+
   ;; Variables that appear in the rewritten answer are variables that appear in X.
-  (defthm 4v-sexpr-vars-sexpr-rewrite1-args
-    (implies (not (member-equal k (4v-sexpr-vars-list x)))
-             (not (member-equal
-                   k (4v-sexpr-vars
-                      (mv-nth 0 (sexpr-rewrite1-args x rewrites)))))))
-
-  ;; If the rewrites are correct with respect to fn, then the result of
-  ;; sexpr-rewrite1-args is equivalent to (cons fn args).
-  (defthm sexpr-rewrite1-args-correct
-    (implies (and (4v-sexpr-fn-rewritesp fn rewrites)
-                  (mv-nth 1 (sexpr-rewrite1-args args rewrites)))
-             (4v-sexpr-equiv (mv-nth 0 (sexpr-rewrite1-args args rewrites))
-                             (cons fn args)))))
+  (defthm sexpr-rewrite-try-rules-vars
+    ;; not a great rewrite rule
+    (b* (((mv ?successp ?rhs subst) (sexpr-rewrite-try-rules args rewrites)))
+      (implies (not (member v (4v-sexpr-vars-list args)))
+               (not (member v (4v-sexpr-vars-list (alist-vals subst))))))))
 
 
-(defsection sexpr-rewrite1
-  :parents (sexpr-rewriting-internals)
-  :short "Performs one rewrite on a term, passed in as a top-level function and
-its arguments."
-  :long "A thin wrapper around sexpr-rewrite1-args, this looks up the rewrite
-rules for a particular top-level function and calls sexpr-rewrite1-args to
-apply one of them, if possible."
-  ;; returns (mv new-x changedp)
-  (defund sexpr-rewrite1 (fn args rewrite-al)
-    (declare (xargs :guard t))
-    ;; Do we want hons-assoc-equal or hons-get?
-    ;; Hons-assoc-equal-seems ok because *sexpr-rewrites* is only 13 long;
-    ;; according to profiling the difference (and the time spent in this function
-    ;; altogether) is negligible.
-    (b* ((rws (cdr (hons-assoc-equal fn rewrite-al))))
-      (sexpr-rewrite1-args args rws)))
+(defsection sexpr-rewrite-step
 
-  (local (in-theory (enable sexpr-rewrite1)))
+  (defxdoc sexpr-rewrite-fncall
+    :parents (sexpr-rewriting-internals)
+    :short "Apply sexpr-rewriting to a function applied to some args, which are
+assumed to already be simplified."
+    :long "<p>In sexpr-rewriting (see @(see sexpr-rewrite)), when rewriting a
+function application, the arguments are first recursively rewritten, and then
+sexpr-rewrite-fncall is applied to simplify the function applied to those args.
+This works by matching the args to the rewrite rules associated with that
+function symbol (using @(see sexpr-rewrite-try-rules)) and then recursively
+rewriting the resulting RHS and substitution using @(see sexpr-rewrite-sigma).
+If no rewrite rules are found, ground evaluation is done using @(see
+sexpr-rewrite-ground).")
 
-  ;; The result of rewriting contains only variables that are in the input (args).
-  (defthm 4v-sexpr-vars-sexpr-rewrite1
-    (implies (not (member-equal k (4v-sexpr-vars-list args)))
-             (not (member-equal
-                   k (4v-sexpr-vars (mv-nth 0 (sexpr-rewrite1 fn args rewrite-al)))))))
+  (defxdoc sexpr-rewrite-sigma
+    :parents (sexpr-rewriting-internals)
+    :short "Apply sexpr-rewriting to an sexpr with a substitution.  The
+expressions in the substitution are assumed to already be simplified."
+    :long "<p>In sexpr-rewriting (see @(see sexpr-rewrite)), when a rewrite
+rule is successfully applied by @(see sexpr-rewrite-try-rules), it results in a
+RHS sexpr and a substitution alist.  To completely simplify the result (to a
+fixed point under the existing rules, if one exists), this function recurs down
+the RHS, attempting to apply rewrite rules to each subexpression (using @(see
+sexpr-rewrite-fncall)) while rebuilding a sexpr corresponding to the
+composition of the RHS and the substitution.</p>")
+
+
+  (mutual-recursion
+
+   (defun sexpr-rewrite-fncall (clk fn args rewrites)
+     (declare (xargs :guard (natp clk)
+                     :well-founded-relation nat-list-<
+                     :measure (list (nfix clk) 0)))
+     (b* ((rules (cdr (hons-assoc-equal fn rewrites)))
+          ((mv successp rhs sigma) (sexpr-rewrite-try-rules args rules))
+          ((unless successp) (sexpr-rewrite-ground (hons fn args)))
+          ((when (zp clk))
+           (cw "Clock ran out~%")
+           (sexpr-rewrite-ground (hons fn args))))
+       (sexpr-rewrite-sigma (1- clk) rhs sigma rewrites)))
+
+   (defun sexpr-rewrite-sigma (clk x sigma rewrites)
+     (declare (xargs :guard (natp clk)
+                     :measure (list (nfix clk) (+ 1 (acl2-count x)))))
+     (if (atom x)
+         (and x
+              (cdr (hons-assoc-equal x sigma)))
+       (let ((args (sexpr-rewrite-sigma-list clk (cdr x) sigma rewrites)))
+         (sexpr-rewrite-fncall clk (car x) args rewrites))))
+
+   (defun sexpr-rewrite-sigma-list (clk x sigma rewrites)
+     (declare (xargs :guard (natp clk)
+                     :measure (list (nfix clk) (+ 1 (acl2-count x)))))
+     (if (atom x)
+         nil
+       (hons (sexpr-rewrite-sigma clk (car x) sigma rewrites)
+             (sexpr-rewrite-sigma-list clk (cdr x) sigma rewrites)))))
+
+  (flag::make-flag sexpr-rewrite-step-flag sexpr-rewrite-fncall
+                   :flag-mapping ((sexpr-rewrite-fncall . fncall)
+                                  (sexpr-rewrite-sigma . sigma)
+                                  (sexpr-rewrite-sigma-list . sigma-list)))
 
   ;; Predicate that indicates that al is a good alist of rewrite rules, mapping
   ;; function symbols to rewrite lists recognized by 4v-sexpr-fn-rewritesp.
@@ -535,73 +578,125 @@ apply one of them, if possible."
     (implies (4v-sexpr-rewrite-alistp al)
              (4v-sexpr-fn-rewritesp x (cdr (hons-assoc-equal x al)))))
 
-  ;; If the rewrite rules are OK, then if any rewrite occurred, the result of
-  ;; sexpr-rewrite1 is equivalent to the input fn applied to args.
-  (defthm sexpr-rewrite1-correct
-    (implies (and (4v-sexpr-rewrite-alistp rewrites)
-                  (mv-nth 1 (sexpr-rewrite1 fn args rewrites)))
-             (4v-sexpr-equiv (mv-nth 0 (sexpr-rewrite1 fn args rewrites))
-                             (cons fn args)))
-    :hints (("goal" :use ((:instance sexpr-rewrite1-args-correct
-                           (rewrites (cdr (hons-assoc-equal fn rewrites)))))
-             :in-theory (disable sexpr-rewrite1-args-correct)))))
+  (local
+   (defthm sexpr-rewrite-try-rules-correct-of-lookup-fn
+     ;; not a great rewrite rule
+     (mv-let (successp rhs subst)
+       (sexpr-rewrite-try-rules args (cdr (hons-assoc-equal fn rewrites)))
+       (implies (and successp
+                     (4v-sexpr-rewrite-alistp rewrites))
+                (4v-sexpr-equiv (4v-sexpr-compose rhs subst) (cons fn args))))
+     :hints (("goal" :use ((:instance sexpr-rewrite-try-rules-correct
+                            (rewrites (cdr (hons-assoc-equal fn rewrites)))))
+              :in-theory (disable sexpr-rewrite-try-rules-correct)))))
 
 
-(defsection sexpr-rewrite-n
-  :parents (sexpr-rewriting-internals)
-  :short "Repeatedly rewrites a term (expressed as a top-level function and its
-args) until it is stable or else a clock runs out."
-  :long "Simply calls sexpr-rewrite1 over and over until there is no change, or
-the iteration limit is up.  Returns the new term."
+  (defthm-sexpr-rewrite-step-flag
+    (defthm sexpr-rewrite-fncall-correct
+      (implies (4v-sexpr-rewrite-alistp rewrites)
+               (4v-sexpr-equiv (sexpr-rewrite-fncall clk fn args rewrites)
+                               (cons fn args)))
+      :flag fncall)
+    (defthm sexpr-rewrite-sigma-correct
+      (implies (4v-sexpr-rewrite-alistp rewrites)
+               (4v-sexpr-equiv (sexpr-rewrite-sigma clk x sigma rewrites)
+                               (4v-sexpr-compose x sigma)))
+      :flag sigma)
+    (defthm sexpr-rewrite-sigma-list-correct
+      (implies (4v-sexpr-rewrite-alistp rewrites)
+               (4v-sexpr-list-equiv (sexpr-rewrite-sigma-list clk x sigma rewrites)
+                                    (4v-sexpr-compose-list x sigma)))
+      :hints ('(:in-theory (enable 4v-sexpr-list-equiv-alt-def)))
+      :flag sigma-list))
 
-  (defund sexpr-rewrite-n (n fn args rewrite-al)
-    (declare (xargs :guard (natp n)))
-    (b* (((when (zp n))
-          (cw "Sexpr-rewrite-n: Limit reached -- looping rewrite rule?~%")
-          (cw "Try trace$ing some or all of sexp-rewrite-n, sexpr-rewrite1, sexpr-rewrite1-args.~%")
-          (hons fn args))
-         ((mv newx changed) (sexpr-rewrite1 fn args rewrite-al))
-         ((when (or (not changed)
-                    (and (consp newx)
-                         (hqual (car newx) fn)
-                         (hqual (cdr newx) args))))
-          (sexpr-rewrite-ground (hons fn args)))
-         (newx (sexpr-rewrite-ground newx))
-         ((when (or (atom newx) (atom (cdr newx)))) newx))
-      (sexpr-rewrite-n (1- n) (car newx) (cdr newx) rewrite-al)))
+  (defthm-sexpr-rewrite-step-flag
+    (defthm sexpr-rewrite-fncall-vars
+      (implies (not (member v (4v-sexpr-vars-list args)))
+               (not (member v (4v-sexpr-vars (sexpr-rewrite-fncall clk fn args rewrites)))))
+      :flag fncall)
+    (defthm sexpr-rewrite-sigma-vars
+      (implies (not (member v (4v-sexpr-vars-list (alist-vals sigma))))
+               (not (member v (4v-sexpr-vars (sexpr-rewrite-sigma clk x sigma rewrites)))))
+      :flag sigma)
+    (defthm sexpr-rewrite-sigma-list-vars
+      (implies (not (member v (4v-sexpr-vars-list (alist-vals sigma))))
+               (not (member v (4v-sexpr-vars-list (sexpr-rewrite-sigma-list
+                                                   clk x sigma rewrites)))))
+      :flag sigma-list)))
+  
 
-  (local (in-theory (enable sexpr-rewrite-n)))
 
-  (local (defthm lemma
-           (implies (NOT (MEMBER-EQUAL K (4V-SEXPR-VARS-LIST ARGS)))
-                    (NOT (MEMBER-EQUAL K (4V-SEXPR-VARS (SEXPR-REWRITE-GROUND (CONS FN ARGS))))))
-           :hints(("Goal" :in-theory (enable sexpr-rewrite-ground)))))
+(defsection sexpr-rewrite
+  :parents (sexpr-rewriting sexpr-rewriting-internals)
+  :short "Applies inside-out rewriting to an s-expression using a user-provided
+set of rewrite rules."
+  :long "A good (?) default set of rules is provided in *sexpr-rewrites*.  It
+is a theorem that, if the rewrite rules are recognized by
+4v-sexpr-rewrite-alistp, then the result is 4v-sexpr-equiv to the input.  It is
+also a theorem that the variables of the result are a subset of those of the
+input."
+  
+  (mutual-recursion
+   (defun sexpr-rewrite (x rewrites)
+     (declare (xargs :guard t
+                     :well-founded-relation nat-list-<
+                     :measure (list 1 0 (acl2-count x))))
+     (if (atom x)
+         x
+       (b* ((args (sexpr-rewrite-list (cdr x) rewrites)))
+         (sexpr-rewrite-fncall 100 (car x) args rewrites))))
 
-  ;; Variables in the result are in the input.
-  (defthm 4v-sexpr-vars-sexpr-rewrite-n
-    (implies (not (member-equal k (4v-sexpr-vars-list args)))
-             (not (member-equal
-                   k (4v-sexpr-vars (sexpr-rewrite-n n fn args rewrite-al)))))
-    :hints (("goal" :induct  (sexpr-rewrite-n n fn args rewrite-al)
-             :in-theory (disable 4v-sexpr-eval))
-            '(:use ((:instance 4v-sexpr-vars-sexpr-rewrite1)
-                    (:instance 4v-sexpr-vars-sexpr-rewrite-ground
-                               (x (mv-nth 0 (sexpr-rewrite1 fn args rewrite-al)))))
-                   :in-theory (e/d ()
-                                   (4v-sexpr-vars-sexpr-rewrite1
-                                    4v-sexpr-vars-sexpr-rewrite-ground
-                                    4v-sexpr-eval)))))
+   (defun sexpr-rewrite-list (x rewrites)
+     (declare (xargs :guard t
+                     :measure (list 1 0 (acl2-count x))))
+     (if (atom x)
+         nil
+       (hons (sexpr-rewrite (car x) rewrites)
+             (sexpr-rewrite-list (cdr x) rewrites)))))
 
-  ;; The result of sexpr-rewrite-n is equivalent to the input (cons fn args), as
-  ;; long as the rewrite rules are good.
-  (defthm sexpr-rewrite-n-correct
-    (implies (4v-sexpr-rewrite-alistp rewrites)
-             (4v-sexpr-equiv (sexpr-rewrite-n n fn args rewrites)
-                             (cons fn args)))
-    :hints(("Goal" :in-theory (e/d ()
-                                   (sexpr-rewrite1 4v-sexpr-eval))
-            :induct (sexpr-rewrite-n n fn args rewrites))
-           (witness :ruleset 4v-sexpr-equiv-witnessing))))
+
+  (memoize 'sexpr-rewrite :condition '(consp x))
+
+  (flag::make-flag sexpr-rewrite-flag sexpr-rewrite
+                   :flag-mapping ((sexpr-rewrite . rw)
+                                  (sexpr-rewrite-list . rw-list)))
+
+
+
+  (defthm-sexpr-rewrite-flag
+    (defthm sexpr-rewrite-correct
+      (implies (4v-sexpr-rewrite-alistp rewrites)
+               (4v-sexpr-equiv (sexpr-rewrite x rewrites)
+                               x))
+      :flag rw)
+    (defthm sexpr-rewrite-list-correct
+      (implies (4v-sexpr-rewrite-alistp rewrites)
+               (4v-sexpr-list-equiv (sexpr-rewrite-list x rewrites)
+                                    x))
+      :hints('(:in-theory (enable 4v-sexpr-list-equiv-alt-def)))
+      :flag rw-list))
+
+  (defthm-sexpr-rewrite-flag
+    (defthm sexpr-rewrite-vars
+      (implies (not (member v (4v-sexpr-vars x)))
+               (not (member v (4v-sexpr-vars (sexpr-rewrite x rewrites)))))
+      :flag rw)
+    (defthm sexpr-rewrite-list-vars
+      (implies (not (member v (4v-sexpr-vars-list x)))
+               (not (member v (4v-sexpr-vars-list (sexpr-rewrite-list x rewrites)))))
+      :flag rw-list))
+
+  (defun sexpr-rewrite-alist (x rewrites)
+    (declare (xargs :guard t))
+    (if (atom x)
+        nil
+      (if (atom (car x))
+          (sexpr-rewrite-alist (cdr x) rewrites)
+        (cons (cons (caar x) (sexpr-rewrite (cdar x) rewrites))
+              (sexpr-rewrite-alist (cdr x) rewrites))))))
+
+
+
 
 
 (defsection rewrites-to-al
@@ -667,78 +762,6 @@ the iteration limit is up.  Returns the new term."
       (and (consp (car al))
            (4v-sexpr-equiv (caar al) (cdar al))
            (4v-sexpr-rewritesp (cdr al))))))
-
-
-
-
-(defsection sexpr-rewrite
-  :parents (sexpr-rewriting sexpr-rewriting-internals)
-  :short "Applies inside-out rewriting to an s-expression using a user-provided
-set of rewrite rules."
-  :long "A good (?) default set of rules is provided in *sexpr-rewrites*.  It
-is a theorem that, if the rewrite rules are recognized by
-4v-sexpr-rewrite-alistp, then the result is 4v-sexpr-equiv to the input.  It is
-also a theorem that the variables of the result are a subset of those of the
-input."
-  (mutual-recursion
-   (defun sexpr-rewrite (x rewrites)
-     (declare (xargs :guard t))
-     (if (atom x)
-         x
-       (b* ((args (sexpr-rewrite-list (cdr x) rewrites)))
-         (sexpr-rewrite-n 100 (car x) args rewrites))))
-
-   (defun sexpr-rewrite-list (x rewrites)
-     (declare (xargs :guard t))
-     (if (atom x)
-         nil
-       (hons (sexpr-rewrite (car x) rewrites)
-             (sexpr-rewrite-list (cdr x) rewrites)))))
-
-  (memoize 'sexpr-rewrite :condition '(consp x))
-
-
-  ;; The variables of the result are a subset of those of the inputs.
-  (defthm-4v-sexpr-flag
-    (defthm 4v-sexpr-vars-sexpr-rewrite
-      (implies (not (member-equal k (4v-sexpr-vars x)))
-               (not (member-equal k (4v-sexpr-vars (sexpr-rewrite x rewrites)))))
-      :flag sexpr)
-
-    (defthm 4v-sexpr-vars-sexpr-rewrite-list
-      (implies (not (member-equal k (4v-sexpr-vars-list x)))
-               (not (member-equal k (4v-sexpr-vars-list
-                                     (sexpr-rewrite-list x rewrites)))))
-      :flag sexpr-list))
-
-  (defthm 4v-sexpr-vars-sexpr-rewrite-subset
-    (subsetp-equal (4v-sexpr-vars (sexpr-rewrite x rewrites))
-                   (4v-sexpr-vars x))
-    :hints ((witness)))
-  
-  ;; If the rules provided are proper, then the result is equivalent to the
-  ;; input.
-  (defthm-4v-sexpr-flag
-    (defthm sexpr-rewrite-correct
-      (implies (4v-sexpr-rewrite-alistp rewrites)
-               (4v-sexpr-equiv (sexpr-rewrite x rewrites)
-                               x))
-      :flag sexpr)
-    (defthm sexpr-rewrite-list-correct
-      (implies (4v-sexpr-rewrite-alistp rewrites)
-               (4v-sexpr-list-equiv (sexpr-rewrite-list x rewrites)
-                                    x))
-      :flag sexpr-list)
-    :hints ((witness :ruleset 4v-sexpr-list-equiv-witnessing)))
-
-  (defun sexpr-rewrite-alist (x rewrites)
-    (declare (xargs :guard t))
-    (if (atom x)
-        nil
-      (if (atom (car x))
-          (sexpr-rewrite-alist (cdr x) rewrites)
-        (cons (cons (caar x) (sexpr-rewrite (cdar x) rewrites))
-              (sexpr-rewrite-alist (cdr x) rewrites))))))
 
 (defsection *sexpr-rewrites*
   :parents (sexpr-rewriting)
@@ -1418,8 +1441,10 @@ which rewrites to
 (defsection sexpr-rewrite-default
   :parents (sexpr-rewriting)
   :short "Rewrite an s-expression with the default rewrite rules, *sexpr-rewrites*."
-  :long "May be a bit faster than using sexpr-rewrite, because there is only
-one argument to be memoized."
+  :long "<p>May be a bit faster than using sexpr-rewrite, because there is only
+one argument to be memoized.  On the other hand, it has to resolve the special
+variable *sexpr-rewrites*, but probably that's cheaper than an extra hash.
+Test this sometime?</p>"
 
   (mutual-recursion
    (defun sexpr-rewrite-default (x)
@@ -1427,7 +1452,7 @@ one argument to be memoized."
      (if (atom x)
          x
        (b* ((args (sexpr-rewrite-default-list (cdr x))))
-         (sexpr-rewrite-n 100 (car x) args *sexpr-rewrites*))))
+         (sexpr-rewrite-fncall 100 (car x) args *sexpr-rewrites*))))
 
    (defun sexpr-rewrite-default-list (x)
      (declare (xargs :guard t))
@@ -1475,74 +1500,6 @@ one argument to be memoized."
 
 
 
-(defsection sexpr-rewrite-of-restrict
-  :parents (sexpr-rewriting)
-  :short "One-pass 4v-sexpr-restrict followed by sexpr-rewrite"
-  :long "Equivalent to sexpr-rewrite of 4v-sexpr-restrict.  Careful about
-memoization here; wouldn't want to use this when you're about to (or just have)
-done a 4v-sexpr-restrict of a similar sexpression with the same alist, or done a
-sexpr-rewrite of an sexpression similar to your result.  Memoization won't
-carry over."
-  (mutual-recursion
-   (defun sexpr-rewrite-of-restrict (x al)
-     (declare (xargs :guard t))
-     (if (atom x)
-         (and x (let ((look (hons-get x al)))
-                  ;; less than satisfying...
-                  (if look (sexpr-rewrite-default (cdr look)) x)))
-       (b* ((args (sexpr-rewrite-of-restrict-list (cdr x) al)))
-         (sexpr-rewrite-n 100 (car x) args *sexpr-rewrites*))))
-
-   (defun sexpr-rewrite-of-restrict-list (x al)
-     (declare (xargs :guard t))
-     (if (atom x)
-         nil
-       (hons (sexpr-rewrite-of-restrict (car x) al)
-             (sexpr-rewrite-of-restrict-list (cdr x) al)))))
-
-  (memoize 'sexpr-rewrite-of-restrict :condition '(consp x))
-
-  (defthm-4v-sexpr-flag
-    (defthm sexpr-rewrite-of-restrict-is-sexpr-rewrite-of-4v-sexpr-restrict
-      (equal (sexpr-rewrite-of-restrict x al)
-             (sexpr-rewrite (4v-sexpr-restrict x al) *sexpr-rewrites*))
-      :flag sexpr)
-    (defthm sexpr-rewrite-of-restrict-list-is-sexpr-rewrite-list-of-4v-sexpr-restrict-list
-      (equal (sexpr-rewrite-of-restrict-list x al)
-             (sexpr-rewrite-list (4v-sexpr-restrict-list x al)
-                                 *sexpr-rewrites*))
-      :flag sexpr-list))
-
-  (defun sexpr-rewrite-of-restrict-alist (x al)
-    (declare (xargs :guard t))
-    (if (atom x)
-        nil
-      (if (atom (car x))
-          (sexpr-rewrite-of-restrict-alist (cdr x) al)
-        (cons (cons (caar x) (sexpr-rewrite-of-restrict (cdar x) al))
-              (sexpr-rewrite-of-restrict-alist (cdr x) al)))))
-
-  (defthm sexpr-rewrite-of-restrict-alist-is-sexpr-rewrite-alist
-    (equal (sexpr-rewrite-of-restrict-alist x al)
-           (sexpr-rewrite-alist
-            (4v-sexpr-restrict-alist x al)
-            *sexpr-rewrites*)))
-
-
-  (defun sexpr-rewrite-of-restrict-alists (x al)
-    (declare (Xargs :guard t))
-    (if (atom x)
-        nil
-      (cons (sexpr-rewrite-of-restrict-alist (car x) al)
-            (sexpr-rewrite-of-restrict-alists (cdr X) al))))
-
-  (defun sexpr-rewrite-of-restrict-list-list (x al)
-    (declare (Xargs :guard t))
-    (if (atom x)
-        nil
-      (cons (sexpr-rewrite-of-restrict-list (car x) al)
-            (sexpr-rewrite-of-restrict-list-list (cdr X) al)))))
-
 
 
 (defsection 4v-sexpr-restrict-with-rw
@@ -1569,7 +1526,7 @@ Memoization won't carry over.</p>"
                   ;; consists of already-rewritten sexprs.
                   (if look (cdr look) x)))
        (b* ((args (4v-sexpr-restrict-with-rw-list (cdr x) al)))
-         (sexpr-rewrite-n 100 (car x) args *sexpr-rewrites*))))
+         (sexpr-rewrite-fncall 100 (car x) args *sexpr-rewrites*))))
 
    (defun 4v-sexpr-restrict-with-rw-list (x al)
      (declare (xargs :guard t))
@@ -1702,7 +1659,7 @@ carry over."
                   ;; consists of already-rewritten sexprs.
                   (and look (cdr look))))
        (b* ((args (4v-sexpr-compose-with-rw-list (cdr x) al)))
-         (sexpr-rewrite-n 100 (car x) args *sexpr-rewrites*))))
+         (sexpr-rewrite-fncall 100 (car x) args *sexpr-rewrites*))))
 
    (defun 4v-sexpr-compose-with-rw-list (x al)
      (declare (xargs :guard t))
@@ -2524,6 +2481,13 @@ simplifying using the known signals."
     :hints ((set-reasoning))))
 
 (defsection sexpr-boolean-rw-n
+
+  ;; BOZO. This has the same problem that sexpr-rewrite-n used to: it only
+  ;; rewrites a top-level expression, assuming its subexpressions are already
+  ;; simplified, and then recurs again on the top-level expression.  But if the
+  ;; rewrite rule introduced new subexpressions aside from the top one (i.e. if
+  ;; the nesting of functions on the RHS is more than 1 deep) then this won't
+  ;; really simplify those.
   (defund sexpr-boolean-rw-n (n x brules)
     (declare (xargs :guard (and (sexpr-brules-p brules)
                                 (natp n))))
