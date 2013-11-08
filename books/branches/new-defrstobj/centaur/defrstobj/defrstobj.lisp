@@ -353,8 +353,13 @@
        (tr-set (second (assoc 'tr-set fi-pairs))))
 
     `((defun ,length$a (x)
-        (declare (xargs :guard t))
-        (nfix (g ,size-key x)))
+        (declare (xargs :guard t)
+                 ,@(and (not grow) '((ignore x))))
+        ,(if grow
+             ;; resizable
+             `(nfix (g ,size-key x))
+           ;; fixed size given by array decl
+           (car (third type))))
 
       (defun ,acc$a (i x)
         (declare (xargs :guard (and (natp i)
@@ -623,7 +628,6 @@
                              update-nth-array
                              nth-update-nth
                              len-update-nth
-                             ;; field-map-key-lookup
                              max
                              (:t len)
                              resize-list-when-zp

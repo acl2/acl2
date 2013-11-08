@@ -170,12 +170,6 @@
 (include-book "std/util/extensions/assert-return-thms" :dir :system)
 (include-book "centaur/misc/tshell-tests" :dir :system)
 
-(include-book "defrstobj/groundwork/demo1")
-(include-book "defrstobj/groundwork/demo2")
-(include-book "defrstobj/groundwork/demo3")
-(include-book "defrstobj/groundwork/demo4")
-(include-book "defrstobj/groundwork/demo5")
-
 (include-book "ubdds/sanity-check-macros")
 
 ;; BOZO why do we care about coi/records/fast?

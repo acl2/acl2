@@ -61,19 +61,24 @@
                     (scalar-fieldinfo-p x))
          :exec (case (acl2::tag x)
                  (:array (array-fieldinfo-p x))
-                 (:scalar (scalar-fieldinfo-p x)))))
+                 (:scalar (scalar-fieldinfo-p x))))))
 
-  (defthm array-tag-when-fieldinfo-p
-    (implies (fieldinfo-p x)
-             (equal (equal (acl2::tag x) :array)
-                    (array-fieldinfo-p x)))
-    :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-  (defthm scalar-tag-when-fieldinfo-p
-    (implies (fieldinfo-p x)
-             (equal (equal (acl2::tag x) :scalar)
-                    (scalar-fieldinfo-p x)))
-    :rule-classes ((:rewrite :backchain-limit-lst 0))))
+(local
+ (defthm array-tag-when-fieldinfo-p
+   (implies (fieldinfo-p x)
+            (equal (equal (acl2::tag x) :array)
+                   (array-fieldinfo-p x)))
+   :hints(("Goal" :in-theory (enable fieldinfo-p)))
+   :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+(local
+ (defthm scalar-tag-when-fieldinfo-p
+   (implies (fieldinfo-p x)
+            (equal (equal (acl2::tag x) :scalar)
+                   (scalar-fieldinfo-p x)))
+   :hints(("Goal" :in-theory (enable fieldinfo-p)))
+   :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
 (defun field-map-p (x)
@@ -94,9 +99,10 @@
                             rest)))
         (otherwise (cons (scalar-fieldinfo->key (car x)) rest))))))
 
-(defthm eqlable-listp-of-field-map-collect-names
-  (implies (field-map-p x)
-           (eqlable-listp (field-map-collect-names x))))
+(local
+ (defthm eqlable-listp-of-field-map-collect-names
+   (implies (field-map-p x)
+            (eqlable-listp (field-map-collect-names x)))))
 
 (defun field-map-well-formedp (x)
   (declare (xargs :guard t))
@@ -128,10 +134,11 @@
               (mv type (+ 1 idx))
             (mv nil nil)))))))
 
-(defthm natp-of-field-map-key-lookup
-  (implies (mv-nth 0 (field-map-key-lookup key map))
-           (natp (mv-nth 1 (field-map-key-lookup key map))))
-  :rule-classes :type-prescription)
+(local
+ (defthm natp-of-field-map-key-lookup
+   (implies (mv-nth 0 (field-map-key-lookup key map))
+            (natp (mv-nth 1 (field-map-key-lookup key map))))
+   :rule-classes :type-prescription))
 
 (defund-nx field-map-key-lookup-recur (mv)
   (if (mv-nth 0 mv)
@@ -170,82 +177,86 @@
                                     field-map-key-lookup-recur))))
 
 
-(defthm reverse-of-field-map-key-lookup
-  (mv-let (type idx)
-    (field-map-key-lookup key map)
-    (implies (and type (field-map-well-formedp map))
-             (let ((entry (nth idx map)))
-               (and (implies (eq type :array)
-                             (and (equal (acl2::tag entry) :array)
-                                  (equal (array-fieldinfo->tr-key entry) key)))
-                    (implies (eq type :size)
-                             (and (equal (acl2::tag entry) :array)
-                                  (equal (array-fieldinfo->size-key entry) key)))
-                    (implies (eq type :scalar)
-                             (and (equal (acl2::tag entry) :scalar)
-                                  (equal (scalar-fieldinfo->key entry) key))))))))
+(local
+ (defthm reverse-of-field-map-key-lookup
+   (mv-let (type idx)
+     (field-map-key-lookup key map)
+     (implies (and type (field-map-well-formedp map))
+              (let ((entry (nth idx map)))
+                (and (implies (eq type :array)
+                              (and (equal (acl2::tag entry) :array)
+                                   (equal (array-fieldinfo->tr-key entry) key)))
+                     (implies (eq type :size)
+                              (and (equal (acl2::tag entry) :array)
+                                   (equal (array-fieldinfo->size-key entry) key)))
+                     (implies (eq type :scalar)
+                              (and (equal (acl2::tag entry) :scalar)
+                                   (equal (scalar-fieldinfo->key entry) key)))))))))
 
-(defthm not-equal-nth-by-not-in-field-map
-  (implies (not (member b (field-map-collect-names map)))
-           (let ((entry (nth n map)))
-             (and (implies (equal (acl2::tag entry) :array)
-                           (and (not (equal (array-fieldinfo->tr-key entry) b))
-                                (not (equal (array-fieldinfo->size-key entry) b))))
-                  (implies (equal (acl2::tag entry) :scalar)
-                           (not (equal (scalar-fieldinfo->key entry) b)))))))
+(local
+ (defthm not-equal-nth-by-not-in-field-map
+   (implies (not (member b (field-map-collect-names map)))
+            (let ((entry (nth n map)))
+              (and (implies (equal (acl2::tag entry) :array)
+                            (and (not (equal (array-fieldinfo->tr-key entry) b))
+                                 (not (equal (array-fieldinfo->size-key entry) b))))
+                   (implies (equal (acl2::tag entry) :scalar)
+                            (not (equal (scalar-fieldinfo->key entry) b))))))))
 
-(defthm field-map-key-lookup-by-nth
-  (implies (field-map-well-formedp map)
-           (let ((entry (nth n map)))
-             (and (implies (equal (acl2::tag entry) :array)
-                           (and (mv-let (type idx)
-                                  (field-map-key-lookup
-                                   (array-fieldinfo->tr-key entry) map)
-                                  (and (equal type :array)
-                                       (equal idx (nfix n))))
-                                (mv-let (type idx)
-                                  (field-map-key-lookup
-                                   (array-fieldinfo->size-key entry) map)
-                                  (and (equal type :size)
-                                       (equal idx (nfix n))))))
-                  (implies (equal (acl2::tag entry) :scalar)
-                           (mv-let (type idx)
-                             (field-map-key-lookup
-                              (scalar-fieldinfo->key entry) map)
-                             (and (equal type :scalar)
-                                  (equal idx (nfix n))))))))
-  :hints (("goal" :induct (nth n map))))
+(local
+ (defthm field-map-key-lookup-by-nth
+   (implies (field-map-well-formedp map)
+            (let ((entry (nth n map)))
+              (and (implies (equal (acl2::tag entry) :array)
+                            (and (mv-let (type idx)
+                                   (field-map-key-lookup
+                                    (array-fieldinfo->tr-key entry) map)
+                                   (and (equal type :array)
+                                        (equal idx (nfix n))))
+                                 (mv-let (type idx)
+                                   (field-map-key-lookup
+                                    (array-fieldinfo->size-key entry) map)
+                                   (and (equal type :size)
+                                        (equal idx (nfix n))))))
+                   (implies (equal (acl2::tag entry) :scalar)
+                            (mv-let (type idx)
+                              (field-map-key-lookup
+                               (scalar-fieldinfo->key entry) map)
+                              (and (equal type :scalar)
+                                   (equal idx (nfix n))))))))
+   :hints (("goal" :induct (nth n map)))))
 
-(defthm keys-same-when-field-map-well-formedp
-  (implies (field-map-well-formedp map)
-           (b* ((x1 (nth nx1 map))
-                ((array-fieldinfo a1) x1)
-                ((scalar-fieldinfo s1) x1)
-                (x2 (nth nx2 map))
-                ((array-fieldinfo a2) x2)
-                ((scalar-fieldinfo s2) x2))
-             (and (implies (and (equal (acl2::tag x1) :array)
-                                (equal (acl2::tag x2) :array))
-                           (and (equal (equal a1.tr-key a2.tr-key)
-                                       (equal (nfix nx1) (nfix nx2)))
-                                (not (equal a1.tr-key a2.size-key))
-                                (equal (equal a1.size-key a2.size-key)
-                                       (equal (nfix nx1) (nfix nx2)))))
-                  (implies (and (equal (acl2::tag x1) :array)
-                                (equal (acl2::tag x2) :scalar))
-                           (and (not (equal a1.tr-key s2.key))
-                                (not (equal a1.size-key s2.key))))
-                  (implies (and (equal (acl2::tag x1) :scalar)
-                                (equal (acl2::tag x2) :scalar))
-                           (and (equal (equal s1.key s2.key)
-                                       (equal (nfix nx1) (nfix nx2)))
-                                (equal (equal s1.key s2.key)
-                                       (equal (nfix nx1) (nfix nx2))))))))
-  :hints (("goal" :use ((:instance field-map-key-lookup-by-nth (n nx1))
-                        (:instance field-map-key-lookup-by-nth (n nx2)))
-           :in-theory (acl2::e/d* (acl2::arith-equiv-forwarding)
-                            (field-map-key-lookup-by-nth))
-           :do-not-induct t)))
+(local
+ (defthm keys-same-when-field-map-well-formedp
+   (implies (field-map-well-formedp map)
+            (b* ((x1 (nth nx1 map))
+                 ((array-fieldinfo a1) x1)
+                 ((scalar-fieldinfo s1) x1)
+                 (x2 (nth nx2 map))
+                 ((array-fieldinfo a2) x2)
+                 ((scalar-fieldinfo s2) x2))
+              (and (implies (and (equal (acl2::tag x1) :array)
+                                 (equal (acl2::tag x2) :array))
+                            (and (equal (equal a1.tr-key a2.tr-key)
+                                        (equal (nfix nx1) (nfix nx2)))
+                                 (not (equal a1.tr-key a2.size-key))
+                                 (equal (equal a1.size-key a2.size-key)
+                                        (equal (nfix nx1) (nfix nx2)))))
+                   (implies (and (equal (acl2::tag x1) :array)
+                                 (equal (acl2::tag x2) :scalar))
+                            (and (not (equal a1.tr-key s2.key))
+                                 (not (equal a1.size-key s2.key))))
+                   (implies (and (equal (acl2::tag x1) :scalar)
+                                 (equal (acl2::tag x2) :scalar))
+                            (and (equal (equal s1.key s2.key)
+                                        (equal (nfix nx1) (nfix nx2)))
+                                 (equal (equal s1.key s2.key)
+                                        (equal (nfix nx1) (nfix nx2))))))))
+   :hints (("goal" :use ((:instance field-map-key-lookup-by-nth (n nx1))
+                         (:instance field-map-key-lookup-by-nth (n nx2)))
+            :in-theory (acl2::e/d* (acl2::arith-equiv-forwarding)
+                                   (field-map-key-lookup-by-nth))
+            :do-not-induct t))))
 
 
 
@@ -334,9 +345,10 @@
   :rewrite :direct)
 
 
-(in-theory (disable rstobj-field-corr))
+(in-theory (disable rstobj-field-corr
+                    rstobj-field-corr-necc))
 
-(defthm rstobj-field-corr-of-size-key
+(defthmd rstobj-field-corr-of-size-key
   (mv-let (keytype idx)
     (field-map-key-lookup szkey (rstobj-field-map))
     (implies (and (rstobj-field-corr rstobj$c rstobj$a)
@@ -344,10 +356,9 @@
              (equal (g szkey rstobj$a)
                     (len (nth idx rstobj$c)))))
   :hints (("goal" :use ((:instance rstobj-field-corr-necc
-                         (idx (mv-nth 1 (field-map-key-lookup szkey (rstobj-field-map))))))
-           :in-theory (disable rstobj-field-corr-necc))))
+                         (idx (mv-nth 1 (field-map-key-lookup szkey (rstobj-field-map)))))))))
 
-(defthm rstobj-field-corr-of-scalar-key
+(defthmd rstobj-field-corr-of-scalar-key
   (mv-let (keytype idx)
     (field-map-key-lookup sckey (rstobj-field-map))
     (implies (and (rstobj-field-corr rstobj$c rstobj$a)
@@ -355,10 +366,9 @@
              (equal (g sckey rstobj$a)
                     (nth idx rstobj$c))))
   :hints (("goal" :use ((:instance rstobj-field-corr-necc
-                         (idx (mv-nth 1 (field-map-key-lookup sckey (rstobj-field-map))))))
-           :in-theory (disable rstobj-field-corr-necc))))
+                         (idx (mv-nth 1 (field-map-key-lookup sckey (rstobj-field-map)))))))))
 
-(defthm rstobj-field-corr-of-tr-key
+(defthmd rstobj-field-corr-of-tr-key
   (mv-let (keytype idx)
     (field-map-key-lookup trkey (rstobj-field-map))
     (implies (and (rstobj-field-corr rstobj$c rstobj$a)
@@ -370,11 +380,11 @@
                       (rstobj-tr-default trkey)))))
   :hints (("goal" :use ((:instance rstobj-field-corr-necc
                          (idx (mv-nth 1 (field-map-key-lookup trkey (rstobj-field-map))))))
-           :in-theory (disable rstobj-field-corr-necc
-                               nth))))
-  
+           :in-theory (disable nth))))
 
-(defthm rstobj-field-corr-of-update-scalar
+(local (in-theory (enable rstobj-field-corr-necc)))
+
+(defthmd rstobj-field-corr-of-update-scalar
   (implies (and (rstobj-field-corr rstobj$c rstobj$a)
                 (equal (acl2::tag (nth idx (rstobj-field-map))) :scalar)
                 (equal (scalar-fieldinfo->key (nth idx (rstobj-field-map))) key)
@@ -382,7 +392,7 @@
            (rstobj-field-corr (update-nth idx v rstobj$c)
                               (s key v rstobj$a)))
   :hints (("goal" :in-theory (acl2::e/d* (acl2::arith-equiv-forwarding)
-                                   (nfix))
+                                         (nfix))
            :cases ((nth idx (rstobj-field-map)))
            :do-not-induct t)
           (and stable-under-simplificationp
@@ -390,7 +400,7 @@
 
 
 
-(defthm rstobj-field-corr-of-update-array
+(defthmd rstobj-field-corr-of-update-array
   (implies (and (rstobj-field-corr rstobj$c rstobj$a)
                 (equal (acl2::tag (nth idx (rstobj-field-map))) :array)
                 (equal (array-fieldinfo->tr-key (nth idx (rstobj-field-map))) key)
@@ -410,7 +420,7 @@
   :otf-flg t)
 
 
-(defthm rstobj-field-corr-of-grow-array
+(defthmd rstobj-field-corr-of-grow-array
   (implies (and (rstobj-field-corr rstobj$c rstobj$a)
                 (equal (acl2::tag (nth idx (rstobj-field-map))) :array)
                 (equal (array-fieldinfo->size-key (nth idx (rstobj-field-map))) size-key)
@@ -430,7 +440,7 @@
                `(:expand (,(car (last clause))))))
   :otf-flg t)
 
-(defthm rstobj-field-corr-of-empty-array
+(defthmd rstobj-field-corr-of-empty-array
   (implies (and (rstobj-field-corr rstobj$c rstobj$a)
                 (equal (acl2::tag (nth idx (rstobj-field-map))) :array)
                 (equal (array-fieldinfo->tr-key (nth idx (rstobj-field-map))) tr-key)
