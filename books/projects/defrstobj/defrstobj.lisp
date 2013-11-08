@@ -894,7 +894,7 @@
          (logic)
          (set-inhibit-warnings "non-rec" "disable" "subsume") ;; implicitly local
          (local (set-default-hints nil))
-         (local (include-book "centaur/defrstobj/array-lemmas" :dir :system))
+         (local (include-book "projects/defrstobj/array-lemmas" :dir :system))
          (local (in-theory
                  (union-theories
                   (union-theories (theory 'minimal-theory)
