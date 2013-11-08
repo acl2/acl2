@@ -40,12 +40,11 @@
 (defrstobj m1  ;; "machine 1"                 ; Executable interface:
 
   (regs  :type (array integer (32))           ; (get-regs i m1)
-         :initially 0                         ; (set-regs i val m1)
+         :initially 5                         ; (set-regs i val m1)
          :typed-record int-tr-p)
 
   (pctr  :type integer                        ; (get-pctr m1)
-         :initially 0                         ; (set-pctr x m1)
-         :fix (ifix x))
+         :initially 0)                        ; (set-pctr x m1)
 
   :inline t)
 
@@ -55,197 +54,109 @@
   ;; Test of a machine with multiple arrays and other fields
 
   (m2-regs :type (array integer (64))
-           :initially 0
+           :initially 37
            :typed-record int-tr-p)
 
   ;; Large array to make sure we don't blow up
   (m2-mem  :type (array integer (8192))
            :initially 0
-           :resizable t
            :typed-record int-tr-p)
 
   (m2-foo  :initially nil)
   (m2-bar  :initially bar)
 
-  (m2-actr :type integer :initially 0 :fix (ifix x))
-  (m2-bctr :type integer :initially 1 :fix (ifix x))
-
-  :inline t)
-
-(defrstobj m21-no-arrays
-
-
-  (m21-foo  :initially nil)
-  (m21-bar  :initially bar)
-
-  (m21-actr :type integer :initially 0 :fix (ifix x))
-  (m21-bctr :type integer :initially 1 :fix (ifix x))
+  (m2-actr :type integer :initially 0)
+  (m2-bctr :type integer :initially 1)
 
   :inline t)
 
 
-(make-event
- `(defrstobj m3
 
-    ;; Test of some other typed-record types
+(defrstobj m3
 
-    (m3-regs :type (array integer (64))
-             :initially 0
-             :typed-record int-tr-p)
+  ;; Test of some other typed-record types
 
-    (rstobj::m3-mem  :type (array integer (8192))
-                     :initially 0
-                     :typed-record int-tr-p)
+  (m3-regs :type (array integer (64))
+           :initially 37
+           :typed-record int-tr-p)
 
-    (m3-chars :type (array character (256))
-              :initially ,(code-char 0)
-              :typed-record char-tr-p)
-
-    (m3-bits  :type (array bit (12345))
-              :initially 0
-              :typed-record bit-tr-p)
-
-    (m3-foo  :initially nil)
-    (m3-bar  :initially bar)
-
-    (m3-actr :type integer :initially 0 :fix (ifix x))
-    (m3-bctr :type integer :initially 1 :fix (ifix x))
-
-    :inline t))
-
-
-(defrstobj m41-no-scalars
-
-  (m41-regs :type (array (unsigned-byte 128) (64))
+  (rstobj::m3-mem  :type (array integer (8192))
            :initially 0
-           :typed-record ub128-tr-p)
+           :typed-record int-tr-p)
 
-  (m41-mem :type (array (unsigned-byte 8) (65536))
-          :initially 0
-          :typed-record ub8-tr-p)
+  (m3-chars :type (array character (256))
+            :initially #\a
+            :typed-record char-tr-p)
 
-  (m41-sregs :type (array (signed-byte 32) (11))
+  (m3-bits  :type (array bit (12345))
             :initially 0
-            :typed-record sb32-tr-p)
+            :typed-record bit-tr-p)
+
+  (m3-foo  :initially nil)
+  (m3-bar  :initially bar)
+
+  (m3-actr :type integer :initially 0)
+  (m3-bctr :type integer :initially 1)
 
   :inline t)
 
-(defrstobj m42-no-scalars-resizable
-
-  (m42-regs :type (array (unsigned-byte 128) (64))
-            :initially 0
-            :resizable t
-            :typed-record ub128-tr-p)
-
-  (m42-mem :type (array (unsigned-byte 8) (65536))
-           :initially 0
-           :resizable t
-           :typed-record ub8-tr-p)
-
-  (m42-sregs :type (array (signed-byte 32) (11))
-             :initially 0
-             :resizable t
-             :typed-record sb32-tr-p)
-
-  :inline t)
 
 (defrstobj m4
 
   (m4-regs :type (array (unsigned-byte 128) (64))
-           :initially 0
+           :initially 321
            :typed-record ub128-tr-p)
 
   (m4-mem :type (array (unsigned-byte 8) (65536))
-          :initially 0
+          :initially 17
           :typed-record ub8-tr-p)
 
   (m4-sregs :type (array (signed-byte 32) (11))
-            :initially 0
+            :initially 12
             :typed-record sb32-tr-p)
 
-  (m4-flags :type (unsigned-byte 1234) :initially 0
-            :fix (unsigned-byte-fix 1234 x))
+  (m4-flags :type (unsigned-byte 1234) :initially 127)
 
   :inline t)
 
-
-
-
-(defun nonneg-fix (x)
-  (declare (xargs :guard t))
-  (if (integerp x)
-      (if (< x 0)
-          (- x)
-        x)
-    0))
-
-(def-typed-record nonneg
-  :elem-p (natp x)
-  :elem-list-p (nat-listp x)
-  :elem-default 0
-  :elem-fix (nonneg-fix x))
-
-
-(defrstobj m4andahalf
-  (m4.5-regs :type (array (unsigned-byte 128) (64))
-           :initially 0
-           :typed-record ub128-tr-p)
-
-  (m4.5-mem :type (array (integer 0 *) (65536))
-          :initially 0
-          :typed-record nonneg-tr-p)
-
-  (m4.5-sregs :type (array (signed-byte 32) (11))
-            :initially 0
-            :typed-record sb32-tr-p)
-
-  (m4.5-flags :type (unsigned-byte 1234) :initially 127
-              :fix (unsigned-byte-fix 1234 x))
-
-  :inline t)
-  
-
-(defun char-fix (x)
-  (declare (xargs :guard t))
-  (if (characterp x) x #\a))
 
 (defrstobj m5
 
   ;; Just a big test of a stobj with many array fields and many normal fields.
-  ;; Performance is GREAT.
+  ;; Performance is not great yet, but maybe we can improve it.
 
   (m5-arr0 :type (array (unsigned-byte 128) (64))
-           :initially 0 :resizable t
+           :initially 0
            :typed-record ub128-tr-p)
 
   (m5-arr1 :type (array (unsigned-byte 128) (64))
-           :initially 0 :resizable t
+           :initially 0
            :typed-record ub128-tr-p)
 
   (m5-arr2 :type (array (unsigned-byte 128) (64))
-           :initially 0 :resizable t
+           :initially 0
            :typed-record ub128-tr-p)
 
   (m5-arr3 :type (array (unsigned-byte 128) (64))
-           :initially 0 :resizable t
+           :initially 0
            :typed-record ub128-tr-p)
 
   (m5-arr4 :type (array (unsigned-byte 128) (64))
-           :initially 0 :resizable t
+           :initially 0
            :typed-record ub128-tr-p)
 
 
 
   (m5-arr5 :type (array (unsigned-byte 8) (64))
-           :initially 0 :resizable t
+           :initially 0
            :typed-record ub8-tr-p)
 
   (m5-arr6 :type (array (unsigned-byte 8) (64))
-           :initially 0 :resizable t
+           :initially 0
            :typed-record ub8-tr-p)
 
   (m5-arr7 :type (array (unsigned-byte 8) (64))
-           :initially 0 :resizable t
+           :initially 0
            :typed-record ub8-tr-p)
 
   (m5-arr8 :type (array (unsigned-byte 8) (64))
@@ -278,17 +189,17 @@
             :typed-record int-tr-p)
 
 
-  (m5-fld1 :type integer :initially 0 :fix (ifix x))
-  (m5-fld2 :type integer :initially 0 :fix (ifix x))
-  (m5-fld3 :type integer :initially 0 :fix (ifix x))
-  (m5-fld4 :type integer :initially 0 :fix (ifix x))
-  (m5-fld5 :type integer :initially 0 :fix (ifix x))
+  (m5-fld1 :type integer :initially 0)
+  (m5-fld2 :type integer :initially 0)
+  (m5-fld3 :type integer :initially 0)
+  (m5-fld4 :type integer :initially 0)
+  (m5-fld5 :type integer :initially 0)
 
-  (m5-fld6 :type character :initially #\a :fix (char-fix x))
-  (m5-fld7 :type character :initially #\a :fix (char-fix x))
-  (m5-fld8 :type character :initially #\a :fix (char-fix x))
-  (m5-fld9 :type character :initially #\a :fix (char-fix x))
-  (m5-fld10 :type character :initially #\a :fix (char-fix x))
+  (m5-fld6 :type character :initially #\a)
+  (m5-fld7 :type character :initially #\a)
+  (m5-fld8 :type character :initially #\a)
+  (m5-fld9 :type character :initially #\a)
+  (m5-fld10 :type character :initially #\a)
 
   (m5-fld11 :initially nil)
   (m5-fld12 :initially nil)
@@ -303,5 +214,4 @@
 (defrstobj matt-example
   ;; Example stobj from Matt Kaufmann that previously did not work due to a
   ;; theory problem, which we have now fixed.
-  (fld1 :type integer :initially 0 :fix (ifix x)))
-
+  (fld1 :type integer :initially 0))

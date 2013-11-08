@@ -18,7 +18,4 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
-(ld "package.lsp")
-(include-book "std/portcullis" :dir :system)
-; cert-flags: ? t :ttags :all
+(in-package "RSTOBJ")

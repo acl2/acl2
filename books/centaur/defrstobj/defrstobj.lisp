@@ -20,23 +20,14 @@
 
 (in-package "RSTOBJ")
 (include-book "def-typed-record")
-(include-book "g-delete-keys")
-(include-book "fancy-worseguy")
+;;(include-book "g-delete-keys")
+(include-book "generic")
+;;(include-book "fancy-worseguy")
 (include-book "misc/definline" :dir :system)
 (include-book "misc/records" :dir :system)
 (include-book "tools/bstar" :dir :system)
-
-#||
-;; fool dependency scanner into including the array lemmas book, since our
-;; defrstobj event will include it.
-(include-book "array-lemmas")
-||#
-
-
-(defun-nx non-executable-nth (n x)
-  ;; Used in good-stp below, to get around stobj restrictions
-  (nth n x))
-
+(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "centaur/misc/absstobjs" :dir :system)
 
 ; The DEFRSTOBJ macro.
 ;
@@ -94,7 +85,7 @@
         (er hard? 'make-normal-stobj-field
             "Malformed rstobj field: ~x0.~%" rsf)))
     (cons (car rsf)
-          (remove-keyword :typed-record (cdr rsf)))))
+          (remove-keyword :fix (remove-keyword :typed-record (cdr rsf))))))
 
 (defun eat-typed-records (rsfs)
   (if (atom rsfs)
@@ -114,6 +105,25 @@
     (cons (cons name (second look))
           (tr-alist (cdr rsfs)))))
 
+(defun fix-alist (rsfs)
+  ;; Build an alist binding every field name to its :typed-record entry (or
+  ;; NIL).  Note: we rely on this binding every field, even if it has no
+  ;; :typed-record part or isn't even an array field.
+  (b* (((when (atom rsfs))
+        nil)
+       (rsf  (car rsfs))
+       (name (car rsf))
+       (look (assoc-keyword :fix (cdr rsf))))
+    (cons (cons name (second look))
+          (fix-alist (cdr rsfs)))))
+
+
+(defun make-$c-fields (st-fields mksym-pkg)
+  (if (atom st-fields)
+      nil
+    (cons (cons (mksym (caar st-fields) '$c)
+                (cdar st-fields))
+          (make-$c-fields (cdr st-fields) mksym-pkg))))
 
 
 ; An FTA ("field template alist") is an alist that is similar to ACL2's notion
@@ -124,693 +134,421 @@
 ;
 ;   (2) we extend it with the :typed-record field, etc.
 
-(defun make-fta (field-name defstobj-fld-template tr-alist mksym-pkg)
 
+(defun make-fta (field-name typed-rec fix defstobj-fld-template mksym-pkg tr-table)
+  (declare (xargs :mode :program))
   (b* (((list recog-name type init accessor-name updater-name length-name
               resize-name resizable)
         ;; BOZO this has to be kept in sync with defstobj-template
         defstobj-fld-template)
 
-; For array fields, we'll add an :arr-rec-name field that gives the name of the
-; additional record part of the array+record pair we'll use to implement this
-; array.
 
-       (typed-record (cdr (assoc field-name tr-alist)))
+       ;; We could just override the init settting with the typed-record init
+       ;; value, but we can't tell the difference here between one where no
+       ;; :initially key was given and one where :initially nil was given.  For
+       ;; now we'll just say the :initially value has to be specified and equal
+       ;; to the typed record default.
+       (- (b* (((unless typed-rec) t)
+               (tr-entry (cdr (assoc typed-rec tr-table)))
+               ((unless tr-entry)
+                (er hard? 'make-fta
+                    "Field ~x0 is supposed to be a ~x1 typed record, but this ~
+                     doesn't appear to be a typed record: it must have an ~
+                     entry in the ~x2 table.  (Typically the name ends in ~
+                     -TR-P.)"
+                    field-name typed-rec 'typed-records))
+               (tr-fi-pairs (cdr (assoc :fi-pairs tr-entry)))
+               (default-lambda (cadr (assoc 'elem-default tr-fi-pairs)))
+               (default-val (third default-lambda))) ;; (lambda () 0), e.g.
+            (or (equal init default-val)
+                (er hard? 'check-fta-init-vals
+                    "Field ~x0 is a ~x1 record, which has default value ~x2, ~
+                     but its initial value is ~x3 -- they must be the same."
+                    field-name
+                    typed-rec
+                    default-val
+                    init))))
 
-       (arr-rec-name
-        (and length-name (mksym field-name '-RSTOBJ-REC)))
+       (field-key (intern (symbol-name field-name) "KEYWORD"))
+       (size-key (and typed-rec
+                      (intern
+                       (concatenate 'string (symbol-name field-name) "-SIZE")
+                       "KEYWORD")))
 
        (- (or (and length-name
-                   typed-record)
+                   typed-rec)
               (and (not length-name)
-                   (not typed-record))
+                   (not typed-rec))
               (er hard? 'make-fta
                   "Field ~x0 is not allowed; each array needs to have a ~
                    :typed-record entry, and non-arrays may not have ~
-                   :typed-record entries." field-name))))
+                   :typed-record entries." field-name)))
+
+       (- (and fix typed-rec
+               (er hard? 'make-fta
+                   "Field ~x0 is not allowed: only non-array fields may specify :fix.")))
+
+       (- (and (not typed-rec) (not fix)
+               (not (equal type t))
+               (er hard? 'make-fta
+                   "Scalar field ~x0 must have a :fix argument since it has a ~
+                    nontrivial type ~x1.~%"
+                   field-name type))))
 
     `((:field-name    . ,field-name)
-      (:recog-name    . ,recog-name)
+      (:recog-name$c    . ,recog-name)
       (:type          . ,type)
       (:init          . ,init)
-      (:accessor-name . ,accessor-name)
-      (:updater-name  . ,updater-name)
-      (:length-name   . ,length-name)
-      (:resize-name   . ,resize-name)
+      (:accessor-name$c . ,accessor-name)
+      (:updater-name$c  . ,updater-name)
+      (:length-name$c   . ,length-name)
+      (:resize-name$c   . ,resize-name)
       (:resizable     . ,resizable)
       (:offset        . ,(acl2::defconst-name accessor-name))
-      (:arr-rec-name  . ,arr-rec-name)
-      (:typed-record  . ,typed-record))))
+      (:typed-record  . ,typed-rec)
+      (:accessor-name . ,(mksym 'get- field-name))
+      (:updater-name  . ,(mksym 'set- field-name))
+      (:length-name   . ,(and typed-rec (mksym field-name '-length)))
+      (:grow-name     . ,(and resizable (mksym 'grow- field-name)))
+      (:empty-name    . ,(and resizable (mksym 'empty- field-name)))
+      (:field-key     . ,field-key)
+      (:size-key      . ,size-key)
+      (:fix           . ,fix))))
 
-(defun make-ftas (field-names st-fld-templates tr-alist mksym-pkg)
-  (if (atom field-names)
+(defun make-ftas (tr-alist st-fld-templates fix-alist mksym-pkg tr-table)
+  (if (atom tr-alist)
       nil
-    (cons (make-fta (car field-names) (car st-fld-templates) tr-alist mksym-pkg)
-          (make-ftas (cdr field-names) (cdr st-fld-templates) tr-alist mksym-pkg))))
+    (cons (make-fta (caar tr-alist) ;; field name
+                    (cdar tr-alist) ;; typed-rec
+                    (cdar fix-alist) ;; fix
+                    (car st-fld-templates)
+                    mksym-pkg tr-table)
+          (make-ftas (cdr tr-alist) (cdr st-fld-templates) (cdr fix-alist) mksym-pkg tr-table))))
 
-(defun make-arr-rec-fields (ftas)
-  ;; Build the "record" entries for the array/record pairs
-  (b* (((when (atom ftas))
-        nil)
-       (name (cdr (assoc :arr-rec-name (car ftas))))
-       ((unless name)
-        (make-arr-rec-fields (cdr ftas))))
-    (cons `(,name :initially nil)
-          (make-arr-rec-fields (cdr ftas)))))
 
-(defun find-fta (name ftas)
-  (cond ((atom ftas)
-         nil)
-        ((equal (cdr (assoc :field-name (car ftas))) name)
-         (car ftas))
-        (t
-         (find-fta name (cdr ftas)))))
+(defun additional-exec-defs (name$c ftas mksym-pkg)
+  (b* (((when (atom ftas)) nil)
+       (rest (additional-exec-defs name$c (cdr ftas) mksym-pkg))
+       (fta (car ftas))
+       (resizable (cdr (assoc :resizable fta)))
+       ((unless resizable) rest)
+       (empty (cdr (assoc :empty-name fta)))
+       (empty$c (mksym empty '$c))
+       (resize (cdr (assoc :resize-name$c fta))))
+    (cons `(defun ,empty$c (,name$c)
+             (declare (xargs :stobjs ,name$c))
+             (,resize 0 ,name$c))
+          rest)))
 
-(defun collect-array-ftas (ftas)
+(defun creator-logic-updates (ftas)
+  (declare (xargs :mode :program))
+  (b* (((when (atom ftas)) nil)
+       (rest (creator-logic-updates (cdr ftas)))
+       (fta (car ftas))
+       (size (cdr (assoc :size-key fta)))
+       (field (cdr (assoc :field-key fta)))
+       ((unless size) ;; scalar
+        (b* ((init (cdr (assoc :init fta))))
+          (cons `(x (s ,field (quote ,init) x)) rest)))
+       (type (cdr (assoc :type fta)))
+       (init-size (car (third type)))
+       (- (or (natp init-size)
+              (er hard? 'creator-logic-updates
+                  "Couldn't find array initial size in type decl ~x0 for field ~x1"
+                  type (cdr (assoc :field-name fta))))))
+    (append `((x (s ,field nil x))
+              (x (s ,size ,init-size x)))
+            rest)))
+
+
+
+(defun scalar-fixing-function-thms (ftas w mksym-pkg)
+  (declare (xargs :mode :program))
+  (b* (((when (atom ftas)) nil)
+       (rest (scalar-fixing-function-thms (cdr ftas) w mksym-pkg))
+       (fta (car ftas))
+       (fix (cdr (assoc :fix fta)))
+       ((unless fix) rest)
+       (field (cdr (assoc :field-name fta)))
+       (type (cdr (assoc :type fta)))
+       (hyp (translate-declaration-to-guard type 'x w))
+       (id-thmname (mksym 'rstobj-fix-idempotent-for field))
+       (elemp-thmname (mksym 'rstobj-fix-elem-p-for field)))
+    (list* `(defthm ,id-thmname
+              (implies ,hyp
+                       (equal ,fix x)))
+           `(defthm ,elemp-thmname
+              ,(translate-declaration-to-guard type fix w))
+           rest)))
+
+(defun scalar-fixing-function-thm-names (ftas mksym-pkg)
+  (declare (xargs :mode :program))
+  (b* (((when (atom ftas)) nil)
+       (rest (scalar-fixing-function-thm-names (cdr ftas) mksym-pkg))
+       (fta (car ftas))
+       (fix (cdr (assoc :fix fta)))
+       ((unless fix) rest)
+       (field (cdr (assoc :field-name fta))))
+    (list* (mksym 'rstobj-fix-idempotent-for field)
+           (mksym 'rstobj-fix-elem-p-for field)
+           rest)))
+
+(defun collect-typed-rec-theorems (ftas tr-table)
+  (b* (((when (atom ftas)) nil)
+       (rest (collect-typed-rec-theorems (cdr ftas) tr-table))
+       (fta (car ftas))
+       (typed-rec (cdr (assoc :typed-record fta)))
+       ((unless typed-rec) rest))
+    (append (cdr (assoc :theorems (cdr (assoc typed-rec tr-table))))
+            (collect-typed-rec-theorems (cdr ftas) tr-table))))
+
+
+
+(defun logic-field-functions-one (fta w tr-table mksym-pkg)
+  (b* ((typed-rec (cdr (assoc :typed-record fta)))
+       (acc       (cdr (assoc :accessor-name fta)))
+       (upd       (cdr (assoc :updater-name fta)))
+       (key       (cdr (assoc :field-key fta)))
+       (type      (cdr (assoc :type fta)))
+       (acc$a     (mksym acc '$a))
+       (upd$a     (mksym upd '$a))
+
+       ((unless typed-rec)
+        ;; scalar -- just getter and setter
+        (b* ((fix (cdr (assoc :fix fta)))
+             (get-core `(g ,key x))
+             (get-body (if fix
+                           (subst get-core 'x fix)
+                         get-core))
+             (guard (translate-declaration-to-guard type 'v w)))
+          `((defun ,acc$a (x)
+              (declare (xargs :guard t))
+              ,get-body)
+            (defun ,upd$a (v x)
+              (declare (xargs :guard ,guard))
+              (s ,key v x)))))
+
+       (length    (cdr (assoc :length-name fta)))
+       (grow      (cdr (assoc :grow-name fta)))
+       (empty     (cdr (assoc :empty-name fta)))
+
+       (length$a  (mksym length '$a))
+       (size-key  (cdr (assoc :size-key fta)))
+
+       (grow/empty
+        (and grow
+             `((defun ,(mksym grow '$a) (n x)
+                 (declare (xargs :guard (and (natp n)
+                                             (<= (,length$a x) n))))
+                 (s ,size-key n x))
+               (defun ,(mksym empty '$a) (x)
+                 (declare (xargs :guard t))
+                 (s ,key nil (s ,size-key 0 x))))))
+
+       (guard (translate-declaration-to-guard (second type) 'v w))
+
+       (fi-pairs (cdr (assoc :fi-pairs
+                             (cdr (assoc typed-rec tr-table)))))
+       (tr-get (second (assoc 'tr-get fi-pairs)))
+       (tr-set (second (assoc 'tr-set fi-pairs))))
+
+    `((defun ,length$a (x)
+        (declare (xargs :guard t)
+                 ,@(and (not grow) '((ignore x))))
+        ,(if grow
+             ;; resizable
+             `(nfix (g ,size-key x))
+           ;; fixed size given by array decl
+           (car (third type))))
+
+      (defun ,acc$a (i x)
+        (declare (xargs :guard (and (natp i)
+                                    (< i (,length$a x)))))
+        (,tr-get i (g ,key x)))
+
+      (defun ,upd$a (i v x)
+        (declare (xargs :guard (and (natp i)
+                                    (< i (,length$a x))
+                                    ,guard)))
+        (s ,key (,tr-set i v (g ,key x)) x))
+
+      . ,grow/empty)))
+
+(defun logic-field-functions (ftas w tr-table mksym-pkg)
   (if (atom ftas)
       nil
-    (if (cdr (assoc :length-name (car ftas)))
-        (cons (car ftas) (collect-array-ftas (cdr ftas)))
-      (collect-array-ftas (cdr ftas)))))
-
-(defun fta-field-names (ftas)
-  (if (atom ftas)
-      nil
-    (cons (cdr (assoc :field-name (car ftas)))
-          (fta-field-names (cdr ftas)))))
+    (append (logic-field-functions-one (car ftas) w tr-table mksym-pkg)
+            (logic-field-functions (cdr ftas) w tr-table mksym-pkg))))
 
 
+(defun make-fieldmap-entries (ftas)
+  (b* (((when (atom ftas)) nil)
+       (fta (car ftas))
+       (field-key (cdr (assoc :field-key fta)))
+       (size-key (cdr (assoc :size-key fta))))
+    (cons (if size-key
+              `(make-array-fieldinfo :tr-key ,field-key :size-key ,size-key)
+            `(make-scalar-fieldinfo :key ,field-key))
+          (make-fieldmap-entries (cdr ftas)))))
 
-(defun fta-fns (fta)
-  (remove nil (list (cdr (assoc :recog-name fta))
-                    (cdr (assoc :accessor-name fta))
-                    (cdr (assoc :updater-name fta))
-                    (cdr (assoc :length-name fta))
-                    (cdr (assoc :resize-name fta)))))
+(defun make-tr-get-entries (ftas tr-table)
+  (b* (((when (atom ftas)) nil)
+       (rest (make-tr-get-entries (cdr ftas) tr-table))
+       (fta (car ftas))
+       (typed-rec (cdr (assoc :typed-record fta)))
+       ((unless typed-rec) rest)
+       (field-key (cdr (assoc :field-key fta)))
+       (tr-get (second (assoc 'tr-get (cdr (assoc :fi-pairs (cdr (assoc typed-rec tr-table))))))))
+    (cons `(,field-key (,tr-get i tr)) rest)))
 
-(defun fta-list-fns (ftas)
-  (if (atom ftas)
-      nil
-    (append (fta-fns (car ftas))
-            (fta-list-fns (cdr ftas)))))
+(defun make-tr-set-entries (ftas tr-table)
+  (b* (((when (atom ftas)) nil)
+       (rest (make-tr-set-entries (cdr ftas) tr-table))
+       (fta (car ftas))
+       (typed-rec (cdr (assoc :typed-record fta)))
+       ((unless typed-rec) rest)
+       (field-key (cdr (assoc :field-key fta)))
+       (tr-set (second (assoc 'tr-set (cdr (assoc :fi-pairs (cdr (assoc typed-rec tr-table))))))))
+    (cons `(,field-key (,tr-set i v tr)) rest)))
 
-(defun type-prescriptions-from-names (names)
-  (if (atom names)
-      nil
-    (cons `(:type-prescription ,(car names))
-          (type-prescriptions-from-names (cdr names)))))
+(defun make-tr-fix-entries (ftas tr-table)
+  (b* (((when (atom ftas)) nil)
+       (rest (make-tr-fix-entries (cdr ftas) tr-table))
+       (fta (car ftas))
+       (typed-rec (cdr (assoc :typed-record fta)))
+       ((unless typed-rec) rest)
+       (field-key (cdr (assoc :field-key fta)))
+       (tr-fix (second (assoc 'elem-fix (cdr (assoc :fi-pairs (cdr (assoc typed-rec tr-table))))))))
+    (cons `(,field-key (,tr-fix v)) rest)))
 
-(defun executable-counterparts-from-names (names)
-  (if (atom names)
-      nil
-    (cons `(:executable-counterpart ,(car names))
-          (executable-counterparts-from-names (cdr names)))))
+(defun make-tr-default-entries (ftas tr-table)
+  (b* (((when (atom ftas)) nil)
+       (rest (make-tr-default-entries (cdr ftas) tr-table))
+       (fta (car ftas))
+       (typed-rec (cdr (assoc :typed-record fta)))
+       ((unless typed-rec) rest)
+       (field-key (cdr (assoc :field-key fta)))
+       (tr-default (second (assoc 'elem-default (cdr (assoc :fi-pairs (cdr (assoc typed-rec tr-table))))))))
+    (cons `(,field-key (,tr-default)) rest)))
 
+(defun make-tr-elem-p-entries (ftas tr-table)
+  (b* (((when (atom ftas)) nil)
+       (rest (make-tr-elem-p-entries (cdr ftas) tr-table))
+       (fta (car ftas))
+       (typed-rec (cdr (assoc :typed-record fta)))
+       ((unless typed-rec) rest)
+       (field-key (cdr (assoc :field-key fta)))
+       (tr-elem-p (second (assoc 'elem-p (cdr (assoc :fi-pairs (cdr (assoc typed-rec tr-table))))))))
+    (cons `(,field-key (,tr-elem-p v)) rest)))
 
+(defun make-scalar-fix-entries (ftas)
+  (b* (((when (atom ftas)) nil)
+       (rest (make-scalar-fix-entries (cdr ftas)))
+       (fta (car ftas))
+       (typed-rec (cdr (assoc :typed-record fta)))
+       ((when typed-rec) rest)
+       (field-key (cdr (assoc :field-key fta)))
+       (fix (cdr (assoc :fix fta)))
+       (fix-body (if fix `((lambda (x) ,fix) v) 'v)))
+    (cons `(,field-key ,fix-body) rest)))
 
-(defun typed-record-fi-pairs (fn wrld)
-  (b* ((look (assoc fn (table-alist 'typed-records wrld)))
-       ((unless look)
-        (er hard? 'typed-record-fi-pairs
-            "~x0 does not look like a valid typed-record recognizer.  The ~
-             current typed-record recognizers are ~&1."
-            fn
-            (strip-cars (table-alist 'typed-records wrld)))))
-    (cdr (assoc :fi-pairs (cdr look)))))
+(defun make-scalar-elem-p-entries (ftas wrld)
+  (b* (((when (atom ftas)) nil)
+       (rest (make-scalar-elem-p-entries (cdr ftas) wrld))
+       (fta (car ftas))
+       (typed-rec (cdr (assoc :typed-record fta)))
+       ((when typed-rec) rest)
+       (field-key (cdr (assoc :field-key fta)))
+       (type (cdr (assoc :type fta)))
+       (form (translate-declaration-to-guard type 'v wrld)))
+    (cons `(,field-key ,form) rest)))
 
-(defun typed-record-thms (fn wrld)
-  (b* ((look (assoc fn (table-alist 'typed-records wrld)))
-       ((unless look)
-        (er hard? 'typed-record-thms
-            "~x0 does not look like a valid typed-record recognizer.  The ~
-             current typed-record recognizers are ~&1."
-            fn
-            (strip-cars (table-alist 'typed-records wrld)))))
-    (cdr (assoc :theorems (cdr look)))))
+(defun make-field-corr-of-tr-key-concls (ftas tr-table)
+  (b* (((when (atom ftas)) nil)
+       (rest (make-field-corr-of-tr-key-concls (cdr ftas) tr-table))
+       (fta (car ftas))
+       (typed-rec (cdr (assoc :typed-record fta)))
+       ((unless typed-rec) rest)
+       (field-key (cdr (assoc :field-key fta)))
+       (tr-get (second (assoc 'tr-get (cdr (assoc :fi-pairs (cdr (assoc typed-rec tr-table))))))))
+    (cons `(implies (equal trkey ,field-key)
+                    (equal (,tr-get i (g trkey st$a))
+                           (if (< i (len (nth idx st$c)))
+                               (nth i (nth idx st$c))
+                             (rstobj-tmp-tr-default trkey))))
+          rest)))
 
-(defun collect-typed-record-thms (ftas wrld)
-  (b* (((when (atom ftas))
-        nil)
-       (length-name (cdr (assoc :length-name (car ftas))))
-       ((unless length-name)
-        ;; Not an array, nothing to do
-        (collect-typed-record-thms (cdr ftas) wrld))
-       (typed-record     (cdr (assoc :typed-record (car ftas)))))
-    (append (typed-record-thms typed-record wrld)
-            (collect-typed-record-thms (cdr ftas) wrld))))
-
-
-
-
-
-
-
-(defun array-boilerplate (ftas mksym-pkg wrld)
-  ;; Basic theorems about the well-formed list recognizer for an array field.
-  (b* (((when (atom ftas))
-        nil)
-       (length-name (cdr (assoc :length-name (car ftas))))
-       ((unless length-name)
-        ;; not an array, nothing to do.
-        (array-boilerplate (cdr ftas) mksym-pkg wrld))
-
-       (typed-record       (cdr (assoc :typed-record (car ftas))))
-       (fi-pairs           (typed-record-fi-pairs typed-record wrld))
-       (elem-list-p-lambda (second (assoc 'elem-list-p fi-pairs)))
-       (elem-list-p        (third elem-list-p-lambda))
-
-       (recog-name    (cdr (assoc :recog-name (car ftas))))
-       (full-type     (cdr (assoc :type (car ftas)))) ;; with the array part
-       (elem-type     (second full-type))             ;; just the element part
-       (elem-p-of-val (translate-declaration-to-guard elem-type 'val wrld)))
-
+(defun array-types-preserved-thms (ftas w mksym-pkg)
+  (b* (((when (atom ftas)) nil)
+       (rest (array-types-preserved-thms (cdr ftas) w mksym-pkg))
+       (fta (car ftas))
+       (type (cdr (assoc :type fta)))
+       ((unless (and (consp type) (eq (car type) 'array))) rest)
+       (recog (cdr (assoc :recog-name$c fta)))
+       (hyp (translate-declaration-to-guard (second type) 'v w)))
     (append
-     `((defthm ,(mksym recog-name '-of-make-list-ac)
-         (implies (and ,elem-p-of-val
-                       (,recog-name acc))
-                  (,recog-name (make-list-ac n val acc)))
-         :hints(("Goal" :in-theory (enable make-list-ac))))
-
-       (defthm ,(mksym 'true-listp-when- recog-name)
-         (implies (,recog-name x)
-                  (true-listp x))
-         :rule-classes :compound-recognizer)
-
-       (defthm ,(mksym 'elem-list-p-for- typed-record '-when- recog-name)
-         (implies (,recog-name x)
-                  ,elem-list-p)))
-
-     (array-boilerplate (cdr ftas) mksym-pkg wrld))))
-
-
-(defun weak-stp-conjuncts (stobj-name ftas wrld)
-  ;; The array-rec-pair-p requirement for each array array/record pair.
-  (b* (((when (atom ftas))
-        nil)
-       (length-name (cdr (assoc :length-name (car ftas))))
-       ((unless length-name)
-        ;; Not an array, nothing to do
-        (weak-stp-conjuncts stobj-name (cdr ftas) wrld))
-
-       (offset           (cdr (assoc :offset (car ftas))))
-       (arr-rec-name     (cdr (assoc :arr-rec-name (car ftas))))
-       (typed-record     (cdr (assoc :typed-record (car ftas))))
-
-       ;; Now, we need to look up the proper array-rec-pair-p function
-       ;; in the world.
-       (fi-pairs         (typed-record-fi-pairs typed-record wrld))
-       (array-rec-pair-p (second (assoc 'array-rec-pair-p fi-pairs))))
-
-    (cons `(,array-rec-pair-p (nth ,offset ,stobj-name)
-                              (,arr-rec-name ,stobj-name)
-                              (,length-name ,stobj-name))
-          (weak-stp-conjuncts stobj-name (cdr ftas) wrld))))
-
-(defun good-stp-conjuncts (stobj-name ftas wrld)
-  (b* (((when (atom ftas))
-        nil)
-       (length-name       (cdr (assoc :length-name (car ftas))))
-       ((unless length-name)
-        ;; Not an array, nothing to do
-        (good-stp-conjuncts stobj-name (cdr ftas) wrld))
-
-       (arr-rec-name      (cdr (assoc :arr-rec-name (car ftas))))
-       (typed-record      (cdr (assoc :typed-record (car ftas))))
-       (offset            (cdr (assoc :offset (car ftas))))
-       (fi-pairs          (typed-record-fi-pairs typed-record wrld))
-       (tr-delete-indices (second (assoc 'tr-delete-indices fi-pairs)))
-       (array-rec-pair-p  (second (assoc 'array-rec-pair-p fi-pairs))))
-    (cons `(mbe :logic (,array-rec-pair-p
-                        (non-executable-nth ,offset ,stobj-name)
-                        (,arr-rec-name ,stobj-name)
-                        (,length-name ,stobj-name))
-                :exec
-                (or
-                 ;; This part should get executed:
-                 (not (,arr-rec-name ,stobj-name))
-                 ;; This part shouldn't get executed:
-                 (equal (,arr-rec-name ,stobj-name)
-                        (,tr-delete-indices (- (,length-name ,stobj-name) 1)
-                                            (,arr-rec-name ,stobj-name)))))
-          (good-stp-conjuncts stobj-name (cdr ftas) wrld))))
-
-(defun collect-array-rec-pair-ps (ftas wrld)
-  (b* (((when (atom ftas))
-        nil)
-       (length-name (cdr (assoc :length-name (car ftas))))
-       ((unless length-name)
-        ;; Not an array, nothing to do
-        (collect-array-rec-pair-ps (cdr ftas) wrld))
-
-       (typed-record     (cdr (assoc :typed-record (car ftas))))
-       (fi-pairs         (typed-record-fi-pairs typed-record wrld))
-       (array-rec-pair-p (second (assoc 'array-rec-pair-p fi-pairs))))
-
-    (cons array-rec-pair-p
-          (collect-array-rec-pair-ps (cdr ftas) wrld))))
-
-
-
-(defun array-update-wrapper (stobj-name fta mksym-pkg wrld)
-  (b* ((field-name          (cdr (assoc :field-name fta)))
-       (offset              (cdr (assoc :offset fta)))
-       (length-name         (cdr (assoc :length-name fta)))
-       (updater-name        (cdr (assoc :updater-name fta)))
-
-       ;; bozo update-arr-rec-name probably has the wrong package,
-       ;; and arr-rec-offset is horrible.  do this better.
-       (arr-rec-name        (cdr (assoc :arr-rec-name fta)))
-       (update-arr-rec-name (mksym 'update- arr-rec-name))
-       (arr-rec-offset      (acl2::defconst-name arr-rec-name))
-
-       (type                (cdr (assoc :type fta))) ;; full array type
-       (etype               (second type))
-       (etype-of-val        (translate-declaration-to-guard etype 'val wrld))
-       (weak-stp            (mksym 'weak- stobj-name '-p))
-
-       (typed-record      (cdr (assoc :typed-record fta)))
-       (fi-pairs          (typed-record-fi-pairs typed-record wrld))
-       (tr-set            (second (assoc 'tr-set fi-pairs)))
-       (array-to-tr       (second (assoc 'array-to-tr fi-pairs)))
-       (tr-to-array       (second (assoc 'tr-to-array fi-pairs)))
-       (tr-delete-indices (second (assoc 'tr-delete-indices fi-pairs)))
-
-       (getter      (mksym field-name '-getter))
-       (setter      (mksym field-name '-setter)))
-
-    `(progn
-
-       (defund-nx ,getter (,stobj-name)
-         (,array-to-tr (- (,length-name ,stobj-name) 1)
-                       (nth ,offset ,stobj-name)
-                       (,arr-rec-name ,stobj-name)))
-
-       (defund-nx ,setter (val ,stobj-name)
-         (let* ((arr (nth ,offset ,stobj-name))
-                (len (,length-name ,stobj-name))
-                (arr (,tr-to-array (- len 1) val arr))
-                (rec (,tr-delete-indices (- len 1) val))
-                (,stobj-name  (update-nth ,offset arr ,stobj-name))
-                (,stobj-name  (,update-arr-rec-name rec ,stobj-name)))
-           ,stobj-name))
-
-       (local
-        (encapsulate
-          ()
-          (local (in-theory (enable ,getter ,setter)))
-
-          (defthm ,(mksym weak-stp '-of- setter)
-            (implies (,weak-stp ,stobj-name)
-                     (,weak-stp (,setter val ,stobj-name))))
-
-          (defthm ,(mksym getter '-of- setter)
-            (equal (,getter (,setter val ,stobj-name))
-                   val))
-
-          (defthm ,(mksym setter '-of- getter)
-            (implies (,weak-stp ,stobj-name)
-                     (equal (,setter (,getter ,stobj-name) ,stobj-name)
-                            ,stobj-name)))
-
-          (defthm ,(mksym setter '-of- setter)
-            (implies (,weak-stp ,stobj-name)
-                     (equal (,setter val1 (,setter val2 ,stobj-name))
-                            (,setter val1 ,stobj-name))))
-
-          (defthm ,(mksym getter '-after-updating-other)
-            (implies (and (,weak-stp ,stobj-name)
-                          (natp n)
-                          (not (equal n ,offset))
-                          (not (equal n ,arr-rec-offset)))
-                     (equal (,getter (update-nth n val ,stobj-name))
-                            (,getter ,stobj-name))))
-
-          (defthm ,(mksym setter '-after-updating-other)
-            (implies (and (,weak-stp ,stobj-name)
-                          (natp n)
-                          (not (equal n ,offset))
-                          (not (equal n ,arr-rec-offset)))
-                     (equal (,setter val1 (update-nth n val2 ,stobj-name))
-                            (update-nth n val2 (,setter val1 ,stobj-name)))))
-
-          (defthm ,(mksym 'other-after- setter)
-            (implies (and (,weak-stp ,stobj-name)
-                          (natp n)
-                          (not (equal n ,offset))
-                          (not (equal n ,arr-rec-offset)))
-                     (equal (nth n (,setter val ,stobj-name))
-                            (nth n ,stobj-name))))
-
-          (defthm ,(mksym updater-name '-when-good-inputs)
-            (implies (and (,weak-stp ,stobj-name)
-                          (natp i)
-                          ,etype-of-val
-                          (< i (,length-name ,stobj-name)))
-                     (equal (,updater-name i val ,stobj-name)
-                            (,setter (,tr-set i val (,getter ,stobj-name)) ,stobj-name))))
-
-          )))))
-
-(defun array-update-wrappers (stobj-name ftas mksym-pkg wrld)
-  (b* (((when (atom ftas))
-        nil)
-       (length-name (cdr (assoc :length-name (car ftas))))
-       ((unless length-name)
-        ;; Not an array, nothign to do for this field
-        (array-update-wrappers stobj-name (cdr ftas) mksym-pkg wrld)))
-    (cons (array-update-wrapper stobj-name (car ftas) mksym-pkg wrld)
-          (array-update-wrappers stobj-name (cdr ftas) mksym-pkg wrld))))
-
-
-
-(defun make-noninterference-theorems1 (stobj-name field1 other-fields mksym-pkg)
-  (b* (((when (atom other-fields))
-        nil)
-       ((when (equal field1 (car other-fields)))
-        (make-noninterference-theorems1 stobj-name field1 (cdr other-fields) mksym-pkg))
-       (field2        (car other-fields))
-       (field1-getter (mksym field1 '-getter))
-       (field1-setter (mksym field1 '-setter))
-       (field2-setter (mksym field2 '-setter))
-       (weak-stp      (mksym 'weak- stobj-name '-p))
-       (thms
-        `((defthm ,(mksym field1-getter '-of- field2-setter)
-            (implies (,weak-stp ,stobj-name)
-                     (equal (,field1-getter (,field2-setter val ,stobj-name))
-                            (,field1-getter ,stobj-name)))
-            :hints(("Goal" :in-theory (enable ,field1-getter
-                                              ,field2-setter))))
-          (defthm ,(mksym field1-setter '-of- field2-setter)
-            (implies (and (,weak-stp ,stobj-name)
-                          (syntaxp (symbol-< ',field1 ',field2))
-                          )
-                     (equal (,field1-setter val1 (,field2-setter val2 ,stobj-name))
-                            (,field2-setter val2 (,field1-setter val1 ,stobj-name))))
-            :hints(("Goal" :in-theory (enable ,field1-setter ,field2-setter)))))))
-    (append thms
-            (make-noninterference-theorems1 stobj-name field1 (cdr other-fields) mksym-pkg))))
-
-(defun make-noninterference-theorems (stobj-name fieldnames all-fieldnames mksym-pkg)
-  (if (atom fieldnames)
-      nil
-    (append
-     (make-noninterference-theorems1 stobj-name (car fieldnames) all-fieldnames mksym-pkg)
-     (make-noninterference-theorems stobj-name (cdr fieldnames) all-fieldnames mksym-pkg))))
-
-(defun make-noninterference-top (stobj-name ftas mksym-pkg)
-  (let* ((array-ftas (collect-array-ftas ftas))
-         (all-fieldnames (fta-field-names array-ftas)))
-    `(progn
-       ,@(make-noninterference-theorems stobj-name all-fieldnames all-fieldnames mksym-pkg))))
-
-
-
-
-(defun make-cond-pairs-for-get1 (stobj-name ftas misc-fta mksym-pkg)
-
-  (b* (((when (atom ftas))
-        ;; Default case: get the key out of the extra MISC field.
-        (b* ((get-misc (cdr (assoc :accessor-name misc-fta))))
-          (list `(t (g name (,get-misc ,stobj-name))))))
-
-       (field-name    (cdr (assoc :field-name (car ftas))))
-       (keyword       (intern-in-package-of-symbol (symbol-name field-name) :keyword))
-       (length-name   (cdr (assoc :length-name (car ftas))))
-       (accessor-name (cdr (assoc :accessor-name (car ftas))))
-
-       ((unless length-name)
-        ;; Ordinary field, use the getter for this field
-        (cons `((equal name ,keyword)
-                (,accessor-name ,stobj-name))
-              (make-cond-pairs-for-get1 stobj-name (cdr ftas) misc-fta mksym-pkg)))
-
-       ;; Array field, use the special accessor
-       (getter (mksym field-name '-getter)))
-    (cons `((equal name ,keyword)
-            (,getter ,stobj-name))
-          (make-cond-pairs-for-get1 stobj-name (cdr ftas) misc-fta mksym-pkg))))
-
-
-(defun make-cond-pairs-for-set1 (stobj-name ftas misc-fta mksym-pkg)
-
-  (b* (((when (atom ftas))
-        ;; Default case: set the key out of the extra MISC field.
-        (b* ((get-misc (cdr (assoc :accessor-name misc-fta)))
-             (set-misc (cdr (assoc :updater-name misc-fta))))
-          (list `(t (,set-misc (s name val (,get-misc ,stobj-name)) ,stobj-name)))))
-
-       (field-name    (cdr (assoc :field-name (car ftas))))
-       (keyword       (intern-in-package-of-symbol (symbol-name field-name) :keyword))
-       (length-name   (cdr (assoc :length-name (car ftas))))
-       (updater-name  (cdr (assoc :updater-name (car ftas))))
-
-       ((unless length-name)
-        ;; Ordinary field, use the setter for this field
-        (cons `((equal name ,keyword)
-                (,updater-name val ,stobj-name))
-              (make-cond-pairs-for-set1 stobj-name (cdr ftas) misc-fta mksym-pkg)))
-
-       ;; Array field, use the special updater
-       (setter (mksym field-name '-setter)))
-    (cons `((equal name ,keyword)
-            (,setter val ,stobj-name))
-          (make-cond-pairs-for-set1 stobj-name (cdr ftas) misc-fta mksym-pkg))))
-
-
-(defun make-st-wrappers (stobj-name ftas misc-fta mksym-pkg
-                                    st-good update-st-good
-                                    st-badplace update-st-badplace)
-  (b* ((get1          (mksym stobj-name '-get1))
-       (set1          (mksym stobj-name '-set1))
-       (weak-stp      (mksym 'weak- stobj-name '-p))
-       (good-stp      (mksym 'good- stobj-name '-p)))
-
-    `(progn
-
-       (defund-nx ,get1 (name ,stobj-name)
-         (cond ((equal name :rstobj-good)
-                (,st-good ,stobj-name))
-               ((equal name :rstobj-badplace)
-                (,st-badplace ,stobj-name))
-               ,@(make-cond-pairs-for-get1 stobj-name ftas misc-fta mksym-pkg)))
-
-       (defund-nx ,set1 (name val ,stobj-name)
-         (cond ((equal name :rstobj-good)
-                (,update-st-good val ,stobj-name))
-               ((equal name :rstobj-badplace)
-                (,update-st-badplace val ,stobj-name))
-               ,@(make-cond-pairs-for-set1 stobj-name ftas misc-fta mksym-pkg)))
-
-       (local
-        (encapsulate
-          ()
-          (local (in-theory (enable ,get1 ,set1)))
-
-          (defthm ,(mksym weak-stp '-of- set1)
-            (implies (,weak-stp ,stobj-name)
-                     (,weak-stp (,set1 name val ,stobj-name)))
-            :hints(("Goal" :in-theory (enable member-equal))))
-
-          (defthm ,(mksym good-stp '-of- set1)
-            (implies (and (,good-stp ,stobj-name)
-                          (force (not (equal name :rstobj-good))))
-                     (,good-stp (,set1 name val ,stobj-name)))
-            :hints(("Goal" :in-theory (enable ,good-stp member-equal))))
-
-          (defthm ,(mksym get1 '-of- set1 '-same)
-            (equal (,get1 name (,set1 name val ,stobj-name))
-                   val))
-
-          (defthm ,(mksym get1 '-of- set1 '-diff)
-            (implies (and (,weak-stp ,stobj-name)
-                          (not (equal name1 name2)))
-                     (equal (,get1 name1 (,set1 name2 val ,stobj-name))
-                            (,get1 name1 ,stobj-name))))
-
-          (defthm ,(mksym set1 '-of- get1 '-same)
-            (implies (,weak-stp ,stobj-name)
-                     (equal (,set1 name (,get1 name ,stobj-name) ,stobj-name)
-                            ,stobj-name)))
-
-          (defthm ,(mksym set1 '-of- set1 '-same)
-            (implies (,weak-stp ,stobj-name)
-                     (equal (,set1 name val1 (,set1 name val2 ,stobj-name))
-                            (,set1 name val1 ,stobj-name))))
-
-          (defthm ,(mksym set1 '-of- set1 '-diff)
-            (implies (and (not (equal name1 name2))
-                          (,weak-stp ,stobj-name))
-                     (equal (,set1 name1 val1 (,set1 name2 val2 ,stobj-name))
-                            (,set1 name2 val2 (,set1 name1 val1 ,stobj-name))))))))))
-
-
-
-(defun make-exec-getter (stobj-name fta mksym-pkg wrld)
-  (b* ((fieldname     (cdr (assoc :field-name fta)))
-       (length-name   (cdr (assoc :length-name fta)))
-       (accessor-name (cdr (assoc :accessor-name fta)))
-       (keyword       (intern-in-package-of-symbol (symbol-name fieldname) :keyword))
-
-       (good-stp      (mksym 'GOOD- stobj-name '-P))
-       (st-get        (mksym stobj-name '-GET))
-
-       ((unless length-name)
-        ;; Normal field, not an array
-        `(definline ,(mksym 'get- fieldname) (,stobj-name)
-           (declare (xargs :stobjs ,stobj-name
-                           :guard (,good-stp ,stobj-name)))
-           (mbe :logic (,st-get ,keyword ,stobj-name)
-                :exec (,accessor-name ,stobj-name))))
-
-       (typed-record (cdr (assoc :typed-record fta)))
-       (fi-pairs     (typed-record-fi-pairs typed-record wrld))
-       (tr-get       (second (assoc 'tr-get fi-pairs)))
-       (getter       (mksym fieldname '-getter)))
-
-    `(definline ,(mksym 'get- fieldname) (i ,stobj-name)
-       (declare (xargs :stobjs ,stobj-name
-                       :guard (and (,good-stp ,stobj-name)
-                                   (natp i)
-                                   (< i (,length-name ,stobj-name)))
-                       :guard-hints(("Goal" :in-theory (enable ,getter)))))
-       (mbe :logic (,tr-get i (,st-get ,keyword ,stobj-name))
-            :exec (,accessor-name i ,stobj-name)))))
-
-(defun make-exec-getters (stobj-name ftas mksym-pkg wrld)
+     `((defthm ,(mksym recog '-of-repeat)
+         (implies ,hyp
+                  (,recog (acl2::repeat v n)))
+         :hints(("Goal" :in-theory (enable acl2::repeat)
+                 :induct (acl2::repeat v n))))
+
+       (defthm ,(mksym recog '-of-update-nth)
+         (implies (and ,hyp
+                       (,recog x)
+                       (<= (nfix i) (len x)))
+                  (,recog (update-nth i v x)))
+         :hints(("Goal" :in-theory (enable update-nth len))))
+
+       (defthm ,(mksym recog '-of-resize-list)
+         (implies (and ,hyp
+                       (,recog x))
+                  (,recog (resize-list x n v)))
+         :hints(("Goal" :in-theory (enable resize-list)))))
+     rest)))
+       
+
+(defun absstobj-exports-one (fta mksym-pkg)
+  (b* ((typed-rec (cdr (assoc :typed-record fta)))
+       (acc       (cdr (assoc :accessor-name fta)))
+       (upd       (cdr (assoc :updater-name fta)))
+
+       (acc$a     (mksym acc '$a))
+       (acc$c     (cdr (assoc :accessor-name$c fta)))
+       (upd$a     (mksym upd '$a))
+       (upd$c     (cdr (assoc :updater-name$c fta)))
+
+       (acc/upd
+        `((,acc :logic ,acc$a :exec ,acc$c)
+          (,upd :logic ,upd$a :exec ,upd$c)))
+
+       ((unless typed-rec)
+        ;; scalar -- just getter and setter
+        acc/upd)
+
+       (length    (cdr (assoc :length-name fta)))
+       (grow      (cdr (assoc :grow-name fta)))
+       (empty     (cdr (assoc :empty-name fta)))
+
+       (length$a  (mksym length '$a))
+       (length$c  (cdr (assoc :length-name$c fta)))
+       
+       (grow/empty
+        (and grow
+             `((,grow :logic ,(mksym grow '$a) :exec ,(cdr (assoc :resize-name$c fta)))
+               (,empty :logic ,(mksym empty '$a) :exec ,(mksym empty '$c))))))
+
+    `((,length :logic ,length$a :exec ,length$c)
+      ,@acc/upd
+      . ,grow/empty)))
+
+(defun absstobj-exports (ftas mksym-pkg)
   (if (atom ftas)
       nil
-    (cons (make-exec-getter stobj-name (car ftas) mksym-pkg wrld)
-          (make-exec-getters stobj-name (cdr ftas) mksym-pkg wrld))))
+    (append (absstobj-exports-one (car ftas) mksym-pkg)
+            (absstobj-exports (cdr ftas) mksym-pkg))))
 
 
-(defun make-exec-setter (stobj-name fta mksym-pkg wrld)
-  (b* ((fieldname     (cdr (assoc :field-name fta)))
-       (length-name   (cdr (assoc :length-name fta)))
-       (updater-name  (cdr (assoc :updater-name fta)))
-       (type          (cdr (assoc :type fta)))
-       (keyword       (intern-in-package-of-symbol (symbol-name fieldname) :keyword))
-
-       (good-stp      (mksym 'GOOD- stobj-name '-P))
-       (st-get        (mksym stobj-name '-GET))
-       (st-set        (mksym stobj-name '-SET))
-
-       ((unless length-name)
-        ;; Normal field, not an array
-        `(definline ,(mksym 'set- fieldname) (x ,stobj-name)
-           (declare (xargs :stobjs ,stobj-name
-                           :guard (and (,good-stp ,stobj-name)
-                                       ,(translate-declaration-to-guard type 'x wrld))))
-           (mbe :logic (,st-set ,keyword x ,stobj-name)
-                :exec (,updater-name x ,stobj-name))))
-
-       (etype        (second type))
-       (typed-record (cdr (assoc :typed-record fta)))
-       (fi-pairs     (typed-record-fi-pairs typed-record wrld))
-       (tr-set       (second (assoc 'tr-set fi-pairs))))
-
-    `(definline ,(mksym 'set- fieldname) (i x ,stobj-name)
-       (declare (xargs :stobjs ,stobj-name
-                       :guard (and (,good-stp ,stobj-name)
-                                   (natp i)
-                                   (< i (,length-name ,stobj-name))
-                                   ,(translate-declaration-to-guard etype 'x wrld))
-                       :guard-hints(("Goal" :in-theory (disable ,updater-name)))))
-       (mbe :logic (,st-set ,keyword
-                            (,tr-set i x (,st-get ,keyword ,stobj-name))
-                            ,stobj-name)
-            :exec (,updater-name i x ,stobj-name)))))
-
-
-(defun make-exec-setters (stobj-name ftas mksym-pkg wrld)
-  (if (atom ftas)
-      nil
-    (cons (make-exec-setter stobj-name (car ftas) mksym-pkg wrld)
-          (make-exec-setters stobj-name (cdr ftas) mksym-pkg wrld))))
-
-
-(defun field-keywords (ftas)
-  (if (atom ftas)
-      nil
-    (b* ((field-name    (cdr (assoc :field-name (car ftas))))
-         (keyword       (intern-in-package-of-symbol (symbol-name field-name) :keyword)))
-      (cons keyword
-            (field-keywords (cdr ftas))))))
-
-
-(defun make-cond-pairs-for-badguy1 (get1 keywords)
-  ;; Doesn't introduce the final T pair
-  (b* (((when (atom keywords))
-        nil)
-       (kwd1 (car keywords))
-       (pair1 `((not (equal (,get1 ,kwd1 x)
-                            (,get1 ,kwd1 y)))
-                (list :mismatch ,kwd1))))
-    (cons pair1
-          (make-cond-pairs-for-badguy1 get1 (cdr keywords)))))
-
-
-
-(defun badguy-finds-diffs-lemma (stobj-name badguy1 fta)
-  ;; For a non-array field
-  (b* ((mksym-pkg stobj-name)
-       (field-name    (cdr (assoc :field-name fta)))
-       (accessor-name (cdr (assoc :accessor-name fta))))
-
-    `(local (defthm ,(mksym badguy1 '-finds-diffs-in- field-name)
-              (implies (not (equal (,accessor-name x)
-                                   (,accessor-name y)))
-                       (,badguy1 x y))))))
-
-(defun badguy-finds-diffs-lemma-arr (stobj-name badguy1 weak-stp fta wrld)
-  (b* ((mksym-pkg stobj-name)
-       (field-name    (cdr (assoc :field-name fta)))
-       (offset        (cdr (assoc :offset fta)))
-       (arr-rec-name  (cdr (assoc :arr-rec-name fta)))
-       (length-name   (cdr (assoc :length-name fta)))
-       (typed-record  (cdr (assoc :typed-record fta)))
-       (fi-pairs      (typed-record-fi-pairs typed-record wrld))
-       (array-to-tr   (second (assoc 'array-to-tr fi-pairs)))
-       (pair-p        (second (assoc 'array-rec-pair-p fi-pairs)))
-       (tr-thm        (let ((mksym-pkg array-to-tr))
-                        (mksym 'equal-of- array-to-tr)))
-       (getter        (mksym field-name '-getter)))
-    `(local (defthm ,(mksym badguy1 '-finds-diffs-in- field-name)
-              (implies (and (,weak-stp x)
-                            (,weak-stp y)
-                            (or (not (equal (nth ,offset x)
-                                            (nth ,offset y)))
-                                (not (equal (,arr-rec-name x)
-                                            (,arr-rec-name y)))))
-                       (,badguy1 x y))
-              :hints(("Goal"
-                      :in-theory (e/d (,weak-stp ,getter ,length-name ,tr-thm)
-                                      (,pair-p))))))))
-
-(defun badguy-finds-diffs-lemmas (stobj-name badguy1 weak-stp ftas wrld)
-  (if (atom ftas)
-      nil
-    (cons
-     (if (cdr (assoc :length-name (car ftas)))
-         (badguy-finds-diffs-lemma-arr stobj-name badguy1 weak-stp (car ftas) wrld)
-       (badguy-finds-diffs-lemma stobj-name badguy1 (car ftas)))
-     (badguy-finds-diffs-lemmas stobj-name badguy1 weak-stp (cdr ftas) wrld))))
-
-
-(defund equal-when-weak-stp-rhs (ftas)
-  ;; Makes a list of conjuncts for these fields
-  (if (atom ftas)
-      nil
-    (b* ((fta           (car ftas))
-         (accessor-name (cdr (assoc :accessor-name fta)))
-         (offset        (cdr (assoc :offset fta)))
-         (arr-rec-name  (cdr (assoc :arr-rec-name fta)))
-         (length-name   (cdr (assoc :length-name fta))))
-      (cons
-       (if length-name
-           `(and (equal (nth ,offset x) (nth ,offset y))
-                 (equal (,arr-rec-name x) (,arr-rec-name y)))
-         `(equal (,accessor-name x) (,accessor-name y)))
-       (equal-when-weak-stp-rhs (cdr ftas))))))
 
 
 
@@ -827,508 +565,516 @@
               (er hard? 'defrstobj-fn "Expected at least one field for ~x0." name)))
 
        (tr-alist      (tr-alist rsfs))
+       (fix-alist     (fix-alist rsfs))
        (st-fields     (eat-typed-records rsfs))
        (st-kw-part    (alist-to-keyword-alist st-kw-alist nil))
-       (st-template   (defstobj-template name (append st-fields st-kw-part) wrld))
-       ((list namep create-name st-fld-templates ?doc ?inline)
+       (name$c        (mksym name '$c))
+       (st-fields$c   (make-$c-fields st-fields mksym-pkg))
+       (st-template   (defstobj-template name$c (append st-fields$c st-kw-part) wrld))
+       ((list recog$c create$c st$c-fld-templates ?doc ?inline)
         ;; BOZO this has to be kept in sync with defstobj-template.
         st-template)
 
-       (ftas (make-ftas (strip-cars tr-alist) st-fld-templates tr-alist mksym-pkg))
+       (tr-table      (table-alist 'typed-records wrld))
 
-       (set           (mksym name '-SET))
-       (get           (mksym name '-GET))
-       (set1          (mksym name '-SET1))
-       (get1          (mksym name '-GET1))
-       (weak-stp      (mksym 'WEAK- name '-P))
-       (good-stp      (mksym 'GOOD- name '-P))
-       (bad-stp       (mksym 'BAD- name '-P))
-       (to            (mksym 'TO- name '-RSTOBJ))
-       (from          (mksym 'FROM- name '-RSTOBJ))
-       (misc-name     (mksym name '-RSTOBJ-MISC))
-       (good-name     (mksym name '-RSTOBJ-GOOD))
-       (badplace-name (mksym name '-RSTOBJ-BADPLACE))
-       (user-keys     (field-keywords ftas))
-       (- (or (not (member :rstobj-good user-keys))
-              (er hard? 'defrstobj-fn "The field name RSTOBJ-GOOD is reserved.")))
-       (- (or (not (member :rstobj-badplace user-keys))
-              (er hard? 'defrstobj-fn "The field name RSTOBJ-BADPLACE is reserved.")))
-       (user-keys     (list* :rstobj-good :rstobj-badplace user-keys))
+       (ftas (make-ftas tr-alist st$c-fld-templates fix-alist mksym-pkg tr-table))
 
-       (st-fields+    (append st-fields
-                              `((,misc-name     :initially nil)
-                                (,good-name     :initially t)
-                                (,badplace-name :initially nil))
-                              (make-arr-rec-fields ftas)))
-       (args          (append st-fields+ st-kw-part))
-       (st-form       `(defstobj ,name ,@args))
-
-       ;; Regenerate the templates that the extended form will use, so that
-       ;; we'll have FTAs for the array records and the other extra fields.
-       (ext-st-template (defstobj-template name args wrld))
-       ((list & & ext-st-fld-templates & &) ext-st-template)
-       (ext-ftas (make-ftas (strip-cars st-fields+) ext-st-fld-templates tr-alist mksym-pkg))
-
-       (misc-fta           (find-fta misc-name ext-ftas))
-       (good-fta           (find-fta good-name ext-ftas))
-       (badplace-fta       (find-fta badplace-name ext-ftas))
-       (st-misc            (cdr (assoc :accessor-name misc-fta)))
-       (update-st-good     (cdr (assoc :updater-name good-fta)))
-       (update-st-badplace (cdr (assoc :updater-name badplace-fta)))
-       (st-badplace        (cdr (assoc :accessor-name badplace-fta)))
-
-       (st-fns   (list* namep create-name (fta-list-fns ext-ftas)))
-
-       (badguy1 (mksym name '-BADGUY1))
-       (badguy  (mksym name '-BADGUY))
-
-       )
+       (stobj-args    (append st-fields$c st-kw-part))
+       (recog         (mksym name 'p))
+       (recog$a       (mksym recog '$a))
+       (create        (mksym 'create- name))
+       (create$a      (mksym create '$a)))
 
     `(with-output
-       :off (summary)
+       :off (event acl2::prove)
+       :summary (acl2::form time)
        (encapsulate
          ()
 
-; Get into a very restricted theory that (hopefully) just includes what we need.
-
          (logic)
          (set-inhibit-warnings "non-rec" "disable" "subsume") ;; implicitly local
+
+
+         (local (defthm plus-collect-consts
+                  (implies (syntaxp (and (quotep x) (quotep y)))
+                           (equal  (+ x y z)
+                                   (+ (+ x y) z)))))
+
+         (local
+          (progn
+            ,@(scalar-fixing-function-thms ftas wrld mksym-pkg)))
+
+
          (local (set-default-hints nil))
-         (local (include-book "centaur/defrstobj/array-lemmas" :dir :system))
-         (local (in-theory
-                 (union-theories
-                  (union-theories (theory 'minimal-theory)
-                                  (theory 'array-lemmas))
-                  (executable-counterpart-theory :here))))
-
-         ;; This could generate huge lists if someone asks for a big array
-         (local (in-theory (disable (:executable-counterpart make-list-ac))))
-
-         (local (in-theory (enable not o< o-finp acl2-count zp natp nfix max
-                                   len length true-listp update-nth-array
-
-                                   acl2::natp-compound-recognizer
-                                   car-cons cdr-cons car-cdr-elim
-
-                                   nth-0-cons
-                                   nth-add1
-                                   len-update-nth
-                                   nth-update-nth
-                                   true-listp-update-nth
-                                   non-executable-nth
-
-                                   acl2::s-diff-s
-                                   acl2::s-same-s
-                                   acl2::s-same-g
-                                   acl2::g-diff-s
-                                   acl2::g-same-s
-                                   acl2::g-of-nil-is-nil
-                                   g-of-g-delete-keys
-                                   g-delete-keys-of-s-diff
-
-                                   (:type-prescription true-listp)
-                                   (:type-prescription len)
-                                   (:type-prescription acl2-count)
-
-                                   ,@(collect-typed-record-thms ftas wrld))))
-
-         ,st-form
-
-         (in-theory (disable ,@st-fns))
-
-         (local (in-theory (enable ,@st-fns)))
-
-         (local (progn ,@(array-boilerplate ftas mksym-pkg wrld)))
-
-         (defthm ,(mksym namep '-of- create-name)
-           (,namep (,create-name))
-           :hints (("Goal"
-                    :in-theory (e/d (,namep ,create-name)
-                                    (make-list-ac (make-list-ac))))))
-
-         (defund-nx ,weak-stp (,name)
-           (and (true-listp ,name)
-                (= (len ,name) ,(len st-fields+))
-                ,@(weak-stp-conjuncts name ftas wrld)
-                ;; In support of equal-by-keys, we now require that the misc
-                ;; field must not mention the other keys.
-                (let ((misc (,st-misc ,name)))
-                  (equal misc (g-delete-keys ',user-keys misc)))))
-
-         (local (in-theory (enable ,weak-stp
-                                   ,@(collect-array-rec-pair-ps ftas wrld))))
-
-         (defund ,good-stp (,name)
-           (declare (xargs :stobjs ,name))
-           (mbe :logic (and (,weak-stp ,name)
-                            (eq (,good-name ,name) t))
-                :exec (and (eq (,good-name ,name) t)
-                           ,@(good-stp-conjuncts name ftas wrld)
-                           ;; In support of equal-by-keys, we now require that
-                           ;; the misc field must not mention the other keys.
-                           (let ((misc (,st-misc ,name)))
-                             (equal misc (g-delete-keys ',user-keys misc))))))
-
-
-         ;; Matt Kaufmann sent me a nice bug report that showed
-         ;; good-stp-of-create-st failing for an extremely simple rstobj.  It
-         ;; seemed like ACL2 was trying to prove the theorem by executing
-         ;; good-stp on the constant list '(0 nil t nil), which was getting
-         ;; created by (create-st).  But this in turn called weak-stp, which is
-         ;; non-executable, and wrapped the whole term in a HIDE.  Then nothing
-         ;; could apply to it, and everything broke down.  So, to fix this,
-         ;; just make sure we never try to execute these during the following
-         ;; proofs.  See "matt-example" in basic-tests.lisp.
-         (local (in-theory (disable (:executable-counterpart ,good-stp)
-                                    (:executable-counterpart ,weak-stp))))
-
-         (defthm ,(mksym good-stp '-of- create-name)
-           (,good-stp (,create-name))
-           :hints(("Goal" :in-theory (enable ,good-stp))))
-
-         ;; The wrappers for reading/writing individual array fields
-         ,@(array-update-wrappers name ftas mksym-pkg wrld)
-
-         ;; Proofs that the individual wrappers don't interfere with one another
-         (local ,(make-noninterference-top name ftas mksym-pkg))
-
-         ;; The get1/set1 wrappers for dealing with arbitrary fields
-         ,(make-st-wrappers name ftas misc-fta mksym-pkg
-                            good-name update-st-good
-                            badplace-name update-st-badplace)
-
-         (local (in-theory (disable ,create-name)))
-
-         (defund-nx ,bad-stp (,name)
-           (declare (xargs :hints (("Goal" :in-theory (enable nth)))))
-           (or (not (,weak-stp ,name))
-               (and (not (eq (,good-name ,name) t))
-                    (,bad-stp (,badplace-name ,name))
-                    (let* ((temp (,create-name))
-                           (temp (,update-st-good nil temp))
-                           (temp (,update-st-badplace (,st-badplace ,name) temp)))
-                      (equal ,name temp)))))
-
-         (local (in-theory (enable ,bad-stp)))
-
-         (local (defthm ,(mksym 'not- bad-stp '-when- good-stp)
-                  (implies (,good-stp ,name)
-                           (not (,bad-stp ,name)))
-                  :hints(("Goal" :in-theory (enable ,good-stp)))))
-
-         (defund-nx ,to (,name)
-           (if (,bad-stp ,name)
-               (let* ((temp (,create-name))
-                      (temp (,update-st-badplace ,name temp))
-                      (temp (,update-st-good nil temp)))
-                 temp)
-             ,name))
-
-         (defund-nx ,from (,name)
-           (if (,bad-stp ,name)
-               (,st-badplace ,name)
-             ,name))
-
-         (encapsulate
-           ()
-           (local (in-theory (enable ,to ,from)))
-
-           (defthm ,(mksym to '-identity)
-             (implies (not (,bad-stp ,name))
-                      (equal (,to ,name)
-                             ,name)))
-
-           (defthm ,(mksym weak-stp '-of- to)
-             (,weak-stp (,to ,name))
-             :hints(("Goal" :in-theory (enable ,create-name))))
 
-           (defthm ,(mksym from '-identity)
-             (implies (not (,bad-stp ,name))
-                      (equal (,from ,name)
-                             ,name)))
-
-           (defthm ,(mksym from '- to '-inverse)
-             (equal (,from (,to ,name))
-                    ,name))
-
-           (defthm ,(mksym to '- from '-inverse)
-             (implies (,weak-stp ,name)
-                      (equal (,to (,from ,name))
-                             ,name))))
-
-
-         ;; The main logical story
-
-         (defund-nx ,get (key ,name)
-           (,get1 key (,to ,name)))
-
-         (defund-nx ,set (key val ,name)
-           (,from (,set1 key val (,to ,name))))
-
-         (local (in-theory (enable ,get ,set)))
-
-         (defthm ,(mksym good-stp '-of- set)
-           (implies (and (force (,good-stp ,name))
-                         (force (not (equal key :rstobj-good))))
-                    (,good-stp (,set key val ,name))))
-
-         (defthm ,(mksym get '-of- set '-same)
-           (equal (,get key (,set key val ,name))
-                  val))
-
-         (defthm ,(mksym get '-of- set '-diff)
-           (implies (not (equal key1 key2))
-                    (equal (,get key1 (,set key2 val ,name))
-                           (,get key1 ,name))))
-
-         (defthm ,(mksym set '-of- get '-same)
-           (equal (,set key1 (,get key1 ,name) ,name)
-                  ,name))
-
-         (defthm ,(mksym set '-of- set '-diff)
-           (implies (not (equal key1 key2))
-                    (equal (,set key1 val1 (,set key2 val2 ,name))
-                           (,set key2 val2 (,set key1 val1 ,name))))
-           ;; ACL2 infers a bad loop stopper otherwise (it considers the values
-           ;; instead of just the keys!)
-           :rule-classes ((:rewrite :loop-stopper ((key1 key2)))))
-
-         (defthm ,(mksym set '-of- set '-same)
-           (equal (,set key val1 (,set key val2 ,name))
-                  (,set key val1 ,name)))
-
-         ;; We leave the strong rule enabled even though it may be too
-         ;; expensive in general.  If you disable it, you'll still have the
-         ;; weaker -SAME and -DIFF rules unless you disable them, too.
-         (defthm ,(mksym get '-of- set '-strong)
-           (equal (,get key1 (,set key2 val ,name))
-                  (if (equal key1 key2)
-                      val
-                    (,get key1 ,name))))
-
-         (local (in-theory (disable ,get ,set)))
-
-         ;; Main functions for execution
-
-         (local (in-theory (enable ,good-stp
-                                   ,get
-                                   ,set
-                                   ,get1
-                                   ,set1)))
-
-         ,@(make-exec-getters name ftas mksym-pkg wrld)
-         ,@(make-exec-setters name ftas mksym-pkg wrld)
-
-
-
-; Development of EQUAL-BY-G style reasoning
-
-         (local (in-theory (enable fancy-worseguy-finds-counterexample
-                                   fancy-worseguy-not-among-keys
-                                   fancy-worseguy-unless-equal)))
-
-         (defsection ,badguy1
-
-           (defund-nx ,badguy1 (x y)
-             (cond
-              ,@(make-cond-pairs-for-badguy1 get1 user-keys)
-              (t (fancy-worseguy ',user-keys
-                                 (,misc-name x)
-                                 (,misc-name y)))))
-
-           (local (in-theory (enable ,badguy1 ,get1)))
-
-; Critical fact 1: If the badguy finds something, then it's different between
-; the two stobjs.
-
-           (defthm ,(mksym badguy1 '-finds-counterexample)
-             (implies (,badguy1 x y)
-                      (equal (equal (,get1 (cadr (,badguy1 x y)) x)
-                                    (,get1 (cadr (,badguy1 x y)) y))
-                             nil)))
-
-; Critical fact 2: If the two stobjs are well-formed and not equal, then the
-; badguy finds something.  We start by showing that any difference in a
-; particular field will be exposed by our new badguy.
-
-           ,@(badguy-finds-diffs-lemmas name badguy1 weak-stp ftas wrld)
-
-           (local (defthm badguy1-finds-diffs-in-good
-                    (implies (not (equal (,good-name x) (,good-name y)))
-                             (,badguy1 x y))))
-
-           (local (defthm badguy1-finds-diffs-in-badplace
-                    (implies (not (equal (,badplace-name x) (,badplace-name y)))
-                             (,badguy1 x y))))
-
-           (local (defthm badguy1-finds-diffs-in-misc
-                    (implies (and (,weak-stp x)
-                                  (,weak-stp y)
-                                  (not (equal (,misc-name x) (,misc-name y))))
-                             (,badguy1 x y))
-                    :hints(("Goal" :in-theory (enable ,weak-stp)))))
-
-           (local (defthm equal-when-weak-stp
-                    (implies (and (,weak-stp x)
-                                  (,weak-stp y))
-                             (equal (equal x y)
-                                    (and (equal (,good-name x) (,good-name y))
-                                         (equal (,misc-name x) (,misc-name y))
-                                         (equal (,badplace-name x) (,badplace-name y))
-                                         ,@(equal-when-weak-stp-rhs ftas))))
-                    :hints(("Goal" :in-theory (enable equal-of-cons-rewrite
-                                                      expand-nth
-                                                      equal-len-with-constant
-                                                      ,weak-stp)))))
-
-           (defthm ,(mksym badguy1 '-unless-equal)
-             (implies (and (not (equal x y))
-                           (,weak-stp x)
-                           (,weak-stp y))
-                      (,badguy1 x y))
-             :hints(("Goal" :in-theory (e/d (,get1)
-                                            (,badguy1))))))
-
-         (defsection ,badguy
-
-           (defund-nx ,badguy (x y)
-             (,badguy1 (,to x) (,to y)))
-
-           (local (in-theory (enable ,badguy)))
-
-           (local (defthm weak-unless-bad
-                    (implies (not (,bad-stp x))
-                             (,weak-stp x))
-                    :hints(("Goal" :in-theory (enable ,bad-stp)))))
-
-           (local (defthm badplace-of-to-when-bad
-                    (implies (,bad-stp x)
-                             (equal (,badplace-name (,to x))
-                                    x))
-                    :hints(("Goal" :in-theory (enable ,to
-                                                      ,badplace-name
-                                                      ,update-st-good
-                                                      ,update-st-badplace)))))
-
-           (local (defthm to-leaves-nonbad-alone
-                    (implies (not (,bad-stp x))
-                             (equal (,to x)
-                                    x))))
-
-           (local (defthm to-leaves-bad-bad
-                    (implies (,bad-stp x)
-                             (,bad-stp (,to x)))
-                    :hints(("Goal" :in-theory (enable ,bad-stp
-                                                      ,to
-                                                      ,good-name
-                                                      ,badplace-name
-                                                      ,update-st-good
-                                                      ,update-st-badplace
-                                                      ,create-name)))))
-
-           (defthm ,(mksym badguy '-finds-counterexample)
-             (implies (,badguy x y)
-                      (equal (equal (,get (cadr (,badguy x y)) x)
-                                    (,get (cadr (,badguy x y)) y))
-                             nil))
-             :hints(("Goal"
-                     :use ((:instance ,(mksym badguy1 '-finds-counterexample)
-                                      (x (,to x))
-                                      (y (,to y)))))))
-
-           (local (defthm lemma-both-good
-                    (implies (and (not (equal x y))
-                                  (case-split (not (,bad-stp x)))
-                                  (case-split (not (,bad-stp y))))
-                             (,badguy x y))))
-
-           (local (defthm bad-still-differ
-                    (implies (and (not (equal x y))
-                                  (,bad-stp x)
-                                  (,bad-stp y))
-                             (not (equal (,to x) (,to y))))
-                    :hints(("Goal"
-                            :do-not '(generalize fertilize eliminate-destructors)
-                            :do-not-induct t
-                            :in-theory (disable badplace-of-to-when-bad)
-                            :use ((:instance badplace-of-to-when-bad (x x))
-                                  (:instance badplace-of-to-when-bad (x y)))))))
-
-           (local (defthm lemma-both-bad
-                    (implies (and (not (equal x y))
-                                  (case-split (,bad-stp x))
-                                  (case-split (,bad-stp y)))
-                             (,badguy x y))
-                    :hints(("Goal"
-                            :do-not '(generalize fertilize eliminate-destructors)
-                            :do-not-induct t
-                            :in-theory (disable ,(mksym badguy1 '-unless-equal))
-                            :use ((:instance ,(mksym badguy1 '-unless-equal)
-                                             (x (,to x))
-                                             (y (,to y))))))))
-
-           (local (defthm lemma-bad-with-good
-                    (implies (and (not (equal x y))
-                                  (case-split (,bad-stp x))
-                                  (case-split (not (,bad-stp y))))
-                             (,badguy x y))
-                    :hints(("Goal"
-                            :in-theory (disable ,(mksym badguy1 '-unless-equal))
-                            :use ((:instance ,(mksym badguy1 '-unless-equal)
-                                             (x (,to x))
-                                             (y (,to y))))))))
-
-           (local (defthm lemma-good-with-bad
-                    (implies (and (not (equal x y))
-                                  (case-split (,bad-stp x))
-                                  (case-split (not (,bad-stp y))))
-                             (,badguy y x))
-                    :hints(("Goal"
-                            :in-theory (disable ,(mksym badguy1 '-unless-equal))
-                            :use ((:instance ,(mksym badguy1 '-unless-equal)
-                                             (x (,to y))
-                                             (y (,to x))))))))
-
-           (defthm ,(mksym badguy '-unless-equal)
-             (implies (not (equal x y))
-                      (,badguy x y))
-             :hints(("Goal" :in-theory (disable ,badguy)))))
-
-
-         ;; Fancy rule for equalities of set-nests.  See the discussion of
-         ;; EQUAL-OF-TR-SET in typed-records.lisp for an explanation of this
-         ;; rule.
-         (defthm ,(mksym 'equal-of- set)
-           (implies
-            (syntaxp (or (acl2::rewriting-positive-literal-fn
-                          (list 'equal (list ',set key val x) y)
-                          mfc state)
-                         (acl2::rewriting-positive-literal-fn
-                          (list 'equal y (list ',set key val x))
-                          mfc state)))
-            (equal (equal (,set key val x) y)
-                   (let ((arb (acl2::introduce-var 'arbitrary-key
-                                                   (hide (cadr (,badguy (,set key val x) y))))))
-                     (equal (,get arb (,set key val x))
-                            (,get arb y)))))
-           :hints(("Goal"
-                   :expand (:free (x) (hide x))
-                   :in-theory (e/d (acl2::introduce-var)
-                                   (,badguy ,get ,set
-                                    ,(mksym badguy '-finds-counterexample)
-                                    ,(mksym badguy '-unless-equal)))
-                   :use ((:instance ,(mksym badguy '-finds-counterexample)
-                                    (x (,set key val x))
-                                    (y y))
-                         (:instance ,(mksym badguy '-unless-equal)
-                                    (x (,set key val x))
-                                    (y y))))))
-
-
-
-         (value-triple ',name)))))
+         (local (in-theory #!acl2
+                           (e/d**
+                            ((:t nfix)
+                             natp-compound-recognizer
+                             zp-compound-recognizer
+                             nth-of-repeat
+                             len-of-repeat
+                             append-to-nil
+                             (:t repeat)
+                             make-list-ac-removal
+                             nth-when-atom
+                             nth-0-cons
+                             nth-add1
+                             car-cons cdr-cons
+                             nfix-when-natp
+                             length
+                             len-of-cons
+                             len-when-atom
+                             update-nth-array
+                             nth-update-nth
+                             len-update-nth
+                             max
+                             (:t len)
+                             resize-list-when-zp
+                             (:rules-of-class :executable-counterpart :here))
+                            ((make-list-ac)
+                             (repeat)))))
+
+         (local (in-theory (e/d
+                            (plus-collect-consts
+                             field-map-key-lookup-open
+                             field-map-key-lookup-recur-open
+                             ,@(scalar-fixing-function-thm-names ftas mksym-pkg)
+                             . ,(collect-typed-rec-theorems
+                                 ftas (table-alist 'typed-records wrld)))
+                            ((field-map-key-lookup-recur)))))
+
+
+; Get into a very restricted theory that (hopefully) just includes what we need.
+
+         
+         (defstobj ,name$c ,@stobj-args)
+
+         ;; At the moment this is just emptying functions for resizable array
+         ;; fields.  Could add others.
+         ,@(additional-exec-defs name$c ftas mksym-pkg)
+
+         (defun ,recog$a (x)
+           (declare (xargs :guard t)
+                    (ignorable x))
+           t)
+
+         (defun ,create$a ()
+           (declare (xargs :guard t))
+           (let* ((x nil)
+                  . ,(creator-logic-updates ftas))
+             x))
+
+         ,@(logic-field-functions ftas wrld tr-table mksym-pkg)
+
+         (local
+          (progn 
+
+            (defconst *rstobj-tmp-field-map*
+              (list . ,(make-fieldmap-entries ftas)))
+
+            (defund rstobj-tmp-field-map () *rstobj-tmp-field-map*)
+
+            (defun rstobj-tmp-tr-get (name i tr)
+              (declare (ignorable name i tr))
+              (case name
+                . ,(make-tr-get-entries ftas tr-table)))
+
+            (defun rstobj-tmp-tr-set (name i v tr)
+              (declare (ignorable name i v tr))
+              (case name
+                . ,(make-tr-set-entries ftas tr-table)))
+
+            (defun rstobj-tmp-tr-fix (name v)
+              (declare (ignorable name v))
+              (case name
+                . ,(make-tr-fix-entries ftas tr-table)))
+
+            (defun rstobj-tmp-tr-default (name)
+              (declare (ignorable name))
+              (case name
+                . ,(make-tr-default-entries ftas tr-table)))
+
+
+            (defun rstobj-tmp-tr-elem-p (name v)
+              (declare (ignorable name v))
+              (case name . ,(make-tr-elem-p-entries ftas tr-table)))
+
+            (defun rstobj-tmp-scalar-fix (name v)
+              (declare (ignorable name v))
+              (case name
+                . ,(make-scalar-fix-entries ftas)))
+
+            (defun rstobj-tmp-scalar-elem-p (name v)
+              (declare (ignorable name v))
+              (case name
+                . ,(make-scalar-elem-p-entries ftas wrld)))
+
+            ;; these type-prescriptions cause trouble when there are
+            ;; either no arrays or no scalars
+            (in-theory (disable (:t rstobj-tmp-field-map)
+                                (:t rstobj-tmp-tr-get)
+                                (:t rstobj-tmp-tr-set)
+                                (:t rstobj-tmp-tr-fix)
+                                (:t rstobj-tmp-tr-default)
+                                (:t rstobj-tmp-tr-elem-p)
+                                (:t rstobj-tmp-scalar-fix)
+                                (:t rstobj-tmp-scalar-elem-p)))
+
+            (defun-sk rstobj-tmp-field-corr (st$c st$a)
+              (forall (idx i)
+                      (let ((entry (nth idx (rstobj-tmp-field-map))))
+                        (and (implies (equal (acl2::tag entry) :array)
+                                      ;; array
+                                      (b* (((array-fieldinfo x) entry)
+                                           (arr (nth idx st$c))
+                                           (tr  (g x.tr-key st$a)))
+                                        (and (implies (natp i)
+                                                      (equal (rstobj-tmp-tr-get x.tr-key i tr)
+                                                             (if (< i (len arr))
+                                                                 (nth i arr)
+                                                               (rstobj-tmp-tr-default x.tr-key))))
+                                             (equal (g x.size-key st$a)
+                                                    (len arr)))))
+                             (implies (equal (acl2::tag entry) :scalar)
+                                      (b* (((scalar-fieldinfo x) entry))
+                                        (equal (g x.key st$a)
+                                               (nth idx st$c)))))))
+              :rewrite :direct)
+
+            (in-theory (disable rstobj-tmp-field-corr rstobj-tmp-field-corr-necc))
+
+
+            (defthm rstobj-tmp-field-corr-of-size-key
+              (mv-let (keytype idx)
+                (field-map-key-lookup szkey (rstobj-tmp-field-map))
+                (implies (and (rstobj-tmp-field-corr st$c st$a)
+                              (equal keytype :size))
+                         (equal (g szkey st$a)
+                                (len (nth idx st$c)))))
+              :hints (("goal" :by (:instance
+                                   (:functional-instance
+                                    rstobj-field-corr-of-size-key
+                                    (rstobj-field-corr-witness rstobj-tmp-field-corr-witness)
+                                    (rstobj-field-corr rstobj-tmp-field-corr)
+                                    (rstobj-field-map rstobj-tmp-field-map)
+                                    (rstobj-tr-get rstobj-tmp-tr-get)
+                                    (rstobj-tr-set rstobj-tmp-tr-set)
+                                    (rstobj-tr-fix rstobj-tmp-tr-fix)
+                                    (rstobj-tr-default rstobj-tmp-tr-default)
+                                    (rstobj-tr-elem-p rstobj-tmp-tr-elem-p)
+                                    (rstobj-scalar-fix rstobj-tmp-scalar-fix)
+                                    (rstobj-scalar-elem-p rstobj-tmp-scalar-elem-p))
+                                   (rstobj$c st$c)
+                                   (rstobj$a st$a))
+                       :in-theory (disable (rstobj-tmp-field-map)
+                                           rstobj-tmp-tr-get
+                                           rstobj-tmp-tr-fix
+                                           rstobj-tmp-scalar-fix
+                                           rstobj-tmp-scalar-elem-p
+                                           rstobj-tmp-tr-default
+                                           rstobj-tmp-tr-set)
+                       :do-not-induct t)
+                      (let ((lit (car clause)))
+                        (case-match lit
+                          ((f ('rstobj-tmp-field-corr . &) . &)
+                           `(:in-theory (e/d ,(if (eq f 'equal)
+                                                  '(rstobj-tmp-field-corr)
+                                                '(rstobj-tmp-field-corr-necc))
+                                             ((rstobj-tmp-field-map)
+                                              rstobj-tmp-tr-get
+                                              rstobj-tmp-tr-fix
+                                              rstobj-tmp-scalar-fix))))
+                          (('if . &) nil)
+                          (('implies . &) nil)
+                          (& '(:in-theory (enable)))))))
+
+            (defthm rstobj-tmp-field-corr-of-scalar-key
+              (mv-let (keytype idx)
+                (field-map-key-lookup sckey (rstobj-tmp-field-map))
+                (implies (and (rstobj-tmp-field-corr st$c st$a)
+                              (equal keytype :scalar))
+                         (equal (g sckey st$a)
+                                (nth idx st$c))))
+              :hints (("goal" :by (:instance
+                                   (:functional-instance
+                                    rstobj-field-corr-of-scalar-key
+                                    (rstobj-field-corr-witness rstobj-tmp-field-corr-witness)
+                                    (rstobj-field-corr rstobj-tmp-field-corr)
+                                    (rstobj-field-map rstobj-tmp-field-map)
+                                    (rstobj-tr-get rstobj-tmp-tr-get)
+                                    (rstobj-tr-set rstobj-tmp-tr-set)
+                                    (rstobj-tr-fix rstobj-tmp-tr-fix)
+                                    (rstobj-tr-default rstobj-tmp-tr-default)
+                                    (rstobj-tr-elem-p rstobj-tmp-tr-elem-p)
+                                    (rstobj-scalar-fix rstobj-tmp-scalar-fix)
+                                    (rstobj-scalar-elem-p rstobj-tmp-scalar-elem-p))
+                                   (rstobj$c st$c)
+                                   (rstobj$a st$a))
+                       :do-not-induct t)))
+
+            (defthm rstobj-tmp-field-corr-of-tr-key
+              (mv-let (keytype idx)
+                (field-map-key-lookup trkey (rstobj-tmp-field-map))
+                (implies (and (rstobj-tmp-field-corr st$c st$a)
+                              (equal keytype :array)
+                              (natp i))
+                         (equal (rstobj-tmp-tr-get trkey i (g trkey st$a))
+                                (if (< i (len (nth idx st$c)))
+                                    (nth i (nth idx st$c))
+                                  (rstobj-tmp-tr-default trkey)))))
+              :hints (("goal" :by (:instance
+                                   (:functional-instance
+                                    rstobj-field-corr-of-tr-key
+                                    (rstobj-field-corr-witness rstobj-tmp-field-corr-witness)
+                                    (rstobj-field-corr rstobj-tmp-field-corr)
+                                    (rstobj-field-map rstobj-tmp-field-map)
+                                    (rstobj-tr-get rstobj-tmp-tr-get)
+                                    (rstobj-tr-set rstobj-tmp-tr-set)
+                                    (rstobj-tr-fix rstobj-tmp-tr-fix)
+                                    (rstobj-tr-default rstobj-tmp-tr-default)
+                                    (rstobj-tr-elem-p rstobj-tmp-tr-elem-p)
+                                    (rstobj-scalar-fix rstobj-tmp-scalar-fix)
+                                    (rstobj-scalar-elem-p rstobj-tmp-scalar-elem-p))
+                                   (rstobj$c st$c)
+                                   (rstobj$a st$a))
+                       :do-not-induct t)))
+
+            ,@(let ((concls (make-field-corr-of-tr-key-concls ftas tr-table)))
+                (and concls
+                     `((defthm rstobj-tmp-field-corr-of-tr-key-elaborate
+                         (mv-let (keytype idx)
+                           (field-map-key-lookup trkey (rstobj-tmp-field-map))
+                           (implies (and (rstobj-tmp-field-corr st$c st$a)
+                                         (equal keytype :array)
+                                         (natp i))
+                                    (and . ,concls)))
+                         :hints (("goal" :use rstobj-tmp-field-corr-of-tr-key
+                                  :in-theory (e/d (rstobj-tmp-tr-get) (rstobj-tmp-field-corr-of-tr-key))))))))
+
+
+            (defthm rstobj-tmp-field-corr-of-update-scalar
+              (implies (and (rstobj-tmp-field-corr st$c st$a)
+                            (equal (acl2::tag (nth idx (rstobj-tmp-field-map))) :scalar)
+                            (equal (scalar-fieldinfo->key (nth idx (rstobj-tmp-field-map))) key)
+                            (equal v (rstobj-tmp-scalar-fix key v)))
+                       (rstobj-tmp-field-corr (update-nth idx v st$c)
+                                              (s key v st$a)))
+              :hints (("goal" :by (:instance
+                                   (:functional-instance
+                                    rstobj-field-corr-of-update-scalar
+                                    (rstobj-field-corr-witness rstobj-tmp-field-corr-witness)
+                                    (rstobj-field-corr rstobj-tmp-field-corr)
+                                    (rstobj-field-map rstobj-tmp-field-map)
+                                    (rstobj-tr-get rstobj-tmp-tr-get)
+                                    (rstobj-tr-set rstobj-tmp-tr-set)
+                                    (rstobj-tr-fix rstobj-tmp-tr-fix)
+                                    (rstobj-tr-default rstobj-tmp-tr-default)
+                                    (rstobj-tr-elem-p rstobj-tmp-tr-elem-p)
+                                    (rstobj-scalar-fix rstobj-tmp-scalar-fix)
+                                    (rstobj-scalar-elem-p rstobj-tmp-scalar-elem-p))
+                                   (rstobj$c st$c)
+                                   (rstobj$a st$a))
+                       :do-not-induct t)))
+
+
+
+
+            (defthm rstobj-tmp-field-corr-of-update-array
+              (implies (and (rstobj-tmp-field-corr st$c st$a)
+                            (equal (acl2::tag (nth idx (rstobj-tmp-field-map))) :array)
+                            (equal (array-fieldinfo->tr-key (nth idx (rstobj-tmp-field-map))) key)
+                            (equal tr1 (rstobj-tmp-tr-set key i v (g key st$a)))
+                            (equal v (rstobj-tmp-tr-fix key v))
+                            (natp i)
+                            (< i (len (nth idx st$c))))
+                       (rstobj-tmp-field-corr (update-nth idx (update-nth i v (nth idx st$c))
+                                                          st$c)
+                                              (s key tr1 st$a)))
+              :hints (("goal" :by (:instance
+                                   (:functional-instance
+                                    rstobj-field-corr-of-update-array
+                                    (rstobj-field-corr-witness rstobj-tmp-field-corr-witness)
+                                    (rstobj-field-corr rstobj-tmp-field-corr)
+                                    (rstobj-field-map rstobj-tmp-field-map)
+                                    (rstobj-tr-get rstobj-tmp-tr-get)
+                                    (rstobj-tr-set rstobj-tmp-tr-set)
+                                    (rstobj-tr-fix rstobj-tmp-tr-fix)
+                                    (rstobj-tr-default rstobj-tmp-tr-default)
+                                    (rstobj-tr-elem-p rstobj-tmp-tr-elem-p)
+                                    (rstobj-scalar-fix rstobj-tmp-scalar-fix)
+                                    (rstobj-scalar-elem-p rstobj-tmp-scalar-elem-p))
+                                   (rstobj$c st$c)
+                                   (rstobj$a st$a))
+                       :do-not-induct t)))
+
+
+            (defthm rstobj-tmp-field-corr-of-grow-array
+              (implies (and (rstobj-tmp-field-corr st$c st$a)
+                            (equal (acl2::tag (nth idx (rstobj-tmp-field-map))) :array)
+                            (equal (array-fieldinfo->size-key (nth idx (rstobj-tmp-field-map))) size-key)
+                            (natp new-size)
+                            (<= (len (nth idx st$c)) new-size)
+                            (equal default (rstobj-tmp-tr-default
+                                            (array-fieldinfo->tr-key (nth idx (rstobj-tmp-field-map))))))
+                       (rstobj-tmp-field-corr (update-nth idx
+                                                          (resize-list (nth idx st$c) new-size default)
+                                                          st$c)
+                                              (s size-key new-size st$a)))
+              :hints (("goal" :by (:instance
+                                   (:functional-instance
+                                    rstobj-field-corr-of-grow-array
+                                    (rstobj-field-corr-witness rstobj-tmp-field-corr-witness)
+                                    (rstobj-field-corr rstobj-tmp-field-corr)
+                                    (rstobj-field-map rstobj-tmp-field-map)
+                                    (rstobj-tr-get rstobj-tmp-tr-get)
+                                    (rstobj-tr-set rstobj-tmp-tr-set)
+                                    (rstobj-tr-fix rstobj-tmp-tr-fix)
+                                    (rstobj-tr-default rstobj-tmp-tr-default)
+                                    (rstobj-tr-elem-p rstobj-tmp-tr-elem-p)
+                                    (rstobj-scalar-fix rstobj-tmp-scalar-fix)
+                                    (rstobj-scalar-elem-p rstobj-tmp-scalar-elem-p))
+                                   (rstobj$c st$c)
+                                   (rstobj$a st$a))
+                       :do-not-induct t)))
+
+            (defthm rstobj-tmp-field-corr-of-empty-array
+              (implies (and (rstobj-tmp-field-corr st$c st$a)
+                            (equal (acl2::tag (nth idx (rstobj-tmp-field-map))) :array)
+                            (equal (array-fieldinfo->tr-key (nth idx (rstobj-tmp-field-map))) tr-key)
+                            (equal (array-fieldinfo->size-key (nth idx (rstobj-tmp-field-map))) size-key))
+                       (rstobj-tmp-field-corr (update-nth idx nil st$c)
+                                              (s tr-key nil (s size-key 0 st$a))))
+              :hints (("goal" :by (:instance
+                                   (:functional-instance
+                                    rstobj-field-corr-of-empty-array
+                                    (rstobj-field-corr-witness rstobj-tmp-field-corr-witness)
+                                    (rstobj-field-corr rstobj-tmp-field-corr)
+                                    (rstobj-field-map rstobj-tmp-field-map)
+                                    (rstobj-tr-get rstobj-tmp-tr-get)
+                                    (rstobj-tr-set rstobj-tmp-tr-set)
+                                    (rstobj-tr-fix rstobj-tmp-tr-fix)
+                                    (rstobj-tr-default rstobj-tmp-tr-default)
+                                    (rstobj-tr-elem-p rstobj-tmp-tr-elem-p)
+                                    (rstobj-scalar-fix rstobj-tmp-scalar-fix)
+                                    (rstobj-scalar-elem-p rstobj-tmp-scalar-elem-p))
+                                   (rstobj$c st$c)
+                                   (rstobj$a st$a))
+                       :do-not-induct t)))
+
+
+            (defthm rstobj-tmp-field-corr-of-create
+              (rstobj-tmp-field-corr (,create$c) (,create$a))
+              :hints(("Goal" :in-theory (e/d (rstobj-tmp-field-corr))
+                      :expand ((:free (a b c) (nth a (cons b c)))))))
+
+
+            (defun-nx rstobj-tmp-corr (,name$c x)
+              (and (,recog$c ,name$c)
+                   (rstobj-tmp-field-corr ,name$c x)))
+
+            (defthm field-lookup-in-rstobj-tmp-field-map
+              (implies (syntaxp (quotep key))
+                       (equal (field-map-key-lookup key (rstobj-tmp-field-map))
+                              (field-map-key-lookup key *rstobj-tmp-field-map*))))
+
+            (defthm index-lookup-in-rstobj-tmp-field-map
+              (implies (syntaxp (quotep idx))
+                       (equal (nth idx (rstobj-tmp-field-map))
+                              (nth idx *rstobj-tmp-field-map*))))
+
+
+            ,@(array-types-preserved-thms ftas wrld mksym-pkg)
+
+            (set-default-hints
+             '((and stable-under-simplificationp
+                    '(:in-theory (enable ,create$a ,create$c ,recog$c)))))))
+
+         (local (in-theory (disable
+                            (rstobj-tmp-field-corr)
+                            (rstobj-tmp-field-map)
+                            ,recog$c
+                            ,create$a
+                            (,create$a)
+                            ,create$c
+                            (,create$c))))
+
+         (acl2::defabsstobj-events ,name
+           :concrete ,name$c
+           :corr-fn rstobj-tmp-corr
+           :creator (,create :logic ,create$a :exec ,create$c)
+           :recognizer (,recog :logic ,recog$a :exec ,recog$c)
+           :exports
+           ,(absstobj-exports ftas mksym-pkg))
+         ))))
 
 (defmacro defrstobj (name &rest args)
   `(make-event
     (defrstobj-fn ',name ',args (w state))))
+
+
+(logic)
+(local
+ (progn
+
+   ;; Very basic test: more tests in basic-tests.lisp
+   
+   (defun ubp-listp (n x)
+     (declare (xargs :guard t))
+     (if (atom x)
+         (not x)
+       (and (unsigned-byte-p n (car x))
+            (ubp-listp n (cdr x)))))
+
+   (defun ubp-fix (n x)
+     (declare (xargs :guard t))
+     (if (unsigned-byte-p n x)
+         x
+       0))
+
+   (def-typed-record ubp8
+     :elem-p       (unsigned-byte-p 8 x)
+     :elem-list-p  (ubp-listp 8 x)
+     :elem-default 0
+     :elem-fix     (ubp-fix 8 x))
+
+
+   (defun nonneg-fix (x)
+     (declare (xargs :guard t))
+     (if (integerp x)
+         (if (< x 0)
+             (- x)
+           x)
+       0))
+
+   (def-typed-record nonneg
+     :elem-p (natp x)
+     :elem-list-p (nat-listp x)
+     :elem-default 0
+     :elem-fix (nonneg-fix x))
+
+   (defrstobj st
+
+     (natarr  :type (array (integer 0 *) (32))
+              :initially 0
+              :typed-record nonneg-tr-p)
+
+     (u8arr   :type (array (unsigned-byte 8) (64))
+              :initially 0
+              :typed-record ubp8-tr-p
+              :resizable t)
+
+     (intfld  :type integer
+              :initially 5
+              :fix (ifix x))
+
+     (natfld :type (integer 0 *)
+             :initially 0
+             :fix (nonneg-fix x)))))
+
+
+
+
+
+
 
