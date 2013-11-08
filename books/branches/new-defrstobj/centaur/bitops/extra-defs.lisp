@@ -124,7 +124,7 @@ about it.</p>"
                      (x integerp))
   :returns (slice natp :rule-classes :type-prescription)
   :parents (extra-defs)
-  :short "Extract the @('n')th 32-bit slice of the integer @('x')."
+  :short "Extract the @('n')th 64-bit slice of the integer @('x')."
   :long "<p>We leave this enabled; we would usually not expect to try to reason
 about it.</p>"
   :enabled t

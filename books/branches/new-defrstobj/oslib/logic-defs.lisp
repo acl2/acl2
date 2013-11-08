@@ -223,7 +223,7 @@ subdirectories) of the given @('path').</p>
 
 <p>The file names returned are <b>not</b> complete paths.  For instance, if
 @('/home/users/jared') contains @('foo.txt'), then @('val') will contain
-@('\"foo.txt\") instead of @('\"/home/users/jared/foo.txt\"').</p>"
+@('\"foo.txt\"') instead of @('\"/home/users/jared/foo.txt\"').</p>"
 
   :ignore-ok t
   (b* ((- (raise "Raw Lisp definition not installed?"))

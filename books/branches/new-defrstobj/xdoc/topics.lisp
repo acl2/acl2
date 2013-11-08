@@ -720,7 +720,7 @@ missing modules.</p>
 
 <h4>Step 2: Set up the Web Server</h4>
 
-<p>Once you have create the @('xdata.db') file, you will need to copy both it
+<p>Once you have created the @('xdata.db') file, you will need to copy both it
 and a different script, @('xdataget.pl'), to some directory in your web
 server.</p>
 

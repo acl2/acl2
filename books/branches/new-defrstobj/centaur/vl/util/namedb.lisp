@@ -326,9 +326,9 @@ for a module.</p>
 
 <h3>Using Name DBs</h3>
 
-<p>Typically, the user begins by constructing a name db using @('(@(see
-vl-starting-namedb) names)'), where @('names') are just a list of the strings
-that are \"in use.\"</p>
+<p>Typically, the user begins by constructing a name db using
+@('(vl-starting-namedb names)'), where @('names') are just a list of the
+strings that are \"in use.\"</p>
 
 <p>Once constructed, name DBs must be used in a single-threaded discipline.
 That is, the functions for generating names actually return @('(mv fresh-name
@@ -394,7 +394,7 @@ only give you fresh names.</p>
 empty.</p>
 
 <p><u>Invariant B2</u>.  Each @('prefix') bound in @('pmap') is bound to
-@('(@(see vl-pgenstr-highest) prefix (strip-cars names))').</p>
+@('(vl-pgenstr-highest prefix (strip-cars names))').</p>
 
 <p><u>Invariant C1</u>.  The @('plist') binds exactly those @('prefix')es that
 are bound in @('pmap').</p>
@@ -615,7 +615,7 @@ fresh-name db-prime)')."
 (defsection vl-unlike-any-prefix-p
   :parents (vl-namedb-p)
   :short "@(call vl-unlike-any-prefix-p) determines whether for all @('p') in
-@('prefixes'), @('(@(see vl-pgenstr-p) p name)') is false."
+@('prefixes'), @('(vl-pgenstr-p p name)') is false."
 
   :long "<p>We use this function in the implementation of @(see
 vl-namedb-plain-name).  When requesting a plain name, one might ask for a name

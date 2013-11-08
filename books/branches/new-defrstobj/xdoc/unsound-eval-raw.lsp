@@ -54,7 +54,7 @@
         ((unless (equal (len return-vals)
                         (len stobjs-out)))
          (mv (msg "Failed to evaluate ~x0; trans-eval returned incoherent return values ~x1."
-                  (cons :stobjs-out stobjs-out
+                  (list :stobjs-out stobjs-out
                         :return-vals return-vals))
              nil state)))
      (mv nil (unsound-eval-elide stobjs-out return-vals) state))
