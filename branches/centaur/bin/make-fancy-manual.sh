@@ -1,30 +1,30 @@
-#!/bin/sh
+#!/bin/bash
+
+# Example with all arguments given:
+# make-fancy-manual.sh \
+#  /projects/acl2/devel/books/system/doc \
+#  /u/www/users/moore/acl2/manuals \
+#  2013-10-25-acl2-only
+
+if [ $# -lt 1 ] ; then
+    books=/projects/acl2/devel/books
+else
+    books=$1
+fi
 
 if [ $# -lt 2 ] ; then
-    echo "Usage:   make-fancy-manual source-dir target-dir [suffix]"
-    echo "Example:"
-    echo "$0 \\"
-    echo " /projects/acl2/devel/books/centaur \\"
-    echo " /u/www/users/moore/acl2 \\"
-    echo " 2013-10-25b"
-    echo "Example:"
-    echo "$0 \\"
-    echo " /projects/acl2/devel/books/system/doc \\"
-    echo " /u/www/users/moore/acl2 \\"
-    echo " 2013-10-25-acl2-only"
-    exit 1
-fi
-
-source=$1
-target=$2
-
-# Make destination directory.
-if [ $# -lt 3 ] ; then
-    suffix=`/bin/date +%F`
+    destdir=/u/www/users/moore/acl2/manuals
 else
-    suffix=$3
+    destdir=$2
 fi
-dest=${target}/acl2-xdoc-$suffix
+
+if [ $# -lt 3 ] ; then
+    destfile=`/bin/date +%F`
+else
+    destfile=$3
+fi
+
+dest=${destdir}/$destfile
 if [ -d $dest ] ; then
     echo "ERROR: Directory $dest already exists"
     exit 1
@@ -33,8 +33,8 @@ echo "mkdir $dest"
 mkdir $dest
 
 # Copy from source to destination and move to destination/manual/.
-echo "cp -pr $source/manual $dest/manual"
-cp -pr $source/manual $dest/manual
+echo "cp -pr $books/centaur/manual $dest/manual"
+cp -pr $books/centaur/manual $dest/manual
 echo "cd $dest/manual"
 cd $dest/manual
 
@@ -50,3 +50,17 @@ ln -s xdataget.pl xdataget.cgi
 mv config.js config.js.orig
 sed 's/^var XDATAGET = ""/var XDATAGET = "xdataget.cgi"/g' config.js.orig > config.js
 
+# Copy books/system/doc/rendered-doc-combined.lsp
+echo "cp -p $books/system/doc/rendered-doc-combined.lsp $dest/"
+cp -p $books/system/doc/rendered-doc-combined.lsp $dest/
+
+# Gzip books/system/doc/rendered-doc-combined.lsp
+echo "gzip $dest/rendered-doc-combined.lsp"
+gzip $dest/rendered-doc-combined.lsp
+
+# Run update script, if available
+cd $destdir
+if [ -x update.sh ] ; then \
+    echo "Running ./update.sh $destfile in directory $destdir"
+    ./update.sh $destfile
+fi

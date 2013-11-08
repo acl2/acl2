@@ -439,6 +439,14 @@
     'character)
    ((atom form)
     t)
+   ((eq (car form) 'return-last)
+    (cond ((equal (cadr form) ''mbe1-raw)
+           (output-type-for-declare-form-rec (caddr form) flet-alist))
+          ((and (equal (cadr form) ''progn)
+                (consp (caddr form))
+                (eq (car (caddr form)) 'throw-nonexec-error))
+           (setq *acl2-output-type-abort* '*))
+          (t (output-type-for-declare-form-rec (car (last form)) flet-alist))))
    ((member (car form) '(return-last return-from when)
             :test 'eq)
     (output-type-for-declare-form-rec (car (last form)) flet-alist))
@@ -531,6 +539,7 @@
    ((member (car form)
             '(tagbody ; e.g., ld-fn
               throw-raw-ev-fncall ; e.g., from defchoose
+              throw-nonexec-error
               eval
               error
               )
@@ -585,8 +594,6 @@
 ; We return a list of output types, one per value.  So if #-acl2-mv-as-values,
 ; then we always return a list of length one.
 
-  (when (eq fn 'return-last)
-    (return-from output-type-for-declare-form '*))
   #-acl2-mv-as-values
   (let* ((*acl2-output-type-abort* nil) ; protect for call on next line
          (result (output-type-for-declare-form-rec form nil)))
@@ -927,9 +934,10 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; it didn't, surely different lisps will define char-name differently.  So,
 ; we can't allow notation such as #\\346.
 
-  (let ((ch (read-char s)))
-    (cond ((member ch *acl2-read-character-terminators*)
-           (unread-char ch s)
+  (let* ((ch (read-char s nil nil)))
+    (cond ((or (null ch)
+               (member ch *acl2-read-character-terminators*))
+           (when ch (unread-char ch s))
            (cond
             ((characterp acc)
              acc)

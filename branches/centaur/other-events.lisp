@@ -6449,9 +6449,10 @@
        ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst)))
         (modifying-include-book-dir-alist t))
        (table-fn 'acl2-defaults-table
-           `(nil ',acl2-defaults-table :clear)
-           state
-           `(table acl2-defaults-table nil ',acl2-defaults-table :clear))))))
+                 `(nil ',acl2-defaults-table :clear)
+                 state
+                 `(table acl2-defaults-table nil ',acl2-defaults-table
+                         :clear))))))
 
 (defun in-encapsulatep (embedded-event-lst non-trivp)
 
@@ -37253,44 +37254,48 @@
 #-acl2-loop-only
 (defun-overrides magic-ev-fncall (fn args state hard-error-returns-nilp aok)
   (let ((wrld (w state)))
-    (cond ((and (symbolp fn)
-                (true-listp args)
-                (let ((formals
-                       (getprop fn 'formals t 'current-acl2-world wrld)))
-                  (and (not (eq formals t)) ; (function-symbolp fn wrld)
-                       (eql (length args) (length formals))))
-                (logicalp fn wrld))
-           (ev-fncall fn args state
-                      nil ; latches
-                      hard-error-returns-nilp aok))
-          (t (mv t
-                 (cw "~%~%Meta-level function Problem: Magic-ev-fncall ~
-                      attempted to apply ~X02 to argument list ~X12.  This is ~
-                      illegal because ~@3.  The meta-level function ~
-                      computation was ignored.~%~%"
-                     fn
-                     args
-                     (abbrev-evisc-tuple *the-live-state*)
-                     (cond
-                      ((not (symbolp fn))
-                       (msg "~x0 is not a symbol" fn))
-                      ((not (true-listp args))
-                       (msg "that argument list is not a true list"))
-                      ((eq (getprop fn 'formals t 'current-acl2-world wrld) t)
-                       (msg "~x0 is not a known function symbol in the ~
-                             current ACL2 logical world"
-                            fn))
-                      ((not (eql (length args)
-                                 (length (getprop fn 'formals t
-                                                  'current-acl2-world wrld))))
-                       (msg "The length of that args is ~x0, but ~x1 takes ~
-                             ~x2 arguments"
-                            (length args)
-                            fn
-                            (length (getprop fn 'formals t
-                                             'current-acl2-world wrld))))
-                      (t
-                       (assert (not (logicalp fn wrld)))
-                       (msg "~x0 is not a logic-mode function symbol"
-                            fn)))))))))
+    (cond
+     ((and (symbolp fn)
+           (true-listp args)
+           (let ((formals
+                  (getprop fn 'formals t 'current-acl2-world wrld)))
+             (and (not (eq formals t)) ; (function-symbolp fn wrld)
+                  (eql (length args) (length formals))))
+           (logicalp fn wrld))
+      (ev-fncall fn args state
+                 nil ; latches
+                 hard-error-returns-nilp aok))
+     (t
+      (let ((msg
+             (msg "~%~%Meta-level function Problem: Magic-ev-fncall attempted ~
+                   to apply ~X02 to argument list ~X12.  This is illegal ~
+                   because ~@3.  The meta-level function computation was ~
+                   ignored.~%~%"
+                  fn
+                  args
+                  (abbrev-evisc-tuple *the-live-state*)
+                  (cond
+                   ((not (symbolp fn))
+                    (msg "~x0 is not a symbol" fn))
+                   ((not (true-listp args))
+                    (msg "that argument list is not a true list"))
+                   ((eq (getprop fn 'formals t 'current-acl2-world wrld) t)
+                    (msg "~x0 is not a known function symbol in the current ~
+                          ACL2 logical world"
+                         fn))
+                   ((not (eql (length args)
+                              (length (getprop fn 'formals t
+                                               'current-acl2-world wrld))))
+                    (msg "The length of that args is ~x0, but ~x1 takes ~x2 ~
+                          arguments"
+                         (length args)
+                         fn
+                         (length (getprop fn 'formals t
+                                          'current-acl2-world wrld))))
+                   (t
+                    (assert (not (logicalp fn wrld)))
+                    (msg "~x0 is not a logic-mode function symbol"
+                         fn))))))
+        (prog2$ (cw "~@0" msg)
+                (mv t msg)))))))
 
