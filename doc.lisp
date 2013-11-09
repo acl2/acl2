@@ -62269,6 +62269,10 @@ Subtopics
   then returned (mv t nil), but now it returns mv t <msg>, shere
   <msg> denotes the message (printed with the [fmt] ~@ directive).
 
+  Fixed :[pbt] to avoid printing the bodies of [defconst] forms. Thanks
+  to Jared Davis for pointing out the large output when the body is a
+  large character string.
+
   NEW FEATURES
 
   We have added a tool for writing out useful information about a

@@ -7289,8 +7289,8 @@
       (list (car form) (cadr form) (caddr form) *evisceration-ellipsis-mark*))
      ((defthm defthmd)
        (list (car form) (cadr form) *evisceration-ellipsis-mark*))
-     (defdoc
-       (list 'defdoc (cadr form) *evisceration-ellipsis-mark*))
+     ((defdoc defconst)
+      (list (car form) (cadr form) *evisceration-ellipsis-mark*))
      (mutual-recursion
       (cons 'mutual-recursion
             (print-ldd-full-or-sketch/mutual-recursion (cdr form))))
