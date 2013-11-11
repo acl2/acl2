@@ -47,6 +47,7 @@
 (include-book "intro")
 (include-book "centaur/gl/bfr-satlink" :dir :system)
 (local (include-book "booth-support"))
+(local (include-book "centaur/esim/stv/stv-decomp-proofs" :dir :system))
 ; (depends-on "boothmul.v")
 ; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
@@ -235,6 +236,26 @@
    :g-bindings (boothmul-decomp-autobinds)))
 
 (local
+ ;; This is trivially proved by instantiating boothmul-pp-correct.  But we need
+ ;; to know this specifically later on when we want to show that the
+ ;; composition of the two steps is equivalent to the whole run.
+ (defthm boothmul-pps-types
+   (implies (boothmul-decomp-autohyps)
+            (b* ((in-alist  (boothmul-decomp-autoins))
+                 (out-alist (stv-run (boothmul-decomp) in-alist)))
+              (and (natp (cdr (assoc 'pp0 out-alist)))
+                   (natp (cdr (assoc 'pp1 out-alist)))
+                   (natp (cdr (assoc 'pp2 out-alist)))
+                   (natp (cdr (assoc 'pp3 out-alist)))
+                   (natp (cdr (assoc 'pp4 out-alist)))
+                   (natp (cdr (assoc 'pp5 out-alist)))
+                   (natp (cdr (assoc 'pp6 out-alist)))
+                   (natp (cdr (assoc 'pp7 out-alist))))))
+   :hints (("goal" :use boothmul-pp-correct
+            :in-theory '((:t boothmul-pp-spec)
+                         natp-compound-recognizer)))))
+
+(local
  (def-gl-thm boothmul-sum-correct
    ;; Main Lemma 2.  Addition Part is Correct.
    ;; This is also easy for Glucose, taking about 13 seconds.
@@ -328,9 +349,9 @@
 ; we don't WANT a theorem about our decomposed circuit; we want a theorem about
 ; our original circuit.
 ;
-; So now we're going to use GL to show that, properly wired up, our decomposed
-; circuit is just doing what the original circuit does.  It's easiest to
-; explain this with a picture.  Recall the picture of our decomposed circuit:
+; So now we're going to show that, properly wired up, our decomposed circuit is
+; just doing what the original circuit does.  It's easiest to explain this with
+; a picture.  Recall the picture of our decomposed circuit:
 ;
 ;         __________________________
 ;        |                  ___     |
@@ -344,8 +365,7 @@
 ;        |   |___|                  |
 ;        |__________________________|
 ;
-; We're now going to use GL to show that if wire the "cut" back together like
-; this:
+; We're now going to show that if wire the "cut" back together like this:
 ;
 ;    +==================================================+
 ;    ||+----------------------------------------------+||
@@ -372,41 +392,49 @@
 ;        |   |___|         |___|    |
 ;        |__________________________|
 ;
-; Arguably we "should" carry out a theorem like this without using GL, just by
-; arguing about sexpr decomposition.  But letting GL blast them into AIGs seems
-; to work perfectly well.
+; We could do this using GL, but sometimes this takes too much time even though
+; the two circuits we're comparing "should" be almost the same.  Instead, we
+; use a specialized theory for performing these sorts of proofs, developed in
+; the book stv-decomp-proofs.lisp.
+
 
 (local
- (def-gl-thm boothmul-decomp-is-boothmul
-   :hyp (boothmul-decomp-autohyps)
+ (defthm boothmul-decomp-is-boothmul
+   (implies (boothmul-decomp-autohyps)
+            (b* ( ;; Run the decomposed circuit to get the partial products
+                 (in-alist1  (boothmul-decomp-autoins))
+                 (out-alist1 (stv-run (boothmul-decomp) in-alist1))
 
-   :concl (b* ( ;; Run the decomposed circuit to get the partial products
-               (in-alist1  (boothmul-decomp-autoins))
-               (out-alist1 (stv-run (boothmul-decomp) in-alist1))
+                 ;; Grab the resulting partial products out.
+                 ((assocs pp0 pp1 pp2 pp3 pp4 pp5 pp6 pp7) out-alist1)
 
-               ;; Grab the resulting partial products out.
-               ((assocs pp0 pp1 pp2 pp3 pp4 pp5 pp6 pp7) out-alist1)
+                 ;; Run the decomposed circuit again, sticking the partial
+                 ;; products back in on the inputs.  (This is a rather subtle use
+                 ;; of the autoins macro, which uses the bindings for pp0...pp7
+                 ;; above.)
+                 (in-alist2 (boothmul-decomp-autoins))
+                 (out-alist2 (stv-run (boothmul-decomp) in-alist2))
 
-               ;; Run the decomposed circuit again, sticking the partial
-               ;; products back in on the inputs.  (This is a rather subtle use
-               ;; of the autoins macro, which uses the bindings for pp0...pp7
-               ;; above.)
-               (in-alist2 (boothmul-decomp-autoins))
-               (out-alist2 (stv-run (boothmul-decomp) in-alist2))
+                 ;; Separately, run the original circuit.
+                 (orig-in-alist  (boothmul-direct-autoins))
+                 (orig-out-alist (stv-run (boothmul-direct) orig-in-alist)))
 
-               ;; Separately, run the original circuit.
-               (orig-in-alist  (boothmul-direct-autoins))
-               (orig-out-alist (stv-run (boothmul-direct) orig-in-alist)))
+              (equal
+               ;; The final answer from running the decomposed circuit the second
+               ;; time, after feeding its partial products back into itself.
+               (cdr (assoc 'o out-alist2))
 
-            (equal
-             ;; The final answer from running the decomposed circuit the second
-             ;; time, after feeding its partial products back into itself.
-             (cdr (assoc 'o out-alist2))
+               ;; The answer from running the original circuit.
+               (cdr (assoc 'o orig-out-alist)))))
+   :hints (("goal"
+            ;; Need to know that the intermediate values are non-X:
+            :use ((:instance boothmul-pps-types))
+            :in-theory (stv-decomp-theory))
+           (and stable-under-simplificationp
+                '(:in-theory (union-theories (stv-decomp-theory)
+                                             '(pairlis$-of-cons
+                                               pairlis$-when-atom)))))))
 
-             ;; The answer from running the original circuit.
-             (cdr (assoc 'o orig-out-alist))))
-
-   :g-bindings (boothmul-decomp-autobinds)))
 
 
 ; All that remains is to chain the above facts together.
