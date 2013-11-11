@@ -2935,7 +2935,8 @@ Subtopics
   This key's value is used by [include-book]'s :DIR argument to
   associate a directory with a keyword. An exception is the keyword
   :SYSTEM for the books/ directory; see [include-book], in particular
-  the section on ``Books Directory.''
+  the section on ``Books Directory.'' Also see [add-include-book-dir]
+  and [add-include-book-dir!].
 
     :match-free-default
 
@@ -3929,31 +3930,44 @@ Subtopics
   (SWITCHES-PARAMETERS-AND-MODES)
   "Link keyword for :dir argument of [ld] and [include-book]
 
-    Example Form:
+    Example Forms:
+
+    ; For (include-book \"foo\" :dir :smith), prepend \"/u/smith/\" to \"foo\".
     (add-include-book-dir :smith \"/u/smith/\")
-     ; For (include-book \"foo\" :dir :smith), prepend \"/u/smith/\" to \"foo\".
+
+    ; For (include-book \"bar\" :dir :util), prepend absolute directory pathname
+    ; corresponding to the relative pathname, \"utilities/\".
+    (add-include-book-dir :util \"utilities\")
+
+  Note: This is an event! It does not print the usual event summary but
+  nevertheless changes the ACL2 logical [world] and is so recorded.
+  It is [local] to the book or [encapsulate] form in which it occurs.
+  See [add-include-book-dir!] for a corresponding non-[local] event.
 
     General Form:
     (add-include-book-dir kwd dir)
 
-  where kwd is a [keywordp] and dir is the [pathname] of a directory.
-  (If the final '/' is missing, ACL2 will add it for you.) The effect
-  of this event is to modify the meaning of the :dir keyword argument
-  of [include-book] as indicated by the examples above, and similarly
-  for [ld], namely by associating the indicated directory with the
-  indicated keyword for purposes of the :dir argument. By the
-  ``indicated directory'' we mean, in the case that the pathname is a
-  relative pathname, the directory relative to the current connected
-  book directory; see [cbd]. See [delete-include-book-dir] for how to
-  undo this effect.
+  where kwd is a [keywordp] and dir is a relative or absolute
+  [pathname] for a directory. (If the final '/' is missing, ACL2 will
+  add it for you.) The effect of this event is to modify the meaning
+  of the :dir keyword argument of [include-book] or [ld] as indicated
+  by the examples above, that is, by associating the indicated
+  directory with the indicated keyword for purposes of the :dir
+  argument. By the ``indicated directory'' we mean, in the case that
+  the pathname is a relative pathname, the directory relative to the
+  current connected book directory; see [cbd]. See
+  [delete-include-book-dir] for how to undo this effect.
 
-  A keyword that is already associated with a directory string by an
-  existing invocation of add-include-book-dir cannot be associated
-  with a different directory string. If that is your intention, first
-  apply [delete-include-book-dir] to that keyword; see
-  [delete-include-book-dir]. If however the new directory string is
-  identical with the old, then the call of add-include-book-dir will
-  be redundant (see [redundant-events]).
+  For a keyword already associated with a directory string by a
+  previous invocation of add-include-book-dir or
+  [add-include-book-dir!], it is illegal to associate a different
+  directory string until removing the existing association; see
+  [delete-include-book-dir] (and see [delete-include-book-dir!] if
+  the existing association was made by [add-include-book-dir!]. If
+  however the new directory string is identical with the existing
+  one, which was already assigned by add-include-book-dir, then the
+  new call of add-include-book-dir will be redundant (see
+  [redundant-events]).
 
   The keyword :system can never be redefined. It will always point to
   the absolute pathname of the system books directory, which by
@@ -3961,15 +3975,67 @@ Subtopics
   executable was originally built (see [include-book], in particular
   the discussion there of ``books directory'').
 
-  This macro generates (in essence) a call (table acl2-defaults-table
-  :include-book-dir-alist ...) and hence is [local] to any [books]
+  This macro is essentially a call (table acl2-defaults-table
+  :include-book-dir-alist ...), and hence is [local] to any [books]
   and [encapsulate] [events] in which it occurs. See
   [ACL2-defaults-table]. Even if you invoke add-include-book-dir
   before certifying a book, so that this event is among the book's
   [portcullis] commands rather than in the book itself, nevertheless
   that add-include-book-dir event will not be visible after the book
-  is included. (Note: The above behavior is generally preserved in
-  raw-mode (see [set-raw-mode]),though by means other than a table.)")
+  is included. If you want the effect to persist outside the book,
+  see [add-include-book-dir!].
+
+  It is actually illegal to update the [ACL2-defaults-table] directly
+  with a new :include-book-dir-alist value; instead, use
+  add-include-book-dir and delete-include-book-dir. This restriction
+  allows ACL2 to function appropriately while including sub-books and
+  in raw-mode (see [set-raw-mode]), where the associations of
+  keywords to directories are stored outside the usual tables. Upon
+  exit from raw-mode, all effects disappear that were made by
+  add-include-book-dir, [add-include-book-dir!],
+  [delete-include-book-dir], or [delete-include-book-dir!].")
+ (ADD-INCLUDE-BOOK-DIR!
+  (SWITCHES-PARAMETERS-AND-MODES)
+  "Non-[local]ly link keyword for :dir argument of [ld] and
+  [include-book]
+
+  Please see [add-include-book-dir], which has completely analogous
+  syntax and semantics, except that add-include-book-dir! is not
+  [local] to the [encapsulate] or the book in which it occurs.
+  Probably [add-include-book-dir] is to be preferred unless you have
+  a good reason for wanting to export the effect of this event
+  outside the enclosing [encapsulate] or book.
+
+  Note: This is an event! It does not print the usual event summary but
+  nevertheless changes the ACL2 logical [world] and is so recorded.
+
+  This macro is essentially a [table] event that updates the table
+  include-book-dir!-table, which associates keywords with absolute
+  pathnames. However, as with [add-include-book-dir], direct table
+  updates are disallowed; you must use add-include-book-dir! to add
+  to the table and [delete-include-book-dir!] to remove from the
+  table.
+
+  It is illegal to call add-include-book-dir! in a [local] context. (If
+  you are tempted to do that, consider using [add-include-book-dir]
+  instead.) To understand this restriction, imagine a book that
+  contains the following sequence of [events].
+
+    (add-include-book-dir! :my-dir \"path/to/BAD/dir\")
+    (local (delete-include-book-dir! :my-dir))
+    (local (add-include-book-dir! :my-dir \"path/to/GOOD/dir\"))
+    (include-book \"foo\" :dir :my-dir)
+    (defthm f-def
+      (equal (f x) x))
+
+  During the first (proof) pass of [certify-book], the book
+  path/to/GOOD/dir/foo.lisp will be included. But on the second pass,
+  the book path/to/BAD/dir/foo.lisp will be included. Now imagine
+  that the ``good'' version contains the event (defun f (x) x) but
+  the ``bad'' version instead contains the event (defun f (x) (not
+  x)). Then we can easily prove nil from the theorem f-def! Although
+  it is likely that checksums will catch this error at [include-book]
+  time, we prefer not to rely on checksums for soundness.")
  (ADD-INVISIBLE-FNS
   (SWITCHES-PARAMETERS-AND-MODES)
   "Make some unary functions invisible to the [loop-stopper] algorithm
@@ -20386,26 +20452,53 @@ Subtopics
   "Unlink keyword for :dir argument of [ld] and [include-book]
 
     Example Forms:
+    ; Remove association of a directory with :smith for include-book and ld:
     (delete-include-book-dir :smith)
-     ; Remove association of directory with :smith for include-book.
 
     General Form:
     (delete-include-book-dir kwd)
 
   where kwd is a [keywordp]. The effect of this event is to modify the
   meaning of the :dir keyword argument of [include-book] and [ld] as
-  indicated by the examples above, namely by removing association of
-  any directory with the indicated keyword for purposes of the
-  [include-book] (and [ld]) :dir argument. Normally one would instead
-  use [add-include-book-dir] to associate a new directory with that
-  keyword; see [add-include-book-dir].
+  indicated by the example above, namely by removing association of a
+  directory with the indicated keyword for purposes of the :dir
+  argument of [include-book] and [ld]. See [add-include-book-dir] for
+  how to associate a new directory with a keyword.
 
   Note: This is an event! It does not print the usual event summary but
   nevertheless changes the ACL2 logical [world] and is so recorded.
 
   This macro is [local] to any [books] and [encapsulate] [events] in
   which it occurs; see [add-include-book-dir] for a discussion of
-  this aspect of both macros.")
+  this aspect of both macros. For non-local associations of keywords
+  with directories, see [add-include-book-dir!] and
+  [delete-include-book-dir!]. Note that delete-include-book-dir may
+  only be used to remove keywords added by calls of
+  [add-include-book-dir], and [delete-include-book-dir!] may only be
+  used to remove keywords added by calls of [add-include-book-dir!]")
+ (DELETE-INCLUDE-BOOK-DIR!
+  (SWITCHES-PARAMETERS-AND-MODES)
+  "Non-[local]ly unlink keyword for :dir argument of [ld] and
+  [include-book]
+
+  Please see [delete-include-book-dir], which has completely analogous
+  syntax and semantics, but is used for removing associations
+  previously placed by [add-include-book-dir]. By contrast,
+  delete-include-book-dir! removes associations previously placed by
+  [add-include-book-dir!].
+
+  Note: This is an event! It does not print the usual event summary but
+  nevertheless changes the ACL2 logical [world] and is so recorded.
+
+  This macro is essentially a [table] event that updates the table
+  include-book-dir!-table, which associates keywords with absolute
+  pathnames. However, as with [delete-include-book-dir], direct table
+  updates are disallowed; you must use delete-include-book-dir! to
+  remove from the table and [add-include-book-dir!] to add to the
+  table.
+
+  It is illegal to call delete-include-book-dir! in a [local] context.
+  For an explanation, see [add-include-book-dir!].")
  (DENOMINATOR
   (ACL2-BUILT-INS)
   "Divisor of a ratio in lowest terms
@@ -21876,38 +21969,40 @@ Subtopics
     General Form:
     An embedded event form is a term, x, such that:
 
-      o x is a call of an event function other than [defpkg] (see [events]
+    * x is a call of an event function other than [defpkg] (see [events]
       for a listing of the event functions);
-
-      o x is of the form ([local] x1) where x1 is an embedded event form;
-
-      o x is of the form ([skip-proofs] x1) where x1 is an embedded event
+    * x is of the form ([local] x1) where x1 is an embedded event form;
+    * x is of the form ([skip-proofs] x1) where x1 is an embedded event
       form;
-
-      o x is of the form ([make-event] &), where & is any term whose
+    * x is of the form ([make-event] &), where & is any term whose
       expansion is an embedded event (see [make-event]);
-
-      o x is of the form ([with-output] ... x1), ([with-prover-step-limit]
+    * x is of the form ([with-output] ... x1), ([with-prover-step-limit]
       ... x1 ...), or ([with-prover-time-limit] ... x1), where x1 is
       an embedded event form;
+    * x is a call of [encapsulate], [progn], [progn!], or [include-book];
+    * x macroexpands to one of the forms above; or
+    * [intended only for the implementation] x is (RECORD-EXPANSION x1 x2),
+      where x1 and x2 are embedded event forms.
 
-      o x is a call of [encapsulate], [progn], [progn!], or [include-book];
+  However, we add the following restrictions for [local] contexts.
 
-      o x macroexpands to one of the forms above; or
+    * An embedded event form may not set the [ACL2-defaults-table] when in
+      the context of [local]. Thus for example, the form
 
-      o [intended only for the implementation] x is (RECORD-EXPANSION x1
-      x2), where x1 and x2 are embedded event forms.
+          (local (table acl2-defaults-table :defun-mode :program))
 
-  An exception: an embedded event form may not set the
-  [ACL2-defaults-table] when in the context of [local]. Thus for
-  example, the form
-
-    (local (table acl2-defaults-table :defun-mode :program))
-
-  is not an embedded event form, nor is the form (local (program)),
-  since the latter sets the [ACL2-defaults-table] implicitly. An
-  example at the end of the discussion below illustrates why there is
-  this restriction.
+      is not an embedded event form, nor is the form (local (program)),
+      since the latter sets the [ACL2-defaults-table] implicitly. An
+      example at the end of the discussion below illustrates why
+      there is this restriction.
+    * A call of [defaxiom] is illegal in the context of [local]. Without
+      this restriction, one could locally assert a strong axiom like
+      (equal t nil) and then non-locally prove that formula, leaving
+      you in an ACL2 logical [world] in which it appears that the
+      formula is actually provable without such an axiom.
+    * A call of [add-include-book-dir!] or [delete-include-book-dir!] is
+      illegal in the context of [local]. For an explanation, see
+      [add-include-book-dir!].
 
   Only embedded event forms are allowed in a book after its initial
   [in-package] form. See [books]. However, you may find that
@@ -62280,6 +62375,13 @@ Subtopics
   to Dave Greve for requesting this tool and participating in its
   specification.
 
+  There are new analogues of [add-include-book-dir] and
+  [delete-include-book-dir]: [add-include-book-dir!] and
+  [delete-include-book-dir!], respectively. The new utilities are
+  similar to their existing counterparts, except that their effects
+  are not [local] to enclosing [books] or [encapsulate] events.
+  Thanks to Shilpi Goel for requesting this enhancement.
+
   HEURISTIC IMPROVEMENTS
 
   BUG FIXES
@@ -79306,14 +79408,15 @@ Subtopics
   might want to execute appropriate Common Lisp forms in raw mode,
   for example, (setq *print-length* 5) and (setq *print-level* 5).
 
-  Include-book. The [events] [add-include-book-dir] and
-  [delete-include-book-dir] have been designed to work with raw mode.
-  However, if you enter raw mode and then evaluate such forms, then
-  the effects of these forms will disappear when you exit raw mode,
-  in which case you can expect to see a suitable warning. Regarding
-  include-book itself: it should work in raw mode as you might
-  expect, at least if a compiled file or expansion file was created
-  when the book was certified; see [certify-book].
+  Include-book. The [events] [add-include-book-dir],
+  [add-include-book-dir!], [delete-include-book-dir], and
+  [delete-include-book-dir!] have been designed to work with raw
+  mode. However, if you enter raw mode and then evaluate such forms,
+  then the effects of these forms will disappear when you exit raw
+  mode, in which case you can expect to see a suitable warning.
+  Regarding include-book itself: it should work in raw mode as you
+  might expect, at least if a compiled file or expansion file was
+  created when the book was certified; see [certify-book].
 
   Packages. Raw mode disallows the use of [defpkg]. If you want to
   create a new package, first exit raw mode with :set-raw-mode nil;
@@ -83681,6 +83784,10 @@ Subtopics
   [Add-include-book-dir]
       Link keyword for :dir argument of [ld] and [include-book]
 
+  [Add-include-book-dir!]
+      Non-[local]ly link keyword for :dir argument of [ld] and
+      [include-book]
+
   [Add-invisible-fns]
       Make some unary functions invisible to the [loop-stopper] algorithm
 
@@ -83717,6 +83824,10 @@ Subtopics
 
   [Delete-include-book-dir]
       Unlink keyword for :dir argument of [ld] and [include-book]
+
+  [Delete-include-book-dir!]
+      Non-[local]ly unlink keyword for :dir argument of [ld] and
+      [include-book]
 
   [Dive-into-macros-table]
       Right-associated function information for the [proof-checker]

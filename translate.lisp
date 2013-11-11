@@ -7388,7 +7388,8 @@
                       #+:non-standard-analysis defthm-std
                       #+:non-standard-analysis defun-std
                       add-custom-keyword-hint
-                      add-include-book-dir ; definition explains inclusion here
+                      add-include-book-dir ; definition explains inclusion
+                      add-include-book-dir! ; definition explains inclusion
                       add-match-free-override
                       certify-book
                       comp
@@ -7403,6 +7404,7 @@
                       defthm
                       defuns
                       delete-include-book-dir ; definition explains inclusion
+                      delete-include-book-dir! ; definition explains inclusion
                       encapsulate
                       in-arithmetic-theory
                       in-theory

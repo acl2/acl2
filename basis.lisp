@@ -12589,82 +12589,111 @@
 (defun observe-raw-mode-setting (v state)
 
 ; We are about to set state global 'acl2-raw-mode-p to v.  We go through some
-; lengths to maintain 'raw-include-book-dir-alist here and warn when the value
-; of this variable is discarded as we leave raw mode.  We are thus violating
-; the semantics of put-global, by setting 'raw-include-book-dir-alist when only
-; 'acl2-raw-mode-p is to be set -- but all bets are off when using raw mode, so
-; this violation is tolerable.
+; lengths here to maintain the values of state globals
+; 'raw-include-book-dir-alist and 'raw-include-book-dir!-alist, and warn when
+; the value of either of these variables is discarded as we leave raw mode.  We
+; are thus violating the semantics of put-global, by sometimes setting these
+; two variables when only 'acl2-raw-mode-p is to be set -- but all bets are off
+; when using raw mode, so this violation is tolerable.
 
   (let ((old-raw-mode (f-get-global 'acl2-raw-mode-p state))
         (old-raw-include-book-dir-alist
          (f-get-global 'raw-include-book-dir-alist state))
+        (old-raw-include-book-dir!-alist
+         (f-get-global 'raw-include-book-dir!-alist state))
         (ctx 'observe-raw-mode-setting))
-    (cond ((or (iff v old-raw-mode)
+    (cond
+     ((or (iff v old-raw-mode)
 
 ; If we are executing a raw-Lisp include-book on behalf of include-book-fn,
 ; then a change in the status of raw mode is not important, as we will continue
-; to maintain and use the value of state global 'raw-include-book-dir-alist as
-; the value for include-book-dir-alist (see the function include-book-dir).
-; This state global is bound by state-global-let* in load-compiled-book, which
-; in turn is called by include-book under include-book-fn.
+; to maintain and use the values of state globals 'raw-include-book-dir-alist
+; and 'raw-include-book-dir!-alist to compute the value of function
+; include-book-dir.  The former state global is bound by state-global-let* in
+; load-compiled-book, which in turn is called by include-book under
+; include-book-fn.  The latter state global is set to an alist value (i.e., not
+; :ignore) in include-book-raw-top, which in turn is called when doing early
+; loads of compiled files by include-book-top, under include-book-fn, under
+; include-book.
 
-               *load-compiled-stack*)
-           state)
-          ((iff (eq old-raw-include-book-dir-alist :ignore)
-                old-raw-mode)
+          *load-compiled-stack*)
+      state)
+     ((eq (not old-raw-mode)
+          (raw-include-book-dir-p state))
 
-; Clearly the two arguments of iff can't both be non-nil, since the value of
-; 'raw-include-book-dir-alist is never :ignore in raw-mode.  Can they both be
-; nil?  Assuming old-raw-mode is nil, then since (iff v old-raw-mode) is false,
-; we are about to go into raw mode.  Also, since we are not in the previous
-; case, we are not currently under include-book-fn.  But since we are currently
-; not in raw mode and not under include-book-fn, we expect
-; old-raw-include-book-dir-alist to be :ignore, as per the Essay on
+; Clearly the two arguments of iff can't both be nil, since the value of
+; 'raw-include-book-dir-alist is not ignored (it is never :ignore) in raw-mode.
+; Can they both be t?  Assuming old-raw-mode is nil, then since (iff v
+; old-raw-mode) is false, we are about to go into raw mode.  Also, since we are
+; not in the previous case, we are not currently under include-book-fn.  But
+; since we are currently not in raw mode and not under include-book-fn, we
+; expect old-raw-include-book-dir-alist to be :ignore, as per the Essay on
 ; Include-book-dir-alist: "We maintain the invariant that :ignore is the value
 ; [of 'include-book-dir-alist] except when in raw-mode or during evaluation of
 ; include-book-fn."
 
-           (prog2$ (er hard! ctx
-                       "Implementation error: Transitioning from ~x0 = ~x1 ~
-                        and yet the value of state global variable ~x2 is ~
-                        ~x3!  Implementors should see the comment just above ~
-                        this message in observe-raw-mode-setting."
-                       'acl2-raw-mode-p
-                       old-raw-mode
-                       'raw-include-book-dir-alist
-                       old-raw-include-book-dir-alist)
-                   state))
-          (t (let ((old-table-include-book-dir-alist
-                    (cdr (assoc-eq :include-book-dir-alist
-                                   (table-alist 'acl2-defaults-table
-                                                (w state))))))
-               (pprogn
-                (cond
-                 ((and old-raw-mode
+      (prog2$ (er hard! ctx
+                  "Implementation error: Transitioning from ~x0 = ~x1 and yet ~
+                   the value of state global variable ~x2 is ~x3!  ~
+                   Implementors should see the comment just above this ~
+                   message in observe-raw-mode-setting."
+                  'acl2-raw-mode-p
+                  old-raw-mode
+                  'raw-include-book-dir-alist
+                  old-raw-include-book-dir-alist)
+              state))
+     (t
+      (let* ((wrld (w state))
+             (old-table-include-book-dir-alist
+              (cdr (assoc-eq :include-book-dir-alist
+                             (table-alist 'acl2-defaults-table wrld))))
+             (old-table-include-book-dir!-alist
+              (table-alist 'include-book-dir!-table wrld)))
+        (pprogn
+         (cond
+          ((and
+            old-raw-mode
 
 ; The warning below is probably irrelevant for a context such that
 ; acl2-defaults-table will ultimately be discarded, because even without
 ; raw-mode we will be discarding include-book-dir-alist changes.
 
-                       (not (acl2-defaults-table-local-ctx-p state))
-                       (not (equal old-raw-include-book-dir-alist
-                                   old-table-include-book-dir-alist)))
-                  (warning$ ctx "Raw-mode"
-                            "The set of legal values for the :DIR argument of ~
-                             include-book and ld appears to have changed when ~
-                             ~x0 or ~x1 was executed in raw-mode.  Changes ~
-                             are being discarded as we exit raw-mode."
-                            'add-include-book-dir
-                            'delete-include-book-dir))
-                 (t state))
-                (f-put-global 'raw-include-book-dir-alist
-                              (cond (old-raw-mode
+            (not (acl2-defaults-table-local-ctx-p state))
+            (or (not (equal old-raw-include-book-dir-alist
+                            old-table-include-book-dir-alist))
+                (not (equal old-raw-include-book-dir!-alist
+                            old-table-include-book-dir!-alist))))
+           (warning$ ctx "Raw-mode"
+                     "The set of legal values for the :DIR argument of ~
+                      include-book and ld appears to have changed when ~v0 ~
+                      was executed in raw-mode.  Changes are being discarded ~
+                      as we exit raw-mode."
+                     (append
+                      (and (not (equal old-table-include-book-dir-alist
+                                       old-raw-include-book-dir-alist))
+                           '(add-include-book-dir
+                             delete-include-book-dir))
+                      (and (not (equal old-table-include-book-dir!-alist
+                                       old-raw-include-book-dir!-alist))
+                           '(add-include-book-dir!
+                             delete-include-book-dir!)))))
+          (t state))
+         (f-put-global 'raw-include-book-dir-alist
+                       (cond (old-raw-mode
 
 ; We are leaving raw-mode and are not under include-book-fn.
 
-                                     :ignore)
-                                    (t old-table-include-book-dir-alist))
-                              state)))))))
+                              :ignore)
+                             (t old-table-include-book-dir-alist))
+                       state)
+         (f-put-global 'raw-include-book-dir!-alist
+                       (cond (old-raw-mode
+
+; We are leaving raw-mode and are not under include-book-fn.
+
+                              :ignore)
+                             (t old-table-include-book-dir!-alist))
+                       state)))))))
 
 #+acl2-loop-only
 (defmacro progn! (&rest r)

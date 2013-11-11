@@ -22929,8 +22929,14 @@
          (not (f-get-global 'modifying-include-book-dir-alist state)))
     (er soft ctx
         "Illegal attempt to set the :include-book-dir-alist field of the ~
-         acl2-defaults-table.  This can only be done by calling ~
-         add-include-book-dir or delete-include-book-dir."))
+         acl2-defaults-table.  This can only be done by calling ~v0."
+        '(add-include-book-dir delete-include-book-dir)))
+   ((and (eq name 'include-book-dir!-table)
+         (not (f-get-global 'modifying-include-book-dir-alist state)))
+    (er soft ctx
+        "Illegal attempt to set the include-book-dir!-table.  This can only ~
+         be done by calling ~v0."
+        '(add-include-book-dir! delete-include-book-dir!)))
    (t (let ((term (getprop name 'table-guard *t* 'current-acl2-world wrld)))
         (er-progn
          (mv-let

@@ -1499,8 +1499,7 @@
                             progn-fn
                             encapsulate-fn
                             include-book-fn
-                            add-include-book-dir-fn
-                            delete-include-book-dir-fn
+                            change-include-book-dir
                             comp-fn
                             verify-termination-fn
                             verify-termination-boot-strap-fn
@@ -4640,9 +4639,10 @@
                               (er hard ctx
                                   "Unable to find the :dir argument to ~
                                    include-book, ~x0, which should have been ~
-                                   defined by add-include-book-dir.  Perhaps ~
-                                   the book ~x1 needs to be recertified."
+                                   defined by ~v1.  Perhaps the book ~x2 ~
+                                   needs to be recertified."
                                   dir
+                                  '(add-include-book-dir add-include-book-dir!)
                                   book-name)))
                      (t (f-get-global 'connected-book-directory state)))
                book-name ".lisp" ctx state)))
@@ -4846,10 +4846,14 @@
     (acl2-unwind-protect
      "include-book-raw"
      (unwind-protect
-         (progn (include-book-raw
-                 full-book-name directory-name
-                 load-compiled-file dir ctx state)
-                (value nil))
+         (state-global-let*
+          ((raw-include-book-dir!-alist
+            (assert$ (not (raw-include-book-dir-p state))
+                     (table-alist 'include-book-dir!-table (w state)))))
+          (progn (include-book-raw
+                  full-book-name directory-name
+                  load-compiled-file dir ctx state)
+                 (value nil)))
        (setq *saved-hcomp-restore-hts*
              (list* *hcomp-fn-macro-restore-ht*
                     *hcomp-const-restore-ht*)))
