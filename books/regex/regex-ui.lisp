@@ -81,6 +81,48 @@
                       (not (mv-nth 1 (match-regex-fun regex str untrans-str n)))))
          :rule-classes :type-prescription))
 
+(local (defthm stringp-of-get-backref-string
+         (implies (stringp str)
+                  (stringp (get-backref-string br str)))))
+
+(defun string-or-nil-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (eq x nil)
+    (and (or (stringp (car x))
+             (not (car x)))
+         (string-or-nil-listp (cdr x)))))
+
+(defthmd nth-of-string-or-nil-listp
+  (implies (and (string-or-nil-listp x)
+                (nth n x))
+           (stringp (nth n x))))
+
+(local (defthm string-or-nil-listp-of-resolve-backrefs
+         (implies (stringp str)
+                  (string-or-nil-listp (resolve-backrefs brlist str)))))
+
+(local (defthm string-or-nil-listp-of-cdr
+         (implies (string-or-nil-listp x)
+                  (string-or-nil-listp (cdr x)))))
+
+(local (defthm string-or-nil-listp-of-match-regex-at-char-backrefs
+         (implies (stringp untrans-str)
+                  (string-or-nil-listp (mv-nth 2 (match-regex-at-char regex str untrans-str idx))))
+         :hints(("Goal" :in-theory (enable match-regex-at-char)))))
+
+(local (defthm string-or-nil-listp-of-match-regex-fun
+         (implies (stringp untrans-str)
+                  (string-or-nil-listp
+                   (mv-nth 2 (match-regex-fun regex str untrans-str idx))))
+         :hints(("Goal" :in-theory (enable match-regex-fun)))))
+
+(local (defthm string-or-nil-listp-of-match-regex
+         (implies (stringp untrans-str)
+                  (string-or-nil-listp
+                   (mv-nth 2 (match-regex regex str untrans-str))))
+         :hints(("Goal" :in-theory (enable match-regex-fun)))))
+
 (local (defthm true-listp-of-match-regex-at-char
          (true-listp (mv-nth 2 (match-regex-at-char regex str untrans-str n)))
          :rule-classes :type-prescription
@@ -122,7 +164,10 @@
                    str))
        ((mv ?matchp whole substrs)
         (match-regex regex transstr str)))
-    (mv whole substrs)))
+    (mv whole substrs))
+  ///
+  (defthm string-or-nil-listp-of-do-regex-match-precomp-substrs
+    (string-or-nil-listp (mv-nth 1 (do-regex-match-precomp str regex opts)))))
 
 (define do-regex-match
   ((str stringp "String to test")
@@ -196,7 +241,10 @@
         (mv regex nil nil))
        ((mv whole substrs)
         (do-regex-match-precomp str regex opts)))
-    (mv nil whole substrs)))
+    (mv nil whole substrs))
+  ///
+  (defthm string-or-nil-listp-of-do-regex-match-substrs
+    (string-or-nil-listp (mv-nth 2 (do-regex-match str regex opts)))))
 
 ;; We also want to know that the substrings are strings or NIL.  Since we're
 ;; going to lay down Nths bindings, I'll write these in terms of Nth.
