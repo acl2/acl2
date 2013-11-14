@@ -40,9 +40,9 @@
        (tail (scan-to-event (cdr w)))
        (prev-theory (current-theory1 tail nil nil))
        (prev-enabled (consp (member-equal rune prev-theory)))
-       (- (cw "event: ~x0~%prev enabled: ~x1~%"
-              (access-event-tuple-form (cddar w))
-              prev-enabled))
+       ;; (- (cw "event: ~x0~%prev enabled: ~x1~%"
+       ;;        (access-event-tuple-form (cddar w))
+       ;;        prev-enabled))
        ((when (xor en/dis prev-enabled))
         w))
     (scan-for-last-en/disabling rune en/dis tail)))
@@ -52,8 +52,11 @@
   (declare (xargs :mode :program :stobjs state))
   (b* ((w (w state))
        (en/dis (consp (member-equal rune (current-theory1 w nil nil))))
-       (- (cw "enabled: ~x0~%" en/dis))
+       ;; (- (cw "enabled: ~x0~%" en/dis))
        (ev-wrld (scan-for-last-en/disabling rune en/dis w))
+       ((unless ev-wrld)
+        (cw "Never enabled/disabled~%")
+        (value :invisible))
        ((er cmd-wrld) (superior-command-world
                        ev-wrld w 'find-last-en/disabling state))
        (state (pe-fn1 w (standard-co state) ev-wrld cmd-wrld state)))
