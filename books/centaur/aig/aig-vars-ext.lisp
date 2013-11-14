@@ -28,6 +28,10 @@
 (include-book "centaur/misc/alist-defs" :dir :system)
 (include-book "centaur/misc/numlist" :dir :system)
 
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;; floor stuff
+(local (include-book "arithmetic/top-with-meta" :dir :system))
+
 (defsort  :comparablep atom :compare< alphorder :prefix alphorder)
 
 ;; Accumulates the AIG vars of X into acc, excluding those that are only found
@@ -106,7 +110,7 @@
 
 ;; New map-aig-vars-fast implementation:
 
-(program)
+;; (program)
 
 (defun aig-vars-dfsorder-aux2 (x seen vars)
   (declare (Xargs :guard t))
@@ -132,12 +136,36 @@
         (aig-vars-dfsorder-aux2 (car x) seen vars)))
     (aig-vars-dfsorder-aux2-list (cdr x) seen vars)))
 
+(defun sbitset-alistp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      t
+    (and (consp (car x))
+         (sbitsetp (cdar x))
+         (sbitset-alistp (cdr x)))))
+
+(defthm sbitsetp-of-lookup-in-sbitset-alistp
+  (implies (and (sbitset-alistp x)
+                (hons-assoc-equal k x))
+           (sbitsetp (cdr (hons-assoc-equal k x)))))
+
+;; Making this local mostly in case of name conflicts
+(local
+ (defun max-nat-list (x)
+   (declare (xargs :guard (nat-listp x)))
+   (if (atom x)
+       0
+     (max (lnfix (car x))
+          (max-nat-list (cdr x))))))
+
 (defun aig-vars-sparse/trans-aux (x memo-table nalist)
+  (declare (xargs :guard (sbitset-alistp memo-table)
+                  :verify-guards nil))
   ;; alternative that translates as it goes
   (b* (((when (atom x))
         (mv (if (booleanp x)
                 nil
-              (sbitset-singleton (cdr (hons-get x nalist))))
+              (sbitset-singleton (nfix (cdr (hons-get x nalist)))))
             memo-table))
        ((unless (cdr x))
         (aig-vars-sparse/trans-aux (car x) memo-table nalist))
@@ -152,7 +180,16 @@
        (memo-table (hons-acons x all-vars memo-table)))
     (mv all-vars memo-table)))
 
+(defthm sbitsetp-of-aig-vars-sparse-trans-aux
+  (implies (sbitset-alistp memo-table)
+           (and (sbitsetp (mv-nth 0 (aig-vars-sparse/trans-aux x memo-table nalist)))
+                (sbitset-alistp (mv-nth 1 (aig-vars-sparse/trans-aux x memo-table nalist))))))
+
+(verify-guards aig-vars-sparse/trans-aux)
+
+
 (defun map-aig-vars-sparse/trans (x memo-table nalist)
+  (declare (xargs :guard (sbitset-alistp memo-table)))
   (b* (((when (atom x))
         (fast-alist-free memo-table)
         nil)
@@ -161,15 +198,31 @@
     (cons vars1
           (map-aig-vars-sparse/trans (cdr x) memo-table nalist))))
 
+
+(defun sbitset-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (eq x nil)
+    (and (sbitsetp (car x))
+         (sbitset-listp (cdr x)))))
+
+(defthm sbitset-listp-of-map-aig-vars-sparse-trans
+  (implies (sbitset-alistp memo-table)
+           (sbitset-listp (map-aig-vars-sparse/trans x memo-table nalist))))
+
 (defmacro maybe-add-translated-sbit (bit x offset acc tbl)
   `(if (logbitp ,bit ,x)
        (cons (aref1 'map-aig-vars-fast-array ,tbl (+ ,bit ,offset))
              ,acc)
      ,acc))
 
+
 (defund 60bits-0-7-trans (offset x acc tbl)
   ;; Identical to bits-0-7, but for 60-bit unsigned ints
-  (declare (xargs :guard (natp offset))
+  (declare (xargs :guard (and (natp offset)
+                              (array1p 'map-aig-vars-fast-array tbl)
+                              (<= (+ 8 offset)
+                                  (car (dimensions 'map-aig-vars-fast-array tbl)))))
            (type (unsigned-byte 60) x))
   (b* ((acc (maybe-add-translated-sbit 7 x offset acc tbl))
        (acc (maybe-add-translated-sbit 6 x offset acc tbl))
@@ -184,7 +237,10 @@
 (defund 60bits-0-3-trans (offset x acc tbl)
   ;; Since 8 doesn't divide 60, we have this goofy function for the final
   ;; bits.
-  (declare (xargs :guard (natp offset))
+  (declare (xargs :guard (and (natp offset)
+                              (array1p 'map-aig-vars-fast-array tbl)
+                              (<= (+ 4 offset)
+                                  (car (dimensions 'map-aig-vars-fast-array tbl)))))
            (type (unsigned-byte 60) x))
   (b* ((acc (maybe-add-translated-sbit 3 x offset acc tbl))
        (acc (maybe-add-translated-sbit 2 x offset acc tbl))
@@ -193,7 +249,10 @@
     acc))
 
 (defund 60bits-0-59-trans (offset x acc tbl)
-  (declare (xargs :guard (natp offset))
+  (declare (xargs :guard (and (natp offset)
+                              (array1p 'map-aig-vars-fast-array tbl)
+                              (<= (+ 60 offset)
+                                  (car (dimensions 'map-aig-vars-fast-array tbl)))))
            (type (unsigned-byte 60) x))
   ;; We could do a check against zero like in bits-0-31, but since this is
   ;; used in sparse bitsets where the data should never be zero, we think
@@ -207,8 +266,25 @@
        (acc (60bits-0-7-trans (+ offset 8)  (the (unsigned-byte 60) (ash x -8)) acc tbl)))
     (60bits-0-7-trans offset x acc tbl)))
 
-(defun sbitset-members-exec-trans (x acc tbl)
+(defun sbitset-max-offset (x)
   (declare (xargs :guard (sbitsetp x)))
+  (if (atom x)
+      0
+    (max (lnfix (sbitset-pair-offset (car x)))
+         (sbitset-max-offset (cdr x)))))
+
+;; (defthm sbitset-offset-<=-max
+;;   (implies (and (sbitsetp x)
+;;                 (consp x))
+;;            (<= (sbitset-pair-offset (car x))
+;;                (sbitset-max-offset x)))
+;;   :rule-classes (:rewrite :linear))
+
+(defun sbitset-members-exec-trans (x acc tbl)
+  (declare (xargs :guard (and (sbitsetp x)
+                              (array1p 'map-aig-vars-fast-array tbl)
+                              (<= (+ 60 (* 60 (sbitset-max-offset x)))
+                                  (car (dimensions 'map-aig-vars-fast-array tbl))))))
   (if (atom x)
       acc
     (let* ((pair1   (car x))
@@ -221,21 +297,185 @@
                          tbl))))
 
 (defun sbitset-members-trans (x tbl)
-  (declare (xargs :guard (sbitsetp x)))
+  (declare (xargs :guard (and (sbitsetp x)
+                              (array1p 'map-aig-vars-fast-array tbl)
+                              (<= (+ 60 (* 60 (sbitset-max-offset x)))
+                                  (car (dimensions 'map-aig-vars-fast-array tbl))))))
   (sbitset-members-exec-trans x nil tbl))
 
 (memoize 'sbitset-members-trans)
 
+(defun max-sbitset-max-offset (x)
+  (declare (xargs :guard (sbitset-listp x)))
+  (if (atom x)
+      0
+    (max (sbitset-max-offset (car x))
+         (max-sbitset-max-offset (cdr x)))))
+
+
 (defun map-sbitset-members-trans (x tbl)
+  (declare (xargs :guard (and (sbitset-listp x)
+                              (array1p 'map-aig-vars-fast-array tbl)
+                              (<= (+ 60 (* 60 (max-sbitset-max-offset x)))
+                                  (car (dimensions 'map-aig-vars-fast-array tbl))))))
   (if (atom x)
       nil
     (cons (sbitset-members-trans (car x) tbl)
           (map-sbitset-members-trans (cdr x) tbl))))
 
+(local (defthm consp-assoc-equal-when-alistp
+         (implies (alistp x)
+                  (iff (consp (assoc k x))
+                       (assoc k x)))))
+
+(local (defthm consp-assoc-equal-when-key
+         (implies k
+                  (iff (consp (assoc k x))
+                       (assoc k x)))))
+
+(local
+ (defthm car-of-assoc-equal-when-key
+   (implies (and key
+                 (assoc key x))
+            (equal (car (assoc key x)) key))))
+
+(local
+ (defthm bounded-integer-alistp-of-compress11
+   (implies (and (natp bound)
+                 (natp i))
+            (bounded-integer-alistp
+             (compress11 name x i bound default)
+             bound))))
+
+
+(local
+ (defthm alistp-of-compress11
+   (implies i
+            (alistp (compress11 name x i bound default)))))
+
+
+(defun finish-map-aig-vars-fast (array-len valist ndeps)
+  (declare (xargs :guard (and (posp array-len)
+                              (< array-len *maximum-positive-32-bit-integer*)
+                              (bounded-integer-alistp valist array-len)
+                              (sbitset-listp ndeps)
+                              (<= (+ 60 (* 60 (max-sbitset-max-offset ndeps)))
+                                  array-len))
+                  ;; :guard-hints ((and stable-under-simplificationp
+                  ;;                    '(:use ((:instance max-sbitset-max-offset-bound
+                  ;;                             (x ndeps)))
+                  ;;                      :in-theory (disable max-sbitset-max-offset-bound))))
+                  ))
+
+  (b* ((varr     (compress1 'map-aig-vars-fast-array
+                            (cons (list :HEADER
+                                        :DIMENSIONS (list array-len)
+                                        :MAXIMUM-LENGTH (+ array-len 1)
+                                        :DEFAULT 0
+                                        :NAME 'map-aig-vars-fast-array
+                                        )
+                                  valist)))
+       (nlists   (map-sbitset-members-trans ndeps varr)))
+    (flush-compress 'map-aig-vars-fast-array)
+    nlists))
+
+(defthm sbitset-max-offset-of-sbitset-union-exec
+  (implies (and (sbitsetp x)
+                (sbitsetp y))
+           (equal (sbitset-max-offset (sbitset-union-exec x y))
+                  (max (sbitset-max-offset x)
+                       (sbitset-max-offset y))))
+  :hints(("Goal" :in-theory (enable sbitset-union-exec))))
+
+(defthm sbitset-max-offset-of-sbitset-union
+  (implies (and (sbitsetp x) (sbitsetp y))
+           (equal (sbitset-max-offset (sbitset-union x y))
+                  (max (sbitset-max-offset x)
+                       (sbitset-max-offset y))))
+  :hints(("Goal" :in-theory (enable sbitset-union))))
+
+(defthm sbitset-max-offset-of-sbitset-singleton
+  (equal (sbitset-max-offset (sbitset-singleton n))
+         (floor (nfix n) *sbitset-block-size*))
+  :hints(("Goal" :in-theory (enable sbitset-singleton
+                                    sbitset-singleton-pair))))
+
+(defthm sbitset-max-offset-of-lookup
+  (<= (sbitset-max-offset (cdr (hons-assoc-equal x memo-table)))
+      (max-sbitset-max-offset (alist-vals memo-table)))
+  :hints(("Goal" :in-theory (enable alist-vals)))
+  :rule-classes :linear)
+
+(local
+ (progn
+   (defthm floor-of-lookup-when-max-nat-list
+     (<= (floor (nfix (cdr (hons-assoc-equal x nalist))) 60)
+         (floor (max-nat-list (alist-vals nalist)) 60))
+     :hints(("Goal" :in-theory (enable alist-vals))))
+
+   (defthm sbitset-max-offset-of-aig-vars-sparse/trans-aux
+     (implies (and (sbitset-alistp memo-table)
+                   (<= (max-sbitset-max-offset (alist-vals memo-table))
+                       (floor (max-nat-list (alist-vals nalist)) 60)))
+              (mv-let (bitset memo-table)
+                (aig-vars-sparse/trans-aux x memo-table nalist)
+                (and (<= (max-sbitset-max-offset (alist-vals memo-table))
+                         (floor (max-nat-list (alist-vals nalist)) 60))
+                     (<= (sbitset-max-offset bitset)
+                         (floor (max-nat-list (alist-vals nalist)) 60)))))
+     :hints(("Goal" :in-theory (enable alist-vals)))
+     :rule-classes (:rewrite :linear))
+
+   (defthm max-sbitset-max-offset-of-map-aig-vars-sparse/trans
+     (implies (and (sbitset-alistp memo-table)
+                   (<= (max-sbitset-max-offset (alist-vals memo-table))
+                       (floor (max-nat-list (alist-vals nalist)) 60)))
+              (<= (max-sbitset-max-offset
+                   (map-aig-vars-sparse/trans x memo-table nalist))
+                  (floor (max-nat-list (alist-vals nalist)) 60)))
+     :hints(("Goal" :in-theory (disable aig-vars-sparse/trans-aux)))
+     :rule-classes (:rewrite :linear))
+   
+   (defthm alist-vals-of-pairlis
+     (implies (equal (len X) (len y))
+              (equal (alist-vals (pairlis$ x y))
+                     (list-fix y)))
+     :hints(("Goal" :in-theory (enable list-fix alist-vals))))
+
+   (defthm max-nat-list-of-numlist
+     (implies (and (natp start) (natp by))
+              (equal (max-nat-list (numlist start by n))
+                     (if (zp n)
+                         0
+                       (+ start (* (+ -1 n) by))))))
+
+   (defthm max-sbitset-max-offset-of-map-aig-vars-sparse/trans-start
+     (implies (atom memo-table)
+              (<= (max-sbitset-max-offset
+                   (map-aig-vars-sparse/trans x memo-table nalist))
+                  (floor (max-nat-list (alist-vals nalist)) 60)))
+     :hints (("goal" :use max-sbitset-max-offset-of-map-aig-vars-sparse/trans
+              :in-theory (e/d (alist-vals)
+                              (max-sbitset-max-offset-of-map-aig-vars-sparse/trans))))
+     :rule-classes (:rewrite :linear))
+
+   (defthm nat-listp-of-numlist
+     (implies (and (natp start) (natp by))
+              (nat-listp (numlist start by n))))
+
+   (defthm bounded-integer-alistp-of-pairlis
+     (implies (and (natp bound)
+                   (nat-listp keys)
+                   (force (< (max-nat-list keys) bound)))
+              (bounded-integer-alistp (pairlis$ keys vals) bound)))))
+
+
 (defun map-aig-vars-fast (aigs)
   ;; inline translation to numeric aigs + sparse algorithm + convert back
   (declare (xargs :guard t
-                  :verify-guards nil))
+                  :guard-hints ('(:cases ((< 0 (len (alist-keys
+                                                     (mv-nth 1 (aig-vars-dfsorder-aux2-list
+                                                                aigs nil nil))))))))))
   (b* (((mv seen vars) (aig-vars-dfsorder-aux2-list aigs nil nil))
        (nseen (fast-alist-len seen)) ;; bozo use length instead?
        (- (fast-alist-free seen))
@@ -245,21 +485,15 @@
        (numlist  (numlist 0 1 len))
        (nalist   (pairlis$ all-vars numlist))
        (valist   (pairlis$ numlist all-vars))
-       ;(naigs    (cwtime (with-fast-alist nalist
-       ;                    (aig-restrict-list aigs nalist))))
        ((with-fast nalist))
        (ndeps    (map-aig-vars-sparse/trans aigs nseen nalist))
-       (varr     (compress1 'map-aig-vars-fast-array
-                            (cons (list :HEADER
-                                        :DIMENSIONS (list len)
-                                        :MAXIMUM-LENGTH (+ len 1)
-                                        :DEFAULT 0
-                                        :NAME 'map-aig-vars-fast-array
-                                        )
-                                  valist)))
-       (nlists   (map-sbitset-members-trans ndeps varr)))
-    (flush-compress 'map-aig-vars-fast-array)
-    nlists))
+       (array-len (* 60 (+ 1 (floor len 60)))))
+    (mbe :logic (finish-map-aig-vars-fast array-len valist ndeps)
+         :exec (if (<= *maximum-positive-32-bit-integer* array-len)
+                   (prog2$
+                    (er hard? 'map-aig-vars-fast "Array length out of bounds: ~x0" array-len)
+                    (non-exec (finish-map-aig-vars-fast array-len valist ndeps)))
+                 (finish-map-aig-vars-fast array-len valist ndeps)))))
 
 
 
