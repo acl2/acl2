@@ -261,7 +261,7 @@
 ; for v6-3 took about 9 minutes using ACL2(h) built on CMUCL, which is normally
 ; a much slower lisp than GCL.
 
-#+(and (not cmucl) (not gcl))
+#+(not cmucl)
 (def-gl-thm 1f
   :hyp (and (unsigned-byte-p 3000 x)
             (unsigned-byte-p 3000 y))
@@ -269,7 +269,7 @@
   :g-bindings (gl::auto-bindings (:mix (:nat x 3000)
                                        (:nat y 3000))))
 
-#+(and cmucl (not gcl))
+#+cmucl
 (def-gl-thm 1f
   :hyp (and (unsigned-byte-p 2000 x)
             (unsigned-byte-p 2000 y))
