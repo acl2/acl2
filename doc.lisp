@@ -11751,7 +11751,13 @@ Subtopics
   including how they are used to build rules from formulas and a
   discussion of the various keywords in a rule class description.
 
-    Example (which we'll return to, below):
+  We will introduce clause-processor rules by way of the following
+  example. But note that the clause-processor utility is more general
+  than this example may suggest; for example, the second argument of
+  evl0 in the hypothesis need not be the same as its second argument
+  in the conclusion.
+
+    ; Example (which we'll return to, below):
     (defthm correctness-of-note-fact-clause-processor
       (implies (and (pseudo-term-listp cl)
                     (alistp a)
@@ -11771,10 +11777,13 @@ Subtopics
   restrictions. For example, something like (car (mv ...)) is
   illegal; also see [signature].
 
-  We begin this documentation with an introduction, focusing on an
-  example, and then conclude with details. You might find it most
-  useful simply to look at the examples in community books directory
+  We begin this documentation with an introduction, focusing on the
+  example above, and then conclude with a detailed general discussion
+  of clause-processor rules. You might find it most useful simply to
+  look at the examples in community books directory
   books/clause-processors/; see file Readme.lsp in that directory.
+
+  INTRODUCTION
 
   A :clause-processor rule installs a simplifier at the level of goals,
   where a goal is represented as a clause: a list of [term]s that is
@@ -11902,6 +11911,8 @@ Subtopics
   That concludes our introduction to clause-processor rules and hints.
   We turn now to detailed documentation.
 
+  DETAILED DOCUMENTATION
+
   The [signature] of a clause-processor function, CL-PROC, must have
   one of the following forms. Here, each st_i is a [stobj] (possibly
   state) while the other parameters and results are not stobjs (see
@@ -11933,6 +11944,7 @@ Subtopics
   to help prove the rule; see [meta-extract] for explanation of this
   advanced feature.)
 
+    ; General Form (omitting possible meta-extract hypotheses)
     (implies (and (pseudo-term-listp CL)
                   (alistp A)
                   (EVL (conjoin-clauses <CL-LIST>)
@@ -15495,7 +15507,10 @@ Subtopics
   form.) Although the defabsstobj event will fail if the required
   lemmas have not been proved, first it will print the [defthm] forms
   that must be admitted in order to complete submission of the
-  defabsstobj event.
+  defabsstobj event. (Note that although the those theorems are
+  stated exactly in the form expected by the system, you are welcome
+  to supply whatever :[rule-classes] you prefer, even though the
+  system creates :rule-classes nil by default.)
 
   The detailed theory explaining the need for these lemmas may be found
   in a comment in ACL2 source file other-events.lisp, in a comment
@@ -26600,6 +26615,22 @@ Subtopics
   assumptions'' are, by default, delayed until the successful
   completion of the main goal. See [forcing-round] and see
   [immediate-force-modep].
+
+  Note that the only time that ACL2 gives special treatment to calls of
+  force is when it is considering the hypotheses of a conditional
+  rule, as discussed above. In particular, when the rewriter
+  encounters a subterm of the goal currently being simplified, a call
+  of force is not treated specially. For example, if you provide a
+  :use hint (see [hints]) that replaces a goal G by the goal
+
+    (implies (implies (and ... (force HYP) ...)
+                      concl)
+             G)
+
+  then the rewriter will not give any special treatment to (force HYP).
+  Instead, it will first rewrite HYP to, say, HYP'; and then, using
+  the fact that force is the identity function, the rewriter will
+  return HYP' as the rewritten value for (force HYP).
 
   Forcing is generally used on hypotheses that are always expected to
   be true, as is commonly the case for [guard]s of functions. All the
@@ -62320,7 +62351,8 @@ Subtopics
   in just one category, though of course many changes could be placed
   in more than one category.
 
-  CHANGES TO EXISTING FEATURES
+
+CHANGES TO EXISTING FEATURES
 
   [Gag-mode] no longer saves prover output when PROVE output is
   inhibited (see [set-inhibit-output-lst]). This may improve
@@ -62368,7 +62400,8 @@ Subtopics
   to Jared Davis for pointing out the large output when the body is a
   large character string.
 
-  NEW FEATURES
+
+NEW FEATURES
 
   We have added a tool for writing out useful information about a
   book's event names when certifying the book. See [bookdata]. Thanks
@@ -62382,9 +62415,11 @@ Subtopics
   are not [local] to enclosing [books] or [encapsulate] events.
   Thanks to Shilpi Goel for requesting this enhancement.
 
-  HEURISTIC IMPROVEMENTS
 
-  BUG FIXES
+HEURISTIC IMPROVEMENTS
+
+
+BUG FIXES
 
   It had been possible to update a [stobj] (either an ordinary stobj or
   an abstract stobjs) so that it no longer satisfies its recognizer
@@ -62411,7 +62446,13 @@ Subtopics
   is detected that could come from a call of [non-exec], and to do a
   more complete job for calls of [return-last].
 
-  CHANGES AT THE SYSTEM LEVEL
+  (CCL only) A CCL bug was treating filenames of the form \"~/user/...\"
+  as \"~/...\". Thanks to Gary Byers for sending us a CCL-specific form
+  that is now included in the ACL2 sources, which avoids this
+  problem.
+
+
+CHANGES AT THE SYSTEM LEVEL
 
   The ACL2 system [documentation] has been reworked for the [xdoc]
   framework developed by Jared Davis. While the ACL2 User's Manual
@@ -62430,7 +62471,8 @@ Subtopics
   See [note-6-4-books] for release notes about the books, corresponding
   to the release of ACL2 Version 6.4.
 
-  EMACS SUPPORT
+
+EMACS SUPPORT
 
   There is now an Emacs utility for browsing the hypertext
   documentation for ACL2 and the community books. This browser,
@@ -62440,7 +62482,8 @@ Subtopics
   acl2+books combined manual. It is loaded automatically into emacs
   if you load the file emacs/emacs-acl2.el. See [ACL2-doc].
 
-  EXPERIMENTAL/ALTERNATE VERSIONS")
+
+EXPERIMENTAL/ALTERNATE VERSIONS")
  (NOTE1
   (RELEASE-NOTES)
   "Acl2 Version 1.1 Notes

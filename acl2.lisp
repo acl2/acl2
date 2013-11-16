@@ -2529,3 +2529,9 @@ which is saved just in case it's needed later.")
 #+ccl
 (when (boundp 'ccl::*save-source-locations*)
   (setq ccl::*save-source-locations* nil))
+
+; As of CCL revision 15972 (and probably many earlier revisions), CCL treats
+; "~user/" as "~/".  (See CCL bug 1121,
+; http://trac.clozure.com/ccl/ticket/1121.)  The following workaround was
+; suggested by Gary Byers.
+(setq ccl:*trust-paths-from-environment* nil)
