@@ -204,9 +204,7 @@
 href='http://www.cs.utexas.edu/users/moore/acl2/'>ACL2 Theorem Prover</a> and
 the <a href='http://acl2-books.googlecode.com/'>ACL2 Community Books</a>"
 
-   :long "<p>This manual was generated on <b>@(`(:raw (oslib::date))`)</b>.</p>
-
-<h3>Introduction</h3>
+   :long "<h3>Introduction</h3>
 
 <p><a href='http://www.cs.utexas.edu/users/moore/acl2/'>ACL2</a> is an
 interactive theorem prover.  It combines a Lisp-based programming language for
@@ -223,11 +221,11 @@ quickly writing and documenting code, interfacing tools for connecting ACL2 to
 other systems, productivity tools for better proof automation and debugging,
 and specialty libraries for areas like @(see hardware-verification).</p>
 
-<p>This user manual covers both ACL2 and the Community Books.  It is derived by
-combining the classic @(see doc-string)s found in the ACL2 source code and some
-books with the @(see xdoc) topics found in other books.  Besides just importing
-the documentation, we also rearrange the topic hierarchy to try to improve its
-organization.</p>
+<p>This manual was generated on <b>@(`(:raw (oslib::date))`)</b>.  It covers
+both ACL2 and the Community Books.  It is derived by combining the classic
+@(see doc-string)s found in the ACL2 source code and some books with the @(see
+xdoc) topics found in other books.  Besides just importing the documentation,
+we also rearrange the topic hierarchy to try to improve its organization.</p>
 
 <p>This manual is very much a work in progress.  If you would like to
 contribute to its development, please join the <a
@@ -325,38 +323,11 @@ href='http://dx.doi.org/10.1007/978-3-642-14052-5_30'>A Mechanically Verified
 AIG to BDD Conversion Algorithm</a>.  In ITP 2010,LNCS 6172, Springer.  Pages
 435-449.</p>")
 
-(defsection macro-libraries
-  :parents (top macros)
-  :short "Generally useful macros for writing more concise code, and frameworks
-for quickly introducing concepts like typed structures, typed lists, defining
-functions with type signatures, and automating other common tasks.")
 
 (defsection hardware-verification
   :parents (top)
   :short "Libraries for working with hardware description languages, modeling
 circuits, etc.")
-
-(defsection proof-automation
-  :parents (top)
-  :short "Tools, utilities, and strategies for dealing with particular kinds
-of proofs.")
-
-(defsection interfacing-tools
-  :parents (top)
-  :short "Libraries and tools for doing basic <see topic='@(url std/io)'>file
-i/o</see>, using raw <see topic='@(url quicklisp)'>Common Lisp libraries</see>,
-working with the <see topic='@(url oslib)'>operating system</see>, and
-interfacing with <see topic='@(url bridge)'>other programs</see>.")
-
-(defsection debugging
-  :parents (top)
-  :short "Tools for debugging failed or slow proofs, or misbehaving
-functions.")
-
-(defsection macros
-  :parents (acl2)
-  :short "Macros allow you to extend the syntax of ACL2.")
-
 
 
 ; Huge stupid hack.  Topics that are documented with the old :DOC system can't
@@ -396,7 +367,6 @@ functions.")
      (xdoc::change-parents data-definitions (macro-libraries))
      (xdoc::change-parents data-structures (macro-libraries))
 
-     (xdoc::change-parents io (interfacing-tools))
      (xdoc::change-parents hacker (interfacing-tools))
 
      (xdoc::change-parents witness-cp (proof-automation))
@@ -407,218 +377,12 @@ functions.")
 ;; So I got started on that, and decided to move around a whole bunch of ACL2
 ;; doc topics.  Much of this would probably make more sense to do in ACL2 itself.
 
-     (xdoc::change-parents copyright (about-acl2))
-     (xdoc::change-parents version (about-acl2))
-     (xdoc::change-parents release-notes (about-acl2))
-     (xdoc::change-parents bibliography (about-acl2))
-     (xdoc::change-parents acknowledgments (about-acl2))
-     (xdoc::change-parents acl2-help (about-acl2))
+     (xdoc::change-parents release-notes (about-acl2)) ;; bozo matt doesn't like this?
 
-     (xdoc::change-parents nqthm-to-acl2 (acl2-tutorial))
-
-     (xdoc::change-parents exit (good-bye))
-     (xdoc::change-parents quit (good-bye))
-
-     (xdoc::change-parents |Pages Written Especially for the Tours| (acl2-tutorial))
-
-     (xdoc::change-parents introduction-to-the-tau-system (tau-system))
-     (xdoc::change-parents tau-data (tau-system))
-     (xdoc::change-parents tau-database (tau-system))
-
-     (xdoc::change-parents wof (io))
-     (xdoc::change-parents serialize (io))
-
-     (xdoc::change-parents guard-obligation (guard))
-     (xdoc::change-parents guard-debug (guard debugging))
-     (xdoc::change-parents verify-guards-formula (guard))
-     (xdoc::change-parents print-gv (guard debugging))
-     (xdoc::change-parents walkabout (debugging))
-     (xdoc::change-parents trace (debugging))
-     (xdoc::change-parents time-tracker (debugging))
-     (xdoc::change-parents disassemble$ (debugging))
-     (xdoc::change-parents splitter (debugging))
-     (xdoc::change-parents splitter-output (splitter))
-     (xdoc::change-parents immed-forced (splitter))
-     (xdoc::change-parents if-intro (splitter))
-     (xdoc::change-parents proof-checker (debugging))
-     (xdoc::change-parents proof-tree (debugging))
-     (xdoc::change-parents pstack (debugging))
-     (xdoc::change-parents forward-chaining-reports (debugging))
-     (xdoc::change-parents accumulated-persistence (debugging))
-     (xdoc::change-parents set-accumulated-persistence (accumulated-persistence))
-     (xdoc::change-parents show-accumulated-persistence (accumulated-persistence))
-     (xdoc::change-parents dmr (debugging))
-     (xdoc::change-parents dynamically-monitor-rewrites (dmr))
-     (xdoc::change-parents break-rewrite (debugging))
-     (xdoc::change-parents why-brr (break-rewrite))
-     (xdoc::change-parents cw-gstack (break-rewrite))
-
-     (xdoc::change-parents default-hints (hints))
-     (xdoc::change-parents override-hints (hints))
-     (xdoc::change-parents hints-and-the-waterfall (hints))
-     (xdoc::change-parents lemma-instance (hints))
-     (xdoc::change-parents induct (hints))
-     (xdoc::change-parents hands-off (hints))
-     (xdoc::change-parents expand (hints))
-     (xdoc::change-parents nonlinearp (hints linear-arithmetic))
-     (xdoc::change-parents no-thanks (hints))
-     (xdoc::change-parents backchain-limit-rw (hints))
-     (xdoc::change-parents backtrack (hints))
      (xdoc::change-parents consideration (hints))
-     (xdoc::change-parents restrict (hints))
-     (xdoc::change-parents reorder (hints))
-     (xdoc::change-parents use (hints))
-     (xdoc::change-parents by (hints))
-     (xdoc::change-parents do-not (hints))
      (xdoc::change-parents do-not-hint (hints))
-     (xdoc::change-parents do-not-induct (hints))
-     (xdoc::change-parents goal-spec (hints))
-     (xdoc::change-parents clause-identifier (goal-spec))
-
-
-     (xdoc::change-parents otf-flg (defthm thm xargs))
-
-     (xdoc::change-parents package-reincarnation-import-restrictions
-                           (defpkg))
-
-     (xdoc::change-parents print-doc-start-column (documentation))
-     (xdoc::change-parents proof-supporters-alist (dead-events))
-
-     (xdoc::change-parents cases (hints))
-     (xdoc::change-parents custom-keyword-hints (hints))
-     (xdoc::change-parents computed-hints (hints))
-     (xdoc::change-parents using-computed-hints (computed-hints))
-     (xdoc::change-parents using-computed-hints-1 (computed-hints))
-     (xdoc::change-parents using-computed-hints-2 (computed-hints))
-     (xdoc::change-parents using-computed-hints-3 (computed-hints))
-     (xdoc::change-parents using-computed-hints-4 (computed-hints))
-     (xdoc::change-parents using-computed-hints-5 (computed-hints))
-     (xdoc::change-parents using-computed-hints-6 (computed-hints))
-     (xdoc::change-parents using-computed-hints-7 (computed-hints))
-     (xdoc::change-parents using-computed-hints-8 (computed-hints))
-
-     (xdoc::change-parents forced (force))
-     (xdoc::change-parents forcing-round (force))
-     (xdoc::change-parents enable-forcing (force))
-     (xdoc::change-parents disable-forcing (force))
-     (xdoc::change-parents immediate-force-modep (force))
-     (xdoc::change-parents enable-immediate-force-modep (force))
-     (xdoc::change-parents disable-immediate-force-modep (force))
-     (xdoc::change-parents failed-forcing (force))
-
-     (xdoc::change-parents lambda (term))
-
-     (xdoc::change-parents loop-stopper (rewrite))
-
-     (xdoc::change-parents lp (ld))
-     (xdoc::change-parents reset-ld-specials (ld))
-     (xdoc::change-parents keyword-commands (ld))
-     (xdoc::change-parents ld-error-action (ld))
-     (xdoc::change-parents ld-error-triples (ld))
-     (xdoc::change-parents ld-evisc-tuple (ld))
-     (xdoc::change-parents ld-keyword-aliases (ld))
-     (xdoc::change-parents ld-missing-input-ok (ld))
-     (xdoc::change-parents ld-post-eval-print (ld))
-     (xdoc::change-parents ld-pre-eval-filter (ld))
-     (xdoc::change-parents ld-pre-eval-print (ld))
-     (xdoc::change-parents ld-prompt (ld))
-     (xdoc::change-parents ld-query-control-alist (ld))
-     (xdoc::change-parents ld-redefinition-action (ld))
-     (xdoc::change-parents ld-skip-proofsp (ld))
-     (xdoc::change-parents ld-verbose (ld))
-     (xdoc::change-parents prompt (ld))
-     (xdoc::change-parents p! (ld))
-     (xdoc::change-parents a! (ld))
-     (xdoc::change-parents abort! (ld))
-     (xdoc::change-parents default-print-prompt (ld))
-     (xdoc::change-parents redef (ld))
-     (xdoc::change-parents redef- (ld))
-     (xdoc::change-parents redef+ (ld))
-     (xdoc::change-parents redef! (ld))
-
-     (xdoc::change-parents ignorable (declare))
-     (xdoc::change-parents ignore (declare))
-     (xdoc::change-parents optimize (declare))
-     (xdoc::change-parents type (declare))
-
-
-     (xdoc::change-parents xargs (defun))
-     (xdoc::change-parents measure (xargs))
-     (xdoc::change-parents guard-hints (xargs))
-     (xdoc::change-parents mode (xargs))
-     (xdoc::change-parents non-executable (xargs))
-     (xdoc::change-parents normalize (xargs))
-     (xdoc::change-parents stobjs (xargs))
-
-     (xdoc::change-parents stobj (programming))
-     (xdoc::change-parents defabsstobj (stobj events))
-     (xdoc::change-parents single-threaded-objects (stobj))
-
-
-     (xdoc::change-parents obdd (bdd))
-
-     (xdoc::change-parents defund (defun))
-     (xdoc::change-parents defun-inline (defun))
-     (xdoc::change-parents defund-inline (defun))
-     (xdoc::change-parents defun-notinline (defun))
-     (xdoc::change-parents defund-notinline (defun))
-     (xdoc::change-parents defun-nx (defun))
-     (xdoc::change-parents defun-mode (defun))
-
-
-     (xdoc::change-parents defabbrev (macros))
-     (xdoc::change-parents macro-args (macros))
-     (xdoc::change-parents &allow-other-keys (macro-args))
-     (xdoc::change-parents &body (macro-args))
-     (xdoc::change-parents &key (macro-args))
-     (xdoc::change-parents &optional (macro-args))
-     (xdoc::change-parents &rest (macro-args))
-     (xdoc::change-parents &whole (macro-args))
-     (xdoc::change-parents trans (macros))
-     (xdoc::change-parents trans1 (macros))
-     (xdoc::change-parents trans! (macros))
-     (xdoc::change-parents defmacro (macros events))
-     (xdoc::change-parents make-event (macros events))
      (xdoc::change-parents untranslate-patterns (macros user-defined-functions-table))
-     (xdoc::change-parents add-macro-alias (macros switches-parameters-and-modes))
-     (xdoc::change-parents add-macro-fn (macros switches-parameters-and-modes))
-     (xdoc::change-parents macro-aliases-table (macros switches-parameters-and-modes))
-     (xdoc::change-parents remove-binop (macros switches-parameters-and-modes))
-     (xdoc::change-parents remove-macro-alias (macros switches-parameters-and-modes))
-     (xdoc::change-parents remove-macro-fn (macros switches-parameters-and-modes))
-     (xdoc::change-parents untrans-table (macros switches-parameters-and-modes))
-     (xdoc::change-parents user-defined-functions-table (macros switches-parameters-and-modes))
-
-
-
-
-     (xdoc::change-parents apropos (docs))
-
-     (xdoc::change-parents certify-book! (certify-book))
-
-     (xdoc::change-parents save-exec (interfacing-tools))
-
-     (xdoc::change-parents wormhole-data (wormhole))
-     (xdoc::change-parents wormhole-entry-code (wormhole))
-     (xdoc::change-parents wormhole-eval (wormhole))
-     (xdoc::change-parents wormhole-implementation (wormhole))
-     (xdoc::change-parents wormhole-p (wormhole))
-     (xdoc::change-parents wormhole-statusp (wormhole))
-     (xdoc::change-parents make-wormhole-status (wormhole))
-     (xdoc::change-parents get-wormhole-status (wormhole))
-     (xdoc::change-parents set-wormhole-entry-code (wormhole))
-     (xdoc::change-parents set-wormhole-data (wormhole))
-
-     (xdoc::change-parents show-bodies (definition))
-     (xdoc::change-parents set-body (events definition))
-
-     (xdoc::change-parents the-method (acl2-tutorial))
-
-     (xdoc::change-parents proof-of-well-foundedness (ordinals))
-     (xdoc::change-parents o< (ordinals))
-     (xdoc::change-parents o-p (ordinals))
-
-     (xdoc::change-parents keyword (keywordp))))
+     ))
 
 (comp t)
 

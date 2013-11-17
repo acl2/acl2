@@ -17,218 +17,84 @@
 # more details.  You should have received a copy of the GNU General Public
 # License along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+#
+# For authorship information, see "Credits and History" below.
 
-##############################
-### Section: Credits and History
-##############################
 
-# For many years, the ACL2 books were built using the "Makefile-generic"
-# system.  This make system was written by
+# Note: to use this Makefile, you will need to have already built a copy of
+# ACL2.  To get ACL2, see: http://www.cs.utexas.edu/users/moore/acl2/
 #
-#      Matt Kaufmann <kaufmann@cs.utexas.edu> and
-#      J Strother Moore <moore@cs.utexas.edu>
 #
-# and was actually an adaptation of Makefiles used by Bishop Brock for his IHS
-# and data-structures libraries.
+# Usage:  make [-j <jobs>] [<targets>] [ACL2=<cmd>] [options]
 #
-# In 2008, Sol Swords <sswords@centtech.com> developed cert.pl, a perl-based
-# alternative to ACL2's make system.  This build system was largely compatible
-# with the previous Makefile-generic system, but featured enhanced,
-# cross-directory dependency tracking.  Centaur Technology used cert.pl for
-# many years, both internally and for their publicly released "centaur/"
-# community books.
+#   -j <jobs>     How many books you want to certify in parallel; typically the
+#                 number of cores on your machine.
 #
-# In 2013, Jared Davis <jared@centtech.com> developed an initial version of
-# this current Makefile, which is substantially based on cert.pl, and made
-# minor adjustments to several Community Books to ensure that they could all be
-# certified with the new system.
+#   <targets>     Collections of books (or particular books) that you want to
+#                 certify.  Default: "basic"
 #
-# Subsequently, significant contributions to this Makefile have been made by
-# many people, notably:
+#   ACL2=<cmd>    The command to use to run ACL2.  Default: "acl2"
 #
-#   - Matt Kaufmann <kaufmann@cs.utexas.edu> has extended the Makefile in
-#     support of certifying ACL2(r) books, multi-lisp compilation, provisional
-#     certification, chk-include-book-worlds target, among numerous other
-#     improvements and contributions such as testing the Makefile on many
-#     systems and further tweaking some Community Books.
+# Targets:
 #
-#   - Sol Swords <sswords@cs.utexas.edu> has provided significant support for
-#     cert.pl, notably extending it to operate on Windows, and adding features
-#     such as automatically tracking books that rely on ACL2(h).
+#   basic         The default.  This is a lightweight selection of books for
+#                 reasoning about arithmetic, lists, sets, strings, io, etc.,
+#                 and other miscellaneous tools and macros.  Many users may
+#                 find "basic" to be a convenient starting place.
 #
-#   - David Rager <ragerdl@cs.utexas.edu> provided significant early beta
-#     testing and worked to ensure the Makefile works with ACL2(p) and in
-#     different configurations of ACL2_CUSTOMIZATION; he has also provided
-#     useful make targets.
+#   all           Certifies most books that are not horribly slow, including,
+#                 for instance, most of workshops, projects, the centaur
+#                 books, y86 and jvm models, etc.  Usually, committers to
+#                 acl2-books should run "make all" first.
+#   
+#   everything    A very full build, including very slow books.  Most users
+#                 will not want to use this target.  It is useful for, e.g.,
+#                 regression testing before releases.
 #
-#   - Jared Davis <jared@centtech.com> has made other miscellaneous
-#     improvements, e.g., a more comprehensive implementation of book cleaning.
+#   <dirname>     There are targets for many top-level directories, e.g., you
+#                 may run "make coi" to build everything in coi/ directory,
+#                 "make rtl" to build the books within rtl/, and so on.
+#
+#   <file-name>   You can ask to certify particular files, for instance,
+#                 "make arithmetic-5/top.cert"
+#
+#   manual        Builds centaur/doc.cert, which produces the combined ACL2
+#                 books+system manual in centaur/manual/index.html.  Note:
+#                 this target requires ACL2(h) and USE_QUICKLISP=1.
+#
+# Basic Options:
+#
+#   USE_QUICKLISP=1
+#                 Experimental; needed for certain books.  Quicklisp is a
+#                 packaging system for Common Lisp libraries, sort of like CPAN
+#                 for Perl or RubyGems for Ruby.  May not work with some Lisps.
+#
+# Advanced Options:
+#
+#   STARTJOB=<command>
+#                 The shell to use for running jobs.  Default: "bash"
+#
+#   NO_RESCAN=1   Assume dependency information is up to date.  This may save
+#                 a few seconds on subsequent builds, especially on slow NFS
+#                 systems.  May cause trouble if dependencies have changed.
+#
+#   ACL2_COMP=1   Causes multi-lisp compilation; not needed for most users.
+#
+#   EXCLUDED_PREFIXES=<strings>
+#                 Do not certify books that start with these prefixes.  For
+#                 instance, EXCLUDED_PREFIXES="projects workshops coi" would
+#                 avoid building the books in these directories.
+#
+#   ACL2_BOOK_CERTS=<cert-file-names>
+#   ACL2_BOOK_DIRS=<dir-names>
+#                 Add particular files or directories as additional targets
+#                 to certify, when using certain Makefile targets.
+#
+# Of course, the usual GNU make options are also available.  In particular, -k
+# is useful for causing make to keep going when an error is encountered (but
+# return a non-zero error status at the end).
 
-##############################
-### Section: Documentation
-##############################
 
-# Basic usage:
-#    make -j <jobs> [<target>]
-#
-# Where:
-#    - <jobs> is how many books you want to certify in parallel,
-#        typically the number of cores on your machine
-#    - <target> is optional and defaults to "all" when omitted,
-#        or names the target you want to build (see below).
-
-# Of course, the usual GNU make options are available.  In particular,
-# -k is useful for causing make to keep going when an error is
-# encountered (but return a non-zero error status at the end).
-
-# Major top-level targets:
-#   - `all' is the default
-#   - `everything' includes everything in `all' and also some slow books
-
-# Major user-definable variables (whose effects occur in this order):
-#   - ACL2
-#     ACL2 executable, which is "acl2" by default.
-#   - STARTJOB
-#     The shell, which is the path to "bash" by default.
-#   - NO_RESCAN
-#     When defined, avoids rebuilding auxiliary files of targets and
-#     dependencies.
-#   - ACL2_COMP
-#     When defined, causes multi-lisp compilation (most users won't
-#     care about this one)
-#   - EXCLUDED_PREFIXES
-#     Reduces the default targets by eliminating all that start with
-#     any prefix in this list of strings.
-#   - ACL2_BOOK_CERTS
-#     Augments the targets with this list of strings, e.g., foo.cert.
-#   - ACL2_BOOK_DIRS
-#     Augments the targets with all targets that have a prefix among
-#     this list of strings.
-#   - USE_QUICKLISP
-#     Set this if you want to build Quicklisp (which is sort of like
-#     CPAN or RubyGems but for Lisp).  Required for certain books in
-#     oslib, and hence to build centaur/manual/.  This works in CCL
-#     and Allegro CL but may not work in some other Common Lisp
-#     implementations.
-
-# Jared Davis has summarized the improvements over the earlier
-# Makefile as follows.
-
-#  - It simplifies the build system, doing away with hundreds of Makefiles in
-#    individual directories, and replacing them with this single file.  This is
-#    possible because I've gone through and fixed up many books so that they
-#    follow certain conventions, explained below.
-#
-#  - It increases (significantly) opportunities for book-level parallelism, by
-#    doing away with directory-level dependencies.  Essentially, any books that
-#    do not have an include-book dependency can be built in parallel.  At the
-#    same time, this means that books can be reorganized based on their logical
-#    content, without regards to directory build order.
-#
-#  - It generally increases build-system automation.  We use "find" commands to
-#    find Lisp files instead of maintaining (by hand) lists of directories.  We
-#    also do not need to manually keep track of dependencies between
-#    directories, etc.
-#
-# This Makefile starts by automatically scanning for books and their
-# dependencies.  This scanning can be slightly expensive, especially on slow
-# NFS systems.  When you know that you haven't added or changed any books, you
-# might prefer to avoid rescanning by adding NO_RESCAN=1 to the command line.
-#
-# In order to make the book- and dependency-scanning simple and reliable, books
-# are expected to follow certain conventions.  These conventions are generally
-# very similar to the previous behavior of cert.pl and Makefile-generic.
-#
-#   - We scan for lines like (include-book "foo") and (ld "foo.lisp"); for
-#     dependency scanning to work, these commands must be on a single line and
-#     can't be wrapped up in macros.  Occasionally it is useful to fool the
-#     dependency scanner, e.g., in a multi-line comments you might do:
-#
-#        #| Here's an example of how to use this stuff:
-#
-#           (include-book ;; newline to fool dependency scanner
-#             "foo")
-#
-#           (demo-of-how-to-use-foo)
-#        |#
-#
-#   - Additional dependencies (e.g., on raw-lisp files or other kinds of data
-#     files) can be added using depends-on comments, e.g.,
-#
-#        ; (depends-on "foo-raw.lsp")
-#
-#   - Certifiable books should be named foo.lisp
-#   - Non-certifiable Lisp files should be named foo.lsp
-#   - The instructions for certifying foo.lisp are found in:
-#       foo.acl2, if it exists, or else
-#       cert.acl2, if it exists, or else
-#       default to simply (certify-book "foo" ? t)
-#     These instructions specify arguments to certify-book, for example:
-#       ; cert-flags: ? t :ttags :all
-#   - In the following cases, books may be skipped in which case,
-#     recursively, so are books that include such books, books that
-#     include those parent books, and so on.  In each case, the
-#     indicated line may be placed either in the .lisp file or in the
-#     .acl2 file that is consulted, as discussed above.
-#       - Books that depend on ACL2(h), such as
-#         centaur/tutorial/alu16-book.lisp, contain this line:
-#           ; cert_param: (hons-only)
-#       - Books that require glucose (a SAT solver) contain this line:
-#           ; cert_param: (uses-glucose)
-#       - Books that require quicklisp contain this line:
-#           ; cert_param: (uses-quicklisp)
-#   - Two-pass certification is handled as follows, for example in
-#     books/make-event/stobj-test.acl2 (as indicated above, this can
-#     also go into the book instead of the relevant .acl2 file):
-#       ; cert_param: (acl2x)
-#   - It's not clear that provisional certification is fully
-#     supported.  For now, we implement it for two specific
-#     directories; search below for "provisional certification" to see
-#     how that's done.
-#   - The "user" target allows one to restrict to specific
-#     directories.  Search for "user" below to see an example.
-#
-# CHANGE/BOZO: In this Makefile (as in cert.pl), any certify-book lines given
-# in the .acl2 file are ignored.  Instead, we generate the certify-book command
-# to use by looking for comments like:
-#
-#         ; cert-flags: ? t :ttags :all
-#
-# These comments can be put in the individual foo.acl2 or (for directory-level
-# defaults) in cert.acl2.  The default cert-flags are "? t".  Using special
-# comments instead of certify-book forms means that the certification flags
-# can't be hidden inside macros, possibly easing the job of an "evaluator."
-#
-# BOZO (from Jared) I have gone through the ACL2 regression suite and replaced
-# certify-book lines throughout .acl2 files with cert-flags comments.  However,
-# for now I've left the certify-book commands intact, for compatiblity with
-# Makefile-generic.  Eventually, we should not have both things in .acl2 files.
-# Before we can do that, we'll need to change Makefile-generic to look for
-# cert-flags instead of certify-book commands.  Alternately, maybe the scheme
-# should be something like: if you give a certify-book command, we use it;
-# otherwise we generate one using the cert-flags.
-
-# STATUS / TODO LIST / MISSING FEATURES / BOZOS:
-#
-#  [DONE] Requires perl on the client machine (I think we've agreed this is
-#         okay)
-#
-#  [DONE] Two-pass certification seems to work, using the cert.pl directive
-#         cert_param(acl2x).  See for instance
-#         books/make-event/stobj-test.acl2.
-#
-#  [DONE] How should cleaning work?
-#
-#    Using a find command has the advantage that it will get rid of old files
-#    even after the .lisp files have been deleted.  It has the disadvantage
-#    that it seems tricky to properly delete .h and .c files using a find
-#    command.  An alternative would be to use CERT_PL_CERTS to generate a huge
-#    list of files to remove.  This will require using xargs, etc., which is
-#    gross, but so does the find command.  Blah.
-#
-#    We now implement the CERT_PL_CERTS-based approach, but using clean.pl,
-#    which nicely deals with the whole too-many-arguments issue.  It seems to
-#    perform well.  I think this is probably as good as we can do.
 
 ##############################
 ### Section: Preliminaries
@@ -249,12 +115,11 @@ STARTJOB ?= $(SHELL)
 .SUFFIXES:
 .SUFFIXES: .cert .lisp
 
-# Keep this .PHONY target here, even though the main target
-# definitions come much later in the file, because we start defining
-# the "all" target (at least) well before then.  Also, keep "all:"
-# here so that "all" is the top target.
-.PHONY: all everything
-all:
+.PHONY: basic all
+
+# Keep this before any other target so that basic will be the default target
+basic:
+
 
 QUICKLISP_DIR=centaur/quicklisp
 
@@ -274,7 +139,6 @@ $(QUICKLISP_DIR)/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lisp \
 $(QUICKLISP_DIR)/top.cert: $(QUICKLISP_DIR)/setup.lisp \
                            $(QUICKLISP_DIR)/cert.acl2 \
                            tools/include-raw.cert
-
 
 all: $(QUICKLISP_DIR)/top.cert
 
@@ -956,6 +820,7 @@ all: $(OK_CERTS)
 # But that didn't work, presumably because the value of OK_CERTS was
 # on a first pass through the Makefile without USE_QUICKLISP being
 # set.
+.PHONY: everything
 everything:
 	$(MAKE) all $(ADDED_BOOKS) USE_QUICKLISP=1
 
@@ -1236,3 +1101,150 @@ clean_vl:
 
 clean: clean_vl
 
+
+
+
+##############################
+### Section: Credits and History
+##############################
+
+# For many years, the ACL2 books were built using the "Makefile-generic"
+# system.  This make system was written by
+#
+#      Matt Kaufmann <kaufmann@cs.utexas.edu> and
+#      J Strother Moore <moore@cs.utexas.edu>
+#
+# and was actually an adaptation of Makefiles used by Bishop Brock for his IHS
+# and data-structures libraries.
+#
+# In 2008, Sol Swords <sswords@centtech.com> developed cert.pl, a perl-based
+# alternative to ACL2's make system.  This build system was largely compatible
+# with the previous Makefile-generic system, but featured enhanced,
+# cross-directory dependency tracking.  Centaur Technology used cert.pl for
+# many years, both internally and for their publicly released "centaur/"
+# community books.
+#
+# In 2013, Jared Davis <jared@centtech.com> developed an initial version of
+# this current Makefile, which is substantially based on cert.pl, and made
+# minor adjustments to several Community Books to ensure that they could all be
+# certified with the new system.
+#
+# Subsequently, significant contributions to this Makefile have been made by
+# many people, notably:
+#
+#   - Matt Kaufmann <kaufmann@cs.utexas.edu> has extended the Makefile in
+#     support of certifying ACL2(r) books, multi-lisp compilation, provisional
+#     certification, chk-include-book-worlds target, among numerous other
+#     improvements and contributions such as testing the Makefile on many
+#     systems and further tweaking some Community Books.
+#
+#   - Sol Swords <sswords@cs.utexas.edu> has provided significant support for
+#     cert.pl, notably extending it to operate on Windows, and adding features
+#     such as automatically tracking books that rely on ACL2(h).
+#
+#   - David Rager <ragerdl@cs.utexas.edu> provided significant early beta
+#     testing and worked to ensure the Makefile works with ACL2(p) and in
+#     different configurations of ACL2_CUSTOMIZATION; he has also provided
+#     useful make targets.
+#
+#   - Jared Davis <jared@centtech.com> has made other miscellaneous
+#     improvements, e.g., a more comprehensive implementation of book cleaning.
+#
+# Jared Davis has summarized the improvements over the earlier Makefile as
+# follows.
+#
+#  - It simplifies the build system, doing away with hundreds of Makefiles in
+#    individual directories, and replacing them with this single file.  This is
+#    possible because I've gone through and fixed up many books so that they
+#    follow certain conventions, explained below.
+#
+#  - It increases (significantly) opportunities for book-level parallelism, by
+#    doing away with directory-level dependencies.  Essentially, any books that
+#    do not have an include-book dependency can be built in parallel.  At the
+#    same time, this means that books can be reorganized based on their logical
+#    content, without regards to directory build order.
+#
+#  - It generally increases build-system automation.  We use "find" commands to
+#    find Lisp files instead of maintaining (by hand) lists of directories.  We
+#    also do not need to manually keep track of dependencies between
+#    directories, etc.
+
+
+
+
+
+# BOZO --- the comments below should eventually be integrated into the XDOC
+# documentatio about cert.pl.
+
+# In order to make the book- and dependency-scanning simple and reliable, books
+# are expected to follow certain conventions.  These conventions are generally
+# very similar to the previous behavior of cert.pl and Makefile-generic.
+#
+#   - We scan for lines like (include-book "foo") and (ld "foo.lisp"); for
+#     dependency scanning to work, these commands must be on a single line and
+#     can't be wrapped up in macros.  Occasionally it is useful to fool the
+#     dependency scanner, e.g., in a multi-line comments you might do:
+#
+#        #| Here's an example of how to use this stuff:
+#
+#           (include-book ;; newline to fool dependency scanner
+#             "foo")
+#
+#           (demo-of-how-to-use-foo)
+#        |#
+#
+#   - Additional dependencies (e.g., on raw-lisp files or other kinds of data
+#     files) can be added using depends-on comments, e.g.,
+#
+#        ; (depends-on "foo-raw.lsp")
+#
+#   - Certifiable books should be named foo.lisp
+#   - Non-certifiable Lisp files should be named foo.lsp
+#   - The instructions for certifying foo.lisp are found in:
+#       foo.acl2, if it exists, or else
+#       cert.acl2, if it exists, or else
+#       default to simply (certify-book "foo" ? t)
+#     These instructions specify arguments to certify-book, for example:
+#       ; cert-flags: ? t :ttags :all
+#   - In the following cases, books may be skipped in which case,
+#     recursively, so are books that include such books, books that
+#     include those parent books, and so on.  In each case, the
+#     indicated line may be placed either in the .lisp file or in the
+#     .acl2 file that is consulted, as discussed above.
+#       - Books that depend on ACL2(h), such as
+#         centaur/tutorial/alu16-book.lisp, contain this line:
+#           ; cert_param: (hons-only)
+#       - Books that require glucose (a SAT solver) contain this line:
+#           ; cert_param: (uses-glucose)
+#       - Books that require quicklisp contain this line:
+#           ; cert_param: (uses-quicklisp)
+#   - Two-pass certification is handled as follows, for example in
+#     books/make-event/stobj-test.acl2 (as indicated above, this can
+#     also go into the book instead of the relevant .acl2 file):
+#       ; cert_param: (acl2x)
+#   - It's not clear that provisional certification is fully
+#     supported.  For now, we implement it for two specific
+#     directories; search below for "provisional certification" to see
+#     how that's done.
+#   - The "user" target allows one to restrict to specific
+#     directories.  Search for "user" below to see an example.
+#
+# CHANGE/BOZO: In this Makefile (as in cert.pl), any certify-book lines given
+# in the .acl2 file are ignored.  Instead, we generate the certify-book command
+# to use by looking for comments like:
+#
+#         ; cert-flags: ? t :ttags :all
+#
+# These comments can be put in the individual foo.acl2 or (for directory-level
+# defaults) in cert.acl2.  The default cert-flags are "? t".  Using special
+# comments instead of certify-book forms means that the certification flags
+# can't be hidden inside macros, possibly easing the job of an "evaluator."
+#
+# BOZO (from Jared) I have gone through the ACL2 regression suite and replaced
+# certify-book lines throughout .acl2 files with cert-flags comments.  However,
+# for now I've left the certify-book commands intact, for compatiblity with
+# Makefile-generic.  Eventually, we should not have both things in .acl2 files.
+# Before we can do that, we'll need to change Makefile-generic to look for
+# cert-flags instead of certify-book commands.  Alternately, maybe the scheme
+# should be something like: if you give a certify-book command, we use it;
+# otherwise we generate one using the cert-flags.
