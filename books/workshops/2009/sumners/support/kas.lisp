@@ -3663,13 +3663,13 @@
 
 (defun kern-simplify-term (term wrld ens ls$ us$)
   (declare (xargs :stobjs (ls$ us$)))
-  (letk ((term (kern-unfak-term term))
-	 (ls$ (kern-logic-init term wrld ens ls$))
+  (letk ((term. (kern-unfak-term term))
+         (ls$ (kern-logic-init term. wrld ens ls$))
          (us$ (kern-user-init ls$ us$))
-         (node ls$ (kern-term-to-node term ls$))
+         (node ls$ (kern-term-to-node term. ls$))
          (node+ dcv ls$ us$ (kern-rewrite-node node ls$ us$)))
-      (kern-force-assert (or (=^ dcv (kern-dcv-empty)) (list dcv))
-        (mv node+ ls$ us$))))
+        (kern-force-assert (or (=^ dcv (kern-dcv-empty)) (list dcv))
+                           (mv node+ ls$ us$))))
 
 (defun parse-kernel-simplify-hint (hint)
   (if (and (consp hint)
