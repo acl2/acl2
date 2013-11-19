@@ -1013,7 +1013,7 @@ chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
 # might wish to issue the command below directly, so that the -j
 # option is passed to the call of make.  Don't forget to include
 # ACL2=acl2h, where acl2h is your ACL2(h) executable.
-combined-manual:
+manual:
 	$(MAKE) USE_QUICKLISP=1 ACL2_BOOK_CERTS=centaur/doc.cert
 
 # This has been tested using CCL on Linux, but may work for other
@@ -1035,7 +1035,7 @@ combined-manual:
 # following command in this directory, where acl2h is an ACL2(h)
 # executable.
 
-#   make ACL2_BOOK_CERTS=system/doc/render-doc-combined.cert ACL2=acl2h
+#   make all ACL2_BOOK_CERTS=system/doc/render-doc-combined.cert ACL2=acl2h
 
 ##############################
 ### Section: Some notes
