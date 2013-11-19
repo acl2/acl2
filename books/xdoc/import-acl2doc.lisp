@@ -31,6 +31,21 @@
 
 (include-book "system/doc/acl2-doc-wrap" :dir :system)
 
+; Well, that's almost true. :)
+;
+; There is still defdoc-style documentation in the ACL2 sources.  This didn't
+; bother us at first, because the xdoc topics just overwrote them.  But then we
+; found a topic we wanted to delete, and found that just deleting it from
+; acl2-doc.lisp didn't work, because it would then just get re-imported from
+; ACL2.  So, at least until the docs get removed from the ACL2 sources, we need
+; to work around this somehow.
+
+(make-event
+ (let ((names (strip-cars (global-val 'acl2::documentation-alist (acl2::w state)))))
+   (value `(defconst xdoc::*acl2-built-in-defdoc-names*
+             ',names))))
+
+
 ; Hack for broken links to be reported differently in the community manual.
 
 #!XDOC
@@ -148,8 +163,8 @@ find what you want.</p>")
 ;
 ; We return nil if there is no defdoc for name.  Otherwise, we return the
 ; include-book path (with closest book first, hence opposite from the order
-; typically displayed by :pe) for the most recent defdoc of name, else t if
-; that path is nil.
+; typically displayed by :pe) for the most recent defdoc of name, else
+; :built-in if that path is nil.
 
   (declare (xargs :mode :program))
   (cond ((endp wrld)
@@ -163,7 +178,11 @@ find what you want.</p>")
                          ;; Matt's version didn't reverse these, but mine
                          ;; does for compatibility with the origin book.
                          (or (reverse (global-val 'include-book-path wrld))
-                             t)))))))
+                             ;; Originally we returned T here.  Now I return
+                             ;; :built-in for better compatibility with
+                             ;; extend-topic-with-origin.  I ran into a weird
+                             ;; problem with e0-ordinalp here.
+                             :built-in)))))))
                (defdoc-include-book-path name (cdr wrld))))))
 
 #!XDOC
@@ -241,6 +260,25 @@ find what you want.</p>")
           (all-topic-names (cdr topics)))))
 
 #!XDOC
+(defun set-diff-fal (x fal)
+  (cond ((atom x)
+         nil)
+        ((hons-get (car x) fal)
+         (set-diff-fal (cdr x) fal))
+        (t
+         (cons (car x)
+               (set-diff-fal (cdr x) fal)))))
+
+#!XDOC
+(defun extend-skip-fal (built-ins fal)
+  (if (atom built-ins)
+      fal
+    (hons-acons (car built-ins) t
+                (extend-skip-fal (cdr built-ins) fal))))
+
+(include-book "verbosep")
+
+#!XDOC
 (defmacro import-acl2doc ()
   ;; This is for refreshing the documentation to reflect topics documented in
   ;; libraries.  We throw away any defdoc topics for names that already have
@@ -251,6 +289,14 @@ find what you want.</p>")
     (b* ((all-topics (get-xdoc-table (w state)))
          (names      (xdoc::all-topic-names all-topics))
          (skip-fal   (make-fast-alist (pairlis$ names nil)))
+
+         ;; dumb hack to make sure we don't import old defdoc stuff
+         (built-ins  (set-diff-fal *acl2-built-in-defdoc-names* skip-fal))
+         (- (or (not built-ins)
+                (not (xdoc-verbose-p))
+                (cw "; XDOC Warning: Not importing DEFDOC topics from ACL2 ~
+                     Sources with no XDOC equivalents: ~x0.~%" built-ins)))
+         (skip-fal   (extend-skip-fal built-ins skip-fal))
          ((mv ?er ?val state)
           (time$ (acl2::write-xdoc-alist :skip-topics-fal skip-fal)
                  :msg "~|; Importing acl2 :doc topics: ~st sec, ~sa bytes~%"

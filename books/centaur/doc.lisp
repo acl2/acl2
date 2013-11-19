@@ -334,7 +334,7 @@ circuits, etc.")
 ; have XDOC topics for their parents.  So, get them all loaded and converted
 ; into proper XDOC topics, then move them around where we want them.
 
-(local (xdoc::import-acl2doc))
+(xdoc::import-acl2doc)
 
 (include-book "xdoc/topics" :dir :system)
 
@@ -386,7 +386,7 @@ circuits, etc.")
 
 (comp t)
 
-(local (xdoc::fix-the-hierarchy))
+(xdoc::fix-the-hierarchy)
 
 (local (deflabel doc-rebuild-label))
 

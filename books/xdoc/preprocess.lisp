@@ -26,27 +26,10 @@
 (include-book "str/defs" :dir :system)
 (include-book "std/io/read-string" :dir :system)
 (include-book "unsound-eval")
+(include-book "verbosep")
 (local (include-book "misc/assert" :dir :system))
 (set-state-ok t)
 (program)
-
-(encapsulate
- ()
- ;; We're not allowed to attach to program mode functions without a ttag, so
- ;; make this logic mode.
- (logic)
- (defstub xdoc-verbose-p () t)
- (defun xdoc-verbose-fn ()
-   (declare (xargs :guard t))
-   t)
- (defun xdoc-quiet-fn ()
-   (declare (xargs :guard t))
-   nil)
- (defmacro xdoc-verbose ()
-   `(defattach xdoc-verbose-p xdoc-verbose-fn))
- (defmacro xdoc-quiet ()
-   `(defattach xdoc-verbose-p xdoc-quiet-fn))
- (xdoc-verbose))
 
 ; ----------------- World Lookup Stuff --------------------------
 
