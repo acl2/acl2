@@ -15,9 +15,9 @@
 # Then, we typically execute the following in /projects/acl2/devel/:
 #   bin/make-fancy-manual.sh
 # But optional arguments may be given:
-#   bin/make-fancy-manual.sh [booksdir] [destdir] [destfile]
-# Note: if executable file update.sh exists in destdir/destfile, then
-# it is executed with destfile as the argument.
+#   bin/make-fancy-manual.sh [booksdir] [destdirmain] [destdirsub]
+# Note: if executable file update.sh exists in destdirmain/destdirsub, then
+# it is executed in destdirmain with destdirsub as the argument.
 
 if [ $# -lt 1 ] ; then
     books=/projects/acl2/devel/books
@@ -26,30 +26,40 @@ else
 fi
 
 if [ $# -lt 2 ] ; then
-    destdir=/u/www/users/moore/acl2/manuals
+    destdirmain=/u/www/users/moore/acl2/manuals
 else
-    destdir=$2
+    destdirmain=$2
 fi
 
 if [ $# -lt 3 ] ; then
-    destfile=`/bin/date +%F`
+    destdirsub=`/bin/date +%F`
 else
-    destfile=$3
+    destdirsub=$3
 fi
 
-dest=${destdir}/$destfile
-if [ -d $dest ] ; then
-    echo "ERROR: Directory $dest already exists"
+destdir=${destdirmain}/$destdirsub
+if [ -d $destdir ] ; then
+    echo "ERROR: Directory $destdir already exists"
     exit 1
 fi
-echo "mkdir $dest"
-mkdir $dest
+echo "mkdir $destdir"
+mkdir $destdir
+
+if [ ! -d $books/centaur/manual ] ; then
+    echo "ERROR: Directory $books/centaur/manual/ does not exist."
+    exit 1
+fi
+
+if [ ! -f $books/system/doc/rendered-doc-combined.lsp ] ; then
+    echo "ERROR: File $books/system/doc/rendered-doc-combined.lsp does not exist."
+    exit 1
+fi
 
 # Copy from source to destination and move to destination/manual/.
-echo "cp -pr $books/centaur/manual $dest/manual"
-cp -pr $books/centaur/manual $dest/manual
-echo "cd $dest/manual"
-cd $dest/manual
+echo "cp -pr $books/centaur/manual $destdir/manual"
+cp -pr $books/centaur/manual $destdir/manual
+echo "cd $destdir/manual"
+cd $destdir/manual
 
 # Create file, fix its permission, and add link.
 echo "perl xdata2sql.pl"
@@ -64,16 +74,16 @@ mv config.js config.js.orig
 sed 's/^var XDATAGET = ""/var XDATAGET = "xdataget.cgi"/g' config.js.orig > config.js
 
 # Copy books/system/doc/rendered-doc-combined.lsp
-echo "cp -p $books/system/doc/rendered-doc-combined.lsp $dest/"
-cp -p $books/system/doc/rendered-doc-combined.lsp $dest/
+echo "cp -p $books/system/doc/rendered-doc-combined.lsp $destdir/"
+cp -p $books/system/doc/rendered-doc-combined.lsp $destdir/
 
 # Gzip books/system/doc/rendered-doc-combined.lsp
-echo "gzip $dest/rendered-doc-combined.lsp"
-gzip $dest/rendered-doc-combined.lsp
+echo "gzip $destdir/rendered-doc-combined.lsp"
+gzip $destdir/rendered-doc-combined.lsp
 
 # Run update script, if available
-cd $destdir
+cd $destdirmain
 if [ -x update.sh ] ; then \
-    echo "Running ./update.sh $destfile in directory $destdir"
-    ./update.sh $destfile
+    echo "Running ./update.sh $destdirsub in directory $destdirmain"
+    ./update.sh $destdirsub
 fi

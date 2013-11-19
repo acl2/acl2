@@ -21425,7 +21425,8 @@
 ; Improved an error message produced in cases that could be due to a missing
 ; stobj declaration or formal parameter.  Below is a test suite, where the
 ; first four forms come from Jared Davis, who suggested making such an
-; improvement.
+; improvement.  Thanks to Jared Davis for reporting a bug in our initial
+; implementation of this improvement.
 
 ;   (set-state-ok t)
 ;   (defun f (x state)

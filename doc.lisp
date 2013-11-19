@@ -35,18 +35,14 @@
 (in-package "ACL2")
 
 (defconst *acl2-system-documentation* '
-((&ALLOW-OTHER-KEYS (MISCELLANEOUS)
+((&ALLOW-OTHER-KEYS (POINTERS)
                     "See [macro-args].")
- (&BODY (MISCELLANEOUS)
-        "See [macro-args].")
- (&KEY (MISCELLANEOUS)
-       "See [macro-args].")
- (&OPTIONAL (MISCELLANEOUS)
+ (&BODY (POINTERS) "See [macro-args].")
+ (&KEY (POINTERS) "See [macro-args].")
+ (&OPTIONAL (POINTERS)
             "See [macro-args].")
- (&REST (MISCELLANEOUS)
-        "See [macro-args].")
- (&WHOLE (MISCELLANEOUS)
-         "See [macro-args].")
+ (&REST (POINTERS) "See [macro-args].")
+ (&WHOLE (POINTERS) "See [macro-args].")
  (*
   (ACL2-BUILT-INS)
   "Multiplication macro
@@ -352,7 +348,7 @@
   even though you may undo back past where you computed and saved
   them.")
  (A!
-  (MISCELLANEOUS)
+  (LD)
   "To return to the top-level of ACL2's command loop
 
   When (a!) is evaluated inside of ACL2's command loop, the current
@@ -371,7 +367,7 @@
   such a way that it causes a stack overflow or other resource
   exhaustion when called.")
  (ABORT!
-  (MISCELLANEOUS)
+  (LD)
   "To return to the top-level of ACL2's command loop
 
   This is an alias for a!; see [a!]. For a related feature that only
@@ -380,23 +376,39 @@
   (ACL2)
   "About ACL2
 
-  This is ACL2 Version 6.3, copyright (C) 2013, Regents of the
+  This is ACL2 Version 6.3, [copyright] (C) 2013, Regents of the
   University of Texas, authored by Matt Kaufmann and J Strother
   Moore.
 
-  For past versions, see
-  http://www.cs.utexas.edu/users/moore/acl2/current/other-releases.html.
-
-  For statistics on ACL2 code size, see file doc/acl2-code-size.txt.
+  See the ACL2 home page for additional information including
+  tutorials, installation instructions, mailing lists, related
+  publications, ACL2 workshops and seminars, acknowledgements, and
+  other ACL2 releases.
 
   See [documentation] for how to access the ACL2 User's Manual.
 
-  See the home page at http://www.cs.utexas.edu/users/moore/acl2/ for
-  additional information including tutorials, applications, mailing
-  lists, related publications, libraries, ACL2 workshops and
-  seminars, installation instructions, and acknowledgements.
+  For statistics on ACL2 code size, see file doc/acl2-code-size.txt.
 
-  See [copyright] for license and copyright information.")
+
+Subtopics
+
+  [Acknowledgments]
+      Some contributors to the well-being of ACL2
+
+  [ACL2-help]
+      The acl2-help mailing list
+
+  [Bibliography]
+      Reports about ACL2
+
+  [Common-lisp]
+      Relation to Common Lisp, including deviations from the spec
+
+  [Copyright]
+      ACL2 copyright, license, sponsorship
+
+  [Version]
+      ACL2 Version Number")
  (ABOUT_MODELS
   (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "About Models
@@ -610,7 +622,7 @@
 
   To see the ACL2 definition of this function, see [pf].")
  (ACCUMULATED-PERSISTENCE
-  (OTHER)
+  (DEBUGGING)
   "To get statistics on which [rune]s are being tried
 
     Useful Forms:
@@ -1137,7 +1149,7 @@ Subtopics
   above suggests that disabling this ``useless'' rule can allow the
   second application of R, thus preventing the proof.")
  (ACKNOWLEDGMENTS
-  (MISCELLANEOUS)
+  (ABOUT-ACL2)
   "Some contributors to the well-being of ACL2
 
   The development of ACL2 was initially made possible by funding from
@@ -1239,8 +1251,8 @@ Subtopics
   the books that arose from that workshop. Pete and his student,
   Daron Vroon, provided the current implementation of [ordinals].
 
-  Jared Davis and Sol Swords have our gratitude for starting the
-  acl2-books repository, http://acl2-books.googlecode.com/.
+  Jared Davis and Sol Swords have our gratitude for starting the ACL2
+  Books repository.
 
   We thank David L. Rager for contributing an initial version of the
   support for [parallelism] in an experimental extension of ACL2.
@@ -1309,10 +1321,11 @@ Subtopics
       Ordered binary decision diagrams with rewriting
 
   [Books]
-      Files of ACL2 event forms
+      Books are files of ACL2 [events]---they are the main way to split up
+      large ACL2 developments into separate modules.
 
-  [Break-rewrite]
-      The read-eval-print loop entered to [monitor] rewrite rules
+  [Debugging]
+      Tools for debugging failed or slow proofs, or misbehaving functions.
 
   [Documentation]
       ACL2 system (and books) documentation
@@ -1320,24 +1333,19 @@ Subtopics
   [Events]
       Functions that extend the logic
 
-  [Forward-chaining-reports]
-      To see reports about the forward chaining process
-
   [History]
       Functions that display or change history
 
   [Hons-and-memoization]
       Hash cons, function memoization, and applicative hash tables
 
-  [Introduction-to-the-tau-system]
-      A decision procedure for runtime types
+  [Interfacing-tools]
+      Libraries and tools for doing basic [file i/o], using raw [Common
+      Lisp libraries], working with the [operating system], and
+      interfacing with [other programs].
 
-  [Io]
-      Input/output facilities in ACL2
-
-  [Legacy-documentation]
-      Parent section for the legacy \"documentation\" topic (likely to be
-      deleted soon)
+  [Macros]
+      Macros allow you to extend the syntax of ACL2.
 
   [Miscellaneous]
       A miscellany of documented functions and concepts (often cited in
@@ -1349,17 +1357,18 @@ Subtopics
   [Parallelism]
       Experimental extension for parallel execution and proofs
 
+  [Pointers]
+      Links pointing to relevant documentation topics
+
   [Programming]
       Programming in ACL2
 
+  [Proof-automation]
+      Tools, utilities, and strategies for dealing with particular kinds
+      of proofs.
+
   [Proof-checker]
-      Support for low-level interaction
-
-  [Proof-tree]
-      Proof tree displays
-
-  [Pages_Written_Especially_for_the_Tours]
-      Pages Written Especially for the Tours
+      An interactive tool for controlling ACL2's proof processes.
 
   [Real]
       ACL2(r) support for real numbers
@@ -1370,20 +1379,11 @@ Subtopics
   [Rule-classes]
       Adding rules to the database
 
-  [Serialize]
-      Routines for saving ACL2 objects to files, and later restoring them
-
-  [Stobj]
-      Single-threaded objects or ``von Neumann bottlenecks''
-
   [Switches-parameters-and-modes]
       A variety of ways to modify the ACL2 environment
 
   [Theories]
-      Sets of [rune]s to [enable]/[disable] in concert
-
-  [Trace]
-      Tracing functions in ACL2")
+      Sets of [rune]s to [enable]/[disable] in concert")
  (ACL2-AS-STANDALONE-PROGRAM
   (ACL2-TUTORIAL)
   "Calling ACL2 from another program
@@ -1554,15 +1554,6 @@ Subtopics
   [Add-to-set]
       Add a symbol to a list
 
-  [Add-to-set-eq]
-      See [add-to-set].
-
-  [Add-to-set-eql]
-      See [add-to-set].
-
-  [Add-to-set-equal]
-      See [add-to-set].
-
   [Alistp]
       Recognizer for association lists
 
@@ -1581,6 +1572,24 @@ Subtopics
   [Append]
       [concatenate] zero or more lists
 
+  [Aref1]
+      Access the elements of a 1-dimensional array
+
+  [Aref2]
+      Access the elements of a 2-dimensional array
+
+  [Array1p]
+      Recognize a 1-dimensional array
+
+  [Array2p]
+      Recognize a 2-dimensional array
+
+  [Aset1]
+      Set the elements of a 1-dimensional array
+
+  [Aset2]
+      Set the elements of a 2-dimensional array
+
   [Ash]
       Arithmetic shift operation
 
@@ -1592,12 +1601,6 @@ Subtopics
 
   [Assoc]
       Look up key in association list
-
-  [Assoc-eq]
-      See [assoc].
-
-  [Assoc-equal]
-      See [assoc].
 
   [Assoc-keyword]
       Look up key in a [keyword-value-listp]
@@ -1779,12 +1782,6 @@ Subtopics
   [Check-sum]
       Assigning ``often unique'' integers to files and objects
 
-  [Close-input-channel]
-      See [io].
-
-  [Close-output-channel]
-      See [io].
-
   [Code-char]
       The character corresponding to a given numeric code
 
@@ -1799,6 +1796,12 @@ Subtopics
 
   [Complex/complex-rationalp]
       Recognizer for complex numbers
+
+  [Compress1]
+      Remove irrelevant pairs from a 1-dimensional array
+
+  [Compress2]
+      Remove irrelevant pairs from a 2-dimensional array
 
   [Concatenate]
       Concatenate lists or strings together
@@ -1827,14 +1830,11 @@ Subtopics
   [Cw!]
       Print to the comment window
 
+  [Default]
+      Return the :default from the [header] of a 1- or 2-dimensional array
+
   [Delete-assoc]
       Remove the first pair from an association list for a given key
-
-  [Delete-assoc-eq]
-      See [delete-assoc].
-
-  [Delete-assoc-equal]
-      See [delete-assoc].
 
   [Denominator]
       Divisor of a ratio in lowest terms
@@ -1844,6 +1844,10 @@ Subtopics
 
   [Digit-to-char]
       Map a digit to a character
+
+  [Dimensions]
+      Return the :dimensions from the [header] of a 1- or 2-dimensional
+      array
 
   [E0-ord-<]
       The old ordering function for ACL2 ordinals
@@ -1921,17 +1925,14 @@ Subtopics
   [Floor]
       Division returning an integer by truncating toward negative infinity
 
+  [Flush-compress]
+      Flush the under-the-hood array for the given name
+
   [Fms]
       :(str alist co-channel state evisc) => state
 
   [Fms!]
       :(str alist co-channel state evisc) => state
-
-  [Fms!-to-string]
-      See [printing-to-strings].
-
-  [Fms-to-string]
-      See [printing-to-strings].
 
   [Fmt]
       Formatted printing
@@ -1939,14 +1940,8 @@ Subtopics
   [Fmt!]
       :(str alist co-channel state evisc) => state
 
-  [Fmt!-to-string]
-      See [printing-to-strings].
-
   [Fmt-to-comment-window]
       Print to the comment window
-
-  [Fmt-to-string]
-      See [printing-to-strings].
 
   [Fmt1]
       :(str alist col co-channel state evisc) => (mv col state)
@@ -1954,17 +1949,8 @@ Subtopics
   [Fmt1!]
       :(str alist col channel state evisc) => (mv col state)
 
-  [Fmt1!-to-string]
-      See [printing-to-strings].
-
-  [Fmt1-to-string]
-      See [printing-to-strings].
-
   [Fourth]
       Fourth member of the list
-
-  [Get-output-stream-string$]
-      See [io].
 
   [Getenv$]
       Read an environment variable
@@ -1977,6 +1963,9 @@ Subtopics
 
   [Hard-error]
       Print an error message and stop execution
+
+  [Header]
+      Return the header of a 1- or 2-dimensional array
 
   [Identity]
       The identity function
@@ -2026,20 +2015,11 @@ Subtopics
   [Intersection$]
       Elements of one list that are not elements of another
 
-  [Intersection-eq]
-      See [intersection$].
-
-  [Intersection-equal]
-      See [intersection$].
-
   [Intersectp]
       Test whether two lists intersect
 
-  [Intersectp-eq]
-      See [intersectp].
-
-  [Intersectp-equal]
-      See [intersectp].
+  [Io]
+      Input/output facilities in ACL2
 
   [Keyword-value-listp]
       Recognizer for true lists whose even-position elements are keywords
@@ -2137,6 +2117,9 @@ Subtopics
   [Max]
       The larger of two numbers
 
+  [Maximum-length]
+      Return the :maximum-length from the [header] of an array
+
   [Mbe]
       Attach code for execution
 
@@ -2148,12 +2131,6 @@ Subtopics
 
   [Member]
       Membership predicate
-
-  [Member-eq]
-      See [member].
-
-  [Member-equal]
-      See [member].
 
   [Min]
       The smaller of two numbers
@@ -2205,12 +2182,6 @@ Subtopics
 
   [No-duplicatesp]
       Check for duplicates in a list
-
-  [No-duplicatesp-eq]
-      See [no-duplicatesp].
-
-  [No-duplicatesp-equal]
-      See [no-duplicatesp].
 
   [Non-exec]
       Mark code as non-executable
@@ -2266,23 +2237,8 @@ Subtopics
   [Observation]
       Print an observation
 
-  [Observation-cw]
-      See [observation].
-
   [Oddp]
       Test whether an integer is odd
-
-  [Open-input-channel]
-      See [io].
-
-  [Open-input-channel-p]
-      See [io].
-
-  [Open-output-channel]
-      See [io].
-
-  [Open-output-channel-p]
-      See [io].
 
   [Or]
       Disjunction
@@ -2303,9 +2259,6 @@ Subtopics
   [Pairlis$]
       Zipper together two lists
 
-  [Peek-char$]
-      See [io].
-
   [Pkg-imports]
       List of symbols imported into a given package
 
@@ -2318,12 +2271,6 @@ Subtopics
   [Position]
       Position of an item in a string or a list
 
-  [Position-eq]
-      See [position].
-
-  [Position-equal]
-      See [position].
-
   [Posp]
       A recognizer for the positive integers
 
@@ -2333,8 +2280,8 @@ Subtopics
   [Princ$]
       Print an atom
 
-  [Print-object$]
-      See [io].
+  [Printing-to-strings]
+      Printing to strings instead of files or standard output
 
   [Prog2$]
       Execute two forms and return the value of the second one
@@ -2353,15 +2300,6 @@ Subtopics
 
   [Put-assoc]
       Modify an association list by associating a value with a key
-
-  [Put-assoc-eq]
-      See [put-assoc].
-
-  [Put-assoc-eql]
-      See [put-assoc].
-
-  [Put-assoc-equal]
-      See [put-assoc].
 
   [Putprop]
       Update fast property lists
@@ -2382,26 +2320,11 @@ Subtopics
   [Rassoc]
       Look up value in association list
 
-  [Rassoc-eq]
-      See [rassoc].
-
-  [Rassoc-equal]
-      See [rassoc].
-
   [Rational-listp]
       Recognizer for a true list of rational numbers
 
   [Rationalp]
       Recognizer for rational numbers (ratios and integers)
-
-  [Read-byte$]
-      See [io].
-
-  [Read-char$]
-      See [io].
-
-  [Read-object]
-      See [io].
 
   [Read-run-time]
       Read elapsed runtime
@@ -2424,26 +2347,8 @@ Subtopics
   [Remove-duplicates]
       Remove duplicates from a string or a list
 
-  [Remove-duplicates-eq]
-      See [remove-duplicates].
-
-  [Remove-duplicates-equal]
-      See [remove-duplicates].
-
-  [Remove-eq]
-      See [remove].
-
-  [Remove-equal]
-      See [remove].
-
   [Remove1]
       Remove first occurrences, testing using [eql]
-
-  [Remove1-eq]
-      See [remove1].
-
-  [Remove1-equal]
-      See [remove1].
 
   [Rest]
       Rest ([cdr]) of the list
@@ -2471,12 +2376,6 @@ Subtopics
 
   [Set-difference$]
       Elements of one list that are not elements of another
-
-  [Set-difference-eq]
-      See [set-difference$].
-
-  [Set-difference-equal]
-      See [set-difference$].
 
   [Setenv$]
       Set an environment variable
@@ -2559,12 +2458,6 @@ Subtopics
   [Subsetp]
       Test if every [member] of one list is a [member] of the other
 
-  [Subsetp-eq]
-      See [subsetp].
-
-  [Subsetp-equal]
-      See [subsetp].
-
   [Subst]
       A single substitution into a tree
 
@@ -2634,17 +2527,8 @@ Subtopics
   [Union$]
       Elements of one list that are not elements of another
 
-  [Union-eq]
-      See [union$].
-
-  [Union-equal]
-      See [union$].
-
   [Unsigned-byte-p]
       Recognizer for natural numbers that fit in a specified bit width
-
-  [Untranslate]
-      See [user-defined-functions-table].
 
   [Update-nth]
       Modify a list by putting the given value at the given position
@@ -2654,9 +2538,6 @@ Subtopics
 
   [With-live-state]
       Allow a reference to state in raw Lisp
-
-  [Write-byte$]
-      See [io].
 
   [Xor]
       Logical ``exclusive or''
@@ -3290,12 +3171,11 @@ Subtopics
       User's Manual, which omits documentation for the books. Both of
       these manuals are based on files that you will have if you are
       using a released version of ACL2 (after Version 6.3). But if
-      you are using an svn version (see
-      http://acl2-devel.googlecode.com), then in order to use the
-      acl2+books combined manual you will need an extra file. You can
-      build this file yourself, as described below but you may prefer
-      to download it when queried by Emacs: when you start ACL2-Doc,
-      you will be given the option of downloading it from
+      you are using an svn version, then to use the acl2+books
+      combined manual you will need an extra file. You can build this
+      file yourself, as described below but you may prefer to
+      download it when queried by Emacs: when you start ACL2-Doc, you
+      will be given the option of downloading it from
       http://www.cs.utexas.edu/users/moore/acl2/manuals/current/rendered-doc-combined.lsp.gz
       and extracting into directory system/doc/ of your community
       books directory. Indeed, the system will do all this for you if
@@ -3333,7 +3213,7 @@ Subtopics
               cd books
               make ACL2_BOOK_CERTS=system/doc/render-doc-combined.cert ACL2=acl2h")
  (ACL2-HELP
-  (OTHER)
+  (ABOUT-ACL2)
   "The acl2-help mailing list
 
   You can email questions about ACL2 usage to the acl2-help mailing
@@ -3362,18 +3242,15 @@ Subtopics
   Many successful ACL2 users run in an shell under Emacs; see [emacs].
   However, those not familiar with Emacs may prefer to start with an
   Eclipse-based interface initiallly developed by Peter Dillinger and
-  Pete Manolios called the ``ACL2 Sedan'', or ``ACL2s''. As of this
-  writing, the home page for ACL2s is
-  http://acl2s.ccs.neu.edu/acl2s/doc/.
+  Pete Manolios called the ACL2 Sedan or ``ACL2s''.
 
   ACL2 sessions in the ACL2 Sedan can utilize non-standard extensions
   and enhancements, especially geared toward new users, termination
   reasoning, and attaching rich user interfaces. These extensions are
-  generally available as certifiable ACL2 books, and can be
-  downloaded from http://acl2s.ccs.neu.edu/acl2s/src/acl2-extensions.
-  (Some code originating from this project has been migrated to the
-  ACL2 community books, but only after it was quite stable.) Thanks
-  to Peter Dillinger, Pete Manolios, Daron Vroon, and Harsh Raju
+  generally available as certifiable ACL2 books. (Some code
+  originating from this project has been migrated to the ACL2
+  community books, but only after it was quite stable.) Thanks to
+  Peter Dillinger, Pete Manolios, Daron Vroon, and Harsh Raju
   Chamarthi for their work on the ACL2 Sedan and for making their
   books available to ACL2 users.")
  (ACL2-TUTORIAL
@@ -3382,50 +3259,38 @@ Subtopics
 
   To learn about ACL2, read at least the following two links.
 
-      * [Industrial Applications of ACL2] (10 minutes) to help you
-      understand what sophisticated users can do;
-
-      * [A Flying Tour] (10 minutes) to get an overview of the system and
+    * [Industrial Applications of ACL2] (10 minutes) to help you understand
+      what sophisticated users can do;
+    * [A Flying Tour] (10 minutes) to get an overview of the system and
       what skills the user must have.
 
   If you want to learn how to use ACL2, we recommend that you read a
   selection of the materials referenced below, depending on your
   learning style, and do suggested exercises.
 
-      * ``[A Walking Tour]'' (1 hour) provides an overview of the theorem
-      prover.
-
-      * The external site http://tryacl2.org provides interactive lessons
-      to get you started using ACL2.
-
-      * ``[Introduction to the Theorem Prover]'' (10-40 hours) provides
+    * [A Walking Tour] (1 hour) provides an overview of the theorem prover.
+    * The Try ACL2 web site provides interactive lessons to get you started
+      using ACL2.
+    * [Introduction to the Theorem Prover] (10-40 hours) provides
       instruction on how to interact with the system. Unlike the
       three documents above, this document expects you to think! It
       cites the necessary background pages on programming in ACL2 and
-      on the logic and then instructs you in The Method, which is how
-      expert users use ACL2. It concludes with some challenge
+      on the logic and then instructs you in [the-method], which is
+      how expert users use ACL2. It concludes with some challenge
       problems for the ACL2 beginner (including solutions) and an
       FAQ. Most users will spend several hours a day for several days
       working through this material.
-
-      * The book ''Computer-Aided Reasoning: An Approach'' (see
-      http://www.cs.utexas.edu/users/moore/publications/acl2-books/car/index.html
-      is worth a careful read, as you work exercises and learn ``The
-      Method.''
-
-      * ``[Annotated ACL2 Scripts and Demos]'' contains relatively
-      elementary proof scripts that have been annotated to help train
-      the newcomer.
-
-      * Many files (``books'') in the ACL2 community books (see
-      [community-books]) are extensively annotated. See the link to
-      ``Lemma Libraries and Utilities'' on the ACL2 home page
-      (http://www.cs.utexas.edu/users/moore/acl2).
-
-      * An ``[Alternative Introduction]'' document, while largely subsumed
-      by the topic ``[Introduction to the Theorem Prover]'' mentioned
-      above, still might be useful because it covers much of the
-      tutorial material in a different way.
+    * The book Computer-Aided Reasoning: An Approach is worth a careful
+      read, as you work exercises and learn [the-method].
+    * [Annotated ACL2 Scripts and Demos] contains relatively elementary
+      proof scripts that have been annotated to help train the
+      newcomer.
+    * Many files (``books'') in the ACL2 community books (see
+      [community-books]) are extensively annotated.
+    * An [Alternative Introduction] document, while largely subsumed by the
+      [Introduction to the Theorem Prover] mentioned above, still
+      might be useful because it covers much of the tutorial material
+      in a different way.
 
   At this point you are probably ready to use ACL2 on your own small
   projects. A common mistake for beginners is to browse the
@@ -3433,8 +3298,7 @@ Subtopics
   of a very small project and then simplify it!
 
   Note that ACL2 has a very supportive user network. See the link to
-  ``Mailing Lists'' on the ACL2 home page
-  (http://www.cs.utexas.edu/users/moore/acl2).
+  ``Mailing Lists'' on the ACL2 home page.
 
   The topics listed below are a hodge podge, developed over time.
   Although some of these are not mentioned above, you might find some
@@ -3467,8 +3331,17 @@ Subtopics
   [Introduction-to-the-theorem-prover]
       How the theorem prover works -- level 0
 
+  [Nqthm-to-ACL2]
+      ACL2 analogues of Nqthm functions and commands
+
+  [Pages_Written_Especially_for_the_Tours]
+      Pages Written Especially for the Tours
+
   [Startup]
       How to start using ACL2; the ACL2 [command] loop
+
+  [The-method]
+      How to find proofs
 
   [Tidbits]
       Some basic hints for using ACL2
@@ -3554,8 +3427,7 @@ Subtopics
   [Set-waterfall-printing]
       For ACL2(p): configuring the printing that occurs within the
       parallelized waterfall")
- (ACL2S (MISCELLANEOUS)
-        "See [ACL2-sedan].")
+ (ACL2S (POINTERS) "See [ACL2-sedan].")
  (ACL2_AS_AN_INTERACTIVE_THEOREM_PROVER
   (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "ACL2 as an Interactive Theorem Prover
@@ -4059,12 +3931,12 @@ Subtopics
   For more information see [invisible-fns-table]. Also see
   [set-invisible-fns-table], which explains how to set the entire
   table in a single event, and see [remove-invisible-fns].")
- (ADD-LD-KEYWORD-ALIAS (SWITCHES-PARAMETERS-AND-MODES)
+ (ADD-LD-KEYWORD-ALIAS (POINTERS)
                        "See [ld-keyword-aliases].")
- (ADD-LD-KEYWORD-ALIAS! (SWITCHES-PARAMETERS-AND-MODES)
+ (ADD-LD-KEYWORD-ALIAS! (POINTERS)
                         "See [ld-keyword-aliases].")
  (ADD-MACRO-ALIAS
-  (SWITCHES-PARAMETERS-AND-MODES)
+  (MACROS SWITCHES-PARAMETERS-AND-MODES)
   "Associate a function name with a macro name
 
     Example:
@@ -4083,7 +3955,7 @@ Subtopics
   This is a convenient way to add an entry to [macro-aliases-table].
   See [macro-aliases-table] and also see [remove-macro-alias].")
  (ADD-MACRO-FN
-  (SWITCHES-PARAMETERS-AND-MODES)
+  (MACROS SWITCHES-PARAMETERS-AND-MODES)
   "Associate a function name with a macro name
 
     Examples:
@@ -4324,11 +4196,11 @@ Subtopics
 
   In particular, reasoning about any of these primitives reduces to
   reasoning about the function add-to-set-equal.")
- (ADD-TO-SET-EQ (ACL2-BUILT-INS)
+ (ADD-TO-SET-EQ (POINTERS)
                 "See [add-to-set].")
- (ADD-TO-SET-EQL (ACL2-BUILT-INS)
+ (ADD-TO-SET-EQL (POINTERS)
                  "See [add-to-set].")
- (ADD-TO-SET-EQUAL (ACL2-BUILT-INS)
+ (ADD-TO-SET-EQUAL (POINTERS)
                    "See [add-to-set].")
  (ADVANCED-FEATURES
   (ACL2-TUTORIAL)
@@ -4670,8 +4542,7 @@ Subtopics
       hints interact with the ACL2 proof process. For other topics
       related to hints, see [override-hints], see
       [add-custom-keyword-hint], see [default-hints], and see
-      [computed-hints] (also see [using-computed-hints] and for other
-      topics USING-COMPUTED-HINTS-xxx see [miscellaneous].
+      [computed-hints] and [using-computed-hints].
 
       o See [bind-free] to bind [free-variables] of a [rewrite] or [linear]
       rule.
@@ -5434,37 +5305,28 @@ Subtopics
     [Tutorial4-Defun-Sk-Example]
     [Tutorial5-Miscellaneous-Examples]
 
-  The page
-  http://www.cs.utexas.edu/users/moore/publications/tutorial/rev3.html
-  contains a script that illustrates how it feels to use The Method
-  to prove an unusual list reverse function correct. The screen shots
-  of ACL2's proof output are outdated -- in the version shown, ACL2
-  does not print Key Checkpoints, but the concept of key checkpoint
-  is clear in the discussion and the behavior of the user.
+  The web page Brief ACL2 Tutorial contains a script that illustrates
+  how it feels to use The Method to prove an unusual list reverse
+  function correct. The screen shots of ACL2's proof output are
+  outdated -- in the version shown, ACL2 does not print Key
+  Checkpoints, but the concept of key checkpoint is clear in the
+  discussion and the behavior of the user.
 
-  See
-  http://www.cs.utexas.edu/users/moore/acl2/contrib/POLISHING-PROOFS-TUTORIAL.html
-  for a tutorial on becoming successful at approaching a
-  formalization and proof problem in ACL2. That tutorial, written by
-  Shilpi Goel and Sandip Ray, has two parts: it illustrates how to
-  guide the theorem prover to a successful proof, and it shows how to
-  clean up the proof in order to facilitate maintenance and extension
-  of the resulting book (see [books]).
+  See Polishing Proofs Tutorial for a tutorial on becoming successful
+  at approaching a formalization and proof problem in ACL2. That
+  tutorial, written by Shilpi Goel and Sandip Ray, has two parts: it
+  illustrates how to guide the theorem prover to a successful proof,
+  and it shows how to clean up the proof in order to facilitate
+  maintenance and extension of the resulting book (see [books]).
 
-  At
-  http://www.cs.utexas.edu/users/moore/publications/tutorial/kaufmann-TPHOLs08/index.html
-  is the demo given by Matt Kaufmann at TPHOLs08, including all the
-  scripts. There is a gzipped tar file containing the entire contents
-  of the demos.
+  The ACL2 Demo Given at TPHOLs 2008 by Matt Kaufmann includes scripts
+  and a gzipped tar file containing the entire contents of the demos.
 
-  At
-  http://www.cs.utexas.edu/users/moore/publications/tutorial/sort-equivalence
-  is a collection of scripts illustrating both high-level strategy
-  and lower-level tactics dealing with the functional equivalence of
-  various list sorting algorithms. Start with the README on that
-  directory. There is also a gzipped tar file containing all the
-  scripts, at
-  http://www.cs.utexas.edu/users/moore/publications/tutorial/sort-equivalence.tgz.
+  The sort equivalence demo is a collection of scripts illustrating
+  both high-level strategy and lower-level tactics dealing with the
+  functional equivalence of various list sorting algorithms. Start
+  with the README on that directory. There is also a gzipped tar file
+  with all of these scripts.
 
   When you feel you have read enough examples, you might want to try
   the following very simple example on your own. (See
@@ -5597,7 +5459,7 @@ Subtopics
 
   Append is a Common Lisp function. See any Common Lisp documentation
   for more information.")
- (APROPOS (MISCELLANEOUS)
+ (APROPOS (POINTERS)
           "See [finding-documentation].")
  (ARCHITECTURE-OF-THE-PROVER
   (INTRODUCTION-TO-THE-THEOREM-PROVER)
@@ -5678,7 +5540,7 @@ Subtopics
   The output of an unsuccessful proof attempt concludes with some key
   checkpoints which usually bear looking at.")
  (AREF1
-  (ARRAYS)
+  (ARRAYS ACL2-BUILT-INS)
   "Access the elements of a 1-dimensional array
 
     Example Form:
@@ -5698,7 +5560,7 @@ Subtopics
   the correct answer is returned but a slow array comment is printed
   to the comment window. See [slow-array-warning].")
  (AREF2
-  (ARRAYS)
+  (ARRAYS ACL2-BUILT-INS)
   "Access the elements of a 2-dimensional array
 
     Example Form:
@@ -5730,7 +5592,7 @@ Subtopics
   [constraint] (if any), and whether [documentation] about the symbol
   is available via :[doc].")
  (ARRAY1P
-  (ARRAYS)
+  (ARRAYS ACL2-BUILT-INS)
   "Recognize a 1-dimensional array
 
     Example Form:
@@ -5744,7 +5606,7 @@ Subtopics
   The function operates in constant time if alist is the semantic
   value of name. See [arrays].")
  (ARRAY2P
-  (ARRAYS)
+  (ARRAYS ACL2-BUILT-INS)
   "Recognize a 2-dimensional array
 
     Example Form:
@@ -6283,7 +6145,7 @@ Subtopics
     XXX
     ACL2 !>")
  (ASET1
-  (ARRAYS)
+  (ARRAYS ACL2-BUILT-INS)
   "Set the elements of a 1-dimensional array
 
     Example Form:
@@ -6316,7 +6178,7 @@ Subtopics
   if the condition is not true, aset1 prints a slow array warning to
   the comment window. See [slow-array-warning].")
  (ASET2
-  (ARRAYS)
+  (ARRAYS ACL2-BUILT-INS)
   "Set the elements of a 2-dimensional array
 
     Example Form:
@@ -6479,10 +6341,8 @@ Subtopics
 
   Assoc is defined by Common Lisp. See any Common Lisp documentation
   for more information.")
- (ASSOC-EQ (ACL2-BUILT-INS)
-           "See [assoc].")
- (ASSOC-EQUAL (ACL2-BUILT-INS)
-              "See [assoc].")
+ (ASSOC-EQ (POINTERS) "See [assoc].")
+ (ASSOC-EQUAL (POINTERS) "See [assoc].")
  (ASSOC-KEYWORD
   (ACL2-BUILT-INS)
   "Look up key in a [keyword-value-listp]
@@ -6658,7 +6518,7 @@ Subtopics
 
   []")
  (BACKCHAIN-LIMIT
-  (MISCELLANEOUS)
+  (REWRITE META LINEAR TYPE-PRESCRIPTION)
   "Limiting the effort expended on relieving hypotheses
 
   Before ACL2 can apply a rule with hypotheses, it must establish that
@@ -6800,14 +6660,10 @@ Subtopics
 
     (backchain-limit wrld :ts) ; backchain limit for type-set reasoning
     (backchain-limit wrld :rewrite) ; backchain limit for rewriting")
- (BACKCHAIN-LIMIT-RW (MISCELLANEOUS)
-                     "Hints keyword :BACKCHAIN-LIMIT-RW
-
-  See [hints].")
- (BACKTRACK (MISCELLANEOUS)
-            "Hints keyword :BACKTRACK
-
-  See [hints].")
+ (BACKCHAIN-LIMIT-RW (POINTERS)
+                     "See [hints] for keyword :guard-hints.")
+ (BACKTRACK (POINTERS)
+            "See [hints] for keyword :guard-hints.")
  (BDD
   (ACL2)
   "Ordered binary decision diagrams with rewriting
@@ -6852,6 +6708,9 @@ Subtopics
 
   [If*]
       For conditional rewriting with BDDs
+
+  [Obdd]
+      Ordered binary decision diagrams with rewriting
 
   [Show-bdd]
       Inspect failed BDD proof attempts")
@@ -7568,11 +7427,10 @@ Subtopics
 
   See [if*] for another example.")
  (BIBLIOGRAPHY
-  (MISCELLANEOUS)
+  (ABOUT-ACL2)
   "Reports about ACL2
 
-  For a list of notes and reports about ACL2, see
-  http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html.")
+  The ACL2 home page includes a list of notes and reports about ACL2.")
  (BINARY-*
   (ACL2-BUILT-INS)
   "Multiplication function
@@ -8432,7 +8290,7 @@ Subtopics
   continue the ``guided tour'' through the rest of the
   [documentation] of [books]. See [book-name], following the pointer
   given at the conclusion.")
- (BOOK-MAKEFILES (BOOKS)
+ (BOOK-MAKEFILES (POINTERS)
                  "See [books-certification].")
  (BOOK-NAME
   (BOOKS)
@@ -8520,7 +8378,8 @@ Subtopics
   See [book-contents] to continue the guided tour.")
  (BOOKDATA
   (BOOKS)
-  "Generating data about books
+  "An optional tool for writing out small files with meta-data about the
+  books that are being certified.
 
   ACL2 provides a primitive capability for writing out a file of data
   associated with a book. This information might be useful, for
@@ -8607,77 +8466,72 @@ Subtopics
       name \"MYPKG-PACKAGE\" if the package name is \"MYPKG\"
 
   Our hope is that people in the ACL2 community will generate and use
-  this data to improve the ACL2 community books (see
-  [community-books]). Here is an example illustrating how to generate
-  bookdata files for those books as a byproduct of a regression run.
-  Below, we write {DIR} as an abbreviation for the ACL2 sources
-  directory, and assume that this command is run from that directory.
-  Of course, you may wish to use make options like -j 8 and make
-  variable settings like ACL2={DIR}/my-saved_acl2; see
-  [books-certification] for details.
+  this data to improve the ACL2 [community-books]. Here is an example
+  illustrating how to generate bookdata files for those books as a
+  byproduct of a regression run. Below, we write {DIR} as an
+  abbreviation for the ACL2 sources directory, and assume that this
+  command is run from that directory. Of course, you may wish to use
+  make options like -j 8 and make variable settings like
+  ACL2={DIR}/my-saved_acl2; see [books-certification] for details.
 
     make regression-fresh \\
     ACL2_CUSTOMIZATION={DIR}/acl2-customization-files/bookdata.lisp")
  (BOOKS
   (ACL2 NOTE1)
-  "Files of ACL2 event forms
+  "Books are files of ACL2 [events]---they are the main way to split up
+  large ACL2 developments into separate modules.
 
-  This [documentation] topic is about ACL2 input files. However, there
-  are two traditional (paper) books published about ACL2: a textbook
-  and a case studies book. Further information on those two paper
-  books is available by following links from the ACL2 home page,
-  http://www.cs.utexas.edu/users/moore/acl2/.
+  This [documentation] topic is about ACL2 source code files. However,
+  there are also traditional, paper books published about ACL2 and
+  its applications.
 
-  A ``book'' is a file of ACL2 [events] that have been certified as
-  admissible. Using [include-book] you can construct a new logical
-  [world] by assuming the [events] in any number of mutually
-  compatible books. Relevant documented topics are listed below.
-  Following this list is a ``guided tour'' through the topics.
+  You will almost surely want to organize your own ACL2 work into
+  books. They facilitate reuse, allow you to reload proofs more
+  quickly, allow you to rebuild parts of your proof in parallel, and
+  so forth. You will also want to be aware of the many community
+  books, which provide useful tools and lemmas to build upon. See
+  [community-books] for more information, including how to
+  contribute.
 
-  You can contribute books to the ACL2 community and obtain updates
-  inbetween ACL2 releases by visiting the acl2-books project web
-  page, http://acl2-books.googlecode.com/. Also see
-  [community-books].
 
-  Introduction.
+Introduction
 
-  A ``book'' is a file of ACL2 forms. Books are prepared entirely by
-  the user of the system, i.e., they are ``source'' files not
-  ``object'' files. Some of the forms in a book are marked [local]
-  and the others are considered ``non-local.''
+  A book is a file of ACL2 forms. Books are prepared entirely by the
+  user of the system, i.e., they are source files not object files.
+  Some of the forms in a book are marked [local] and the others are
+  considered ``non-local.''
 
-  [Include-book] lets you load a book into any ACL2 [world]. If
-  completed without error, the inclusion of a book extends the logic
-  of the host [world] by the addition of just the non-local [events]
-  in the book. You may extend the [world] by successively including a
-  variety of books to obtain the desired collection of definitions
-  and rules. Unless name conflicts occur (which are detected and
-  signalled) inclusion of a book is consistency preserving provided
-  the book itself is consistent as discussed later. However,
-  [include-book] merely assumes the validity of the [events] in a
-  book; if you include a book that contains an inconsistency (e.g.,
-  an inadmissible definition) then the resulting theory is
-  inconsistent.
+  [Include-book] lets you load a book into any ACL2 [world]. A
+  successful include-book extends the logic of the host [world] by
+  adding just the non-local [events] in the book. Ordinarily, you
+  might include a variety of books to load all of their definitions
+  and rules.
 
-  It is possible to ``certify'' a book, with [certify-book],
-  guaranteeing that the error-free inclusion of the certified forms
-  will produce a consistent extension of a consistent logic.
-  Certification processes both the [local] and non-local forms, so
-  you can mark as [local] those [events] you need for certification
-  that you want to hide from users of the book (e.g., hacks, crocks,
-  and kludges on the way to a good set of :[rewrite] rules).
-  Certification can also ``compile'' a book, thereby speeding up the
-  execution of the functions defined within it. The desire to compile
-  books is largely responsible for the restrictions we put on the
-  forms allowed in books.
+  Successful book inclusion is consistency preserving, provided that
+  the book itself is consistent, as discussed later. However,
+  [include-book] assumes the [events] in a book are valid, so if you
+  include a book that contains an inconsistency (e.g., an
+  inadmissible definition) then the resulting theory is inconsistent!
+
+  [Certify-book] lets you certify a book to guarantee that its
+  successful inclusion is consistency preserving. During
+  certification, both the [local] and non-local forms are processed.
+  This lets you mark as [local] any [events] you need for
+  certification, but that you want to hide from users of the
+  book---e.g., the hacks, crocks, and kludges on the way to a good
+  set of [rewrite] rules.
+
+  Certification can also [compile] a book to speed up the execution of
+  the functions defined within it. The desire to compile books is
+  largely responsible for the restrictions we put on the forms
+  allowed in books.
 
   Extensive [documentation] is available on the various aspects of
   books. We recommend that you read it all before using books. It has
   been written so as to make sense when read in a certain linear
   sequence, called the ``guided tour'', though in general you may
   browse through it randomly. If you are on the guided tour, you
-  should next read the [documentation] on book-example (see
-  [book-example]).
+  should next read [book-example].
 
 
 Subtopics
@@ -8691,14 +8545,12 @@ Subtopics
   [Book-example]
       How to create, certify, and use a simple book
 
-  [Book-makefiles]
-      See [books-certification].
-
   [Book-name]
       Conventions associated with book names
 
   [Bookdata]
-      Generating data about books
+      An optional tool for writing out small files with meta-data about
+      the books that are being certified.
 
   [Books-certification]
       Certifying ACL2 community [books]
@@ -8715,11 +8567,8 @@ Subtopics
   [Certify-book]
       How to produce a [certificate] for a book
 
-  [Certifying-books]
-      See [books-certification].
-
   [Community-books]
-      [books] contributed by the ACL2 community
+      Libraries of ACL2 [books] developed by the ACL2 community.
 
   [Full-book-name]
       Book naming conventions assumed by ACL2
@@ -8738,9 +8587,6 @@ Subtopics
 
   [Provisional-certification]
       Certify a book in stages for improved parallelism
-
-  [Regression]
-      See [books-certification].
 
   [Set-cbd]
       To set the connected book directory
@@ -8761,13 +8607,10 @@ Subtopics
   manual for those who may wish to do that).
 
   For more information about installing ACL2, see the installation
-  instructions, either by following a link from the ACL2 home page or
-  by going directly to the page
-  http://www.cs.utexas.edu/users/moore/acl2/current/installation/installation.html.
-  For information about so-called ``classic ACL2 `make'-based
-  certification'', which provides support for certifying directories
-  of books but may disappear in a future ACL2 release, see
-  [books-certification-classic].
+  instructions. For information about so-called ``classic ACL2
+  `make'-based certification'', which provides support for certifying
+  directories of books but may disappear in a future ACL2 release,
+  see [books-certification-classic].
 
   The Basics
 
@@ -9273,11 +9116,15 @@ Subtopics
   When integers x and y are viewed in their two's complement
   representation, (boole$ op x y) returns the result of applying the
   bit-wise logical operation specified by op. The following table is
-  adapted from documentation for analogous Common Lisp function boole
-  in the Common Lisp HyperSpec
-  (http://www.lisp.org/HyperSpec/Body/fun_boole.html#boole). Note
-  that the values of op for boole$ are ACL2 constants, rather than
-  corresponding values of op for the Common Lisp function boole.
+  adapted from documentation for the analogous Common Lisp function
+  [Error: failed to evaluate @(`...`): Failed to evaluate (clhs
+  \"Body/f_boole.htm\" \"boole\"); trans eval failed? t.. Input
+  expression: (clhs \"Body/f_boole.htm\" \"boole\")] in the [Error:
+  failed to evaluate @(`...`): Failed to evaluate (clhs \"\" \"Common
+  Lisp Hyperspec\"); trans eval failed? t.. Input expression: (clhs \"\"
+  \"Common Lisp Hyperspec\")]. Note that the values of op for boole$
+  are ACL2 constants, rather than corresponding values of op for the
+  Common Lisp function boole.
 
     op               result
     -----------      ---------
@@ -9775,7 +9622,7 @@ Subtopics
   equivalently (and, all are ignored for non-ANSI GCL; see
   [set-debugger-enable]).")
  (BREAK-REWRITE
-  (ACL2)
+  (DEBUGGING)
   "The read-eval-print loop entered to [monitor] rewrite rules
 
   ACL2 allows the user to [monitor] the application of rewrite rules.
@@ -10041,6 +9888,9 @@ Subtopics
   [Brr@]
       To access context sensitive information within [break-rewrite]
 
+  [Cw-gstack]
+      Debug a rewriting loop or stack overflow
+
   [Dmr]
       Dynamically monitor rewrites and other prover activity
 
@@ -10054,7 +9904,10 @@ Subtopics
       Conditional exit from break-rewrite
 
   [Unmonitor]
-      To stop monitoring a rule name")
+      To stop monitoring a rule name
+
+  [Why-brr]
+      An explanation of why ACL2 has an explicit [brr] mode")
  (BREAKS
   (ACL2-BUILT-INS)
   "Common Lisp breaks
@@ -10494,10 +10347,8 @@ Subtopics
   butlast is optional, but in ACL2 it is required.
 
   To see the ACL2 definition of this function, see [pf].")
- (BY (MISCELLANEOUS)
-     "Hints keyword :BY
-
-  See [hints].")
+ (BY (POINTERS)
+     "See [hints] for keyword :guard-hints.")
  (CAAAAR
     (ACL2-BUILT-INS)
     "[car] of the [caaar]
@@ -10857,10 +10708,8 @@ Subtopics
   their cases. This can produce literals containing IFs.
 
   See [set-case-split-limitations] for a more general discussion.")
- (CASES (MISCELLANEOUS)
-        "Hints keyword :CASES
-
-  See [hints].")
+ (CASES (POINTERS)
+        "See [hints] for keyword :guard-hints.")
  (CBD
   (BOOKS)
   "Connected book directory string
@@ -11373,9 +11222,15 @@ Subtopics
   documentation of the :acl2x and :ttagsx keyword arguments for
   certify-book, see [set-write-ACL2x].
 
-  This completes the tour through the [documentation] of [books].")
+  This completes the tour through the [documentation] of [books].
+
+
+Subtopics
+
+  [Certify-book!]
+      A variant of [certify-book]")
  (CERTIFY-BOOK!
-  (OTHER)
+  (CERTIFY-BOOK)
   "A variant of [certify-book]
 
     Examples:
@@ -11396,7 +11251,7 @@ Subtopics
   argument k may not be t in certify-book! and if k exceeds the
   current [command] number, then an appropriate [ubt!] will be
   executed first. See [certify-book] and see [ubt!].")
- (CERTIFYING-BOOKS (BOOKS)
+ (CERTIFYING-BOOKS (POINTERS)
                    "See [books-certification].")
  (CHAR
   (ACL2-BUILT-INS)
@@ -11695,7 +11550,7 @@ Subtopics
   executed. To return to the default behavior, use the command
   (checkpoint-forced-goals nil).")
  (CLAUSE-IDENTIFIER
-  (MISCELLANEOUS)
+  (GOAL-SPEC)
   "The internal form of a [goal-spec]
 
   To each goal-spec, str, there corresponds a clause-identifier
@@ -12049,8 +11904,7 @@ Subtopics
       Proceedings of the 6th International Workshop on the
       Implementation of Logics (IWIL 2006) (C. Benzmueller, B.
       Fischer, and G. Sutcliffe, editors), CEUR Workshop Proceedings
-      Vol. 212, Phnom Penh, Cambodia, pp. 7-26, November 2006,
-      http://ceur-ws.org/Vol-212/.")
+      Vol. 212, Phnom Penh, Cambodia, pp. 7-26, November 2006.")
  (CLEAR-HASH-TABLES
   (HONS-AND-MEMOIZATION)
   "Deprecated feature
@@ -12092,9 +11946,9 @@ Subtopics
   Clear-memoize-tables is a logical no-op. All memoized values are
   forgotten. It returns nil, invoking [clear-memoize-table] for each
   memoized function.")
- (CLOSE-INPUT-CHANNEL (ACL2-BUILT-INS)
+ (CLOSE-INPUT-CHANNEL (POINTERS)
                       "See [io].")
- (CLOSE-OUTPUT-CHANNEL (ACL2-BUILT-INS)
+ (CLOSE-OUTPUT-CHANNEL (POINTERS)
                        "See [io].")
  (CLOSE-TRACE-FILE
   (TRACE)
@@ -12263,7 +12117,7 @@ Subtopics
               recent command matching pat that was part of the user's
               session, not part of the system initialization.")
  (COMMAND-LINE
-  (OTHER)
+  (INTERFACING-TOOLS)
   "Handling of command-line arguments when ACL2 is invoked
 
   You may provide command-line arguments when invoking ACL2, which are
@@ -12277,7 +12131,7 @@ Subtopics
   [Save-exec]
       Save an executable image and a wrapper script")
  (COMMON-LISP
-  (MISCELLANEOUS)
+  (ABOUT-ACL2)
   "Relation to Common Lisp, including deviations from the spec
 
   ACL2 is a logic, a theorem prover, and a programming language based
@@ -12405,20 +12259,27 @@ Subtopics
   Click [here] to continue.")
  (COMMUNITY-BOOKS
   (BOOKS)
-  "[books] contributed by the ACL2 community
+  "Libraries of ACL2 [books] developed by the ACL2 community.
 
-  For background on ACL2 books, which can contain useful definitions
-  and theorems, see [books].
+  ACL2 [books] are files of ACL2 [events] like definitions and
+  theorems.
 
-  The ACL2 ``community books'' is a collection of books developed since
-  the early 1990s by members of the ACL2 community. The installation
-  instructions suggest installing these books in the books/
-  subdirectory of your local ACL2 installation. You can contribute
-  books to the ACL2 community and obtain updates inbetween ACL2
-  releases by visiting the acl2-books project web page,
-  http://acl2-books.googlecode.com/.
+  The ACL2 Community Books are the canonical set of open-source books
+  for ACL2, developed since the early 1990s by members of the ACL2
+  community. They include libraries for reasoning in many domains,
+  macro libraries for more quickly writing and documenting code,
+  interfacing tools for connecting ACL2 to other systems,
+  productivity tools for better proof automation and debugging, and
+  specialty libraries for areas like hardware verification.
 
-  To certify the community books, see [regression].")
+  From the ACL2 Books web site you can:
+
+    * download the Community Books, which typically you should put them
+      into the books/ subdirectory of your ACL2 installation;
+    * learn how to contribute books to the ACL2 community; and
+    * obtain updates between ACL2 releases.
+
+  To certify the community books, see [books-certification].")
  (COMP
   (EVENTS PROGRAMMING)
   "Compile some ACL2 functions
@@ -12891,7 +12752,7 @@ Subtopics
   specialized mechanism. It may be more appropriate to create
   :[forward-chaining] rules instead of :compound-recognizer rules.")
  (COMPRESS1
-  (ARRAYS)
+  (ARRAYS ACL2-BUILT-INS)
   "Remove irrelevant pairs from a 1-dimensional array
 
     Example Form:
@@ -12930,7 +12791,7 @@ Subtopics
   error if the header specifies an :order of :none or nil and the
   array's length exceeds the [maximum-length] field of its [header].")
  (COMPRESS2
-  (ARRAYS)
+  (ARRAYS ACL2-BUILT-INS)
   "Remove irrelevant pairs from a 2-dimensional array
 
     Example Form:
@@ -14236,10 +14097,11 @@ Subtopics
   natural number). The symbol has three characters in its name, the
   middle one of which is a lower case b.")
  (COPYRIGHT
-  (MISCELLANEOUS)
+  (ABOUT-ACL2)
   "ACL2 copyright, license, sponsorship
 
-  ACL2 Version 6.3 -- A Computational Logic for Applicative Common Lisp
+  ACL2 Version 6.3 --- A Computational Logic for Applicative Common
+  Lisp
   Copyright (C) 2013, Regents of the University of Texas
 
   This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -14453,7 +14315,7 @@ Subtopics
   expressions are evaluated by [in-theory] or the :[in-theory] hint,
   [world] is bound to the current ACL2 [world].")
  (CUSTOM-KEYWORD-HINTS
-  (MISCELLANEOUS)
+  (HINTS)
   "User-defined hints
 
   See [add-custom-keyword-hint] for a discussion of how advanced users
@@ -14561,7 +14423,7 @@ Subtopics
   make the output a bit clearer in that case. Use cw! instead if you
   want to be able to read the forms back in.")
  (CW-GSTACK
-  (OTHER)
+  (BREAK-REWRITE DEBUGGING)
   "Debug a rewriting loop or stack overflow
 
     Example Forms:
@@ -15004,6 +14866,60 @@ Subtopics
   either to disable the tau system (locally or globally by disabling
   (:executable-counterpart tau-system)) or change the legacy hints to
   use the new subgoal names.")
+ (DEBUGGING
+  (TOP ACL2)
+  "Tools for debugging failed or slow proofs, or misbehaving functions.
+
+
+Subtopics
+
+  [Accumulated-persistence]
+      To get statistics on which [rune]s are being tried
+
+  [Break-rewrite]
+      The read-eval-print loop entered to [monitor] rewrite rules
+
+  [Cw-gstack]
+      Debug a rewriting loop or stack overflow
+
+  [Disassemble$]
+      Disassemble a function
+
+  [Dmr]
+      Dynamically monitor rewrites and other prover activity
+
+  [Failed-forcing]
+      How to deal with a proof [failure] in a forcing round
+
+  [Forward-chaining-reports]
+      To see reports about the forward chaining process
+
+  [Guard-debug]
+      Generate markers to indicate sources of guard proof obligations
+
+  [Print-gv]
+      Print a form whose evaluation caused a guard violation
+
+  [Proof-checker]
+      An interactive tool for controlling ACL2's proof processes.
+
+  [Proof-tree]
+      Proof tree displays
+
+  [Pstack]
+      Seeing what the prover is up to
+
+  [Splitter]
+      Reporting of rules whose application may have caused case splits
+
+  [Time-tracker]
+      Display time spent during specified evaluation
+
+  [Trace]
+      Tracing functions in ACL2
+
+  [Walkabout]
+      Explore an ACL2 cons tree")
  (DECLARE
   (PROGRAMMING)
   "Declarations
@@ -15115,7 +15031,7 @@ Subtopics
   ACL2 insists on the declaration to ensure that the definition is
   processed the same way no matter what the context.")
  (DEFABBREV
-  (EVENTS)
+  (MACROS EVENTS)
   "A convenient form of macro definition for simple expansions
 
     Examples:
@@ -15220,7 +15136,7 @@ Subtopics
   For another introduction to abstract stobjs, see the paper ``Abstract
   Stobjs and Their Application to ISA Modeling'' by Shilpi Goel,
   Warren A. Hunt, Jr., and Matt Kaufmann, in the proceedings of ACL2
-  Workshop 2013, http://www.cs.uwyo.edu/~ruben/acl2-13.
+  Workshop 2013.
 
   INTRODUCTION
 
@@ -16369,7 +16285,7 @@ Subtopics
   might well be surprised by evaluation results if the code were
   written with the assumption specified in the constraint f2=f1.")
  (DEFAULT
-  (ARRAYS)
+  (ARRAYS ACL2-BUILT-INS)
   "Return the :default from the [header] of a 1- or 2-dimensional array
 
     Example Form:
@@ -16430,7 +16346,7 @@ Subtopics
   [Command]s that change the default [defun-mode] are not permitted
   inside [local] forms.")
  (DEFAULT-HINTS
-  (MISCELLANEOUS)
+  (HINTS)
   "A list of hints added to every proof attempt
 
     Examples:
@@ -16466,7 +16382,7 @@ Subtopics
   Advanced users only: see [override-hints] for an advanced variant of
   default hints.")
  (DEFAULT-PRINT-PROMPT
-  (MISCELLANEOUS)
+  (LD)
   "The default [prompt] printed by [ld]
 
     Example prompt:
@@ -16526,7 +16442,7 @@ Subtopics
   total-parallelism-work-limit
 
   See [set-total-parallelism-work-limit].")
- (DEFAULT-VERIFY-GUARDS-EAGERNESS (SWITCHES-PARAMETERS-AND-MODES)
+ (DEFAULT-VERIFY-GUARDS-EAGERNESS (POINTERS)
                                   "See [set-verify-guards-eagerness].")
  (DEFAXIOM
   (EVENTS)
@@ -17695,7 +17611,16 @@ Subtopics
   for fn from the syntactic presentation and it can compute the
   controllers from the termination analysis. Provided the definition
   is admissible, [defun] adds the :definition rule (equal (fn x y)
-  body).")
+  body).
+
+
+Subtopics
+
+  [Set-body]
+      Set the definition body
+
+  [Show-bodies]
+      Show the potential definition bodies")
  (DEFLABEL
   (EVENTS)
   "Build a landmark and/or add a [documentation] topic
@@ -17799,7 +17724,7 @@ Subtopics
     T
     ACL2 !>")
  (DEFMACRO
-  (EVENTS)
+  (MACROS EVENTS)
   "Define a macro
 
     Example Defmacros:
@@ -18002,7 +17927,10 @@ Subtopics
       Handling defpkg events that are local
 
   [Managing-ACL2-packages]
-      User-contributed documentation on packages")
+      User-contributed documentation on packages
+
+  [Package-reincarnation-import-restrictions]
+      Re-defining undone [defpkg]s")
  (DEFPROXY
   (EVENTS)
   "Define a non-executable :[program]-mode function for attachment
@@ -18313,9 +18241,8 @@ Subtopics
     (include-book \"misc/defpun\" :dir :system)
 
   Details of defpun are provided by Manolios and Moore in the ``Partial
-  Functions in ACL2'' published with the ACL2 2000 workshop; see
-  http://www.cs.utexas.edu/users/moore/acl2/workshop-2000/. Also see
-  http://www.cs.utexas.edu/users/moore/publications/defpun/index.html.
+  Functions in ACL2'' published with the ACL2 2000 workshop. Also see
+  Partial Functions in ACL2.
 
   A variant, defp, has been developed by Matt Kaufmann to allow more
   general forms of tail recursion. If defpun doesn't work for you,
@@ -19023,7 +18950,13 @@ Subtopics
   [term] using the indicated hints (see [hints]) or [instructions]
   (see [proof-checker]). If it is successful, it stores the rules
   described by the rule-classes (see [rule-classes]), proving the
-  necessary corollaries.")
+  necessary corollaries.
+
+
+Subtopics
+
+  [Otf-flg]
+      Allow more than one initial subgoal to be pushed for induction")
  (DEFTHMD
   (EVENTS)
   "Prove and name a theorem and then disable it
@@ -19051,7 +18984,7 @@ Subtopics
   The summary for the [in-theory] event is suppressed. See [defthm] for
   documentation of defthm.")
  (DEFTTAG
-  (EVENTS)
+  (INTERFACING-TOOLS EVENTS)
   "Introduce a trust tag (ttag)
 
   Introduction. This event is intended for advanced users who, in
@@ -19542,9 +19475,41 @@ Subtopics
                       :verify-guards nil
                       :non-executable t
                       :otf-flg t))
-      (example-body x y z i j))")
+      (example-body x y z i j))
+
+
+Subtopics
+
+  [Defun-inline]
+      Define a potentially inlined function symbol and associated macro
+
+  [Defun-mode]
+      Determines whether a function definition is a logical act
+
+  [Defun-notinline]
+      Define a not-to-be-inlined function symbol and associated macro
+
+  [Defun-nx]
+      Define a non-executable function symbol
+
+  [Defund]
+      Define a function symbol and then disable it
+
+  [Defund-inline]
+      Define a potentially disabled, inlined function symbol and
+      associated macro
+
+  [Defund-notinline]
+      Define a disabled, not-to-be-inlined function symbol and associated
+      macro
+
+  [Mutual-recursion]
+      Define some mutually recursive functions
+
+  [Xargs]
+      Extra arguments, for example to give [hints] to [defun]")
  (DEFUN-INLINE
-  (EVENTS)
+  (DEFUN EVENTS)
   "Define a potentially inlined function symbol and associated macro
 
   You may be able to improve performance by replacing an event (defun f
@@ -19652,7 +19617,7 @@ Subtopics
   the book. This may be fixed in a future release if someone
   complains.")
  (DEFUN-MODE
-  (MISCELLANEOUS)
+  (DEFUN SWITCHES-PARAMETERS-AND-MODES)
   "Determines whether a function definition is a logical act
 
   Two ``[defun-mode]s'' are supported, :[program] and :[logic]. Roughly
@@ -19872,7 +19837,7 @@ Subtopics
   BE ON THE LOOKOUT FOR SCREWUPS DUE TO DAMAGE CAUSED BY THE
   EXECUTION OF YOUR FUNCTIONS HAVING :[program] MODE!")
  (DEFUN-NOTINLINE
-  (EVENTS)
+  (DEFUN EVENTS)
   "Define a not-to-be-inlined function symbol and associated macro
 
   See [defun-inline] for an analogous utility that supports inlining.
@@ -19889,7 +19854,7 @@ Subtopics
   notinline). Fortunately, Common Lisp implementations often do
   respect the first of these as well.")
  (DEFUN-NX
-  (EVENTS)
+  (DEFUN EVENTS)
   "Define a non-executable function symbol
 
     Example:
@@ -20340,7 +20305,7 @@ Subtopics
                :restrict ((forall-expr1-necc
                            ((y (forall-expr2-witness x))))))))")
  (DEFUND
-  (EVENTS)
+  (DEFUN EVENTS)
   "Define a function symbol and then disable it
 
   Use defund instead of [defun] when you want to disable a function
@@ -20380,7 +20345,7 @@ Subtopics
 
   See [defun] for documentation of defun.")
  (DEFUND-INLINE
-  (EVENTS)
+  (DEFUN EVENTS)
   "Define a potentially disabled, inlined function symbol and associated
   macro
 
@@ -20388,7 +20353,7 @@ Subtopics
   that defund-inline disables the newly-defined function symbol. See
   [defun-inline].")
  (DEFUND-NOTINLINE
-  (EVENTS)
+  (DEFUN EVENTS)
   "Define a disabled, not-to-be-inlined function symbol and associated
   macro
 
@@ -20396,7 +20361,7 @@ Subtopics
   being that defund-notinline disables the newly-defined function
   symbol. See [defun-notinline].")
  (DEFUNS
-  (MISCELLANEOUS)
+  (MUTUAL-RECURSION)
   "An alternative to [mutual-recursion]
 
     Example:
@@ -20458,9 +20423,9 @@ Subtopics
 
   In particular, reasoning about any of these primitives reduces to
   reasoning about the function delete-assoc-equal.")
- (DELETE-ASSOC-EQ (ACL2-BUILT-INS)
+ (DELETE-ASSOC-EQ (POINTERS)
                   "See [delete-assoc].")
- (DELETE-ASSOC-EQUAL (ACL2-BUILT-INS)
+ (DELETE-ASSOC-EQUAL (POINTERS)
                      "See [delete-assoc].")
  (DELETE-INCLUDE-BOOK-DIR
   (SWITCHES-PARAMETERS-AND-MODES)
@@ -20563,7 +20528,7 @@ Subtopics
 
   To see the ACL2 definition of this function, see [pf].")
  (DIMENSIONS
-  (ARRAYS)
+  (ARRAYS ACL2-BUILT-INS)
   "Return the :dimensions from the [header] of a 1- or 2-dimensional
   array
 
@@ -20611,7 +20576,7 @@ Subtopics
   a computed list of names, lst, use the theory expression
   (set-difference-theories (current-theory :here) lst).")
  (DISABLE-FORCING
-  (MISCELLANEOUS)
+  (FORCE EVENTS SWITCHES-PARAMETERS-AND-MODES)
   "To disallow forced case-splits
 
     General Form:
@@ -20641,7 +20606,7 @@ Subtopics
   then there will be no application of ax. To restore forced case
   splitting, see [enable-forcing].")
  (DISABLE-IMMEDIATE-FORCE-MODEP
-  (MISCELLANEOUS)
+  (FORCE EVENTS SWITCHES-PARAMETERS-AND-MODES)
   "[force]d hypotheses are not attacked immediately
 
     General Form:
@@ -20686,7 +20651,7 @@ Subtopics
   [rune], disabledp returns t if the rune is disabled, and nil
   otherwise.")
  (DISASSEMBLE$
-  (OTHER)
+  (DEBUGGING PROGRAMMING)
   "Disassemble a function
 
   The macro disassemble$ provides a convenient interface to the
@@ -20776,7 +20741,7 @@ Subtopics
 
   See [table] for a general discussion of tables.")
  (DMR
-  (OTHER BREAK-REWRITE ACCUMULATED-PERSISTENCE)
+  (DEBUGGING BREAK-REWRITE ACCUMULATED-PERSISTENCE)
   "Dynamically monitor rewrites and other prover activity
 
   In addition to utilities that allow you to set breakpoints or print
@@ -20944,14 +20909,10 @@ Subtopics
   [parallelism]): when waterfall-parallelism has been set to a
   non-nil value (see [set-waterfall-parallelism]), statistics about
   parallel execution are printed instead of the usual information.")
- (DO-NOT (MISCELLANEOUS)
-         "Hints keyword :DO-NOT
-
-  See [hints].")
- (DO-NOT-INDUCT (MISCELLANEOUS)
-                "Hints keyword :DO-NOT-INDUCT
-
-  See [hints].")
+ (DO-NOT (POINTERS)
+         "See [hints] for keyword :guard-hints.")
+ (DO-NOT-INDUCT (POINTERS)
+                "See [hints] for keyword :guard-hints.")
  (DOC
   (DOCUMENTATION)
   "[Documentation] at the terminal
@@ -21337,8 +21298,12 @@ Subtopics
   [Doc]
       [Documentation] at the terminal
 
-  [Nqthm-to-ACL2]
-      ACL2 analogues of Nqthm functions and commands")
+  [Finding-documentation]
+      Searching the documentation
+
+  [Legacy-documentation]
+      Parent section for the legacy \"documentation\" topic (likely to be
+      deleted soon)")
  (DOUBLE-REWRITE
   (MISCELLANEOUS REWRITE)
   "Cause a term to be rewritten twice
@@ -21563,7 +21528,7 @@ Subtopics
        (iff (bar x) t)))
 
     (thm (foo (bar y)))")
- (DYNAMICALLY-MONITOR-REWRITES (OTHER)
+ (DYNAMICALLY-MONITOR-REWRITES (POINTERS)
                                "See [dmr].")
  (E/D
   (THEORIES THEORY-FUNCTIONS)
@@ -22143,7 +22108,7 @@ Subtopics
   a computed list of names, lst, use the theory expression
   (union-theories (current-theory :here) lst).")
  (ENABLE-FORCING
-  (MISCELLANEOUS)
+  (FORCE EVENTS SWITCHES-PARAMETERS-AND-MODES)
   "To allow forced case splits
 
     General Form:
@@ -22162,7 +22127,7 @@ Subtopics
     :in-theory (enable (:executable-counterpart force))
     :in-theory (enable (force))")
  (ENABLE-IMMEDIATE-FORCE-MODEP
-  (MISCELLANEOUS)
+  (FORCE EVENTS SWITCHES-PARAMETERS-AND-MODES)
   "[force]d hypotheses are attacked immediately
 
     General Form:
@@ -23918,6 +23883,18 @@ Subtopics
       Define a disabled, not-to-be-inlined function symbol and associated
       macro
 
+  [Disable-forcing]
+      To disallow forced case-splits
+
+  [Disable-immediate-force-modep]
+      [force]d hypotheses are not attacked immediately
+
+  [Enable-forcing]
+      To allow forced case splits
+
+  [Enable-immediate-force-modep]
+      [force]d hypotheses are attacked immediately
+
   [Encapsulate]
       Hide some [events] and/or constrain some functions
 
@@ -24708,7 +24685,7 @@ Subtopics
   See [quantifiers] for an example illustrating how the use of
   recursion, rather than explicit quantification with [defun-sk], may
   be preferable.")
- (EXIT (OTHER)
+ (EXIT (GOOD-BYE)
        "Quit entirely out of Lisp
 
   Same as [good-bye].")
@@ -24726,10 +24703,8 @@ Subtopics
   source code has been processed under ACL2 and the [world] is all
   but complete. exit-boot-strap-mode has only one job: to signal the
   completion of the boot-strapping.")
- (EXPAND (MISCELLANEOUS)
-         "Hints keyword :EXPAND
-
-  See [hints].")
+ (EXPAND (POINTERS)
+         "See [hints] for keyword :guard-hints.")
  (EXPLODE-NONNEGATIVE-INTEGER
   (ACL2-BUILT-INS)
   "The list of [characters] in the radix-r form of a number
@@ -25127,7 +25102,7 @@ Subtopics
                        (integerp i)
                        (integerp j))
                   (integerp (foo i j))))")
- (EXTERNAL-FORMAT (IO)
+ (EXTERNAL-FORMAT (POINTERS)
                   "See [character-encoding].")
  (EXTRA-INFO
   (GUARD)
@@ -25190,7 +25165,7 @@ Subtopics
   onto useful data structures even though you may undo back past
   where you computed and saved them.")
  (FAILED-FORCING
-  (MISCELLANEOUS)
+  (FORCE DEBUGGING)
   "How to deal with a proof [failure] in a forcing round
 
   See [forcing-round] for a background discussion of the notion of
@@ -25736,7 +25711,7 @@ Subtopics
   equivalence relation is encoded entirely in its presence as a
   'coarsening of [equal].)")
  (FINDING-DOCUMENTATION
-  (MISCELLANEOUS)
+  (DOCUMENTATION)
   "Searching the documentation
 
   The :[doc] command will display, at the terminal, [documentation]
@@ -25747,13 +25722,11 @@ Subtopics
   The XDOC (\"acl2+books\") manual is a combined manual for the ACL2
   sources and the community books. It is built using documentation
   not only from the ACL2 sources (which may be rearranged) but also
-  from the community books (whether included in the current session
-  or not), using an ``XDOC processor'' created by Jared Davis. The
-  ACL2 home page (http://www.cs.utexas.edu/users/moore/acl2/) has a
-  link to this manual, which as of this writing may be found directly
-  by visiting the following web page:
-  http://fv.centtech.com/acl2/latest/doc/. You can build a local copy
-  of this manual from the ACL2 Community Books, following
+  from the [community-books], using an ``XDOC processor'' created by
+  Jared Davis. The ACL2 home page) has a link to this manual, which
+  as of this writing may be found directly by visiting the following
+  web page: http://fv.centtech.com/acl2/latest/doc/. You can build a
+  local copy of this manual from the ACL2 Community Books, following
   instructions in their Makefile.")
  (FIRST
   (ACL2-BUILT-INS)
@@ -25949,7 +25922,7 @@ Subtopics
 
   To see the ACL2 definition of this function, see [pf].")
  (FLUSH-COMPRESS
-  (ARRAYS)
+  (ARRAYS ACL2-BUILT-INS)
   "Flush the under-the-hood array for the given name
 
     Example Form:
@@ -26101,9 +26074,9 @@ Subtopics
   forced to print past the right margin in order to make the output a
   bit clearer in that case. Use fms! instead if you want to be able
   to read the forms back in.")
- (FMS!-TO-STRING (ACL2-BUILT-INS)
+ (FMS!-TO-STRING (POINTERS)
                  "See [printing-to-strings].")
- (FMS-TO-STRING (ACL2-BUILT-INS)
+ (FMS-TO-STRING (POINTERS)
                 "See [printing-to-strings].")
  (FMT
   (ACL2-BUILT-INS)
@@ -26535,7 +26508,7 @@ Subtopics
   forced to print past the right margin in order to make the output a
   bit clearer in that case. Use fmt! instead if you want to be able
   to read the forms back in.")
- (FMT!-TO-STRING (ACL2-BUILT-INS)
+ (FMT!-TO-STRING (POINTERS)
                  "See [printing-to-strings].")
  (FMT-TO-COMMENT-WINDOW
   (ACL2-BUILT-INS)
@@ -26558,7 +26531,7 @@ Subtopics
     (fmt-to-comment-window fmt-string alist col evisc-tuple)
 
   where these arguments are as desribed for [fmt1]; see [fmt].")
- (FMT-TO-STRING (ACL2-BUILT-INS)
+ (FMT-TO-STRING (POINTERS)
                 "See [printing-to-strings].")
  (FMT1
   (ACL2-BUILT-INS)
@@ -26575,11 +26548,11 @@ Subtopics
   forced to print past the right margin in order to make the output a
   bit clearer in that case. Use fmt1! instead if you want to be able
   to read the forms back in.")
- (FMT1!-TO-STRING (ACL2-BUILT-INS)
+ (FMT1!-TO-STRING (POINTERS)
                   "See [printing-to-strings].")
- (FMT1-TO-STRING (ACL2-BUILT-INS)
+ (FMT1-TO-STRING (POINTERS)
                  "See [printing-to-strings].")
- (FNCALL-TERM (MISCELLANEOUS)
+ (FNCALL-TERM (POINTERS)
               "See [meta-extract].")
  (FORALL
   (DEFUN-SK)
@@ -26727,10 +26700,35 @@ Subtopics
   [if] terms are ultimately eliminated using the ordinary flow of the
   proof (but see [set-case-split-limitations]), allowing force
   ultimately to function as intended. Moreover, forcing can be
-  disabled, as described above; also see [disable-forcing].")
- (FORCED (MISCELLANEOUS) "See [force].")
+  disabled, as described above; also see [disable-forcing].
+
+
+Subtopics
+
+  [Disable-forcing]
+      To disallow forced case-splits
+
+  [Disable-immediate-force-modep]
+      [force]d hypotheses are not attacked immediately
+
+  [Enable-forcing]
+      To allow forced case splits
+
+  [Enable-immediate-force-modep]
+      [force]d hypotheses are attacked immediately
+
+  [Failed-forcing]
+      How to deal with a proof [failure] in a forcing round
+
+  [Forcing-round]
+      A section of a proof dealing with [force]d assumptions
+
+  [Immediate-force-modep]
+      When executable counterpart is [enable]d, [force]d hypotheses are
+      attacked immediately")
+ (FORCED (POINTERS) "See [force].")
  (FORCING-ROUND
-  (MISCELLANEOUS)
+  (FORCE)
   "A section of a proof dealing with [force]d assumptions
 
   If ACL2 ``[force]s'' some hypothesis of some rule to be true, it is
@@ -26988,9 +26986,15 @@ Subtopics
   Debugging :forward-chaining rules can be difficult since their
   effects are not directly visible on the goal being simplified.
   Tools are available to help you discover what forward chaining has
-  occurred see [forward-chaining-reports].")
+  occurred see [forward-chaining-reports].
+
+
+Subtopics
+
+  [Forward-chaining-reports]
+      To see reports about the forward chaining process")
  (FORWARD-CHAINING-REPORTS
-  (ACL2)
+  (FORWARD-CHAINING DEBUGGING)
   "To see reports about the forward chaining process
 
   Debugging forward-chaining rules can be hard because their effects
@@ -29577,7 +29581,7 @@ Subtopics
       (declare (type (signed-byte 28) x y z))
       (imin (i+ x y)
             (i+ y (imin x z))))")
- (GCS (HISTORY)
+ (GCS (POINTERS)
       "See [get-command-sequence].")
  (GENERALIZE
   (RULE-CLASSES)
@@ -29879,10 +29883,10 @@ Subtopics
   then get-internal-run-time has a multiple value return, and the
   first two values (runtime and child runtime) are added together to
   produce a result for get-internal-time.")
- (GET-OUTPUT-STREAM-STRING$ (ACL2-BUILT-INS)
+ (GET-OUTPUT-STREAM-STRING$ (POINTERS)
                             "See [io].")
  (GET-WORMHOLE-STATUS
-  (MISCELLANEOUS)
+  (WORMHOLE)
   "Make a wormhole's status visible outside the wormhole
 
   General Form: (get-wormhole-status name state)
@@ -29927,7 +29931,7 @@ Subtopics
 
   To see the ACL2 definition of this function, see [pf].")
  (GOAL-SPEC
-  (MISCELLANEOUS)
+  (HINTS)
   "To indicate where a hint is to be used
 
     Examples:
@@ -30026,7 +30030,13 @@ Subtopics
 
     (thm (implies (and (not (endp x)) (not (endp (cdr x))))
                   (equal (append (append x y) z) (append x y z)))
-         :hints ((\"Subgoal *1/\" :in-theory nil)))")
+         :hints ((\"Subgoal *1/\" :in-theory nil)))
+
+
+Subtopics
+
+  [Clause-identifier]
+      The internal form of a [goal-spec]")
  (GOOD-ATOM-LISTP
   (ACL2-BUILT-INS)
   "Recognizer for a true list of ``good'' [atom]s
@@ -30068,7 +30078,16 @@ Subtopics
   it indicates the Unix (Linux) exit status.
 
   If you merely want to exit the ACL2 [command] loop, use :q instead
-  (see [q]).")
+  (see [q]).
+
+
+Subtopics
+
+  [Exit]
+      Quit entirely out of Lisp
+
+  [Quit]
+      Quit entirely out of Lisp")
  (GRANULARITY
   (PARALLEL-PROGRAMMING)
   "Limit the amount of parallelism
@@ -30244,6 +30263,9 @@ Subtopics
   [Guard-miscellany]
       Miscellaneous remarks about guards
 
+  [Guard-obligation]
+      The guard proof obligation
+
   [Guard-quick-reference]
       Brief summary of guard checking and guard verification
 
@@ -30253,6 +30275,9 @@ Subtopics
   [Guards-for-specification]
       Guards as a specification device
 
+  [Print-gv]
+      Print a form whose evaluation caused a guard violation
+
   [Set-guard-checking]
       Control checking [guard]s during execution of top-level forms
 
@@ -30260,9 +30285,12 @@ Subtopics
       The eagerness with which [guard] verification is tried.
 
   [Verify-guards]
-      Verify the [guard]s of a function")
+      Verify the [guard]s of a function
+
+  [Verify-guards-formula]
+      View the guard proof obligation, without proving it")
  (GUARD-DEBUG
-  (GUARD)
+  (GUARD DEBUGGING)
   "Generate markers to indicate sources of guard proof obligations
 
   ACL2 guard verification (see [guard]) is often best avoided by
@@ -31637,10 +31665,8 @@ Subtopics
     ACL2 Error in (VERIFY-GUARDS FOO): The guards for FOO cannot
     be verified because the theorem has the wrong syntactic
     form.  See :DOC verify-guards.")
- (GUARD-HINTS (MISCELLANEOUS)
-              "Xargs keyword :GUARD-HINTS
-
-  See [xargs].")
+ (GUARD-HINTS (POINTERS)
+              "See [xargs] for keyword :guard-hints.")
  (GUARD-INTRODUCTION
   (GUARD)
   "Introduction to [guard]s in ACL2
@@ -31766,7 +31792,7 @@ Subtopics
   the same [xargs] form, in which case the :stobjs form will be
   treated as through it comes before the :guard form.")
  (GUARD-OBLIGATION
-  (OTHER)
+  (GUARD)
   "The guard proof obligation
 
   See [verify-guards], and see [guard] for a discussion of guards. Also
@@ -32400,10 +32426,8 @@ Subtopics
   failed proofs.
 
   []")
- (HANDS-OFF (MISCELLANEOUS)
-            "Hints keyword :HANDS-OFF
-
-  See [hints].")
+ (HANDS-OFF (POINTERS)
+            "See [hints] for keyword :guard-hints.")
  (HARD-ERROR
   (ACL2-BUILT-INS)
   "Print an error message and stop execution
@@ -32439,7 +32463,7 @@ Subtopics
 
     ACL2 !>")
  (HEADER
-  (ARRAYS)
+  (ARRAYS ACL2-BUILT-INS)
   "Return the header of a 1- or 2-dimensional array
 
     Example Form:
@@ -33472,9 +33496,33 @@ Subtopics
         [defun], then the ``normalized'' body of that definition is
         used, for which ACL2 has propagated IF tests upward. This
         behavior differs from that provided by a :by hint, where the
-        original body of the definition is used.")
+        original body of the definition is used.
+
+
+Subtopics
+
+  [Custom-keyword-hints]
+      User-defined hints
+
+  [Default-hints]
+      A list of hints added to every proof attempt
+
+  [Goal-spec]
+      To indicate where a hint is to be used
+
+  [Hints-and-the-waterfall]
+      How [hints] fit into the ACL2 proof waterfall
+
+  [Lemma-instance]
+      An object denoting an instance of a theorem
+
+  [Override-hints]
+      A list of hints given priority in every proof attempt
+
+  [Using-computed-hints]
+      How to use computed hints")
  (HINTS-AND-THE-WATERFALL
-  (MISCELLANEOUS)
+  (HINTS)
   "How [hints] fit into the ACL2 proof waterfall
 
   Below we describe the flow of an ACL2 proof attempt, with special
@@ -33714,9 +33762,6 @@ Subtopics
 
 Subtopics
 
-  [Gcs]
-      See [get-command-sequence].
-
   [Get-command-sequence]
       Return list of [command]s that are between two [command] descriptors
 
@@ -33769,12 +33814,6 @@ Subtopics
   [Reset-kill-ring]
       Save memory by resetting and perhaps resizing the kill ring used by
       [oops]
-
-  [Tau-data]
-      To see what tau knows about a function symbol
-
-  [Tau-database]
-      To see the tau database as a (very large) object
 
   [U]
       Undo last [command], without a query
@@ -35180,8 +35219,7 @@ Subtopics
   Even if there were no infinite loop, this kind of use of IF* is
   useful in order to provide feedback of the form shown above
   whenever the test of an IF term fails to simplify to t or to nil.")
- (IF-INTRO (MISCELLANEOUS)
-           "See [splitter].")
+ (IF-INTRO (POINTERS) "See [splitter].")
  (IFF
   (ACL2-BUILT-INS)
   "Logical ``if and only if''
@@ -35203,9 +35241,8 @@ Subtopics
   Ifix has a [guard] of t.
 
   To see the ACL2 definition of this function, see [pf].")
- (IGNORABLE (PROGRAMMING)
-            "See [declare].")
- (IGNORE (PROGRAMMING) "See [declare].")
+ (IGNORABLE (POINTERS) "See [declare].")
+ (IGNORE (POINTERS) "See [declare].")
  (IGNORED-ATTACHMENT
   (MISCELLANEOUS)
   "Why attachments are sometimes not used
@@ -35345,10 +35382,10 @@ Subtopics
   [Guard] for (imagpart x):
 
     (acl2-numberp x)")
- (IMMED-FORCED (MISCELLANEOUS)
+ (IMMED-FORCED (POINTERS)
                "See [splitter].")
  (IMMEDIATE-FORCE-MODEP
-  (MISCELLANEOUS)
+  (FORCE SWITCHES-PARAMETERS-AND-MODES)
   "When executable counterpart is [enable]d, [force]d hypotheses are
   attacked immediately
 
@@ -35754,10 +35791,8 @@ Subtopics
   where rune1 and rune2 are two specific [rune]s. The arguments are not
   evaluated. Invariant is just a macro that expands into a term that
   checks that not both [rune]s are enabled. See [theory-invariant].")
- (INDUCT (MISCELLANEOUS)
-         "Hints keyword :INDUCT
-
-  See [hints].")
+ (INDUCT (POINTERS)
+         "See [hints] for keyword :guard-hints.")
  (INDUCTION
   (RULE-CLASSES)
   "Make a rule that suggests a certain induction
@@ -36663,11 +36698,32 @@ Subtopics
 
   These are but a few of the interesting projects carried out with
   ACL2. Many of the authors mentioned above have versions of the
-  papers on their web pages. In addition, see the link to ``Books and
-  Papers about ACL2 and Its Applications'' on the ACL2 home page
-  (http://www.cs.utexas.edu/users/moore/acl2). Also see the
-  presentations in each of the workshops listed in the link to ``ACL2
-  Workshops'' on the ACL2 home page.")
+  papers on their web pages. In addition, see Books and Papers about
+  ACL2 and its Applications. Also, see the presentations in each of
+  the ACL2 Workshops.")
+ (INTERFACING-TOOLS
+  (TOP ACL2)
+  "Libraries and tools for doing basic [file i/o], using raw [Common
+  Lisp libraries], working with the [operating system], and
+  interfacing with [other programs].
+
+
+Subtopics
+
+  [Command-line]
+      Handling of command-line arguments when ACL2 is invoked
+
+  [Defttag]
+      Introduce a trust tag (ttag)
+
+  [Io]
+      Input/output facilities in ACL2
+
+  [Save-exec]
+      Save an executable image and a wrapper script
+
+  [Sys-call]
+      Make a system call to the host operating system")
  (INTERN
   (ACL2-BUILT-INS)
   "Create a new symbol in a given package
@@ -36824,9 +36880,9 @@ Subtopics
   Intersection$ is similar to the Common Lisp primitive intersection.
   However, Common Lisp does not specify the order of elements in the
   result of a call of intersection.")
- (INTERSECTION-EQ (ACL2-BUILT-INS)
+ (INTERSECTION-EQ (POINTERS)
                   "See [intersection$].")
- (INTERSECTION-EQUAL (ACL2-BUILT-INS)
+ (INTERSECTION-EQUAL (POINTERS)
                      "See [intersection$].")
  (INTERSECTION-THEORIES
   (THEORIES THEORY-FUNCTIONS)
@@ -36879,9 +36935,9 @@ Subtopics
 
   In particular, reasoning about any of these primitives reduces to
   reasoning about the function intersectp-equal.")
- (INTERSECTP-EQ (ACL2-BUILT-INS)
+ (INTERSECTP-EQ (POINTERS)
                 "See [intersectp].")
- (INTERSECTP-EQUAL (ACL2-BUILT-INS)
+ (INTERSECTP-EQUAL (POINTERS)
                    "See [intersectp].")
  (INTRODUCTION-TO-A-FEW-SYSTEM-CONSIDERATIONS
   (INTRODUCTION-TO-THE-THEOREM-PROVER)
@@ -38017,7 +38073,7 @@ Subtopics
   theorem prover, use your browser's Back Button now to return to
   [introduction-to-the-theorem-prover].")
  (INTRODUCTION-TO-THE-TAU-SYSTEM
-  (ACL2)
+  (TAU-SYSTEM)
   "A decision procedure for runtime types
 
   This doc topic is the main source of information about the tau system
@@ -38266,17 +38322,8 @@ Subtopics
       Turn on or off automatic (``greedy'') generation of :tau-system
       rules
 
-  [Tau-data]
-      To see what tau knows about a function symbol
-
-  [Tau-database]
-      To see the tau database as a (very large) object
-
   [Tau-status]
-      Query or set tau system status
-
-  [Tau-system]
-      Make a rule for the ACL2 ``type checker''")
+      Query or set tau system status")
  (INTRODUCTION-TO-THE-THEOREM-PROVER
   (ACL2-TUTORIAL)
   "How the theorem prover works -- level 0
@@ -38360,8 +38407,7 @@ Subtopics
   least once.
 
   After you finish this tutorial material, we recommend that you look
-  at the ACL2 Demos, at the ``Demos'' link of the ACL2 home page,
-  http://www.cs.utexas.edu/users/moore/acl2.
+  at the ACL2 Demos, at the ``Demos'' link of the ACL2 home page.
 
   Most users of ACL2 have bought the book
 
@@ -38369,11 +38415,11 @@ Subtopics
   Kluwer Academic Publishers, June, 2000
 
   which is available in paperback from Lulu for approximately $20 (as
-  of 2010). See http://www.lulu.com/content/1746161. That book
-  contains hundreds of exercises in programming, proof, and using The
-  Method described here to prove theorems. Solutions to the exercises
-  are online. For more information about the book and a companion one
-  (also available on Lulu) about industrial applications of ACL2, see
+  of 2010). That book contains hundreds of exercises in programming,
+  proof, and using The Method described here to prove theorems.
+  Solutions to the exercises are online. For more information about
+  the book and a companion one (also available on Lulu) about
+  industrial applications of ACL2, see
 
   
   http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html#Books
@@ -38592,9 +38638,8 @@ Subtopics
             (there are others but at least do a few)
         [frequently-asked-questions-by-newcomers]
 
-  We also recommend that you look at the ACL2 Demos, at the ``demos''
-  link of the ACL2 home page
-  http://www.cs.utexas.edu/users/moore/acl2.
+  We also recommend that you look at the ACL2 Demos mentioned in the
+  [ACL2-tutorial].
 
   Most users of ACL2 have bought the book
 
@@ -39759,7 +39804,7 @@ Subtopics
   and will be permuted so as to end up as adjacent tips in the fn
   nest. See [loop-stopper].")
  (IO
-  (ACL2)
+  (INTERFACING-TOOLS ACL2-BUILT-INS)
   "Input/output facilities in ACL2
 
     Example:
@@ -40028,15 +40073,6 @@ Subtopics
   [Eviscerate-hide-terms]
       To print (hide ...) as <hidden>
 
-  [External-format]
-      See [character-encoding].
-
-  [Iprint]
-      See [set-iprint].
-
-  [Iprinting]
-      See [set-iprint].
-
   [Open-output-channel!]
       When trust tags are needed to open output channels
 
@@ -40052,8 +40088,8 @@ Subtopics
   [Printing-to-strings]
       Printing to strings instead of files or standard output
 
-  [Reset-print-control]
-      See [print-control].
+  [Serialize]
+      Routines for saving ACL2 objects to files, and later restoring them
 
   [Set-evisc-tuple]
       Control suppression of details when printing
@@ -40073,34 +40109,17 @@ Subtopics
   [Set-print-case]
       Control whether symbols are printed in upper case or in lower case
 
-  [Set-print-circle]
-      See [print-control].
-
-  [Set-print-escape]
-      See [print-control].
-
-  [Set-print-length]
-      See [print-control].
-
-  [Set-print-level]
-      See [print-control].
-
-  [Set-print-lines]
-      See [print-control].
-
   [Set-print-radix]
       Control printing of the radix for numbers
 
-  [Set-print-readably]
-      See [print-control].
-
-  [Set-print-right-margin]
-      See [print-control].
-
   [Without-evisc]
-      Print output in full")
- (IPRINT (IO) "See [set-iprint].")
- (IPRINTING (IO) "See [set-iprint].")
+      Print output in full
+
+  [Wof]
+      Direct standard output and proofs output to a file")
+ (IPRINT (POINTERS) "See [set-iprint].")
+ (IPRINTING (POINTERS)
+            "See [set-iprint].")
  (IRRELEVANT-FORMALS
   (PROGRAMMING)
   "Formals that are used but only insignificantly
@@ -40197,11 +40216,10 @@ Subtopics
   since certification.
 
   See [include-book] to continue the guided tour through [books].")
- (KEYWORD (MISCELLANEOUS)
-          "See [keywordp].")
+ (KEYWORD (POINTERS) "See [keywordp].")
  (KEYWORD-COMMANDS
-  (MISCELLANEOUS)
-  "How keyword commands are processed
+  (LD)
+  "How keyword commands like :u and :pbt are processed
 
     Examples:
     user type-in                 form evaluated
@@ -40300,7 +40318,7 @@ Subtopics
   a given list. The guard of (kwote-lst lst) is (true-listp lst).
 
   To see the ACL2 definition of this function, see [pf].")
- (LAMBDA (MISCELLANEOUS) "See [term].")
+ (LAMBDA (POINTERS) "See [term].")
  (LAST
   (ACL2-BUILT-INS)
   "The last [cons] (not element) of a list
@@ -40623,10 +40641,85 @@ Subtopics
 
 Subtopics
 
+  [A!]
+      To return to the top-level of ACL2's command loop
+
+  [Abort!]
+      To return to the top-level of ACL2's command loop
+
   [Calling-ld-in-bad-contexts]
-      Errors caused by calling [ld] in inappropriate contexts")
+      Errors caused by calling [ld] in inappropriate contexts
+
+  [Default-print-prompt]
+      The default [prompt] printed by [ld]
+
+  [Keyword-commands]
+      How keyword commands like :u and :pbt are processed
+
+  [Ld-error-action]
+      Determines [ld]'s response to an error
+
+  [Ld-error-triples]
+      Determines whether a form caused an error during [ld]
+
+  [Ld-evisc-tuple]
+      Determines whether [ld] suppresses details when printing
+
+  [Ld-keyword-aliases]
+      Abbreviation of some keyword commands
+
+  [Ld-missing-input-ok]
+      Determines which forms [ld] evaluates
+
+  [Ld-post-eval-print]
+      Determines whether and how [ld] prints the result of evaluation
+
+  [Ld-pre-eval-filter]
+      Determines which forms [ld] evaluates
+
+  [Ld-pre-eval-print]
+      Determines whether [ld] prints the forms to be eval'd
+
+  [Ld-prompt]
+      Determines the [prompt] printed by [ld]
+
+  [Ld-query-control-alist]
+      How to default answers to queries
+
+  [Ld-redefinition-action]
+      To allow redefinition without undoing
+
+  [Ld-skip-proofsp]
+      How carefully ACL2 processes your [command]s
+
+  [Ld-verbose]
+      Determines whether [ld] prints ``ACL2 Loading ...''
+
+  [Lp]
+      The Common Lisp entry to ACL2
+
+  [P!]
+      To pop up (at least) one level of ACL2's command loop
+
+  [Prompt]
+      The prompt printed by [ld]
+
+  [Redef]
+      A common way to set [ld-redefinition-action]
+
+  [Redef!]
+      A common way to set [ld-redefinition-action]
+
+  [Redef+]
+      System hacker's redefinition [command]
+
+  [Redef-]
+      Turn off system hacker's redefinition [command]
+
+  [Reset-ld-specials]
+      Restores initial settings of the [ld] specials")
  (LD-ERROR-ACTION
-  (MISCELLANEOUS)
+  (LD)
   "Determines [ld]'s response to an error
 
   Ld-error-action is an [ld] special (see [ld]). The accessor is
@@ -40738,7 +40831,7 @@ Subtopics
   ld similarly sees the :STOP-LD; stops evaluation of forms, without
   defining g1; and returns (mv nil (:STOP-LD 2 3 4) state).")
  (LD-ERROR-TRIPLES
-  (MISCELLANEOUS)
+  (LD)
   "Determines whether a form caused an error during [ld]
 
   Ld-error-triples is an [ld] special (see [ld]). The accessor is
@@ -40760,7 +40853,7 @@ Subtopics
   conclusion of the last error-free form. Then [ld] takes the action
   determined by [ld-error-action].")
  (LD-EVISC-TUPLE
-  (MISCELLANEOUS)
+  (LD)
   "Determines whether [ld] suppresses details when printing
 
   Ld-evisc-tuple is an [ld] special (see [ld]). The accessor is
@@ -40782,7 +40875,7 @@ Subtopics
   how other evisc-tuples affect the printing of error messages and
   warnings, as well as other output not from ld.")
  (LD-KEYWORD-ALIASES
-  (SWITCHES-PARAMETERS-AND-MODES)
+  (LD SWITCHES-PARAMETERS-AND-MODES)
   "Abbreviation of some keyword commands
 
     Examples:
@@ -40859,7 +40952,7 @@ Subtopics
   [keyword-commands]. But this parse is overridden, as described
   above, for the keywords bound in the ld-keyword-aliases [table].")
  (LD-MISSING-INPUT-OK
-  (MISCELLANEOUS)
+  (LD)
   "Determines which forms [ld] evaluates
 
   ld-missing-input-ok is an [ld] special (see [ld]). The accessor is
@@ -40876,7 +40969,7 @@ Subtopics
   is supplied for :ld-missing-input-ok, where :warn prints a warning.
   Also see [ld].")
  (LD-POST-EVAL-PRINT
-  (MISCELLANEOUS)
+  (LD)
   "Determines whether and how [ld] prints the result of evaluation
 
   Ld-post-eval-print is an [ld] special (see [ld]). The accessor is
@@ -40938,7 +41031,7 @@ Subtopics
   returning a value. By printing just val otherwise, we suppress the
   fact that [state] has possibly been changed.")
  (LD-PRE-EVAL-FILTER
-  (MISCELLANEOUS)
+  (LD)
   "Determines which forms [ld] evaluates
 
   Ld-pre-eval-filter is an [ld] special (see [ld]). The accessor is
@@ -40966,7 +41059,7 @@ Subtopics
   name filter is used if you wish to replay all the [command]s in a
   file up through the introduction of the given one.")
  (LD-PRE-EVAL-PRINT
-  (MISCELLANEOUS)
+  (LD)
   "Determines whether [ld] prints the forms to be eval'd
 
   Ld-pre-eval-print is an [ld] special (see [ld]). The accessor is
@@ -40999,7 +41092,7 @@ Subtopics
   to execute (set-inhibit-output-lst lst) where lst evaluates to a
   list including 'prove and 'event.")
  (LD-PROMPT
-  (MISCELLANEOUS)
+  (LD)
   "Determines the [prompt] printed by [ld]
 
   Ld-prompt is an [ld] special (see [ld]). The accessor is (ld-prompt
@@ -41040,7 +41133,7 @@ Subtopics
   appropriately next time or assign an appropriate value to
   ld-prompt.")
  (LD-QUERY-CONTROL-ALIST
-  (MISCELLANEOUS)
+  (LD)
   "How to default answers to queries
 
   Ld-query-control-alist is an [ld] special (see [ld]). The accessor is
@@ -41093,7 +41186,7 @@ Subtopics
   no such printing would take place for sysdef queries. Instead, the
   default value of :n would be assigned ``quietly''.")
  (LD-REDEFINITION-ACTION
-  (MISCELLANEOUS)
+  (LD)
   "To allow redefinition without undoing
 
   Ld-redefinition-action is an [ld] special (see [ld]). The accessor is
@@ -41264,7 +41357,7 @@ Subtopics
   About Unfortunate Redundancies,'' for more discussion of potential
   pitfalls of redefinition.")
  (LD-SKIP-PROOFSP
-  (MISCELLANEOUS)
+  (LD)
   "How carefully ACL2 processes your [command]s
 
     Examples:
@@ -41366,7 +41459,7 @@ Subtopics
   simply to allow experimentation and rapid reconstruction of lost or
   modified logical [world]s.")
  (LD-VERBOSE
-  (MISCELLANEOUS)
+  (LD)
   "Determines whether [ld] prints ``ACL2 Loading ...''
 
   Ld-verbose is an [ld] special (see [ld]). The accessor is (ld-verbose
@@ -41392,7 +41485,7 @@ Subtopics
   current recursion in [ld] and/or [wormhole], and #\\c is the
   connected book directory (cbd).")
  (LEGACY-DOCUMENTATION
-  (ACL2)
+  (DOCUMENTATION)
   "Parent section for the legacy \"documentation\" topic (likely to be
   deleted soon)
 
@@ -41424,9 +41517,12 @@ Subtopics
       Another response to ``(type :more for more, :more! for the rest)''
 
   [More-doc]
-      A continuation of the :[doc] [documentation]")
+      A continuation of the :[doc] [documentation]
+
+  [Print-doc-start-column]
+      Printing the one-liner")
  (LEMMA-INSTANCE
-  (MISCELLANEOUS)
+  (HINTS)
   "An object denoting an instance of a theorem
 
   Lemma instances are the objects one provides via :use and :by [hints]
@@ -41888,9 +41984,18 @@ Subtopics
   term2 is a subbag of that for term1. For example, (/ a (* b b)) is
   always bigger than (fn a b) because the first has two function
   applications and {a b} is a subbag of a b b, but (/ a (* b b)) is
-  not always bigger than (fn a x).")
+  not always bigger than (fn a x).
+
+
+Subtopics
+
+  [Backchain-limit]
+      Limiting the effort expended on relieving hypotheses
+
+  [Linear-arithmetic]
+      A description of the linear arithmetic decision procedure")
  (LINEAR-ARITHMETIC
-  (MISCELLANEOUS)
+  (LINEAR)
   "A description of the linear arithmetic decision procedure
 
   We describe the procedure very roughly here. Fundamental to the
@@ -43730,7 +43835,7 @@ Subtopics
   Logxor is defined in Common Lisp. See any Common Lisp documentation
   for more information.")
  (LOOP-STOPPER
-  (MISCELLANEOUS)
+  (REWRITE)
   "Limit application of permutative rewrite rules
 
   See [rule-classes] for a discussion of the syntax of the
@@ -43884,7 +43989,7 @@ Subtopics
 
   To see the ACL2 definition of this function, see [pf].")
  (LP
-  (MISCELLANEOUS)
+  (LD)
   "The Common Lisp entry to ACL2
 
   To enter the ACL2 [command] loop from Common Lisp, call the Common
@@ -43950,7 +44055,7 @@ Subtopics
   return three such values, only the second will be printed (and that
   will only happen if the first is nil!). See [ld] for details.")
  (MACRO-ALIASES-TABLE
-  (SWITCHES-PARAMETERS-AND-MODES)
+  (MACROS SWITCHES-PARAMETERS-AND-MODES)
   "A [table] used to associate function names with macro names
 
     Example:
@@ -44016,7 +44121,7 @@ Subtopics
   example, (append x y) and (binary-append x y) represent the same
   term, for any expressions x and y.")
  (MACRO-ARGS
-  (MISCELLANEOUS)
+  (MACROS)
   "The formals list of a macro definition
 
     Examples:
@@ -44133,6 +44238,71 @@ Subtopics
 
   Also see [toggle-pc-macro] for how to change a macro command to an
   atomic macro command, and vice versa.")
+ (MACRO-LIBRARIES
+  (TOP MACROS)
+  "Generally useful macros for writing more concise code, and frameworks
+  for quickly introducing concepts like typed structures, typed
+  lists, defining functions with type signatures, and automating
+  other common tasks.")
+ (MACROS
+  (ACL2)
+  "Macros allow you to extend the syntax of ACL2.
+
+
+Subtopics
+
+  [Add-macro-alias]
+      Associate a function name with a macro name
+
+  [Add-macro-fn]
+      Associate a function name with a macro name
+
+  [Defabbrev]
+      A convenient form of macro definition for simple expansions
+
+  [Defmacro]
+      Define a macro
+
+  [Macro-libraries]
+      Generally useful macros for writing more concise code, and
+      frameworks for quickly introducing concepts like typed
+      structures, typed lists, defining functions with type
+      signatures, and automating other common tasks.
+
+  [Macro-aliases-table]
+      A [table] used to associate function names with macro names
+
+  [Macro-args]
+      The formals list of a macro definition
+
+  [Make-event]
+      Evaluate (expand) a given form and then evaluate the result
+
+  [Remove-binop]
+      Remove the association of a function name with a macro name
+
+  [Remove-macro-alias]
+      Remove the association of a function name with a macro name
+
+  [Remove-macro-fn]
+      Remove the association of a function name with a macro name
+
+  [Trans]
+      Print the macroexpansion of a form
+
+  [Trans!]
+      Print the macroexpansion of a form without single-threadedness
+      concerns
+
+  [Trans1]
+      Print the one-step macroexpansion of a form
+
+  [Untrans-table]
+      Associates a function symbol with a macro for printing user-level
+      terms
+
+  [User-defined-functions-table]
+      An advanced [table] used to replace certain system functions")
  (MAKE-CHARACTER-LIST
   (ACL2-BUILT-INS)
   "[coerce] to a list of characters
@@ -44142,7 +44312,7 @@ Subtopics
 
   To see the ACL2 definition of this function, see [pf].")
  (MAKE-EVENT
-  (EVENTS USING-TABLES-EFFICIENTLY)
+  (EVENTS MACROS)
   "Evaluate (expand) a given form and then evaluate the result
 
   Make-event is a utility for generating [events]. It provides a
@@ -45172,7 +45342,7 @@ Subtopics
   [tau-interval-dom], [tau-interval-lo-rel], [tau-interval-lo],
   [tau-interval-hi-rel], and [tau-interval-hi].")
  (MAKE-WORMHOLE-STATUS
-  (MISCELLANEOUS)
+  (WORMHOLE)
   "Creates a wormhole status object from given status, entry code, and
   data
 
@@ -45186,9 +45356,7 @@ Subtopics
   (DEFPKG)
   "User-contributed documentation on packages
 
-  Jared Davis has contributed documentation on managing ACL2 packages.
-  See
-  http://www.cs.utexas.edu/users/moore/acl2/contrib/managing-acl2-packages.html.")
+  Jared Davis has contributed documentation on managing ACL2 packages.")
  (MARKUP
   (LEGACY-DOCUMENTATION)
   "The markup language for ACL2 [documentation] strings
@@ -45475,7 +45643,7 @@ Subtopics
 
   To see the ACL2 definition of this function, see [pf].")
  (MAXIMUM-LENGTH
-  (ARRAYS)
+  (ARRAYS ACL2-BUILT-INS)
   "Return the :maximum-length from the [header] of an array
 
     Example Form:
@@ -45742,10 +45910,8 @@ Subtopics
       (declare (ignorable x)
                (xargs :guard (equal x t)))
       (and (mbt x) y))")
- (MEASURE (MISCELLANEOUS)
-          "Xargs keyword :MEASURE
-
-  See [xargs].")
+ (MEASURE (POINTERS)
+          "See [xargs] for keyword :guard-hints.")
  (MEMBER
   (ACL2-BUILT-INS)
   "Membership predicate
@@ -45781,9 +45947,8 @@ Subtopics
 
   Member is defined by Common Lisp. See any Common Lisp documentation
   for more information.")
- (MEMBER-EQ (ACL2-BUILT-INS)
-            "See [member].")
- (MEMBER-EQUAL (ACL2-BUILT-INS)
+ (MEMBER-EQ (POINTERS) "See [member].")
+ (MEMBER-EQUAL (POINTERS)
                "See [member].")
  (MEMOIZE
   (EVENTS HONS-AND-MEMOIZATION)
@@ -46406,6 +46571,9 @@ Subtopics
 
 Subtopics
 
+  [Backchain-limit]
+      Limiting the effort expended on relieving hypotheses
+
   [Evaluator-restrictions]
       Some restrictions on the use of evaluators in meta-level rules")
  (META-EXTRACT
@@ -46728,15 +46896,15 @@ Subtopics
   whether guard-checking may cause an error. A useful instance of the
   hypothesis displayed above will be one in which st is that modified
   state.")
- (META-EXTRACT-CONTEXTUAL-FACT (MISCELLANEOUS)
+ (META-EXTRACT-CONTEXTUAL-FACT (POINTERS)
                                "See [meta-extract].")
- (META-EXTRACT-FORMULA (MISCELLANEOUS)
+ (META-EXTRACT-FORMULA (POINTERS)
                        "See [meta-extract].")
- (META-EXTRACT-GLOBAL-FACT (MISCELLANEOUS)
+ (META-EXTRACT-GLOBAL-FACT (POINTERS)
                            "See [meta-extract].")
- (META-EXTRACT-GLOBAL-FACT+ (MISCELLANEOUS)
+ (META-EXTRACT-GLOBAL-FACT+ (POINTERS)
                             "See [meta-extract].")
- (META-EXTRACT-RW+-TERM (MISCELLANEOUS)
+ (META-EXTRACT-RW+-TERM (POINTERS)
                         "See [meta-extract].")
  (MIN
   (ACL2-BUILT-INS)
@@ -46794,56 +46962,8 @@ Subtopics
 
 Subtopics
 
-  [&allow-other-keys]
-      See [macro-args].
-
-  [&body]
-      See [macro-args].
-
-  [&key]
-      See [macro-args].
-
-  [&optional]
-      See [macro-args].
-
-  [&rest]
-      See [macro-args].
-
-  [&whole]
-      See [macro-args].
-
-  [A!]
-      To return to the top-level of ACL2's command loop
-
-  [Abort!]
-      To return to the top-level of ACL2's command loop
-
-  [Acknowledgments]
-      Some contributors to the well-being of ACL2
-
-  [ACL2s]
-      See [ACL2-sedan].
-
-  [Apropos]
-      See [finding-documentation].
-
-  [Backchain-limit]
-      Limiting the effort expended on relieving hypotheses
-
-  [Backchain-limit-rw]
-      Hints keyword :BACKCHAIN-LIMIT-RW
-
-  [Backtrack]
-      Hints keyword :BACKTRACK
-
-  [Bibliography]
-      Reports about ACL2
-
   [Bind-free]
       To bind free variables of a rewrite, definition, or linear rule
-
-  [By]
-      Hints keyword :BY
 
   [Case-split]
       Like force but immediately splits the top-level goal on the
@@ -46853,20 +46973,11 @@ Subtopics
       A list of two ``numbers'' limiting the number of cases produced at
       once
 
-  [Cases]
-      Hints keyword :CASES
-
-  [Clause-identifier]
-      The internal form of a [goal-spec]
-
   [Command]
       Forms you type at the top-level, but...
 
   [Command-descriptor]
       An object describing a particular [command] typed by the user
-
-  [Common-lisp]
-      Relation to Common Lisp, including deviations from the spec
 
   [Computed-hints]
       Computing advice to the theorem proving process
@@ -46875,17 +46986,11 @@ Subtopics
       Restrictions on certain functions introduced in [encapsulate]
       [events]
 
-  [Copyright]
-      ACL2 copyright, license, sponsorship
-
   [Corollary]
       The corollary formula of a [rune]
 
   [Current-package]
       The package used for reading and printing
-
-  [Custom-keyword-hints]
-      User-defined hints
 
   [Default-backchain-limit]
       Specifying the backchain limit for a rule
@@ -46893,47 +46998,17 @@ Subtopics
   [Default-defun-mode]
       The default [defun-mode] of [defun]'d functions
 
-  [Default-hints]
-      A list of hints added to every proof attempt
-
-  [Default-print-prompt]
-      The default [prompt] printed by [ld]
-
   [Default-ruler-extenders]
       The default [ruler-extenders] for [defun]'d functions
 
-  [Defun-mode]
-      Determines whether a function definition is a logical act
-
-  [Defuns]
-      An alternative to [mutual-recursion]
-
-  [Disable-forcing]
-      To disallow forced case-splits
-
-  [Disable-immediate-force-modep]
-      [force]d hypotheses are not attacked immediately
-
   [Disabledp]
       Determine whether a given name or rune is disabled
-
-  [Do-not]
-      Hints keyword :DO-NOT
-
-  [Do-not-induct]
-      Hints keyword :DO-NOT-INDUCT
 
   [Double-rewrite]
       Cause a term to be rewritten twice
 
   [Embedded-event-form]
       Forms that may be embedded in other [events]
-
-  [Enable-forcing]
-      To allow forced case splits
-
-  [Enable-immediate-force-modep]
-      [force]d hypotheses are attacked immediately
 
   [Enter-boot-strap-mode]
       The first millisecond of the Big Bang
@@ -46947,14 +47022,8 @@ Subtopics
   [Exit-boot-strap-mode]
       The end of pre-history
 
-  [Expand]
-      Hints keyword :EXPAND
-
   [Extended-metafunctions]
       State and context sensitive metafunctions
-
-  [Failed-forcing]
-      How to deal with a proof [failure] in a forcing round
 
   [Failure]
       How to deal with a proof failure
@@ -46962,20 +47031,8 @@ Subtopics
   [Find-rules-of-rune]
       Find the rules named rune
 
-  [Finding-documentation]
-      Searching the documentation
-
-  [Fncall-term]
-      See [meta-extract].
-
   [Force]
       Identity function used to force a hypothesis
-
-  [Forced]
-      See [force].
-
-  [Forcing-round]
-      A section of a proof dealing with [force]d assumptions
 
   [Functional-instantiation-in-ACL2r]
       Additional requirements for :functional-instance hints in ACL2(r)
@@ -46995,20 +47052,8 @@ Subtopics
   [Get-internal-time]
       Runtime vs. realtime in ACL2 timings
 
-  [Get-wormhole-status]
-      Make a wormhole's status visible outside the wormhole
-
-  [Goal-spec]
-      To indicate where a hint is to be used
-
   [Guard]
       Restricting the domain of a function
-
-  [Guard-hints]
-      Xargs keyword :GUARD-HINTS
-
-  [Hands-off]
-      Hints keyword :HANDS-OFF
 
   [Hide]
       Hide a term from the rewriter
@@ -47016,81 +47061,14 @@ Subtopics
   [Hints]
       Advice to the theorem proving process
 
-  [Hints-and-the-waterfall]
-      How [hints] fit into the ACL2 proof waterfall
-
   [I-am-here]
       A convenient marker for use with [rebuild]
-
-  [If-intro]
-      See [splitter].
 
   [Ignored-attachment]
       Why attachments are sometimes not used
 
-  [Immed-forced]
-      See [splitter].
-
-  [Immediate-force-modep]
-      When executable counterpart is [enable]d, [force]d hypotheses are
-      attacked immediately
-
-  [Induct]
-      Hints keyword :INDUCT
-
-  [Keyword]
-      See [keywordp].
-
-  [Keyword-commands]
-      How keyword commands are processed
-
-  [Lambda]
-      See [term].
-
   [Last-prover-steps]
       The number of prover steps most recently taken
-
-  [Ld-error-action]
-      Determines [ld]'s response to an error
-
-  [Ld-error-triples]
-      Determines whether a form caused an error during [ld]
-
-  [Ld-evisc-tuple]
-      Determines whether [ld] suppresses details when printing
-
-  [Ld-missing-input-ok]
-      Determines which forms [ld] evaluates
-
-  [Ld-post-eval-print]
-      Determines whether and how [ld] prints the result of evaluation
-
-  [Ld-pre-eval-filter]
-      Determines which forms [ld] evaluates
-
-  [Ld-pre-eval-print]
-      Determines whether [ld] prints the forms to be eval'd
-
-  [Ld-prompt]
-      Determines the [prompt] printed by [ld]
-
-  [Ld-query-control-alist]
-      How to default answers to queries
-
-  [Ld-redefinition-action]
-      To allow redefinition without undoing
-
-  [Ld-skip-proofsp]
-      How carefully ACL2 processes your [command]s
-
-  [Ld-verbose]
-      Determines whether [ld] prints ``ACL2 Loading ...''
-
-  [Lemma-instance]
-      An object denoting an instance of a theorem
-
-  [Linear-arithmetic]
-      A description of the linear arithmetic decision procedure
 
   [Local-incompatibility]
       When non-local [events] won't replay in isolation
@@ -47098,42 +47076,8 @@ Subtopics
   [Logical-name]
       A name created by a logical event
 
-  [Loop-stopper]
-      Limit application of permutative rewrite rules
-
-  [Lp]
-      The Common Lisp entry to ACL2
-
-  [Macro-args]
-      The formals list of a macro definition
-
-  [Make-wormhole-status]
-      Creates a wormhole status object from given status, entry code, and
-      data
-
-  [Measure]
-      Xargs keyword :MEASURE
-
   [Meta-extract]
       Meta reasoning using valid terms extracted from context or [world]
-
-  [Meta-extract-contextual-fact]
-      See [meta-extract].
-
-  [Meta-extract-formula]
-      See [meta-extract].
-
-  [Meta-extract-global-fact]
-      See [meta-extract].
-
-  [Meta-extract-global-fact+]
-      See [meta-extract].
-
-  [Meta-extract-rw+-term]
-      See [meta-extract].
-
-  [Mode]
-      Xargs keyword :MODE
 
   [Name]
       Syntactic rules on logical names
@@ -47141,41 +47085,14 @@ Subtopics
   [Nil-goal]
       How to proceed when the prover generates a goal of nil
 
-  [No-thanks]
-      Hints keyword :NO-THANKS
-
-  [Non-executable]
-      Xargs keyword :NON-EXECUTABLE
-
   [Non-linear-arithmetic]
       Non-linear Arithmetic
-
-  [Nonlinearp]
-      Hints keyword :NONLINEARP
-
-  [Normalize]
-      Xargs keyword :NORMALIZE
 
   [Nu-rewriter]
       Rewriting NTH/UPDATE-NTH expressions
 
-  [Obdd]
-      Ordered binary decision diagrams with rewriting
-
   [Ordinals]
       Ordinals in ACL2
-
-  [Otf-flg]
-      Allow more than one initial subgoal to be pushed for induction
-
-  [Override-hints]
-      A list of hints given priority in every proof attempt
-
-  [P!]
-      To pop up (at least) one level of ACL2's command loop
-
-  [Package-reincarnation-import-restrictions]
-      Re-defining undone [defpkg]s
 
   [Parallel]
       Evaluating forms in parallel
@@ -47183,56 +47100,14 @@ Subtopics
   [Parallelism-build]
       Building an ACL2 executable with parallel execution enabled
 
-  [Print-doc-start-column]
-      Printing the one-liner
-
-  [Prompt]
-      The prompt printed by [ld]
-
-  [Proof-of-well-foundedness]
-      A proof that [o<] is well-founded on [o-p]s
-
-  [Proof-supporters-alist]
-      See [dead-events].
-
-  [Redef]
-      A common way to set [ld-redefinition-action]
-
-  [Redef!]
-      A common way to set [ld-redefinition-action]
-
-  [Redef+]
-      System hacker's redefinition [command]
-
-  [Redef-]
-      Turn off system hacker's redefinition [command]
-
   [Redefined-names]
       To collect the names that have been redefined
 
   [Redundant-events]
       Allowing a name to be introduced ``twice''
 
-  [Reorder]
-      Hints keyword :REORDER
-
-  [Restrict]
-      Hints keyword :RESTRICT
-
   [Rewrite-stack-limit]
       Limiting the stack depth of the ACL2 rewriter
-
-  [Saving-and-restoring]
-      See [save-exec].
-
-  [Set-wormhole-data]
-      Sets the wormhole data object in a wormhole status object
-
-  [Set-wormhole-entry-code]
-      Sets the wormhole entry code in a wormhole status object
-
-  [Show-bodies]
-      Show the potential definition bodies
 
   [Signature]
       How to specify the arity of a constrained function
@@ -47242,15 +47117,6 @@ Subtopics
 
   [Specious-simplification]
       Nonproductive proof steps
-
-  [Splitter]
-      Reporting of rules whose application may have caused case splits
-
-  [Splitter-output]
-      Status for reporting of [splitter] rules
-
-  [Stobjs]
-      Xargs keyword :STOBJS
 
   [Subversive-inductions]
       Why we restrict [encapsulate]d recursive functions
@@ -47267,14 +47133,8 @@ Subtopics
   [Term]
       The three senses of well-formed ACL2 expressions or formulas
 
-  [The-method]
-      How to find proofs
-
   [Time-tracker-tau]
       Messages about expensive use of the [tau-system]
-
-  [Trust-tag]
-      See [defttag].
 
   [Ttags-seen]
       List some declared trust tags (ttags)
@@ -47285,77 +47145,14 @@ Subtopics
   [Type-set]
       How type information is encoded in ACL2
 
-  [Typespec-check]
-      See [meta-extract].
-
-  [Use]
-      Hints keyword :USE
-
-  [Using-computed-hints]
-      How to use computed hints
-
-  [Using-computed-hints-1]
-      Driving Home the Basics
-
-  [Using-computed-hints-2]
-      One Hint to Every Top-Level Goal in a Forcing Round
-
-  [Using-computed-hints-3]
-      Hints as a Function of the Goal (not its Name)
-
-  [Using-computed-hints-4]
-      Computing the Hints
-
-  [Using-computed-hints-5]
-      Debugging Computed Hints
-
-  [Using-computed-hints-6]
-      Using the computed-hint-replacement feature
-
-  [Using-computed-hints-7]
-      Using the stable-under-simplificationp flag
-
-  [Using-computed-hints-8]
-      Some Final Comments
-
   [Using-enabled-rules]
       Avoiding :use [hints] for [enable]d :[rewrite] rules
-
-  [Version]
-      ACL2 Version Number
-
-  [Waterfall]
-      See [hints-and-the-waterfall].
-
-  [Why-brr]
-      An explanation of why ACL2 has an explicit [brr] mode
 
   [World]
       ACL2 property lists and the ACL2 logical database
 
   [Wormhole]
-      [ld] without [state] --- a short-cut to a parallel universe
-
-  [Wormhole-data]
-      Determines the wormhole data object from a wormhole status object
-
-  [Wormhole-entry-code]
-      Determines the wormhole entry code from a wormhole status object
-
-  [Wormhole-eval]
-      State-saving without state --- a short-cut to a parallel universe
-
-  [Wormhole-implementation]
-      Notes on how wormholes are implemented
-
-  [Wormhole-p]
-      Predicate to determine if you are inside a [wormhole]
-
-  [Wormhole-statusp]
-      Predicate recognizing well-formed wormhole status object
-
-  [Xargs]
-      Extra arguments, for example to give [hints] to [defun]")
+      [ld] without [state] --- a short-cut to a parallel universe")
  (MOD
   (ACL2-BUILT-INS)
   "Remainder using [floor]
@@ -47403,10 +47200,8 @@ Subtopics
   function.
 
   To see the ACL2 definition of this function, see [pf].")
- (MODE (MISCELLANEOUS)
-       "Xargs keyword :MODE
-
-  See [xargs].")
+ (MODE (POINTERS)
+       "See [xargs] for keyword :guard-hints.")
  (MODELING_IN_ACL2
   (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Modeling in ACL2
@@ -47867,7 +47662,7 @@ Subtopics
   exec) expands to (mbe1 exec logic), which expands to a call of
   [return-last].")
  (MUTUAL-RECURSION
-  (EVENTS PROGRAMMING)
+  (EVENTS PROGRAMMING DEFUN)
   "Define some mutually recursive functions
 
     Example:
@@ -47972,7 +47767,13 @@ Subtopics
     ; all inside a MUTUAL-RECURSION form.
 
       (declare (xargs :guard (alistp lst)))
-      (cons 'mutual-recursion (my-mutual-recursion-fn lst))).")
+      (cons 'mutual-recursion (my-mutual-recursion-fn lst))).
+
+
+Subtopics
+
+  [Defuns]
+      An alternative to [mutual-recursion]")
  (MUTUAL-RECURSION-PROOF-EXAMPLE
   (TUTORIAL5-MISCELLANEOUS-EXAMPLES)
   "A small proof about mutually recursive functions
@@ -49149,14 +48950,12 @@ Subtopics
 
   In particular, reasoning about any of these primitives reduces to
   reasoning about the function no-duplicatesp-equal.")
- (NO-DUPLICATESP-EQ (ACL2-BUILT-INS)
+ (NO-DUPLICATESP-EQ (POINTERS)
                     "See [no-duplicatesp].")
- (NO-DUPLICATESP-EQUAL (ACL2-BUILT-INS)
+ (NO-DUPLICATESP-EQUAL (POINTERS)
                        "See [no-duplicatesp].")
- (NO-THANKS (MISCELLANEOUS)
-            "Hints keyword :NO-THANKS
-
-  See [hints].")
+ (NO-THANKS (POINTERS)
+            "See [hints] for keyword :guard-hints.")
  (NON-EXEC
   (ACL2-BUILT-INS)
   "Mark code as non-executable
@@ -49248,10 +49047,8 @@ Subtopics
     ; violation for that; we just get the error expected from using non-exec.
     (defun h2 ()
       (non-exec (/ 0)))")
- (NON-EXECUTABLE (MISCELLANEOUS)
-                 "Xargs keyword :NON-EXECUTABLE
-
-  See [xargs].")
+ (NON-EXECUTABLE (POINTERS)
+                 "See [xargs] for keyword :guard-hints.")
  (NON-LINEAR-ARITHMETIC
   (MISCELLANEOUS)
   "Non-linear Arithmetic
@@ -49469,10 +49266,8 @@ Subtopics
   done in an efficient way. The use of a small, specialized, theory
   helps avoid the repeated application of rewrite rules to already
   stabilized terms.")
- (NONLINEARP (MISCELLANEOUS)
-             "Hints keyword :NONLINEARP
-
-  See [hints].")
+ (NONLINEARP (POINTERS)
+             "See [hints] for keyword :guard-hints.")
  (NONNEGATIVE-INTEGER-QUOTIENT
   (ACL2-BUILT-INS)
   "Natural number division function
@@ -49500,10 +49295,8 @@ Subtopics
   virtually always more than is necessary for the ACL2 user. In
   particular, the output often omits subgoals that are sufficiently
   trivial, including tautologies.")
- (NORMALIZE (MISCELLANEOUS)
-            "Xargs keyword :NORMALIZE
-
-  See [xargs].")
+ (NORMALIZE (POINTERS)
+            "See [xargs] for keyword :guard-hints.")
  (NORMED
   (HONS-AND-MEMOIZATION)
   "Normed objects are ACL2 Objects that are \"canonical\" or \"unique\" in a
@@ -50691,10 +50484,8 @@ Subtopics
 
   The books/case-studies/ directory has been removed. These books are
   in support of the first (1998) ACL2 workshop, and are accessible
-  via the ACL2 home page on the Web,
-  http://www.cs.utexas.edu/users/moore/acl2/. Also, the
-  books/cli-misc directory has been renamed books/misc, and the
-  books/nqthm directory has been removed.
+  via the ACL2 home page. Also, the books/cli-misc directory has been
+  renamed books/misc, and the books/nqthm directory has been removed.
 
   The notion of ACL2 version has been slightly modified to catch
   unsoundness due to implementation dependencies. See [version].
@@ -53665,12 +53456,10 @@ Subtopics
   Redundancies'' is new. Thanks to Grant Passmore for providing
   examples that led us to write this additional documentation.
 
-  Solutions to exercises in ``How To Prove Theorems Formally''
-  (http://www.cs.utexas.edu/users/moore/publications/how-to-prove-thms)
-  are now available in distributed book
-  books/misc/how-to-prove-thms.lisp. Also in that directory may be
-  found a new book hanoi.lisp that contains a solution to the Towers
-  of Hanoi problem.
+  Solutions to exercises in  How To Prove Theorems Formally are now
+  available in distributed book books/misc/how-to-prove-thms.lisp.
+  Also in that directory may be found a new book hanoi.lisp that
+  contains a solution to the Towers of Hanoi problem.
 
 
 Subtopics
@@ -57468,8 +57257,8 @@ Subtopics
 
   NEW AND UPDATED BOOKS
 
-  See http://code.google.com/p/acl2-books/wiki/BooksSince34 for a list
-  of books in Version 3.5 of ACL2 but not Version 3.4.
+  See BooksSince34 for a list of books in Version 3.5 of ACL2 but not
+  Version 3.4.
 
   Run the shell command
 
@@ -57828,11 +57617,10 @@ Subtopics
 
   NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE
 
-  See http://code.google.com/p/acl2-books/wiki/BooksSince35 for a list
-  of books in Version 3.6 of ACL2 but not Version 3.5. For changes to
-  existing books rather than additions, see the log entries at
-  http://code.google.com/p/acl2-books/source/list starting with
-  revision r286 up through revision r329.
+  See BooksSince35 for a list of books in Version 3.6 of ACL2 but not
+  Version 3.5. For changes to existing books rather than additions,
+  see the log entries starting with revision r286 up through revision
+  r329.
 
   It is no longer required to specify a value for environment (or
   `make') variable ACL2_SYSTEM_BOOKS when running `make' in the
@@ -57924,12 +57712,10 @@ Subtopics
   The essential changes to ACL2 since Version 3.6 are the two bug fixes
   described below. There was also some functionality-neutral code
   refactoring, as requested by Daron Vroon in support of the ACL2
-  Sedan (see [ACL2-sedan]). Also see
-  http://code.google.com/p/acl2-books/wiki/BooksSince36 for a list of
-  books in Version 3.6.1 of ACL2 but not Version 3.6. For changes to
-  existing books rather than additions, see the log entries at
-  http://code.google.com/p/acl2-books/source/list starting with
-  revision r329 up through revision 350.
+  Sedan (see [ACL2-sedan]). Also see BooksSince36 for a list of books
+  in Version 3.6.1 of ACL2 but not Version 3.6. For changes to
+  existing books rather than additions, see the log entries starting
+  with revision r329 up through revision 350.
 
   Fixed a soundness bug in the handling of [ruler-extenders],
   specifically in the handling of [let]-expressions. Thanks to Pete
@@ -58731,9 +58517,8 @@ Subtopics
 
   NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE
 
-  See http://code.google.com/p/acl2-books/source/list for a record of
-  books changed or added since the preceding release, with log
-  entries.
+  See the log entries for a record of books changed or added since the
+  preceding release, with log entries.
 
   We note in particular the new system/ directory, which begins to
   specify ACL2 system code in anticipation of opening the
@@ -58946,9 +58731,8 @@ Subtopics
 
   NEW AND UPDATED BOOKS AND RELATED INFRASTRUCTURE
 
-  See http://code.google.com/p/acl2-books/source/list for a record of
-  books changed or added since the preceding release, with log
-  entries.
+  See the log entries for a record of books changed or added since the
+  preceding release, with log entries.
 
   Modified books/Makefile-generic by adding a new BOOKS_SKIP_COMP
   variable, which is used in Makefiles in some subdirectories of
@@ -59447,8 +59231,7 @@ Subtopics
 
   Many changes have been made to the distributed books, thanks to an
   active ACL2 community. You can contribute books and obtain updates
-  between ACL2 releases by visiting the acl2-books project web page,
-  http://acl2-books.googlecode.com/.
+  between ACL2 releases by visiting the ACL2 Books web page.
 
   There is new Makefile support for certifying just some of the
   distributed books. See [books-certification-classic], in particular
@@ -60015,9 +59798,8 @@ Subtopics
   CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS
 
   Many changes have been made to the distributed books, as recorded in
-  svn logs under the `Source' and 'Updates' links at
-  http://acl2-books.googlecode.com/. Here we list some of the more
-  significant changes.
+  svn logs under the `Source' and 'Updates' links at the ACL2 Books
+  web page. Here we list some of the more significant changes.
 
       o A large library has been graciously contributed by the formal
       verification group at Centaur Technology. See books/centaur/
@@ -60145,8 +59927,8 @@ Subtopics
   Public License. [Added later: The license has changed since
   Version_5.0. See LICENSE.] Formerly, any later version had been
   acceptable. Moreover, books are no longer distributed from a
-  University of Texas website, but rather, from Google Code at
-  http://code.google.com/p/acl2-books/downloads/.
+  University of Texas website, but rather, from Google Code at the
+  ACL2 Books Downloads page.
 
   CHANGES TO EXISTING FEATURES
 
@@ -60548,8 +60330,7 @@ Subtopics
   to Jared Davis for requesting such a utility and to Shilpi Goel for
   pointing out an inconvenience with the initial implementation. Note
   that it uses the distributed book books/misc/disassemble.lisp,
-  which users are welcome to modify (see
-  http://www.cs.utexas.edu/users/moore/acl2/).
+  which users are welcome to modify (see [community-books]).
 
   The macro set-accumulated-persistence is an alias for
   [accumulated-persistence]. Thanks to Robert Krug for suggesting
@@ -62344,15 +62125,18 @@ Subtopics
   [documentation] has been updated to reflect all changes that are
   recorded here.
 
-  Below we roughly organize the changes since Version 6.2 into the
-  following categories of changes: existing features, new features,
-  heuristic improvements, bug fixes, changes at the system level,
-  Emacs support, and experimental versions. Each change is described
-  in just one category, though of course many changes could be placed
-  in more than one category.
+  Below we roughly organize the changes to ACL2 since Version 6.3 into
+  the following categories of changes: existing features, new
+  features, heuristic improvements, bug fixes, changes at the system
+  level, Emacs support, and experimental versions. Each change is
+  described in just one category, though of course many changes could
+  be placed in more than one category.
+
+  See also [note-6-4-books] for a summary of changes made to the ACL2
+  Community Books since ACL2 6.3.
 
 
-CHANGES TO EXISTING FEATURES
+Changes to Existing Features
 
   [Gag-mode] no longer saves prover output when PROVE output is
   inhibited (see [set-inhibit-output-lst]). This may improve
@@ -62401,7 +62185,7 @@ CHANGES TO EXISTING FEATURES
   large character string.
 
 
-NEW FEATURES
+New Features
 
   We have added a tool for writing out useful information about a
   book's event names when certifying the book. See [bookdata]. Thanks
@@ -62416,10 +62200,10 @@ NEW FEATURES
   Thanks to Shilpi Goel for requesting this enhancement.
 
 
-HEURISTIC IMPROVEMENTS
+Heuristic Improvements
 
 
-BUG FIXES
+Bug Fixes
 
   It had been possible to update a [stobj] (either an ordinary stobj or
   an abstract stobjs) so that it no longer satisfies its recognizer
@@ -62452,7 +62236,7 @@ BUG FIXES
   problem.
 
 
-CHANGES AT THE SYSTEM LEVEL
+Changes at the System Level
 
   The ACL2 system [documentation] has been reworked for the [xdoc]
   framework developed by Jared Davis. While the ACL2 User's Manual
@@ -62468,11 +62252,8 @@ CHANGES AT THE SYSTEM LEVEL
   eliminated (for example :more). Thanks to Jared for all his work
   contributing to this enhancement.
 
-  See [note-6-4-books] for release notes about the books, corresponding
-  to the release of ACL2 Version 6.4.
 
-
-EMACS SUPPORT
+EMACS Support
 
   There is now an Emacs utility for browsing the hypertext
   documentation for ACL2 and the community books. This browser,
@@ -62483,7 +62264,7 @@ EMACS SUPPORT
   if you load the file emacs/emacs-acl2.el. See [ACL2-doc].
 
 
-EXPERIMENTAL/ALTERNATE VERSIONS")
+Experimental/Alternate Versions")
  (NOTE1
   (RELEASE-NOTES)
   "Acl2 Version 1.1 Notes
@@ -62501,7 +62282,8 @@ EXPERIMENTAL/ALTERNATE VERSIONS")
 Subtopics
 
   [Books]
-      Files of ACL2 event forms
+      Books are files of ACL2 [events]---they are the main way to split up
+      large ACL2 developments into separate modules.
 
   [Guard]
       Restricting the domain of a function
@@ -63806,7 +63588,7 @@ Subtopics
 
   Clausify now optimizes (mv-nth 'k (list x0 ... xk ... xn)) to xk.")
  (NQTHM-TO-ACL2
-  (DOCUMENTATION)
+  (ACL2-TUTORIAL)
   "ACL2 analogues of Nqthm functions and commands
 
     Example Forms:
@@ -64230,7 +64012,7 @@ Subtopics
 
     (rationalp x)")
  (O-FINP
-  (ACL2-BUILT-INS)
+  (ORDINALS ACL2-BUILT-INS)
   "Recognizes if an ordinal is finite
 
   We introduce the function o-finp which returns t for any ordinal that
@@ -64240,7 +64022,7 @@ Subtopics
 
   To see the ACL2 definition of this function, see [pf].")
  (O-FIRST-COEFF
-  (ACL2-BUILT-INS)
+  (ORDINALS ACL2-BUILT-INS)
   "Returns the first coefficient of an ordinal
 
   An ACL2 ordinal is either a natural number or, for an infinite
@@ -64254,7 +64036,7 @@ Subtopics
 
   To see the ACL2 definition of this function, see [pf].")
  (O-FIRST-EXPT
-  (ACL2-BUILT-INS)
+  (ORDINALS ACL2-BUILT-INS)
   "The first exponent of an ordinal
 
   An ACL2 ordinal is either a natural number or, for an infinite
@@ -64268,13 +64050,13 @@ Subtopics
 
   To see the ACL2 definition of this function, see [pf].")
  (O-INFP
-  (ACL2-BUILT-INS)
+  (ORDINALS ACL2-BUILT-INS)
   "Recognizes if an ordinal is infinite
 
   O-infp is a macro. (O-infp x) opens up to (not (o-finp x)) (see
   [o-finp]).")
  (O-P
-  (ACL2-BUILT-INS)
+  (ORDINALS ACL2-BUILT-INS)
   "A recognizer for the ordinals up to epsilon-0
 
   Using the nonnegative integers and lists we can represent the
@@ -64445,7 +64227,7 @@ Subtopics
 
   To see the ACL2 definition of this function, see [pf].")
  (O-RST
-  (ACL2-BUILT-INS)
+  (ORDINALS ACL2-BUILT-INS)
   "Returns the rest of an infinite ordinal
 
   An ACL2 infinite ordinal is a list whose elements are
@@ -64458,7 +64240,7 @@ Subtopics
 
   To see the ACL2 definition of this function, see [pf].")
  (O<
-  (ACL2-BUILT-INS)
+  (ORDINALS ACL2-BUILT-INS)
   "The well-founded less-than relation on ordinals up to epsilon-0
 
   If x and y are both o-ps (see [o-p]) then (o< x y) is true iff x is
@@ -64519,22 +64301,22 @@ Subtopics
 
   To see the ACL2 definition of this function, see [pf].")
  (O<=
-  (ACL2-BUILT-INS)
+  (ORDINALS ACL2-BUILT-INS)
   "The less-than-or-equal relation for the ordinals
 
   o<= is a macro and (o<= x y) expands to (not (o< y x)). See [o<].")
  (O>
-  (ACL2-BUILT-INS)
+  (ORDINALS ACL2-BUILT-INS)
   "The greater-than relation for the ordinals
 
   O> is a macro and (o> x y) expands to (o< y x). See [o<].")
  (O>=
-  (ACL2-BUILT-INS)
+  (ORDINALS ACL2-BUILT-INS)
   "The greater-than-or-equal relation for the ordinals
 
   O>= is a macro and (o>= x y) expands to (not (o< x y)). See [o<].")
  (OBDD
-  (MISCELLANEOUS)
+  (BDD)
   "Ordered binary decision diagrams with rewriting
 
   See [bdd] for information on this topic.")
@@ -64606,7 +64388,7 @@ Subtopics
   observation during [include-book]. If you want to avoid printing
   from observation-cw during [include-book], then you need to manage
   that yourself.")
- (OBSERVATION-CW (ACL2-BUILT-INS)
+ (OBSERVATION-CW (POINTERS)
                  "See [observation].")
  (ODDP
   (ACL2-BUILT-INS)
@@ -64762,11 +64544,11 @@ Subtopics
   [world]s. Most users are unlikely to experience a memory problem,
   but if you do, then you may want to disable oops by evaluting
   (reset-kill-ring 0 state); see [reset-kill-ring].")
- (OPEN-INPUT-CHANNEL (ACL2-BUILT-INS)
+ (OPEN-INPUT-CHANNEL (POINTERS)
                      "See [io].")
- (OPEN-INPUT-CHANNEL-P (ACL2-BUILT-INS)
+ (OPEN-INPUT-CHANNEL-P (POINTERS)
                        "See [io].")
- (OPEN-OUTPUT-CHANNEL (ACL2-BUILT-INS)
+ (OPEN-OUTPUT-CHANNEL (POINTERS)
                       "See [io].")
  (OPEN-OUTPUT-CHANNEL!
   (IO)
@@ -64876,7 +64658,7 @@ Subtopics
             \"nil\" :load-compiled-file nil))
 
     (defthm bad nil :rule-classes nil)")
- (OPEN-OUTPUT-CHANNEL-P (ACL2-BUILT-INS)
+ (OPEN-OUTPUT-CHANNEL-P (POINTERS)
                         "See [io].")
  (OPEN-TRACE-FILE
   (TRACE)
@@ -64892,8 +64674,7 @@ Subtopics
   [standard-co]. But it can be redirected to a file as shown above.
   See [close-trace-file] for how to send trace output back to the
   screen.")
- (OPTIMIZE (PROGRAMMING)
-           "See [declare].")
+ (OPTIMIZE (POINTERS) "See [declare].")
  (OR
   (ACL2-BUILT-INS)
   "Disjunction
@@ -65205,9 +64986,45 @@ Subtopics
   use l< to prove that the famous Ackermann function terminates.
   Finally, since l< does something reasonable with natural numbers,
   it gets along with [ACL2-count], the default measure chosen by
-  ACL2.")
+  ACL2.
+
+
+Subtopics
+
+  [O-finp]
+      Recognizes if an ordinal is finite
+
+  [O-first-coeff]
+      Returns the first coefficient of an ordinal
+
+  [O-first-expt]
+      The first exponent of an ordinal
+
+  [O-infp]
+      Recognizes if an ordinal is infinite
+
+  [O-p]
+      A recognizer for the ordinals up to epsilon-0
+
+  [O-rst]
+      Returns the rest of an infinite ordinal
+
+  [O<]
+      The well-founded less-than relation on ordinals up to epsilon-0
+
+  [O<=]
+      The less-than-or-equal relation for the ordinals
+
+  [O>]
+      The greater-than relation for the ordinals
+
+  [O>=]
+      The greater-than-or-equal relation for the ordinals
+
+  [Proof-of-well-foundedness]
+      A proof that [o<] is well-founded on [o-p]s")
  (OTF-FLG
-  (MISCELLANEOUS)
+  (DEFTHM THM XARGS)
   "Allow more than one initial subgoal to be pushed for induction
 
   The value of this flag is normally nil. If you want to prevent the
@@ -65255,15 +65072,9 @@ Subtopics
 
 Subtopics
 
-  [Accumulated-persistence]
-      To get statistics on which [rune]s are being tried
-
   [ACL2-defaults-table]
       A [table] specifying certain defaults, e.g., the default
       [defun-mode]
-
-  [ACL2-help]
-      The acl2-help mailing list
 
   [Break$]
       Cause an immediate Lisp break
@@ -65271,44 +65082,17 @@ Subtopics
   [Certify-book]
       How to produce a [certificate] for a book
 
-  [Certify-book!]
-      A variant of [certify-book]
-
-  [Command-line]
-      Handling of command-line arguments when ACL2 is invoked
-
-  [Cw-gstack]
-      Debug a rewriting loop or stack overflow
-
   [Dead-events]
       Using proof supporters to identify dead code and unused theorems
 
-  [Disassemble$]
-      Disassemble a function
-
-  [Dmr]
-      Dynamically monitor rewrites and other prover activity
-
-  [Dynamically-monitor-rewrites]
-      See [dmr].
-
-  [Exit]
-      Quit entirely out of Lisp
-
   [Good-bye]
       Quit entirely out of Lisp
-
-  [Guard-obligation]
-      The guard proof obligation
 
   [In-package]
       Select current package
 
   [Ld]
       The ACL2 read-eval-print loop, file loader, and [command] processor
-
-  [Print-gv]
-      Print a form whose evaluation caused a guard violation
 
   [Props]
       Print the ACL2 properties on a symbol
@@ -65325,32 +65109,17 @@ Subtopics
   [Psog]
       Show the most recently saved output in [gag-mode]
 
-  [Pstack]
-      Seeing what the prover is up to
-
   [Q]
       Quit ACL2 (type :q) --- reenter with (lp)
 
   [Quick-and-dirty-subsumption-replacement-step]
       (advanced topic) controlling a heuristic in the prover's clausifier
 
-  [Quit]
-      Quit entirely out of Lisp
-
   [Rebuild]
       A convenient way to reconstruct your old [state]
 
   [Redo-flat]
       Redo on failure of a [progn], [encapsulate], or [certify-book]
-
-  [Reset-ld-specials]
-      Restores initial settings of the [ld] specials
-
-  [Save-exec]
-      Save an executable image and a wrapper script
-
-  [Set-accumulated-persistence]
-      See [accumulated-persistence].
 
   [Sharp-bang-reader]
       Package prefix that is not restricted to symbols
@@ -65363,9 +65132,6 @@ Subtopics
 
   [Sharp-u-reader]
       Allow underscore characters in numbers
-
-  [Show-accumulated-persistence]
-      See [accumulated-persistence].
 
   [Skip-proofs]
       Skip proofs for a given form --- a quick way to introduce
@@ -65383,33 +65149,11 @@ Subtopics
   [Top-level]
       Evaluate a top-level form as a function body
 
-  [Trace]
-      Tracing functions in ACL2
-
-  [Trans]
-      Print the macroexpansion of a form
-
-  [Trans!]
-      Print the macroexpansion of a form without single-threadedness
-      concerns
-
-  [Trans1]
-      Print the one-step macroexpansion of a form
-
-  [Verify-guards-formula]
-      View the guard proof obligation, without proving it
-
-  [Walkabout]
-      Explore an ACL2 cons tree
-
   [With-prover-step-limit]
       Limit the number of steps for proofs
 
   [With-prover-time-limit]
-      Limit the time for proofs
-
-  [Wof]
-      Direct standard output and proofs output to a file")
+      Limit the time for proofs")
  (OTHER_REQUIREMENTS
   (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Other Requirements
@@ -65487,7 +65231,7 @@ Subtopics
                    :standard-co (@ tmp-channel))
     (close-output-channel (@ tmp-channel) state)")
  (OVERRIDE-HINTS
-  (MISCELLANEOUS)
+  (HINTS)
   "A list of hints given priority in every proof attempt
 
   This is an advanced feature, originally implemented to help system
@@ -65767,7 +65511,7 @@ Subtopics
 
   []")
  (P!
-  (MISCELLANEOUS)
+  (LD)
   "To pop up (at least) one level of ACL2's command loop
 
   Logically speaking, (p!) = nil. If you are already at the top level
@@ -65792,7 +65536,7 @@ Subtopics
   If you are at an ACL2 prompt (as opposed to a raw Lisp break), then
   you may type :p! in place of (p!); see [keyword-commands].")
  (PACKAGE-REINCARNATION-IMPORT-RESTRICTIONS
-  (MISCELLANEOUS)
+  (DEFPKG)
   "Re-defining undone [defpkg]s
 
   Suppose (defpkg \"pkg\" imports) is the most recently executed
@@ -65823,7 +65567,7 @@ Subtopics
   not import a::sym into \"pkg\". But in fact in AKCL it is a theorem
   because pkg::sym is read as a::sym because of the old imports.")
  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS
-  (ACL2)
+  (ACL2-TUTORIAL)
   "Pages Written Especially for the Tours
 
   The ACL2 Home Page is generated from ACL2's online documentation
@@ -67223,8 +66967,7 @@ Subtopics
 
   Please see [pe]. :Pe now has the functionality formerly provided by
   :pe!.")
- (PEEK-CHAR$ (ACL2-BUILT-INS)
-             "See [io].")
+ (PEEK-CHAR$ (POINTERS) "See [io].")
  (PERHAPS
   (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Perhaps
@@ -67435,6 +67178,426 @@ Subtopics
   for more information.
 
   To see the ACL2 definition of this function, see [pf].")
+ (POINTERS
+  (ACL2)
+  "Links pointing to relevant documentation topics
+
+
+Subtopics
+
+  [&allow-other-keys]
+      See [macro-args].
+
+  [&body]
+      See [macro-args].
+
+  [&key]
+      See [macro-args].
+
+  [&optional]
+      See [macro-args].
+
+  [&rest]
+      See [macro-args].
+
+  [&whole]
+      See [macro-args].
+
+  [ACL2s]
+      See [ACL2-sedan].
+
+  [Add-ld-keyword-alias]
+      See [ld-keyword-aliases].
+
+  [Add-ld-keyword-alias!]
+      See [ld-keyword-aliases].
+
+  [Add-to-set-eq]
+      See [add-to-set].
+
+  [Add-to-set-eql]
+      See [add-to-set].
+
+  [Add-to-set-equal]
+      See [add-to-set].
+
+  [Apropos]
+      See [finding-documentation].
+
+  [Assoc-eq]
+      See [assoc].
+
+  [Assoc-equal]
+      See [assoc].
+
+  [Backchain-limit-rw]
+      See [hints] for keyword :guard-hints.
+
+  [Backtrack]
+      See [hints] for keyword :guard-hints.
+
+  [Book-makefiles]
+      See [books-certification].
+
+  [By]
+      See [hints] for keyword :guard-hints.
+
+  [Cases]
+      See [hints] for keyword :guard-hints.
+
+  [Certifying-books]
+      See [books-certification].
+
+  [Close-input-channel]
+      See [io].
+
+  [Close-output-channel]
+      See [io].
+
+  [Default-verify-guards-eagerness]
+      See [set-verify-guards-eagerness].
+
+  [Delete-assoc-eq]
+      See [delete-assoc].
+
+  [Delete-assoc-equal]
+      See [delete-assoc].
+
+  [Do-not]
+      See [hints] for keyword :guard-hints.
+
+  [Do-not-induct]
+      See [hints] for keyword :guard-hints.
+
+  [Dynamically-monitor-rewrites]
+      See [dmr].
+
+  [Expand]
+      See [hints] for keyword :guard-hints.
+
+  [External-format]
+      See [character-encoding].
+
+  [Fms!-to-string]
+      See [printing-to-strings].
+
+  [Fms-to-string]
+      See [printing-to-strings].
+
+  [Fmt!-to-string]
+      See [printing-to-strings].
+
+  [Fmt-to-string]
+      See [printing-to-strings].
+
+  [Fmt1!-to-string]
+      See [printing-to-strings].
+
+  [Fmt1-to-string]
+      See [printing-to-strings].
+
+  [Fncall-term]
+      See [meta-extract].
+
+  [Forced]
+      See [force].
+
+  [Gcs]
+      See [get-command-sequence].
+
+  [Get-output-stream-string$]
+      See [io].
+
+  [Guard-hints]
+      See [xargs] for keyword :guard-hints.
+
+  [Hands-off]
+      See [hints] for keyword :guard-hints.
+
+  [If-intro]
+      See [splitter].
+
+  [Ignorable]
+      See [declare].
+
+  [Ignore]
+      See [declare].
+
+  [Immed-forced]
+      See [splitter].
+
+  [Induct]
+      See [hints] for keyword :guard-hints.
+
+  [Intersection-eq]
+      See [intersection$].
+
+  [Intersection-equal]
+      See [intersection$].
+
+  [Intersectp-eq]
+      See [intersectp].
+
+  [Intersectp-equal]
+      See [intersectp].
+
+  [Iprint]
+      See [set-iprint].
+
+  [Iprinting]
+      See [set-iprint].
+
+  [Keyword]
+      See [keywordp].
+
+  [Lambda]
+      See [term].
+
+  [Measure]
+      See [xargs] for keyword :guard-hints.
+
+  [Member-eq]
+      See [member].
+
+  [Member-equal]
+      See [member].
+
+  [Meta-extract-contextual-fact]
+      See [meta-extract].
+
+  [Meta-extract-formula]
+      See [meta-extract].
+
+  [Meta-extract-global-fact]
+      See [meta-extract].
+
+  [Meta-extract-global-fact+]
+      See [meta-extract].
+
+  [Meta-extract-rw+-term]
+      See [meta-extract].
+
+  [Mode]
+      See [xargs] for keyword :guard-hints.
+
+  [No-duplicatesp-eq]
+      See [no-duplicatesp].
+
+  [No-duplicatesp-equal]
+      See [no-duplicatesp].
+
+  [No-thanks]
+      See [hints] for keyword :guard-hints.
+
+  [Non-executable]
+      See [xargs] for keyword :guard-hints.
+
+  [Nonlinearp]
+      See [hints] for keyword :guard-hints.
+
+  [Normalize]
+      See [xargs] for keyword :guard-hints.
+
+  [Observation-cw]
+      See [observation].
+
+  [Open-input-channel]
+      See [io].
+
+  [Open-input-channel-p]
+      See [io].
+
+  [Open-output-channel]
+      See [io].
+
+  [Open-output-channel-p]
+      See [io].
+
+  [Optimize]
+      See [declare].
+
+  [Peek-char$]
+      See [io].
+
+  [Position-eq]
+      See [position].
+
+  [Position-equal]
+      See [position].
+
+  [Print-object$]
+      See [io].
+
+  [Print-summary-user]
+      See [finalize-event-user].
+
+  [Proof-supporters-alist]
+      See [dead-events].
+
+  [Put-assoc-eq]
+      See [put-assoc].
+
+  [Put-assoc-eql]
+      See [put-assoc].
+
+  [Put-assoc-equal]
+      See [put-assoc].
+
+  [Rassoc-eq]
+      See [rassoc].
+
+  [Rassoc-equal]
+      See [rassoc].
+
+  [Read-byte$]
+      See [io].
+
+  [Read-char$]
+      See [io].
+
+  [Read-object]
+      See [io].
+
+  [Regression]
+      See [books-certification].
+
+  [Remove-duplicates-eq]
+      See [remove-duplicates].
+
+  [Remove-duplicates-equal]
+      See [remove-duplicates].
+
+  [Remove-eq]
+      See [remove].
+
+  [Remove-equal]
+      See [remove].
+
+  [Remove1-eq]
+      See [remove1].
+
+  [Remove1-equal]
+      See [remove1].
+
+  [Reorder]
+      See [hints] for keyword :guard-hints.
+
+  [Reset-print-control]
+      See [print-control].
+
+  [Restrict]
+      See [hints] for keyword :guard-hints.
+
+  [Saving-and-restoring]
+      See [save-exec].
+
+  [Set-accumulated-persistence]
+      See [accumulated-persistence].
+
+  [Set-compiler-enabled]
+      See [compilation].
+
+  [Set-difference-eq]
+      See [set-difference$].
+
+  [Set-difference-equal]
+      See [set-difference$].
+
+  [Set-ld-keyword-aliases]
+      See [ld-keyword-aliases].
+
+  [Set-ld-keyword-aliases!]
+      See [ld-keyword-aliases].
+
+  [Set-ld-redefinition-action]
+      See [ld-redefinition-action].
+
+  [Set-ld-skip-proofs]
+      See [ld-skip-proofsp].
+
+  [Set-ld-skip-proofsp]
+      See [ld-skip-proofsp].
+
+  [Set-let*-abstraction]
+      See [set-let*-abstractionp].
+
+  [Set-non-linear]
+      See [set-non-linearp].
+
+  [Set-print-circle]
+      See [print-control].
+
+  [Set-print-escape]
+      See [print-control].
+
+  [Set-print-length]
+      See [print-control].
+
+  [Set-print-level]
+      See [print-control].
+
+  [Set-print-lines]
+      See [print-control].
+
+  [Set-print-readably]
+      See [print-control].
+
+  [Set-print-right-margin]
+      See [print-control].
+
+  [Set-ruler-extenders]
+      See [ruler-extenders].
+
+  [Set-serialize-character]
+      See [with-serialize-character].
+
+  [Show-accumulated-persistence]
+      See [accumulated-persistence].
+
+  [Single-threaded-objects]
+      See [stobj].
+
+  [Stobj-let]
+      See [nested-stobjs].
+
+  [Stobjs]
+      See [xargs] for keyword :guard-hints.
+
+  [Subsetp-eq]
+      See [subsetp].
+
+  [Subsetp-equal]
+      See [subsetp].
+
+  [Trust-tag]
+      See [defttag].
+
+  [Type]
+      See [declare].
+
+  [Typespec-check]
+      See [meta-extract].
+
+  [Union-eq]
+      See [union$].
+
+  [Union-equal]
+      See [union$].
+
+  [Untranslate]
+      See [user-defined-functions-table].
+
+  [Use]
+      See [hints] for keyword :guard-hints.
+
+  [Verify-guards-eagerness]
+      See [set-verify-guards-eagerness].
+
+  [Waterfall]
+      See [hints-and-the-waterfall].
+
+  [Write-byte$]
+      See [io].")
  (POPPING_OUT_OF_AN_INDUCTIVE_PROOF
   (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Popping out of an Inductive Proof
@@ -67592,9 +67755,9 @@ Subtopics
 
   Position is defined by Common Lisp. See any Common Lisp documentation
   for more information.")
- (POSITION-EQ (ACL2-BUILT-INS)
+ (POSITION-EQ (POINTERS)
               "See [position].")
- (POSITION-EQUAL (ACL2-BUILT-INS)
+ (POSITION-EQUAL (POINTERS)
                  "See [position].")
  (POSP
   (ACL2-BUILT-INS)
@@ -68425,7 +68588,7 @@ Subtopics
   *PRINT-PPRINT-DISPATCH*, and *PRINT-RIGHT-MARGIN* do not have any
   effect for such GCL versions.)")
  (PRINT-DOC-START-COLUMN
-  (MISCELLANEOUS)
+  (LEGACY-DOCUMENTATION)
   "Printing the one-liner
 
     Examples:
@@ -68443,7 +68606,7 @@ Subtopics
   the name, on the same line. The initial value of
   print-doc-start-column is 15.")
  (PRINT-GV
-  (OTHER)
+  (GUARD DEBUGGING)
   "Print a form whose evaluation caused a guard violation
 
   By default, ACL2 checks input constraints on functions, known as
@@ -68596,12 +68759,11 @@ Subtopics
   Finally, we note that while print-gv is a utility for debugging guard
   violations, in contrast, see [guard-debug] for a utility to assist
   in debugging failed proofs arising from guard verification.")
- (PRINT-OBJECT$ (ACL2-BUILT-INS)
-                "See [io].")
- (PRINT-SUMMARY-USER (SWITCHES-PARAMETERS-AND-MODES)
+ (PRINT-OBJECT$ (POINTERS) "See [io].")
+ (PRINT-SUMMARY-USER (POINTERS)
                      "See [finalize-event-user].")
  (PRINTING-TO-STRINGS
-  (IO)
+  (IO ACL2-BUILT-INS)
   "Printing to strings instead of files or standard output
 
   Each of ACL2's formatted printing functions, FM*, has an analoguous
@@ -68985,6 +69147,8 @@ Subtopics
   more directly appropriate; for example, see [events] for top-level
   event constructors like [defun].
 
+  Also see [debugging] for utilities that can aid in programming.
+
 
 Subtopics
 
@@ -69024,23 +69188,17 @@ Subtopics
   [Defun]
       Define a function symbol
 
+  [Disassemble$]
+      Disassemble a function
+
   [Equality-variants]
       Versions of a function using different equality tests
-
-  [Ignorable]
-      See [declare].
-
-  [Ignore]
-      See [declare].
 
   [Irrelevant-formals]
       Formals that are used but only insignificantly
 
   [Mutual-recursion]
       Define some mutually recursive functions
-
-  [Optimize]
-      See [declare].
 
   [Redefining-programs]
       An explanation of why we restrict redefinitions
@@ -69058,26 +69216,14 @@ Subtopics
   [Set-irrelevant-formals-ok]
       Allow irrelevant formals in definitions
 
-  [Set-state-ok]
-      Allow the use of STATE as a formal parameter
-
-  [Single-threaded-objects]
-      See [stobj].
-
   [State]
       The von Neumannesque ACL2 state object
 
+  [Stobj]
+      Single-threaded objects or ``von Neumann bottlenecks''
+
   [Time$]
       Time an evaluation
-
-  [Time-tracker]
-      Display time spent during specified evaluation
-
-  [Trace]
-      Tracing functions in ACL2
-
-  [Type]
-      See [declare].
 
   [Zero-test-idioms]
       How to test for 0")
@@ -69923,7 +70069,7 @@ Subtopics
 
   We invite suggestions for additional advanced topics.")
  (PROMPT
-  (MISCELLANEOUS)
+  (LD)
   "The prompt printed by [ld]
 
   The prompt printed by ACL2 conveys information about various
@@ -69941,9 +70087,13 @@ Subtopics
 
     (install-new-raw-prompt) ; install prompt with [RAW LISP] as described above
     (install-old-raw-prompt) ; revert to original prompt from host Common Lisp")
+ (PROOF-AUTOMATION
+  (TOP ACL2)
+  "Tools, utilities, and strategies for dealing with particular kinds of
+  proofs.")
  (PROOF-CHECKER
-  (ACL2)
-  "Support for low-level interaction
+  (ACL2 DEBUGGING)
+  "An interactive tool for controlling ACL2's proof processes.
 
   Call this up with (verify ...).
 
@@ -70390,7 +70540,7 @@ Subtopics
       (atomic macro) expand function call at the current subterm, without
       simplifying")
  (PROOF-OF-WELL-FOUNDEDNESS
-  (MISCELLANEOUS)
+  (ORDINALS)
   "A proof that [o<] is well-founded on [o-p]s
 
   The soundness of ACL2 rests in part on the well-foundedness of [o<]
@@ -70562,10 +70712,10 @@ Subtopics
   descending sequence of [o-p]s has the property that each member has
   od less than or equal to the od, n, of the first member of the
   sequence. This contradicts Lemma Main. Q.E.D.")
- (PROOF-SUPPORTERS-ALIST (MISCELLANEOUS)
+ (PROOF-SUPPORTERS-ALIST (POINTERS)
                          "See [dead-events].")
  (PROOF-TREE
-  (ACL2)
+  (DEBUGGING)
   "Proof tree displays
 
   A view of ACL2 proofs may be obtained by way of ``proof tree
@@ -71439,7 +71589,7 @@ Subtopics
 
   Also see [pso] and see [pso!] for printing the full output.")
  (PSTACK
-  (OTHER)
+  (DEBUGGING)
   "Seeing what the prover is up to
 
     General Forms:
@@ -71784,11 +71934,11 @@ Subtopics
 
   In particular, reasoning about any of these primitives reduces to
   reasoning about the function put-assoc-equal.")
- (PUT-ASSOC-EQ (ACL2-BUILT-INS)
+ (PUT-ASSOC-EQ (POINTERS)
                "See [put-assoc].")
- (PUT-ASSOC-EQL (ACL2-BUILT-INS)
+ (PUT-ASSOC-EQL (POINTERS)
                 "See [put-assoc].")
- (PUT-ASSOC-EQUAL (ACL2-BUILT-INS)
+ (PUT-ASSOC-EQUAL (POINTERS)
                   "See [put-assoc].")
  (PUTPROP
   (ACL2-BUILT-INS)
@@ -72673,7 +72823,7 @@ Subtopics
   To turn the heuristic back on:
 
     (defattach quick-and-dirty-srs quick-and-dirty-srs-builtin)")
- (QUIT (OTHER)
+ (QUIT (GOOD-BYE)
        "Quit entirely out of Lisp
 
   Same as [good-bye].")
@@ -72759,9 +72909,8 @@ Subtopics
 
   Rassoc is defined by Common Lisp. See any Common Lisp documentation
   for more information.")
- (RASSOC-EQ (ACL2-BUILT-INS)
-            "See [rassoc].")
- (RASSOC-EQUAL (ACL2-BUILT-INS)
+ (RASSOC-EQ (POINTERS) "See [rassoc].")
+ (RASSOC-EQUAL (POINTERS)
                "See [rassoc].")
  (RATIONAL-LISTP
   (ACL2-BUILT-INS)
@@ -72776,12 +72925,9 @@ Subtopics
   "Recognizer for rational numbers (ratios and integers)
 
   (rationalp x) is true if and only if x is an rational number.")
- (READ-BYTE$ (ACL2-BUILT-INS)
-             "See [io].")
- (READ-CHAR$ (ACL2-BUILT-INS)
-             "See [io].")
- (READ-OBJECT (ACL2-BUILT-INS)
-              "See [io].")
+ (READ-BYTE$ (POINTERS) "See [io].")
+ (READ-CHAR$ (POINTERS) "See [io].")
+ (READ-OBJECT (POINTERS) "See [io].")
  (READ-RUN-TIME
   (ACL2-BUILT-INS)
   "Read elapsed runtime
@@ -72958,7 +73104,7 @@ Subtopics
   If you supply the above ``filter'' argument, then you may also supply
   the keyword argument :dir, which is then passed to ld; see [ld].")
  (REDEF
-  (MISCELLANEOUS)
+  (LD)
   "A common way to set [ld-redefinition-action]
 
     Example and General Form:
@@ -72972,7 +73118,7 @@ Subtopics
   query, see [redef!] or for more options, see
   [ld-redefinition-action].")
  (REDEF!
-  (MISCELLANEOUS)
+  (LD)
   "A common way to set [ld-redefinition-action]
 
     Example and General Form:
@@ -72985,7 +73131,7 @@ Subtopics
   similar, but queries the user first before doing the redefinition.
   For more related options, see [ld-redefinition-action].")
  (REDEF+
-  (MISCELLANEOUS)
+  (LD)
   "System hacker's redefinition [command]
 
     Example and General Form:
@@ -73012,7 +73158,7 @@ Subtopics
   definitions. Thus, note that even system functions can be redefined
   with a mere warning. Be careful!")
  (REDEF-
-  (MISCELLANEOUS)
+  (LD)
   "Turn off system hacker's redefinition [command]
 
     Example and General Form:
@@ -73808,7 +73954,7 @@ Subtopics
   alternative proof strategies or measure performance.
 
   We welcome user observations and experience on this issue.")
- (REGRESSION (BOOKS)
+ (REGRESSION (POINTERS)
              "See [books-certification].")
  (RELEASE-NOTES
   (ACL2)
@@ -74079,7 +74225,7 @@ Subtopics
   Remove is defined by Common Lisp. See any Common Lisp documentation
   for more information.")
  (REMOVE-BINOP
-  (SWITCHES-PARAMETERS-AND-MODES)
+  (MACROS SWITCHES-PARAMETERS-AND-MODES)
   "Remove the association of a function name with a macro name
 
   The form (remove-binop macro-fn) is an abbreviation for the form
@@ -74209,13 +74355,12 @@ Subtopics
 
   Remove-duplicates is defined by Common Lisp. See any Common Lisp
   documentation for more information.")
- (REMOVE-DUPLICATES-EQ (ACL2-BUILT-INS)
+ (REMOVE-DUPLICATES-EQ (POINTERS)
                        "See [remove-duplicates].")
- (REMOVE-DUPLICATES-EQUAL (ACL2-BUILT-INS)
+ (REMOVE-DUPLICATES-EQUAL (POINTERS)
                           "See [remove-duplicates].")
- (REMOVE-EQ (ACL2-BUILT-INS)
-            "See [remove].")
- (REMOVE-EQUAL (ACL2-BUILT-INS)
+ (REMOVE-EQ (POINTERS) "See [remove].")
+ (REMOVE-EQUAL (POINTERS)
                "See [remove].")
  (REMOVE-INVISIBLE-FNS
   (SWITCHES-PARAMETERS-AND-MODES)
@@ -74239,7 +74384,7 @@ Subtopics
   See [add-invisible-fns] and also see [invisible-fns-table] and see
   [set-invisible-fns-table].")
  (REMOVE-MACRO-ALIAS
-  (SWITCHES-PARAMETERS-AND-MODES)
+  (MACROS SWITCHES-PARAMETERS-AND-MODES)
   "Remove the association of a function name with a macro name
 
     Example:
@@ -74254,7 +74399,7 @@ Subtopics
   name does not occur in the [table], then this form still generates
   an event, but the event has no real effect.")
  (REMOVE-MACRO-FN
-  (SWITCHES-PARAMETERS-AND-MODES)
+  (MACROS SWITCHES-PARAMETERS-AND-MODES)
   "Remove the association of a function name with a macro name
 
     Example:
@@ -74430,14 +74575,11 @@ Subtopics
 
   In particular, reasoning about any of these primitives reduces to
   reasoning about the function remove1-equal.")
- (REMOVE1-EQ (ACL2-BUILT-INS)
-             "See [remove1].")
- (REMOVE1-EQUAL (ACL2-BUILT-INS)
+ (REMOVE1-EQ (POINTERS) "See [remove1].")
+ (REMOVE1-EQUAL (POINTERS)
                 "See [remove1].")
- (REORDER (MISCELLANEOUS)
-          "Hints keyword :REORDER
-
-  See [hints].")
+ (REORDER (POINTERS)
+          "See [hints] for keyword :guard-hints.")
  (RESET-FC-REPORTING
   (FORWARD-CHAINING-REPORTS)
   "Reset the forward-chaining tracking state to its initial
@@ -74480,7 +74622,7 @@ Subtopics
   logical [world]s, at the cost of disabling the effect of the [oops]
   [command].")
  (RESET-LD-SPECIALS
-  (OTHER)
+  (LD)
   "Restores initial settings of the [ld] specials
 
     Examples:
@@ -74540,7 +74682,7 @@ Subtopics
 
   See [ubt-prehistory] for how to undo a reset-prehistory command that
   does not have a permanent-p of t.")
- (RESET-PRINT-CONTROL (IO)
+ (RESET-PRINT-CONTROL (POINTERS)
                       "See [print-control].")
  (RESIZE-LIST
   (STOBJ)
@@ -74572,10 +74714,8 @@ Subtopics
 
   Calls of this macro restore the memoization settings saved by
   [save-and-clear-memoization-settings].")
- (RESTRICT (MISCELLANEOUS)
-           "Hints keyword :RESTRICT
-
-  See [hints].")
+ (RESTRICT (POINTERS)
+           "See [hints] for keyword :guard-hints.")
  (RETRIEVE
   (PROOF-CHECKER)
   "Re-enter a (specified) [proof-checker] state
@@ -75292,6 +75432,9 @@ Subtopics
 
 Subtopics
 
+  [Backchain-limit]
+      Limiting the effort expended on relieving hypotheses
+
   [Bind-free]
       To bind free variables of a rewrite, definition, or linear rule
 
@@ -75307,6 +75450,9 @@ Subtopics
 
   [Free-variables]
       Free variables in rules
+
+  [Loop-stopper]
+      Limit application of permutative rewrite rules
 
   [Syntaxp]
       Attach a heuristic filter on a rule")
@@ -76394,7 +76540,7 @@ Subtopics
   unmemoizes all functions that were memoized by calls of [memoize].
   Also see [restore-memoization-settings].")
  (SAVE-EXEC
-  (OTHER COMMAND-LINE)
+  (INTERFACING-TOOLS COMMAND-LINE)
   "Save an executable image and a wrapper script
 
   Save-exec saves your ACL2 state so that you can immediately re-start
@@ -76661,7 +76807,7 @@ Subtopics
   at that time are passed to Lisp if and only if inert-args is nil.
   For SBCL, when they are passed to Lisp they are passed as toplevel
   options, not as runtime options.")
- (SAVING-AND-RESTORING (MISCELLANEOUS)
+ (SAVING-AND-RESTORING (POINTERS)
                        "See [save-exec].")
  (SEARCH
   (ACL2-BUILT-INS)
@@ -76722,7 +76868,7 @@ Subtopics
 
   See any Common Lisp documentation for details.")
  (SERIALIZE
-  (ACL2)
+  (IO)
   "Routines for saving ACL2 objects to files, and later restoring them
 
   This documentation topic relates to an experimental extension of ACL2
@@ -76753,9 +76899,6 @@ Subtopics
 
   [Serialize-write]
       Write an ACL2 object into a file
-
-  [Set-serialize-character]
-      See [with-serialize-character].
 
   [With-serialize-character]
       Control output mode for print-object$")
@@ -76951,7 +77094,7 @@ Subtopics
   [value-triple]. The value of keyword :ON-SKIP-PROOFS must always be
   either t or nil, but other than that, it is ignored when EVENT-P is
   nil.")
- (SET-ACCUMULATED-PERSISTENCE (OTHER)
+ (SET-ACCUMULATED-PERSISTENCE (POINTERS)
                               "See [accumulated-persistence].")
  (SET-BACKCHAIN-LIMIT
   (SWITCHES-PARAMETERS-AND-MODES)
@@ -76994,7 +77137,7 @@ Subtopics
 
   The default limit is (nil nil).")
  (SET-BODY
-  (EVENTS)
+  (DEFINITION EVENTS)
   "Set the definition body
 
     Examples:
@@ -77340,7 +77483,7 @@ Subtopics
   generally, [compilation] via set-compile-fns is suppressed when the
   [state] global variable [ld-skip-proofsp] has value
   '[include-book].")
- (SET-COMPILER-ENABLED (SWITCHES-PARAMETERS-AND-MODES)
+ (SET-COMPILER-ENABLED (POINTERS)
                        "See [compilation].")
  (SET-DEBUGGER-ENABLE
   (SWITCHES-PARAMETERS-AND-MODES)
@@ -77650,9 +77793,9 @@ Subtopics
   Set-difference$ is similar to the Common Lisp primitive
   set-difference. However, Common Lisp does not specify the order of
   elements in the result of a call of set-difference.")
- (SET-DIFFERENCE-EQ (ACL2-BUILT-INS)
+ (SET-DIFFERENCE-EQ (POINTERS)
                     "See [set-difference$].")
- (SET-DIFFERENCE-EQUAL (ACL2-BUILT-INS)
+ (SET-DIFFERENCE-EQUAL (POINTERS)
                        "See [set-difference$].")
  (SET-DIFFERENCE-THEORIES
   (THEORIES THEORY-FUNCTIONS)
@@ -78769,17 +78912,17 @@ Subtopics
     (set-irrelevant-formals-ok flg)
 
   where flg is either t, nil, or :warn.")
- (SET-LD-KEYWORD-ALIASES (SWITCHES-PARAMETERS-AND-MODES)
+ (SET-LD-KEYWORD-ALIASES (POINTERS)
                          "See [ld-keyword-aliases].")
- (SET-LD-KEYWORD-ALIASES! (SWITCHES-PARAMETERS-AND-MODES)
+ (SET-LD-KEYWORD-ALIASES! (POINTERS)
                           "See [ld-keyword-aliases].")
- (SET-LD-REDEFINITION-ACTION (SWITCHES-PARAMETERS-AND-MODES)
+ (SET-LD-REDEFINITION-ACTION (POINTERS)
                              "See [ld-redefinition-action].")
- (SET-LD-SKIP-PROOFS (SWITCHES-PARAMETERS-AND-MODES)
-                     "See [set-ld-skip-proofsp].")
- (SET-LD-SKIP-PROOFSP (SWITCHES-PARAMETERS-AND-MODES)
+ (SET-LD-SKIP-PROOFS (POINTERS)
+                     "See [ld-skip-proofsp].")
+ (SET-LD-SKIP-PROOFSP (POINTERS)
                       "See [ld-skip-proofsp].")
- (SET-LET*-ABSTRACTION (SWITCHES-PARAMETERS-AND-MODES)
+ (SET-LET*-ABSTRACTION (POINTERS)
                        "See [set-let*-abstractionp].")
  (SET-LET*-ABSTRACTIONP
   (SWITCHES-PARAMETERS-AND-MODES)
@@ -78935,7 +79078,7 @@ Subtopics
   Note that if (table acl2-defaults-table :measure-function 'name) has
   its default value of nil, then the default measure function is
   [ACL2-count].")
- (SET-NON-LINEAR (SWITCHES-PARAMETERS-AND-MODES)
+ (SET-NON-LINEAR (POINTERS)
                  "See [set-non-linearp].")
  (SET-NON-LINEARP
   (SWITCHES-PARAMETERS-AND-MODES)
@@ -79118,7 +79261,7 @@ Subtopics
   :downcase is unspecified.
 
   Also see [print-control] for other user-settable print controls.")
- (SET-PRINT-CIRCLE (IO)
+ (SET-PRINT-CIRCLE (POINTERS)
                    "See [print-control].")
  (SET-PRINT-CLAUSE-IDS
   (SWITCHES-PARAMETERS-AND-MODES)
@@ -79159,13 +79302,13 @@ Subtopics
                4)))
 
     (defattach print-clause-id-okp print-clause-id-okp-level-4)")
- (SET-PRINT-ESCAPE (IO)
+ (SET-PRINT-ESCAPE (POINTERS)
                    "See [print-control].")
- (SET-PRINT-LENGTH (IO)
+ (SET-PRINT-LENGTH (POINTERS)
                    "See [print-control].")
- (SET-PRINT-LEVEL (IO)
+ (SET-PRINT-LEVEL (POINTERS)
                   "See [print-control].")
- (SET-PRINT-LINES (IO)
+ (SET-PRINT-LINES (POINTERS)
                   "See [print-control].")
  (SET-PRINT-RADIX
   (IO)
@@ -79200,9 +79343,9 @@ Subtopics
     ACL2 !>(list 25 25/3)
     (25 25/3)
     ACL2 !>")
- (SET-PRINT-READABLY (IO)
+ (SET-PRINT-READABLY (POINTERS)
                      "See [print-control].")
- (SET-PRINT-RIGHT-MARGIN (IO)
+ (SET-PRINT-RIGHT-MARGIN (POINTERS)
                          "See [print-control].")
  (SET-PROVER-STEP-LIMIT
   (SWITCHES-PARAMETERS-AND-MODES)
@@ -79529,7 +79672,7 @@ Subtopics
   occurs.
 
   For a different but somewhat related concept, see [backchain-limit].")
- (SET-RULER-EXTENDERS (SWITCHES-PARAMETERS-AND-MODES)
+ (SET-RULER-EXTENDERS (POINTERS)
                       "See [ruler-extenders].")
  (SET-RW-CACHE-STATE
   (SWITCHES-PARAMETERS-AND-MODES)
@@ -79657,7 +79800,7 @@ Subtopics
   See [set-inhibit-output-lst] if you want to inhibit certain output
   from the prover but not other output (e.g., not the summary), and
   you don't want to save any output.")
- (SET-SERIALIZE-CHARACTER (SERIALIZE)
+ (SET-SERIALIZE-CHARACTER (POINTERS)
                           "See [with-serialize-character].")
  (SET-SPLITTER-OUTPUT
   (SWITCHES-PARAMETERS-AND-MODES)
@@ -79690,7 +79833,7 @@ Subtopics
   Again, see [splitter] for the effects of turning on the reporting of
   splitter rules.")
  (SET-STATE-OK
-  (SWITCHES-PARAMETERS-AND-MODES PROGRAMMING)
+  (STATE SWITCHES-PARAMETERS-AND-MODES)
   "Allow the use of STATE as a formal parameter
 
   Note: This is an event! It does not print the usual event summary but
@@ -80294,7 +80437,7 @@ Subtopics
   is an mp-measure and that in every recursive call the measure of
   the arguments decreases according to rel.")
  (SET-WORMHOLE-DATA
-  (MISCELLANEOUS)
+  (WORMHOLE)
   "Sets the wormhole data object in a wormhole status object
 
     General Form:  (set-wormhole-data whs data)
@@ -80307,7 +80450,7 @@ Subtopics
   (possibly) new status object suitable as the value of the lambda
   expressions in [wormhole-eval] and [wormhole].")
  (SET-WORMHOLE-ENTRY-CODE
-  (MISCELLANEOUS)
+  (WORMHOLE)
   "Sets the wormhole entry code in a wormhole status object
 
     General Form:  (set-wormhole-entry-code whs code)
@@ -80651,7 +80794,7 @@ Subtopics
   is prepended to that string. The resulting string is then handed to
   the Lisp reader in order to obtain the final result, which must be
   a number or else an error occurs.")
- (SHOW-ACCUMULATED-PERSISTENCE (OTHER)
+ (SHOW-ACCUMULATED-PERSISTENCE (POINTERS)
                                "See [accumulated-persistence].")
  (SHOW-BDD
   (BDD)
@@ -80704,7 +80847,7 @@ Subtopics
   in full, and term-ans is the answer to be used in place of the
   query for whether to print the resulting [term] in full.")
  (SHOW-BODIES
-  (MISCELLANEOUS)
+  (DEFINITION)
   "Show the potential definition bodies
 
     Examples:
@@ -80965,7 +81108,7 @@ Subtopics
   only to a non-recursive definition, and applies when its body is a
   disjunction or conjunction, according to a perhaps subtle criterion
   that is intended to avoid case splits.")
- (SINGLE-THREADED-OBJECTS (PROGRAMMING)
+ (SINGLE-THREADED-OBJECTS (POINTERS)
                           "See [stobj].")
  (SIXTH
   (ACL2-BUILT-INS)
@@ -81566,7 +81709,7 @@ Subtopics
   question, you may allow the simplifier to make progress on the
   subgoal.")
  (SPLITTER
-  (MISCELLANEOUS)
+  (DEBUGGING)
   "Reporting of rules whose application may have caused case splits
 
   The application of a rule to a term may cause a goal to simplify to
@@ -81722,9 +81865,15 @@ Subtopics
   can occur for example when a call of IF is in the body of a [let]
   expression, i.e., in a call of a [lambda] expression. But splits
   caused by other processes, notably destructor elimination (see
-  [elim]), will typically not be attributed to splitters.")
+  [elim]), will typically not be attributed to splitters.
+
+
+Subtopics
+
+  [Splitter-output]
+      Status for reporting of [splitter] rules")
  (SPLITTER-OUTPUT
-  (MISCELLANEOUS)
+  (SPLITTER)
   "Status for reporting of [splitter] rules
 
   See [splitter] for a discussion of splitter rules. See
@@ -82096,7 +82245,10 @@ Subtopics
       A common ACL2 programming idiom
 
   [Programming-with-state]
-      Programming using the von Neumannesque ACL2 [state] object")
+      Programming using the von Neumannesque ACL2 [state] object
+
+  [Set-state-ok]
+      Allow the use of STATE as a formal parameter")
  (STATE-GLOBAL-LET*
   (ACL2-BUILT-INS)
   "Bind [state] global variables
@@ -82176,7 +82328,7 @@ Subtopics
      10
     ACL2 !>")
  (STOBJ
-  (ACL2)
+  (PROGRAMMING)
   "Single-threaded objects or ``von Neumann bottlenecks''
 
   In ACL2, a ``single-threaded object'' is a data structure whose use
@@ -82317,9 +82469,6 @@ Subtopics
 
   [Stobj-example-3]
       Another example of a single-threaded object
-
-  [Stobj-let]
-      See [nested-stobjs].
 
   [With-local-state]
       Locally bind state
@@ -83194,12 +83343,10 @@ Subtopics
   This completes the tour through the documentation of [stobj]s.
   However, you may now wish to read the documentation for the event
   that introduces a new single-threaded object; see [defstobj].")
- (STOBJ-LET (STOBJ)
+ (STOBJ-LET (POINTERS)
             "See [nested-stobjs].")
- (STOBJS (MISCELLANEOUS)
-         "Xargs keyword :STOBJS
-
-  See [xargs].")
+ (STOBJS (POINTERS)
+         "See [xargs] for keyword :guard-hints.")
  (STOP-PROOF-TREE
   (PROOF-TREE)
   "Stop displaying proof trees during proofs
@@ -83558,9 +83705,8 @@ Subtopics
 
   Subsetp is defined by Common Lisp. See any Common Lisp documentation
   for more information.")
- (SUBSETP-EQ (ACL2-BUILT-INS)
-             "See [subsetp].")
- (SUBSETP-EQUAL (ACL2-BUILT-INS)
+ (SUBSETP-EQ (POINTERS) "See [subsetp].")
+ (SUBSETP-EQUAL (POINTERS)
                 "See [subsetp].")
  (SUBST
   (ACL2-BUILT-INS)
@@ -83834,12 +83980,6 @@ Subtopics
   [Add-invisible-fns]
       Make some unary functions invisible to the [loop-stopper] algorithm
 
-  [Add-ld-keyword-alias]
-      See [ld-keyword-aliases].
-
-  [Add-ld-keyword-alias!]
-      See [ld-keyword-aliases].
-
   [Add-macro-alias]
       Associate a function name with a macro name
 
@@ -83862,8 +84002,8 @@ Subtopics
   [Default-hints-table]
       A [table] used to provide [hints] for proofs
 
-  [Default-verify-guards-eagerness]
-      See [set-verify-guards-eagerness].
+  [Defun-mode]
+      Determines whether a function definition is a logical act
 
   [Delete-include-book-dir]
       Unlink keyword for :dir argument of [ld] and [include-book]
@@ -83872,12 +84012,28 @@ Subtopics
       Non-[local]ly unlink keyword for :dir argument of [ld] and
       [include-book]
 
+  [Disable-forcing]
+      To disallow forced case-splits
+
+  [Disable-immediate-force-modep]
+      [force]d hypotheses are not attacked immediately
+
   [Dive-into-macros-table]
       Right-associated function information for the [proof-checker]
+
+  [Enable-forcing]
+      To allow forced case splits
+
+  [Enable-immediate-force-modep]
+      [force]d hypotheses are attacked immediately
 
   [Finalize-event-user]
       User-supplied code to complete [events], e.g., with extra summary
       output
+
+  [Immediate-force-modep]
+      When executable counterpart is [enable]d, [force]d hypotheses are
+      attacked immediately
 
   [Initialize-event-user]
       User-supplied code to initiate [events]
@@ -83896,9 +84052,6 @@ Subtopics
 
   [Nth-aliases-table]
       A [table] used to associate names for nth/update-nth printing
-
-  [Print-summary-user]
-      See [finalize-event-user].
 
   [Program]
       To set the default [defun-mode] to :[program]
@@ -83972,9 +84125,6 @@ Subtopics
   [Set-compile-fns]
       Have each function compiled as you go along.
 
-  [Set-compiler-enabled]
-      See [compilation].
-
   [Set-debugger-enable]
       Control whether Lisp errors and breaks invoke the Lisp debugger
 
@@ -84024,24 +84174,6 @@ Subtopics
   [Set-irrelevant-formals-ok]
       Allow irrelevant formals in definitions
 
-  [Set-ld-keyword-aliases]
-      See [ld-keyword-aliases].
-
-  [Set-ld-keyword-aliases!]
-      See [ld-keyword-aliases].
-
-  [Set-ld-redefinition-action]
-      See [ld-redefinition-action].
-
-  [Set-ld-skip-proofs]
-      See [set-ld-skip-proofsp].
-
-  [Set-ld-skip-proofsp]
-      See [ld-skip-proofsp].
-
-  [Set-let*-abstraction]
-      See [set-let*-abstractionp].
-
   [Set-let*-abstractionp]
       To shorten many prettyprinted clauses
 
@@ -84053,9 +84185,6 @@ Subtopics
 
   [Set-measure-function]
       Set the default measure function symbol
-
-  [Set-non-linear]
-      See [set-non-linearp].
 
   [Set-non-linearp]
       To turn on or off non-linear arithmetic reasoning
@@ -84090,9 +84219,6 @@ Subtopics
 
   [Set-rewrite-stack-limit]
       Sets the rewrite stack depth used by the rewriter
-
-  [Set-ruler-extenders]
-      See [ruler-extenders].
 
   [Set-rw-cache-state]
       Set the default rw-cache-state
@@ -84154,9 +84280,6 @@ Subtopics
 
   [User-defined-functions-table]
       An advanced [table] used to replace certain system functions
-
-  [Verify-guards-eagerness]
-      See [set-verify-guards-eagerness].
 
   [With-guard-checking]
       Suppressing or enable guard-checking for a form
@@ -84705,7 +84828,7 @@ Subtopics
   See [extended-metafunctions] for information on the use of mfc and
   metafunction-context.")
  (SYS-CALL
-  (ACL2-BUILT-INS)
+  (INTERFACING-TOOLS ACL2-BUILT-INS)
   "Make a system call to the host operating system
 
     Example Forms:
@@ -84779,9 +84902,18 @@ Subtopics
 
     P $* >& foo.out
 
-  For a different, more direct solution, see [sys-call+].")
+  For a different, more direct solution, see [sys-call+].
+
+
+Subtopics
+
+  [Sys-call+]
+      Make a system call to the host OS, returning status and output
+
+  [Sys-call-status]
+      Exit status from the preceding system call")
  (SYS-CALL+
-  (ACL2-BUILT-INS)
+  (SYS-CALL ACL2-BUILT-INS)
   "Make a system call to the host OS, returning status and output
 
     Example Form:
@@ -84834,7 +84966,7 @@ Subtopics
   As is the case for sys-call, a trust tag is required to call
   sys-call+. For discussion of this and more, see [sys-call].")
  (SYS-CALL-STATUS
-  (ACL2-BUILT-INS)
+  (SYS-CALL ACL2-BUILT-INS)
   "Exit status from the preceding system call
 
   This function returns two values, (mv status state). The first is the
@@ -85078,7 +85210,7 @@ Subtopics
 
   To see the ACL2 definition of this function, see [pf].")
  (TAU-DATA
-  (HISTORY INTRODUCTION-TO-THE-TAU-SYSTEM)
+  (TAU-SYSTEM)
   "To see what tau knows about a function symbol
 
     Examples:
@@ -85110,7 +85242,7 @@ Subtopics
   information has been gleaned, evaluate (global-val 'tau-runes (w
   state)).")
  (TAU-DATABASE
-  (HISTORY INTRODUCTION-TO-THE-TAU-SYSTEM)
+  (TAU-SYSTEM)
   "To see the tau database as a (very large) object
 
     Example:
@@ -85312,7 +85444,7 @@ Subtopics
 
   intended to be self-explanatory.")
  (TAU-SYSTEM
-  (RULE-CLASSES INTRODUCTION-TO-THE-TAU-SYSTEM)
+  (RULE-CLASSES)
   "Make a rule for the ACL2 ``type checker''
 
   This documentation topic describes the syntactic form of
@@ -85702,8 +85834,17 @@ Subtopics
   [In-tau-intervalp]
       Boolean membership in a tau interval
 
+  [Introduction-to-the-tau-system]
+      A decision procedure for runtime types
+
   [Make-tau-interval]
       Make a tau interval
+
+  [Tau-data]
+      To see what tau knows about a function symbol
+
+  [Tau-database]
+      To see the tau database as a (very large) object
 
   [Tau-interval-dom]
       Access the domain of a tau interval
@@ -86121,7 +86262,7 @@ Subtopics
   THE is defined in Common Lisp. See any Common Lisp documentation for
   more information.")
  (THE-METHOD
-  (MISCELLANEOUS)
+  (ACL2-TUTORIAL)
   "How to find proofs
 
   Also see [introduction-to-the-theorem-prover] for a more detailed
@@ -87539,7 +87680,13 @@ Subtopics
 
   where term is a term alleged to be a theorem, and [hints], [otf-flg]
   and [doc-string] are as described in the corresponding :[doc]
-  entries. The three keyword arguments above are all optional.")
+  entries. The three keyword arguments above are all optional.
+
+
+Subtopics
+
+  [Otf-flg]
+      Allow more than one initial subgoal to be pushed for induction")
  (TIDBITS
   (ACL2-TUTORIAL)
   "Some basic hints for using ACL2
@@ -87786,9 +87933,15 @@ Subtopics
   in the top-level loop will show that the form being timed is a call
   of the ACL2 evaluator function ev-rec. This is normal; the curious
   are invited, at their own risk, to see [return-last] for an
-  explanation.")
+  explanation.
+
+
+Subtopics
+
+  [Time-tracker]
+      Display time spent during specified evaluation")
  (TIME-TRACKER
-  (PROGRAMMING TRACE)
+  (DEBUGGING TIME$)
   "Display time spent during specified evaluation
 
   The time-tracker macro is a utility for displaying time spent during
@@ -88622,7 +88775,7 @@ Subtopics
   ``caused an error'', see the definition of top-level in the ACL2
   source code, and see [ld-error-action].)")
  (TRACE
-  (ACL2 PROGRAMMING OTHER)
+  (DEBUGGING)
   "Tracing functions in ACL2
 
   ACL2 provides a trace utility, [trace$], with corresponding reverse
@@ -88655,9 +88808,6 @@ Subtopics
 
   [Set-trace-evisc-tuple]
       Set the trace evisc tuple
-
-  [Time-tracker]
-      Display time spent during specified evaluation
 
   [Trace!]
       Trace the indicated functions after creating an active trust tag
@@ -89405,7 +89555,7 @@ Subtopics
   will be made using the original predefined functions, not using
   their code installed by trace$.")
  (TRANS
-  (OTHER)
+  (MACROS)
   "Print the macroexpansion of a form
 
     Examples:
@@ -89445,7 +89595,7 @@ Subtopics
 
   For more, see [term].")
  (TRANS!
-  (OTHER)
+  (MACROS)
   "Print the macroexpansion of a form without single-threadedness
   concerns
 
@@ -89457,7 +89607,7 @@ Subtopics
   ignores single-threadedness restrictions. Thus, the second form
   above is legal for :trans!. Also see [trans] and see [trans1].")
  (TRANS1
-  (OTHER)
+  (MACROS)
   "Print the one-step macroexpansion of a form
 
     Examples:
@@ -89521,8 +89671,7 @@ Subtopics
   objects.
 
   To see the ACL2 definition of this function, see [pf].")
- (TRUST-TAG (MISCELLANEOUS)
-            "See [defttag].")
+ (TRUST-TAG (POINTERS) "See [defttag].")
  (TTAGS-SEEN
   (MISCELLANEOUS)
   "List some declared trust tags (ttags)
@@ -90744,7 +90893,7 @@ Subtopics
 
   [Mutual-recursion-proof-example]
       A small proof about mutually recursive functions")
- (TYPE (PROGRAMMING) "See [declare].")
+ (TYPE (POINTERS) "See [declare].")
  (TYPE-PRESCRIPTION
   (RULE-CLASSES)
   "Make a rule that specifies the type of a term
@@ -90933,7 +91082,13 @@ Subtopics
   exposed; then the conclusion's lambdas are also expanded away. The
   simplest way to understand (2) may be to look at the definition of
   ACL2 source function unprettyify-tp, which implements Step (2), say
-  by evaluating :[pe] unprettyify-tp.")
+  by evaluating :[pe] unprettyify-tp.
+
+
+Subtopics
+
+  [Backchain-limit]
+      Limiting the effort expended on relieving hypotheses")
  (TYPE-SET
   (MISCELLANEOUS)
   "How type information is encoded in ACL2
@@ -91202,7 +91357,7 @@ Subtopics
   containing an integer, (i), then the first inequality is made
   strict. An analogous remark holds for the (j) case. The RATIONAL
   and REAL type specifiers are similarly generalized.")
- (TYPESPEC-CHECK (MISCELLANEOUS)
+ (TYPESPEC-CHECK (POINTERS)
                  "See [meta-extract].")
  (U
   (HISTORY)
@@ -91472,10 +91627,8 @@ Subtopics
   Union$ is similar to the Common Lisp primitive union. However, Common
   Lisp does not specify the order of elements in the result of a call
   of union.")
- (UNION-EQ (ACL2-BUILT-INS)
-           "See [union$].")
- (UNION-EQUAL (ACL2-BUILT-INS)
-              "See [union$].")
+ (UNION-EQ (POINTERS) "See [union$].")
+ (UNION-EQUAL (POINTERS) "See [union$].")
  (UNION-THEORIES
   (THEORIES THEORY-FUNCTIONS)
   "Union two [theories]
@@ -91832,7 +91985,7 @@ Subtopics
   returned by untrace$ gives the list of functions for which tracing
   is being removed.")
  (UNTRANS-TABLE
-  (SWITCHES-PARAMETERS-AND-MODES)
+  (MACROS SWITCHES-PARAMETERS-AND-MODES)
   "Associates a function symbol with a macro for printing user-level
   terms
 
@@ -91853,7 +92006,7 @@ Subtopics
   See [add-macro-fn] for a more general discussion of this [table] and
   for a way to associate a macro name with a function name in theory
   events.")
- (UNTRANSLATE (ACL2-BUILT-INS)
+ (UNTRANSLATE (POINTERS)
               "See [user-defined-functions-table].")
  (UPDATE-NTH
   (ACL2-BUILT-INS)
@@ -91898,12 +92051,10 @@ Subtopics
   documentation for more information.
 
   To see the ACL2 definition of this function, see [pf].")
- (USE (MISCELLANEOUS)
-      "Hints keyword :USE
-
-  See [hints].")
+ (USE (POINTERS)
+      "See [hints] for keyword :guard-hints.")
  (USER-DEFINED-FUNCTIONS-TABLE
-  (SWITCHES-PARAMETERS-AND-MODES)
+  (MACROS SWITCHES-PARAMETERS-AND-MODES)
   "An advanced [table] used to replace certain system functions
 
     Examples:
@@ -91982,7 +92133,7 @@ Subtopics
   will replace it with *a*, and the usual untranlation routine will
   print this as *A*.")
  (USING-COMPUTED-HINTS
-  (MISCELLANEOUS)
+  (HINTS)
   "How to use computed hints
 
   Computed hints (see [computed-hints]) are extraordinarily powerful.
@@ -92026,7 +92177,7 @@ Subtopics
   [Using-computed-hints-8]
       Some Final Comments")
  (USING-COMPUTED-HINTS-1
-  (MISCELLANEOUS USING-COMPUTED-HINTS)
+  (USING-COMPUTED-HINTS)
   "Driving Home the Basics
 
   The common hint
@@ -92072,7 +92223,7 @@ Subtopics
     (defthm main (big-thm a b c)
       :hints (my-special-hint))")
  (USING-COMPUTED-HINTS-2
-  (MISCELLANEOUS USING-COMPUTED-HINTS)
+  (USING-COMPUTED-HINTS)
   "One Hint to Every Top-Level Goal in a Forcing Round
 
   Suppose the main proof completes with a forcing round on three
@@ -92172,7 +92323,7 @@ Subtopics
   test in a computed hint of the form (if test '(:key1 val1 ...)
   nil).")
  (USING-COMPUTED-HINTS-3
-  (MISCELLANEOUS USING-COMPUTED-HINTS)
+  (USING-COMPUTED-HINTS)
   "Hints as a Function of the Goal (not its Name)
 
   Sometimes it is desirable to supply a hint whenever a certain term
@@ -92289,7 +92440,7 @@ Subtopics
   fire on \"[1]Subgoal 1\" because it is a child of \"[1]Subgoal 1\" and
   the hint fired on that.")
  (USING-COMPUTED-HINTS-4
-  (MISCELLANEOUS USING-COMPUTED-HINTS)
+  (USING-COMPUTED-HINTS)
   "Computing the Hints
 
   So far we have used computed hints only to compute when a fixed set
@@ -92426,7 +92577,7 @@ Subtopics
 
   had been present.")
  (USING-COMPUTED-HINTS-5
-  (MISCELLANEOUS USING-COMPUTED-HINTS)
+  (USING-COMPUTED-HINTS)
   "Debugging Computed Hints
 
   We have found that it is sometimes helpful to define hints so that
@@ -92486,7 +92637,7 @@ Subtopics
   it into the system itself. But it does illustrate that you can use
   computed hints to do unusual things.")
  (USING-COMPUTED-HINTS-6
-  (MISCELLANEOUS USING-COMPUTED-HINTS)
+  (USING-COMPUTED-HINTS)
   "Using the computed-hint-replacement feature
 
   So far none of our computed hints have used the
@@ -92735,7 +92886,7 @@ Subtopics
   So we succeeded in getting a hint to fire indefinitely but allow a
   full simplification between rounds.")
  (USING-COMPUTED-HINTS-7
-  (MISCELLANEOUS USING-COMPUTED-HINTS)
+  (USING-COMPUTED-HINTS)
   "Using the stable-under-simplificationp flag
 
   A problem with the example in [using-computed-hints-6] is that
@@ -92947,7 +93098,7 @@ Subtopics
             (t
              nil)))")
  (USING-COMPUTED-HINTS-8
-  (MISCELLANEOUS USING-COMPUTED-HINTS)
+  (USING-COMPUTED-HINTS)
   "Some Final Comments
 
   None of the examples show the use of the variable WORLD, which is
@@ -93134,13 +93285,7 @@ Subtopics
   When we recertify number-table.lisp, we'll see the expensive
   computation is still called once for each number in Step 2, but is
   no longer called during Step 3. Similarly, the [include-book] no
-  longer shows any calls of the expensive computation.
-
-
-Subtopics
-
-  [Make-event]
-      Evaluate (expand) a given form and then evaluate the result")
+  longer shows any calls of the expensive computation.")
  (USING_THE_ASSOCIATIVITY_OF_APP_TO_PROVE_A_TRIVIAL_CONSEQUENCE
   (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Using the Associativity of App to Prove a Trivial Consequence
@@ -93610,10 +93755,10 @@ Subtopics
   the second pass through the encapsulate form, which is evaluated
   successfully and leaves us in a [world] where f1 is guard-verified
   and f2 is not.")
- (VERIFY-GUARDS-EAGERNESS (SWITCHES-PARAMETERS-AND-MODES)
+ (VERIFY-GUARDS-EAGERNESS (POINTERS)
                           "See [set-verify-guards-eagerness].")
  (VERIFY-GUARDS-FORMULA
-  (OTHER)
+  (GUARD)
   "View the guard proof obligation, without proving it
 
   See [verify-guards] and see [guard] for a discussion of guards. This
@@ -93797,7 +93942,7 @@ Subtopics
   sound induction scheme was stored. The attempt to prove nil (lemma
   bad-lemma) then failed.")
  (VERSION
-  (MISCELLANEOUS)
+  (ABOUT-ACL2)
   "ACL2 Version Number
 
   To determine the version number of your copy of ACL2, evaluate the
@@ -93891,7 +94036,7 @@ Subtopics
   of the incrl field. Note that incremental releases are full-fledged
   releases.")
  (WALKABOUT
-  (OTHER)
+  (DEBUGGING)
   "Explore an ACL2 cons tree
 
   By typing (walkabout x state) for an ACL2 term x whose value is a
@@ -93987,7 +94132,7 @@ Subtopics
     :5
     F
     :")
- (WATERFALL (MISCELLANEOUS)
+ (WATERFALL (POINTERS)
             "See [hints-and-the-waterfall].")
  (WATERFALL-PARALLELISM
   (PARALLEL-PROOF)
@@ -94466,7 +94611,7 @@ Subtopics
 
   []")
  (WHY-BRR
-  (MISCELLANEOUS)
+  (BREAK-REWRITE)
   "An explanation of why ACL2 has an explicit [brr] mode
 
   Why isn't [brr] mode automatically disabled when there are no
@@ -95415,7 +95560,7 @@ Subtopics
   upon evaluating a call of walkabout. We may add documentation for
   walkabout if that is requested.")
  (WOF
-  (OTHER)
+  (IO)
   "Direct standard output and proofs output to a file
 
     Example Form:
@@ -95997,9 +96142,43 @@ Subtopics
   From the discussion above we see that wormholes can be used to create
   formatted output without passing in the ACL2 [state]. For examples
   see [cw], in particular the discussion at the end of that
-  documentation topic.")
+  documentation topic.
+
+
+Subtopics
+
+  [Get-wormhole-status]
+      Make a wormhole's status visible outside the wormhole
+
+  [Make-wormhole-status]
+      Creates a wormhole status object from given status, entry code, and
+      data
+
+  [Set-wormhole-data]
+      Sets the wormhole data object in a wormhole status object
+
+  [Set-wormhole-entry-code]
+      Sets the wormhole entry code in a wormhole status object
+
+  [Wormhole-data]
+      Determines the wormhole data object from a wormhole status object
+
+  [Wormhole-entry-code]
+      Determines the wormhole entry code from a wormhole status object
+
+  [Wormhole-eval]
+      State-saving without state --- a short-cut to a parallel universe
+
+  [Wormhole-implementation]
+      Notes on how wormholes are implemented
+
+  [Wormhole-p]
+      Predicate to determine if you are inside a [wormhole]
+
+  [Wormhole-statusp]
+      Predicate recognizing well-formed wormhole status object")
  (WORMHOLE-DATA
-  (MISCELLANEOUS)
+  (WORMHOLE)
   "Determines the wormhole data object from a wormhole status object
 
     General Form:  (wormhole-data whs)
@@ -96007,7 +96186,7 @@ Subtopics
   See [wormhole]. Returns the wormhole data from a well-formed wormhole
   status whs. If whs is nil or not well-formed, the data is nil.")
  (WORMHOLE-ENTRY-CODE
-  (MISCELLANEOUS)
+  (WORMHOLE)
   "Determines the wormhole entry code from a wormhole status object
 
     General Form:  (wormhole-entry-code whs)
@@ -96016,7 +96195,7 @@ Subtopics
   status whs. If whs is nil or not well-formed, the entry code is
   :ENTER.")
  (WORMHOLE-EVAL
-  (MISCELLANEOUS)
+  (WORMHOLE)
   "State-saving without state --- a short-cut to a parallel universe
 
     Example Form:
@@ -96090,7 +96269,7 @@ Subtopics
   For a behind-the-scenes description of how wormholes work, See
   [wormhole-implementation].")
  (WORMHOLE-IMPLEMENTATION
-  (MISCELLANEOUS)
+  (WORMHOLE)
   "Notes on how wormholes are implemented
 
   What happens when you call [wormhole]? Recall that a typical call of
@@ -96172,14 +96351,14 @@ Subtopics
 
   Wormhole always returns nil.")
  (WORMHOLE-P
-  (MISCELLANEOUS)
+  (WORMHOLE)
   "Predicate to determine if you are inside a [wormhole]
 
   See [wormhole] for a discussion of wormholes. (Wormhole-p state)
   returns (mv nil t state) when evaluated inside a wormhole, else (mv
   nil nil state).")
  (WORMHOLE-STATUSP
-  (MISCELLANEOUS)
+  (WORMHOLE)
   "Predicate recognizing well-formed wormhole status object
 
     General Form:  (wormhole-statusp whs)
@@ -96187,10 +96366,9 @@ Subtopics
   See [wormhole]. This predicate is useful in guards for wormholes. It
   checks whether whs is either nil or a cons whose car is :ENTER or
   :SKIP.")
- (WRITE-BYTE$ (ACL2-BUILT-INS)
-              "See [io].")
+ (WRITE-BYTE$ (POINTERS) "See [io].")
  (XARGS
-  (MISCELLANEOUS)
+  (DEFUN)
   "Extra arguments, for example to give [hints] to [defun]
 
   Common Lisp's [defun] function does not easily allow one to pass
@@ -96338,7 +96516,13 @@ Subtopics
   :[well-founded-relation]
   Value is a function symbol that is known to be a well-founded
   relation in the sense that a rule of class :[well-founded-relation]
-  has been proved about it. See [well-founded-relation].")
+  has been proved about it. See [well-founded-relation].
+
+
+Subtopics
+
+  [Otf-flg]
+      Allow more than one initial subgoal to be pushed for induction")
  (XOR
   (ACL2-BUILT-INS)
   "Logical ``exclusive or''

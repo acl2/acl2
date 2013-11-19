@@ -5989,8 +5989,8 @@
 ; members of stobjs-out and stobjs-out2 are positionally equal (where the
 ; shorter one is extended by nils if necessary) except that in some positions,
 ; stobjs-out may contain nil while stobjs-out2 contains a value missing from
-; known-stobjs.  In that case the value returned is the result of pushing all
-; such values onto acc.
+; known-stobjs.  In that case the value returned can be the result of pushing
+; all such values onto acc.
 
   (cond ((and (endp stobjs-out) (endp stobjs-out2))
          (reverse acc))
@@ -5998,7 +5998,8 @@
          (missing-known-stobjs (cdr stobjs-out) (cdr stobjs-out2) known-stobjs
                                acc))
         ((and (null (car stobjs-out))
-              (not (member-eq (car stobjs-out2) known-stobjs)))
+              (not (or (eq known-stobjs t)
+                       (member-eq (car stobjs-out2) known-stobjs))))
          (missing-known-stobjs (cdr stobjs-out) (cdr stobjs-out2) known-stobjs
                                (cons (car stobjs-out2) acc)))
         (t nil)))
