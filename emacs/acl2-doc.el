@@ -441,7 +441,14 @@ in the ACL2 read-eval-print loop.
            (goto-char (point-min))
            (and (search-forward "Parent list: (" nil t)
 		(acl2-doc-topic-at-point)))))
-    (cond ((null first-parent)
+    (cond ((and (eq first-parent 'TOP)
+		(eq (nth 0 *acl2-doc-state*) 'ACL2)
+		(save-excursion
+		  (goto-char (point-min))
+		  (and (search-forward "Parent list: (TOP " nil t)
+		       (setq first-parent (acl2-doc-topic-at-point)))))
+	   (acl2-doc-display first-parent))
+	  ((null first-parent)
 	   (cond ((save-excursion
 		    (goto-char (point-min))
 		    (forward-line 1)
