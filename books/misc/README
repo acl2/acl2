@@ -397,6 +397,12 @@ correctly implements multiplication.
 
 ===============================================================================
 
+multi-v-uni.lisp -- support for the paper by J Moore, "A Mechanically
+                    Checked Proof of a Multiprocessor Result via a
+                    Uniprocessor View"
+
+===============================================================================
+
 nested-stobj-tests.lisp -- tests for nested stobjs (and stobj-let)
 
 ===============================================================================
