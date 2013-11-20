@@ -24,6 +24,7 @@
 ; otherwise, these functions won't do much of anything interesting.
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 
 (defun hons-analyze-memory (slowp)
   (declare (xargs :guard t)
@@ -44,23 +45,29 @@
 
 (add-macro-alias maybe-wash-memory maybe-wash-memory-fn)
 
+(defxdoc set-max-mem
+  :parents (memory-management)
+  :short "Set garbage collection threshold in ACL2(h)"
+  :long "On CCL, this basically means, \"try to stay within about N gigabytes
+         of memory.\"
+
+         The cert.pl build system scans for calls of set-max-mem.  Loosely
+         speaking, if a book contains something like:
+
+ @({
+  (value-triple (set-max-mem (* 4 (expt 2 30))))
+ })
+
+         Then a memory limit of 4 GB (plus some padding) will be placed on the
+         job.  This limit is probably ignored unless you are using a clustering
+         system like PBS.
+
+         NOTE: A perl script is going to parse this, so for this to work you
+         can't just use an arbitrary Lisp expression here.  Explicitly
+         supported expressions are: (* n (expt 2 30)) and (expt 2 n).")
 
 (defun set-max-mem (n)
 
-; On CCL, this basically means, "try to stay within about N gigabytes of memory."
-;
-; The cert.pl build system scans for calls of set-max-mem.  Loosely speaking, if
-; a book contains somethign like:
-;
-;   (value-triple (set-max-mem (* 4 (expt 2 30))))
-;
-; Then a memory limit of 4 GB (plus some padding) will be placed on the job.
-; This limit is probably ignored unless you are using a clustering system like
-; PBS.
-;
-; NOTE: A perl script is going to parse this, so for this to work you can't
-; just use an arbitrary Lisp expression here.  Explicitly supported expressions
-; are: (* n (expt 2 30)) and (expt 2 n).
 
   (declare (xargs :guard t)
            (ignore n))
