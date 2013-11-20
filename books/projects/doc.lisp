@@ -16,7 +16,7 @@ of projects that have been carried out with @(see acl2).")
   :parents (projects)
   :short "Paco is a cut-down, simplified ACL2-like theorem prover for
 pedagogical use."
-  
+
   :long "<p>The ACL2 source files for paco are located in @('projects/paco').
 These files can be built by running, e.g., @('make paco') from the @('books/')
 directory.  After building these source files, to run paco on some examples,
@@ -300,10 +300,10 @@ as bogus mutual recursions can make ACL2 proofs more difficult.</li>
 <p>A program consists of a list of nodes in the following format.</p>
 
 @({
- (:node :label    idx 
+ (:node :label    idx
         :pre      annot-pre
         :subst    sub
-        :branches ((pred1 . idx1) ... (predn . idxn)) 
+        :branches ((pred1 . idx1) ... (predn . idxn))
         :post     annot-post)
 })
 
@@ -589,4 +589,41 @@ details.</p>
 this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.</p>")
 
+
+(defxdoc leftist-trees
+  :parents (projets)
+  :short "An implementation of leftist trees as described in <a
+href='http://www.cambridge.org/us/academic/subjects/computer-science/programming-languages-and-applied-logic/purely-functional-data-structures'>Purely
+Functional Data Structures</a>, Chris Okasaki, Cambridge University Press 1999."
+
+  :long "<p>The directory @('projects/leftist-trees') contains the ACL2 source
+files for the Leftist Trees implementation by Ben Selfridge.  These ACL2 books
+may be built by running, e.g., @('make leftist-trees') from the @('books/')
+directory.</p>
+
+<p>Leftist trees are an efficient implementation of binary heaps well-suited to
+a functional language.  In this book we provide an implementation of the
+leftist heap data structure and its basic operations, along with some basic
+theorems regarding invariance of those operations, the rank vs. the size of the
+tree, and the correctness of the associated heapsort algorithm.  We prove that
+heapsort is correct and equivalent to the isort algorithm provided in the
+\"sorting\" book.</p>
+
+<h3>Copyright Information</h3>
+
+<p>Leftist Trees Library for ACL2<br/>
+Copyright (C) 2012 Ben Selfridge</p>
+
+<p>This program is free software; you can redistribute it and/or modify it
+under the terms of Version 2 of the GNU General Public License as published by
+the Free Software Foundation.</p>
+
+<p>This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.</p>
+
+<p>You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
+Street, Fifth Floor, Boston, MA 02110-1301, USA.</p>")
 

@@ -46,7 +46,7 @@
 #                 for instance, most of workshops, projects, the centaur
 #                 books, y86 and jvm models, etc.  Usually, committers to
 #                 acl2-books should run "make all" first.
-#   
+#
 #   everything    A very full build, including very slow books.  Most users
 #                 will not want to use this target.  It is useful for, e.g.,
 #                 regression testing before releases.
@@ -468,7 +468,7 @@ bdd/benchmarks.lisp: bdd/cbf.cert bdd/create-benchmarks.lsp
 #     a book other than the target that we picked, we will need to
 #     make it depend on that target.
 
-# In order to create a deps file, we connect to the directory (e.g., 
+# In order to create a deps file, we connect to the directory (e.g.,
 # cd clause-processors/SULFA), and then use shell commands:
 #   fgrep ':dir :system' `find . -name "*.lisp"`
 #   fgrep ':dir :system' `find . -name "*.acl2"`
@@ -786,7 +786,7 @@ OK_CERTS := $(filter-out $(addsuffix %, $(EXCLUDED_PREFIXES)), $(OK_CERTS))
 # ACL2_BOOK_CERTS=" \
 # workshops/2006/cowles-gamboa-euclid/Euclid/ed6a.cert \
 # workshops/2006/cowles-gamboa-euclid/Euclid/ed4bb.cert \
-# " 
+# "
 #
 # If variable ACL2_BOOK_DIRS is set, then ACL2_BOOK_CERTS is extended
 # accordingly.  Note that the pathnames in ACL2_BOOK_DIRS should be
@@ -924,6 +924,9 @@ concurrent-programs: $(filter projects/concurrent-programs/%, $(OK_CERTS))
 
 .PHONY: equational
 equational: $(filter projects/equational/%, $(OK_CERTS))
+
+.PHONY: leftist-trees
+leftist-trees: $(filter projects/leftist-trees/%, $(OK_CERTS))
 
 # Dependencies based on running the following in the milawa/ACL2 directory:
 #   grep "include-book" `find . -name "*.lisp"` | grep :dir
