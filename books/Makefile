@@ -1035,7 +1035,7 @@ manual:
 # following command in this directory, where acl2h is an ACL2(h)
 # executable.
 
-#   make all ACL2_BOOK_CERTS=system/doc/render-doc-combined.cert ACL2=acl2h
+#   make system/doc/render-doc-combined.cert ACL2=acl2h
 
 ##############################
 ### Section: Some notes

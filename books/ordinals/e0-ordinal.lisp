@@ -15,7 +15,21 @@ See the end of this file for documentation of E0-ORD-< and E0-ORDINALP.
 
 (defun e0-ord-< (x y)
 
-  "< for the old acl2 ordinals"
+  ":Doc-Section ACL2::ACL2-built-ins
+
+   the old ordering function for ACL2 ordinals~/
+
+   ~l[o<] for the current new ordering function for ACL2 ordinals.~/
+
+   The functions ~c[e0-ordinalp] and ~ilc[e0-ord-<] were replaced in ACL2
+   Version_2.8 by ~ilc[o-p] and ~ilc[o<], respectively.  However, books created
+   before that version used the earlier functions for termination proofs; the
+   old functions might be of use in these cases.  To use the old functions in
+   termination proofs, include the community book ~c[books/ordinals/e0-ordinal]
+   and execute the event ~c[(set-well-founded-relation e0-ord-<)]
+   (~pl[set-well-founded-relation]).  For a more thorough discussion of
+   these functions, see the documentation at the end of community book
+   ~c[books/ordinals/e0-ordinal.lisp]."
 
   (declare (xargs :guard t))
   (if (consp x)
@@ -33,7 +47,21 @@ See the end of this file for documentation of E0-ORD-< and E0-ORDINALP.
 
 (defun e0-ordinalp (x)
 
-   "The old acl2 ordinal definition"
+  ":Doc-Section ACL2::ACL2-built-ins
+
+   the old recognizer for ACL2 ordinals~/
+
+   ~l[o-p] for the current recognizer for ACL2 ordinals.~/
+
+   The functions ~c[e0-ordinalp] and ~ilc[e0-ord-<] were replaced in ACL2
+   Version_2.8 by ~ilc[o-p] and ~ilc[o<], respectively.  However, books created
+   before that version used the earlier functions for termination proofs; the
+   old functions might be of use in these cases.  To use the old functions in
+   termination proofs, include the community book ~c[books/ordinals/e0-ordinal]
+   and execute the event ~c[(set-well-founded-relation e0-ord-<)]
+   (~pl[set-well-founded-relation]).  For a more thorough discussion of
+   these functions, see the documentation at the end of community book
+   ~c[books/ordinals/e0-ordinal.lisp]."
 
   (declare (xargs :guard t))
   (if (consp x)
