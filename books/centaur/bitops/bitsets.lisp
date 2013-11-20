@@ -129,13 +129,13 @@ just use @('nfix').</p>
 <dd>Constructs the set @('X - {a}')</dd>
 <dd>Execution: @('(logandc1 (ash 1 a) x)')</dd>
 
-<dt>@('(bitset-union X Y)')</dt>
-<dd>Constructs the set @('X U Y')</dd>
-<dd>Execution: @('(logior x y)')</dd>
+<dt>@('(bitset-union X Y ...)')</dt>
+<dd>Constructs the set @('X U Y U ...')</dd>
+<dd>Execution: @('(logior x (logior y ...))')</dd>
 
-<dt>@('(bitset-intersect X Y)')</dt>
-<dd>Constructs the set @('X \\intersect Y')</dd>
-<dd>Execution: @('(logand x y)')</dd>
+<dt>@('(bitset-intersect X Y ...)')</dt>
+<dd>Constructs the set @('X \\intersect Y \\intersect ...')</dd>
+<dd>Execution: @('(logand x (logand y ...))')</dd>
 
 <dt>@('(bitset-difference X Y)')</dt>
 <dd>Constructs the set @('X - Y')</dd>
@@ -329,7 +329,10 @@ details.</p>"
     (defthm bitset-members-under-iff
       ;; BOZO proving this is silghtly questionable...
       (iff (bitset-members x)
-           (posp x)))))
+           (posp x))))
+
+  (defthm nat-listp-of-bitset-members
+    (nat-listp (bitset-members x))))
 
 
 
@@ -588,7 +591,8 @@ definition should be better for symbolic simulation with @(see GL).</p>"
 
   (definlined bitset-singleton (a)
     (declare (xargs :guard (natp a)))
-    (ash 1 (lnfix a)))
+    (the (integer 0 *)
+      (ash 1 (the (integer 0 *) (lnfix a)))))
 
   (local (in-theory (enable bitset-singleton)))
 
@@ -635,7 +639,9 @@ like @(see bitset-union).</p>"
   (definlined bitset-insert (a x)
     (declare (xargs :guard (and (natp a)
                                 (natp x))))
-    (logior (ash 1 (lnfix a)) (lnfix x)))
+    (the (integer 0 *)
+      (logior (the (integer 0 *) (ash 1 (the (integer 0 *) (lnfix a))))
+              (the (integer 0 *) (lnfix x)))))
 
   (local (in-theory (enable bitset-insert)))
 
@@ -693,7 +699,9 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
   (definlined bitset-delete (a x)
     (declare (xargs :guard (and (natp a)
                                 (natp x))))
-    (logandc1 (ash 1 (lnfix a)) (lnfix x)))
+    (the (integer 0 *)
+      (logandc1 (the (integer 0 *) (ash 1 (the (integer 0 *) (lnfix a))))
+                (the (integer 0 *) (lnfix x)))))
 
   (local (in-theory (enable bitset-delete)))
 
@@ -736,15 +744,30 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
       :hints(("Goal" :in-theory (disable bitset-delete))))))
 
 
-
 (defsection bitset-union
   :parents (bitsets)
-  :short "@(call bitset-union) constructs the set @('X U Y')."
+  :short "@('(bitset-union X Y ...)') constructs the set @('X U Y U ...')."
 
-  (definlined bitset-union (x y)
+  (definlined bitset-binary-union (x y)
     (declare (xargs :guard (and (natp x)
                                 (natp y))))
-    (logior (lnfix x) (lnfix y)))
+    (the (integer 0 *)
+      (logior (the (integer 0 *) (lnfix x))
+              (the (integer 0 *) (lnfix y)))))
+
+  (defmacro bitset-union (&rest args)
+    (cond ((atom args)
+           0)
+          ((atom (cdr args))
+           (car args))
+          (t
+           (xxxjoin 'bitset-binary-union args))))
+
+  (local (assert! (equal (bitset-union #b1 #b10 #b100) #b111)))
+  (local (assert! (equal (bitset-union #b1 #b10 #b1000 #ub1100_0001) #ub1100_1011)))
+
+  (add-macro-alias bitset-union bitset-binary-union$inline)
+  (add-macro-fn    bitset-union bitset-binary-union$inline t)
 
   (local (in-theory (enable bitset-union)))
 
@@ -788,15 +811,35 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
 
 (defsection bitset-intersect
   :parents (bitsets)
-  :short "@(call bitset-intersect) constructs the set @('X \\intersect Y')."
+  :short "@('(bitset-intersect X Y ...)') constructs the set @('X \\intersect Y
+  \\intersect ...')."
 
   :long "<p>Note: if you only want to know whether or not two sets intersect,
 @(see bitset-intersectp) is probably more efficient.</p>"
 
-  (definlined bitset-intersect (x y)
+  (definlined bitset-binary-intersect (x y)
     (declare (xargs :guard (and (natp x)
                                 (natp y))))
-    (logand (lnfix x) (lnfix y)))
+    (the (integer 0 *)
+      (logand (the (integer 0 *) (lnfix x))
+              (the (integer 0 *) (lnfix y)))))
+
+  (defmacro bitset-intersect (&rest args)
+    (cond ((atom args)
+           0)
+          ((atom (cdr args))
+           (car args))
+          (t
+           (xxxjoin 'bitset-binary-intersect args))))
+
+  (local (assert! (equal (bitset-intersect #b111 #b110 #b100) #b100)))
+  (local (assert! (equal (bitset-intersect #ub1111_1111
+                                           #ub1010_1010
+                                           #ub1010_0000)
+                         #ub1010_0000)))
+
+  (add-macro-alias bitset-intersect bitset-binary-intersect$inline)
+  (add-macro-fn    bitset-intersect bitset-binary-intersect$inline t)
 
   (local (in-theory (enable bitset-intersect)))
 
@@ -837,7 +880,6 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
       :hints(("Goal" :in-theory (disable bitset-intersect))))))
 
 
-
 (defsection bitset-difference
   :parents (bitsets)
   :short "@(call bitset-difference) constructs the set @('X - Y')."
@@ -845,7 +887,9 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
   (definlined bitset-difference (x y)
     (declare (xargs :guard (and (natp x)
                                 (natp y))))
-    (logandc1 (lnfix y) (lnfix x)))
+    (the (integer 0 *)
+      (logandc1 (the (integer 0 *) (lnfix y))
+                (the (integer 0 *) (lnfix x)))))
 
   (local (in-theory (enable bitset-difference)))
 
@@ -958,8 +1002,8 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
           '((bitset-singleton$inline . t)
             (bitset-insert$inline . t)
             (bitset-delete$inline . t)
-            (bitset-intersect$inline . t)
-            (bitset-union$inline . t)
+            (bitset-binary-intersect$inline . t)
+            (bitset-binary-union$inline . t)
             (bitset-difference$inline . t))
 
           :clear)
@@ -970,7 +1014,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
              (implies (and (natp a) (natp b))
                       (not (iff (sets::in k (bitset-members a))
                                 (sets::in k (bitset-members b))))))
-     :restriction 
+     :restriction
      (let ((bitset-fns (table-alist 'bitset-fns world)))
                     (or (and (consp a)
                              (assoc (car a) bitset-fns))
@@ -1036,7 +1080,8 @@ of @('Y')."
   (definlined bitset-subsetp (x y)
     (declare (xargs :guard (and (natp x)
                                 (natp y))))
-    (= 0 (bitset-difference x y)))
+    (eql 0 (the (integer 0 *)
+             (bitset-difference x y))))
 
   (local (in-theory (enable bitset-subsetp)))
 
@@ -1104,7 +1149,8 @@ actually construct the intersection.</p>"
   (definlined bitset-intersectp (x y)
     (declare (xargs :guard (and (natp x)
                                 (natp y))))
-    (logtest (lnfix x) (lnfix y)))
+    (logtest (the (integer 0 *) (lnfix x))
+             (the (integer 0 *) (lnfix y))))
 
   (local (in-theory (enable bitset-intersectp)))
 
@@ -1162,9 +1208,10 @@ X))').  We could have used this as the @(':logic') definition, but the @(see
 logcount)-based definition should be better for symbolic simulation with @(see
 GL).</p>"
 
-  (defund bitset-cardinality (x)
+  (definlined bitset-cardinality (x)
     (declare (xargs :guard (natp x)))
-    (logcount (lnfix x)))
+    (the (integer 0 *)
+      (logcount (the (integer 0 *) (lnfix x)))))
 
 ; The correctness proof is tricky because logcount is effectively is defined in
 ; a logcar/logcdr style, while bitset-members is defined in a logbitp

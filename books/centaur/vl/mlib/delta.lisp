@@ -23,20 +23,17 @@
 (local (include-book "../util/arithmetic"))
 
 (defaggregate vl-delta
-  (nf netdecls assigns modinsts warnings addmods)
-  :tag nil
-  :legiblep nil
-  :require
-  ((vl-namefactory-p-of-vl-delta->namefactory (vl-namefactory-p nf))
-   (vl-netdecllist-p-of-vl-delta->netdecls    (vl-netdecllist-p netdecls))
-   (vl-assignlist-p-of-vl-delta->assigns      (vl-assignlist-p assigns))
-   (vl-modinstlist-p-of-vl-delta->modinsts    (vl-modinstlist-p modinsts))
-   (vl-modulelist-p-of-vl-delta->addmods      (vl-modulelist-p addmods))
-   (vl-warninglist-p-of-vl-delta->warnings    (vl-warninglist-p warnings))
-   )
-
   :parents (transforms)
   :short "A set of changes to be made to a module."
+  ((nf        vl-namefactory-p)
+   (netdecls  vl-netdecllist-p)
+   (assigns   vl-assignlist-p)
+   (modinsts  vl-modinstlist-p)
+   (gateinsts vl-gateinstlist-p)
+   (warnings  vl-warninglist-p)
+   (addmods   vl-modulelist-p))
+  :tag nil
+  :legiblep nil
 
   :long "<p>An @(see vl-delta-p) is mostly just a bunch of accumulators of
 different types, which may be useful when writing a transform that makes

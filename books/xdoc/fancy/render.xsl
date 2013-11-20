@@ -70,7 +70,9 @@
 </xsl:template>
 
 <xsl:template match="img">
-  <img src="images/{@src}"/>
+  <div class="ximg">
+    <img src="images/{@src}"/>
+  </div>
 </xsl:template>
 
 <xsl:template match="b">

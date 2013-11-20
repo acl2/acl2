@@ -151,9 +151,9 @@ h3, h4, h5, h3 .tt, h4 .tt, h5 .tt {  color: #FF6700; }
 .box          { border-color: black; }
 #data_wrapper { border-color: #034569; }
 
-.code,.tt { color: #306030;}
-.code a   { color: #309030;}
-.code     { border-color: #3C9DD0; }
+.code,.tt      { color: #306030;}
+.code a, .tt a { color: #309030;}
+.code          { border-color: #3C9DD0; }
 
 #nav a:hover, #flat a:hover { background-color: #FFAB73; }
 #data a:hover { background-color: #ffffa0; }
@@ -468,4 +468,8 @@ hr { margin-top: 2em; }
     border-right-color: #000060;
     text-align: left;
     padding-right: 1em;
+}
+
+.ximg {
+    text-align: center;
 }

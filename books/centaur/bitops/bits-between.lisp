@@ -111,6 +111,10 @@ bitset-members).</p>"
     (integer-listp (bits-between n m x))
     :hints(("Goal" :in-theory (enable bits-between))))
 
+  (defthm nat-listp-of-bits-between
+    (nat-listp (bits-between n m x))
+    :hints(("Goal" :in-theory (enable bits-between))))
+
   (defthm bits-between-when-not-integer
     (implies (not (integerp x))
              (equal (bits-between n m x)

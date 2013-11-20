@@ -601,11 +601,12 @@ some kind of separator!</p>
   "Look up information about the current defines in the world."
   (cdr (assoc 'defines (table-alist 'define world))))
 
-(defmacro extend-define-table (name &key fn formals returns)
+(defmacro extend-define-table (name &key fn formals raw-formals returns)
   `(table define 'defines
           (cons (cons ',name (list (cons :fn ,fn)
-                                  (cons :formals ,formals)
-                                  (cons :returns ,returns)))
+                                   (cons :formals ,formals)
+                                   (cons :returns ,returns)
+                                   (cons :raw-formals ,raw-formals)))
                 (get-defines world))))
 
 (defun define-fn (fnname args world)
@@ -666,6 +667,7 @@ some kind of separator!</p>
 
        (macro         (and need-macrop
                            (make-wrapper-macro fnname fnname-fn formals)))
+       (raw-formals   formals)
        (formals       (remove-macro-args fnname formals nil))
        (formals       (parse-formals fnname formals '(:type)))
        (formal-names  (formallist->names formals))
@@ -767,7 +769,8 @@ some kind of separator!</p>
          (extend-define-table ,fnname
                               :fn ',fnname-fn
                               :returns ',returnspecs
-                              :formals ',formals)
+                              :formals ',formals
+                              :raw-formals ',raw-formals)
 
          (local
           (make-event
