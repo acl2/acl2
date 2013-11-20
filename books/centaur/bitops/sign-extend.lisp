@@ -28,8 +28,8 @@
 
 (defsection sign-extend
   :parents (bitops)
-  :short "@(call sign-extend) interprets the least significant @('b') bits of
-the integer @('x') as a signed number of with @('b')."
+  :short "@(call sign-extend) interprets the least significant @('n') bits of
+the integer @('x') as a signed number of width @('n')."
 
   :long "<p>This is logically identical to @(see logext).  But, for better
 performance we adopt a method from Sean Anderson's <a
@@ -37,11 +37,11 @@ href='http://graphics.stanford.edu/~seander/bithacks.html'>bit twiddling
 hacks</a> page, viz:</p>
 
 @({
-unsigned b;                  // number of bits representing the number in x
-int x;                       // sign extend this b-bit number to r
+unsigned n;                  // number of bits representing the number in x
+int x;                       // sign extend this n-bit number to r
 int r;                       // resulting sign-extended number
-int const m = 1U << (b - 1); // mask can be pre-computed if b is fixed
-x = x & ((1U << b) - 1);     // (Skip this if bits in x above position b are already zero.)
+int const m = 1U << (n - 1); // mask can be pre-computed if n is fixed
+x = x & ((1U << n) - 1);     // (Skip this if bits in x above position n are already zero.)
 r = (x ^ m) - m;
 })
 
