@@ -8993,8 +8993,9 @@
 ; function application.  We return (mv new-term hyp unify-subst rune
 ; new-rcnst), where if new-term is not nil:
 
-; - if hyp is non-nil, then assuming hyp, term is provably equal to the
-;   application of unify-subst to new-term;
+; - term is provably equal to the application of unify-subst to new-term, where
+;   if hyp is non-nil then this is under the assumption of the application of
+;   unify-subst to hyp,
 
 ; - if rune is non-nil, rune justifies the above claim; and
 
@@ -16693,6 +16694,8 @@
 ; information for constructing a theory in which the proof may replay.
 
                    (rewrite-entry (rewrite hyp alist 'expansion)
+                                  :geneqv *geneqv-iff*
+                                  :obj t
                                   :ttree (push-lemma? rune ttree))
                    (let ((ens (access rewrite-constant rcnst
                                       :current-enabled-structure)))

@@ -2534,4 +2534,5 @@ which is saved just in case it's needed later.")
 ; "~user/" as "~/".  (See CCL bug 1121,
 ; http://trac.clozure.com/ccl/ticket/1121.)  The following workaround was
 ; suggested by Gary Byers.
+#+ccl
 (setq ccl:*trust-paths-from-environment* nil)
