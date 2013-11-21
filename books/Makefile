@@ -1017,7 +1017,7 @@ chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
 # option is passed to the call of make.  Don't forget to include
 # ACL2=acl2h, where acl2h is your ACL2(h) executable.
 manual:
-	$(MAKE) USE_QUICKLISP=1 ACL2_BOOK_CERTS=centaur/doc.cert
+	$(MAKE) USE_QUICKLISP=1 centaur/doc.cert
 
 # This has been tested using CCL on Linux, but may work for other
 # OS/Lisp combinations.  See also centaur/README.html.  ACL2(h) is
