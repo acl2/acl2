@@ -510,7 +510,7 @@ This works by matching the args to the rewrite rules associated with that
 function symbol (using @(see sexpr-rewrite-try-rules)) and then recursively
 rewriting the resulting RHS and substitution using @(see sexpr-rewrite-sigma).
 If no rewrite rules are found, ground evaluation is done using @(see
-sexpr-rewrite-ground).")
+sexpr-rewrite-ground).</p>")
 
   (defxdoc sexpr-rewrite-sigma
     :parents (sexpr-rewriting-internals)
