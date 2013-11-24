@@ -25,7 +25,7 @@
 (program)
 
 (defxdoc extended-formals
-  :parents (std/util)
+  :parents (std/util define)
   :short "Extended syntax for function arguments that allows for built-in
 guards, documentation, and macro-like keyword/optional arguments."
 

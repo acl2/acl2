@@ -25,7 +25,7 @@
 (program)
 
 (defxdoc returns-specifiers
-  :parents (std/util)
+  :parents (std/util define)
   :short "A concise way to name, document, and prove basic type-like theorems
 about a function's return values."
 
