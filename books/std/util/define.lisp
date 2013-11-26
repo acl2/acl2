@@ -37,7 +37,7 @@
 
   :long "<h3>Introduction</h3>
 
-<p>@('define') is an extension of @('defun')/@('defun') with:</p>
+<p>@('define') is an extension of @('defun')/@('defund') with:</p>
 
 <ul>
 
