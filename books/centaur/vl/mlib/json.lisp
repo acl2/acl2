@@ -149,13 +149,13 @@ and including the surrounding quotes."
 
 (add-json-encoder stringp jp-str)
 
-(define jp-maybe-string ((x vl-maybe-string-p) &key (ps 'ps))
+(define jp-maybe-string ((x maybe-stringp) &key (ps 'ps))
   :parents (json-encoders)
   (if x
       (jp-str x)
     (vl-print "null")))
 
-(add-json-encoder vl-maybe-string-p jp-maybe-string)
+(add-json-encoder maybe-stringp jp-maybe-string)
 
 
 
@@ -174,7 +174,7 @@ minimum reasonable size for a JSON implementation to support.</p>"
         ps))
     (vl-print-nat x)))
 
-(define jp-maybe-nat ((x vl-maybe-natp) &key (ps 'ps))
+(define jp-maybe-nat ((x maybe-natp) &key (ps 'ps))
   :parents (json-encoders)
   (if x
       (jp-nat x)
@@ -182,8 +182,8 @@ minimum reasonable size for a JSON implementation to support.</p>"
 
 (add-json-encoder natp jp-nat)
 (add-json-encoder posp jp-nat)
-(add-json-encoder vl-maybe-natp jp-maybe-nat)
-(add-json-encoder vl-maybe-posp jp-maybe-nat)
+(add-json-encoder maybe-natp jp-maybe-nat)
+(add-json-encoder maybe-posp jp-maybe-nat)
 
 
 
@@ -387,7 +387,7 @@ encoding.</p>"
 
 (defmacro def-vl-jp-aggregate (type &key omit override newlines
                                     (long '""))
-  (declare (xargs :guard (vl-maybe-natp newlines)))
+  (declare (xargs :guard (maybe-natp newlines)))
   `(make-event
     (let ((form (def-vl-jp-aggregate-fn ',type ',omit ',override ',long ',newlines
                   (w state))))
@@ -397,7 +397,7 @@ encoding.</p>"
 
 
 (defmacro def-vl-jp-list (type &key newlines)
-  (declare (xargs :guard (vl-maybe-natp newlines)))
+  (declare (xargs :guard (maybe-natp newlines)))
   (b* ((mksym-package-symbol 'vl::foo)
        (list-p         (mksym 'vl- type 'list-p))
        (elem-print     (mksym 'vl-jp- type))

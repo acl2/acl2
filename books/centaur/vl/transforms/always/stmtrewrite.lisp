@@ -360,7 +360,7 @@ just some useless computation if it's not necessary.</p>"
     (vl-flatten-blocks sequentialp merged-stmts)))
 
 (define vl-blockstmt-rewrite ((sequentialp booleanp)
-                              (name        vl-maybe-string-p)
+                              (name        maybe-stringp)
                               (decls       vl-blockitemlist-p)
                               (stmts       vl-stmtlist-p)
                               (atts        vl-atts-p)

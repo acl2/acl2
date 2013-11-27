@@ -55,7 +55,8 @@
 ;
 ; Our top level function is
 ;
-;  (order-topics-by-importance all-topics state) --> (mv all-topics state)
+;  (order-topics-by-importance all-topics state) 
+;     --> (mv all-topics xtopics state)
 ;
 ; It just permutes the input topics into a "good" order so that "more
 ; important" topics come first.  The goal is to improve the relevance of
@@ -307,7 +308,7 @@
 ;;                    ;; Including code here helps cut down on automatically
 ;;                    ;; generated stuff.
 ;;                    (+ 1/10 acc))
-;;                   ((member-equal tagname '("tt" "b" "u" "i" "color" "sf" ))
+;;                   ((member-equal tagname '("tt" "b" "u" "i" "color" "sf" "icon"))
 ;;                    (+ 1/20 acc))
 ;;                   ((member-equal tagname '("p"))
 ;;                    (let ((len (text-length-through-close-paragraph (cdr tokens) 0)))
@@ -359,7 +360,7 @@
                      ;; Including code here helps cut down on automatically
                      ;; generated stuff.
                      (+ 2 acc))
-                    ((member-equal tagname '("tt" "b" "u" "i" "color" "sf" ))
+                    ((member-equal tagname '("tt" "b" "u" "i" "color" "sf" "icon"))
                      (+ 1 acc))
                     (t acc))))
           (rough-size (cdr tokens) (cons tagname open-tags) acc)))
@@ -647,7 +648,7 @@
                (mergesort (strip-cars (fast-alist-free (topics-fal result)))))
         (er hard? 'order-topics-by-importance
             "Screwed up the database!"))
-    (mv result state)))       
+    (mv result xtopics state)))
 
 
 

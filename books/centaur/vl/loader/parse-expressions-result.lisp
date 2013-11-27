@@ -75,7 +75,7 @@
  (encapsulate
   ()
   (local (in-theory (enable vl-maybe-expr-p)))
-  ;(local (in-theory (disable stringp-when-vl-maybe-string-p)))
+  ;(local (in-theory (disable stringp-when-maybe-stringp)))
   (make-event
    `(defthm-vl-flag-parse-expression vl-parse-expression-value
       (vl-parse-attr-spec-fn

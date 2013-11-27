@@ -20,40 +20,121 @@
 
 (in-package "RSTOBJ")
 (include-book "def-typed-record")
-;;(include-book "g-delete-keys")
 (include-book "generic")
-;;(include-book "fancy-worseguy")
 (include-book "misc/definline" :dir :system)
 (include-book "misc/records" :dir :system)
 (include-book "tools/bstar" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "centaur/misc/absstobjs" :dir :system)
 
-; The DEFRSTOBJ macro.
-;
-; Example:
-;
-;    (defrstobj st
-;
-;      (regs :type (array (unsigned-byte 64) (32))
-;            :initially 0
-;            :typed-record u32-tr-p)
-;
-;      (pc   :type (unsigned-byte 64)
-;            :initially 0)
-;
-;      (mem  :type (array (unsigned-byte 8) (*mem-size*))
-;            :initially 0
-;            :typed-record u8-tr-p)
-;
-;      :inline t)
-;
-; The syntax of DEFRSTOBJ is basically that of DEFSTOBJ, except that each array
-; field needs to have a :TYPED-RECORD argument that names the recognizer
-; function for a typed record that was introduced by DEF-TYPED-RECORD.  See the
-; file defrstobj-tests.lisp for several more examples, including examples of
-; how to use DEF-TYPED-RECORD.
-;
+(defsection defrstobj
+  :parents (stobj macro-libraries)
+  :short "Record-like @(see stobj)s combine the run-time efficiency of stobjs
+with the reasoning efficiency of records.  They are designed for modeling,
+e.g., the state of a processor or virtual machine."
+
+  :long "<h3>Introduction</h3>
+
+<p>A <b>Record-like @(see stobj)</b> (\"rstobj\") is a way to model a
+processor's state that allows for both good execution efficiency and good
+reasoning efficiency.</p>
+
+<p>The state is implemented as a stobj so that it can be accessed efficiently
+and updated destructively, without, e.g., lots of consing just to build the new
+state object.  This is good since it's useful for processor models to execute
+efficiently.</p>
+
+<p>The state is reasoned about as if it were a \"record,\" in the sense of the
+@('misc/records') book.  The top-level field accessors and updators of the
+stobj are (logically) defined as @('g') and @('s').  This style of reasoning
+seems good.  It has been used in the compositional cutpoint techniques
+developed by John Matthews, J Moore, Sandip Ray, and Daron Vroon, the
+\"wormhole abstraction\" of Dave Greve at Rockwell Collins, the work of Eric
+Smith for automated cutpoint-based proofs, etc.  There are probably other
+people who are also using records, e.g., Rob Sumners.</p>
+
+
+<h3>Using @('defrstobj')</h3>
+
+<p>The syntax of @('defrstobj') is nearly that of defstobj, except that:</p>
+
+<ul>
+
+<li>Simply typed (non-array) fields require an additional @(':fix') argument
+that says how to coerce \"bad\" objects into an object of the appropriate type.
+This should be a term mentioning @('acl2::x').</li>
+
+<li>Array fields require an additional @(':typed-record') argument that names
+recognizer function for a typed record; see @(see def-typed-record).</li>
+
+</ul>
+
+<p>Example:</p>
+
+@({
+    (include-book \"centaur/defrstobj/defrstobj\" :dir :system)
+
+    (defrstobj st
+
+      (regs :type (array (unsigned-byte 64) (32))
+            :initially 0
+            :typed-record u32-tr-p)
+
+      (pc   :type (unsigned-byte 64)
+            :initially 0
+            :fix (unsigned-byte-fix 64 x))
+
+      (mem  :type (array (unsigned-byte 8) (*mem-size*))
+            :initially 0
+            :typed-record u8-tr-p)
+
+      :inline t)
+})
+
+<p>See also @('centaur/rstobj/defrstobj-tests.lisp') for several more examples,
+including examples of how to use @('def-typed-record').</p>
+
+
+<h3>Notes</h3>
+
+<p>Record-like stobjs are now based on abstract stobjs.  This offers various
+benefits over a <see topic='@(url legacy-defrstobj)'>previous version</see> of
+rstobjs that didn't use abstract stobjs.  For instance, you no longer need any
+kind of good-stobj predicate, and the top-level logical story is now just in
+terms of @('g') and @('s') instead of stobj-specific functions.</p>
+
+<p>A subtlety of treating the state as a record is that you (logically)
+\"lose\" any type information about the top-level fields.  For instance, you
+would expect to know that the @('pc') field above is a 64-bit natural.</p>
+
+<p>With rstobjs, the state is logically just a record, so logically there is no
+restriction on the @('pc').  However, the executable accessor for the @('pc')
+will logically be defined as, e.g.,</p>
+
+@({
+    (unsigned-byte-fix 64 (g :pc st))
+})
+
+<p>Note that this fixing is free in the execution; the abstract stobj invariant
+allows us to assume that @('pc') is well-formed so we don't need to do any
+fixing.</p>
+
+<p>Arrays complicate things.  If a stobj only has non-array fields, then
+viewing it as a record is pretty straightforward&mdash;we basically have a key
+corresponding to each field.  But how do we handle array fields, which have
+their own collections of elements?</p>
+
+<p>One approach might be to try to keep viewing the stobj as a flat record.
+For instance, we might try to have the story be something like <i>arr[3]
+corresponds to the field (:ARR . 3)</i> or similar.  This is probably possible,
+but something I didn't like about it was that it means we would also lose the
+type information on the array elements.</p>
+
+<p>Instead, I set things up so that the whole array looks like just one field
+in the stobj.  The array itself is represented as a typed record, with its own
+get/set functions that satisfy the theorems of Greve and Wilding's typed
+records book.  See @(see def-typed-record).</p>")
+
 ; I originally imagined that DEFRSTOBJ would automatically introduce the typed
 ; records needed to support each field (and even got pretty far along with the
 ; implementation of this idea).  But the problem with this is that:
@@ -506,7 +587,7 @@
                   (,recog (resize-list x n v)))
          :hints(("Goal" :in-theory (enable resize-list)))))
      rest)))
-       
+
 
 (defun absstobj-exports-one (fta mksym-pkg)
   (b* ((typed-rec (cdr (assoc :typed-record fta)))
@@ -532,7 +613,7 @@
 
        (length$a  (mksym length '$a))
        (length$c  (cdr (assoc :length-name$c fta)))
-       
+
        (grow/empty
         (and grow
              `((,grow :logic ,(mksym grow '$a) :exec ,(cdr (assoc :resize-name$c fta)))
@@ -647,7 +728,7 @@
 
 ; Get into a very restricted theory that (hopefully) just includes what we need.
 
-         
+
          (defstobj ,name$c ,@stobj-args)
 
          ;; At the moment this is just emptying functions for resizable array
@@ -668,7 +749,7 @@
          ,@(logic-field-functions ftas wrld tr-table mksym-pkg)
 
          (local
-          (progn 
+          (progn
 
             (defconst *rstobj-tmp-field-map*
               (list . ,(make-fieldmap-entries ftas)))
@@ -1018,7 +1099,7 @@
  (progn
 
    ;; Very basic test: more tests in basic-tests.lisp
-   
+
    (defun ubp-listp (n x)
      (declare (xargs :guard t))
      (if (atom x)
@@ -1071,10 +1152,4 @@
      (natfld :type (integer 0 *)
              :initially 0
              :fix (nonneg-fix x)))))
-
-
-
-
-
-
 

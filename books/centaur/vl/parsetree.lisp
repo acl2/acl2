@@ -262,7 +262,7 @@ case splits.</p>"
 
   ///
   (defthm type-of-vl-op-arity
-    (vl-maybe-natp (vl-op-arity x))
+    (maybe-natp (vl-op-arity x))
     :rule-classes :type-prescription))
 
 
@@ -753,7 +753,7 @@ vl-atomguts-p) is already known."
 
   ((guts       vl-atomguts-p)
 
-   (finalwidth vl-maybe-natp
+   (finalwidth maybe-natp
                :rule-classes :type-prescription)
 
    (finaltype  vl-maybe-exprtype-p
@@ -795,7 +795,7 @@ vl-atomguts-p) is already known."
    (atts "No requirements (yet) due to mutual recursion.")
    (args "No requirements (yet) due to mutual recursion.")
 
-   (finalwidth vl-maybe-natp
+   (finalwidth maybe-natp
                :rule-classes :type-prescription)
 
    (finaltype  vl-maybe-exprtype-p
@@ -884,7 +884,7 @@ are able to achieve the straightforward recursive structure we desire.</p>
 
 <ul>
 
-<li>@('finalwidth'), which is a @(see vl-maybe-natp), and</li>
+<li>@('finalwidth'), which is a @(see maybe-natp), and</li>
 
 <li>@('finaltype'), which is a @(see vl-maybe-exprtype-p).</li>
 
@@ -907,7 +907,7 @@ imposed by @('vl-expr-p').</p>
 @('finaltype') fields, which are @('nil') upon parsing and may later be filled
 in by our expression typing and sizing computations.  To be accepted by
 @('vl-nonatom-p'), the @('finalwidth') and @('finaltype') must be valid @(see
-vl-maybe-natp) and @(see vl-maybe-exprtype-p) objects, respectively.</p>
+maybe-natp) and @(see vl-maybe-exprtype-p) objects, respectively.</p>
 
 <p>Additionally, each non-atomic expression includes:</p>
 
@@ -986,7 +986,7 @@ each operator has the proper arity.</p>"
                   (force (vl-exprlist-p args))
                   (force (implies (vl-op-arity op)
                                   (equal (len args) (vl-op-arity op))))
-                  (force (vl-maybe-natp finalwidth))
+                  (force (maybe-natp finalwidth))
                   (force (vl-maybe-exprtype-p finaltype)))
              (vl-expr-p (make-vl-nonatom :op op
                                          :atts atts
@@ -1034,7 +1034,7 @@ instead.</p>"
   :parents (vl-expr-p)
   :short "Get the @('finalwidth') from an expression."
   :long "<p>See @(see vl-expr-p) for a discussion of widths.  The result is a
-@(see vl-maybe-natp).</p>"
+@(see maybe-natp).</p>"
   (if (eq (tag x) :vl-atom)
       (vl-atom->finalwidth x)
     (vl-nonatom->finalwidth x))
@@ -1043,9 +1043,9 @@ instead.</p>"
 
   ///
 
-  (defthm vl-maybe-natp-of-vl-expr->finalwidth
+  (defthm maybe-natp-of-vl-expr->finalwidth
     (implies (force (vl-expr-p x))
-             (vl-maybe-natp (vl-expr->finalwidth x)))
+             (maybe-natp (vl-expr->finalwidth x)))
     :rule-classes :type-prescription)
 
   (defthm vl-expr->finalwidth-of-vl-atom
@@ -1530,7 +1530,7 @@ try to support the use of both ascending and descending ranges.</p>")
   :tag :vl-port
   :legiblep nil
 
-  ((name vl-maybe-string-p
+  ((name maybe-stringp
          :rule-classes
          ((:type-prescription)
           (:rewrite :corollary
@@ -2311,7 +2311,7 @@ our transformations may not preserve it correctly.</p>")
               @('nil') because Verilog allows expressions to be \"blank\", in
               which case they represent an unconnected wire.")
 
-   (portname vl-maybe-string-p
+   (portname maybe-stringp
              :rule-classes
              ((:type-prescription)
               (:rewrite
@@ -2561,7 +2561,7 @@ instance."
   :tag :vl-modinst
   :legiblep nil
 
-  ((instname  vl-maybe-string-p
+  ((instname  maybe-stringp
               :rule-classes
               ((:type-prescription)
                (:rewrite :corollary
@@ -2673,7 +2673,7 @@ recognized by @(call vl-gatetype-p).</p>")
                              (not (equal (vl-gateinst->type x) t))
                              (not (equal (vl-gateinst->type x) nil)))))))
 
-   (name     vl-maybe-string-p
+   (name     maybe-stringp
              :rule-classes
              ((:type-prescription)
               (:rewrite :corollary
@@ -3529,7 +3529,7 @@ parallel (@('fork ... join')) blocks.  See the compound statement's
   ((type        vl-compoundstmttype-p)
    (exprs       vl-exprlist-p)
    (stmts       "no guard due to mutual recursion")
-   (name        vl-maybe-string-p)
+   (name        maybe-stringp)
    (decls       vl-blockitemlist-p)
    (ctrl        vl-maybe-delayoreventcontrol-p)
    (sequentialp booleanp)
@@ -3636,7 +3636,7 @@ kinds of statements.</p>"
                  @('vl-compoundstmt-p') itself due to mutual recursion; see
                  @(see vl-stmt-p).")
 
-   (name        vl-maybe-string-p
+   (name        maybe-stringp
                 :rule-classes
                 ((:type-prescription)
                  (:rewrite :corollary
@@ -3834,7 +3834,7 @@ statements are recognized with @(see vl-compoundstmt-p).</p>"
     (implies (and (force (vl-compoundstmttype-p type))
                   (force (vl-exprlist-p exprs))
                   (force (vl-stmtlist-p stmts))
-                  (force (vl-maybe-string-p name))
+                  (force (maybe-stringp name))
                   (force (vl-blockitemlist-p decls))
                   (force (vl-maybe-delayoreventcontrol-p ctrl))
                   (force (booleanp sequentialp))

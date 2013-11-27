@@ -213,7 +213,7 @@ regards even lone @('vl-hidpiece-p') atoms as valid.</p>"
 
   (defthm vl-hidexpr-p-of-vl-atom
     (implies (and (force (vl-atomguts-p guts))
-                  (force (vl-maybe-posp finalwidth))
+                  (force (maybe-posp finalwidth))
                   (force (vl-maybe-exprtype-p finaltype)))
              (equal (vl-hidexpr-p (make-vl-atom :guts guts
                                                 :finalwidth finalwidth
@@ -229,7 +229,7 @@ regards even lone @('vl-hidpiece-p') atoms as valid.</p>"
                   (force (vl-hidpiece-p (vl-atom->guts (first args))))
                   (force (vl-hidexpr-p (second args)))
                   (force (vl-atts-p atts))
-                  (force (vl-maybe-posp finalwidth))
+                  (force (maybe-posp finalwidth))
                   (force (vl-maybe-exprtype-p finaltype)))
              (vl-hidexpr-p (make-vl-nonatom :op op
                                             :args args
@@ -245,7 +245,7 @@ regards even lone @('vl-hidpiece-p') atoms as valid.</p>"
                   (force (vl-hidpiece-p (vl-atom->guts (first args))))
                   (force (vl-hidexpr-p (third args)))
                   (force (vl-atts-p atts))
-                  (force (vl-maybe-posp finalwidth))
+                  (force (maybe-posp finalwidth))
                   (force (vl-maybe-exprtype-p finaltype)))
              (vl-hidexpr-p (make-vl-nonatom :op op
                                             :args args
@@ -292,7 +292,7 @@ portion of a hierarchical identifier is a resolved expression."
                   (force (vl-hidexpr-p (second args)))
                   (force (vl-hid-indicies-resolved-p (second args)))
                   (force (vl-atts-p atts))
-                  (force (vl-maybe-posp finalwidth))
+                  (force (maybe-posp finalwidth))
                   (force (vl-maybe-exprtype-p finaltype)))
              (vl-hid-indicies-resolved-p (make-vl-nonatom :op op
                                                           :args args
@@ -311,7 +311,7 @@ portion of a hierarchical identifier is a resolved expression."
                   (force (vl-hidexpr-p (third args)))
                   (force (vl-hid-indicies-resolved-p (third args)))
                   (force (vl-atts-p atts))
-                  (force (vl-maybe-posp finalwidth))
+                  (force (maybe-posp finalwidth))
                   (force (vl-maybe-exprtype-p finaltype)))
              (vl-hid-indicies-resolved-p (make-vl-nonatom :op op
                                                           :args args
@@ -442,7 +442,7 @@ of @(see vl-hid-fix)."
 
   (defthm vl-hid-fixed-p-of-vl-atom
     (implies (and (force (vl-atomguts-p guts))
-                  (force (vl-maybe-posp finalwidth))
+                  (force (maybe-posp finalwidth))
                   (force (vl-maybe-exprtype-p finaltype)))
              (equal (vl-hid-fixed-p (make-vl-atom :guts guts
                                                   :finalwidth finalwidth

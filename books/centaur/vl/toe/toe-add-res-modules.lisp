@@ -153,7 +153,7 @@ names.</p>"
   (verify-guards vl-res-rewrite-pat)
 
   (local (defthm l0
-           (implies (vl-maybe-natp idx)
+           (implies (maybe-natp idx)
                     (iff (vl-emodwire "vl_res" idx)
                          t))
            :hints(("Goal"
@@ -498,7 +498,7 @@ resolution of W1...Wn, for each such W.</p>"
   (defmvtypes vl-make-res-occs (true-listp natp))
 
   (local (defthm l0
-           (implies (vl-maybe-natp idx)
+           (implies (maybe-natp idx)
                     (iff (vl-emodwire "vl_res" idx)
                          t))
            :hints(("Goal"

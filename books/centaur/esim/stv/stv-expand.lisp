@@ -31,10 +31,10 @@
 
 
 (define stv-maybe-match-select ((x vl::vl-expr-p))
-  :returns (mv (err? vl::vl-maybe-string-p :rule-classes :type-prescription)
+  :returns (mv (err? vl::maybe-stringp :rule-classes :type-prescription)
                (from vl::vl-expr-p :hyp :fguard)
-               (msb? vl::vl-maybe-natp :rule-classes :type-prescription)
-               (lsb? vl::vl-maybe-natp :rule-classes :type-prescription))
+               (msb? vl::maybe-natp :rule-classes :type-prescription)
+               (lsb? vl::maybe-natp :rule-classes :type-prescription))
   :parents (stv-expand)
   :short "Match an expression with an optional bit- or part-select."
   (b* (((unless (vl::vl-nonatom-p x))
@@ -79,10 +79,10 @@
 ; :input lines mention inputs, and :output lines mention outputs.
 
 (define stv-wirename-parse ((str stringp))
-  :returns (mv (err?     vl::vl-maybe-string-p :rule-classes :type-prescription)
+  :returns (mv (err?     vl::maybe-stringp :rule-classes :type-prescription)
                (basename stringp)
-               (msb?     vl::vl-maybe-natp :rule-classes :type-prescription)
-               (lsb?     vl::vl-maybe-natp :rule-classes :type-prescription))
+               (msb?     vl::maybe-natp :rule-classes :type-prescription)
+               (lsb?     vl::maybe-natp :rule-classes :type-prescription))
   :parents (stv-expand)
   :short "Match a Verilog-style wire name, bit-select, or part-select."
   :long "<p>Examples:</p>

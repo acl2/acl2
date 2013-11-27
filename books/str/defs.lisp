@@ -22,6 +22,7 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "tools/bstar" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (local (include-book "top"))
 (local (include-book "std/util/defredundant" :dir :system))
 
@@ -40,7 +41,7 @@
     ;; char-fix.lisp
     char-fix$inline
     char-fix
-   
+
     ;; eqv.lisp
     chareqv$inline
     chareqv
@@ -68,7 +69,7 @@
     rchars-to-string
     join-aux
     join
-   
+
     ;; char-case.lisp
     little-a
     little-z
@@ -218,7 +219,7 @@
     ;; prefix-lines.lisp
     prefix-lines-aux
     prefix-lines
-    
+
     ;; strline.lisp
     charpos-aux
     go-to-line
@@ -291,7 +292,7 @@
     strval8
     strval16
     strval2
-    
+
     ;; substrp
     substrp$inline
     substrp
@@ -304,7 +305,7 @@
     symbol-list-names
     intern-list-fn
     intern-list
-    
+
     )
   state))
 

@@ -99,8 +99,8 @@ flip-flops.</p>"
        (ticks (and x.ctrl (vl-simpledelaycontrol->ticks x.ctrl))))
     (mv test x.lvalue rhs ticks))
   ///
-  (defthm vl-maybe-natp-of-vl-match-latchbody-form1.ticks
-    (vl-maybe-natp (mv-nth 3 (vl-match-latchbody-form1 x)))
+  (defthm maybe-natp-of-vl-match-latchbody-form1.ticks
+    (maybe-natp (mv-nth 3 (vl-match-latchbody-form1 x)))
     :rule-classes :type-prescription))
 
 
@@ -133,8 +133,8 @@ flip-flops.</p>"
                    (vl-simpledelaycontrol->ticks ass.ctrl))))
     (mv x.condition ass.lvalue ass.expr ticks))
   ///
-  (defthm vl-maybe-natp-of-vl-match-latchbody-form2.ticks
-    (vl-maybe-natp (mv-nth 3 (vl-match-latchbody-form2 x)))
+  (defthm maybe-natp-of-vl-match-latchbody-form2.ticks
+    (maybe-natp (mv-nth 3 (vl-match-latchbody-form2 x)))
     :rule-classes :type-prescription))
 
 (define vl-match-latchbody ((x vl-stmt-p))
@@ -151,8 +151,8 @@ flip-flops.</p>"
         (mv test lhs rhs delay)))
     (vl-match-latchbody-form2 x))
   ///
-  (defthm vl-maybe-natp-of-vl-match-latchbody.ticks
-    (vl-maybe-natp (mv-nth 3 (vl-match-latchbody x)))
+  (defthm maybe-natp-of-vl-match-latchbody.ticks
+    (maybe-natp (mv-nth 3 (vl-match-latchbody x)))
     :rule-classes :type-prescription))
 
 (define vl-match-latch-main ((x vl-always-p))
@@ -209,8 +209,8 @@ Cummings</a> articles about coding styles for non-blocking assignments.</p>"
                                (not (vl-eventcontrol->starp ctrl)))
                           (vl-evatomlist-plain-p (vl-eventcontrol->atoms ctrl))))))
 
-    (defthm vl-maybe-natp-of-vl-match-latch-main.ticks
-      (vl-maybe-natp (mv-nth 4 (vl-match-latch-main x)))
+    (defthm maybe-natp-of-vl-match-latch-main.ticks
+      (maybe-natp (mv-nth 4 (vl-match-latch-main x)))
       :rule-classes :type-prescription))
 
 
@@ -298,8 +298,8 @@ extra sanity checking."
     (mv warnings condition lhs rhs delay))
 
   ///
-  (defthm vl-maybe-natp-of-vl-careful-match-latch.ticks
-    (vl-maybe-natp (mv-nth 4 (vl-careful-match-latch x warnings)))
+  (defthm maybe-natp-of-vl-careful-match-latch.ticks
+    (maybe-natp (mv-nth 4 (vl-careful-match-latch x warnings)))
     :rule-classes :type-prescription))
 
 
@@ -382,8 +382,8 @@ sanity checking."
     (mv warnings condition lhs rhs delay))
 
   ///
-  (defthm vl-maybe-natp-of-vl-careless-match-latch.ticks
-    (vl-maybe-natp (mv-nth 4 (vl-careless-match-latch x warnings)))
+  (defthm maybe-natp-of-vl-careless-match-latch.ticks
+    (maybe-natp (mv-nth 4 (vl-careless-match-latch x warnings)))
     :rule-classes :type-prescription))
 
 (define vl-latchcode-synth-always

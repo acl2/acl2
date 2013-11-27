@@ -171,7 +171,7 @@ like @('foo').</p>"
 
 
 (define vl-idexpr ((name stringp)
-                   (finalwidth vl-maybe-natp)
+                   (finalwidth maybe-natp)
                    (finaltype vl-maybe-exprtype-p))
   :parents (expr-tools)
   :short "Construct an @(see vl-idexpr-p)."
@@ -192,7 +192,7 @@ construct fast alists binding identifiers to things, etc.</p>"
 
   (defthm vl-idexpr-p-of-vl-idexpr
     (implies (and (force (stringp name))
-                  (force (vl-maybe-natp finalwidth))
+                  (force (maybe-natp finalwidth))
                   (force (vl-maybe-exprtype-p finaltype)))
              (vl-idexpr-p (vl-idexpr name finalwidth finaltype))))
 
@@ -211,7 +211,7 @@ construct fast alists binding identifiers to things, etc.</p>"
 
   (defthm vl-atom-p-of-vl-idexpr
     (implies (and (force (stringp name))
-                  (force (vl-maybe-natp finalwidth))
+                  (force (maybe-natp finalwidth))
                   (force (vl-maybe-exprtype-p finaltype)))
              (vl-atom-p (vl-idexpr name finalwidth finaltype)))))
 
@@ -220,7 +220,7 @@ construct fast alists binding identifiers to things, etc.</p>"
 (defprojection vl-make-idexpr-list (x finalwidth finaltype)
   (vl-idexpr x finalwidth finaltype)
   :guard (and (string-listp x)
-              (vl-maybe-natp finalwidth)
+              (maybe-natp finalwidth)
               (vl-maybe-exprtype-p finaltype))
   :result-type vl-exprlist-p
   :parents (expr-tools)
@@ -229,7 +229,7 @@ construct fast alists binding identifiers to things, etc.</p>"
   :rest
   ((defthm vl-idexprlist-p-of-vl-make-idexpr-list
      (implies (and (force (string-listp x))
-                   (force (vl-maybe-natp finalwidth))
+                   (force (maybe-natp finalwidth))
                    (force (vl-maybe-exprtype-p finaltype)))
               (vl-idexprlist-p (vl-make-idexpr-list x finalwidth finaltype))))
 

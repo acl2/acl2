@@ -62,6 +62,10 @@
       lnfix
       lifix
       lbfix
+      maybe-natp
+      maybe-stringp
+      maybe-posp
+      maybe-integerp
       never-memoize
 
       std::mksym

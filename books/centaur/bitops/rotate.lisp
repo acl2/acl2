@@ -21,6 +21,7 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "tools/bstar" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (include-book "ihs/logops-definitions" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "centaur/gl/gl-mbe" :dir :system)

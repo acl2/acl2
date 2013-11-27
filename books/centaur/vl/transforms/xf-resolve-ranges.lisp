@@ -160,11 +160,11 @@ think it can.</p>"
            (t
             ;; Some unsupported operation -- fail.
             nil))))
-  :prepwork ((local (in-theory (enable vl-maybe-natp))))
+  :prepwork ((local (in-theory (enable maybe-natp))))
   ///
 
   (defthm type-of-vl-rangeexpr-reduce
-    (vl-maybe-natp (vl-rangeexpr-reduce x))
+    (maybe-natp (vl-rangeexpr-reduce x))
     :rule-classes :type-prescription)
 
   (defthm upper-bound-of-vl-rangeexpr-reduce

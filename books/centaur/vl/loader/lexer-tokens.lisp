@@ -366,7 +366,7 @@ in any sort of useful way.</p>")
 
 (defund vl-inttoken-constraint-p (width value bits)
   (declare (xargs :guard (and (posp width)
-                              (vl-maybe-natp value)
+                              (maybe-natp value)
                               (vl-bitlist-p bits))))
   (if value
       ;; Has a value: must not have bits, and value must be in bounds.
@@ -391,8 +391,8 @@ in any sort of useful way.</p>")
             (booleanp-of-vl-inttoken->signedp
              (booleanp signedp)
              :rule-classes :type-prescription)
-            (vl-maybe-natp-of-vl-inttoken->value
-             (vl-maybe-natp value)
+            (maybe-natp-of-vl-inttoken->value
+             (maybe-natp value)
              :rule-classes :type-prescription)
             (vl-bitlist-p-of-vl-inttoken->bits
              (vl-bitlist-p bits))
@@ -741,7 +741,7 @@ token.</p>"
                   (force (true-listp etext))
                   (force (posp width))
                   (force (booleanp signedp))
-                  (force (vl-maybe-natp value))
+                  (force (maybe-natp value))
                   (force (vl-inttoken-constraint-p width value bits))
                   (force (vl-bitlist-p bits))
                   (force (booleanp wasunsized)))

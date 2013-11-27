@@ -3,7 +3,7 @@
 
 (include-book "tools/bstar" :dir :system)
 (include-book "u32-listp")
-(include-book "xdoc/base" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (include-book "arith-equivs")

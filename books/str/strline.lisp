@@ -20,6 +20,7 @@
 
 (in-package "STR")
 (include-book "coerce")
+(include-book "std/basic/defs" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
 

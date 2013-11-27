@@ -87,7 +87,7 @@ assign bcNxtWCBEntSrc_P =
   :tag :sd-key
   :legiblep nil
   :require ((stringp-of-sd-key->pat         (stringp pat))
-            (vl-maybe-natp-of-sd-key->index (vl-maybe-natp index))
+            (maybe-natp-of-sd-key->index (maybe-natp index))
             (stringp-of-sd-key->orig        (stringp orig)))
 
   :parents (skip-detection)

@@ -1140,9 +1140,9 @@ baz
                    (cons 'mv vals))))
 
        ((unless kind)
-        (b* ((acc            (str::revappend-chars "<tt>" acc))
+        (b* ((acc            (str::revappend-chars "<v>" acc))
              ((mv acc state) (xml-ppr-obj-aux ret topics-fal base-pkg state acc))
-             (acc            (str::revappend-chars "</tt>" acc)))
+             (acc            (str::revappend-chars "</v>" acc)))
           (mv nil acc state)))
 
        ((when (eq kind :code))
@@ -1211,9 +1211,9 @@ baz
                                         (cw "; xdoc error: no closing ') found for @(' ...~%"))
                                    (mv acc state)))
                           (sub (fancy-extract-block x (+ n 3) end))
-                          (acc (str::revappend-chars "<tt>" acc))
+                          (acc (str::revappend-chars "<v>" acc))
                           (acc (autolink-and-encode sub 0 (length sub) topics-fal base-pkg kpa acc))
-                          (acc (str::revappend-chars "</tt>" acc)))
+                          (acc (str::revappend-chars "</v>" acc)))
                        (preprocess-aux x (+ end 2) xl dir topics-fal base-pkg kpa state acc)))
 
                     ((when (and (< (+ n 2) xl)

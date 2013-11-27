@@ -529,7 +529,7 @@ problematic lvalues encountered.</p>" long)))
   :type vl-plainarg
   :extra-formals (loc instname)
   :guard (and (vl-location-p loc)
-              (vl-maybe-string-p instname))
+              (maybe-stringp instname))
   :body
   (b* ((dir  (vl-plainarg->dir x))
        (expr (vl-plainarg->expr x))
@@ -560,7 +560,7 @@ problematic lvalues encountered.</p>" long)))
   :type vl-plainarglist
   :extra-formals (loc instname)
   :guard (and (vl-location-p loc)
-              (vl-maybe-string-p instname))
+              (maybe-stringp instname))
   :body
   (if (atom x)
       warnings
@@ -571,7 +571,7 @@ problematic lvalues encountered.</p>" long)))
   :type vl-arguments
   :extra-formals (loc instname)
   :guard (and (vl-location-p loc)
-              (vl-maybe-string-p instname))
+              (maybe-stringp instname))
   :body
   (if (vl-arguments->namedp x)
       (warn :type :vl-programming-error

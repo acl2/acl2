@@ -180,7 +180,7 @@ then we return @('foo_0, ..., foo_N').</p>"
 
 (defund vl-replicated-instnames (instname instrange nf inst warnings)
     "Returns (MV WARNINGS NAMES NF')"
-    (declare (xargs :guard (and (vl-maybe-string-p instname)
+    (declare (xargs :guard (and (maybe-stringp instname)
                                 (vl-range-p instrange)
                                 (vl-range-resolved-p instrange)
                                 (vl-namefactory-p nf)
@@ -230,7 +230,7 @@ then we return @('foo_0, ..., foo_N').</p>"
               (mv-nth 0 (vl-replicated-instnames instname instrange nf inst warnings)))))
 
   (defthm string-listp-of-vl-replicated-instnames
-    (implies (and (force (vl-maybe-string-p instname))
+    (implies (and (force (maybe-stringp instname))
                   (force (vl-namefactory-p nf)))
              (string-listp
               (mv-nth 1 (vl-replicated-instnames instname instrange nf inst warnings)))))
@@ -244,7 +244,7 @@ then we return @('foo_0, ..., foo_N').</p>"
     :hints(("Goal" :in-theory (e/d (vl-range-size)))))
 
   (defthm vl-namefactory-p-of-vl-replicated-instnames
-    (implies (and (force (vl-maybe-string-p instname))
+    (implies (and (force (maybe-stringp instname))
                   (force (vl-range-p instrange))
                   (force (vl-range-resolved-p instrange))
                   (force (vl-namefactory-p nf)))
@@ -291,7 +291,7 @@ vl-replicated-instnames).</p>"
 
 
   (defund vl-replicate-orig-instnames (instname instrange)
-    (declare (xargs :guard (and (vl-maybe-string-p instname)
+    (declare (xargs :guard (and (maybe-stringp instname)
                                 (vl-range-p instrange)
                                 (vl-range-resolved-p instrange))))
     (b* ((left  (vl-resolved->val (vl-range->msb instrange)))
@@ -1406,8 +1406,8 @@ the replicate transform."
           x.instname))
       (vl-string->value (vl-atom->guts (cdr look)))))
 
-  (defthm vl-maybe-string-p-of-vl-modinst-origname
-    (vl-maybe-string-p (vl-modinst-origname x))
+  (defthm maybe-stringp-of-vl-modinst-origname
+    (maybe-stringp (vl-modinst-origname x))
     :hints(("Goal" :in-theory (enable vl-modinst-origname))))
 
   (defund vl-modinst-origidx (x)
@@ -1421,8 +1421,8 @@ the replicate transform."
           nil))
       (vl-resolved->val (cdr look))))
 
-  (defthm vl-maybe-natp-of-vl-modinst-origidx
-    (vl-maybe-natp (vl-modinst-origidx x))
+  (defthm maybe-natp-of-vl-modinst-origidx
+    (maybe-natp (vl-modinst-origidx x))
     :hints(("Goal" :in-theory (enable vl-modinst-origidx))))
 
   (defund vl-modinst-origname/idx (x)
@@ -1434,8 +1434,8 @@ the replicate transform."
           (cat origname "[" (natstr origidx) "]")
         origname)))
 
-  (defthm vl-maybe-string-p-of-vl-modinst-origname/idx
-    (vl-maybe-string-p (vl-modinst-origname/idx x))
+  (defthm maybe-stringp-of-vl-modinst-origname/idx
+    (maybe-stringp (vl-modinst-origname/idx x))
     :hints(("Goal" :in-theory (enable vl-modinst-origname/idx)))))
 
 (defsection vl-gateinst-origname
@@ -1457,8 +1457,8 @@ the replicate transform."
           x.name))
       (vl-string->value (vl-atom->guts (cdr look)))))
 
-  (defthm vl-maybe-string-p-of-vl-gateinst-origname
-    (vl-maybe-string-p (vl-gateinst-origname x))
+  (defthm maybe-stringp-of-vl-gateinst-origname
+    (maybe-stringp (vl-gateinst-origname x))
     :hints(("Goal" :in-theory (enable vl-gateinst-origname))))
 
 
@@ -1473,8 +1473,8 @@ the replicate transform."
           nil))
       (vl-resolved->val (cdr look))))
 
-  (defthm vl-maybe-natp-of-vl-gateinst-origidx
-    (vl-maybe-natp (vl-gateinst-origidx x))
+  (defthm maybe-natp-of-vl-gateinst-origidx
+    (maybe-natp (vl-gateinst-origidx x))
     :hints(("Goal" :in-theory (enable vl-gateinst-origidx))))
 
   (defund vl-gateinst-origname/idx (x)
@@ -1486,8 +1486,8 @@ the replicate transform."
           (cat origname "[" (natstr origidx) "]")
         origname)))
 
-  (defthm vl-maybe-string-p-of-vl-gateinst-origname/idx
-    (vl-maybe-string-p (vl-gateinst-origname/idx x))
+  (defthm maybe-stringp-of-vl-gateinst-origname/idx
+    (maybe-stringp (vl-gateinst-origname/idx x))
     :hints(("Goal" :in-theory (enable vl-gateinst-origname/idx)))))
 
 (defsection vl-replicate-modinst

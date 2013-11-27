@@ -22,6 +22,7 @@
 (include-book "misc/definline" :dir :system)
 (include-book "strprefixp")
 (include-book "std/lists/sublistp" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (local (include-book "arithmetic"))
 
 (defsection strpos-fast

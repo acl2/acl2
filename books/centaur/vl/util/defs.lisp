@@ -112,72 +112,6 @@ typical example is:</p>
           (mergesort x)))))
 
 
-(define vl-maybe-integerp (x)
-  :parents (utilities)
-  :short "Recognizer for integers and @('nil')."
-  :long "<p>This is like an option type, where either there is some integer
-value or nothing.</p>"
-  :inline t
-  (or (not x)
-      (integerp x))
-  ///
-  (defrule vl-maybe-integerp-compound-recognizer
-    (equal (vl-maybe-integerp x)
-           (or (integerp x)
-               (not x)))
-    :rule-classes :compound-recognizer))
-
-
-(define vl-maybe-natp (n)
-  :parents (utilities)
-  :short "Recognizer for naturals and @('nil')."
-  :long "<p>This is like an option type, where either there is some natural
-number value or nothing.</p>"
-  :inline t
-  (or (not n)
-      (natp n))
-  ///
-  (defrule vl-maybe-natp-compound-recognizer
-    (equal (vl-maybe-natp x)
-           (or (not x)
-               (natp x)))
-    :rule-classes :compound-recognizer))
-
-
-(define vl-maybe-posp (x)
-  :parents (utilities)
-  :short "Recognizer for positive naturals and @('nil')."
-  :long "<p>This is like an option type, where either there is some positive,
-natural number value or nothing.</p>"
-  :inline t
-  (or (not x)
-      (posp x))
-  ///
-  (defrule vl-maybe-posp-compound-recognizer
-    (equal (vl-maybe-posp x)
-           (or (and (integerp x)
-                    (< 0 x))
-               (not x)))
-    :rule-classes :compound-recognizer))
-
-
-(define vl-maybe-string-p (x)
-  ;; BOZO name consistency with other functions here
-  :parents (utilities)
-  :short "Recognizer for strings and @('nil')."
-  :long "<p>This is like an option type, where either there is some string
-value or nothing.</p>"
-  :inline t
-  (or (not x)
-      (stringp x))
-  ///
-  (defrule vl-maybe-string-p-compound-recognizer
-    (equal (vl-maybe-string-p x)
-           (or (not x)
-               (stringp x)))
-    :rule-classes :compound-recognizer))
-
-
 (deflist nat-listp (x)
   (natp x)
   :elementp-of-nil nil
@@ -185,7 +119,7 @@ value or nothing.</p>"
 
 
 (deflist vl-maybe-nat-listp (x)
-  (vl-maybe-natp x)
+  (maybe-natp x)
   :elementp-of-nil t
   :parents (utilities)
   :rest
@@ -196,7 +130,7 @@ value or nothing.</p>"
 
 
 (deflist vl-maybe-string-listp (x)
-  (vl-maybe-string-p x)
+  (maybe-stringp x)
   :elementp-of-nil t
   :parents (utilities)
   :rest

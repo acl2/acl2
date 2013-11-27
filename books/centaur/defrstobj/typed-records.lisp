@@ -26,40 +26,6 @@
 (set-verify-guards-eagerness 2)
 
 
-; typed-records.lisp
-;
-; This file is similar in spirit to coi/records/defrecord.lisp, which was
-; described in the following paper.
-;
-;   David Greve and Matthew Wilding.  Typed ACL2 Records. ACL2 Workshop 2003.
-;
-; Loosely speaking, our goal here is to develop a record-like structure where
-; the values always have a particular type.  The resulting structure satisfies
-; almost the same theorems as in the misc/records book, but the g-same-s
-; theorem becomes
-;
-;   (g a (s a v r)) = (foo-fix v)      ; instead of just being v
-;
-; And we gain the theorem (foop (g a r)).
-;
-; Greve and Wilding accomplish this by starting with an ordinary record, but
-; instead of just storing values or fixed values into its slots, they instead
-; store ENTRIES of the form (FOO . NON-ENTRY), where the FOO must be a foop
-; that is not the default foop.  I started with this, but when I tried to
-; extend it to be able to view a STOBJ array as a typed record, I ran into
-; trouble.  I didn't see a good way to prove something akin to EQUAL-BY-G, and
-; without that it didn't seem easy to adapt the basic approach I'd developed
-; for untyped records to typed records.
-;
-; I went to Sol's office to gripe about this, and we started to try to more
-; precisely understand what was problematic.  In a short time, we had come up
-; with a different way to implement typed records that seems to be much more
-; suitable.  In short, instead of using a misc/record with some kind of special
-; entries, we directly develop a new kind of typed record where the well-formed
-; records are only allowed to have values of the proper type.  This lets us
-; nicely separate the bad part of the record (if any) from the good part, and
-; obtain a theorem in the spirit of EQUAL-BY-G.
-;
 ; This book develops a generic theory for typed records.  By itself this
 ; generic theory is not very useful, so you will want to also be aware of:
 ;

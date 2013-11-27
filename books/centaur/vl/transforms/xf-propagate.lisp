@@ -62,8 +62,8 @@ module/gate instance ports.</p>")
 (defaggregate propagate-limits
   (max-ops)
   :tag :propagate-limits
-  :require ((vl-maybe-natp-of-propagate-limits->max-ops
-             (vl-maybe-natp max-ops)
+  :require ((maybe-natp-of-propagate-limits->max-ops
+             (maybe-natp max-ops)
              :rule-classes :type-prescription))
   :parents (propagate)
   :short "Limits on the assignments to consider."

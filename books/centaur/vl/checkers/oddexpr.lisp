@@ -70,8 +70,8 @@ which makes it useful for simple linting.</p>"
 
   (local (in-theory (enable vl-expr-probable-selfsize)))
 
-  (defthm vl-maybe-natp-of-vl-expr-probable-selfsize
-    (vl-maybe-natp (vl-expr-probable-selfsize x mod ialist))
+  (defthm maybe-natp-of-vl-expr-probable-selfsize
+    (maybe-natp (vl-expr-probable-selfsize x mod ialist))
     :rule-classes :type-prescription))
 
 

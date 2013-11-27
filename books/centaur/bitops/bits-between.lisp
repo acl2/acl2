@@ -22,6 +22,7 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "tools/bstar" :dir :system)
 (include-book "std/osets/top" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (local (include-book "ihs-extensions"))
 (local (include-book "std/lists/rev" :dir :system))
 (local (include-book "std/lists/append" :dir :system))

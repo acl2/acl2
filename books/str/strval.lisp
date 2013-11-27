@@ -20,6 +20,7 @@
 
 (in-package "STR")
 (include-book "strnatless")
+(include-book "std/basic/defs" :dir :system)
 (local (include-book "arithmetic"))
 (local (include-book "misc/assert" :dir :system))
 

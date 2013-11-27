@@ -55,7 +55,7 @@
 (defun vl-gatebldr-tuple-p (x)
   (declare (xargs :guard t))
   (and (tuplep 3 x)
-       (vl-maybe-string-p (first x)) ;; name
+       (maybe-stringp (first x)) ;; name
        (vl-maybe-range-p (second x)) ;; range
        (vl-exprlist-p (third x))))   ;; args
 
@@ -167,7 +167,7 @@
 
 (defparser vl-parse-optional-name-of-gate-instance (tokens warnings)
   :result (and (consp val)
-               (vl-maybe-string-p (car val)) ;; the name
+               (maybe-stringp (car val)) ;; the name
                (vl-maybe-range-p (cdr val))) ;; the range
   :fails gracefully
   :count weak

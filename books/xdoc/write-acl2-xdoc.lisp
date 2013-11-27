@@ -61,13 +61,11 @@
     ("EQ" nil .  "</p></blockquote>~%<p>")
     ("EV" nil .  "</code>~%")
 
-; XDOC question: Is <img> supported?  I generate it just below, but I'm not
-; sure I do it right.
+; XDOC question: Is <img> supported?  
+;  Yes but not documented.  <icon src='...'> is for inline images,
+;  <img src='...'> is for larger, centered images
 
-; A: hrmn.  not supported right now.  I'm just going to put in [image] until
-; I add support for it.
-
-    ("GIF" nil . "<img src='~st' />") ;gif files; e.g., ~gif[\"foo.gif\" align=top]
+    ("GIF" nil . "<icon src='~st' />") ;gif files; e.g., ~gif[\"foo.gif\" align=top]
 ;    ("GIF" nil . "[image]") ;gif files; e.g., ~gif[\"foo.gif\" align=top]
 
     ("I" nil .  "<i>~st</i>")
@@ -88,15 +86,7 @@
     ("T" nil .  "<tt>~st</tt>")
     ("TERMINAL" nil . "") ; terminal only, ignore
 
-; XDOC question: Again, is <img> supported?  I generate it just below, but I'm
-; not sure I do it right, especially since it's within <a>.  There's the same
-; issue for "FLY", "WALK", and "LARGE WALK".
-; XDOC question: Is it OK to refer to an image?  I guess twarning.gif will need
-; to be around.
-
-; A: replacing images with [image] for now, I'll add support somehow.
-
-    ("WARN" nil . "<see topic='ACL2____A_02Tiny_02Warning_02Sign'><img src='twarning.gif'/></see>")
+    ("WARN" nil . "<see topic='ACL2____A_02Tiny_02Warning_02Sign'><icon src='twarning.gif'/></see>")
 ;    ("WARN" nil . "[image]")
 
 ; Jared note: these don't seem quite right.
@@ -105,10 +95,10 @@
     ("CLICK-HERE" t .  "Click <see topic=\"@(url ~sc)\">here</see>")
     ("PCLICK-HERE" t .  "click <see topic=\"@(url ~sc)\">here</see>")
 
-    ("FLY" t .  "<see topic=\"@(url ~sc)\"><img src='flying.gif'/></see>")
-    ("LARGE-FLY" t .  "<see topic=\"@(url ~sc)\"><img src='large-flying.gif'/></see>")
-    ("WALK" t .  "<see topic=\"@(url ~sc)\"><img src='walking.gif'/></see>")
-    ("LARGE-WALK" t .  "<see topic=\"@(url ~sc)\"><img src='large-walking.gif'/></see>")
+    ("FLY" t .  "<see topic=\"@(url ~sc)\"><icon src='flying.gif'/></see>")
+    ("LARGE-FLY" t .  "<see topic=\"@(url ~sc)\"><icon src='large-flying.gif'/></see>")
+    ("WALK" t .  "<see topic=\"@(url ~sc)\"><icon src='walking.gif'/></see>")
+    ("LARGE-WALK" t .  "<see topic=\"@(url ~sc)\"><icon src='large-walking.gif'/></see>")
 
 ;    ("FLY" t .  "[image]")
 ;    ("LARGE-FLY" t .  "[image]")

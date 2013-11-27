@@ -22,7 +22,7 @@
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc cert.pl
-  ;; BOZO parents?
+  :parents (books)
   :short "@('cert.pl') is a mature, user-friendly, industrial-strength tool for
 certifying ACL2 @(see books)."
 

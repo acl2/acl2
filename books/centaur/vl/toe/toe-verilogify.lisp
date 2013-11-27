@@ -93,7 +93,7 @@ rest)').  Here's an illustrative example:</p>
 vl-merge-contiguous-indices).</p>"
 
   (defund vl-match-contiguous-indices (n x)
-    (declare (xargs :guard (and (vl-maybe-natp n)
+    (declare (xargs :guard (and (maybe-natp n)
                                 (vl-maybe-nat-listp x))
                     :measure (len x)))
     (if (or (not (natp n))
@@ -104,13 +104,13 @@ vl-merge-contiguous-indices).</p>"
 
   (local (in-theory (enable vl-match-contiguous-indices)))
 
-  (defthm vl-maybe-natp-of-vl-match-contiguous-indices
-    (implies (and (force (vl-maybe-natp n))
+  (defthm maybe-natp-of-vl-match-contiguous-indices
+    (implies (and (force (maybe-natp n))
                   (force (vl-maybe-nat-listp x)))
-             (vl-maybe-natp (mv-nth 0 (vl-match-contiguous-indices n x)))))
+             (maybe-natp (mv-nth 0 (vl-match-contiguous-indices n x)))))
 
   (defthm vl-maybe-nat-listp-of-vl-match-contiguous-indices
-    (implies (and (force (vl-maybe-natp n))
+    (implies (and (force (maybe-natp n))
                   (force (vl-maybe-nat-listp x)))
              (vl-maybe-nat-listp (mv-nth 1 (vl-match-contiguous-indices n x)))))
 
@@ -126,14 +126,14 @@ vl-merge-contiguous-indices).</p>"
 
   (defthm vl-match-contiguous-indices-monotonic-on-success
     (implies (and (not (equal n (mv-nth 0 (vl-match-contiguous-indices n x))))
-                  (force (vl-maybe-natp n))
+                  (force (maybe-natp n))
                   (force (vl-maybe-nat-listp x)))
              (< n (mv-nth 0 (vl-match-contiguous-indices n x))))
     :rule-classes ((:rewrite) (:linear)))
 
   (defthm vl-match-contiguous-indices-exists-on-success
     (implies (and (not (equal n (mv-nth 0 (vl-match-contiguous-indices n x))))
-                  (force (vl-maybe-natp n))
+                  (force (maybe-natp n))
                   (force (vl-maybe-nat-listp x)))
              (natp (mv-nth 0 (vl-match-contiguous-indices n x))))))
 

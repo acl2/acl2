@@ -928,6 +928,9 @@ equational: $(filter projects/equational/%, $(OK_CERTS))
 .PHONY: leftist-trees
 leftist-trees: $(filter projects/leftist-trees/%, $(OK_CERTS))
 
+.PHONY: legacy-defrstobj
+legacy-defrstobj: $(filter projects/legacy-defrstobj/%, $(OK_CERTS))
+
 # Dependencies based on running the following in the milawa/ACL2 directory:
 #   grep "include-book" `find . -name "*.lisp"` | grep :dir
 # We want to make sure these are certified before trying to build Milawa,

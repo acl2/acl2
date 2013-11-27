@@ -21,8 +21,10 @@
 (in-package "ACL2")
 
 (include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (include-book "tools/bstar" :dir :system)
 (include-book "xdoc/base" :dir :system)
+
 
 (encapsulate nil
   (local (in-theory (enable* arith-equiv-forwarding)))

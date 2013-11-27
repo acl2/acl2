@@ -25,19 +25,6 @@
 (in-package "XDOC")
 (set-state-ok t)
 
-#!ACL2
-(defmacro lnfix (x)
-  "Logical NFIX"
-  ;; BOZO this very much doesn't belong here, but I want it everywhere.
-  `(mbe :logic (nfix ,x) :exec ,x))
-
-#!ACL2
-(defmacro lifix (x)
-  "Logical IFIX"
-  ;; BOZO this very much doesn't belong here, but I want it everywhere.
-  `(mbe :logic (ifix ,x) :exec ,x))
-
-
 (table xdoc 'doc nil)
 (table xdoc 'default-parents nil)
 (table xdoc 'post-defxdoc-event nil)
@@ -88,7 +75,7 @@
              (equal dir-system (subseq bookname 0 lds)))
         (concatenate 'string "[books]/"
                      (subseq bookname lds nil))
-      nil)))
+      bookname)))
 
 (defmacro defxdoc (name &key parents short long)
   (declare (xargs :guard (guard-for-defxdoc name parents short long)))

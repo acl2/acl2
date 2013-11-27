@@ -235,8 +235,8 @@ or @('nil') for no delay.</li>
   :prepwork ((local (in-theory (enable vl-flopcodestmt-p
                                        vl-flopcodeassign-p))))
   ///
-  (defthm vl-maybe-natp-of-vl-flopcodestmt->delay
-    (vl-maybe-natp (vl-flopcodestmt->delay x))
+  (defthm maybe-natp-of-vl-flopcodestmt->delay
+    (maybe-natp (vl-flopcodestmt->delay x))
     :rule-classes :type-prescription))
 
 
@@ -340,7 +340,7 @@ global requirements for flopcode programs."
   :inline t
   (vl-flopcodestmt->delay (car x))
   ///
-  (defthm vl-maybe-natp-of-vl-flopcodeprog->delay
-    (vl-maybe-natp (vl-flopcodeprog->delay x))
+  (defthm maybe-natp-of-vl-flopcodeprog->delay
+    (maybe-natp (vl-flopcodeprog->delay x))
     :rule-classes :type-prescription))
 

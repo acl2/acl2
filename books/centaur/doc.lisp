@@ -347,6 +347,8 @@ circuits, etc.")
        ((unless (equal (cdr (assoc :name topic)) name))
         (cons (car all-topics)
               (change-parents-fn name new-parents (cdr all-topics))))
+       (- (cw "; Note: changing parents of ~x0 from ~x1 to ~x2."
+              name (cdr (assoc :parents topic)) new-parents))
        (topic (cons (cons :parents new-parents)
                     (delete-assoc-equal :parents topic))))
     (cons topic (cdr all-topics))))
@@ -358,36 +360,82 @@ circuits, etc.")
                              (get-xdoc-table world))))
 
 
+
+; These are legacy defdoc topics that need to be incorporated into the
+; hierarchy at some sensible places.  These changes are not controversial, so
+; we'll do them globally, so they'll be included, e.g., in the Emacs version of
+; the combined manual.
+(xdoc::change-parents ihs (arithmetic))
+(xdoc::change-parents b* (macro-libraries))
+(xdoc::change-parents data-definitions (macro-libraries))
+(xdoc::change-parents data-structures (macro-libraries))
+(xdoc::change-parents hacker (interfacing-tools))
+(xdoc::change-parents witness-cp (proof-automation))
+(xdoc::change-parents esim (hardware-verification))
+(xdoc::change-parents testing (debugging))
+
+(xdoc::change-parents leftist-trees (projects/leftist-trees))
+(xdoc::change-parents ltree-sort (leftist-trees))
+(xdoc::change-parents how-many-lt (leftist-trees))
+
+#!XDOC
+(defun fix-redundant-acl2-parents (all-topics)
+  (b* (((when (atom all-topics))
+        nil)
+       (topic (car all-topics))
+       (parents (cdr (assoc :parents topic)))
+       (topic (if (or (equal parents '(acl2::top acl2::acl2))
+                      (equal parents '(acl2::acl2 acl2::top)))
+                  (progn$
+                   (cw "; Note: Removing 'redundant' ACL2 parent for ~x0.~%"
+                       (cdr (assoc :name topic)))
+                   (cons (cons :parents '(acl2::top))
+                         (delete-assoc-equal :parents topic)))
+                topic)))
+    (cons topic
+          (fix-redundant-acl2-parents (cdr all-topics)))))
+
+
 (defmacro xdoc::fix-the-hierarchy ()
-  ;; I make this a macro so I can reuse it in Centaur internal manuals.
+  ;; Semi-bozo.
+  ;;
+  ;; This is a place that Jared can put changes that are either experimental or
+  ;; under discussion.
+  ;;
+  ;; Later in this file, I call fix-the-hierarchy, but only LOCALLY, so that it
+  ;; only affects the web manual (not the Emacs manual), and not any other
+  ;; manuals that include centaur/doc.
+  ;;
+  ;; I wrap these changes up in a non-local macro so that authors of other
+  ;; manuals (e.g., our internal manual at Centaur) can also choose to call
+  ;; fix-the-hierarchy if they wish.
   `(progn
-     (xdoc::change-parents ihs (arithmetic))
 
-     (xdoc::change-parents b* (macro-libraries))
-     (xdoc::change-parents data-definitions (macro-libraries))
-     (xdoc::change-parents data-structures (macro-libraries))
+     #!XDOC
+     (table xdoc 'doc (fix-redundant-acl2-parents
+                       (get-xdoc-table acl2::world)))
 
-     (xdoc::change-parents hacker (interfacing-tools))
-
-     (xdoc::change-parents witness-cp (proof-automation))
-     (xdoc::change-parents esim (hardware-verification))
-
-     (xdoc::change-parents testing (debugging))
-
-;; So I got started on that, and decided to move around a whole bunch of ACL2
-;; doc topics.  Much of this would probably make more sense to do in ACL2 itself.
-
-     (xdoc::change-parents release-notes (about-acl2)) ;; bozo matt doesn't like this?
-
+     (xdoc::change-parents release-notes (about-acl2))
      (xdoc::change-parents consideration (hints))
      (xdoc::change-parents do-not-hint (hints))
-     (xdoc::change-parents untranslate-patterns (macros user-defined-functions-table))
+     (xdoc::change-parents untranslate-patterns
+                           (macros user-defined-functions-table))
+
+     (xdoc::change-parents books (top))
+     (xdoc::change-parents legacy-documentation (documentation))
+     (xdoc::change-parents documentation (top))
+     (xdoc::change-parents bdd (boolean-reasoning proof-automation))
+
+     (xdoc::change-parents xdoc (documentation))
+
+     ;; bozo where should this go...
+     (xdoc::change-parents unsound-eval (miscellaneous))
+
      ))
 
 (comp t)
 
-(xdoc::fix-the-hierarchy)
-
+(local (xdoc::fix-the-hierarchy))
 (local (deflabel doc-rebuild-label))
 
 (make-event

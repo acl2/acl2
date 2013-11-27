@@ -25,6 +25,7 @@
 (in-package "XDOC")
 (include-book "save-classic")
 (include-book "importance")
+(include-book "linkcheck")
 (include-book "centaur/bridge/to-json" :dir :system)
 (set-state-ok t)
 (program)
@@ -397,10 +398,15 @@
                   (clean-topics topics)))))
 
        (- (cw "; Saving JSON files for ~x0 topics.~%" (len topics)))
-       ((mv topics state)
+       ((mv topics xtopics state)
         (time$ (order-topics-by-importance topics state)
                :msg "; Importance sorting topics: ~st sec, ~sa bytes.~%"
                :mintime 1/2))
+
+       (lcfile (oslib::catpath dir "linkcheck.html"))
+       ((mv channel state) (open-output-channel lcfile :character state))
+       (state (princ$ (linkcheck xtopics) channel state))
+       (state (close-output-channel channel state))
 
        (topics-fal (time$ (topics-fal topics)))
        (uid-map    (time$ (make-uid-map 0 topics nil)))

@@ -35,6 +35,8 @@
             ;; things we're importing from acl2 libraries
             '(<< equal-by-nths equal-by-nths-lhs equal-by-nths-rhs equal-by-nths-hyp
                  defsection definline b*)
+            ;; extra imports for better documentation links
+            '(stobj macro-libraries legacy-defrstobj)
             ;; things from from type-spec-fns
             '(atom-fix bitp bit-fix bit-listp character-fix cons-fix nat-listp
                        string-fix symbol-fix signed-byte-fix signed-byte-listp

@@ -233,7 +233,7 @@ see their ranges.</p>
 together.  For instance, @('foo[3:1], foo[0]') could generally be merged into
 @('foo[3:0]').</p>"
 
-  (local (in-theory (enable vl-maybe-natp)))
+  (local (in-theory (enable maybe-natp)))
 
   (defund vl-maybe-merge-selects (x mod ialist)
     (declare (xargs :guard (and (vl-exprlist-p x)

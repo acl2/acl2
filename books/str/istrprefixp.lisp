@@ -21,6 +21,7 @@
 (in-package "STR")
 (include-book "ieqv")
 (include-book "iprefixp")
+(include-book "std/basic/defs" :dir :system)
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "arithmetic"))
 

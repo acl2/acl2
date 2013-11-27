@@ -22,6 +22,7 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "centaur/misc/absstobjs" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (in-theory (disable nth update-nth nfix)))
 (local (in-theory (enable* arith-equiv-forwarding)))

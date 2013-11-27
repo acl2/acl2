@@ -20,6 +20,7 @@
 
 (in-package "STR")
 (include-book "strprefixp")
+(include-book "std/basic/defs" :dir :system)
 (local (include-book "arithmetic"))
 
 ; BOZO should probably rewrite this to have a nice listrpos function sort of

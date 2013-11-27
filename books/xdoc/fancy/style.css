@@ -144,16 +144,17 @@ h1 { margin-bottom: 0; }
 body          { background-color: white;}
 #data_wrapper { background-color: #ffffff; }
 
-h1, h2, h1 .tt, h2 .tt  {  color: #A64300; }
-h3, h4, h5, h3 .tt, h4 .tt, h5 .tt {  color: #FF6700; }
+h1, h2, h1 .tt, h2 .tt, h1 .v, h2 .v  {  color: #A64300; }
+h3, h4, h5, h3 .tt, h4 .tt, h5 .tt, h3 .v, h4 .v, h5 .v
+{ color: #FF6700; }
 
 
 .box          { border-color: black; }
 #data_wrapper { border-color: #034569; }
 
-.code,.tt      { color: #306030;}
-.code a, .tt a { color: #309030;}
-.code          { border-color: #3C9DD0; }
+.code,.v,.tt  { color: #306030;}
+.code a, .v a { color: #309030;}
+.code         { border-color: #3C9DD0; }
 
 #nav a:hover, #flat a:hover { background-color: #FFAB73; }
 #data a:hover { background-color: #ffffa0; }
@@ -191,7 +192,7 @@ dt, .hindex, #flat, #still_loading {
     font-family: "Tahoma", "Geneva", "Verdana", sans-serif;
 }
 
-.code, .srclink, .tt, #letters, .from {
+.code, .srclink, .tt, #letters, .from, .v {
     font-family: "Consolas", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;
 }
 

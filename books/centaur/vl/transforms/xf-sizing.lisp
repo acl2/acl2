@@ -556,8 +556,8 @@ are not really supposed to have sizes.</p>"
              (vl-warninglist-p (mv-nth 0 (vl-atom-selfsize x mod ialist elem warnings))))
     :hints(("Goal" :in-theory (disable (force)))))
 
-  (defthm vl-maybe-natp-of-vl-atom-selfsize
-    (vl-maybe-natp (mv-nth 1 (vl-atom-selfsize x mod ialist elem warnings)))
+  (defthm maybe-natp-of-vl-atom-selfsize
+    (maybe-natp (mv-nth 1 (vl-atom-selfsize x mod ialist elem warnings)))
     :rule-classes ((:type-prescription)))
 
   (defthm warning-irrelevance-of-vl-atom-selfsize
@@ -611,8 +611,8 @@ the size of @('$random') as 32.</p>"
              (vl-warninglist-p
               (mv-nth 0 (vl-syscall-selfsize args arg-sizes context elem warnings)))))
 
-  (defthm vl-maybe-natp-of-vl-syscall-selfsize
-    (vl-maybe-natp
+  (defthm maybe-natp-of-vl-syscall-selfsize
+    (maybe-natp
      (mv-nth 1 (vl-syscall-selfsize args arg-sizes context elem warnings)))
     :rule-classes ((:type-prescription)))
 
@@ -882,7 +882,7 @@ expression.</p>
 <p>This function basically implements Table 5-22; see @(see
 expression-sizing).</p>"
 
-  (local (in-theory (enable vl-maybe-natp)))
+  (local (in-theory (enable maybe-natp)))
 
   (defund vl-op-selfsize (op args arg-sizes context elem warnings)
     "Returns (MV WARNINGS SIZE)"
@@ -1112,8 +1112,8 @@ expression-sizing).</p>"
              (vl-warninglist-p
               (mv-nth 0 (vl-op-selfsize op args arg-sizes context elem warnings)))))
 
-  (defthm vl-maybe-natp-of-vl-op-selfsize
-    (vl-maybe-natp (mv-nth 1 (vl-op-selfsize op args arg-sizes context elem warnings)))
+  (defthm maybe-natp-of-vl-op-selfsize
+    (maybe-natp (mv-nth 1 (vl-op-selfsize op args arg-sizes context elem warnings)))
     :rule-classes :type-prescription)
 
   (defthm warning-irrelevance-of-vl-op-selfsize
@@ -1150,7 +1150,7 @@ provides a context for @(see warnings).</li>
 
 </ul>
 
-<p>The @('size') we return is a @(see vl-maybe-natp); a @('size') of @('nil')
+<p>The @('size') we return is a @(see maybe-natp); a @('size') of @('nil')
 indicates that we had some problem determining the expression's size.</p>
 
 <p>Some failures are expected, e.g., we do not know how to size some system
@@ -1279,8 +1279,8 @@ annotations left by @(see vl-modulelist-follow-hids) like (e.g.,
     :hints(("Goal" :expand (vl-expr-selfsize x mod ialist elem warnings))))
 
   (defthm-vl-flag-expr-selfsize
-    (defthm vl-maybe-natp-of-vl-expr-selfsize
-      (vl-maybe-natp
+    (defthm maybe-natp-of-vl-expr-selfsize
+      (maybe-natp
        (mv-nth 1 (vl-expr-selfsize x mod ialist elem warnings)))
       :rule-classes :type-prescription
       :flag expr)
@@ -3228,7 +3228,7 @@ computed.</p>
 
 <dt>@(call vl-expr-size)</dt>
 
-<dd>Here, the @('lhs-size') is a @(see vl-maybe-natp).  To size an expression
+<dd>Here, the @('lhs-size') is a @(see maybe-natp).  To size an expression
 @('x') which occurs in an assignment such as @('assign lhs = x'), the
 @('lhs-size') should be the width of @('lhs').  To size other expressions that
 do not occur in assignments, such as a self-determined subexpression, the
@@ -3289,7 +3289,7 @@ context-determined expressions."
  (defund vl-expr-size (lhs-size x mod ialist elem warnings)
    "Determine sizes for a top-level or self-determined expression.
     Returns (MV SUCCESSP WARNINGS X-PRIME)"
-   (declare (xargs :guard (and (vl-maybe-natp lhs-size)
+   (declare (xargs :guard (and (maybe-natp lhs-size)
                                (vl-expr-p x)
                                (vl-module-p mod)
                                (equal ialist (vl-moditem-alist mod))
@@ -4183,7 +4183,7 @@ context-determined expressions."
 
     (defthm vl-expr-p-of-vl-expr-size
       (let ((ret (vl-expr-size lhs-size x mod ialist elem warnings)))
-        (implies (and (force (vl-maybe-natp lhs-size))
+        (implies (and (force (maybe-natp lhs-size))
                       (force (vl-expr-p x))
                       (force (vl-module-p mod))
                       (force (equal ialist (vl-moditem-alist mod))))
@@ -4230,7 +4230,7 @@ context-determined expressions."
                                      (:rules-of-class :type-prescription :here)
                                      default-car
                                      default-cdr
-                                     vl-maybe-natp))))))
+                                     maybe-natp))))))
 
 
 (defsection vl-expr-size-guards
@@ -4281,7 +4281,7 @@ context-determined expressions."
 
   (verify-guards vl-expr-size
     :hints((and stable-under-simplificationp
-                '(:in-theory (e/d (vl-op-p vl-maybe-natp
+                '(:in-theory (e/d (vl-op-p maybe-natp
                                    (:ruleset basic-arithmetic-rules))
                                   (return-type-of-vl-nonatom->op))
                              :use ((:instance return-type-of-vl-nonatom->op)))))))
@@ -4361,7 +4361,7 @@ context-determined expressions."
                      natp-when-member-equal-of-nat-listp
                      )))
 
-  (local (in-theory (enable vl-maybe-natp
+  (local (in-theory (enable maybe-natp
                             tag-of-vl-nonatom
                             vl-atom-p-when-wrong-tag)))
 
@@ -4370,7 +4370,7 @@ context-determined expressions."
     (defthm vl-expr-welltyped-p-of-vl-expr-size
       (let ((ret (vl-expr-size lhs-size x mod ialist elem warnings)))
         (implies (and (mv-nth 0 ret)
-                      (force (vl-maybe-natp lhs-size))
+                      (force (maybe-natp lhs-size))
                       (force (vl-expr-p x))
                       (force (vl-module-p mod))
                       (force (equal ialist (vl-moditem-alist mod))))

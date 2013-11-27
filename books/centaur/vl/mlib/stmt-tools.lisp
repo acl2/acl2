@@ -1314,7 +1314,7 @@ block name to each variable name.</p>"
 
   (defund vl-blockstmt (sequentialp name decls stmts atts)
     (declare (xargs :guard (and (booleanp sequentialp)
-                                (vl-maybe-string-p name)
+                                (maybe-stringp name)
                                 (vl-blockitemlist-p decls)
                                 (vl-stmtlist-p stmts)
                                 (vl-atts-p atts))))
@@ -1363,7 +1363,7 @@ block name to each variable name.</p>"
 
   (defthm vl-compoundstmt-p-of-vl-blockstmt
     (implies (and (force (booleanp sequentialp))
-                  (force (vl-maybe-string-p name))
+                  (force (maybe-stringp name))
                   (force (vl-blockitemlist-p decls))
                   (force (vl-atts-p atts)))
              (vl-compoundstmt-p (make-vl-blockstmt :sequentialp sequentialp
@@ -1374,7 +1374,7 @@ block name to each variable name.</p>"
 
   (defthm vl-stmt-p-of-vl-blockstmt
     (implies (and (force (booleanp sequentialp))
-                  (force (vl-maybe-string-p name))
+                  (force (maybe-stringp name))
                   (force (vl-blockitemlist-p decls))
                   (force (vl-stmtlist-p stmts))
                   (force (vl-atts-p atts)))
@@ -1389,9 +1389,9 @@ block name to each variable name.</p>"
              (booleanp (vl-blockstmt->sequentialp x)))
     :rule-classes :type-prescription)
 
-  (defthm vl-maybe-string-p-of-vl-blockstmt->name
+  (defthm maybe-stringp-of-vl-blockstmt->name
     (implies (force (vl-blockstmt-p x))
-             (vl-maybe-string-p (vl-blockstmt->name x)))
+             (maybe-stringp (vl-blockstmt->name x)))
     :rule-classes ((:rewrite)
                    (:type-prescription)))
 

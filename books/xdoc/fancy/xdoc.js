@@ -565,7 +565,7 @@ function dat_long_topic(key)
 
     var from = xdata[key][XD_FROM];
     var fromp = (from == "Unknown")
-                   ? ""
+                   ? "<p class='from'>Unknown Origin</p>"
                    : "<p class='from'>" + from + "</p>";
 
     var basepkg = htmlEncode(xdata[key][XD_BASEPKG]);

@@ -890,7 +890,7 @@ book and may change if CCL gets a compiler-macro for CONCATENATE.</p>
     ;; pre-encode a wire's name and then generate symbols for its bits by
     ;; calling this function directly.
     (declare (type string basename)
-             (xargs :guard (and (vl-maybe-natp index)
+             (xargs :guard (and (maybe-natp index)
                                 (or index
                                     (not (equal basename "NIL"))))))
     (mbe :logic
@@ -910,7 +910,7 @@ book and may change if CCL gets a compiler-macro for CONCATENATE.</p>
 
   (defthm vl-emodwire-p-of-vl-emodwire-encoded
     (implies (and (force (stringp name))
-                  (force (vl-maybe-natp index))
+                  (force (maybe-natp index))
                   (force (or index (not (equal name "NIL")))))
              (vl-emodwire-p
               (vl-emodwire-encoded (vl-emodwire-encode name) index)))
@@ -924,13 +924,13 @@ book and may change if CCL gets a compiler-macro for CONCATENATE.</p>
 
   (definlined vl-emodwire-exec (basename index)
     (declare (type string basename)
-             (xargs :guard (and (vl-maybe-natp index)
+             (xargs :guard (and (maybe-natp index)
                                 (or index (not (equal basename "NIL"))))))
     (vl-emodwire-encoded (vl-emodwire-encode basename) index))
 
   (defthm vl-emodwire-p-of-vl-emodwire-exec
     (implies (and (force (stringp basename))
-                  (force (vl-maybe-natp index))
+                  (force (maybe-natp index))
                   (force (or index (not (equal basename "NIL")))))
              (vl-emodwire-p (vl-emodwire-exec basename index)))
     :hints(("Goal" :in-theory (enable vl-emodwire-exec))))
@@ -938,7 +938,7 @@ book and may change if CCL gets a compiler-macro for CONCATENATE.</p>
 
   (defund vl-emodwire (basename index)
     (declare (type string basename)
-             (xargs :guard (and (vl-maybe-natp index)
+             (xargs :guard (and (maybe-natp index)
                                 (or index (not (equal basename "NIL"))))
                     :guard-hints(("Goal" :in-theory (enable vl-emodwire-exec
                                                             vl-emodwire-encoded)))))
@@ -964,7 +964,7 @@ book and may change if CCL gets a compiler-macro for CONCATENATE.</p>
 
   (defthm vl-emodwire-p-of-vl-emodwire
     (implies (and (force (stringp basename))
-                  (force (vl-maybe-natp index))
+                  (force (maybe-natp index))
                   (force (or index (not (equal basename "NIL")))))
              (vl-emodwire-p (vl-emodwire basename index)))))
 
@@ -973,7 +973,7 @@ book and may change if CCL gets a compiler-macro for CONCATENATE.</p>
 
 (defund vl-emodwire-plain (basename index)
     (declare (type string basename)
-             (xargs :guard (vl-maybe-natp index)))
+             (xargs :guard (maybe-natp index)))
     (let ((basename (vl-emodwire-encode basename)))
       (if (not index)
           (intern basename "ACL2")
@@ -1023,7 +1023,7 @@ and the basename of @('|reset|') is @('\"reset\"').</p>"
 
   (defthm vl-emodwire->basename-of-vl-emodwire
     (implies (and (force (stringp basename))
-                  (force (vl-maybe-natp index)))
+                  (force (maybe-natp index)))
              (equal (vl-emodwire->basename (vl-emodwire basename index))
                     basename))
     :hints(("Goal" :in-theory (enable vl-emodwire
@@ -1070,7 +1070,7 @@ index of @('|reset|') is @('nil').</p>"
 
 (defthm vl-emodwire->index-of-vl-emodwire
     (implies (and (force (stringp basename))
-                  (force (vl-maybe-natp index))
+                  (force (maybe-natp index))
                   (force (or index (not (equal basename "NIL")))))
              (equal (vl-emodwire->index (vl-emodwire basename index))
                     index))

@@ -75,6 +75,10 @@
   </div>
 </xsl:template>
 
+<xsl:template match="icon">
+    <img src="images/{@src}"/>
+</xsl:template>
+
 <xsl:template match="b">
   <b><xsl:apply-templates/></b>
 </xsl:template>
@@ -93,6 +97,10 @@
 
 <xsl:template match="u">
   <u><xsl:apply-templates/></u>
+</xsl:template>
+
+<xsl:template match="v">
+  <span class="v"><xsl:apply-templates/></span>
 </xsl:template>
 
 <xsl:template match="tt">

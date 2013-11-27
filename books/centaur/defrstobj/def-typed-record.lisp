@@ -21,17 +21,121 @@
 (in-package "RSTOBJ")
 (include-book "typed-records")
 
-; def-typed-record.lisp
-;
-; We introduce the DEF-TYPED-RECORD macro which can be used to introduce a new
-; kind of typed record.  Using this macro gives you definitions of the get and
-; set functions, the ordinary get-of-set style theorems about them, and other
-; stuff such as a badguy for finding differences between typed records.
-;
-; The generic theory that supports this macro is found in typed-records.lisp.
-;
-; For several examples of using the macro, see typed-record-tests.lisp.
+(defsection def-typed-record
+  :parents (defrstobj)
+  :short "Introduce a typed record for use with @(see defrstobj)."
 
+  :long "<p>A <b>typed record</b> is a record-like structure: it associates
+keys with values, has a @('get') function to look up the value of some key, and
+has a @('set') function to install some new value for some key.</p>
+
+<p>Unlike an ordinary @('misc/record'), a typed record is homogeneous, i.e., we
+unconditionally know @({(foop (get a r))}).  Meanwhile, the @('get') and
+@('set') functions for a typed record are <b>almost</b> the same as for
+ordinary records.  The only difference is that the @('g-same-s') theorem
+becomes:</p>
+
+@({
+   (get a (set a v r)) = (foo-fix v)   ; instead of just being v
+})
+
+<p>The macro @('def-typed-record') can be used to introduce a new typed record
+structure for use in @(see defrstobj) array fields.</p>
+
+
+<h3>Usage</h3>
+
+<p>You can use @('def-typed-record') to introduce the @('get-') and @('set-')
+functions, the ordinary @('get-of-set') style theorems about them, and some
+additional definitions such as a badguy for identifying differences between
+typed records (which can be useful for pick-a-point style reasoning.)</p>
+
+<h5>Example: typed record for naturals</h5>
+
+@({
+    (def-typed-record nat
+      :elem-p (natp x)
+      :elem-list-p (nat-listp x)
+      :elem-default 0
+      :elem-fix (nfix x))
+})
+
+<p>This introduces the recognizer function @('nat-tr-p'), the getter function
+@('nat-tr-get'), the setter function @('nat-tr-set'), and related theorems.</p>
+
+<h5>Example: typed-record for (8-bit) bytes</h5>
+
+@({
+   (defun ubp-listp (n x)
+     (declare (xargs :guard t))
+     (if (atom x)
+         (not x)
+       (and (unsigned-byte-p n (car x))
+            (ubp-listp n (cdr x)))))
+
+   (defun ubp-fix (n x)            ;; other fixing functions
+     (declare (xargs :guard t))    ;; are also possible
+     (if (unsigned-byte-p n x)
+         x
+       0))
+
+   (def-typed-record ubp8
+     :elem-p       (unsigned-byte-p 8 x)
+     :elem-list-p  (ubp-listp 8 x)
+     :elem-default 0
+     :elem-fix     (ubp-fix 8 x))
+})
+
+<p>This produce @('ubp8-tr-p'), @('ubp8-tr-get'), @('ubp8-tr-set'), and related
+theorems.</p>
+
+
+<h5>General Form</h5>
+
+@({
+    (def-typed-record name
+      :elem-p        [element recognizer, foop]
+      :elem-list-p   [list recognizer, foo-listp]
+      :elem-default  [default value, e.g., 0, nil, ...]
+      :elem-fix      [fixing function, foo-fix]
+      :in-package-of [symbol to use for new names])
+})
+
+<p>Note that the terms you use for @('elem-p') and so forth need to refer to
+exactly the variable @('acl2::x').</p>
+
+
+<h3>Related Work and History</h3>
+
+<p>This version of typed records is very similar in spirit to the
+@('coi/records/defrecord.lisp') book; see:</p>
+
+<box><p>David Greve and Matthew Wilding.  <a
+href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2003/contrib/greve-wilding_defrecord/defrecord.ps'>Typed
+ACL2 Records</a>. ACL2 Workshop 2003.</p></box>
+
+<p>Greve and Wilding implemented typed records by starting with an ordinary
+record, but instead of just storing values or fixed values into its slots, they
+instead store ENTRIES of the form @('(FOO . NON-ENTRY)'), where the FOO must be
+a foop that is not the default foop.</p>
+
+<p>When developing rstobjs, I (Jared) started with Greve and Wilding's
+approach; see @(see legacy-defrstobj).  But when I tried to extend their work
+to be able to view a STOBJ array as a typed record, I ran into trouble.  I
+didn't see a good way to prove something akin to @('equal-by-g'), and without
+that it didn't seem easy to adapt the basic approach I'd developed for untyped
+records to also deal with typed records.</p>
+
+<p>I went to Sol's office to gripe about this, and we started to try to more
+precisely understand what was problematic.  In a short time, we had come up
+with a different way to implement typed records that seems to be much more
+suitable.</p>
+
+<p>In short, instead of using a @('misc/record') with some kind of special
+entries, we directly develop a new kind of typed record where the well-formed
+records are only allowed to have values of the proper type.  This lets us
+nicely separate the bad part of the record (if any) from the good part, and
+obtain a theorem in the spirit of @('EQUAL-BY-G').</p>")
 
 (defun symbol-list-names (x)
   (declare (xargs :guard (symbol-listp x)))
@@ -554,7 +658,7 @@
 
 ; Some basic tests to make sure the macro is working
 
-   (def-typed-record nat
+(def-typed-record nat
      :elem-p (natp x)
      :elem-list-p (nat-listp x)
      :elem-default 0

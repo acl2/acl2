@@ -110,7 +110,7 @@ output bits that weren't driven by the preliminary occurrences.</li>
   (local (in-theory (enable vl-make-z-occs)))
 
   (local (defthm l0
-           (implies (vl-maybe-natp idx)
+           (implies (maybe-natp idx)
                     (iff (vl-emodwire "vl_zdrive" idx)
                          t))
            :hints(("Goal"

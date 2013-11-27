@@ -1293,7 +1293,7 @@ case.</li>
     "Returns (MV WARNINGS' BITS')"
     (declare (xargs :guard (and (vl-location-p loc)
                                 (vl-bitlist-p bits)
-                                (vl-maybe-posp width))))
+                                (maybe-posp width))))
     (b* ((actual-len  (len bits))
          (unsizedp    (not width))
          (desired-len (if width

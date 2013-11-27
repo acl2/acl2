@@ -3,7 +3,7 @@
 
 (local (include-book "smm-impl"))
 (include-book "tools/bstar" :dir :system)
-(include-book "xdoc/base" :dir :system) ;; for lnfix :-p
+(include-book "std/basic/defs" :dir :system)
 (include-book "misc/definline" :dir :system)
 (include-book "arith-equivs")
 (include-book "u32-listp")

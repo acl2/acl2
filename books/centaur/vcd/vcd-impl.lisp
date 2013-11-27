@@ -678,8 +678,8 @@
                    (:type-prescription :corollary
                                        (implies (force (vcd-net-p x))
                                                 (true-listp (vcd-net->syms x))))))
-   (vl-maybe-string-p-of-vcd-net->idcode
-    (vl-maybe-string-p idcode)
+   (maybe-stringp-of-vcd-net->idcode
+    (maybe-stringp idcode)
     :rule-classes :type-prescription)))
 
 (defthm consp-of-vcd-net->path

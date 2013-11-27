@@ -22,6 +22,7 @@
 (include-book "ieqv")
 (include-book "tools/bstar" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (local (include-book "arithmetic"))
 (local (include-book "std/lists/equiv" :dir :system))
 

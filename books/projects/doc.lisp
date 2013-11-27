@@ -7,6 +7,7 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "milawa/doc")
+(include-book "leftist-trees/top")
 
 (defxdoc projects
   :short "The @('projects') directory of the Community Books contains a variety
@@ -590,8 +591,8 @@ this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.</p>")
 
 
-(defxdoc leftist-trees
-  :parents (projets)
+(defxdoc projects/leftist-trees
+  :parents (projects)
   :short "An implementation of leftist trees as described in <a
 href='http://www.cambridge.org/us/academic/subjects/computer-science/programming-languages-and-applied-logic/purely-functional-data-structures'>Purely
 Functional Data Structures</a>, Chris Okasaki, Cambridge University Press 1999."
@@ -626,4 +627,87 @@ details.</p>
 <p>You should have received a copy of the GNU General Public License along with
 this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.</p>")
+
+(defxdoc legacy-defrstobj
+  :parents (projects)
+  :short "A predecessor of the @(see defrstobj) library that wasn't based on
+abstract stobjs."
+
+  :long "<p>The directory @('projects/legacy-defrstobj') contains the ACL2
+source files for the original version of the @(see defrstobj) library.  These
+ACL2 books may be built by running, e.g., @('make legacy-defrstobj') from the
+@('books/') directory.</p>
+
+<p>This legacy version of record-like stobjs was written by Jared Davis before
+ACL2 supported abstract stobjs.  As a result, many tricks and twists are needed
+to effectively hide the true nature of the stobj and to be able to treat it
+like a record.</p>
+
+<p>The legacy version isn't bad&mdash;we used this version of rstobjs for our
+microcode model at Centaur Technology for a couple of years.  But we eventually
+became irritated with how long it took to define rstobjs with many fields (it's
+quadratic in the number of fields).  It's likely that a sufficiently motivated
+person could speed this up, and we considered a way of doing so.</p>
+
+<p>But ultimately, we decided that with abstract stobjs, we could reimplement
+defrstobj in a much simpler way.  The new approach, implemented by Sol Swords,
+avoids this quadratic cost, and also has a couple of other nice features.  For
+instance:</p>
+
+<ul>
+
+<li>You don't need to \"good stobj\" predicate in your guards, because abstract
+stobjs basically give you that for free;</li>
+
+<li>You can use the record library's @('s') and @('g') functions directly,
+instead of needing \"equivalent\", stobj-specific functions.</li>
+
+</ul>
+
+<p>So today there is little reason to use the legacy version.  Use the new,
+more modern @(see defrstobj) instead!</p>
+
+<p>Rather than delete the original version, we decided to put it into the
+@('projects') directory.  This is partly for posterity, but mostly:</p>
+
+<ul>
+
+<li>For pedagogical value.  The project's <b>groundwork</b> directory notably
+works through several demos, uncovering along the way the tricks that we need
+to support progressively more complicated stobjs as records.  This may be of
+interest to anyone who is interested in doing crazy things to avoid
+hypotheses.</li>
+
+<li>For regression-testing value.  This is a very elaborate use of stobjs,
+non-executablility, and MBE tricks, and may be a good exercise to put ACL2
+through as it evolves.</li>
+
+</ul>
+
+<h3>Copyright Information</h3>
+
+<p>Record Like Stobjs<br/>
+Copyright (C) 2011-2012
+<a href=\"http://www.centtech.com\">Centaur Technology</a>.</p>
+
+<p>Contact:</p>
+@({
+Centaur Technology Formal Verification Group
+7600-C N. Capital of Texas Highway, Suite 300
+Austin, TX 78731, USA.
+})
+
+<p>This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option) any
+later version.</p>
+
+<p>This program is distributed in the hope that it will be useful but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.</p>
+
+<p>You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
+Street, Suite 500, Boston, MA 02110-1335, USA.</p>")
 
