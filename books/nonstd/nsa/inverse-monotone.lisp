@@ -1284,12 +1284,18 @@
 					      (icfn-range (lambda () ,range))
 					      (icfn-inv-interval ,inverse-interval)
 					      (icfn-inverse ,f-inverse))))
-		 ("Subgoal 3"
-		  :use ((:instance ,f-obligation-range-non-trivial)))
-		 ("Subgoal 2"
+		 ("Subgoal 15"
+		  :use ((:instance ,f-obligation-inverse (y (,f x)))))
+		 ("Subgoal 13"
+		  :use ((:instance ,f-obligation-inverse (y (,f x)))))
+		 ("Subgoal 12"
+		  :use ((:instance ,f-obligation-inverse (y (,f x)))))
+		 ("Subgoal 11"
+		  :use ((:instance ,f-obligation-inverse (y (,f x)))))
+		 ("Subgoal 2" 
 		  :use ((:instance ,f-obligation-domain-non-trivial)))
-		 ("Subgoal 1"
-		  :use ((:instance ,f-obligation-inverse)))
+		 ("Subgoal 1" 
+		  :use ((:instance ,f-obligation-range-non-trivial)))
 		 ))
 
        (defthm ,f-inverse-is-real

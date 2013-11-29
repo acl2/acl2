@@ -393,7 +393,7 @@
 
 (definv real-sine
     :f-inverse        acl2-asin
-    :domain           (interval (- (/ (acl2-pi) 2)) (/ (acl2-pi) 2))
+    :domain           (interval (* -1/2 (acl2-pi)) (* 1/2 (acl2-pi)))
     :range            (interval -1 1)
     :inverse-interval sine-interval)
 

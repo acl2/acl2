@@ -61,29 +61,10 @@ BADDIRS := $(BADDIRS)
 # but it's for another day.
 BADDIRS += std/
 
-# We exclude workshops/2011/ because (at least)
-# workshops/2011/reid-gamboa-differentiator/support/inverse-square
-# includes nsa/inverse-square, which is excluded below because it
-# doesn't certify as of this writing.
-BADDIRS += workshops/2011/
-
 # Directories that need links:
 LINKDIRS := $(filter-out $(FULLDIRS) $(addsuffix %, $(BADDIRS)),$(ALLDIRS))
 
 EXCLUDED_PREFIXES += $(BADDIRS)
-
-# These no longer certify; Ruben might be working on them.
-EXCLUDED_PREFIXES += nsa/inverse-square.cert \
-		     nsa/inverse-derivatives.cert \
-
-# The book nsa/inverse-trig no longer certifies; Ruben might be
-# working on it.  We also exclude nsa/complex-polar, since it includes
-# inverse-trig, and nsa/ln, since it includes complex-polar, and
-# nsa/raise, since it includes ln
-EXCLUDED_PREFIXES += nsa/inverse-trig.cert \
-		     nsa/complex-polar.cert \
-		     nsa/ln.cert \
-		     nsa/raise.cert
 
 # We run links, even before including ../Makefile, so that
 # Makefiles are present.  Use clean-links explicitly to remove links.
