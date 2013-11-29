@@ -595,6 +595,8 @@
 ; then we always return a list of length one.
 
   #-acl2-mv-as-values
+  (declare (ignore fn))
+  #-acl2-mv-as-values
   (let* ((*acl2-output-type-abort* nil) ; protect for call on next line
          (result (output-type-for-declare-form-rec form nil)))
     (cond
