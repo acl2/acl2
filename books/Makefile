@@ -954,8 +954,12 @@ milawa-test-extended: milawa-test-basic
 	cd projects/milawa/ACL2; $(MAKE) ACL2=$(ACL2) all
 
 .PHONY: milawa-clean
+# The -d test below avoids problems with nonstd/Makefile, which
+# includes the present Makefile.
 milawa-clean:
-	cd projects/milawa/ACL2; $(MAKE) clean
+	if [ -d projects/milawa/ACL2 ] ; then \
+	cd projects/milawa/ACL2; $(MAKE) clean ; \
+	fi
 
 clean: milawa-clean
 
