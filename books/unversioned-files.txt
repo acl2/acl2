@@ -40,6 +40,8 @@ Makefile-tmp
 *.wx32fsl
 *.wx64fsl
 *.fx86fsl
+*.sao
+.acl2rc
 *.log
 TMP*.*
 temp-emacs-file.lsp
