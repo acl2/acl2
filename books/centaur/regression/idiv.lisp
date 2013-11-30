@@ -34,12 +34,12 @@
 (defstv divide-test-vector
   :mod *divide-module*
   :inputs '(("iDIVIDEND" dividend) ("iDIVISOR" divisor) ("iDIVVLD" divvld)
-            ("iRESET" reset) ("CLK" clk))
-  :outputs '(("oQUOTIENT" quot) ("oREMAINDER" rem) ("oDONE" done)))
+            ("iRESET" reset) ("CLK" 0 ~))
+  :outputs '(("oQUOTIENT" _ quot) ("oREMAINDER" _ rem) ("oDONE" _ done)))
 
 (def-gl-thm divide-resets-quotient
   :hyp (and (divide-test-vector-autohyps)
-            (equal reset -1))
+            (equal reset 1))
   :concl (equal (let* ((in-alist (divide-test-vector-autoins))
                        (out-alist (stv-run (divide-test-vector)
                                            in-alist))
@@ -49,12 +49,11 @@
   :g-bindings '((dividend (:g-number (11 12 13 14 15 16 17 18 19)))
                 (divisor (:g-number (6 7 8 9 10)))
                 (divvld (:g-number (0 1)))
-                (clk (:g-number (2 3)))
                 (reset (:g-number (4 5)))))
 
 (def-gl-thm divide-resets-everything
   :hyp (and (divide-test-vector-autohyps)
-            (equal reset -1))
+            (equal reset 1))
   :concl (let* ((in-alist (divide-test-vector-autoins))
                        (out-alist (stv-run (divide-test-vector) in-alist))
                        (quot (cdr (assoc 'quot out-alist)))
@@ -67,6 +66,5 @@
   :g-bindings '((dividend (:g-number (11 12 13 14 15 16 17 18 19)))
                 (divisor (:g-number (6 7 8 9 10)))
                 (divvld (:g-number (0 1)))
-                (clk (:g-number (2 3)))
                 (reset (:g-number (4 5)))))
 
