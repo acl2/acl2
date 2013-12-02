@@ -84,6 +84,7 @@ clean:
 	@rm -f `find . -name "*.lx64fsl"`
 	@rm -f `find . -name "*.ccl"`
 	@rm -f `find . -name "*.proof"`
+	@rm -f `find . -name ".acl2rc"`
 	@rm -f acl2-images/*-acl2 acl2-images/*-symmetry
 	@rm -f acl2-images/*-acl2.* acl2-images/*-symmetry.*
 	@rm -f Makefile-deps Makefile-cache
