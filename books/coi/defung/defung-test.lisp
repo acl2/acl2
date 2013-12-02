@@ -257,7 +257,7 @@
 
 (def::ung f91 (x)
   (declare (xargs :signature ((natp) natp)
-		  :default-value (if (> x 100) (- x 10) 91)))
+		  :default-value (if (> x '100) (- x '10) '91)))
   (if (> x 100) (- x 10)
     (f91 (f91 (+ x 11)))))
 
