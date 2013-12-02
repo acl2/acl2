@@ -178,6 +178,10 @@ ACL2'' http://www.cs.utexas.edu/users/moore/publications/defpun/index.html
 
 ===============================================================================
 
+enumerate.lisp -- hint for case-splitting according to a finite range of values
+
+===============================================================================
+
 misc2/defpun-exec-domain-example.lisp -- execute partial functions on a
                                          specified domain
 
