@@ -117,7 +117,7 @@
 (def::ung mixed-rec (x)
   (declare (xargs :signature ((integerp) integerp)
 		  :verify-guards nil
-		  :default-value 0))
+		  :default-value '0))
   (if (zp x) 0
     (let ((v (mixed-rec (1- x))))
       (+ v (mixed-rec v)))))
@@ -257,7 +257,7 @@
 
 (def::ung f91 (x)
   (declare (xargs :signature ((natp) natp)
-		  :default-value (if (> x 100) (- x 10) 91)))
+		  :default-value (if (> x '100) (- x '10) '91)))
   (if (> x 100) (- x 10)
     (f91 (f91 (+ x 11)))))
 
