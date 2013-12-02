@@ -19,6 +19,7 @@ DIRS =	symbol-fns \
 	gensym \
         generalize \
 	quantification \
-	termination
+	termination \
+	defung
 
 include ../Makefile-subdirs
