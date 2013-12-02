@@ -3,6 +3,16 @@ described below will explain how to reduce output from the command:
 
   "svn status -u ."
 
+WARNING: Be careful about doing this under centaur/.  In particular,
+the process below will probably mess things up for some folks (in
+particular, Jared Davis) when applied to projects/milawa/ and some
+other parts of centaur/.  For such cases, simply update using a
+command such as the following in a terminal:
+
+  svn propedit svn:ignore . --editor-cmd emacs
+
+Otherwise....
+
 There are actually two ways to do this.  In most cases, it will be
 simplest simply to execute the following in the new directory,
 replacing "unversioned-files.txt" by a path to unversioned-files.txt
