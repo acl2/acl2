@@ -14,7 +14,7 @@
 (def::ung Lack (x y)
   (declare (xargs :non-executable t
 		  :signature ((integerp integerp) integerp)
-		  :default-value 0))
+		  :default-value '0))
   (if (= x 0) (1+ y)
     (if (= y 0) (Lack (1- x) 1)
       (Lack (1- x) (Lack x (1- y))))))
