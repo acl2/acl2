@@ -678,6 +678,7 @@ auto-bindings).</p>"
           (value '(value-triple ',fn)))))))
 
 (defmacro break-on-g-apply ()
+  "To undo breaking on g-apply, one can call ~c[(untrace$)]"
   `(trace$ (g-apply :entry (prog2$ (acl2::fmt-to-comment-window!
                                     "(g-apply ~x0 ~x1~%"
                                     `((#\0 . ,(car acl2::arglist))
