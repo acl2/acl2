@@ -20,28 +20,34 @@
 
 (in-package "ACL2")
 (include-book "ihs/logops-definitions" :dir :system)
+(include-book "xdoc/top" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "ihsext-basics"))
 (local (include-book "misc/assert" :dir :system))
 
+(defxdoc part-select
+  :short "Select a portion of bits from an integer that represents a bit
+          vector"
+  :long "This is a hopefully more readable alternative to RDB.
 
-; part-select.lisp
-;
-; This is a hopefully more readable alternative to RDB.
-;
-; Sometimes RDB is exactly what you want, but other times you have a high/low
-; index and you want to use them to select part of a vector.
-;
-; PART-SELECT is just a little wrapper around RDB that lets you do things like
-;
-;   (part-select foo :low 10 :high 17)       ;; Like foo[17:10] in Verilog
-;
-; You can still select parts of a vector using an index/size, e.g.:
-;
-;   (part-select foo :low 10 :width 7)       ;; Like foo[16:10] in Verilog
-;
-; This just macroexpands into RDB calls, to avoid making reasoning any more
-; complicated.
+         Sometimes RDB is exactly what you want, but other times you have a
+         high/low index and you want to use them to select part of a vector.
+
+         PART-SELECT is just a little wrapper around RDB that lets you do
+         things like
+
+ @({
+ (part-select foo :low 10 :high 17)       ;; Like foo[17:10] in Verilog
+ })
+
+         You can still select parts of a vector using an index/size, e.g.:
+
+ @({
+ (part-select foo :low 10 :width 7)       ;; Like foo[16:10] in Verilog
+ })
+
+         This just macroexpands into RDB calls, to avoid making reasoning any
+         more complicated.")
 
 
 ;; ;; this might be generally useful
