@@ -57,7 +57,7 @@ flopcode programs correctly.  Here are some \"local\" requirements:</p>
 
 <li>All expressions have their widths and types computed.</li>
 
-<li>Every assignment must be a non-blocking, i.e., it uses @('<=') instead of
+<li>Every assignment must be non-blocking, i.e., it uses @('<=') instead of
 @('=').</li>
 
 <li>Every assignment must be to a simple identifier, i.e., the left-hand side
@@ -67,7 +67,7 @@ is not something like @('a[3]').</li>
 control, i.e., @('#5').</li>
 
 <li>Top-level @(see if-statements) are allowed, but the @('true') branch must
-be an assignment and the @('else') branch must be a @(see vl-nullstmt-p).  In
+be an assignment, and the @('else') branch must be a @(see vl-nullstmt-p).  In
 other words, there really aren't any @('else') statements.</li>
 
 <li>No other statements are allowed.</li>
