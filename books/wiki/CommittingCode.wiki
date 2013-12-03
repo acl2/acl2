@@ -19,6 +19,13 @@
 
   * We highly recommend that you document your library using the XDOC system.  See XDOC topic "xdoc" at [http://fv.centtech.com/acl2/latest/doc/centaur/frames2.html] for more information.
 
+= Licensing =
+
+It is very important that no files are falsely claimed to be in the public domain or released under a particular license when the copyright holder has not granted such release.  If it is too tricky to contribute and coordinate with the appropriate lawyers to obtain an official release, please make sure that you *do not* place a false license on the code.  Companies that use such falsely-licensed code may be liable for patent-infringement and other IP-related claims.  So, please don't mislead the community by placing an unapproved license.  No license is better than a misleading license.
+
+People on the various ACL2 mailing lists may be willing to provide offline advice on how to convince legal departments that contributing to the ACL2 community is a good value proposition.
+
+
 = Integration of Version Control and Issue-tracking =
 
 There are commit-log commands to:
