@@ -365,7 +365,7 @@
 ;        |   |___|                  |
 ;        |__________________________|
 ;
-; We're now going to show that if wire the "cut" back together like this:
+; We're now going to show that if we wire the "cut" back together like this:
 ;
 ;    +==================================================+
 ;    ||+----------------------------------------------+||
