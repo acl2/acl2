@@ -81,7 +81,7 @@
           `(even/odd-p 'odd ,x))
   ~ev[]
 
-  But of course in proofs you will still see the flag functions.  To hide 
+  But of course in proofs you will still see the flag functions.  To hide
   these flags, you can call the macro ~c[add-untranslate-pattern] as follows:
 
   ~bv[]
@@ -89,7 +89,7 @@
         (add-untranslate-pattern (even/odd-p 'odd ?x)  (odd-p ?x))
   ~ev[]
 
-  The effect of these patterns can be seen by submitting the following 
+  The effect of these patterns can be seen by submitting the following
   commands.  We first disable the type prescription of ~c[even/odd-p] and its
   definition, so that ACL2 will generate terms involving ~c[even/odd-p].
 
@@ -100,7 +100,7 @@
         (thm (equal (+ (even-p x) (even-p y))
                     (+ (odd-p y) (odd-p x))))
   ~ev[]
-             
+
   Some of the proof output generated is now as follows:
 
   ~bv[]
@@ -127,7 +127,7 @@
   EXAMPLE 2: MATT'S CHALLENGE
 
   Matt Kaufmann suggested the following challenge problem, inspired by the
-  hand-written untranslation routine for the RTL library.  We begin with 
+  hand-written untranslation routine for the RTL library.  We begin with
   the following code:
 
   ~bv[]
@@ -201,7 +201,7 @@
 
   Any quoted constant matches with a quoted constant.  Note that numbers and so
   forth must be MANUALLY quoted.
-  
+
   Unquoted symbols behave as follows:
   ~bq[]
     If the symbol has no leading ~c[?] character, then the symbol matches only
@@ -279,7 +279,7 @@
   so that for all ~c[x,y], ~c[(f$ x y mystobj)] is printed as ~c[(f x y)].
   Note that the printing of ~c[(f$ x y yourstobj)] will not be altered.
 
-  ~l[untranslate-patterns-table] for more examples and details.~/"  
+  ~l[untranslate-patterns] for more examples and details.~/"  
   (if (and (consp target)
            (eq (car target) 'quote))
       `(add-untranslate-pattern-constant ,(cadr target) ,replacement)
