@@ -348,10 +348,12 @@
 
 (defun logapp (size i j)
   ":doc-section logops-definitions
-  (LOGAPP size i j) is a binary append of i to j.
+  (LOGAPP size i j) is a binary append of i to j (where i effectively becomes
+  the 'low' bits and j becomes the 'high' bits).
   ~/~/
-  LOGAPP is a specification for merging integers.  Note that i is truncated
-  to size bits before merging with j.~/"
+  LOGAPP is a specification for merging integers.  Note that i is truncated to
+  size bits before merging with j, and that j is also shifted to the left by
+  size bits before the merge.~/"
   (declare (xargs :guard (and (integerp size)
                               (>= size 0)
                               (integerp i)
