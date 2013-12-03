@@ -811,10 +811,10 @@ some kind of separator!</p>
 (progn
   ;; Returns (mv successp arglist).
   ;; If DEFINE has created a macro wrapper for a function, which may have
-  ;; optional or keyword args, we'd terms involving the function to untranslate
-  ;; to a correct call of the macro.  This tries to do that.  Args are the
-  ;; arguments provided to the function, macro-args is the lambda-list of the
-  ;; macro.
+  ;; optional or keyword args, we'd like terms involving the function to
+  ;; untranslate to a correct call of the macro.  This tries to do that.  Args
+  ;; are the arguments provided to the function, macro-args is the lambda-list
+  ;; of the macro.
   (defun untrans-macro-args (args macro-args opt/key)
     (cond ((endp macro-args)
            (mv (endp args) nil))
