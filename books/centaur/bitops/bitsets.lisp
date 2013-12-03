@@ -51,7 +51,7 @@ maximal element.  If your sets contain extremely small numbers---less than
 28-60, depending on the Lisp---then they can be represented as fixnums and the
 bitset operations will be remarkably efficient.</p>
 
-<p>Beyond this, bignums are necessary.  Even though bignum operations are
+<p>Beyond this, bignums are necessary.  Even though bignum operations
 generally involve memory allocation and are much slower than fixnum operations,
 using bignums to represent sets can still be very efficient.  For instance, on
 64-bit CCL, bignums are represented as a header/data pair where the data is an
