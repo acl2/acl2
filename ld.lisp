@@ -3850,7 +3850,7 @@
 
   `(with-ubt!
     (with-output
-     :off (event expansion summary proof-tree)
+     :off (event history summary proof-tree)
      (progn
        (include-book "misc/disassemble" :dir :system :ttags '(:disassemble$))
        (value-triple (disassemble$-fn ,fn ,recompile (list ,@args)))))))
