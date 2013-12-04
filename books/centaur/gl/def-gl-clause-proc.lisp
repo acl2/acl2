@@ -619,7 +619,7 @@ clause processor to prove theorems.</p>"
                      (cadr output-look)
                    '(:off (warning warning! observation prove
                                    event summary proof-tree
-                                   acl2::expansion)
+                                   acl2::history)
                           :gag-mode nil))))
       `(make-event
         (def-gl-clause-processor-fn

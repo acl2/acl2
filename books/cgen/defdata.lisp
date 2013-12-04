@@ -2428,9 +2428,7 @@ X:rgbcolors = blue
   "
   `(with-output
        :stack :push
-       :off (warning warning! observation prove 
-                     proof-checker event expansion
-                     summary proof-tree)
+       :off ,#!acl2(remove1-eq 'error *valid-output-names*)
 
        (make-event
         (er-let* ((type-info (table defdata::types-info-table ',typename)))
@@ -2477,9 +2475,7 @@ X:rgbcolors = blue
     keyword args are optional."
   `(with-output
     :stack :push
-    :off (warning warning! observation prove 
-                  proof-checker event expansion
-                  summary proof-tree)
+    :off ,#!acl2(remove1-eq 'error *valid-output-names*)
 
     (make-event
      '(progn
@@ -4773,11 +4769,9 @@ nor a predefined typename~%" dtexp)
       :off ,(cond ((get-acl2s-defdata-debug)
                     '(summary proof-checker))
                    ((get-acl2s-defdata-verbose)
-                    '(summary warning! observation warning proof-checker expansion))
-                   (t 
-                    '(warning warning! observation prove 
-                              proof-checker event expansion
-                              summary proof-tree))
+                    '(summary warning! observation warning proof-checker acl2::history))
+                   (t
+                    #!acl2(remove1-eq 'error *valid-output-names*))
                
                )
       :gag-mode ,(if (get-acl2s-defdata-debug) 'nil 't)
@@ -5009,10 +5003,9 @@ constant-everywhere in tau-system.
        :off ,(cond ((get-acl2s-defdata-debug)
                     'acl2::proof-checker)
                    ((get-acl2s-defdata-verbose)
-                    '(warning! observation warning acl2::proof-checker event acl2::expansion))
-                   (t 
-                    '(warning warning! observation prove acl2::proof-checker event acl2::expansion
-                             summary proof-tree))
+                    '(warning! observation warning acl2::proof-checker event acl2::history))
+                   (t
+                    #!acl2(remove1-eq 'error *valid-output-names*))
                
                )
        :gag-mode ,(if (get-acl2s-defdata-debug) 'nil 't)
@@ -5077,11 +5070,9 @@ constant-everywhere in tau-system.
                     'proof-checker)
                    ((get-acl2s-defdata-verbose)
                     '(warning! observation warning 
-                               proof-checker event expansion))
-                   (t 
-                    '(warning warning! observation prove
-                              proof-checker event expansion
-                              summary proof-tree))
+                               proof-checker event acl2::history))
+                   (t
+                    #!acl2(remove1-eq 'error *valid-output-names*))
                
                )
        :gag-mode ,(if (get-acl2s-defdata-debug) 'nil 't)

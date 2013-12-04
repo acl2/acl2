@@ -108,7 +108,7 @@
                                 ',(and quietp
                                        '(prove proof-tree warning
                                                observation event
-                                               expansion summary))))
+                                               history summary))))
     :on-behalf-of ,whole-form))
 
 ; From John Erickson's email to acl2-help, 4/19/06.

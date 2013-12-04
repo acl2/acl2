@@ -2516,9 +2516,7 @@ Use :simple search strategy to find counterexamples and witnesses.
                     ,(if (system-debug-flag vl)
                          ''(summary)
                        ;;shut everything except error
-                       ''(warning warning! observation prove
-                                  proof-checker event expansion
-                                  proof-tree summary)))) 
+                       (quote #!acl2(remove1-eq 'error *valid-output-names*)))) )
                   (make-event
                    (er-progn
 ; dont even think of nested testing (nested waterfall call to test checkpoint)
@@ -3277,7 +3275,7 @@ For more information see :doc subgoal-timeout.~%")
                           ''(summary)
                         ;;shut everything except error
                         ''(warning warning! observation prove
-                                  proof-checker event expansion
+                                  proof-checker event history
                                   proof-tree summary)))) 
                     
 doesnt work on an make-event
@@ -4695,9 +4693,7 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
                ((acl2::inhibit-output-lst 
                  (if (system-debug-flag vl)
                      '(summary)
-                   '(warning warning! observation prove
-                             proof-checker event expansion
-                             proof-tree summary))))
+                   #!acl2(remove1-eq 'error *valid-output-names*))))
                (trans-eval `(acl2::thm-fn ',form state
                                          (or ',hints 
 ;user-specified hints override default hints

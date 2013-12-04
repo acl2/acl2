@@ -53,7 +53,7 @@ export INHIBIT ?= (set-inhibit-output-lst (list (quote prove) \
                                          (quote warning) \
                                          (quote observation) \
                                          (quote event) \
-                                         (quote expansion)))
+                                         (quote history)))
 
 # Modeline for .out files.  We like to have the .out files open in auto-revert
 # mode, for those cases where you are watching the file as it is being
