@@ -179,7 +179,7 @@ are returned in a nonsensical order.</p>"
                           :type :vl-collect-wires-approx
                           :msg "Approximating the wires for ~a0 with ~s1."
                           :args (list x (vl-verilogify-emodwirelist wires))
-                          :args 'vl-expr-allwires)))
+                          :fn 'vl-expr-allwires)))
                    (mv (list w) wires)))
 
                 (left  (vl-resolved->val left))

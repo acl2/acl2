@@ -29,6 +29,8 @@
 (include-book "sbitsets")
 (include-book "part-select")
 (include-book "extra-defs")
+(include-book "merge")
+(include-book "fast-logrev")
 
 (defxdoc bitops
   :parents (arithmetic)

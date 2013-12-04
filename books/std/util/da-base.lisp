@@ -503,22 +503,25 @@ reasoning about @('car') in general.</p>"
    valid-fields   ; list of valid fields (already keywordified) for this aggregate
    )
   ;; Makes sure args are valid, turns them into a (field . value) alist
-  (cond ((null args)
-         nil)
-        ((atom args)
-         (er hard? 'da-changer-args-to-alist
-             "Expected a true-list, but instead it ends with ~x0." args))
-        ((atom (cdr args))
-         (er hard? 'da-changer-args-to-alist
-             "Expected :field val pairs, but found ~x0." args))
-        (t
-         (let ((field (first args))
-               (value (second args)))
-           (and (or (member-equal field valid-fields)
-                    (er hard? 'da-changer-args-to-alist
-                        "~x0 is not among the allowed fields, ~&1." field valid-fields))
-                (cons (cons field value)
-                      (da-changer-args-to-alist (cddr args) valid-fields)))))))
+  (b* (((when (null args))
+        nil)
+       ((when (atom args))
+        (er hard? 'da-changer-args-to-alist
+            "Expected a true-list, but instead it ends with ~x0." args))
+       ((when (atom (cdr args)))
+        (er hard? 'da-changer-args-to-alist
+            "Expected :field val pairs, but found ~x0." args))
+       (field (first args))
+       (value (second args))
+       ((unless (member-equal field valid-fields))
+        (er hard? 'da-changer-args-to-alist
+            "~x0 is not among the allowed fields, ~&1." field valid-fields))
+       (rest (da-changer-args-to-alist (cddr args) valid-fields))
+       ((when (assoc field rest))
+        (er hard? 'da-changer-args-to-alist
+            "Multiple occurrences of ~x0 in change/make macro." field)))
+    (cons (cons field value)
+          rest)))
 
 (defun da-make-valid-fields-for-changer (fields)
   ;; Convert field names into keywords for the (change-foo ...) macro

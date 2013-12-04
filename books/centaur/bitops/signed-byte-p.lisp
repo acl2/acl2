@@ -82,6 +82,7 @@
   :hints(("Goal" :in-theory (enable signed-byte-p))))
 
 
+
 (defsection basic-unsigned-byte-p-of-*
 
   (local (defthmd lem-multiply-bound
@@ -98,34 +99,42 @@
   (local (defthmd step1
            (implies (and (natp a)
                          (natp b)
-                         (posp n)
-                         (< a (expt 2 n))
-                         (< b (expt 2 n)))
+                         (posp n1)
+                         (posp n2)
+                         (< a (expt 2 n1))
+                         (< b (expt 2 n2)))
                     (< (* a b)
-                       (* (expt 2 n)
-                          (expt 2 n))))
+                       (* (expt 2 n1)
+                          (expt 2 n2))))
            :hints(("Goal" :use ((:instance lem-multiply-bound
                                            (a1 a)
                                            (a2 b)
-                                           (b1 (expt 2 n))
-                                           (b2 (expt 2 n))))))))
+                                           (b1 (expt 2 n1))
+                                           (b2 (expt 2 n2))))))))
 
   (local (defthmd upper-bound
            (implies (and (natp a)
                          (natp b)
-                         (posp n)
-                         (< a (expt 2 n))
-                         (< b (expt 2 n)))
-                    (< (* a b) (expt 2 (+ n n))))
+                         (posp n1)
+                         (posp n2)
+                         (< a (expt 2 n1))
+                         (< b (expt 2 n2)))
+                    (< (* a b) (expt 2 (+ n1 n2))))
            :rule-classes ((:rewrite) (:linear))
            :hints(("Goal" :use ((:instance step1))))))
+
+  (defthm lousy-unsigned-byte-p-of-*-mixed
+    ;; Probably won't ever unify with anything.
+    (implies (and (unsigned-byte-p n1 a)
+                  (unsigned-byte-p n2 b))
+             (unsigned-byte-p (+ n1 n2) (* a b)))
+    :hints(("Goal" :use ((:instance upper-bound)))))
 
   (defthm lousy-unsigned-byte-p-of-*
     ;; Probably won't ever unify with anything.
     (implies (and (unsigned-byte-p n a)
                   (unsigned-byte-p n b))
-             (unsigned-byte-p (+ n n) (* a b)))
-    :hints(("Goal" :in-theory (enable upper-bound))))
+             (unsigned-byte-p (+ n n) (* a b))))
 
   (local (defthm crock
            (equal (+ (/ n 2) (/ n 2))

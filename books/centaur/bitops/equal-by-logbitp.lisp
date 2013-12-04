@@ -779,7 +779,8 @@ etc.</p>"
     '(logbitp-of-ash-split
       logbitp-of-loghead-split
       logbitp-of-logapp-split
-      logbitp-of-logsquash-split))
+      logbitp-of-logsquash-split
+      logbitp-of-logrev-split))
 
   (def-ruleset! logbitp-case-splits+
     ;; Even more case splitting rules to enable after that

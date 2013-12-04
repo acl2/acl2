@@ -94,7 +94,7 @@
           logbitp logbit logior logand lognot logxor
           logcons logcar logcdr loghead logtail
           integer-length
-          logmaskp logext logapp
+          logmaskp logext logapp logrev
           b-eqv b-nand b-nor b-andc1 b-andc2 b-orc1 b-orc2
           b-not b-and b-ior b-xor bfix bitp
           logcount))
@@ -3262,3 +3262,278 @@
                     :scheme (integer-length-ind x))))
 
   (add-to-ruleset ihsext-inductions logcount-induct))
+
+
+(defsection logrev**
+
+  (local (in-theory (enable* arith-equiv-forwarding)))
+  (local (in-theory (enable logrev1 logrev)))
+
+  (in-theory (disable (:type-prescription logrev))) ;; Too weak (integerp)
+
+  (defthm logrev-type
+    ;; Redundant with ihs/basic-definitions.lisp
+    (natp (logrev size i))
+    :rule-classes :type-prescription)
+
+  (local (defthm natp-of-logrev1
+           (implies (natp j)
+                    (natp (logrev1 size i j)))))
+
+  (local (defthm logtail-1-of-logcons
+           ;; BOZO unlocalize?
+           (equal (logtail 1 (logcons a b))
+                  (ifix b))
+           :hints(("Goal" :in-theory (enable logtail**)))))
+
+  (local (defthmd logcons-alt
+           (equal (logcons b i)
+                  (logior (bfix b) (ash i 1)))
+           :hints(("Goal" :in-theory (enable ash**)))))
+
+  (local (defthm ash-of-logior
+           (implies (natp size)
+                    (equal (ash (logior a b) size)
+                           (logior (ash a size)
+                                   (ash b size))))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-redefs)))))
+
+  (local (defthm ash-of-logcons-0
+           (implies (natp size)
+                    (equal (ASH (LOGCONS 0 J) (+ -1 SIZE))
+                           (ash j size)))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-redefs
+                                              logcons-alt)))))
+
+  (local (defthm ash-of-logcons-1
+           (implies (natp size)
+                    (equal (ASH (LOGCONS 1 J) (+ -1 SIZE))
+                           (logior (ash 1 (+ -1 size))
+                                   (ash j size))))
+           :hints(("Goal"
+                   :in-theory (enable* ihsext-inductions
+                                       ihsext-redefs
+                                       logcons-alt)))))
+
+  (encapsulate
+    ()
+    ;; This is similar to how REV differs from REVERSE.  Using a non
+    ;; tail-recursive version seems really convenient for reasoning.
+    (local (defun my-logrev (size i)
+             (declare (xargs :measure (nfix size)))
+             (if (zp size)
+                 0
+               (let ((size (- size 1)))
+                 (logior (my-logrev size (logcdr i))
+                         (ash (logcar i) size))))))
+
+    (local (defthm logrev1-removal
+             (equal (logrev1 size i j)
+                    (logior (my-logrev size i)
+                            (ash j (nfix size))))
+             :hints(("Goal" :induct (logrev1 size i j)))))
+
+    (local (defthm logrev-removal
+             (equal (logrev size i)
+                    (my-logrev size i))))
+
+    (defthmd logrev**
+      (equal (logrev size i)
+             (if (zp size)
+                 0
+               (let ((size (- size 1)))
+                 (logior (logrev size (logcdr i))
+                         (ash (logcar i) size)))))
+      :rule-classes ((:definition
+                      :clique (logrev)
+                      :controller-alist ((logrev t nil))))))
+
+  (add-to-ruleset ihsext-recursive-redefs '(logrev**))
+  (add-to-ruleset ihsext-redefs '(logrev**))
+
+  (defthmd logrev-induct
+    t
+    :rule-classes ((:induction
+                    :pattern (logrev size i)
+                    :scheme (logbitp-ind size i))))
+
+  (add-to-ruleset ihsext-inductions '(logrev-induct))
+
+  (local (in-theory (e/d (logrev**)
+                         (logrev))))
+
+  (defcong nat-equiv equal (logrev size i) 1
+    :hints(("Goal" :in-theory (enable* logrev-induct))))
+
+  (defcong int-equiv equal (logrev size i) 2
+    :hints(("Goal" :in-theory (enable* logrev-induct))))
+
+  (defthm logrev-when-zp
+    (implies (zp size)
+             (equal (logrev size i)
+                    0)))
+
+  (defthm logrev-when-zip
+    (implies (zip i)
+             (equal (logrev size i)
+                    0))
+    :hints(("Goal" :in-theory (enable* logrev-induct))))
+
+  (defsection logrev-upper-bound
+
+    (local (in-theory (enable expt-2-is-ash)))
+
+    (local (defthm l2
+             (implies (and (< a (ash 1 size))
+                           (< b (ash 1 size))
+                           (integerp a)
+                           (integerp b)
+                           (natp size))
+                      (< (logior a b) (ash 1 size)))
+             :rule-classes ((:rewrite) (:linear))
+             :hints(("Goal"
+                     :in-theory (disable right-shift-to-logtail
+                                         unsigned-byte-p-of-logior
+                                         unsigned-byte-p-logior)
+                     :use ((:instance unsigned-byte-p-of-logior
+                                      (n size)
+                                      (x a)
+                                      (y b)))))))
+
+    (local (defthm l3
+             ;; BOZO good rule to unlocalize?
+             (equal (equal (ash 1 k) 0)
+                    (negp k))
+             :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                                ihsext-recursive-redefs)))))
+
+    (local (defthm l4
+             (implies (natp size)
+                      (< (ash 1 (+ -1 size))
+                         (ash 1 size)))
+             :rule-classes ((:rewrite) (:linear))
+             :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                                ihsext-recursive-redefs
+                                                logcons)))))
+
+    (local (defthm l6
+             (implies (and (< (logrev (+ -1 size) k)
+                              (ash 1 (+ -1 size)))
+                           (not (zp size)))
+                      (< (logior (ash 1 (+ -1 size))
+                                 (logrev (+ -1 size) k))
+                         (ash 1 size)))
+             :hints(("goal"
+                     :use ((:instance l2
+                                      (a (ash 1 (+ -1 size)))
+                                      (b (logrev (+ -1 size) k))
+                                      (size size)))))))
+
+    (defthm logrev-upper-bound
+      (< (logrev size i)
+         (expt 2 (nfix size)))
+      :rule-classes ((:linear)
+                     ;; BOZO this is gross, what's the right way to do this?
+                     (:linear :corollary
+                              (implies (natp size)
+                                       (< (logrev size i)
+                                          (ash 1 size))))
+                     (:linear :corollary
+                              (implies (natp size)
+                                       (< (logrev size i)
+                                          (expt 2 size))))
+                     (:rewrite :corollary
+                               (implies (natp size)
+                                        (< (logrev size i)
+                                           (ash 1 size))))
+                     (:rewrite :corollary
+                               (implies (natp size)
+                                        (< (logrev size i)
+                                           (expt 2 size)))))
+      :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                         ihsext-recursive-redefs
+                                         logcons-alt)))))
+
+  (defthm unsigned-byte-p-of-logrev
+    (equal (unsigned-byte-p size (logrev size n))
+           (natp size)))
+
+  (defthm logrev-of-loghead-same
+    (equal (logrev size (loghead size i))
+           (logrev size i))
+    :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                       ihsext-recursive-redefs))))
+
+  (defthm loghead-of-logrev-same
+    (equal (loghead size (logrev size i))
+           (logrev size i))
+    :hints(("Goal" :cases ((natp size)))))
+
+  (defsection logbitp-of-logrev-split
+    (local (defun my-ind (n size x)
+             (if (or (zp n)
+                     (zp size))
+                 (list n size x)
+               (my-ind (- n 1) (- size 1) (logcdr x)))))
+
+    (local (defthm l0
+             (implies (and (unsigned-byte-p size x)
+                           (<= size (nfix n)))
+                      (not (logbitp n x)))
+             :hints(("Goal"
+                     :induct (my-ind n size x)
+                     :in-theory (enable* ihsext-recursive-redefs
+                                         logcons-alt)))))
+
+    (local (defthm l1
+             (implies (unsigned-byte-p size x)
+                      (not (logbitp size x)))
+             :hints(("Goal"
+                     :in-theory (disable l0)
+                     :use ((:instance l0 (n size)))))))
+
+    (local (defthm case-too-big
+             (implies (>= (nfix n) (nfix size))
+                      (equal (logbitp n (logrev size i))
+                             nil))
+             :hints(("Goal"
+                     :in-theory (disable l0)
+                     :use ((:instance l0
+                                      (size (nfix size))
+                                      (x (logrev size i))
+                                      (n (nfix n))))))))
+
+    (local (defthm case-in-bounds
+             (implies (and (natp n)
+                           (natp size)
+                           (< n size))
+                      (equal (logbitp n (logrev size i))
+                             (logbitp (- size (+ 1 n)) i)))
+             :hints(("Goal"
+                     :induct (logrev size i)
+                     :in-theory (enable* ihsext-inductions
+                                         ihsext-recursive-redefs)))))
+
+    (local (defthm better-in-bounds
+             (implies (and (natp n)
+                           (natp size))
+                      (equal (logbitp n (logrev size i))
+                             (and (< n size)
+                                  (logbitp (- size (+ 1 n)) i))))))
+
+    (defthmd logbitp-of-logrev-split
+      (equal (logbitp n (logrev size i))
+             (and (< (nfix n) (nfix size))
+                  (logbitp (- (nfix size) (+ 1 (nfix n))) i)))
+      :hints(("Goal"
+              :in-theory (disable case-too-big
+                                  case-in-bounds
+                                  better-in-bounds)
+              :use ((:instance better-in-bounds
+                               (n (nfix n))
+                               (size (nfix size)))))))))
+
+
+
