@@ -31,7 +31,10 @@ It might be difficult to decide whether a script warrants being placed inside
 demos.  Ideally, every file in demos would demonstrate something.  For example,
 there are many files inside books/make-event that demonstrate how to do
 something in particular with make-event, and it would probably be better to
-place these files in the demos directory (but we have not yet done so).")
+place these files in the demos directory (but we have not yet done so).
+
+Any large project should be placed in the books/projects directory.  Things in
+this directory should be relatively small.")
 
  (:PERMISSION ; author/s permission for distribution and copying:
 "Copyright (C) 2012 David L. Rager <ragerdl@gmail.com>

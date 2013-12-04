@@ -1,16 +1,5 @@
 (in-package "ACL2")
 
-#| help for the dependency scanner:
-
-(include-book "assertions")
-(include-book "measures")
-(include-book "partial-correctness")
-(include-book "total-correctness")
-
-|#
-
-
-
 #||
 
   defsimulate.lisp
@@ -262,7 +251,7 @@ think I can do the change reliably.
          ;; than write something else for run in one of those I simply include
          ;; the assertions book locally.
          
-         (local (include-book "symbolic/generic/assertions" :dir :system))
+         (local (include-book "assertions"))
          
          ;; I should only need the theorems about cutpoint and assertion that I
          ;; have already proved. So I disable them. In fact I disable
@@ -421,7 +410,7 @@ think I can do the change reliably.
       ;; Now just include the book we desire and throw in partial correctness.
       
       `(local 
-        (include-book "symbolic/generic/partial-correctness" :dir :system))
+        (include-book "partial-correctness"))
 
       ;; The job of assertion, cutpoint and nextt is done. So I disable them.
       `(local (in-theory (theory 'minimal-theory)))
@@ -723,7 +712,7 @@ think I can do the change reliably.
          ;; than write something else for run in one of those I simply include
          ;; the assertions book locally.
          
-         (local (include-book "symbolic/generic/assertions" :dir :system))
+         (local (include-book "assertions"))
          
          ;; I should only need the theorems about cutpoint and assertion that I
          ;; have already proved. So disable them. In fact I disable everything
@@ -943,7 +932,7 @@ think I can do the change reliably.
        (encapsulate 
         ()
 
-        (local (include-book "symbolic/generic/measures" :dir :system))
+        (local (include-book "measures" :dir :system))
 
         (local (in-theory (theory 'minimal-theory)))
 
@@ -1020,7 +1009,7 @@ think I can do the change reliably.
       `(local (in-theory (theory 'minimal-theory)))
 
       `(local 
-        (include-book "symbolic/generic/total-correctness" :dir :system))
+        (include-book "total-correctness" :dir :system))
       
       ;; The final theorem. please dont be overawed by the number of :use
       ;; hints. These would not have been required if I were doing theorem

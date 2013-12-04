@@ -18,6 +18,8 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+(in-package "ACL2")
+
 #+Clozure
 (progn
 

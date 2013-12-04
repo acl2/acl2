@@ -1,4 +1,4 @@
-include ../../Makefile-generic
+include ../../../Makefile-generic
 -include Makefile-deps
 
 # The generic theorems:

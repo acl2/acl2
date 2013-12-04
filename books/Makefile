@@ -309,7 +309,7 @@ endif
 ADDED_BOOKS := \
   coi/termination/assuming/complex.cert \
   models/jvm/m5/apprentice.cert \
-  parallel/proofs/ideal-speedup.cert \
+  system/parallel/proofs/ideal-speedup.cert \
   workshops/2009/sumners/support/examples.cert \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert
