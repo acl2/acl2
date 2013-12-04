@@ -1,0 +1,27 @@
+#summary Procedure for removing makefiles
+
+= Introduction =
+
+It'd be helpful to have a wiki topic that says how to remove Makefiles from various book directories, in favor of using the cert.pl system.  Keeping these Makefiles around makes it harder to move stuff!
+
+This is intentionally left as poorly written, because it's not supposed to be something that we really need in the long-run.
+
+= Details =
+
+Why might there be a Makefile?
+  # To include subdirectories
+  # To specify certification params for ttags and skip-proofs
+
+As for (1), cert.pl handles automatically handles subdirectories.
+
+As for (2), you can add a cert.acl2 file in the directory that contains the following, which will instruct ACL2 to allow all ttags.  Also, you might need to place it in more than one .acl2 file, since cert.acl2 is only used if there isn't already a .acl2 file for any particular book.
+
+{{{
+; cert-flags: ? t :ttags :all
+}}}
+
+Here's the form if you both need to allow ttags and skip-proofs
+
+{{{
+; cert-flags: ? t :ttags :all:skip-proofs-okp t
+}}}
