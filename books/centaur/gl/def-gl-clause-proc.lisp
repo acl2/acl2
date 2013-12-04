@@ -599,7 +599,7 @@ clause processor to prove theorems.</p>"
           ;; apply-fns &key (output
           ;;                 '(:off (warning warning! observation prove
           ;;                                 event summary proof-tree
-          ;;                                 acl2::expansion)
+          ;;                                 acl2::history)
           ;;                        :gag-mode nil))
           ;; top-apply-fns
           ;; include-nonrec
