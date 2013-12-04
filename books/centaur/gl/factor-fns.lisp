@@ -285,7 +285,7 @@
 (defmacro factor-fn (fn)
   `(with-output
     :off (warning warning! observation prove acl2::proof-checker
-                  acl2::expansion event  proof-tree)
+                  acl2::history event  proof-tree)
     (make-event
      (let* ((world (w state))
             (clique (or (wgetprop ',fn 'recursivep) '(,fn))))
