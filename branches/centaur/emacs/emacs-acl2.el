@@ -184,14 +184,14 @@
 
 (font-lock-add-keywords
  'lisp-mode
- '(("\\((def[^ \t]*\\|(encapsulate\\|(in-theory\\|(include-book\\|(local\\)\\>"
-    . font-lock-keyword-face)
-   ("\\((make-event\\|(mutual-recursion\\|(prog[^ \t]*\\)\\>"
-    . font-lock-keyword-face)
-   ("\\((table\\|(theory-invariant\\)\\>"
-    . font-lock-keyword-face)
-   ("\\((value-triple\\|(verify-guards\\|(verify-termination\\)\\>"
-    . font-lock-keyword-face)))
+ '(("(\\(def[^ \t]*\\|encapsulate\\|in-theory\\|include-book\\|local\\)\\>"
+    . 1)
+   ("(\\(make-event\\|mutual-recursion\\|prog[^ \t]*\\)\\>"
+    . 1)
+   ("(\\(table\\|theory-invariant\\)\\>"
+    . 1)
+   ("(\\(value-triple\\|verify-guards\\|verify-termination\\)\\>"
+    . 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Control-t keymap

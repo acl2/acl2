@@ -7289,8 +7289,8 @@
       (list (car form) (cadr form) (caddr form) *evisceration-ellipsis-mark*))
      ((defthm defthmd)
        (list (car form) (cadr form) *evisceration-ellipsis-mark*))
-     (defdoc
-       (list 'defdoc (cadr form) *evisceration-ellipsis-mark*))
+     ((defdoc defconst)
+      (list (car form) (cadr form) *evisceration-ellipsis-mark*))
      (mutual-recursion
       (cons 'mutual-recursion
             (print-ldd-full-or-sketch/mutual-recursion (cdr form))))
@@ -7571,7 +7571,7 @@
      (t (make-ldds-command-block1 wrld1 cmd-ldd 1 fullp nil ens wrld ans)))))
 
 (defun pcb-pcb!-fn (cd fullp state)
-  (io? temporary nil (mv erp val state)
+  (io? history nil (mv erp val state)
        (cd fullp)
        (let ((wrld (w state))
              (ens (ens state)))
@@ -7610,7 +7610,7 @@
   (list 'pcb!-fn cd 'state))
 
 (defun pc-fn (cd state)
-  (io? temporary nil (mv erp val state)
+  (io? history nil (mv erp val state)
        (cd)
        (let ((wrld (w state)))
          (er-let* ((cmd-wrld (er-decode-cd cd wrld :pc state)))
@@ -7759,7 +7759,7 @@
 ; irrelevant).  We always print the most recent command here, possibly elided
 ; into the cd1-cd2 region.  We mark the end points of the region if markp is t.
 
-  (io? temporary nil (mv erp val state)
+  (io? history nil (mv erp val state)
        (cd1 markp cd2)
        (let ((wrld (w state))
              (ens (ens state)))
@@ -8035,7 +8035,7 @@
                        (value :invisible))))))
 
 (defun pe-fn (logical-name state)
-  (io? temporary nil (mv erp val state)
+  (io? history nil (mv erp val state)
        (logical-name)
        (let ((wrld (w state))
              (channel (standard-co state)))
@@ -22929,8 +22929,14 @@
          (not (f-get-global 'modifying-include-book-dir-alist state)))
     (er soft ctx
         "Illegal attempt to set the :include-book-dir-alist field of the ~
-         acl2-defaults-table.  This can only be done by calling ~
-         add-include-book-dir or delete-include-book-dir."))
+         acl2-defaults-table.  This can only be done by calling ~v0."
+        '(add-include-book-dir delete-include-book-dir)))
+   ((and (eq name 'include-book-dir!-table)
+         (not (f-get-global 'modifying-include-book-dir-alist state)))
+    (er soft ctx
+        "Illegal attempt to set the include-book-dir!-table.  This can only ~
+         be done by calling ~v0."
+        '(add-include-book-dir! delete-include-book-dir!)))
    (t (let ((term (getprop name 'table-guard *t* 'current-acl2-world wrld)))
         (er-progn
          (mv-let

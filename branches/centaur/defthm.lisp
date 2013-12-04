@@ -9266,8 +9266,58 @@
                ((and (equivalence-relationp equiv2 wrld)
                      (symbolp fn)
                      (all-variablep args1)
-                     (no-duplicatesp-equal args1)
+                     (no-duplicatesp-eq args1)
                      (member-eq xk args1)
+
+; The next conjunct is critical, but was missing from Versions  6.3 and 1.9,
+; hence likely in all versions between these and perhaps even before 1.9.
+; Without it, one can prove nil as follows.
+
+;   (defun e (x y)
+;     (or (equal x y)
+;         (and (booleanp x) (booleanp y))))
+;
+;   (defequiv e)
+;
+;   (defun h (x y)
+;     (if (booleanp x)
+;         (booleanp y)
+;       (equal (car x) y)))
+;
+;   ; The following is a bogus sort of expansion of:
+;   ; (defcong e equal (h x y) 2)
+;
+;   (defthm e-implies-equal-h-2-bad
+;     (implies (e y1 y2)
+;              (equal (h y2 y1)
+;                     (h y2 y2)))
+;     :rule-classes :congruence)
+;
+;   (defun true ()
+;     t)
+;
+;   (defun false ()
+;     nil)
+;
+;   (defthm e-true-false
+;     (e (true) (false)))
+;
+;   (defthm fact-1
+;     (h (cons t x) (true))
+;     :rule-classes nil)
+;
+;   (defthm fact-2
+;     (not (h (cons t x) (false)))
+;     :rule-classes nil)
+;
+;   (in-theory (disable true (true) false (false)))
+;
+;   (defthm contradiction
+;     nil
+;     :hints (("Goal" :use (fact-1 fact-2)))
+;     :rule-classes nil)
+
+                     (not (member-eq yk args1))
                      (corresponding-args-eq-except args1 args2 xk yk))
                 (mv t (list fn equiv1
                             (1+ (- (length args1) (length (member-eq xk args1))))

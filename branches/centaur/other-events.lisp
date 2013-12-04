@@ -4356,7 +4356,7 @@
      #+:non-standard-analysis defun-std
      add-custom-keyword-hint
      add-default-hints!
-     add-include-book-dir
+     add-include-book-dir add-include-book-dir!
      add-ld-keyword-alias!
      add-match-free-override
      comp
@@ -4375,7 +4375,7 @@
      defttag
      defun
      defuns
-     delete-include-book-dir
+     delete-include-book-dir delete-include-book-dir!
      encapsulate
      in-arithmetic-theory
      in-theory
@@ -4922,6 +4922,14 @@
                form
                " because we do not permit defaxiom events in the scope of an ~
                 encapsulate"
+               (chk-embedded-event-form-orig-form-msg orig-form state)
+               ""))
+          ((and in-local-flg
+                (member-eq (car form) '(add-include-book-dir!
+                                        delete-include-book-dir!)))
+           (er soft ctx local-str
+               form
+               (msg " (see :DOC ~x0)" (car form))
                (chk-embedded-event-form-orig-form-msg orig-form state)
                ""))
           ((and (eq (car form) 'include-book)
@@ -10748,7 +10756,8 @@
                 (value (list* 'include-book
                               full-book-name
                               (cddr form)))))))
-   ((and (eq (car form) 'add-include-book-dir)
+   ((and (member-eq (car form)
+                    '(add-include-book-dir add-include-book-dir!))
 
 ; This case is very similar to the include-book case handled in the preceding
 ; COND branch, above.  See that case for explanatory comments.  In order to see
@@ -10773,7 +10782,7 @@
 
 ; (include-book "bar")
 
-; You'll see this error, because
+; You'll see this error:
 
 ; ACL2 Error in ( INCLUDE-BOOK "foo" ...):  There is no file named
 ; "D/SUB/foo.lisp" that can be opened for input.
@@ -10789,16 +10798,18 @@
     (cond
      (make-event-parent
       (er soft ctx
-          "Each add-include-book-dir form in the certification world must be ~
-           given absolute pathname before it is saved in the certificate as a ~
-           portcullis command.  ACL2 generally figures out a suitable ~
-           absolute pathname when the pathname is relative.  But the present ~
-           form, ~x0, comes from the expansion of a make-event form with ~
-           (first) argument ~x1 and non-nil :check-expansion argument. ~ ~
-           Consider changing this make-event form to produce an ~
-           add-include-book-dir with an absolute pathname instead."
-          form (cadr make-event-parent)))
-     (t (value (list 'add-include-book-dir
+          "Each ~&0 call in the certification world must be given an absolute ~
+           pathname before it is saved in the certificate as a portcullis ~
+           command.  ACL2 generally figures out a suitable absolute pathname ~
+           when the pathname is relative.  But the present form, ~x1, comes ~
+           from the expansion of a make-event form with (first) argument ~x2 ~
+           and non-nil :check-expansion argument. ~ Consider changing this ~
+           make-event form to produce a call of ~x3 on an absolute pathname."
+          '(add-include-book-dir add-include-book-dir!)
+          form
+          (cadr make-event-parent)
+          (car form)))
+     (t (value (list (car form)
                      (cadr form)
                      (extend-pathname cbd (caddr form) state))))))
    ((member-eq (car form) names)
@@ -13624,16 +13635,20 @@
              (value t))))
 
 (defun include-book-dir (dir state)
-  (cond ((eq dir :system)
-         (f-get-global 'system-books-dir state))
-        (t (let* ((alist0 (f-get-global 'raw-include-book-dir-alist state))
-                  (alist (cond
-                          ((eq alist0 :ignore)
-                           (cdr (assoc-eq :include-book-dir-alist
-                                          (table-alist 'acl2-defaults-table
-                                                       (w state)))))
-                          (t alist0))))
-             (cdr (assoc-eq dir alist))))))
+  (cond
+   ((eq dir :system)
+    (f-get-global 'system-books-dir state))
+   ((raw-include-book-dir-p state)
+    (or (cdr (assoc-eq dir (f-get-global 'raw-include-book-dir!-alist state)))
+        (cdr (assoc-eq dir (f-get-global 'raw-include-book-dir-alist state)))))
+   (t
+    (let ((wrld (w state)))
+      (or (cdr (assoc-eq dir
+                         (cdr (assoc-eq :include-book-dir-alist
+                                        (table-alist 'acl2-defaults-table
+                                                     wrld)))))
+          (cdr (assoc-eq dir
+                         (table-alist 'include-book-dir!-table wrld))))))))
 
 (defmacro include-book-dir-with-chk (soft-or-hard ctx dir)
   `(let ((ctx ,ctx)
@@ -13642,16 +13657,20 @@
        (cond ((null dir-value) ; hence, dir is not :system
               (er ,soft-or-hard ctx
                   "The legal values for the :DIR argument are keywords that ~
-                   include :SYSTEM as well as those added by a call of ~
-                   add-include-book-dir.  However, that argument is ~x0, which ~
-                   is not among the list of those legal values, ~x1."
+                   include :SYSTEM as well as those added by a call of ~v0.  ~
+                   However, that argument is ~x1, which is not among the list ~
+                   of those legal values, ~x2."
+                  '(add-include-book-dir add-include-book-dir!)
                   dir
                   (cons :system
                         (strip-cars
-                         (cdr (assoc-eq :include-book-dir-alist
-                                        (table-alist 'acl2-defaults-table
-                                                     (w state))))))))
-             (t ,(if (eq soft-or-hard 'soft) '(value dir-value)
+                         (append
+                          (cdr (assoc-eq :include-book-dir-alist
+                                         (table-alist 'acl2-defaults-table
+                                                      (w state))))
+                          (table-alist 'include-book-dir!-table (w state)))))))
+             (t ,(if (eq soft-or-hard 'soft)
+                     '(value dir-value)
                    'dir-value))))))
 
 (defun newly-defined-top-level-fns-rec (trips collect-p full-book-name acc)
@@ -31718,10 +31737,12 @@
 
 ; Essay on Include-book-dir-alist
 
-; The :include-book-dir-alist field of the acl2-defaults-table supports the
-; :dir argument of include-book and ld, by associating keywords (used as values
-; of :dir) with absolute directory pathnames.  The macro add-include-book-dir
-; provides a way to extend that field.  Up through ACL2 Version_3.6.1, when
+; ACL2 supports two alists that associate keywords with absolute directory
+; pathnames, to be used as values of the :dir argument of include-book and ld:
+; the include-book-dir!-table, and the :include-book-dir-alist field of the
+; acl2-defaults-table.  The macros add-include-book-dir and
+; add-include-book-dir! provide ways to extend these alists to allow additional
+; legal values for :dir.  Up through ACL2 Version_3.6.1, when
 ; add-include-book-dir was executed in raw Lisp it would be ignored, because it
 ; macroexpanded to a table event.  But consider a file loaded in raw Lisp, say
 ; when we are in raw-mode and are executing an include-book command with a :dir
@@ -31732,39 +31753,49 @@
 ; The above problem with raw-mode could be explained away by saying that
 ; raw-mode is a hack, and you get what you get.  But Version_4.0 introduced the
 ; loading of compiled files before corresponding event processing, which causes
-; routine evaluation of add-include-book-dir and include-book in raw Lisp.
+; routine evaluation of add-include-book-dir, add-include-book-dir!, and
+; include-book in raw Lisp.
 
-; Therefore we maintain for raw Lisp a variant of the acl2-defaults-table's
-; include-book-dir-alist, namely state global 'raw-include-book-dir-alist.  The
-; value of this variable is initially :ignore, meaning that we are to use the
-; acl2-defaults-table's include-book-dir-alist.  But when the value is not
-; :ignore, then it is an alist that is used as the include-book-dir-alist.  We
+; Therefore we maintain for raw Lisp variants of these two alists: state
+; globals 'raw-include-book-dir-alist and 'raw-include-book-dir!-alist.  The
+; values of these variables are initially :ignore, meaning that we are to use
+; the two tables, not the state globals.  But when the values are not :ignore,
+; then they are alists to use in place of the corresponding table values.  We
 ; guarantee that every embedded event form that defines handling of :dir values
 ; for include-book does so in a manner that works when loading compiled files,
 ; and we weakly extend this guarantee to raw-mode as well (weakly, since we
-; cannot perfectly control raw-mode but anyhow, a trust tag is necessary to
-; enter raw-mode so our guarantee need not be ironclad).  The above :ignore
-; value must then be set to a legitimate include-book-alist when inside
-; include-book or (generally) raw-mode, and should remain :ignore when not in
-; those contexts.  When the value is not :ignore, then execution of
-; add-include-book-dir will extend the value of 'raw-include-book-dir-alist
-; instead of modifying the acl2-defaults-table.  And whenever we execute
-; include-book in raw Lisp, we use this value instead of the one in the
-; acl2-defaults-table, by binding it to nil upon entry.  Thus, any
-; add-include-book-dir will be local to the book, which respects the semantics
-; of include-book.  We bind it to nil because that is also how include-book
-; works: the acl2-defaults-table initially has an empty :include-book-dir-alist
-; field (see process-embedded-events).
+; cannot perfectly control raw-mode; but a trust tag is necessary to enter
+; raw-mode so our guarantee need not be ironclad).  The above :ignore value
+; must then be set to a legitimate include-book-alist when inside include-book
+; or (ideally) in raw-mode, and should remain :ignore when not in those
+; contexts.  When the value of 'raw-include-book-dir-alist is not :ignore, then
+; execution of add-include-book-dir will extend the value of
+; 'raw-include-book-dir-alist instead of modifying the acl2-defaults-table.
+; Whenever we execute include-book in raw Lisp, we use this value instead of
+; the one in the acl2-defaults-table, by binding it to nil upon entry.  Thus,
+; any add-include-book-dir will be local to the book, which respects the
+; semantics of include-book.  We bind it to nil because that is also how
+; include-book works: the acl2-defaults-table initially has an empty
+; :include-book-dir-alist field (see process-embedded-events).  Of course,
+; add-include-book-dir! corresponds to the include-book-dir!-table, not to the
+; acl2-defaults-table, and its effect is not local to a book.  Thus, we handle
+; 'raw-include-book-dir!-alist a bit differently from how we handle
+; 'raw-include-book-dir-alist, though similarly: we bind it to nil in
+; include-book-raw-top, at the top level of the entry into raw Lisp (for early
+; load of compiled files) from include-book, bindings state global
+; 'raw-include-book-dir!-alist to the current value of the
+; include-book-dir!-table.
 
 ; In order to be able to rely on the above scheme, we disallow any direct table
-; update of the :include-book-dir-alist field of the acl2-defaults-table.  We
-; use the state global 'modifying-include-book-dir-alist for this purpose,
-; which is globally nil but is bound to t by add-include-book-dir and
-; delete-include-book-dir.  We insist that it be non-nil in chk-table-guard.
-; We considered doing it in chk-embedded-event-form, but that would have been
-; more awkward, and more importantly, it would have allowed such direct updates
-; when developing a book interactively but not when certifying the book, which
-; could provide a rude surprise to the user at certification time.
+; update of the include-book-dir!-table or of the :include-book-dir-alist field
+; of the acl2-defaults-table.  We use the state global
+; 'modifying-include-book-dir-alist for this purpose, which is globally nil but
+; is bound to t by add-include-book-dir and related macros.  We insist that it
+; be non-nil in chk-table-guard.  We considered making such a check instead in
+; chk-embedded-event-form, but that would have been more awkward, and more
+; importantly, it would have allowed such direct updates when developing a book
+; interactively but not when certifying the book, which could provide a rude
+; surprise to the user at certification time.
 
 ; End of Essay on Include-book-dir-alist
 
@@ -31775,152 +31806,192 @@
         (in-encapsulatep (global-val 'embedded-event-lst wrld)
                          nil))))
 
-(defun add-include-book-dir-fn (keyword dir state)
+(defun change-include-book-dir (keyword dir caller state)
+
+; Caller is add-include-book-dir, add-include-book-dir!,
+; delete-include-book-dir!, or delete-include-book-dir.  Dir is nil if and only
+; caller is one of the latter two.
 
 ; See the Essay on Include-book-dir-alist.
 
   (declare (xargs :guard (state-p state)
                   :mode :program))
-  (let ((ctx 'add-include-book-dir))
-    (cond ((or (not (keywordp keyword))
+  (let ((ctx (if dir
+                 (cons caller keyword)
+               (msg "~x0" (list caller keyword))))
+        (bang-p (member-eq caller '(add-include-book-dir!
+                                    delete-include-book-dir!))))
+    (cond ((not (if dir
+                    (member-eq caller '(add-include-book-dir
+                                        add-include-book-dir!))
+                  (member-eq caller '(delete-include-book-dir
+                                      delete-include-book-dir!))))
+
+; We do this check at runtime, rather than in the guard, so that, for the sake
+; of efficient execution, we can include it in the list of functions given to
+; oneify-cltl-code whose *1* function is defined simply to call the raw Lisp
+; function.  An added benefit is that we can check here that dir is not nil.
+
+           (cond
+            ((and (null dir)
+                  (member-eq caller '(add-include-book-dir
+                                      add-include-book-dir!)))
+             (er soft ctx
+                 "It is illegal to call ~x0 with a directory argument of nil."
+                 caller))
+            (t
+             (er soft ctx
+                 "Internal error: Illegal call of change-include-book-dir: ~
+                  ~x0 is ~x1 but ~x2 is ~x3 (expected ~v4)."
+                 'dir dir 'caller caller
+                 (if dir
+                     '(add-include-book-dir add-include-book-dir!)
+                   '(delete-include-book-dir delete-include-book-dir!))))))
+          ((or (not (keywordp keyword))
                (eq keyword :SYSTEM))
            (er soft ctx
-               "The first argument of add-include-book-dir must be a keyword ~
-                (see :DOC keywordp) other than :SYSTEM, but ~x0 is not."
-               keyword))
-          ((not (stringp dir))
+               "The first argument of ~x0 must be a keyword (see :DOC ~
+                keywordp) other than :SYSTEM, but ~x1 is not."
+               caller keyword))
+          ((and dir (not (stringp dir)))
            (er soft ctx
-               "The second argument of add-include-book-dir must be a ~
-                string, but ~x0 is not."
-               dir))
+               "The second argument of ~x0 must be a string, but ~x1 is not."
+               caller dir))
           (t
            (state-global-let*
             ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst)))
              (modifying-include-book-dir-alist t))
-            (let* ((dir (maybe-add-separator
-                         (extend-pathname (cbd) dir state)))
-                   (raw-p (not (eq (f-get-global 'raw-include-book-dir-alist
-                                                 state)
-                                   :ignore)))
-                   (old (cond (raw-p
-                               (f-get-global 'raw-include-book-dir-alist
-                                             state))
-                              (t
-                               (cdr (assoc-eq :include-book-dir-alist
-                                              (table-alist 'acl2-defaults-table
-                                                           (w state)))))))
-                   (pair (assoc-eq keyword old))
-                   (new (acons keyword dir old)))
-              (cond
-               ((not (absolute-pathname-string-p dir t (os (w state))))
+            (let ((dir (and dir
+                            (maybe-add-separator
+                             (extend-pathname (cbd) dir state))))
+                  (raw-p (raw-include-book-dir-p state))
+                  (wrld (w state)))
+              (mv-let
+               (old alt)
+               (cond
+                (raw-p
+                 (cond
+                  (bang-p
+                   (mv (f-get-global 'raw-include-book-dir!-alist
+                                     state)
+                       (f-get-global 'raw-include-book-dir-alist
+                                     state)))
+                  (t
+                   (mv (f-get-global 'raw-include-book-dir-alist
+                                     state)
+                       (f-get-global 'raw-include-book-dir!-alist
+                                     state)))))
+                (bang-p
+                 (mv (table-alist 'include-book-dir!-table wrld)
+                     (cdr (assoc-eq :include-book-dir-alist
+                                    (table-alist 'acl2-defaults-table
+                                                 wrld)))))
+                (t
+                 (mv (cdr (assoc-eq :include-book-dir-alist
+                                    (table-alist 'acl2-defaults-table
+                                                 wrld)))
+                     (table-alist 'include-book-dir!-table wrld))))
+               (let ((old-pair (assoc-eq keyword old))
+                     (alt-pair (assoc-eq keyword alt)))
+                 (cond
+                  ((and dir
+                        (not (absolute-pathname-string-p dir t (os wrld))))
 
 ; The call above of maybe-add-separator should make this branch dead code, but
 ; we leave it here for robustness, e.g., in case we change that call.
 
-                (er soft ctx
-                    "The second argument of add-include-book-dir must ~
-                     represent a directory, in particular ending with ~
-                     character '~s0', but ~x1 does not."
-                    *directory-separator-string* dir))
-               (pair
-                (cond ((equal (cdr pair) dir)
-                       (stop-redundant-event ctx state))
-                      (t (er soft ctx
-                             "The keyword ~x0 is already bound to directory ~
-                              ~x1. If you intend to override the old setting ~
-                              with directory ~x2, first evaluate ~x3."
-                             keyword
-                             (cdr pair)
-                             dir
-                             `(delete-include-book-dir ,keyword)))))
-               (raw-p
-                (pprogn (cond
-                         ((or (acl2-defaults-table-local-ctx-p state)
-                              (not (eq (f-get-global
-                                        'raw-include-book-dir-alist state)
-                                       :ignore)))
-
-; We skip the warning below when in a context for which acl2-defaults-table
-; will ultimately be discarded, since the effect of add-include-book-dir would
-; disappear even without raw-mode.  We also skip the warning if we are in a
-; context where we have previously transitioned the value of
-; 'raw-include-book-dir-alist from :ignore, as either we have already given a
-; warning, or else we deemed that transition not worthy of a warning, as in the
-; state-global-let* binding of raw-include-book-dir-alist in
-; load-compiled-book.
-
-                          state)
+                   (er soft ctx
+                       "The second argument of ~x0 must represent a ~
+                        directory, in particular ending with character '~s1', ~
+                        but ~x2 does not."
+                       caller *directory-separator-string* dir))
+                  ((and dir
+                        (equal (cdr old-pair) dir))
+                   (stop-redundant-event ctx state))
+                  ((if dir
+                       (or old-pair alt-pair) ; already bound
+                     alt-pair)                ; bound in the wrong table
+                   (mv-let
+                    (other-add other-delete)
+                    (cond (bang-p
+                           (mv 'add-include-book-dir
+                               'delete-include-book-dir))
+                          (t
+                           (mv 'add-include-book-dir!
+                               'delete-include-book-dir!)))
+                    (cond ((null dir) ; hence alt-pair
+                           (er soft ctx
+                               "The keyword ~x0 was previously bound to ~
+                                directory ~x1 by a call of ~x2.  Perhaps you ~
+                                intended to call ~x3 instead of ~x4."
+                               keyword (cdr alt-pair) other-add other-delete
+                               caller))
+                          (alt-pair
+                           (er soft ctx
+                               "The keyword ~x0 was previoiusly bound to ~
+                                directory ~x1 by a call of ~x2.  To bind ~x0 ~
+                                with ~x3 first evaluate ~x4."
+                               keyword
+                               (cdr alt-pair)
+                               other-add
+                               caller
+                               (list other-delete keyword)))
+                          (t (er soft ctx
+                                 "The keyword ~x0 was previously bound to ~
+                                  directory ~x1.  If you intend to override ~
+                                  the old setting with directory ~x2, first ~
+                                  evaluate ~x3."
+                                 keyword
+                                 (cdr old-pair)
+                                 dir
+                                 (list (cond (bang-p 'delete-include-book-dir!)
+                                             (t 'delete-include-book-dir))
+                                       keyword))))))
+                  ((and (null dir)
+                        (null (cdr old-pair)))
+                   (stop-redundant-event ctx state))
+                  (t (let ((new (cond (dir (acons keyword dir old))
+                                      (t (delete-assoc-eq keyword old)))))
+                       (er-progn
+                        (cond
+                         (raw-p
+                          (pprogn
+                           (cond (bang-p
+                                  (f-put-global 'raw-include-book-dir!-alist
+                                                new
+                                                state))
+                                 (t
+                                  (f-put-global 'raw-include-book-dir-alist
+                                                new
+                                                state)))
+                           (value nil)))
+                         ((not bang-p)
+                          (table-fn 'acl2-defaults-table
+                                    (list :include-book-dir-alist
+                                          (kwote new))
+                                    state
+                                    (list 'table
+                                          'acl2-defaults-table
+                                          ':include-book-dir-alist
+                                          (kwote new))))
+                         (dir
+                          (table-fn 'include-book-dir!-table
+                                    (list keyword (kwote dir))
+                                    state
+                                    (list 'table
+                                          'include-book-dir!-table
+                                          keyword
+                                          (kwote dir))))
                          (t
-                          (warning$ ctx "Raw-mode"
-                                    "The effect of add-include-book-dir will ~
-                                     disappear if you exit raw-mode.")))
-                        (f-put-global 'raw-include-book-dir-alist new state)
-                        (value new)))
-               (t (er-progn
-                   (table-fn 'acl2-defaults-table
-                             (list :include-book-dir-alist
-                                   (list 'quote new))
-                             state
-                             (list 'table
-                                   'acl2-defaults-table
-                                   ':include-book-dir-alist
-                                   (list 'quote new)))
-                   (value new))))))))))
-
-(defun delete-include-book-dir-fn (keyword state)
-
-; See the Essay on Include-book-dir-alist.
-
-  (declare (xargs :guard (state-p state)
-                  :mode :program))
-  (let ((ctx 'delete-include-book-dir))
-    (cond ((or (not (keywordp keyword))
-               (eq keyword :SYSTEM))
-           (er soft ctx
-               "The argument of delete-include-book-dir must be a keyword ~
-                (see :DOC keywordp) other than :SYSTEM, but ~x0 is not."
-               keyword))
-          (t
-           (state-global-let*
-            ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst)))
-             (modifying-include-book-dir-alist t))
-            (let* ((raw-p (not (eq (f-get-global 'raw-include-book-dir-alist
-                                                 state)
-                                   :ignore)))
-                   (old (cond (raw-p
-                               (f-get-global 'raw-include-book-dir-alist
-                                             state))
-                              (t
-                               (cdr (assoc-eq :include-book-dir-alist
-                                              (table-alist 'acl2-defaults-table
-                                                           (w state)))))))
-                   (found (assoc-eq keyword old))
-                   (new (if found
-                            (delete-assoc-eq keyword old)
-                          old)))
-              (cond
-               ((not found)
-                (pprogn
-                 (warning$ ctx "Table"
-                           "There is no binding of keyword ~x0 to delete!"
-                           keyword)
-                 (stop-redundant-event ctx state)))
-               (raw-p
-                (pprogn (f-put-global 'raw-include-book-dir-alist new state)
-                        (warning$ ctx "Raw-mode"
-                                  "The effect of add-include-book-dir will ~
-                                   disappear if you exit raw-mode.")
-                        (value new)))
-               (t (er-progn
-                   (table-fn 'acl2-defaults-table
-                             (list :include-book-dir-alist
-                                   (list 'quote new))
-                             state
-                             (list 'table
-                                   'acl2-defaults-table
-                                   ':include-book-dir-alist
-                                   (list 'quote new)))
-                   (value new))))))))))
+                          (table-fn 'include-book-dir!-table
+                                    (list nil (kwote new) :clear)
+                                    state
+                                    (list 'table
+                                          'include-book-dir!-table
+                                          nil
+                                          (kwote new)
+                                          :clear))))
+                        (value new)))))))))))))
 
 (defun add-custom-keyword-hint-fn (key uterm1 uterm2 state)
 

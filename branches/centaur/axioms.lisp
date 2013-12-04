@@ -9519,42 +9519,6 @@
 ; :logic as well (since :logic mode functions cannot have :program mode
 ; functions in their bodies).
 
-;first: we mention the old ordinals:
-
-(defdoc e0-ordinalp
-  ":Doc-Section ACL2::ACL2-built-ins
-
-   the old recognizer for ACL2 ordinals~/
-
-   ~l[o-p] for the current recognizer for ACL2 ordinals.~/
-
-   The functions ~c[e0-ordinalp] and ~ilc[e0-ord-<] were replaced in ACL2
-   Version_2.8 by ~ilc[o-p] and ~ilc[o<], respectively.  However, books created
-   before that version used the earlier functions for termination proofs; the
-   old functions might be of use in these cases.  To use the old functions in
-   termination proofs, include the community book ~c[books/ordinals/e0-ordinal]
-   and execute the event ~c[(set-well-founded-relation e0-ord-<)]
-   (~pl[set-well-founded-relation]).  For a more thorough discussion of
-   these functions, see the documentation at the end of community book
-   ~c[books/ordinals/e0-ordinal.lisp].")
-
-(defdoc e0-ord-<
-  ":Doc-Section ACL2::ACL2-built-ins
-
-   the old ordering function for ACL2 ordinals~/
-
-   ~l[o<] for the current new ordering function for ACL2 ordinals.~/
-
-   The functions ~c[e0-ordinalp] and ~ilc[e0-ord-<] were replaced in ACL2
-   Version_2.8 by ~ilc[o-p] and ~ilc[o<], respectively.  However, books created
-   before that version used the earlier functions for termination proofs; the
-   old functions might be of use in these cases.  To use the old functions in
-   termination proofs, include the community book ~c[books/ordinals/e0-ordinal]
-   and execute the event ~c[(set-well-founded-relation e0-ord-<)]
-   (~pl[set-well-founded-relation]).  For a more thorough discussion of
-   these functions, see the documentation at the end of community book
-   ~c[books/ordinals/e0-ordinal.lisp].")
-
 (defun natp (x)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -11956,8 +11920,14 @@
   one gains familiarity with ACL2.~/~/")
 
 (defconst *valid-output-names*
-  '(error warning warning! observation prove proof-checker event expansion
-          summary proof-tree))
+
+; Warning: this list should include all keys of the alist
+; *window-descriptions*.  Also: If you change this list, also consider changing
+; the value of INHIBIT in distributed books files Makefile-generic and
+; build/make_cert.
+
+  '(error warning warning! observation prove proof-checker event summary
+          history proof-tree))
 
 ; Set-difference$
 
@@ -28587,14 +28557,14 @@
     set-let*-abstractionp defaxiom
     set-bogus-mutual-recursion-ok
     set-ruler-extenders
-    delete-include-book-dir certify-book progn!
+    delete-include-book-dir delete-include-book-dir! certify-book progn!
     f-put-global push-untouchable
     set-backchain-limit set-default-hints!
     set-rw-cache-state! set-override-hints-macro
     deftheory pstk verify-guards defchoose
     set-default-backchain-limit set-state-ok
     set-ignore-ok set-non-linearp set-tau-auto-mode with-output
-    set-compile-fns add-include-book-dir
+    set-compile-fns add-include-book-dir add-include-book-dir!
     clear-pstk add-custom-keyword-hint
     initial-gstack
     acl2-unwind-protect set-well-founded-relation
@@ -29159,6 +29129,7 @@
     (proof-tree-start-printed . nil)
     (proofs-co . acl2-output-channel::standard-character-output-0)
     (raw-arity-alist . nil)
+    (raw-include-book-dir!-alist . :ignore)
     (raw-include-book-dir-alist . :ignore)
     (raw-proof-format . nil)
     (redo-flat-fail . nil)
@@ -37304,7 +37275,7 @@
     compiler-enabled
     compiled-file-extension
     modifying-include-book-dir-alist
-    raw-include-book-dir-alist
+    raw-include-book-dir!-alist raw-include-book-dir-alist
     deferred-ttag-notes
     deferred-ttag-notes-saved
     pc-assign
@@ -38152,15 +38123,6 @@
              (eql (char str (1- len)) *directory-separator*)
            t))))
 
-(defun include-book-dir-alistp (x os)
-  (declare (xargs :guard t))
-  (cond ((atom x) (null x))
-        (t (and (consp (car x))
-                (keywordp (caar x))
-                (stringp (cdar x))
-                (absolute-pathname-string-p (cdar x) t os)
-                (include-book-dir-alistp (cdr x) os)))))
-
 (defun illegal-ruler-extenders-values (x wrld)
   (declare (xargs :guard (and (symbol-listp x)
                               (plist-worldp wrld))))
@@ -38377,6 +38339,19 @@
 ; order to make that event quickly exceed the default limit.
 
    (fixnum-bound))
+
+(defun include-book-dir-alist-entry-p (key val os)
+  (declare (xargs :guard t))
+  (and (keywordp key)
+       (stringp val)
+       (absolute-pathname-string-p val t os)))
+
+(defun include-book-dir-alistp (x os)
+  (declare (xargs :guard t))
+  (cond ((atom x) (null x))
+        (t (and (consp (car x))
+                (include-book-dir-alist-entry-p (caar x) (cdar x) os)
+                (include-book-dir-alistp (cdr x) os)))))
 
 (table acl2-defaults-table nil nil
 
@@ -42100,8 +42075,9 @@
   the book is included.  (Note: The above behavior is generally preserved in
   raw-mode (~pl[set-raw-mode]),though by means other than a table.)~/"
 
-  `(add-include-book-dir-fn ,keyword
+  `(change-include-book-dir ,keyword
                             ,dir
+                            'add-include-book-dir
 
 ; We use state in the loop but the live state outside it.  This could be a
 ; problem if we could define a function that can take a non-live state as an
@@ -42140,7 +42116,9 @@
   in which it occurs; ~pl[add-include-book-dir] for a discussion of this aspect
   of both macros.~/"
 
-  `(delete-include-book-dir-fn ,keyword
+  `(change-include-book-dir ,keyword
+                            nil
+                            'delete-include-book-dir
 
 ; We use state in the loop but the live state outside it.  This could be a
 ; problem if we could define a function that can take a non-live state as an
@@ -42148,8 +42126,52 @@
 ; with-live-state.  However, we prevent that problem by putting
 ; delete-include-book-dir in a suitable list in the definition of translate11.
 
-                               #+acl2-loop-only state
-                               #-acl2-loop-only *the-live-state*))
+                            #+acl2-loop-only state
+                            #-acl2-loop-only *the-live-state*))
+
+(table include-book-dir!-table nil nil
+       :guard (include-book-dir-alist-entry-p
+               key val (global-val 'operating-system world)))
+
+(defun raw-include-book-dir-p (state)
+
+; See the Essay on Include-book-dir-alist.  An invariant is that the value of
+; 'raw-include-book-dir-alist is :ignore if and only if the value of
+; 'raw-include-book-dir!-alist is :ignore, though quite possibly we do not need
+; to maintain that invariant.
+
+  (declare (xargs :guard (and (state-p state)
+                              (boundp-global 'raw-include-book-dir-alist state))))
+  (not (eq (f-get-global 'raw-include-book-dir-alist state)
+           :ignore)))
+
+(defmacro add-include-book-dir! (keyword dir)
+  `(change-include-book-dir ,keyword
+                            ,dir
+                            'add-include-book-dir!
+
+; We use state in the loop but the live state outside it.  This could be a
+; problem if we could define a function that can take a non-live state as an
+; argument; see the bug through Version_4.3 explained in a comment in
+; with-live-state.  However, we prevent that problem by putting
+; add-include-book-dir in a suitable list in the definition of translate11.
+
+                            #+acl2-loop-only state
+                            #-acl2-loop-only *the-live-state*))
+
+(defmacro delete-include-book-dir! (keyword)
+  `(change-include-book-dir ,keyword
+                            nil
+                            'delete-include-book-dir!
+
+; We use state in the loop but the live state outside it.  This could be a
+; problem if we could define a function that can take a non-live state as an
+; argument; see the bug through Version_4.3 explained in a comment in
+; with-live-state.  However, we prevent that problem by putting
+; delete-include-book-dir in a suitable list in the definition of translate11.
+
+                            #+acl2-loop-only state
+                            #-acl2-loop-only *the-live-state*))
 
 ; Begin implementation of tables controlling non-linear arithmetic.
 

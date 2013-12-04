@@ -2414,9 +2414,7 @@
           pre-defaults-table
           (table-alist 'acl2-defaults-table (w state))
           state)
-         (io? event nil (mv erp val state)
-              ()
-              (pcs-fn :x :x nil state))
+         (pcs-fn :x :x nil state)
          (value :invisible)))))))
 
 (defun ubt-ubu-fn (kwd cd state)
@@ -21425,7 +21423,8 @@
 ; Improved an error message produced in cases that could be due to a missing
 ; stobj declaration or formal parameter.  Below is a test suite, where the
 ; first four forms come from Jared Davis, who suggested making such an
-; improvement.
+; improvement.  Thanks to Jared Davis for reporting a bug in our initial
+; implementation of this improvement.
 
 ;   (set-state-ok t)
 ;   (defun f (x state)
@@ -21488,6 +21487,8 @@
 
 ; Slightly improved error message for illegal rewrite rules, following feedback
 ; from David Rager.
+
+; Removed EXPANSION from *valid-output-names* (it was not used).
 
   :doc
   ":Doc-Section release-notes
@@ -22365,15 +22366,16 @@
    ((modifying-include-book-dir-alist
 
 ; The Essay on Include-book-dir-alist explains that the above state global must
-; be t in order to set the acl2-defaults-table.  The idea is to enforce the
-; rule that the acl2-defaults-table is used for the include-book-dir-alist when
-; in the ACL2 loop, but state global 'raw-include-book-dir-alist is used
-; instead when in raw Lisp (see for example add-include-book-dir-fn).  Here, we
-; are presumably evaluating puff or puff* in the loop rather than inside
-; include-book, since these are not embedded event forms.  So we need not worry
-; about puff being evaluated inside an event inside a book.  (Note that
-; make-event is not legal inside a book except with a check-expansion argument
-; that is used as the expansion -- re-expansion does not take place.)  Now,
+; be t in order to set the include-book-dir!-table or the
+; :include-book-dir-alist field of the acl2-defaults-table.  The idea is to
+; enforce the rule that these are used for the include-book-dir-alist when in
+; the ACL2 loop, but state globals 'raw-include-book-dir-alist and
+; 'raw-include-book-dir!-alist are used instead when in raw Lisp (see for
+; example change-include-book-dir).  Here, we are presumably evaluating puff or
+; puff* in the loop rather than inside include-book, since these are not
+; embedded event forms.  So we need not worry about puff being evaluated inside
+; an event inside a book.  (Note that make-event is not legal inside a book
+; except with a check-expansion argument that is used as the expansion.)  Now,
 ; with raw mode one can in principle call all sorts of ACL2 system functions in
 ; raw Lisp that we never intended to be called there -- but that requires a
 ; trust tag, so it's not our problem!
@@ -22446,7 +22448,7 @@
 
 (defun puff-report (caller new-cd1 new-cd2 cd state)
   (cond ((eql new-cd1 (1+ new-cd2))
-         (pprogn (io? temporary nil state
+         (pprogn (io? history nil state
                       (caller cd)
                       (fms "Note: ~x0 is complete, but no events were ~
                             executed under the given command descriptor, ~
