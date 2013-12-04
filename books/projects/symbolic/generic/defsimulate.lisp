@@ -27,7 +27,7 @@ think I can do the change reliably.
 ||#
 
 
-;; OK, some generic stuff. 
+;; OK, some generic stuff.
 
 ;; The function create-variables here takes a number n (think of the i to be 0)
 ;; and creates a list (s0 s1 ... sn). I use that list as formals inside the
@@ -48,12 +48,12 @@ think I can do the change reliably.
 ;; many times now, that I am now sincerely thinking that we should probably
 ;; have a generic book of "utilities" which has these functions in it.
 
-(defun lastval (x) 
+(defun lastval (x)
   (cond ((endp x) nil)
         ((endp (rest x)) (first x))
         (t (lastval (rest x)))))
 
-(defun dellast (x) 
+(defun dellast (x)
   (cond ((endp x) nil)
         ((endp (rest x)) nil)
         (t (cons (first x) (dellast (rest x))))))
@@ -65,17 +65,17 @@ think I can do the change reliably.
 
 (include-book "ordinals/ordinals-without-arithmetic" :dir :system)
 (include-book "misc/defpun" :dir :system)
-      
-    
 
-(defun defsimulate-partial (nextt run arity cutname exitname defaultname exitsteps 
+
+
+(defun defsimulate-partial (nextt run arity cutname exitname defaultname exitsteps
                                prename postname assertname define-run? hints thms)
 
   (declare (xargs :mode :program))
   (let* (;; I do a little trick with run. If define-run? is T then run is the
          ;; name of the function run, otherwise run is simply runn irrespective
          ;; of what the user has written. Maybe this is a trivial deal.
-         (run (if define-run? 
+         (run (if define-run?
                   (prog2$ (cw "You have decided to call this macro with ~
                                :define-run? parameter set to T. We will define ~
                                a function called runn and prove the ~
@@ -85,7 +85,7 @@ think I can do the change reliably.
                                this macro you need to prove that your run is ~
                                equal to runn. That should be pretty easy to ~
                                prove by induction based on your run. Good ~
-                               luck!~|") 
+                               luck!~|")
                           'runn)
                 (prog2$ (cw "You have decided to use your own run function. ~
                              Please note that we will assume that your ~
@@ -101,7 +101,7 @@ think I can do the change reliably.
          ;; the variables in this macro as (s0 s1 s2 ....) so that I have a
          ;; good handle of what it is that I am doing.
          (params (create-variables arity 0))
-           
+
            ;; A few shortcuts I will probably use often. For some of these
            ;; functions I create terms like (pre s0 s1)
            (preterm (cons prename params))
@@ -110,8 +110,8 @@ think I can do the change reliably.
            (exitterm (cons exitname params))
            (postterm (cons postname params)))
 
-    (append 
-     
+    (append
+
      ;; First the run function definition to be installed in ACL2. This is only
      ;; in case of :define-run?
 
@@ -126,19 +126,19 @@ think I can do the change reliably.
                you should either define it outside first and call this macro ~
                with :define-run? nil or after execution of the macro define ~
                another recursive version of ~s0~ and inductively prove that to ~
-               be equal to the one we generate.~|" 
+               be equal to the one we generate.~|"
               run)
-          
+
           (list
 
-           `(defun-nx ,run (,(lastval params) n)  
+           `(defun-nx ,run (,(lastval params) n)
               ;; I add the :non-executable argument in the declare because nextt
               ;; might otherwise have stobjs or something like that and I dont
               ;; want to deal with them.
-              (if (zp n) ,(lastval params) 
+              (if (zp n) ,(lastval params)
                 (,run (,nextt ,(lastval params)) (1- n))))))
-       nil) 
-     
+       nil)
+
      (list
       ;; Let us get the easy theorems through first. These theorems should go
       ;; through rather easily. However, I at least need some tricks with
@@ -147,7 +147,7 @@ think I can do the change reliably.
       ;; and M6 it is vital that nextt is disabled and opened via openers;
       ;; otherwise I dont know how long a proof might take. I achieve this by
       ;; storing the theory at the beginning of the events as a deftheory form.
-      
+
       `(local (deftheory oldth (current-theory :here)))
       ;; These theorems are the proof obligations for partial correctness. The
       ;; easy stuff is all those except for the one which says that assertions
@@ -159,35 +159,35 @@ think I can do the change reliably.
           (not ,(cons cutname (snoc (dellast params)
                                     (list defaultname))))))
 
-      `(local 
+      `(local
         (defthm pre-implies-cutpoint
           (implies ,preterm ,cutterm)))
-      
+
       `(local
         (defthm exitpoint-is-cutpoint
           (implies ,exitterm  ,cutterm)))
-      
+
       `(local
         (defthm pre-implies-assertion
           (implies ,preterm ,assertterm)))
-      
+
       `(local
         (defthm assertion-implies-post
           (implies (and ,assertterm ,exitterm) ,postterm)))
-      
+
       ;; To get the difficult one, I would first define the tail-recursive
-      ;; steps-to-cutpoint function. 
+      ;; steps-to-cutpoint function.
 
       ;; There seems to be some problem with defpun when the function next is
       ;; enabled. So disable it.
 
       `(local (in-theory (disable ,nextt)))
 
-      `(local 
+      `(local
         (defpun concrete-steps-to-cutpoint-tail ,(snoc params 'i)
           (if ,cutterm
               i
-            ,(cons 'concrete-steps-to-cutpoint-tail 
+            ,(cons 'concrete-steps-to-cutpoint-tail
                    (snoc (snoc (dellast params)
                                (list nextt (lastval params)))
                                '(1+ i))))))
@@ -198,35 +198,35 @@ think I can do the change reliably.
       `(defpun ,(packn (list exitsteps '-tail)) ,(snoc params 'i)
          (if ,exitterm
              i
-           ,(cons (packn (list exitsteps '-tail)) 
+           ,(cons (packn (list exitsteps '-tail))
                    (snoc (snoc (dellast params)
                                (list nextt (lastval params)))
                          '(1+ i)))))
-      
 
-      
+
+
       `(local
         (defun-nx concrete-steps-to-cutpoint ,params
           (declare (xargs :normalize nil :non-executable t))
           (let ((steps ,(cons 'concrete-steps-to-cutpoint-tail (snoc params 0)))
                 (s ,(lastval params)))
             (if ,(cons cutname (snoc (dellast params) (list run 's 'steps)))
-                steps 
+                steps
               (omega)))))
-      
+
       ;; Now we define the nextt-cutpoint function. All this is automatic, since
       ;; no user input should be required.
-      
-      `(local 
+
+      `(local
         (defun-nx concrete-nextt-cutpoint ,params
           (declare (xargs :normalize nil :non-executable t))
           (let* ((s ,(lastval params))
-                 (steps ,(cons 'concrete-steps-to-cutpoint 
+                 (steps ,(cons 'concrete-steps-to-cutpoint
                               (snoc (dellast params) 's))))
             (if (natp steps)
                 (,run s steps)
               (,defaultname)))))
-      
+
       ;; Ok, now I need to prove some stuff. The first thing I will prove is
       ;; the symbolic simulation rules for nextt-cutpoint. This would be useful
       ;; to then prove that assertion is invariant over cutpoints. But I have
@@ -234,32 +234,32 @@ think I can do the change reliably.
       ;; include the book and functionally instantiate the theorem. No property
       ;; of concrete step or default should be required, and hence I am fine
       ;; with just disabling stuff.
-      
+
       `(local (in-theory (disable ,nextt ,defaultname (,defaultname))))
-      
+
       `(local
         (encapsulate
          ()
-         
+
          ;; How do we prove the symbolic simulation theorems? Well, just a
          ;; simple functional instantiation of the previous theorems we have
          ;; proved.
-         
+
          ;; Note: Why do I do this within another encapsulate? Well there are
          ;; name clashes between partial/total correctness book and the
          ;; assertion book (for example the name of the function run. Rather
          ;; than write something else for run in one of those I simply include
          ;; the assertions book locally.
-         
+
          (local (include-book "assertions"))
-         
+
          ;; I should only need the theorems about cutpoint and assertion that I
          ;; have already proved. So I disable them. In fact I disable
          ;; everything since I am in the middle of a macro and I am afraid that
          ;; things can cause trouble by interfering with my plan of proof.
 
          (local (in-theory (theory 'minimal-theory)))
-         
+
          ;; These are theorems that should be trivial to prove. But I dont want
          ;; to needlessly risk symbolic simulation on the concrete
          ;; machine. Rather I know that I have already proved the generic
@@ -270,27 +270,27 @@ think I can do the change reliably.
                     (equal ,(cons 'concrete-nextt-cutpoint params)
                            ,(lastval params)))
            :hints (("Goal"
-                    :in-theory 
+                    :in-theory
                     (disable |nextt cutpoint for cutpoint|)
-                   :use 
-                    ((:instance 
-                      (:functional-instance 
+                   :use
+                    ((:instance
+                      (:functional-instance
                        |nextt cutpoint for cutpoint|
                        (run (lambda (s n) (,run s n)))
                        (nextt (lambda (s) (,nextt s)))
                        (default-state (lambda () (,defaultname)))
-                       (cutpoint 
-                        (lambda (s) 
+                       (cutpoint
+                        (lambda (s)
                           ,(cons cutname (snoc (dellast params) 's))))
-                       (nextt-cutpoint 
-                        (lambda (s) 
-                          ,(cons 'concrete-nextt-cutpoint 
+                       (nextt-cutpoint
+                        (lambda (s)
+                          ,(cons 'concrete-nextt-cutpoint
                                  (snoc (dellast params) 's))))
-                       (steps-to-cutpoint 
-                        (lambda (s) ,(cons 'concrete-steps-to-cutpoint 
+                       (steps-to-cutpoint
+                        (lambda (s) ,(cons 'concrete-steps-to-cutpoint
                                            (snoc (dellast params) 's))))
                        (steps-to-cutpoint-tail
-                         (lambda (s i) 
+                         (lambda (s i)
                            ,(cons 'concrete-steps-to-cutpoint-tail
                                   (snoc (snoc (dellast params) 's) 'i)))))
                       (s ,(lastval params)))))
@@ -316,35 +316,35 @@ think I can do the change reliably.
          (defthm nextt-cutpoint-for-not-cutpoint
            (implies (not ,cutterm)
                     (equal ,(cons 'concrete-nextt-cutpoint params)
-                           ,(cons 'concrete-nextt-cutpoint 
-                                  (snoc (dellast params) 
+                           ,(cons 'concrete-nextt-cutpoint
+                                  (snoc (dellast params)
                                         (list nextt (lastval params))))))
            :hints (("Goal"
-                    :in-theory 
+                    :in-theory
                     (disable |nextt cutpoint for not cutpoint|)
-                   :use 
-                    ((:instance 
-                      (:functional-instance 
+                   :use
+                    ((:instance
+                      (:functional-instance
                        |nextt cutpoint for not cutpoint|
                        (run (lambda (s n) (,run s n)))
                        (nextt (lambda (s) (,nextt s)))
                        (default-state (lambda () (,defaultname)))
-                       (cutpoint 
-                        (lambda (s) 
+                       (cutpoint
+                        (lambda (s)
                           ,(cons cutname (snoc (dellast params) 's))))
-                       (nextt-cutpoint 
-                        (lambda (s) 
-                          ,(cons 'concrete-nextt-cutpoint 
+                       (nextt-cutpoint
+                        (lambda (s)
+                          ,(cons 'concrete-nextt-cutpoint
                                  (snoc (dellast params) 's))))
-                       (steps-to-cutpoint 
-                        (lambda (s) ,(cons 'concrete-steps-to-cutpoint 
+                       (steps-to-cutpoint
+                        (lambda (s) ,(cons 'concrete-steps-to-cutpoint
                                            (snoc (dellast params) 's))))
                        (steps-to-cutpoint-tail
                          (lambda (s i) ,(cons 'concrete-steps-to-cutpoint-tail
                                             (snoc (snoc (dellast params) 's) 'i)))))
                       (s ,(lastval params)))))))))
 
-      
+
       ;; Now apply symbolic simulation based on the rules above to prove the
       ;; theorem below. This needs me to open nextt, but disable
       ;; concrete-nextt-cutpoint.
@@ -375,46 +375,46 @@ think I can do the change reliably.
       ;; not be possible for these two rules to be sufficient. However, if
       ;; indeed that is necessary then it is also true that such inductive
       ;; theorems should have been proved earlier as rewrite rules in ACL2.
-      
+
       )
 
      thms
-      
+
      (list
-      
+
       `(local
         (defthm assertion-invariant-over-cutpoints
           (implies (and ,cutterm ,assertterm (not ,exitterm))
                    (let ((s ,(lastval params)))
-                     ,(cons assertname 
+                     ,(cons assertname
                             (snoc (dellast params)
-                                  (cons 'concrete-nextt-cutpoint 
+                                  (cons 'concrete-nextt-cutpoint
                                         (snoc (dellast params)
                                               (list nextt 's)))))))
           :hints ,hints))
-                   
-      
+
+
       ;; OK, so this completes all the proof obligations that the user has. The
       ;; last thing then is to define steps-to-exitpoint and prove the partial
       ;; correctness theorem by functional instantiation.
-      
+
 
       `(defun-nx ,exitsteps ,params
          (declare (xargs :normalize nil :non-executable t))
          (let ((steps ,(cons (packn (list exitsteps '-tail)) (snoc params 0)))
                (s ,(lastval params)))
            (if ,(cons exitname (snoc (dellast params) (list run 's 'steps)))
-               steps 
+               steps
              (omega))))
-      
+
       ;; Now just include the book we desire and throw in partial correctness.
-      
-      `(local 
+
+      `(local
         (include-book "partial-correctness"))
 
       ;; The job of assertion, cutpoint and nextt is done. So I disable them.
       `(local (in-theory (theory 'minimal-theory)))
-      
+
       ;; The final theorem. please dont be overawed by the number of :use
       ;; hints. These would not have been required if I were doing theorem
       ;; proving. But here now I am specifying a macro and it better be that
@@ -423,61 +423,61 @@ think I can do the change reliably.
       ;; are to be required manually.
 
       `(defthm ,(packn (list nextt '-partial-correctness))
-         (implies (and ,preterm 
-                       ,(cons exitname 
-                              (snoc (dellast params) 
+         (implies (and ,preterm
+                       ,(cons exitname
+                              (snoc (dellast params)
                                     (list run (lastval params) 'n))))
                     (let ((steps ,(cons exitsteps params)))
-                      ,(cons postname 
-                             (snoc (dellast params) 
+                      ,(cons postname
+                             (snoc (dellast params)
                                    (list run (lastval params) 'steps)))))
          :hints (("Goal"
-                  :use 
-                  ((:instance 
-                    (:functional-instance 
+                  :use
+                  ((:instance
+                    (:functional-instance
                      |partial correctness|
-                     (pre (lambda (s) 
+                     (pre (lambda (s)
                             ,(cons prename (snoc (dellast params) 's))))
-                     
-                     (cutpoint 
-                      (lambda (s) 
+
+                     (cutpoint
+                      (lambda (s)
                         ,(cons cutname (snoc (dellast params) 's))))
-                     
-                     (assertion 
-                      (lambda (s) 
-                        ,(cons assertname 
+
+                     (assertion
+                      (lambda (s)
+                        ,(cons assertname
                                (snoc (dellast params) 's))))
-                     (exitpoint 
-                      (lambda (s) 
-                        ,(cons exitname 
+                     (exitpoint
+                      (lambda (s)
+                        ,(cons exitname
                                (snoc (dellast params) 's))))
-                     (steps-to-exitpoint 
-                      (lambda (s) 
+                     (steps-to-exitpoint
+                      (lambda (s)
                         ,(cons exitsteps
                                (snoc (dellast params) 's))))
-                     (steps-to-cutpoint 
+                     (steps-to-cutpoint
                       (lambda (s)
-                        ,(cons 'concrete-steps-to-cutpoint 
+                        ,(cons 'concrete-steps-to-cutpoint
                                (snoc (dellast params) 's))))
-                     
-                     (steps-to-cutpoint-tail 
-                      (lambda (s i) 
-                        ,(cons 'concrete-steps-to-cutpoint-tail 
+
+                     (steps-to-cutpoint-tail
+                      (lambda (s i)
+                        ,(cons 'concrete-steps-to-cutpoint-tail
                                (snoc (snoc (dellast params) 's) 'i))))
-                     
-                     
+
+
                      (steps-to-exitpoint-tail
-                      (lambda (s i) 
+                      (lambda (s i)
                         ,(cons (packn (list exitsteps '-tail))
                                (snoc (snoc (dellast params) 's) 'i))))
-                     
+
                      (nextt-cutpoint
-                      (lambda (s) 
-                        ,(cons 'concrete-nextt-cutpoint 
+                      (lambda (s)
+                        ,(cons 'concrete-nextt-cutpoint
                                (snoc (dellast params) 's))))
-                     (post 
-                      (lambda (s) 
-                        ,(cons postname 
+                     (post
+                      (lambda (s)
+                        ,(cons postname
                                (snoc (dellast params) 's))))
                      (default-state (lambda () (,defaultname)))
                      (nextt (lambda (s) (,nextt s)))
@@ -504,14 +504,14 @@ think I can do the change reliably.
                  ("Subgoal 7"
                   :use ((:instance concrete-steps-to-cutpoint-tail-def
                                    (,(lastval params) s))))
-                        
+
                  ("Subgoal 8"
                   :use ((:instance assertion-invariant-over-cutpoints
                                    (,(lastval params) s))))
                  ("Subgoal 9"
                   :in-theory (enable ,run))
                  ("Subgoal 10"
-                  :use ((:instance 
+                  :use ((:instance
                          (:definition ,(packn (list exitsteps '-tail-def)))
                          (,(lastval params) s))))
                  ("Subgoal 11"
@@ -524,8 +524,8 @@ think I can do the change reliably.
 ;; are in the inclusion of the measures book, the proofs of invariance of
 ;; assertion, etc. I document them when I reach them.
 
-(defun defsimulate-total (nextt run arity measure cutname exitname 
-                                 defaultname exitsteps 
+(defun defsimulate-total (nextt run arity measure cutname exitname
+                                 defaultname exitsteps
                                  prename postname assertname define-run? hints
                                  thms)
 
@@ -533,7 +533,7 @@ think I can do the change reliably.
   (let* (;; I do a little trick with run. If define-run? is T then run is the
          ;; name of the function run, otherwise run is simply runn irrespective
          ;; of what the user has written. Maybe this is a trivial deal.
-         (run (if define-run? 
+         (run (if define-run?
                   (prog2$ (cw "You have decided to call this macro with ~
                                :define-run? parameter set to T. We will define ~
                                a function called runn and prove the ~
@@ -543,7 +543,7 @@ think I can do the change reliably.
                                this macro you need to prove that your run is ~
                                equal to runn. That should be pretty easy to ~
                                prove by induction based on your run. Good ~
-                               luck!~|") 
+                               luck!~|")
                           'runn)
                 (prog2$ (cw "You have decided to use your own run function. ~
                              Please note that we will assume that your ~
@@ -552,14 +552,14 @@ think I can do the change reliably.
                              defined it, for example if your function is <run ~
                              n s>, please either abort the macro and redefine ~
                              it this way or call our macro with :define-run? ~
-                             t. Good luck!~|") 
+                             t. Good luck!~|")
                         run)))
 
          ;; Ok now create the formals for this macro. I will always refer to
          ;; the variables in this macro as (s0 s1 s2 ....) so that I have a
          ;; good handle of what it is that I am doing.
          (params (create-variables arity 0))
-           
+
            ;; A few shortcuts I will probably use often. For some of these
            ;; functions I create terms like (pre s0 s1)
            (preterm (cons prename params))
@@ -568,8 +568,8 @@ think I can do the change reliably.
            (exitterm (cons exitname params))
            (postterm (cons postname params)))
 
-    (append 
-     
+    (append
+
      ;; First the run function definition to be installed in ACL2. This is only
      ;; in case of :define-run?
 
@@ -586,23 +586,23 @@ think I can do the change reliably.
                another recursive version of ~s0~ and inductively prove that to ~
                be equal to the one we generate.~|"
               run)
-          
+
           (list
 
-           `(defun-nx ,run (,(lastval params) n) 
+           `(defun-nx ,run (,(lastval params) n)
               ;; I add the :non-executable argument in the declare because nextt
               ;; might otherwise have stobjs or something like that and I dont
               ;; want to deal with them.
-              (if (zp n) ,(lastval params) 
+              (if (zp n) ,(lastval params)
                 (,run (,nextt ,(lastval params)) (1- n))))))
-       nil) 
-     
+       nil)
+
      (list
       ;; Let us get the easy theorems through first. These theorems should go
       ;; through rather easily. I have to think about hint settings later, but I
-      ;; think they might not be necessary. 
+      ;; think they might not be necessary.
 
-       
+
       `(local (deftheory oldth (current-theory :here)))
 
       ;; These theorems are the proof obligations for partial correctness. The
@@ -615,41 +615,41 @@ think I can do the change reliably.
           (not ,(cons cutname (snoc (dellast params)
                                     (list defaultname))))))
 
-      `(local 
+      `(local
         (defthm pre-implies-cutpoint
           (implies ,preterm ,cutterm)))
-      
+
       `(local
         (defthm exitpoint-is-cutpoint
           (implies ,exitterm  ,cutterm)))
-      
+
       `(local
         (defthm pre-implies-assertion
           (implies ,preterm ,assertterm)))
-      
+
       `(local
         (defthm assertion-implies-post
           (implies (and ,assertterm ,exitterm) ,postterm)))
 
       ;; For total correctness I add the new thing about measure.
 
-      `(local 
+      `(local
         (defthm measure-is-ordinal
           (o-p ,(cons measure params))))
-      
+
       ;; To get the difficult one, I would first define the tail-recursive
-      ;; steps-to-cutpoint function. 
+      ;; steps-to-cutpoint function.
 
       ;; There seems to be some problem with defpun when the function next is
       ;; enabled. So disable it.
 
       `(local (in-theory (disable ,nextt)))
 
-      `(local 
+      `(local
         (defpun concrete-steps-to-cutpoint-tail ,(snoc params 'i)
           (if ,cutterm
               i
-            ,(cons 'concrete-steps-to-cutpoint-tail 
+            ,(cons 'concrete-steps-to-cutpoint-tail
                    (snoc (snoc (dellast params)
                                (list nextt (lastval params)))
                                '(1+ i))))))
@@ -660,34 +660,34 @@ think I can do the change reliably.
       `(defpun ,(packn (list exitsteps '-tail)) ,(snoc params 'i)
          (if ,exitterm
              i
-           ,(cons (packn (list exitsteps '-tail)) 
+           ,(cons (packn (list exitsteps '-tail))
                    (snoc (snoc (dellast params)
                                (list nextt (lastval params)))
                          '(1+ i)))))
-      
-      
+
+
       `(local
         (defun-nx concrete-steps-to-cutpoint ,params
           (declare (xargs :normalize nil :non-executable t))
           (let ((steps ,(cons 'concrete-steps-to-cutpoint-tail (snoc params 0)))
                 (s ,(lastval params)))
             (if ,(cons cutname (snoc (dellast params) (list run 's 'steps)))
-                steps 
+                steps
               (omega)))))
-      
+
       ;; Now we define the nextt-cutpoint function. All this is automatic, since
       ;; no user input should be required.
-      
-      `(local 
+
+      `(local
         (defun-nx concrete-nextt-cutpoint ,params
           (declare (xargs :normalize nil :non-executable t))
           (let* ((s ,(lastval params))
-                 (steps ,(cons 'concrete-steps-to-cutpoint 
+                 (steps ,(cons 'concrete-steps-to-cutpoint
                               (snoc (dellast params) 's))))
             (if (natp steps)
                 (,run s steps)
               (,defaultname)))))
-      
+
       ;; Ok, now I need to prove some stuff. The first thing I will prove is
       ;; the symbolic simulation rules for nextt-cutpoint. This would be useful
       ;; to then prove that assertion is invariant over cutpoints. But I have
@@ -695,32 +695,32 @@ think I can do the change reliably.
       ;; include the book and functionally instantiate the theorem. No property
       ;; of concrete step or default should be required, and hence I am fine
       ;; with just disabling stuff.
-      
+
       `(local (in-theory (disable ,nextt ,defaultname (,defaultname))))
-      
+
       `(local
         (encapsulate
          ()
-         
+
          ;; How do we prove the symbolic simulation theorems? Well, just a
          ;; simple functional instantiation of the previous theorems we have
          ;; proved.
-         
+
          ;; Note: Why do I do this within another encapsulate? Well there are
          ;; name clashes between partial/total correctness book and the
          ;; assertion book (for example the name of the function run. Rather
          ;; than write something else for run in one of those I simply include
          ;; the assertions book locally.
-         
+
          (local (include-book "assertions"))
-         
+
          ;; I should only need the theorems about cutpoint and assertion that I
          ;; have already proved. So disable them. In fact I disable everything
          ;; since I am in the middle of a macro and I am afraid that things can
          ;; cause trouble by interfering with my plan of proof.
 
          (local (in-theory (theory 'minimal-theory)))
-         
+
          ;; These are theorems that should be trivial to prove. But I dont want
          ;; to needlessly risk symbolic simulation on the concrete
          ;; machine. Rather I know that I have already proved the generic
@@ -731,27 +731,27 @@ think I can do the change reliably.
                     (equal ,(cons 'concrete-nextt-cutpoint params)
                            ,(lastval params)))
            :hints (("Goal"
-                    :in-theory 
+                    :in-theory
                     (disable |nextt cutpoint for cutpoint|)
-                   :use 
-                    ((:instance 
-                      (:functional-instance 
+                   :use
+                    ((:instance
+                      (:functional-instance
                        |nextt cutpoint for cutpoint|
                        (run (lambda (s n) (,run s n)))
                        (nextt (lambda (s) (,nextt s)))
                        (default-state (lambda () (,defaultname)))
-                       (cutpoint 
-                        (lambda (s) 
+                       (cutpoint
+                        (lambda (s)
                           ,(cons cutname (snoc (dellast params) 's))))
-                       (nextt-cutpoint 
-                        (lambda (s) 
-                          ,(cons 'concrete-nextt-cutpoint 
+                       (nextt-cutpoint
+                        (lambda (s)
+                          ,(cons 'concrete-nextt-cutpoint
                                  (snoc (dellast params) 's))))
-                       (steps-to-cutpoint 
-                        (lambda (s) ,(cons 'concrete-steps-to-cutpoint 
+                       (steps-to-cutpoint
+                        (lambda (s) ,(cons 'concrete-steps-to-cutpoint
                                            (snoc (dellast params) 's))))
                        (steps-to-cutpoint-tail
-                         (lambda (s i) 
+                         (lambda (s i)
                            ,(cons 'concrete-steps-to-cutpoint-tail
                                   (snoc (snoc (dellast params) 's) 'i)))))
                       (s ,(lastval params)))))
@@ -777,40 +777,40 @@ think I can do the change reliably.
          (defthm nextt-cutpoint-for-not-cutpoint
            (implies (not ,cutterm)
                     (equal ,(cons 'concrete-nextt-cutpoint params)
-                           ,(cons 'concrete-nextt-cutpoint 
-                                  (snoc (dellast params) 
+                           ,(cons 'concrete-nextt-cutpoint
+                                  (snoc (dellast params)
                                         (list nextt (lastval params))))))
            :hints (("Goal"
-                    :in-theory 
+                    :in-theory
                     (disable |nextt cutpoint for not cutpoint|)
-                   :use 
-                    ((:instance 
-                      (:functional-instance 
+                   :use
+                    ((:instance
+                      (:functional-instance
                        |nextt cutpoint for not cutpoint|
                        (run (lambda (s n) (,run s n)))
                        (nextt (lambda (s) (,nextt s)))
                        (default-state (lambda () (,defaultname)))
-                       (cutpoint 
-                        (lambda (s) 
+                       (cutpoint
+                        (lambda (s)
                           ,(cons cutname (snoc (dellast params) 's))))
-                       (nextt-cutpoint 
-                        (lambda (s) 
-                          ,(cons 'concrete-nextt-cutpoint 
+                       (nextt-cutpoint
+                        (lambda (s)
+                          ,(cons 'concrete-nextt-cutpoint
                                  (snoc (dellast params) 's))))
-                       (steps-to-cutpoint 
-                        (lambda (s) ,(cons 'concrete-steps-to-cutpoint 
+                       (steps-to-cutpoint
+                        (lambda (s) ,(cons 'concrete-steps-to-cutpoint
                                            (snoc (dellast params) 's))))
                        (steps-to-cutpoint-tail
                          (lambda (s i) ,(cons 'concrete-steps-to-cutpoint-tail
-                                            (snoc (snoc (dellast params) 's) 
+                                            (snoc (snoc (dellast params) 's)
                                                   'i)))))
                       (s ,(lastval params)))))))))
 
-      
+
       ;; Now apply symbolic simulation based on the rules above to prove the
       ;; theorem below. This needs me to open nextt, but disable
       ;; concrete-nextt-cutpoint.
-      
+
        `(local (in-theory (union-theories (theory 'oldth)
                                          '(nextt-cutpoint-for-cutpoint
                                            nextt-cutpoint-for-not-cutpoint))))
@@ -842,20 +842,20 @@ think I can do the change reliably.
 
 
        )
-     
+
      thms
-      
+
      (list
      `(local
        (defthm total-correctness-proof-obligation
-         (implies (and ,cutterm 
-                       ,assertterm 
+         (implies (and ,cutterm
+                       ,assertterm
                        (not ,exitterm)
                        (let ((s ,(lastval params)))
-                         (equal ns 
-                                ,(cons 
-                                  'concrete-nextt-cutpoint 
-                                  (snoc (dellast params) 
+                         (equal ns
+                                ,(cons
+                                  'concrete-nextt-cutpoint
+                                  (snoc (dellast params)
                                       (list nextt 's))))))
                   (and ,(cons assertname
                               (snoc (dellast params) 'ns))
@@ -878,15 +878,15 @@ think I can do the change reliably.
        (defthm assertion-invariant-over-cutpoints
          (implies (and ,cutterm ,assertterm (not ,exitterm))
                   (let ((s ,(lastval params)))
-                    ,(cons assertname 
+                    ,(cons assertname
                            (snoc (dellast params)
-                                 (cons 'concrete-nextt-cutpoint 
+                                 (cons 'concrete-nextt-cutpoint
                                        (snoc (dellast params)
                                              (list nextt 's)))))))
          :hints (("Goal"
                   :in-theory (theory 'minimal-theory)
                   :use ((:instance total-correctness-proof-obligation
-                                   (ns ,(cons 'concrete-nextt-cutpoint 
+                                   (ns ,(cons 'concrete-nextt-cutpoint
                                               (snoc (dellast params)
                                                    (list nextt (lastval
                                                                params)))))))))))
@@ -895,15 +895,15 @@ think I can do the change reliably.
        (defthm nextt-cutpoint-is-cutpoint
          (implies (and ,cutterm ,assertterm (not ,exitterm))
                   (let ((s ,(lastval params)))
-                    ,(cons cutname 
+                    ,(cons cutname
                            (snoc (dellast params)
-                                 (cons 'concrete-nextt-cutpoint 
+                                 (cons 'concrete-nextt-cutpoint
                                        (snoc (dellast params)
                                              (list nextt 's)))))))
          :hints (("Goal"
                   :in-theory (theory 'minimal-theory)
                   :use ((:instance total-correctness-proof-obligation
-                                   (ns ,(cons 'concrete-nextt-cutpoint 
+                                   (ns ,(cons 'concrete-nextt-cutpoint
                                               (snoc (dellast params)
                                                    (list nextt (lastval params)))))))))))
 
@@ -911,63 +911,63 @@ think I can do the change reliably.
        (defthm cutpoint-measure-decreases
          (implies (and ,cutterm ,assertterm (not ,exitterm))
                   (let ((s ,(lastval params)))
-                    (o< ,(cons measure 
-                               (snoc (dellast params) 
-                                     (cons 'concrete-nextt-cutpoint 
+                    (o< ,(cons measure
+                               (snoc (dellast params)
+                                     (cons 'concrete-nextt-cutpoint
                                            (snoc (dellast params)
                                                  (list nextt 's)))))
                         ,(cons measure (snoc (dellast params) 's)))))
          :hints (("Goal"
                   :in-theory (theory 'minimal-theory)
                   :use ((:instance total-correctness-proof-obligation
-                                   (ns ,(cons 'concrete-nextt-cutpoint 
+                                   (ns ,(cons 'concrete-nextt-cutpoint
                                               (snoc (dellast params)
                                                     (list nextt (lastval params)))))))))))
-     
+
      ;; OK two down, one to go. For this last one, which is just to say that
      ;; the nextt-cutpoint is natp, I am really doing the simple matter of
-     ;; instantiating the corresponding generic theorem. 
+     ;; instantiating the corresponding generic theorem.
 
      `(local
-       (encapsulate 
+       (encapsulate
         ()
 
-        (local (include-book "measures" :dir :system))
+        (local (include-book "measures"))
 
         (local (in-theory (theory 'minimal-theory)))
 
         (defthm some-cutpoint-is-reachable
           (implies (and ,cutterm ,assertterm (not ,exitterm))
                    (let ((s ,(lastval params)))
-                     (natp ,(cons 'concrete-steps-to-cutpoint 
-                                  (snoc (dellast params) 
+                     (natp ,(cons 'concrete-steps-to-cutpoint
+                                  (snoc (dellast params)
                                         (list nextt 's))))))
           :hints (("Goal"
-                   :use 
-                   ((:instance 
-                     (:functional-instance 
+                   :use
+                   ((:instance
+                     (:functional-instance
                       |some cutpoint is reachable|
-                       (run (lambda (s n) (,run s n))) 
+                       (run (lambda (s n) (,run s n)))
                        (nextt (lambda (s) (,nextt s)))
                        (default-state (lambda () (,defaultname)))
-                       (assertion 
+                       (assertion
                         (lambda (s)
                           ,(cons assertname (snoc (dellast params) 's))))
-                       (exitpoint 
-                        (lambda (s) 
+                       (exitpoint
+                        (lambda (s)
                           ,(cons exitname (snoc (dellast params) 's))))
-                       (cutpoint 
-                        (lambda (s) 
+                       (cutpoint
+                        (lambda (s)
                           ,(cons cutname (snoc (dellast params) 's))))
-                       (nextt-cutpoint 
-                        (lambda (s) 
-                          ,(cons 'concrete-nextt-cutpoint 
+                       (nextt-cutpoint
+                        (lambda (s)
+                          ,(cons 'concrete-nextt-cutpoint
                                  (snoc (dellast params) 's))))
-                       (steps-to-cutpoint 
-                        (lambda (s) ,(cons 'concrete-steps-to-cutpoint 
+                       (steps-to-cutpoint
+                        (lambda (s) ,(cons 'concrete-steps-to-cutpoint
                                            (snoc (dellast params) 's))))
                        (steps-to-cutpoint-tail
-                         (lambda (s i) 
+                         (lambda (s i)
                            ,(cons 'concrete-steps-to-cutpoint-tail
                                   (snoc (snoc (dellast params) 's) 'i)))))
                       (s ,(lastval params)))))
@@ -988,29 +988,29 @@ think I can do the change reliably.
                   ("Subgoal 6"
                    :in-theory (enable ,run))))))
 
-        
+
 
       ;; OK, so this completes all the proof obligations that the user has. The
       ;; last thing then is to define steps-to-exitpoint and prove the partial
       ;; correctness theorem by functional instantiation.
-      
+
 
       `(defun-nx ,exitsteps ,params
          (declare (xargs :normalize nil :non-executable t))
          (let ((steps ,(cons (packn (list exitsteps '-tail)) (snoc params 0)))
                (s ,(lastval params)))
            (if ,(cons exitname (snoc (dellast params) (list run 's 'steps)))
-               steps 
+               steps
              (omega))))
-      
+
       ;; Now just include the book we desire and throw in total
       ;; correctness. Finally I can make things minimal-theory as well.
-      
+
       `(local (in-theory (theory 'minimal-theory)))
 
-      `(local 
-        (include-book "total-correctness" :dir :system))
-      
+      `(local
+        (include-book "total-correctness"))
+
       ;; The final theorem. please dont be overawed by the number of :use
       ;; hints. These would not have been required if I were doing theorem
       ;; proving. But here now I am specifying a macro and it better be that
@@ -1019,60 +1019,60 @@ think I can do the change reliably.
       ;; are to be required manually.
 
       `(defthm ,(packn (list nextt '-total-correctness))
-         (implies ,preterm 
+         (implies ,preterm
                     (let ((steps ,(cons exitsteps params)))
-                      ,(cons postname 
-                             (snoc (dellast params) 
+                      ,(cons postname
+                             (snoc (dellast params)
                                    (list run (lastval params) 'steps)))))
          :hints (("Goal"
-                  :use 
-                  ((:instance 
-                    (:functional-instance 
+                  :use
+                  ((:instance
+                    (:functional-instance
                      |total correctness|
-                     (pre (lambda (s) 
+                     (pre (lambda (s)
                             ,(cons prename (snoc (dellast params) 's))))
-                     
-                     (cutpoint 
-                      (lambda (s) 
+
+                     (cutpoint
+                      (lambda (s)
                         ,(cons cutname (snoc (dellast params) 's))))
                      (cutpoint-measure
                       (lambda (s)
                         ,(cons measure (snoc (dellast params) 's))))
-                     (assertion 
-                      (lambda (s) 
-                        ,(cons assertname 
+                     (assertion
+                      (lambda (s)
+                        ,(cons assertname
                                (snoc (dellast params) 's))))
-                     (exitpoint 
-                      (lambda (s) 
-                        ,(cons exitname 
+                     (exitpoint
+                      (lambda (s)
+                        ,(cons exitname
                                (snoc (dellast params) 's))))
-                     (steps-to-exitpoint 
-                      (lambda (s) 
+                     (steps-to-exitpoint
+                      (lambda (s)
                         ,(cons exitsteps
                                (snoc (dellast params) 's))))
-                     (steps-to-cutpoint 
+                     (steps-to-cutpoint
                       (lambda (s)
-                        ,(cons 'concrete-steps-to-cutpoint 
+                        ,(cons 'concrete-steps-to-cutpoint
                                (snoc (dellast params) 's))))
-                     
-                     (steps-to-cutpoint-tail 
-                      (lambda (s i) 
-                        ,(cons 'concrete-steps-to-cutpoint-tail 
+
+                     (steps-to-cutpoint-tail
+                      (lambda (s i)
+                        ,(cons 'concrete-steps-to-cutpoint-tail
                                (snoc (snoc (dellast params) 's) 'i))))
-                     
-                     
+
+
                      (steps-to-exitpoint-tail
-                      (lambda (s i) 
+                      (lambda (s i)
                         ,(cons (packn (list exitsteps '-tail))
                                (snoc (snoc (dellast params) 's) 'i))))
-                     
+
                      (nextt-cutpoint
-                      (lambda (s) 
-                        ,(cons 'concrete-nextt-cutpoint 
+                      (lambda (s)
+                        ,(cons 'concrete-nextt-cutpoint
                                (snoc (dellast params) 's))))
-                     (post 
-                      (lambda (s) 
-                        ,(cons postname 
+                     (post
+                      (lambda (s)
+                        ,(cons postname
                                (snoc (dellast params) 's))))
                      (default-state (lambda () (,defaultname)))
                      (nextt (lambda (s) (,nextt s)))
@@ -1099,7 +1099,7 @@ think I can do the change reliably.
                  ("Subgoal 7"
                   :use ((:instance concrete-steps-to-cutpoint-tail-def
                                    (,(lastval params) s))))
-                        
+
                  ("Subgoal 8"
                   :use ((:instance assertion-invariant-over-cutpoints
                                    (,(lastval params) s))))
@@ -1118,7 +1118,7 @@ think I can do the change reliably.
                   :use ((:instance (:definition concrete-steps-to-cutpoint)
                                    (,(lastval params) s))))
                  ("Subgoal 13"
-                  :use ((:instance 
+                  :use ((:instance
                          (:definition ,(packn (list exitsteps '-tail-def)))
                          (,(lastval params) s))))
                  ("Subgoal 14"
@@ -1130,41 +1130,41 @@ think I can do the change reliably.
 (defun defsimulate-fn (nextt arity mode measure run cutpoint exitpoint default
                             exitsteps pre post assertion define-run? hints thms)
   (declare (xargs :mode :program
-                  :guard 
+                  :guard
                   (and (symbolp exitsteps)
                        (symbolp nextt)
                        (or (eq mode :partial)
                            (eq mode :total)))))
 
   (if (eq mode :partial)
-      `(encapsulate 
+      `(encapsulate
         ()
-        ,@(defsimulate-partial 
-            nextt run arity 
+        ,@(defsimulate-partial
+            nextt run arity
             cutpoint exitpoint default exitsteps pre post
             assertion define-run? hints thms))
 
-    ;; Total correctness 
-    `(encapsulate 
+    ;; Total correctness
+    `(encapsulate
         ()
-        ,@(defsimulate-total 
+        ,@(defsimulate-total
             nextt run arity measure
             cutpoint exitpoint default exitsteps pre post
             assertion define-run? hints thms))))
-      
-(defmacro defsimulate 
+
+(defmacro defsimulate
   (nextt
    &key
    ;; Partial opr total correctness?
    (mode ':partial)
-   
+
    ;; arity is the arity of the functions precondition, postcondition,
    ;; assertion, cutpoint, exitpoint, etc. These functions must each have the
    ;; same arity and the arity must be specified here. By default (if all of
    ;; the above are unary) the arity can be left unspecified and is taken to be
    ;; 1.
    (arity '1)
-   
+
    ;; I am not sure if this parameter is necessary. I often while using this
    ;; macro was forgetting to define the function run, and hence getting error
    ;; and so I put this keyword in so that I was testing with it on. If this is
@@ -1191,7 +1191,7 @@ think I can do the change reliably.
    (run 'runn)
 
    ;; This is the steps-to-exitpoint function that I define. If nothing is
-   ;; provided then I will just take the default name 'exitsteps. 
+   ;; provided then I will just take the default name 'exitsteps.
    (exitsteps 'exitsteps)
 
    ;; Now the other functions.
@@ -1206,14 +1206,14 @@ think I can do the change reliably.
    ;; control the theorems especially during the debugging stages.
    (hints 'nil)
    (thms 'nil))
-  
+
   (defsimulate-fn nextt arity mode measure run cutpoint exitpoint default
     exitsteps pre post assertion define-run? hints thms))
 
-         
+
 
 ;; Testing: We now consider defining a "concrete version" of the functions step,
-;; assertion, cutpoint, etc. and see how the macro is working. 
+;; assertion, cutpoint, etc. and see how the macro is working.
 
 ;; Note: I used to comment out all my testing. But I have since realized that
 ;; if I submit the book to Matt then I need to have my testing such that books
@@ -1228,25 +1228,25 @@ think I can do the change reliably.
 ;; We define the following functions. For this  first test I am lazy and will
 ;; simply use the system default names.
 
-;; 
+;;
 
-(encapsulate 
+(encapsulate
  ()
- 
+
  ;; First define the functions that you need.
 
  (local
   (defun stepp (a) (declare (xargs :normalize nil)) a) )
  (local
   (defun defaultstate () nil))
- 
+
  (local
   (defun precondition (a) (not (equal a nil))))
 
  (local
   (defun postcondition (a) (declare (ignore a)) t))
 
- (local 
+ (local
   (defun cutpointp (a) (not (equal a nil))))
  (local
   (defun assertions (a) (declare (ignore a)) t))
@@ -1262,7 +1262,7 @@ think I can do the change reliably.
 ;; Another example. This uses all the keywords and further allows more than one
 ;; argument.
 
-(encapsulate 
+(encapsulate
   nil
 
   (local (defun stepp2 (a) (declare (xargs :normalize nil)) a))
@@ -1276,10 +1276,10 @@ think I can do the change reliably.
   (local (defun runf (b k) (if (zp k) b (runf (stepp2 b) (1- k)))))
 
   (local
-   (defsimulate stepp2 
+   (defsimulate stepp2
      :default defaultstate2
-     :cutpoint cutpointp2 
-     :assertion assertions2 
+     :cutpoint cutpointp2
+     :assertion assertions2
      :pre precondition2
      :exitpoint exitpointp2
      :exitsteps exitsteps2
@@ -1294,9 +1294,9 @@ think I can do the change reliably.
 ;; simply use the system default names.
 
 
-(encapsulate 
+(encapsulate
  ()
- 
+
  ;; First define the functions that you need.
 
  (local (defun stepp (a) (declare (xargs :normalize nil)) a) )
@@ -1315,7 +1315,7 @@ think I can do the change reliably.
 ;; Another example. This uses all the keywords and further allows more than one
 ;; argument.
 
-(encapsulate 
+(encapsulate
   nil
 
   (local (defun stepp2 (a) (declare (xargs :normalize nil)) a))
@@ -1330,11 +1330,11 @@ think I can do the change reliably.
   (local (defun runf (b k) (if (zp k) b (runf (stepp2 b) (1- k)))))
 
   (local
-   (defsimulate stepp2 
+   (defsimulate stepp2
      :default defaultstate2
      :mode :total
-     :cutpoint cutpointp2 
-     :assertion assertions2 
+     :cutpoint cutpointp2
+     :assertion assertions2
      :pre precondition2
      :exitpoint exitpointp2
      :measure measure2
