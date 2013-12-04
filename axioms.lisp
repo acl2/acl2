@@ -11920,8 +11920,14 @@
   one gains familiarity with ACL2.~/~/")
 
 (defconst *valid-output-names*
-  '(error warning warning! observation prove proof-checker event expansion
-          summary proof-tree))
+
+; Warning: this list should include all keys of the alist
+; *window-descriptions*.  Also: If you change this list, also consider changing
+; the value of INHIBIT in distributed books files Makefile-generic and
+; build/make_cert.
+
+  '(error warning warning! observation prove proof-checker event summary
+          history proof-tree))
 
 ; Set-difference$
 

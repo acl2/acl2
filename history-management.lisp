@@ -7571,7 +7571,7 @@
      (t (make-ldds-command-block1 wrld1 cmd-ldd 1 fullp nil ens wrld ans)))))
 
 (defun pcb-pcb!-fn (cd fullp state)
-  (io? temporary nil (mv erp val state)
+  (io? history nil (mv erp val state)
        (cd fullp)
        (let ((wrld (w state))
              (ens (ens state)))
@@ -7610,7 +7610,7 @@
   (list 'pcb!-fn cd 'state))
 
 (defun pc-fn (cd state)
-  (io? temporary nil (mv erp val state)
+  (io? history nil (mv erp val state)
        (cd)
        (let ((wrld (w state)))
          (er-let* ((cmd-wrld (er-decode-cd cd wrld :pc state)))
@@ -7759,7 +7759,7 @@
 ; irrelevant).  We always print the most recent command here, possibly elided
 ; into the cd1-cd2 region.  We mark the end points of the region if markp is t.
 
-  (io? temporary nil (mv erp val state)
+  (io? history nil (mv erp val state)
        (cd1 markp cd2)
        (let ((wrld (w state))
              (ens (ens state)))
@@ -8035,7 +8035,7 @@
                        (value :invisible))))))
 
 (defun pe-fn (logical-name state)
-  (io? temporary nil (mv erp val state)
+  (io? history nil (mv erp val state)
        (logical-name)
        (let ((wrld (w state))
              (channel (standard-co state)))

@@ -2414,9 +2414,7 @@
           pre-defaults-table
           (table-alist 'acl2-defaults-table (w state))
           state)
-         (io? event nil (mv erp val state)
-              ()
-              (pcs-fn :x :x nil state))
+         (pcs-fn :x :x nil state)
          (value :invisible)))))))
 
 (defun ubt-ubu-fn (kwd cd state)
@@ -21490,6 +21488,8 @@
 ; Slightly improved error message for illegal rewrite rules, following feedback
 ; from David Rager.
 
+; Removed EXPANSION from *valid-output-names* (it was not used).
+
   :doc
   ":Doc-Section release-notes
 
@@ -22448,7 +22448,7 @@
 
 (defun puff-report (caller new-cd1 new-cd2 cd state)
   (cond ((eql new-cd1 (1+ new-cd2))
-         (pprogn (io? temporary nil state
+         (pprogn (io? history nil state
                       (caller cd)
                       (fms "Note: ~x0 is complete, but no events were ~
                             executed under the given command descriptor, ~
