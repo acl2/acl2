@@ -11225,18 +11225,60 @@
                                    (cons (caar alist)
                                          (cons (cdar alist) ans))))))
 
-(defun loop-stopper-alist-p (x wrld)
+(defun eliminate-macro-aliases (lst macro-aliases wrld)
+
+; Returns (mv flg lst), where flg is nil if lst is unchanged, :error if there
+; is an error (some element is neither a function symbol nor a macro aliases)
+; -- in which case lst is a string giving a reason for the error after "but
+; <original_list> " -- else :changed if there is no error but at least one
+; macro alias was found.
+
+  (cond ((atom lst)
+         (cond ((null lst) (mv nil nil))
+               (t (mv :error "does not end in nil"))))
+        (t (mv-let (flg rst)
+                   (eliminate-macro-aliases (cdr lst) macro-aliases wrld)
+                   (cond ((eq flg :error)
+                          (mv :error rst))
+                         (t (let* ((next (car lst))
+                                   (fn (deref-macro-name next macro-aliases)))
+                              (cond ((not (and (symbolp fn)
+                                               (function-symbolp fn wrld)))
+                                     (mv :error
+                                         (msg "contains ~x0"
+                                              next)))
+                                    ((or (eq flg :changed)
+                                         (not (eq next fn)))
+                                     (mv :changed (cons fn rst)))
+                                    (t (mv nil lst))))))))))
+
+(defun fix-loop-stopper-alist (x macro-aliases wrld)
+
+; Returns (mv flg x').  If x is a valid loop-stopper alist then flg is flg0 and
+; x' is x.  If x is valid except that some symbols that are expected to be
+; function symbols are actually macro aliases, then flg is t and x' is the
+; result of replacing each such macro aliases by the corresponding function.
+; Otherwise flg is :error.
+
   (cond
-   ((consp x)
-    (and (true-listp (car x))
-         (<= 2 (length (car x)))
-         (legal-variablep (caar x))
-         (legal-variablep (cadar x))
-         (not (eq (caar x) (cadar x)))
-         (all-function-symbolps (cddar x) wrld)
-         (loop-stopper-alist-p (cdr x) wrld)))
-   (t
-    (eq x nil))))
+   ((null x) (mv nil nil))
+   ((atom x) (mv :error nil))
+   ((not (and (true-listp (car x))
+              (<= 2 (length (car x)))
+              (legal-variablep (caar x))
+              (legal-variablep (cadar x))
+              (not (eq (caar x) (cadar x)))))
+    (mv :error nil))
+   (t (mv-let (flg1 fns)
+              (eliminate-macro-aliases (cddar x) macro-aliases wrld)
+              (cond ((eq flg1 :error) (mv :error nil))
+                    (t (mv-let
+                        (flg2 rest)
+                        (fix-loop-stopper-alist (cdr x) macro-aliases wrld)
+                        (cond (flg1 (mv t (cons (list* (caar x) (cadar x) fns)
+                                                rest)))
+                              (flg2 (mv t (cons (car x) rest)))
+                              (t (mv nil x))))))))))
 
 (defun guess-controller-alist-for-definition-rule (names formals body ctx wrld
                                                          state)
@@ -11314,33 +11356,6 @@
          (backchain-limit-listp (cdr lst)))
         (t
          nil)))
-
-(defun eliminate-macro-aliases (lst macro-aliases wrld)
-
-; Returns (mv flg lst), where flg is nil if lst is unchanged, :error if there
-; is an error (some element is neither a function symbol nor a macro aliases)
-; -- in which case lst is a string giving a reason for the error after "but
-; <original_list> " -- else :changed if there is no error but at least one
-; macro alias was found.
-
-  (cond ((atom lst)
-         (cond ((null lst) (mv nil nil))
-               (t (mv :error "does not end in nil"))))
-        (t (mv-let (flg rst)
-                   (eliminate-macro-aliases (cdr lst) macro-aliases wrld)
-                   (cond ((eq flg :error)
-                          (mv :error rst))
-                         (t (let* ((next (car lst))
-                                   (fn (deref-macro-name next macro-aliases)))
-                              (cond ((not (and (symbolp fn)
-                                               (function-symbolp fn wrld)))
-                                     (mv :error
-                                         (msg "contains ~x0"
-                                              next)))
-                                    ((or (eq flg :changed)
-                                         (not (eq next fn)))
-                                     (mv :changed (cons fn rst)))
-                                    (t (mv nil lst))))))))))
 
 (defun translate-rule-class-alist (token alist seen corollary name x ctx ens
                                          wrld state)
@@ -11595,9 +11610,9 @@
                    (cond
                     ((assoc-eq :HINTS seen)
                      (er soft ctx
-                         "It is illegal to supply both :HINTS and :INSTRUCTIONS ~
-                       in a rule class.  Hence, ~x0 is illegal.  See :DOC ~
-                       rule-classes."
+                         "It is illegal to supply both :HINTS and ~
+                          :INSTRUCTIONS in a rule class.  Hence, ~x0 is ~
+                          illegal.  See :DOC rule-classes."
                          x))
                     (t
                      (er-let* ((instrs (if assumep
@@ -11614,28 +11629,28 @@
                     ((eq token :FORWARD-CHAINING)
                      (er soft ctx
                          "The :FORWARD-CHAINING rule class may specify ~
-                       :TRIGGER-TERMS but may not specify :TRIGGER-FNS.  ~
-                       Thus, ~x0 is illegal.  See :DOC forward-chaining and ~
-                       :DOC meta."
+                          :TRIGGER-TERMS but may not specify :TRIGGER-FNS.  ~
+                          Thus, ~x0 is illegal.  See :DOC forward-chaining ~
+                          and :DOC meta."
                          x))
                     ((not (eq token :META))
                      (er soft ctx
-                         ":TRIGGER-FNS can only be specified for :META rules.  ~
-                       Thus, ~x0 is illegal.  See :DOC ~@1."
+                         ":TRIGGER-FNS can only be specified for :META rules. ~
+                           Thus, ~x0 is illegal.  See :DOC ~@1."
                          x
                          (symbol-name token)))
                     ((atom (cadr alist))
                      (er soft ctx
-                         "The :TRIGGER-FNS component of a :META rule class must ~
-                       be a non-empty true-list of function symbols.  But ~x0 ~
-                       is empty.  See :DOC meta."
+                         "The :TRIGGER-FNS component of a :META rule class ~
+                          must be a non-empty true-list of function symbols.  ~
+                          But ~x0 is empty.  See :DOC meta."
                          (cadr alist)))
                     ((eq (car (cadr alist)) 'quote)
                      (er soft ctx
-                         "The :TRIGGER-FNS component of a :META rule class must ~
-                       be a non-empty true-list of function symbols.  You ~
-                       specified ~x0 for this component, but the list is not ~
-                       to be quoted.~@1  See :DOC meta."
+                         "The :TRIGGER-FNS component of a :META rule class ~
+                          must be a non-empty true-list of function symbols.  ~
+                          You specified ~x0 for this component, but the list ~
+                          is not to be quoted.~@1  See :DOC meta."
                          (cadr alist)
                          (cond ((and (consp (cdr (cadr alist)))
                                      (symbol-listp (cadr (cadr alist)))
@@ -11649,24 +11664,25 @@
                                                         wrld)
                                (cond ((eq flg :error)
                                       (er soft ctx
-                                          "The :TRIGGER-FNS component of a :META ~
-                                        rule class must be a non-empty ~
-                                        true-list of function symbols, but ~
-                                        ~x0 ~@1.  See :DOC meta."
+                                          "The :TRIGGER-FNS component of a ~
+                                           :META rule class must be a ~
+                                           non-empty true-list of function ~
+                                           symbols, but ~x0 ~@1.  See :DOC ~
+                                           meta."
                                           (cadr alist) lst))
                                      (t (value lst)))))))
                   (:TRIGGER-TERMS
                    (cond
                     ((eq token :META)
                      (er soft ctx
-                         "The :META rule class may specify :TRIGGER-FNS but may ~
-                       not specify :TRIGGER-TERMS.  Thus, ~x0 is illegal.  ~
-                       See :DOC meta and :DOC forward-chaining."
+                         "The :META rule class may specify :TRIGGER-FNS but ~
+                          may not specify :TRIGGER-TERMS.  Thus, ~x0 is ~
+                          illegal.  See :DOC meta and :DOC forward-chaining."
                          x))
                     ((not (true-listp (cadr alist)))
                      (er soft ctx
-                         "The :TRIGGER-TERMS must be a list true list.  Thus the ~
-                       rule class ~x0 proposed for ~x1 is illegal."
+                         "The :TRIGGER-TERMS must be a list true list.  Thus ~
+                          the rule class ~x0 proposed for ~x1 is illegal."
                          x name))
                     ((eq token :LINEAR)
 
@@ -11687,10 +11703,10 @@
                         ((null terms)
                          (er soft ctx
                              "For the :LINEAR rule ~x0 you specified an empty ~
-                           list of :TRIGGER-TERMS.  This is illegal.  If you ~
-                           wish to cause ACL2 to compute the trigger terms, ~
-                           omit the :TRIGGER-TERMS field entirely.  See :DOC ~
-                           linear."
+                              list of :TRIGGER-TERMS.  This is illegal.  If ~
+                              you wish to cause ACL2 to compute the trigger ~
+                              terms, omit the :TRIGGER-TERMS field entirely.  ~
+                              See :DOC linear."
                              name))
                         (t
                          (let ((terms (remove-guard-holders-lst terms)))
@@ -11706,25 +11722,25 @@
                                                      t t t ctx wrld state)))
                        (cond ((null terms)
                               (er soft ctx
-                                  ":FORWARD-CHAINING rules must have at least one ~
-                               trigger.  Your rule class, ~x0, specifies ~
-                               none.  See :DOC forward-chaining."
+                                  ":FORWARD-CHAINING rules must have at least ~
+                                   one trigger.  Your rule class, ~x0, ~
+                                   specifies none.  See :DOC forward-chaining."
                                   x))
                              (t (value (remove-guard-holders-lst terms))))))
                     (t
                      (er soft ctx
                          ":TRIGGER-TERMS can only be specified for ~
-                       :FORWARD-CHAINING and :LINEAR rules.  Thus, ~x0 is ~
-                       illegal.  See :DOC ~@1."
+                          :FORWARD-CHAINING and :LINEAR rules.  Thus, ~x0 is ~
+                          illegal.  See :DOC ~@1."
                          x
                          (symbol-name token)))))
                   (:TYPED-TERM
                    (cond
                     ((not (eq token :TYPE-PRESCRIPTION))
                      (er soft ctx
-                         "Only :TYPE-PRESCRIPTION rule classes are permitted to ~
-                       have a :TYPED-TERM component.  Thus, ~x0 is illegal.  ~
-                       See :DOC ~@1."
+                         "Only :TYPE-PRESCRIPTION rule classes are permitted ~
+                          to have a :TYPED-TERM component.  Thus, ~x0 is ~
+                          illegal.  See :DOC ~@1."
                          x
                          (symbol-name token)))
                     (t (er-let* ((term (translate (cadr alist)
@@ -11759,27 +11775,28 @@
                                                   :TYPE-PRESCRIPTION)))
                        (er soft ctx
                            "The rule-class ~@0 is not permitted to have a ~
-                         :BACKCHAIN-LIMIT-LST component.  Hence, ~x1 is ~
-                         illegal.  See :DOC ~@0."
+                            :BACKCHAIN-LIMIT-LST component.  Hence, ~x1 is ~
+                            illegal.  See :DOC ~@0."
                            (symbol-name token) x))
                       ((not (equal (length (remove-duplicates-equal
                                             (strip-cars hyps-concl-pairs)))
                                    1))
                        (er soft ctx
                            "We do not allow you to specify the ~
-                         :BACKCHAIN-LIMIT-LST when more than one rule is ~
-                         produced from the corollary and at least two such ~
-                         rules have different hypothesis lists.  You should ~
-                         split the corollary of ~x0 into parts and specify a ~
-                         limit for each."
+                            :BACKCHAIN-LIMIT-LST when more than one rule is ~
+                            produced from the corollary and at least two such ~
+                            rules have different hypothesis lists.  You ~
+                            should split the corollary of ~x0 into parts and ~
+                            specify a limit for each."
                            x))
                       (t
                        (let ((hyps (car (car hyps-concl-pairs))))
                          (cond
                           ((null hyps)
                            (er soft ctx
-                               "There are no hypotheses, so :BACKCHAIN-LIMIT-LST ~
-                             makes no sense.  See :DOC RULE-CLASSES."))
+                               "There are no hypotheses, so ~
+                                :BACKCHAIN-LIMIT-LST makes no sense.  See ~
+                                :DOC RULE-CLASSES."))
                           ((null (cadr alist))
                            (value nil))
                           ((and (integerp (cadr alist))
@@ -11793,41 +11810,42 @@
                           ((eq token :META)
                            (er soft ctx
                                "The legal values of :BACKCHAIN-LIMIT-LST for ~
-                             rules of class :META are nil or a non-negative ~
-                             integer.  See :DOC RULE-CLASSES."))
+                                rules of class :META are nil or a ~
+                                non-negative integer.  See :DOC RULE-CLASSES."))
                           ((and (backchain-limit-listp (cadr alist))
                                 (eql (length (cadr alist)) (length hyps)))
                            (value (cadr alist)))
                           (t
                            (er soft ctx
                                "The legal values of :BACKCHAIN-LIMIT-LST are ~
-                             nil, a non-negative integer, or a list of these ~
-                             of the same length as the flattened hypotheses.  ~
-                             In this case the list of flattened hypotheses, ~
-                             of length ~x0, is:~%  ~x1.~%See :DOC ~
-                             RULE-CLASSES."
+                                nil, a non-negative integer, or a list of ~
+                                these of the same length as the flattened ~
+                                hypotheses.  In this case the list of ~
+                                flattened hypotheses, of length ~x0, is:~%  ~
+                                ~x1.~%See :DOC RULE-CLASSES."
                                (length hyps) hyps))))))))
                   (:MATCH-FREE
                    (cond
                     ((not (member-eq token '(:REWRITE :LINEAR :FORWARD-CHAINING)))
                      (er soft ctx
                          "Only :REWRITE, :FORWARD-CHAINING, and :LINEAR rule ~
-                       classes are permitted to have a :MATCH-FREE component.  ~
-                       Thus, ~x0 is illegal.  See :DOC free-variables."
+                          classes are permitted to have a :MATCH-FREE ~
+                          component.  Thus, ~x0 is illegal.  See :DOC ~
+                          free-variables."
                          x))
                     ((not (member-eq (cadr alist) '(:ALL :ONCE)))
                      (er soft ctx
                          "The legal values of :MATCH-FREE are :ALL and :ONCE. ~
-                       Thus, ~x0 is illegal.  See :DOC free-variables."
+                          Thus, ~x0 is illegal.  See :DOC free-variables."
                          x))
                     (t (value (cadr alist)))))
                   (:CLIQUE
                    (cond
                     ((not (eq token :DEFINITION))
                      (er soft ctx
-                         "Only :DEFINITION rule classes are permitted to have a ~
-                       :CLIQUE component.  Thus, ~x0 is illegal.  See :DOC ~
-                       ~@1."
+                         "Only :DEFINITION rule classes are permitted to have ~
+                          a :CLIQUE component.  Thus, ~x0 is illegal.  See ~
+                          :DOC ~@1."
                          x
                          (symbol-name token)))
                     (t (er-progn
@@ -11848,37 +11866,40 @@
                                                             (macro-aliases wrld)
                                                             wrld)
                                    (er soft ctx
-                                       "The :CLIQUE of a :DEFINITION must be a ~
-                                     truelist of function symbols (containing ~
-                                     no duplications) or else a single ~
-                                     function symbol.  ~x0 is neither.~@1  ~
-                                     See :DOC definition."
+                                       "The :CLIQUE of a :DEFINITION must be ~
+                                        a truelist of function symbols ~
+                                        (containing no duplications) or else ~
+                                        a single function symbol.  ~x0 is ~
+                                        neither.~@1  See :DOC definition."
                                        (cadr alist)
                                        (cond ((eq flg :error) "")
-                                             (t (msg "  Note that it is illegal ~
-                                                   to use ~v0 here, because ~
-                                                   we require function ~
-                                                   symbols, not merely macros ~
-                                                   that are aliases for ~
-                                                   function symbols (see :DOC ~
-                                                   macro-aliases-table)."
+                                             (t (msg "  Note that it is ~
+                                                      illegal to use ~v0 ~
+                                                      here, because we ~
+                                                      require function ~
+                                                      symbols, not merely ~
+                                                      macros that are aliases ~
+                                                      for function symbols ~
+                                                      (see :DOC ~
+                                                      macro-aliases-table)."
                                                      (set-difference-equal
                                                       (cadr alist)
                                                       lst)))))))
                                  ((and (ffnnamep fn body)
                                        (not (member-eq fn clique)))
                                   (er soft ctx
-                                      "The :CLIQUE of a :DEFINITION must contain ~
-                                    the defined function, ~x0, if the body ~
-                                    calls the function.  See :DOC definition."
+                                      "The :CLIQUE of a :DEFINITION must ~
+                                       contain the defined function, ~x0, if ~
+                                       the body calls the function.  See :DOC ~
+                                       definition."
                                       fn))
                                  ((and clique
                                        (not (member-eq fn clique)))
                                   (er soft ctx
                                       "The :CLIQUE of a :DEFINITION, when ~
-                                    non-nil, must contain the function ~
-                                    defined.  ~x0 does not contain ~x1.  See ~
-                                    :DOC definition."
+                                       non-nil, must contain the function ~
+                                       defined.  ~x0 does not contain ~x1.  ~
+                                       See :DOC definition."
                                       (cadr alist)
                                       fn))
                                  (t (value clique)))))))))
@@ -11886,9 +11907,9 @@
                    (cond
                     ((not (eq token :DEFINITION))
                      (er soft ctx
-                         "Only :DEFINITION rule classes are permitted to have a ~
-                       :CONTROLLER-ALIST component.  Thus, ~x0 is illegal.  ~
-                       See :DOC ~@1."
+                         "Only :DEFINITION rule classes are permitted to have ~
+                          a :CONTROLLER-ALIST component.  Thus, ~x0 is ~
+                          illegal.  See :DOC ~@1."
                          x
                          (symbol-name token)))
                     (t
@@ -11902,17 +11923,17 @@
                    (cond
                     ((not (eq token :DEFINITION))
                      (er soft ctx
-                         "Only :DEFINITION rule classes are permitted to have an ~
-                       :INSTALL-BODY component.  Thus, ~x0 is illegal.  ~
-                       See :DOC ~@1."
+                         "Only :DEFINITION rule classes are permitted to have ~
+                          an :INSTALL-BODY component.  Thus, ~x0 is illegal.  ~
+                          See :DOC ~@1."
                          x
                          (symbol-name token)))
                     ((not (member-eq (cadr alist)
                                      '(t nil :NORMALIZE)))
                      (er soft ctx
                          "The :INSTALL-BODY component of a  :DEFINITION rule ~
-                       class must have one of the values ~v0.  Thus, ~x1 is ~
-                       illegal.  See :DOC ~@2."
+                          class must have one of the values ~v0.  Thus, ~x1 ~
+                          is illegal.  See :DOC ~@2."
                          '(t nil :NORMALIZE)
                          (cadr alist)
                          (symbol-name token)))
@@ -11923,46 +11944,56 @@
                     ((not (eq token :REWRITE))
                      (er soft ctx
                          "Only :REWRITE rule classes are permitted to have a ~
-                       :LOOP-STOPPER component.  Thus, ~x0 is illegal.  See ~
-                       :DOC rule-classes."
+                          :LOOP-STOPPER component.  Thus, ~x0 is illegal.  ~
+                          See :DOC rule-classes."
                          x))
-                    ((not (loop-stopper-alist-p (cadr alist) wrld))
-                     (er soft ctx
-                         "The :LOOP-STOPPER for a rule class must be a list ~
-                       whose elements have the form (variable1 variable2 . ~
-                       fns), where variable1 and variable2 are distinct ~
-                       variables and fns is a list of function symbols, but ~
-                       ~x0 does not have this form.  Thus, ~x1 is illegal.  ~
-                       See :DOC rule-classes."
-                         (cadr alist)
-                         x))
-                    ((not (subsetp-eq (union-eq (strip-cars (cadr alist))
-                                                (strip-cadrs (cadr alist)))
-                                      (all-vars corollary)))
-                     (let ((bad-vars (set-difference-eq
-                                      (union-eq (strip-cars (cadr alist))
-                                                (strip-cadrs (cadr alist)))
-                                      (all-vars corollary))))
-                       (er soft ctx
-                           "The variables from elements (variable1 variable2 . ~
-                         fns) of a :LOOP-STOPPER specified for a rule class ~
-                         must all appear in the :COROLLARY theorem for that ~
-                         rule class.  However, the ~#0~[variables ~&1 ~
-                         do~/variable ~&1 does~] not appear in ~p2.  Thus, ~
-                         ~x3 is illegal.  See :DOC rule-classes."
-                           (if (cdr bad-vars) 0 1)
-                           bad-vars
-                           (untranslate corollary t wrld)
-                           x)))
-                    (t
-                     (value (cadr alist)))))
+                    (t (mv-let
+                        (flg loop-stopper-alist)
+                        (fix-loop-stopper-alist
+                         (cadr alist) (macro-aliases wrld) wrld)
+                        (cond
+                         ((eq flg :error)
+                          (er soft ctx
+                              "The :LOOP-STOPPER for a rule class must be a ~
+                               list whose elements have the form (variable1 ~
+                               variable2 . fns), where variable1 and ~
+                               variable2 are distinct variables and fns is a ~
+                               list of function symbols (or macro-aliases for ~
+                               function symbols), but ~x0 does not have this ~
+                               form.  Thus, ~x1 is illegal.  See :DOC ~
+                               rule-classes."
+                              (cadr alist)
+                              x))
+                         ((not (subsetp-eq
+                                (union-eq (strip-cars loop-stopper-alist)
+                                          (strip-cadrs loop-stopper-alist))
+                                (all-vars corollary)))
+                          (let ((bad-vars
+                                 (set-difference-eq
+                                  (union-eq (strip-cars loop-stopper-alist)
+                                            (strip-cadrs loop-stopper-alist))
+                                  (all-vars corollary))))
+                            (er soft ctx
+                                "The variables from elements (variable1 ~
+                                 variable2 . fns) of a :LOOP-STOPPER ~
+                                 specified for a rule class must all appear ~
+                                 in the :COROLLARY theorem for that rule ~
+                                 class.  However, the ~#0~[variables ~&1 ~
+                                 do~/variable ~&1 does~] not appear in ~p2.  ~
+                                 Thus, ~x3 is illegal.  See :DOC rule-classes."
+                                (if (cdr bad-vars) 0 1)
+                                bad-vars
+                                (untranslate corollary t wrld)
+                                x)))
+                         (t
+                          (value loop-stopper-alist)))))))
                   (:PATTERN
                    (cond
                     ((not (eq token :INDUCTION))
                      (er soft ctx
-                         "Only :INDUCTION rule classes are permitted to have a ~
-                       :PATTERN component.  Thus, ~x0 is illegal.  See :DOC ~
-                       ~@1."
+                         "Only :INDUCTION rule classes are permitted to have ~
+                          a :PATTERN component.  Thus, ~x0 is illegal.  See ~
+                          :DOC ~@1."
                          x
                          (symbol-name token)))
                     (t (er-let*
@@ -11973,19 +12004,19 @@
                                (fquotep term)
                                (flambdap (ffn-symb term)))
                            (er soft ctx
-                               "The :PATTERN term of an :INDUCTION rule class may ~
-                            not be a variable symbol, constant, or the ~
-                            application of a lambda expression.  Thus ~x0 is ~
-                            illegal.  See :DOC induction."
+                               "The :PATTERN term of an :INDUCTION rule class ~
+                                may not be a variable symbol, constant, or ~
+                                the application of a lambda expression.  Thus ~
+                                ~x0 is illegal.  See :DOC induction."
                                x))
                           (t (value term)))))))
                   (:CONDITION
                    (cond
                     ((not (eq token :INDUCTION))
                      (er soft ctx
-                         "Only :INDUCTION rule classes are permitted to have a ~
-                       :CONDITION component.  Thus, ~x0 is illegal.  See :DOC ~
-                       ~@1."
+                         "Only :INDUCTION rule classes are permitted to have ~
+                          a :CONDITION component.  Thus, ~x0 is illegal.  See ~
+                          :DOC ~@1."
                          x
                          (symbol-name token)))
                     (t (er-let*
@@ -11996,9 +12027,9 @@
                    (cond
                     ((not (eq token :INDUCTION))
                      (er soft ctx
-                         "Only :INDUCTION rule classes are permitted to have a ~
-                       :SCHEME component.  Thus, ~x0 is illegal.  See :DOC ~
-                       ~@1."
+                         "Only :INDUCTION rule classes are permitted to have ~
+                          a :SCHEME component.  Thus, ~x0 is illegal.  See ~
+                          :DOC ~@1."
                          x
                          (symbol-name token)))
                     (t (er-let*
@@ -12009,10 +12040,10 @@
                                (fquotep term)
                                (flambdap (ffn-symb term)))
                            (er soft ctx
-                               "The :SCHEME term of an :INDUCTION rule class may ~
-                            not be a variable symbol, constant, or the ~
-                            application of a lambda expression.  Thus ~x0 is ~
-                            illegal.  See :DOC induction."
+                               "The :SCHEME term of an :INDUCTION rule class ~
+                                may not be a variable symbol, constant, or ~
+                                the application of a lambda expression.  Thus ~
+                                ~x0 is illegal.  See :DOC induction."
                                x))
                           ((not (or (getprop (ffn-symb term) 'induction-machine
                                              nil 'current-acl2-world wrld)
@@ -12020,35 +12051,35 @@
                                              nil 'current-acl2-world wrld)))
                            (er soft ctx
                                "The function symbol of the :SCHEME term of an ~
-                            :INDUCTION rule class must, at least sometimes, ~
-                            suggest an induction and ~x0 does not.  See :DOC ~
-                            induction."
+                                :INDUCTION rule class must, at least ~
+                                sometimes, suggest an induction and ~x0 does ~
+                                not.  See :DOC induction."
                                (ffn-symb term)))
                           (t (value term)))))))
                   (:TYPE-SET
                    (cond
                     ((not (eq token :TYPE-SET-INVERTER))
                      (er soft ctx
-                         "Only :TYPE-SET-INVERTER rule classes are permitted to ~
-                       have a :TYPE-SET component.  Thus ~x0 is illegal.  See ~
-                       :DOC ntype-set-inverter."
+                         "Only :TYPE-SET-INVERTER rule classes are permitted ~
+                          to have a :TYPE-SET component.  Thus ~x0 is ~
+                          illegal.  See :DOC type-set-inverter."
                          x))
                     ((not (and (integerp (cadr alist))
                                (<= *min-type-set* (cadr alist))
                                (<= (cadr alist) *max-type-set*)))
                      (er soft ctx
-                         "The :TYPE-SET of a :TYPE-SET-INVERTER rule must be a ~
-                       type-set, i.e., an integer between ~x0 and ~x1, ~
-                       inclusive.  ~x2 is not a type-set.  See :DOC type-set ~
-                       and :DOC type-set-inverter."
+                         "The :TYPE-SET of a :TYPE-SET-INVERTER rule must be ~
+                          a type-set, i.e., an integer between ~x0 and ~x1, ~
+                          inclusive.  ~x2 is not a type-set.  See :DOC ~
+                          type-set and :DOC type-set-inverter."
                          *min-type-set*
                          *max-type-set*
                          (cadr alist)))
                     (t (value (cadr alist)))))
                   (otherwise
                    (er soft ctx
-                       "The key ~x0 is unrecognized as a rule class component.  ~
-                     See :DOC rule-classes."
+                       "The key ~x0 is unrecognized as a rule class ~
+                        component.  See :DOC rule-classes."
                        (car alist))))))
         (translate-rule-class-alist token (cddr alist)
                                     (cons (cons (car alist) val) seen)
