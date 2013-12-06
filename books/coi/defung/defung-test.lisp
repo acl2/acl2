@@ -71,6 +71,11 @@
 ;; <1 (ACL2_*1*_ACL2::INC-DEC 536870913)
 ;; 536870913
 
+; Added by Matt K. 12/6/2013, in order to keep the next proof from stalling out
+; for hours when the host Lisp is LispWorks (or, quite possibly, any Lisp
+; implementation that do not compile on-the-fly).
+(comp t)
+
 ;;
 ;; Proof by execution. Odd that it seems to execute inc-dec 3 times ?
 ;;
