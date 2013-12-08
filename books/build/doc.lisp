@@ -933,7 +933,7 @@ section, to rename variables like @('CERT_PL_CERTS'), etc.  See @('cert.pl
 
 (defxdoc |7. Distributed Builds|
   :parents (cert.pl)
-  :short "(Advanced) how to use a distribute ACL2 book building over a cluster
+  :short "(Advanced) how to distribute ACL2 book building over a cluster
 of machines."
 
   :long "<p>Warning: getting a cluster set up and running smoothly is a
@@ -945,7 +945,7 @@ do some scripting to work around dumb problems.  Think of this topic as:
 cluster.</i></p>
 
 <p>At Centaur, @('cert.pl') is successfully used within a <a
-href='http://www.rocksclusters.org/'>rocks</a> cluster environment at Centaur,
+href='http://www.rocksclusters.org/'>rocks</a> cluster environment,
 using the open-source queuing system <a
 href='http://www.adaptivecomputing.com/support/download-center/torque-download/'>torque</a>
 and the <a
