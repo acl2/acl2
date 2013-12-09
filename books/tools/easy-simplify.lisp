@@ -114,3 +114,25 @@ Usage:
     ',term ',hyp ',hint ',equiv
     ',normalize ',rewrite ',repeat ',backchain-limit
     state))
+
+
+
+
+(defmacro defopen (name term &key (hyp 't) hint)
+  ;; This is a simple event generator that creates a theorem by finding out
+  ;; what a term simplifies to under some hyp and with some hint.  In contrast
+  ;; to misc/defopener, because this only does simplification (no clausify),
+  ;; the reductions may be less powerful, but it seems to produce more compact
+  ;; expressions compared to defopener, where the result is formed by combining
+  ;; several clauses produced from the original term.
+  `(make-event
+    (b* (((er new-hyp-term)
+          (acl2::easy-simplify-term ,hyp :hint ,hint))
+         ((er new-term)
+          (acl2::easy-simplify-term-fn
+           ',term new-hyp-term ',hint 'equal t t 1000 1000 state)))
+      (value `(defthm ,',name
+                ,(if (not (eq ',hyp t))
+                     `(implies ,',hyp (equal ,',term ,new-term))
+                   `(equal ,',term ,new-term))
+                :hints (("goal" . ,',hint)))))))

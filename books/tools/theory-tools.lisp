@@ -41,13 +41,3 @@
   (find-equal-in-tree x (car (last clause))))
 
 
-
-
-
-(defmacro defopen (name fn hyps &rest rest)
-  `(make-event
-    `(defthm ,',name
-       (implies ,',hyps
-                ,(formula ',fn t (w state)))
-       :hints (("goal" :in-theory '(,',fn)))
-       ,@',rest)))
