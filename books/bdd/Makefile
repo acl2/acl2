@@ -11,7 +11,7 @@ benchmarks.lisp: cbf.cert
 
 # Below is the result of running 'make dependencies' after executing
 # "make ACL2_PCERT=".  If we run 'make dependencies' before creating
-# benchmarks.lisp, we get some unfortunate error ourput.  So, we avoid
+# benchmarks.lisp, we get some unfortunate error output.  So, we avoid
 # using the usual -include of Makefile-deps.
 
 alu-proofs.cert: alu-proofs.lisp
