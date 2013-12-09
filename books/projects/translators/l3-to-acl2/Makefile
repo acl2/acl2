@@ -10,7 +10,7 @@
 # WARNING: Do not run with -j (unless it's -j 1)!  Otherwise you may
 # get errors.
 
-ACL2_DIR ?= $(shell cd ../../.. ; pwd)
+ACL2_DIR ?= $(shell cd ../../../.. ; pwd)
 export ACL2 ?= $(ACL2_DIR)/saved_acl2
 export ACL2_SYSTEM_BOOKS ?= $(ACL2_DIR)/books
 

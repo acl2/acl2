@@ -494,7 +494,7 @@ ifeq ($(ACL2_HAS_REALS), )
 ACL2_CUSTOM_TARGETS := \
   clause-processors/SULFA/target.cert \
   fix-cert/fix-cert.cert \
-  translators/l3-to-acl2/target.cert \
+  projects/translators/l3-to-acl2/target.cert \
   workshops/1999/multiplier/proof.cert \
   workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert \
   workshops/2003/kaufmann/support/input/defs-in.cert \
@@ -505,11 +505,11 @@ ACL2_CUSTOM_TARGETS := \
 # in the directory or it is exluded explicitly by
 # REBUILD_MAKEFILE_BOOKS, and a "deps" file is used, then that "deps"
 # file should be placed in a different directory (that is not
-# excluded).  For example, translators/l3-to-acl2/target.cert below
-# depends on translators/l3-to-acl2-deps.cert, for which dependencies
-# will be generated since there is no cert_pl_exclude file in
-# translators/ (even though there is a cert_pl_exclude in
-# translators/l3-to-acl2/).
+# excluded).  For example, projects/translators/l3-to-acl2/target.cert
+# below depends on projects/translators/l3-to-acl2-deps.cert, for
+# which dependencies will be generated since there is no
+# cert_pl_exclude file in projects/translators/ (even though there is
+# a cert_pl_exclude in projects/translators/l3-to-acl2/).
 
 # We only make the books under SULFA if a documented test for an
 # installed SAT solver succeeds.
@@ -534,8 +534,8 @@ models/y86-target.cert:
 	cd $(@D)/y86 ; $(STARTJOB) -c "$(MAKE) -j 1"
 endif
 
-translators/l3-to-acl2/target.cert: \
-  translators/l3-to-acl2-deps.cert
+projects/translators/l3-to-acl2/target.cert: \
+  projects/translators/l3-to-acl2-deps.cert
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE) -j 1"
 
 workshops/1999/multiplier/proof.cert: \
