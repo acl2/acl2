@@ -252,6 +252,60 @@ inputs, used to support experimental esim decomposition.</p>"
   :o ((|o|))
   :x (:out ((|o| . (zif |sel| |a| |b|)))))
 
+(def-esim-primitive *esim-bufif0*
+  :short "Primitive E module for a kind of bufif0 gate."
+  :long "<p>We use this to implement @(see vl::*vl-1-bit-bufif0*).</p>"
+  :i ((|data|) (|ctrl|))
+  :o ((|out|))
+  :x (:out ((|out| . (tristate (not |ctrl|) |data|)))))
+
+(def-esim-primitive *esim-bufif1*
+  :short "Primitive E module for a kind of bufif1 gate."
+  :long "<p>We use this to implement @(see vl::*vl-1-bit-bufif1*).</p>"
+  :i ((|data|) (|ctrl|))
+  :o ((|out|))
+  :x (:out ((|out| . (tristate |ctrl| |data|)))))
+
+(def-esim-primitive *esim-notif0*
+  :short "Primitive E module for a kind of notif0 gate."
+  :long "<p>We use this to implement @(see vl::*vl-1-bit-notif0*).</p>"
+  :i ((|data|) (|ctrl|))
+  :o ((|out|))
+  :x (:out ((|out| . (tristate (not |ctrl|) (not |data|))))))
+
+(def-esim-primitive *esim-notif1*
+  :short "Primitive E module for a kind of notif1 gate."
+  :long "<p>We use this to implement @(see vl::*vl-1-bit-notif1*).</p>"
+  :i ((|data|) (|ctrl|))
+  :o ((|out|))
+  :x (:out ((|out| . (tristate |ctrl| (not |data|))))))
+
+(def-esim-primitive *esim-nmos*
+  :short "Primitive E module for a kind of nmos gate."
+  :long "<p>We use this to implement @(see vl::*vl-1-bit-nmos*).</p>"
+  :i ((|data|) (|ctrl|))
+  :o ((|out|))
+  :x (:out ((|out| . (zif |ctrl| |data| (z))))))
+
+(def-esim-primitive *esim-pmos*
+  :short "Primitive E module for a kind of pmos gate."
+  :long "<p>We use this to implement @(see vl::*vl-1-bit-pmos*).</p>"
+  :i ((|data|) (|ctrl|))
+  :o ((|out|))
+  :x (:out ((|out| . (zif |ctrl| (z) |data|)))))
+
+(def-esim-primitive *esim-cmos*
+  :short "Primitive E module for a kind of cmos gate."
+  :long "<p>We use this to implement @(see vl::*vl-1-bit-cmos*).</p>"
+  :i ((|data|) (|nctrl|) (|pctrl|))
+  :o ((|out|))
+  :x (:out ((|out| . (res (zif |nctrl| |data| (z))
+                          (zif |pctrl| (z) |data|))))))
+
+
+
+
+
 (defsection *esim-primitives*
   :parents (esim-primitives)
   :short "A list of all esim primitives."
@@ -278,5 +332,13 @@ inputs, used to support experimental esim decomposition.</p>"
           *esim-flop*
           *esim-latch*
           *esim-fsmreg*
-          *esim-zif*)))
+          *esim-zif*
+
+          *esim-bufif0*
+          *esim-bufif1*
+          *esim-notif0*
+          *esim-notif1*
+          *esim-nmos*
+          *esim-pmos*
+          *esim-cmos*)))
 

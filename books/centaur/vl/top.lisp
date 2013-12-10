@@ -42,7 +42,7 @@
 (include-book "transforms/xf-expand-functions")
 (include-book "transforms/xf-expr-split")
 (include-book "transforms/xf-follow-hids")
-(include-book "transforms/xf-gateredux")
+;; (include-book "transforms/xf-gateredux")
 (include-book "transforms/xf-gatesplit")
 (include-book "transforms/xf-gate-elim")
 (include-book "transforms/xf-hid-elim")
@@ -773,18 +773,20 @@ instances, supply elimination, dependency-order sorting, E translation."
 ; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple :vl-widths-fixed
 ; :vl-args-compat>>
 
-       (mods (xf-cwtime (vl-modulelist-gateredux mods)
-                        :name xf-gateredux))
+       ;; Used to run gateredux to get rid of MOS/tran/bufif gates etc.  Now we
+       ;; have primitives for them so they're taken care of by gate-elim.
+       ;; (mods (xf-cwtime (vl-modulelist-gateredux mods)
+       ;;                  :name xf-gateredux))
 
-       ((unless (uniquep (vl-modulelist->names mods)))
-        (prog2$
-         (er hard? 'vl-simplify-part3
-             "Programming error: gateredux resulted in name clashes?")
-         (mv nil nil)))
+       ;; ((unless (uniquep (vl-modulelist->names mods)))
+       ;;  (prog2$
+       ;;   (er hard? 'vl-simplify-part3
+       ;;       "Programming error: gateredux resulted in name clashes?")
+       ;;   (mv nil nil)))
 
 
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
+       ;; ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
+       ;;                                :name propagate-errors))
 
 ;(- (cw "~x0 modules remain.~%" (len mods)))
 

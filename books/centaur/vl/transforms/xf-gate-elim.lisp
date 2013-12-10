@@ -36,17 +36,12 @@ the VL's primitive modules like @(see *vl-1-bit-and*).</p>
 <p>Note that this transform does not preserve delays.</p>
 
 <p>Ordering notes.  This transform should typically be run after @(see
-gatesplit) and @(see gateredux), and also after other transforms like @(see
-blankargs), @(see expression-sizing), and @(see replicate).</p>
+gatesplit), and also after other transforms like @(see blankargs), @(see
+expression-sizing), and @(see replicate).</p>
 
 <p>We only try to deal with non-array instances of gates, with the usual
-arities (i.e., 2 arguments to a NOT or BUF, and 3 arguments to AND, OR, ...).
-We generally expect that the @(see gateredux), @(see gatesplit), and @(see
-replicate) transforms will get all the gates into this format.</p>
-
-<p><b>BOZO</b> it might make sense to merge this transform with @(see
-gateredux).</p>")
-
+arities (i.e., 2 arguments to a NOT or BUF, and 3 arguments to AND, OR,
+...).</p>")
 
 (defund vl-gateinst-primitive-module (type)
   (declare (xargs :guard (vl-gatetype-p type)))
@@ -59,6 +54,24 @@ gateredux).</p>")
     (:vl-nand *vl-1-bit-nand*)
     (:vl-nor  *vl-1-bit-nor*)
     (:vl-xnor *vl-1-bit-xnor*)
+    (:vl-bufif0 *vl-1-bit-bufif0*)
+    (:vl-bufif1 *vl-1-bit-bufif1*)
+    (:vl-notif0 *vl-1-bit-notif0*)
+    (:vl-notif1 *vl-1-bit-notif1*)
+    (:vl-nmos *vl-1-bit-nmos*)
+    (:vl-rnmos *vl-1-bit-rnmos*)
+    (:vl-pmos *vl-1-bit-pmos*)
+    (:vl-rpmos *vl-1-bit-rpmos*)
+    (:vl-cmos *vl-1-bit-cmos*)
+    (:vl-rcmos *vl-1-bit-rcmos*)
+    (:vl-tran *vl-1-bit-tran*)
+    (:vl-rtran *vl-1-bit-rtran*)
+    (:vl-tranif0 *vl-1-bit-tranif0*)
+    (:vl-rtranif0 *vl-1-bit-rtranif0*)
+    (:vl-tranif1 *vl-1-bit-tranif1*)
+    (:vl-rtranif1 *vl-1-bit-rtranif1*)
+    (:vl-pullup *vl-1-bit-pullup*)
+    (:vl-pulldown *vl-1-bit-pulldown*)
     (otherwise nil)))
 
 (local (in-theory (enable vl-gateinst-primitive-module)))
@@ -102,9 +115,6 @@ gateinsts/modinsts should be equivalent to the gate being eliminated.</p>
 <p>We may fail to eliminate @('x') for several reasons, for instance:</p>
 
 <ul>
-
-<li>it is not one of the basic gate types (more complex gates can be handled by
-@(see gateredux)),</li>
 
 <li>it has more than the usual number of arguments (higher arity gates can
 simplified by @(see gatesplit),</li>
