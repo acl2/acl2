@@ -18,6 +18,8 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+#!ACL2
 (in-package "ACL2")
-(include-book "std/portcullis" :dir :system)
-; cert-flags: ? t :ttags :all
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
+(ld "package.lsp")
+(in-package "BITSETS")

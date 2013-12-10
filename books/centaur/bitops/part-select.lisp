@@ -19,85 +19,64 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "ihs/logops-definitions" :dir :system)
 (include-book "xdoc/top" :dir :system)
+(include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "ihsext-basics"))
 (local (include-book "misc/assert" :dir :system))
 
-(defxdoc part-select
+(defsection bitops/part-select
+  :parents (bitops)
+  :short "This book provides a readable nice macro for extracting a portion of
+an integer.  You could use it to, e.g., extract bits 15-8 as a byte.")
+
+(defsection part-select
+  :parents (bitops/part-select)
   :short "Select a portion of bits from an integer that represents a bit
-          vector"
-  :long "This is a hopefully more readable alternative to RDB.
+vector"
 
-         Sometimes RDB is exactly what you want, but other times you have a
-         high/low index and you want to use them to select part of a vector.
+  :long "<p>@('part-select') is a macro that lets you write code to extract
+parts of vectors.  For instance:</p>
 
-         PART-SELECT is just a little wrapper around RDB that lets you do
-         things like
+@({
+     (part-select foo :low 10 :high 17)   ;; Like foo[17:10] in Verilog
+})
 
- @({
- (part-select foo :low 10 :high 17)       ;; Like foo[17:10] in Verilog
- })
+<p>You can also using an index/size, e.g.:</p>
 
-         You can still select parts of a vector using an index/size, e.g.:
+@({
+     (part-select foo :low 10 :width 7)   ;; Like foo[16:10] in Verilog
+})
 
- @({
- (part-select foo :low 10 :width 7)       ;; Like foo[16:10] in Verilog
- })
+@(def part-select)"
 
-         This just macroexpands into RDB calls, to avoid making reasoning any
-         more complicated.")
+  (defun-inline part-select-width-low (x width low)
+    "Don't call this directly -- use the part-select macro instead."
+    (declare (xargs :guard (and (integerp x)
+                                (natp width)
+                                (natp low))))
+    (mbe :logic (loghead width (logtail low x))
+         :exec (logand (1- (ash 1 width))
+                       (ash x (- low)))))
 
+  (defun-inline part-select-low-high (x low high)
+    "Don't call this directly -- use the part-select macro instead."
+    (declare (xargs :guard (and (integerp x)
+                                (natp low)
+                                (natp high)
+                                (<= low high))))
+    (part-select-width-low x (+ 1 (- high low)) low))
 
-;; ;; this might be generally useful
-;; (local
-;;  (encapsulate
-;;    ()
-;;    (local (defun my-induct (x n)
-;;             (if (zp n)
-;;                 x
-;;               (my-induct (logcdr x) (- n 1)))))
-
-;;    (defthm logand-with-full-mask-to-logtail
-;;      (implies (and (natp width)
-;;                    (integerp x))
-;;               (equal (logand (+ -1 (ash 1 width)) x)
-;;                      (loghead width x)))
-;;      :hints(("Goal"
-;;              :induct (my-induct x width)
-;;              :in-theory (e/d* (loghead* ash* logand** logcons)
-;;                               (loghead logand ash)))))))
-
-
-(defun part-select-width-low (x width low)
-  ;; Don't call this, use the macro instead.
-  (declare (xargs :guard (and (integerp x)
-                              (natp width)
-                              (natp low))))
-  (mbe :logic (rdb (bsp width low) x)
-       :exec
-       (logand (1- (ash 1 width))
-               (ash x (- low)))))
-
-(defun part-select-low-high (x low high)
-  ;; Don't call this, use the macro instead.
-  (declare (xargs :guard (and (integerp x)
-                              (natp low)
-                              (natp high)
-                              (<= low high))))
-  (part-select-width-low x (+ 1 (- high low)) low))
-
-(defmacro part-select (x &key low high width)
-  (cond ((and high width)
-         (er hard? 'part-select "Can't use :high and :width together"))
-        ((and low high)
-         `(part-select-low-high ,x ,low ,high))
-        ((and low width)
-         `(part-select-width-low ,x ,width ,low))
-        (t
-         (er hard? 'part-select "Need at least :low and :width, or else :low and :high"))))
-
+  (defmacro part-select (x &key low high width)
+    (cond ((and high width)
+           (er hard? 'part-select "Can't use :high and :width together"))
+          ((and low high)
+           `(part-select-low-high ,x ,low ,high))
+          ((and low width)
+           `(part-select-width-low ,x ,width ,low))
+          (t
+           (er hard? 'part-select
+               "Need at least :low and :width, or else :low and :high")))))
 
 (local
  (progn

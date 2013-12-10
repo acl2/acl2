@@ -27,9 +27,13 @@
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "std/lists/mfc-utils" :dir :system)
 (include-book "centaur/misc/introduce-var" :dir :system)
-(include-book "equal-by-logbitp")
+(include-book "logbitp-mismatch")
+(local (include-book "equal-by-logbitp"))
 (local (include-book "ihsext-basics"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+
+; BOZO this is very similar to copybit/notbit/etc... also need to figure
+; out a better way to deal with these rulesets.
 
 (def-ruleset! ihsext-basic-thms nil)
 (def-ruleset! ihsext-advanced-thms nil)

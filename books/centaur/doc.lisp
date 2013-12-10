@@ -56,13 +56,7 @@
 
 (include-book "bitops/top")
 (include-book "bitops/congruences")
-(include-book "bitops/sign-extend")
-(include-book "bitops/install-bit")
-(include-book "bitops/rotate")
-(include-book "bitops/ash-bounds")
 (include-book "bitops/defaults")
-(include-book "bitops/saturate")
-(include-book "bitops/signed-byte-p")
 
 (include-book "bridge/top")
 
@@ -110,6 +104,7 @@
 
 (include-book "std/top" :dir :system)
 (include-book "std/io/unsound-read" :dir :system)
+(include-book "std/bitsets/top" :dir :system)
 
 (include-book "ubdds/lite")
 (include-book "ubdds/param")

@@ -26,7 +26,7 @@
 (include-book "ihs/logops-definitions" :dir :system)
 (local (include-book "signed-byte-p"))
 
-(defsection extra-defs
+(defsection bitops/extra-defs
   :parents (bitops)
   :short "Additional bitwise operations."
   :long "<p>This is just an ad-hoc collection of low-level bit operations,
@@ -39,7 +39,7 @@ instructions.</p>")
 (define nth-slice2 ((n natp)
                     (x integerp))
   :returns (slice natp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "Extract the @('n')th 2-bit slice of the integer @('x')."
   :long "<p>We leave this enabled; we would usually not expect to try to reason
 about it.</p>"
@@ -60,7 +60,7 @@ about it.</p>"
 (define nth-slice8 ((n natp)
                     (x integerp))
   :returns (slice natp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "Extract the @('n')th 8-bit slice of the integer @('x')."
   :long "<p>We leave this enabled; we would usually not expect to try to reason
 about it.</p>"
@@ -81,7 +81,7 @@ about it.</p>"
 (define nth-slice16 ((n natp)
                      (x integerp))
   :returns (slice natp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "Extract the @('n')th 16-bit slice of the integer @('x')."
   :long "<p>We leave this enabled; we would usually not expect to try to reason
 about it.</p>"
@@ -102,7 +102,7 @@ about it.</p>"
 (define nth-slice32 ((n natp)
                      (x integerp))
   :returns (slice natp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "Extract the @('n')th 32-bit slice of the integer @('x')."
   :long "<p>We leave this enabled; we would usually not expect to try to reason
 about it.</p>"
@@ -123,7 +123,7 @@ about it.</p>"
 (define nth-slice64 ((n natp)
                      (x integerp))
   :returns (slice natp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "Extract the @('n')th 64-bit slice of the integer @('x')."
   :long "<p>We leave this enabled; we would usually not expect to try to reason
 about it.</p>"
@@ -143,7 +143,7 @@ about it.</p>"
 
 (define negate-slice8 ((x :type (unsigned-byte 8)))
   :returns (~x natp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "@(call negate-slice8) computes the 8-bit two's complement negation of
 @('x') and returns it as an 8-bit natural."
   :long "<p>For example, @('(negate-slice8 3) = 253').</p>
@@ -166,7 +166,7 @@ it.</p>"
 
 (define negate-slice16 ((x :type (unsigned-byte 16)))
   :returns (~x natp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "@(call negate-slice16) computes the 16-bit two's complement negation
 of @('x') and returns it as an 16-bit natural."
   :long "<p>We leave this enabled; we would usually not expect to try to reason
@@ -188,7 +188,7 @@ about it.</p>"
 
 (define negate-slice32 ((x :type (unsigned-byte 32)))
   :returns (~x natp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "@(call negate-slice32) computes the 32-bit two's complement negation
 of @('x') and returns it as an 32-bit natural."
   :long "<p>We leave this enabled; we would usually not expect to try to reason
@@ -210,7 +210,7 @@ about it.</p>"
 
 (define negate-slice64 ((x :type (unsigned-byte 64)))
   :returns (~x natp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "@(call negate-slice64) computes the 64-bit two's complement negation
 of @('x') and returns it as an 64-bit natural."
   :long "<p>We leave this enabled; we would usually not expect to try to reason
@@ -233,7 +233,7 @@ about it.</p>"
 (define abs-diff ((a integerp)
                   (b integerp))
   :returns (ans natp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "@(call abs-diff) is just @('(abs (- (ifix a) (ifix b)))'), but
 optimized for @(see gl)."
 
@@ -275,7 +275,7 @@ directly.</p>"
 (define setbit ((n natp     "Bit position to set to 1.")
                 (x integerp "Starting value."))
   :returns (ans integerp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "Set X[n] := 1"
   :enabled t
   (let ((n (lnfix n))
@@ -289,7 +289,7 @@ directly.</p>"
 (define clearbit ((n natp     "Bit position to clear to 0.")
                   (x integerp "Starting value."))
   :returns (ans integerp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "Set X[n] := 0"
   :enabled t
   (let ((n (lnfix n))
@@ -304,7 +304,7 @@ directly.</p>"
                  (from integerp)
                  (to   integerp))
   :returns (ans integerp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "Set To[n] := From[n]"
   :enabled t
   (if (logbitp n from)
@@ -319,7 +319,7 @@ directly.</p>"
 (define notbit ((n natp     "Bit position to negate.")
                 (x integerp "Starting value."))
   :returns (ans integerp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "Set X[n] := ~X[n]"
   :enabled t
   (if (logbitp n x)
@@ -338,7 +338,7 @@ directly.</p>"
 
 (define bitscan-fwd ((src natp))
   :returns (position natp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "@(call bitscan-fwd) returns the bit position of the least significant
 bit in @('src') that is set, or 0 when @('src') is zero (and hence has no such
 bit)."
@@ -379,7 +379,7 @@ bit)."
 
 (define bitscan-rev ((src natp))
   :returns (position natp :rule-classes :type-prescription)
-  :parents (extra-defs)
+  :parents (bitops/extra-defs)
   :short "@(call bitscan-rev) returns the bit position of the most significant
 bit in @('src') that is set, or 0 when @('src') is zero (and hence has no such
 bit)."

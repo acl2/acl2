@@ -25,8 +25,8 @@
 
 (in-package "ACL2")
 (include-book "sexpr-vars")
-(include-book "centaur/bitops/bitsets" :dir :system)
-(include-book "centaur/bitops/sbitsets" :dir :system)
+(include-book "std/bitsets/bitsets" :dir :system)
+(include-book "std/bitsets/sbitsets" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
 
 (local (in-theory (disable natp)))

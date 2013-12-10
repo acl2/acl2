@@ -65,7 +65,7 @@ include Makefile-pdeps
 	@ls -l $*.mpcert
 
 
-.PHONY: all clean clean_proofs
+.PHONY: all clean
 
 # We could use cert.pl to clean up the certs, but it misses a few because of
 # images; this once led me to be pretty confused because an old cert was being
@@ -73,9 +73,6 @@ include Makefile-pdeps
 # to just aggressively remove certs here.
 clean:
 	@echo "Cleaning ACL2 directory (certificates, ACL2 images, etc.)"
-	@echo "Note: this doesn't clean up ../Proofs, which contains the saved"
-	@echo "      proofs for bootstrapping.  To also clean these files, "
-	@echo "      run 'make clean clean_proofs'."
 	@../../../build/clean.pl
 	@rm -f `find . -name "*.mpcert"`
 	@rm -f `find . -name "*.out"`
@@ -99,10 +96,8 @@ clean:
 	@rm -f tactics/autodoc/*.tex
 	@rm -f bootstrap/*/autodoc/*.tex
 	@rm -f Makefile-cache Makefile-deps Makefile-pdeps TAGS
-
-clean_proofs:
 	@echo "Cleaning ../Proofs directory."
-	cd ../Proofs; ./clean-proofs.sh
+	@cd ../Proofs; ./clean-proofs.sh
 
 acl2-images/tactics-acl2: rewrite/fast-crewrite-clause.cert \
                   rewrite/traces/trace-arities.cert \

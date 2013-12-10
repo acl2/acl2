@@ -24,13 +24,23 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
+(include-book "centaur/misc/arith-equivs" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 
 
+(defsection bitops/ash-bounds
+  :parents (bitops)
+  :short "A book with some basic bounding and monotonicity lemmas for @(see
+ash) and @(see logtail)."
+
+  :long "<p>This is a fast-loading book that can be used separately from the
+rest of Bitops.</p>")
+
+
 (defsection self-bounds-for-logtail
-  :parents (logtail)
+  :parents (bitops/ash-bounds logtail)
   :short "Lemmas for the bounds of @('(logtail n a)') versus @('a')."
 
   :long "<p>These are lemmas for:</p>
@@ -188,11 +198,8 @@
                                      (< a (logtail n a)))))))
 
 
-
-
-
 (defsection self-bounds-for-ash
-  :parents (ash)
+  :parents (bitops/ash-bounds ash)
   :short "Lemmas for the bounds of @('(ash a b)') versus @('a')."
 
   :long "<p>These are lemmas for:</p>
@@ -248,13 +255,11 @@ to negative numbers.</p>"
   (defthm |(< (ash a b) a) when (posp a)|
     (implies (posp a)
              (equal (< (ash a b) a)
-                    (and (integerp b)
-                         (< b 0))))
+                    (negp b)))
     :rule-classes ((:rewrite)
                    (:linear :corollary
                             (implies (and (posp a)
-                                          (integerp b)
-                                          (< b 0))
+                                          (negp b))
                                      (< (ash a b) a))))
     :hints(("Goal"
             :in-theory (disable |(< a (ash a b)) when (posp a)|
@@ -265,7 +270,7 @@ to negative numbers.</p>"
 
 
 (defsection monotonicity-properties-of-ash
-  :parents (ash)
+  :parents (bitops/ash-bounds ash)
   :short "Lemmas about @('(ash a b)') versus @('(ash a c)')."
 
   :long "<p>These are basic lemmas about:</p>
@@ -310,7 +315,7 @@ extend these to negative numbers.</p>"
 
 
 (defsection |(= 0 (ash 1 x))|
-  :parents (ash)
+  :parents (bitops/ash-bounds ash)
 
   (local (defthm l0
            (implies (zip x)
@@ -327,5 +332,5 @@ extend these to negative numbers.</p>"
 
   (defthm |(= 0 (ash 1 x))|
     (equal (equal 0 (ash 1 x))
-           (and (integerp x)
-                (< x 0)))))
+           (negp x))
+    :hints(("Goal" :in-theory (enable negp)))))

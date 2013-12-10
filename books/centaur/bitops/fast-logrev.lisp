@@ -29,21 +29,14 @@
 (local (include-book "equal-by-logbitp"))
 (local (include-book "arithmetic/top" :dir :system))
 
-;; Original version:
-;;
-;; b = ((b * 0x0802LU & 0x22110LU) | (b * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
-;;
-;; Rewritten to make precedence clear:
-;;
-;; temp1 = (b * 0x0802LU & 0x22110LU)
-;; temp2 = (b * 0x8020LU & 0x88440LU)
-;; temp3 = temp1 | temp2
-;; temp4 = temp3 * 0x10101LU
-;; result = temp4 >> 16
+(defxdoc bitops/fast-logrev
+  :parents (bitops logrev)
+  :short "Optimized definitions of @(see logrev) at particular sizes.")
+
+(local (xdoc::set-default-parents bitops/fast-logrev))
 
 (define fast-logrev-u8 ((x :type (unsigned-byte 8)))
   :returns (reverse-x)
-  :parents (logrev)
   :inline t
   :enabled t
   :verify-guards nil
@@ -69,6 +62,18 @@ is a fixnum on CCL and probably most other 64-bit Lisps.  In contrast, the
      ;; .32 seconds
      (time (loop for i fixnum from 1 to times do (fast-logrev-u8 byte))))
 })"
+
+; Original version:
+;
+; b = ((b * 0x0802LU & 0x22110LU) | (b * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
+;
+; Rewritten to make precedence clear:
+;
+; temp1 = (b * 0x0802LU & 0x22110LU)
+; temp2 = (b * 0x8020LU & 0x88440LU)
+; temp3 = temp1 | temp2
+; temp4 = temp3 * 0x10101LU
+; result = temp4 >> 16
 
   (mbe :logic (logrev 8 x)
        :exec
@@ -119,7 +124,6 @@ is a fixnum on CCL and probably most other 64-bit Lisps.  In contrast, the
 
 (define fast-logrev-u16 ((x :type (unsigned-byte 16)))
   :returns (reverse-x)
-  :parents (logrev)
   :enabled t
   :short "Fast implementation of @('(logrev 16 x)') for 16-bit unsigned values."
   :long "
@@ -153,7 +157,6 @@ is a fixnum on CCL and probably most other 64-bit Lisps.  In contrast, the
 
 (define fast-logrev-u32 ((x :type (unsigned-byte 32)))
   :returns (reverse-x)
-  :parents (logrev)
   :enabled t
   :short "Faster implementation of @('(logrev 32 x)') for 32-bit unsigned
 values."
@@ -192,7 +195,6 @@ fast.</p>
 
 (define fast-logrev-u64 ((x :type (unsigned-byte 64)))
   :returns (reverse-x)
-  :parents (logrev)
   :enabled t
   :short "Faster implementation of @('(logrev 64 x)') for 64-bit unsigned
 values."

@@ -1,5 +1,5 @@
 ; Centaur Bitops Library
-; Copyright (C) 2010-2011 Centaur Technology
+; Copyright (C) 2010-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -20,19 +20,20 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
-(include-book "xdoc/top" :dir :system)
-(include-book "misc/definline" :dir :system)
-(include-book "tools/bstar" :dir :system)
-(include-book "ihs/logops-definitions" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "ihs/basic-definitions" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
-(include-book "std/basic/defs" :dir :system)
 (local (include-book "ihsext-basics"))
 (local (include-book "ash-bounds"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
+(defsection bitops/saturate
+  :parents (bitops)
+  :short "Definitions of signed and unsigned saturation operations.")
+
+(local (xdoc::set-default-parents bitops/saturate))
 
 (defsection unsigned-saturate
-  :parents (bitops)
   :short "@(call unsigned-saturate) coerces the integer @('x') into an
 @('n')-bit unsigned integer by unsigned saturation."
 
@@ -46,27 +47,31 @@
 <p>@('unsigned-saturate') is actually a macro.  Generally it expands into a
 call of @('unsigned-saturate-fn').  But, in the common cases where @('n') is
 explicitly 8, 16, 32, or 64, it instead expands into a call of an optimized,
-inlined function.</p>"
+inlined function.</p>
 
-  (defund unsigned-saturate-fn (n x)
-    (declare (xargs :guard (and (posp n)
-                                (integerp x))))
-    (b* ((n       (lnfix n))
-         (x       (lifix x))
-         (2^n     (ash 1 n))
-         (max     (+ -1 2^n))
-         ((when (>= x max))
-          max)
-         ((when (<= x 0))
-          0))
-      x))
+@(def unsigned-saturate)"
 
-  (local (in-theory (enable unsigned-saturate-fn)))
+  (defmacro unsigned-saturate (n x)
+    (cond ((eql n 8)   `(unsigned-saturate8 ,x))
+          ((eql n 16)  `(unsigned-saturate16 ,x))
+          ((eql n 32)  `(unsigned-saturate32 ,x))
+          ((eql n 64)  `(unsigned-saturate64 ,x))
+          (t           `(unsigned-saturate-fn ,n ,x)))))
 
-  (defthm natp-of-unsigned-saturate-fn
-    (natp (unsigned-saturate-fn n x))
-    :rule-classes :type-prescription)
-
+(define unsigned-saturate-fn ((n posp)
+                              (x integerp))
+  :parents (unsigned-saturate)
+  :returns (saturated natp :rule-classes :type-prescription)
+  :short "Logical definition of @(see unsigned-saturate), and also its
+executable implementation in the general case."
+  (b* ((n   (lnfix n))
+       (x   (lifix x))
+       (2^n (ash 1 n))
+       (max (+ -1 2^n))
+       ((when (>= x max)) max)
+       ((when (<= x 0)) 0))
+    x)
+  ///
   (defthm unsigned-byte-p-of-unsigned-saturate-fn
     (implies (natp n)
              (unsigned-byte-p n (unsigned-saturate-fn n x)))
@@ -75,52 +80,58 @@ inlined function.</p>"
   (defcong nat-equiv equal (unsigned-saturate-fn n x) 1)
   (defcong int-equiv equal (unsigned-saturate-fn n x) 2)
 
-
-  (definline unsigned-saturate8 (x)
-    (declare (xargs :guard (integerp x)))
-    (mbe :logic (unsigned-saturate-fn 8 x)
-         :exec
-         (cond ((>= x #ux_FF) #ux_FF)
-               ((<= x 0)      0)
-               (t             x))))
-
-  (definline unsigned-saturate16 (x)
-    (declare (xargs :guard (integerp x)))
-    (mbe :logic (unsigned-saturate-fn 16 x)
-         :exec
-         (cond ((>= x #ux_FFFF) #ux_FFFF)
-               ((<= x 0)        0)
-               (t               x))))
-
-  (definline unsigned-saturate32 (x)
-    (declare (xargs :guard (integerp x)))
-    (mbe :logic (unsigned-saturate-fn 32 x)
-         :exec
-         (cond ((>= x #ux_FFFF_FFFF) #ux_FFFF_FFFF)
-               ((<= x 0)             0)
-               (t                    x))))
-
-  (definline unsigned-saturate64 (x)
-    (declare (xargs :guard (integerp x)))
-    (mbe :logic (unsigned-saturate-fn 64 x)
-         :exec
-         (cond ((>= x #ux_FFFF_FFFF_FFFF_FFFF) #ux_FFFF_FFFF_FFFF_FFFF)
-               ((<= x 0)                       0)
-               (t                              x))))
-
-  (defmacro unsigned-saturate (n x)
-    (cond ((eql n 8)   `(unsigned-saturate8 ,x))
-          ((eql n 16)  `(unsigned-saturate16 ,x))
-          ((eql n 32)  `(unsigned-saturate32 ,x))
-          ((eql n 64)  `(unsigned-saturate64 ,x))
-          (t           `(unsigned-saturate-fn ,n ,x))))
-
   (add-macro-alias unsigned-saturate unsigned-saturate-fn))
+
+(local (in-theory (enable unsigned-saturate-fn)))
+
+(define unsigned-saturate8 ((x integerp))
+  :parents (unsigned-saturate)
+  :short "Optimized implementation of 8-bit unsigned saturation."
+  :inline t
+  :enabled t
+  (mbe :logic (unsigned-saturate-fn 8 x)
+       :exec
+       (cond ((>= x #ux_FF) #ux_FF)
+             ((<= x 0)      0)
+             (t             x))))
+
+(define unsigned-saturate16 ((x integerp))
+  :parents (unsigned-saturate)
+  :short "Optimized implementation of 16-bit unsigned saturation."
+  :inline t
+  :enabled t
+  (mbe :logic (unsigned-saturate-fn 16 x)
+       :exec
+       (cond ((>= x #ux_FFFF) #ux_FFFF)
+             ((<= x 0)        0)
+             (t               x))))
+
+(define unsigned-saturate32 ((x integerp))
+  :parents (unsigned-saturate)
+  :short "Optimized implementation of 32-bit unsigned saturation."
+  :inline t
+  :enabled t
+  (mbe :logic (unsigned-saturate-fn 32 x)
+       :exec
+       (cond ((>= x #ux_FFFF_FFFF) #ux_FFFF_FFFF)
+             ((<= x 0)             0)
+             (t                    x))))
+
+(define unsigned-saturate64 ((x integerp))
+  :parents (unsigned-saturate)
+  :short "Optimized implementation of 64-bit unsigned saturation."
+  :inline t
+  :enabled t
+  (mbe :logic (unsigned-saturate-fn 64 x)
+       :exec
+       (cond ((>= x #ux_FFFF_FFFF_FFFF_FFFF) #ux_FFFF_FFFF_FFFF_FFFF)
+             ((<= x 0)                       0)
+             (t                              x))))
 
 
 
 (defsection signed-saturate
-  :parents (bitops)
+  :parents (bitops/saturate)
   :short "@(call signed-saturate) coerces the integer @('x') into an @('n')-bit
 signed integer by signed saturation, then returns the result as an @('n')-bit
 <b>unsigned</b> number."
@@ -140,93 +151,107 @@ result.</p>
 <p>@('signed-saturate') is actually a macro.  Generally it expands into a call
 of @('signed-saturate-fn').  But, in the common cases where @('n') is
 explicitly 8, 16, 32, or 64, it instead expands into a call of an optimized,
-inlined function.</p>"
+inlined function.</p>
 
-  (defund signed-saturate-fn (n x)
-    (declare (xargs :guard (and (posp n)
-                                (integerp x))))
-    (b* ((n       (lnfix n))
-         (x       (lifix x))
-         ((when (mbe :logic (zp n)
-                     :exec nil))
-          0)
-         (2^{n-1} (ash 1 (1- n)))
-         (max     (+ -1 2^{n-1}))
-         ((when (>= x max))
-          max)
-         (min     (- 2^{n-1}))
-         ((when (<= x min))
-          2^{n-1})
-         (mask    (+ -1 (ash 1 n))))
-      (logand mask x)))
-
-  (local (in-theory (enable signed-saturate-fn)))
-
-  (defthm natp-of-signed-saturate-fn
-    (natp (signed-saturate-fn n x))
-    :rule-classes :type-prescription)
-
-  (local (defthm crock
-           (implies (and (integerp n)
-                         (< 0 n))
-                    (< (ash 1 (+ -1 n)) (ash 1 n)))
-           :rule-classes :linear))
-
-  (defthm unsigned-byte-p-of-signed-saturate-fn
-    (implies (natp n)
-             (unsigned-byte-p n (signed-saturate-fn n x)))
-    :hints(("Goal" :in-theory (enable expt-2-is-ash))))
-
-  (defcong nat-equiv equal (signed-saturate-fn n x) 1)
-  (defcong int-equiv equal (signed-saturate-fn n x) 2)
-
-
-
-  (definline signed-saturate8 (x)
-    (declare (xargs :guard (integerp x)))
-    (mbe :logic (signed-saturate-fn 8 x)
-         :exec
-         (cond ((>= x #ux_+7F) #ux_7F)
-               ((<= x #ux_-80) #ux_80)
-               (t
-                (the (unsigned-byte 8)
-                  (logand (the (signed-byte 8) x) #ux_FF))))))
-
-  (definline signed-saturate16 (x)
-    (declare (xargs :guard (integerp x)))
-    (mbe :logic (signed-saturate-fn 16 x)
-         :exec
-         (cond ((>= x #ux_+7FFF) #ux_7FFF)
-               ((<= x #ux_-8000) #ux_8000)
-               (t (the (unsigned-byte 16)
-                    (logand (the (signed-byte 16) x) #ux_FFFF))))))
-
-  (definline signed-saturate32 (x)
-    (declare (xargs :guard (integerp x)))
-    (mbe :logic (signed-saturate-fn 32 x)
-         :exec
-         (cond ((>= x #ux_+7FFF_FFFF) #ux_7FFF_FFFF)
-               ((<= x #ux_-8000_0000) #ux_8000_0000)
-               (t (the (unsigned-byte 32)
-                    (logand (the (signed-byte 32) x) #ux_FFFF_FFFF))))))
-
-  (definline signed-saturate64 (x)
-    (declare (xargs :guard (integerp x)))
-    (mbe :logic (signed-saturate-fn 64 x)
-         :exec
-         (cond ((>= x #ux_+7FFF_FFFF_FFFF_FFFF) #ux_7FFF_FFFF_FFFF_FFFF)
-               ((<= x #ux_-8000_0000_0000_0000) #ux_8000_0000_0000_0000)
-               (t (the (unsigned-byte 64)
-                    (logand (the (signed-byte 64) x) #ux_FFFF_FFFF_FFFF_FFFF))))))
+@(def signed-saturate)"
 
   (defmacro signed-saturate (n x)
     (cond ((eql n 8)   `(signed-saturate8 ,x))
           ((eql n 16)  `(signed-saturate16 ,x))
           ((eql n 32)  `(signed-saturate32 ,x))
           ((eql n 64)  `(signed-saturate64 ,x))
-          (t           `(signed-saturate-fn ,n ,x))))
+          (t           `(signed-saturate-fn ,n ,x)))))
+
+(define signed-saturate-fn ((n posp)
+                            (x integerp))
+  :parents (signed-saturate)
+  :returns (saturated natp :rule-classes :type-prescription)
+  :short "Logical definition of @(see signed-saturate), and also its executable
+implementation in the general case."
+  (b* ((n       (lnfix n))
+       (x       (lifix x))
+       ((when (mbe :logic (zp n)
+                   :exec nil))
+        0)
+       (2^{n-1} (ash 1 (1- n)))
+       (max     (+ -1 2^{n-1}))
+       ((when (>= x max))
+        max)
+       (min     (- 2^{n-1}))
+       ((when (<= x min))
+        2^{n-1})
+       (mask    (+ -1 (ash 1 n))))
+    (logand mask x))
+  ///
+  (local (defthm crock
+           (implies (and (integerp n)
+                         (< 0 n))
+                    (< (ash 1 (+ -1 n)) (ash 1 n)))
+           :rule-classes :linear))
+
+  (local (include-book "ihs-extensions")) ;; bozo
+  (defthm unsigned-byte-p-of-signed-saturate-fn
+    (implies (natp n)
+             (unsigned-byte-p n (signed-saturate-fn n x)))
+    :hints(("Goal" :in-theory (e/d (expt-2-is-ash)
+                                   (ash-1-removal)))))
+
+  (defcong nat-equiv equal (signed-saturate-fn n x) 1)
+  (defcong int-equiv equal (signed-saturate-fn n x) 2)
 
   (add-macro-alias signed-saturate signed-saturate-fn))
+
+(local (in-theory (enable signed-saturate-fn)))
+
+(define signed-saturate8 ((x integerp))
+  :parents (signed-saturate)
+  :short "Optimized implementation of 8-bit signed saturation."
+  :inline t
+  :enabled t
+  (mbe :logic (signed-saturate-fn 8 x)
+       :exec
+       (cond ((>= x #ux_+7F) #ux_7F)
+             ((<= x #ux_-80) #ux_80)
+             (t
+              (the (unsigned-byte 8)
+                (logand (the (signed-byte 8) x) #ux_FF))))))
+
+(define signed-saturate16 ((x integerp))
+  :parents (signed-saturate)
+  :short "Optimized implementation of 16-bit signed saturation."
+  :inline t
+  :enabled t
+  (mbe :logic (signed-saturate-fn 16 x)
+       :exec
+       (cond ((>= x #ux_+7FFF) #ux_7FFF)
+             ((<= x #ux_-8000) #ux_8000)
+             (t (the (unsigned-byte 16)
+                  (logand (the (signed-byte 16) x) #ux_FFFF))))))
+
+(define signed-saturate32 ((x integerp))
+  :parents (signed-saturate)
+  :short "Optimized implementation of 32-bit signed saturation."
+  :inline t
+  :enabled t
+  (mbe :logic (signed-saturate-fn 32 x)
+       :exec
+       (cond ((>= x #ux_+7FFF_FFFF) #ux_7FFF_FFFF)
+             ((<= x #ux_-8000_0000) #ux_8000_0000)
+             (t (the (unsigned-byte 32)
+                  (logand (the (signed-byte 32) x) #ux_FFFF_FFFF))))))
+
+(define signed-saturate64 ((x integerp))
+  :parents (signed-saturate)
+  :short "Optimized implementation of 64-bit signed saturation."
+  :inline t
+  :enabled t
+  (mbe :logic (signed-saturate-fn 64 x)
+       :exec
+       (cond ((>= x #ux_+7FFF_FFFF_FFFF_FFFF) #ux_7FFF_FFFF_FFFF_FFFF)
+             ((<= x #ux_-8000_0000_0000_0000) #ux_8000_0000_0000_0000)
+             (t (the (unsigned-byte 64)
+                  (logand (the (signed-byte 64) x) #ux_FFFF_FFFF_FFFF_FFFF))))))
+
 
 
 

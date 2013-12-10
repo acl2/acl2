@@ -18,6 +18,13 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
-(include-book "std/portcullis" :dir :system)
-; cert-flags: ? t :ttags :all
+(in-package "BITSETS")
+
+(defmacro enable (&rest args)
+  `(enable* . ,args))
+
+(defmacro disable (&rest args)
+  `(disable* . ,args))
+
+(defmacro e/d (&rest args)
+  `(e/d* . ,args))

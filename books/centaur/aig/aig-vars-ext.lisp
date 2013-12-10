@@ -23,7 +23,7 @@
 (include-book "defsort/defsort" :dir :system)
 (include-book "aig-base")
 (include-book "tools/bstar" :dir :system)
-(include-book "centaur/bitops/sbitsets" :dir :system)
+(include-book "std/bitsets/sbitsets" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/misc/alist-defs" :dir :system)
 (include-book "centaur/misc/numlist" :dir :system)
@@ -270,7 +270,7 @@
   (declare (xargs :guard (sbitsetp x)))
   (if (atom x)
       0
-    (max (lnfix (sbitset-pair-offset (car x)))
+    (max (lnfix (bitsets::sbitset-pair-offset (car x)))
          (sbitset-max-offset (cdr x)))))
 
 ;; (defthm sbitset-offset-<=-max
@@ -288,8 +288,8 @@
   (if (atom x)
       acc
     (let* ((pair1   (car x))
-           (offset1 (sbitset-pair-offset pair1))
-           (block1  (sbitset-pair-block pair1)))
+           (offset1 (bitsets::sbitset-pair-offset pair1))
+           (block1  (bitsets::sbitset-pair-block pair1)))
       ;; BOZO should probably use ash 5 for 32-bit case
       (60bits-0-59-trans (* offset1 60)
                          block1
@@ -382,10 +382,10 @@
 (defthm sbitset-max-offset-of-sbitset-union-exec
   (implies (and (sbitsetp x)
                 (sbitsetp y))
-           (equal (sbitset-max-offset (sbitset-union-exec x y))
+           (equal (sbitset-max-offset (bitsets::sbitset-union-exec x y))
                   (max (sbitset-max-offset x)
                        (sbitset-max-offset y))))
-  :hints(("Goal" :in-theory (enable sbitset-union-exec))))
+  :hints(("Goal" :in-theory (enable bitsets::sbitset-union-exec))))
 
 (defthm sbitset-max-offset-of-sbitset-union
   (implies (and (sbitsetp x) (sbitsetp y))
@@ -396,9 +396,9 @@
 
 (defthm sbitset-max-offset-of-sbitset-singleton
   (equal (sbitset-max-offset (sbitset-singleton n))
-         (floor (nfix n) *sbitset-block-size*))
+         (floor (nfix n) bitsets::*sbitset-block-size*))
   :hints(("Goal" :in-theory (enable sbitset-singleton
-                                    sbitset-singleton-pair))))
+                                    bitsets::sbitset-singleton-pair))))
 
 (defthm sbitset-max-offset-of-lookup
   (<= (sbitset-max-offset (cdr (hons-assoc-equal x memo-table)))

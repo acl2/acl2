@@ -51,8 +51,13 @@ href='http://code.google.com/p/acl2-books/'>ACL2 Community Books</a>.</li>
 
 <li><b>A local version.</b> If you sometimes work without an internet
 connection, or are using development snapshots of ACL2 and need up-to-date
-documentation, you can build a local version of the documentation.  You first
-need to build ACL2(h), then certify the @('centaur/doc') book as follows:
+documentation, you can <a href='download/'>download</a> a local copy of this
+manual.</li>
+
+</ul>
+
+<p>You can also build your own copy of the manual.  To do this, you first need
+to build ACL2(h), then certify the @('centaur/doc') book as follows:
 
 @({
   cd acl2-sources/books

@@ -22,6 +22,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "natstr")
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "arithmetic"))
 

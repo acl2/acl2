@@ -28,7 +28,7 @@
 (include-book "../mlib/warnings")
 (include-book "../util/cwtime")
 (include-book "use-set-ignore")
-(include-book "centaur/bitops/bitsets" :dir :system)
+(include-book "std/bitsets/bitsets" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 

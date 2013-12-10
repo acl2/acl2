@@ -1,5 +1,5 @@
 ; Centaur Bitops Library
-; Copyright (C) 2010-2011 Centaur Technology
+; Copyright (C) 2010-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -20,22 +20,22 @@
 
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
-(include-book "ihs/logops-definitions" :dir :system)
-; (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+(include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "ihsext-basics"))
-(local (in-theory (disable floor mod logbitp evenp oddp ash)))
-(local (in-theory (disable logcons logcar logcdr integer-length)))
-(local (in-theory (disable expt logior logand lognot)))
+(local (in-theory (enable* arith-equiv-forwarding)))
 
 (defxdoc bitops/defaults
   :parents (bitops)
-  :short "Basic theorems about the \"default\" behavior of bit operations when
-their inputs are ill-formed.")
+  :short "(semi-deprecated) Basic theorems about the \"default\" behavior of
+bit-vector operations when their inputs are ill-formed (e.g., not integers, not
+naturals)."
 
-(local (in-theory (enable* arith-equiv-forwarding)))
+  :long "<p>We tend not to include this any more, because it should mostly be
+subsumed by the @('nat-equiv') and @('int-equiv') congruence reasoning.</p>")
 
 (defsection logbitp-defaults
   :parents (bitops/defaults logbitp)
+  :short "Behavior of @(see logbitp) on bad inputs."
 
   (defthm logbitp-default-1
     (implies (not (natp a))
@@ -54,6 +54,7 @@ their inputs are ill-formed.")
 
 (defsection lognot-default
   :parents (bitops/defaults lognot)
+  :short "Behavior of @(see lognot) on bad inputs."
 
   (defthm lognot-default
     (implies (not (integerp x))
@@ -66,6 +67,7 @@ their inputs are ill-formed.")
 
 (defsection logand-defaults
   :parents (bitops/defaults logand)
+  :short "Behavior of @(see logand) on bad inputs."
 
   (defthm logand-default-1
     (implies (not (integerp x))
@@ -84,6 +86,7 @@ their inputs are ill-formed.")
 
 (defsection logior-defaults
   :parents (bitops/defaults logior)
+  :short "Behavior of @(see logior) on bad inputs."
 
   (defthm logior-default-1
     (implies (not (integerp x))
@@ -102,6 +105,7 @@ their inputs are ill-formed.")
 
 (defsection logcar-default
   :parents (bitops/defaults logcar)
+  :short "Behavior of @(see logcar) on bad inputs."
 
   (defthm logcar-default
     (implies (not (integerp x))
@@ -112,6 +116,7 @@ their inputs are ill-formed.")
 
 (defsection logcdr-default
   :parents (bitops/defaults logcdr)
+  :short "Behavior of @(see logcdr) on bad inputs."
 
   (defthm logcdr-default
     (implies (not (integerp x))
@@ -120,9 +125,9 @@ their inputs are ill-formed.")
     :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
-
 (defsection integer-length-default
   :parents (bitops/defaults integer-length)
+  :short "Behavior of @(see integer-length) on bad inputs."
 
   (defthm integer-length-default
     (implies (not (integerp x))
@@ -133,6 +138,7 @@ their inputs are ill-formed.")
 
 (defsection ash-defaults
   :parents (bitops/defaults ash)
+  :short "Behavior of @(see ash) on bad inputs."
 
   (defthm ash-default-1
     (implies (not (integerp x))
@@ -150,6 +156,7 @@ their inputs are ill-formed.")
 
 (defsection logxor-defaults
   :parents (bitops/defaults logxor)
+  :short "Behavior of @(see logxor) on bad inputs."
 
   (defthm logxor-default-1
     (implies (not (integerp x))

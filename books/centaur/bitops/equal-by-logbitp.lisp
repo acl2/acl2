@@ -24,13 +24,22 @@
 ; agree on every bit.
 
 (in-package "ACL2")
-(include-book "std/util/wizard" :dir :system)
-(local (include-book "integer-length"))
-(local (in-theory (disable floor mod logbitp evenp oddp)))
-(local (in-theory (disable logcons logcar logcdr integer-length)))
-(include-book "ihsext-basics")
-(local (include-book "arithmetic/top-with-meta" :dir :system))
+(include-book "logbitp-mismatch")
 (include-book "clause-processors/witness-cp" :dir :system)
+(include-book "std/util/wizard" :dir :system)
+(local (include-book "ihsext-basics"))
+(local (include-book "integer-length"))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
+
+; BOZOs:
+;   - Document rulesets
+;   - Document logbitp-reasoning and so on.
+
+(defsection bitops/equal-by-logbitp
+  :parents (bitops)
+  :short "Introduces @('equal-by-logbitp'), a strategy for proving that @('a =
+b') by showing that their bits are equal, and computed hints that can automate
+the application of this strategy.")
 
 (local (defthm equal-of-logcdrs-when-equal-of-logcars
          (implies (and (integerp i)
@@ -53,89 +62,9 @@
        (equal (logcar a) 1))
    :rule-classes ((:forward-chaining :trigger-terms ((logcar a))))))
 
-;; (local (defthm lemma1
-;;          (implies (integerp a)
-;;                   (equal (mod a 2) (logcar a)))
-;;          :hints(("Goal" :in-theory (enable  logcar)))))
-
-;; (local (defthm lemma2
-;;          (implies (integerp a)
-;;                   (equal (floor a 2) (logcdr a)))
-;;          :hints(("Goal" :in-theory (enable  logcdr)))))
-
-
-(defsection logbitp-mismatch
-  :parents (bitops)
-  :short "@(call logbitp-mismatch) finds the minimal bit-position for which
-@('a') and @('b') differ, or returns @('NIL') if no such bit exists."
-
-  :long "<p>This is mainly useful for proving @(see equal-by-logbitp), but
-it's also occasionally useful as a witness in other theorems.</p>"
-
-  (defund logbitp-mismatch (a b)
-    (declare (xargs :measure (+ (integer-length a)
-                                (integer-length b))
-                    :guard (and (integerp a)
-                                (integerp b))))
-    (cond ((not (equal (logcar a) (logcar b)))
-           0)
-          ((and (zp (integer-length a))
-                (zp (integer-length b)))
-           nil)
-          (t
-           (let ((tail (logbitp-mismatch (logcdr a) (logcdr b))))
-             (and tail (+ 1 tail))))))
-
-  (local (in-theory (enable logbitp-mismatch
-                            integer-length**)))
-  (local (in-theory (enable* arith-equiv-forwarding)))
-
-  (defthm logbitp-mismatch-under-iff
-    (iff (logbitp-mismatch a b)
-         (not (equal (ifix a) (ifix b)))))
-
-  (local (in-theory (disable logbitp-mismatch-under-iff)))
-
-  (defthm logbitp-mismatch-correct
-    (implies (logbitp-mismatch a b)
-             (not (equal (logbitp (logbitp-mismatch a b) a)
-                         (logbitp (logbitp-mismatch a b) b))))
-    :hints(("Goal"
-            :in-theory (enable logbitp-mismatch logbitp**)
-            :induct (logbitp-mismatch a b))))
-
-
-  (defthm logbitp-mismatch-upper-bound
-    (implies (logbitp-mismatch a b)
-             (<= (logbitp-mismatch a b)
-                 (max (integer-length a)
-                      (integer-length b))))
-    :rule-classes ((:rewrite) (:linear)))
-
-  (defthm logbitp-mismatch-upper-bound-for-nonnegatives
-    (implies (and (not (and (integerp a) (< a 0)))
-                  (not (and (integerp b) (< b 0)))
-                  (logbitp-mismatch a b))
-             (< (logbitp-mismatch a b)
-                (max (integer-length a)
-                     (integer-length b))))
-    :rule-classes ((:rewrite) (:linear :trigger-terms ((logbitp-mismatch a b)))))
-
-
-  (defthm integerp-of-logbitp-mismatch
-    ;; BOZO why do I have to have this stupid rule when the type prescription
-    ;; for logbitp-mismatch says it's either a nonnegative integer or nil?
-    (equal (integerp (logbitp-mismatch a b))
-           (if (logbitp-mismatch a b)
-               t
-             nil))
-    :hints(("Goal" :in-theory (enable logbitp-mismatch)))))
-
-
-
 
 (defsection equal-by-logbitp
-  :parents (bitops)
+  :parents (bitops/equal-by-logbitp logbitp)
   :short "Show @('a = b') by showing their bits are equal."
 
   :long "<p>@('Equal-by-logbitp') may be functionally instantiated to prove
@@ -196,12 +125,11 @@ can generate the appropriate @(':functional-instance') automatically.</p>"
                              (a (logbitp-lhs))
                              (b (logbitp-rhs))))))))
 
-
 (defthmd logbitp-when-bit
   ;; Disabled because the case split could be expensive
   (implies (bitp b)
            (equal (logbitp i b)
-                  (and (= (nfix i) 0)
+                  (and (zp i)
                        (equal b 1)))))
 
 (defthm logbitp-of-negative-const
@@ -538,7 +466,7 @@ can generate the appropriate @(':functional-instance') automatically.</p>"
 
 
 (defsection equal-by-logbitp-hint
-  :parents (bitops)
+  :parents (bitops/equal-by-logbitp)
   :short "Basic automation for @(see equal-by-logbitp)."
   :long "<p>The @('equal-by-logbitp-hint') computed hint looks for goals of the
 form:</p>
@@ -585,7 +513,7 @@ this to the @(see default-hints).</p>"
 
 
 (defsection open-logbitp-of-const-meta
-  :parents (logbitp)
+  :parents (bitops/equal-by-logbitp logbitp)
   :short "Rewrite terms like @('(logbitp foo 7)') to @('(or (not (natp
 foo)) (member-equal foo '(0 1 2)))')."
 
@@ -766,7 +694,7 @@ want to consider enabling this rule.</p>"
 
 
 (defsection equal-by-logbitp-hammer
-  :parents (equal-by-logbitp)
+  :parents (bitops/equal-by-logbitp)
   :short "Drastic automation for @(see equal-by-logbitp)."
 
   :long "<p>This is an enhanced version of @(see equal-by-logbitp-hint) that

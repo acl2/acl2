@@ -584,7 +584,7 @@ function dat_long_topic(key)
 	div.append("<h1>" + topic_name(key) + "</h1>" + fromp);
 	shortp = jQuery("<p></p>");
     } else {
-	div.append("<h1><img src='xdoc-logo.png'/></h1>");
+	div.append("<div align=\"center\" style=\"margin-top: 1em;\"><img src='xdoc-logo.png'/></div>");
 	shortp = jQuery("<p align='center'></p>");
     }
 
@@ -826,7 +826,8 @@ function search_go_main(query) {
 $(document).ready(function()
 {
     LazyLoad.js('xindex.js', onIndexLoaded);
-    $(".toolbutton").powerTip({placement:'se'});
+    $(".toolbutton").powerTip({placement: 'se'});
+    $(".rtoolbutton").powerTip({placement: 'sw'});
 });
 
 
@@ -1070,3 +1071,23 @@ function action_go_back(data) {
 
 
 
+function printer_friendly()
+{
+    var w = window.open("", "Printer",
+			"height=600,width=640,toolbar=1,location=0,resizable=1,scrollbars=1,status=0");
+    
+
+    var html = "<html>\n"
+	+ "<head>\n"
+	+ "<title>Printer Friendly</title>\n"
+	+ "<link rel=\"stylesheet\" type=\"text/css\" href=\"print.css\"/>"
+        + "<link rel=\"shortcut icon\" href=\"favicon.png\"/>"
+        + "</head><body>"
+	+ $("#data").html()
+	+ "</body></html>";
+
+    w.document.write(html);
+
+//    $(w.document.body).html(html);
+ 
+}

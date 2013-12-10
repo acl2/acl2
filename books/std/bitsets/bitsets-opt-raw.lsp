@@ -18,7 +18,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
+(in-package "BITSETS")
 
 #+(and Clozure x86-64)
 (declaim (inline bignum-extract))

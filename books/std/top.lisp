@@ -22,6 +22,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+(include-book "bitsets/top")
 (include-book "lists/top")
 (include-book "alists/top")
 (include-book "typed-lists/top")

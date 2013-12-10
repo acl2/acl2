@@ -469,6 +469,7 @@
        (- (cw "Copying fancy viewer main files...~%"))
        (state          (stupid-copy-files xdoc/fancy
                                           (list "collapse_subtopics.png"
+                                                "download.png"
                                                 "expand_subtopics.png"
                                                 "favicon.png"
                                                 "Icon_External_Link.png"
@@ -479,6 +480,9 @@
                                                 "LICENSE"
                                                 "minus.png"
                                                 "plus.png"
+                                                "print.css"
+                                                "print.html"
+                                                "printer.png"
                                                 "render.js"
                                                 "style.css"
                                                 "view_flat.png"
@@ -489,6 +493,7 @@
                                                 "xdoc_index.js"
                                                 "xdataget.pl"
                                                 "xdata2sql.pl"
+                                                "zip.sh"
                                                 )
                                           dir state))
 
@@ -513,8 +518,21 @@
     state))
 
 
+(defun run-fancy-zip (dir state)
+  (b* ((- (cw "; XDOC: Running zip.sh to create download/ directory.~%"))
+       ((mv erp val state)
+        (time$ (sys-call+ "sh" (list (oslib::catpath dir "zip.sh") dir) state)
+               :msg "; XDOC zip.sh: ~st sec, ~sa bytes.~%"))
+       ((when erp)
+        (er hard? 'run-fancy-zip
+            "zip.sh failed (exit code ~x0).  ~x1."
+            erp val)
+        state))
+    state))
+
 (defun save-fancy (all-topics dir state)
   (b* ((state (prepare-fancy-dir dir state))
-       (state (save-json-files all-topics dir state)))
+       (state (save-json-files all-topics dir state))
+       (state (run-fancy-zip dir state)))
     state))
 

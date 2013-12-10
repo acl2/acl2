@@ -321,6 +321,11 @@
        :exec (and (integerp i)
                   (= i (- (ash 1 (integer-length i)) 1)))))
 
+(defund bitmaskp (i)
+  ;; replacement for logmaskp that respects int-equiv
+  (declare (xargs :guard (integerp i)))
+  (logmaskp (ifix i)))
+
 (defun-inline loghead (size i)
   ":doc-section logops-definitions
   (LOGHEAD size i) returns the size low-order bits of i.

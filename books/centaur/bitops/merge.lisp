@@ -36,7 +36,7 @@
 ;; Speed hint
 (local (in-theory (disable ACL2::LOGIOR-<-0-LINEAR-2)))
 
-(defxdoc merge-operations
+(defxdoc bitops/merge
   :parents (bitops)
   :short "Various common operations for concatenating bytes/words."
 
@@ -61,7 +61,7 @@ them execute more efficiently.  For instance,</p>
                (merge-8-u8s a7 a6 a5 a4 a3 a2 a1 a0))))
 })")
 
-(local (xdoc::set-default-parents merge-operations))
+(local (xdoc::set-default-parents bitops/merge))
 
 
 ;; Merging Bytes --------------------------------------------------------------

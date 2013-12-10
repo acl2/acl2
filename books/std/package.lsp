@@ -23,7 +23,8 @@
 ; We load these here now so we can import their symbols into std/util as desired.
 (include-book "str/portcullis" :dir :system)
 (include-book "xdoc/portcullis" :dir :system)
-(include-book "std/osets/portcullis" :dir :system)
+(include-book "osets/portcullis")
+(include-book "bitsets/portcullis" )
 
 (defconst *std-pkg-symbols*
   (set-difference-eq
@@ -31,6 +32,7 @@
                        (union-eq *acl2-exports*
                                  *common-lisp-symbols-from-main-lisp-package*))
              '(std ; Makes ":xdoc std" do the right thing.
+               std/util ;; likewise
 
 ; Things I want to "export" to the ACL2 package.
 ;

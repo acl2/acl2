@@ -90,12 +90,26 @@
 	<form onsubmit="{search_submit(); return false;}">
 	<label id="searchmsg">
   	  Search </label>
-        <input id="searchbox" type="text" size="30" placeholder="loading..."
+        <input id="searchbox" type="text" size="23" placeholder="loading..."
 	       disabled="disabled"/>
 	<input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;"
 	       hidefocus="true" tabindex="-1"/>
 	</form>
       </td>
+      <th>
+        &#160; &#160;&#160;
+	<a href="javascript:printer_friendly()">
+	  <img class="rtoolbutton" src="printer.png"
+	       data-powertip="<p>Launch a printer-friendly version of this page, in a new window.</p>"/>
+	</a>
+	<a target="DownloadWindow" href="download/">
+	  <img class="rtoolbutton" src="download.png"
+	       data-powertip="<p>Download a zipped copy of this manual (for
+	       faster or offline browsing).</p>"/>
+	</a>
+
+      </th>
+
     </tr>
   </table>
 

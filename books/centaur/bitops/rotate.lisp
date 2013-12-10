@@ -1,5 +1,5 @@
 ; Centaur Bitops Library
-; Copyright (C) 2010-2011 Centaur Technology
+; Copyright (C) 2010-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,10 +19,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "xdoc/top" :dir :system)
-(include-book "tools/bstar" :dir :system)
-(include-book "std/basic/defs" :dir :system)
-(include-book "ihs/logops-definitions" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "ihs/basic-definitions" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "centaur/gl/gl-mbe" :dir :system)
 (local (include-book "ihsext-basics"))
@@ -32,6 +30,13 @@
 (local (in-theory (disable (force))))
 (local (in-theory (enable* arith-equiv-forwarding)))
 (local (enable-wizard))
+
+(defsection bitops/rotate
+  :parents (bitops)
+  :short "Definitions of @(see rotate-left) and @(see rotate-right) operations,
+and lemmas for reasoning about them.")
+
+(local (xdoc::set-default-parents bitops/rotate))
 
 
 (local (defthm mod-0
@@ -54,54 +59,47 @@
          :hints(("Goal" :in-theory (enable mod rem)))))
 
 
-(defsection rotate-left
+(define rotate-left
+  ((x      integerp "The bit vector to be rotated left.")
+   (width  posp     "The width of @('x').")
+   (places natp     "The number of places to rotate left."))
+  :returns (rotated natp :rule-classes :type-prescription)
+  :short "Rotate a bit-vector some arbitrary number of places to the left."
+  :long "<p>Note that @('places') can be larger than @('width').  We
+automatically reduce the number of places modulo the width, which makes sense
+since rotating @('width')-many times is the same as not rotating at all.</p>"
 
-  (defund rotate-left (x width places)
-    "Rotates X, a vector of some WIDTH, by PLACES places to the left.
+  ;; Running example to help understand the code.  Suppose X is some 16-bit
+  ;; number, say 16'b AAAA_BBBB_CCCC_DDDD, so the width is 16, and suppose we
+  ;; want to rotate left by 20 places.
 
-Note that PLACES can be larger than WIDTH.  We automatically reduce the number
-of places modulo the width, which makes sense: rotating WIDTH-many times is the
-same as not rotating at all."
-
-    (declare (xargs :guard (and (integerp x)
-                                (posp width)
-                                (natp places))))
-
-    ;; Running example to help understand the code.  Suppose X is some 16-bit
-    ;; number, say 16'b AAAA_BBBB_CCCC_DDDD, so the width is 16, and suppose we
-    ;; want to rotate left by 20 places.
-
-    (let* ((width      (lnfix width))
-           (places     (lnfix places))
-           (wmask      (1- (ash 1 width)))
-           (x          (logand x wmask))              ; chop x down to size
-           (places     (mbe :logic (mod places width) ; e.g., 20 places --> 4 places
-                            :exec
-                            ;; REM is slightly cheaper than MOD, but in many
-                            ;; cases we can probably avoid REM entirely because
-                            ;; usually we'll be rotating by some amount less
-                            ;; than the width...
-                            (if (< places width)
-                                places
-                              (rem places width))))
-           (places     (gl::gl-mbe places ;; logically this is a no-op
-                                   ;; ensure that GL knows places is short
-                                   (logand places (lognot (ash -1
-                                                               (integer-length
-                                                                width))))
-                                   ;; debugging if this check failes
-                                   (list places width)))
-           (low-num    (- width places))              ; e.g., 12
-           (mask       (1- (ash 1 low-num)))          ; e.g., 0000_1111_1111_1111
-           (xl         (logand x mask))               ; e.g., 0000_BBBB_CCCC_DDDD
-           (xh         (logand x (lognot mask)))      ; e.g., AAAA_0000_0000_0000
-           (xh-shift   (ash xh (- low-num)))          ; e.g., 0000_0000_0000_AAAA
-           (xl-shift   (ash xl places))               ; e.g., BBBB_CCCC_DDDD_0000
-           (ans        (logior xl-shift xh-shift)))   ; e.g., BBBB_CCCC_DDDD_AAAA
-      ans))
-
-  (local (in-theory (enable rotate-left)))
-
+  (let* ((width      (lnfix width))
+         (places     (lnfix places))
+         (wmask      (1- (ash 1 width)))
+         (x          (logand x wmask))                ; chop x down to size
+         (places     (mbe :logic (mod places width) ; e.g., 20 places --> 4 places
+                          :exec
+                          ;; REM is slightly cheaper than MOD, but in many
+                          ;; cases we can probably avoid REM entirely because
+                          ;; usually we'll be rotating by some amount less
+                          ;; than the width...
+                          (if (< places width)
+                              places
+                            (rem places width))))
+         (places     (gl::gl-mbe places ;; logically this is a no-op
+                                 ;; ensure that GL knows places is short
+                                 (logand places (lognot (ash -1
+                                                             (integer-length
+                                                              width))))))
+         (low-num    (- width places))              ; e.g., 12
+         (mask       (1- (ash 1 low-num)))          ; e.g., 0000_1111_1111_1111
+         (xl         (logand x mask))               ; e.g., 0000_BBBB_CCCC_DDDD
+         (xh         (logand x (lognot mask)))      ; e.g., AAAA_0000_0000_0000
+         (xh-shift   (ash xh (- low-num)))          ; e.g., 0000_0000_0000_AAAA
+         (xl-shift   (ash xl places))               ; e.g., BBBB_CCCC_DDDD_0000
+         (ans        (logior xl-shift xh-shift)))   ; e.g., BBBB_CCCC_DDDD_AAAA
+    ans)
+  ///
   (defcong int-equiv equal (rotate-left x width places) 1)
   (defcong nat-equiv equal (rotate-left x width places) 2)
   (defcong nat-equiv equal (rotate-left x width places) 3)
@@ -143,11 +141,6 @@ same as not rotating at all."
                 (equal (rotate-left #b1111000011001010 16 15)  #b0111100001100101)
                 (equal (rotate-left #b1111000011001010 16 16)  #b1111000011001010))
            :rule-classes nil))
-
-  (defthm natp-of-rotate-left
-    (natp (rotate-left x width places))
-    :rule-classes :type-prescription)
-
 
   (local (defthm logbitp-of-rotate-left-1
            (implies (and (>= n width)
@@ -208,27 +201,21 @@ same as not rotating at all."
            (equal-by-logbitp-hint))))
 
 
+(define rotate-left-1
+  ((x      integerp "The bit vector to be rotated left.")
+   (width  posp     "The width of @('x')."))
+  :returns (rotated natp :rule-classes :type-prescription)
+  :short "Rotate a bit-vector by a single place to the left."
 
+  (b* (((when (mbe :logic (zp width) :exec nil))
+        0)
+       (msb   (logbit  (- width 1) x))
+       (chop  (loghead (- width 1) x)))
+    (logcons msb chop))
 
-(defsection rotate-left-1
-
-  (defund rotate-left-1 (x width)
-    (declare (xargs :guard (and (integerp x)
-                                (posp width))))
-    (b* (((when (mbe :logic (zp width) :exec nil))
-          0)
-         (msb   (logbit  (- width 1) x))
-         (chop  (loghead (- width 1) x)))
-      (logcons msb chop)))
-
-  (local (in-theory (enable rotate-left-1)))
-
+  ///
   (defcong int-equiv equal (rotate-left-1 x width) 1)
   (defcong nat-equiv equal (rotate-left-1 x width) 2)
-
-  (defthm natp-of-rotate-left-1
-    (natp (rotate-left-1 x width))
-    :rule-classes :type-prescription)
 
   (defthmd logbitp-of-rotate-left-1-split
     (equal (logbitp n (rotate-left-1 x width))
@@ -287,8 +274,12 @@ same as not rotating at all."
                   (:instance case-split-mod-of-decrement-l1))))))
 
 
-
 (defsection rotate-left**
+  :parents (bitops/rotate rotate-left)
+  :short "Alternate, recursive definitions of @(see rotate-left)."
+  :long "<p>Here are both tail-recursive and non tail-recursive versions of
+@(see rotate-left).  These rules are disabled by default and must be explicitly
+enabled when you want to use them.</p>"
 
   (local (in-theory (e/d (case-split-mod-of-decrement)
                          (max natp nfix ifix floor-mod-elim))))
@@ -334,51 +325,49 @@ same as not rotating at all."
                                    logbitp-of-rotate-left-split)))))))
 
 
-(defsection rotate-right
+(define rotate-right
+  ((x      integerp "The bit vector to be rotated right.")
+   (width  posp     "The width of @('x').")
+   (places natp     "The number of places to rotate right."))
+  :returns (rotated natp :rule-classes :type-prescription)
+  :short "Rotate a bit-vector some arbitrary number of places to the right."
+  :long "<p>Note that @('places') can be larger than @('width').  We
+automatically reduce the number of places modulo the width, which makes sense
+since rotating @('width')-many times is the same as not rotating at all.</p>"
 
-  (local (defthm loghead-removal-backwards
-           ;; BOZO should really fix loghead's definition instead...
-           (implies (natp width)
-                    (equal (logand x (+ -1 (ash 1 width)))
-                           (loghead width x)))
-           :hints((equal-by-logbitp-hint)
-                  (and stable-under-simplificationp
-                       '(:in-theory (enable b-and bool->bit
-                                            logbitp-of-loghead-split))))))
+  :prepwork
+  ((local (defthm loghead-removal-backwards
+            ;; BOZO should really fix loghead's definition instead...
+            (implies (natp width)
+                     (equal (logand x (+ -1 (ash 1 width)))
+                            (loghead width x)))
+            :hints((equal-by-logbitp-hint)
+                   (and stable-under-simplificationp
+                        '(:in-theory (enable b-and bool->bit
+                                             logbitp-of-loghead-split)))))))
 
-  (defund rotate-right (x width places)
-    "Rotate X, a vector of some WIDTH, by PLACES places to the right.
+  ;; Running example to help understand the code: suppose X is some 16-bit
+  ;; number, say 16'b AAAA_BBBB_CCCC_DDDD, so the width is 16, and suppose we
+  ;; want to rotate by 20 places.
 
-Note that PLACES can be larger than WIDTH.  We automatically reduce the number
-of places modulo the width, which makes sense: rotating WIDTH-many times is the
-same as not rotating at all."
-
-    (declare (xargs :guard (and (integerp x)
-                                (posp width)
-                                (natp places))))
-    ;; Running example to help understand the code: suppose X is some 16-bit
-    ;; number, say 16'b AAAA_BBBB_CCCC_DDDD, so the width is 16, and suppose we
-    ;; want to rotate by 20 places.
-    (let* ((width      (lnfix width))
-           (x          (mbe :logic (loghead width x)
-                            :exec (logand x (+ -1 (ash 1 width)))))
-           (places     (lnfix places))
-           (places     (mbe :logic (mod places width) ; e.g., 20 places --> 4 places
-                            :exec
-                            ;; As in rotate-left
-                            (if (< places width)
-                                places
-                              (rem places width))))
-           (mask       (1- (ash 1 places)))         ; e.g., 0000_0000_0000_1111
-           (xl         (logand x mask))             ; e.g., 0000_0000_0000_DDDD
-           (xh-shift   (ash x (- places)))          ; e.g., 0000_AAAA_BBBB_CCCC
-           (high-num   (- width places))            ; e.g., 12
-           (xl-shift   (ash xl high-num))           ; e.g., DDDD_0000_0000_0000
-           (ans        (logior xl-shift xh-shift))) ; e.g., DDDD_AAAA_BBBB_CCCC
-      ans))
-
-  (local (in-theory (enable rotate-right)))
-
+  (let* ((width      (lnfix width))
+         (x          (mbe :logic (loghead width x)
+                          :exec (logand x (+ -1 (ash 1 width)))))
+         (places     (lnfix places))
+         (places     (mbe :logic (mod places width) ; e.g., 20 places --> 4 places
+                          :exec
+                          ;; As in rotate-left
+                          (if (< places width)
+                              places
+                            (rem places width))))
+         (mask       (1- (ash 1 places)))           ; e.g., 0000_0000_0000_1111
+         (xl         (logand x mask))               ; e.g., 0000_0000_0000_DDDD
+         (xh-shift   (ash x (- places)))            ; e.g., 0000_AAAA_BBBB_CCCC
+         (high-num   (- width places))              ; e.g., 12
+         (xl-shift   (ash xl high-num))             ; e.g., DDDD_0000_0000_0000
+         (ans        (logior xl-shift xh-shift)))   ; e.g., DDDD_AAAA_BBBB_CCCC
+    ans)
+  ///
   (defcong int-equiv equal (rotate-right x width places) 1)
   (defcong nat-equiv equal (rotate-right x width places) 2)
   (defcong nat-equiv equal (rotate-right x width places) 3)
@@ -419,10 +408,6 @@ same as not rotating at all."
                 (equal (rotate-right #b1111000011001010 16 15)  #b1110000110010101)
                 (equal (rotate-right #b1111000011001010 16 16)  #b1111000011001010))
            :rule-classes nil))
-
-  (defthm natp-of-rotate-right
-    (natp (rotate-right x width places))
-    :rule-classes :type-prescription)
 
   (local (defthm logbitp-of-rotate-right-1
            (implies (and (>= n width)
@@ -483,31 +468,25 @@ same as not rotating at all."
 
 
 
+(define rotate-right-1
+  ((x      integerp "The bit vector to be rotated right.")
+   (width  posp     "The width of @('x')."))
+  :returns (rotated natp :rule-classes :type-prescription)
+  :short "Rotate a bit-vector by a single place to the right."
 
-(defsection rotate-right-1
-
-  (defund rotate-right-1 (x width)
-    (declare (xargs :guard (and (integerp x)
-                                (posp width))))
-    (cond ((zp width)
-           0)
-          ((equal width 1)
-           ;; Rotating a one-bit thing does nothing.
-           (loghead 1 x))
-          (t
-           ;; Gaah, this is ugly
-           (let ((x (loghead width x)))
-             (logior (ash (logbit 0 x) (1- width))
-                     (ash x -1))))))
-
-  (local (in-theory (enable rotate-right-1)))
-
+  (cond ((zp width)
+         0)
+        ((equal width 1)
+         ;; Rotating a one-bit thing does nothing.
+         (loghead 1 x))
+        (t
+         ;; Gaah, this is ugly
+         (let ((x (loghead width x)))
+           (logior (ash (logbit 0 x) (1- width))
+                   (ash x -1)))))
+  ///
   (defcong int-equiv equal (rotate-right-1 x width) 1)
   (defcong nat-equiv equal (rotate-right-1 x width) 2)
-
-  (defthm natp-of-rotate-right-1
-    (natp (rotate-right-1 x width))
-    :rule-classes :type-prescription)
 
   (defthmd logbitp-of-rotate-right-1-split
     (equal (logbitp n (rotate-right-1 x width))
@@ -519,9 +498,12 @@ same as not rotating at all."
     :hints(("Goal" :in-theory (enable logbitp-of-loghead-split)))))
 
 
-
-
 (defsection rotate-right**
+  :parents (bitops/rotate rotate-right)
+  :short "Alternate, recursive definitions of @(see rotate-right)."
+  :long "<p>Here are both tail-recursive and non tail-recursive versions of
+@(see rotate-right).  These rules are disabled by default and must be
+explicitly enabled when you want to use them.</p>"
 
   (local (in-theory (e/d (case-split-mod-of-decrement)
                          (max natp nfix ifix floor-mod-elim))))

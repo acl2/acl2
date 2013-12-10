@@ -37,6 +37,13 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 
+(defsection bitops/ihsext-basics
+  :parents (bitops)
+  :short "A key book in the bitops library.  This is intended to be a (still
+lightweight) replacement for books such as @('ihs/logops-lemmas.lisp')."
+
+  :long "<p>BOZO this needs a lot of documentation.  For now you're best
+off looking at the source code.</p>")
 
 (defredundant-events
 ; There are too many rules with forced hyps in logops-lemmas.  We'll locally
@@ -101,7 +108,7 @@
 
 
 (make-event
- (prog2$ (cw "Note (from ihs-extensions): disabling ~&0.~%~%"
+ (prog2$ (cw "Bitops Note: disabling ~&0.~%~%"
              *ihs-extensions-disables*)
          '(value-triple :invisible))
  :check-expansion t)
@@ -3105,11 +3112,6 @@
 
 (defsection bitmaskp
 
-  ;; replacement for logmaskp that respects int-equiv
-  (defund bitmaskp (i)
-    (declare (xargs :guard (integerp i)))
-    (logmaskp (ifix i)))
-
   (local (in-theory (enable bitmaskp)))
 
   (defcong int-equiv equal (bitmaskp i) 1)
@@ -3182,6 +3184,7 @@
              :induct (logand mask i))))
 
   (defthmd logmaskp-lognot
+    ;; bozo why not bitmaskp?
     (equal (logmaskp (lognot mask))
            (equal mask (ash -1 (integer-length mask))))
     :hints (("goal" :induct (integer-length mask)

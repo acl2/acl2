@@ -19,25 +19,17 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-
-; ihs-extensions.lisp
-;
-; This book is can be used instead of ihs/logops-lemmas to add a bunch of
-; additional theorems and provide a more sensible theory.  This book should
-; typically be only locally included since it makes various changes to the
-; global theory such as disabling floor, mod, expt, etc.
-
 (include-book "ihsext-basics")
-;; (include-book "defaults")
 (include-book "integer-length")
-
-; (local (include-book "arithmetic-3/extra/top-ext" :dir :system))
 (local (include-book "equal-by-logbitp"))
-
-; (local (in-theory (disable expt-between-one-and-two)))
-
-
 (local (in-theory (enable* arith-equiv-forwarding)))
+
+(defsection bitops/ihs-extensions
+  :parents (bitops)
+  :short "Extension of @(see bitops/ihsext-basics) with additional lemmas."
+
+  :long "<p>BOZO this needs a lot of documentation.  For now you're best
+off looking at the source code.</p>")
 
 
 (local (defun dec-induct (n)
@@ -452,7 +444,7 @@
                           (ash-1-removal
                            exponents-add-for-nonneg-exponents
                            expt))))
-  
+
   (defthm |(2^n + a mod 2^n) when a < 2^n+1|
     (implies (and (case-split (< a (expt 2 (+ 1 n))))
                   (natp a)
@@ -798,9 +790,9 @@
     |(logbitp n (+ (expt 2 n) a))|))
 
 
-(encapsulate 
+(encapsulate
  ()
- (local (include-book "arithmetic/top-with-meta" :dir :system))            
+ (local (include-book "arithmetic/top-with-meta" :dir :system))
 
  (defthm lognot-lognot
    (equal (lognot (lognot x))
@@ -813,14 +805,14 @@
     (unsigned-byte-p n x)
     (equal (loghead n (- (loghead n (- x))))
            x))
-   :hints (("Goal" 
+   :hints (("Goal"
             :induct t
             :in-theory (e/d* (minus-to-lognot
                               ihsext-recursive-redefs
                               ihsext-inductions))
             :expand ((:free (x) (loghead n x))))))
 
- 
+
  (defthm loghead-of-negative-rw
    (implies
     (and

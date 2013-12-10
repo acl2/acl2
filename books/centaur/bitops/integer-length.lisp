@@ -48,7 +48,7 @@
 
   (defthm integer-length-type-prescription-strong
     ;; Even without any books loaded, ACL2 already knows that (integer-length a)
-    ;; is unconditinoally a natp.
+    ;; is unconditionally a natp.
     (implies (and (integerp n)
                   (< 0 n))
              (and (integerp (integer-length n))
