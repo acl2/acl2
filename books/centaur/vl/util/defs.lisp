@@ -1098,3 +1098,9 @@ code that is violating guards), it just causes a hard error.</p>"
   (defun impossible ()
     (declare (xargs :guard nil))
     (er hard 'impossible "Provably impossible")))
+
+
+;; kind of a terrible function name
+(define vl-width-from-difference ((a integerp))
+  :returns (width posp :rule-classes :type-prescription)
+  (+ 1 (abs (lifix a))))

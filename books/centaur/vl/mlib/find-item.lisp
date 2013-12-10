@@ -141,6 +141,10 @@
                                    (vl-find-portdecl-under-iff)))))
 
 
+  (defthm vl-portdecl-alist-p-of-vl-portdecl-alist
+    (implies (vl-portdecllist-p portdecls)
+             (vl-portdecl-alist-p (vl-portdecl-alist portdecls))))
+
   (defun vl-fast-find-portdecl (name portdecls alist)
     ;; This is just a faster version of vl-find-portdecl, where the search is
     ;; done as an fast-alist lookup rather than as string search.

@@ -567,6 +567,9 @@ are not really supposed to have sizes.</p>"
                (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
 
 
+
+
+
 (defsection vl-syscall-selfsize
   :parents (vl-expr-selfsize)
   :short "Compute the self-determined size of an system call."
@@ -1122,6 +1125,41 @@ expression-sizing).</p>"
       (implies (syntaxp (not (equal warnings ''nil)))
                (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
 
+(define vl-hidexpr-selfsize ((x (and (vl-expr-p x)
+                                     (vl-nonatom-p x)
+                                     (or (eq (vl-nonatom->op x) :vl-hid-dot)
+                                         (eq (vl-nonatom->op x) :vl-hid-arraydot))))
+                             (warnings vl-warninglist-p))
+  :returns (mv (new-warnings vl-warninglist-p :hyp (vl-warninglist-p warnings))
+               (size maybe-natp :hints(("Goal" :in-theory (enable maybe-natp)))))
+  (b* ((width (vl-hid-width x))
+       ((unless width)
+        (mv (cons (make-vl-warning :type :vl-hid-size-failed
+                                   :msg "Range of HID ~a0 not resolved"
+                                   :args (list x)
+                                   :fatalp t)
+                  warnings)
+            nil)))
+    (mv warnings width))
+  ///
+  (defthm vl-hidexpr-selfsize-normalize-warnings
+    (implies (syntaxp (not (equal warnings ''nil)))
+             (equal (mv-nth 1 (vl-hidexpr-selfsize x warnings))
+                    (mv-nth 1 (vl-hidexpr-selfsize x nil)))))
+
+  (defthm vl-hidexpr-welltyped-p-of-selfsize
+    (implies (and (mv-nth 1 (vl-hidexpr-selfsize x warnings))
+                  (or (equal op :vl-hid-dot)
+                      (equal op :vl-hid-arraydot))
+                  (equal type :vl-unsigned)
+                  (force (vl-expr-p x))
+                  (force (vl-nonatom-p x)))
+             (vl-hidexpr-welltyped-p
+              (vl-nonatom op (vl-nonatom->atts x) (vl-nonatom->args x)
+                          (mv-nth 1 (vl-hidexpr-selfsize x warnings))
+                          type)))
+    :hints(("Goal" :in-theory (enable vl-hidexpr-welltyped-p)))))
+
 
 (defsection vl-expr-selfsize
   :parents (vl-expr-size)
@@ -1183,12 +1221,9 @@ annotations left by @(see vl-modulelist-follow-hids) like (e.g.,
 
           ((when (or (eq op :vl-hid-dot)
                      (eq op :vl-hid-arraydot)))
-           ;; BOZO.  We should try to size HIDs using the information from
-           ;; their attributes.  We have to handle them here, rather than in
-           ;; vl-op-selfsize, because we only want to try to size "top-level"
-           ;; HIDs.  But for now I just want to press on, so I'm not trying to
-           ;; size them yet.
-           (mv warnings nil))
+
+           (vl-hidexpr-selfsize x warnings))
+
 
           ((when (eq op :vl-array-index))
            ;; BOZO we should try to size array-indexing here.  For now I'm
@@ -1595,6 +1630,18 @@ produce unsigned values.</li>
            (vl-atom-typedecide x mod ialist elem warnings))
           (op        (vl-nonatom->op x))
           (args      (vl-nonatom->args x))
+          ((when (or (eq op :vl-hid-dot)
+                     (eq op :vl-hid-arraydot)))
+           (if (assoc-equal "VL_HID_RESOLVED_RANGE_P" (vl-nonatom->atts x))
+               ;; this implies it's unsigned
+               (mv warnings :vl-unsigned)
+             (mv (cons (make-vl-warning :type :vl-bad-hid
+                                        :msg "~a0: Couldn't resolve the type of HID ~a1"
+                                        :args (list elem x)
+                                        :fatalp t)
+                       warnings)
+                 nil)))
+
           ((mv warnings arg-types)
            (vl-exprlist-typedecide-aux args mod ialist elem warnings mode)))
 
@@ -1684,11 +1731,6 @@ produce unsigned values.</li>
 
          ((:vl-array-index)
           ;; BOZO we should try to determine the type of array indexes.
-          (mv warnings nil))
-
-         ((:vl-hid-dot :vl-hid-arraydot)
-          ;; BOZO.  We should try to determine the type of a HID from its
-          ;; attributes.
           (mv warnings nil))
 
          ((:vl-funcall)
@@ -3914,8 +3956,39 @@ context-determined expressions."
               (mv nil warnings x)))
           (mv t warnings new-x)))
 
+       ((:vl-hid-dot :vl-hid-arraydot)
+        (b* (((unless (eq finaltype :vl-unsigned))
+              (b* ((w (make-vl-warning
+                       :type :vl-programming-error
+                       :msg "~a0: signed HID? Shouldn't generate this: ~a1"
+                       :args (list elem x)
+                       :fatalp t
+                       :fn 'vl-expr-expandsizes)))
+                (mv nil (cons w warnings) x)))
+             ((mv warnings selfsize) (vl-expr-selfsize x mod ialist elem warnings))
+             ((mv warnings type)     (vl-expr-typedecide x mod ialist elem warnings))
+             ((unless (and (posp selfsize)
+                           (<= selfsize finalwidth)
+                           (eq type :vl-unsigned)))
+              (b* ((w (make-vl-warning
+                       :type :vl-programming-error
+                       :msg "~a0: bad HID size or type: ~a1"
+                       :args (list elem x)
+                       :fatalp t
+                       :fn 'vl-expr-expandsizes)))
+                (mv nil (cons w warnings) x)))
+             (inner (change-vl-nonatom x
+                                       :finalwidth selfsize
+                                       :finaltype :vl-unsigned))
+             ;; Inner-width can be less than finalwidth; may need to zero-extend.
+             ((mv successp warnings new-x)
+              (vl-expandsizes-zeroextend inner finalwidth elem warnings))
+             ((unless successp)
+              (mv nil warnings x)))
+          (mv t warnings new-x)))
 
-       ((:vl-funcall :vl-syscall :vl-hid-dot :vl-hid-arraydot :vl-mintypmax
+
+       ((:vl-funcall :vl-syscall :vl-mintypmax
                      :vl-array-index)
         (b* ((w (make-vl-warning
                  :type :vl-unsupported
@@ -4398,6 +4471,9 @@ context-determined expressions."
                   (vl-expr-welltyped-p (mv-nth 2 ret))
                   (equal (vl-expr->finalwidth (mv-nth 2 ret)) finalwidth)
                   (equal (vl-expr->finaltype (mv-nth 2 ret)) finaltype))))
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((:free (ialist warnings)
+                               (vl-expr-selfsize x mod ialist elem warnings))))))
       :flag vl-expr-expandsizes)
 
     (defthm vl-exprlist-welltyped-p-of-vl-exprlist-expandsizes

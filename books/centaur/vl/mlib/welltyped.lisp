@@ -20,6 +20,8 @@
 
 (in-package "VL")
 (include-book "expr-tools")
+(include-book "range-tools")
+(include-book "hid-tools")
 (include-book "../util/sum-nats")
 (local (include-book "../util/arithmetic"))
 
@@ -84,6 +86,22 @@ hierarchical identifiers.</p>"
     :rule-classes :type-prescription))
 
 
+
+
+
+
+
+
+
+(define vl-hidexpr-welltyped-p ((x (and (vl-expr-p x)
+                                        (vl-nonatom-p x))))
+  (b* (((vl-nonatom x) x)
+       (width (vl-hid-width x)))
+    (and (eq x.finaltype :vl-unsigned)
+         width
+         (eql x.finalwidth width))))
+
+
 (defsection vl-expr-welltyped-p
   :parents (vl-expr-p expression-sizing)
   :short "@(call vl-expr-welltyped-p) determines if an @(see vl-expr-p) is
@@ -115,7 +133,13 @@ that the width of @('foo') itself is non-zero.</p>"
            (vl-atom-welltyped-p x))
           ((when (not (mbt (consp x))))
            (er hard 'vl-expr-welltyped-p "Termination hack."))
-          ((vl-nonatom x) x))
+          ((vl-nonatom x) x)
+          ((when (or (eq x.op :vl-hid-dot)
+                     (eq x.op :vl-hid-arraydot)))
+           ;; These are special because we don't require the args to be sized.
+           ;; Signedness of hierarchical identifiers is very tricky; we require
+           ;; that they be unsigned to avoid a lot of potential problems.
+           (vl-hidexpr-welltyped-p x)))
        (and
         (vl-exprlist-welltyped-p x.args)
         (case x.op
@@ -285,10 +309,6 @@ that the width of @('foo') itself is non-zero.</p>"
 
           ((:vl-syscall)
            ;; BOZO do we want to constrain these in any way?
-           t)
-
-          ((:vl-hid-dot :vl-hid-arraydot)
-           ;; BOZO anything to restrict about these?
            t)
 
           ((:vl-mintypmax)

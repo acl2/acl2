@@ -552,8 +552,8 @@ assignment truncation, etc."
 
 ;      (- (acl2::sneaky-save :pre-hid-elim mods))
 
-       (mods (xf-cwtime (vl-modulelist-hid-elim mods)
-                        :name xf-hid-elim))
+       ;; (mods (xf-cwtime (vl-modulelist-hid-elim mods)
+       ;;                  :name xf-hid-elim))
 
        ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
                                       :name propagate-errors))
@@ -581,8 +581,8 @@ assignment truncation, etc."
 ;      (mods (cwtime (vl-modulelist-drop-vcovers-hook mods)
 ;                    :name xf-vcover-elim))
 
-       (mods (xf-cwtime (vl-modulelist-stmtrewrite mods config.unroll-limit)
-                        :name xf-stmtrewrite))
+       ;; (mods (xf-cwtime (vl-modulelist-stmtrewrite mods config.unroll-limit)
+       ;;                  :name xf-stmtrewrite))
 
 ; Jared -- removing reset elimination!  Now gets handled by ordinary HID stuff.
 ;

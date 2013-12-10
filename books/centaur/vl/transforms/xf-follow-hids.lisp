@@ -709,7 +709,16 @@ identifier.</p>"
                   ;; Any failure will result in a modname of nil.  Just don't
                   ;; change anything, then.
                   (mv warnings x-prime))
+
+                 ((unless range-resolvedp)
+                  (mv (cons (make-vl-warning
+                             :type :vl-follow-hids-fail
+                             :msg "Failed to resolve the range of HID ~a0 in module ~m1"
+                             :args (list x (vl-module->name mod)))
+                            warnings)
+                      x-prime))
                  ;; Else we're ready to make our annotations.
+
                  (val     (make-vl-atom :guts (make-vl-string :value modname)))
                  (atts    (vl-nonatom->atts x-prime))
                  (atts    (acons "VL_HID_RESOLVED_MODULE_NAME" val atts))

@@ -20,6 +20,7 @@
 
 (in-package "VL")
 (include-book "expr-tools")
+(include-book "range-tools")
 (local (include-book "../util/arithmetic"))
 
 
@@ -223,13 +224,9 @@ regards even lone @('vl-hidpiece-p') atoms as valid.</p>"
 
   (defthm vl-hidexpr-p-of-vl-nonatom
     (implies (and (equal op :vl-hid-dot)
-                  (force (vl-exprlist-p args))
-                  (force (equal (len args) 2))
                   (force (vl-atom-p (first args)))
                   (force (vl-hidpiece-p (vl-atom->guts (first args))))
                   (force (vl-hidexpr-p (second args)))
-                  (force (vl-atts-p atts))
-                  (force (maybe-posp finalwidth))
                   (force (vl-maybe-exprtype-p finaltype)))
              (vl-hidexpr-p (make-vl-nonatom :op op
                                             :args args
@@ -239,21 +236,14 @@ regards even lone @('vl-hidpiece-p') atoms as valid.</p>"
 
   (defthm vl-hidexpr-p-of-vl-nonatom-arraydot
     (implies (and (equal op :vl-hid-arraydot)
-                  (force (vl-exprlist-p args))
-                  (force (equal (len args) 3))
                   (force (vl-atom-p (first args)))
                   (force (vl-hidpiece-p (vl-atom->guts (first args))))
-                  (force (vl-hidexpr-p (third args)))
-                  (force (vl-atts-p atts))
-                  (force (maybe-posp finalwidth))
-                  (force (vl-maybe-exprtype-p finaltype)))
+                  (force (vl-hidexpr-p (third args))))
              (vl-hidexpr-p (make-vl-nonatom :op op
                                             :args args
                                             :atts atts
                                             :finalwidth finalwidth
-                                            :finaltype finaltype))))
-
-  )
+                                            :finaltype finaltype)))))
 
 
 
@@ -496,12 +486,11 @@ of @(see vl-hid-fix)."
                   (force (vl-hid-indicies-resolved-p (third args)))
                   (force (vl-hid-fixed-p (third args))))
 
-             (vl-hidexpr-p (make-vl-nonatom :op op
-                                            :args args
-                                            :atts atts
-                                            :finalwidth finalwidth
-                                            :finaltype finaltype)))))
-
+             (vl-hid-fixed-p (make-vl-nonatom :op op
+                                              :args args
+                                              :atts atts
+                                              :finalwidth finalwidth
+                                              :finaltype finaltype)))))
 
 
 (defsection vl-hid-final-name
@@ -811,4 +800,91 @@ intermediate list.</p>"
                      (or (atom (cdr pieces))
                          (and (equal (second pieces) (vl-resolved->val (second args)))
                               (vl-hid-prefixp (cddr pieces) (third args)))))))))))
+
+
+
+(define vl-hid-range ((x (and (vl-expr-p x)
+                              (vl-nonatom-p x))))
+  :returns (mv successp
+               (range vl-maybe-range-p :hyp :fguard))
+  (b* ((atts (vl-nonatom->atts x))
+       ((unless (assoc-equal "VL_HID_RESOLVED_RANGE_P" atts))
+        (mv nil nil))
+       (left (cdr (assoc-equal "VL_HID_RESOLVED_RANGE_LEFT" atts)))
+       (right (cdr (assoc-equal "VL_HID_RESOLVED_RANGE_RIGHT" atts)))
+       ((unless (or (and (not left) (not right))
+                    (and left right)))
+        (mv nil nil)))
+    (if left
+        (mv t (make-vl-range :msb left :lsb right))
+      (mv t nil)))
+  ///
+  (defthm vl-hid-range-of-copy-atts
+    (equal (vl-hid-range (vl-nonatom op (vl-nonatom->atts x) args fw ft))
+           (vl-hid-range x))))
+
+(define vl-hid-rangeatts ((range (and (vl-maybe-range-p range)
+                                      (vl-maybe-range-resolved-p range)))
+                          (atts vl-atts-p
+                                "the rest of the atts"))
+  :returns (new-atts vl-atts-p :hyp :guard)
+  (b* ((atts (if range
+                 (list* (cons "VL_HID_RESOLVED_RANGE_LEFT"
+                              (vl-range->msb range))
+                        (cons "VL_HID_RESOLVED_RANGE_RIGHT"
+                              (vl-range->lsb range))
+                        atts)
+               (list* (cons "VL_HID_RESOLVED_RANGE_LEFT"
+                            nil)
+                      (cons "VL_HID_RESOLVED_RANGE_RIGHT"
+                            nil)
+                      atts))))
+    (cons (list "VL_HID_RESOLVED_RANGE_P") atts))
+  ///
+  (local (defthm vl-range-identity
+           (implies (vl-range-p range)
+                    (equal (vl-range (vl-range->msb range)
+                                     (vl-range->lsb range))
+                           range))
+           :hints(("Goal" :in-theory (enable vl-range-p
+                                             vl-range
+                                             vl-range->msb
+                                             vl-range->lsb)))))
+  (defthm vl-hid-range-of-vl-hid-rangeatts
+    (implies (vl-maybe-range-p range)
+             (equal (vl-hid-range (vl-nonatom op (vl-hid-rangeatts range atts) args fw ft))
+                    (mv t range)))
+    :hints(("Goal" :in-theory (e/d (vl-hid-range
+                                    vl-maybe-range-p
+                                    assoc-equal)
+                                   ((force)))))))
+
+(define vl-hid-width ((x (and (vl-expr-p x)
+                              (vl-nonatom-p x))))
+  :enabled t
+  :guard-hints (("goal" :in-theory (enable vl-hid-range
+                                           vl-maybe-range-resolved-p
+                                           vl-maybe-range-size
+                                           vl-range-resolved-p
+                                           vl-range-size
+                                           vl-width-from-difference)))
+  :returns (width maybe-posp :rule-classes :type-prescription)
+  (mbe :logic (b* (((mv ok range) (vl-hid-range x)))
+                (and ok
+                     (vl-maybe-range-resolved-p range)
+                     (vl-maybe-range-size range)))
+       :exec
+       (b* ((atts (vl-nonatom->atts x))
+            ((unless (assoc-equal "VL_HID_RESOLVED_RANGE_P" atts))
+             nil)
+            (left (cdr (assoc-equal "VL_HID_RESOLVED_RANGE_LEFT" atts)))
+            (right (cdr (assoc-equal "VL_HID_RESOLVED_RANGE_RIGHT" atts)))
+            ((unless (or (and (not left) (not right))
+                         (and left (vl-expr-resolved-p left)
+                              right (vl-expr-resolved-p right))))
+             nil))
+         (if left
+             (vl-width-from-difference
+              (- (vl-resolved->val left) (vl-resolved->val right)))
+           1))))
 

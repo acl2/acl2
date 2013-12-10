@@ -57,9 +57,6 @@
        (mods (xf-cwtime (mp-verror-transform-hook mods)
                         :name xf-mp-verror))
 
-       (mods (xf-cwtime (vl-modulelist-follow-hids mods)
-                        :name xf-follow-hids))
-
        (mods (xf-cwtime (vl-modulelist-clean-warnings mods)
                         :name xf-clean-warnings)))
 
