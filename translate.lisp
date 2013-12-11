@@ -2458,7 +2458,13 @@
 
 (defun ev-fncall-w (fn args w user-stobj-alist safe-mode gc-off
                        hard-error-returns-nilp aok)
-  (declare (xargs :guard (plist-worldp w)))
+  (declare (xargs :guard
+                  (and (plist-worldp w)
+                       (let ((formals (getprop fn 'formals t
+                                               'current-acl2-world w)))
+                         (and (not (eq formals t))
+                              (equal (length formals)
+                                     (length args)))))))
 
 ; WARNING: Do not call this function if args contains the live state
 ; or any other live stobjs and evaluation of form could modify any of
