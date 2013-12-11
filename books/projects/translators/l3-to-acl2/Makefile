@@ -1,23 +1,29 @@
-# Note that ACL2 and ACL2_SYSTEM_BOOKS should be defined, e.g.:
-# bash
-# ACL2_DIR=/Users/kaufmann/acl2/v6-2/acl2-sources
-# export ACL2=${ACL2_DIR}/saved_acl2
-# export ACL2_SYSTEM_BOOKS=${ACL2_DIR}/books
-
-# Example, when running from this directory:
-# make ACL2=acl2ch ACL2_SYSTEM_BOOKS=/projects/acl2/devel/books
-
 # WARNING: Do not run with -j (unless it's -j 1)!  Otherwise you may
 # get errors.
 
+# We compute the variable ACL2_DIR if it is not already defined.
+# Using only pwd on Windows, Harsh Raju Chamarthi reported a failure.
+# It turned out that the cbd seemed was set to a path of the form
+# "C:/msys/home/...", but an include-book command failed with
+# corresponding pathname "/home/...".  So we make an attempt to
+# include the leading "C:/msys" for msys/mingw, and for cygwin we try
+# to get a suitable value using cygpath.
+
+ifneq ($(findstring MINGW, $(shell uname)),)
+ACL2_DIR ?= $(shell cd ../../../.. ; pwd -W)
+else
+ifneq ($(findstring CYGWIN, $(shell uname)),)
+ACL2_DIR ?= $(shell cd ../../../.. ; cygpath -m `pwd`)
+else
 ACL2_DIR ?= $(shell cd ../../../.. ; pwd)
+endif
+endif
+
+$(warning ACL2_DIR is $(ACL2_DIR))
+
 export ACL2 ?= $(ACL2_DIR)/saved_acl2
 export ACL2_SYSTEM_BOOKS ?= $(ACL2_DIR)/books
 
-# There were issues with examples/thacker when testing in late
-# September 2013 on Windows, so for now we remove that directory.  If
-# you want it included at your local installation, simply uncomment
-# the next line and comment out the one immediately below it.
-# DIRS = translator examples/thacker
-DIRS = translator
+DIRS = translator examples/thacker
 include $(ACL2_SYSTEM_BOOKS)/Makefile-subdirs
+

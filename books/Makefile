@@ -100,7 +100,14 @@
 ### Section: Preliminaries
 ##############################
 
+# For cygwin, we need to do something special to get a Unix-like
+# pathname.
+ifneq (,$(findstring CYGWIN, $(shell uname)))
+export ACL2_SYSTEM_BOOKS := $(shell cygpath -m $(CURDIR))
+else
 export ACL2_SYSTEM_BOOKS := $(CURDIR)
+endif
+
 $(info ACL2_SYSTEM_BOOKS is $(ACL2_SYSTEM_BOOKS))
 ifneq ($(ACL2_JOBS), )
 ${error Error: variable ACL2_JOBS is obsolete -- use -j instead -- see :DOC book-makefiles }
