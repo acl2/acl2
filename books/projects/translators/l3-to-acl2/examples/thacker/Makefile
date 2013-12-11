@@ -22,7 +22,19 @@ include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
 # files.
 # -include Makefile-deps
 
+ifneq ($(findstring MINGW, $(shell uname)),)
+L3_TO_ACL2_DIR ?= $(shell cd ../../translator/ ; pwd -W)
+else
+ifneq ($(findstring CYGWIN, $(shell uname)),)
+L3_TO_ACL2_DIR ?= $(shell cd ../../translator/ ; cygpath -m `pwd`)
+else
 L3_TO_ACL2_DIR ?= $(shell cd ../../translator/ ; pwd)
+endif
+endif
+
+$(warning L3_TO_ACL2_DIR is $(L3_TO_ACL2_DIR))
+
+
 
 BOOKS = tiny run tiny-logic tiny-manual
 
