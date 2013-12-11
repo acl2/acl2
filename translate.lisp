@@ -4681,28 +4681,6 @@
    bind-free, but this does not seem to be the case here.  If you believe this ~
    error message is itself in error please contact the maintainers of ACL2.")
 
-(defconst *ttag-fns-and-macros*
-
-; Each cdr is either nil or a msg.
-
-  `((open-output-channel!)
-    (progn!) ; protected because it is legal in books; it's OK to omit progn-fn
-    (remove-untouchable-fn
-     .
-     ,(msg "  Note that the same restriction applies to the macro ~x0, whose ~
-            expansions generate calls of ~x1."
-           'remove-untouchable
-           'remove-untouchable-fn))
-    (set-raw-mode-on
-     .
-     ,(msg "  If you do not plan to certify books in this session, then ~
-            instead you may want to call ~x0; see :DOC ~x0."
-           'set-raw-mode-on!))
-    (set-temp-touchable-fns)
-    (set-temp-touchable-vars)
-    (sys-call)
-    ))
-
 (defun unknown-binding-msg (stobjs-bound str1 str2 str3)
   (msg
    "The single-threaded object~#0~[ ~&0 has~/s ~&0 have~] been bound in ~@1.  ~

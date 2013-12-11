@@ -11921,7 +11921,7 @@
 
 (defconst *valid-output-names*
 
-; Warning: this list should include all keys of the alist
+; Warning: this list should be a subset of the list of keys of the alist
 ; *window-descriptions*.  Also: If you change this list, also consider changing
 ; the value of INHIBIT in distributed books files Makefile-generic and
 ; build/make_cert.
@@ -50014,16 +50014,68 @@ Lisp definition."
         (t (and (eq (car lst) nil)
                 (all-nils (cdr lst))))))
 
+(defconst *ttag-fns-and-macros*
+
+; Each cdr is either nil or a msg.
+
+  `((open-output-channel!)
+    (progn!) ; protected because it is legal in books; it's OK to omit progn-fn
+    (remove-untouchable-fn
+     .
+     ,(msg "  Note that the same restriction applies to the macro ~x0, whose ~
+            expansions generate calls of ~x1."
+           'remove-untouchable
+           'remove-untouchable-fn))
+    (set-raw-mode-on
+     .
+     ,(msg "  If you do not plan to certify books in this session, then ~
+            instead you may want to call ~x0; see :DOC ~x0."
+           'set-raw-mode-on!))
+    (set-temp-touchable-fns)
+    (set-temp-touchable-vars)
+    (sys-call)
+    ))
+
 (defun oracle-apply-guard (fn args state)
+
+; This function should return nil if the term (cons fn (kwote-lst args)) can
+; not be translated for execution.  See translate11.
+
+; Note that this function is described in :doc oracle-apply.  If this function
+; is updated, then update that :doc topic as well.
+
   (declare (xargs :stobjs state))
   (and (symbolp fn)
-       (not (eq fn 'return-last))
+       (not (member-eq fn
+
+; Before removing any function from the following list, be sure to look at
+; translate11 to see that could be a mistake.
+
+                       '(if synp mv-list return-last)))
+       (not (assoc-eq fn *ttag-fns-and-macros*))
        (true-listp args)
        (let* ((wrld (w state))
               (formals (getprop fn 'formals t 'current-acl2-world wrld))
-              (stobjs-in (stobjs-in fn wrld)))
+              (stobjs-in (stobjs-in fn wrld))
+              (untouchable-fns (global-val 'untouchable-fns wrld)))
          (and (not (eq formals t))
               (eql (len formals) (len args))
+              (true-listp untouchable-fns)
+              (or (not (member-eq fn untouchable-fns))
+                  (and (f-boundp-global 'temp-touchable-fns state)
+                       (or (eq t (f-get-global 'temp-touchable-fns state))
+                           (and (true-listp (f-get-global 'temp-touchable-fns
+                                                          state))
+                                (member-eq fn
+                                           (f-get-global 'temp-touchable-fns
+                                                         state))))))
+
+; Perhaps we could skip the next check.  It is equivalent to (not
+; (stobj-creatorp fn wrld)), but stobj-creatorp is defined later.
+
+              (not (and (null formals)
+                        (getprop fn 'stobj-function nil 'current-acl2-world
+                                 wrld)))
               (true-listp stobjs-in) ; needed for guard of all-nils
               (all-nils stobjs-in)))))
 

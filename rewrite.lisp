@@ -11636,6 +11636,8 @@
 
 (defun nth-update-rewriter (recursivep term alist ens wrld state)
 
+; Warning: This function assumes that (nu-rewriter-mode wrld) is non-nil.
+
 ; Term is a function or lambda application.  This function may rewrite
 ; term/alist and returns (mv hitp term' ttree), where either hitp is nil (in
 ; which case term' is irrelevant) or term' is equal to term/alist and ttree
@@ -11659,7 +11661,6 @@
 ; NTH expression in alist.  But term is not a variable.
 
   (cond
-   ((not (nu-rewriter-mode wrld)) (mv nil nil nil))
    ((not (if recursivep
              (nth-update-rewriter-targetp term wrld)
            (eq (ffn-symb term) 'NTH)))
@@ -14095,7 +14096,8 @@
                  (flg term1 ttree1)
 ; Rockwell Addition
                  (cond
-                  ((eq (nu-rewriter-mode wrld) :literals)
+                  ((member-eq (nu-rewriter-mode wrld)
+                              '(nil :literals))
                    (mv nil nil nil))
                   (t
                    (nth-update-rewriter

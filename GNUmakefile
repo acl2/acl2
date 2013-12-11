@@ -130,6 +130,16 @@
 LISP = ccl
 DIR = /tmp
 
+# The following is intended to provide the current working directory
+# on Cygwin/Windows.
+ifneq (,$(findstring CYGWIN, $(shell uname)))
+ACL2_WD := $(shell cygpath -m `pwd`)
+else
+ACL2_WD := $(shell pwd)
+endif
+
+$(info ACL2_WD is $(ACL2_WD))
+
 # The variable NONSTD should be defined for the non-standard version and not
 # for the standard version.  Non-standard ACL2 images will end in saved_acl2r
 # rather than saved_acl2.  ACL2_HONS, ACL2_PAR, ACL2_DEVEL, and ACL2_WAG (for
@@ -693,7 +703,7 @@ move-large:
 .PHONY: certify-books
 certify-books:
 ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(shell pwd)/saved_acl2
+	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(ACL2_WD)/saved_acl2
 else
 	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(ACL2)
 endif
@@ -708,7 +718,7 @@ endif
 regression:
 	uname -a
 ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) all ACL2=$(shell pwd)/saved_acl2
+	cd books ; $(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2_WD)/saved_acl2
 else
 	cd books ; $(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2)
 endif
@@ -717,7 +727,7 @@ endif
 regression-everything:
 	uname -a
 ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(shell pwd)/saved_acl2
+	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2_WD)/saved_acl2
 else
 	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2)
 endif
@@ -727,7 +737,7 @@ regression-nonstd:
 	uname -a
 ifndef ACL2
 	cd books/nonstd ; \
-	$(MAKE) $(ACL2_IGNORE) all ACL2=$(shell pwd)/saved_acl2r
+	$(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2_WD)/saved_acl2r
 else
 	cd books/nonstd ; \
 	$(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2)
@@ -744,7 +754,7 @@ certify-books-fresh: clean-books
 .PHONY: regression-fresh
 regression-fresh: clean-books
 ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 regression
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2 regression
 else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression
 endif
@@ -752,7 +762,7 @@ endif
 .PHONY: regression-everything-fresh
 regression-everything-fresh: clean-books
 ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 regression-everything
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2 regression-everything
 else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-everything
 endif
@@ -760,7 +770,7 @@ endif
 .PHONY: regression-nonstd-fresh
 regression-nonstd-fresh: clean-books-nonstd
 ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2r regression-nonstd
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2r regression-nonstd
 else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-nonstd
 endif
@@ -772,7 +782,7 @@ certify-books-short:
 	uname -a
 ifndef ACL2
 	cd books ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 basic
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2 basic
 else
 	cd books ; \
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) basic
@@ -828,7 +838,7 @@ clean-legacy-doc:
 .PHONY: clean-books
 clean-books:
 ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 moreclean
+	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2 moreclean
 else
 	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) moreclean
 endif
@@ -837,7 +847,7 @@ endif
 clean-books-nonstd:
 ifndef ACL2
 	cd books/nonstd ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(shell pwd)/saved_acl2 clean clean-links
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2 clean clean-links
 else
 	cd books/nonstd ; \
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) clean clean-links
@@ -938,7 +948,7 @@ our-develenv.cl:
 chk-include-book-worlds:
 	uname -a
 ifndef ACL2
-	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(shell pwd)/saved_acl2
+	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2_WD)/saved_acl2
 else
 	cd books ; $(MAKE) $(ACL2_IGNORE) chk-include-book-worlds ACL2=$(ACL2)
 endif
