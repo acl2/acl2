@@ -88,14 +88,14 @@ traditional library of lemmas that can be applied to unbounded problems.</p>
 <p>Bitops is not especially automatic.  Merely loading it may allow you to
 solve some bit-vector problems automatically.  But if you want to use it
 <i>well</i> and understand what to do when it doesn't solve your problems, you
-should expect to invest some effort to learn the library.</p>
+should expect to invest some effort in learning the library.</p>
 
 <p>One reason Bitops may be less automatic than other libraries is that we use
 it in proofs about microcode routines.  These proofs often involve very large
 terms.  This poses a challenge when writing arithmetic rules: to successfully
 manage proofs with large terms, case-splitting needs to be carefully
 controlled.  To keep the library more controllable, some good rules are kept
-disabled by default, so to get the most out of the library, you may need to
+disabled by default.  So, to get the most out of the library, you may need to
 explicitly enable these rules as appropriate.</p>
 
 
@@ -172,7 +172,7 @@ It is intended to be a (still lightweight) replacement for books such as
 
 <p>For instance, it has rules such as @('logand**'), which is a recursive
 definition of @(see logand) that is well-suited for doing inductive proofs,
-etc.  This rule is much like IHS's @('logand*'), but is improved because there
+etc.  This rule is much like IHS's @('logand*') but is improved since there
 are no hypotheses.</p>
 
 <p>A lot of the rules in @('ihsext-basics') are improved versions of @('ihs')
@@ -204,7 +204,7 @@ about @('signed-byte-p') and @('unsigned-byte-p'), e.g., that when you add two
 @('n')-bit signed numbers, you get an @('n+1')-bit signed number.</p>
 
 <p>These rules can be very helpful when you are trying to write optimized
-functions using Common Lisp @(see type-spec)s, and need to satisfy the guard
+functions using Common Lisp @(see type-spec)s and need to satisfy the guard
 obligations that come from terms such as @('(the (unsigned-byte 16) x)').</p>
 
 <p>You can use this book independently of the rest of the library.  It
@@ -276,9 +276,9 @@ integer, e.g., bits 15-8.</p>
 <h5>@(see bitops/rotate)</h5>
 
 <p>This book defines @(see rotate-left) and @(see rotate-right) operations.  It
-provides lemmas explaining how @(see logbitp) is interacts with these
-operations, and makes use of the @('equal-by-logbitp') strategy to provide
-equivalent, recursive definitions.</p>
+provides lemmas explaining how @(see logbitp) interacts with these operations,
+and it makes use of the @('equal-by-logbitp') strategy to provide equivalent,
+recursive definitions.</p>
 
 <h5>@(see bitops/saturate)</h5>
 
