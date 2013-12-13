@@ -225,7 +225,7 @@ find what you want.</p>")
         (mv (acons :from "ACL2 Sources" topic)
             state))
 
-       ((when (natp val))
+       ((when (eq val :top-level))
         ;;(cw "~x0: current session.~%" name)
         (mv (acons :from "Current Interactive Session" topic)
             state))
