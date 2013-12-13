@@ -487,7 +487,7 @@ form:</p>
 })
 
 <p>Note that this hint is very aggressive.  For instance, it doesn't try to
-determine whether @('lhs') and @('rhs') are numbers, it'll will try to use
+determine whether @('lhs') and @('rhs') are numbers; it will try to use
 @(see equal-by-logbitp) anyway.  Because of this, you would never want to add
 this to the @(see default-hints).</p>"
 
