@@ -8905,8 +8905,9 @@
                (not (and proxy-upgrade-p
                          (global-val 'boot-strap-flg wrld))))
           (er soft ctx
-              "Redefinition of system names is not permitted unless there ~
-               is an active trust tag (ttag).  See :DOC defttag."))
+              "Redefinition of system names, such as ~x0, is not permitted ~
+               unless there is an active trust tag (ttag).  See :DOC defttag."
+              name))
          (proxy-upgrade-p
 
 ; We erase all vestiges of the old function.  It may well be safe to return
