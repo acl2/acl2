@@ -32,7 +32,7 @@
 ;; (include-book "../gl/gify-clause-proc")
 (local (include-book "../gl/general-object-thms"))
 (local (include-book "eval-restrict"))
-(include-book "parallel/without-waterfall-parallelism" :dir :system)
+(include-book "misc/without-waterfall-parallelism" :dir :system)
 
 (local (in-theory (disable gl::generic-geval gl::generic-geval-alt-def)))
 

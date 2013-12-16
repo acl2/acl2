@@ -19,7 +19,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-(include-book "parallel/without-waterfall-parallelism" :dir :system)
+(include-book "misc/without-waterfall-parallelism" :dir :system)
 (include-book "gify")
 (include-book "run-gified-cp")
 (include-book "glcp-templates")
