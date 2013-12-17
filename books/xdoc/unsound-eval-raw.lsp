@@ -26,7 +26,13 @@
     ;; on a fake state, we really should cause an error.
     (error "Unsound-eval requires a live state."))
   (handler-case
-   (b* (((mv err val state)
+   (b* (#+lispworks
+        ;; (Mod by Matt K., 12/2013:)
+        ;; LispWorks 6.1.1 has a bug that can prevent catching stack overflow
+        ;; errors when system::*stack-overflow-behaviour* is nil, as it is in
+        ;; ACL2.  We work around that bug as follows.
+        (system::*stack-overflow-behaviour* t)
+        ((mv err val state)
          ;; This with-guard-checking form seems necessary because otherwise, it
          ;; seems, trans-eval will just do whatever the default guard checking
          ;; mode is.  And, in some make-events, it appears that guard checking

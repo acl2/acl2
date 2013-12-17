@@ -62,6 +62,10 @@
 #                 books+system manual in centaur/manual/index.html.  Note:
 #                 this target requires ACL2(h) and USE_QUICKLISP=1.
 #
+#   special       Includes all the books, allowing arbitrary code before and
+#                 after an include-book, and writing the log for each book
+#                 <bk>.lisp to the file <bk>.special.out.
+#
 # Basic Options:
 #
 #   USE_QUICKLISP=1
@@ -89,6 +93,13 @@
 #   ACL2_BOOK_DIRS=<dir-names>
 #                 Add particular files or directories as additional targets
 #                 to certify, when using certain Makefile targets.
+#
+#   [For target "special":]
+#   ACL2_SPECIAL_PRE=<pre-file-name>
+#   ACL2_SPECIAL_POST=<post-file-name>
+#                 Specify the files of forms to execute in the ACL2 loop
+#                 immediately before (<pre-file-name>) and immediately after
+#                 (<post-file-name>) including a book.
 #
 # Of course, the usual GNU make options are also available.  In particular, -k
 # is useful for causing make to keep going when an error is encountered (but
@@ -1019,6 +1030,29 @@ chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
             (echo '** Pseudo-good-worldp check FAILED for including $*;' "see `pwd`/$@" '**' ;\
              exit 1)
 	@rm -f $(@D)/workxxx.bkchk.$(*F)
+
+# Next, we implement the target "special", which generalize the
+# approach for bkchk (above) to allow arbitrary code before and after
+# an include-book.
+
+BOOKS_SPECIAL_OUT := $(patsubst %.cert,%.special.out,$(OK_CERTS))
+BOOKS_SPECIAL_OUT := $(filter-out hacking/%, $(BOOKS_SPECIAL_OUT))
+BOOKS_SPECIAL_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_SPECIAL_OUT))
+
+.PHONY: special
+special: $(BOOKS_SPECIAL_OUT)
+
+%.special.out: %.cert
+	@echo "Including $* on `date`"
+	@echo '(acl2::value :q)' > $(@D)/workxxx.special.$(*F)
+	@echo '(in-package "ACL2")' >> $(@D)/workxxx.special.$(*F)
+	@echo '(acl2::lp)' >> $(@D)/workxxx.special.$(*F)
+	@echo '(acl2::in-package "ACL2")' >> $(@D)/workxxx.special.$(*F)
+	@cat $(ACL2_SPECIAL_PRE) >> $(@D)/workxxx.special.$(*F)
+	@echo '(include-book "$*")' >> $(@D)/workxxx.special.$(*F)
+	@cat $(ACL2_SPECIAL_POST) >> $(@D)/workxxx.special.$(*F)
+	@($(ACL2) < $(@D)/workxxx.special.$(*F) 2>&1) > $*.special.out
+	@rm -f $(@D)/workxxx.special.$(*F)
 
 ##############################
 ### Section: Building the XDOC combined manual
