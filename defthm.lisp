@@ -9239,14 +9239,14 @@
                     and y are distinct variable symbols.  The ~
                     hypothesis of ~x0, ~x1, is not of this form.")
 
-        (concl-msg "~x0 is an unacceptable :CONGRUENCE rule.  The ~
-                    conclusion of an acceptable rule must be of the ~
-                    form (equiv (fn x1 ... xk ... xn) (fn x1 ... yk ~
-                    ... xn)) where equiv has been proved to be an ~
-                    equivalence relation, fn is a function symbol, ~
-                    the xi are distinct variable symbols, xk is ~x1, ~
-                    yk is ~x2, and ~x2 does not occur among the xi.  ~
-                    The conclusion of ~x0, ~x3, is not of this form."))
+        (concl-msg "~x0 is an unacceptable :CONGRUENCE rule.  The conclusion ~
+                    of an acceptable rule must be of the form (equiv (fn x1 ~
+                    ... xk ... xn) (fn x1 ... yk ... xn)) where equiv has ~
+                    been proved to be an equivalence relation, fn is a ~
+                    function symbol other than IF, the xi are distinct ~
+                    variable symbols, xk is ~x1, yk is ~x2, and ~x2 does not ~
+                    occur among the xi.  The conclusion of ~x0, ~x3, is not ~
+                    of this form."))
     (cond
      ((and (int= (length pairs) 1)
            (int= (length (caar pairs)) 1))
@@ -9265,6 +9265,14 @@
               (cond
                ((and (equivalence-relationp equiv2 wrld)
                      (symbolp fn)
+                     (not (eq fn 'quote)) ; rule out quotep for equiv2 args
+                     (not (eq fn
+
+; Calls of IF are handled specially in geneqv-lst, so that the first argument
+; is treated propositionally and the other arguments inherit the governing
+; congruence.
+
+                              'if))
                      (all-variablep args1)
                      (no-duplicatesp-eq args1)
                      (member-eq xk args1)
