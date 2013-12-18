@@ -12,6 +12,10 @@
 
 ;; cert_param: (uses-glucose)
 
+; Modified by Jared Davis <jared@centtech.com> on 2013-12-17 after changes to
+; improve compatibility between VL and GL multiplies, to verify the multipliers
+; up through 64 bits.
+
 (in-package "ACL2")
 
 (include-book "common")
@@ -82,18 +86,33 @@
 (multiply-thm 2)
 (multiply-thm 3)
 (multiply-thm 4)
-(multiply-thm 8) ; took 1.57 seconds with glucose 2.2 on modern, yet slow, laptop
-; (multiply-thm 10) ; took 86.11 seconds with glucose 2.2 on modern, yet slow, laptop
 
-#|
+; [Jared]: Previously the file stopped here with the following notes:
+;
+;   (multiply-thm 8) ; took 1.57 seconds with glucose 2.2 on modern, yet slow, laptop
+;   (multiply-thm 10) ; took 86.11 seconds with glucose 2.2 on modern, yet slow, laptop
+;
+;   These are left as benchmarks for the future
+;
+;   (multiply-thm 12)
+;   (multiply-thm 16)
+;   (multiply-thm 32)
+;   (multiply-thm 64)
+;   (multiply-thm 128)
+;   (multiply-thm 256)
+;   (multiply-thm 512)
 
-; These are left as benchmarks for the future
+; But now VL generates multipliers that mimic GL's implementation of
+; multiplication, so we can go much higher.  You may notice that the problems
+; being given to the SAT solver are empty.  This is basically because the
+; expressions for the spec and the expressions for the implementation end up
+; being identical thanks to just the basic structural hashing and reductions in
+; Hons AIGs and AIGNET.  In short, the AIG package basically solves the whole
+; thing, and there's nothing for the SAT solver to do.
 
+(multiply-thm 8)
+(multiply-thm 10)
 (multiply-thm 12)
 (multiply-thm 16)
 (multiply-thm 32)
 (multiply-thm 64)
-(multiply-thm 128)
-(multiply-thm 256)
-(multiply-thm 512)
-|#

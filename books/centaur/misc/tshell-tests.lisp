@@ -24,6 +24,18 @@
 ; Well, this is pretty pathetic.  But it's hard to test much here, e.g., how
 ; can we emulate interrupts, etc.?
 
+(defttag :custom-printing)
+
+(progn!
+ (set-raw-mode t)
+ ;; (setq *tshell-debug* t))
+ (defun my-print (line buf stream)
+   ;; Compatible with tshell-echo
+   (if (str::strprefixp "(test-tshell" line)
+       (progn (write-line line stream)
+              (force-output stream))
+     nil)))
+
 (value-triple (tshell-ensure))
 
 (defmacro test-tshell (&key cmd save print okp lines)
@@ -44,6 +56,12 @@
       '(value-triple :success))))
 
 (test-tshell :cmd "echo hello"
+             :save t
+             :print t
+             :okp t
+             :lines '("hello"))
+
+(test-tshell :cmd "echo -n hello"
              :save t
              :print t
              :okp t
@@ -88,3 +106,11 @@
              :print t
              :okp nil
              :lines nil)
+
+;; This should just print a few (test-shell ...) lines.
+
+(test-tshell :cmd "cat tshell-tests.lisp"
+             :save t
+             :print 'my-print
+             :okp t
+             :lines :skip)

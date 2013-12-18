@@ -1,5 +1,5 @@
-; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2011 Centaur Technology
+; Centaur BED Library
+; Copyright (C) 2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -16,28 +16,9 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
-; Original author: Jared Davis <jared@centtech.com>
+; Original authors: Jared Davis <jared@centtech.com>
 
-; defxdoc-raw.lisp
-;
-; This book requires a TTAG.  You should typically not need to include it
-; directly unless you want to document some raw-lisp code with xdoc.
-
-(in-package "XDOC")
-(include-book "base")
-(include-book "tools/include-raw" :dir :system)
-; (depends-on "defxdoc-raw-impl.lsp")
-(set-state-ok t)
-
-(defttag :xdoc)
-
-(defun all-xdoc-topics (state)
-  (declare (xargs :stobjs state :verify-guards t))
-  (prog2$
-   (er hard? 'all-xdoc-topics "all-xdoc-topics not yet defined.")
-   (mv-let (err val state)
-     (read-acl2-oracle state)
-     (declare (ignore err))
-     (mv val state))))
-
-(acl2::include-raw "defxdoc-raw-impl.lsp")
+#!ACL2
+(in-package "ACL2")
+(ld "package.lsp")
+; cert-flags: ? t :ttags :all

@@ -838,7 +838,7 @@ some kind of separator!</p>
                               (cond ((symbolp (car macro-args))
                                      (intern (symbol-name (car macro-args)) "KEYWORD"))
                                     ((symbolp (caar macro-args))
-                                     (intern (symbol-name (car macro-args)) "KEYWORD"))
+                                     (intern (symbol-name (caar macro-args)) "KEYWORD"))
                                     (t (caaar macro-args)))))
                     (presentp (< 2 (len (car macro-args)))))
                (if (and (not (equal (car args) default))
@@ -869,7 +869,7 @@ some kind of separator!</p>
     (and (consp term)
          (not (eq (car term) 'quote))
          (symbolp (car term))
-         (let* ((macro (cdr (assoc (car term) (table-alist 'define-macro-fns world)))))
+         (let* ((macro (cdr (assoc (car term) (table-alist 'std::define-macro-fns world)))))
            (and macro
                 (let ((macro-args
                        (getprop macro 'macro-args nil

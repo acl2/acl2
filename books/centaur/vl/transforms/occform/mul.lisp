@@ -185,8 +185,31 @@ explicitly, which adds a layer of X-detection around the core circuitry.</p>"
        (adders     (vl-simple-inst-list adder-mod "add"
                                         s-exprs
                                         c-exprs
-                                        (cons (car p-exprs) (butlast s-exprs 1))
-                                        (cdr p-exprs)
+
+; Subtle!  I originally summed up the partial products in order.  That is, I
+; did the adds like this:
+;
+;    s0 = p0 + p1
+;    s1 = s0 + p2
+;    s2 = s1 + p3
+;    ...
+;
+; However, the above doesn't agree with the way that GL computes the sum.  To
+; correct for this, I now sum them up in the opposite direction, e.g.,
+;
+;    s0 = p9 + p8  // for a 10-bit multiply
+;    s1 = s0 + p7
+;    s2 = s1 + p6
+;     ...
+;
+; This isn't any kind of panacea, but it at least means that if you write a
+; Verilog module that does assign o = a * b, and you write an ACL2 spec for it
+; that also does (let ((o (* a b))) ...), then things basically work and you
+; can end up with a trivial problem.  Of course, there's no helping you if you
+; write (let ((o (* b a))) ...), instead.
+
+                                        (cons (car (last p-exprs)) (butlast s-exprs 1))
+                                        (cdr (rev p-exprs))
                                         (repeat |*sized-1'b0*| (- n 1))))
 
        ;; this is the answer except for x-detection

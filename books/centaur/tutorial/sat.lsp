@@ -47,7 +47,7 @@
 
 ; There are three additional basic setup steps:
 
-; 1. GL's SATLINK mode is not included by default in the GL books, because it
+; 1. GL's SATLINK mode is not included by default in the GL books because it
 ; depends on several trust tags.  These trust tags are necessary for, e.g.,
 ;
 ;   (1) writing out files to give to the SAT solver,
@@ -102,24 +102,10 @@
 ; -----------------------------------------------------------------------------
 
 ; To follow this tutorial you will need one (or more!) DIMACS-compatible SAT
-; solvers installed on your system.  At the time of this writing, we are using
+; solvers installed on your system.  For information on how to get a SAT solver
+; and what solvers we currently recommend, please see
 ;
-;    Lingeling version ala (ala-b02aa1a-121013)
-;       http://fmv.jku.at/lingeling/
-;
-;    Glucose version 2.1
-;       https://www.lri.fr/~simon/?page=glucose
-;       Some packages Rager needed in order to build glocuse included:
-;       g++ and libc6-dev-i386
-;
-; But probably most any solver that is part of the SAT Competition should work,
-; modulo a few concerns about the input format (see :xdoc satlink::dimacs).
-;
-; We have configured our path so that we can run Lingeling by simply typing
-; "lingeling", and so that we can run Glucose (glucose.sh) by just typing
-; "glucose"; note that we also modified glucose.sh by setting "mypath" to the
-; directory where we installed it, so that we can run it from any directory.
-
+;     :XDOC SATLINK::SAT-SOLVER-OPTIONS
 
 
 ; The particular SAT solver that SATLINK will call, and other options about,
@@ -130,11 +116,13 @@
 
 (gl::gl-satlink-config)
 
-; If you have Lingeling installed on your system as described above, then this
-; configuration will work fine.  But maybe you want to use a different SAT
-; solver, like Glucose.  Here's an example of setting up our own, custom
-; configurations.  We'll turn VERBOSE on, so we can see the SAT solvers
-; working.
+; We have configured our path so that we can run Lingeling by simply typing
+; "lingeling".  If you install lingeling on your system like this, then this
+; default configuration will work fine.
+;
+; But maybe you want to use a different SAT solver, say Glucose.  Here are some
+; examples of how to set up custom configurations.  We'll turn VERBOSE on, so
+; we can see the SAT solvers working:
 
 (defun my-glucose-config ()
   (declare (xargs :guard t))
@@ -150,8 +138,28 @@
                         :mintime 1/2
                         :remove-temps t))
 
-; Now, we can switch between these configurations (and the default
-; configuration) just using defattach.  For instance:
+(defun my-glucose-cert-config ()
+  (declare (xargs :guard t))
+  (satlink::make-config :cmdline "glucose-cert"
+                        :verbose t
+                        :mintime 1/2
+                        :remove-temps t))
+
+; You can, of course, add other SAT solver configurations by modifying the
+; above.  If you're experimenting with a new SAT solver, it's a good idea to
+; run a really quick check that your SAT solver configuration seems to be
+; working.  If all is well, the satlink::check-config command should say "Good
+; deal -- this SATLINK configuration seems OK."
+
+(include-book "centaur/satlink/check-config" :dir :system)
+(satlink::check-config (my-glucose-config))
+(satlink::check-config (my-lingeling-config))
+(satlink::check-config (my-glucose-cert-config))
+
+
+; Now, for GL's integration with Satlink, we can switch between these
+; configurations (and the default configuration) using defattach.  For
+; instance:
 
 (defattach gl::gl-satlink-config my-glucose-config)
 
@@ -160,6 +168,10 @@
 ; other particular proof, we just set up a new attachment, e.g.,:
 
 (defattach gl::gl-satlink-config my-lingeling-config)
+
+; Or with glucose-cert...
+
+(defattach gl::gl-satlink-config my-glucose-cert-config)
 
 ; And so forth.
 
@@ -203,16 +215,6 @@
 (defconst *op-min*     5)
 (defconst *op-count*   6)
 (defconst *op-mult*    7)
-
-(local (defthm unsigned-byte-p-re-redef
-         (equal (unsigned-byte-p bits x)
-                (AND (INTEGERP BITS)
-                     (<= 0 BITS)
-                     (INTEGER-RANGE-P 0 (EXPT 2 BITS) X)))
-         :hints(("Goal" :in-theory (enable unsigned-byte-p)))
-         :rule-classes :definition))
-
-
 
 
 ; Alright.  Now, if you remember from the alu16 tutorial, this proof took about
@@ -301,21 +303,9 @@
            :opcode *op-count*
            :spec (logcount a))
 
-; This produces a lot of not-very-interesting output because in
-; my-glucose-config we set up :verbose t.  This causes everything the SAT
-; solver prints to be displayed (in real time).  We end up seeing a lot of
-; commentary and also the satisfying assignment to the clausal formula, which
-; for me looks something like this:
-
-;; v -1 -2 3 4 5 6 -7 -8 -9 -10 -11 12 -13 -14 -15 -16 -17 18 -19 20 -21 22
-;; 23 -24 25 26 -27 28 29 30 -31 -32 -33 -34 -35 -36 -37 -38 -39 -40 -41 -42
-;; -43 -44 -45 -46 -47 -48 -49 -50 -51 -52 -53 -54 -55 -56 -57 -58 -59 -60 61
-;; -62 63 -64 65 -66 67 -68 -69 70 -71 72 -73 74 -75 76 -77 78 -79 80 81 -82
-;;  [... many lines elided ...]
-
-; This counterexample is checked, then translated back through our CNF
-; conversion, AIGNET conversion, and GL symbolic simulation into an ordinary
-; ACL2-level GL counterexample.
+; The SAT solver finds a counterexample, which gets checked (by Satlink), then
+; translated back through our CNF conversion, AIGNET conversion, and GL
+; symbolic simulation into an ordinary ACL2-level GL counterexample:
 
 ;; Example 1, counterexample from SAT:
 ;; Assignment:
@@ -378,12 +368,23 @@
 
 (defattach gl::gl-satlink-config my-glucose-config)
 
-; I tried this on Glucose and Lingeling, and it appears to still be a hard
-; problem.  On my machine, Glucose finished the proof in 8680 seconds, which is
-; considerably slower than BDDs, but used very little memory.  Lingeling was
+; Historically, VL generated multipliers in a different way, and this proof was
+; much harder.  In the old scheme, I tried this on Glucose 2.1 and Lingeling,
+; and on my machine Glucose finished the proof in 8680 seconds, which was
+; considerably slower than BDDs, but used very little memory; Lingeling was
 ; unable to finish the proof within 24 hours.
+;
+; Today, VL generates a multiplier that matches the GL multiplier, so this
+; proof is instantaneous (and trivial) on any SAT solver:
 
 (alu16-thm alu16-mult-correct
            :opcode *op-mult*
            :spec (logand (* a b) (1- (expt 2 16))))
+
+; However, this is still a very hard proof, because the multiplier
+; implementations don't line up.
+
+(alu16-thm alu16-reverse-mult-correct
+           :opcode *op-mult*
+           :spec (logand (* b a) (1- (expt 2 16))))
 

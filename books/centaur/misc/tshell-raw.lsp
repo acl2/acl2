@@ -149,17 +149,27 @@
   nil)
 
 (defun tshell-parse-status-line (line)
-  ;; If it's an exit line, parse the status and return it as an
-  ;; integer. Otherwise, return nil.
-  (if (str::strprefixp *tshell-status-line* line)
-      (multiple-value-bind (val pos)
-          (parse-integer (subseq line (+ 1 (length *tshell-status-line*))))
-        (declare (ignore pos))
-        val)
-    nil))
+  ;; Returns (PREFIX STATUS)
+  ;; If it's an exit line, PREFIX is anything that was printed before the
+  ;; exit message stuff (which can happen when the command doesn't print a
+  ;; newline at the end of its output), and STATUS is an integer that gives
+  ;; the exit status code.
+  ;; If it's not an exit line, PREFIX and STATUS are both NIL.
+  (let ((pos (str::strpos *tshell-status-line* line)))
+    (if (not pos)
+        (values nil nil)
+      (progn
+        (tshell-debug "Found status line: ~a~%" line)
+        (let ((prefix (subseq line 0 pos))
+              (suffix (subseq line (+ 1 (length *tshell-status-line*) pos))))
+          (multiple-value-bind (val next-pos)
+              (parse-integer suffix)
+            (declare (ignore next-pos))
+            (values prefix val)))))))
 
 (defun tshell-parse-pid-line (line)
   ;; Given a line like TSHELL_PID 1234, we return 1234.
+  (tshell-debug "Parsing PID line: ~a~%" line)
   (unless (str::strprefixp *tshell-pid-line* line)
     (error "TSHELL error: bad pid line: ~a." line))
   (multiple-value-bind (val pos)
@@ -188,9 +198,17 @@
 
 (defun tshell-echo (line buf stream)
 
-; Called by tshell to echo output from the sub-program.  We put this in its own
-; function so that it can be redefined.  The buf is the previous lines from
-; this invocation of the program, in reverse order.
+; This is how tshell prints output from the sub-program using :print t.
+;
+; We originally put this in a separate function so that it can be redefined.
+; Now there's no reason to do that because you can give a custom argument to
+; :print.  But your function should be signature-compatible with tshell-echo.
+;
+; Note: Redefined in transistor/equiv-check (Centaur internal), so don't change
+; it unless you update that, too.
+;
+; We could probably make this more general.  At least it's better than it was
+; before.
 
   (declare (ignorable buf))
   (write-line line stream)
@@ -200,11 +218,12 @@
   (declare (ignorable stream))
 
 ; Called by tshell after all the output has been printed with tshell-echo, in
-; case tshell-echo wants to not print newlines right away
+; case tshell-echo wants to not print newlines right away.  BOZO this doesn't
+; really fit into our output filtering scheme.  Fortunately it isn't being used
+; by anything anymore.  (It was used as part of the original AIGPU to implement
+; some carriage-return hacks, but that's all deprecated now.)
 
   nil)
-
-
 
 (defun tshell-call-fn (cmd print save)
   ;; See the documentation in tshell.lisp.
@@ -222,10 +241,10 @@
          (pid           0)
          (exit-status   1)
          (line          nil)
-         (code          nil)
          (stdout-exit   nil)
          (stderr-exit   nil)
          (buf           nil)
+         (print         (if (eq print t) 'tshell-echo print))
          (stream        (get-output-stream-from-channel *standard-co*))
 
 
@@ -252,8 +271,7 @@
 
          (nl  (coerce (list #\Newline) 'string))
          (cmd (concatenate 'string
-               "(" cmd " < /dev/null 2>&1 ; echo " *tshell-status-line* " $? ) &" nl
-;               cmd " < /dev/null 2>&1 & " nl
+              "(" cmd " < /dev/null 2>&1 ; echo " *tshell-status-line* " $? ) &" nl
                "echo " *tshell-pid-line* " $! 1>&2" nl
                "wait" nl
                "echo " *tshell-exit-line* nl
@@ -273,29 +291,45 @@
         (progn
           ;; Read command output until we find the exit line.
           (loop do
-              (setq line (read-line tshell-out))
-              (setq code (tshell-parse-status-line line))
-              (cond ((equal line *tshell-exit-line*)
-                     (progn
-                       (tshell-debug "TSHELL_EXIT on STDOUT~%")
-                       (setq stdout-exit t)
-                       (loop-finish)))
-                    (code
-                     (progn
-                       (tshell-debug "TSHELL_STATUS is ~a.~%" code)
-                       (setq exit-status code)))
-                    (t
-                     (progn
-                       (when print
-                         (tshell-echo line buf stream))
-                       (when save
-                         (push line buf))))))
+                (block continue
+                  (setq line (read-line tshell-out))
+                  (tshell-debug "** raw tshell stdout line: ~a~%" line)
+
+                  (multiple-value-bind
+                      (prefix code)
+                      (tshell-parse-status-line line)
+                    (tshell-debug "** attempt to parse exit status: prefix=~a, code=~a~%"
+                                  prefix code)
+                    (when code
+                      (tshell-debug "TSHELL_STATUS is ~a.~%" code)
+                      (setq exit-status code)
+
+                      ;; Gah, so totally gross -- keep in sync with 'line'
+                      ;; handling below
+                      (unless (equal prefix "")
+                        (when print
+                          (funcall print prefix buf stream))
+                        (when save
+                          (push prefix buf)))
+                      (return-from continue)))
+
+                  (when (equal line *tshell-exit-line*)
+                    (tshell-debug "TSHELL_EXIT on STDOUT~%")
+                    (setq stdout-exit t)
+                    (loop-finish))
+
+                  ;; Keep in sync with 'prefix' handling above
+                  (when print
+                    (funcall print line buf stream))
+                  (when save
+                    (push line buf))))
 
           ;; Read stderr until we find the exit line.
           (loop do
                 (setq line (read-line tshell-err))
+                (tshell-debug "** raw tshell stderr line: ~a~%" line)
                 (when (equal line *tshell-exit-line*)
-                  (tshell-debug "TSHELL_EXIT on STDERR~%")
+                  (tshell-debug "TSHELL_EXIT on STDERR: ~a~%" line)
                   (setq stderr-exit t)
                   (loop-finish))
                 (tshell-debug "TSHELL_ERR: ~a.~%" line)))

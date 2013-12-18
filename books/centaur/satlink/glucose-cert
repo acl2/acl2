@@ -1,0 +1,172 @@
+#!/usr/bin/env perl
+#
+# glucose-cert - Script for verified sat-solving using Glucose and drup-trim
+# Copyright (C) 2013 Centaur Technology
+#
+# Contact:
+#   Centaur Technology Formal Verification Group
+#   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+#   http://www.centtech.com/
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.  This program is distributed in the hope that it will be useful but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.  You should have received a copy of the GNU General Public
+# License along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+#
+# Original author: Jared Davis <jared@centtech.com>
+
+
+# GLUCOSE-CERT
+#
+# This is a script that uses Glucose to solve a SAT problem, and (in case of
+# UNSAT) then uses DRUP-TRIM to check the resulting proof.  It only prints an
+# "s UNSATISFIABLE" line if the verifier says the proof is okay, and generally
+# prints all its output in a proper DIMACS-compatible form.
+#
+# You can get Glucose 3.0 here:  http://www.labri.fr/perso/lsimon/glucose/
+# You can get Drup-Trim here:    http://www.cs.utexas.edu/~marijn/drup/
+#
+# We're using drup-trim from October 26, 2013.  We assume "glucose" and
+# "drup-trim" are in your PATH.  If you can't do this for some reason, you can
+# modify the $GLUCOSE and $VERIFY lines below with explicit paths or whatever.
+#
+# Usage for this script: glucose-cert [OPTIONS] FILE
+#
+# Where:
+#
+#   - OPTIONS are any extra options for glucose.  (We'll automatically supply
+#     -model, -certified, and -certified-output=...)  See "glucose --help" for
+#     details.
+#
+#   - FILE is the dimacs file you want Glucose to process.
+#
+# Usage with SATLINK: Add this glucose-cert script to your PATH, and then just
+# make a Satlink configuration with :cmdline "glucose-cert".
+
+use warnings;
+use strict;
+require File::Temp;
+
+
+# CONFIGURATION -- You can change the commands to run here, if necessary:
+my $GLUCOSE = "glucose";
+my $VERIFY = "drup-trim";
+
+# SCRIPT is the compact name of this script, typically "glucose-cert", for use
+# in debugging and error messages.
+my $SCRIPT = $0;
+if ($SCRIPT =~ m|\/([^/]*)$|) {
+    $SCRIPT = $1;
+}
+
+# Basic command-line processing.  We stupidly assume the input file is the last
+# argument, just because it's easy to do and means we don't need to know all of
+# the options that Glucose takes.
+if (@ARGV == 0) {
+   print "$SCRIPT: Error: no arguments\n";
+   exit 1;
+}
+
+my $infile = $ARGV[@ARGV-1];
+if (! -f $infile) {
+    print "$SCRIPT: Error: file not found: $infile\n";
+    exit 1;
+}
+
+
+# Now we'll run Glucose and intercept its output.  We'll have it output its
+# proof into a temporary file, which nicely means there's less for Satlink to
+# filter.
+
+my $proof_fd = File::Temp->new( TEMPLATE => 'glucose-cert-XXXXXX' );
+my $proof_filename = $proof_fd->filename;
+
+my @glucose_args = (
+    "-model",                            # print satisfying assigns
+    "-certified",                        # create unsat proof
+    "-certified-output=$proof_filename", # write unsat proof here
+    @ARGV                                # any user args, including file name
+    );
+
+print "c $SCRIPT: solver command is: $GLUCOSE @glucose_args\n";
+
+my $solution = "";  # Used to record the solution line from Glucose
+my $sat_start = time();
+
+open(my $fd, "-|", $GLUCOSE, @glucose_args)
+    or die("$SCRIPT: Error: can't run $GLUCOSE: $!");
+
+while(my $line = <$fd>)
+{
+    if ($line =~ /^s (.+)$/)
+    {
+	print "c $SCRIPT: Intercepting solution line: $1\n";
+	die("$SCRIPT: Error: multiple solution lines!") if ($solution);
+	$solution = $1;
+    }
+    else {
+	print $line;
+    }
+}
+
+# Blah.  Closing the file seems to exit the program, so I guess I won't close it.
+# close($fd) or die("Failed to close $GLUCOSE: $!");
+
+print "c $SCRIPT: Sat solving took " . (time() - $sat_start) . " seconds\n";
+
+if ($solution eq "SATISFIABLE") {
+    print "c $SCRIPT: Glucose said SAT, so not checking an UNSAT proof.\n";
+    print "s $solution\n";
+    exit(0);
+}
+
+elsif ($solution ne "UNSATISFIABLE") {
+    print "c $SCRIPT: Error: Solution $solution not recognized\n";
+    exit(1);
+}
+
+# Glucose thinks it's unsat, so let's try to verify its unsat proof.  We'll do
+# a very similar thing, intercepting the verifier's output.
+
+print "c $SCRIPT: Verifying the UNSAT proof.\n";
+
+my @verifier_args = ($infile, $proof_filename);
+
+print "c $SCRIPT: Verification command: $VERIFY @verifier_args\n";
+
+my $status = "";          # Used to record status lines from the verifier
+my $verif_start = time();
+
+open(my $vfd, "-|", $VERIFY, @verifier_args)
+    or die("$SCRIPT: Error: can't run $VERIFY: $!");
+
+while(my $line = <$vfd>)
+{
+    if ($line =~ /^s (.+)$/) {
+	print "c $SCRIPT: Intercepting verifier line: $1\n";
+	die("$SCRIPT: Error: multiple verifier status lines!") if ($status);
+	$status = $1;
+    }
+    else {
+	print $line;
+    }
+}
+
+print "c $SCRIPT: Verification took " . (time() - $verif_start) . " seconds\n";
+
+if ($status eq "VERIFIED" || $status eq "TRIVIAL UNSAT")
+{
+    # Seems good.  Print the unsat line.
+    print "s $solution\n";
+}
+else {
+    print "c $SCRIPT error: Verifier doesn't say ok!\n";
+    exit(1);
+}
+
+exit(0);

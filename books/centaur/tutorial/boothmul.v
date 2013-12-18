@@ -48,8 +48,6 @@ module boothenc (pp, abits, b, minusb);
 
 endmodule
 
-   
-
 module boothmul (o, a, b);
 
   output [31:0] o;
@@ -66,23 +64,29 @@ module boothmul (o, a, b);
   wire [17:0] pp6;
   wire [17:0] pp7;
 
-   boothenc booth0 (pp0, { a[1:0], 1'b0 }, b, minusb);
-   boothenc booth1 (pp1, a[3:1], b, minusb);
-   boothenc booth2 (pp2, a[5:3], b, minusb);
-   boothenc booth3 (pp3, a[7:5], b, minusb);
-   boothenc booth4 (pp4, a[9:7], b, minusb);
-   boothenc booth5 (pp5, a[11:9], b, minusb);
-   boothenc booth6 (pp6, a[13:11], b, minusb);
-   boothenc booth7 (pp7, a[15:13], b, minusb);
+  boothenc booth0 (pp0, { a[1:0], 1'b0 }, b, minusb);
+  boothenc booth1 (pp1, a[3:1], b, minusb);
+  boothenc booth2 (pp2, a[5:3], b, minusb);
+  boothenc booth3 (pp3, a[7:5], b, minusb);
+  boothenc booth4 (pp4, a[9:7], b, minusb);
+  boothenc booth5 (pp5, a[11:9], b, minusb);
+  boothenc booth6 (pp6, a[13:11], b, minusb);
+  boothenc booth7 (pp7, a[15:13], b, minusb);
 
-   assign o = { {14{pp0[17]}}, pp0 }
-	      + { {12{pp1[17]}}, pp1, 2'b0 }
-	      + { {10{pp2[17]}}, pp2, 4'b0 }
-	      + { {8{pp3[17]}}, pp3, 6'b0 }
-	      + { {6{pp4[17]}}, pp4, 8'b0 }
-	      + { {4{pp5[17]}}, pp5, 10'b0 }
-	      + { {2{pp6[17]}}, pp6, 12'b0 }
-	      + { pp7, 14'b0 };
+  // We originally wrote this just as "assign o = ... + ... + ...", but
+  // later, to experiment with alternative strategies, we decided to make
+  // the summation order explicit, so that we can better match how the
+  // implementation's term is built.
+  wire [31:0] s0 = { {14{pp0[17]}}, pp0 };
+  wire [31:0] s1 = s0 + { {12{pp1[17]}}, pp1, 2'b0 };
+  wire [31:0] s2 = s1 + { {10{pp2[17]}}, pp2, 4'b0 };
+  wire [31:0] s3 = s2 + { {8{pp3[17]}}, pp3, 6'b0 };
+  wire [31:0] s4 = s3 + { {6{pp4[17]}}, pp4, 8'b0 };
+  wire [31:0] s5 = s4 + { {4{pp5[17]}}, pp5, 10'b0 };
+  wire [31:0] s6 = s5 + { {2{pp6[17]}}, pp6, 12'b0 };
+  wire [31:0] s7 = s6 + { pp7, 14'b0 };
+
+  assign o = s7;
 
 endmodule
 

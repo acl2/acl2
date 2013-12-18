@@ -295,17 +295,6 @@
 ;   2011.  November, 2011.  EPTCS 70.  Pages 84--102.
 ;     http://eptcs.org/content.cgi?ACL22011
 
-
-; We have an inconvenient redefinition of UNSIGNED-BYTE-P, which this fixes for
-; the theorems below.
-(local (defthm unsigned-byte-p-re-redef
-         (equal (unsigned-byte-p bits x)
-                (AND (INTEGERP BITS)
-                     (<= 0 BITS)
-                     (INTEGER-RANGE-P 0 (EXPT 2 BITS) X)))
-         :hints(("Goal" :in-theory (enable unsigned-byte-p)))
-         :rule-classes :definition))
-
 ; Here is a proof that ALU16 adds correctly modulo 2^16 when it is given the
 ; PLUS opcode.  To illustrate a few things you need to be aware of, I have done
 ; this proof in an especially bad way, and because of this it takes almost 15
@@ -544,13 +533,15 @@
 ; packages.  Their BDDs are known to grow exponentially.  At any rate, this is
 ; a much harder problem than the previous operators.
 ;
-; You generally have to do something clever to verify multipliers.  Since
-; this one is only 16x16, we can power through it using GL, if we have enough
-; memory and patience.  On a machine with 64 GB of memory, we can finish the
-; proof in about 2,700 seconds after a couple of tweaks:
+; You generally have to do something clever to verify multipliers.  See
+; boothmul.lisp for some approaches to verifying a slightly more realistic
+; multiplier.
+;
+; Historically, even for this only 16x16 multiplier, the proof below took 2,700
+; seconds on a machine with 64 GB of memory, after a few memory tweaks such as:
 
-(set-max-mem (* 40 (expt 2 30)))  ;; Use up to 40 GB of memory before GC'ing
-(hons-resize :addr-ht 400000000)  ;; Pre-reserve space for 400 million honses
+(set-max-mem (* 40 (expt 2 30)))  ; Use up to 40 GB of memory before GC'ing
+(hons-resize :addr-ht 400000000)  ; Pre-reserve space for 400 million honses
 
 (alu16-thm alu16-mult-correct
            :opcode *op-mult*

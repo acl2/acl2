@@ -45,7 +45,7 @@ Developing faster SAT solvers is an active area of research with frequent <a
 href='http://www.satcompetition.org/'>competitions</a>.</p>
 
 <p>SAT solvers are useful because many problems can be recast as SAT problems.
-For instance, the @(see gl::gl) framework can translate many ACL2 proof goals,
+For instance, the @(see gl) framework can translate many ACL2 proof goals,
 e.g., bounded arithmetic problems, into SAT problems.  This allows for a large
 class of theorems to be solved quickly and automatically by the SAT solver.
 This is especially useful in @(see acl2::hardware-verification).</p>
@@ -53,8 +53,8 @@ This is especially useful in @(see acl2::hardware-verification).</p>
 <p><b>Satlink</b> is an interfacing library that allows ACL2 to make use of
 off-the-shelf SAT solvers like <a
 href='http://fmv.jku.at/lingeling/'>lingeling</a>, <a
-href='https://www.lri.fr/~simon/?page=glucose'>glucose</a>, and so on.  It
-provides:</p>
+href='https://www.lri.fr/~simon/?page=glucose'>glucose</a>, and so on; see
+@(see sat-solver-options).  It provides:</p>
 
 <ul>
 
@@ -75,12 +75,17 @@ SAT solver claims the formula is unsatisfiable, it's correct.</li>
 is satisfiable, since we can just check the alleged satisfying assignment it
 produces.</p>
 
+<p>The soundness threat may be reduced by using, e.g., the <a
+href='http://www.satcompetition.org/2013/downloads.shtml'>EDACC verifier</a> to
+check the output of the SAT solver.  This tool was used to check proofs in the
+2013 SAT Competition.  See @(see sat-solver-options) for more information on
+how to set this up.</p>
 
 <h3>Loading the Library</h3>
 
 <p>Satlink is a low-level library.  It would be a bit weird to want to use it
 directly.  Instead, it is typically used indirectly through other tools, such
-as the @(see gl::gl) framework, or @(see acl2::aig-sat), or the @(see
+as the @(see gl) framework, or @(see acl2::aig-sat), or the @(see
 aignet::aignet-cnf) translation.  These other approaches are likely to be more
 convenient than using Satlink directly.</p>
 
@@ -93,9 +98,6 @@ is:</p>
 
 <p>Once you load this book, you generally need to construct your input @(see
 cnf) formula in some way, and then call @(see sat).</p>
-
-
-
 
 <h3>Copyright Information</h3>
 
@@ -122,6 +124,111 @@ details.</p>
 <p>You should have received a copy of the GNU General Public License along with
 this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Suite 500, Boston, MA 02110-1335, USA.</p>")
+
+(defxdoc sat-solver-options
+  :parents (satlink)
+  :short "Some SAT solvers that are known to work with @(see satlink)."
+
+  :long "<p>In principle, Satlink should work with any SAT solver that
+implements the DIMACS format.  This format is used in the <a
+href='http://www.satcompetition.org/'>SAT competitions</a>, so it is
+implemented by many solvers.</p>
+
+<p>Since there are so many options, you may want to look at, e.g., the <a
+href='http://www.satcompetition.org/2013/results.shtml'>SAT Competition
+Results</a> to get ideas about what SAT solvers you would like to install.</p>
+
+<p>It may be a good idea to install several solvers.  This may allow you to
+switch between them and figure out which solver is best for your particular
+problem.  It may also allow you to gain some confidence that many solvers agree
+about whether a particular problem really is unsatisfiable.</p>
+
+<p>If you just want a quick recommendation, here are some solvers that are
+known to work well with Satlink.</p>
+
+<h5><a href='http://www.labri.fr/perso/lsimon/glucose/'>Glucose</a> &mdash;
+open source, recommended</h5>
+
+<p>Based on our experiences using @(see gl) for proofs about hardware modules
+at Centaur, this is generally the first solver we try for any given
+problem.</p>
+
+<p>Version 3.0 should work with Satlink without any modifications.  We have
+also successfully used earlier versions with Satlink, but occasionally needed
+to patch them in minor ways, e.g., to print counterexamples.</p>
+
+<p>Quick instructions:</p>
+
+<ul>
+<li>Download Glucose 3.0 and extract @('glucose-3.0.tgz') somewhere</li>
+<li>@('cd glucose-3.0/core; make')</li>
+<li>@('cd glucose-3.0/simp; make')</li>
+<li>Verify that @('glucose-3.0/simp/glucose --help') prints a help message</li>
+</ul>
+
+<p>Now create a shell script, somewhere in your @('$PATH'), named @('glucose'),
+that contains:</p>
+
+@({
+    #!/bin/sh
+    .../glucose-3.0/simp/glucose -model \"$@\"
+})
+
+<p>You should now be able to call @(see sat) using a @(see config-p) such
+as:</p>
+
+@({
+    (satlink::make-config :cmdline \"glucose\")
+})
+
+<h5><a href='http://fmv.jku.at/lingeling/'>Lingeling</a></h5>
+
+<p>An older version of the solver (ALA) is released under an open source (GPL3)
+license.  For most of our problems, we found this version to be somewhat slower
+than Glucose 2.1.  Of course, our experiences may not be representative.</p>
+
+<p>Newer versions of Lingeling are available under a more restrictive license.
+These modern versions fared very well in the recent SAT competitions, so if the
+license does not pose a problem for you, it may well be worth trying.</p>
+
+<p>The build process is very similar.  For version ALA, simply download and
+extract the tarball, run @('./configure') and @('make'), and then add the
+resulting @('lingeling') executable into your PATH.</p>
+
+
+<h3>Certified UNSAT Checking</h3>
+
+<p>When a SAT solver reports that some formula is <i>satisfiable</i>, Satlink
+does not have to trust it: we can just check that the SAT solver gives us a
+good variable assignment that indeed satisfies the formula.</p>
+
+<p>Unfortunately, when a SAT solver claims that a problem is
+<i>unsatisfiable</i>, we have no way to check its work.  Here, Satlink simply
+assumes the solver is correct; see @(see logical-story).  If the solver is
+buggy, this could lead to ACL2 proofs of non-theorems.</p>
+
+<p>A way to reduce the chance of unsoundness is to have the SAT solver emit a
+proof of UNSAT.  There has been recent progress in the SAT community toward
+standardizing formats for UNSAT proofs, reducing the overhead of producing
+these proofs, and developing fast tools to check these proofs.</p>
+
+<p>Glucose can be configured to produce UNSAT proofs, and tools such as
+<a href='http://www.cs.utexas.edu/~marijn/drup/'>drup-trim</a> can check
+these proofs.</p>
+
+<p>Satlink now includes a script for using Glucose 3.0 along with drup-trim
+to carry out verified SAT checks.  See the file:</p>
+
+@({
+    centaur/satlink/glucose-cert
+})
+
+<p>After installing Glucose and drup-trim, you can add this script to your PATH
+and then simply create a Satlink configuration such as</p>
+
+@({
+    (satlink::make-config :cmdline \"glucose-cert\")
+})")
 
 
 (defsection dimacs-interp
@@ -332,7 +439,10 @@ satlink-run).</p>"
        (cmd (str::cat config.cmdline " " filename))
        ((mv finishedp & lines)
         (time$ (acl2::tshell-call cmd
-                                  :print config.verbose
+                                  ;; Print only if :verbose t is on, and use a
+                                  ;; custom printing function that skips variable
+                                  ;; assignment lines
+                                  :print (and config.verbose 'satlink-echo)
                                   :save t)
                :msg "; SATLINK: `~s0`: ~st sec, ~sa bytes~%"
                :args (list cmd)
@@ -490,17 +600,10 @@ invoke @(see satlink-run-impl), which actually calls the SAT solver.</p>"
     (declare (xargs :stobjs env$
                     :guard (and (config-p config)
                                 (lit-list-listp formula))))
-    (satlink-run-fn config formula env$))
+    (satlink-run-fn config formula env$)))
 
-  (progn!
-   (set-raw-mode t)
-   (defun satlink-run (config formula env$)
-     (b* ((state acl2::*the-live-state*)
-          (prev-okp            (f-get-global 'acl2::writes-okp state))
-          (state               (f-put-global 'acl2::writes-okp t state))
-          ((mv res env$ state) (satlink-run-impl config formula env$))
-          (?state              (f-put-global 'acl2::writes-okp prev-okp state)))
-       (mv res env$)))))
+; (depends-on "top-raw.lsp")
+(acl2::include-raw "top-raw.lsp")
 
 (define sat
   :parents (satlink)

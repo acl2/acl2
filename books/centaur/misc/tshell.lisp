@@ -22,7 +22,7 @@
 (in-package "ACL2")
 (include-book "tools/include-raw" :dir :system)
 (include-book "std/util/define" :dir :system)
-(include-book "str/strprefixp" :dir :system) ;; used in the raw code
+(include-book "str/defs" :dir :system) ;; used in the raw code
 ;; (depends-on "tshell-raw.lsp")
 
 (defxdoc tshell
@@ -39,7 +39,7 @@ some nice features:</p>
 
 <li><i>Output streaming and capture</i>.  You can (optionally) have the
 program's output printed at runtime, but still (optionally) capture its output
-as a strings list.  This makes it easy to show a user a long-running
+as a string list.  This makes it easy to show a user a long-running
 sub-program's output as it's being created, but also parse and analyze the
 program's output with your ACL2 code.</li>
 
@@ -177,6 +177,7 @@ need to involve state.</p>"
               (natp status)
               (string-listp lines)))))))
 
+
 (define tshell-call
   :parents (tshell)
   :short "Use tshell to run a sub-program and wait for it to finish.  (never
@@ -189,9 +190,13 @@ forks ACL2)."
          work to do something like @('\"echo < foo.txt\"').")
    &key
 
-   ((print booleanp
+   ((print symbolp
            "This says whether we should print the lines produced by @('cmd') as
-            they are produced.")
+            they are produced.  @('nil') means print nothing, @('t') means
+            print everything, and any other symbol @('fn') means call the raw
+            Lisp function @('fn') to do the printing.  Using a custom output
+            function is an advanced feature; see @('tshell-raw.lsp') to
+            understand how to write such functions.")
     't)
 
    ((save booleanp
