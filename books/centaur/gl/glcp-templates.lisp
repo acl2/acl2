@@ -360,7 +360,7 @@
              ((mv ok ans pathcond)
               (run-gified fn actuals pathcond clk config bvar-db state))
              ((when ok) (glcp-value ans))
-             ((when (cdr (hons-assoc-equal fn (table-alist 'gl-uninterpreted-functions (w state)))))
+             ((when uninterp)
               (glcp-value (g-apply fn actuals)))
              ((mv erp body formals obligs1)
               (acl2::interp-function-lookup fn

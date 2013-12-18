@@ -131,6 +131,8 @@ going to make.</li>
 @('x') was already sliceable we just return it unchanged.  Otherwise @('x'')
 will be the name of a newly generated, equivalent wire.</p>"
 
+  (defconst *vl-tmp-wire-atts* (list (list (hons-copy "VL_TMP_WIRE"))))
+
   (mutual-recursion
 
    (defund vl-expr-split (x elem delta)
@@ -161,8 +163,10 @@ will be the name of a newly generated, equivalent wire.</p>"
           ;; Otherwise, X contains at least some unsliceable components.
           ;; First, lets recursively split the arguments.  Note that each of
           ;; the new-args will be either atoms or sliceable expressions.
-          ((mv new-args (vl-delta delta))
+          ((mv new-args delta)
            (vl-exprlist-split (vl-nonatom->args x) elem delta))
+
+          ((vl-delta delta) delta)
 
           ;; Now, our operation applied to the simplified args is a simple
           ;; expression.  We create a new, temporary wire of the appropriate
@@ -174,7 +178,8 @@ will be the name of a newly generated, equivalent wire.</p>"
                                        :name    tmp-name
                                        :type    :vl-wire
                                        :signedp (eq type :vl-signed)
-                                       :range   (vl-make-n-bit-range width)))
+                                       :range   (vl-make-n-bit-range width)
+                                       :atts    *vl-tmp-wire-atts*))
           (tmp-assign (make-vl-assign :loc (vl-modelement-loc elem)
                                       :lvalue tmp-expr
                                       :expr rhs-expr))
