@@ -75,11 +75,13 @@ SAT solver claims the formula is unsatisfiable, it's correct.</li>
 is satisfiable, since we can just check the alleged satisfying assignment it
 produces.</p>
 
-<p>The soundness threat may be reduced by using, e.g., the <a
-href='http://www.satcompetition.org/2013/downloads.shtml'>EDACC verifier</a> to
-check the output of the SAT solver.  This tool was used to check proofs in the
-2013 SAT Competition.  See @(see sat-solver-options) for more information on
-how to set this up.</p>
+<p>The soundness threat may be reduced by checking the output of the SAT
+solver.  There has been recent progress in the SAT community toward
+standardizing formats for UNSAT proofs, reducing the overhead of producing
+these proofs, and developing fast tools to check these proofs.  Satlink
+includes, e.g., a @('glucose-cert') script that implements this idea; see @(see
+sat-solver-options).</p>
+
 
 <h3>Loading the Library</h3>
 
@@ -98,6 +100,7 @@ is:</p>
 
 <p>Once you load this book, you generally need to construct your input @(see
 cnf) formula in some way, and then call @(see sat).</p>
+
 
 <h3>Copyright Information</h3>
 
@@ -127,35 +130,24 @@ Street, Suite 500, Boston, MA 02110-1335, USA.</p>")
 
 (defxdoc sat-solver-options
   :parents (satlink)
-  :short "Some SAT solvers that are known to work with @(see satlink)."
+  :short "How to get a SAT solver that you can use with @(see satlink)."
 
-  :long "<p>In principle, Satlink should work with any SAT solver that
-implements the DIMACS format.  This format is used in the <a
-href='http://www.satcompetition.org/'>SAT competitions</a>, so it is
-implemented by many solvers.</p>
+  :long "<p>To use Satlink you will need at least one SAT solver.  Below are
+some solvers that are known to work well with Satlink.  You may wish to install
+several of these.  This lets you switch between solvers to figure out which
+solver is best for your particular problem, and perhaps to gain some additional
+confidence that a particular problem really is unsatisfiable (by checking it
+with many solvers.)</p>
 
-<p>Since there are so many options, you may want to look at, e.g., the <a
-href='http://www.satcompetition.org/2013/results.shtml'>SAT Competition
-Results</a> to get ideas about what SAT solvers you would like to install.</p>
 
-<p>It may be a good idea to install several solvers.  This may allow you to
-switch between them and figure out which solver is best for your particular
-problem.  It may also allow you to gain some confidence that many solvers agree
-about whether a particular problem really is unsatisfiable.</p>
-
-<p>If you just want a quick recommendation, here are some solvers that are
-known to work well with Satlink.</p>
-
-<h5><a href='http://www.labri.fr/perso/lsimon/glucose/'>Glucose</a> &mdash;
-open source, recommended</h5>
+<h3><a href='http://www.labri.fr/perso/lsimon/glucose/'>Glucose</a> &mdash;
+open source, recommended</h3>
 
 <p>Based on our experiences using @(see gl) for proofs about hardware modules
-at Centaur, this is generally the first solver we try for any given
-problem.</p>
-
-<p>Version 3.0 should work with Satlink without any modifications.  We have
-also successfully used earlier versions with Satlink, but occasionally needed
-to patch them in minor ways, e.g., to print counterexamples.</p>
+at Centaur, we usually try Glucose first.  Version 3.0 should work with Satlink
+without any modifications.  (We have also successfully used earlier versions
+with Satlink, but occasionally needed to patch them in minor ways, e.g., to
+print counterexamples.)</p>
 
 <p>Quick instructions:</p>
 
@@ -166,70 +158,239 @@ to patch them in minor ways, e.g., to print counterexamples.</p>
 <li>Verify that @('glucose-3.0/simp/glucose --help') prints a help message</li>
 </ul>
 
-<p>Now create a shell script, somewhere in your @('$PATH'), named @('glucose'),
-that contains:</p>
+<p>Now create a shell script, somewhere in your @('$PATH'), named @('glucose'):</p>
 
 @({
     #!/bin/sh
-    .../glucose-3.0/simp/glucose -model \"$@\"
+    /path/to/glucose-3.0/simp/glucose -model \"$@\"
 })
 
-<p>You should now be able to call @(see sat) using a @(see config-p) such
-as:</p>
+<p>As a quick test to make sure things are working, you can try to certify this
+book:</p>
+
+@({
+    cd [books]/centaur/satlink/solvers
+    cert.pl test-glucose
+})
+
+<p>You should now be able to use Satlink with configurations such as:</p>
 
 @({
     (satlink::make-config :cmdline \"glucose\")
 })
 
-<h5><a href='http://fmv.jku.at/lingeling/'>Lingeling</a></h5>
+<p>Glucose can (optionally) produce UNSAT proofs that can be checked by a
+simpler program.  Satlink includes a script that makes it easy to run the
+solver and then check any UNSAT answers.  See @(see unsat-checking) for more
+information.</p>
 
-<p>An older version of the solver (ALA) is released under an open source (GPL3)
-license.  For most of our problems, we found this version to be somewhat slower
-than Glucose 2.1.  Of course, our experiences may not be representative.</p>
+
+
+<h3><a href='http://www.cril.univ-artois.fr/~hoessen/penelope.html'>Penelope</a></h3>
+
+<p>Penelope is a (mostly) open-source, parallel sat solver.  The build process
+is simple: run @('make') and add the resulting @('penelope') executable to your
+@('PATH').  As a quick test to ensure things are working, you can try to
+certify this book:</p>
+
+@({
+    cd [books]/centaur/satlink/solvers
+    cert.pl test-penelope
+})
+
+<p>Note that you will usually need to point Penelope at a configuration file
+that tells it, e.g., how many cores to use.  The Penelope distribution has a
+@('configuration.ini') file that you can start with.  You can then use a
+Satlink configuration like:</p>
+
+@({
+    (satlink::make-config
+     :cmdline \"penelope -config=/path/to/configuration.ini\")
+})
+
+<p>We are not aware of any UNSAT proof support for this solver.</p>
+
+
+<h3><a href='http://fmv.jku.at/lingeling/'>Lingeling</a></h3>
+
+<p>An older version of Lingeling (Version ALA) is released under an open
+source (GPL3) license.  For most of our problems, we found this version to be
+somewhat slower than Glucose 2.1.  Of course, our experiences may not be
+representative.</p>
 
 <p>Newer versions of Lingeling are available under a more restrictive license.
 These modern versions fared very well in the recent SAT competitions, so if the
 license does not pose a problem for you, it may well be worth trying.</p>
 
-<p>The build process is very similar.  For version ALA, simply download and
+<p>For the open source version ALA, the build process is simple: download and
 extract the tarball, run @('./configure') and @('make'), and then add the
-resulting @('lingeling') executable into your PATH.</p>
-
-
-<h3>Certified UNSAT Checking</h3>
-
-<p>When a SAT solver reports that some formula is <i>satisfiable</i>, Satlink
-does not have to trust it: we can just check that the SAT solver gives us a
-good variable assignment that indeed satisfies the formula.</p>
-
-<p>Unfortunately, when a SAT solver claims that a problem is
-<i>unsatisfiable</i>, we have no way to check its work.  Here, Satlink simply
-assumes the solver is correct; see @(see logical-story).  If the solver is
-buggy, this could lead to ACL2 proofs of non-theorems.</p>
-
-<p>A way to reduce the chance of unsoundness is to have the SAT solver emit a
-proof of UNSAT.  There has been recent progress in the SAT community toward
-standardizing formats for UNSAT proofs, reducing the overhead of producing
-these proofs, and developing fast tools to check these proofs.</p>
-
-<p>Glucose can be configured to produce UNSAT proofs, and tools such as
-<a href='http://www.cs.utexas.edu/~marijn/drup/'>drup-trim</a> can check
-these proofs.</p>
-
-<p>Satlink now includes a script for using Glucose 3.0 along with drup-trim
-to carry out verified SAT checks.  See the file:</p>
+resulting @('lingeling') and/or @('plingeling') executables to your PATH.  As a
+quick test to ensure things are working, you can try to certify these
+books:</p>
 
 @({
-    centaur/satlink/glucose-cert
+    cd [books]/centaur/satlink/solvers
+    cert.pl test-lingeling
+    cert.pl test-plingeling
 })
 
-<p>After installing Glucose and drup-trim, you can add this script to your PATH
-and then simply create a Satlink configuration such as</p>
+<p>Newer versions of Lingeling are allegedly able to produce unsat proofs, but
+we haven't figured out how to make it work.</p>
+
+
+<h3><a
+href='http://tools.computational-logic.org/content/riss3g.php'>Riss3G</a></h3>
+
+<p>The Riss3g solver is a (mostly) open-source variant of Glucose that did
+fairly well in recent competitions and seems to be sometimes faster than
+Glucose.</p>
+
+<p>The build process was reasonably straightforward.  After building, put the
+resulting @('riss3g') and @('riss3gSimp') programs into your @('PATH').  As a
+quick test to ensure things are working, you can try to certify these
+books:</p>
 
 @({
-    (satlink::make-config :cmdline \"glucose-cert\")
-})")
+    cd [books]/centaur/satlink/solvers
+    cert.pl test-riss3g
+    cert.pl test-riss3gSimp
+})
 
+<p>Like Glucose, @('riss3g') has an ability to produce unsat proofs that can be
+checked with an external program.  Satlink includes a script that makes it easy
+to run the solver and then check any UNSAT answers.  See @(see unsat-checking)
+for more information.</p>
+
+
+<h3>Other Solvers</h3>
+
+<p>In principle, Satlink should work with any SAT solver that implements the
+DIMACS format.  This format is used in the <a
+href='http://www.satcompetition.org/'>SAT competitions</a>, so it is
+implemented by many solvers.  Accordingly, you may wish to look at, e.g., the
+<a href='http://www.satcompetition.org/2013/results.shtml'>SAT Competition
+Results</a> to get ideas about what SAT solvers are likely to perform well.</p>
+
+<p>Getting a new solver to work with Satlink <i>should</i> be straightforward.
+Typically you will need to install the solver, add it to your @('PATH'), and
+then figure out how to run it.  Satlink expects to be able to invoke the solver
+using:</p>
+
+@({
+     <solver-command> <input-file>
+})
+
+<p>Sometimes a solver may need extra command-line arguments.  For instance,
+Glucose needs a @('-model') switch or it won't print the satisfying
+assignment (i.e., @('v') lines) in case of SAT.  You might be able to write a
+small script to supply these arguments, e.g., as in the @('glucose') script
+above.</p>
+
+<p>To test out your new solver, Satlink includes a primitive @(see
+config-check) command that you can use to try your solver on a handful of
+trivial problems.  This is a very good way to make sure that at least the basic
+i/o contract seems to be working.  It should be easy to adapt one of the
+@('test-') scripts in the @('centaur/satlink/solvers') directory to suit your
+solver.</p>
+
+<p>If the @('config-check') passes and you want a more thorough check, you
+might try to run your new solver on, e.g., @('centaur/tutorial/sat.lsp') and
+the various files in @('centaur/regression').</p>")
+
+
+(defsection proof-checking
+  :parents (sat-solver-options)
+  :short "Options for running SAT solvers that produce UNSAT proofs."
+
+  :long "<p>For higher confidence (at some cost to runtime), some SAT solvers
+are able to produce UNSAT proofs.  Small programs such as <a
+href='http://www.cs.utexas.edu/~marijn/drup/'>drup-trim</a> can check these
+proofs, to ensure the SAT solver reasoned correctly.</p>
+
+<p>Satlink now includes Perl scripts that can make use of this capability for
+the Glucose and Riss3g solvers.  In particular, see the following scripts:</p>
+
+<ul>
+<li>@('centaur/satlink/solvers/glucose-cert')</li>
+<li>@('centaur/satlink/solvers/riss3g-cert')</li>
+</ul>
+
+<p>The general idea of these scripts is, e.g., for Glucose:</p>
+
+<ul>
+
+<li>We first call Glucose to solve the problem;</li>
+
+<li>When Glucose reports SAT, we just exit (because Satlink can check the
+satisfying assignment itself); or</li>
+
+<li>When Glucose reports UNSAT, we check the proof using the Drup-Trim unsat
+proof checker.  We only print an \"s UNSATISFIABLE\" line if Drup-Trim says
+that the proof is ok.</li>
+
+</ul>
+
+<p>All of this works well with Satlink.  You can still see the output from the
+solver and the verifier in real time, interrupt it, etc.</p>
+
+
+<h3>Setup</h3>
+
+<p>To use these tools, you will need to first:</p>
+
+<ul>
+
+<li>Install @('glucose') and/or @('riss3g') as described in @(see
+sat-solver-options), and</li>
+
+<li>Install the <a href='http://www.cs.utexas.edu/~marijn/drup/'>drup-trim</a>
+program as @('drup-trim') somewhere in your PATH.</li>
+
+</ul>
+
+<p>You can then add the @('glucose-cert') or @('riss3g-cert') scripts to your
+PATH.  As a quick test to ensure things are working, you can try to certify
+these books:</p>
+
+@({
+    cd [books]/centaur/satlink/solvers
+    cert.pl test-glucose-cert
+    cert.pl test-riss3g-cert
+})
+
+<p>To use these scripts from Satlink, you can then typically just use a Satlink
+configuration such as:</p>
+
+@({
+    (satlink::make-config :cmdline \"glucose-cert\" ...)
+})
+
+
+<h3>Skipping Proof Checking During Development</h3>
+
+<p>The environment variable SATLINK_TRUST_SOLVER can be set to 1 to suppress
+proof checking.  When this variable is set, we will NOT instruct the solver to
+produce an UNSAT proof and (of course) will not check the non-existent
+proof.</p>
+
+<p>We use this feature as follows:</p>
+
+<ul>
+
+<li>We generally set @('SATLINK_TRUST_SOLVER=1') in our startup scripts.  This
+way, when we are working with ACL2 (either interactively, or when rebuilding
+books), we just trust the solver and avoid the overhead of UNSAT checking.</li>
+
+<li>We set @('SATLINK_TRUST_SOLVER=0') for our nightly regressions.  These are
+run automatically, overnight, so performance is not very important.</li>
+
+</ul>
+
+<p>This gives us a good blend of performance and confidence.  If the solver
+somehow screws up and claims to have proven a theorem that isn't really true,
+we may not find out about it until our regression fails.  But in exchange, we
+can always use @('glucose-cert') with no performance impact on our everyday
+work.</p>")
 
 (defsection dimacs-interp
   :parents (dimacs)

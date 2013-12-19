@@ -60,6 +60,7 @@
               bitarr get-bit set-bit bits-length resize-bits bits-equiv
               natarr get-nat set-nat nats-length resize-nats nats-equiv
               tshell-call tshell-start tshell-stop tshell-ensure
-              satlink boolean-reasoning
+              satlink boolean-reasoning gl tshell
+
               )))
 

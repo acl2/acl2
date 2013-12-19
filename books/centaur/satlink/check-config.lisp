@@ -21,7 +21,6 @@
 
 (in-package "SATLINK")
 (include-book "top")
-; cert_param: (uses-glucose)
 
 (define simple-sat ((formula lit-list-listp) &key (config config-p))
   :parents (check-config)
@@ -45,7 +44,7 @@
 
 (define check-config ((config config-p))
   :returns nil
-  :parents (satlink)
+  :parents (sat-solver-options)
   :short "Run some quick checks of your SAT solver configuration."
 
   :long "<p>This is a quick check to try to ensure that ACL2 can communicate
@@ -143,3 +142,4 @@ is producing the expected results.</p>"
                :verbose t
                :mintime nil
                :remove-temps t)))
+

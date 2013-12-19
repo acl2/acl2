@@ -215,11 +215,14 @@ endif # ifneq ($(EXCLUDED_PREFIXES), )
 # having subdirectories that we don't know about ahead of time.  We exclude
 # some other directories because there are subdirectories and it's just easiest
 # to stop at the root.
+
+# We also exclude centaur/satlink/solvers because it depends on all kinds of
+# extra SAT solvers.
 $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/$(EGREP_EXTRA_EXCLUDE_STRING))' \
+    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
   > $(BUILD_DIR)/Makefile-books; \
   ls -l $(BUILD_DIR)/Makefile-books)
