@@ -1,9 +1,0 @@
-#summary How to configure Glucose for use with GL
-
-= Running Glucose =
-
-I've had a couple people ask me this, so I'm making a wiki page on it (ideally this would go in the GL documentation somewhere, but this is a start).  
-
-To get Glucose 3.0 to work with GL, you need to pass in the "-model" flag to it.  Also, many of us that use Glucose use the version in the "simp" directory, which includes a simplifier (as opposed to the "core" directory, which does not).
-
-This can be achieved by creating a "glucose" script and passing in the "-model" flag and arguments (perhaps with "$@")
