@@ -19,6 +19,8 @@
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
+; cert_param: (uses-glucose)
+
 (in-package "SATLINK")
 (include-book "top")
 

@@ -81,7 +81,8 @@
 (include-book "gl/bfr-satlink")
 
 (include-book "centaur/satlink/top" :dir :system)
-(include-book "centaur/satlink/check-config" :dir :system)
+; Depends on glucose:
+; (include-book "centaur/satlink/check-config" :dir :system)
 
 (include-book "misc/top")
 (include-book "misc/smm")
