@@ -776,9 +776,19 @@
                       function name."
                      (car lst))
                  (theoryp!1 (cdr lst) t macro-aliases wrld)))
-        (t (prog2$ (cw "~|~%**NOTE**:~%The name ~x0 does not ~
-                        designate a rule or non-empty list of rules."
-                       (car lst))
+        (t (prog2$ (let ((name (car lst)))
+                     (cw "~|~%**NOTE**:~%The name ~x0 does not designate a ~
+                          rule or non-empty list of rules~@1.  See :DOC ~
+                          rule-classes."
+                         name
+                         (cond ((and (symbolp name)
+                                     (or (body name nil wrld)
+                                         (getprop name 'theorem nil
+                                                  'current-acl2-world wrld)
+                                         (getprop name 'defchoose-axiom nil
+                                                  'current-acl2-world wrld)))
+                                " (though there is a theorem with that name)")
+                               (t ""))))
                    (theoryp!1 (cdr lst) t macro-aliases wrld)))))
 
 (defun theoryp! (lst wrld)
