@@ -98,6 +98,7 @@
                        :type-alist hyps-type-alist
                        :obj provep
                        :geneqv (if (member-eq provep '(t nil)) *geneqv-iff* nil)
+                       :pequiv-info nil
                        :fnstack nil
                        :ancestors nil
                        :backchain-limit (backchain-limit wrld :rewrite)

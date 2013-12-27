@@ -1407,6 +1407,48 @@
   (pseudo-congruence-tuple-listp val))
 
 ;-----------------------------------------------------------------
+; PEQUIVS
+
+; If fn has arity n, then the 'pequivs property of fn is an alist, each of
+; whose elements is of the form (equiv pequiv1 ... pequivk), where equiv is
+; some equivalence relation and each pequivi is a pequiv record.
+
+(defun pseudo-pequiv-pattern-p (p)
+  (or (legal-variablep p)
+      (and (weak-pequiv-pattern-p p)
+           (symbolp (access pequiv-pattern p :fn)) ; function symbol
+           (pseudo-term-listp (access pequiv-pattern p :pre-rev))
+           (pseudo-term-listp (access pequiv-pattern p :post))
+           (eql (access pequiv-pattern p :posn)
+                (1+ (length (access pequiv-pattern p :pre-rev))))
+           (pseudo-pequiv-pattern-p (access pequiv-pattern p :next)))))
+
+(defun pseudo-pequiv-p (x)
+  (and (weak-pequiv-p x)
+       (pseudo-pequiv-pattern-p (access pequiv x :pattern))
+       (alistp (access pequiv x :unify-subst))
+       (pseudo-congruence-rulep (access pequiv x :congruence-rule))))
+
+(defun pseudo-pequiv-listp (lst)
+  (cond ((atom lst) (null lst))
+        (t (and (pseudo-pequiv-p (car lst))
+                (pseudo-pequiv-listp (cdr lst))))))
+
+(defun pseudo-pequiv-alistp (alist)
+  (cond ((atom alist) (null alist))
+        (t (and (consp (car alist))
+                (symbolp (caar alist)) ; function-symbolp
+                (pseudo-pequiv-listp (cdar alist))
+                (pseudo-pequiv-alistp (cdr alist))))))
+
+(defun pequivsp (sym val)
+  (declare (ignore sym))
+  (or (null val)
+      (and (weak-pequivs-property-p val)
+           (pseudo-pequiv-alistp (access pequivs-property val :deep))
+           (pseudo-pequiv-alistp (access pequivs-property val :shallow)))))
+
+;-----------------------------------------------------------------
 ; CONGRUENT-STOBJ-REP
 
 (defun congruent-stobj-repp (sym val)
@@ -2707,6 +2749,7 @@
           (NON-EXECUTABLEP (or (eq val *acl2-property-unbound*) ; upgrade proxy
                                (non-executablepp sym val)))
           (NTH-UPDATE-REWRITER-TARGETP (nth-update-rewriter-targetpp sym val))
+          (PEQUIVS (PEQUIVSP sym val))
           (POS-IMPLICANTS (pseudo-pos-implicantsp sym val))
           (PREDEFINED (or (eq val *acl2-property-unbound*) ; upgrade defproxy
                           (predefinedp sym val)))
@@ -2951,7 +2994,7 @@
 
 (defmacro chk-pseudo-good-worldp (book-name)
 
-; This macro is used by the %.bkchk make target in books/Makefile-generic.
+; This macro is used by the %.bkchk make target in books/Makefile.
 
   `(let ((passed-p (pseudo-good-worldp (w state) nil)))
      (pprogn (newline *standard-co* state)

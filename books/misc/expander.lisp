@@ -522,7 +522,8 @@
                          :ancestors nil
                          :backchain-limit 500
                          :step-limit step-limit ; explicit to avoid decrement
-                         :rdepth (rewrite-stack-limit wrld))
+                         :rdepth (rewrite-stack-limit wrld)
+                         :pequiv-info nil)
           (cond
            ((equal val term)
             (cond

@@ -156,7 +156,8 @@
                                               'congruences
                                               nil
                                               'current-acl2-world
-                                              wrld)))))
+                                              wrld))))
+                            :pequiv-info nil)
                            (sl-let
                             (bad-ass ttree)
                             (resume-suspended-assumption-rewriting

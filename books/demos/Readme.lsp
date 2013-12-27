@@ -10,6 +10,7 @@ modeling/memories.lisp
 modeling/nested-stobj-toy-isa.lisp
 modeling/network-state-basic.lisp
 modeling/network-state.lisp
+patterned-congruences.lisp
 proofs
 split-types-examples.lisp
 two-pass-constants")

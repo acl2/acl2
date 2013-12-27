@@ -49,6 +49,7 @@
 	    :rdepth (rewrite-stack-limit wrld)
 	    :type-alist (access metafunction-context mfc :type-alist)
 	    :geneqv geneqv
+            :pequiv-info nil
 	    :wrld wrld
 	    :fnstack (access metafunction-context mfc :fnstack)
 	    :ancestors (access metafunction-context mfc :ancestors)
