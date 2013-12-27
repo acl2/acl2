@@ -13800,6 +13800,7 @@
                          ELIMINATE-DESTRUCTORS-RULE
                          COARSENINGS
                          CONGRUENCES
+                         PEQUIVS
                          INDUCTION-RULES
                          THEOREM
                          UNTRANSLATED-THEOREM

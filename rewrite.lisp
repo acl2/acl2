@@ -25,32 +25,31 @@
 
 ; Essay on Equivalence, Refinements, and Congruence-based Rewriting
 
-; (Note: At the moment, the fact that fn is an equivalence relation is
-; encoded merely by existence of a non-nil 'coarsenings property.  No
-; :equivalence rune explaining why fn is an equivalence relation is to
-; be found there -- though such a rune does exist and is indeed found
-; among the 'congruences of fn itself.  We do not track the use of
-; equivalence relations, we just use them anonymously.  It would be
-; good to track them and report them.  When we do that, read the Note
-; on Tracking Equivalence Runes in subst-type-alist1.)
+; (Note: At the moment, the fact that fn is an equivalence relation is encoded
+; merely by existence of a non-nil 'coarsenings property.  No :equivalence rune
+; explaining why fn is an equivalence relation is to be found there -- though
+; such a rune does exist and is indeed found among the 'congruences of fn
+; itself.  We do not track the use of equivalence relations, we just use them
+; anonymously.  It would be good to track them and report them.  When we do
+; that, read the Note on Tracking Equivalence Runes in subst-type-alist1.)
 
-; (Note: Some of the parenthetical remarks in this code are extremely
-; trite observations -- to the ACL2 afficionado -- added when I sent
-; this commented code off to friends to read.)
+; (Note: Some of the parenthetical remarks in this code are extremely trite
+; observations -- to the ACL2 afficionado -- added when I sent this commented
+; code off to friends to read.)
 
-; We will allow the user to introduce new equivalence relations.
-; At the moment, they must be functions of two arguments only.
-; Parameterized equivlence relations, e.g., x == y (mod n), are
-; interesting and may eventually be implemented.  But in the spirit of
-; getting something done right and working, we start simple.
+; We will allow the user to introduce new equivalence relations.  At the
+; moment, they must be functions of two arguments only.  Parameterized
+; equivalence relations, e.g., x == y (mod n), are interesting and may
+; eventually be implemented.  But in the spirit of getting something done right
+; and working, we start simple.
 
-; An equivalence relation here is any two argument function that has
-; been proved to be Boolean, symmetric, reflexive, and transitive.
-; The rule-class :EQUIVALENCE indicates that a given theorem
-; establishes that equiv is an equivalence relation.  (In the
-; tradition of Nqthm, the ACL2 user tells the system how to use a
-; theorem when the theorem is submitted by the user.  These instructions
-; are called "rule classes".  A typical "event" might therefore be:
+; An equivalence relation here is any two argument function that has been
+; proved to be Boolean, symmetric, reflexive, and transitive.  The rule-class
+; :EQUIVALENCE indicates that a given theorem establishes that equiv is an
+; equivalence relation.  (In the tradition of Nqthm, the ACL2 user tells the
+; system how to use a theorem when the theorem is submitted by the user.  These
+; instructions are called "rule classes".  A typical "event" might therefore
+; be:
 ; (defthm set-equal-is-an-equivalence-rel
 ;   (and (booleanp (set-equal x y))
 ;        (set-equal x x)
@@ -59,52 +58,49 @@
 ;                      (set-equal y z))
 ;                 (set-equal x z)))
 ;   :rule-classes :EQUIVALENCE)
-; The rule class :EQUIVALENCE just alerts the system that this
-; formula states that something is an equivalence relation.  If
-; the formula is proved, the system identifies set-equal as the
-; relation and adds to the database certain information that
-; enables the processing described here.)
+; The rule class :EQUIVALENCE just alerts the system that this formula states
+; that something is an equivalence relation.  If the formula is proved, the
+; system identifies set-equal as the relation and adds to the database certain
+; information that enables the processing described here.)
 
 ; The Boolean requirement is imposed for coding convenience.  In
-; assume-true-false, for example, when we assume (equiv x y) true, we
-; simply give it the type-set *ts-t*, rather than something
-; complicated like its full type-set take away *ts-nil*.  In addition,
-; the Boolean requirement means that (equiv x y) is equal to (equiv y
-; x) (not just propositionally) and hence we can commute it at will.
-; The other three requirements are the classic ones for an equivalence
-; relation.  All three are exploited.  Symmetry is used to justify
-; commutativity, which currently shows up in assume-true-false when we
-; put either (equiv x y) or (equiv y x) on the type-alist -- depending
-; on term-order -- and rely on it to assign the value of either.
-; Reflexivity is used to eliminate (equiv x term) as a hypothesis when
-; x does not occur in term or elsewhere in the clause.  Transitivity
-; is used throughout the rewriting process.  These are not guaranteed
-; to be all the places these properties are used!
+; assume-true-false, for example, when we assume (equiv x y) true, we simply
+; give it the type-set *ts-t*, rather than something complicated like its full
+; type-set take away *ts-nil*.  In addition, the Boolean requirement means that
+; (equiv x y) is equal to (equiv y x) (not just propositionally) and hence we
+; can commute it at will.  The other three requirements are the classic ones
+; for an equivalence relation.  All three are exploited.  Symmetry is used to
+; justify commutativity, which currently shows up in assume-true-false when we
+; put either (equiv x y) or (equiv y x) on the type-alist -- depending on
+; term-order -- and rely on it to assign the value of either.  Reflexivity is
+; used to eliminate (equiv x term) as a hypothesis when x does not occur in
+; term or elsewhere in the clause.  Transitivity is used throughout the
+; rewriting process.  These are not guaranteed to be all the places these
+; properties are used!
 
-; Note:  Some thought has been given to the idea of generalizing our
-; work to non-symmetric reflexive and transitive relations.  We have
-; seen occasional utility for the idea of rewriting with such a monotonic
-; relation, replacing a term by a stronger or more defined one.  But to
-; implement that we feel it should be done in a completely independent
-; second pass in which monotonic relations are considered.  Equivalence
-; relations are of such importance that we did not want to risk doing them
-; weakly just to allow this esoteric variant.
+; Note: Some thought has been given to the idea of generalizing our work to
+; non-symmetric reflexive and transitive relations.  We have seen occasional
+; utility for the idea of rewriting with such a monotonic relation, replacing a
+; term by a stronger or more defined one.  But to implement that we feel it
+; should be done in a completely independent second pass in which monotonic
+; relations are considered.  Equivalence relations are of such importance that
+; we did not want to risk doing them weakly just to allow this esoteric
+; variant.
 
-; Note: We explicitly check that an equivalence relation has no guard
-; because we never otherwise consider their guards.  (The
-; "guard" on an ACL2 function definition is a predicate that must be
-; true of the actuals in order for the defining equation to hold.  It
-; can be thought of as a "precondition" or a characterization of the
-; domain of the function definition.  In Common Lisp (and ACL2 is just
-; a subset of Common Lisp) many functions, e.g., car and cdr, are not
-; defined everywhere and guards are our way of taking note of this.
-; Equivalence relations have "no" guard, meaning their guard is t,
-; i.e., they are defined everywhere.)
+; Note: We explicitly check that an equivalence relation has no guard because
+; we never otherwise consider their guards.  (The "guard" on an ACL2 function
+; definition is a predicate that must be true of the actuals in order for the
+; defining equation to hold.  It can be thought of as a "precondition" or a
+; characterization of the domain of the function definition.  In Common Lisp
+; (and ACL2 is just a subset of Common Lisp) many functions, e.g., car and cdr,
+; are not defined everywhere and guards are our way of taking note of this.
+; Equivalence relations have "no" guard, meaning their guard is t, i.e., they
+; are defined everywhere.)
 
-; The motivation behind equivalence relations is to allow their use
-; as :REWRITE rules.  For example, after set-equal has been proved to be
-; an equivalence relation and union-eq, say, has been proved to be
-; commutative (wrt set-equal),
+; The motivation behind equivalence relations is to allow their use as :REWRITE
+; rules.  For example, after set-equal has been proved to be an equivalence
+; relation and union-eq, say, has been proved to be commutative (wrt
+; set-equal),
 
 ; (implies (and (symbol-listp a)
 ;               (true-listp a)
@@ -112,135 +108,133 @@
 ;               (true-listp b))
 ;          (set-equal (union-eq a b) (union-eq b a)))
 
-; then we would like to be able to use the above rule as a rewrite
-; rule to commute union-eq expressions.  Of course, this is only
-; allowed in situations in which it is sufficient to maintain
-; set-equality as we rewrite.  Implicit in this remark is the idea
-; that the rewriter is given an equivalence relation to maintain as it
-; rewrites.  This is a generalization of id/iff flag in Nqthm's
-; rewriter; that flag indicates whether the rewriter is maintaining
-; identity or propositional equivalence.  :CONGRUENCE lemmas,
-; discussed later, inform the rewriter of the appropriate relations to
-; maintain as it steps from (fn a1 ... an) to the ai.  But given a
-; relation to maintain and a term to rewrite, the rewriter looks at
-; all the :REWRITE rules available and applies those that maintain the
-; given relation.
+; then we would like to be able to use the above rule as a rewrite rule to
+; commute union-eq expressions.  Of course, this is only allowed in situations
+; in which it is sufficient to maintain set-equality as we rewrite.  Implicit
+; in this remark is the idea that the rewriter is given an equivalence relation
+; to maintain as it rewrites.  This is a generalization of id/iff flag in
+; Nqthm's rewriter; that flag indicates whether the rewriter is maintaining
+; identity or propositional equivalence.  :CONGRUENCE lemmas, discussed later,
+; inform the rewriter of the appropriate relations to maintain as it steps from
+; (fn a1 ... an) to the ai.  But given a relation to maintain and a term to
+; rewrite, the rewriter looks at all the :REWRITE rules available and applies
+; those that maintain the given relation.
 
-; For example, suppose the rewriter is working on (memb x (union-eq b
-; a)), where memb is a function that returns t or nil according to
-; whether its first argument is an element of its second.  Suppose the
-; rewriter is to maintain identity during this rewrite, i.e., it is to
-; maintain the equivalence relation equal.  Suppose a :CONGRUENCE rule
-; informs us that equal can be preserved on memb expressions by
-; maintaining set-equal on the second argument.  Then when rewriting
-; the second argument to the memb, rewrite shifts from maintaining
-; equal to maintaining set-equal.  This enables it to use the above
-; theorem as a rewrite rule, replacing (union-eq b a) by (union-eq a
-; b), just as Nqthm would had the connecting relation been equal
+; For example, suppose the rewriter is working on (memb x (union-eq b a)),
+; where memb is a function that returns t or nil according to whether its first
+; argument is an element of its second.  Suppose the rewriter is to maintain
+; identity during this rewrite, i.e., it is to maintain the equivalence
+; relation equal.  Suppose a :CONGRUENCE rule informs us that equal can be
+; preserved on memb expressions by maintaining set-equal on the second
+; argument.  Then when rewriting the second argument to the memb, rewrite
+; shifts from maintaining equal to maintaining set-equal.  This enables it to
+; use the above theorem as a rewrite rule, replacing (union-eq b a) by
+; (union-eq a b), just as Nqthm would had the connecting relation been equal
 ; instead of set-equal.
 
-; This raises the problem of refinements.  For example, we may have
-; some rules about union-eq that are expressed with equal rather than
-; set-equal.  For example, the definition of union-eq is an equality!
-; It is clear that a rule may be tried if its connecting equivalence
-; relation is a refinement of the one we wish to maintain.  By
-; ``equiv1 is a refinement of equiv2'' we mean
+; This raises the problem of refinements.  For example, we may have some rules
+; about union-eq that are expressed with equal rather than set-equal.  For
+; example, the definition of union-eq is an equality!  It is clear that a rule
+; may be tried if its connecting equivalence relation is a refinement of the
+; one we wish to maintain.  By ``equiv1 is a refinement of equiv2'' we mean
 
 ; (implies (equiv1 x y) (equiv2 x y)).
 
-; Such rules are called :REFINEMENT rules and are a distinguished
-; rule-class, named :REFINEMENT.  Every equivalence relation is a
-; refinement of itself.  Equal is a refinement of every equivalence
-; relation and no other relation is a refinement of equal.
+; Such rules are called :REFINEMENT rules and are a distinguished rule-class,
+; named :REFINEMENT.  Every equivalence relation is a refinement of itself.
+; Equal is a refinement of every equivalence relation and no other relation is
+; a refinement of equal.
 
 ; Every equivalence relation, fn, has a non-nil value for the property
-; 'coarsenings.  The value of the property is a list of all
-; equivalence relations (including fn itself) known to admit fn as a
-; refinement.  This list is always closed under the transitivity of
-; refinement.  That is, if e1 is a refinement of e2 and e2 is a
-; refinement of e3, then the 'coarsenings for e1 includes e1 (itself),
-; e2 (of course), and e3 (surprise!).  This makes it easier to answer
-; quickly the question of who is a refinement of whom.
+; 'coarsenings.  The value of the property is a list of all equivalence
+; relations (including fn itself) known to admit fn as a refinement.  This list
+; is always closed under the transitivity of refinement.  That is, if e1 is a
+; refinement of e2 and e2 is a refinement of e3, then the 'coarsenings for e1
+; includes e1 (itself), e2 (of course), and e3 (surprise!).  This makes it
+; easier to answer quickly the question of who is a refinement of whom.
 
 ; Equivalence relations are the only symbols with non-nil 'coarsenings
-; properties, thus this is the way they are recognized.  Furthermore,
-; the 'coarsenings property of 'equal will always list all known
-; equivalence relations.
+; properties, thus this is the way they are recognized.  Furthermore, the
+; 'coarsenings property of 'equal will always list all known equivalence
+; relations.
 
 ; When we are rewriting to maintain equiv we use any rule that is a known
-; refinement of equiv.  Thus, while rewriting to maintain set-equal we can
-; use both set-equal rules and equal rules.
+; refinement of equiv.  Thus, while rewriting to maintain set-equal we can use
+; both set-equal rules and equal rules.
 
 ; Now we move on to the heart of the matter: knowing what relation to maintain
 ; at each step.  This is where :CONGRUENCE rules come in.
 
-; The key idea in congruence-based rewriting is that lemmas of the form:
+; To understand the key idea in congruence-based rewriting, consider lemmas of
+; the form
+
 ; (implies (equiv1 x y)
 ;          (equiv2 (fn a1 ... x ... an)
 ;                  (fn a1 ... y ... an))),
 
-; where equiv1 and equiv2 are equivalence relations, the ai, x, and y
-; are distinct variables and x and y occur in the kth argument
-; position of the n-ary function fn, can be used to rewrite
-; fn-expressions, maintaining equiv2, by rewriting the kth argument
-; position maintaining equiv1.
+; where equiv1 and equiv2 are equivalence relations, the ai, x, and y are
+; distinct variables and x and y occur in the kth argument position of the
+; n-ary function fn.  These lemmas can be used to rewrite fn-expressions,
+; maintaining equiv2, by rewriting the kth argument position maintaining
+; equiv1.  In the separate Essay on Patterned Congruences and Equivalences we
+; generalize to what we call "patterned congruence rules", but in this Essay we
+; focus only on lemmas of the form above.
 
-; We call such a lemma a ``congruence lemma'' and say that it
-; establishes that ``equiv2 is maintained by equiv1 in the kth
-; argument of fn.''  The rule-class :CONGRUENCE indicates when a lemma
-; is to be so used.
+; We call such a lemma a ``congruence lemma'' and say that it establishes that
+; ``equiv2 is maintained by equiv1 in the kth argument of fn.''  The rule-class
+; :CONGRUENCE indicates when a lemma is to be so used.
 
 ; An example :CONGRUENCE lemma is
 
 ; (implies (set-equal a b) (iff (member x a) (member x b))).
 
-; (In my previous example I used memb.  Here I use member, the Common
-; Lisp function.  When member succeeds, it returns the tail of its
-; second arg that starts with its first.  Thus, (member x a) is not
-; necessary equal to (member x b), even when a and b are set-equal.
-; But they are propositionally equivalent, i.e., mutually nil or
-; non-nil.  Iff is just another equivalence relation.)
+; (In my previous example I used memb.  Here I use member, the Common Lisp
+; function.  When member succeeds, it returns the tail of its second arg that
+; starts with its first.  Thus, (member x a) is not necessary equal to (member
+; x b), even when a and b are set-equal.  But they are propositionally
+; equivalent, i.e., mutually nil or non-nil.  Iff is just another equivalence
+; relation.)
 
-; That is, iff is maintained by set-equal in the second argument of
-; member.  Thus, when rewriting a member expression while trying to
-; maintain iff it is sufficient merely to maintain set-equivalence on
-; the second argument of member.  In general we will sweep across the
-; arguments of a function maintaining an appropriate equivalence
-; relation for each argument as a function of the relation we wish to
-; maintain outside.
+; That is, iff is maintained by set-equal in the second argument of member.
+; Thus, when rewriting a member expression while trying to maintain iff it is
+; sufficient merely to maintain set-equivalence on the second argument of
+; member.  In general we will sweep across the arguments of a function
+; maintaining an appropriate equivalence relation for each argument as a
+; function of the relation we wish to maintain outside.
 
-; A literal interpretation of the lemma above suggests that one
-; must maintain identity on the first argument of member in order to
-; rely on the lemma in the second argument.  What then justifies our
-; independent use of :CONGRUENCE lemmas in distict argument positions?
+; A literal interpretation of the lemma above suggests that one must maintain
+; identity on the first argument of member in order to rely on the lemma in the
+; second argument.  What then justifies our independent use of :CONGRUENCE
+; lemmas in distict argument positions?
 
-; Congruence Theorem 1.  :CONGRUENCE lemmas for different argument
-; positions of the same function can be used independently.  In
-; particular, suppose equiv is maintained by e1 in the kth argument of
-; fn and equiv is maintained by e2 in the jth argument of fn, where j
-; is not k.  Suppose a is e1 to a' and b is e2 to b'.  Then (fn
-; ...a...b...) is equiv to (fn ...a'...b'...), where a and b occur in
-; the kth and jth arguments, respectively.
+; Congruence Theorem 1.  :CONGRUENCE lemmas for different argument positions of
+; the same function can be used independently.  In particular, suppose equiv is
+; maintained by e1 in the kth argument of fn and equiv is maintained by e2 in
+; the jth argument of fn, where j is not k.  Suppose a is e1 to a' and b is e2
+; to b'.  Then (fn ...a...b...) is equiv to (fn ...a'...b'...), where a and b
+; occur in the kth and jth arguments, respectively.
 
-; Proof.  By the :CONGRUENCE lemma for equiv and e1 we know that
-; (fn ...a...b...) is equiv (fn ...a'...b...).  By the :CONGRUENCE
-; lemma for equiv and e2 we know that (fn ...a'...b...) is equiv to
-; (fn ...a'...b'...).  The desired result is then obtained via the
-; transitivity of equiv.  Q.E.D.
+; Proof.  By the :CONGRUENCE lemma for equiv and e1 we know that (fn
+; ...a...b...) is equiv (fn ...a'...b...).  By the :CONGRUENCE lemma for equiv
+; and e2 we know that (fn ...a'...b...) is equiv to (fn ...a'...b'...).  The
+; desired result is then obtained via the transitivity of equiv.  Q.E.D.
 
-; While we require the user to formulate :CONGRUENCE lemmas as shown
-; above we actually store them in a data structure, called the
-; 'congruences property of fn, in which lemmas for different slots
-; have been combined.  Indeed, we ``generalize'' still further and
-; allow for more than one way to rewrite a given argument position.  If fn
-; has arity n, then the 'congruences property of fn is a list of tuples,
-; each of which is of the form (equiv slot1 slot2 ... slotn), where equiv
-; is some equivalence relation and each slotk summarizes our knowledge
-; of what is allowed in each argument slot of fn while maintaining
-; equiv.  The entire n+1 tuple is assembled from many different
-; :CONGRUENCE lemmas.  Indeed, it is modified each time a new
-; :CONGRUENCE lemma is proved about fn and equiv.  Without discussing
-; yet the structure of slotk, such a tuple means:
+; Again, we are not considering patterned congruences in the present Essay.
+; For the proof above it is important that in the :CONGRUENCE lemma, each
+; argument of a call of fn is a distinct variable.
+
+; While we require the user to formulate (non-patterned) :CONGRUENCE lemmas as
+; shown above we actually store them in a data structure, called the
+; 'congruences property of fn, in which lemmas for different slots have been
+; combined.  Indeed, we ``generalize'' still further and allow for more than
+; one way to rewrite a given argument position.  If fn has arity n, then the
+; 'congruences property of fn is a list of tuples, each of which is of the form
+; (equiv slot1 slot2 ... slotn), where equiv is some equivalence relation and
+; each slotk summarizes our knowledge of what is allowed in each argument slot
+; of fn while maintaining equiv.  The entire n+1 tuple is assembled from many
+; different :CONGRUENCE lemmas.  Indeed, it is modified each time a new
+; :CONGRUENCE lemma is proved about fn and equiv.  Without discussing yet the
+; structure of slotk, such a tuple means:
 
 ; (implies (and (or (equiv1.1 x1 y1)
 ;                   ...
@@ -252,118 +246,110 @@
 ;          (equiv (fn x1 ... xn)
 ;                 (fn y1 ... yn))).
 
-; Thus, to rewrite (fn x1 ... xn) maintaining equiv we sweep across
-; the arguments rewriting each in turn, maintaining any one of the
-; corresponding equivk,l's, which are encoded in the structure of
-; slotk.
+; Thus, to rewrite (fn x1 ... xn) maintaining equiv we sweep across the
+; arguments rewriting each in turn, maintaining any one of the corresponding
+; equivk.l's, which are encoded in the structure of slotk.
 
-; Note that each equivk,l above is attributable to one and only one
-; :CONGRUENCE lemma.  Since the ors cause searching, we allow the user
-; to control the search by disabling :CONGRUENCE lemmas.  We only
-; pursue paths introduced by enabled lemmas.
+; Note that each equivk,l above is attributable to one and only one :CONGRUENCE
+; lemma.  Since the ors cause searching, we allow the user to control the
+; search by disabling :CONGRUENCE lemmas.  We only pursue paths introduced by
+; enabled lemmas.
 
-; The structure of slotk is a list of ``congruence-rules'', which are
-; instances of the record
+; The structure of slotk is a list of ``congruence-rules'', which are instances
+; of the following record.
 
 (defrec congruence-rule (nume equiv . rune) t)
 
-; The :equiv field is the function symbol of an equivalence relation
-; which, if maintained in argument k, is sufficient to maintain equiv
-; for the fn-expression, :rune (it stands for "rule name") is the name
-; of the :CONGRUENCE lemma that established this link between equiv,
-; :equiv, fn, and k, and :nume is the nume of the rune (a "nume" is a
-; unique natural number corresponding to a rune, used only to speed up
-; the answer to the question: "is the named rule enabled -- i.e.,
-; among those the user permits us to apply automatically?")  allowing
-; us to query the enabled structure directly.
+; The :equiv field is the function symbol of an equivalence relation which, if
+; maintained in argument k, is sufficient to maintain equiv for the
+; fn-expression; :rune (it stands for "rule name") is the name of the
+; :CONGRUENCE lemma that established this link between equiv, :equiv, fn, and
+; k; and :nume is the nume of the rune (a "nume" is a unique natural number
+; corresponding to a rune, used only to speed up the answer to the question:
+; "is the named rule enabled -- i.e., among those the user permits us to apply
+; automatically?"), allowing us to query the enabled structure directly.
 
-; Because we allow more than one :CONGRUENCE rule per argument, we
-; have a problem.  If we are trying to maintain equiv for fn and are
-; rewriting an argument whose slot contains (equivk.1 ... equivk.l),
-; what equivalence relation do we try to maintain while rewriting the
-; argument?  We could iteratively try them each, rewriting the
-; argument l times.  This suffers because some rules would be tried
-; many times due to our use of refinements.  For example, all of the
-; equality rules would be tried for each equivk.i tried.
+; Because we allow more than one :CONGRUENCE rule per argument, we have a
+; problem.  If we are trying to maintain equiv for fn and are rewriting an
+; argument whose slot contains (equivk.1 ... equivk.l), what equivalence
+; relation do we try to maintain while rewriting the argument?  We could
+; iteratively try them each, rewriting the argument l times.  This suffers
+; because some rules would be tried many times due to our use of refinements.
+; For example, all of the equality rules would be tried for each equivk.i
+; tried.
 
-; It is desirable to eliminate the need for more than one pass through
-; rewrite.  We would like to rewrite once.  But if we pass the whole
-; set in, with the understanding that any refinement of any of them
-; can be used, we are not assured that the result of rewrite is
-; equivalent in any of those senses to the input.  The reason is that
-; rewrite may recursively rewrite its intermediate answer.  (If our
-; rewriter simplifies a to a' it may then rewrite a' to a''.)  Thus, a
-; may rewrite to a' maintaining equivk.1 and then a' may rewrite to
-; a'' maintaining equivk.2 and it may be that a is not equivalent to
-; a'' in either the equivk.1 or equivk.2 sense.  However, note that
-; there exists an equivalence relation of which equivk.1 and equivk.2
-; are refinements, and that is the relation being maintained.  Call
-; that the ``generated relation.''  Numerous questions arise.  Is the
-; generated relation definable in the logic, for if so, perhaps we
-; could allow only one equivalence relation per slot per fn and equiv
-; and force the user to invent the necessary generalization of the
-; several relations he wants to use.  Furthermore, if both equivk.1
-; and equivk.2 maintain equiv in the kth slot of fn, does their
-; generated relation maintain it?  We need to know that the answer is
-; ``yes'' if we are going to replace a by a'' (which are equivalent
+; It is desirable to eliminate the need for more than one pass through rewrite.
+; We would like to rewrite once.  But if we pass the whole set in, with the
+; understanding that any refinement of any of them can be used, we are not
+; assured that the result of rewrite is equivalent in any of those senses to
+; the input.  The reason is that rewrite may recursively rewrite its
+; intermediate answer.  (If our rewriter simplifies a to a' it may then rewrite
+; a' to a''.)  Thus, a may rewrite to a' maintaining equivk.1 and then a' may
+; rewrite to a'' maintaining equivk.2 and it may be that a is not equivalent to
+; a'' in either the equivk.1 or equivk.2 sense.  However, note that there
+; exists an equivalence relation of which equivk.1 and equivk.2 are
+; refinements, and that is the relation being maintained.  Call that the
+; ``generated relation.''  Numerous questions arise.  Is the generated relation
+; definable in the logic, for if so, perhaps we could allow only one
+; equivalence relation per slot per fn and equiv and force the user to invent
+; the necessary generalization of the several relations he wants to use.
+; Furthermore, if both equivk.1 and equivk.2 maintain equiv in the kth slot of
+; fn, does their generated relation maintain it?  We need to know that the
+; answer is ``yes'' if we are going to replace a by a'' (which are equivalent
 ; only in the generated sense) and still maintain the goal relation.
 
-; We have taken the tack of allowing more than one :CONGRUENCE rule per
-; slot by automatically (indeed, implicitly) dealing with the generated
-; equivalence relations.  To justify our code, we need a variety of
-; theorems about generated relations.  We state and prove those now.
+; We have taken the tack of allowing more than one :CONGRUENCE rule per slot by
+; automatically (indeed, implicitly) dealing with the generated equivalence
+; relations.  To justify our code, we need a variety of theorems about
+; generated relations.  We state and prove those now.
 
-; Let e1 and e2 be two binary relations.  We define the relation s
-; ``generated by e1 and e2,'' denoted {e1 e2}, as follows.  Because
-; order is unimportant below, our set notation {e1 e2} is acceptable.
+; Let e1 and e2 be two binary relations.  We define the relation s ``generated
+; by e1 and e2,'' denoted {e1 e2}, as follows.  Because order is unimportant
+; below, our set notation {e1 e2} is acceptable.
 
-; (s x y) iff there exists a finite sequence x1, x2, ..., xn such that
-; x = x1, y = xn, and for all i, ((e1 xi xi+1) or (e2 xi xi+1)).  We
-; read this as saying ``(s x y) iff there is a chain connecting x to y
-; composed entirely of e1 and/or e2 links.''
+; (s x y) iff there exists a finite sequence x1, x2, ..., xn such that x = x1,
+; y = xn, and for all i, ((e1 xi xi+1) or (e2 xi xi+1)).  We read this as
+; saying ``(s x y) iff there is a chain connecting x to y composed entirely of
+; e1 and/or e2 links.''
 
-; Congruence Theorem 2. If e1 and e2 are equivalence relations, so is
-; {e1 e2}.
+; Congruence Theorem 2. If e1 and e2 are equivalence relations, so is {e1 e2}.
 
-; Proof.  Let s be {e1 e2}.  Then s is reflexive, symmetric, and
-; transitive, as shown below.
+; Proof.  Let s be {e1 e2}.  Then s is reflexive, symmetric, and transitive, as
+; shown below.
 
-; Reflexive.  To show that (s x x) holds we must exhibit a sequence
-; linking x to x via e1 and/or e2.  The sequence x,x suffices.
+; Reflexive.  To show that (s x x) holds we must exhibit a sequence linking x
+; to x via e1 and/or e2.  The sequence x,x suffices.
 
-; Symmetric.  If (s x y) holds, then there exists a sequence linking x
-; to y via e1 and/or e2 steps.  Let that sequence be x, x2, ..., xk,
-; y.  By definition, either e1 or e2 links each pair.  Since e1 is
-; symmetric, if a pair, xi, xj, is linked by e1 then the pair xj, xi
-; is also linked by e1.  Similarly for e2.  Thus, the sequence
-; obtained by reversing that above, y, xk, ..., x2, x, has the desired
-; property: each pair is linked by e1 or e2.  Therefore, (s y x).
+; Symmetric.  If (s x y) holds, then there exists a sequence linking x to y via
+; e1 and/or e2 steps.  Let that sequence be x, x2, ..., xk, y.  By definition,
+; either e1 or e2 links each pair.  Since e1 is symmetric, if a pair, xi, xj,
+; is linked by e1 then the pair xj, xi is also linked by e1.  Similarly for e2.
+; Thus, the sequence obtained by reversing that above, y, xk, ..., x2, x, has
+; the desired property: each pair is linked by e1 or e2.  Therefore, (s y x).
 
-; Transitive.  If (s x y) holds, then there exists a sequence linking x
-; to y, say x, x2, ..., xk, y.  If (s y z) holds, there exists a
-; sequence linking y to z, say, y, y1, ..., yk, z.  Consider the
-; concatenation of those two sequences, x, x2, ..., xk, y, y, y1, ...,
-; yk, z.  It links x and z and every pair is linked by either e1 or
-; e2.  Thus, (s x z).
+; Transitive.  If (s x y) holds, then there exists a sequence linking x to y,
+; say x, x2, ..., xk, y.  If (s y z) holds, there exists a sequence linking y
+; to z, say, y, y1, ..., yk, z.  Consider the concatenation of those two
+; sequences, x, x2, ..., xk, y, y, y1, ..., yk, z.  It links x and z and every
+; pair is linked by either e1 or e2.  Thus, (s x z).
 
 ; Q.E.D.
 
-; Thus, the relation generated by two equivalence relations is an
-; equivalence relation.
+; Thus, the relation generated by two equivalence relations is an equivalence
+; relation.
 
-; Congruence Theorem 3. If e1 and e2 are equivalence relations, they
-; are both refinements of {e1 e2}.
+; Congruence Theorem 3. If e1 and e2 are equivalence relations, they are both
+; refinements of {e1 e2}.
 
-; Proof.  Let s be {e1 e2}.  We wish to prove
-; (implies (e1 x y) (s x y)) and (implies (e2 x y) (s x y)).
-; We consider the first goal only.  The second is symmetric.
-; But clearly, if x is linked to y by e1 then (s x y) holds,
-; as witnessed by the sequence x,y.  Q.E.D.
+; Proof.  Let s be {e1 e2}.  We wish to prove (implies (e1 x y) (s x y)) and
+; (implies (e2 x y) (s x y)).  We consider the first goal only.  The second is
+; symmetric.  But clearly, if x is linked to y by e1 then (s x y) holds, as
+; witnessed by the sequence x,y.  Q.E.D.
 
-; Congruence Theorem 4.  Let equiv, e1 and e2 be equivalence
-; relations.  Suppose equiv is preserved by e1 in the kth argument of
-; fn.  Suppose equiv is also preserved by e2 in the kth argument of
-; fn.  Then equiv is preserved by {e1 e2} in the kth argument of fn.
+; Congruence Theorem 4.  Let equiv, e1 and e2 be equivalence relations.
+; Suppose equiv is preserved by e1 in the kth argument of fn.  Suppose equiv is
+; also preserved by e2 in the kth argument of fn.  Then equiv is preserved by
+; {e1 e2} in the kth argument of fn.
 
 ; Proof.  Let s be {e1 e2}.  Without loss of generality we restrict our
 ; attention to a function, fn, of one argument.  We have
@@ -375,52 +361,48 @@
 ; We wish to prove
 ; (implies (s x y) (equiv (fn x) (fn y)))
 
-; The hypothesis (s x y) establishes that there is a chain linking
-; x to y via e1 and/or e2.  Let that chain be x, x2, ..., xk, y.
-; Since each adjacent pair is linked via e1 or e2, and both preserve
-; equiv, we get that (equiv (fn x) (fn x2)), (equiv (fn x2) (fn x3)),
-; ... (equiv (fn xk) (fn y)).  By the transitivity of equiv, therefore,
-; (equiv (fn x) (fn y)).  Q.E.D.
+; The hypothesis (s x y) establishes that there is a chain linking x to y via
+; e1 and/or e2.  Let that chain be x, x2, ..., xk, y.  Since each adjacent pair
+; is linked via e1 or e2, and both preserve equiv, we get that (equiv (fn x)
+; (fn x2)), (equiv (fn x2) (fn x3)), ... (equiv (fn xk) (fn y)).  By the
+; transitivity of equiv, therefore, (equiv (fn x) (fn y)).  Q.E.D.
 
-; Lemma.  If e1 is preserved by e in the kth argument of fn then
-; so is {e1 e2}, for any relation e2.
+; Lemma.  If e1 is preserved by e in the kth argument of fn then so is {e1 e2},
+; for any relation e2.
 
-; Proof.  We have that (e a b) implies (e1 (f ...a...) (f ...b...)).
-; Let s be {e1 e2}.  We wish to prove that (e a b) implies
-; (s (f ...a...) (f ...b...)).  But by Congruence Theorem 3 above,
-; e1 is a refinement of s.  Hence, (e1 (f ...a...) (f ...b...))
-; implies (s (f ...a...) (f ...b...)).  Q.E.D.
+; Proof.  We have that (e a b) implies (e1 (f ...a...) (f ...b...)).  Let s be
+; {e1 e2}.  We wish to prove that (e a b) implies (s (f ...a...) (f ...b...)).
+; But by Congruence Theorem 3 above, e1 is a refinement of s.  Hence, (e1 (f
+; ...a...) (f ...b...))  implies (s (f ...a...) (f ...b...)).  Q.E.D.
 
-; Congruence Theorem 5.  Let e1, ..., e4 be equivalence relations.
-; Then if e2 is preserved by e1 in the kth argument of fn and e4 is
-; preserved by e3 in the kth argument of fn, then {e2 e4} is preserved
-; by {e1 e3} in the kth argument of fn.
+; Congruence Theorem 5.  Let e1, ..., e4 be equivalence relations.  Then if e2
+; is preserved by e1 in the kth argument of fn and e4 is preserved by e3 in the
+; kth argument of fn, then {e2 e4} is preserved by {e1 e3} in the kth argument
+; of fn.
 
-; Proof.  By the above lemma, we know {e2 e4} is preserved by e1 in
-; the kth argument of fn.  Similarly, {e2 e4} is preserved by e3 in
-; the kth argument of fn.  Thus, the hypotheses of Theorem 4 are
-; satisfied and we have that {e2 e4} is preserved by {e1 e3} in the
-; kth argument of fn.  Q.E.D.
+; Proof.  By the above lemma, we know {e2 e4} is preserved by e1 in the kth
+; argument of fn.  Similarly, {e2 e4} is preserved by e3 in the kth argument of
+; fn.  Thus, the hypotheses of Theorem 4 are satisfied and we have that {e2 e4}
+; is preserved by {e1 e3} in the kth argument of fn.  Q.E.D.
 
-; We generalize the notion of the relation generated by two relations
-; to that generated by n relations, {e1, e2, ..., en}.  By the above
-; results, {e1, ..., en} is an equivalence relation if each ei is,
-; each ei is a refinement of it, and it supports any congruence that
-; all ei support.  We adopt the convention that the relation generated
-; by {} is EQUAL and the relation denoted by {e1} is e1.
+; We generalize the notion of the relation generated by two relations to that
+; generated by n relations, {e1, e2, ..., en}.  By the above results, {e1, ...,
+; en} is an equivalence relation if each ei is, each ei is a refinement of it,
+; and it supports any congruence that all ei support.  We adopt the convention
+; that the relation generated by {} is EQUAL and the relation denoted by {e1}
+; is e1.
 
-; In our code, generated equivalence relations are represented by
-; lists of congruence-rules.  Thus, if cr1 and cr2 are two
-; instances of the congruence-rule record having :equivs e1 and e2
-; respectively, then {e1 e2} can be represented by '(cr1 cr2).
+; In our code, generated equivalence relations are represented by lists of
+; congruence-rules.  Thus, if cr1 and cr2 are two instances of the
+; congruence-rule record having :equivs e1 and e2 respectively, then {e1 e2}
+; can be represented by '(cr1 cr2).
 
-; The equivalence relation to be maintained by rewrite is always
-; represented as a generated equivalence relation.  In our code we
-; follow the convention of always using a variant of the name
-; ``geneqv'' for such an equivalence relation.  When a variable
-; contains (or is expected to contain) the name of an equivalence
-; relation rather than a :CONGRUENCE rule or geneqv, we use a variant
-; of the name ``equiv'' or even ``fn''.
+; The equivalence relation to be maintained by rewrite is always represented as
+; a generated equivalence relation.  In our code we follow the convention of
+; always using a variant of the name ``geneqv'' for such an equivalence
+; relation.  When a variable contains (or is expected to contain) the name of
+; an equivalence relation rather than a :CONGRUENCE rule or geneqv, we use a
+; variant of the name ``equiv'' or even ``fn''.
 
 ; The geneqv denoting EQUAL is nil.  The geneqv denoting IFF is:
 
@@ -430,21 +412,20 @@
               :nume nil
               :equiv 'iff)))
 
-; This completes our general essay on the subject.  The theorems
-; proved above are mentioned by name elsewhere in our code.  In
-; addition, various details are discussed elsewhere.  For a simple
-; example of how all of this works together, see the function
-; subst-equiv-expr which implements substitution of new for old in
-; term to produce term', where it is given tha new is equiv1 old and
-; term is to be equiv2 term'.
+; This completes our general essay on the subject.  The theorems proved above
+; are mentioned by name elsewhere in our code.  In addition, various details
+; are discussed elsewhere.  For a simple example of how all of this works
+; together, see the function subst-equiv-expr which implements substitution of
+; new for old in term to produce term', where it is given that new is equiv1
+; old and term is to be equiv2 term'.
 
-; We now turn to the most primitive functions for manipulating
-; equivalences and generated equivalences.  We deal with refinements
-; first and then with the question of congruences.
+; We now turn to the most primitive functions for manipulating equivalences and
+; generated equivalences.  We deal with refinements first and then with the
+; question of congruences.
 
 (defun refinementp (equiv1 equiv2 wrld)
 
-; Note: Keep this function in sync with refinementp below.
+; Note: Keep this function in sync with refinementp1.
 
 ; (ACL2 is an applicative subset of Common Lisp.  When this
 ; function, refinementp, is called, its third argument, wrld, will be
@@ -626,6 +607,8 @@
 
 (defun refinementp1 (equiv1 coarsenings1 equiv2)
 
+; Note: Keep this function in sync with refinementp.
+
 ; Both equiv1 and equiv2 are function symbols and coarsenings1 is the
 ; cdr of the 'coarsenings property of equiv1 (the car of that property
 ; is equiv1 itself).  We determine whether equiv1 is a known
@@ -671,18 +654,21 @@
     (list (cons new-cr (cdr new-cr-coarsenings))))
    ((and both-tests-flg
          (refinementp1
-          (car new-cr-coarsenings)            ; new-equiv
-          (cdr new-cr-coarsenings)            ; new-equiv's non-id coarsenings
-          (cadr (car (car old-crs-and-coarsenings))))) ; first old-equiv
+          (car new-cr-coarsenings) ; new-equiv
+          (cdr new-cr-coarsenings) ; new-equiv's non-id coarsenings
+          (access congruence-rule  ; first old-equiv
+                  (car (car old-crs-and-coarsenings))
+                  :equiv)))
 
 ; The new equiv is a refinement of the first old one.  Nothing to do.
 
     old-crs-and-coarsenings)
    ((refinementp1
-     (cadr (car (car old-crs-and-coarsenings)))     ; first old-equiv
-     (cdr (car old-crs-and-coarsenings))            ; first old-equiv's
-                                                    ; non-id coarsenings
-     (car new-cr-coarsenings))                      ; new-equiv
+     (access congruence-rule ; first old-equiv
+             (car (car old-crs-and-coarsenings))
+             :equiv)
+     (cdr (car old-crs-and-coarsenings)) ; first old-equiv's non-id coarsenings
+     (car new-cr-coarsenings))           ; new-equiv
 
 ; The first old equiv is a refinement of the new one.  Delete the old
 ; one.  Continue inserting the new one -- it may cause other
@@ -702,7 +688,7 @@
 (defun union-geneqv1 (geneqv1 old-crs-and-coarsenings wrld)
 
 ; Geneqv1 is a geneqv and old-crs-and-coarsenings is a list of pairs
-; of the form (congurence-rule . coarsenings), where the coarsenings
+; of the form (congruence-rule . coarsenings), where the coarsenings
 ; are the non-id coarsenings of the :equiv of the corresponding
 ; congruence-rule.  This data structure makes it possible to answer
 ; refinement questions without going back to the world.  We scan down
@@ -758,7 +744,7 @@
 ; That brings us to the main function we've been wanting: the one that
 ; determines what generated equivalence relations must be maintained
 ; across the the arguments of fn in order to maintain a given
-; generated equivlence relation for the fn-expression itself.  Because
+; generated equivalence relation for the fn-expression itself.  Because
 ; we form new geneqvs from stored ones in the database, we have to
 ; have the enabled structure so we filter out disabled congruence
 ; rules.
@@ -1236,6 +1222,1064 @@
         (t (subst-equiv-expr1 equiv new old geneqv term ens wrld state ttree))))
 
 ; This completes the definition of congruence-based substitution.
+
+; Next we develop support for patterned congruence rules.  See the Essay just
+; below the following code for an extension of one-way unification.
+
+(defconst *anonymous-var* '|Anonymous variable|)
+
+(mutual-recursion
+
+(defun equal-mod-alist (term1 alist1 term2)
+
+; We determine whether (sublis-var alist1 term1) is equal to term2.
+; We just chase vars in term1 and use equal at the tips.  There is
+; one subtlety.  Consider
+
+; (equal-mod-alist '(foo x z (cons x y))
+;                  '((x . '1) (y . '2))
+;                  '(foo '1 z '(1 . 2)))
+
+; The idea is that if term2 is a quoted constant and term1 is some
+; function application, then it is possible that the sublis-var will
+; convert term1 to a quoted constant.  We know that only happens if
+; the top-most function symbol in term1 is a primitive, so we check
+; that and do the sublis-var if we have to.  But it only happens on
+; the ``tips.''
+
+  (cond ((variablep term1)
+         (let ((temp (assoc-eq term1 alist1)))
+           (cond (temp (equal (cdr temp) term2))
+                 (t (equal term1 term2)))))
+        ((fquotep term1)
+         (equal term1 term2))
+        ((variablep term2) nil)
+        ((fquotep term2)
+         (cond ((and (not (flambdap (ffn-symb term1)))
+                     (assoc-eq (ffn-symb term1)
+                               *primitive-formals-and-guards*))
+                (equal term2 (sublis-var alist1 term1)))
+               (t nil)))
+        ((equal (ffn-symb term1) (ffn-symb term2)) ; may be lambdas.
+         (equal-mod-alist-lst (fargs term1) alist1 (fargs term2)))
+        (t nil)))
+
+(defun equal-mod-alist-lst (term1-lst alist1 term2-lst)
+  (cond
+   ((endp term1-lst) t)
+   (t (and (equal-mod-alist (car term1-lst) alist1 (car term2-lst))
+           (equal-mod-alist-lst (cdr term1-lst) alist1 (cdr term2-lst))))))
+)
+
+(mutual-recursion
+
+(defun equal-mod-alist2 (term1 alist1 term2 alist2)
+
+; This function is similar to equal-mod-alist, except that term1 and term2 are
+; both to be instantiated: we determine whether (sublis-var alist1 term1) is
+; equal to (sublis-var alist2 term2).
+
+  (cond ((variablep term1)
+         (let ((pair1 (assoc-eq term1 alist1)))
+           (cond (pair1 (equal-mod-alist term2 alist2 (cdr pair1)))
+                 ((variablep term2)
+                  (let ((pair2 (assoc-eq term2 alist2)))
+                    (eq term1 (if pair2 (cdr pair2) term2))))
+                 (t nil))))
+        ((variablep term2)
+         (let ((pair2 (assoc-eq term2 alist2)))
+           (cond (pair2 (equal-mod-alist term1 alist1 (cdr pair2)))
+                 (t nil))))
+        ((fquotep term1)
+         (equal-mod-alist term2 alist2 term1))
+        ((fquotep term2)
+         (equal-mod-alist term1 alist1 term2))
+        ((equal (ffn-symb term1) (ffn-symb term2)) ; may be lambdas
+         (equal-mod-alist2-lst (fargs term1) alist1 (fargs term2) alist2))
+        (t nil)))
+
+(defun equal-mod-alist2-lst (term1-lst alist1 term2-lst alist2)
+  (cond
+   ((endp term1-lst) t)
+   (t (and (equal-mod-alist2 (car term1-lst) alist1
+                             (car term2-lst) alist2)
+           (equal-mod-alist2-lst (cdr term1-lst) alist1
+                                 (cdr term2-lst) alist2)))))
+)
+
+(mutual-recursion
+
+(defun one-way-unify1-term-alist (pat term term-alist alist)
+
+; Warning; Keep this function in sync with one-way-unify1.
+
+; This function returns (mv ans alist'), where alist' minimally extends alist
+; such that pat/alist' = term/term-alist if such an extension exists, in which
+; case ans is non-nil, and otherwise ans is nil.  This function differs from
+; one-way-unify1 in the following two ways.  First, in the present function,
+; alist may contain pairs of the form (v . (:sublis-var u . s)), where u is a
+; term, meaning that v is bound to u/s.  (Term-alist, however, is an ordinary
+; substitution, without such :sublis-var "calls".)  Second, term is interpreted
+; as term/term-alist.
+
+; We optimize by considering term instead of term/term-alist when term-alist is
+; nil.  This is certainly sound, and it seems unlikely that it will cause
+; problems since we expect that term is in quote-normal form.
+
+; There is an additional difference between this function and one-way-unify1.
+; In the present function, we treat every occurrence of *anonymous-var* as a
+; distinct, uniquely occurring variable, not bound in the input alist or in the
+; resulting alist.
+
+; This function is a "No-Change Loser" meaning that if it fails and returns nil
+; as its first result, it returns the unmodified alist as its second.
+
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (pseudo-termp term)
+                              (alistp term-alist)
+                              (alistp alist))))
+  (cond ((eq pat *anonymous-var*)
+         (mv t alist))
+        ((variablep pat)
+         (let ((pair (assoc-eq pat alist)))
+           (cond ((null pair)
+                  (mv t
+                      (acons pat
+                             (if term-alist
+                                 (list* :sublis-var term term-alist)
+                               term)
+                             alist)))
+                 ((and (consp pair)
+                       (consp (cdr pair))
+                       (eq (car (cdr pair)) :sublis-var))
+                  (cond ((null term-alist) ; optimization
+                         (mv (equal-mod-alist (cadr (cdr pair))
+                                              (cddr (cdr pair))
+                                              term)
+                             alist))
+                        (t (mv (equal-mod-alist2 (cadr (cdr pair))
+                                                 (cddr (cdr pair))
+                                                 term
+                                                 term-alist) 
+                               alist))))
+                 ((null term-alist) ; optimization
+                  (mv (equal term (cdr pair))
+                      alist))
+                 (t
+                  (mv (equal-mod-alist term term-alist (cdr pair))
+                      alist)))))
+        ((fquotep pat)
+         (cond ((if (null term-alist) ; optimization
+                    (equal term pat)
+                  (equal-mod-alist term term-alist pat))
+                (mv t alist))
+               (t (mv nil alist))))
+        ((variablep term)
+         (let ((pair (assoc-eq term term-alist)))
+           (cond (pair (one-way-unify1-term-alist pat (cdr pair) nil alist))
+                 (t (mv nil alist)))))
+        ((fquotep term) ; then term/term-alist = term; treat term-alist as nil
+         (mv-let
+          (pat1 term1 pat2 term2)
+          (one-way-unify1-quotep-subproblems pat term)
+          (cond ((eq pat1 t) (mv t alist))
+                ((eq pat1 nil) (mv nil alist))
+                ((eq pat2 nil)
+                 (one-way-unify1-term-alist pat1 term1 nil alist))
+                (t
+
+; We are careful with alist to keep this a no change loser.
+
+                 (mv-let
+                  (ans alist1)
+                  (one-way-unify1-term-alist pat1 term1 nil alist)
+                  (cond ((eq ans nil) (mv nil alist))
+                        (t (mv-let
+                            (ans alist2)
+                            (one-way-unify1-term-alist pat2 term2 nil alist1)
+                            (cond (ans (mv ans alist2))
+                                  (t (mv nil alist)))))))))))
+        ((equal (ffn-symb pat) (ffn-symb term)) ; could be lambdas
+         (mv-let
+          (ans alist1)
+          (one-way-unify1-term-alist-lst (fargs pat) (fargs term)
+                                         term-alist alist)
+          (cond
+           (ans (mv ans alist1))
+           ((eq (ffn-symb pat) 'equal)
+
+; Try again, matching by commuting one of the equalities, in analogy to the
+; second call of one-way-unify1-equal1 in one-way-unify1-equal.
+
+            (let ((pat1 (fargn pat 1))
+                  (pat2 (fargn pat 2))
+                  (term1 (fargn term 1))
+                  (term2 (fargn term 2)))
+              (mv-let
+               (ans alist1)
+               (one-way-unify1-term-alist pat2 term1 term-alist alist)
+               (cond
+                (ans
+                 (mv-let
+                  (ans alist2)
+                  (one-way-unify1-term-alist pat1 term2 term-alist alist1)
+                  (cond (ans (mv ans alist2))
+                        (t (mv nil alist)))))
+                (t (mv nil alist))))))
+           (t (mv nil alist)))))
+        (t (mv nil alist))))
+
+(defun one-way-unify1-term-alist-lst (pl tl term-alist alist)
+
+; Warning: Keep this in sync with one-way-unify1-lst.  See
+; one-way-unify1-term-alist.
+
+; This function is NOT a No Change Loser.  That is, it may return nil
+; as its first result, indicating that no substitution exists, but
+; return as its second result an alist different from its input alist.
+
+  (declare (xargs :guard (and (pseudo-term-listp pl)
+                              (pseudo-term-listp tl)
+                              (alistp term-alist)
+                              (alistp alist))))
+  (cond
+   ((null pl) (mv t alist))
+   (t
+    (mv-let
+     (ans alist)
+     (one-way-unify1-term-alist (car pl) (car tl) term-alist alist)
+     (cond
+      (ans (one-way-unify1-term-alist-lst (cdr pl) (cdr tl) term-alist alist))
+      (t (mv nil alist)))))))
+
+)
+
+; Essay on Patterned Congruences and Equivalences
+
+; This Essay documents the addition of support for pattern-based congruence
+; rules: congruence rules that are not based on the application of some
+; function to distinct variables.  We assume familiarity both with the Essay on
+; Equivalence, Refinements, and Congruence-based Rewriting and with the
+; documentation topics for congruence and patterned-congruence.
+
+; We begin with some initial observations that have guided our implementation.
+
+; A key design principle is that the geneqv arguments to existing functions are
+; essentially unchanged.  In particular, as rewrite recurs through
+; rewrite-args, which recurs back through rewrite, geneqv is passed around much
+; as it was before, but can be enhanced by using so-called patterned
+; equivalences that are passed through these functions' arguments.  This
+; approach has allowed us to continue to use some existing functions, in
+; particular geneqv-lst.
+
+; Another basic principle is that we deal with the inherently sequentiality of
+; rewrite-args, in the sense that unlike ordinary geneqvs, the use of patterned
+; equivalences must be done one argument at a time.  Consider the following
+; example.
+
+; (defun triv-equiv (x y)
+;      (declare (ignore x y))
+;      t)
+
+; (defequiv triv-equiv)
+
+; (defun some-consp (x y)
+;   (or (consp x) (consp y)))
+
+; (defthm triv-equiv-implies-equal-some-consp-1
+;   (implies (triv-equiv x x-equiv)
+;            (equal (some-consp x (cons a b))
+;                   (some-consp x-equiv (cons a b))))
+;   :rule-classes (:congruence))
+
+; (defthm triv-equiv-implies-equal-some-consp-2
+;   (implies (triv-equiv y y-equiv)
+;            (equal (some-consp (cons a b) y)
+;                   (some-consp (cons a b) y-equiv)))
+;   :rule-classes (:congruence))
+
+; (defthm cons-is-nil
+;   (triv-equiv (cons x y) nil))
+
+; Now consider the following purported "theorem".
+
+; (thm (equal (some-consp (cons c1 c2) (cons d1 d2))
+;             (some-consp nil nil)))
+
+; Each of the two above congruence rules applies to one of the arguments of the
+; first call of some-consp in the formula just above.  One might thus expect to
+; be able to apply the rule cons-is-nil to each of these arguments, reducing
+; the first call above of some-consp to the second call, thus proving the
+; formul.  But the formula is clearly not provable; in fact, the first call of
+; some-consp is true but the second is false, by definition of some-consp!  We
+; therefore must take care not to propagate such congruences independently in
+; the arguments of a function call, unlike for example what we do with the
+; function geneqv-lst.
+
+; Consider the following new-style congruence rule.
+
+; (implies (inner-equiv y1 y2)
+;          (outer-equiv (mv-nth 1 (foo x (g y1) z))
+;                       (mv-nth 1 (foo x (g y2) z))))
+
+; We imagine that there may be many such rules about mv-nth, so we index such
+; rules not by the outer function symbol (here, mv-nth), but by the next
+; function symbol down towards the designated variable (here, foo).  The
+; rewriter will consider this rule after it has already dived into a call of
+; foo; so the rewriter passes information about the parent call of mv-nth.  Now
+; suppose we are rewriting the term (mv-nth 1 (foo a (h b1) c)), and assume
+; that some rewrite rule equates (h b1) with (g b1).  As we rewrite inside-out,
+; we pick up the congruence rule when we reach the call (foo a (h b1) c).  We
+; might be tempted to have the rewriter ignore this congruence rule when
+; passing to the term (h b1), but that would be a mistake: at that point, (h
+; b1) rewrites to (g b1), and the rewriter is then called recursively.  We want
+; this recursive call to notice the congruence rule, so that it will be
+; sufficient to preserve inner-equiv when making that recursive call on (g b1).
+; Thus, we introduce a notion of a "next" operation that is invoked when
+; passing from the call of foo to the call of h, and we do not discard "next"
+; data based on a mere failure to match the current call, which here is (h b1).
+
+; This concludes initial observations that have guided our implementation.
+
+; We assume familiarity with the concepts described in the Essay on
+; Equivalence, Refinements, and Congruence-based Rewriting, but we begin with a
+; brief review.  That Essay describes the notion of rewriting with respect to a
+; generated equivalence relation, or geneqv: a list of congruence-rule
+; structures that denotes the transitive closure of the union of the
+; equivalence relations represented by the :equiv fields of those congruence
+; rules.  When ACL2 rewrites a function call with respect to a geneqv, it
+; rewrites each argument of that function call with respect to a geneqv derived
+; by applying congruence rules to the original geneqv.  A congruence rule has
+; the following form, where fn is a function symbol and its two calls are made
+; on the same sequence of distinct variables, except that x and y occur
+; uniquely in corresponding positions as shown.
+
+; (implies (equiv1 x y)
+;          (equiv2 (fn a1 ... x ... an)
+;                  (fn a1 ... y ... an))),
+
+; Let us call these rules "classic" congruence rules.  We will refer to equiv1
+; as the "inner equivalence", equiv2 as the "outer equivalence", fn as the
+; "function symbol", x as the "variable", y as the "replacement variable", and
+; the first and second arguments of the above call of equiv2 as the "lhs" and
+; "rhs" of the rule, respectively.  In such a case, where x is the kth argument
+; of fn in the lhs of the rule, we say that it "suffices to maintain equiv1 at
+; the kth argument of a call of fn in order to maintain equiv2".  This notion
+; does not depend on a specific congruence rule; that is, it makes sense for
+; any pair equiv1 and equiv2 of equivalence relations, any function symbol fn,
+; and any positive k not exceeding the arity of fn.
+
+; In this Essay we discuss a generalization of the above notion of congruence
+; rules in which the notions of variable, replacement variable, lhs, and rhs
+; still apply: congruence rules still have the following form, where lhs and
+; rhs are calls of the same function symbol.
+
+; (implies (equiv1 x y)
+;          (equiv2 lhs rhs)),
+
+; As before, lhs and rhs must be the same with the exception that the variable
+; and replacement variable occur uniquely in the rule and, moreover, at the
+; same address (same position) in lhs and rhs, respectively.  But we relax the
+; other requirements on the arguments of lhs (and hence rhs): they need not be
+; variables, and duplicates are permissible.  The following are examples of
+; congruence rules that are not classic, since each lhs has non-variable
+; arguments.  (As of this writing, these and other examples may be found in
+; community book demos/patterned-congruences.lisp.)  In each case the variable
+; is y1 and the replacement variable is y2.
+
+; Inner equivalence e1, outer equivalence iff:
+
+;    (implies (e1 y1 y2)
+;             (iff (f1 3 y1 (cons x x))
+;                  (f1 3 y2 (cons x x))))
+
+; Inner equivalence e4, outer equivalence equal:
+
+;    (implies (e4 y1 y2)
+;             (equal (mv-nth 1 (id (f7 y1)))
+;                    (mv-nth 1 (id (f7 y2)))))
+
+; The first of these two rules is called "shallow" because y1 and y2 occur as
+; top-level arguments of the lhs and rhs of the rule (respectively), just as
+; they do in the classic congruence rule previously displayed above.  The
+; second of these rules is not of that form because y1 and y2 occur inside a
+; subsidiary function call; the second rule is thus not shallow, so we call it
+; "deep".  Both are what we call "patterned congruence rules".  Thus, the class
+; of congruence rules is partitioned into the classes of classic and patterned
+; congruence rules, and the patterned congruence rules are partitioned into the
+; subclasses of shallow and deep congruence rules.
+
+; A shallow or deep patterned congruence rule generates what we call a (shallow
+; or deep, respectively) "patterned equivalence relation", or pequiv.
+
+(defrec pequiv
+  (pattern     ; a pequiv-pattern record
+   unify-subst ; a (unifying) substitution
+   .
+   congruence-rule ; a congruence-rule record
+   )
+  t)
+
+; The :unify-subst field is nil for the pequiv generated by a patterned
+; congruence rule, but need not be nil in general; we describe its role when we
+; give the semantics of pequiv records later below.  The :congruence-rule field
+; is the congruence-rule record corresponding to the patterned congruence rule
+; from which this pequiv is derived.  Finally, we describe the :pattern field,
+; which represents the lhs of a patterned congruence rule.  This field is
+; actually a pequiv-pattern record (defined below), which represents a term,
+; specifically a function call, along with a variable that occurs uniquely
+; within the term.  Function make-pequiv-pattern creates a pattern from the
+; term and (the address of the) variable, informally as follows.  The :fn of
+; the pattern is the function symbol of the term.  The :posn is the one-based
+; position within the arguments of the term under which the variable (uniquely)
+; occurs.  The :pre-rev field is the reverse of the list of arguments strictly
+; before that position, while the :post field is the list of arguments strictly
+; after that position.  Finally, the :next field is either a variable
+; (corresponding to the variable of the patterned congruence rule) or else is,
+; recursively, the pattern representing the argument at :posn (along with the
+; same variable).
+
+(defrec pequiv-pattern ; see description just above
+  (fn posn pre-rev post next)
+  t)
+
+; The discussion above is perhaps a bit misleading because of the following
+; optimization.  Our algorithm attempts to extend a unifying substitution by
+; matching the :pre-rev and :post fields with a term.  But we do not need to
+; record matching of a variable that will not be encountered further.
+; Therefore, before creating the pattern from the term, we replace each
+; uniquely-occurring variable in the term by a the variable, *anonymous-var*.
+; In order to justify this transformation, we first check that *anonymous-var*
+; does not occur anywhere in the term.  (Perhaps it is sufficient that
+; *anonymous-var* does not occur in the arguments of lhs other than the
+; variable of the rule, but the stronger check avoids the need to think through
+; whether that is truly sufficient.)  Then, we use a matching algorithm that
+; always succeeds when matching *anonymous-var*, but never binds
+; *anonymous-var* in the unifying substitution.  This optimization thus saves
+; some consing.  In the rest of this discussion we will ignore the above
+; optimization when we believe this will not lead to confusion.
+
+; We will freely abuse terminology when we expect no confusion to result.  For
+; example, we may confuse a patterned congruence rule with its corresponding
+; pequiv, and we may confuse a term with its corresponding pattern.  Thus, we
+; may speak of the "term" of a pequiv to denote the term corresponding to its
+; :pattern field; similarly, the "variable" of a pequiv is just the variable of
+; the corresponding patterned congruence rule.  (One could expect to reach that
+; variable by following the :next field of the :pattern of the pequiv until
+; :next is a variable, except of course that the variable will have been
+; replaced by the anonymous variable described above.)
+
+; A pequiv record denotes the following equivalence relation, which we may
+; refer to as the corresponding "patterned equivalence".  For this discussion
+; we assume a global binding of variables to values; intuitively, when you
+; submit a formula to ACL2 to prove, the variables in the formula represent
+; values provided by an arbitrary such binding.  Recall the notion of an
+; equivalence relation generated by a binary relation, namely, the
+; equivalential (reflexive, symmetric, transitive) closure of that binary
+; relation.  The patterned equivalence relation denoted by a pequiv is the
+; equivalential closure of the following binary relation.  Let t0 be the term
+; of the pequiv.  Two values v1 and v2 are related if for some substitution s
+; that extends the :unify-subst of the pequiv and for variants s1 and s2 of s
+; obtained by rebinding only the variable of the pequiv, then v1 = t0/s1 and v2
+; = t0/s2.
+
+; Let p be a pequiv, fn be a function symbol, and first-rev and rest be term
+; lists.  We next define the notion of the "next equiv" for a pequiv, p, with
+; respect to fn, first-rev, and rest.  Let pat be the :pattern field of p.
+; This next equiv is either undefined or is obtained from p as described below.
+; Let k, pre-rev, post, and next be the :pre-rev, :post, and :next fields of
+; pat, respectively.  The next equiv is undefined unless, at a minimum: fn is
+; equal to the :fn field of pat, first-rev has the same length as the :pre-rev
+; field of pat, and rest has the same length as the :post field of pat.  So
+; assume that these condiitons hold.  Let s0 be the :unify-subst field of p,
+; and let s be the minimal extension of s0 such that pre-rev/s = first-rev and
+; post/s = rest, if such s exists; otherwise the next equiv does not exist.  If
+; p is a deep pequiv, then the next equiv is the result of replacing the
+; :unify-subst of p by s and replacing the :pattern of p by next.  If p is a
+; shallow equiv, then the next equiv for p is the equivalence relation of the
+; :congruence-rule of p.  Note: If we refer to the next equiv for p and u,
+; where u is a term, we are really referring to the next equiv for p with
+; respect to fn, first-rev and rest, where u is of the form (cons fn (revappend
+; first-rev (cons arg rest))) for some arg and the length of first-rev is the
+; value of the :posn field of the :pattern field of p.
+
+; The correctness of our implementation relies on the theorems below, whose
+; proofs we leave to the reader.  The first theorem justifies the addition of a
+; pequiv to the list of equivalence relations being maintained by the rewriter,
+; while the others justify how a pequiv is used when rewriting an argument of a
+; function call.
+
+; Patterned Congruence Theorem 1.  Let E be the pequiv corresponding to a
+; provable patterned congruence rule with outer equivalence e2.  Then for terms
+; t1 and t2, (implies (E t1 t2) (e2 t1 t2)) is provable.
+
+; Patterned Congruence Theorem 2.  Let p be a pequiv, let u be a term, and
+; assume that the next equiv for p and u exists; call it n.  Let arg be the kth
+; argument of u, where k is the :posn field of the :pattern field of u, let
+; arg' be a term, and let u' be the result of replacing the kth argument of u
+; by arg'.  Then (implies (n arg arg') (p u u')).
+
+; A final data structure for supporting patterned congruence rules is the
+; pequiv-info record.  The rewrite clique takes a pequiv-info formal parameter
+; that is either nil or such a record.
+
+(defrec pequiv-info
+
+; Each function in the rewrite clique has a pequiv-info argument that either is
+; nil or is one of these records.  In the latter case, that argument represents
+; information from a parent call of rewrite on a function call, where one
+; argument of the call is the "current term" being processed, and other
+; "sibling arguments" of the call are stored as indicated below.
+
+  (((rewritten-args-rev ; reverse of (rewritten) preceding sibling arguments
+     .
+     rest-args) ; later sibling arguments, not yet rewritten
+    .
+    (alist ; alist under which the current term and rest-args are rewritten
+     .
+     bkptr)) ; one-based position of the current term
+   .
+   (geneqv ; geneqv of the parent call of rewrite
+    fn ; function symbol of the term rewritten by the parent call of rewrite
+    .
+
+; Finally, deep-pequiv-lst is a list of (deep) pequivs from the parent call of
+; rewrite, each of which has an enabled :congruence-rule field.
+
+    deep-pequiv-lst))
+  t)
+
+; When rewrite is called with a pequiv-info argument of nil, its spec is
+; unchanged from what it was before the introduction of patterned congruences:
+; the term returned by (rewrite term alist ... geneqv ...) is provably in
+; relation geneqv to term/alist.  Of course, "provably" should be understood
+; relative to the assumptions implicit in the other arguments of rewrite: the
+; type-alist, world, and pot-list.
+
+; Subtle Logical Aside.  More subtly, terms u1 and u2 can be understood as
+; being "provably in relation geneqv" if there is a sequence of terms t0, ...,
+; tk such that t0 = u1, tk = u2, and for each i < k and where j = i+1, there is
+; some equivalence relation E in geneqv such that (E ti tj) is provable (again,
+; with respect to the implicit assumptions).  We may wish to take this view of
+; "provably in relation geneqv" because the geneqv relation is defined in terms
+; of a transitive closure, which is not a first-order notion.  In the case of
+; ACL2 we could actually provide a first-order definition of geneqv by using
+; sequences: it is first-order to state that there is a finite sequence of
+; values such that each is in relation E to the next for some E in geneqv.
+; Either of these two notions of "provably in relation geneqv" is in fact
+; adequate; choose your favorite!  End of Subtle Logical Aside.
+
+; We turn now to modifying the above spec for the case of (rewrite term alist
+; bkptr ... geneqv pequiv-info ...), where pequiv-info is a pequiv-info record
+; with fields rewritten-args-rev, rest-args, alist, bkptr, parent-geneqv,
+; parent-fn, and deep-pequiv-lst, and obvious assumptions are left implicit (in
+; particular, bkptr is the length of rewritten-args-rev).  Generate an
+; equivalence relation E by extending geneqv by each of the following, as p
+; ranges over members of deep-pequiv-lst: the next-equiv for p with respect to
+; parent-fn, rewritten-args-rev, and rest-args/alist.  Then the output from the
+; above call of rewrite is provably in relation E to term.  (Note: in our
+; implementation, p also ranges over some pequivs that provably refine a member
+; of parent-geneqv; but we can include these, by the theorems above.)  We
+; discuss later how to prove this spec, after summarizing how pequivs are
+; processed by the rewriter.
+
+; In order to minimize property list accesses, we store deep and shallow
+; equivalences in a single structure, as follows.
+
+(defrec pequivs-property
+  (deep shallow . deep-pequiv-p)
+  t)
+
+; The :deep and :shallow fields are alists whose elements have the form (equiv
+; pequiv1 pequiv2 ... pequivn), where each pequivk is a patterned equivalence
+; that refines equiv.  When such a record is the value of the 'pequivs property
+; of a function symbol, fn, then fn is the :fn field of the :pattern field of
+; each such pequivk in the case of the :shallow field; but in the case of the
+; :deep field, each such pequivk is a deep pequiv, and fn is the :fn field of
+; the :next field of the :pattern field.  In brief, consider a patterned
+; congruence rule with function symbol fn together with outer equivalence e and
+; corresponding pequiv, p.  If the rule (and hence also p) is shallow, then we
+; will find p in the :shallow field of the 'pequivs property of fn, which is an
+; alist with an element (e ... p ...).  Otherwise the rule (and hence also p)
+; is deep, with lhs of the form (fn ... (fn2 ...) ...) such that the variable
+; of the rule occurs in the displayed call of fn2.  In that case, we will find
+; p in the :deep field of the 'pequivs property of fn2, which is an alist with
+; an element (e ... p ...).
+
+; Algorithm discussion.  Next, we describe how rewrite passes pequiv
+; information to rewrite-args and how rewrite-args passes pequiv information to
+; rewrite.
+
+; Rewrite computes a list of deep-pequivs and a list of shallow-pequivs to pass
+; to rewrite-args using function pequivs-for-rewrite-args, where the input term
+; is a call of function symbol fn, a symbol (not a lambda).  In (a) and (b)
+; below, we compute the next pequiv with respect to the following function
+; symbol, first-rev, and rest: the function symbol is fn; first-rev is the
+; :rewritten-args-rev field of pequiv-info; and for rest, we take the
+; :rest-args field of pequiv-info and instantiate it with the :alist field of
+; pequiv-info.  Note that the pequiv-info argument is guaranteed not to be nil
+; if there are any pequivs in (a) or (b) for which to take the next equiv.
+
+; (a) Derive the list of next equivs from the :deep-pequiv-lst field of the
+;     pequiv-info argument, restricting to those (deep) pequivs whose :next
+;     field has :fn field equal to fn.  Sort these into a list of deep pequivs
+;     and a list of shallow pequivs.
+
+; (b) Derive the list of next equivs from deep pequivs stored in the 'pequivs
+;     property of fn, restricting to those that are stored under an outer equiv
+;     that is enabled and refines the geneqv of pequiv-info.  Sort these into a
+;     list of deep pequivs and a list of shallow pequivs.
+
+; (c) Compute additional shallow pequivs from the shallow pequivs stored in the
+;     'pequivs property of fn, restricting to those that are stored under an
+;     outer equiv that is enabled and refines the geneqv argument of (the
+;     present call of) rewrite.
+
+; Note that rewrite is not passed any shallow pequivs.  Rather, rewrite derives
+; shallow-pequivs as described above and passes these to rewrite-args, which
+; uses them to augment the geneqv passed to the child call of rewrite.  That
+; augmentation is done by geneqv-and-pequiv-info-for-rewrite, which is called
+; by rewrite-args in preparation for its call of rewrite; we describe this
+; next.
+
+; Now consider a call (rewrite-args args alist bkptr rewritten-args-rev
+; deep-pequiv-lst shallow-pequiv-lst parent-geneqv parent-fn ... geneqv-lst
+; ...).  These arguments are used by function
+; geneqv-and-pequiv-info-for-rewrite to produce the geneqv and pequiv-info
+; arguments for its "child call" of rewrite.  That child call's geneqv is
+; constructed initially from the geneqv-lst passed to rewrite-args, but is
+; extended (by function geneqv-for-rewrite) using the next equiv for each
+; member of shallow-pequiv-lst with respect to parent-fn, rewritten-args-rev,
+; and (cdr args).  In doing this, we maintain the invariant that a geneqv does
+; not contain two equivs such that one refines the other.  The pequiv-info
+; record for the child call of rewrite is constructed by function
+; pequiv-info-for-rewrite, with fields taken unchanged from the inputs of
+; rewrite-args, in particular without taking the "next" for the pequivs.
+; Except, nil may be returned for pequiv-info when a pequiv-info record is not
+; needed by rewrite, in order to save consing; see pequiv-info-for-rewrite.
+
+; We will briefly sketch the proof by computational induction that the ACL2
+; rewriter satisfies the spec given above for rewrite.  The interesting
+; induction steps are for calling rewrite on a first argument that is a
+; function call when the pequiv-info argument is not nil, and for calling
+; rewrite-args on a non-empty first parameter, args.  Our spec for rewrite is
+; above, and although a detailed proof would also involve a spec for each
+; function in the rewrite clique, for this sketch we give an additional spec
+; only for rewrite-args.  (Then we will sketch the proof.)
+
+; Consider a call (rewrite-args args alist bkptr rewritten-args-rev
+; deep-pequiv-lst shallow-pequiv-lst parent-geneqv parent-fn ... geneqv-lst
+; ...), which results in a term list args', and define the "input term" and
+; "output term" to be, respectively, (cons parent-fn (revappend
+; rewritten-args-rev args/alist)) and (cons parent-fn args').  Assume that
+; geneqv-lst is a list of generated equivalence relations that corresponds
+; positionally to args, such that for each element g of this list and
+; corresponding position k in the argument list of parent-fn, it suffices to
+; preserve g at the kth argument of parent-fn in order to preserve
+; parent-geneqv.  Then the input and output terms are provably equivalent with
+; respect to the equivalence relation generated by parent-geneqv,
+; deep-pequiv-lst, and shallow-pequiv-lst.
+
+; Turning now to the proof sketch, first consider the induction step for
+; (rewrite-args (cons arg rest-args) alist bkptr rewritten-args-rev
+; deep-pequiv-lst shallow-pequiv-lst parent-geneqv parent-fn ... (cons geneqv
+; geneqv-lst) ...).  This call is equal to the call (rewrite-args rest-args
+; alist (1+ bkptr) (cons rewritten-arg rewritten-args-rev) deep-pequiv-lst
+; shallow-pequiv-lst parent-geneqv parent-fn ... geneqv-lst), where
+; rewritten-arg is produced by rewrite using the geneqv and pequiv-info
+; returned by the call that rewrite-args makes of
+; geneqv-and-pequiv-info-for-rewrite.  It suffices by the inductive hypothesis
+; to show that arg/alist and rewritten-arg are provably in the equivalence
+; relation generated by parent-geneqv, deep-pequiv-lst, and shallow-pequiv-lst.
+; But this follows from Patterned Congruence Theorem 2, since by hypothesis
+; geneqv is sufficient for preserving parent-geneqv, and because the spec for
+; rewrite is with respect to the next equivs for deep-pequiv-lst and
+; shallow-pequiv-lst.
+
+; Now consider the induction step for (rewrite term alist ... pequiv-info ...).
+; Now pequivs-for-rewrite-args sets up a call of rewrite-args with next equivs
+; generated from pequiv-info (if non-nil) as in (a) and (b) above, and with new
+; pequivs as in (c) above.  These next equivs are justified by Patterned
+; Congruence Theorems 1 and 2.  By the inductive hypothesis, that call of
+; rewrite-args returns a term that is suitably equivalent to term/alist.  Then
+; the inductive hypothesis takes care of any ensuing call of rewrite, say from
+; rewrite-if or from the right-hand side of an applied rewrite rule.
+
+; We conclude this essay by emphasizing that our support for patterned
+; congruence rules is limited, in particular, mainly for the rewriter.  Thus,
+; pequivs fail to be used heuristically in some places that ordinary
+; congruences are used: for example, as in test-3 in community book
+; books/demos/patterned-congruences.lisp, remove-trivial-equivalences and
+; fertilize-clause doesn't use patterned congruence rules.  If we decide to add
+; such support, then we should think carefully so that we don't introduce
+; unsoundness.  See the examples in the above book involving congruence rules
+; triv-equiv-implies-equal-some-consp-1 and
+; triv-equiv-implies-equal-some-consp-2; while we don't have similar examples
+; at hand to illustrate the danger of careless substitution with
+; remove-trivial-equivalences and fertilize-clause, we can imagine that such
+; dangers exist.  Finally support for pequivs is provided in the function
+; geneqv-at-subterm-top, used in the proof-checker, but is not provided in the
+; code the warns about missing opportunities for the use of double-rewrite
+; (e.g., double-rewrite-opportunities).
+
+; End of Essay on Patterned Congruences and Equivalences
+
+(defconst *empty-pequivs-property*
+  (make pequivs-property
+        :deep nil
+        :shallow nil
+        :deep-pequiv-p nil))
+
+(defmacro pequivs-property-field (prop field)
+
+; We currently store nil as the 'pequivs property of a newly defined function
+; (see defuns-fn1 and intro-udf), which accounts for the test below that prop
+; is non-nil.  We could instead store *empty-pequivs-property* initially, in
+; which case we could eliminate this macro and just use access directly.
+
+  (declare (xargs :guard (and (member-eq field
+                                         '(:deep :shallow :deep-pequiv-p))
+                              (not (keywordp prop))))) ; avoid capture
+  `(let ((prop ,prop))
+     (and prop
+          (access pequivs-property prop ,field))))
+
+(defun next-pequiv (pequiv rewritten-args-rev rest-args alist)
+
+; We return the next equiv for the given deep pequiv with respect to an
+; implicit function symbol (already checked by the caller) together with
+; rewritten-args-rev and rest-args/alist.  See the Essay on Patterned
+; Congruences and Equivalences.
+
+  (let ((pattern (access pequiv pequiv :pattern)))
+    (mv-let
+     (flg unify-subst)
+     (one-way-unify1-term-alist-lst (access pequiv-pattern pattern :pre-rev)
+                                    rewritten-args-rev
+                                    nil
+                                    (access pequiv pequiv :unify-subst))
+     (cond ((null flg) nil)
+           (t (mv-let
+               (flg unify-subst)
+               (one-way-unify1-term-alist-lst (access pequiv-pattern pattern
+                                                      :post)
+                                              rest-args alist unify-subst)
+               (cond ((null flg) nil)
+                     ((equal (access pequiv pequiv :unify-subst)
+                             unify-subst) ; to avoid consing
+                      (change pequiv pequiv
+                              :pattern
+                              (access pequiv-pattern pattern :next)))
+                     (t (change pequiv pequiv
+                                :pattern
+                                (access pequiv-pattern pattern :next)
+                                :unify-subst
+                                unify-subst)))))))))
+
+(defun next-pequivs (deep-pequiv-lst rewritten-args-rev rest-args alist bkptr
+                                     parent-fn child-fn ens
+                                     next-deep-pequiv-lst
+                                     next-shallow-pequiv-lst)
+
+; We return next equivs for (deep) pequivs in deep-pequiv-lst, as described
+; below.  See the Essay on Patterned Congruences and Equivalences.
+
+; This function is really a combination of two functions.  In one case, we
+; expect all congruences within deep-pequiv-lst to be enabled; then child-fn is
+; required to be the function symbol of the child and ens is irrelevant.  In
+; the other case, we expect all pequivs in deep-pequiv-lst to have :next
+; patterns whose :fn is the child function, so we pass in child-fn = nil but we
+; also pass in ens as an enabled structure, in order to filter deep-pequiv-lst
+; by enabled congruences.
+
+  (cond
+   ((endp deep-pequiv-lst)
+    (mv next-deep-pequiv-lst next-shallow-pequiv-lst))
+   (t (let* ((deep-pequiv (car deep-pequiv-lst))
+             (pat (access pequiv deep-pequiv :pattern))
+             (next (access pequiv-pattern pat :next))
+             (next-pequiv
+              (assert$
+               (not (variablep next)) ; deep-equiv is deep
+               (and (eq parent-fn (access pequiv-pattern pat :fn))
+                    (eql bkptr (access pequiv-pattern pat :posn))
+                    (if child-fn
+                        (eq child-fn (access pequiv-pattern next :fn))
+                      (enabled-numep
+                       (access congruence-rule
+                               (access pequiv deep-pequiv :congruence-rule)
+                               :nume)
+                       ens))
+                    (next-pequiv deep-pequiv rewritten-args-rev rest-args
+                                 alist)))))
+        (cond
+         ((not next-pequiv)
+          (next-pequivs (cdr deep-pequiv-lst) rewritten-args-rev rest-args
+                        alist bkptr parent-fn child-fn ens
+                        next-deep-pequiv-lst next-shallow-pequiv-lst))
+         ((variablep (access pequiv-pattern next :next)) ; next is shallow
+          (next-pequivs
+           (cdr deep-pequiv-lst) rewritten-args-rev rest-args alist
+           bkptr parent-fn child-fn ens
+           next-deep-pequiv-lst
+           (cons next-pequiv next-shallow-pequiv-lst)))
+         (t ; next is deep
+          (next-pequivs
+           (cdr deep-pequiv-lst) rewritten-args-rev rest-args alist
+           bkptr parent-fn child-fn ens
+           (cons next-pequiv next-deep-pequiv-lst)
+           next-shallow-pequiv-lst)))))))
+
+(defun next-pequivs-alist (deep-pequiv-alist rewritten-args-rev rest-args
+                                             alist bkptr parent-fn
+                                             parent-geneqv wrld ens
+                                             next-deep-pequiv-lst
+                                             next-shallow-pequiv-lst)
+
+; Deep-pequiv-alist is a list of entries of the form (equiv pequiv1
+; ... pequivk).  For each such entry for which equiv refines parent-geneqv, and
+; then for each pequivi -- which is a deep pequiv -- whose congruence-rule is
+; enabled, accumulate into next-deep-pequiv-lst and next-shallow-pequiv-lst the
+; next equiv with respect to parent-fn, rewritten-args-rev, and
+; rest-args/alist.  See the Essay on Patterned Congruences and Equivalences.
+
+  (cond ((endp deep-pequiv-alist)
+         (mv next-deep-pequiv-lst next-shallow-pequiv-lst))
+        ((geneqv-refinementp (caar deep-pequiv-alist) parent-geneqv wrld)
+         (mv-let (next-deep-pequiv-lst next-shallow-pequiv-lst)
+                 (next-pequivs (cdar deep-pequiv-alist)
+                               rewritten-args-rev rest-args alist bkptr
+                               parent-fn
+                               nil ; child-fn
+                               ens
+                               next-deep-pequiv-lst next-shallow-pequiv-lst)
+                 (next-pequivs-alist (cdr deep-pequiv-alist)
+                                     rewritten-args-rev rest-args
+                                     alist bkptr parent-fn
+                                     parent-geneqv wrld ens
+                                     next-deep-pequiv-lst
+                                     next-shallow-pequiv-lst)))
+        (t (next-pequivs-alist (cdr deep-pequiv-alist)
+                               rewritten-args-rev rest-args
+                               alist bkptr parent-fn
+                               parent-geneqv wrld ens
+                               next-deep-pequiv-lst
+                               next-shallow-pequiv-lst))))
+
+(defun extend-pequiv-lst (pequiv-lst ens acc)
+  (cond ((endp pequiv-lst) acc)
+        (t (extend-pequiv-lst
+            (cdr pequiv-lst)
+            ens
+            (cond ((enabled-numep (access congruence-rule
+                                          (access pequiv (car pequiv-lst)
+                                                  :congruence-rule)
+                                          :nume)
+                                  ens)
+                   (cons (car pequiv-lst) acc))
+                  (t acc))))))
+
+(defun accumulate-shallow-pequiv-alist (alist geneqv wrld ens acc)
+
+; Alist associates each of its keys, an equivalence relation, with a list of
+; shallow pequivs.  We accumulate those pequivs into acc for which the key
+; refines geneqv and the congruence-rule is enabled.
+
+  (cond ((endp alist) acc)
+        (t (accumulate-shallow-pequiv-alist
+            (cdr alist) geneqv wrld ens
+            (cond ((geneqv-refinementp (caar alist) geneqv wrld)
+                   (extend-pequiv-lst (cdar alist) ens acc))
+                  (t acc))))))
+
+(defun pequivs-for-rewrite-args (fn geneqv pequiv-info wrld ens)
+
+; See the Essay on Patterned Congruences and Equivalences, in particular the
+; discussion of computations of a list of deep-pequivs and a list of
+; shallow-pequivs to pass to rewrite-args shown there as (a), (b), and (c).
+
+; Consider a call of rewrite whose term argument, u, has input fn as its
+; function symbol, whose rcnst argument has input ens as its enabled structure,
+; and whose geneqv, pequiv-info, and wrld arguments are corresponding inputs of
+; the present function.  We return two values, next-deep-pequiv-lst and
+; next-shallow-pequiv-lst, which are suitable for the ensuing call of
+; rewrite-args on the arguments of u.  These are lists of deep and of shallow
+; pequivs, respectively, except that next-deep-pequiv-lst can take the special
+; value of :none, which represents the empty list but indicates that the
+; :deep-pequiv-p field is true for the 'pequivs property of fn, indicating that
+; some deep pequiv has a :pattern whose :fn is fn.
+
+  (cond
+   ((flambdap fn) ; no chance of a match by child rewrite call
+    (mv nil nil))
+   (t (let* ((prop (getprop fn 'pequivs nil 'current-acl2-world wrld))
+             (shallow-pequiv-alist (pequivs-property-field prop :shallow)))
+        (cond
+         ((not pequiv-info) ; no pequivs for which to take the "next"
+          (mv (and (pequivs-property-field prop :deep-pequiv-p)
+                   :none)
+              (accumulate-shallow-pequiv-alist ; (c)
+               shallow-pequiv-alist geneqv wrld ens nil)))
+         (t
+          (let ((deep-pequiv-lst (access pequiv-info pequiv-info
+                                         :deep-pequiv-lst))
+                (rewritten-args-rev (access pequiv-info pequiv-info
+                                            :rewritten-args-rev))
+                (rest-args (access pequiv-info pequiv-info
+                                   :rest-args))
+                (alist (access pequiv-info pequiv-info
+                               :alist))
+                (bkptr (access pequiv-info pequiv-info
+                               :bkptr))
+                (parent-fn (access pequiv-info pequiv-info
+                                   :fn)))
+            (mv-let
+             (next-deep-pequiv-lst next-shallow-pequiv-lst) ; (a)
+             (next-pequivs deep-pequiv-lst rewritten-args-rev rest-args alist
+                           bkptr parent-fn fn
+                           nil ; or ens -- irrelevant argument
+                           nil nil)
+             (mv-let
+              (next-deep-pequiv-lst next-shallow-pequiv-lst) ; (b)
+              (next-pequivs-alist (pequivs-property-field prop :deep)
+                                  rewritten-args-rev rest-args alist bkptr
+                                  parent-fn
+                                  (access pequiv-info pequiv-info :geneqv)
+                                  wrld ens
+                                  next-deep-pequiv-lst next-shallow-pequiv-lst)
+              (mv (or next-deep-pequiv-lst
+                      (and (pequivs-property-field prop :deep-pequiv-p)
+                           :none))
+                  (accumulate-shallow-pequiv-alist ; (c)
+                   shallow-pequiv-alist
+                   geneqv wrld ens next-shallow-pequiv-lst)))))))))))
+
+(defun pequiv-info-for-rewrite (fn bkptr rewritten-args-rev args alist geneqv
+                                   deep-pequiv-lst)
+
+; See the Essay on Patterned Congruences and Equivalences.
+
+  (cond ((or (null deep-pequiv-lst) ; common case (note: nil, not :none)
+             (flambdap fn)
+             (variablep (car args))
+             (fquotep (car args)))
+
+; In this case we return nil in order to avoid consing, as the ensuing child
+; call of rewrite from rewrite-args will not need a pequiv-info record.  Why
+; won't such a record be needed?
+
+; If the term passed to the parent call of rewrite is a lambda application --
+; that is, fn is a lambda -- then no matching will take place, as we do not
+; allow lambdas in patterned congruence rules (see the call of
+; lambda-subtermp-lst in interpret-term-as-congruence-rule); so the child
+; rewrite call will not need pequiv-info.  If the term passed to the child call
+; of rewrite is a variable or a quotep, then we don't expect a recursive call
+; of rewrite and hence we don't expect an ensuing call of rewrite-args, so
+; again we won't need pequiv-info.  Otherwise, it suffices that deep-pequiv-lst
+; be nil, as we can see by considering the two potential sources of next equivs
+; whose computation would require pequiv-info -- conditions (a) and (b) from
+; the Essay on Patterned Congruences and Equivalences.  One source (from (a))
+; is the :deep-pequiv-lst field of pequiv-info, which will be empty if the
+; deep-pequivs argument of rewrite-args is empty.  The other source (from (b))
+; is the deep pequivs stored in the 'pequivs property of fn (so, fn is a
+; function symbol in this case, not a lambda).  But if there are any such deep
+; pequivs, then deep-pequiv-lst is either a non-empty list or :none (as
+; computed by pequivs-for-rewrite-args), not nil.
+
+         nil)
+        (t (make pequiv-info
+                 :rewritten-args-rev rewritten-args-rev
+                 :rest-args (cdr args)
+                 :alist alist
+                 :bkptr bkptr
+                 :fn fn
+                 :geneqv geneqv
+                 :deep-pequiv-lst
+                 (and (consp deep-pequiv-lst) ; rule out :none
+                      deep-pequiv-lst)))))
+
+(defun reduce-geneqv-for-equiv (equiv wrld geneqv)
+
+; We will be adding equiv to geneqv.  Here, in preparation for that addition,
+; return the result of deleting every refinement of equiv from geneqv.
+
+  (cond ((endp geneqv) (mv nil nil))
+        (t (mv-let
+            (changedp rest)
+            (reduce-geneqv-for-equiv equiv wrld (cdr geneqv))
+            (cond
+             ((refinementp (access congruence-rule (car geneqv) :equiv)
+                           equiv
+                           wrld)
+              (mv t rest))
+             (changedp
+              (mv t (cons (car geneqv) rest)))
+             (t (mv nil geneqv)))))))
+
+(defun geneqv-for-rewrite (shallow-pequiv-lst fn bkptr rewritten-args-rev
+                                              rest-args alist wrld geneqv)
+
+; See the Essay on Patterned Congruences and Equivalences.  Here we return the
+; result of extending geneqv using every non-nil next equiv for each (shallow)
+; pequiv in shallow-pequiv-lst, with respect to fn, rewritten-args-rev, and
+; rest-args/alist.  This function assumes that every congruence rule of
+; shallow-pequiv-lst is enabled.
+
+  (cond
+   ((null shallow-pequiv-lst) geneqv)
+   (t (let* ((pequiv (car shallow-pequiv-lst))
+             (pat (access pequiv pequiv :pattern))
+             (congruence-rule (access pequiv pequiv :congruence-rule))
+             (equiv (access congruence-rule congruence-rule :equiv)))
+        (geneqv-for-rewrite
+         (cdr shallow-pequiv-lst)
+         fn bkptr rewritten-args-rev rest-args alist wrld
+         (cond
+          ((or (not (eq fn (access pequiv-pattern pat :fn)))
+               (not (eql bkptr (access pequiv-pattern pat :posn)))
+               (geneqv-refinementp equiv geneqv wrld))
+           geneqv)
+          (t (mv-let
+              (flg unify-subst)
+              (one-way-unify1-term-alist-lst
+               (access pequiv-pattern pat :pre-rev)
+               rewritten-args-rev
+               nil
+               (access pequiv pequiv :unify-subst))
+              (cond
+               ((null flg) geneqv)
+               (t (mv-let
+                   (flg unify-subst)
+                   (one-way-unify1-term-alist-lst
+                    (access pequiv-pattern pat :post)
+                    rest-args alist unify-subst)
+                   (declare (ignore unify-subst))
+                   (cond
+                    ((null flg) geneqv)
+                    (t
+
+; We extend geneqv by the equiv of the congruence rule of pequiv.  If some
+; member of geneqv is a refinement of equiv then we delete that member.  This
+; process may be inefficient if many such equiv are processed, since we will
+; continually be taking the coarsenings of geneqv.  But for now, at least, we
+; pay that price rather than the alternative of building an alist that pairs
+; each congruence rule in geneqv with the coarsenings of its :equiv.
+
+                     (mv-let
+                      (changedp geneqv)
+                      (reduce-geneqv-for-equiv equiv wrld geneqv)
+                      (declare (ignore changedp))
+                      (cons congruence-rule geneqv)))))))))))))))
+               
+(defun geneqv-and-pequiv-info-for-rewrite (fn bkptr rewritten-args-rev args
+                                              alist parent-geneqv child-geneqv
+                                              deep-pequiv-lst
+                                              shallow-pequiv-lst
+                                              wrld)
+  (mv (geneqv-for-rewrite shallow-pequiv-lst fn bkptr rewritten-args-rev
+                          (cdr args) alist wrld child-geneqv)
+      (pequiv-info-for-rewrite fn bkptr rewritten-args-rev args alist
+                               parent-geneqv deep-pequiv-lst)))
 
 ; Next we develop clausify, the function that reduces a term to a set
 ; of clauses.
@@ -3419,49 +4463,6 @@
 ; create an instantiation with sublis-var.  Now we chase var bindings.
 ; But there is a subtlety with constants created by sublis-var.
 
-(mutual-recursion
-
-(defun equal-mod-alist (term1 alist1 term2)
-
-; We determine whether (sublis-var alist1 term1) is equal to term2.
-; We just chase vars in term1 and use equal at the tips.  There is
-; one subtlety.  Consider
-
-; (equal-mod-alist '(foo x z (cons x y))
-;                  '((x . '1) (y . '2))
-;                  '(foo '1 z '(1 . 2)))
-
-; The idea is that if term2 is a quoted constant and term1 is some
-; function application, then it is possible that the sublis-var will
-; convert term1 to a quoted constant.  We know that only happens if
-; the top-most function symbol in term1 is a primitive, so we check
-; that and do the sublis-var if we have to.  But it only happens on
-; the ``tips.''
-
-  (cond ((variablep term1)
-         (let ((temp (assoc-eq term1 alist1)))
-           (cond (temp (equal (cdr temp) term2))
-                 (t (equal term1 term2)))))
-        ((fquotep term1)
-         (equal term1 term2))
-        ((variablep term2) nil)
-        ((fquotep term2)
-         (cond ((and (not (flambdap (ffn-symb term1)))
-                     (assoc-eq (ffn-symb term1)
-                               *primitive-formals-and-guards*))
-                (equal term2 (sublis-var alist1 term1)))
-               (t nil)))
-        ((equal (ffn-symb term1) (ffn-symb term2)) ; may be lambdas.
-         (equal-mod-alist-lst (fargs term1) alist1 (fargs term2)))
-        (t nil)))
-
-(defun equal-mod-alist-lst (term1-lst alist1 term2-lst)
-  (cond
-   ((endp term1-lst) t)
-   (t (and (equal-mod-alist (car term1-lst) alist1 (car term2-lst))
-           (equal-mod-alist-lst (cdr term1-lst) alist1 (cdr term2-lst))))))
-)
-
 (defun member-equal-mod-alist (term1 alist1 term2-lst)
   (cond ((endp term2-lst) nil)
         ((equal-mod-alist term1 alist1 (car term2-lst))
@@ -5378,14 +6379,16 @@
           (append (car args)
                   (add-rewrite-args '( ; &extra formals
                                       rdepth step-limit
-                                      type-alist obj geneqv wrld state
+                                      type-alist obj geneqv pequiv-info
+                                      wrld state
                                       fnstack ancestors
                                       backchain-limit
                                       simplify-clause-pot-lst
                                       rcnst gstack ttree)
                                     '( ; &extra formals -- keyword versions
                                       :rdepth :step-limit
-                                      :type-alist :obj :geneqv :wrld :state
+                                      :type-alist :obj :geneqv :pequiv-info
+                                      :wrld :state
                                       :fnstack :ancestors
                                       :backchain-limit
                                       :simplify-clause-pot-lst
@@ -13577,40 +14580,36 @@
 
 (defun rewrite (term alist bkptr ; &extra formals
                      rdepth step-limit
-                     type-alist obj geneqv wrld state fnstack ancestors
-                     backchain-limit
+                     type-alist obj geneqv pequiv-info wrld state fnstack
+                     ancestors backchain-limit
                      simplify-clause-pot-lst rcnst gstack ttree)
-
-; See the :Doc-Section documentation string for the rule-class REWRITE
-; below.  It is unfortunate that we had to use up the doc string for
-; this function to document a random token.  This points out a flaw
-; in our design of the documentation facilities.
 
 ; Comments on the function REWRITE
 
 ; The Input
-; c term:       the "matrix" term we are to rewrite.
-; c alist:      a substitution we are to apply to term before rewriting it.
-; h type-alist: a list of assumptions governing this rewrite
-;   obj:        (objective of rewrite) t, nil, or ? - of heuristic use only.
-; c geneqv:     a generated equivalence relation to maintain
-;   wrld:       the current world
-;   fnstack:    fns and terms currently being expanded - of heuristic use only
-; h ancestors:  a list of terms assumed true, modified as we backchain.
+; c term:        the "matrix" term we are to rewrite.
+; c alist:       a substitution we are to apply to term before rewriting it.
+; h type-alist:  a list of assumptions governing this rewrite
+;   obj:         (objective of rewrite) t, nil, or ? - of heuristic use only.
+; c geneqv:      a generated equivalence relation to maintain
+; c pequiv-info: info on patterned equivalence relations (pequivs) to maintain
+;   wrld:        the current world
+;   fnstack:     fns and terms currently being expanded - of heuristic use only
+; h ancestors:   a list of terms assumed true, modified as we backchain.
 ; h backchain-limit: of heuristic use only
 ; h simplify-clause-pot-lst: a pot-lst of polys
-; h rcnst:      the rewrite constant arguments
-; h ttree:      the evolving ttree describing the rewrites.
-;   rdepth:     maximum allowed stack depth - of heuristic use only
-;   step-limit: number of recursive calls permitted for rewrite
+; h rcnst:       the rewrite constant arguments
+; h ttree:       the evolving ttree describing the rewrites.
+;   rdepth:      maximum allowed stack depth - of heuristic use only
+;   step-limit:  number of recursive calls permitted for rewrite
 
 ; The Output:
 ; a new step-limit, a term term', and a tag-tree ttree'
 
 ; The Specification of Rewrite: The axioms in wrld permit us to infer that the
-; Rewrite Assumption implies that term' is geneqv to term/alist.  One can write
-; this "wrld |- h -> c."  The args are tagged with h and c according to how
-; they are involved in this spec.
+; Rewrite Assumption implies that term' is equivalent via geneqv+pequiv-info to
+; term/alist.  One can write this "wrld |- h -> c."  The args are tagged with h
+; and c according to how they are involved in this spec.
 
 ; The Rewrite Assumption: the conjunction of (a) the assumptions in type-alist,
 ; (b) the assumptions in ancestors, (c) the assumption of every "active" poly
@@ -13909,7 +14908,8 @@
 
                                                (if (unquote arg3) (not obj) obj))
                                               (t '?))))))))
-                       :geneqv *geneqv-iff*)
+                       :geneqv *geneqv-iff*
+                       :pequiv-info nil)
                       (rewrite-entry (rewrite-if rewritten-test
                                                  (fargn term 1)
                                                  (fargn term 2)
@@ -14031,11 +15031,13 @@
             (sl-let (rewritten-test ttree)
                     (rewrite-entry (rewrite (fargn term 1) alist 1)
                                    :obj '?
-                                   :geneqv *geneqv-iff*)
+                                   :geneqv *geneqv-iff*
+                                   :pequiv-info nil)
                     (sl-let (rewritten-concl ttree)
                             (rewrite-entry (rewrite (fargn term 2) alist 1)
                                            :obj '?
-                                           :geneqv *geneqv-iff*)
+                                           :geneqv *geneqv-iff*
+                                           :pequiv-info nil)
                             (mv step-limit
                                 (subcor-var
 
@@ -14127,40 +15129,38 @@
                         (rewrite term1 nil 'nth-update)
                         :ttree (cons-tag-trees ttree1 ttree)))
                   (t
-                   (sl-let
-                    (rewritten-args ttree)
-                    (rewrite-entry
-                     (rewrite-args
-                      (fargs term)
-                      alist
-                      1)
-                     :obj '?
-                     :geneqv
-                     (geneqv-lst fn
-                                 geneqv
-                                 (access rewrite-constant rcnst
-                                         :current-enabled-structure)
-                                 wrld))
-                    (cond
-                     ((and
-                       (or (flambdap fn)
-                           (logicalp fn wrld))
-                       (all-quoteps rewritten-args)
-                       (or
-                        (flambda-applicationp term)
-                        (and (enabled-xfnp
-                              fn
-                              (access rewrite-constant rcnst
-                                      :current-enabled-structure)
-                              wrld)
+                   (let ((ens (access rewrite-constant rcnst
+                                      :current-enabled-structure)))
+                     (mv-let
+                      (deep-pequiv-lst shallow-pequiv-lst)
+                      (pequivs-for-rewrite-args fn geneqv pequiv-info wrld ens)
+                      (sl-let
+                       (rewritten-args ttree)
+                       (rewrite-entry
+                        (rewrite-args (fargs term) alist 1 nil
+                                      deep-pequiv-lst shallow-pequiv-lst
+                                      geneqv fn)
+                        :obj '?
+                        :geneqv
+                        (geneqv-lst fn geneqv ens wrld)
+                        :pequiv-info nil ; ignored
+                        )
+                       (cond
+                        ((and
+                          (or (flambdap fn)
+                              (logicalp fn wrld))
+                          (all-quoteps rewritten-args)
+                          (or
+                           (flambda-applicationp term)
+                           (and (enabled-xfnp fn ens wrld)
 
 ; We don't mind disallowing constrained functions that have attachments,
 ; because the call of ev-fncall below disallows the use of attachments (last
 ; parameter, aok, is nil).  Indeed, we rely on this check in chk-live-state-p.
 
-                             (not (getprop fn 'constrainedp nil
-                                           'current-acl2-world
-                                           wrld)))))
+                                (not (getprop fn 'constrainedp nil
+                                              'current-acl2-world
+                                              wrld)))))
 
 ; Note: The test above, if true, leads here where we execute the
 ; executable counterpart of the fn (or just go into the lambda
@@ -14173,23 +15173,23 @@
 ; provided such functions are currently toggled.  Undefined functions
 ; (e.g., car) pass the test.
 
-                      (cond ((flambda-applicationp term)
-                             (rewrite-entry
-                              (rewrite (lambda-body fn)
-                                       (pairlis$ (lambda-formals fn)
-                                                 rewritten-args)
-                                       'lambda-body)))
-                            (t
-                             (mv-let
-                              (erp val latches)
-                              (pstk
-                               (ev-fncall fn
-                                          (strip-cadrs rewritten-args)
-                                          state
-                                          nil t nil))
-                              (declare (ignore latches))
-                              (cond
-                               (erp
+                         (cond ((flambda-applicationp term)
+                                (rewrite-entry
+                                 (rewrite (lambda-body fn)
+                                          (pairlis$ (lambda-formals fn)
+                                                    rewritten-args)
+                                          'lambda-body)))
+                               (t
+                                (mv-let
+                                 (erp val latches)
+                                 (pstk
+                                  (ev-fncall fn
+                                             (strip-cadrs rewritten-args)
+                                             state
+                                             nil t nil))
+                                 (declare (ignore latches))
+                                 (cond
+                                  (erp
 
 ; We following a suggestion from Matt Wilding and attempt to rewrite the term
 ; before applying HIDE.  This is really a heuristic choice; we could choose
@@ -14199,76 +15199,72 @@
 ; apply in the rare case that the current function symbol (whose evaluation has
 ; errored out) is a compound recognizer.
 
-                                (let ((new-term1
-                                       (cons-term fn rewritten-args)))
-                                  (sl-let
-                                   (new-term2 ttree)
-                                   (rewrite-entry
-                                    (rewrite-with-lemmas new-term1))
-                                   (cond
-                                    ((equal new-term1 new-term2)
-                                     (mv step-limit
-                                         (fcons-term* 'hide new-term1)
-                                         (push-lemma (fn-rune-nume 'hide nil nil
-                                                                   wrld)
-                                                     ttree)))
-                                    (t (mv step-limit new-term2 ttree))))))
-                               (t (mv step-limit
-                                      (kwote val)
-                                      (push-lemma
-                                       (fn-rune-nume fn nil t wrld)
-                                       ttree))))))))
-                     ((and (or (equal fn 'NTH)
-                               (flambdap fn)
-                               (not (recursivep fn wrld)))
-                           (not (member-eq (nu-rewriter-mode wrld)
-                                           '(nil :literals)))
-                           (not (equal-mod-alist-lst
-                                 (fargs term) alist rewritten-args)))
+                                   (let ((new-term1
+                                          (cons-term fn rewritten-args)))
+                                     (sl-let
+                                      (new-term2 ttree)
+                                      (rewrite-entry
+                                       (rewrite-with-lemmas new-term1))
+                                      (cond
+                                       ((equal new-term1 new-term2)
+                                        (mv step-limit
+                                            (fcons-term* 'hide new-term1)
+                                            (push-lemma
+                                             (fn-rune-nume 'hide nil nil wrld)
+                                             ttree)))
+                                       (t (mv step-limit new-term2 ttree))))))
+                                  (t (mv step-limit
+                                         (kwote val)
+                                         (push-lemma
+                                          (fn-rune-nume fn nil t wrld)
+                                          ttree))))))))
+                        ((and (or (equal fn 'NTH)
+                                  (flambdap fn)
+                                  (not (recursivep fn wrld)))
+                              (not (member-eq (nu-rewriter-mode wrld)
+                                              '(nil :literals)))
+                              (not (equal-mod-alist-lst
+                                    (fargs term) alist rewritten-args)))
 
 ; If this is an application of NTH, a lambda expression, or a
 ; non-recursive function, and the arguments changed in the rewrite
 ; above, then we will try nth-update-rewriter again.  We do so
 ; recursively.
 
-                      (mv-let (hitp term1 ttree1)
+                         (mv-let (hitp term1 ttree1)
 ; Rockwell Addition
-                              (nth-update-rewriter
-                               t
-                               (cons-term fn rewritten-args)
-                               nil
-                               (access rewrite-constant rcnst
-                                       :current-enabled-structure)
-                               wrld
-                               state)
-                              (cond
-                               (hitp
-                                (rewrite-entry
-                                 (rewrite term1 nil 'nth-update)
-                                 :ttree (cons-tag-trees ttree1 ttree)))
-                               (t
+                                 (nth-update-rewriter
+                                  t
+                                  (cons-term fn rewritten-args)
+                                  nil ens wrld state)
+                                 (cond
+                                  (hitp
+                                   (rewrite-entry
+                                    (rewrite term1 nil 'nth-update)
+                                    :ttree (cons-tag-trees ttree1 ttree)))
+                                  (t
 
 ; Note:  This code is the same as that below.  Keep them in sync!
 
-                                (sl-let
-                                 (rewritten-term ttree)
-                                 (rewrite-entry
-                                  (rewrite-primitive fn rewritten-args))
-                                 (rewrite-entry
-                                  (rewrite-with-lemmas rewritten-term)))))))
-                     (t
-                      (sl-let
-                       (rewritten-term ttree)
-                       (rewrite-entry
-                        (rewrite-primitive fn rewritten-args))
-                       (rewrite-entry
-                        (rewrite-with-lemmas
-                         rewritten-term)))))))))))))))))
+                                   (sl-let
+                                    (rewritten-term ttree)
+                                    (rewrite-entry
+                                     (rewrite-primitive fn rewritten-args))
+                                    (rewrite-entry
+                                     (rewrite-with-lemmas rewritten-term)))))))
+                        (t
+                         (sl-let
+                          (rewritten-term ttree)
+                          (rewrite-entry
+                           (rewrite-primitive fn rewritten-args))
+                          (rewrite-entry
+                           (rewrite-with-lemmas
+                            rewritten-term)))))))))))))))))))
 
 (defun rewrite-solidify-plus (term ; &extra formals
                               rdepth step-limit
-                              type-alist obj geneqv wrld state fnstack ancestors
-                              backchain-limit
+                              type-alist obj geneqv pequiv-info wrld state
+                              fnstack ancestors backchain-limit
                               simplify-clause-pot-lst rcnst gstack ttree)
 
 ; This function allows us one more try at relieving a hypothesis by rewriting
@@ -14326,8 +15322,8 @@
 
 (defun rewrite-if (test unrewritten-test left right alist ; &extra formals
                         rdepth step-limit
-                        type-alist obj geneqv wrld state fnstack ancestors
-                        backchain-limit
+                        type-alist obj geneqv pequiv-info wrld state fnstack
+                        ancestors backchain-limit
                         simplify-clause-pot-lst rcnst gstack ttree)
 
 ; Test is the result of rewriting unrewritten-test under the same alist and
@@ -14475,42 +15471,63 @@
                                          (ok-to-force rcnst)
                                          wrld ttree))))))))))))))
 
-(defun rewrite-args (args alist bkptr; &extra formals
+(defun rewrite-args (args alist bkptr rewritten-args-rev
+                          deep-pequiv-lst shallow-pequiv-lst
+                          parent-geneqv parent-fn ; &extra formals
                           rdepth step-limit
-                          type-alist obj geneqv wrld state fnstack ancestors
-                          backchain-limit
+                          type-alist obj geneqv pequiv-info wrld state fnstack
+                          ancestors backchain-limit
                           simplify-clause-pot-lst rcnst gstack ttree)
 
 ; Note: In this function, the extra formal geneqv is actually a list of geneqvs
 ; or nil denoting a list of nil geneqvs.
 
+; See the Essay on Patterned Congruences and Equivalences for a discussion of
+; non-&extra formals of this function.  Note our assumption in function
+; geneqv-for-rewrite that every pequiv in shallow-pequiv-lst has an enabled
+; :congruence-rule; this holds because of how shallow-pequiv-lst is created by
+; the call of pequivs-for-rewrite-args in rewrite.  Also note that pequiv-info
+; is ignored in this function and that deep-pequiv-lst can be the special
+; value, :none, which is handled by function pequiv-info-for-rewrite.
+
   (declare (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type (signed-byte 30) step-limit)
+           (ignore pequiv-info))
   (the-mv
    3
    (signed-byte 30)
    (cond ((null args)
-          (mv step-limit nil ttree))
-         (t (sl-let
-             (rewritten-arg ttree)
-             (rewrite-entry (rewrite (car args) alist bkptr)
-                            :geneqv (car geneqv))
+          (mv step-limit (reverse rewritten-args-rev) ttree))
+         (t (mv-let
+             (child-geneqv child-pequiv-info)
+             (geneqv-and-pequiv-info-for-rewrite
+              parent-fn bkptr rewritten-args-rev args alist
+              parent-geneqv
+              (car geneqv)
+              deep-pequiv-lst
+              shallow-pequiv-lst
+              wrld)
              (sl-let
-              (rewritten-args ttree)
-              (rewrite-entry (rewrite-args (cdr args) alist (1+ bkptr))
-                             :geneqv (cdr geneqv))
-              (mv step-limit
-                  (cons rewritten-arg rewritten-args)
-                  ttree)))))))
+              (rewritten-arg ttree)
+              (rewrite-entry (rewrite (car args) alist bkptr)
+                             :geneqv child-geneqv
+                             :pequiv-info child-pequiv-info)
+              (rewrite-entry
+               (rewrite-args (cdr args) alist (1+ bkptr)
+                             (cons rewritten-arg rewritten-args-rev)
+                             deep-pequiv-lst shallow-pequiv-lst
+                             parent-geneqv parent-fn)
+               :pequiv-info nil ; ignored
+               :geneqv (cdr geneqv))))))))
 
 (defun rewrite-primitive (fn args ; &extra formals
                              rdepth step-limit
-                             type-alist obj geneqv wrld state fnstack ancestors
-                             backchain-limit
+                             type-alist obj geneqv pequiv-info wrld state
+                             fnstack ancestors backchain-limit
                              simplify-clause-pot-lst rcnst gstack
                              ttree)
 
-  (declare (ignore geneqv obj)
+  (declare (ignore geneqv pequiv-info obj)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
   (the-mv
@@ -14520,8 +15537,10 @@
     ((flambdap fn) (mv step-limit (fcons-term fn args) ttree))
     ((eq fn 'equal)
      (rewrite-entry (rewrite-equal (car args) (cadr args) nil nil)
-                    :obj '? ; don't-care
-                    :geneqv nil))
+                    :obj '?
+                    :geneqv nil
+                    :pequiv-info nil ; ignored
+                    ))
     (t (let* ((ens (access rewrite-constant rcnst
                            :current-enabled-structure))
               (recog-tuple (most-recent-enabled-recog-tuple
@@ -14543,15 +15562,15 @@
 
 (defun rewrite-equal (lhs rhs lhs-ancestors rhs-ancestors ; &extra formals
                           rdepth step-limit
-                          type-alist obj geneqv wrld state fnstack ancestors
-                          backchain-limit
+                          type-alist obj geneqv pequiv-info wrld state fnstack
+                          ancestors backchain-limit
                           simplify-clause-pot-lst rcnst gstack ttree)
 
 ; We rewrite and return a term equivalent to (EQUAL lhs rhs), plus a ttree.
 ; We keep lists lhs-ancestors and rhs-ancestors of lhs and rhs parameters from
 ; superior calls, in order to break loops as explained below.
 
-  (declare (ignore obj geneqv)
+  (declare (ignore obj geneqv pequiv-info)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -14719,10 +15738,10 @@
                   (sl-let
                    (cars ttree0)
                    (rewrite-entry (rewrite-args '((car lhs) (car rhs))
-                                                alist
-                                                1)
+                                                alist 1 nil nil nil nil 'equal)
                                   :obj '?
                                   :geneqv nil
+                                  :pequiv-info nil ; ignored
                                   :ttree ttree+)
                    (rewrite-entry (rewrite-equal
                                    (car cars)
@@ -14747,8 +15766,9 @@
 
                                    (cons lhs lhs-ancestors)
                                    (cons rhs rhs-ancestors))
-                                  :obj '?
-                                  :geneqv nil
+                                  :obj nil ; ignored
+                                  :geneqv nil ; ignored
+                                  :pequiv-info nil ; ignored
                                   :ttree ttree0))
 
 ; Note that we pass ttree+ (which includes ttree) into the rewrite of
@@ -14764,18 +15784,20 @@
                      (sl-let
                       (cdrs ttree0)
                       (rewrite-entry (rewrite-args '((cdr lhs) (cdr rhs))
-                                                   alist
-                                                   1)
+                                                   alist 1 nil nil nil nil
+                                                   'equal)
                                      :obj '?
                                      :geneqv nil
+                                     :pequiv-info nil ; ignored
                                      :ttree new-ttree)
                       (rewrite-entry (rewrite-equal
                                       (car cdrs)
                                       (cadr cdrs)
                                       (cons lhs lhs-ancestors)
                                       (cons rhs rhs-ancestors))
-                                     :obj '?
-                                     :geneqv nil
+                                     :obj nil ; ignored
+                                     :geneqv nil ; ignored
+                                     :pequiv-info nil ; ignored
                                      :ttree ttree0))
                      (cond ((equal equal-cdrs *t*)
                             (mv step-limit *t* (puffert new-ttree)))
@@ -14817,20 +15839,22 @@
                       (sl-let (equal-cdrs new-ttree)
                               (sl-let
                                (cdrs ttree0)
-                               (rewrite-entry (rewrite-args '((cdr lhs) (cdr rhs))
-                                                            alist
-                                                            1)
-                                              :obj '?
-                                              :geneqv nil
-                                              :ttree ttree)
+                               (rewrite-entry
+                                (rewrite-args '((cdr lhs) (cdr rhs))
+                                              alist 1 nil nil nil nil 'equal)
+                                :obj '?
+                                :geneqv nil
+                                :pequiv-info nil ; ignored
+                                :ttree ttree)
                                (rewrite-entry
                                 (rewrite-equal
                                  (car cdrs)
                                  (cadr cdrs)
                                  (cons lhs lhs-ancestors)
                                  (cons rhs rhs-ancestors))
-                                :obj '?
-                                :geneqv nil
+                                :obj nil ; ignored
+                                :geneqv nil ; ignored
+                                :pequiv-info nil ; ignored
                                 :ttree ttree0))
                               (cond ((equal equal-cdrs *nil*)
                                      (mv step-limit *nil* (puffert new-ttree)))
@@ -14847,7 +15871,7 @@
 (defun relieve-hyp
   (rune target hyp0 unify-subst bkptr memo ; &extra formals
         rdepth step-limit
-        type-alist obj geneqv wrld state fnstack ancestors
+        type-alist obj geneqv pequiv-info wrld state fnstack ancestors
         backchain-limit
         simplify-clause-pot-lst rcnst gstack ttree)
 
@@ -14917,7 +15941,7 @@
 ; Note that unlike some other functions in the rewrite clique, here we really
 ; do care that bkptr is a number representing the hypothesis.
 
-  (declare (ignore obj geneqv)
+  (declare (ignore obj geneqv pequiv-info)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -14964,7 +15988,8 @@
                                        *geneqv-iff*
                                        (access rewrite-constant rcnst
                                                :current-enabled-structure)
-                                       wrld))))
+                                       wrld)))
+                   :pequiv-info nil)
                   (mv step-limit
                       t
                       nil
@@ -15099,6 +16124,7 @@
                                                              bkptr)
                                                     :obj (if not-flg nil t)
                                                     :geneqv *geneqv-iff*
+                                                    :pequiv-info nil
                                                     :ancestors
                                                     (push-ancestor
                                                      (dumb-negate-lit
@@ -15222,8 +16248,8 @@
                                 rw-cache-alist
                                 rw-cache-alist-new ; &extra formals
                                 rdepth step-limit
-                                type-alist obj geneqv wrld state fnstack
-                                ancestors backchain-limit
+                                type-alist obj geneqv pequiv-info wrld state
+                                fnstack ancestors backchain-limit
                                 simplify-clause-pot-lst rcnst gstack
                                 ttree)
 
@@ -15235,6 +16261,7 @@
 ; user.  If there are user complaints about that, we can consider a more
 ; elaborate form of failure reporting.
 
+  (declare (ignore obj geneqv pequiv-info))
   (sl-let
    (relieve-hyps1-ans failure-reason unify-subst1 ttree1 allp
                       rw-cache-alist-new)
@@ -15242,7 +16269,9 @@
     (relieve-hyps1 rune target hyps backchain-limit-lst
                    (extend-unify-subst (car unify-subst-lst) unify-subst)
                    bkptr unify-subst0 ttree0 allp
-                   rw-cache-alist rw-cache-alist-new))
+                   rw-cache-alist rw-cache-alist-new)
+    :obj nil :geneqv nil :pequiv-info nil ; all ignored
+    )
    (cond ((or (endp (cdr unify-subst-lst))
               relieve-hyps1-ans)
           (mv step-limit relieve-hyps1-ans failure-reason unify-subst1 ttree1
@@ -15251,15 +16280,17 @@
              (relieve-hyps1-iter rune target hyps backchain-limit-lst
                                  (cdr unify-subst-lst) unify-subst bkptr
                                  unify-subst0 ttree0 allp
-                                 rw-cache-alist rw-cache-alist-new))))))
+                                 rw-cache-alist rw-cache-alist-new)
+             :obj nil :geneqv nil :pequiv-info nil ; all ignored
+             )))))
 
 (defun relieve-hyps1 (rune target hyps backchain-limit-lst
                            unify-subst bkptr unify-subst0
                            ttree0 allp
                            rw-cache-alist rw-cache-alist-new ; &extra formals
                            rdepth step-limit
-                           type-alist obj geneqv wrld state fnstack ancestors
-                           backchain-limit
+                           type-alist obj geneqv pequiv-info wrld state fnstack
+                           ancestors backchain-limit
                            simplify-clause-pot-lst rcnst gstack
                            ttree)
 
@@ -15281,7 +16312,7 @@
 ; extending rw-cache-alist-new.  Note that rw-cache-alist-new contains only new
 ; entries, rather than extending rw-cache-alist.
 
-  (declare (ignore obj geneqv)
+  (declare (ignore obj geneqv pequiv-info)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -15316,8 +16347,8 @@
                       (new-backchain-limit (car backchain-limit-lst)
                                            backchain-limit
                                            ancestors)
-                      :obj nil
-                      :geneqv nil)
+                      :obj nil :geneqv nil :pequiv-info nil ; all ignored
+                      )
        bkptr)
       (cond
        ((eq relieve-hyp-ans t)
@@ -15328,8 +16359,7 @@
                                       unify-subst0 ttree0
                                       allp
                                       rw-cache-alist rw-cache-alist-new)
-                       :obj nil
-                       :geneqv nil
+                       :obj nil :geneqv nil :pequiv-info nil ; all ignored
                        :ttree new-ttree))
        ((eq relieve-hyp-ans :unify-subst-list)
 
@@ -15345,9 +16375,8 @@
                              unify-subst0 ttree0
                              allp
                              rw-cache-alist rw-cache-alist-new)
-                       :obj nil
-                       :geneqv nil
-                       :ttree new-ttree))
+         :obj nil :geneqv nil :pequiv-info nil ; all ignored
+         :ttree new-ttree))
        (relieve-hyp-ans
 
 ; As explained in the "SPECIAL CASE" comment in relieve-hyp, relieve-hyp
@@ -15391,8 +16420,8 @@
                                          (activate-memo allp)
                                          rw-cache-alist
                                          rw-cache-alist-new)
-                   :obj nil
-                   :geneqv nil)
+                   :obj nil :geneqv nil :pequiv-info nil ; all ignored
+                   )
                   (mv step-limit relieve-hyps-ans
                       (and (null relieve-hyps-ans)
                            (cond ((null (f-get-global 'gstackp state))
@@ -15418,7 +16447,7 @@
         unify-subst bkptr unify-subst0
         ttree0 allp rw-cache-alist rw-cache-alist-new ; &extra formals
         rdepth step-limit
-        type-alist obj geneqv wrld state fnstack ancestors
+        type-alist obj geneqv pequiv-info wrld state fnstack ancestors
         backchain-limit
         simplify-clause-pot-lst rcnst gstack
         ttree)
@@ -15440,7 +16469,7 @@
 ; the unify-subst failed to succeed, except if this list is empty, then a
 ; 'hyp-vars token is used in its place (see relieve-hyps1).
 
-  (declare (ignore obj geneqv)
+  (declare (ignore obj geneqv pequiv-info)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
   (the-mv
@@ -15471,8 +16500,7 @@
                                         unify-subst0 ttree0 allp
                                         (cdr cached-failure-reason-free)
                                         nil)
-                         :obj nil
-                         :geneqv nil
+                         :obj nil :geneqv nil :pequiv-info nil ; all ignored
                          :ttree new-ttree)))
         (let ((rw-cache-alist-new
                (extend-rw-cache-alist-free rcnst
@@ -15511,8 +16539,7 @@
                                        bkptr
                                        unify-subst0 ttree0 allp
                                        rw-cache-alist rw-cache-alist-new)
-                 :obj nil
-                 :geneqv nil
+                 :obj nil :geneqv nil :pequiv-info nil ; all ignored
                  :ttree (accumulate-rw-cache t ttree1 ttree)))))))))))
      (t ; failed to relieve hyp using rest-type-alist
       (rewrite-entry
@@ -15528,8 +16555,8 @@
                              bkptr
                              unify-subst0 ttree0 allp
                              rw-cache-alist rw-cache-alist-new)
-       :obj nil
-       :geneqv nil))))))
+       :obj nil :geneqv nil :pequiv-info nil ; all ignored
+       ))))))
 
 (defun relieve-hyps1-free-2
   (hyp lemmas forcer-fn forcep ens force-flg
@@ -15537,7 +16564,7 @@
        unify-subst bkptr unify-subst0
        ttree0 allp rw-cache-alist rw-cache-alist-new ; &extra formals
        rdepth step-limit
-       type-alist obj geneqv wrld state fnstack ancestors
+       type-alist obj geneqv pequiv-info wrld state fnstack ancestors
        backchain-limit
        simplify-clause-pot-lst rcnst gstack
        ttree)
@@ -15548,7 +16575,7 @@
 ; failure-reason), a unify-subst extending the given unify-subst, a ttree, and
 ; a resulting allp.
 
-  (declare (ignore obj geneqv)
+  (declare (ignore obj geneqv pequiv-info)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -15603,15 +16630,16 @@
              (sl-let
               (relieve-hyps-ans failure-reason unify-subst1 ttree1 allp
                                 inferior-rw-cache-alist-new)
-              (rewrite-entry (relieve-hyps1 rune target (cdr hyps)
-                                            (cdr backchain-limit-lst)
-                                            fully-bound-unify-subst
-                                            (1+ bkptr)
-                                            unify-subst0 ttree0 allp
-                                            (cdr cached-failure-reason-free)
-                                            nil)
-                             :obj nil
-                             :geneqv nil)
+              (rewrite-entry
+               (relieve-hyps1 rune target (cdr hyps)
+                              (cdr backchain-limit-lst)
+                              fully-bound-unify-subst
+                              (1+ bkptr)
+                              unify-subst0 ttree0 allp
+                              (cdr cached-failure-reason-free)
+                              nil)
+               :obj nil :geneqv nil :pequiv-info nil ; all ignored
+               )
               (let ((rw-cache-alist-new
                      (extend-rw-cache-alist-free
                       rcnst
@@ -15670,8 +16698,7 @@
                                           unify-subst0 ttree0 allp
                                           (cdr cached-failure-reason-free)
                                           nil)
-                           :obj nil
-                           :geneqv nil
+                           :obj nil :geneqv nil :pequiv-info nil ; all ignored
                            :ttree new-ttree)))
           (let ((rw-cache-alist-new
                  (extend-rw-cache-alist-free rcnst
@@ -15706,8 +16733,7 @@
                     hyp rest-lemmas forcer-fn forcep ens force-flg rune
                     target hyps backchain-limit-lst unify-subst bkptr
                     unify-subst0 ttree0 allp rw-cache-alist rw-cache-alist-new)
-                   :obj nil
-                   :geneqv nil
+                   :obj nil :geneqv nil :pequiv-info nil ; all ignored
                    :ttree (accumulate-rw-cache t ttree1 ttree)))))))))))
        (t (mv step-limit nil
               nil ; failure-reason-lst
@@ -15723,8 +16749,8 @@
 (defun relieve-hyps (rune target hyps backchain-limit-lst
                           unify-subst allp ; &extra formals
                           rdepth step-limit
-                          type-alist obj geneqv wrld state fnstack ancestors
-                          backchain-limit
+                          type-alist obj geneqv pequiv-info wrld state fnstack
+                          ancestors backchain-limit
                           simplify-clause-pot-lst rcnst gstack ttree)
 
 ; We return t or nil indicating success, a token indicating why we failed (or
@@ -15736,7 +16762,7 @@
 ; 'rw-cache-any-tag and 'rw-cache-nil-tag may differ between the input and
 ; output ttrees.
 
-  (declare (ignore obj geneqv)
+  (declare (ignore obj geneqv pequiv-info)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -15790,8 +16816,7 @@
                     (relieve-hyps1 rune target hyps backchain-limit-lst
                                    unify-subst 1 unify-subst ttree allp
                                    old-rw-cache-alist nil)
-                    :obj nil
-                    :geneqv nil
+                    :obj nil :geneqv nil :pequiv-info nil ; all ignored
 
 ; If we are doing non-linear arithmetic, we will be rewriting linear
 ; terms under a different theory than the standard one.  However, when
@@ -15857,7 +16882,7 @@
 
 (defun rewrite-with-lemma (term lemma ; &extra formals
                                 rdepth step-limit
-                                type-alist obj geneqv wrld state
+                                type-alist obj geneqv pequiv-info wrld state
                                 fnstack ancestors
                                 backchain-limit
                                 simplify-clause-pot-lst rcnst gstack
@@ -15981,22 +17006,23 @@
                             (t
                              (sl-let
                               (relieve-hyps-ans failure-reason unify-subst ttree)
-                              (rewrite-entry (relieve-hyps
+                              (rewrite-entry
+                               (relieve-hyps
 
 ; The next argument of relieve-hyps is a rune on which to "blame" a
 ; possible force.  We could blame such a force on a lot of things, but
 ; we'll blame it on the metarule and the term that it's applied to.
 
-                                              rune
-                                              term
-                                              hyps
-                                              (and rule-backchain-limit
-                                                   (assert$
-                                                    (natp rule-backchain-limit)
-                                                    (make-list
-                                                     (length hyps)
-                                                     :initial-element
-                                                     rule-backchain-limit)))
+                                rune
+                                term
+                                hyps
+                                (and rule-backchain-limit
+                                     (assert$
+                                      (natp rule-backchain-limit)
+                                      (make-list
+                                       (length hyps)
+                                       :initial-element
+                                       rule-backchain-limit)))
 
 ; The meta function has rewritten term to val and has generated a
 ; hypothesis called evaled-hyp.  Now ignore the metafunction and just
@@ -16005,11 +17031,13 @@
 ; themselves.  There may be additional vars in both evaled-hyp and in
 ; val.  But they are free at the time we do this relieve-hyps.
 
-                                              (pairlis$ vars vars)
-                                              nil ; allp=nil for meta rules
-                                              )
-                                             :obj nil
-                                             :geneqv nil)
+                                (pairlis$ vars vars)
+                                nil ; allp=nil for meta rules
+                                )
+                               :obj nil ; ignored
+                               :geneqv nil ; ignored
+                               :pequiv-info nil ; ignored
+                               )
 
 ; If relieve hyps succeeds we get back a unifying substitution that extends
 ; the identity substitution above.  This substitution might bind free vars
@@ -16141,25 +17169,28 @@
                            flg
                            (sl-let
                             (relieve-hyps-ans failure-reason unify-subst ttree)
-                            (rewrite-entry (relieve-hyps
-                                            rune
-                                            term
-                                            (access rewrite-rule lemma :hyps)
-                                            (access rewrite-rule lemma
-                                                    :backchain-limit-lst)
-                                            unify-subst
-                                            (not (oncep (access rewrite-constant
-                                                                rcnst
-                                                                :oncep-override)
-                                                        (access rewrite-rule
-                                                                lemma
-                                                                :match-free)
-                                                        rune
-                                                        (access rewrite-rule
-                                                                lemma
-                                                                :nume))))
-                                           :obj nil
-                                           :geneqv nil)
+                            (rewrite-entry
+                             (relieve-hyps
+                              rune
+                              term
+                              (access rewrite-rule lemma :hyps)
+                              (access rewrite-rule lemma
+                                      :backchain-limit-lst)
+                              unify-subst
+                              (not (oncep (access rewrite-constant
+                                                  rcnst
+                                                  :oncep-override)
+                                          (access rewrite-rule
+                                                  lemma
+                                                  :match-free)
+                                          rune
+                                          (access rewrite-rule
+                                                  lemma
+                                                  :nume))))
+                             :obj nil ; ignored
+                             :geneqv nil ; ignored
+                             :pequiv-info nil ; ignored
+                             )
                             (cond
                              (relieve-hyps-ans
                               (sl-let
@@ -16205,7 +17236,7 @@
 (defun rewrite-with-lemmas1 (term lemmas
                                   ;;; &extra formals
                                   rdepth step-limit
-                                  type-alist obj geneqv wrld state
+                                  type-alist obj geneqv pequiv-info wrld state
                                   fnstack ancestors
                                   backchain-limit
                                   simplify-clause-pot-lst rcnst gstack ttree)
@@ -16248,8 +17279,8 @@
 
 (defun rewrite-fncall (rule term ; &extra formals
                        rdepth step-limit
-                       type-alist obj geneqv wrld state fnstack ancestors
-                       backchain-limit
+                       type-alist obj geneqv pequiv-info wrld state fnstack
+                       ancestors backchain-limit
                        simplify-clause-pot-lst rcnst gstack ttree)
 
 ; Rule is a :REWRITE rule of subclass DEFINITION or else it is nil.  Rule is
@@ -16423,8 +17454,8 @@
                                         unify-subst
                                         nil ; allp=nil for definitions
                                         )
-                          :obj nil
-                          :geneqv nil)))
+                          :obj nil :geneqv nil :pequiv-info nil ; all ignored
+                          )))
                      (cond
                       (relieve-hyps-ans
                        (with-accumulated-persistence
@@ -16634,8 +17665,8 @@
 
 (defun rewrite-with-lemmas (term ; &extra formals
                             rdepth step-limit
-                            type-alist obj geneqv wrld state fnstack ancestors
-                            backchain-limit
+                            type-alist obj geneqv pequiv-info wrld state fnstack
+                            ancestors backchain-limit
                             simplify-clause-pot-lst rcnst gstack ttree)
   (declare (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
@@ -16662,7 +17693,8 @@
     (t (sl-let
         (rewrittenp rewritten-term ttree)
         (rewrite-entry (rewrite-with-linear term)
-                       :geneqv nil)
+                       :geneqv nil :pequiv-info nil ; both ignored
+                       )
         (cond
          (rewrittenp
           (mv step-limit rewritten-term ttree))
@@ -16697,6 +17729,7 @@
 
                    (rewrite-entry (rewrite hyp alist 'expansion)
                                   :geneqv *geneqv-iff*
+                                  :pequiv-info nil
                                   :obj t
                                   :ttree (push-lemma? rune ttree))
                    (let ((ens (access rewrite-constant rcnst
@@ -16777,7 +17810,7 @@
 
 (defun rewrite-linear-term (term alist ; &extra formals
                                  rdepth step-limit
-                                 type-alist obj geneqv wrld state
+                                 type-alist obj geneqv pequiv-info wrld state
                                  fnstack ancestors
                                  backchain-limit
                                  simplify-clause-pot-lst rcnst gstack ttree)
@@ -16810,7 +17843,7 @@
 
 ; We return two things, the rewritten term and the new ttree.
 
-  (declare (ignore obj geneqv)
+  (declare (ignore obj geneqv pequiv-info)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -16838,6 +17871,7 @@
                      (rewrite-entry (rewrite (fargn atm 1) alist 1)
                                     :obj '?
                                     :geneqv nil ; geneqv equal
+                                    :pequiv-info nil
 
 ; If we have enabled non-linear arithmetic, we change theories here,
 ; so that we can have a different normal form for polys and linear- and
@@ -16848,6 +17882,7 @@
                              (rewrite-entry (rewrite (fargn atm 2) alist 2)
                                             :obj '?
                                             :geneqv nil ; geneqv equal
+                                            :pequiv-info nil
 
 ; We change theories here also.
 
@@ -16866,8 +17901,8 @@
 
 (defun rewrite-linear-term-lst (term-lst ttrees ; &extra formals
                                          rdepth step-limit
-                                         type-alist obj geneqv wrld state
-                                         fnstack ancestors
+                                         type-alist obj geneqv pequiv-info
+                                         wrld state fnstack ancestors
                                          backchain-limit
                                          simplify-clause-pot-lst
                                          rcnst gstack ttree)
@@ -16883,7 +17918,7 @@
 ; on each member of term-lst and return two lists --- the rewritten
 ; terms and their ttrees.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -16901,8 +17936,9 @@
      (sl-let
       (term1 ttree1)
       (rewrite-entry (rewrite-linear-term (car term-lst) nil)
-                     :obj nil
-                     :geneqv nil
+                     :obj nil ; ignored
+                     :geneqv nil ; ignored
+                     :pequiv-info nil ; ignored
                      :type-alist (cleanse-type-alist type-alist
                                                      (collect-parents
                                                       (car ttrees)))
@@ -16910,17 +17946,19 @@
       (sl-let (term-lst ttree-lst)
               (rewrite-entry (rewrite-linear-term-lst (cdr term-lst)
                                                       (cdr ttrees))
-                             :obj nil
-                             :geneqv nil
-                             :ttree nil)
+                             :obj nil ; ignored
+                             :geneqv nil ; ignored
+                             :pequiv-info nil ; ignored
+                             :ttree nil ; ignored
+                             )
               (mv step-limit
                   (cons term1 term-lst)
                   (cons ttree1 ttree-lst)))))))
 
 (defun add-linear-lemma (term lemma ; &extra formals
                               rdepth step-limit
-                              type-alist obj geneqv wrld state fnstack ancestors
-                              backchain-limit
+                              type-alist obj geneqv pequiv-info wrld state
+                              fnstack ancestors backchain-limit
                               simplify-clause-pot-lst rcnst gstack ttree)
 
 ; We investigate the application of lemma to term and the
@@ -16943,7 +17981,7 @@
 ; (among other things) checks whether the new vars would have a
 ; loop-stopper-value which exceeds *max-linear-pot-loop-stopper-value*.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -16988,8 +18026,7 @@
                                                    rune
                                                    (access linear-lemma lemma
                                                            :nume))))
-                         :obj nil
-                         :geneqv nil
+                         :obj nil :geneqv nil :pequiv-info nil ; all ignored
                          :ttree nil)
           (declare (ignore failure-reason))
           (cond
@@ -17000,12 +18037,12 @@
               rune
               ((the (signed-byte 30) step-limit) rewritten-concl ttree2)
               t ; considered a success unless the parent with-acc-p fails
-              (rewrite-entry (rewrite-linear-term
-                              (access linear-lemma lemma :concl)
-                              unify-subst)
-                             :obj nil
-                             :geneqv nil
-                             :ttree ttree1)
+              (rewrite-entry
+               (rewrite-linear-term
+                (access linear-lemma lemma :concl)
+                unify-subst)
+               :obj nil :geneqv nil :pequiv-info nil ; all ignored
+               :ttree ttree1)
               :conc
               (access linear-lemma lemma :hyps))
 
@@ -17157,7 +18194,7 @@
 
 (defun add-linear-lemmas (term linear-lemmas ; &extra formals
                                rdepth step-limit
-                               type-alist obj geneqv wrld state
+                               type-alist obj geneqv pequiv-info wrld state
                                fnstack ancestors
                                backchain-limit
                                simplify-clause-pot-lst rcnst gstack ttree)
@@ -17170,7 +18207,7 @@
 ; We return two values.  The first is the standard contradictionp.
 ; The second is the possibly new pot-lst.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -17190,28 +18227,33 @@
                          (access rewrite-constant rcnst
                                  :current-enabled-structure)))
      (rewrite-entry (add-linear-lemmas term (cdr linear-lemmas))
-                    :obj nil
-                    :geneqv nil
-                    :ttree nil))
+                    :obj nil ; ignored
+                    :geneqv nil ; ignored
+                    :pequiv-info nil ; ignored
+                    :ttree nil ; ignored
+                    ))
     (t (sl-let
         (contradictionp new-pot-lst)
         (rewrite-entry (add-linear-lemma term
                                          (car linear-lemmas))
-                       :obj nil
-                       :geneqv nil
-                       :ttree nil)
+                       :obj nil ; ignored
+                       :geneqv nil ; ignored
+                       :pequiv-info nil ; ignored
+                       :ttree nil ; ignored
+                       )
         (cond (contradictionp (mv step-limit contradictionp nil))
               (t (rewrite-entry
                   (add-linear-lemmas term (cdr linear-lemmas))
-                  :obj nil
-                  :geneqv nil
-                  :ttree nil
+                  :obj nil ; ignored
+                  :geneqv nil ; ignored
+                  :pequiv-info nil ; ignored
+                  :ttree nil ; ignored
                   :simplify-clause-pot-lst new-pot-lst))))))))
 
 (defun multiply-alists2 (alist-entry1 alist-entry2 poly ; &extra formals
                                       rdepth step-limit
-                                      type-alist obj geneqv wrld state fnstack
-                                      ancestors backchain-limit
+                                      type-alist obj geneqv pequiv-info wrld
+                                      state fnstack ancestors backchain-limit
                                       simplify-clause-pot-lst
                                       rcnst gstack ttree)
 
@@ -17223,7 +18265,7 @@
 ; and add the result to poly.  Note that each entry is of the form
 ; (term . coeff).
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -17250,6 +18292,7 @@
       (rewrite-entry (rewrite temp-entry nil 'multiply-alists2)
                      :obj nil
                      :geneqv nil
+                     :pequiv-info nil
 
 ; We change theories here, so that we can have a different normal form
 ; for the terms in polys than when rewriting in general.
@@ -17269,8 +18312,9 @@
 
 (defun multiply-alists1 (alist-entry alist2 poly ; &extra formals
                                      rdepth step-limit
-                                     type-alist obj geneqv wrld state fnstack
-                                     ancestors backchain-limit
+                                     type-alist obj geneqv pequiv-info
+                                     wrld state
+                                     fnstack ancestors backchain-limit
                                      simplify-clause-pot-lst
                                      rcnst gstack ttree)
 
@@ -17281,7 +18325,7 @@
 ; Here, we cdr down alist2 multiplying alist-entry by each entry in
 ; alist2 and adding the result to poly.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -17304,20 +18348,19 @@
        (multiply-alists2 alist-entry
                          (car alist2)
                          poly)
-       :obj nil
-       :geneqv nil
-       :ttree nil)
-      (rewrite-entry (multiply-alists1 alist-entry
-                                       (cdr alist2)
-                                       temp-poly)
-                     :obj nil
-                     :geneqv nil
-                     :ttree nil))))))
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+       )
+      (rewrite-entry
+       (multiply-alists1 alist-entry
+                         (cdr alist2)
+                         temp-poly)
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+       ))))))
 
 (defun multiply-alists (alist1 alist2 poly ; &extra formals
                                rdepth step-limit
-                               type-alist obj geneqv wrld state fnstack
-                               ancestors backchain-limit
+                               type-alist obj geneqv pequiv-info
+                               wrld state fnstack ancestors backchain-limit
                                simplify-clause-pot-lst
                                rcnst gstack ttree)
 
@@ -17337,7 +18380,7 @@
 ; In particular, we wish to form alist1*alist2.  Here, we cdr down
 ; alist1 multiplying each entry by alist2 and adding the result to poly.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -17360,21 +18403,20 @@
        (multiply-alists1 (car alist1)
                          alist2
                          poly)
-       :obj nil
-       :geneqv nil
-       :ttree nil)
-      (rewrite-entry (multiply-alists (cdr alist1)
-                                      alist2
-                                      temp-poly)
-                     :obj nil
-                     :geneqv nil
-                     :ttree nil))))))
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+       )
+      (rewrite-entry
+       (multiply-alists (cdr alist1)
+                        alist2
+                        temp-poly)
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+       ))))))
 
 (defun multiply-polys1 (alist1 const1 rel1 alist2 const2 rel2
                                poly ; &extra formals
                                rdepth step-limit
-                               type-alist obj geneqv wrld state fnstack
-                               ancestors backchain-limit
+                               type-alist obj geneqv pequiv-info
+                               wrld state fnstack ancestors backchain-limit
                                simplify-clause-pot-lst
                                rcnst gstack ttree)
 
@@ -17394,7 +18436,7 @@
 ; multiply-alist-and-consts in the let* below, accumulating their answers
 ; into the growing alist.  We finish with multiply-alists.
 
-  (declare (ignore obj geneqv ttree rel1 rel2)
+  (declare (ignore obj geneqv pequiv-info ttree rel1 rel2)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -17460,6 +18502,7 @@
 ;                         temp-poly)
 ;        :obj nil
 ;        :geneqv nil
+;        :pequiv-info nil
 ;        :ttree nil))
 
 ; The following examples from Robert Krug illustrate issues pertaining to the
@@ -17537,14 +18580,14 @@
            (if (eql const1 0)
                temp-poly1
              (multiply-alist-and-const alist2 const1 temp-poly1))))
-     (rewrite-entry (multiply-alists alist1 alist2 temp-poly2)
-                    :obj nil
-                    :geneqv nil
-                    :ttree nil))))
+     (rewrite-entry
+      (multiply-alists alist1 alist2 temp-poly2)
+      :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+      ))))
 
 (defun multiply-polys (poly1 poly2 ; &extra formals
                              rdepth step-limit
-                             type-alist obj geneqv wrld state fnstack
+                             type-alist obj geneqv pequiv-info wrld state fnstack
                              ancestors backchain-limit
                              simplify-clause-pot-lst
                              rcnst gstack ttree)
@@ -17559,7 +18602,7 @@
 
 ; We assume that either poly1 or poly2 is rational-poly-p.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -17596,17 +18639,17 @@
                            :rational-poly-p (and ratp1 ratp2))))
        (sl-let
         (poly)
-        (rewrite-entry (multiply-polys1 alist1 const1 rel1
-                                        alist2 const2 rel2
-                                        pre-poly)
-                       :obj nil
-                       :geneqv nil
-                       :ttree nil)
+        (rewrite-entry
+         (multiply-polys1 alist1 const1 rel1
+                          alist2 const2 rel2
+                          pre-poly)
+         :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+         )
         (mv step-limit (normalize-poly poly)))))))
 
 (defun multiply-pots2 (poly big-poly-list new-poly-list ; &extra formals
                             rdepth step-limit
-                            type-alist obj geneqv wrld state fnstack
+                            type-alist obj geneqv pequiv-info wrld state fnstack
                             ancestors backchain-limit
                             simplify-clause-pot-lst
                             rcnst gstack ttree)
@@ -17618,7 +18661,7 @@
 
 ; We return a list of polys.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -17643,16 +18686,14 @@
      (sl-let (new-poly)
              (rewrite-entry
               (multiply-polys poly (car big-poly-list))
-              :obj nil
-              :geneqv nil
-              :ttree nil)
+              :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+              )
              (rewrite-entry
               (multiply-pots2 poly
                               (cdr big-poly-list)
                               (cons new-poly new-poly-list))
-              :obj nil
-              :geneqv nil
-              :ttree nil)))
+              :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+              )))
     (t
 
 ; Since neither poly is known to be rational, we skip this multiplication.
@@ -17661,14 +18702,13 @@
       (multiply-pots2 poly
                       (cdr big-poly-list)
                       new-poly-list)
-      :obj nil
-      :geneqv nil
-      :ttree nil)))))
+      :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+      )))))
 
 (defun multiply-pots1 (poly-list big-poly-list new-poly-list ; &extra formals
                                  rdepth step-limit
-                                 type-alist obj geneqv wrld state fnstack
-                                 ancestors backchain-limit
+                                 type-alist obj geneqv pequiv-info wrld state
+                                 fnstack ancestors backchain-limit
                                  simplify-clause-pot-lst
                                  rcnst gstack ttree)
 
@@ -17680,7 +18720,7 @@
 
 ; We return a list of polys.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -17703,21 +18743,19 @@
        (multiply-pots2 (car poly-list)
                        big-poly-list
                        new-poly-list)
-       :obj nil
-       :geneqv nil
-       :ttree nil)
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+       )
       (rewrite-entry
        (multiply-pots1 (cdr poly-list)
                        big-poly-list
                        new-new-poly-list)
-       :obj nil
-       :geneqv nil
-       :ttree nil))))))
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+       ))))))
 
 (defun multiply-pots-super-filter (var-list pot-lst-to-look-in ; &extra formals
                                             rdepth step-limit
-                                            type-alist obj geneqv wrld state
-                                            fnstack
+                                            type-alist obj geneqv pequiv-info
+                                            wrld state fnstack
                                             ancestors
                                             backchain-limit
                                             simplify-clause-pot-lst
@@ -17728,7 +18766,7 @@
 
 ; We return a list of polys.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -17755,9 +18793,8 @@
       (rewrite-entry
        (multiply-pots-super-filter (cdr var-list)
                                    pot-lst-to-look-in)
-       :obj nil
-       :geneqv nil
-       :ttree nil)
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+       )
       (rewrite-entry
        (multiply-pots1 (shortest-polys-with-var (car var-list)
                                                 pot-lst-to-look-in
@@ -17766,14 +18803,14 @@
                                                         :pt))
                        big-poly-list
                        nil)
-       :obj nil
-       :geneqv nil
-       :ttree nil))))))
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+       ))))))
 
 (defun multiply-pots-filter (var-list pot-lst-to-look-in ; &extra formals
                                       rdepth step-limit
-                                      type-alist obj geneqv wrld state fnstack
-                                      ancestors backchain-limit
+                                      type-alist obj geneqv pequiv-info
+                                      wrld state
+                                      fnstack ancestors backchain-limit
                                       simplify-clause-pot-lst
                                       rcnst gstack ttree)
 
@@ -17784,7 +18821,7 @@
 
 ; We return a list of polys.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -17808,9 +18845,8 @@
                      (polys-with-var (cadr var-list)
                                      pot-lst-to-look-in)
                      nil)
-     :obj nil
-     :geneqv nil
-     :ttree nil)
+     :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+     )
     (rewrite-entry
      (multiply-pots1 (bounds-polys-with-var (cadr var-list)
                                             pot-lst-to-look-in
@@ -17820,14 +18856,13 @@
                      (polys-with-var (car var-list)
                                      pot-lst-to-look-in)
                      poly-list1)
-     :obj nil
-     :geneqv nil
-     :ttree nil))))
+     :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+     ))))
 
 (defun multiply-pots (var-list pot-lst-to-look-in ; &extra formals
                                rdepth step-limit
-                               type-alist obj geneqv wrld state fnstack
-                               ancestors backchain-limit
+                               type-alist obj geneqv pequiv-info
+                               wrld state fnstack ancestors backchain-limit
                                simplify-clause-pot-lst
                                rcnst gstack ttree)
 
@@ -17840,7 +18875,7 @@
 
 ; We return a list of polys.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -17865,22 +18900,21 @@
       (rewrite-entry
        (multiply-pots (cdr var-list)
                       pot-lst-to-look-in)
-       :obj nil
-       :geneqv nil
-       :ttree nil)
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+       )
       (rewrite-entry
        (multiply-pots1 (polys-with-var (car var-list)
                                        pot-lst-to-look-in)
                        big-poly-list
                        nil)
-       :obj nil
-       :geneqv nil
-       :ttree nil))))))
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+       ))))))
 
 (defun add-multiplied-polys-filter (var-list products-already-tried
                                              pot-lst-to-look-in ; &extra formals
                                              rdepth step-limit
-                                             type-alist obj geneqv wrld state fnstack
+                                             type-alist obj geneqv pequiv-info
+                                             wrld state fnstack
                                              ancestors backchain-limit
                                              simplify-clause-pot-lst
                                              rcnst gstack ttree)
@@ -17889,7 +18923,7 @@
 ; add-multiply-pots, which see, except that we only multiply some of the polys
 ; corresponding to the pots labeled by the vars in var-list.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -17911,9 +18945,8 @@
       (rewrite-entry
        (multiply-pots-filter var-list
                              pot-lst-to-look-in)
-       :obj nil
-       :geneqv nil
-       :ttree nil)
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+       )
 
 ; By filtering the polys so that we avoid creating new pots, we can
 ; dramatically speed up proofs, for example the failure of the following.  (The
@@ -17960,8 +18993,9 @@
 (defun add-multiplied-polys (var-list products-already-tried
                                       pot-lst-to-look-in ; &extra formals
                                       rdepth step-limit
-                                      type-alist obj geneqv wrld state fnstack
-                                      ancestors backchain-limit
+                                      type-alist obj geneqv pequiv-info
+                                      wrld state
+                                      fnstack ancestors backchain-limit
                                       simplify-clause-pot-lst
                                       rcnst gstack ttree)
 
@@ -17971,7 +19005,7 @@
 ; factors we have already tried, and pot-lst-to-look-in is the pot-lst
 ; from which we get our polys.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -18002,9 +19036,8 @@
       (rewrite-entry
        (multiply-pots-super-filter var-list
                                    pot-lst-to-look-in)
-       :obj nil
-       :geneqv nil
-       :ttree nil)
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+       )
       (mv-let (contradictionp new-pot-lst)
               (add-polys poly-list
                          simplify-clause-pot-lst
@@ -18024,9 +19057,8 @@
       (rewrite-entry
        (multiply-pots var-list
                       pot-lst-to-look-in)
-       :obj nil
-       :geneqv nil
-       :ttree nil)
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+       )
       (mv-let (contradictionp new-pot-lst)
               (add-polys poly-list
                          simplify-clause-pot-lst
@@ -18046,7 +19078,8 @@
                                            pot-lst-to-step-down
                                            products-already-tried ; &extra formals
                                            rdepth step-limit
-                                           type-alist obj geneqv wrld state fnstack
+                                           type-alist obj geneqv pequiv-info
+                                           wrld state fnstack
                                            ancestors backchain-limit
                                            simplify-clause-pot-lst
                                            rcnst gstack ttree)
@@ -18070,7 +19103,7 @@
 ; contradictionp is true), and the accumulated list of products we have already
 ; tried.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -18091,9 +19124,8 @@
         (add-multiplied-polys var-list
                               products-already-tried
                               pot-lst-to-look-in)
-        :obj nil
-        :geneqv nil
-        :ttree nil)))
+        :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+        )))
     ((null pot-lst-to-step-down)
      (mv step-limit nil simplify-clause-pot-lst products-already-tried))
     (t
@@ -18131,9 +19163,8 @@
 
                                     pot-lst-to-look-in
                                     products-already-tried)
-                :obj nil
-                :geneqv nil
-                :ttree nil)
+                :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+                )
                (cond (contradictionp (mv step-limit
                                          contradictionp
                                          nil
@@ -18145,9 +19176,10 @@
                                            pot-lst-to-look-in
                                            (cdr pot-lst-to-step-down)
                                            products-already-tried)
-                       :obj nil
-                       :geneqv nil
-                       :ttree nil
+                       :obj nil ; ignored
+                       :geneqv nil ; ignored
+                       :pequiv-info nil ; ignored
+                       :ttree nil ; ignored
                        :simplify-clause-pot-lst new-pot-list)))))
              (t
               (rewrite-entry
@@ -18156,16 +19188,15 @@
                                    pot-lst-to-look-in
                                    (cdr pot-lst-to-step-down)
                                    products-already-tried)
-               :obj nil
-               :geneqv nil
-               :ttree nil))))))))
+               :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+               ))))))))
 
 (defun deal-with-product (new-var pot-lst-to-look-in
                                   pot-lst-to-step-down
                                   products-already-tried ; &extra formals
                                   rdepth step-limit
-                                  type-alist obj geneqv wrld state fnstack
-                                  ancestors backchain-limit
+                                  type-alist obj geneqv pequiv-info wrld state
+                                  fnstack ancestors backchain-limit
                                   simplify-clause-pot-lst
                                   rcnst gstack ttree)
 
@@ -18179,7 +19210,7 @@
 ; contradictionp is true), and the accumulated list of products we have already
 ; tried.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -18200,9 +19231,8 @@
                           pot-lst-to-look-in
                           pot-lst-to-step-down
                           products-already-tried)
-      :obj nil
-      :geneqv nil
-      :ttree nil))
+      :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+      ))
     (t
      (mv step-limit nil simplify-clause-pot-lst products-already-tried)))))
 
@@ -18210,8 +19240,9 @@
                                  pot-lst-to-step-down
                                  products-already-tried ; &extra formals
                                  rdepth step-limit
-                                 type-alist obj geneqv wrld state fnstack
-                                 ancestors backchain-limit
+                                 type-alist obj geneqv pequiv-info
+                                 wrld state
+                                 fnstack ancestors backchain-limit
                                  simplify-clause-pot-lst
                                  rcnst gstack ttree)
 
@@ -18233,7 +19264,7 @@
 ; contradictionp is true), and the accumulated list of products we have already
 ; tried.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -18267,9 +19298,8 @@
                                     pot-lst-to-look-in
                                     pot-lst-to-look-in
                                     products-already-tried)
-                :obj nil
-                :geneqv nil
-                :ttree nil)
+                :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+                )
                (cond (contradictionp (mv step-limit
                                          contradictionp
                                          nil
@@ -18280,9 +19310,10 @@
                                          pot-lst-to-look-in
                                          (cdr pot-lst-to-step-down)
                                          products-already-tried)
-                       :obj nil
-                       :geneqv nil
-                       :ttree nil
+                       :obj nil ; ignored
+                       :geneqv nil ; ignored
+                       :pequiv-info nil ; ignored
+                       :ttree nil ; ignored
                        :simplify-clause-pot-lst new-pot-list)))))
              (t
               (rewrite-entry
@@ -18290,17 +19321,17 @@
                                  pot-lst-to-look-in
                                  (cdr pot-lst-to-step-down)
                                  products-already-tried)
-               :obj nil
-               :geneqv nil
-               :ttree nil))))))))
+               :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+               ))))))))
 
 (defun deal-with-division (new-var inverse-var
                                    pot-lst-to-look-in
                                    pot-lst-to-step-down
                                    products-already-tried ; &extra formals
                                    rdepth step-limit
-                                   type-alist obj geneqv wrld state fnstack
-                                   ancestors backchain-limit
+                                   type-alist obj geneqv pequiv-info
+                                   wrld state
+                                   fnstack ancestors backchain-limit
                                    simplify-clause-pot-lst
                                    rcnst gstack ttree)
 
@@ -18351,7 +19382,7 @@
 ; contradictionp is true), and the accumulated list of products we have already
 ; tried.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -18387,19 +19418,23 @@
                                     :var))
                       products-already-tried
                       pot-lst-to-look-in)
-                     :obj nil
-                     :geneqv nil
-                     :ttree nil)
-                    (cond (contradictionp (mv step-limit contradictionp nil nil))
+                     :obj nil ; ignored
+                     :geneqv nil ; ignored
+                     :pequiv-info nil ; ignored
+                     :ttree nil ; ignored
+                     )
+                    (cond (contradictionp
+                           (mv step-limit contradictionp nil nil))
                           (t
                            (rewrite-entry
                             (deal-with-division new-var inverse-var
                                                 pot-lst-to-look-in
                                                 (cdr pot-lst-to-step-down)
                                                 products-already-tried)
-                            :obj nil
-                            :geneqv nil
-                            :ttree nil
+                            :obj nil ; ignored
+                            :geneqv nil ; ignored
+                            :pequiv-info nil ; ignored
+                            :ttree nil ; ignored
                             :simplify-clause-pot-lst new-pot-lst)))))
                   (t
                    (rewrite-entry
@@ -18407,13 +19442,16 @@
                                         pot-lst-to-look-in
                                         (cdr pot-lst-to-step-down)
                                         products-already-tried)
-                    :obj nil
-                    :geneqv nil
-                    :ttree nil))))))))
+                    :obj nil ; ignored
+                    :geneqv nil ; ignored
+                    :pequiv-info nil ; ignored
+                    :ttree nil ; ignored
+                    ))))))))
 
 (defun non-linear-arithmetic1 (new-vars pot-lst ;;; to look-in/step-down
                                         products-already-tried ; &extra formals
-                                        rdepth step-limit type-alist obj geneqv
+                                        rdepth step-limit type-alist obj
+                                        geneqv pequiv-info
                                         wrld state
                                         fnstack ancestors backchain-limit
                                         simplify-clause-pot-lst
@@ -18422,7 +19460,7 @@
 ; This is the recursive version of function non-linear-arithmetic.  See the
 ; comments and documentation there.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -18460,9 +19498,8 @@
                                  pot-lst ; to-look-in
                                  pot-lst ; to-step-down
                                  products-already-tried)
-             :obj nil
-             :geneqv nil
-             :ttree nil)
+             :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+             )
           (mv step-limit nil simplify-clause-pot-lst products-already-tried))
         (cond (contradictionp (mv step-limit contradictionp nil))
               (t
@@ -18472,9 +19509,10 @@
                                            pot-lst ; to-look-in
                                            pot-lst ; to-step-down
                                            products-already-tried)
-                        :obj nil
-                        :geneqv nil
-                        :ttree nil
+                        :obj nil ; ignored
+                        :geneqv nil ; ignored
+                        :pequiv-info nil ; ignored
+                        :ttree nil ; ignored
                         :simplify-clause-pot-lst new-pot-lst1)
                        (cond
                         (contradictionp (mv step-limit contradictionp nil))
@@ -18486,9 +19524,10 @@
                                              pot-lst ; to-look-in
                                              pot-lst ; to-step-down
                                              products-already-tried)
-                           :obj nil
-                           :geneqv nil
-                           :ttree nil
+                           :obj nil ; ignored
+                           :geneqv nil ; ignored
+                           :pequiv-info nil ; ignored
+                           :ttree nil ; ignored
                            :simplify-clause-pot-lst new-pot-lst2)
                           (cond
                            (contradictionp (mv step-limit contradictionp nil))
@@ -18498,17 +19537,19 @@
                               (cdr new-vars)
                               pot-lst ; to look-in/step-down
                               products-already-tried)
-                             :obj nil
-                             :geneqv nil
-                             :ttree nil
+                             :obj nil ; ignored
+                             :geneqv nil ; ignored
+                             :pequiv-info nil ; ignored
+                             :ttree nil ; ignored
                              :simplify-clause-pot-lst
                              new-pot-lst3)))))))))))))))
 
 (defun non-linear-arithmetic (new-vars pot-lst ;;; to look-in/step-down
                                        products-already-tried ; &extra formals
                                        rdepth step-limit
-                                       type-alist obj geneqv wrld state fnstack
-                                       ancestors backchain-limit
+                                       type-alist obj geneqv pequiv-info
+                                       wrld state
+                                       fnstack ancestors backchain-limit
                                        simplify-clause-pot-lst
                                        rcnst gstack ttree)
 
@@ -18766,7 +19807,7 @@
   specialized, theory helps avoid the repeated application of rewrite rules to
   already stabilized terms.~/"
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -18788,16 +19829,17 @@
        (declare (type (unsigned-byte 29) rdepth))
        (rewrite-entry
         (non-linear-arithmetic1 new-vars pot-lst products-already-tried)
-        :obj    nil ; ignored
-        :geneqv nil ; ignored
-        :ttree  nil ; ignored
+        :obj    nil      ; ignored
+        :geneqv nil      ; ignored
+        :pequiv-info nil ; ignored
+        :ttree  nil      ; ignored
         ))))))
 
 (defun add-polys-and-lemmas2-nl (new-vars old-pot-lst ; &extra formals
                                           rdepth step-limit
-                                          type-alist obj geneqv wrld state
-                                          fnstack
-                                          ancestors backchain-limit
+                                          type-alist obj geneqv pequiv-info
+                                          wrld state
+                                          fnstack ancestors backchain-limit
                                           simplify-clause-pot-lst
                                           rcnst gstack ttree)
 
@@ -18813,7 +19855,7 @@
 ; from the type-alist and ``inverse'' polys (which picks up facts about
 ; division).
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -18835,9 +19877,8 @@
              (t (rewrite-entry
                  (add-polys-and-lemmas2-nl new-vars
                                            simplify-clause-pot-lst)
-                 :obj nil
-                 :geneqv nil
-                 :ttree nil)))))
+                 :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+                 )))))
     (t
      (mv-let
       (contradictionp new-pot-lst)
@@ -18862,9 +19903,7 @@
                                  (getprop (ffn-symb (car new-vars))
                                           'linear-lemmas nil
                                           'current-acl2-world wrld))
-              :obj nil
-              :geneqv nil
-              :ttree nil
+              :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
               :simplify-clause-pot-lst new-pot-lst)
            (mv step-limit nil new-pot-lst))
          (cond
@@ -18881,14 +19920,16 @@
                          (t (rewrite-entry
                              (add-polys-and-lemmas2-nl (cdr new-vars)
                                                        old-pot-lst)
-                             :obj nil
-                             :geneqv nil
-                             :ttree nil
+                             :obj nil ; ignored
+                             :geneqv nil ; ignored
+                             :pequiv-info nil ; ignored
+                             :ttree nil ; ignored
                              :simplify-clause-pot-lst new-pot-lst))))))))))))))
 
 (defun add-polys-and-lemmas1-nl (old-pot-lst cnt ; &extra formals
                                              rdepth step-limit
-                                             type-alist obj geneqv wrld state
+                                             type-alist obj geneqv pequiv-info
+                                             wrld state
                                              fnstack ancestors
                                              backchain-limit
                                              simplify-clause-pot-lst
@@ -18918,7 +19959,7 @@
 ; This heuristic has proved an easy way to prevent excessive effort in
 ; non-linear arithmetic.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -18963,9 +20004,8 @@
 
           (rewrite-entry
            (add-polys-and-lemmas2-nl new-vars old-pot-lst)
-           :obj nil
-           :geneqv nil
-           :ttree nil)))
+           :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+           )))
         (cond
          (contradictionp (mv step-limit contradictionp nil))
          (t
@@ -18996,24 +20036,26 @@
               (sl-let (contradictionp new-pot-lst2)
                       (rewrite-entry
                        (non-linear-arithmetic new-vars new-pot-lst1 nil)
-                       :obj nil
-                       :geneqv nil
-                       :ttree nil
+                       :obj nil ; ignored
+                       :geneqv nil ; ignored
+                       :pequiv-info nil ; ignored
+                       :ttree nil ; ignored
                        :simplify-clause-pot-lst new-pot-lst1)
                       (cond
                        (contradictionp (mv step-limit contradictionp nil))
                        (t
                         (rewrite-entry
                          (add-polys-and-lemmas1-nl new-pot-lst1 (1+ cnt))
-                         :obj nil
-                         :geneqv nil
-                         :ttree nil
+                         :obj nil ; ignored
+                         :geneqv nil ; ignored
+                         :pequiv-info nil ; ignored
+                         :ttree nil ; ignored
                          :simplify-clause-pot-lst new-pot-lst2)))))))))))))))
 
 (defun add-polys-and-lemmas1 (new-vars old-pot-lst ; &extra formals
                                        rdepth step-limit
-                                       type-alist obj geneqv wrld state fnstack
-                                       ancestors
+                                       type-alist obj geneqv pequiv-info
+                                       wrld state fnstack ancestors
                                        backchain-limit
                                        simplify-clause-pot-lst
                                        rcnst gstack ttree)
@@ -19023,7 +20065,7 @@
 ; new vars in it (relative to old-pot-lst) we repeat for those vars.
 ; We return the standard contradictionp and a new pot-lst.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -19046,9 +20088,8 @@
              (t (rewrite-entry
                  (add-polys-and-lemmas1 new-vars
                                         simplify-clause-pot-lst)
-                 :obj nil
-                 :geneqv nil
-                 :ttree nil)))))
+                 :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+                 )))))
     (t (sl-let
         (contradictionp new-pot-lst)
         (cond
@@ -19064,21 +20105,19 @@
                                'linear-lemmas nil
                                'current-acl2-world
                                wrld))
-           :obj nil
-           :geneqv nil
-           :ttree nil)))
-        (cond (contradictionp (mv step-limit contradictionp nil))
-              (t (rewrite-entry
-                  (add-polys-and-lemmas1 (cdr new-vars)
-                                         old-pot-lst)
-                  :obj nil
-                  :geneqv nil
-                  :ttree nil
-                  :simplify-clause-pot-lst new-pot-lst))))))))
+           :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+           )))
+        (cond
+         (contradictionp (mv step-limit contradictionp nil))
+         (t (rewrite-entry
+             (add-polys-and-lemmas1 (cdr new-vars)
+                                    old-pot-lst)
+             :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+             :simplify-clause-pot-lst new-pot-lst))))))))
 
 (defun add-polys-and-lemmas (lst disjunctsp ; &extra formals
                                  rdepth step-limit
-                                 type-alist obj geneqv wrld state
+                                 type-alist obj geneqv pequiv-info wrld state
                                  fnstack ancestors
                                  backchain-limit
                                  simplify-clause-pot-lst rcnst gstack ttree)
@@ -19093,7 +20132,7 @@
 ; name?  The advantage to rewriting a megabyte of code applicatively
 ; is that you get to think of better names for everything!
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -19158,9 +20197,7 @@
                (null ancestors)))
       (rewrite-entry
        (add-polys-and-lemmas1-nl simplify-clause-pot-lst 0)
-       :obj nil
-       :geneqv nil
-       :ttree nil
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
        :simplify-clause-pot-lst new-pot-lst))
      (t
       (rewrite-entry
@@ -19168,14 +20205,13 @@
                                                    simplify-clause-pot-lst
                                                    nil)
                               new-pot-lst)
-       :obj nil
-       :geneqv nil
-       :ttree nil
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
        :simplify-clause-pot-lst new-pot-lst))))))
 
 (defun add-disjunct-polys-and-lemmas (lst1 lst2 ; &extra formals
                                            rdepth step-limit
-                                           type-alist obj geneqv wrld state
+                                           type-alist obj geneqv pequiv-info
+                                           wrld state
                                            fnstack ancestors
                                            backchain-limit
                                            simplify-clause-pot-lst
@@ -19219,7 +20255,7 @@
 ; polys as done here.  This exercise does point to the convenience of
 ; being able to use cons to generate a unique object.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -19234,11 +20270,10 @@
    (signed-byte 30)
    (sl-let
     (contradictionp new-pot-lst1)
-    (rewrite-entry (add-polys-and-lemmas lst1 t)
-                   :obj nil
-                   :geneqv nil
-                   :ttree nil)
-
+    (rewrite-entry
+     (add-polys-and-lemmas lst1 t)
+     :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+     )
     (cond
      (contradictionp
 
@@ -19254,9 +20289,8 @@
                                             (access poly contradictionp
                                                     :ttree)))
                              t)
-       :obj nil
-       :geneqv nil
-       :ttree nil))
+       :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+       ))
      (t
 
 ; The first disjunct did not lead to a contradiction.  Perhaps the
@@ -19266,9 +20300,8 @@
        (contradictionp new-pot-lst2)
        (rewrite-entry
         (add-polys-and-lemmas lst2 t)
-        :obj nil
-        :geneqv nil
-        :ttree nil)
+        :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+        )
        (declare (ignore new-pot-lst2))
        (cond (contradictionp
 
@@ -19291,7 +20324,7 @@
                                                  pot-lst0 ; &extra formals
                                                  rdepth step-limit
                                                  type-alist obj
-                                                 geneqv wrld state
+                                                 geneqv pequiv-info wrld state
                                                  fnstack ancestors
                                                  backchain-limit
                                                  simplify-clause-pot-lst
@@ -19415,7 +20448,7 @@
 ; Thank you very much Bishop for noticing this problem.  It is amazing to me
 ; that it survived all those years in Nqthm without coming to our attention.
 
-  (declare (ignore obj geneqv ttree)
+  (declare (ignore obj geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -19436,16 +20469,14 @@
            (t (rewrite-entry
                (add-disjuncts-polys-and-lemmas to-do-later nil
                                                simplify-clause-pot-lst)
-               :obj nil
-               :geneqv nil
-               :ttree nil))))
+               :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+               ))))
     (t (sl-let (contradictionp new-pot-lst)
                (rewrite-entry
                 (add-disjunct-polys-and-lemmas (car (car split-lst))
                                                (cadr (car split-lst)))
-                :obj nil
-                :geneqv nil
-                :ttree nil)
+                :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+                )
                (cond (contradictionp (mv step-limit contradictionp nil))
                      (t (rewrite-entry
                          (add-disjuncts-polys-and-lemmas
@@ -19454,15 +20485,17 @@
                               (cons (car split-lst) to-do-later)
                             to-do-later)
                           pot-lst0)
-                         :obj nil
-                         :geneqv nil
-                         :ttree nil
+                         :obj nil ; ignored
+                         :geneqv nil ; ignored
+                         :pequiv-info nil ; ignored
+                         :ttree nil ; ignored
                          :simplify-clause-pot-lst new-pot-lst))))))))
 
 (defun add-terms-and-lemmas (term-lst ttrees positivep
                                       ; &extra formals
                                       rdepth step-limit
-                                      type-alist obj geneqv wrld state
+                                      type-alist obj geneqv pequiv-info
+                                      wrld state
                                       fnstack ancestors
                                       backchain-limit
                                       simplify-clause-pot-lst
@@ -19490,7 +20523,7 @@
 ; proof of p from type-alist, the assumption of the terms in term-lst (as per
 ; positivep) and the polys in the original pot list.
 
-  (declare (ignore geneqv ttree)
+  (declare (ignore geneqv pequiv-info ttree)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -19519,10 +20552,10 @@
 ; See the comments in cleanse-type-alist for a couple of oddities
 ; associated with this.
 
-          (rewrite-entry (rewrite-linear-term-lst term-lst ttrees)
-                         :obj nil
-                         :geneqv nil
-                         :ttree nil)
+          (rewrite-entry
+           (rewrite-linear-term-lst term-lst ttrees)
+           :obj nil :geneqv nil :pequiv-info nil :ttree nil ; all ignored
+           )
         (mv step-limit term-lst ttrees))
 
 ; Back to the original show.
@@ -19538,9 +20571,11 @@
               (sl-let (contradictionp basic-pot-lst)
                       (rewrite-entry
                        (add-polys-and-lemmas poly-lst nil)
-                       :obj nil
-                       :geneqv nil
-                       :ttree nil)
+                       :obj nil ; ignored
+                       :geneqv nil ; ignored
+                       :pequiv-info nil ; ignored
+                       :ttree nil ; ignored
+                       )
                       (cond
                        (contradictionp (mv step-limit contradictionp nil))
                        (t (rewrite-entry
@@ -19548,16 +20583,17 @@
                             split-lst
                             nil
                             basic-pot-lst)
-                           :obj nil
-                           :geneqv nil
-                           :ttree nil
+                           :obj nil ; ignored
+                           :geneqv nil ; ignored
+                           :pequiv-info nil ; ignored
+                           :ttree nil ; ignored
                            :simplify-clause-pot-lst
                            basic-pot-lst)))))))))
 
 (defun rewrite-with-linear (term ; &extra formals
                             rdepth step-limit
-                            type-alist obj geneqv wrld state fnstack ancestors
-                            backchain-limit
+                            type-alist obj geneqv pequiv-info wrld state
+                            fnstack ancestors backchain-limit
                             simplify-clause-pot-lst rcnst gstack ttree)
 
 ; If term is an (in)equality, and obj is either 'T or 'NIL, we try
@@ -19597,7 +20633,7 @@
 ;           (SETQ ANS FALSE)
 ;           (GO WIN)))
 
-  (declare (ignore geneqv)
+  (declare (ignore geneqv pequiv-info)
            (type (unsigned-byte 29) rdepth)
            (type (signed-byte 30) step-limit))
 
@@ -19622,9 +20658,11 @@
                (rewrite-entry (add-terms-and-lemmas (list term)
                                                     nil ; pts
                                                     positivep)
-                              :obj nil
-                              :geneqv nil
-                              :ttree nil)
+                              :obj nil ; ignored
+                              :geneqv nil ; ignored
+                              :pequiv-info nil ; ignored
+                              :ttree nil ; ignored
+                              )
                (declare (ignore irrelevant-pot-lst))
                (cond (contradictionp
                       (mv step-limit

@@ -2662,6 +2662,7 @@
                  ELIMINATE-DESTRUCTORS-RULE
                  COARSENINGS
                  CONGRUENCES
+                 PEQUIVS
                  INDUCTION-RULES
                  DEFCHOOSE-AXIOM
                  TABLE-GUARD ; functions names can also be table names

@@ -1680,21 +1680,23 @@
                   names 'coarsenings nil
                   (putprop-x-lst1
                    names 'congruences nil
-                   (putprop-x-lst2
-                    names 'stobjs-in (arglists-to-nils arglists)
-                    (putprop-x-lst1
-                     names 'stobjs-out '(nil)
-                     (primordial-event-macros-and-fns
-                      *initial-event-defmacros*
+                   (putprop-x-lst1
+                    names 'pequivs nil
+                    (putprop-x-lst2
+                     names 'stobjs-in (arglists-to-nils arglists)
+                     (putprop-x-lst1
+                      names 'stobjs-out '(nil)
+                      (primordial-event-macros-and-fns
+                       *initial-event-defmacros*
 
 ; This putprop must be here, into the world seen by
 ; primordial-event-macros-and-fns!
 
-                      (putprop
-                       'state 'stobj '(*the-live-state*)
-                       (initialize-invariant-risk
-                        (primordial-world-globals
-                         operating-system)))))))))))))))))))
+                       (putprop
+                        'state 'stobj '(*the-live-state*)
+                        (initialize-invariant-risk
+                         (primordial-world-globals
+                          operating-system))))))))))))))))))))
       t))))
 
 (defun same-name-twice (l)

@@ -26946,6 +26946,7 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
                                                  fn
                                                  equiv-info))
                                          equiv-info)))
+                :pequiv-info nil
                 :wrld wrld
                 :fnstack (access metafunction-context mfc :fnstack)
                 :ancestors (access metafunction-context mfc :ancestors)
@@ -27041,8 +27042,9 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
                 :rdepth (access metafunction-context mfc :rdepth)
                 :step-limit (initial-step-limit wrld state)
                 :type-alist (access metafunction-context mfc :type-alist)
-                :obj nil    ; ignored by relieve-hyp
-                :geneqv nil ; ignored by relieve-hyp
+                :obj nil    ; ignored
+                :geneqv nil ; ignored
+                :pequiv-info nil ; ignored
                 :wrld wrld
                 :fnstack (access metafunction-context mfc :fnstack)
                 :ancestors ancestors

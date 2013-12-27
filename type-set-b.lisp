@@ -3491,34 +3491,22 @@
     coerce
     cons))
 
-(mutual-recursion
+(defun one-way-unify1-quotep-subproblems (pat term)
 
-(defun one-way-unify1 (pat term alist)
+; Caution:  If you change the code below, update
+; *one-way-unify1-implicit-fns*.
 
-; This function is a "No-Change Loser" meaning that if it fails and returns nil
-; as its first result, it returns the unmodified alist as its second.
+; Term is a quotep.  This function returns (mv pat1 term1 pat2 term2) as
+; follows.  If pat1 is t then pat/s = term for every substitution s, where here
+; and below, = denotes provable equality (in other words, it is a theorem in
+; the given context that pat = term).  If pat is nil then there are no
+; requirements.  Otherwise pat1 and term1 are terms and the spec is as follows.
+; If pat2 is nil then for every substitution s, pat/s = term if pat1/s = term1.
+; But if pat2 is non-nil; then pat2 and term2 are terms, and pat/s = term/s if
+; both pat1/s = term1/s and pat2/s = term2/s.
 
-  (declare (xargs :guard (and (pseudo-termp pat)
-                              (pseudo-termp term)
-                              (alistp alist))))
-  (cond ((variablep pat)
-         (let ((pair (assoc-eq pat alist)))
-           (cond (pair (cond ((equal (cdr pair) term)
-                              (mv t alist))
-                             (t (mv nil alist))))
-                 (t (mv t (cons (cons pat term) alist))))))
-        ((fquotep pat)
-         (cond ((equal pat term) (mv t alist))
-               (t (mv nil alist))))
-        ((variablep term) (mv nil alist))
-        ((fquotep term)
-
-; Caution:  If you change the code below, update *one-way-unify1-implicit-fns*.
-
-; We have historically attempted to unify ``constructor'' terms with explicit
-; values, and we try to simulate that here, treating the primitive arithmetic
-; operators, intern-in-package-of-symbol, coerce (to a very limited extent),
-; and, of course, cons, as constructors.
+; Thus, this function allows us to reduce the problem of matching pat to a
+; quotep, term, to one or two matching problems for "parts" of pat and term.
 
 ; In order to prevent loops, we insist that one-way-unification does not
 ; present the rewriter with ever-more-complex goals.  Robert Krug has sent the
@@ -3541,61 +3529,51 @@
 ; Another interesting example is (thm (foo 4)) after replacing the second
 ; foo-axiom with (equal (foo (+ -1 x)) (foo x)).
 
-         (cond ((acl2-numberp (cadr term))
-                (let ((ffn-symb (ffn-symb pat)))
-                  (case ffn-symb
-                        (binary-+
-                         (cond ((quotep (fargn pat 1))
-                                (let ((new-evg
-                                       (- (cadr term)
-                                          (fix (cadr (fargn pat 1))))))
-                                  (cond
-                                   ((<= (acl2-count new-evg)
-                                        (acl2-count (cadr term)))
-                                    (one-way-unify1
-                                     (fargn pat 2)
-                                     (kwote new-evg)
-                                     alist))
-                                   (t (mv nil alist)))))
-                               ((quotep (fargn pat 2))
-                                (let ((new-evg
-                                       (- (cadr term)
-                                          (fix (cadr (fargn pat 2))))))
-                                  (cond ((<= (acl2-count new-evg)
-                                             (acl2-count (cadr term)))
-                                         (one-way-unify1
-                                          (fargn pat 1)
-                                          (kwote new-evg)
-                                          alist))
-                                        (t (mv nil alist)))))
-                               (t (mv nil alist))))
-                        (binary-*
-                         (cond ((or (not (integerp (cadr term)))
-                                    (int= (cadr term) 0))
-                                (mv nil alist))
-                               ((and (quotep (fargn pat 1))
-                                     (integerp (cadr (fargn pat 1)))
-                                     (> (abs (cadr (fargn pat 1))) 1))
-                                (let ((new-term-evg (/ (cadr term)
-                                                       (cadr (fargn pat 1)))))
-                                  (cond ((integerp new-term-evg)
-                                         (one-way-unify1
-                                          (fargn pat 2)
-                                          (kwote new-term-evg)
-                                          alist))
-                                        (t (mv nil alist)))))
-                               ((and (quotep (fargn pat 2))
-                                     (integerp (cadr (fargn pat 2)))
-                                     (> (abs (cadr (fargn pat 2))) 1))
-                                (let ((new-term-evg (/ (cadr term)
-                                                       (cadr (fargn pat 2)))))
-                                  (cond ((integerp new-term-evg)
-                                         (one-way-unify1
-                                          (fargn pat 1)
-                                          (kwote new-term-evg)
-                                          alist))
-                                        (t (mv nil alist)))))
-                               (t (mv nil alist))))
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (nvariablep pat)
+                              (not (fquotep pat))
+                              (pseudo-termp term)
+                              (quotep term))))
+  (let ((evg (cadr term)))
+    (cond ((acl2-numberp evg)
+           (let ((ffn-symb (ffn-symb pat)))
+             (case ffn-symb
+               (binary-+
+                (cond ((quotep (fargn pat 1))
+                       (let ((new-evg (- evg (fix (cadr (fargn pat 1))))))
+                         (cond
+                          ((<= (acl2-count new-evg)
+                               (acl2-count evg))
+                           (mv (fargn pat 2) (kwote new-evg) nil nil))
+                          (t (mv nil nil nil nil)))))
+                      ((quotep (fargn pat 2))
+                       (let ((new-evg (- evg (fix (cadr (fargn pat 2))))))
+                         (cond ((<= (acl2-count new-evg)
+                                    (acl2-count evg))
+                                (mv (fargn pat 1) (kwote new-evg) nil nil))
+                               (t (mv nil nil nil nil)))))
+                      (t (mv nil nil nil nil))))
+               (binary-*
+                (cond ((or (not (integerp evg))
+                           (int= evg 0))
+                       (mv nil nil nil nil))
+                      ((and (quotep (fargn pat 1))
+                            (integerp (cadr (fargn pat 1)))
+                            (> (abs (cadr (fargn pat 1))) 1))
+                       (let ((new-term-evg (/ evg (cadr (fargn pat 1)))))
+                         (cond ((integerp new-term-evg)
+                                (mv (fargn pat 2) (kwote new-term-evg)
+                                    nil nil))
+                               (t (mv nil nil nil nil)))))
+                      ((and (quotep (fargn pat 2))
+                            (integerp (cadr (fargn pat 2)))
+                            (> (abs (cadr (fargn pat 2))) 1))
+                       (let ((new-term-evg (/ evg (cadr (fargn pat 2)))))
+                         (cond ((integerp new-term-evg)
+                                (mv (fargn pat 1) (kwote new-term-evg)
+                                    nil nil))
+                               (t (mv nil nil nil nil)))))
+                      (t (mv nil nil nil nil))))
 
 ; We once were willing to unify (- x) with 3 by binding x to -3.  John Cowles'
 ; experience with developing ACL2 arithmetic led him to suggest that we not
@@ -3603,51 +3581,34 @@
 ; unify (/ x) with any constant other than those between -1 and 1.  The code
 ; below reflects these suggestions.
 
-                        (unary-- (cond ((>= (+ (realpart (cadr term))
-                                               (imagpart (cadr term)))
-                                            0)
-                                        (mv nil alist))
-                                       (t (one-way-unify1 (fargn pat 1)
-                                                          (kwote (- (cadr term)))
-                                                          alist))))
-                        (unary-/ (cond ((or (>= (* (cadr term)
-                                                   (conjugate (cadr term)))
-                                                1)
-                                            (eql 0 (cadr term)))
-                                        (mv nil alist))
-                                       (t (one-way-unify1 (fargn pat 1)
-                                                          (kwote
-                                                           (/ (cadr term)))
-                                                          alist))))
-                        (otherwise (mv nil alist)))))
+               (unary-- (cond ((>= (+ (realpart evg)
+                                      (imagpart evg))
+                                   0)
+                               (mv nil nil nil nil))
+                              (t (mv (fargn pat 1) (kwote (- evg)) nil nil))))
+               (unary-/ (cond ((or (>= (* evg (conjugate evg))
+                                       1)
+                                   (eql 0 evg))
+                               (mv nil nil nil nil))
+                              (t (mv (fargn pat 1) (kwote (/ evg)) nil nil))))
+               (otherwise (mv nil nil nil nil)))))
+          ((symbolp evg)
+           (cond
+            ((eq (ffn-symb pat) 'intern-in-package-of-symbol)
 
-               ((symbolp (cadr term))
-                (cond
-                 ((eq (ffn-symb pat) 'intern-in-package-of-symbol)
-                  (let ((pkg (symbol-package-name (cadr term)))
-                        (name (symbol-name (cadr term))))
-                    (mv-let
-                     (ans alist1)
-
-; We are careful with alist to keep this a no change loser.
-
-                     (one-way-unify1 (fargn pat 1) (kwote name) alist)
-                     (cond
-                      (ans
-
-; We are unifying 'pkg::name with (intern-in-package-of-symbol x y) where x is
-; now unified with "name".  So when is (intern-in-package-of-symbol "name" y)
-; equal to pkg::name?  It would suffice to unify y with any symbol in pkg.  It
-; might be that y is already such a quoted symbol.  Or perhaps we could unify y
-; with pkg::name, which is one symbol we know is in pkg.  But note that it is
-; not necessary that y unify with a symbol in pkg.  It would suffice, for
-; example, if y could be unified with a symbol in some other package, say gkp,
-; with the property that pkg::name was imported into gkp, for then gkp::name
-; would be pkg::name.  Thus, as is to be expected by all failed unifications,
-; failure does not mean there is no instance that is equal to the term.
-; Suppose that y is not a quoted symbol and is not a variable (which could
-; therefore be unified with pkg::name).  What else might unify with "any symbol
-; in pkg?"  At first sight one might think that if y were
+; We are unifying 'pkg::name with (intern-in-package-of-symbol x y).  Suppose
+; that x is unified with "name"; then when is (intern-in-package-of-symbol
+; "name" y) equal to pkg::name?  It would suffice to unify y with any symbol in
+; pkg.  It might be that y is already such a quoted symbol.  Or perhaps we
+; could unify y with pkg::name, which is one symbol we know is in pkg.  But
+; note that it is not necessary that y unify with a symbol in pkg.  It would
+; suffice, for example, if y could be unified with a symbol in some other
+; package, say gkp, with the property that pkg::name was imported into gkp, for
+; then gkp::name would be pkg::name.  Thus, as is to be expected by all failed
+; unifications, failure does not mean there is no instance that is equal to the
+; term.  Suppose that y is not a quoted symbol and is not a variable (which
+; could therefore be unified with pkg::name).  What else might unify with "any
+; symbol in pkg?"  At first sight one might think that if y were
 ; (intern-in-package-of-symbol z 'pkg::name2) then the result is a symbol in
 ; pkg no matter what z is.  (The idea is that one might think that
 ; (intern-in-package-of-symbol z 'pkg::name2) is "the" generic expression of
@@ -3656,62 +3617,90 @@
 ; possibility that gkp::zzz is imported into pkg so that if z is "ZZZ" the
 ; result is a symbol in gkp not pkg.
 
-                       (cond
-                        ((and (nvariablep (fargn pat 2))
-                              (fquotep (fargn pat 2)))
-                         (cond
-                          ((not (symbolp (cadr (fargn pat 2))))
+             (let ((pkg (symbol-package-name evg))
+                   (name (symbol-name evg)))
+               (cond
+                ((and (nvariablep (fargn pat 2))
+                      (fquotep (fargn pat 2)))
+                 (cond
+                  ((symbolp (cadr (fargn pat 2)))
+                   (if (equal pkg
+                              (symbol-package-name (cadr (fargn pat 2))))
+                       (mv (fargn pat 1) (kwote name) nil nil)
+                     (mv nil nil nil nil)))
+                  (t
 
 ; (intern-in-package-of-symbol x y) is NIL if y is not a symbol.  So we win if
 ; term is 'nil and lose otherwise.  If we win, note that x is unified
 ; (unnecessarily) with "NIL" in alist1 and so we report the win with alist!  If
-; we lose, we have to report alist to be a no change loser.  So its alist
+; we lose, we have to report alist to be a no change loser.  So it's alist
 ; either way.
 
-                           (mv (if (equal term *nil*) ans nil)
-                               alist))
-                          (t (if (equal pkg
-                                        (symbol-package-name
-                                         (cadr (fargn pat 2))))
-                                 (mv ans alist1)
-                               (mv nil alist)))))
-                        (t
-                         (mv-let (ans alist2)
-                                 (one-way-unify1 (fargn pat 2) term
-                                                 alist1)
-                                 (cond (ans (mv ans alist2))
-                                       (t (mv nil alist)))))))
-                      (t (mv nil alist))))))
-                 (t (mv nil alist))))
-               ((stringp (cadr term))
-                (cond ((and (eq (ffn-symb pat) 'coerce)
-                            (equal (fargn pat 2) ''string))
-                       (one-way-unify1 (fargn pat 1)
-                                       (kwote (coerce (cadr term) 'list))
-                                       alist))
-                      (t (mv nil alist))))
-               ((consp (cadr term))
-                (cond ((eq (ffn-symb pat) 'cons)
+                   (mv (eq evg nil) nil nil nil))))
+                (t (mv (fargn pat 1) (kwote name) (fargn pat 2) term)))))
+            (t (mv nil nil nil nil))))
+          ((stringp evg)
+           (cond ((and (eq (ffn-symb pat) 'coerce)
+                       (equal (fargn pat 2) ''string))
+                  (mv (fargn pat 1) (kwote (coerce evg 'list)) nil nil))
+                 (t (mv nil nil nil nil))))
+          ((consp evg)
+           (cond ((eq (ffn-symb pat) 'cons)
 
 ; We have to be careful with alist below so we are a no change loser.
 
-                       (mv-let (ans alist1)
-                         (one-way-unify1 (fargn pat 1)
-                                         (kwote (car (cadr term)))
-                                         alist)
+                  (mv (fargn pat 1) (kwote (car evg))
+                      (fargn pat 2) (kwote (cdr evg))))
+                 (t (mv nil nil nil nil))))
+          (t (mv nil nil nil nil)))))
 
-                         (cond
-                          (ans
-                           (mv-let (ans alist2)
-                                   (one-way-unify1 (fargn pat 2)
-                                                   (kwote
-                                                    (cdr (cadr term)))
-                                                   alist1)
-                                   (cond (ans (mv ans alist2))
-                                         (t (mv nil alist)))))
-                          (t (mv nil alist)))))
-                      (t (mv nil alist))))
+(mutual-recursion
+
+(defun one-way-unify1 (pat term alist)
+
+; Warning: Keep this in sync with one-way-unify1-term-alist.
+
+; This function is a "No-Change Loser" meaning that if it fails and returns nil
+; as its first result, it returns the unmodified alist as its second.
+
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (pseudo-termp term)
+                              (alistp alist))))
+  (cond ((variablep pat)
+         (let ((pair (assoc-eq pat alist)))
+           (cond (pair (cond ((equal (cdr pair) term)
+                              (mv t alist))
+                             (t (mv nil alist))))
+                 (t (mv t (cons (cons pat term) alist))))))
+        ((fquotep pat)
+         (cond ((equal pat term) (mv t alist))
                (t (mv nil alist))))
+        ((variablep term) (mv nil alist))
+        ((fquotep term)
+
+; We have historically attempted to unify ``constructor'' terms with explicit
+; values, and we try to simulate that here, treating the primitive arithmetic
+; operators, intern-in-package-of-symbol, coerce (to a very limited extent),
+; and, of course, cons, as constructors.
+
+         (mv-let
+          (pat1 term1 pat2 term2)
+          (one-way-unify1-quotep-subproblems pat term)
+          (cond ((eq pat1 t) (mv t alist))
+                ((eq pat1 nil) (mv nil alist))
+                ((eq pat2 nil) (one-way-unify1 pat1 term1 alist))
+                (t
+
+; We are careful with alist to keep this a no change loser.
+
+                 (mv-let (ans alist1)
+                         (one-way-unify1 pat1 term1 alist)
+                         (cond ((eq ans nil) (mv nil alist))
+                               (t (mv-let
+                                   (ans alist2)
+                                   (one-way-unify1 pat2 term2 alist1)
+                                   (cond (ans (mv ans alist2))
+                                         (t (mv nil alist)))))))))))
         ((cond ((flambda-applicationp pat)
                 (equal (ffn-symb pat) (ffn-symb term)))
                (t
@@ -3727,6 +3716,8 @@
         (t (mv nil alist))))
 
 (defun one-way-unify1-lst (pl tl alist)
+
+; Warning: Keep this in sync with one-way-unify1-term-alist-lst.
 
 ; This function is NOT a No Change Loser.  That is, it may return nil
 ; as its first result, indicating that no substitution exists, but

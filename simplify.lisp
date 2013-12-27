@@ -5244,6 +5244,7 @@
                         :type-alist type-alist
                         :obj '?
                         :geneqv *geneqv-iff*
+                        :pequiv-info nil
                         :wrld wrld
                         :fnstack nil
                         :ancestors nil
@@ -6626,6 +6627,7 @@
                               :type-alist (access assumption assn :type-alist)
                               :obj '?
                               :geneqv *geneqv-iff*
+                              :pequiv-info nil
                               :wrld wrld
                               :fnstack nil
                               :ancestors new-ancestors
@@ -7249,6 +7251,7 @@
              :type-alist type-alist
              :obj nil
              :geneqv nil
+             :pequiv-info nil
              :wrld wrld
              :fnstack nil
              :ancestors nil

@@ -8224,13 +8224,13 @@
   '(26 . MINUSP))
 (defconst *tau-booleanp-pair*
   #+(and (not non-standard-analysis) acl2-par)
-  '(103 . BOOLEANP)
+  '(107 . BOOLEANP)
   #+(and (not non-standard-analysis) (not acl2-par))
-  '(102 . BOOLEANP)
-  #+(and non-standard-analysis (not acl2-par))
-  '(105 . BOOLEANP)
-  #+(and non-standard-analysis acl2-par)
   '(106 . BOOLEANP)
+  #+(and non-standard-analysis (not acl2-par))
+  '(109 . BOOLEANP)
+  #+(and non-standard-analysis acl2-par)
+  '(110 . BOOLEANP)
   )
 
 ; Note: The constants declared above are checked for accuracy after bootstrap
