@@ -173,7 +173,17 @@ restart the ACL2-Doc browser to view that manual."
 		  *acl2-doc-rendered-combined-pathname-gzipped*))
 	 (or (file-exists-p *acl2-doc-rendered-combined-pathname*)
 	     (error "Gunzip failed."))
-	 (acl2-doc-reset 'TOP))
+
+;;; The following call of acl2-doc-reset may appear to have the
+;;; potential to cause a loop: acl2-doc-reset calls
+;;; acl2-doc-state-create, which calls
+;;; acl2-doc-rendered-combined-fetch, which calls the present
+;;; function.  However, acl2-doc-rendered-combined-fetch is
+;;; essentially a no-op in this case because of the file-exists-p
+;;; check just above.
+
+	 (acl2-doc-reset 'TOP)
+	 (acl2-doc-top))
 	(t (message "Download/install failed.")
 	   nil)))
 
@@ -781,7 +791,7 @@ displayed topic name by putting your cursor on it and typing <RETURN>."
     (setq buffer-read-only t)
     (set-buffer-modified-p nil)
     (goto-char (point-max))
-    (recenter-top-bottom -1)
+    (recenter -1)
     (message "List of all visited topics in order, newest at the bottom")))
 
 (defun acl2-doc-help ()
@@ -808,7 +818,7 @@ displayed topic name by putting your cursor on it and typing <RETURN>."
 (define-key acl2-doc-mode-map "t" 'acl2-doc-top)
 (define-key acl2-doc-mode-map "u" 'acl2-doc-up)
 (define-key acl2-doc-mode-map "q" 'acl2-doc-quit)
-(define-key acl2-doc-mode-map " " 'scroll-up-command)
+(define-key acl2-doc-mode-map " " 'scroll-up)
 (define-key acl2-doc-mode-map "D" 'acl2-doc-rendered-combined-download)
 (define-key acl2-doc-mode-map "\t" 'acl2-doc-tab)
 (define-key acl2-doc-mode-map "H" 'acl2-doc-history)
