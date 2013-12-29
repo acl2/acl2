@@ -25,6 +25,7 @@
 (program)
 
 (include-book "centaur/doc" :dir :system)
+(include-book "centaur/doc-top" :dir :system)
 
 (value-triple (len (get-xdoc-table (w state))))
 

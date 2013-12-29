@@ -46,6 +46,8 @@
 ; nodes.
 
 (defconst *throwaway-tags*
+  ;; We leave "img" and "icon" in this list even thouggh we process them in
+  ;; merge-text below, because we don't want to process </img> or </icon>.
   (list "b" "i" "u" "tt" "v" "color" "sf" "a" "box" "img" "icon"
         "page"))
 
@@ -61,7 +63,13 @@
              (codes (if (equal name "code")
                         (+ 1 codes)
                       codes)))
-          (cond ((member-equal name *throwaway-tags*)
+          (cond ((equal name "img")
+                 (b* ((tok  (list :TEXT "{IMAGE}")))
+                   (merge-text (cons tok rest) acc codes)))
+                ((equal name "icon")
+                 (b* ((tok  (list :TEXT "{ICON}")))
+                   (merge-text (cons tok rest) acc codes)))
+                ((member-equal name *throwaway-tags*)
                  (merge-text rest acc codes))
                 ((equal name "a")
                  (b* ((href (cdr (assoc :href (opentok-atts tok1))))

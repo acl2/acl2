@@ -57,18 +57,16 @@ manual.</li>
 </ul>
 
 <p>You can also build your own copy of the manual.  To do this, you first need
-to build ACL2(h), then certify the @('centaur/doc') book as follows:
+to build ACL2(h), then certify the @('centaur/doc') book as follows:</p>
 
 @({
   cd acl2-sources/books
   make USE_QUICKLISP=1 centaur/doc.cert
 })
 
-After this is built, the manual should be available at:
+<p>After this is built, the manual should be available at:</p>
 
-@({acl2-sources/books/centaur/manual/index.html})</li>
-
-</ul>
+@({acl2-sources/books/centaur/manual/index.html})
 
 
 <h3>Documenting your Books</h3>

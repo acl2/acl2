@@ -17,7 +17,8 @@
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
-; 10/29/2013: Mods made by Matt Kaufmann to support Emacs-based ACL2-Doc browser
+; 10/29/2013, 12/2013: Mods made by Matt Kaufmann to support Emacs-based
+;   ACL2-Doc browser
 
 (in-package "XDOC")
 (include-book "xdoc/display" :dir :system)
@@ -72,6 +73,7 @@
   ;; Adapted from display-topic
   (b* ((name (cdr (assoc :name x)))
        (parents (cdr (assoc :parents x)))
+       (from (cdr (assoc :from x)))
        ((mv text state) (preprocess-topic
                          (acons :parents nil x) ;; horrible hack
                          all-topics nil nil state))
@@ -94,9 +96,16 @@
 ; we decide to associate additional information with name, then we may have a
 ; more convincing reason to make this change.
 
-    (mv (list (rendered-symbol name)
-              (rendered-symbol-lst parents)
-              terminal)
+    (mv (list* (rendered-symbol name)
+               (rendered-symbol-lst parents)
+               terminal
+               (if (equal from "ACL2 Sources")
+
+; We avoid storing the from field in this case, simply to avoid a bit of
+; bloating in generated ACL2 source file doc.lisp.
+
+                   nil
+                 (list from)))
         state)))
 
 (defun render-topics (x all-topics state)

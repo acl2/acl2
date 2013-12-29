@@ -193,42 +193,12 @@
 ; hierarchy and add some context.
 
 (local
- (defxdoc acl2::top
 
 ; The TOP topic will be the first thing the user sees when they open the
 ; manual!  We localize this because you may want to write your own top topics
 ; for custom manuals.
 
-   :short "User manual for the <a
-href='http://www.cs.utexas.edu/users/moore/acl2/'>ACL2 Theorem Prover</a> and
-the <a href='http://acl2-books.googlecode.com/'>ACL2 Community Books</a>"
-
-   :long "<h3>Introduction</h3>
-
-<p><a href='http://www.cs.utexas.edu/users/moore/acl2/'>ACL2</a> is an
-interactive theorem prover.  It combines a Lisp-based programming language for
-developing formal models of systems with a reasoning engine that can prove
-properties about these models.  It has been used to <a
-href='http://en.wikipedia.org/wiki/Formal_verification'>formally verify</a>
-many <see topic='@(url interesting-applications)'>interesting systems</see> in
-academia and industry.</p>
-
-<p>The <a href='http://acl2-books.googlecode.com/'>ACL2 Community Books</a> are
-the canonical set of open-source libraries (\"@(see books)\") for ACL2.  They
-include lemma libraries for reasoning in many domains, macro libraries for more
-quickly writing and documenting code, interfacing tools for connecting ACL2 to
-other systems, productivity tools for better proof automation and debugging,
-and specialty libraries for areas like @(see hardware-verification).</p>
-
-<p>This manual was generated on <b>@(`(:raw (oslib::date))`)</b>.  It covers
-both ACL2 and the Community Books.  It is derived by combining the classic
-@(see doc-string)s found in the ACL2 source code and some books with the @(see
-xdoc) topics found in other books.  Besides just importing the documentation,
-we also rearrange the topic hierarchy to try to improve its organization.</p>
-
-<p>This manual is very much a work in progress.  If you would like to
-contribute to its development, please join the <a
-href='https://code.google.com/p/acl2-books/'>acl2-books</a> project!</p>"))
+ (include-book "doc-top"))
 
 (defsection arithmetic
   :parents (top)
