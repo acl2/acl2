@@ -64,16 +64,25 @@
      (defv *acl2-doc-search-regexp-p* nil)
      (defv *acl2-doc-search-separator* "###---###---###---###---###")
      (defv *acl2-doc-history* nil)
+     (defv *acl2-doc-history-buffer-name*
+       "acl2-doc-history")
      (defv *acl2-doc-return* nil)
+     (defv *acl2-doc-all-topics-rev* nil)
      (defv *acl2-doc-state* nil)))
 
 (acl2-doc-init-vars)
+
+; We define the following variable outside acl2-doc-init-vars, so that it is
+; not smashed by invoking that macro after running acl2-doc-alist-create.
+(defvar *acl2-doc-directory* nil)
 
 ; The following variables can be set before loading this file, for
 ; example in a user's .emacs file.
 (defvar *acl2-doc-rendered-combined-pathname*
   (concat *acl2-sources-dir*
 	  "books/system/doc/rendered-doc-combined.lsp"))
+(defvar *acl2-doc-rendered-combined-pathname-gzipped*
+  (concat *acl2-doc-rendered-combined-pathname* ".gz"))
 (defvar *acl2-doc-rendered-pathname*
   (concat *acl2-sources-dir*
 	  "doc.lisp"))
@@ -115,14 +124,20 @@
 	  (max large-file-warning-threshold 30000000))
 	 (buf0 (find-buffer-visiting rendered-pathname))
 
-;;; We could let buf = buf0 if buf0 is non-nil.  But if the file was
-;;; changed after loading it into buf0, then we would be operating on
-;;; a stale buffer.  So we ignore buf0 other than to decide whether to
-;;; delete the buffer just before returning from this function.
+; We could let buf = buf0 if buf0 is non-nil.  But if the file was changed
+; after loading it into buf0, then we would be operating on a stale buffer.  So
+; we ignore buf0 other than to decide whether to delete the buffer just before
+; returning from this function.
 
 	 (buf (find-file-noselect rendered-pathname)))
     (with-current-buffer
         buf
+
+; Warren Hunt asked that the acl2-doc buffer be put in the same directory as
+; the file from which it was derived.  One basic advantage of this idea is that
+; the directory won't depend on where acl2-doc was invoked.
+
+      (setq *acl2-doc-directory* default-directory)
       (save-excursion
         (lisp-mode)
         (goto-char (point-min))
@@ -136,22 +151,50 @@
 (defun acl2-doc-state-initialized-p ()
   (not (null *acl2-doc-state*)))
 
+(defun acl2-doc-rendered-combined-download ()
+  "Download the acl2+books combined manual from the web; then
+restart the ACL2-Doc browser to view that manual."
+  (interactive)
+  (cond ((file-exists-p *acl2-doc-rendered-combined-pathname*)
+	 (message "Renaming %s to %s.backup"
+		  *acl2-doc-rendered-combined-pathname*
+		  *acl2-doc-rendered-combined-pathname*)
+	 (rename-file *acl2-doc-rendered-combined-pathname*
+		      (concat *acl2-doc-rendered-combined-pathname* ".backup")
+		      0)))
+  (message "Preparing to download %s"
+	   *acl2-doc-rendered-combined-url*)
+  (url-copy-file
+   *acl2-doc-rendered-combined-url*
+   *acl2-doc-rendered-combined-pathname-gzipped*)
+  (cond ((file-exists-p *acl2-doc-rendered-combined-pathname-gzipped*)
+	 (shell-command-to-string
+	  (format "gunzip %s"
+		  *acl2-doc-rendered-combined-pathname-gzipped*))
+	 (or (file-exists-p *acl2-doc-rendered-combined-pathname*)
+	     (error "Gunzip failed."))
+	 (acl2-doc-reset 'TOP))
+	(t (message "Download/install failed.")
+	   nil)))
+
 (defun acl2-doc-rendered-combined-fetch ()
   (or (file-exists-p *acl2-doc-rendered-combined-pathname*)
-      (and (y-or-n-p
-	    (format "Download %s and install as %s? "
-		    *acl2-doc-rendered-combined-url*
-		    *acl2-doc-rendered-combined-pathname*))
-	   (let ((acl2-doc-rendered-combined-pathname-gzipped
-		  (concat *acl2-doc-rendered-combined-pathname*
-			  ".gz")))
-	     (url-copy-file
-	      *acl2-doc-rendered-combined-url*
-	      acl2-doc-rendered-combined-pathname-gzipped)
-	     (shell-command-to-string
-	      (format "gunzip %s"
-		      acl2-doc-rendered-combined-pathname-gzipped))
-	     (file-exists-p *acl2-doc-rendered-combined-pathname*)))))
+      (cond
+       ((and (file-exists-p *acl2-doc-rendered-combined-pathname-gzipped*)
+	     (y-or-n-p
+	      (format "Run gunzip on %s? "
+		      *acl2-doc-rendered-combined-pathname-gzipped*
+		      *acl2-doc-rendered-combined-pathname*)))
+	(shell-command-to-string
+	 (format "gunzip %s"
+		 *acl2-doc-rendered-combined-pathname-gzipped*))
+	(or (file-exists-p *acl2-doc-rendered-combined-pathname*)
+	    (error "Execution of gunzip seems to have failed!")))
+       ((y-or-n-p
+	 (format "Download %s and install as %s? "
+		 *acl2-doc-rendered-combined-url*
+		 *acl2-doc-rendered-combined-pathname*))
+	(acl2-doc-rendered-combined-download)))))
 
 (defun acl2-doc-state-create (top-name)
 
@@ -239,9 +282,21 @@
 
   :syntax-table lisp-mode-syntax-table)
 
+; Arrange that files ending in .acl2-doc come up in acl2-doc mode.
+; See also the emacs documentation for auto-mode-alist.
+(if (not (assoc "\\.acl2-doc\\'" auto-mode-alist))
+    (push '("\\.acl2-doc\\'" . acl2-doc-mode) auto-mode-alist))
+
 (defun switch-to-acl2-doc-buffer ()
-  (prog1 (switch-to-buffer *acl2-doc-buffer-name*)
-    (acl2-doc-mode)))
+  (switch-to-buffer *acl2-doc-buffer-name*)
+
+;;; The next two forms need only be evaluated when the buffer is first
+;;; created, but it is likely harmless to go ahead and evaluate them
+;;; every time.
+
+  (acl2-doc-mode)
+  (setq default-directory *acl2-doc-directory*)
+  t)
 
 (defun acl2-doc-print-topic (tuple)
 
@@ -249,10 +304,17 @@
 ; function may be called repeatedly for the same buffer, e.g., by
 ; function acl2-doc-search-buffer.
 
-  (insert (format "Topic: %s\nParent list: %s\n\n%s\n"
+  (insert (format "Topic: %s\nParent list: %s\n%s\n%s\n"
                   (nth 0 tuple)
                   (nth 1 tuple)
-                  (nth 2 tuple)))
+                  (if (equal (length tuple) 4)
+		      (if (eq (nth 0 tuple) 'TOP)
+			  ""
+			(format "Source: %s\n" (nth 3 tuple)))
+		    (if (eq (acl2-doc-state-top-name) 'ACL2)
+			""
+		      "Source: ACL2 Sources\n"))
+		  (nth 2 tuple)))
   (set-buffer-modified-p nil)
   (force-mode-line-update))
 
@@ -267,16 +329,18 @@
   (switch-to-acl2-doc-buffer)
   (setq buffer-read-only nil)
   (erase-buffer)
-  (acl2-doc-print-topic (cdr entry)) ; entry is (cons position tuple)
+  (acl2-doc-print-topic (cdr entry))	; entry is (cons position tuple)
   (setq buffer-read-only t)
   (goto-char (nth 0 entry))
-  (let ((name (car (cdr entry))))
-  (if (eq (acl2-doc-state-top-name) name)
-      (message "At the top node of the %s manual"
-	       (if (eq (acl2-doc-state-top-name) 'ACL2)
-		   "ACL2 User's"
-		 "acl2+books combined"))
-    (message "Topic: %s" name))))
+  (let ((name (car (cdr entry)))
+	(manual-name (if (eq (acl2-doc-state-top-name) 'ACL2)
+			 "ACL2 User's"
+		       "acl2+books combined")))
+    (push name *acl2-doc-all-topics-rev*)
+    (if (eq (acl2-doc-state-top-name) name)
+	(message "At the top node of the %s manual"
+		 manual-name)
+      (message "Topic: %s (%s manual)" name manual-name))))
 
 (defun acl2-doc-display (name)
 
@@ -386,6 +450,16 @@
     (cond (name (acl2-doc-display name))
 	  (t (error "Cursor is not on a name")))))
 
+(defun acl2-doc-top ()
+  "Go to the top topic."
+  (interactive)
+  (acl2-doc-go (acl2-doc-state-top-name))
+  (let ((manual-name (if (eq (acl2-doc-state-top-name) 'ACL2)
+			 "ACL2 User's"
+		       "acl2+books combined")))
+    (message "At the top node of the %s manual; type h for help"
+	     manual-name)))
+
 (defun acl2-doc (&optional clear)
   "Start or return to the ACL2-Doc browser; prefix argument clears state.
 See the documentation topic for ACL2-Doc for more information.  For
@@ -398,12 +472,12 @@ in the ACL2 read-eval-print loop.
   (interactive "P")
   (cond (clear
 	 (acl2-doc-reset nil)
-         (acl2-doc-go (acl2-doc-state-top-name)))
+	 (acl2-doc-top))
         (*acl2-doc-history*
          (acl2-doc-display-basic (car *acl2-doc-history*)))
         (t
 	 (acl2-doc-maybe-reset)
-         (acl2-doc-go (acl2-doc-state-top-name)))))
+         (acl2-doc-top))))
 
 (defun acl2-doc-last ()
   "Go to the last topic visited."
@@ -472,14 +546,12 @@ Please report this error to the ACL2 implementors."))))
 (defun acl2-doc-quit ()
   "Quit the ACL2-Doc browser."
   (interactive)
-  (switch-to-acl2-doc-buffer)
+  (if (not (equal (buffer-name) *acl2-doc-buffer-name*))
+      (error
+       "Return to %s buffer (e.g., using C-X a a) before running acl2-doc-quit"
+       *acl2-doc-buffer-name*))
   (acl2-doc-update-top-history-entry)
   (quit-window))
-
-(defun acl2-doc-top ()
-  "Go to the top topic."
-  (interactive)
-  (acl2-doc-go (acl2-doc-state-top-name)))
 
 (defun acl2-doc-initialize (&optional toggle)
   "Restart the ACL2-Doc browser, clearing its state.
@@ -571,7 +643,7 @@ previous i command."
 
 (defun acl2-doc-search-aux (str regexp-p)
   (when (equal str "")
-    (error "Input a search string, or type \"S\" to continue previous search"))
+    (error "Input a search string, or type \"n\" to continue previous search"))
   (let* ((buf (acl2-doc-search-buffer))
 	 (continue-p (equal regexp-p :continue))
 	 (str (cond
@@ -641,6 +713,77 @@ expression search."
   (interactive)
   (acl2-doc-search-aux nil :continue))
 
+(defun acl2-doc-tab ()
+  "Visit the next link after the cursor on the current page,
+searching from the top if no link is below the cursor."
+  (interactive)
+  (switch-to-acl2-doc-buffer)
+  (cond ((or (re-search-forward "[[][^ ]+]" nil t)
+	     (progn (goto-char (point-min))
+		    (re-search-forward "[[][^ ]+]" nil t)))
+	 (search-backward "[")
+	 (forward-char 1))
+	(t (error "There are no links on this page."))))
+
+(defun strip-cadrs (x)
+  (let ((ans nil))
+    (while x
+      (push (cadr (car x)) ans)
+      (setq x (cdr x)))
+    (reverse ans)))
+
+(defun acl2-doc-history-buffer ()
+;;; Return the history buffer, creating it first if necessary.
+  (or (get-buffer *acl2-doc-history-buffer-name*)
+      (let ((buf (get-buffer-create *acl2-doc-history-buffer-name*))
+            (alist (acl2-doc-state-alist)))
+	(with-current-buffer
+	    buf
+          (while alist
+	    (insert "\n")
+	    (insert *acl2-doc-search-separator*)
+	    (insert "\n")
+	    (acl2-doc-print-topic (pop alist)))
+	  (setq buffer-read-only t))
+	buf)))
+
+(defun acl2-doc-history ()
+  "Visit a buffer that displays the names of all visited topics
+in order, newest at the bottom.  That buffer is in acl2-doc mode; thus the
+usual acl2-doc commands may be used.  In particular, you can visit a
+displayed topic name by putting your cursor on it and typing <RETURN>."
+  (interactive)
+  (let* ((buf0 (get-buffer *acl2-doc-history-buffer-name*))
+	 (buf (or buf0
+		  (get-buffer-create *acl2-doc-history-buffer-name*)))
+	 (all (reverse *acl2-doc-all-topics-rev*)))
+    (switch-to-buffer *acl2-doc-history-buffer-name*)
+    (acl2-doc-mode)
+    (cond (buf0
+	   (setq buffer-read-only nil)
+	   (delete-region (point-min) (point-max))))
+    (insert "List of all visited topics in order, newest at the bottom:\n")
+    (insert "=========================================================\n")
+    (while all
+      (insert (format "%s" (pop all)))
+      (insert "\n"))
+
+;;; We could bind x to *acl2-doc-history* and execute the commented-out form just
+;;; below, after printing a separator such as the one above.  If someone asks for
+;;; this, we should think about printing the topics in *acl2-doc-return* as well,
+;;; and maybe even display a single list if we can figure out a reasonable way to
+;;; do so while indicating "last" and "return" information.
+
+;;; (while x
+;;;   (insert (format "%s" (cadr (pop x))))
+;;;    (insert "\n"))
+
+    (setq buffer-read-only t)
+    (set-buffer-modified-p nil)
+    (goto-char (point-max))
+    (recenter-top-bottom -1)
+    (message "List of all visited topics in order, newest at the bottom")))
+
 (defun acl2-doc-help ()
 
   "Go to the ACL2-DOC topic to read about how to use the ACL2-Doc browser."
@@ -665,3 +808,7 @@ expression search."
 (define-key acl2-doc-mode-map "t" 'acl2-doc-top)
 (define-key acl2-doc-mode-map "u" 'acl2-doc-up)
 (define-key acl2-doc-mode-map "q" 'acl2-doc-quit)
+(define-key acl2-doc-mode-map " " 'scroll-up-command)
+(define-key acl2-doc-mode-map "D" 'acl2-doc-rendered-combined-download)
+(define-key acl2-doc-mode-map "\t" 'acl2-doc-tab)
+(define-key acl2-doc-mode-map "H" 'acl2-doc-history)
