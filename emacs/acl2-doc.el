@@ -471,7 +471,7 @@ restart the ACL2-Doc browser to view that manual."
 	     manual-name)))
 
 (defun acl2-doc (&optional clear)
-  "Start or return to the ACL2-Doc browser; prefix argument clears state.
+  "Go to the ACL2-Doc browser; prefix argument clears state.
 See the documentation topic for ACL2-Doc for more information.  For
 example, after issuing this command, type
   g ACL2-DOC
@@ -558,7 +558,7 @@ Please report this error to the ACL2 implementors."))))
   (interactive)
   (if (not (equal (buffer-name) *acl2-doc-buffer-name*))
       (error
-       "Return to %s buffer (e.g., using C-X a a) before running acl2-doc-quit"
+       "Return to %s buffer (e.g., using C-t g) before running acl2-doc-quit"
        *acl2-doc-buffer-name*))
   (acl2-doc-update-top-history-entry)
   (quit-window))
@@ -801,8 +801,41 @@ displayed topic name by putting your cursor on it and typing <RETURN>."
   (interactive)
   (acl2-doc-go 'ACL2-DOC))
 
-(define-key global-map "\C-Xaa" 'acl2-doc)
-(define-key global-map "\C-XaA" 'acl2-doc-initialize)
+(defun control-x-a-a-deprecated ()
+  (interactive)
+  (error "Use Control-t g to start the ACL2-Doc browser."))
+
+(defun control-x-a-A-deprecated ()
+  (interactive)
+  (error
+   "Use Control-t g to start the ACL2-Doc browser and then
+I if you want to initialize."))
+
+(when (not (boundp 'ctl-t-keymap))
+
+; Warning: Keep this in sync with the introduction of ctl-t-keymap in
+; emacs-acl2.el.
+
+; Note that ctl-t-keymap will already be defined if this file is loaded
+; from emacs-acl2.el.  But if not, then we define it here.
+
+; This trick probably came from Bob Boyer, to define a new keymap; so now
+; control-t is the first character of a complex command.
+  (defvar ctl-t-keymap)
+  (setq ctl-t-keymap (make-sparse-keymap))
+  (define-key (current-global-map) "\C-T" ctl-t-keymap)
+
+; Control-t t now transposes characters, instead of the former control-t.
+  (define-key ctl-t-keymap "\C-T" 'transpose-chars)
+  (define-key ctl-t-keymap "\C-t" 'transpose-chars)
+  )
+
+(define-key global-map "\C-tg" 'acl2-doc)
+(define-key global-map "\C-tG" 'acl2-doc-go!)
+(define-key global-map "\C-t\C-G" 'acl2-doc-go)
+
+(define-key global-map "\C-Xaa" 'control-x-a-a-deprecated)
+(define-key global-map "\C-XaA" 'control-x-a-A-deprecated)
 
 (define-key acl2-doc-mode-map "g" 'acl2-doc-go)
 (define-key acl2-doc-mode-map "\C-M" 'acl2-doc-go!)

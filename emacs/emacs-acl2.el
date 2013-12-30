@@ -199,6 +199,9 @@
 
 (when (not (boundp 'ctl-t-keymap))
 
+; Warning: Keep this in sync with the introduction of ctl-t-keymap in
+; acl2-doc.el.
+
 ; This trick probably came from Bob Boyer, to define a new keymap; so now
 ; control-t is the first character of a complex command.
   (defvar ctl-t-keymap)
