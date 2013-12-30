@@ -152,8 +152,8 @@
   (not (null *acl2-doc-state*)))
 
 (defun acl2-doc-rendered-combined-download ()
-  "Download the acl2+books combined manual from the web; then
-restart the ACL2-Doc browser to view that manual."
+  "Download the acl2+books combined manual from the web;
+then restart the ACL2-Doc browser to view that manual."
   (interactive)
   (cond ((file-exists-p *acl2-doc-rendered-combined-pathname*)
 	 (message "Renaming %s to %s.backup"
@@ -449,12 +449,16 @@ restart the ACL2-Doc browser to view that manual."
                 (t (intern (upcase value-read)))))))
 
 (defun acl2-doc-go (name)
+
   "Go to the specified topic; performs completion."
+
   (interactive (acl2-doc-completing-read "Go to topic" nil))
   (acl2-doc-display name))
 
 (defun acl2-doc-go! ()
+
   "Go to the topic occurring at the cursor position."
+
   (interactive)
   (let ((name (acl2-doc-topic-at-point)))
     (cond (name (acl2-doc-display name))
@@ -471,14 +475,15 @@ restart the ACL2-Doc browser to view that manual."
 	     manual-name)))
 
 (defun acl2-doc (&optional clear)
+
   "Go to the ACL2-Doc browser; prefix argument clears state.
-See the documentation topic for ACL2-Doc for more information.  For
-example, after issuing this command, type
-  g ACL2-DOC
-to go see a buffer displaying documentation on ACL2-Doc; or, issue the command
-  :doc acl2-doc
-in the ACL2 read-eval-print loop.
+See the documentation topic for ACL2-Doc for more
+information, either by starting ACL2-Doc and typing `h'
+\(help), by viewing the ACL2-DOC topic in a web browser, or by
+typing `:doc acl2-doc' in the ACL2 read-eval-print loop.
+
 \\{acl2-doc-mode-map}"
+
   (interactive "P")
   (cond (clear
 	 (acl2-doc-reset nil)
@@ -499,7 +504,8 @@ in the ACL2 read-eval-print loop.
         (t (error "No last page visited"))))
 
 (defun acl2-doc-return ()
-  "Return to the last topic visited, popping the stack of such topics."
+  "Return to the last topic visited, popping the stack of
+visited topics."
   (interactive)
   (cond (*acl2-doc-return*
 	 (let ((entry (pop *acl2-doc-return*)))
@@ -517,7 +523,9 @@ in the ACL2 read-eval-print loop.
     (buffer-substring beg (point))))
 
 (defun acl2-doc-up ()
+
   "Go to the parent of the current topic."
+
   (interactive)
   (switch-to-acl2-doc-buffer)
   (let ((first-parent
@@ -554,7 +562,9 @@ Please report this error to the ACL2 implementors."))))
 			 (cdr *acl2-doc-history*)))))))
 
 (defun acl2-doc-quit ()
+
   "Quit the ACL2-Doc browser."
+
   (interactive)
   (if (not (equal (buffer-name) *acl2-doc-buffer-name*))
       (error
@@ -564,11 +574,14 @@ Please report this error to the ACL2 implementors."))))
   (quit-window))
 
 (defun acl2-doc-initialize (&optional toggle)
-  "Restart the ACL2-Doc browser, clearing its state.
-With prefix argument, toggle between the ACL2 User's Manual (the
-default) and the acl2+books combined manual.  For the latter, it
-will be necessary first to create file
-books/system/doc/rendered-doc-combined.lsp; see :DOC acl2-doc."
+
+  "Restart the ACL2-Doc browser, clearing its state.  With
+prefix argument, toggle between the ACL2 User's Manual (the
+default) and the acl2+books combined manual.  For the
+latter, it will be necessary first to create file
+books/system/doc/rendered-doc-combined.lsp; see :DOC
+acl2-doc."
+
   (interactive "P")
   (acl2-doc-reset
    (and toggle
@@ -582,39 +595,56 @@ books/system/doc/rendered-doc-combined.lsp; see :DOC acl2-doc."
             (alist (acl2-doc-state-alist)))
 	(with-current-buffer
 	    buf
+	  (when *acl2-doc-directory* ; probabl always true
+	    (setq default-directory *acl2-doc-directory*))
           (while alist
-            (insert (format "%s\n" (car (pop alist))))))
+            (insert (format "%s\n" (car (pop alist)))))
+	  (acl2-doc-mode)
+	  (set-buffer-modified-p nil)
+	  (setq buffer-read-only t))
 	buf)))
 
 (defun acl2-doc-index (name)
-  "Go to the specified topic or else one containing it as a substring;
-performs completion."
+
+  "Go to the specified topic or else one containing it as a
+substring; performs completion.  If the empty string is
+supplied, then go to the index buffer.  Note that the index
+buffer is in ACL2-Doc mode; thus, in particular, you can
+type <RETURN> while standing on a topic in order to go
+directly to that topic."
+
   (interactive (acl2-doc-completing-read
                 "Find topic (then use \",\" for more) "
                 t))
-  (let ((buf (acl2-doc-index-buffer))
-	(found-p (assoc name (acl2-doc-state-alist))))
-    (setq *acl2-doc-index-name-found-p* (consp found-p))
-    (setq *acl2-doc-index-name* (symbol-name name))
+  (let ((buf (acl2-doc-index-buffer)))
     (cond
-     (found-p (with-current-buffer
-		  buf
-		(goto-char (point-min)))
-	      (acl2-doc-display name))
-     (t (let ((topic
-	       (with-current-buffer
-		   buf
-		 (lisp-mode) ; same as for acl2-doc-mode, without key bindings
-		 (goto-char (point-min))
-		 (cond ((search-forward (symbol-name name) nil t)
-			(intern (acl2-doc-read-line)))
-		       (t (setq *acl2-doc-index-name* nil)
-			  (error "No matching topic found"))))))
-	  (acl2-doc-display topic))))))
+     ((equal (symbol-name name) "")
+      (switch-to-buffer *acl2-doc-index-buffer-name*)
+      (goto-char (point-min)))
+     (t
+      (let ((found-p (assoc name (acl2-doc-state-alist))))
+	(setq *acl2-doc-index-name-found-p* (consp found-p))
+	(setq *acl2-doc-index-name* (symbol-name name))
+	(cond
+	 (found-p (with-current-buffer
+		      buf
+		    (goto-char (point-min)))
+		  (acl2-doc-display name))
+	 (t (let ((topic
+		   (with-current-buffer
+		       buf
+		     (goto-char (point-min))
+		     (cond ((search-forward (symbol-name name) nil t)
+			    (intern (acl2-doc-read-line)))
+			   (t (setq *acl2-doc-index-name* nil)
+			      (error "No matching topic found"))))))
+	      (acl2-doc-display topic)))))))))
 
 (defun acl2-doc-index-next ()
-  "Find the next topic containing, as a substring, the topic from the
-previous i command."
+
+  "Find the next topic containing, as a substring, the topic
+from the previous `i' command."
+
   (interactive)
   (let ((buf (get-buffer *acl2-doc-index-buffer-name*)))
     (when (null buf)
@@ -698,19 +728,20 @@ previous i command."
 (defun acl2-doc-search (str)
 
   "Search forward from the top of the manual for the input
-string.  If the search succeeds, then go to that topic with the
-cursor put immediately after the found text, with the topic name
-displayed in the minibuffer."
+string.  If the search succeeds, then go to that topic with
+the cursor put immediately after the found text, with the
+topic name displayed in the minibuffer."
 
   (interactive "sSearch: ")
   (acl2-doc-search-aux str nil))
 
 (defun acl2-doc-re-search (str)
 
-  "Perform a regular expression search, forward from the top of
-the manual, for the input string.  If the search succeeds, then
-go to that topic with the cursor put immediately after the found
-text, with the topic name displayed in the minibuffer."
+  "Perform a regular expression search, forward from the top
+of the manual, for the input string.  If the search
+succeeds, then go to that topic with the cursor put
+immediately after the found text, with the topic name
+displayed in the minibuffer."
 
   (interactive "sRegular Expression Search: ")
   (acl2-doc-search-aux str t))
@@ -724,8 +755,10 @@ expression search."
   (acl2-doc-search-aux nil :continue))
 
 (defun acl2-doc-tab ()
+
   "Visit the next link after the cursor on the current page,
 searching from the top if no link is below the cursor."
+
   (interactive)
   (switch-to-acl2-doc-buffer)
   (cond ((or (re-search-forward "[[][^ ]+]" nil t)
@@ -758,10 +791,13 @@ searching from the top if no link is below the cursor."
 	buf)))
 
 (defun acl2-doc-history ()
-  "Visit a buffer that displays the names of all visited topics
-in order, newest at the bottom.  That buffer is in acl2-doc mode; thus the
-usual acl2-doc commands may be used.  In particular, you can visit a
-displayed topic name by putting your cursor on it and typing <RETURN>."
+
+  "Visit a buffer that displays the names of all visited
+topics in order, newest at the bottom.  That buffer is in
+acl2-doc mode; thus the usual acl2-doc commands may be used.
+In particular, you can visit a displayed topic name by
+putting your cursor on it and typing <RETURN>."
+
   (interactive)
   (let* ((buf0 (get-buffer *acl2-doc-history-buffer-name*))
 	 (buf (or buf0
@@ -796,7 +832,8 @@ displayed topic name by putting your cursor on it and typing <RETURN>."
 
 (defun acl2-doc-help ()
 
-  "Go to the ACL2-DOC topic to read about how to use the ACL2-Doc browser."
+  "Go to the ACL2-DOC topic to read about how to use the
+ACL2-Doc browser."
 
   (interactive)
   (acl2-doc-go 'ACL2-DOC))
