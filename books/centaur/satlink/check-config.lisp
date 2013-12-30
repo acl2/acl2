@@ -19,10 +19,16 @@
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
-; cert_param: (uses-glucose)
-
 (in-package "SATLINK")
 (include-book "top")
+(include-book "system/hl-addr-combine" :dir :system)
+(local (include-book "cnf-basics"))
+
+(local (defthm lit-list-listp-of-append
+         (implies (and (lit-list-listp a)
+                       (lit-list-listp b))
+                  (lit-list-listp (append a b)))))
+
 
 (define simple-sat ((formula lit-list-listp) &key (config config-p))
   :parents (check-config)
@@ -43,6 +49,93 @@
   :parents (check-config)
   (or (equal (simple-sat formula :config config) :unsat)
       (raise "Expected formula ~x0 to be unsatisfiable!" formula)))
+
+
+; For a more thorough than hand test, we will generate pigeonhole problems.
+
+(define bird-in-hole ((bird natp)
+                      (hole   natp))
+  :parents (pigeon-hole)
+  :returns (lit litp "This bird is in this hole.")
+  (b* ((var (make-var (acl2::hl-nat-combine bird hole))))
+    (make-lit var 0)))
+
+(define bird-in-some-hole ((bird natp "Fixed")
+                           (hole natp "Counts down from max hole."))
+  :parents (pigeon-hole)
+  :returns (clause lit-listp "This bird is in some hole.")
+  (b* (((when (zp hole))
+        nil)
+       (hole (- hole 1)))
+    (cons (bird-in-hole bird hole)
+          (bird-in-some-hole bird hole))))
+
+(define every-bird-in-hole ((bird     natp "Counts down from max bird")
+                            (max-hole natp "Fixed"))
+  :parents (pigeon-hole)
+  :returns (clauses lit-list-listp "Every bird is in some hole.")
+  (b* (((when (zp bird))
+        nil)
+       (bird (- bird 1)))
+    (cons (bird-in-some-hole bird max-hole)
+          (every-bird-in-hole bird max-hole))))
+
+
+(define not-both-in-hole ((bird1 natp)
+                          (bird2 natp)
+                          (hole  natp))
+  :parents (pigeon-hole)
+  :returns (clause lit-listp "These two birds do not share this hole.")
+  (list (lit-negate (bird-in-hole bird1 hole))
+        (lit-negate (bird-in-hole bird2 hole))))
+
+(define no-others-in-hole ((tweety natp "Fixed")
+                           (birds  natp "Counts down from max birds.")
+                           (hole   natp "Fixed"))
+  :parents (pigeon-hole)
+  :returns (clauses lit-list-listp "No other bird shares hole with tweety.")
+  (b* (((when (zp birds))
+        nil)
+       (birds (- birds 1))
+       ((when (eql tweety birds))
+        (no-others-in-hole tweety birds hole)))
+    (cons (not-both-in-hole tweety birds hole)
+          (no-others-in-hole tweety birds hole))))
+
+(define no-two-in-hole-aux ((tweety    natp "Counts down from max birds.")
+                            (max-birds natp "Fixed")
+                            (hole      natp "Fixed"))
+  :parents (pigeon-hole)
+  :returns (clauses lit-list-listp "No two birds share this one hole.")
+  (b* (((when (zp tweety))
+        nil)
+       (tweety (- tweety 1)))
+    (append (no-others-in-hole tweety max-birds hole)
+            (no-two-in-hole-aux tweety max-birds hole))))
+
+(define no-two-in-hole ((max-birds natp "Fixed")
+                        (hole      natp "Fixed"))
+  :parents (pigeon-hole)
+  :returns (clauses lit-list-listp "No two birds share this hole.")
+  (no-two-in-hole-aux max-birds max-birds hole))
+
+(define no-two-in-any-hole ((max-birds natp "Fixed")
+                            (hole      natp "Counts down from max hole"))
+  :parents (pigeon-hole)
+  :returns (clauses lit-list-listp "No two birds share any hole.")
+  (b* (((when (zp hole))
+        nil)
+       (hole (- hole 1)))
+    (append (no-two-in-hole max-birds hole)
+            (no-two-in-any-hole max-birds hole))))
+
+(define pigeon-hole ((num-birds natp)
+                     (num-holes natp))
+  :parents (check-config)
+  :returns (clauses lit-list-listp)
+  (append (every-bird-in-hole num-birds num-holes)
+          (no-two-in-any-hole num-birds num-holes)))
+
 
 (define check-config ((config config-p))
   :returns nil
@@ -135,8 +228,39 @@ is producing the expected results.</p>"
                          (list ~lc ld)
                          (list ~ld)))
 
+
+     ;; I decided to add something a little harder because the above didn't
+     ;; seem sufficient to exercise unsat proof checking mechanisms.
+
+     (cw "*** Some basic pigeon-hole problems ***~%")
+
+     (assert-unsat (pigeon-hole 3 1)) ;; 3 pigeons don't fit in 1 hole
+     (assert-unsat (pigeon-hole 3 2)) ;; They don't fit into 2 holes
+     (assert-sat   (pigeon-hole 3 3)) ;; They do fit in 3 holes
+     (assert-sat   (pigeon-hole 3 4)) ;; They do fit in 4 holes
+
+     (assert-unsat (pigeon-hole 4 1)) ;; 4 pigeons don't fit in 1 hole
+     (assert-unsat (pigeon-hole 4 2)) ;; They don't fit into 2 holes
+     (assert-unsat (pigeon-hole 4 3)) ;; They don't fit into 3 holes
+     (assert-sat   (pigeon-hole 4 4)) ;; They do fit in 4 holes
+     (assert-sat   (pigeon-hole 4 5)) ;; They do fit in 4 holes
+
+     (assert-unsat (pigeon-hole 7 6)) ;; 7 pigeons don't fit in 6 holes
+     (assert-sat   (pigeon-hole 7 7)) ;; They do fit into 7 holes
+
      (cw "*** Good deal -- this SATLINK configuration seems OK. ***~%")
      )))
+
+
+
+
+#||
+
+; I no longer do this here, because
+;   (1) it lets us keep the documentation for this file in centaur/doc.lisp
+;       without requiring glucose, and
+;   (2) we now have the whole solvers/ directory, with scripts for many
+;       SAT solvers, and we probably want to check all of them.
 
 (value-triple
  (check-config
@@ -145,3 +269,4 @@ is producing the expected results.</p>"
                :mintime nil
                :remove-temps t)))
 
+||#

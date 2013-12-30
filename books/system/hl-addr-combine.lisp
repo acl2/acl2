@@ -163,7 +163,7 @@
           b)))
 
 (encapsulate
- ()
+  ()
 
 ; Proof that hl-nat-combine is one-to-one.  Suppose hl-nat-combine(a,b) =
 ; hl-nat-combine(c,d).  Recall that n(n+1)/2 = 1 + 2 + ... + n, so we know:
@@ -180,95 +180,100 @@
 ; a+b < c+d, clearly b < c+d, so b < M, so b < M + d.  Hence, b cannot be d,
 ; and this case cannot occur.  QED.
 
- (local (in-theory (enable hl-nat-combine)))
+  (local (in-theory (enable hl-nat-combine)))
 
- (local (defun sum-up-to (n) ; 1 + 2 + ... + n
-          (declare (xargs :guard (natp n)))
-          (if (zp n)
-              0
-            (+ n (sum-up-to (1- n))))))
+  (local (defun sum-up-to (n) ; 1 + 2 + ... + n
+           (declare (xargs :guard (natp n)))
+           (if (zp n)
+               0
+             (+ n (sum-up-to (1- n))))))
 
- (local (defthm sum-up-to-identity
-          (implies (natp n)
-                   (equal (/ (* n (+ 1 n)) 2)
-                          (sum-up-to n)))))
+  (local (defthm sum-up-to-identity
+           (implies (natp n)
+                    (equal (/ (* n (+ 1 n)) 2)
+                           (sum-up-to n)))))
 
- (local (defthm hl-nat-combine-redefinition
-          (implies (and (natp a)
-                        (natp b))
-                   (equal (hl-nat-combine a b)
-                          (+ (sum-up-to (+ a b)) b)))
-          :hints(("Goal" :use ((:instance sum-up-to-identity (n (+ a b))))))))
+  (local (defthm hl-nat-combine-redefinition
+           (implies (and (natp a)
+                         (natp b))
+                    (equal (hl-nat-combine a b)
+                           (+ (sum-up-to (+ a b)) b)))
+           :hints(("Goal" :use ((:instance sum-up-to-identity (n (+ a b))))))))
 
- (local (defun sum-interval (a b) ; a+1 + ... + b.
-          (declare (xargs :guard (and (natp a)
-                                      (natp b))
-                          :measure (nfix (- (nfix b) (nfix a)))))
-          (let ((a (nfix a))
-                (b (nfix b)))
-            (if (<= b a)
-                0
-              (+ b (sum-interval a (- b 1)))))))
+  (defthm natp-of-hl-nat-combine
+    (implies (and (natp a)
+                  (natp b))
+             (natp (hl-nat-combine a b))))
 
- (local (defthmd decompose-sum-up-to
-          (implies (and (natp a)
-                        (natp b)
-                        (< a b))
-                   (equal (sum-up-to b)
-                          (+ (sum-up-to a) (sum-interval a b))))))
+  (local (defun sum-interval (a b) ; a+1 + ... + b.
+           (declare (xargs :guard (and (natp a)
+                                       (natp b))
+                           :measure (nfix (- (nfix b) (nfix a)))))
+           (let ((a (nfix a))
+                 (b (nfix b)))
+             (if (<= b a)
+                 0
+               (+ b (sum-interval a (- b 1)))))))
 
- (local (defthm decompose-rhs
-          (implies (and (natp a)
-                        (natp b)
-                        (natp c)
-                        (natp d)
-                        (< (+ a b) (+ c d)))
-                   (equal (hl-nat-combine c d)
-                          (+ (sum-up-to (+ a b))
-                             (sum-interval (+ a b) (+ c d)) ; a+b+1 + ... + c+d
-                             d)))
-          :hints(("Goal" :use ((:instance decompose-sum-up-to
-                                          (b (+ c d))
-                                          (a (+ a b))))))))
+  (local (defthmd decompose-sum-up-to
+           (implies (and (natp a)
+                         (natp b)
+                         (< a b))
+                    (equal (sum-up-to b)
+                           (+ (sum-up-to a) (sum-interval a b))))))
 
- (local (defthm sum-interval-lower-bound
-          (implies (and (natp a)
-                        (natp b)
-                        (< a b))
-                   (< a (sum-interval a b)))
-          :rule-classes :linear))
+  (local (defthm decompose-rhs
+           (implies (and (natp a)
+                         (natp b)
+                         (natp c)
+                         (natp d)
+                         (< (+ a b) (+ c d)))
+                    (equal (hl-nat-combine c d)
+                           (+ (sum-up-to (+ a b))
+                              (sum-interval (+ a b) (+ c d)) ; a+b+1 + ... + c+d
+                              d)))
+           :hints(("Goal" :use ((:instance decompose-sum-up-to
+                                           (b (+ c d))
+                                           (a (+ a b))))))))
 
- (defthm hl-nat-combine-is-one-to-one
-   (implies (and (natp a)
-                 (natp b)
-                 (natp c)
-                 (natp d))
-            (equal (equal (hl-nat-combine a b)
-                          (hl-nat-combine c d))
-                   (and (equal a c)
-                        (equal b d))))
-   :hints(("Goal"
-           :cases ((equal (+ a b) (+ c d))
-                   (< (+ a b) (+ c d))
-                   (< (+ c d) (+ a b))))))
+  (local (defthm sum-interval-lower-bound
+           (implies (and (natp a)
+                         (natp b)
+                         (< a b))
+                    (< a (sum-interval a b)))
+           :rule-classes :linear))
 
- (defthm hl-nat-combine-monotonic-a
-   (implies (and (natp a)
-                 (natp a2)
-                 (natp b)
-                 (< a a2))
-            (< (hl-nat-combine a b)
-               (hl-nat-combine a2 b)))
-   :rule-classes :linear)
+  (defthm hl-nat-combine-is-one-to-one
+    (implies (and (natp a)
+                  (natp b)
+                  (natp c)
+                  (natp d))
+             (equal (equal (hl-nat-combine a b)
+                           (hl-nat-combine c d))
+                    (and (equal a c)
+                         (equal b d))))
+    :hints(("Goal"
+            :cases ((equal (+ a b) (+ c d))
+                    (< (+ a b) (+ c d))
+                    (< (+ c d) (+ a b))))))
 
- (defthm hl-nat-combine-monotonic-b
-   (implies (and (natp a)
-                 (natp b)
-                 (natp b2)
-                 (< b b2))
-            (< (hl-nat-combine a b)
-               (hl-nat-combine a b2)))
-   :rule-classes :linear))
+  (defthm hl-nat-combine-monotonic-a
+    (implies (and (natp a)
+                  (natp a2)
+                  (natp b)
+                  (< a a2))
+             (< (hl-nat-combine a b)
+                (hl-nat-combine a2 b)))
+    :rule-classes :linear)
+
+  (defthm hl-nat-combine-monotonic-b
+    (implies (and (natp a)
+                  (natp b)
+                  (natp b2)
+                  (< b b2))
+             (< (hl-nat-combine a b)
+                (hl-nat-combine a b2)))
+    :rule-classes :linear))
 
 
 

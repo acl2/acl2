@@ -67,7 +67,12 @@ if (!$ENV{"SATLINK_TRUST_SOLVER"})
 {
     @args = (@args,
 	     "-drup=" . $proof_file,
-	     "-no-enabled_cp3");
+	     "-no-enabled_cp3",
+	     # Special option to not print the drup format line, which
+	     # drup-trim doesn't support.  Thanks to Norbert Manthey for this
+	     # suggestion!
+	     "-no-proofFormat"
+	);
 }
 
 @args = (@args, @ARGV); # Tack on [OPTIONS] FILE

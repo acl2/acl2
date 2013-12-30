@@ -467,9 +467,13 @@ work.</p>")
                    ((< index (bits-length env$))
                     (set-bit index (if minus-p 0 1) env$))
                    (t
-                    (prog2$
-                     (raise "Assignment to out-of-bounds variable: ~x0" index)
-                     env$)))))
+                    ;; Historically we caused an error here.  However, we later
+                    ;; found that some SAT solvers (e.g., Riss3g) would produce
+                    ;; assignments to other variables, presumably variables that
+                    ;; they are inventing.  Well, this isn't really a problem,
+                    ;; and we're going to check the assignment anyway, so it
+                    ;; seems reasonable to tolerate this.
+                    env$))))
     (satlink-parse-variable-line x (+ n len) xl saw-zero-p env$)))
 
 (define satlink-handle-line
