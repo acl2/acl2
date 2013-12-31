@@ -8789,7 +8789,9 @@
                               (update-doc-database-lst names docs pairs
                                                        wrld9a))))
            (wrld11 (update-w big-mutrec
-                             (putprop-x-lst1 names 'congruences nil wrld10)))
+                             (putprop-x-lst1
+                              names 'pequivs nil
+                              (putprop-x-lst1 names 'congruences nil wrld10))))
            (wrld11a (update-w big-mutrec
                               (putprop-x-lst1 names 'coarsenings nil
                                               wrld11)))
@@ -9053,18 +9055,20 @@
      (putprop
       fn 'congruences nil
       (putprop
-       fn 'constrainedp t ; 'constraint-lst comes later
+       fn 'pequivs nil
        (putprop
-        fn 'hereditarily-constrained-fnnames (list fn)
+        fn 'constrainedp t ; 'constraint-lst comes later
         (putprop
-         fn 'symbol-class :COMMON-LISP-COMPLIANT
-         (putprop-unless
-          fn 'stobjs-out stobjs-out nil
+         fn 'hereditarily-constrained-fnnames (list fn)
+         (putprop
+          fn 'symbol-class :COMMON-LISP-COMPLIANT
           (putprop-unless
-           fn 'stobjs-in stobjs-in nil
-           (putprop
-            fn 'formals formals
-            (putprop fn 'guard
+           fn 'stobjs-out stobjs-out nil
+           (putprop-unless
+            fn 'stobjs-in stobjs-in nil
+            (putprop
+             fn 'formals formals
+             (putprop fn 'guard
 
 ; We are putting a guard of t on a signature function, even though a :guard
 ; other than t might have been specified for this function.  This may seem to
@@ -9075,8 +9079,8 @@
 ; function bogus-exported-compliants to check that we are not making that sort
 ; of mistake; see bogus-exported-compliants.
 
-                     *t*
-                     wrld))))))))))
+                      *t*
+                      wrld)))))))))))
   (& (er hard 'store-signature "Unrecognized signature!" insig))))
 
 (defun intro-udf-lst1 (insigs wrld)

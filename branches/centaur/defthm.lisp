@@ -978,7 +978,7 @@
 (defun extend-geneqv-alist (var geneqv alist wrld)
 
 ; For each pair (x . y) in alist, x is a variable and y is a geneqv.  The
-; result extends alist by assocating variable var with geneqv, thus extending
+; result extends alist by associating variable var with geneqv, thus extending
 ; the generated equivalence relation already associated with var in alist.
 
   (put-assoc-eq var
@@ -9204,32 +9204,169 @@
         (t (and (eq (car args1) (car args2))
                 (corresponding-args-eq-except (cdr args1) (cdr args2) xk yk)))))
 
+(mutual-recursion
+
+; The two functions in this nest accumulate into seen the variables occurring
+; free in the first argument, and accumulate into dups those occurring at least
+; twice in term (and, more precisely, those occurring at least once in the
+; first argument that already occur in seen).
+
+(defun duplicate-vars-1 (term seen dups)
+  (cond ((variablep term)
+         (cond ((member-eq term dups)
+                (mv seen dups))
+               ((member-eq term seen)
+                (mv seen (cons term dups)))
+               (t
+                (mv (cons term seen) dups))))
+        ((fquotep term)
+         (mv seen dups))
+        (t (duplicate-vars-1-lst (fargs term) seen dups))))
+
+(defun duplicate-vars-1-lst (lst seen dups)
+  (cond ((endp lst) (mv seen dups))
+        (t (mv-let (seen dups)
+                   (duplicate-vars-1 (car lst) seen dups)
+                   (duplicate-vars-1-lst (cdr lst) seen dups)))))
+)
+
+(defun duplicate-vars (term)
+  (mv-let (seen dups)
+          (duplicate-vars-1 term nil nil)
+          (declare (ignore seen))
+          dups))
+
+(mutual-recursion
+
+(defun replace-duplicate-vars-with-anonymous-var-1 (term dup-vars)
+  (cond ((variablep term) (cond ((member-eq term dup-vars)
+                                 term)
+                                (t *anonymous-var*)))
+        ((fquotep term) term)
+        (t (cons-term (ffn-symb term)
+                      (replace-duplicate-vars-with-anonymous-var-1-lst
+                       (fargs term) dup-vars)))))
+
+(defun replace-duplicate-vars-with-anonymous-var-1-lst (lst dup-vars)
+  (cond ((endp lst) nil)
+        (t (cons (replace-duplicate-vars-with-anonymous-var-1
+                  (car lst) dup-vars)
+                 (replace-duplicate-vars-with-anonymous-var-1-lst
+                  (cdr lst) dup-vars)))))
+)
+
+(defun replace-duplicate-vars-with-anonymous-var (term)
+  (replace-duplicate-vars-with-anonymous-var-1 term (duplicate-vars term)))
+
+(defun split-at-position (posn lst acc)
+
+; We pop posn-many elements off lst, accumulating them into acc and returning
+; the resulting extension of acc together with what remains of lst.
+
+  (cond ((eql posn 1)
+         (mv acc lst))
+        (t (split-at-position (1- posn) (cdr lst) (cons (car lst) acc)))))
+
+(defun make-pequiv-pattern (term addr)
+
+; Address is the address of a variable occurrence in term.  We return the
+; corresponding pattern.  See the Essay on Patterned Congruences and
+; Equivalences.
+
+  (cond ((endp addr)
+         (assert$ (variablep term)
+                  term))
+        (t (assert$ (and (nvariablep term)
+                         (not (fquotep term))
+                         (not (flambda-applicationp term)))
+                    (mv-let (pre-rev next/post)
+                            (split-at-position (car addr) (fargs term) nil)
+                            (make pequiv-pattern
+                                  :fn (ffn-symb term)
+                                  :posn (car addr)
+                                  :pre-rev pre-rev
+                                  :post (cdr next/post)
+                                  :next
+                                  (make-pequiv-pattern (car next/post)
+                                                       (cdr addr))))))))
+
+(defun make-pequiv (term addr nume equiv rune)
+  (make pequiv
+        :pattern (make-pequiv-pattern
+                  (replace-duplicate-vars-with-anonymous-var term)
+                  addr)
+        :unify-subst nil
+        :congruence-rule (make congruence-rule
+                               :rune rune
+                               :nume nume
+                               :equiv equiv)))
+
+(mutual-recursion
+
+(defun var-address (var term acc)
+
+; Var is a variable and term is a term.  This function returns nil if var does
+; not occur in term, returns t if var occurs more than once in term, and
+; otherwise returns the one-based address of the unique occurrence of var in
+; term (with the reverse of the accumulator appended to the front of that
+; address).  A return value of nil is thus ambiguous if term is a variable.
+
+  (declare (xargs :guard (and (symbolp var)
+                              (pseudo-termp term)
+                              (true-listp acc))))
+  (cond ((eq var term)
+         (reverse acc))
+        ((variablep term) nil)
+        ((fquotep term) nil)
+        (t (var-address-lst var (fargs term) 1 acc))))
+
+(defun var-address-lst (var lst position acc)
+  (declare (xargs :guard (and (symbolp var)
+                              (pseudo-term-listp lst)
+                              (natp position)
+                              (true-listp acc))))
+  (cond ((endp lst) nil)
+        (t (let ((addr1 (var-address var (car lst) (cons position acc)))
+                 (addr2 (var-address-lst var (cdr lst) (1+ position) acc)))
+             (cond ((or (and addr1 addr2)
+                        (eq addr1 t)
+                        (eq addr2 t))
+                    t)
+                   (t (or addr1 addr2)))))))
+)
+
 (defun interpret-term-as-congruence-rule (name term wrld)
 
-; This function recognizes terms that are :CONGRUENCE lemmas.  We
-; return two results.  The first is a flag that indicates whether or
-; not the term is a :CONGRUENCE lemma.  If the term is a congruence
-; lemma, the second result is a 4-tuple, (fn equiv1 k equiv2), which
-; means term states that ``equiv2 is preserved by equiv1 in the kth
-; argument of fn.''  If the term is not a :CONGRUENCE rule, the second
-; is a tilde-@ message explaining why.  See the essay on equivalence,
-; refinements, and congruence-based rewriting for details.
+; This function recognizes terms that are :CONGRUENCE lemmas.  We return two
+; results.  The first result is nil when the term is not a valid :CONGRUENCE
+; lemma.  If the term is a congruence lemma, the second result is a structure
+; (fn equiv1 addr equiv2 . extra).  If the term represents a classic congruence
+; rule, then extra is nil, addr is a positive integer k, and this structure
+; states that ``equiv2 is preserved by equiv1 in the kth argument of fn.''
+; Otherwise the term represents a patterned congruence rule, which is thus
+; either shallow or deep, indicated by whether the first result is :SHALLOW or
+; :DEEP, respectively.  In that case, extra is the lhs of the rule, and addr is
+; the address of the occurrence of the rule's variable in lhs.  Finally, if the
+; term is not a :CONGRUENCE rule, the second is a tilde-@ message explaining
+; why.  See the essay on equivalence, refinements, and congruence-based
+; rewriting for details.
 
-; :CONGRUENCE lemmas are of the form
+; Classic :CONGRUENCE lemmas are of the form
 
 ; (implies (equiv1 xk yk)
 ;          (equiv2 (fn x1 ... xk ... xn) (fn x1 ... yk ... xn)))
 
-; where fn is a function symbol, all the xi and yk are distinct
-; variables and equiv1 and the equiv2 are equivalence relations.
-; Such a lemma is read as ``equiv2 is preserved by equiv1 in the kth
-; argument of fn.''
+; where fn is a function symbol, all the xi and yk are distinct variables and
+; equiv1 and the equiv2 are equivalence relations.  Such a lemma is read as
+; ``equiv2 is preserved by equiv1 in the kth argument of fn.''  For a
+; discussion of patterned :CONGRUENCE lemmas, see the Essay on Patterned
+; Congruences and Equivalences.
 
-; We do not actually cause an error because this function is sometimes
-; called when STATE is unavailable.  We combine the recognition of the
-; :CONGRUENCE lemma with the construction of the 4-tuple describing it
-; because the two are so intermingled that it seemed dubious to
-; separate them into two functions.
+; We do not actually cause an error because this function is sometimes called
+; when STATE is unavailable.  We combine the recognition of the :CONGRUENCE
+; lemma with the construction of the structure describing it because the two
+; are so intermingled that it seemed dubious to separate them into two
+; functions.
 
   (let ((pairs (unprettyify (remove-guard-holders term)))
         (hyp-msg   "~x0 is an unacceptable :CONGRUENCE rule.  The ~
@@ -9238,20 +9375,22 @@
                     been proved to be an equivalence relation and x ~
                     and y are distinct variable symbols.  The ~
                     hypothesis of ~x0, ~x1, is not of this form.")
-
-        (concl-msg "~x0 is an unacceptable :CONGRUENCE rule.  The ~
-                    conclusion of an acceptable rule must be of the ~
-                    form (equiv (fn x1 ... xk ... xn) (fn x1 ... yk ~
-                    ... xn)) where equiv has been proved to be an ~
-                    equivalence relation, fn is a function symbol, ~
-                    the xi are distinct variable symbols, xk is ~x1, ~
-                    yk is ~x2, and ~x2 does not occur among the xi.  ~
-                    The conclusion of ~x0, ~x3, is not of this form."))
+        (concl-msg "~x0 is an unacceptable :CONGRUENCE rule because its ~
+                    conclusion does not have the expected form.  See :DOC ~
+                    congruence.")
+        (failure-msg "~x0 is an unacceptable :CONGRUENCE rule because ~@1.  ~
+                      See :DOC congruence."))
     (cond
      ((and (int= (length pairs) 1)
            (int= (length (caar pairs)) 1))
       (let ((hyp (caaar pairs))
-            (concl (cdar pairs)))
+            (concl
+
+; With the advent of patterned congruences, we put the conclusion into
+; quote-normal form, both to facilitate matching when the rule is subsequently
+; applied and to make the test robust below where we use subst-var-lst.
+
+             (sublis-var nil (cdar pairs))))
         (case-match
          hyp
          ((equiv1 xk yk)
@@ -9263,9 +9402,18 @@
              concl
              ((equiv2 (fn . args1) (fn . args2))
               (cond
-               ((and (equivalence-relationp equiv2 wrld)
-                     (symbolp fn)
-                     (all-variablep args1)
+               ((or (not (equivalence-relationp equiv2 wrld))
+                    (not (symbolp fn))
+                    (eq fn 'quote) ; rule out quotep for equiv2 args
+                    (eq fn
+
+; Calls of IF are handled specially in geneqv-lst, so that the first argument
+; is treated propositionally and the other arguments inherit the governing
+; congruence.
+
+                        'if))
+                (mv nil (msg concl-msg name)))
+               ((and (all-variablep args1)
                      (no-duplicatesp-eq args1)
                      (member-eq xk args1)
 
@@ -9319,21 +9467,132 @@
 
                      (not (member-eq yk args1))
                      (corresponding-args-eq-except args1 args2 xk yk))
-                (mv t (list fn equiv1
-                            (1+ (- (length args1) (length (member-eq xk args1))))
-                            equiv2)))
-               (t (mv nil (msg concl-msg name xk yk concl)))))
-             (& (mv nil (msg concl-msg name xk yk concl)))))
+                (mv :classic
+                    (list* fn
+                           equiv1
+                           (1+ (- (length args1)
+                                  (length (member-eq xk args1))))
+                           equiv2
+                           nil)))
+
+; Otherwise our check is for a patterned congruence rule.
+
+               ((or (ffnnamep-lst 'if args1)
+                    (ffnnamep-lst 'implies args1)
+                    (ffnnamep-lst 'equal args1)
+                    (lambda-subtermp-lst args1))
+
+; The restrictions above might be stronger than necessary.  But we have felt
+; free to rely on them while developing support for patterned congruence rules.
+; For example, rewrite-equal calls rewrite-args several times with arguments
+; deep-pequiv-lst and shallow-pequiv-lst equal to nil, and this is safe because
+; no pequivs encountered can involve the symbol EQUAL in the pattern.  Another
+; example is in the body of the definition of rewrite for the case (eq
+; (ffn-symb term) 'IMPLIES), where recursive calls of rewrite are passed the
+; value nil for pequiv-info.
+
+                (let ((bad-fns (append (and (ffnnamep-lst 'if args1)
+                                            '(if))
+                                       (and (ffnnamep-lst 'implies args1)
+                                            '(implies))
+                                       (and (ffnnamep-lst 'equal args1)
+                                            '(equal))))
+                      (bad-lambda-p (lambda-subtermp-lst args1)))
+                  (mv nil
+                      (msg failure-msg
+                           name
+                           (cond ((and bad-fns bad-lambda-p)
+                                  (msg "the function symbol~#0~[ ~&0~/s ~&0~] ~
+                                        and a lambda application occur in the ~
+                                        conclusion of the rule"
+                                       bad-fns))
+                                 (bad-fns
+                                  (msg "the function symbol~#0~[ ~&0 ~
+                                        occurs~/s ~&0 occur~] in the ~
+                                        conclusion of the rule"
+                                       bad-fns))
+                                 (t ; bad-lambda-p
+                                  (msg "a lambda application occurs in the ~
+                                        conclusion of the rule.")))))))
+               ((dumb-occur-var-lst *anonymous-var* term)
+
+; We introduce *anonymous-var*, which will be treated specially during
+; matching, when creating a pequiv-pattern from term; so it would be a mistake
+; to allow *anonymous-var* in term, which should not get that special
+; treatment.  See the Essay on Patterned Congruences and Equivalences.
+
+                (mv nil
+                    (msg failure-msg
+                         name
+                         (msg "the variable ~x0, which is used in a special ~
+                               way by the implementation, occurs in the rule"
+                              *anonymous-var*))))
+               (t
+                (let ((addr1 (var-address xk (fargn concl 1) nil))
+                      (addr2 (var-address yk (fargn concl 2) nil)))
+                  (cond
+                   ((or (null addr1) (null addr2))
+                    (mv nil
+                        (msg failure-msg
+                             name
+                             (cond
+                              ((null addr1)
+                               (msg "the variable ~x0 does not occur in ~x1"
+                                    xk (fargn concl 1)))
+                              (t
+                               (msg "the variable ~x0 does not occur in ~x1"
+                                    yk (fargn concl 2)))))))
+                   ((or (eq addr1 t) (eq addr2 t))
+                    (mv nil
+                        (msg failure-msg
+                             name
+                             (cond
+                              ((null addr1)
+                               (msg "the variable ~x0 occurs more than once ~
+                                     in ~x1"
+                                    xk (fargn concl 1)))
+                              (t
+                               (msg "the variable ~x0 occurs more than once ~
+                                     in ~x1"
+                                    yk (fargn concl 2)))))))
+                   ((not (equal addr1 addr2))
+                    (mv nil
+                        (msg failure-msg
+                             name
+                             (msg "the variables ~x0 and ~x1 occur at ~
+                                   different positions in the first and ~
+                                   second arguments, respectively, of ~x3 in ~
+                                   the conclusion of the proposed rule"
+                                  xk yk equiv2))))
+                   ((not (equal args2 (subst-var-lst yk xk args1)))
+
+; The test above is sufficient: at this point we know that xk occurs
+; exactly once in args1, so if the equality is true, then the left and right
+; sides of the concl are equal except at addr1 (= addr2).
+
+                    (mv nil
+                        (msg failure-msg
+                             name
+                             (msg "the second argument of its conclusion is ~
+                                   not equal to the result of substituting ~
+                                   ~x0 for ~x1 in its first argument"
+                                  yk xk))))
+                   (t
+                    (mv (if (member-eq xk args1)
+                            :shallow
+                          :deep)
+                        (list* fn equiv1 addr1 equiv2
+                               (fargn concl 1) ; (fn . args1)
+                               ))))))))
+             (& (mv nil (msg concl-msg name)))))
            (t (mv nil (msg hyp-msg name hyp)))))
          (& (mv nil (msg hyp-msg name hyp))))))
-     (t (mv nil (msg "~x0 is an unacceptable :CONGRUENCE rule.  When ~
-                      an acceptable :CONGRUENCE rule is ~
-                      propositionally flattened, only one conjunct is ~
-                      produced and it is of the form (implies (equiv1 ~
-                      xk yk) (equiv2 (fn ... xk ...) (fn ... yk ~
-                      ...))), where equiv1 and equiv2 are equivalence ~
-                      relations.  ~x0 is not of this form."
-                     name))))))
+     (t (mv nil (msg failure-msg
+                     name
+                     "the supplied formula does not generate a single ~
+                      conjunct of the form (implies (equiv1 xk yk) (equiv2 ~
+                      (fn ...) (fn ...))), where equiv1 and equiv2 are ~
+                      equivalence relations"))))))
 
 (defun some-congruence-rule-same (equiv rules)
 
@@ -9356,88 +9615,92 @@
 
 (defun chk-acceptable-congruence-rule (name term ctx wrld state)
 
-; We check that term is of the form
-; (implies (equiv1 xk yk)
-;          (equiv2 (fn ... xk ...) (fn ... yk ...)))
+; We check that term is a legal congruence rule.
 
-; We print a warning message if we already know that equiv2 is
-; preserved by equiv1 in the kth slot of fn.  We are not so much
-; watching out for the possibility that equiv1 literally occurs in the
-; list in the kth slot -- though that could happen and the old rule be
-; disabled so the user is unaware that it exists.  We are more
-; concerned about the possibility that equiv1 is some refinement of a
-; relation already in the kth slot.
+; If the rule is a classic (not patterned) congruence rule, then we print a
+; warning message if we already know that equiv2 is preserved by equiv1 in the
+; kth slot of fn.  We are not so much watching out for the possibility that
+; equiv1 literally occurs in the list in the kth slot -- though that could
+; happen and the old rule be disabled so the user is unaware that it exists.
+; We are more concerned about the possibility that equiv1 is some refinement of
+; a relation already in the kth slot.
 
   (mv-let
    (flg x)
    (interpret-term-as-congruence-rule name term wrld)
    (cond
     ((not flg) (er soft ctx "~@0" x))
-    (t (let ((fn (car x))
-             (equiv1 (cadr x))
-             (k (caddr x))
-             (equiv2 (cadddr x)))
-         (let ((temp (nth k
-                          (assoc-eq equiv2
-                                    (getprop fn 'congruences nil
-                                             'current-acl2-world wrld)))))
-           (cond
-            ((some-congruence-rule-same equiv1 temp)
-             (er soft ctx
-                 "The previously added :CONGRUENCE lemma, ~x0, ~
-                  establishes that ~x1 preserves ~x2 in the ~n3 slot ~
-                  of ~x4.  Thus, ~x5 is unnecessary."
-                 (base-symbol
-                  (access congruence-rule
-                          (some-congruence-rule-same equiv1 temp)
-                          :rune))
-                 equiv1 equiv2 (cons k 'th) fn name))
-            ((some-congruence-rule-has-refinement equiv1 temp wrld)
-             (er soft ctx
-                 "The previously added :CONGRUENCE lemma, ~x0, ~
-                  establishes that ~x1 preserves ~x2 in the ~n3 slot ~
-                  of ~x4.  But we know that ~x5 is a refinement of ~
-                  ~x1.  Thus, ~x6 is unnecessary."
-                 (base-symbol
+    (t
+     (let ((fn (car x))
+           (equiv1 (cadr x))    ; inner equiv
+           (addr (caddr x))     ; a number in the :classic case
+           (equiv2 (cadddr x))) ; outer equiv
+       (pprogn
+        (cond ((eq equiv1 'equal)
+               (warning$ ctx "Equiv"
+                         "The :CONGRUENCE rule ~x0 will have no effect on ~
+                          proofs because ACL2 already knows that ~x1 refines ~
+                          every equivalence relation."
+                         name 'equal))
+              ((and (eq equiv2 'iff)
+                    (mv-let
+                     (ts ttree)
+                     (type-set (cons-term fn (formals fn wrld))
+                               nil nil nil (ens state) wrld
+                               nil nil nil)
+                     (declare (ignore ttree))
+                     (ts-subsetp ts *ts-boolean*)))
+               (warning$ ctx "Equiv"
+                         "The :CONGRUENCE rule ~x0 can be strengthened by ~
+                          replacing the outer equivalence relation, ~x1, by ~
+                          ~x2.  See :DOC congruence, in particular (near the ~
+                          end) the Remark on Replacing IFF by EQUAL."
+                         name 'iff 'equal))
+              (t state))
+        (cond
+         ((eq flg :classic)
+          (let* ((k addr)
+                 (temp (nth k
+                            (assoc-eq equiv2
+                                      (getprop fn 'congruences nil
+                                               'current-acl2-world wrld)))))
+            (cond
+             ((some-congruence-rule-same equiv1 temp)
+              (er soft ctx
+                  "The previously added :CONGRUENCE lemma, ~x0, establishes ~
+                   that ~x1 preserves ~x2 in the ~n3 slot of ~x4.  Thus, ~x5 ~
+                   is unnecessary."
+                  (base-symbol
+                   (access congruence-rule
+                           (some-congruence-rule-same equiv1 temp)
+                           :rune))
+                  equiv1 equiv2 (cons k 'th) fn name))
+             ((some-congruence-rule-has-refinement equiv1 temp wrld)
+              (er soft ctx
+                  "The previously added :CONGRUENCE lemma, ~x0, establishes ~
+                   that ~x1 preserves ~x2 in the ~n3 slot of ~x4.  But we ~
+                   know that ~x5 is a refinement of ~x1.  Thus, ~x6 is ~
+                   unnecessary."
+                  (base-symbol
+                   (access congruence-rule
+                           (some-congruence-rule-has-refinement equiv1 temp
+                                                                wrld)
+                           :rune))
                   (access congruence-rule
                           (some-congruence-rule-has-refinement equiv1 temp wrld)
-                          :rune))
-                 (access congruence-rule
-                         (some-congruence-rule-has-refinement equiv1 temp wrld)
-                         :equiv)
-                 equiv2 (cons k 'th) fn equiv1 name))
-            (t (pprogn
-                (cond ((eq equiv1 'equal)
-                       (warning$ ctx "Equiv"
-                                 "The :CONGRUENCE rule ~x0 will have no effect ~
-                                  on proofs because ACL2 already knows that ~
-                                  ~x1 refines every equivalence relation, ~
-                                  including ~x2."
-                                 name 'equal equiv2))
-                      ((and (eq equiv2 'iff)
-                            (mv-let
-                             (ts ttree)
-                             (type-set (cons-term fn (formals fn wrld))
-                                       nil nil nil (ens state) wrld
-                                       nil nil nil)
-                             (declare (ignore ttree))
-                             (ts-subsetp ts *ts-boolean*)))
-                       (warning$ ctx "Equiv"
-                                 "The :CONGRUENCE rule ~x0 can be ~
-                                  strengthened by replacing the second ~
-                                  equivalence relation, ~x1, by ~x2.  See ~
-                                  :DOC congruence, in particular (near the ~
-                                  end) the Remark on Replacing IFF by EQUAL."
-                                 name 'iff 'equal))
-                      (t state))
-                (value nil))))))))))
-
-(defun putnth (val n lst)
-  (declare (xargs :guard (and (true-listp lst)
-                              (integerp n)
-                              (<= 0 n))))
-  (cond ((int= n 0) (cons val (cdr lst)))
-        (t (cons (car lst) (putnth val (1- n) (cdr lst))))))
+                          :equiv)
+                  equiv2 (cons k 'th) fn equiv1 name))
+             (t (value nil)))))
+         (t (pprogn
+             (observation ctx
+                          "The rule ~x0 is a ~s1 patterned congruence rule.  ~
+                           See :DOC patterned-congruence."
+                          name
+                          (if (eq flg :shallow)
+                              "shallow"
+                            (assert$ (eq flg :deep)
+                                     "deep")))
+             (value nil))))))))))
 
 (defun add-congruence-rule-to-congruence (rule k congruence)
 
@@ -9447,50 +9710,138 @@
 ; the geneqvi is a list of congruence-rule records.  We add rule to
 ; geneqvk.
 
-  (putnth (cons rule (nth k congruence)) k congruence))
+  (update-nth k (cons rule (nth k congruence)) congruence))
+
+(defun cons-assoc-eq-rec (key val alist)
+
+; This function is analogous to put-assoc-eq, but instead of replacing the
+; value of key in alist, that value -- which should be a true list -- is
+; extended by consing val onto the front of it.
+
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (true-list-listp alist)
+                              (assoc-eq key alist))))
+  (cond ((endp alist)
+         (er hard 'cons-assoc-eq-rec
+             "Implementation error: Reached the end of the alist for key ~x0!"
+             key))
+        ((eq key (caar alist))
+         (acons key
+                (cons val (cdar alist))
+                (cdr alist)))
+        (t (cons (car alist)
+                 (cons-assoc-eq-rec key val (cdr alist))))))
+
+(defun cons-assoc-eq (key val alist)
+
+; This function is analogous to put-assoc-eq, but instead of replacing the
+; value of key in alist, that value -- which should be a true list -- is
+; extended by consing val onto the front of the old value of key in alist.
+
+; As an optimization, we handle specially the case that key is not already a
+; key of alist.
+
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (true-list-listp alist))))
+  (cond ((endp alist) (list (list key val)))
+        ((assoc-eq key alist)
+         (cons-assoc-eq-rec key val alist))
+        (t (acons key (list val) alist))))
 
 (defun add-congruence-rule (rune nume term wrld)
-
-; Suppose term states that equiv2 is preserved by equiv1 in the kth
-; argument of fn.  Then we add a new :CONGRUENCE rule to the
-; 'congruences property of fn recording this fact.  The new rule is
-; added as the first rule tried for the kth argument of fn while
-; maintaining equiv2.  In addition, the entry for equiv2 is moved to
-; the front of the list of congruences for fn so that when we rewrite
-; fn maintaining some equiv3, where equiv2 is a refinement of equiv3,
-; we will try equiv2 first.  This idea of moving the equiv2 entry to
-; the front is not motivated by any example -- this code has not yet
-; seen action -- it is just the first-cut design.
-
-  (mv-let (flg x)
-          (interpret-term-as-congruence-rule (base-symbol rune) term wrld)
-          (declare (ignore flg))
-          (let ((fn (car x))
-                (equiv1 (cadr x))
-                (k (caddr x))
-                (equiv2 (cadddr x)))
-            (let* ((temp (assoc-eq equiv2
-                                   (getprop fn 'congruences nil
-                                            'current-acl2-world wrld)))
-                   (equiv2-congruence
-                    (or temp
-                        (cons equiv2 (make-list-ac (arity fn wrld) nil nil))))
-                   (rst (if temp
-                            (remove1-equal temp
-                                           (getprop fn 'congruences nil
-                                                    'current-acl2-world wrld))
-                            (getprop fn 'congruences nil 'current-acl2-world wrld))))
-              (putprop fn
-                       'congruences
-                       (cons (add-congruence-rule-to-congruence
-                              (make congruence-rule
-                                    :rune rune
-                                    :nume nume
-                                    :equiv equiv1)
-                              k
-                              equiv2-congruence)
-                             rst)
-                       wrld)))))
+  (mv-let
+   (flg x)
+   (interpret-term-as-congruence-rule (base-symbol rune) term wrld)
+   (let ((fn (car x))
+         (equiv1 (cadr x))   ; inner equiv
+         (addr (caddr x))    ; a number when flg is :classic
+         (equiv2 (cadddr x)) ; outer equiv
+         (lhs (cddddr x)))
+     (cond
+      ((eq flg :classic)
+       (let* ((k addr)
+              (temp (assoc-eq equiv2
+                              (getprop fn 'congruences nil
+                                       'current-acl2-world wrld)))
+              (equiv2-congruence
+               (or temp
+                   (cons equiv2 (make-list-ac (arity fn wrld) nil nil))))
+              (rst (if temp
+                       (remove1-equal temp
+                                      (getprop fn 'congruences nil
+                                               'current-acl2-world wrld))
+                     (getprop fn 'congruences nil 'current-acl2-world wrld))))
+         (putprop fn
+                  'congruences
+                  (cons (add-congruence-rule-to-congruence
+                         (make congruence-rule
+                               :rune rune
+                               :nume nume
+                               :equiv equiv1)
+                         k
+                         equiv2-congruence)
+                        rst)
+                  wrld)))
+      ((null flg)
+       (er hard! 'add-congruence-rule
+           "Implementation error: ~x0 returned failure when attempting to ~
+            apply ~x1.  Please contact the ACL2 implementors."
+           'interpret-term-as-congruence-rule
+           'add-congruence-rule))
+      (t
+       (assert$
+        (and (member-eq flg '(:deep :shallow))
+             (not (or (variablep lhs)
+                      (fquotep lhs)
+                      (lambda-applicationp lhs)))
+             (consp addr))
+        (let* ((pequiv (make-pequiv lhs addr nume equiv1 rune))
+               (sym (if (eq flg :shallow)
+                        fn
+                      (let ((arg ; (nth (1- (car addr)) (fargs lhs))
+                             (nth (car addr) lhs)))
+                        (assert$
+                         (not (or (variablep arg)
+                                  (fquotep arg)
+                                  (lambda-applicationp arg)))
+                         (ffn-symb arg)))))
+               (prop (getprop sym 'pequivs nil 'current-acl2-world wrld))
+               (new-prop
+                (let ((prop (or prop
+                                *empty-pequivs-property*)))
+                  (cond ((eq flg :shallow)
+                         (change pequivs-property prop
+                                 :shallow
+                                 (cons-assoc-eq equiv2
+                                                pequiv
+                                                (pequivs-property-field
+                                                 prop :shallow))))
+                        (t ; (eq flg :deep)
+                         (change pequivs-property prop
+                                 :deep
+                                 (cons-assoc-eq equiv2
+                                                pequiv
+                                                (pequivs-property-field
+                                                 prop :deep)))))))
+               (parent-prop
+                (and (eq flg :deep) ; optimization
+                     (getprop fn 'pequivs nil 'current-acl2-world wrld))))
+          (putprop sym 'pequivs new-prop
+                   (cond ((eq flg :shallow) wrld)
+                         ((null parent-prop) ; and flg is :deep
+                          (putprop fn 'pequivs
+                                   (make pequivs-property
+                                         :shallow nil
+                                         :deep nil
+                                         :deep-pequiv-p t)
+                                   wrld))
+                         ((pequivs-property-field parent-prop :deep-pequiv-p)
+                          wrld)
+                         (t
+                          (putprop fn 'pequivs
+                                   (change pequivs-property parent-prop
+                                           :deep-pequiv-p t)
+                                   wrld)))))))))))
 
 ;---------------------------------------------------------------------------
 ; Section:  :DEFINITION rules
@@ -11225,18 +11576,60 @@
                                    (cons (caar alist)
                                          (cons (cdar alist) ans))))))
 
-(defun loop-stopper-alist-p (x wrld)
+(defun eliminate-macro-aliases (lst macro-aliases wrld)
+
+; Returns (mv flg lst), where flg is nil if lst is unchanged, :error if there
+; is an error (some element is neither a function symbol nor a macro aliases)
+; -- in which case lst is a string giving a reason for the error after "but
+; <original_list> " -- else :changed if there is no error but at least one
+; macro alias was found.
+
+  (cond ((atom lst)
+         (cond ((null lst) (mv nil nil))
+               (t (mv :error "does not end in nil"))))
+        (t (mv-let (flg rst)
+                   (eliminate-macro-aliases (cdr lst) macro-aliases wrld)
+                   (cond ((eq flg :error)
+                          (mv :error rst))
+                         (t (let* ((next (car lst))
+                                   (fn (deref-macro-name next macro-aliases)))
+                              (cond ((not (and (symbolp fn)
+                                               (function-symbolp fn wrld)))
+                                     (mv :error
+                                         (msg "contains ~x0"
+                                              next)))
+                                    ((or (eq flg :changed)
+                                         (not (eq next fn)))
+                                     (mv :changed (cons fn rst)))
+                                    (t (mv nil lst))))))))))
+
+(defun fix-loop-stopper-alist (x macro-aliases wrld)
+
+; Returns (mv flg x').  If x is a valid loop-stopper alist then flg is flg0 and
+; x' is x.  If x is valid except that some symbols that are expected to be
+; function symbols are actually macro aliases, then flg is t and x' is the
+; result of replacing each such macro aliases by the corresponding function.
+; Otherwise flg is :error.
+
   (cond
-   ((consp x)
-    (and (true-listp (car x))
-         (<= 2 (length (car x)))
-         (legal-variablep (caar x))
-         (legal-variablep (cadar x))
-         (not (eq (caar x) (cadar x)))
-         (all-function-symbolps (cddar x) wrld)
-         (loop-stopper-alist-p (cdr x) wrld)))
-   (t
-    (eq x nil))))
+   ((null x) (mv nil nil))
+   ((atom x) (mv :error nil))
+   ((not (and (true-listp (car x))
+              (<= 2 (length (car x)))
+              (legal-variablep (caar x))
+              (legal-variablep (cadar x))
+              (not (eq (caar x) (cadar x)))))
+    (mv :error nil))
+   (t (mv-let (flg1 fns)
+              (eliminate-macro-aliases (cddar x) macro-aliases wrld)
+              (cond ((eq flg1 :error) (mv :error nil))
+                    (t (mv-let
+                        (flg2 rest)
+                        (fix-loop-stopper-alist (cdr x) macro-aliases wrld)
+                        (cond (flg1 (mv t (cons (list* (caar x) (cadar x) fns)
+                                                rest)))
+                              (flg2 (mv t (cons (car x) rest)))
+                              (t (mv nil x))))))))))
 
 (defun guess-controller-alist-for-definition-rule (names formals body ctx wrld
                                                          state)
@@ -11314,33 +11707,6 @@
          (backchain-limit-listp (cdr lst)))
         (t
          nil)))
-
-(defun eliminate-macro-aliases (lst macro-aliases wrld)
-
-; Returns (mv flg lst), where flg is nil if lst is unchanged, :error if there
-; is an error (some element is neither a function symbol nor a macro aliases)
-; -- in which case lst is a string giving a reason for the error after "but
-; <original_list> " -- else :changed if there is no error but at least one
-; macro alias was found.
-
-  (cond ((atom lst)
-         (cond ((null lst) (mv nil nil))
-               (t (mv :error "does not end in nil"))))
-        (t (mv-let (flg rst)
-                   (eliminate-macro-aliases (cdr lst) macro-aliases wrld)
-                   (cond ((eq flg :error)
-                          (mv :error rst))
-                         (t (let* ((next (car lst))
-                                   (fn (deref-macro-name next macro-aliases)))
-                              (cond ((not (and (symbolp fn)
-                                               (function-symbolp fn wrld)))
-                                     (mv :error
-                                         (msg "contains ~x0"
-                                              next)))
-                                    ((or (eq flg :changed)
-                                         (not (eq next fn)))
-                                     (mv :changed (cons fn rst)))
-                                    (t (mv nil lst))))))))))
 
 (defun translate-rule-class-alist (token alist seen corollary name x ctx ens
                                          wrld state)
@@ -11595,9 +11961,9 @@
                    (cond
                     ((assoc-eq :HINTS seen)
                      (er soft ctx
-                         "It is illegal to supply both :HINTS and :INSTRUCTIONS ~
-                       in a rule class.  Hence, ~x0 is illegal.  See :DOC ~
-                       rule-classes."
+                         "It is illegal to supply both :HINTS and ~
+                          :INSTRUCTIONS in a rule class.  Hence, ~x0 is ~
+                          illegal.  See :DOC rule-classes."
                          x))
                     (t
                      (er-let* ((instrs (if assumep
@@ -11614,28 +11980,28 @@
                     ((eq token :FORWARD-CHAINING)
                      (er soft ctx
                          "The :FORWARD-CHAINING rule class may specify ~
-                       :TRIGGER-TERMS but may not specify :TRIGGER-FNS.  ~
-                       Thus, ~x0 is illegal.  See :DOC forward-chaining and ~
-                       :DOC meta."
+                          :TRIGGER-TERMS but may not specify :TRIGGER-FNS.  ~
+                          Thus, ~x0 is illegal.  See :DOC forward-chaining ~
+                          and :DOC meta."
                          x))
                     ((not (eq token :META))
                      (er soft ctx
-                         ":TRIGGER-FNS can only be specified for :META rules.  ~
-                       Thus, ~x0 is illegal.  See :DOC ~@1."
+                         ":TRIGGER-FNS can only be specified for :META rules. ~
+                           Thus, ~x0 is illegal.  See :DOC ~@1."
                          x
                          (symbol-name token)))
                     ((atom (cadr alist))
                      (er soft ctx
-                         "The :TRIGGER-FNS component of a :META rule class must ~
-                       be a non-empty true-list of function symbols.  But ~x0 ~
-                       is empty.  See :DOC meta."
+                         "The :TRIGGER-FNS component of a :META rule class ~
+                          must be a non-empty true-list of function symbols.  ~
+                          But ~x0 is empty.  See :DOC meta."
                          (cadr alist)))
                     ((eq (car (cadr alist)) 'quote)
                      (er soft ctx
-                         "The :TRIGGER-FNS component of a :META rule class must ~
-                       be a non-empty true-list of function symbols.  You ~
-                       specified ~x0 for this component, but the list is not ~
-                       to be quoted.~@1  See :DOC meta."
+                         "The :TRIGGER-FNS component of a :META rule class ~
+                          must be a non-empty true-list of function symbols.  ~
+                          You specified ~x0 for this component, but the list ~
+                          is not to be quoted.~@1  See :DOC meta."
                          (cadr alist)
                          (cond ((and (consp (cdr (cadr alist)))
                                      (symbol-listp (cadr (cadr alist)))
@@ -11649,24 +12015,25 @@
                                                         wrld)
                                (cond ((eq flg :error)
                                       (er soft ctx
-                                          "The :TRIGGER-FNS component of a :META ~
-                                        rule class must be a non-empty ~
-                                        true-list of function symbols, but ~
-                                        ~x0 ~@1.  See :DOC meta."
+                                          "The :TRIGGER-FNS component of a ~
+                                           :META rule class must be a ~
+                                           non-empty true-list of function ~
+                                           symbols, but ~x0 ~@1.  See :DOC ~
+                                           meta."
                                           (cadr alist) lst))
                                      (t (value lst)))))))
                   (:TRIGGER-TERMS
                    (cond
                     ((eq token :META)
                      (er soft ctx
-                         "The :META rule class may specify :TRIGGER-FNS but may ~
-                       not specify :TRIGGER-TERMS.  Thus, ~x0 is illegal.  ~
-                       See :DOC meta and :DOC forward-chaining."
+                         "The :META rule class may specify :TRIGGER-FNS but ~
+                          may not specify :TRIGGER-TERMS.  Thus, ~x0 is ~
+                          illegal.  See :DOC meta and :DOC forward-chaining."
                          x))
                     ((not (true-listp (cadr alist)))
                      (er soft ctx
-                         "The :TRIGGER-TERMS must be a list true list.  Thus the ~
-                       rule class ~x0 proposed for ~x1 is illegal."
+                         "The :TRIGGER-TERMS must be a list true list.  Thus ~
+                          the rule class ~x0 proposed for ~x1 is illegal."
                          x name))
                     ((eq token :LINEAR)
 
@@ -11687,10 +12054,10 @@
                         ((null terms)
                          (er soft ctx
                              "For the :LINEAR rule ~x0 you specified an empty ~
-                           list of :TRIGGER-TERMS.  This is illegal.  If you ~
-                           wish to cause ACL2 to compute the trigger terms, ~
-                           omit the :TRIGGER-TERMS field entirely.  See :DOC ~
-                           linear."
+                              list of :TRIGGER-TERMS.  This is illegal.  If ~
+                              you wish to cause ACL2 to compute the trigger ~
+                              terms, omit the :TRIGGER-TERMS field entirely.  ~
+                              See :DOC linear."
                              name))
                         (t
                          (let ((terms (remove-guard-holders-lst terms)))
@@ -11706,25 +12073,25 @@
                                                      t t t ctx wrld state)))
                        (cond ((null terms)
                               (er soft ctx
-                                  ":FORWARD-CHAINING rules must have at least one ~
-                               trigger.  Your rule class, ~x0, specifies ~
-                               none.  See :DOC forward-chaining."
+                                  ":FORWARD-CHAINING rules must have at least ~
+                                   one trigger.  Your rule class, ~x0, ~
+                                   specifies none.  See :DOC forward-chaining."
                                   x))
                              (t (value (remove-guard-holders-lst terms))))))
                     (t
                      (er soft ctx
                          ":TRIGGER-TERMS can only be specified for ~
-                       :FORWARD-CHAINING and :LINEAR rules.  Thus, ~x0 is ~
-                       illegal.  See :DOC ~@1."
+                          :FORWARD-CHAINING and :LINEAR rules.  Thus, ~x0 is ~
+                          illegal.  See :DOC ~@1."
                          x
                          (symbol-name token)))))
                   (:TYPED-TERM
                    (cond
                     ((not (eq token :TYPE-PRESCRIPTION))
                      (er soft ctx
-                         "Only :TYPE-PRESCRIPTION rule classes are permitted to ~
-                       have a :TYPED-TERM component.  Thus, ~x0 is illegal.  ~
-                       See :DOC ~@1."
+                         "Only :TYPE-PRESCRIPTION rule classes are permitted ~
+                          to have a :TYPED-TERM component.  Thus, ~x0 is ~
+                          illegal.  See :DOC ~@1."
                          x
                          (symbol-name token)))
                     (t (er-let* ((term (translate (cadr alist)
@@ -11759,27 +12126,28 @@
                                                   :TYPE-PRESCRIPTION)))
                        (er soft ctx
                            "The rule-class ~@0 is not permitted to have a ~
-                         :BACKCHAIN-LIMIT-LST component.  Hence, ~x1 is ~
-                         illegal.  See :DOC ~@0."
+                            :BACKCHAIN-LIMIT-LST component.  Hence, ~x1 is ~
+                            illegal.  See :DOC ~@0."
                            (symbol-name token) x))
                       ((not (equal (length (remove-duplicates-equal
                                             (strip-cars hyps-concl-pairs)))
                                    1))
                        (er soft ctx
                            "We do not allow you to specify the ~
-                         :BACKCHAIN-LIMIT-LST when more than one rule is ~
-                         produced from the corollary and at least two such ~
-                         rules have different hypothesis lists.  You should ~
-                         split the corollary of ~x0 into parts and specify a ~
-                         limit for each."
+                            :BACKCHAIN-LIMIT-LST when more than one rule is ~
+                            produced from the corollary and at least two such ~
+                            rules have different hypothesis lists.  You ~
+                            should split the corollary of ~x0 into parts and ~
+                            specify a limit for each."
                            x))
                       (t
                        (let ((hyps (car (car hyps-concl-pairs))))
                          (cond
                           ((null hyps)
                            (er soft ctx
-                               "There are no hypotheses, so :BACKCHAIN-LIMIT-LST ~
-                             makes no sense.  See :DOC RULE-CLASSES."))
+                               "There are no hypotheses, so ~
+                                :BACKCHAIN-LIMIT-LST makes no sense.  See ~
+                                :DOC RULE-CLASSES."))
                           ((null (cadr alist))
                            (value nil))
                           ((and (integerp (cadr alist))
@@ -11793,41 +12161,42 @@
                           ((eq token :META)
                            (er soft ctx
                                "The legal values of :BACKCHAIN-LIMIT-LST for ~
-                             rules of class :META are nil or a non-negative ~
-                             integer.  See :DOC RULE-CLASSES."))
+                                rules of class :META are nil or a ~
+                                non-negative integer.  See :DOC RULE-CLASSES."))
                           ((and (backchain-limit-listp (cadr alist))
                                 (eql (length (cadr alist)) (length hyps)))
                            (value (cadr alist)))
                           (t
                            (er soft ctx
                                "The legal values of :BACKCHAIN-LIMIT-LST are ~
-                             nil, a non-negative integer, or a list of these ~
-                             of the same length as the flattened hypotheses.  ~
-                             In this case the list of flattened hypotheses, ~
-                             of length ~x0, is:~%  ~x1.~%See :DOC ~
-                             RULE-CLASSES."
+                                nil, a non-negative integer, or a list of ~
+                                these of the same length as the flattened ~
+                                hypotheses.  In this case the list of ~
+                                flattened hypotheses, of length ~x0, is:~%  ~
+                                ~x1.~%See :DOC RULE-CLASSES."
                                (length hyps) hyps))))))))
                   (:MATCH-FREE
                    (cond
                     ((not (member-eq token '(:REWRITE :LINEAR :FORWARD-CHAINING)))
                      (er soft ctx
                          "Only :REWRITE, :FORWARD-CHAINING, and :LINEAR rule ~
-                       classes are permitted to have a :MATCH-FREE component.  ~
-                       Thus, ~x0 is illegal.  See :DOC free-variables."
+                          classes are permitted to have a :MATCH-FREE ~
+                          component.  Thus, ~x0 is illegal.  See :DOC ~
+                          free-variables."
                          x))
                     ((not (member-eq (cadr alist) '(:ALL :ONCE)))
                      (er soft ctx
                          "The legal values of :MATCH-FREE are :ALL and :ONCE. ~
-                       Thus, ~x0 is illegal.  See :DOC free-variables."
+                          Thus, ~x0 is illegal.  See :DOC free-variables."
                          x))
                     (t (value (cadr alist)))))
                   (:CLIQUE
                    (cond
                     ((not (eq token :DEFINITION))
                      (er soft ctx
-                         "Only :DEFINITION rule classes are permitted to have a ~
-                       :CLIQUE component.  Thus, ~x0 is illegal.  See :DOC ~
-                       ~@1."
+                         "Only :DEFINITION rule classes are permitted to have ~
+                          a :CLIQUE component.  Thus, ~x0 is illegal.  See ~
+                          :DOC ~@1."
                          x
                          (symbol-name token)))
                     (t (er-progn
@@ -11848,37 +12217,40 @@
                                                             (macro-aliases wrld)
                                                             wrld)
                                    (er soft ctx
-                                       "The :CLIQUE of a :DEFINITION must be a ~
-                                     truelist of function symbols (containing ~
-                                     no duplications) or else a single ~
-                                     function symbol.  ~x0 is neither.~@1  ~
-                                     See :DOC definition."
+                                       "The :CLIQUE of a :DEFINITION must be ~
+                                        a truelist of function symbols ~
+                                        (containing no duplications) or else ~
+                                        a single function symbol.  ~x0 is ~
+                                        neither.~@1  See :DOC definition."
                                        (cadr alist)
                                        (cond ((eq flg :error) "")
-                                             (t (msg "  Note that it is illegal ~
-                                                   to use ~v0 here, because ~
-                                                   we require function ~
-                                                   symbols, not merely macros ~
-                                                   that are aliases for ~
-                                                   function symbols (see :DOC ~
-                                                   macro-aliases-table)."
+                                             (t (msg "  Note that it is ~
+                                                      illegal to use ~v0 ~
+                                                      here, because we ~
+                                                      require function ~
+                                                      symbols, not merely ~
+                                                      macros that are aliases ~
+                                                      for function symbols ~
+                                                      (see :DOC ~
+                                                      macro-aliases-table)."
                                                      (set-difference-equal
                                                       (cadr alist)
                                                       lst)))))))
                                  ((and (ffnnamep fn body)
                                        (not (member-eq fn clique)))
                                   (er soft ctx
-                                      "The :CLIQUE of a :DEFINITION must contain ~
-                                    the defined function, ~x0, if the body ~
-                                    calls the function.  See :DOC definition."
+                                      "The :CLIQUE of a :DEFINITION must ~
+                                       contain the defined function, ~x0, if ~
+                                       the body calls the function.  See :DOC ~
+                                       definition."
                                       fn))
                                  ((and clique
                                        (not (member-eq fn clique)))
                                   (er soft ctx
                                       "The :CLIQUE of a :DEFINITION, when ~
-                                    non-nil, must contain the function ~
-                                    defined.  ~x0 does not contain ~x1.  See ~
-                                    :DOC definition."
+                                       non-nil, must contain the function ~
+                                       defined.  ~x0 does not contain ~x1.  ~
+                                       See :DOC definition."
                                       (cadr alist)
                                       fn))
                                  (t (value clique)))))))))
@@ -11886,9 +12258,9 @@
                    (cond
                     ((not (eq token :DEFINITION))
                      (er soft ctx
-                         "Only :DEFINITION rule classes are permitted to have a ~
-                       :CONTROLLER-ALIST component.  Thus, ~x0 is illegal.  ~
-                       See :DOC ~@1."
+                         "Only :DEFINITION rule classes are permitted to have ~
+                          a :CONTROLLER-ALIST component.  Thus, ~x0 is ~
+                          illegal.  See :DOC ~@1."
                          x
                          (symbol-name token)))
                     (t
@@ -11902,17 +12274,17 @@
                    (cond
                     ((not (eq token :DEFINITION))
                      (er soft ctx
-                         "Only :DEFINITION rule classes are permitted to have an ~
-                       :INSTALL-BODY component.  Thus, ~x0 is illegal.  ~
-                       See :DOC ~@1."
+                         "Only :DEFINITION rule classes are permitted to have ~
+                          an :INSTALL-BODY component.  Thus, ~x0 is illegal.  ~
+                          See :DOC ~@1."
                          x
                          (symbol-name token)))
                     ((not (member-eq (cadr alist)
                                      '(t nil :NORMALIZE)))
                      (er soft ctx
                          "The :INSTALL-BODY component of a  :DEFINITION rule ~
-                       class must have one of the values ~v0.  Thus, ~x1 is ~
-                       illegal.  See :DOC ~@2."
+                          class must have one of the values ~v0.  Thus, ~x1 ~
+                          is illegal.  See :DOC ~@2."
                          '(t nil :NORMALIZE)
                          (cadr alist)
                          (symbol-name token)))
@@ -11923,46 +12295,56 @@
                     ((not (eq token :REWRITE))
                      (er soft ctx
                          "Only :REWRITE rule classes are permitted to have a ~
-                       :LOOP-STOPPER component.  Thus, ~x0 is illegal.  See ~
-                       :DOC rule-classes."
+                          :LOOP-STOPPER component.  Thus, ~x0 is illegal.  ~
+                          See :DOC rule-classes."
                          x))
-                    ((not (loop-stopper-alist-p (cadr alist) wrld))
-                     (er soft ctx
-                         "The :LOOP-STOPPER for a rule class must be a list ~
-                       whose elements have the form (variable1 variable2 . ~
-                       fns), where variable1 and variable2 are distinct ~
-                       variables and fns is a list of function symbols, but ~
-                       ~x0 does not have this form.  Thus, ~x1 is illegal.  ~
-                       See :DOC rule-classes."
-                         (cadr alist)
-                         x))
-                    ((not (subsetp-eq (union-eq (strip-cars (cadr alist))
-                                                (strip-cadrs (cadr alist)))
-                                      (all-vars corollary)))
-                     (let ((bad-vars (set-difference-eq
-                                      (union-eq (strip-cars (cadr alist))
-                                                (strip-cadrs (cadr alist)))
-                                      (all-vars corollary))))
-                       (er soft ctx
-                           "The variables from elements (variable1 variable2 . ~
-                         fns) of a :LOOP-STOPPER specified for a rule class ~
-                         must all appear in the :COROLLARY theorem for that ~
-                         rule class.  However, the ~#0~[variables ~&1 ~
-                         do~/variable ~&1 does~] not appear in ~p2.  Thus, ~
-                         ~x3 is illegal.  See :DOC rule-classes."
-                           (if (cdr bad-vars) 0 1)
-                           bad-vars
-                           (untranslate corollary t wrld)
-                           x)))
-                    (t
-                     (value (cadr alist)))))
+                    (t (mv-let
+                        (flg loop-stopper-alist)
+                        (fix-loop-stopper-alist
+                         (cadr alist) (macro-aliases wrld) wrld)
+                        (cond
+                         ((eq flg :error)
+                          (er soft ctx
+                              "The :LOOP-STOPPER for a rule class must be a ~
+                               list whose elements have the form (variable1 ~
+                               variable2 . fns), where variable1 and ~
+                               variable2 are distinct variables and fns is a ~
+                               list of function symbols (or macro-aliases for ~
+                               function symbols), but ~x0 does not have this ~
+                               form.  Thus, ~x1 is illegal.  See :DOC ~
+                               rule-classes."
+                              (cadr alist)
+                              x))
+                         ((not (subsetp-eq
+                                (union-eq (strip-cars loop-stopper-alist)
+                                          (strip-cadrs loop-stopper-alist))
+                                (all-vars corollary)))
+                          (let ((bad-vars
+                                 (set-difference-eq
+                                  (union-eq (strip-cars loop-stopper-alist)
+                                            (strip-cadrs loop-stopper-alist))
+                                  (all-vars corollary))))
+                            (er soft ctx
+                                "The variables from elements (variable1 ~
+                                 variable2 . fns) of a :LOOP-STOPPER ~
+                                 specified for a rule class must all appear ~
+                                 in the :COROLLARY theorem for that rule ~
+                                 class.  However, the ~#0~[variables ~&1 ~
+                                 do~/variable ~&1 does~] not appear in ~p2.  ~
+                                 Thus, ~x3 is illegal.  See :DOC rule-classes."
+                                (if (cdr bad-vars) 0 1)
+                                bad-vars
+                                (untranslate corollary t wrld)
+                                x)))
+                         (t
+                          (value loop-stopper-alist)))))))
                   (:PATTERN
                    (cond
                     ((not (eq token :INDUCTION))
                      (er soft ctx
-                         "Only :INDUCTION rule classes are permitted to have a ~
-                       :PATTERN component.  Thus, ~x0 is illegal.  See :DOC ~
-                       ~@1."
+                         "Only :INDUCTION rule classes are permitted to have ~
+                          a :PATTERN component.  Thus, ~x0 is illegal.  See ~
+                          :DOC ~@1."
                          x
                          (symbol-name token)))
                     (t (er-let*
@@ -11973,19 +12355,19 @@
                                (fquotep term)
                                (flambdap (ffn-symb term)))
                            (er soft ctx
-                               "The :PATTERN term of an :INDUCTION rule class may ~
-                            not be a variable symbol, constant, or the ~
-                            application of a lambda expression.  Thus ~x0 is ~
-                            illegal.  See :DOC induction."
+                               "The :PATTERN term of an :INDUCTION rule class ~
+                                may not be a variable symbol, constant, or ~
+                                the application of a lambda expression.  Thus ~
+                                ~x0 is illegal.  See :DOC induction."
                                x))
                           (t (value term)))))))
                   (:CONDITION
                    (cond
                     ((not (eq token :INDUCTION))
                      (er soft ctx
-                         "Only :INDUCTION rule classes are permitted to have a ~
-                       :CONDITION component.  Thus, ~x0 is illegal.  See :DOC ~
-                       ~@1."
+                         "Only :INDUCTION rule classes are permitted to have ~
+                          a :CONDITION component.  Thus, ~x0 is illegal.  See ~
+                          :DOC ~@1."
                          x
                          (symbol-name token)))
                     (t (er-let*
@@ -11996,9 +12378,9 @@
                    (cond
                     ((not (eq token :INDUCTION))
                      (er soft ctx
-                         "Only :INDUCTION rule classes are permitted to have a ~
-                       :SCHEME component.  Thus, ~x0 is illegal.  See :DOC ~
-                       ~@1."
+                         "Only :INDUCTION rule classes are permitted to have ~
+                          a :SCHEME component.  Thus, ~x0 is illegal.  See ~
+                          :DOC ~@1."
                          x
                          (symbol-name token)))
                     (t (er-let*
@@ -12009,10 +12391,10 @@
                                (fquotep term)
                                (flambdap (ffn-symb term)))
                            (er soft ctx
-                               "The :SCHEME term of an :INDUCTION rule class may ~
-                            not be a variable symbol, constant, or the ~
-                            application of a lambda expression.  Thus ~x0 is ~
-                            illegal.  See :DOC induction."
+                               "The :SCHEME term of an :INDUCTION rule class ~
+                                may not be a variable symbol, constant, or ~
+                                the application of a lambda expression.  Thus ~
+                                ~x0 is illegal.  See :DOC induction."
                                x))
                           ((not (or (getprop (ffn-symb term) 'induction-machine
                                              nil 'current-acl2-world wrld)
@@ -12020,35 +12402,35 @@
                                              nil 'current-acl2-world wrld)))
                            (er soft ctx
                                "The function symbol of the :SCHEME term of an ~
-                            :INDUCTION rule class must, at least sometimes, ~
-                            suggest an induction and ~x0 does not.  See :DOC ~
-                            induction."
+                                :INDUCTION rule class must, at least ~
+                                sometimes, suggest an induction and ~x0 does ~
+                                not.  See :DOC induction."
                                (ffn-symb term)))
                           (t (value term)))))))
                   (:TYPE-SET
                    (cond
                     ((not (eq token :TYPE-SET-INVERTER))
                      (er soft ctx
-                         "Only :TYPE-SET-INVERTER rule classes are permitted to ~
-                       have a :TYPE-SET component.  Thus ~x0 is illegal.  See ~
-                       :DOC ntype-set-inverter."
+                         "Only :TYPE-SET-INVERTER rule classes are permitted ~
+                          to have a :TYPE-SET component.  Thus ~x0 is ~
+                          illegal.  See :DOC type-set-inverter."
                          x))
                     ((not (and (integerp (cadr alist))
                                (<= *min-type-set* (cadr alist))
                                (<= (cadr alist) *max-type-set*)))
                      (er soft ctx
-                         "The :TYPE-SET of a :TYPE-SET-INVERTER rule must be a ~
-                       type-set, i.e., an integer between ~x0 and ~x1, ~
-                       inclusive.  ~x2 is not a type-set.  See :DOC type-set ~
-                       and :DOC type-set-inverter."
+                         "The :TYPE-SET of a :TYPE-SET-INVERTER rule must be ~
+                          a type-set, i.e., an integer between ~x0 and ~x1, ~
+                          inclusive.  ~x2 is not a type-set.  See :DOC ~
+                          type-set and :DOC type-set-inverter."
                          *min-type-set*
                          *max-type-set*
                          (cadr alist)))
                     (t (value (cadr alist)))))
                   (otherwise
                    (er soft ctx
-                       "The key ~x0 is unrecognized as a rule class component.  ~
-                     See :DOC rule-classes."
+                       "The key ~x0 is unrecognized as a rule class ~
+                        component.  See :DOC rule-classes."
                        (car alist))))))
         (translate-rule-class-alist token (cddr alist)
                                     (cons (cons (car alist) val) seen)
@@ -13042,6 +13424,13 @@
   (declare (ignore val numes ens wrld))
   nil)
 
+(defun info-for-pequivs (val numes ens wrld)
+
+; This seems complicated so we'll punt for now.
+
+  (declare (ignore val numes ens wrld))
+  nil)
+
 (defun info-for-coarsenings (val numes ens wrld)
 
 ; It is not obvious how to determine which coarsenings are really new, so we
@@ -13206,6 +13595,8 @@
        (info-for-eliminate-destructors-rule val numes ens wrld))
       (congruences
        (info-for-congruences val numes ens wrld))
+      (pequivs
+       (info-for-pequivs val numes ens wrld))
       (coarsenings
        (info-for-coarsenings val numes ens wrld))
       (forward-chaining-rules
@@ -13467,7 +13858,7 @@
 (defun access-x-rule-rune (x rule)
 
 ; Given a rule object, rule, of record type x, we return the :rune of rule.
-; This is thus ``(access x rule :rune).''
+; This is thus typically ``(access x rule :rune).''
 
 ; Note: We include with every case the rule-class tokens that create this rule
 ; so that we can search for any such tokens and find this function when adding
@@ -13483,6 +13874,10 @@
         (congruence-rule                             ;;; :congruence
                                                      ;;; :equivalence
          (access congruence-rule rule :rune))
+        (pequiv                                      ;;; :congruence
+         (access congruence-rule
+                 (access pequiv rule :congruence-rule)
+                 :rune))
         (rewrite-rule                                ;;; :rewrite
                                                      ;;; :meta
                                                      ;;; :definition
@@ -13545,6 +13940,20 @@
        (cdr congruences) rune
        (collect-congruence-rules-of-rune-in-geneqv-lst (cdr (car congruences))
                                                        rune ans)))))
+
+(defun collect-pequivs-of-rune (alist rune ans)
+
+; Alist has the form of the :deep or :shallow field of the 'pequivs property of
+; a function symbol.  Thus, each element of alist is of the form (equiv pequiv1
+; ... pequivn), where each pequivi is a pequiv record.  We scan this alist and
+; collect every pequiv record in it whose :rune is rune.
+
+  (cond
+   ((null alist) ans)
+   (t (collect-pequivs-of-rune
+       (cdr alist)
+       rune
+       (collect-x-rules-of-rune 'pequiv rune (cdr (car alist)) ans)))))
 
 (defun find-rules-of-rune2 (rune sym key val ans)
 
@@ -13611,6 +14020,16 @@
              (if (member-eq token '(:congruence :equivalence))
                  (collect-congruence-rules-of-rune val rune ans)
                  ans))
+            (pequivs
+             (if (eq token :congruence)
+                 (collect-pequivs-of-rune
+                  (access pequivs-property val :deep)
+                  rune
+                  (collect-pequivs-of-rune
+                   (access pequivs-property val :shallow)
+                   rune
+                   ans))
+               ans))
             (coarsenings
 
 ; :Refinement rules add to the 'coarsenings property.  If equiv1 is a
@@ -15287,7 +15706,7 @@
             `(implies (,equiv1 ,(nth k fn-args)
                                ,arg-k-equiv)
                       (,equiv2 ,fn-args
-                               ,(putnth arg-k-equiv k fn-args))))
+                               ,(update-nth k arg-k-equiv fn-args))))
          :rule-classes
          ,(extend-rule-classes :CONGRUENCE rule-classes)
          ,@(if instructions (list :instructions instructions) nil)

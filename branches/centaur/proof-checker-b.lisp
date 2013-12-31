@@ -2905,27 +2905,47 @@
 ;; subterm.  The following function actually returns a list of congruence
 ;; rules.
 
-(defun geneqv-at-subterm (term addr geneqv ens wrld)
-  ;; The property we want is that if one substitutes an equivalent
-  ;; subterm of TERM at the given address (equivalent modulo the
-  ;; generated equivalence relation returned by this function, that
-  ;; is), then the resulting term is equivalent modulo geneqv to the
-  ;; original TERM.  We assume that address is a valid address for
-  ;; term.  (*** This should really be a guard.)  As usual, we may
-  ;; return NIL for 'equal.
-  (if (null addr)
-      geneqv
-    (geneqv-at-subterm
-     (nth (1- (car addr)) (fargs term))
-     (cdr addr)
-     (nth (1- (car addr))
-          ;; ***** seems inefficient to do all the computing just below
-          (geneqv-lst (ffn-symb term) geneqv ens wrld))
-     ens
-     wrld)))
+(defun geneqv-at-subterm (term addr geneqv pequiv-info ens wrld)
+
+; Address is a valid address for the term, term.  This function returns a
+; geneqv g such that if one substitutes a subterm u of term at the given
+; address such that (g term u), resulting in a term term', then (geneqv term
+; term').  As usual, we may return nil for to represent the geneqv for equal.
+
+  (cond ((null addr)
+         geneqv)
+        (t
+         (let ((child-geneqv0
+                (nth (1- (car addr))
+
+; It seems inefficient to compute the entire geneqv-lst, but we prefer not to
+; write a separate function to obtain just the nth element of that list.
+
+                     (geneqv-lst (ffn-symb term) geneqv ens wrld))))
+           (mv-let
+            (deep-pequiv-lst shallow-pequiv-lst)
+            (pequivs-for-rewrite-args (ffn-symb term) geneqv pequiv-info wrld
+                                      ens)
+            (mv-let
+             (pre-rev cur/post)
+             (split-at-position (car addr) (fargs term) nil)
+             (mv-let
+              (child-geneqv child-pequiv-info)
+              (geneqv-and-pequiv-info-for-rewrite
+               (ffn-symb term)
+               (car addr)
+               pre-rev cur/post
+               nil ; alist for cur/post (and, pre-rev in this case)
+               geneqv child-geneqv0
+               deep-pequiv-lst shallow-pequiv-lst
+               wrld)
+              (geneqv-at-subterm (car cur/post)
+                                 (cdr addr)
+                                 child-geneqv child-pequiv-info
+                                 ens wrld))))))))
 
 (defun geneqv-at-subterm-top (term addr ens wrld)
-  (geneqv-at-subterm term addr *geneqv-iff* ens wrld))
+  (geneqv-at-subterm term addr *geneqv-iff* nil ens wrld))
 
 ;; In the following we want to know if every occurrence of old in term
 ;; is at a position at which substitution by something EQUIV to old
@@ -4260,8 +4280,8 @@
                                (getprop 'equal 'coarsenings nil
                                         'current-acl2-world w)))
                (pprogn (print-no-change
-                        "The ``equivalence relation'' that you supplied, ~p0, is
-                      not known to ACL2 as an equivalence relation."
+                        "The ``equivalence relation'' that you supplied, ~p0, ~
+                         is not known to ACL2 as an equivalence relation."
                         (list (cons #\0 equiv)))
                        (value :fail)))
               ((null args)
@@ -5426,6 +5446,7 @@
                       (let ((gstack nil))
                         (rewrite-entry
                          (rewrite nterm nil 'proof-checker)
+                         :pequiv-info nil
                          :rdepth (rewrite-stack-limit wrld)
                          :step-limit step-limit
                          :obj '?

@@ -119,7 +119,7 @@
 
 (mutual-recursion
 
-(defun expand-abbreviations-with-lemma (term geneqv
+(defun expand-abbreviations-with-lemma (term geneqv pequiv-info
                                              fns-to-be-ignored-by-rewrite
                                              rdepth step-limit ens wrld state
                                              ttree)
@@ -140,6 +140,7 @@
         (access rewrite-rule lemma :rhs)
         unify-subst
         geneqv
+        pequiv-info
         fns-to-be-ignored-by-rewrite
         (adjust-rdepth rdepth) step-limit ens wrld state
         (push-lemma cr-rune
@@ -147,18 +148,18 @@
                                 ttree)))))
      (t (mv step-limit term ttree)))))
 
-(defun expand-abbreviations (term alist geneqv fns-to-be-ignored-by-rewrite
+(defun expand-abbreviations (term alist geneqv pequiv-info
+                                  fns-to-be-ignored-by-rewrite
                                   rdepth step-limit ens wrld state ttree)
 
-; This function is essentially like rewrite but is more restrictive in
-; its use of rules.  We rewrite term/alist maintaining geneqv and
-; avoiding the expansion or application of lemmas to terms whose fns
-; are in fns-to-be-ignored-by-rewrite.  We return a new term and a
-; ttree (accumulated onto our argument) describing the rewrite.  We
-; only apply "abbreviations" which means we expand lambda applications
-; and non-rec fns provided they do not duplicate arguments or
-; introduce IFs, etc. (see abbreviationp), and we apply those
-; unconditional :REWRITE rules with the same property.
+; This function is essentially like rewrite but is more restrictive in its use
+; of rules.  We rewrite term/alist maintaining geneqv and pequiv-info, avoiding
+; the expansion or application of lemmas to terms whose fns are in
+; fns-to-be-ignored-by-rewrite.  We return a new term and a ttree (accumulated
+; onto our argument) describing the rewrite.  We only apply "abbreviations"
+; which means we expand lambda applications and non-rec fns provided they do
+; not duplicate arguments or introduce IFs, etc. (see abbreviationp), and we
+; apply those unconditional :REWRITE rules with the same property.
 
 ; It used to be written:
 
@@ -179,12 +180,11 @@
 ;  below for the reason we expand other
 ;  *expandable-boot-strap-non-rec-fns*.
 
-; This is no longer true.  We now expand the IMPLIES from the original
-; theorem in preprocess-clause before expand-abbreviations is called,
-; and do not expand any others here.  These changes in the handling of
-; IMPLIES (as well as several others) are caused by the introduction
-; of assume-true-false-if.  See the mini-essay at
-; assume-true-false-if.
+; This is no longer true.  We now expand the IMPLIES from the original theorem
+; in preprocess-clause before expand-abbreviations is called, and do not expand
+; any others here.  These changes in the handling of IMPLIES (as well as
+; several others) are caused by the introduction of assume-true-false-if.  See
+; the mini-essay at assume-true-false-if.
 
   (cond
    ((zero-depthp rdepth)
@@ -213,7 +213,8 @@
 
              (not (equal (fargn term 1) ''progn)))
         (expand-abbreviations (fargn term 3)
-                              alist geneqv fns-to-be-ignored-by-rewrite rdepth
+                              alist geneqv pequiv-info
+                              fns-to-be-ignored-by-rewrite rdepth
                               step-limit ens wrld state
                               (push-lemma
                                (fn-rune-nume 'return-last nil nil wrld)
@@ -223,44 +224,49 @@
             (sublis-var alist term)
             ttree))
        (t
-        (sl-let
-         (expanded-args ttree)
-         (expand-abbreviations-lst (fargs term)
-                                   alist
-                                   (geneqv-lst (ffn-symb term) geneqv ens wrld)
-                                   fns-to-be-ignored-by-rewrite
-                                   (adjust-rdepth rdepth) step-limit
-                                   ens wrld state ttree)
-         (let* ((fn (ffn-symb term))
-                (term (cons-term fn expanded-args)))
+        (mv-let
+         (deep-pequiv-lst shallow-pequiv-lst)
+         (pequivs-for-rewrite-args (ffn-symb term) geneqv pequiv-info wrld ens)
+         (sl-let
+          (expanded-args ttree)
+          (expand-abbreviations-lst (fargs term)
+                                    alist
+                                    1 nil deep-pequiv-lst shallow-pequiv-lst
+                                    geneqv (ffn-symb term)
+                                    (geneqv-lst (ffn-symb term) geneqv ens wrld)
+                                    fns-to-be-ignored-by-rewrite
+                                    (adjust-rdepth rdepth) step-limit
+                                    ens wrld state ttree)
+          (let* ((fn (ffn-symb term))
+                 (term (cons-term fn expanded-args)))
 
 ; If term does not collapse to a constant, fn is still its ffn-symb.
 
-           (cond
-            ((fquotep term)
+            (cond
+             ((fquotep term)
 
 ; Term collapsed to a constant.  But it wasn't a constant before, and so
 ; it collapsed because cons-term executed fn on constants.  So we record
 ; a use of the executable counterpart.
 
-             (mv step-limit
-                 term
-                 (push-lemma (fn-rune-nume fn nil t wrld) ttree)))
-            ((member-equal fn fns-to-be-ignored-by-rewrite)
-             (mv step-limit (cons-term fn expanded-args) ttree))
-            ((and (all-quoteps expanded-args)
-                  (enabled-xfnp fn ens wrld)
-                  (or (flambda-applicationp term)
-                      (not (getprop fn 'constrainedp nil
-                                    'current-acl2-world wrld))))
-             (cond ((flambda-applicationp term)
-                    (expand-abbreviations
-                     (lambda-body fn)
-                     (pairlis$ (lambda-formals fn) expanded-args)
-                     geneqv
-                     fns-to-be-ignored-by-rewrite
-                     (adjust-rdepth rdepth) step-limit ens wrld state ttree))
-                   ((programp fn wrld)
+              (mv step-limit
+                  term
+                  (push-lemma (fn-rune-nume fn nil t wrld) ttree)))
+             ((member-equal fn fns-to-be-ignored-by-rewrite)
+              (mv step-limit (cons-term fn expanded-args) ttree))
+             ((and (all-quoteps expanded-args)
+                   (enabled-xfnp fn ens wrld)
+                   (or (flambda-applicationp term)
+                       (not (getprop fn 'constrainedp nil
+                                     'current-acl2-world wrld))))
+              (cond ((flambda-applicationp term)
+                     (expand-abbreviations
+                      (lambda-body fn)
+                      (pairlis$ (lambda-formals fn) expanded-args)
+                      geneqv pequiv-info
+                      fns-to-be-ignored-by-rewrite
+                      (adjust-rdepth rdepth) step-limit ens wrld state ttree))
+                    ((programp fn wrld)
 
 ; Why is the above test here?  We do not allow :program mode fns in theorems.
 ; However, the prover can be called during definitions, and in particular we
@@ -275,47 +281,48 @@
 ;             (symbol-btreep (cdddr x)))
 ;      t))
 
-                    (mv step-limit (cons-term fn expanded-args) ttree))
-                   (t
-                    (mv-let
-                     (erp val latches)
-                     (pstk
-                      (ev-fncall fn (strip-cadrs expanded-args) state nil t
-                                 nil))
-                     (declare (ignore latches))
-                     (cond
-                      (erp
+                     (mv step-limit (cons-term fn expanded-args) ttree))
+                    (t
+                     (mv-let
+                      (erp val latches)
+                      (pstk
+                       (ev-fncall fn (strip-cadrs expanded-args) state nil t
+                                  nil))
+                      (declare (ignore latches))
+                      (cond
+                       (erp
 
 ; We following a suggestion from Matt Wilding and attempt to simplify the term
 ; before applying HIDE.
 
-                       (let ((new-term1 (cons-term fn expanded-args)))
-                         (sl-let (new-term2 ttree)
-                                 (expand-abbreviations-with-lemma
-                                  new-term1 geneqv fns-to-be-ignored-by-rewrite
-                                  rdepth step-limit ens wrld state ttree)
-                                 (cond
-                                  ((equal new-term2 new-term1)
-                                   (mv step-limit
-                                       (mcons-term* 'hide new-term1)
-                                       (push-lemma (fn-rune-nume 'hide nil nil wrld)
-                                                   ttree)))
-                                  (t (mv step-limit new-term2 ttree))))))
-                      (t (mv step-limit
-                             (kwote val)
-                             (push-lemma (fn-rune-nume fn nil t wrld)
-                                         ttree))))))))
-            ((flambdap fn)
-             (cond ((abbreviationp nil
-                                   (lambda-formals fn)
-                                   (lambda-body fn))
-                    (expand-abbreviations
-                     (lambda-body fn)
-                     (pairlis$ (lambda-formals fn) expanded-args)
-                     geneqv
-                     fns-to-be-ignored-by-rewrite
-                     (adjust-rdepth rdepth) step-limit ens wrld state ttree))
-                   (t
+                        (let ((new-term1 (cons-term fn expanded-args)))
+                          (sl-let (new-term2 ttree)
+                                  (expand-abbreviations-with-lemma
+                                   new-term1 geneqv pequiv-info
+                                   fns-to-be-ignored-by-rewrite
+                                   rdepth step-limit ens wrld state ttree)
+                                  (cond
+                                   ((equal new-term2 new-term1)
+                                    (mv step-limit
+                                        (mcons-term* 'hide new-term1)
+                                        (push-lemma (fn-rune-nume 'hide nil nil wrld)
+                                                    ttree)))
+                                   (t (mv step-limit new-term2 ttree))))))
+                       (t (mv step-limit
+                              (kwote val)
+                              (push-lemma (fn-rune-nume fn nil t wrld)
+                                          ttree))))))))
+             ((flambdap fn)
+              (cond ((abbreviationp nil
+                                    (lambda-formals fn)
+                                    (lambda-body fn))
+                     (expand-abbreviations
+                      (lambda-body fn)
+                      (pairlis$ (lambda-formals fn) expanded-args)
+                      geneqv pequiv-info
+                      fns-to-be-ignored-by-rewrite
+                      (adjust-rdepth rdepth) step-limit ens wrld state ttree))
+                    (t
 
 ; Once upon a time (well into v1-9) we just returned (mv term ttree)
 ; here.  But then Jun Sawada pointed out some problems with his proofs
@@ -333,14 +340,15 @@
 ; not imagine that this change will adversely affect proofs, but if
 ; so, well, the old code is shown on the first line of this comment.
 
-                    (sl-let (body ttree)
-                            (expand-abbreviations
-                             (lambda-body fn)
-                             nil
-                             geneqv
-                             fns-to-be-ignored-by-rewrite
-                             (adjust-rdepth rdepth) step-limit ens wrld state
-                             ttree)
+                     (sl-let (body ttree)
+                             (expand-abbreviations
+                              (lambda-body fn)
+                              nil
+                              geneqv
+                              nil ; pequiv-info
+                              fns-to-be-ignored-by-rewrite
+                              (adjust-rdepth rdepth) step-limit ens wrld state
+                              ttree)
 
 ; Rockwell Addition:
 
@@ -349,25 +357,25 @@
 ; is better to eagerly expand this lambda if the new body would make
 ; it an abbreviation.
 
-                            (cond
-                             ((abbreviationp nil
-                                             (lambda-formals fn)
-                                             body)
-                              (expand-abbreviations
-                               body
-                               (pairlis$ (lambda-formals fn) expanded-args)
-                               geneqv
-                               fns-to-be-ignored-by-rewrite
-                               (adjust-rdepth rdepth) step-limit ens wrld state
-                               ttree))
-                             (t
-                              (mv step-limit
-                                  (mcons-term (list 'lambda (lambda-formals fn)
-                                                    body)
-                                              expanded-args)
-                                  ttree)))))))
-            ((member-eq fn '(iff synp mv-list return-last wormhole-eval force
-                                 case-split double-rewrite))
+                             (cond
+                              ((abbreviationp nil
+                                              (lambda-formals fn)
+                                              body)
+                               (expand-abbreviations
+                                body
+                                (pairlis$ (lambda-formals fn) expanded-args)
+                                geneqv pequiv-info
+                                fns-to-be-ignored-by-rewrite
+                                (adjust-rdepth rdepth) step-limit ens wrld state
+                                ttree))
+                              (t
+                               (mv step-limit
+                                   (mcons-term (list 'lambda (lambda-formals fn)
+                                                     body)
+                                               expanded-args)
+                                   ttree)))))))
+             ((member-eq fn '(iff synp mv-list return-last wormhole-eval force
+                                  case-split double-rewrite))
 
 ; The list above is an arbitrary subset of *expandable-boot-strap-non-rec-fns*.
 ; Once upon a time we used the entire list here, but Bishop Brock complained
@@ -391,42 +399,42 @@
 ; idea, but we still keep IMPLIES in the list for tautologyp because
 ; if we can decide it's a tautology by expanding, all the better.
 
-             (with-accumulated-persistence
-              (fn-rune-nume fn nil nil wrld)
-              ((the (signed-byte 30) step-limit) term ttree)
-              t
-              (expand-abbreviations (body fn t wrld)
-                                    (pairlis$ (formals fn wrld) expanded-args)
-                                    geneqv
-                                    fns-to-be-ignored-by-rewrite
-                                    (adjust-rdepth rdepth)
-                                    step-limit ens wrld state
-                                    (push-lemma (fn-rune-nume fn nil nil wrld)
-                                                ttree))))
+              (with-accumulated-persistence
+               (fn-rune-nume fn nil nil wrld)
+               ((the (signed-byte 30) step-limit) term ttree)
+               t
+               (expand-abbreviations (body fn t wrld)
+                                     (pairlis$ (formals fn wrld) expanded-args)
+                                     geneqv pequiv-info
+                                     fns-to-be-ignored-by-rewrite
+                                     (adjust-rdepth rdepth)
+                                     step-limit ens wrld state
+                                     (push-lemma (fn-rune-nume fn nil nil wrld)
+                                                 ttree))))
 
 ; Rockwell Addition:  We are expanding abbreviations.  This is new treatment
 ; of IF, which didn't used to receive any special notice.
 
-            ((eq fn 'if)
+             ((eq fn 'if)
 
 ; There are no abbreviation (or rewrite) rules hung on IF, so coming out
 ; here is ok.
 
-             (let ((a (car expanded-args))
-                   (b (cadr expanded-args))
-                   (c (caddr expanded-args)))
-               (cond
-                ((equal b c) (mv step-limit b ttree))
-                ((quotep a)
-                 (mv step-limit
-                     (if (eq (cadr a) nil) c b)
-                     ttree))
-                ((and (equal geneqv *geneqv-iff*)
-                      (equal b *t*)
-                      (or (equal c *nil*)
-                          (and (nvariablep c)
-                               (not (fquotep c))
-                               (eq (ffn-symb c) 'HARD-ERROR))))
+              (let ((a (car expanded-args))
+                    (b (cadr expanded-args))
+                    (c (caddr expanded-args)))
+                (cond
+                 ((equal b c) (mv step-limit b ttree))
+                 ((quotep a)
+                  (mv step-limit
+                      (if (eq (cadr a) nil) c b)
+                      ttree))
+                 ((and (equal geneqv *geneqv-iff*)
+                       (equal b *t*)
+                       (or (equal c *nil*)
+                           (and (nvariablep c)
+                                (not (fquotep c))
+                                (eq (ffn-symb c) 'HARD-ERROR))))
 
 ; Some users keep HARD-ERROR disabled so that they can figure out
 ; which guard proof case they are in.  HARD-ERROR is identically nil
@@ -435,38 +443,52 @@
 ; even put it in the ttree, because for all the user knows this is
 ; primitive type inference.
 
-                 (mv step-limit a ttree))
-                (t (mv step-limit
-                       (mcons-term 'if expanded-args)
-                       ttree)))))
+                  (mv step-limit a ttree))
+                 (t (mv step-limit
+                        (mcons-term 'if expanded-args)
+                        ttree)))))
 
 ; Rockwell Addition: New treatment of equal.
 
-            ((and (eq fn 'equal)
-                  (equal (car expanded-args) (cadr expanded-args)))
-             (mv step-limit *t* ttree))
-            (t
-             (expand-abbreviations-with-lemma
-              term geneqv fns-to-be-ignored-by-rewrite rdepth step-limit ens
-              wrld state ttree)))))))))))
+             ((and (eq fn 'equal)
+                   (equal (car expanded-args) (cadr expanded-args)))
+              (mv step-limit *t* ttree))
+             (t
+              (expand-abbreviations-with-lemma
+               term geneqv pequiv-info
+               fns-to-be-ignored-by-rewrite rdepth step-limit ens
+               wrld state ttree))))))))))))
 
-(defun expand-abbreviations-lst (lst alist geneqv-lst
+(defun expand-abbreviations-lst (lst alist bkptr rewritten-args-rev
+                                     deep-pequiv-lst shallow-pequiv-lst
+                                     parent-geneqv parent-fn geneqv-lst
                                      fns-to-be-ignored-by-rewrite rdepth
                                      step-limit ens wrld state ttree)
   (cond
-   ((null lst) (mv step-limit nil ttree))
-   (t (sl-let (term1 new-ttree)
-              (expand-abbreviations (car lst) alist
-                                    (car geneqv-lst)
-                                    fns-to-be-ignored-by-rewrite
-                                    rdepth step-limit ens wrld state ttree)
-              (sl-let (terms1 new-ttree)
-                      (expand-abbreviations-lst (cdr lst) alist
-                                                (cdr geneqv-lst)
-                                                fns-to-be-ignored-by-rewrite
-                                                rdepth step-limit ens wrld
-                                                state new-ttree)
-                      (mv step-limit (cons term1 terms1) new-ttree))))))
+   ((null lst) (mv step-limit (reverse rewritten-args-rev) ttree))
+   (t (mv-let
+       (child-geneqv child-pequiv-info)
+       (geneqv-and-pequiv-info-for-rewrite
+        parent-fn bkptr rewritten-args-rev lst alist
+        parent-geneqv
+        (car geneqv-lst)
+        deep-pequiv-lst
+        shallow-pequiv-lst
+        wrld)
+       (sl-let (term1 new-ttree)
+               (expand-abbreviations (car lst) alist
+                                     child-geneqv child-pequiv-info
+                                     fns-to-be-ignored-by-rewrite
+                                     rdepth step-limit ens wrld state ttree)
+               (expand-abbreviations-lst (cdr lst) alist
+                                         (1+ bkptr)
+                                         (cons term1 rewritten-args-rev)
+                                         deep-pequiv-lst shallow-pequiv-lst
+                                         parent-geneqv parent-fn
+                                         (cdr geneqv-lst)
+                                         fns-to-be-ignored-by-rewrite
+                                         rdepth step-limit ens wrld
+                                         state new-ttree))))))
 
 )
 
@@ -557,6 +579,7 @@
                               (lambda-body (ffn-symb term)))
                   nil
                   *geneqv-iff*
+                  nil
                   fns-to-be-ignored-by-rewrite
                   (rewrite-stack-limit wrld) step-limit ens wrld state ttree)
                  (mv step-limit t term ttree)))
@@ -584,6 +607,7 @@
                             (access def-body def-body :concl))
                 nil
                 *geneqv-iff*
+                nil
                 fns-to-be-ignored-by-rewrite
                 (rewrite-stack-limit wrld)
                 step-limit ens wrld state
@@ -610,6 +634,7 @@
                                  (access rewrite-rule lemma :rhs))
                      nil
                      *geneqv-iff*
+                     nil
                      fns-to-be-ignored-by-rewrite
                      (rewrite-stack-limit wrld)
                      step-limit ens wrld state
@@ -1050,7 +1075,7 @@
        (let ((term (disjoin (expand-any-final-implies cl wrld))))
          (sl-let (term ttree)
                  (expand-abbreviations term nil
-                                       *geneqv-iff*
+                                       *geneqv-iff* nil
                                        (access rewrite-constant
                                                rcnst
                                                :fns-to-be-ignored-by-rewrite)
