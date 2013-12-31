@@ -240,7 +240,7 @@ add theorems into the same section.</p>")
 
        (long (or long
                  (and parents
-                      (str::cat "<p>This is an ordinary @(see defmapappend).</p>"
+                      (str::cat "<p>This is an ordinary @(see std::defmapappend).</p>"
                                 "@(def " (symbol-name name) ")"))))
 
        (def

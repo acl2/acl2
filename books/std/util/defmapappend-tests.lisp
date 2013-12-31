@@ -22,7 +22,7 @@
 (include-book "defmapappend")
 (include-book "misc/assert" :dir :system)
 
-(deflist nat-listp (x)
+(deflist my-nat-listp (x)
   (natp x)
   :elementp-of-nil nil)
 
@@ -32,18 +32,18 @@
       nil
     (cons n (nats (- n 1)))))
 
-(defthm nat-listp-of-nats
-  (nat-listp (nats n))
+(defthm my-nat-listp-of-nats
+  (my-nat-listp (nats n))
   :hints(("Goal" :in-theory (enable nats))))
 
 (defprojection map-nats (x)
   (nats x)
-  :guard (nat-listp x)
+  :guard (my-nat-listp x)
   :optimize nil)
 
 (defmapappend append-nats (x)
   (nats x)
-  :guard (nat-listp x))
+  :guard (my-nat-listp x))
 
 (value-triple (map-nats (nats 5)))
 (value-triple (append-nats (nats 5)))
@@ -52,7 +52,7 @@
 
 (defmapappend m0 (x)
   (nats x)
-  :guard (nat-listp x))
+  :guard (my-nat-listp x))
 
 (assert! (let ((topic (xdoc::find-topic 'm0 (xdoc::get-xdoc-table (w state)))))
            (and topic
@@ -63,7 +63,7 @@
 
 (defmapappend m1 (x)
   (nats x)
-  :guard (nat-listp x))
+  :guard (my-nat-listp x))
 
 (assert! (let ((topic (xdoc::find-topic 'm1 (xdoc::get-xdoc-table (w state)))))
            (and topic
@@ -72,7 +72,7 @@
 
 (defmapappend m2 (x)
   (nats x)
-  :guard (nat-listp x)
+  :guard (my-nat-listp x)
   :parents (bar))
 
 (assert! (let ((topic (xdoc::find-topic 'm2 (xdoc::get-xdoc-table (w state)))))
@@ -83,7 +83,7 @@
 
 (defmapappend m3 (x)
   (nats x)
-  :guard (nat-listp x)
+  :guard (my-nat-listp x)
   :parents nil)
 
 (assert! (let ((topic (xdoc::find-topic 'm3 (xdoc::get-xdoc-table (w state)))))

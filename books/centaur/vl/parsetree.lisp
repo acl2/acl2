@@ -1176,10 +1176,6 @@ the result of splitting an array such as @('buf foo [13:0] (o, i);') by @(see
 replicate).  This property is also given to module instances as described
 below.</dd>
 
-<dd>@('VL_GATE_REDUX'), with no value, is added when, e.g., @('pullup') and
-@('pulldown') gates are converted into @('buf') gates, during @(see gateredux).
-It is also given to certain module instances as described below.</dd>
-
 <dd>@('VL_GATESPLIT') is added when certain gates are simplified, e.g., when we
 split @('not(o1,o2,...,on, i);') into @('not(o1,i);'), @('not(o2,i)'), ...,
 @('not(on, i);') in @(see gatesplit).  <b>BOZO</b> make this annotation more

@@ -581,8 +581,8 @@ deprecate classic manuals in the future.</p>
 
 <p>However, you may find that even after setting @(':import nil'), some
 extraneous documentation is still being included!  For instance, you may find
-documentation from libraries like @(see str) and @(see oslib) in your
-output.</p>
+documentation from libraries like @(see str::str) and @(see oslib::oslib) in
+your output.</p>
 
 <p>This is because @('xdoc/save') includes some supporting books that are,
 themselves, documented.  If you really want precise control over what goes into
@@ -1223,6 +1223,81 @@ table) event.  It's good practice to only <b>locally</b> set the default
 parents&mdash;otherwise the default parents can \"leak\" from your book and
 lead you to inadvertently set the parents of other, unrelated topics.</p>")
 
+
+(defxdoc xdoc-extend
+  :short "Extend an existing XDOC topic with additional content."
+  :long "<p>Basic example:</p>
+
+@({
+     (defxdoc foo
+       :short \"Example of xdoc-extend.\"
+       :long \"<p>Foo is very important.</p>\")
+
+     (xdoc::xdoc-extend foo
+       \"<p>Note: you can't use Foo with Bar.</p>\")
+})
+
+<p>is roughly equivalent to just writing:</p>
+
+@({
+     (defxdoc foo
+       :short \"Example of xdoc-extend.\"
+       :long \"<p>Foo is very important.</p>
+               <p>Note: you can't use Foo with Bar.</p>\")
+})
+
+<p>@(call xdoc-extend) requires that @('name') is an existing XDOC topic, e.g.,
+it may have been introduced with @(see defxdoc), @(see defsection), or similar.
+We just look up that topic and extend its @(':long') string by appending the
+new @('long') fragment to it.</p>
+
+<p>This mechanism is barbaric and fragile.  For instance:</p>
+
+<ul>
+
+<li>You can't put the new content anywhere except at the end of the current
+@('long') string.  (But see @(see xdoc-prepend) if you want to extend the
+beginning of a topic).</li>
+
+<li>If you extend a topic several times in different books, the resulting text
+may differ depending on the particular @(see include-book) order that happens
+to be used.</li>
+
+</ul>
+
+<p>Nevertheless, judiciously used, it can be a useful tool for connecting
+together related content that must be kept in separate files, e.g., for
+bootstrapping or other reasons.</p>")
+
+
+(defxdoc xdoc-prepend
+  :short "Extend an existing XDOC topic with additional content, at the front."
+
+  :long "<p>@(call xdoc-prepend) is very much like @(see xdoc-extend), except
+that it extends the @(':long') string for @('name') at the front, instead of at
+the back.</p>
+
+<p>Basic example:</p>
+
+@({
+     (defxdoc foo
+       :short \"Example of xdoc-prepend.\"
+       :long \"<p>Foo is very important.</p>\")
+
+     (xdoc::xdoc-prepend foo
+       \"<p>Never use Foo, use Bar instead!</p>\")
+})
+
+<p>is roughly equivalent to just writing:</p>
+
+@({
+     (defxdoc foo
+       :short \"Example of xdoc-prepend.\"
+       :long \"<p>Never use Foo, use Bar instead!</p>
+               <p>Foo is very important.</p>\")
+})
+
+<p>See @(see xdoc-extend) for related commentary.</p>")
 
 #||
 

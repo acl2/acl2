@@ -44,8 +44,8 @@ satisfying assignment in terms of the Hons AIG's variables.</p>
 e.g., it produces output that @(see satlink) does not understand.</p>
 
 <p>The underlying mechanism takes advantage of @(see aignet) to carry out the
-<see topic='@(url aignet-cnf)'>cnf conversion</see> and @(see satlink) to call
-the SAT solver.  As a picture:</p>
+<see topic='@(url aignet::aignet-cnf)'>cnf conversion</see> and @(see satlink)
+to call the SAT solver.  As a picture:</p>
 
 @({
            convert                export              dimacs

@@ -558,7 +558,11 @@ off looking at the source code.</p>")
            :hints (("goal" :use lemma2
                     :in-theory (disable lemma2)))))
 
-  (defthmd |(integerp (expt x n))|
+  (defthmd integerp-of-expt
+    ;; Previously this was named |(integerp (expt x n))|, but that had a name
+    ;; conflict with arithmetic-5.  Unfortunately the rules differ---this rule
+    ;; is better than arithmetic 5's---so for now I'll just rename this one to
+    ;; avoid the conflict.
     (implies (and (integerp x)
                   (< 1 x))
              (equal (integerp (expt x n))
@@ -566,7 +570,7 @@ off looking at the source code.</p>")
     :hints(("Goal" :in-theory (enable expt)))))
 
 
-(local (in-theory (enable |(integerp (expt x n))|)))
+(local (in-theory (enable integerp-of-expt)))
 
 (defthmd |(logcdr (expt 2 n))|
   (equal (logcdr (expt 2 n))
@@ -575,8 +579,8 @@ off looking at the source code.</p>")
            0))
   :hints(("Goal" :in-theory (e/d* (ihsext-arithmetic)
                                   (ash-1-removal
-                                   |(integerp (expt x n))|))
-          :use ((:instance |(integerp (expt x n))|
+                                   integerp-of-expt))
+          :use ((:instance integerp-of-expt
                  (x 2))))
          '(:cases ((zip n)))))
 
@@ -589,8 +593,8 @@ off looking at the source code.</p>")
            0))
   :hints(("Goal" :in-theory (e/d* (ihsext-arithmetic)
                                   (ash-1-removal
-                                   |(integerp (expt x n))|))
-          :use ((:instance |(integerp (expt x n))|
+                                   integerp-of-expt))
+          :use ((:instance integerp-of-expt
                  (x 2)))
           :cases ((natp n)))))
 
@@ -781,7 +785,7 @@ off looking at the source code.</p>")
 
 
 (def-ruleset ihs-ext-disabled-rules
-  '(|(integerp (expt x n))|
+  '(integerp-of-expt
     |(logcdr (expt 2 n))|
     |(logcar (expt 2 n))|
     logand-with-2^n-is-logbitp
@@ -794,7 +798,10 @@ off looking at the source code.</p>")
  ()
  (local (include-book "arithmetic/top-with-meta" :dir :system))
 
- (defthm lognot-lognot
+ (defthm lognot-of-lognot
+   ;; Renamed from lognot-lognot to lognot-of-lognot because arithmetic-5
+   ;; and ihs/logops-lemmas both have a worse version of this rule named
+   ;; lognot-lognot.
    (equal (lognot (lognot x))
           (ifix x))
    :hints (("Goal" :in-theory (enable lognot)))

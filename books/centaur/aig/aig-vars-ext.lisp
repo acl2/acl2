@@ -97,15 +97,25 @@
 
 
 
+(defsection aig-vars-1pass
+  :parents (aig-vars)
+  :short "Faster, raw Lisp implementation of @(see aig-vars)."
+  :long "<p>Logically this is just @(see aig-vars).</p>"
 
-(defun aig-vars-1pass (x)
-  (declare (xargs :guard t))
-  (aig-vars x))
+  (defun aig-vars-1pass (x)
+    (declare (xargs :guard t))
+    (aig-vars x)))
 
-(defun aig-vars-fast (x)
-  ;; under-the-hood memoization, kind of nasty
-  (declare (xargs :guard t))
-  (aig-vars x))
+
+(defsection aig-vars-fast
+  :parents (aig-vars)
+  :short "Faster, raw Lisp implementation of @(see aig-vars), with
+under-the-hood memoization; kind of nasty."
+
+  (defun aig-vars-fast (x)
+    ;; under-the-hood memoization, kind of nasty
+    (declare (xargs :guard t))
+    (aig-vars x)))
 
 
 ;; New map-aig-vars-fast implementation:

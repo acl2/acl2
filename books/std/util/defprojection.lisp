@@ -308,7 +308,7 @@ first.</p>")
 
        (long (or long
                  (and parents
-                      (str::cat "<p>This is an ordinary @(see defprojection).</p>"))))
+                      (str::cat "<p>This is an ordinary @(see std::defprojection).</p>"))))
 
        (def  (if already-definedp
                  nil

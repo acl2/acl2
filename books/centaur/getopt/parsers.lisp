@@ -59,7 +59,7 @@ you care about.</p>
 
 <p>Note that once you have introduced such a new parsing function, you
 can (optionally) register it as the default parser for a predicate using @(see
-set-default-parser).</p>
+defparser).</p>
 
 <p>Every argument-parsing function must have the following form:</p>
 

@@ -84,7 +84,7 @@ it never X or Z?"
 
   :long "<p>It is sometimes useful to know whether a 4v-sexpr is always purely
 Boolean valued; see @(see faig-purebool-p) for some directly analogous
-discussion about @(see faigs).</p>
+discussion about @(see faig)s.</p>
 
 <p>@(call 4v-sexpr-purebool-p) is a logically nice, but non-executable way to
 express pure Boolean-ness.  See also @(see 4v-sexpr-purebool-check), which can
@@ -158,9 +158,9 @@ be executed, and uses a SAT solver to answer the question.</p>"
 
 (define 4v-sexpr-purebool-check
   :parents (4v-sexpr-purebool-p)
-  :short "An executable version of @(see sexpr-purebool-p) using SAT."
+  :short "An executable version of @(see 4v-sexpr-purebool-p) using SAT."
   ((sexpr "The 4v-sexpr to check.")
-   &key
+   &key 
    ((config satlink::config-p) 'satlink::*default-config*))
   :returns
   (mv (fail booleanp :rule-classes :type-prescription

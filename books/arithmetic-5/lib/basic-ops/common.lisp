@@ -1121,13 +1121,16 @@ to
 	(t
 	 (but-nth (cdr list) (+ -1 n)))))
 
-(defun how-many (x list ans)
+(defun how-many-factors (x list ans)
+  ;; [Jared]: Previously this was named "how-many."  I changed its name to
+  ;; avoid a conflict with, e.g., sorting/convert-perm-to-how-many.lisp, so
+  ;; that we can include both books in the XDOC manual, etc.
   (declare (xargs :guard (integerp ans)))
   ;; We assume that any instances of x appear at the head of list.
   (cond ((atom list)
 	 ans)
 	((equal (car list) x)
-	 (how-many x (cdr list) (+ 1 ans)))
+	 (how-many-factors x (cdr list) (+ 1 ans)))
 	(t
 	 ans)))
 
@@ -1138,7 +1141,7 @@ to
   (defthm foo-1
     (implies (and (consp list)
 		  (integerp ans))
-	     (<= (+ 1 ans) (how-many (car list) list ans)))))
+	     (<= (+ 1 ans) (how-many-factors (car list) list ans)))))
 
  (local
   (defthm foo-2
@@ -1151,14 +1154,14 @@ to
  (local
   (defthm foo-3
     (implies (integerp ans)
-	     (integerp (how-many x list ans)))
+	     (integerp (how-many-factors x list ans)))
     :rule-classes :type-prescription))
 
  (defun condense-factors (factors ans)
    (declare (xargs :guard t))
    (if (atom factors)
        ans
-     (let ((count (how-many (car factors) factors 0)))
+     (let ((count (how-many-factors (car factors) factors 0)))
        (condense-factors (but-nth factors (+ -1 count))
 			 (cons (cons (car factors) count)
 			       ans)))))

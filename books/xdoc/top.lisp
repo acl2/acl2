@@ -72,7 +72,8 @@
   ;; be appended onto the end of the current :long for this topic.
   `(table xdoc 'doc
           (let* ((all-topics   (xdoc::get-xdoc-table world))
-                 (old-topic    (xdoc::find-topic ',name all-topics)))
+                 (old-topic    (xdoc::find-topic ',name all-topics))
+                 (long         (or ,long "")))
             (cond ((not old-topic)
                    (prog2$
                     (er hard? 'xdoc-extend
@@ -81,9 +82,10 @@
                     all-topics))
                    (t
                     (let* ((other-topics (remove-equal old-topic all-topics))
-                           (old-long  (cdr (assoc :long old-topic)))
-                           (new-long  (concatenate 'string old-long ,long))
-                           (new-topic (acons :long new-long (delete-assoc :long old-topic))))
+                           (old-long     (cdr (assoc :long old-topic)))
+                           (new-long     (concatenate 'string old-long long))
+                           (new-topic    (acons :long new-long
+                                                (delete-assoc :long old-topic))))
                       (cons new-topic other-topics)))))))
 
 (defmacro xdoc-prepend (name long)
@@ -92,18 +94,20 @@
   ;; be prepended to the front of the current :long for this topic.
   `(table xdoc 'doc
           (let* ((all-topics   (xdoc::get-xdoc-table world))
-                 (old-topic    (xdoc::find-topic ',name all-topics)))
+                 (old-topic    (xdoc::find-topic ',name all-topics))
+                 (long         (or ,long "")))
             (cond ((not old-topic)
                    (prog2$
-                    (cw "XDOC WARNING:  Ignoring attempt to prepend to topic ~x0, ~
-                         because no such topic is currently defined.~%"
-                        ',name)
+                    (er hard? 'xdoc-prepend
+                        "Trying to prepend to topic ~x0, but this topic wasn't
+                         found." ',name)
                     all-topics))
                    (t
                     (let* ((other-topics (remove-equal old-topic all-topics))
-                           (old-long  (cdr (assoc :long old-topic)))
-                           (new-long  (concatenate 'string ,long old-long))
-                           (new-topic (acons :long new-long (delete-assoc :long old-topic))))
+                           (old-long     (cdr (assoc :long old-topic)))
+                           (new-long     (concatenate 'string long old-long))
+                           (new-topic    (acons :long new-long
+                                                (delete-assoc :long old-topic))))
                       (cons new-topic other-topics)))))))
 
 (defund extract-keyword-from-args (kwd args)

@@ -39,7 +39,7 @@ when it creates RAM modules.</p>"
 
 
 (defsection vl-rammodule->addr-width
-  :parents (rams vl-rammodule-p)
+  :parents (vl-rammodule-p)
   :short "Get the address width from a RAM module."
 
   :long "<p>@(call vl-rammodule->addr-width) returns the number of address bits
@@ -68,7 +68,7 @@ attribute when VL's parser creates RAM modules.</p>"
 
 
 (defsection vl-rammodule->data-width
-  :parents (rams vl-rammodule-p)
+  :parents (vl-rammodule-p)
   :short "Get the data width from a RAM module."
 
   :long "<p>@(call vl-rammodule->data-width) returns the width of each entry in

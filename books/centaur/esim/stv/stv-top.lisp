@@ -786,10 +786,10 @@ some kind of ALU then we probably want to @(':mix') the @('abus') and
 suggested by the initial and input lines, and doesn't smartly mix together
 signals.</dd>
 
-<dd>If your module is small or you're using @(see gl-aig-mode), then this may
-be fine and very convenient.  For more complex modules, you'll probably want to
-write your own binding macros.  See @(see stv-easy-bindings) for a high-level
-way to describe most kind of bindings.</dd>
+<dd>If your module is small or you're using @(see gl::gl-aig-mode), then this
+may be fine and very convenient.  For more complex modules, you'll probably
+want to write your own binding macros.  See @(see stv-easy-bindings) for a
+high-level way to describe most kind of bindings.</dd>
 
 <dt>@('(my-run-mod)')</dt>
 

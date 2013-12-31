@@ -287,18 +287,18 @@ small script to supply these arguments, e.g., as in the @('glucose') script
 above.</p>
 
 <p>To test out your new solver, Satlink includes a primitive @(see
-config-check) command that you can use to try your solver on a handful of
+check-config) command that you can use to try your solver on a handful of
 trivial problems.  This is a very good way to make sure that at least the basic
 i/o contract seems to be working.  It should be easy to adapt one of the
 @('test-') scripts in the @('centaur/satlink/solvers') directory to suit your
 solver.</p>
 
-<p>If the @('config-check') passes and you want a more thorough check, you
+<p>If the @('check-config') passes and you want a more thorough check, you
 might try to run your new solver on, e.g., @('centaur/tutorial/sat.lsp') and
 the various files in @('centaur/regression').</p>")
 
 
-(defsection proof-checking
+(defsection unsat-checking
   :parents (sat-solver-options)
   :short "Options for running SAT solvers that produce UNSAT proofs."
 

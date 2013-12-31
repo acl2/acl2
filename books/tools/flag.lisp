@@ -31,7 +31,7 @@
 
 (defxdoc make-flag
   :parents (mutual-recursion)
-  :short "Create a flag-based @(see induction) scheme for a @(see
+  :short "Create a flag-based @(see acl2::induction) scheme for a @(see
 mutual-recursion)."
 
   :long "<p>The @('make-flag') macro lets you quickly introduce:</p>

@@ -22,14 +22,16 @@
 (include-book "../mlib/stmt-tools")
 (local (include-book "../util/arithmetic"))
 
-; VL-Lint Only.
-;
-; We eliminte $verror and $acc_readmem statements to cut down on noisy warnings
-; about dropping unsupported constructs.
+(defsection vl-lint-stmt-rewrite
+  :parents (lint)
+  :short "(Unsound transform) eliminate @('$display') and various other
+statements to cut down on noisy warnings about dropping unsupported
+constructs.")
 
-(defund vl-lint-throwaway-fn-p (x)
-  (declare (xargs :guard (vl-stmt-p x)
-                  :guard-debug t))
+(local (xdoc::set-default-parents vl-lint-stmt-rewrite))
+
+(define vl-lint-throwaway-fn-p ((x vl-stmt-p))
+  :returns (throwaway-p booleanp :rule-classes :type-prescription)
   (b* (((unless (vl-fast-enablestmt-p x))
         nil)
        ((vl-enablestmt x) x)
@@ -39,10 +41,13 @@
        ((unless (vl-fast-sysfunname-p x.id.guts))
         nil)
        ((vl-sysfunname x.id.guts) x.id.guts))
-    (member-equal x.id.guts.name
-                  (list "$display" "$vcover" "$verror" "$acc_readmem"))))
+    (and (member-equal x.id.guts.name
+                       (list "$display" "$vcover" "$verror" "$acc_readmem"))
+         t)))
 
 (defsection vl-lint-stmt-rewrite
+  :short "Main rewrite.  Recursively convert any throwaway statements into null
+statements."
 
   (mutual-recursion
 
@@ -96,20 +101,9 @@
 
 
 
-
-(defsection vl-always-lint-stmt-rewrite
-
-  (defund vl-always-lint-stmt-rewrite (x)
-    (declare (xargs :guard (vl-always-p x)))
-    (change-vl-always x :stmt (vl-lint-stmt-rewrite (vl-always->stmt x))))
-
-  (local (in-theory (enable vl-always-lint-stmt-rewrite)))
-
-  (defthm vl-always-p-of-vl-always-lint-stmt-rewrite
-    (implies (force (vl-always-p x))
-             (vl-always-p (vl-always-lint-stmt-rewrite x)))))
-
-
+(define vl-always-lint-stmt-rewrite ((x vl-always-p))
+  :returns (new-x vl-always-p :hyp :fguard)
+  (change-vl-always x :stmt (vl-lint-stmt-rewrite (vl-always->stmt x))))
 
 (defprojection vl-alwayslist-lint-stmt-rewrite (x)
   (vl-always-lint-stmt-rewrite x)
@@ -117,58 +111,35 @@
   :result-type vl-alwayslist-p)
 
 
-(defsection vl-initial-lint-stmt-rewrite
-
-  (defund vl-initial-lint-stmt-rewrite (x)
-    (declare (xargs :guard (vl-initial-p x)))
-    (change-vl-initial x :stmt (vl-lint-stmt-rewrite (vl-initial->stmt x))))
-
-  (local (in-theory (enable vl-initial-lint-stmt-rewrite)))
-
-  (defthm vl-initial-p-of-vl-initial-lint-stmt-rewrite
-    (implies (force (vl-initial-p x))
-             (vl-initial-p (vl-initial-lint-stmt-rewrite x)))))
-
+(define vl-initial-lint-stmt-rewrite ((x vl-initial-p))
+  :returns (new-x vl-initial-p :hyp :fguard)
+  (change-vl-initial x :stmt (vl-lint-stmt-rewrite (vl-initial->stmt x))))
 
 (defprojection vl-initiallist-lint-stmt-rewrite (x)
   (vl-initial-lint-stmt-rewrite x)
   :guard (vl-initiallist-p x)
   :result-type vl-initiallist-p)
 
-
-(defsection vl-module-lint-stmt-rewrite
-
-  (defund vl-module-lint-stmt-rewrite (x)
-    (declare (xargs :guard (and (vl-module-p x))))
-    (b* (((vl-module x) x)
-         ((unless (or x.alwayses x.initials))
-          x)
-         (alwayses (vl-alwayslist-lint-stmt-rewrite x.alwayses))
-         (initials (vl-initiallist-lint-stmt-rewrite x.initials)))
-      (change-vl-module x
-                        :alwayses alwayses
-                        :initials initials)))
-
-  (local (in-theory (enable vl-module-lint-stmt-rewrite)))
-
-  (defthm vl-module-p-of-vl-module-lint-stmt-rewrite
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-lint-stmt-rewrite x))))
-
+(define vl-module-lint-stmt-rewrite ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard)
+  (b* (((vl-module x) x)
+       ((unless (or x.alwayses x.initials))
+        x)
+       (alwayses (vl-alwayslist-lint-stmt-rewrite x.alwayses))
+       (initials (vl-initiallist-lint-stmt-rewrite x.initials)))
+    (change-vl-module x
+                      :alwayses alwayses
+                      :initials initials))
+  ///
   (defthm vl-module->name-of-vl-module-lint-stmt-rewrite
     (equal (vl-module->name (vl-module-lint-stmt-rewrite x))
            (vl-module->name x))))
 
-
-(defsection vl-modulelist-lint-stmt-rewrite
-
-  (defprojection vl-modulelist-lint-stmt-rewrite (x)
-    (vl-module-lint-stmt-rewrite x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p)
-
-  (local (in-theory (enable vl-modulelist-lint-stmt-rewrite)))
-
+(defprojection vl-modulelist-lint-stmt-rewrite (x)
+  (vl-module-lint-stmt-rewrite x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
+  ///
   (defthm vl-modulelist->names-of-vl-modulelist-lint-stmt-rewrite
     (equal (vl-modulelist->names (vl-modulelist-lint-stmt-rewrite x))
            (vl-modulelist->names x))))

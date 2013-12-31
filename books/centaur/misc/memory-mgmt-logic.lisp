@@ -46,29 +46,67 @@
 (add-macro-alias maybe-wash-memory maybe-wash-memory-fn)
 
 (defxdoc set-max-mem
-  :parents (memory-management)
-  :short "Set garbage collection threshold in ACL2(h)"
-  :long "On CCL, this basically means, \"try to stay within about N gigabytes
-         of memory.\"
+  :parents (hons-and-memoization)
+  :short "An enhanced memory management scheme for ACL2(h). (CCL only; requires
+  a trust tag)"
 
-         The cert.pl build system scans for calls of set-max-mem.  Loosely
-         speaking, if a book contains something like:
+  :long "<p>Typical usage:</p>
 
- @({
-  (value-triple (set-max-mem (* 4 (expt 2 30))))
- })
+@({
+ (include-book \"centaur/misc/memory-mgmt\" :dir :system) ;; adds ttag
+ (value-triple (set-max-mem (* 4 (expt 2 30))))           ;; 4 GB
+})
 
-         Then a memory limit of 4 GB (plus some padding) will be placed on the
-         job.  This limit is probably ignored unless you are using a clustering
-         system like PBS.
+<p>Logically @(call set-max-mem) just returns @('nil').</p>
 
-         NOTE: A perl script is going to parse this, so for this to work you
-         can't just use an arbitrary Lisp expression here.  Explicitly
-         supported expressions are: (* n (expt 2 30)) and (expt 2 n).")
+<p>Under the hood, loading the @('centaur/misc/memory-mgmt') book adds some
+special garbage collection hooks into CCL, and @('set-max-mem') influences the
+behavior of these hooks.</p>
+
+<p>Roughly speaking, @(call set-max-mem) means: <b>try</b> to use no more than
+@('n') bytes of <b>heap</b> memory.  You should think of this as a soft cap.
+Generally the limit will grow by increments of 1 GB as you start to run out of
+memory.</p>
+
+<p>Note that this only influences the heap memory.  To avoid swapping death,
+you should typically pick an @('n') that leaves space for the stacks and other
+processes on your system.  For instance, if your machine has only 8 GB of
+physical memory, you may wish to reserve no more than about 6 GB for the
+heap.</p>
+
+
+<h3>Interaction with @(see cert.pl)</h3>
+
+<p>The @(see cert.pl) build system scans for calls of @('set-max-mem') and uses
+them to infer how much memory a book will need.  This information may be useful
+for scheduling jobs when carrying out <see topic='@(url |7. Distributed
+Builds|)'>distributed builds</see> on a cluster.</p>
+
+<p>Note that this parsing is done by a simple Perl script, so you can't just
+use an arbitrary Lisp expression here.  Explicitly supported expressions
+are:</p>
+
+<ul>
+ <li>@('(* n (expt 2 30))')</li>
+ <li>@('(expt 2 n)')</li>
+</ul>
+
+
+<h3>Using @('set-max-mem') in Pure ACL2 Books</h3>
+
+<p>To make it possible to embed calls of @(see set-max-mem) into ordinary,
+trust-tag free ACL2 code, the logical definition of @('set-max-mem') is found
+in the book:</p>
+
+@({
+   (include-book \"centaur/misc/memory-mgmt-logic\" :dir :system)
+})
+
+<p>Note that if you load only this @('-logic') book, without also loading the
+raw book, then @('set-max-mem') will <b>do nothing</b> except print a message
+saying it is doing nothing.</p>")
 
 (defun set-max-mem (n)
-
-
   (declare (xargs :guard t)
            (ignore n))
   (cw "set-max-mem is defined under the hood~%"))

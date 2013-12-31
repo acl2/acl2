@@ -71,7 +71,7 @@ should generally use @(see make-lit) instead.</p>"
   :parents (litp)
   :short "Raw value of a literal."
   :long "<p>This exposes the underlying representation of literals.  You should
-generally use @(see lit-id) and @(see lit-neg) instead.</p>"
+generally use @(see lit->index) and @(see lit->neg) instead.</p>"
 
   (lnfix lit)
 
@@ -205,7 +205,7 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
 
 (define lit->var ((lit litp))
   :parents (litp)
-  :short "Access the @('id') component of a literal."
+  :short "Access the @('var') component of a literal."
 
   (make-var (ash (the (integer 0 *) (lit-val lit))
                  -1))
@@ -213,7 +213,7 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
   :inline t
   ;; BOZO type-prescription doesn't make sense unless we strengthen
   ;; the compound-recognizer rule for varp?
-  :returns (id varp :rule-classes (:rewrite :type-prescription))
+  :returns (var varp :rule-classes (:rewrite :type-prescription))
 
   ///
   (defcong lit-equiv equal (lit->var lit) 1))
@@ -247,17 +247,17 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
 
 
 (acl2::def-b*-decomp lit
-                     (id . lit->var)
+                     (var . lit->var)
                      (neg . lit->neg))
 
 
-(define make-lit ((id varp) (neg bitp))
+(define make-lit ((var varp) (neg bitp))
   :parents (litp)
-  :short "Construct a literal with the given @('id') and @('neg')."
+  :short "Construct a literal with the given @('var') and @('neg')."
 
   (to-lit (the (integer 0 *)
             (logior (the (integer 0 *)
-                      (ash (the (integer 0 *) (var->index id)) 1))
+                      (ash (the (integer 0 *) (var->index var)) 1))
                     (the bit (lbfix neg)))))
 
   :inline t
@@ -266,15 +266,15 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
   :returns (lit litp :rule-classes (:rewrite :type-prescription))
   :prepwork ((local (in-theory (enable lit->var lit->neg))))
   ///
-  (defcong var-equiv equal (make-lit id neg) 1)
-  (defcong bit-equiv equal (make-lit id neg) 2)
+  (defcong var-equiv equal (make-lit var neg) 1)
+  (defcong bit-equiv equal (make-lit var neg) 2)
 
   (defthm lit->var-of-make-lit
-    (equal (lit->var (make-lit id neg))
-           (var-fix id)))
+    (equal (lit->var (make-lit var neg))
+           (var-fix var)))
 
   (defthm lit->neg-of-make-lit
-    (equal (lit->neg (make-lit id neg))
+    (equal (lit->neg (make-lit var neg))
            (bfix neg)))
 
   (defthm make-lit->varentity
@@ -284,10 +284,10 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
     :hints(("Goal" :in-theory (disable acl2::logior$))))
 
   (local (defthm equal-of-make-lit-lemma
-           (implies (and (varp id) (bitp neg))
-                    (equal (equal a (make-lit id neg))
+           (implies (and (varp var) (bitp neg))
+                    (equal (equal a (make-lit var neg))
                            (and (litp a)
-                                (equal (var->index (lit->var a)) (var->index id))
+                                (equal (var->index (lit->var a)) (var->index var))
                                 (equal (lit->neg a) neg))))
            :hints(("Goal" :in-theory (disable make-lit
                                               make-lit->varentity
@@ -296,12 +296,12 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
            :rule-classes nil))
 
   (defthmd equal-of-make-lit
-    (equal (equal a (make-lit id neg))
+    (equal (equal a (make-lit var neg))
            (and (litp a)
-                (equal (var->index (lit->var a)) (var->index id))
+                (equal (var->index (lit->var a)) (var->index var))
                 (equal (lit->neg a) (bfix neg))))
     :hints(("Goal" :use ((:instance equal-of-make-lit-lemma
-                          (id (var-fix id)) (neg (bfix neg))))
+                          (var (var-fix var)) (neg (bfix neg))))
             :in-theory (disable lit->var lit->neg)))))
 
 
@@ -314,9 +314,9 @@ generally use @(see lit-id) and @(see lit-neg) instead.</p>"
   :short "Efficiently negate a literal."
   :enabled t
   :inline t
-  (mbe :logic (b* ((id  (lit->var lit))
+  (mbe :logic (b* ((var (lit->var lit))
                    (neg (lit->neg lit)))
-                (make-lit id (b-not neg)))
+                (make-lit var (b-not neg)))
        :exec (to-lit
               (the (integer 0 *)
                 (logxor (the (integer 0 *) (lit-val lit))
@@ -334,9 +334,9 @@ we return @('lit') unchanged.</p>"
   :enabled t
   :inline t
 
-  (mbe :logic (b* ((id (lit->var lit))
+  (mbe :logic (b* ((var (lit->var lit))
                    (neg (b-xor (lit->neg lit) c)))
-                (make-lit id neg))
+                (make-lit var neg))
        :exec (to-lit (the (integer 0 *)
                        (logxor (the (integer 0 *) (lit-val lit))
                                (the bit c)))))

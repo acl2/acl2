@@ -1026,7 +1026,7 @@ module VL_1_BIT_FLOP (q, clk, d) ;
 endmodule
 })
 
-<p>VL takes this as a primitive.  The @(see flop-inference) transform converts
+<p>VL takes this as a primitive.  The @(see always-top) transform converts
 certain @('always') statements into instances of this module.</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-flop*).</p>")
@@ -1078,7 +1078,7 @@ module VL_1_BIT_LATCH (q, clk, d);
 endmodule
 })
 
-<p>VL takes this as a primitive.  The @(see latch-inference) transform converts
+<p>VL takes this as a primitive.  The @(see always-top) transform converts
 certain @('always') statements into instances of this module.</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-latch*).</p>")
@@ -1121,6 +1121,25 @@ certain @('always') statements into instances of this module.</p>
                            :esim      acl2::*esim-latch*)))
 
 
+(defxdoc *vl-1-bit-bufif0*
+  :parents (primitives)
+  :short "Primitive conditional driver."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_BUFIF0 (out, data, ctrl);
+   output out;
+   input data;
+   input ctrl;
+   bufif0 gate (out, data, ctrl);
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('bufif0') gates into instances of this module.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-bufif0*).</p>")
+
 (defconsts *vl-1-bit-bufif0*
   (b* ((name "VL_1_BIT_BUFIF0")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
@@ -1143,6 +1162,26 @@ certain @('always') statements into instances of this module.</p>
                            :maxloc    *vl-fakeloc*
                            :atts      atts
                            :esim      acl2::*esim-bufif0*)))
+
+
+(defxdoc *vl-1-bit-bufif1*
+  :parents (primitives)
+  :short "Primitive conditional driver."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_BUFIF1 (out, data, ctrl);
+   output out;
+   input data;
+   input ctrl;
+   bufif1 gate (out, data, ctrl);
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('bufif1') gates into instances of this module.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-bufif1*).</p>")
 
 (defconsts *vl-1-bit-bufif1*
   (b* ((name "VL_1_BIT_BUFIF1")
@@ -1167,6 +1206,25 @@ certain @('always') statements into instances of this module.</p>
                            :atts      atts
                            :esim      acl2::*esim-bufif1*)))
 
+(defxdoc *vl-1-bit-notif0*
+  :parents (primitives)
+  :short "Primitive conditional driver."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_NOTIF0 (out, data, ctrl);
+   output out;
+   input data;
+   input ctrl;
+   notif0 gate (out, data, ctrl);
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('notif0') gates into instances of this module.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-notif0*).</p>")
+
 (defconsts *vl-1-bit-notif0*
   (b* ((name "VL_1_BIT_NOTIF0")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
@@ -1189,6 +1247,25 @@ certain @('always') statements into instances of this module.</p>
                            :maxloc    *vl-fakeloc*
                            :atts      atts
                            :esim      acl2::*esim-notif0*)))
+
+(defxdoc *vl-1-bit-notif1*
+  :parents (primitives)
+  :short "Primitive conditional driver."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_NOTIF1 (out, data, ctrl);
+   output out;
+   input data;
+   input ctrl;
+   notif1 gate (out, data, ctrl);
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('notif1') gates into instances of this module.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-notif1*).</p>")
 
 (defconsts *vl-1-bit-notif1*
   (b* ((name "VL_1_BIT_NOTIF1")
@@ -1214,6 +1291,27 @@ certain @('always') statements into instances of this module.</p>
                            :esim      acl2::*esim-notif1*)))
 
 
+(defxdoc *vl-1-bit-nmos*
+  :parents (primitives)
+  :short "Primitive nmos transistor."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_NMOS (out, data, ctrl);
+  output out ;
+  input data ;
+  input ctrl ;
+  nmos gate (out, data, ctrl) ;
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('nmos') gates into instances of this module.</p>
+
+<p>ESIM has very little support for transistors, but this may be a useful
+target for other back-end tools.  The corresponding @(see esim) primitive is
+@(see acl2::*esim-nmos*).</p>")
+
 (defconsts *vl-1-bit-nmos*
   (b* ((name "VL_1_BIT_NMOS")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
@@ -1238,6 +1336,27 @@ certain @('always') statements into instances of this module.</p>
                            :esim      acl2::*esim-nmos*)))
 
 
+(defxdoc *vl-1-bit-rnmos*
+  :parents (primitives)
+  :short "Primitive resistive nmos transistor."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_RNMOS (out, data, ctrl);
+  output out ;
+  input data ;
+  input ctrl ;
+  rnmos gate (out, data, ctrl) ;
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('rnmos') gates into instances of this module.</p>
+
+<p>ESIM has no notion of strengths and very little support for transistors, but
+this may be a convenient target for other back-end tools.  The corresponding
+@(see esim) primitive is @(see acl2::*esim-nmos*).</p>")
+
 (defconsts *vl-1-bit-rnmos*
   (b* ((name "VL_1_BIT_RNMOS")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
@@ -1260,6 +1379,28 @@ certain @('always') statements into instances of this module.</p>
                            :maxloc    *vl-fakeloc*
                            :atts      atts
                            :esim      acl2::*esim-nmos*)))
+
+
+(defxdoc *vl-1-bit-pmos*
+  :parents (primitives)
+  :short "Primitive pmos transistor."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_PMOS (out, data, ctrl);
+  output out ;
+  input data ;
+  input ctrl ;
+  pmos gate (out, data, ctrl) ;
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('pmos') gates into instances of this module.</p>
+
+<p>ESIM has very little support for transistors, but this may be a useful
+target for other back-end tools.  The corresponding @(see esim) primitive is
+@(see acl2::*esim-pmos*).</p>")
 
 (defconsts *vl-1-bit-pmos*
   (b* ((name "VL_1_BIT_PMOS")
@@ -1284,6 +1425,26 @@ certain @('always') statements into instances of this module.</p>
                            :atts      atts
                            :esim      acl2::*esim-pmos*)))
 
+(defxdoc *vl-1-bit-rpmos*
+  :parents (primitives)
+  :short "Primitive resistive pmos transistor."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_RPMOS (out, data, ctrl);
+  output out ;
+  input data ;
+  input ctrl ;
+  rpmos gate (out, data, ctrl) ;
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('rpmos') gates into instances of this module.</p>
+
+<p>ESIM has no notion of strengths and very little support for transistors, but
+this may be a convenient target for other back-end tools.  The corresponding
+@(see esim) primitive is @(see acl2::*esim-nmos*).</p>")
 
 (defconsts *vl-1-bit-rpmos*
   (b* ((name "VL_1_BIT_RPMOS")
@@ -1308,6 +1469,27 @@ certain @('always') statements into instances of this module.</p>
                            :atts      atts
                            :esim      acl2::*esim-pmos*)))
 
+(defxdoc *vl-1-bit-cmos*
+  :parents (primitives)
+  :short "Primitive cmos transistor."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_CMOS (out, data, nctrl, pctrl);
+  output out ;
+  input data ;
+  input nctrl ;
+  input pctrl ;
+  cmos gate (out, data, nctrl, pctrl) ;
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('cmos') gates into instances of this module.</p>
+
+<p>ESIM has very little support for transistors, but this may be a useful
+target for other back-end tools.  The corresponding @(see esim) primitive is
+@(see acl2::*esim-cmos*).</p>")
 
 (defconsts *vl-1-bit-cmos*
   (b* ((name "VL_1_BIT_CMOS")
@@ -1334,6 +1516,27 @@ certain @('always') statements into instances of this module.</p>
                            :atts      atts
                            :esim      acl2::*esim-cmos*)))
 
+(defxdoc *vl-1-bit-rcmos*
+  :parents (primitives)
+  :short "Primitive resistive cmos transistor."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_RCMOS (out, data, nctrl, pctrl);
+  output out ;
+  input data ;
+  input nctrl ;
+  input pctrl ;
+  rcmos gate (out, data, nctrl, pctrl) ;
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('rcmos') gates into instances of this module.</p>
+
+<p>ESIM has no notion of strengths and very little support for transistors, but
+this may be a convenient target for other back-end tools.  The corresponding
+@(see esim) primitive is @(see acl2::*esim-rcmos*).</p>")
 
 (defconsts *vl-1-bit-rcmos*
   (b* ((name "VL_1_BIT_RCMOS")
@@ -1360,6 +1563,25 @@ certain @('always') statements into instances of this module.</p>
                            :atts      atts
                            :esim      acl2::*esim-cmos*)))
 
+(defxdoc *vl-1-bit-tran*
+  :parents (primitives)
+  :short "Primitive bidirectional connection."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_TRAN (a, b);
+  inout a ;
+  inout b ;
+  tran gate (a, b) ;
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('tran') gates into instances of this module.</p>
+
+<p>There is no sensible way to model this in ESIM and hence there is no ESIM
+equivalent.  However, this module may be a convenient target for other back-end
+tools.</p>")
 
 (defconsts *vl-1-bit-tran*
   (b* ((name "VL_1_BIT_TRAN")
@@ -1383,6 +1605,26 @@ certain @('always') statements into instances of this module.</p>
                            :esim      nil   ;; no e equivalent
                            )))
 
+(defxdoc *vl-1-bit-rtran*
+  :parents (primitives)
+  :short "Primitive, resistive bidirectional connection."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_RTRAN (a, b);
+  inout a ;
+  inout b ;
+  rtran gate (a, b) ;
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('rtran') gates into instances of this module.</p>
+
+<p>There is no sensible way to model this in ESIM and hence there is no ESIM
+equivalent.  However, this module may be a convenient target for other back-end
+tools.</p>")
+
 (defconsts *vl-1-bit-rtran*
   (b* ((name "VL_1_BIT_RTRAN")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
@@ -1404,6 +1646,27 @@ certain @('always') statements into instances of this module.</p>
                            :atts      atts
                            :esim      nil   ;; no e equivalent
                            )))
+
+(defxdoc *vl-1-bit-tranif0*
+  :parents (primitives)
+  :short "Primitive, conditional bidirectional connection."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_TRANIF0 (a, b, ctrl);
+  inout a ;
+  inout b ;
+  input ctrl ;
+  tranif0 gate (a, b, ctrl) ;
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('tranif0') gates into instances of this module.</p>
+
+<p>There is no sensible way to model this in ESIM and hence there is no ESIM
+equivalent.  However, this module may be a convenient target for other back-end
+tools.</p>")
 
 (defconsts *vl-1-bit-tranif0*
   (b* ((name "VL_1_BIT_TRANIF0")
@@ -1428,6 +1691,29 @@ certain @('always') statements into instances of this module.</p>
                            :atts      atts
                            :esim      nil   ;; no e equivalent
                            )))
+
+
+
+(defxdoc *vl-1-bit-rtranif0*
+  :parents (primitives)
+  :short "Primitive, resistive, conditional bidirectional connection."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_RTRANIF0 (a, b, ctrl);
+  inout a ;
+  inout b ;
+  input ctrl ;
+  rtranif0 gate (a, b, ctrl) ;
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('rtranif0') gates into instances of this module.</p>
+
+<p>There is no sensible way to model this in ESIM and hence there is no ESIM
+equivalent.  However, this module may be a convenient target for other back-end
+tools.</p>")
 
 (defconsts *vl-1-bit-rtranif0*
   (b* ((name "VL_1_BIT_RTRANIF0")
@@ -1454,6 +1740,27 @@ certain @('always') statements into instances of this module.</p>
                            )))
 
 
+(defxdoc *vl-1-bit-tranif1*
+  :parents (primitives)
+  :short "Primitive, conditional bidirectional connection."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_TRANIF1 (a, b, ctrl);
+  inout a ;
+  inout b ;
+  input ctrl ;
+  tranif1 gate (a, b, ctrl) ;
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('tranif1') gates into instances of this module.</p>
+
+<p>There is no sensible way to model this in ESIM and hence there is no ESIM
+equivalent.  However, this module may be a convenient target for other back-end
+tools.</p>")
+
 (defconsts *vl-1-bit-tranif1*
   (b* ((name "VL_1_BIT_TRANIF1")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
@@ -1477,6 +1784,27 @@ certain @('always') statements into instances of this module.</p>
                            :atts      atts
                            :esim      nil   ;; no e equivalent
                            )))
+
+(defxdoc *vl-1-bit-rtranif1*
+  :parents (primitives)
+  :short "Primitive, resistive, conditional bidirectional connection."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_RTRANIF1 (a, b, ctrl);
+  inout a ;
+  inout b ;
+  input ctrl ;
+  rtranif1 gate (a, b, ctrl) ;
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('rtranif1') gates into instances of this module.</p>
+
+<p>There is no sensible way to model this in ESIM and hence there is no ESIM
+equivalent.  However, this module may be a convenient target for other back-end
+tools.</p>")
 
 (defconsts *vl-1-bit-rtranif1*
   (b* ((name "VL_1_BIT_RTRANIF1")
@@ -1502,6 +1830,24 @@ certain @('always') statements into instances of this module.</p>
                            :esim      nil   ;; no e equivalent
                            )))
 
+(defxdoc *vl-1-bit-pullup*
+  :parents (primitives)
+  :short "Primitive pullup element."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_PULLUP (a, b, ctrl);
+  output out;
+  pullup gate (out);
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('pullup') gates into instances of this module.</p>
+
+<p>There is no sensible way to model this in ESIM and hence there is no ESIM
+equivalent.  However, this module may be a convenient target for other back-end
+tools.</p>")
 
 (defconsts *vl-1-bit-pullup*
   (b* ((name "VL_1_BIT_PULLUP")
@@ -1523,6 +1869,24 @@ certain @('always') statements into instances of this module.</p>
                            :esim      nil   ;; no e equivalent
                            )))
 
+(defxdoc *vl-1-bit-pulldown*
+  :parents (primitives)
+  :short "Primitive pulldown element."
+  :long "<p>The Verilog meaning of this module is:</p>
+
+@({
+module VL_1_BIT_PULLDOWN (a, b, ctrl);
+  output out;
+  pulldown gate (out);
+endmodule
+})
+
+<p>VL takes this as a primitive.  The @(see gate-elim) transform converts
+certain @('pulldown') gates into instances of this module.</p>
+
+<p>There is no sensible way to model this in ESIM and hence there is no ESIM
+equivalent.  However, this module may be a convenient target for other back-end
+tools.</p>")
 
 (defconsts *vl-1-bit-pulldown*
   (b* ((name "VL_1_BIT_PULLDOWN")
@@ -1543,9 +1907,6 @@ certain @('always') statements into instances of this module.</p>
                            :atts      atts
                            :esim      nil   ;; no e equivalent
                            )))
-
-
-
 
 
 

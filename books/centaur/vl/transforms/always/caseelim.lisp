@@ -247,7 +247,7 @@ expression-sizing) code.</p>"
 
 
 (define vl-casestmt-compare-expr
-  :parents (vl-casestmt-rewrite-aux)
+  :parents (vl-casestmt-elim-aux)
   :short "Creates, e.g., the expression @('foo === 3'b110'), for handling
 @('case(foo) ... 3'b110: ... endcase')."
   ((test vl-expr-p "The test expression, e.g., @('foo').")

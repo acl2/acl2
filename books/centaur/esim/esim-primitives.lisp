@@ -35,7 +35,7 @@ vl::primitives)."
   :long "<p>The patterns used for the :i and :o ports here might look strange.
 For instance, why do we use @('((|a|) (|b|))') as the input pattern for an AND
 gate instead of @('(|a| |b|)')?  This allows our primitives to be directly
-compatible with VL's primitives, as far as @(see vl-portdecls-to-i/o) is
+compatible with VL's primitives, as far as @(see vl::vl-portdecls-to-i/o) is
 concerned.</p>
 
 <p><b>BOZO</b> Things to consider:</p>

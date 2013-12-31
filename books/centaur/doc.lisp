@@ -140,7 +140,7 @@
 ;; (include-book "vl/lint/xf-drop-unresolved-submodules")
 (include-book "vl/mlib/lvalues-mentioning")
 (include-book "vl/mlib/rvalues")
-(include-book "vl/mlib/ram-tools")
+;; (include-book "vl/mlib/ram-tools")   obsolete
 
 
 (include-book "hacking/all" :dir :system)
@@ -151,6 +151,10 @@
 (include-book "tutorial/alu16-book")
 (include-book "tutorial/counter")
 
+
+;; Not much doc here, but some theorems from arithmetic-5 are referenced by
+;; other topics...
+(include-book "arithmetic-5/top" :dir :system)
 
 #||
 

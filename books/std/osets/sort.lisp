@@ -107,7 +107,14 @@ really we could avoid that by just being a bit smarter, like in defsort.</p>"
 
   (defund halve-list (x)
     (declare (xargs :guard t))
-    (halve-list-aux x x nil))
+    (halve-list-aux x x nil)))
+
+
+(defsection halve-list-thms
+
+  ;; Keep these in a separate section.  We don't want to try to include them in
+  ;; the xdoc documentation, because they're not theorems that are going to be
+  ;; included in sets/top.lisp.
 
   (local (in-theory (enable halve-list-aux)))
 
@@ -201,7 +208,13 @@ really we could avoid that by just being a bit smarter, like in defsort.</p>"
                (halve-list x)
                (fast-union (mergesort-exec part1)
                            (mergesort-exec part2)
-                           nil)))))
+                           nil))))))
+
+
+(defsection mergesort-exec-thms
+
+  ;; Keep this separate from mergesort-exec, for the same reason as in
+  ;; halve-list-thms
 
   (local (in-theory (enable fast-union-set
                             fast-union-membership)))

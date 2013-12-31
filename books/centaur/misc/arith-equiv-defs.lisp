@@ -16,17 +16,32 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
-; Original authors: Jared Davis <jared@centtech.com>, Sol Swords <sswords@centtech.com>
-
-; arith-equivs.lisp -- congruence reasoning about integers/naturals/bits
-
-
-;; Note: To use this book at full strength, do:
-;; (local (in-theory (enable* arith-equiv-forwarding)))
+; Original authors: Jared Davis <jared@centtech.com>,
+;                   Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "tools/rulesets" :dir :system)
+
+(defsection arith-equivs
+  :parents (arithmetic)
+  :short "Definitions for congruence reasoning about integers/naturals/bits."
+
+  :long "<p>Note: to use this book at full strength, do:</p>
+
+@({
+    (include-book \"centaur/misc/arith-equivs\" :dir :system)
+    (local (in-theory (enable* arith-equiv-forwarding)))
+})
+
+<p>You can also load just the definitions and bare-minimum theorems using</p>
+
+@({
+    (include-book \"centaur/misc/arith-equiv-defs\" :dir :system)
+})
+
+<p>BOZO eventually incorporate this into @(see std/basic).</p>")
+
 
 (defthm bitp-compound-recognizer
   ;; Questionable given the bitp-forward rule.  But I think we may still want
@@ -45,60 +60,83 @@
 ;;   (implies (< 1 x)
 ;;            (not (bitp x))))
 
-(defun int-equiv (a b)
-  (declare (xargs :guard t))
-  (equal (ifix a) (ifix b)))
+(defsection int-equiv
+  :parents (arith-equivs)
+  :short "Equivalence under @(see ifix), i.e., integer equivalence."
 
-(defun nat-equiv (a b)
-  (declare (xargs :guard t))
-  (equal (nfix a) (nfix b)))
+  (defun int-equiv (a b)
+    (declare (xargs :guard t))
+    (equal (ifix a) (ifix b)))
 
-(defun bit-equiv (x y)
-  (declare (xargs :guard t))
-  (equal (bfix x) (bfix y)))
+  (defequiv int-equiv)
 
-(local (in-theory (enable int-equiv nat-equiv bit-equiv)))
+  (defthm ifix-under-int-equiv
+    (int-equiv (ifix a) a))
 
-(defequiv int-equiv)
-(defequiv nat-equiv)
-(defequiv bit-equiv)
+  (defcong int-equiv equal (ifix a) 1)
+  (defcong int-equiv equal (zip a) 1))
 
-(defrefinement int-equiv nat-equiv)
-(defrefinement nat-equiv bit-equiv)
-;; (defrefinement int-equiv bit-equiv) ;; already known
 
-(defcong int-equiv equal (ifix a) 1)
-(defcong nat-equiv equal (nfix a) 1)
-(defcong bit-equiv equal (bfix a) 1)
+(defsection nat-equiv
+  :parents (arith-equivs)
+  :short "Equivalence under @(see nfix), i.e., natural number equivalence."
 
-(defthm ifix-under-int-equiv
-  (int-equiv (ifix a) a))
+  (defun nat-equiv (a b)
+    (declare (xargs :guard t))
+    (equal (nfix a) (nfix b)))
 
-(defthm nfix-under-nat-equiv
-  (nat-equiv (nfix a) a))
+  (defequiv nat-equiv)
+  (defrefinement int-equiv nat-equiv)
 
-(defthm bfix-under-bit-equiv
-  (bit-equiv (bfix a) a))
+  (defthm nfix-under-nat-equiv
+    (nat-equiv (nfix a) a))
 
-(defcong int-equiv equal (zip a) 1)
-(defcong nat-equiv equal (zp a)  1)
-(defcong bit-equiv equal (zbp a) 1)
+  (defcong nat-equiv equal (nfix a) 1)
+  (defcong nat-equiv equal (zp a)  1))
 
-(defund-inline bool->bit (x)
-  (declare (xargs :guard t))
-  (if x 1 0))
 
-(defund negp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (< x 0)))
+(defsection bit-equiv
+  :parents (arith-equivs)
+  :short "Equivalence under @(see bfix), i.e., bit equivalence."
 
-(defthm negp-compound-recognizer
-  (equal (negp x)
-         (and (integerp x)
-              (< x 0)))
-  :hints(("Goal" :in-theory (enable negp)))
-  :rule-classes :compound-recognizer)
+  (defun bit-equiv (x y)
+    (declare (xargs :guard t))
+    (equal (bfix x) (bfix y)))
+
+  (defequiv bit-equiv)
+  (defrefinement nat-equiv bit-equiv)
+
+  (defthm bfix-under-bit-equiv
+    (bit-equiv (bfix a) a))
+
+  (defcong bit-equiv equal (bfix a) 1)
+  (defcong bit-equiv equal (zbp a) 1))
+
+
+(defsection bool->bit
+  :parents (arith-equivs)
+  :short "Coerce a Boolean into a @(see bitp)."
+
+  (defund-inline bool->bit (x)
+    (declare (xargs :guard t))
+    (if x 1 0)))
+
+
+(defsection negp
+  :parents (arith-equivs)
+  :short "Recognizer for negative integers."
+
+  (defund negp (x)
+    (declare (xargs :guard t))
+    (and (integerp x)
+         (< x 0)))
+
+  (defthm negp-compound-recognizer
+    (equal (negp x)
+           (and (integerp x)
+                (< x 0)))
+    :hints(("Goal" :in-theory (enable negp)))
+    :rule-classes :compound-recognizer))
 
 
 

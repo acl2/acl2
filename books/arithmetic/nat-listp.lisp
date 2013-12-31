@@ -30,7 +30,7 @@
 book."
 
   :long "<p>BOZO additional lemmas about @('nat-listp') are available in the
-book @(see std/typed-list/nat-listp), which subsumes this one.  Should we get
+book @(see std/typed-lists/nat-listp), which subsumes this one.  Should we get
 rid of this book?</p>"
 
   (local (in-theory (enable nat-listp)))

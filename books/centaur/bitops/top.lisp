@@ -48,19 +48,20 @@ to the venerable @(see ihs) library, and is now fairly comprehensive."
 
 <ul>
 
-<li>Definitions for single-bit operations like @(see b-and), @(see b-or), etc.,
-and for extended bit-vector operations, like @(see loghead), @(see logapp),
-@(see logrev), etc.  These are largely inherited from @(see ihs).</li>
+<li>Definitions for single-bit operations like @(see b-and), @(see b-ior),
+etc., and for extended bit-vector operations, like @(see loghead), @(see
+logapp), @(see logrev), etc.  These are largely inherited from @(see ihs).</li>
 
 <li>Support for reasoning about these new operations, and also about the
 bit-vector operations that are built into ACL2 like @(see logand), @(see ash),
 and @(see logbitp).</li>
 
 <li>Efficient implementations of certain bit-vector operations like @(see
-sign-extend), @(see merge-operations), @(see fast-logrev), etc., with lemmas or
-@(see mbe) to relate them to the logically nicer definitions.  These
-definitions generally don't add any logical power, but are useful for
-developing more efficient executable models.</li>
+sign-extend), <see topic='@(url bitops/merge)'>merge operations</see>, <see
+topic='@(url fast-logrev)'>fast-logrev</see>, etc., with lemmas or @(see mbe)
+to relate them to the logically nicer definitions.  These definitions generally
+don't add any logical power, but are useful for developing more efficient
+executable models.</li>
 
 </ul>
 
@@ -75,7 +76,7 @@ the bit-vector operations.</p>
 <p>Instead, you will usually include books from both Bitops <b>and</b> from
 some other arithmetic library.  Bitops is often used in concert with books from
 @('arithmetic'), @('arithmetic-3'), and @('arithmetic-5').  See @(see
-bitops-compatibiity) for notes about using these libraries with Bitops.</p>
+bitops-compatibility) for notes about using these libraries with Bitops.</p>
 
 <p>Bitops definitions are typically compatible with @(see gl), a framework for
 bit-blasting ACL2 theorems.  GL is mainly applicable to bounded problems, but

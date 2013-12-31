@@ -122,15 +122,15 @@ following @(see acl2::refinement) hierarchy:</p>
 
 (defsection concatenation
   :parents (str)
-  :short "Functions for joining strings together.
+  :short "Functions for joining strings together."
 
-<p><b><color rgb='#ff0000'>Efficiency Warning</color></b>.  Concatenating
-strings in ACL2 is fundamentally slow.  Why?  In Common Lisp, strings are just
-arrays of characters, and there is not any mechanism for efficiently splicing
-together arrays.  Any kind of string concatenation, then, minimally requires
-creating a completely new array and copying all of the input characters into
-it.  This makes it especially slow to repeatedly use, e.g., @(see cat) to build
-up a string.</p>
+  :long "<p><b><color rgb='#ff0000'>Efficiency Warning</color></b>.
+Concatenating strings in ACL2 is fundamentally slow.  Why?  In Common Lisp,
+strings are just arrays of characters, and there is not any mechanism for
+efficiently splicing together arrays.  Any kind of string concatenation, then,
+minimally requires creating a completely new array and copying all of the input
+characters into it.  This makes it especially slow to repeatedly use, e.g.,
+@(see cat) to build up a string.</p>
 
 <p>To build strings more efficiently, a good general strategy is to build up a
 reverse-order character list, and then convert it into a string at the end.

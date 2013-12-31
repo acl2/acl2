@@ -56,7 +56,7 @@ help for symbols interned in the ACL2 package only).</p>")
 (defsection inspect-package
   :parents (intern-debugging)
   :short "Print some basic information about a package. (CCL only)"
-  :long "<p>@(call ccl-inspect-package) is given the name of a package, e.g.,
+  :long "<p>@(call inspect-package) is given the name of a package, e.g.,
 @('\"ACL2\"') or @('\"VL\"').  It prints out some low-level information about
 the current number of symbols that are in the package and how many will fit
 before it needs to be resized.  This is occasionally useful for figuring out

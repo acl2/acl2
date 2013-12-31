@@ -17,28 +17,48 @@
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
+; Modified by Jared Davis <jared@centtech.com> to add XDOC support.
 
 (in-package "ACL2")
-
-;; Want a quick way of defining equivalence relations such as
-
-;; (defun-sk foo-equiv (a b)
-;;   (forall (x y z)
-;;           (and (bar-equiv (foo a x y)
-;;                           (foo b x y))
-;;                (baz-equiv (fa a z)
-;;                           (fa b z)))))
-
-;; This would be done as:
-;; (def-universal-equiv foo-equiv (a b)
-;;   :qvars (x y z)
-;;   :equivs ((bar-equiv (foo a x y))
-;;            (baz-equiv (fa a z))))
-
-;; When called with :DEFQUANT T, uses DEFQUANT instead of DEFUN-SK.  This requires
-;; that the WITNESS-CP book be included.
-
 (include-book "clause-processors/equality" :dir :system)
+(include-book "xdoc/top" :dir :system)
+(set-state-ok t)
+
+(defsection def-universal-equiv
+  :parents (macro-libraries)
+  :short "A macro for defining universally quantified equivalence relations."
+
+  :long "<p>It is often useful to introduce equivalence relations such as:</p>
+
+<blockquote>
+<i>A === B when for every possible element E, A and B agree on E.</i>
+</blockquote>
+
+<p>For some particular notion of what <i>agree</i> means.  This macro gives you
+a quick way to introduce such a relation, using @(see defun-sk), and then
+automatically prove that it is an equivalence relation.  For instance, an
+equivalence such as:</p>
+
+@({
+    (defun-sk foo-equiv (a b)
+      (forall (x y z)
+              (and (bar-equiv (foo a x y)
+                              (foo b x y))
+                   (baz-equiv (fa a z)
+                              (fa b z)))))
+})
+
+<p>Can be introduced using:</p>
+
+@({
+    (def-universal-equiv foo-equiv (a b)
+      :qvars (x y z)
+      :equivs ((bar-equiv (foo a x y))
+               (baz-equiv (fa a z))))
+})
+
+<p>When called with @(':defquant t'), we use @(see defquant) instead of @(see
+defun-sk).  This requires that the WITNESS-CP book be included.</p>")
 
 (defun universal-equiv-equivterms (var1 var2 equivs)
   (if (atom equivs)
@@ -67,32 +87,54 @@
         (list (list qvars term))
       (universal-equiv-multi-qvar-bindings 0 qvars term))))
 
-
 (defun universal-equiv-form (equivname qvars equivs defquant
-                                       witness-dcls witness-dcls-p)
+                                       witness-dcls witness-dcls-p
+                                       parents parents-p short long
+                                       state)
+  (declare (xargs :mode :program))
   (let* ((equivterms `(and . ,(universal-equiv-equivterms
                                'x 'y equivs)))
-         (witness (intern-in-package-of-symbol
-                   (concatenate 'string (symbol-name equivname) "-WITNESS")
-                   equivname))
+         (witness        (intern-in-package-of-symbol
+                          (concatenate 'string (symbol-name equivname) "-WITNESS")
+                          equivname))
          (equivname-necc (intern-in-package-of-symbol
-                          (concatenate 'string (symbol-name equivname)
-                                       "-NECC")
+                          (concatenate 'string (symbol-name equivname) "-NECC")
                           equivname))
          (equivname-refl (intern-in-package-of-symbol
-                          (concatenate 'string (symbol-name equivname)
-                                       "-REFL")
+                          (concatenate 'string (symbol-name equivname) "-REFL")
                           equivname))
          (equivname-symm (intern-in-package-of-symbol
-                          (concatenate 'string (symbol-name equivname)
-                                       "-SYMM")
+                          (concatenate 'string (symbol-name equivname) "-SYMM")
                           equivname))
          (equivname-trans (intern-in-package-of-symbol
-                           (concatenate 'string (symbol-name equivname)
-                                        "-TRANS")
-                           equivname)))
-    `(encapsulate
-         nil
+                           (concatenate 'string (symbol-name equivname) "-TRANS")
+                           equivname))
+
+         ;; Mimicking how deflist deals with parents/etc.
+         (parents (if parents-p
+                      parents
+                    (or (xdoc::get-default-parents (w state))
+                        '(acl2::undocumented))))
+
+         ;; BOZO this is kind of lame, can we generate better docs?
+         (long
+          (or long
+              (and parents
+                   (concatenate 'string
+                                "<p>This is a universal equivalence, introduced
+                     using @(see acl2::def-universal-equiv).</p>"))))
+         (long (and long
+                    (concatenate 'string long
+                                 "@(def "
+                                 (symbol-package-name equivname)
+                                 "::"
+                                 (symbol-name equivname) ")"))))
+
+    `(defsection ,equivname
+       ,@(and parents `(:parents ,parents))
+       ,@(and short   `(:short ,short))
+       ,@(and long    `(:long ,long))
+
        ,(if qvars
             `(,(if defquant 'defquant 'defun-sk) ,equivname (x y)
                (forall ,qvars ,equivterms)
@@ -143,6 +185,14 @@
        (defequiv ,equivname))))
 
 (defmacro def-universal-equiv (name &key qvars equiv-terms defquant
-                                    (witness-dcls 'nil witness-dcls-p))
-  (universal-equiv-form name qvars equiv-terms defquant
-                        witness-dcls witness-dcls-p))
+                                    (witness-dcls 'nil witness-dcls-p)
+                                    (parents      'nil parents-p)
+                                    short long)
+  `(make-event
+    (let ((form (universal-equiv-form ',name ',qvars ',equiv-terms ',defquant
+                                      ',witness-dcls ',witness-dcls-p
+                                      ',parents ',parents-p
+                                      ',short ',long
+                                      state)))
+      (value form))))
+

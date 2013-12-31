@@ -492,7 +492,7 @@ does not need to use @(see bitset-members).</p>
 
 <p>We prefer to reason about @('(sets::in a (bitset-members X))').  We could
 have used this as the @(':logic') definition, but the @(see logbitp)-based
-definition should be better for symbolic simulation with @(see GL).</p>"
+definition should be better for symbolic simulation with @(see gl::gl).</p>"
   :inline t
   :split-types t
   (logbitp a (the unsigned-byte (lnfix x)))
@@ -1089,7 +1089,7 @@ actually construct the intersection.</p>"
   :long "<p>We prefer to reason about @('(sets::cardinality (bitset-members
 X))').  We could have used this as the @(':logic') definition, but the @(see
 logcount)-based definition should be better for symbolic simulation with @(see
-GL).</p>"
+gl::gl).</p>"
   :inline t
   :split-types t
   (the unsigned-byte
