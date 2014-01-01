@@ -7667,28 +7667,6 @@
 ; equivalent to NIL.  The actual output is performed after opening a wormhole
 ; to state.
 
-(defconst *window-descriptions*
-
-; Warning: the keys in this alist should include all members of
-; *valid-output-names*.
-
-;                  str clr top pop
-  '((proof-tree    "0" t   t   nil)
-    (rewrite-state "1" t   nil nil)
-    (frame         "2" t   t   t)
-    (error         "3" t   t   t)
-    (warning!      "3" t   t   t)
-    (warning       "3" t   t   t)
-    (observation   "3" t   t   t)
-    (prove         "4" nil nil nil)
-    (event         "4" nil nil nil)
-    (summary       "4" nil nil nil)
-    (chronology    "5" t   nil nil)
-    (proof-checker "6" nil nil nil)
-    (history       "t" t   t   t)
-    (temporary     "t" t   t   t)
-    (query         "q" t   t   t)))
-
 (defun io?-nil-output (lst default-bindings)
   (cond ((null lst) nil)
         (t (cons (cond ((eq (car lst) 'state) 'state)

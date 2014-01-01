@@ -11919,16 +11919,6 @@
   ~ilc[logic] and ~ilc[program].  Other topics in this section can be read as
   one gains familiarity with ACL2.~/~/")
 
-(defconst *valid-output-names*
-
-; Warning: this list should be a subset of the list of keys of the alist
-; *window-descriptions*.  Also: If you change this list, also consider changing
-; the value of INHIBIT in distributed books files Makefile-generic and
-; build/make_cert.
-
-  '(error warning warning! observation prove proof-checker event summary
-          history proof-tree))
-
 ; Set-difference$
 
 (defun set-difference-eq-exec (l1 l2)
@@ -12026,6 +12016,38 @@
               :exec  (set-difference-eql-exec l1 l2)))
    (t ; (equal test 'equal)
     `(set-difference-equal ,l1 ,l2))))
+
+(defconst *window-descriptions*
+
+; See the Essay on Inhibited Output and the Illusion of Windows.
+
+; If you change this list, also consider changing the value of INHIBIT in
+; distributed books files Makefile-generic and build/make_cert.
+
+;                  str clr top pop
+  '((proof-tree    "0" t   t   nil)
+;   (rewrite-state "1" t   nil nil)
+;   (frame         "2" t   t   t)
+    (error         "3" t   t   t)
+    (warning!      "3" t   t   t)
+    (warning       "3" t   t   t)
+    (observation   "3" t   t   t)
+    (prove         "4" nil nil nil)
+    (event         "4" nil nil nil)
+    (summary       "4" nil nil nil)
+;   (chronology    "5" t   nil nil)
+    (proof-checker "6" nil nil nil)
+    (history       "t" t   t   t)
+    (temporary     "t" t   t   t)
+    (query         "q" t   t   t)))
+
+(defconst *valid-output-names*
+
+; If you change this list, also consider changing the value of INHIBIT in
+; distributed books files Makefile-generic and build/make_cert.
+
+  (set-difference-eq (strip-cars *window-descriptions*)
+                     '(TEMPORARY QUERY)))
 
 #+acl2-loop-only
 (defun listp (x)
