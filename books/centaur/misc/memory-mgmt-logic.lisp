@@ -79,8 +79,7 @@ heap.</p>
 
 <p>The @(see cert.pl) build system scans for calls of @('set-max-mem') and uses
 them to infer how much memory a book will need.  This information may be useful
-for scheduling jobs when carrying out <see topic='@(url |7. Distributed
-Builds|)'>distributed builds</see> on a cluster.</p>
+for scheduling jobs when carrying out distributed builds on a cluster.</p>
 
 <p>Note that this parsing is done by a simple Perl script, so you can't just
 use an arbitrary Lisp expression here.  Explicitly supported expressions

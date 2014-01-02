@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "duplicate-detect") ;; bozo for expr-fix
+(include-book "../mlib/fix")
 (include-book "../mlib/expr-tools")
 (include-book "../mlib/writer")
 (local (include-book "../util/arithmetic"))

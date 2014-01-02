@@ -465,12 +465,12 @@ approximation</b> of @('Y').</p>"
 
 
 (defsection 4v-sexpr-alist-<=-alt
-  :parents (4v-sexpr-alist=<=)
+  :parents (4v-sexpr-alist-<=)
   :short "Just a different way to define @('<=') for sexpr alists."
 
   :long "<p>The definition of @('4v-sexpr-alist-<=') compares the actual sexprs
 bound in the alists.  Here, instead, we first evaluate all the sexprs in the
-alist, then compare their results using our simple @(see 4v-alist=<=)
+alist, then compare their results using our simple @(see 4v-alist-<=)
 comparison for four-valued alists.</p>
 
 <p>Either definition is equivalent, as established by this theorem, which is

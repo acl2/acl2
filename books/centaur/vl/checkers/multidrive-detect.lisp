@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "duplicate-detect")
+(include-book "../mlib/fix")
 (include-book "../mlib/lvalues")
 (include-book "../toe/toe-wirealist")
 (include-book "../toe/toe-verilogify")

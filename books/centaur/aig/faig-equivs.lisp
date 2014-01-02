@@ -24,33 +24,32 @@
 (set-verify-guards-eagerness 0)
 
 
-(defsection faig-equiv
+(def-universal-equiv faig-equiv
+  :qvars env
+  :equiv-terms ((equal (faig-eval x env)))
+  :defquant t
+  :witness-dcls ((declare (xargs :guard t)))
   :parents (faig)
   :short "We say the FAIGs @('X') and @('Y') are equivalent when they always
-evaluate to the same value, per @(see faig-eval)."
+evaluate to the same value, per @(see faig-eval).")
 
-  (def-universal-equiv faig-equiv
-    :qvars env
-    :equiv-terms ((equal (faig-eval x env)))
-    :defquant t
-    :witness-dcls ((declare (xargs :guard t))))
-
-  (verify-guards faig-equiv))
+(verify-guards faig-equiv)
 
 
-(defsection faig-alist-equiv
+(def-universal-equiv faig-alist-equiv
+  :qvars k
+  :equiv-terms ((iff (hons-assoc-equal k x))
+                (faig-equiv (cdr (hons-assoc-equal k x))))
+  :defquant t
+  :witness-dcls ((declare (xargs :guard t)))
   :parents (faig)
   :short "We say the FAIG Alists @('X') and @('Y') are equivalent when they
-bind the same keys to equivalent FAIGs, in the sense of @(see faig-equiv)."
+bind the same keys to equivalent FAIGs, in the sense of @(see faig-equiv).")
 
-  (def-universal-equiv faig-alist-equiv
-    :qvars k
-    :equiv-terms ((iff (hons-assoc-equal k x))
-                  (faig-equiv (cdr (hons-assoc-equal k x))))
-    :defquant t
-    :witness-dcls ((declare (xargs :guard t))))
+(verify-guards faig-alist-equiv)
 
-  (verify-guards faig-alist-equiv)
+(defsection faig-alist-equiv-thms
+  :extension faig-alist-equiv
 
   (defrefinement alist-equiv faig-alist-equiv
     :hints ((witness))))

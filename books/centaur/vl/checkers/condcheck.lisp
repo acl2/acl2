@@ -20,7 +20,7 @@
 
 (in-package "VL")
 (include-book "../mlib/ctxexprs")
-(include-book "duplicate-detect")
+(include-book "../mlib/fix")
 (local (include-book "../util/arithmetic"))
 
 (defxdoc condcheck

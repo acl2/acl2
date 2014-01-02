@@ -212,7 +212,7 @@ utility.  The @(see std::defaggregate) macro now has a new
 @(see std::define) now saves some additional information about definitions in
 tables.  A new @(see std/basic) library has been added for basic definitions.
 Optimized bitset libraries have been pulled out of @(see bitops) and moved into
-@(see std/bitsets) and @(see std/sbitsets).</p>
+@(see bitsets::bitsets) and @(see bitsets::sbitsets).</p>
 
 <p>@(see xdoc).  The @(':xdoc') command now shows @(':from') information and
 prints parents more nicely.  The fancy viewer now shows what package a topic is
@@ -222,8 +222,8 @@ within documentation strings; see @(see xdoc::preprocessor).  Added link
 checking page to help notice broken links to external web pages.  Added
 \"download this manual\" and \"printer friendly\" features.</p>
 
-<p>@(see vl).  Expanded @(see always-top) with support for basic @('case')
-statements.  Expanded @(see expr-simp) to make more reductions and be more
+<p>@(see vl).  Expanded @(see vl::always-top) with support for basic @('case')
+statements.  Expanded @(see vl::expr-simp) to make more reductions and be more
 modular.  Added new support for hierarchical identifiers.  Cleaned up support
 for gate instances.</p>
 
@@ -247,8 +247,8 @@ proofs.</p>
 logcons) can now unify with integer g-number objects.  Optimized symbolic
 subtraction and @(see logeqv).  Added a vacuity check in AIG mode.  Path
 condition handling has been made more efficient in AIG mode.  @(see gl-mbe)
-has been reimplemented using @(see gl-assert), a more general mechanism.  A
-new @(see gl-concretize) utility gives more control over GL in AIG mode.</p>
+has been reimplemented using @(see gl::gl-assert), a more general mechanism.  A
+new @(see gl::gl-concretize) utility gives more control over GL in AIG mode.</p>
 
 <p>@('centaur/tutorial').  The multiplier proof by decomposition now has
 comments and is done by rewriting instead of by GL, using a special new theory

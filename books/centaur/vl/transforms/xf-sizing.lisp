@@ -55,9 +55,9 @@ and types throughout a module.  Prerequisite transformations:</p>
 
 <ul>
  <li>@(see portdecl-sign), so we get can signedness right,</li>
- <li>@(see unparameterization), so there are no paramterized widths,</li>
- <li>@(see rangeresolve), so the ranges of wires have been determined</li>, and
- <li>@(see selresolve), so the indices of selects have been determined.</li>
+ <li>@(see unparameterization), so there are no paramterized widths, and</li>
+ <li>@(see rangeresolve), so the ranges of wires and selects have been
+     determined.</li>
 </ul>
 
 <p>BOZO follow-hids might also be a prerequisite when we add support for

@@ -58,10 +58,10 @@ and @(see logbitp).</li>
 
 <li>Efficient implementations of certain bit-vector operations like @(see
 sign-extend), <see topic='@(url bitops/merge)'>merge operations</see>, <see
-topic='@(url fast-logrev)'>fast-logrev</see>, etc., with lemmas or @(see mbe)
-to relate them to the logically nicer definitions.  These definitions generally
-don't add any logical power, but are useful for developing more efficient
-executable models.</li>
+topic='@(url bitops/fast-logrev)'>fast-logrev</see>, etc., with lemmas or @(see
+mbe) to relate them to the logically nicer definitions.  These definitions
+generally don't add any logical power, but are useful for developing more
+efficient executable models.</li>
 
 </ul>
 

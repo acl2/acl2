@@ -203,10 +203,17 @@ formerly the \"location directive\" and printed a location.</p>")
   :inline t
   (vl-fmt-aux x 0 (length x) alist))
 
-(defmacro vl-cw (x &rest args)
-  `(vl-fmt ,x (pairlis$
-               '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
-               (list ,@args))))
+
+(defsection vl-cw
+  :parents (verilog-printing)
+  :short "@(see cw)-like function for printing to @(see ps), with support for
+pretty-printing Verilog constructs as in @(see vl-fmt)."
+
+  (defmacro vl-cw (x &rest args)
+    `(vl-fmt ,x (pairlis$
+                 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                 (list ,@args)))))
+
 
 (define vl-cw-obj ((msg stringp) args &key (ps 'ps))
   (cond ((<= (len args) 10)

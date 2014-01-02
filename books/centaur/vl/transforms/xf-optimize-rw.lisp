@@ -23,34 +23,41 @@
 (local (include-book "../util/arithmetic"))
 
 
-;                         EXPRESSION OPTIMIZATION
-;
-; During the course of expression rewriting, splitting, and so on, we often
-; introduce intermediate expressions which are ugly, large, confusing, etc.; We
-; now introduce a routine to perform some really trivial optimizations, which
-; actually produce a pretty significant impact when applied throughout the
-; rewritten, split up, simplified tree.
+(defsection expression-optimization
+  :parents (transforms)
+  :short "Simplify expressions in a few trivial ways, mainly to clean up ugly
+generated expressions."
 
-; WARNING: These are only valid on sized expressions!
+  :long "<p>During the course of expression rewriting, splitting, and so on, we
+often introduce intermediate expressions which are ugly, large, confusing,
+etc.; We now introduce a routine to perform some really trivial optimizations,
+which actually produce a pretty significant impact when applied throughout the
+rewritten, split up, simplified tree.</p>
+
+<p>WARNING: These are only valid on sized expressions!</p>")
+
+(local (xdoc::set-default-parents expression-optimization))
 
 
-(defund vl-op-optimize (op args mod ialist)
-  (declare (xargs :guard (and (vl-op-p op)
-                              (vl-exprlist-p args)
-                              (or (not (vl-op-arity op))
-                                  (equal (len args) (vl-op-arity op)))
-                              (vl-module-p mod)
-                              (equal ialist (vl-moditem-alist mod)))
-                  :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity)))))
-
-; This function is the core of our optimizations.  OP is some operator which is
-; being applied to ARGS.  The operation takes place in within the module MOD
-; (so we can look up ranges, etc.) and IALIST is the pre-computed ialist for
-; MOD (so we can do these lookups quickly).
-
-; We return either NIL (to indicate that we have no suggestions) or a new
-; expression which is to replace OP(ARGS).  For correctness, this new
-; expression must be semantically equal to OP(ARGS) in this context.
+(define vl-op-optimize
+  :short "Core function in @(see expression-optimization)."
+  ((op     "Some operator being applied to @('args')."
+           vl-op-p)
+   (args   vl-exprlist-p)
+   (mod    "Module where this expression takes place."
+           vl-module-p)
+   (ialist "For fast lookups within @('mod')."
+           (equal ialist (vl-moditem-alist mod)) ))
+  :guard (or (not (vl-op-arity op))
+             (eql (len args) (vl-op-arity op)))
+  :returns (new-expr?
+            "NIL if we have no optimizations to make, or a new expression which
+             is to replace @('OP(ARGS)').  For correctness, this new expression
+             must be semantically equal to OP(ARGS) in this context."
+            (equal (vl-expr-p new-expr?)
+                   (if new-expr? t nil))
+            :hyp :fguard)
+  :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity)))
 
   (case op
 
@@ -82,14 +89,14 @@
                 nil)
 
                ((and (not range)
-                     (equal index 0))
+                     (zp index))
                 ;; foo[0] of a foo with no range --> foo
                 from)
 
                ((and range
                      (vl-range-resolved-p range)
-                     (= index (vl-resolved->val (vl-range->msb range)))
-                     (= index (vl-resolved->val (vl-range->lsb range))))
+                     (eql index (vl-resolved->val (vl-range->msb range)))
+                     (eql index (vl-resolved->val (vl-range->lsb range))))
                 ;; foo[i] of a foo with range [i:i] --> foo
                 from)
 
@@ -112,15 +119,15 @@
                 nil)
 
                ((and (not range)
-                     (equal l-index 0)
-                     (equal r-index 0))
+                     (zp l-index)
+                     (zp r-index))
                 ;; foo[0:0] of foo which has no range --> foo
                 from)
 
                ((and range
                      (vl-range-resolved-p range)
-                     (= l-index (vl-resolved->val (vl-range->msb range)))
-                     (= r-index (vl-resolved->val (vl-range->lsb range))))
+                     (eql l-index (vl-resolved->val (vl-range->msb range)))
+                     (eql r-index (vl-resolved->val (vl-range->lsb range))))
                 ;; foo[left:right] from foo whose range is [left:right] --> foo
                 from)
 
@@ -136,40 +143,26 @@
     (otherwise
      nil)))
 
-(defthm vl-expr-p-of-vl-op-optimize
-  (implies (and (force (vl-op-p op))
-                (force (vl-exprlist-p args))
-                (force (or (not (vl-op-arity op))
-                           (equal (len args) (vl-op-arity op))))
-                (force (vl-module-p mod))
-                (force (equal ialist (vl-moditem-alist mod))))
-           (equal (vl-expr-p (vl-op-optimize op args mod ialist))
-                  (if (vl-op-optimize op args mod ialist)
-                      t
-                    nil)))
-  :hints(("Goal" :in-theory (enable vl-op-optimize))))
+(defsection vl-expr-optimize
+  :short "Optimize sub-expressions throughout an expression."
+  :long "<p>The use of @('changedp') is only to avoid re-consing expressions
+  that aren't being optimized.</p>"
 
+  (mutual-recursion
 
-
-
-(mutual-recursion
-
-; The introduction of changedp is only to avoid re-consing expressions that aren't
-; being optimized.
-
- (defund vl-expr-optimize (x mod ialist)
-   "Returns (MV CHANGEDP X-PRIME)"
-   (declare (xargs :guard (and (vl-expr-p x)
-                               (vl-module-p mod)
-                               (equal ialist (vl-moditem-alist mod)))
-                   :verify-guards nil
-                   :measure (two-nats-measure (acl2-count x) 1)))
-   (if (vl-fast-atom-p x)
-       (mv nil x)
-     (b* ((op                            (vl-nonatom->op x))
-          (args                          (vl-nonatom->args x))
-          ((mv args-changedp args-prime) (vl-exprlist-optimize args mod ialist))
-          (candidate                     (vl-op-optimize op args-prime mod ialist)))
+   (defund vl-expr-optimize (x mod ialist)
+     "Returns (MV CHANGEDP X-PRIME)"
+     (declare (xargs :guard (and (vl-expr-p x)
+                                 (vl-module-p mod)
+                                 (equal ialist (vl-moditem-alist mod)))
+                     :verify-guards nil
+                     :measure (two-nats-measure (acl2-count x) 1)))
+     (if (vl-fast-atom-p x)
+         (mv nil x)
+       (b* ((op                            (vl-nonatom->op x))
+            (args                          (vl-nonatom->args x))
+            ((mv args-changedp args-prime) (vl-exprlist-optimize args mod ialist))
+            (candidate                     (vl-op-optimize op args-prime mod ialist)))
          (cond (candidate
                 (mv t candidate))
                (args-changedp
@@ -177,138 +170,140 @@
                (t
                 (mv nil x))))))
 
- (defund vl-exprlist-optimize (x mod ialist)
-   "Returns (MV CHANGEDP X-PRIME)"
-   (declare (xargs :guard (and (vl-exprlist-p x)
-                               (vl-module-p mod)
-                               (equal ialist (vl-moditem-alist mod)))
-                   :verify-guards nil
-                   :measure (two-nats-measure (acl2-count x) 0)))
-   (if (atom x)
-       (mv nil nil)
-     (b* (((mv car-changedp car-prime) (vl-expr-optimize (car x) mod ialist))
-          ((mv cdr-changedp cdr-prime) (vl-exprlist-optimize (cdr x) mod ialist)))
+   (defund vl-exprlist-optimize (x mod ialist)
+     "Returns (MV CHANGEDP X-PRIME)"
+     (declare (xargs :guard (and (vl-exprlist-p x)
+                                 (vl-module-p mod)
+                                 (equal ialist (vl-moditem-alist mod)))
+                     :verify-guards nil
+                     :measure (two-nats-measure (acl2-count x) 0)))
+     (if (atom x)
+         (mv nil nil)
+       (b* (((mv car-changedp car-prime) (vl-expr-optimize (car x) mod ialist))
+            ((mv cdr-changedp cdr-prime) (vl-exprlist-optimize (cdr x) mod ialist)))
          (mv (or car-changedp cdr-changedp)
              (cons car-prime cdr-prime))))))
 
-(defthm vl-exprlist-optimize-when-not-consp
-  (implies (not (consp x))
-           (equal (vl-exprlist-optimize x mod ialist)
-                  (mv nil nil)))
-  :hints(("Goal" :in-theory (enable vl-exprlist-optimize))))
+  (defthm vl-exprlist-optimize-when-not-consp
+    (implies (not (consp x))
+             (equal (vl-exprlist-optimize x mod ialist)
+                    (mv nil nil)))
+    :hints(("Goal" :in-theory (enable vl-exprlist-optimize))))
 
-(defthm vl-exprlist-optimize-of-cons
-  (equal (vl-exprlist-optimize (cons a x) mod ialist)
-         (b* (((mv car-changedp car-prime) (vl-expr-optimize a mod ialist))
-              ((mv cdr-changedp cdr-prime) (vl-exprlist-optimize x mod ialist)))
+  (defthm vl-exprlist-optimize-of-cons
+    (equal (vl-exprlist-optimize (cons a x) mod ialist)
+           (b* (((mv car-changedp car-prime) (vl-expr-optimize a mod ialist))
+                ((mv cdr-changedp cdr-prime) (vl-exprlist-optimize x mod ialist)))
              (mv (or car-changedp cdr-changedp)
                  (cons car-prime cdr-prime))))
-  :hints(("Goal" :in-theory (enable vl-exprlist-optimize))))
+    :hints(("Goal" :in-theory (enable vl-exprlist-optimize))))
 
-(defthm true-listp-of-vl-exprlist-optimize
-  (true-listp (mv-nth 1 (vl-exprlist-optimize x mod ialist)))
-  :rule-classes :type-prescription
-  :hints(("Goal" :induct (len x))))
+  (defthm true-listp-of-vl-exprlist-optimize
+    (true-listp (mv-nth 1 (vl-exprlist-optimize x mod ialist)))
+    :rule-classes :type-prescription
+    :hints(("Goal" :induct (len x))))
 
-(defthm len-of-vl-exprlist-optimize
-  (equal (len (mv-nth 1 (vl-exprlist-optimize x mod ialist)))
-         (len x))
-  :hints(("Goal" :induct (len x))))
+  (defthm len-of-vl-exprlist-optimize
+    (equal (len (mv-nth 1 (vl-exprlist-optimize x mod ialist)))
+           (len x))
+    :hints(("Goal" :induct (len x))))
 
-(encapsulate
- ()
- (local (defthm lemma
-          (case flag
-            (expr (implies (and (vl-expr-p x)
+  (encapsulate
+    ()
+    (local (defthm lemma
+             (case flag
+               (expr (implies (and (vl-expr-p x)
+                                   (vl-module-p mod)
+                                   (equal ialist (vl-moditem-alist mod)))
+                              (vl-expr-p (mv-nth 1 (vl-expr-optimize x mod ialist)))))
+               (atts t)
+               (t (implies (and (vl-exprlist-p x)
                                 (vl-module-p mod)
                                 (equal ialist (vl-moditem-alist mod)))
-                           (vl-expr-p (mv-nth 1 (vl-expr-optimize x mod ialist)))))
-            (atts t)
-            (t (implies (and (vl-exprlist-p x)
-                             (vl-module-p mod)
-                             (equal ialist (vl-moditem-alist mod)))
-                        (vl-exprlist-p (mv-nth 1 (vl-exprlist-optimize x mod ialist))))))
-          :rule-classes nil
-          :hints(("Goal"
-                  :induct (vl-expr-induct flag x)
-                  :expand ((vl-expr-optimize x mod ialist))))))
+                           (vl-exprlist-p (mv-nth 1 (vl-exprlist-optimize x mod ialist))))))
+             :rule-classes nil
+             :hints(("Goal"
+                     :induct (vl-expr-induct flag x)
+                     :expand ((vl-expr-optimize x mod ialist))))))
 
- (defthm vl-expr-p-of-vl-expr-optimize
-   (implies (and (force (vl-expr-p x))
-                 (force (vl-module-p mod))
-                 (force (equal ialist (vl-moditem-alist mod))))
-            (vl-expr-p (mv-nth 1 (vl-expr-optimize x mod ialist))))
-   :hints(("Goal" :use ((:instance lemma (flag 'expr))))))
+    (defthm vl-expr-p-of-vl-expr-optimize
+      (implies (and (force (vl-expr-p x))
+                    (force (vl-module-p mod))
+                    (force (equal ialist (vl-moditem-alist mod))))
+               (vl-expr-p (mv-nth 1 (vl-expr-optimize x mod ialist))))
+      :hints(("Goal" :use ((:instance lemma (flag 'expr))))))
 
- (defthm vl-exprlist-p-of-vl-exprlist-optimize
-   (implies (and (force (vl-exprlist-p x))
-                 (force (vl-module-p mod))
-                 (force (equal ialist (vl-moditem-alist mod))))
-            (vl-exprlist-p (mv-nth 1 (vl-exprlist-optimize x mod ialist))))
-   :hints(("Goal" :use ((:instance lemma (flag 'list)))))))
+    (defthm vl-exprlist-p-of-vl-exprlist-optimize
+      (implies (and (force (vl-exprlist-p x))
+                    (force (vl-module-p mod))
+                    (force (equal ialist (vl-moditem-alist mod))))
+               (vl-exprlist-p (mv-nth 1 (vl-exprlist-optimize x mod ialist))))
+      :hints(("Goal" :use ((:instance lemma (flag 'list)))))))
 
-(verify-guards vl-expr-optimize
-               :hints(("Goal" :in-theory (enable vl-expr-optimize))))
-
+  (verify-guards vl-expr-optimize
+    :hints(("Goal" :in-theory (enable vl-expr-optimize)))))
 
 
 
 (defmacro def-vl-optimize (name type body)
-  `(encapsulate
-    ()
-    (defund ,name (x mod ialist)
-      "Returns (MV CHANGEDP X-PRIME)"
-      (declare (xargs :guard (and (,type x)
-                                  (vl-module-p mod)
-                                  (equal ialist (vl-moditem-alist mod))))
-               (ignorable x mod ialist))
-      ,body)
+  `(defsection ,name
+     :short ,(cat "Optimize expressions throughout a @(see "
+                  (symbol-name type) ").")
+     (defund ,name (x mod ialist)
+       "Returns (MV CHANGEDP X-PRIME)"
+       (declare (xargs :guard (and (,type x)
+                                   (vl-module-p mod)
+                                   (equal ialist (vl-moditem-alist mod))))
+                (ignorable x mod ialist))
+       ,body)
 
-    (local (in-theory (enable ,name)))
+     (local (in-theory (enable ,name)))
 
-    (defthm ,(intern-in-package-of-symbol
-              (cat (symbol-name type) "-OF-" (symbol-name name))
-              name)
-      (implies (and (force (,type x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
-               (,type (mv-nth 1 (,name x mod ialist)))))
+     (defthm ,(intern-in-package-of-symbol
+               (cat (symbol-name type) "-OF-" (symbol-name name))
+               name)
+       (implies (and (force (,type x))
+                     (force (vl-module-p mod))
+                     (force (equal ialist (vl-moditem-alist mod))))
+                (,type (mv-nth 1 (,name x mod ialist)))))
 
-    ))
+     ))
 
 (defmacro def-vl-optimize-list (name list-type element-name)
-  `(encapsulate
-    ()
-    (defund ,name (x mod ialist)
-      "Returns (MV CHANGEDP X-PRIME)"
-      (declare (xargs :guard (and (,list-type x)
-                                  (vl-module-p mod)
-                                  (equal ialist (vl-moditem-alist mod)))))
-      (if (atom x)
-          (mv nil nil)
-        (b* (((mv car-changedp car-prime) (,element-name (car x) mod ialist))
-             ((mv cdr-changedp cdr-prime) (,name (cdr x) mod ialist)))
-            (mv (or car-changedp cdr-changedp)
-                (cons car-prime cdr-prime)))))
+  `(defsection ,name
+     :short ,(cat "Optimize expressions throughout a @(see "
+                  (symbol-name list-type) ").")
 
-    (local (in-theory (enable ,name)))
+     (defund ,name (x mod ialist)
+       "Returns (MV CHANGEDP X-PRIME)"
+       (declare (xargs :guard (and (,list-type x)
+                                   (vl-module-p mod)
+                                   (equal ialist (vl-moditem-alist mod)))))
+       (if (atom x)
+           (mv nil nil)
+         (b* (((mv car-changedp car-prime) (,element-name (car x) mod ialist))
+              ((mv cdr-changedp cdr-prime) (,name (cdr x) mod ialist)))
+           (mv (or car-changedp cdr-changedp)
+               (cons car-prime cdr-prime)))))
 
-    (defthm ,(intern-in-package-of-symbol
-              (cat "TRUE-LISTP-OF-" (symbol-name name) "-2")
-              name)
-      (true-listp (mv-nth 1 (,name x mod ialist)))
-      :rule-classes :type-prescription)
+     (local (in-theory (enable ,name)))
 
-    (defthm ,(intern-in-package-of-symbol
-              (cat (symbol-name list-type) "-OF-" (symbol-name name))
-              name)
-      (implies (and (force (,list-type x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
-               (,list-type (mv-nth 1 (,name x mod ialist))))
-      :hints(("Goal" :induct (len x))))
+     (defthm ,(intern-in-package-of-symbol
+               (cat "TRUE-LISTP-OF-" (symbol-name name) "-2")
+               name)
+       (true-listp (mv-nth 1 (,name x mod ialist)))
+       :rule-classes :type-prescription)
 
-    ))
+     (defthm ,(intern-in-package-of-symbol
+               (cat (symbol-name list-type) "-OF-" (symbol-name name))
+               name)
+       (implies (and (force (,list-type x))
+                     (force (vl-module-p mod))
+                     (force (equal ialist (vl-moditem-alist mod))))
+                (,list-type (mv-nth 1 (,name x mod ialist))))
+       :hints(("Goal" :induct (len x))))
+
+     ))
 
 
 (def-vl-optimize vl-assign-optimize vl-assign-p
@@ -391,8 +386,9 @@
 
 
 
-(defund vl-module-optimize (x)
-  (declare (xargs :guard (vl-module-p x)))
+(define vl-module-optimize ((x vl-module-p))
+  :short "Optimize expressions throughout a module."
+  :returns (new-x vl-module-p :hyp :fguard)
   (b* (((when (vl-module->hands-offp x))
         x)
        (ialist                            (vl-moditem-alist x))
@@ -400,30 +396,22 @@
        ((mv gateinsts-changedp gateinsts) (vl-gateinstlist-optimize (vl-module->gateinsts x) x ialist))
        ((mv assigns-changedp assigns)     (vl-assignlist-optimize (vl-module->assigns x) x ialist))
        (-                                 (flush-hons-get-hash-table-link ialist)))
-      (if (or modinsts-changedp gateinsts-changedp assigns-changedp)
-          (change-vl-module x
-                            :modinsts modinsts
-                            :gateinsts gateinsts
-                            :assigns assigns)
-        x)))
-
-(defthm vl-module-p-of-vl-module-optimize
-  (implies (force (vl-module-p x))
-           (vl-module-p (vl-module-optimize x)))
-  :hints(("Goal" :in-theory (enable vl-module-optimize))))
-
-(defthm vl-module->name-of-vl-module-optimize
-  (equal (vl-module->name (vl-module-optimize x))
-         (vl-module->name x))
-  :hints(("Goal" :in-theory (enable vl-module-optimize))))
-
-
+    (if (or modinsts-changedp gateinsts-changedp assigns-changedp)
+        (change-vl-module x
+                          :modinsts modinsts
+                          :gateinsts gateinsts
+                          :assigns assigns)
+      x))
+  ///
+  (defthm vl-module->name-of-vl-module-optimize
+    (equal (vl-module->name (vl-module-optimize x))
+           (vl-module->name x))))
 
 (defprojection vl-modulelist-optimize (x)
   (vl-module-optimize x)
   :guard (vl-modulelist-p x)
   :result-type vl-modulelist-p
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-optimize
-     (equal (vl-modulelist->names (vl-modulelist-optimize x))
-            (vl-modulelist->names x)))))
+  ///
+  (defthm vl-modulelist->names-of-vl-modulelist-optimize
+    (equal (vl-modulelist->names (vl-modulelist-optimize x))
+           (vl-modulelist->names x))))

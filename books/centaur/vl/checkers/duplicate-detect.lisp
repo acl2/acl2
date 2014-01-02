@@ -20,590 +20,208 @@
 
 (in-package "VL")
 (include-book "../mlib/writer")
+(include-book "../mlib/fix")
 (include-book "../mlib/expr-tools")
 (local (include-book "../util/arithmetic"))
 
-
-(defsection vl-atom-fix
-  :parents (vl-expr-fix)
-
-  (local (in-theory (enable vl-atom-p
-                            vl-atom
-                            vl-atom->finalwidth
-                            vl-atom->finaltype
-                            vl-atom->guts)))
-
-  (defund vl-atom-fix (x)
-    (declare (xargs :guard (vl-atom-p x)))
-    (mbe :logic (change-vl-atom x
-                                :finalwidth nil
-                                :finaltype nil)
-         :exec (if (or (vl-atom->finalwidth x)
-                       (vl-atom->finaltype x))
-                   (change-vl-atom x
-                                   :finalwidth nil
-                                   :finaltype nil)
-                 x)))
-
-  (local (in-theory (enable vl-atom-fix)))
-
-  (defthm vl-atom-p-of-vl-atom-fix
-    (implies (force (vl-atom-p x))
-             (vl-atom-p (vl-atom-fix x)))))
-
-
-
-(defsection vl-expr-fix
-  :parents (vl-expr-p)
-  :short "Throw away attributes and widths, keeping just the core of an expression."
-  :long "<p>This is often useful when writing heuristic checks where you want
-to look for particular expressions, where attributes and differing sizes are of
-no concern.</p>"
-
-;; BOZO consider optimizing to avoid reconsing already-fixed expressions
-
-  (mutual-recursion
-   (defund vl-expr-fix (x)
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (if (vl-fast-atom-p x)
-         (vl-atom-fix x)
-       (change-vl-nonatom x
-                          :args (vl-exprlist-fix (vl-nonatom->args x))
-                          :atts nil
-                          :finalwidth nil
-                          :finaltype nil)))
-   (defund vl-exprlist-fix (x)
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (atom x)
-         nil
-       (cons (vl-expr-fix (car x))
-             (vl-exprlist-fix (cdr x))))))
-
-  (flag::make-flag flag-vl-expr-fix
-                   vl-expr-fix
-                   :flag-mapping ((vl-expr-fix . expr)
-                                  (vl-exprlist-fix . list)))
-
-  (defthm len-of-vl-exprlist-fix
-    (equal (len (vl-exprlist-fix x))
-           (len x))
-    :hints(("Goal"
-            :induct (len x)
-            :expand (vl-exprlist-fix x))))
-
-  (defthm-flag-vl-expr-fix lemma
-    (expr (implies (force (vl-expr-p x))
-                   (vl-expr-p (vl-expr-fix x)))
-          :name vl-expr-p-of-vl-expr-fix)
-    (list (implies (force (vl-exprlist-p x))
-                   (vl-exprlist-p (vl-exprlist-fix x)))
-          :name vl-exprlist-p-of-vl-exprlist-fix)
-    :hints(("Goal"
-            :induct (flag-vl-expr-fix flag x)
-            :expand ((vl-expr-fix x)
-                     (vl-exprlist-fix x))))))
-
-
-
-(defsection vl-range-fix
-
-  (defund vl-range-fix (x)
-    (declare (xargs :guard (vl-range-p x)))
-    (b* (((vl-range x) x))
-      (change-vl-range x
-                       :msb (vl-expr-fix x.msb)
-                       :lsb (vl-expr-fix x.lsb))))
-
-  (local (in-theory (enable vl-range-fix)))
-
-  (defthm vl-range-p-of-vl-range-fix
-    (implies (force (vl-range-p x))
-             (vl-range-p (vl-range-fix x)))))
-
-
-(defsection vl-maybe-range-fix
-
-  (defund vl-maybe-range-fix (x)
-    (declare (xargs :guard (vl-maybe-range-p x)))
-    (if x
-        (vl-range-fix x)
-      x))
-
-  (local (in-theory (enable vl-maybe-range-fix)))
-
-  (defthm vl-maybe-range-p-of-vl-maybe-range-fix
-    (implies (force (vl-maybe-range-p x))
-             (vl-maybe-range-p (vl-maybe-range-fix x)))))
-
-
-(defsection vl-rangelist-fix
-
-  (defprojection vl-rangelist-fix (x)
-    (vl-range-fix x)
-    :guard (vl-rangelist-p x))
-
-  (local (in-theory (enable vl-rangelist-fix)))
-
-  (defthm vl-rangelist-p-of-vl-rangelist-fix
-    (implies (force (vl-rangelist-p x))
-             (vl-rangelist-p (vl-rangelist-fix x)))))
-
-
-
-(defsection vl-assign-fix
-
-  (defund vl-assign-fix (x)
-    (declare (xargs :guard (vl-assign-p x)))
-    (b* (((vl-assign x) x))
-      (change-vl-assign x
-                        :lvalue   (vl-expr-fix x.lvalue)
-                        :expr     (vl-expr-fix x.expr)
-                        :delay    nil
-                        :strength nil
-                        :loc      *vl-fakeloc*
-                        :atts     nil)))
-
-  (local (in-theory (enable vl-assign-fix)))
-
-  (defthm vl-assign-p-of-vl-assign-fix
-    (implies (force (vl-assign-p x))
-             (vl-assign-p (vl-assign-fix x)))))
-
-
-(defsection vl-assignlist-fix
-
-  (defprojection vl-assignlist-fix (x)
-    (vl-assign-fix x)
-    :guard (vl-assignlist-p x))
-
-  (local (in-theory (enable vl-assignlist-fix)))
-
-  (defthm vl-assignlist-p-of-vl-assignlist-fix
-    (implies (force (vl-assignlist-p x))
-             (vl-assignlist-p (vl-assignlist-fix x)))))
-
-
-(defsection vl-plainarg-fix
-
-  (defund vl-plainarg-fix (x)
-    (declare (xargs :guard (vl-plainarg-p x)))
-    (b* (((vl-plainarg x) x))
-      (change-vl-plainarg x
-                          :expr (if x.expr
-                                    (vl-expr-fix x.expr)
-                                  nil)
-                          :atts     nil
-                          :portname nil
-                          :dir      nil)))
-
-  (local (in-theory (enable vl-plainarg-fix)))
-
-  (defthm vl-plainarg-p-of-vl-plainarg-fix
-    (implies (force (vl-plainarg-p x))
-             (vl-plainarg-p (vl-plainarg-fix x)))))
-
-(defsection vl-plainarglist-fix
-
-  (defprojection vl-plainarglist-fix (x)
-    (vl-plainarg-fix x)
-    :guard (vl-plainarglist-p x))
-
-  (local (in-theory (enable vl-plainarglist-fix)))
-
-  (defthm vl-plainarglist-p-of-vl-plainarglist-fix
-    (implies (force (vl-plainarglist-p x))
-             (vl-plainarglist-p (vl-plainarglist-fix x)))))
-
-
-(defsection vl-namedarg-fix
-
-  (defund vl-namedarg-fix (x)
-    (declare (xargs :guard (vl-namedarg-p x)))
-    (b* (((vl-namedarg x) x))
-      (change-vl-namedarg x
-                          :expr (if x.expr
-                                    (vl-expr-fix x.expr)
-                                  nil)
-                          :atts     nil)))
-
-  (local (in-theory (enable vl-namedarg-fix)))
-
-  (defthm vl-namedarg-p-of-vl-namedarg-fix
-    (implies (force (vl-namedarg-p x))
-             (vl-namedarg-p (vl-namedarg-fix x)))))
-
-(defsection vl-namedarglist-fix
-
-  (defprojection vl-namedarglist-fix (x)
-    (vl-namedarg-fix x)
-    :guard (vl-namedarglist-p x))
-
-  (local (in-theory (enable vl-namedarglist-fix)))
-
-  (defthm vl-namedarglist-p-of-vl-namedarglist-fix
-    (implies (force (vl-namedarglist-p x))
-             (vl-namedarglist-p (vl-namedarglist-fix x)))))
-
-
-(defsection vl-arguments-fix
-
-  (defund vl-arguments-fix (x)
-    (declare (xargs :guard (vl-arguments-p x)))
-    (b* ((namedp (vl-arguments->namedp x))
-         (args   (vl-arguments->args x))
-         (args-fix (if namedp
-                       (vl-namedarglist-fix args)
-                     (vl-plainarglist-fix args))))
-      (vl-arguments namedp args-fix)))
-
-  (local (in-theory (enable vl-arguments-fix)))
-
-  (defthm vl-arguments-p-of-vl-arguments-fix
-    (implies (force (vl-arguments-p x))
-             (vl-arguments-p (vl-arguments-fix x)))))
-
-
-(defsection vl-modinst-fix
-
-  (defund vl-modinst-fix (x)
-    (declare (xargs :guard (vl-modinst-p x)))
-    (b* (((vl-modinst x) x))
-      (change-vl-modinst x
-                         :range     (vl-maybe-range-fix x.range)
-                         :paramargs (vl-arguments-fix x.paramargs)
-                         :portargs  (vl-arguments-fix x.portargs)
-                         :str nil
-                         :delay nil
-                         :atts nil
-                         :loc *vl-fakeloc*)))
-
-  (local (in-theory (enable vl-modinst-fix)))
-
-  (defthm vl-modinst-p-of-vl-modinst-fix
-    (implies (force (vl-modinst-p x))
-             (vl-modinst-p (vl-modinst-fix x)))))
-
-
-(defsection vl-modinstlist-fix
-
-  (defprojection vl-modinstlist-fix (x)
-    (vl-modinst-fix x)
-    :guard (vl-modinstlist-p x))
-
-  (local (in-theory (enable vl-modinstlist-fix)))
-
-  (defthm vl-modinstlist-p-of-vl-modinstlist-fix
-    (implies (force (vl-modinstlist-p x))
-             (vl-modinstlist-p (vl-modinstlist-fix x)))))
-
-
-(defsection vl-gateinst-fix
-
-  (defund vl-gateinst-fix (x)
-    (declare (xargs :guard (vl-gateinst-p x)))
-    (b* (((vl-gateinst x) x))
-      (change-vl-gateinst x
-                         :range     (vl-maybe-range-fix x.range)
-                         :strength  nil
-                         :delay     nil
-                         :args      (vl-plainarglist-fix x.args)
-                         :atts      nil
-                         :loc       *vl-fakeloc*)))
-
-  (local (in-theory (enable vl-gateinst-fix)))
-
-  (defthm vl-gateinst-p-of-vl-gateinst-fix
-    (implies (force (vl-gateinst-p x))
-             (vl-gateinst-p (vl-gateinst-fix x)))))
-
-(defsection vl-gateinstlist-fix
-
-  (defprojection vl-gateinstlist-fix (x)
-    (vl-gateinst-fix x)
-    :guard (vl-gateinstlist-p x))
-
-  (local (in-theory (enable vl-gateinstlist-fix)))
-
-  (defthm vl-gateinstlist-p-of-vl-gateinstlist-fix
-    (implies (force (vl-gateinstlist-p x))
-             (vl-gateinstlist-p (vl-gateinstlist-fix x)))))
-
-
-
-
-
 (deflist vl-locationlist-p (x)
+  ;; BOZO find me a home
   (vl-location-p x)
   :guard t
   :elementp-of-nil nil)
 
 
-(defsection vl-locationlist-string
+(defsection duplicate-detect
+  :parents (checkers)
+  :short "Check for instances and assignments that are literally identical."
 
-  (defund vl-locationlist-string (n)
-    (declare (xargs :guard (and (natp n)
-                                (<= n 9))))
-    (cond ((zp n)
-           "")
-          ((= n 1)
-           (cat "~l1"))
-          ((= n 2)
-           (cat "~l2 and ~l1"))
-          (t
-           (cat "~l" (natstr n) ", " (vl-locationlist-string (- n 1))))))
+  :long "<p>This is a heuristic for generating warnings.  We look for
+assignments, module instances, and gate instances that are identical <see
+topic='@(url fixing-functions)'>up to fixing</see>.  These sorts of things
+might well be copy/paste errors.</p>")
 
-  (local (in-theory (enable vl-locationlist-string)))
+(local (xdoc::set-default-parents duplicate-detect))
 
+(define vl-locationlist-string ((n natp))
+  :guard (<= n 9)
+  :parents (vl-make-duplicate-warning)
+  :returns (str stringp :rule-classes :type-prescription)
+  (cond ((zp n)
+         "")
+        ((= n 1)
+         (cat "~l1"))
+        ((= n 2)
+         (cat "~l2 and ~l1"))
+        (t
+         (cat "~l" (natstr n) ", " (vl-locationlist-string (- n 1)))))
+  ///
   (defthm stringp-of-vl-locationlist-string
     (stringp (vl-locationlist-string n))
     :rule-classes :type-prescription))
 
+(define vl-make-duplicate-warning ((type stringp)
+                                   (locs vl-locationlist-p)
+                                   (modname stringp))
+  :returns (warning vl-warning-p)
+  (b* ((locs        (redundant-list-fix locs))
+       (elide-p     (> (len locs) 9))
+       (elided-locs (if elide-p (take 9 locs) locs)))
+    (make-vl-warning
+     :type :vl-warn-duplicates
+     :msg  (cat "In module ~m0, found duplicated " type " at "
+                (vl-locationlist-string (len elided-locs))
+                (if elide-p
+                    " (and other locations)."
+                  "."))
+     :args (cons modname elided-locs)
+     :fatalp nil
+     :fn 'vl-make-duplicate-warning)))
 
-(defsection vl-make-duplicate-warning
+(define vl-duplicate-gateinst-locations
+  ((dupe vl-gateinst-p      "Some gateinst that was duplicated (fixed).")
+   (fixed vl-gateinstlist-p "Fixed versions of @('orig')")
+   (orig  vl-gateinstlist-p "Original gate instances, i.e., before fixing."))
+  :guard (same-lengthp fixed orig)
+  :returns (matches vl-locationlist-p "Locations of gates matching @('dupe')."
+                    :hyp :fguard)
+  (b* (((when (atom fixed))
+        nil)
+       (rest (vl-duplicate-gateinst-locations dupe (cdr fixed) (cdr orig)))
+       ((when (equal dupe (car fixed)))
+        (cons (vl-gateinst->loc (car orig)) rest)))
+    rest))
 
-  (defund vl-make-duplicate-warning (type locs modname)
-    (declare (xargs :guard (and (stringp type)
-                                (vl-locationlist-p locs)
-                                (stringp modname))))
-    (b* ((locs        (redundant-list-fix locs))
-         (elide-p     (> (len locs) 9))
-         (elided-locs (if elide-p (take 9 locs) locs)))
-      (make-vl-warning
-       :type :vl-warn-duplicates
-       :msg  (cat "In module ~m0, found duplicated " type " at "
-                  (vl-locationlist-string (len elided-locs))
-                  (if elide-p
-                      " (and other locations)."
-                    "."))
-       :args (cons modname elided-locs)
-       :fatalp nil
-       :fn 'vl-make-duplicate-warning
-       )))
-
-  (local (in-theory (enable vl-make-duplicate-warning)))
-
-  (defthm vl-warning-p-of-vl-make-duplicate-warning
-    (vl-warning-p (vl-make-duplicate-warning type locs modname))))
-
-
-
-(defsection vl-duplicate-gateinst-warnings
-
-  (defund vl-duplicate-gateinst-locations (dupe fixed orig)
-    ;; Dupe is fixed and was duplicated in orig.
-    ;; Fixed = (fix orig).
-    ;; Collect locations of elements in orig that got fixed to dupe.
-    (declare (xargs :guard (and (vl-gateinst-p dupe)
-                                (vl-gateinstlist-p fixed)
-                                (vl-gateinstlist-p orig)
-                                (same-lengthp fixed orig))))
-    (b* (((when (atom fixed))
-          nil)
-         (rest (vl-duplicate-gateinst-locations dupe (cdr fixed) (cdr orig)))
-         ((when (equal dupe (car fixed)))
-          (cons (vl-gateinst->loc (car orig)) rest)))
-      rest))
-
-  (local (in-theory (enable vl-duplicate-gateinst-locations)))
-
-  (defthm vl-locationlist-p-of-vl-duplicate-gateinst-locations
-    (implies (and (force (vl-gateinst-p dupe))
-                  (force (vl-gateinstlist-p fixed))
-                  (force (vl-gateinstlist-p orig))
-                  (force (same-lengthp fixed orig)))
-             (vl-locationlist-p (vl-duplicate-gateinst-locations dupe fixed orig))))
-
-  (defund vl-duplicate-gateinst-warnings (dupes fixed orig modname)
-    ;; Dupes are the fixed gateinsts that were duplicated.
-    ;; Fixed = (fix orig).
-    ;; Make warnings for each duplicate thing we found.
-    (declare (xargs :guard (and (vl-gateinstlist-p dupes)
-                                (vl-gateinstlist-p fixed)
-                                (vl-gateinstlist-p orig)
-                                (same-lengthp fixed orig)
-                                (stringp modname))))
-    (if (atom dupes)
-        nil
-      (b* ((locs    (vl-duplicate-gateinst-locations (car dupes) fixed orig))
-           (warning (vl-make-duplicate-warning "gate instances" locs modname))
-           (rest    (vl-duplicate-gateinst-warnings (cdr dupes) fixed orig modname)))
-        (cons warning rest))))
-
-  (local (in-theory (enable vl-duplicate-gateinst-warnings)))
-
-  (defthm vl-warninglist-p-of-vl-duplicate-gateinst-warnings
-    (vl-warninglist-p (vl-duplicate-gateinst-warnings dupes fixed orig modname))))
-
-
-(defsection vl-duplicate-modinst-warnings
-
-  (defund vl-duplicate-modinst-locations (dupe fixed orig)
-    (declare (xargs :guard (and (vl-modinst-p dupe)
-                                (vl-modinstlist-p fixed)
-                                (vl-modinstlist-p orig)
-                                (same-lengthp fixed orig))))
-    (b* (((when (atom fixed))
-          nil)
-         (rest (vl-duplicate-modinst-locations dupe (cdr fixed) (cdr orig)))
-         ((when (equal dupe (car fixed)))
-          (cons (vl-modinst->loc (car orig)) rest)))
-      rest))
-
-  (local (in-theory (enable vl-duplicate-modinst-locations)))
-
-  (defthm vl-locationlist-p-of-vl-duplicate-modinst-locations
-    (implies (and (force (vl-modinst-p dupe))
-                  (force (vl-modinstlist-p fixed))
-                  (force (vl-modinstlist-p orig))
-                  (force (same-lengthp fixed orig)))
-             (vl-locationlist-p (vl-duplicate-modinst-locations dupe fixed orig))))
-
-  (defund vl-duplicate-modinst-warnings (dupes fixed orig modname)
-    (declare (xargs :guard (and (vl-modinstlist-p dupes)
-                                (vl-modinstlist-p fixed)
-                                (vl-modinstlist-p orig)
-                                (same-lengthp fixed orig)
-                                (stringp modname))))
-    (if (atom dupes)
-        nil
-      (b* ((locs    (vl-duplicate-modinst-locations (car dupes) fixed orig))
-           (warning (vl-make-duplicate-warning "module instances" locs modname))
-           (rest    (vl-duplicate-modinst-warnings (cdr dupes) fixed orig modname)))
-        (cons warning rest))))
-
-  (local (in-theory (enable vl-duplicate-modinst-warnings)))
-
-  (defthm vl-warninglist-p-of-vl-duplicate-modinst-warnings
-    (vl-warninglist-p (vl-duplicate-modinst-warnings dupes fixed orig modname))))
+(define vl-duplicate-gateinst-warnings
+  ((dupes vl-gateinstlist-p "The gateinsts that were duplicated.  (fixed).")
+   (fixed vl-gateinstlist-p "Fixed versions of @('orig').")
+   (orig  vl-gateinstlist-p "Original gate instances, i.e., before fixing.")
+   (modname stringp))
+  :guard (same-lengthp fixed orig)
+  :returns (warnings vl-warninglist-p "Warnings for each duplicate gateinst.")
+  (b* (((when (atom dupes))
+        nil)
+       (locs    (vl-duplicate-gateinst-locations (car dupes) fixed orig))
+       (warning (vl-make-duplicate-warning "gate instances" locs modname))
+       (rest    (vl-duplicate-gateinst-warnings (cdr dupes) fixed orig modname)))
+    (cons warning rest)))
 
 
 
+(define vl-duplicate-modinst-locations
+  ((dupe  vl-modinst-p "Some modinst that was duplicated (fixed).")
+   (fixed vl-modinstlist-p "Fixed versions of @('orig').")
+   (orig  vl-modinstlist-p "Original module instances, i.e., before fixing."))
+  :guard (same-lengthp fixed orig)
+  :returns (matches vl-locationlist-p "Locations of instances matching @('dupe')."
+                    :hyp :fguard)
+  (b* (((when (atom fixed))
+        nil)
+       (rest (vl-duplicate-modinst-locations dupe (cdr fixed) (cdr orig)))
+       ((when (equal dupe (car fixed)))
+        (cons (vl-modinst->loc (car orig)) rest)))
+    rest))
+
+(define vl-duplicate-modinst-warnings
+  ((dupes vl-modinstlist-p "The modinsts that were duplicated.  (fixed).")
+   (fixed vl-modinstlist-p "Fixed versions of @('orig').")
+   (orig  vl-modinstlist-p "Original mod instances, i.e., before fixing.")
+   (modname stringp))
+  :guard (same-lengthp fixed orig)
+  :returns (warnings vl-warninglist-p "Warnings for each duplicate modinst.")
+  (b* (((when (atom dupes))
+        nil)
+       (locs    (vl-duplicate-modinst-locations (car dupes) fixed orig))
+       (warning (vl-make-duplicate-warning "module instances" locs modname))
+       (rest    (vl-duplicate-modinst-warnings (cdr dupes) fixed orig modname)))
+    (cons warning rest)))
 
 
-(defsection vl-duplicate-assign-warnings
+(define vl-duplicate-assign-locations
+  ((dupe  vl-assign-p     "Some assign that was duplicated (fixed).")
+   (fixed vl-assignlist-p "Fixed versions of @('orig').")
+   (orig  vl-assignlist-p "Original module instances, i.e., before fixing."))
+  :guard (same-lengthp fixed orig)
+  :returns (matches vl-locationlist-p "Locations of instances matching @('dupe')."
+                    :hyp :fguard)
+  (b* (((when (atom fixed))
+        nil)
+       (rest (vl-duplicate-assign-locations dupe (cdr fixed) (cdr orig)))
+       ((when (equal dupe (car fixed)))
+        (cons (vl-assign->loc (car orig)) rest)))
+    rest))
 
-  (defund vl-duplicate-assign-locations (dupe fixed orig)
-    (declare (xargs :guard (and (vl-assign-p dupe)
-                                (vl-assignlist-p fixed)
-                                (vl-assignlist-p orig)
-                                (same-lengthp fixed orig))))
-    (b* (((when (atom fixed))
-          nil)
-         (rest (vl-duplicate-assign-locations dupe (cdr fixed) (cdr orig)))
-         ((when (equal dupe (car fixed)))
-          (cons (vl-assign->loc (car orig)) rest)))
-      rest))
-
-  (local (in-theory (enable vl-duplicate-assign-locations)))
-
-  (defthm vl-locationlist-p-of-vl-duplicate-assign-locations
-    (implies (and (force (vl-assign-p dupe))
-                  (force (vl-assignlist-p fixed))
-                  (force (vl-assignlist-p orig))
-                  (force (same-lengthp fixed orig)))
-             (vl-locationlist-p (vl-duplicate-assign-locations dupe fixed orig))))
-
-  (defund vl-duplicate-assign-warnings (dupes fixed orig modname)
-    (declare (xargs :guard (and (vl-assignlist-p dupes)
-                                (vl-assignlist-p fixed)
-                                (vl-assignlist-p orig)
-                                (same-lengthp fixed orig)
-                                (stringp modname))))
-    (if (atom dupes)
-        nil
-      (b* ((locs    (vl-duplicate-assign-locations (car dupes) fixed orig))
-           (lvalue  (vl-assign->lvalue (car dupes)))
-           (type    (if (vl-idexpr-p lvalue)
-                        (cat "assignments to " (vl-idexpr->name lvalue))
-                      (let ((lvalue-str (vl-pps-origexpr lvalue)))
-                        (if (< (length lvalue-str) 40)
-                            (cat "assignments to " lvalue-str)
-                          (cat "assignments to \""
-                               (subseq lvalue-str 0 40)
-                               "...\"")))))
-           (warning (vl-make-duplicate-warning type locs modname))
-           (rest    (vl-duplicate-assign-warnings (cdr dupes) fixed orig modname)))
-        (cons warning rest))))
-
-  (local (in-theory (enable vl-duplicate-assign-warnings)))
-
-  (defthm vl-warninglist-p-of-vl-duplicate-assign-warnings
-    (vl-warninglist-p (vl-duplicate-assign-warnings dupes fixed orig modname))))
+(define vl-duplicate-assign-warnings
+  ((dupes vl-assignlist-p "The assigns that were duplicated.  (fixed).")
+   (fixed vl-assignlist-p "Fixed versions of @('orig').")
+   (orig  vl-assignlist-p "Original mod instances, i.e., before fixing.")
+   (modname stringp))
+  :guard (same-lengthp fixed orig)
+  :returns (warnings vl-warninglist-p "Warnings for each duplicate assign.")
+  (b* (((when (atom dupes))
+        nil)
+       (locs    (vl-duplicate-assign-locations (car dupes) fixed orig))
+       (lvalue  (vl-assign->lvalue (car dupes)))
+       (type    (if (vl-idexpr-p lvalue)
+                    (cat "assignments to " (vl-idexpr->name lvalue))
+                  (let ((lvalue-str (vl-pps-origexpr lvalue)))
+                    (if (< (length lvalue-str) 40)
+                        (cat "assignments to " lvalue-str)
+                      (cat "assignments to \""
+                           (subseq lvalue-str 0 40)
+                           "...\"")))))
+       (warning (vl-make-duplicate-warning type locs modname))
+       (rest    (vl-duplicate-assign-warnings (cdr dupes) fixed orig modname)))
+    (cons warning rest)))
 
 
+(define vl-module-duplicate-detect ((x vl-module-p))
+  :short "Detect duplicate assignments and instances throughout a module."
+  :returns (new-x vl-module-p :hyp :fguard
+                  "Same as @('x'), but perhaps with more warnings.")
+  (b* (((vl-module x) x)
 
-(defsection vl-module-duplicate-detect
+       (gateinsts-fix (vl-gateinstlist-fix x.gateinsts))
+       (modinsts-fix  (vl-modinstlist-fix x.modinsts))
+       (assigns-fix   (vl-assignlist-fix x.assigns))
 
-  (defund vl-module-duplicate-detect (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((vl-module x) x)
+       (gateinst-dupes (duplicated-members gateinsts-fix))
+       (modinst-dupes  (duplicated-members modinsts-fix))
+       (assign-dupes   (duplicated-members assigns-fix))
 
-         (gateinsts-fix (vl-gateinstlist-fix x.gateinsts))
-         (modinsts-fix  (vl-modinstlist-fix x.modinsts))
-         (assigns-fix   (vl-assignlist-fix x.assigns))
+       ((unless (or gateinst-dupes modinst-dupes assign-dupes))
+        x)
 
-         (gateinst-dupes (duplicated-members gateinsts-fix))
-         (modinst-dupes  (duplicated-members modinsts-fix))
-         (assign-dupes   (duplicated-members assigns-fix))
+       (gate-warnings
+        (and gateinst-dupes
+             (vl-duplicate-gateinst-warnings gateinst-dupes gateinsts-fix
+                                             x.gateinsts x.name)))
 
-         ((unless (or gateinst-dupes modinst-dupes assign-dupes))
-          x)
+       (mod-warnings
+        (and modinst-dupes
+             (vl-duplicate-modinst-warnings modinst-dupes modinsts-fix
+                                            x.modinsts x.name)))
 
-         ((unless (and (vl-gateinstlist-p gateinst-dupes)
-                       (vl-modinstlist-p modinst-dupes)
-                       (vl-assignlist-p assign-dupes)))
-          (er hard? 'vl-module-duplicate-detect
-              "Eventually prove this never happens")
-          x)
+       (ass-warnings
+        (and assign-dupes
+             (vl-duplicate-assign-warnings assign-dupes assigns-fix
+                                           x.assigns x.name)))
 
-         (gate-warnings
-          (and gateinst-dupes
-               (vl-duplicate-gateinst-warnings gateinst-dupes gateinsts-fix
-                                               x.gateinsts x.name)))
+       (warnings (append gate-warnings
+                         mod-warnings
+                         ass-warnings
+                         x.warnings)))
 
-         (mod-warnings
-          (and modinst-dupes
-               (vl-duplicate-modinst-warnings modinst-dupes modinsts-fix
-                                              x.modinsts x.name)))
-
-         (ass-warnings
-          (and assign-dupes
-               (vl-duplicate-assign-warnings assign-dupes assigns-fix
-                                             x.assigns x.name)))
-
-         (warnings (append gate-warnings
-                           mod-warnings
-                           ass-warnings
-                           x.warnings)))
-
-      (change-vl-module x :warnings warnings)))
-
-  (local (in-theory (enable vl-module-duplicate-detect)))
-
-  (defthm vl-module-p-of-vl-module-duplicate-detect
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-duplicate-detect x))))
-
+    (change-vl-module x :warnings warnings))
+  ///
   (defthm vl-module->name-of-vl-module-duplicate-detect
     (equal (vl-module->name (vl-module-duplicate-detect x))
-           (vl-module->name x))
-    :hints(("Goal" :in-theory (disable (force))))))
+           (vl-module->name x))))
 
-
-(defsection vl-modulelist-duplicate-detect
-
-  (defprojection vl-modulelist-duplicate-detect (x)
-    (vl-module-duplicate-detect x)
-    :guard (vl-modulelist-p x))
-
-  (local (in-theory (enable vl-modulelist-duplicate-detect)))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-duplicate-detect
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-duplicate-detect x))))
-
+(defprojection vl-modulelist-duplicate-detect (x)
+  (vl-module-duplicate-detect x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
+  ///
   (defthm vl-modulelist->names-of-vl-modulelist-duplicate-detect
     (equal (vl-modulelist->names (vl-modulelist-duplicate-detect x))
            (vl-modulelist->names x))))

@@ -21,7 +21,7 @@
 (in-package "VL")
 (include-book "../mlib/expr-tools")
 (include-book "../mlib/stmt-tools")
-(include-book "../checkers/duplicate-detect")
+(include-book "../mlib/fix")
 (local (include-book "../util/arithmetic"))
 
 (defxdoc oprewrite

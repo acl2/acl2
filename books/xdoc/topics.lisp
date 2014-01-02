@@ -54,19 +54,28 @@ connection, or are using development snapshots of ACL2 and need up-to-date
 documentation, you can <a href='download/'>download</a> a local copy of this
 manual.</li>
 
+<li><b>The ACL2-Doc Emacs version.</b> If you would like to view the
+documentation using Emacs instead of a web browser, Matt Kaufmann has created
+an Emacs-based documentation browser with many features.  See @(see
+acl2::acl2-doc) for details.</li>
+
 </ul>
 
 <p>You can also build your own copy of the manual.  To do this, you first need
-to build ACL2(h), then certify the @('centaur/doc') book as follows:</p>
+to build ACL2(h), then certify the @('centaur/doc') book, e.g., as follows:</p>
 
 @({
   cd acl2-sources/books
-  make USE_QUICKLISP=1 centaur/doc.cert
+  make USE_QUICKLISP=1 ACL2=my-acl2h centaur/doc.cert
 })
 
-<p>After this is built, the manual should be available at:</p>
+<p>After this is built, the web-based manual should be available at:</p>
 
 @({acl2-sources/books/centaur/manual/index.html})
+
+<p>See also @(see acl2::acl2-doc) for details about how to build your own
+Emacs-based manual.</p>
+
 
 
 <h3>Documenting your Books</h3>

@@ -26,56 +26,51 @@
 (set-verify-guards-eagerness 0)
 
 
-(defsection aig-equiv
+(def-universal-equiv aig-equiv
+  :qvars env
+  :equiv-terms ((equal (aig-eval x env)))
+  :defquant t
+  :witness-dcls ((declare (xargs :guard t)))
   :parents (aig-semantics)
   :short "We say the AIGs @('X') and @('Y') are equivalent when they always
-evaluate to the same value, per @(see aig-eval)."
-  :long "@(def aig-equiv)"
+evaluate to the same value, per @(see aig-eval).")
 
-  (def-universal-equiv aig-equiv
-    :qvars env
-    :equiv-terms ((equal (aig-eval x env)))
-    :defquant t
-    :witness-dcls ((declare (xargs :guard t))))
-
-  (verify-guards aig-equiv))
+(verify-guards aig-equiv)
 
 
-
-(defsection aig-alist-equiv
+(def-universal-equiv aig-alist-equiv
+  :qvars k
+  :equiv-terms ((iff (hons-assoc-equal k x))
+                (aig-equiv (cdr (hons-assoc-equal k x))))
+  :defquant t
+  :witness-dcls ((declare (xargs :guard t)))
   :parents (aig-semantics)
   :short "We say the AIG Alists @('X') and @('Y') are equivalent when they bind
-the same keys to equivalent AIGs, in the sense of @(see aig-equiv)."
-  :long "@(def aig-alist-equiv)"
+the same keys to equivalent AIGs, in the sense of @(see aig-equiv).")
 
-  (def-universal-equiv aig-alist-equiv
-    :qvars k
-    :equiv-terms ((iff (hons-assoc-equal k x))
-                  (aig-equiv (cdr (hons-assoc-equal k x))))
-    :defquant t
-    :witness-dcls ((declare (xargs :guard t))))
+(verify-guards aig-alist-equiv)
 
-  (verify-guards aig-alist-equiv)
+(defsection aig-alist-equiv-thms
+  :extension aig-alist-equiv
 
   (defrefinement alist-equiv aig-alist-equiv
     :hints ((witness))))
 
 
 
-
-(defsection aig-env-equiv
+(def-universal-equiv aig-env-equiv
+  :qvars key
+  :equiv-terms ((iff (aig-env-lookup key x)))
+  :defquant t
+  :witness-dcls ((declare (xargs :guard t)))
   :parents (aig-semantics)
   :short "We say the environments @('X') and @('Y') are equivalent when they
-give equivalent values to variables looked up with @(see aig-env-lookup)."
-  :long "@(def aig-env-equiv)"
+give equivalent values to variables looked up with @(see aig-env-lookup).")
 
-  (def-universal-equiv aig-env-equiv
-    :qvars key
-    :equiv-terms ((iff (aig-env-lookup key x)))
-    :defquant t
-    :witness-dcls ((declare (xargs :guard t))))
+(verify-guards aig-env-equiv)
 
-  (verify-guards aig-env-equiv)
+(defsection aig-env-equiv-thms
+  :extension aig-env-equiv
 
   (defrefinement alist-equiv aig-env-equiv
     :hints ((witness))))

@@ -23,50 +23,48 @@
 (include-book "../mlib/expr-tools")
 (local (include-book "../util/arithmetic"))
 
-(defsection vl-module-portcheck
+(defsection portcheck
+  :parents (checkers)
+  :short "Trivial check to make sure that each module's ports agree with its
+  port declarations.")
 
-  (defund vl-module-portcheck (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((vl-module x) x)
-         (decl-names (mergesort (vl-portdecllist->names x.portdecls)))
-         (port-names (mergesort (vl-exprlist-names (remove nil (vl-portlist->exprs x.ports)))))
-         ((unless (subset decl-names port-names))
-          (b* ((w (make-vl-warning
-                   :type :vl-port-mismatch
-                   :msg "Port declarations for non-ports: ~&0."
-                   :args (list (difference decl-names port-names))
-                   :fatalp t
-                   :fn 'vl-check-ports-agree-with-portdecls)))
-            (change-vl-module x :warnings (cons w x.warnings))))
-         ((unless (subset port-names decl-names))
-          (b* ((w (make-vl-warning
-                   :type :vl-port-mismatch
-                   :msg "Missing port declarations for ~&0."
-                   :args (list (difference port-names decl-names))
-                   :fatalp t
-                   :fn 'vl-check-ports-agree-with-portdecls)))
-            (change-vl-module x :warnings (cons w x.warnings)))))
-      x))
+(define vl-module-portcheck ((x vl-module-p))
+  :parents (portcheck)
+  :returns (new-x vl-module-p :hyp :fguard
+                  "New version of @('x'), with at most some added warnings.")
+  (b* (((vl-module x) x)
+       (decl-names (mergesort (vl-portdecllist->names x.portdecls)))
+       (port-names (mergesort (vl-exprlist-names (remove nil (vl-portlist->exprs x.ports)))))
+       ((unless (subset decl-names port-names))
+        (b* ((w (make-vl-warning
+                 :type :vl-port-mismatch
+                 :msg "Port declarations for non-ports: ~&0."
+                 :args (list (difference decl-names port-names))
+                 :fatalp t
+                 :fn 'vl-check-ports-agree-with-portdecls)))
+          (change-vl-module x :warnings (cons w x.warnings))))
 
-  (local (in-theory (enable vl-module-portcheck)))
-
-  (defthm vl-module-p-of-vl-module-portcheck
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-portcheck x))))
-
+       ((unless (subset port-names decl-names))
+        (b* ((w (make-vl-warning
+                 :type :vl-port-mismatch
+                 :msg "Missing port declarations for ~&0."
+                 :args (list (difference port-names decl-names))
+                 :fatalp t
+                 :fn 'vl-check-ports-agree-with-portdecls)))
+          (change-vl-module x :warnings (cons w x.warnings)))))
+    x)
+  ///
   (defthm vl-module->name-of-vl-module-portcheck
     (equal (vl-module->name (vl-module-portcheck x))
            (vl-module->name x))))
 
 
-(defsection vl-modulelist-portcheck
-
-  (defprojection vl-modulelist-portcheck (x)
-    (vl-module-portcheck x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p)
-
+(defprojection vl-modulelist-portcheck (x)
+  (vl-module-portcheck x)
+  :parents (portcheck)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
+  ///
   (defthm vl-modulelist->names-of-vl-modulelist-portcheck
     (equal (vl-modulelist->names (vl-modulelist-portcheck x))
-           (vl-modulelist->names x))
-    :hints(("Goal" :induct (len x)))))
+           (vl-modulelist->names x))))

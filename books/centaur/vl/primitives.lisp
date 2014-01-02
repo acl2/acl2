@@ -1536,7 +1536,7 @@ certain @('rcmos') gates into instances of this module.</p>
 
 <p>ESIM has no notion of strengths and very little support for transistors, but
 this may be a convenient target for other back-end tools.  The corresponding
-@(see esim) primitive is @(see acl2::*esim-rcmos*).</p>")
+@(see esim) primitive is @(see acl2::*esim-cmos*).</p>")
 
 (defconsts *vl-1-bit-rcmos*
   (b* ((name "VL_1_BIT_RCMOS")

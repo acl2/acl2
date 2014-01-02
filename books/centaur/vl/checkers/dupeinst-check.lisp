@@ -20,7 +20,8 @@
 
 (in-package "VL")
 (include-book "../mlib/expr-tools")
-(include-book "duplicate-detect")
+(include-book "../mlib/fix")
+(include-book "../mlib/writer")
 (local (include-book "../util/arithmetic"))
 
 

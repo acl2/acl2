@@ -109,6 +109,9 @@
 (include-book "std/io/unsound-read" :dir :system)
 (include-book "std/bitsets/top" :dir :system)
 
+(include-book "str/top" :dir :system)
+(include-book "str/base64" :dir :system)
+
 (include-book "ubdds/lite")
 (include-book "ubdds/param")
 
@@ -320,7 +323,7 @@ circuits, etc.")
        ((unless (equal (cdr (assoc :name topic)) name))
         (cons (car all-topics)
               (change-parents-fn name new-parents (cdr all-topics))))
-       (- (cw "; Note: changing parents of ~x0 from ~x1 to ~x2."
+       (- (cw "; Note: changing parents of ~x0 from ~x1 to ~x2.~%"
               name (cdr (assoc :parents topic)) new-parents))
        (topic (cons (cons :parents new-parents)
                     (delete-assoc-equal :parents topic))))

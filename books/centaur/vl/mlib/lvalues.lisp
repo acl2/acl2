@@ -134,9 +134,9 @@ statements.</p>"
   :short "Functions for gathering all the expressions used in lvalue positions
 throughout a module item."
 
-  :long "<p>Like the @(see allexpr) family of functions, these functions gather
-up \"top level\" expressions found throughout various module items that occur
-in \"lvalue positions.\"</p>
+  :long "<p>Like the @(see allexprs) family of functions, these functions
+gather up \"top level\" expressions found throughout various module items that
+occur in \"lvalue positions.\"</p>
 
 <p>Roughly speaking, the lvalexprs functions try to return all expressions that
 are being driven by assignments or submodules.  But lvalue gathering is

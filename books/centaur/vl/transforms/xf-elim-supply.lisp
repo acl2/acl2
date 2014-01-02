@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -22,7 +22,6 @@
 (include-book "xf-subst")
 (include-book "../mlib/find-item")
 (local (include-book "../util/arithmetic"))
-
 
 
 (defxdoc elim-supplies
@@ -54,51 +53,56 @@ you haven't hooked up a bad wire to a supply, and so that the verification
 person may at least see that this input is supposed to have a particular
 value.</p>")
 
-
-(defsection vl-collect-supplies
-
-  (defund vl-collect-supplies (x portdecls palist warnings)
-    (declare (xargs :guard (and (vl-netdecllist-p x)
-                                (vl-portdecllist-p portdecls)
-                                (equal palist (vl-portdecl-alist portdecls))
-                                (vl-warninglist-p warnings))))
+(local (xdoc::set-default-parents elim-supplies))
 
 
-; Returns (MV WARNINGS-PRIME NETDECLS SUPPLY0S SUPPLY1S)
-;   - NETDECLS are the non-supply netdecls, which should be kept
-;   - SUPPLY0S are the names of the supply0 wires (a string list)
-;   - SUPPLY1S are the names of the supply1 wires (a string list)
+(define vl-collect-supplies
+  ((x         vl-netdecllist-p)
+   (portdecls vl-portdecllist-p)
+   (palist    (equal palist (vl-portdecl-alist portdecls)))
+   (warnings  vl-warninglist-p))
+  :returns
+  (mv (warnings vl-warninglist-p :hyp (vl-warninglist-p warnings))
+      (netdecls vl-netdecllist-p
+                "The non-supply netdecls, which should be kept."
+                :hyp (vl-netdecllist-p x)
+                :hints(("Goal" :in-theory (disable (force)))))
+      (supply0s string-listp "Names of supply0 wires."
+                :hyp (vl-netdecllist-p x)
+                :hints(("Goal" :in-theory (disable (force)))))
+      (supply1s string-listp "Names of supply1 wires."
+                :hyp (vl-netdecllist-p x)
+                :hints(("Goal" :in-theory (disable (force))))))
+  (b* (((when (atom x))
+        (mv warnings nil nil nil))
+       ((mv warnings rest-decls rest-supply0 rest-supply1)
+        (vl-collect-supplies (cdr x) portdecls palist warnings))
+       (type  (vl-netdecl->type (car x)))
+       (name  (vl-netdecl->name (car x)))
+       (range (vl-netdecl->range (car x))))
+    (case type
+      ((:vl-supply0 :vl-supply1)
 
-    (if (atom x)
-        (mv warnings nil nil nil)
-      (b* (((mv warnings rest-decls rest-supply0 rest-supply1)
-            (vl-collect-supplies (cdr x) portdecls palist warnings))
-           (type  (vl-netdecl->type (car x)))
-           (name  (vl-netdecl->name (car x)))
-           (range (vl-netdecl->range (car x))))
-        (case type
-          ((:vl-supply0 :vl-supply1)
-
-           (if range
+       (if range
 
 ; Our simple-minded substitution won't work if the supply is an array of
 ; supplies.  Fortunately, this is probably something that no sane person would
 ; ever try to write.  We don't eliminate the supply, we just leave it as is,
 ; but we add a warning.
 
-               (mv (cons (make-vl-warning
-                          :type :vl-bad-supply
-                          :msg "~a0: we do not support supplies with ranges."
-                          :args (list (car x))
-                          :fatalp t
-                          :fn 'vl-collect-supplies)
-                         warnings)
-                   (cons (car x) rest-decls)
-                   rest-supply0
-                   rest-supply1)
+           (mv (cons (make-vl-warning
+                      :type :vl-bad-supply
+                      :msg "~a0: we do not support supplies with ranges."
+                      :args (list (car x))
+                      :fatalp t
+                      :fn 'vl-collect-supplies)
+                     warnings)
+               (cons (car x) rest-decls)
+               rest-supply0
+               rest-supply1)
 
-             (let ((portdecl (vl-fast-find-portdecl name portdecls palist)))
-               (if portdecl
+         (let ((portdecl (vl-fast-find-portdecl name portdecls palist)))
+           (if portdecl
 
 ; We originally just tried to throw away all supplies.  But we ran into
 ; problems because some inputs are declared to be supplies, and if we throw
@@ -109,87 +113,52 @@ value.</p>")
 ; checks to ensure that only 1/0 are given to supply inputs, but for now we
 ; just are going to convert the wire declaration into a plain declaration.
 
-                   (if (not (eq (vl-portdecl->dir portdecl) :vl-input))
-                       (mv (cons (make-vl-warning
-                                  :type :vl-bad-supply
-                                  :msg "~a0: we do not support supplies as ports."
-                                  :args (list (car x))
-                                  :fatalp t)
-                                 warnings)
-                           (cons (car x) rest-decls)
-                           rest-supply0
-                           rest-supply1)
+               (if (not (eq (vl-portdecl->dir portdecl) :vl-input))
+                   (mv (cons (make-vl-warning
+                              :type :vl-bad-supply
+                              :msg "~a0: we do not support supplies as ports."
+                              :args (list (car x))
+                              :fatalp t)
+                             warnings)
+                       (cons (car x) rest-decls)
+                       rest-supply0
+                       rest-supply1)
 
-                     (mv warnings
-                         (cons (change-vl-netdecl (car x)
-                                                  :type :vl-wire
-                                                  :atts (cons (if (eq type :vl-supply0)
-                                                                  (cons "VL_SUPPLY_0" nil)
-                                                                (cons "VL_SUPPLY_1" nil))
-                                                              (vl-netdecl->atts (car x))))
-                               rest-decls)
-                         rest-supply0
-                         rest-supply1))
+                 (mv warnings
+                     (cons (change-vl-netdecl (car x)
+                                              :type :vl-wire
+                                              :atts (cons (if (eq type :vl-supply0)
+                                                              (cons "VL_SUPPLY_0" nil)
+                                                            (cons "VL_SUPPLY_1" nil))
+                                                          (vl-netdecl->atts (car x))))
+                           rest-decls)
+                     rest-supply0
+                     rest-supply1))
 
 ; Otherwise, this is not a port, and we are going to go ahead and eliminate it
 ; everywhere with 1 or 0.
 
-                 (mv warnings
-                     rest-decls
-                     (if (eq type :vl-supply0) (cons name rest-supply0) rest-supply0)
-                     (if (eq type :vl-supply1) (cons name rest-supply1) rest-supply1))))))
+             (mv warnings
+                 rest-decls
+                 (if (eq type :vl-supply0) (cons name rest-supply0) rest-supply0)
+                 (if (eq type :vl-supply1) (cons name rest-supply1) rest-supply1))))))
 
 ; Finally, we have the case where this is an ordinary net declaration, not a
 ; supply wire.
 
-          (otherwise (mv warnings
-                         (cons (car x) rest-decls)
-                         rest-supply0
-                         rest-supply1))))))
+      (otherwise (mv warnings
+                     (cons (car x) rest-decls)
+                     rest-supply0
+                     rest-supply1))))
 
-  (local (in-theory (enable vl-collect-supplies)))
-
+  ///
   (local (in-theory (disable vl-find-portdecl-under-iff)))
-
-  (defthm true-listp-of-vl-collect-supplies-1
-    (true-listp (mv-nth 1 (vl-collect-supplies x portdecls palist warnings)))
-    :rule-classes :type-prescription)
-
-  (defthm true-listp-of-vl-collect-supplies-2
-    (true-listp (mv-nth 2 (vl-collect-supplies x portdecls palist warnings)))
-    :rule-classes :type-prescription)
-
-  (defthm true-listp-of-vl-collect-supplies-3
-    (true-listp (mv-nth 3 (vl-collect-supplies x portdecls palist warnings)))
-    :rule-classes :type-prescription)
-
-  (defthm vl-warninglist-p-of-vl-collect-supplies
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p (mv-nth 0 (vl-collect-supplies x portdecl palist warnings)))))
-
-  (defthm vl-netdecllist-p-of-vl-collect-supplies
-    (implies (and (force (vl-netdecllist-p x))
-                  (force (vl-portdecllist-p portdecls))
-                  (force (equal palist (vl-portdecl-alist portdecls))))
-             (vl-netdecllist-p (mv-nth 1 (vl-collect-supplies x portdecls palist warnings)))))
-
-  (defthm string-listp-of-vl-collect-supplies-2
-    (implies (and (force (vl-netdecllist-p x))
-                  (force (vl-portdecllist-p portdecls))
-                  (force (equal palist (vl-portdecl-alist portdecls))))
-             (string-listp (mv-nth 2 (vl-collect-supplies x portdecls palist warnings)))))
-
-  (defthm string-listp-of-vl-collect-supplies-3
-    (implies (and (force (vl-netdecllist-p x))
-                  (force (vl-portdecllist-p portdecls))
-                  (force (equal palist (vl-portdecl-alist portdecls))))
-             (string-listp (mv-nth 3 (vl-collect-supplies x portdecls palist warnings))))))
+  (defmvtypes vl-collect-supplies
+    (nil true-listp true-listp true-listp)))
 
 
-
-
-(defund vl-module-elim-supplies (x)
-  (declare (xargs :guard (vl-module-p x)))
+(define vl-module-elim-supplies ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard)
   (b* (((when (vl-module->hands-offp x))
         x)
        (warnings  (vl-module->warnings x))
@@ -224,25 +193,18 @@ value.</p>")
        (x-prime (change-vl-module x
                                   :netdecls new-decls
                                   :warnings warnings-prime)))
-      (vl-module-subst x-prime sigma)))
-
-(defthm vl-module-p-of-vl-module-elim-supplies
-  (implies (force (vl-module-p x))
-           (vl-module-p (vl-module-elim-supplies x)))
-  :hints(("Goal" :in-theory (enable vl-module-elim-supplies))))
-
-(defthm vl-module->name-of-vl-module-elim-supplies
-  (equal (vl-module->name (vl-module-elim-supplies x))
-         (vl-module->name x))
-  :hints(("Goal" :in-theory (enable vl-module-elim-supplies))))
-
+      (vl-module-subst x-prime sigma))
+  ///
+  (defthm vl-module->name-of-vl-module-elim-supplies
+    (equal (vl-module->name (vl-module-elim-supplies x))
+           (vl-module->name x))))
 
 (defprojection vl-modulelist-elim-supplies (x)
   (vl-module-elim-supplies x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p)
+  :result-type vl-modulelist-p
+  ///
+  (defthm vl-modulelist->names-of-vl-modulelist-elim-supplies
+    (equal (vl-modulelist->names (vl-modulelist-elim-supplies x))
+           (vl-modulelist->names x))))
 
-(defthm vl-modulelist->names-of-vl-modulelist-elim-supplies
-  (equal (vl-modulelist->names (vl-modulelist-elim-supplies x))
-         (vl-modulelist->names x))
-  :hints(("Goal" :induct (len x))))

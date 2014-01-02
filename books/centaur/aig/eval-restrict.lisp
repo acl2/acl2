@@ -640,7 +640,9 @@
 
 
 
-(defsection faig-fix-equiv
+(def-universal-equiv faig-fix-equiv
+  :equiv-terms ((iff (consp x))
+                (faig-equiv x))
   :parents (faig)
   :short "We say the objects @('X') and @('Y') are equivalent if they are (1)
 @(see faig-equiv), and (2) both atoms or both conses."
@@ -661,11 +663,10 @@ constant false, whereas the car of @('y') is @('t'), constant true.</p>
 
 <p>So, @(call faig-fix-equiv) corrects for this by insisting that @('x') and
 @('y') are either both atoms or both conses.  This way, the car/cdr of
-@('faig-fix-equiv') objects are always @(see aig-equiv).</p>"
+@('faig-fix-equiv') objects are always @(see aig-equiv).</p>")
 
-  (def-universal-equiv faig-fix-equiv
-    :equiv-terms ((iff (consp x))
-                  (faig-equiv x)))
+(defsection faig-fix-equiv-thms
+  :extension faig-fix-equiv
 
   (defrefinement faig-fix-equiv faig-equiv
     :hints(("Goal" :in-theory (enable faig-fix-equiv))))

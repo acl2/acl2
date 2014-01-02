@@ -1120,7 +1120,7 @@ the module.</p>"
 (defsection vl-plainarglists-to-arguments
   :parents (argument-partitioning)
   :short "Convert each plainarglist in a @(see vl-plainarglistlist-p) into an
-@(see vl-argument-p)."
+@(see vl-arguments-p)."
 
   (defund vl-plainarglists-to-arguments (x)
     (declare (xargs :guard (vl-plainarglistlist-p x)))
@@ -1171,7 +1171,7 @@ vl-moditem-alist).</li>
 
 </ul>
 
-<p>The @('arg-lists') we produce is a @(see vl-argumentslist-p) of length
+<p>The @('arg-lists') we produce is a @(see vl-argumentlist-p) of length
 @('insts'), and contains the new arguments to use in the split up module
 instances.</p>"
 

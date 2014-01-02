@@ -86,17 +86,17 @@ changed in future versions of the library.</p>
 
 <ul>
 
-<li><b>chars</b> refer to actual @(see characters), which typically will be in
-the Base64 alphabet, i.e., @('A-Z'), @('a-z'), @('0-9'), @('+'), and @('/').
-Of course, when decoding, data might be coming from some external source; it
-might contain pad characters @('=') or even arbitrary, invalid characters from
-beyond the Base64 alphabet.</li>
+<li><b>chars</b> refer to actual @(see acl2::characters), which typically will
+be in the Base64 alphabet, i.e., @('A-Z'), @('a-z'), @('0-9'), @('+'), and
+@('/').  Of course, when decoding, data might be coming from some external
+source; it might contain pad characters @('=') or even arbitrary, invalid
+characters from beyond the Base64 alphabet.</li>
 
 <li><b>codes</b> refer to actual @(see char-code)s, with the usual
 correspondence to <i>chars</i>.</li>
 
 <li><b>values</b> refer to the interpretation of each Base64 character as a
-numeric value.  For instance, the value of @('#\A') is 0; the value of @('#\B')
+numeric value.  For instance, the value of @('#\\A') is 0; the value of @('#\\B')
 is 1, and so on.  In our representation, the values are exactly the 64 natural
 numbers from 0-63, and can be recognized with, e.g., @('(unsigned-byte-p 6
 val)').</li>

@@ -97,7 +97,7 @@ not a very satisfying state of affairs.</p>
 macros.  For instance, we do not allow definitions to include most compiler
 directives---we allow the body of @('`foo') to include @('`bar'), but not
 @('`endif').  These restrictions are intended to ensure that we do not
-\"mispreprocess\" anything.  See @(see preprocessor-define-minutia) for some
+\"mispreprocess\" anything.  See @(see preprocessor-ifdef-minutia) for some
 details and additional discussion.</p>
 
 <p>We also have pretty good support for @('include') directives.  This is quite
@@ -1377,6 +1377,10 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
 
 
 (defsection vl-preprocess-loop
+  :parents (preprocessor)
+  :short "Main loop for the preprocessor."
+  :long "<p>We accumulate the transformed characters that are to be given to
+  the lexer into acc, in reverse order.</p>"
 
   (defund vl-preprocess-loop (echars defines istack activep include-dirs acc n state)
     "Returns (MV SUCCESSP DEFINES-PRIME ACC REMAINDER STATE)"
@@ -1391,9 +1395,6 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
                     :stobjs state
                     :measure (two-nats-measure n (acl2-count echars))
                     :hints(("Goal" :in-theory (disable (force))))))
-
-; This is the main loop for the preprocessor.  It accumulates the transformed
-; characters that are to be given to the lexer into acc, in reverse order.
 
     (b* (((when (atom echars))
           (mv t defines acc echars state))

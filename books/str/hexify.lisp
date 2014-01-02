@@ -23,84 +23,101 @@
 (include-book "tools/bstar" :dir :system)
 (local (include-book "explode-atom"))
 (local (include-book "arithmetic"))
-
-(defund insert-underscores (x)
-  (declare (xargs :guard t))
-  (cond ((atom x)
-         x)
-        ((equal (mod (len x) 4) 0)
-         (list* #\_ (car x) (insert-underscores (cdr x))))
-        (t
-         (list* (car x) (insert-underscores (cdr x))))))
-
-(local (in-theory (enable insert-underscores)))
-
-(defthm character-listp-of-insert-underscores
-  (implies (force (character-listp x))
-           (character-listp (insert-underscores x))))
-
 (local (in-theory (disable explode-atom)))
 
-(local (defthm character-listp-of-cdr
-         (implies (character-listp x)
-                  (character-listp (cdr x)))))
+(defsection insert-underscores
+  :parents (hexify)
 
-(defun hexify (x)
-  ;; Dumb printing utility.  X should be a natural, string, or symbol;
-  ;; otherwise we'll just cause an error.
-  ;;
-  ;; Normally X is a natural.  We turn it into a hexadecimal string that has an
-  ;; underscore inserted every four characters, which makes it easier to read
-  ;; long hex values.
-  ;;
-  ;; As a special convenience, if X is a string we just return it unchanged, and
-  ;; if X is a symbol we just return its name.
-  ;;
-  ;; Typical usage is (cw "foo: ~x0~%" (str::hexify foo))
-  (declare (xargs :guard t))
-  (cond ((integerp x)
-         (b* ((xsign (< x 0))
-              (xabs (abs x))
-              (chars (explode-atom xabs 16)) ;; looks like BEEF...
-              (nice-chars (list* #\# #\u #\x 
-                                 (append (and xsign '(#\-))
-                                         (cons (first chars)
-                                               (insert-underscores (nthcdr 1 chars)))))))
-           (implode nice-chars)))
-        ((symbolp x)
-         (symbol-name x))
-        ((stringp x)
-         x)
-        (t
-         (prog2$ (er hard? 'hexify "Unexpected argument ~x0.~%" x)
-                 ""))))
+  (defund insert-underscores (x)
+    (declare (xargs :guard t))
+    (cond ((atom x)
+           x)
+          ((equal (mod (len x) 4) 0)
+           (list* #\_ (car x) (insert-underscores (cdr x))))
+          (t
+           (list* (car x) (insert-underscores (cdr x))))))
 
-(defun binify (x)
-  ;; Dumb printing utility.  X should be a natural, string, or symbol;
-  ;; otherwise we'll just cause an error.
-  ;;
-  ;; Normally X is a natural.  We turn it into a binary string that has an
-  ;; underscore inserted every four characters, which makes it easier to read
-  ;; long binary values.
-  ;;
-  ;; As a special convenience, if X is a string we just return it unchanged, and
-  ;; if X is a symbol we just return its name.
-  ;;
-  ;; Typical usage is (cw "foo: ~x0~%" (str::binify foo))
-  (declare (xargs :guard t))
-  (cond ((integerp x)
-         (b* ((xsign (< x 0))
-              (xabs (abs x))
-              (chars (explode-atom xabs 2))
-              (nice-chars (list* #\# #\u #\b 
-                                 (append (and xsign '(#\-))
-                                         (cons (first chars)
-                                               (insert-underscores (nthcdr 1 chars)))))))
-           (implode nice-chars)))
-        ((symbolp x)
-         (symbol-name x))
-        ((stringp x)
-         x)
-        (t
-         (prog2$ (er hard? 'binify "Unexpected argument ~x0.~%" x)
-                 ""))))
+  (local (in-theory (enable insert-underscores)))
+
+  (defthm character-listp-of-insert-underscores
+    (implies (force (character-listp x))
+             (character-listp (insert-underscores x)))))
+
+(defsection hexify
+  :parents (numbers)
+  :short "Convert numbers into readable hex strings."
+
+  :long "<p>@(call hexify) is a dumb but useful printing utility for displaying
+numbers in hex.  It is typically used in @(see cw) statements, e.g.,:</p>
+
+@({
+    ACL2 !> (cw \"foo is ~s0~%\" (str::hexify (1- (expt 2 32))))
+    foo is #uxFFFF_FFFF
+    NIL
+    ACL2 !>
+})
+
+<p>The @('#ux') is for compatibility with the @(see acl2::sharp-u-reader).</p>
+
+<p>See also @(see natstr) which converts numbers into decimal strings (without
+underscores) and @(see binify) which is like @('hexify') but for binary instead
+of hex.</p>
+
+<h3>Usage</h3>
+
+<p>@(call hexify) always returns a @(see stringp).</p>
+
+<p>@('x') must be an integer, string, or symbol; otherwise a @(see hard-error)
+will be caused.</p>
+
+<p>Normally @('x') is an integer.  In this case, we convert it into an
+msb-first hex string with an underscore inserted every four characters.  This
+makes it easier to read long values.</p>
+
+<p>When @('x') is a string we just return it unchanged.</p>
+
+<p>When @('x') is a symbol we just return its name.</p>"
+
+  (defun hexify (x)
+    (declare (xargs :guard t))
+    (cond ((integerp x)
+           (b* ((xsign (< x 0))
+                (xabs (abs x))
+                (chars (explode-atom xabs 16)) ;; looks like BEEF...
+                (nice-chars (list* #\# #\u #\x
+                                   (append (and xsign '(#\-))
+                                           (cons (first chars)
+                                                 (insert-underscores (nthcdr 1 chars)))))))
+             (implode nice-chars)))
+          ((symbolp x)
+           (symbol-name x))
+          ((stringp x)
+           x)
+          (t
+           (prog2$ (er hard? 'hexify "Unexpected argument ~x0.~%" x)
+                   "")))))
+
+(defsection binify
+  :parents (numbers)
+  :short "Convert numbers into readable binary strings."
+  :long "<p>@(call binify) is identical to @(see str::hexify) except that it
+produces binary output instead of hex output.</p>"
+
+  (defun binify (x)
+    (declare (xargs :guard t))
+    (cond ((integerp x)
+           (b* ((xsign (< x 0))
+                (xabs (abs x))
+                (chars (explode-atom xabs 2))
+                (nice-chars (list* #\# #\u #\b
+                                   (append (and xsign '(#\-))
+                                           (cons (first chars)
+                                                 (insert-underscores (nthcdr 1 chars)))))))
+             (implode nice-chars)))
+          ((symbolp x)
+           (symbol-name x))
+          ((stringp x)
+           x)
+          (t
+           (prog2$ (er hard? 'binify "Unexpected argument ~x0.~%" x)
+                   "")))))

@@ -49,8 +49,7 @@ possible).</p>
 
 <li>First, we will only consider wires that are not explicitly defined, since
 these wires seem to be the obvious starting place to look for typos.  Note that
-it is quite easy to identify these wires, e.g., see @(see
-vl-module-implicitwires), and the transformation @(see make-implicit-wires)
+it is quite easy to identify these wires, e.g., see @(see make-implicit-wires),
 which adds declarations to the modules to make these wires explicit.</li>
 
 <li>Next, we will only consider the subset of these wires that are either
