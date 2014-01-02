@@ -5,6 +5,13 @@
 #|===========================================================================|#
 (in-package "ACL2")
 
+#||
+;; Jared added this comment to avoid having Centaur's cluster kill this book
+;; for using too much memory.  See cert.pl for details.
+
+(set-max-mem (* 6 (expt 2 30)))
+||#
+
 (include-book "defung")
 
 #+joe

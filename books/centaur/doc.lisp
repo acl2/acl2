@@ -302,12 +302,6 @@ AIG to BDD Conversion Algorithm</a>.  In ITP 2010,LNCS 6172, Springer.  Pages
 circuits, etc.")
 
 
-(defsection books-reference
-  :parents (books)
-  :short "Reference guide for ACL2 functionality related to books, e.g.,
-@(see include-book), @(see certify-book), @(see cbd), etc.")
-
-
 
 ; Huge stupid hack.  Topics that are documented with the old :DOC system can't
 ; have XDOC topics for their parents.  So, get them all loaded and converted
@@ -377,6 +371,16 @@ circuits, etc.")
           (fix-redundant-acl2-parents (cdr all-topics)))))
 
 
+(defsection books-reference
+  :parents (books)
+  :short "Reference guide for ACL2 functionality related to books, e.g.,
+@(see include-book), @(see certify-book), @(see cbd), etc.")
+
+(defxdoc books-tour
+  :parents (books)
+  :short "The <i>guided tour</i> of concepts related to ACL2 @(see books)."
+  :long "<p>The tour begins with @(see book-example).</p>")
+
 (defmacro xdoc::fix-the-hierarchy ()
   ;; Semi-bozo.
   ;;
@@ -413,6 +417,27 @@ circuits, etc.")
 
      ;; new books documentation stuff
      (xdoc::change-parents books (top))
+     (xdoc::change-parents cbd (books-reference))
+     (xdoc::change-parents set-cbd (books-reference))
+     (xdoc::change-parents book-compiled-file (books-reference))
+     (xdoc::change-parents full-book-name (books-reference))
+     (xdoc::change-parents pathname (books-reference))
+
+     ;; bury this down within books-certification to help people avoid it
+     (xdoc::change-parents books-certification (community-books))
+     (xdoc::change-parents books-certification-classic (books-certification))
+     (xdoc::change-parents provisional-certification (books-certification))
+
+     ;; Topics associated with the "guided tour" of books
+     (xdoc::change-parents book-example (books-tour))
+     (xdoc::change-parents book-name (books-tour))
+     (xdoc::change-parents book-contents (books-tour))
+     (xdoc::change-parents certificate (books-tour))
+     (xdoc::change-parents portcullis (books-tour))
+     (xdoc::change-parents keep (books-tour))
+     (xdoc::change-parents include-book (books-reference books-tour events))
+     (xdoc::change-parents certify-book (books-reference books-tour))
+
      ))
 
 (comp t)
