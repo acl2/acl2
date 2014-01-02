@@ -2,15 +2,15 @@
 
 (include-book "syntax")
 (include-book "fixpoints")
-(include-book "../../../../ordinals/e0-ordinal")
+(include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation e0-ord-<)
 
 (defabbrev semantics-EX (m f val)
   (image (mu-semantics m (second f) val)
          (inverse-relation m)))
-  
+
 (defabbrev semantics-NOT (m f val)
-  (set-complement (mu-semantics m (second f) val) 
+  (set-complement (mu-semantics m (second f) val)
                   (states m)))
 
 (defabbrev semantics-AND (m f val)
@@ -22,7 +22,7 @@
              (mu-semantics m (third f) val)))
 
 (defabbrev semantics-fix (m f val s)
-  (compute-fix-point m (third f)  
+  (compute-fix-point m (third f)
                      (put-assoc-equal (second f) s val)
                      (second f) (size m)))
 
@@ -60,7 +60,7 @@
 		(semantics-NU m f val))))))
 
 (defun compute-fix-point (m f val y n)
-  (declare (xargs :guard (and (modelp m) (relationp val) 
+  (declare (xargs :guard (and (modelp m) (relationp val)
                               (integerp n) (>= n 0))
                   :verify-guards nil
                   :measure (cons (+ (acl2-count f) 1) (nfix n))))
@@ -74,9 +74,9 @@
 )
 
 (defmacro if-zpn (a)
-  `(if (zp n) 
-       ,a 
-     (list ,a 
+  `(if (zp n)
+       ,a
+     (list ,a
            (semantics-ind m f val y (1- n))
            (semantics-ind m f (put-assoc-equal y (mu-semantics m f val) val)
                           y (1- n)))))
@@ -87,7 +87,7 @@
 	((equal (len f) 2)
 	 (if-zpn (semantics-ind m (second f) val y n)))
 	((equal (len f) 3)
-	 (cond 
+	 (cond
 	  ((in (second f) '(& +))
 	   (if-zpn (list (semantics-ind m (first f) val y n)
 			 (semantics-ind m (third f) val y n))))
@@ -104,7 +104,7 @@
 
 (defthm add-semantics-ind-to-mu-semantics
   t
-  :rule-classes 
+  :rule-classes
   ((:induction :pattern (compute-fix-point m f val y n)
                :scheme (semantics-ind m f val y n))))
 
@@ -146,10 +146,10 @@
                 (not (equal (cadr f) '&))
                 (equal (len f) 3))
            (equal (mu-semantics m f val)
-                  (semantics-NU m f val)))) 
+                  (semantics-NU m f val))))
 
 (defthm open-compute-fix-point
-  (implies 
+  (implies
    (not (zp n))
    (equal (compute-fix-point m f val y n)
           (let ((x (value-of y val))
@@ -163,8 +163,8 @@
                 (modelp m))
            (and (true-listp (mu-semantics m f val))
                 (true-listp (compute-fix-point m f val y n))))
-  :hints (("Goal" :in-theory (disable SETS::=<-LEN-REM-DUPS
-				      SETS::|X == Y  =>  X =< Y / Y =< X|))))  ;; RBK:
+  :hints (("Goal" :in-theory (disable SET::=<-LEN-REM-DUPS
+				      SET::|X == Y  =>  X =< Y / Y =< X|))))  ;; RBK:
 
 (verify-guards mu-semantics)
 
@@ -249,36 +249,36 @@ true at all of the states in s."
    (rel-range-subset (good-val) (states (good-model))))
 
  (defthm good-var-var (mu-symbolp (good-var)))
- 
+
  (defthm sem-mon-f-is-sem-monotone
    (implies (=< x y)
-            (=< (mu-semantics 
+            (=< (mu-semantics
                  (good-model) (sem-mon-f)
                  (put-assoc-equal (good-var) x (good-val)))
-                (mu-semantics 
+                (mu-semantics
                  (good-model) (sem-mon-f)
                  (put-assoc-equal (good-var) y (good-val)))))))
 
 ; Exercise 23
 (defmacro defmu (name thm fn-inst &rest args)
-  `(defthm ,name ,thm 
-     :hints 
+  `(defthm ,name ,thm
+     :hints
      (("goal"
        :use (:functional-instance
              ,fn-inst
-             (sets::S (lambda nil (states (good-model))))
-             (sets::f
+             (set::S (lambda nil (states (good-model))))
+             (set::f
               (lambda (y)
                 (mu-semantics (good-model)
 			      (sem-mon-f)
 			      (put-assoc-equal (good-var) y (good-val)))))
-             (sets::applyf
+             (set::applyf
               (lambda (y n)
                 (compute-fix-point (good-model)
                                    (sem-mon-f)
                                    (put-assoc-equal (good-var) y (good-val))
                                    (good-var) n)))
-             (sets::cardinality cardinality)))
+             (set::cardinality cardinality)))
       ,@args)))
 
 (defthm mu-symbol-not-+-or-&
@@ -297,8 +297,8 @@ true at all of the states in s."
              (mu-semantics (good-model)
 			   (list 'mu (good-var) (sem-mon-f))
 			   (good-val)))
-  sets::lfix-is-a-fixpoint
-  ("subgoal 3" 
+  set::lfix-is-a-fixpoint
+  ("subgoal 3"
    :use (:instance good-val-range-ok)))
 
 ; Exercise 22, part 2
@@ -306,14 +306,14 @@ true at all of the states in s."
   (implies (post-fixpointp (good-model) (sem-mon-f) (good-val) (good-var) x)
            (=< (mu-semantics (good-model) (list 'mu (good-var) (sem-mon-f))
 			     (good-val)) x))
-  sets::lfix-is-below-all-post-fixpoints)
+  set::lfix-is-below-all-post-fixpoints)
 
 ; Exercise 22, part 3
 (defmu semnu-is-a-fixpoint
   (fixpointp (good-model) (sem-mon-f) (good-val) (good-var)
              (mu-semantics (good-model) (list 'nu (good-var) (sem-mon-f))
 			   (good-val)))
-  sets::gfix-is-a-fixpoint)
+  set::gfix-is-a-fixpoint)
 
 ; Exercise 22, part 4
 (defmu semnu-is-above-all-pre-fixpoints
@@ -321,4 +321,4 @@ true at all of the states in s."
                 (pre-fixpointp (good-model) (sem-mon-f) (good-val) (good-var) x))
            (=< x (mu-semantics (good-model) (list 'nu (good-var) (sem-mon-f))
 			       (good-val))))
-  sets::gfix-is-above-all-pre-fixpoints)
+  set::gfix-is-above-all-pre-fixpoints)

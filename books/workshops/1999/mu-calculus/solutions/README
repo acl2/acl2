@@ -11,37 +11,7 @@ Before you look at the files in this directory, note the following.
     of a function.  There was no room in the article to describe the
     macro, so read "defung-intro.txt" before looking at the solutions.
 
-2.  If this directory resides under an ACL2 distribution in 
-    books/case-studies/mu-calculus/solutions/ (the default), then to
-    certify the books in this directory:
-
-    If you want to do it within acl2, start acl2 and type:
-
-    (ld "build.lisp")
-
-    You can also type:
-    
-    make 
-
-3.  If this directory is not in the default place, then
-    certification requires:
-
-    a. Edit "meta.lisp" so that the argument to include-book is the
-       "top-with-meta" book which comes with the ACL2 distribution. 
-
-    b. If you want to do it within acl2, start acl2 and type:
-
-       (ld "build.lisp")
-
-       You can also type:
-
-       make 
-
-       You will have to set the value of ACL2 in "makefile".
-
-4.  Typing "make clean" will remove files added by the certification
-    process.
-              
+2.  You can certify the books here using "cert.pl"
 
 The books in this directory are:
 
@@ -50,9 +20,7 @@ Filename          - Description
 README            - This file
 
 meta.lisp         - Top-with-meta book
-makefile	  - Makefile to build and clean
-
-build.lisp        - Used to certify all the ACL2 books
+makefile	  - legacy makefile to build and clean
 
 defung-intro.txt  - Description of defung macro and exercises
 defung.lisp       - Defung macro

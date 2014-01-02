@@ -1,14 +1,14 @@
 (in-package "MODEL-CHECK")
 (include-book "syntax")
-(include-book "../../../../ordinals/e0-ordinal")
+(include-book "ordinals/e0-ordinal" :dir :system)
 (set-well-founded-relation e0-ord-<)
 
 (defabbrev semantics-EX (m f val)
   (image (mu-semantics m (second f) val)
          (inverse-relation m)))
-  
+
 (defabbrev semantics-NOT (m f val)
-  (set-complement (mu-semantics m (second f) val) 
+  (set-complement (mu-semantics m (second f) val)
                   (states m)))
 
 (defabbrev semantics-AND (m f val)
@@ -20,7 +20,7 @@
              (mu-semantics m (third f) val)))
 
 (defabbrev semantics-fix (m f val s)
-  (compute-fix-point m (third f)  
+  (compute-fix-point m (third f)
                      (put-assoc-equal (second f) s val)
                      (second f) (size m)))
 

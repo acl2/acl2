@@ -12,34 +12,11 @@ Because the definitions of some functions depend on solutions to
 exercises, some exercise solutions are included (although not noted as
 such) in the files in this directory.
 
-To certify the books in this directory:
-
-  If you want to do it within acl2, start acl2 and type:
-     
-  (ld "build.lisp")
-
-  You can also type:
-
-  make 
-
-  If you use make, then you may have to set the value of ACL2 in "makefile".  
-  This variable is correctly set if this directory resides under an ACL2 
-  distribution in books/case-studies/mu-calculus/book/ (which is the default).
-
-
-Typing "make clean" will remove files added by the certification
-process.
-   
-
-The files in this directory are:
+You can use "cert.pl" to certify these books.
 
 File	        - Description
 ---------------------------------------------
 README          - This file
-
-makefile	- Makefile to build and clean
-build.lisp      - Used to certify all the ACL2 books
-
 sets.lisp       - Functions in Section Sets
 fast-sets.lisp  - Functions in Section Fast-sets 
 fixpoints.lisp  - Functions in Section Fixpoint Theory

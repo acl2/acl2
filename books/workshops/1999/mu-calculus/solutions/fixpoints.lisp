@@ -1,22 +1,22 @@
-(in-package "SETS")
+(in-package "SET")
 
 (include-book "sets")
 
-(encapsulate 
+(encapsulate
  ((f (X) t)
   (S () t))
 
  (local (defun f (X)
           (declare (ignore X))
           nil))
- 
+
  (local (defun S ()
           nil))
- 
+
  (defthm f-is-monotonic
    (implies (=< X Y)
             (=< (f X) (f Y))))
- 
+
  (defthm S-is-top
    (=< (f X) (set-union X (S)))))
 
@@ -34,7 +34,7 @@
    :hints (("Goal"
             :in-theory (enable ==)))))
 
-(local 
+(local
  (defcong == == (applyf X m) 1))
 
 (local
@@ -47,7 +47,7 @@
    (implies (and (=< X Y)
                  (=< (f Y) Y))
             (=< (f X) Y))
-   :hints (("Goal" 
+   :hints (("Goal"
             :in-theory (disable f-is-monotonic)
             :use ((:instance f-is-monotonic))))))
 
@@ -122,11 +122,11 @@
       (lfpf))
   :hints (("Goal"
            :in-theory (enable ==)
-           :use ((:instance lfix-count-argument 
+           :use ((:instance lfix-count-argument
                             (n (1+ (len (rem-dups (S))))))))
           ("Goal'''"
            :in-theory (disable applyf-on-nil-below-top)
-           :use ((:instance applyf-on-nil-below-top 
+           :use ((:instance applyf-on-nil-below-top
                             (n (len (rem-dups (S)))))))))
 
 (defabbrev gfpf ()
@@ -181,7 +181,7 @@
                           (applyf (S) (1- n)))))
             (<= (len (rem-dups (applyf (S) n)))
                 (- (len (rem-dups (S))) n)))
-   :hints (("Goal" 
+   :hints (("Goal"
             :induct (applyf (S) n)
             :in-theory (enable ==))
            ("Subgoal *1/3.2"
@@ -195,6 +195,6 @@
       (gfpf))
  :hints (("Goal"
            :in-theory (enable ==)
-           :use ((:instance gfix-count-argument 
+           :use ((:instance gfix-count-argument
                             (n (+ 1 (len (rem-dups (S))))))))))
 

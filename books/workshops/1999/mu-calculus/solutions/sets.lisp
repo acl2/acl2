@@ -1,4 +1,4 @@
-(in-package "SETS")
+(in-package "SET") ;; 2014-01-02: Changed from SETS by Jared to avoid conflict with std/sets
 (include-book "defung")
 (include-book "meta")
 (include-book "perm")

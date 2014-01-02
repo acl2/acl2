@@ -1,4 +1,4 @@
-(in-package "SETS")
+(in-package "SET") ;; 2014-01-02: Changed from SETS by Jared to avoid conflict with std/sets
 
 ; Checks for set containment, i.e., is a in X?
 (defun in (a X)

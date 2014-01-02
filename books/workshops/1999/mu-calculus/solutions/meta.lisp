@@ -1,2 +1,2 @@
 (in-package "ACL2")
-(include-book "../../../../arithmetic/top-with-meta")
+(include-book "arithmetic/top-with-meta" :dir :system)
