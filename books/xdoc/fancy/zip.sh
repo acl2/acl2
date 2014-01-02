@@ -24,7 +24,7 @@
 
 set -e
 
-if [ "$#" -neq 1 ]
+if [ "$#" -ne 1 ]
 then
     echo "Usage: zip.sh [path to an xdoc manual]"
     exit 1

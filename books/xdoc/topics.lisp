@@ -272,14 +272,11 @@ Technology</a>.</p>
 
 <h3>Structuring Documents</h3>
 
-<p>For section headings,</p>
-<ul>
- <li>@('<h1>') creates the biggest heading:<h1>H1 Example</h1></li>
- <li>@('<h2>') the next biggest:<h2>H2 Example</h2></li>
- <li>@('<h3>') a medium-sized heading:<h3>H3 Example</h3></li>
- <li>@('<h4>') the second smallest:<h4>H4 Example</h4></li>
- <li>@('<h5>') the smallest heading:<h5>H5 Example</h5></li>
-</ul>
+<h1>@('<h1>') creates the biggest heading</h1>
+<h2>@('<h2>') the next biggest</h2>
+<h3>@('<h3>') a medium size heading (a good default)</h3>
+<h4>@('<h4>') a smaller heading</h4>
+<h5>@('<h5>') a very small heading</h5>
 
 <p>@('<p>') tags should be put around paragraphs.</p>
 
@@ -338,8 +335,44 @@ element is an @('<li>') tag.  For instance,</p>
 
 <p>These framed boxes are generated with the @('<box>') tag.</p>
 
-<p>It's relatively easy to add new tags.  We'll probably add some kind of image
-support in the future, and maybe other tags that users want.</p>")
+<p>A subset of HTML tables is implemented, including @('<table>'), @('<tr>'),
+@('<th>'), and @('<td>').  To encourage portability, this is a somewhat limited
+facility&mdash;you cannot control widths, padding, etc. on table cells. Here is
+an example table:</p>
+
+<table>
+<tr> <th>Color</th> <th>Land</th>   <th>Power Source</th> </tr>
+
+<tr> <td>White</td> <td>Plains</td>
+     <td>Goodness, order and light, all that is richeous and holy.  Adversary
+         of evil and chaos.</td>
+</tr>
+
+<tr> <td>Blue</td>  <td>Islands</td>
+     <td>Air and water, knowledge and control, illusion and sleight of hand.
+         Adversary of chaos and nature.</td>
+</tr>
+
+<tr> <td>Black</td>  <td>Swamps</td>
+     <td>Evil, darkness and despair, ambition and will, suffering and death.
+         Adversary of nature and goodness.</td>
+</tr>
+
+<tr> <td>Red</td>  <td>Mountains</td>
+     <td>Fire and chaos, impulsiveness and fury, freedom and whimsy.
+         Adversary of goodness and control.</td>
+</tr>
+
+<tr> <td>Green</td> <td>Forests</td>
+     <td>Life and nature, growth and fertility.  Adversary of control and
+         death.</td>
+</tr>
+</table>
+
+
+<p>It's relatively easy to add new tags.  There is undocumented support for
+images and icons, but this is currently awkward.  In the future, we may add
+other tags that users request.</p>")
 
 
 (defxdoc preprocessor
@@ -352,14 +385,26 @@ preprocessor which can be used to interpret certain directives of the form
 <p>To look up function definitions (or pieces of definitions) from the ACL2
 world and insert them into your documentation, you can use:</p>
 
-<ul>
- <li>@('@(def fn)'), insert the definition of <i>fn</i><br/>
-     (also works for theorems, macros, ...)</li>
- <li>@('@(body fn)'), just the body of <i>fn</i></li>
- <li>@('@(formals fn)'), just the formals of <i>fn</i></li>
- <li>@('@(measure fn)'), just the measure of <i>fn</i></li>
- <li>@('@(call fn)'), a generic function call of <i>fn</i></li>
-</ul>
+<table>
+
+<tr>  <td>@('@(def fn)')</td>
+      <td>insert the definition of <i>fn</i><br/>
+          (also works for theorems, macros, ...)</td>
+</tr>
+
+<tr> <td>@('@(body fn)')</td>
+     <td>just the body of <i>fn</i></td> </tr>
+
+<tr> <td>@('@(formals fn)')</td>
+     <td>just the formals of <i>fn</i></td> </tr>
+
+<tr> <td>@('@(measure fn)')</td>
+     <td>just the measure of <i>fn</i></td> </tr>
+
+<tr> <td>@('@(call fn)')</td>
+     <td>a generic function call of <i>fn</i></td> </tr>
+
+</table>
 
 <p>We expect that @('def') and @('body') directives will expand to large code
 fragments, so they are automatically wrapped in @('<code>') blocks.</p>
@@ -375,9 +420,9 @@ etc.</p>
 
 <h3>Adding Examples or Code Fragments</h3>
 
-<p>There's a special syntax to put in \"raw\" text.  This is especially useful
-for examples and code fragments, where you don't want to have to escape special
-character like &lt; with &amp;lt;</p>
+<p>There is special syntax to put in raw or verbatim text.  This is especially
+useful for examples and code fragments, where you don't want to have to escape
+special character like @('<') with @('&lt;').</p>
 
 <ul>
 <li><tt>@@('...')</tt> inserts @('...') into @('<tt>') tags.</li>
@@ -385,16 +430,18 @@ character like &lt; with &amp;lt;</p>
 </ul>
 
 <p>These have a special feature for automatically linking to documented topics.
-For instance, <tt>@@('consp x')</tt> produces @('(consp x)'), and
+For instance, <tt>@@('(consp x)')</tt> produces @('(consp x)'), and
 <tt>@@({ (consp x) })</tt> produces:</p>
 
 @({
  (consp x)
 })
 
-<p>You can also dynamically evaluate ACL2 expressions using the preprocessor's
-backtick syntax.  This may be useful for injecting constants and examples into
-your documentation.  For instance:</p>
+<h3>Evaluating Lisp from Doc Strings</h3>
+
+<p>The preprocessor has a special backtick syntax for dynamically evaluating
+ACL2 expressions.  This can be used to inject constants and examples into your
+documentation.  For instance:</p>
 
 <ul>
 <li>@('@(`(+ 1 2 3)`)')          produces @(`(+ 1 2 3)`)</li>
@@ -416,8 +463,8 @@ special @(':raw') prefix can be used to insert exactly the contents of a
 string, with no automatic escaping.  For instance:
   @('  @(`(:raw \"a &lt; b\")`)  ') produces 
        @(`(:raw \"a &lt; b\")`).
-Note that it is quite easy to use @(':raw') incorrectly; you need to know the
-right kind of escaping to use.</p>
+Note that it is quite easy to use @(':raw') incorrectly; you have to escape
+things properly yourself!</p>
 
 <h3>Emacs Links</h3>
 

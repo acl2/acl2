@@ -302,6 +302,13 @@ AIG to BDD Conversion Algorithm</a>.  In ITP 2010,LNCS 6172, Springer.  Pages
 circuits, etc.")
 
 
+(defsection books-reference
+  :parents (books)
+  :short "Reference guide for ACL2 functionality related to books, e.g.,
+@(see include-book), @(see certify-book), @(see cbd), etc.")
+
+
+
 ; Huge stupid hack.  Topics that are documented with the old :DOC system can't
 ; have XDOC topics for their parents.  So, get them all loaded and converted
 ; into proper XDOC topics, then move them around where we want them.
@@ -350,6 +357,8 @@ circuits, etc.")
 (xdoc::change-parents ltree-sort (leftist-trees))
 (xdoc::change-parents how-many-lt (leftist-trees))
 
+
+
 #!XDOC
 (defun fix-redundant-acl2-parents (all-topics)
   (b* (((when (atom all-topics))
@@ -393,7 +402,6 @@ circuits, etc.")
      (xdoc::change-parents untranslate-patterns
                            (macros user-defined-functions-table))
 
-     (xdoc::change-parents books (top))
      (xdoc::change-parents legacy-documentation (documentation))
      (xdoc::change-parents documentation (top))
      (xdoc::change-parents bdd (boolean-reasoning proof-automation))
@@ -403,6 +411,8 @@ circuits, etc.")
      ;; bozo where should this go...
      (xdoc::change-parents unsound-eval (miscellaneous))
 
+     ;; new books documentation stuff
+     (xdoc::change-parents books (top))
      ))
 
 (comp t)
@@ -460,8 +470,7 @@ circuits, etc.")
      (ubt! 'doc-rebuild-label)
      (ld ;; newline to fool dependency scanner
       "new-doc.lsp")
-     (make-event
-      (er-progn (xdoc::save "./manual"
-                            :import nil
-                            :expand-level 2)
-                (value `(value-triple :manual)))))))
+     (xdoc::save "./manual"
+                 :import nil
+                 :expand-level 2)
+     (value `(value-triple :manual)))))

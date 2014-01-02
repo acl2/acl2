@@ -139,6 +139,16 @@ h1 { margin-bottom: 0; }
 #left   { background-color: #ffcba3; }
 #right  { background-color: white; }
 
+.xtable th {
+  background-color: #ffdcb4;
+}
+
+.xtable tr:nth-child(odd) { background-color:#fff4e8; }
+/*.xtable tr:nth-child(odd) td:nth-child(odd) { background-color:#fffff6; } */
+
+.xtable tr:nth-child(even) { background-color:#ffffff; }
+/* .xtable tr:nth-child(even) td:nth-child(odd) { background-color:#fff6ff; } */
+
 #top, #bottom, #right, #left, #parents { border-color: #3C9DD0; }
 
 body          { background-color: white;}
@@ -188,7 +198,7 @@ body { font-family: "Georgia", "Bookman Old Style", serif; }
     font-family: "Geneva", "Verdana", sans-serif;
 }
 
-dt, .hindex, #flat, #still_loading {
+dt, .hindex, #flat, #still_loading, .xtable th {
     font-family: "Tahoma", "Geneva", "Verdana", sans-serif;
 }
 
@@ -473,4 +483,18 @@ hr { margin-top: 2em; }
 .ximg {
     text-align: center;
 }
+
+
+.xtable {
+  border-collapse:collapse;
+  border: 1px solid black;
+  margin-left: 1.5em;
+  margin-right: 1.5em;
+}
+
+.xtable td, .xtable th {
+  vertical-align: top;
+  padding: .5em;
+}
+
 

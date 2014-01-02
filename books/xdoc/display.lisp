@@ -147,6 +147,8 @@
        ((when (equal name "code"))
         (+ 4 (get-indent-level (cdr open-tags))))
        ((when (equal name "blockquote"))
+        (+ 4 (get-indent-level (cdr open-tags))))
+       ((when (member-equal name '("table")))
         (+ 4 (get-indent-level (cdr open-tags)))))
     (get-indent-level (cdr open-tags))))
 
@@ -278,6 +280,8 @@
                     (auto-indent (maybe-doublespace acc) open-tags))
                    ((member-equal name '("h1" "h2" "h3"))
                     (auto-indent (maybe-triplespace acc) open-tags))
+                   ((member-equal name '("table"))
+                    (auto-indent (maybe-newline acc) open-tags))
                    ((equal name "index")
                     (b* ((atts  (opentok-atts tok1))
                          (title (cdr (assoc-equal "title" atts)))
@@ -299,10 +303,12 @@
              (acc (cond
                    ((member-equal name '("h1" "h2" "h3" "h4" "h5" "p" "dl" "ul" "ol"
                                          "short" "code" "index" "index_body"
-                                         "blockquote"))
+                                         "blockquote" "table"))
                     (auto-indent (maybe-doublespace acc) open-tags))
-                   ((member-equal name '("li" "dd" "dt" "index_head"))
+                   ((member-equal name '("li" "dd" "dt" "index_head" "tr"))
                     (auto-indent (maybe-newline acc) open-tags))
+                   ((member-equal name '("td" "th"))
+                    (list* #\Space #\Space #\| #\Tab acc))
                    (t
                     acc))))
           (tokens-to-terminal rest wrap-col open-tags list-nums acc)))

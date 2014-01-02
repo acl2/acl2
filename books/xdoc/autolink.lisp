@@ -44,8 +44,8 @@
 (defun error-context (x n xl) ;; ==> STRING
   ;; Tries to show what text is near an error.
   (declare (type string x))
-  (let ((min (nfix (- n 40)))
-        (max (min (+ n 20) xl)))
+  (b* ((min (nfix (- n 40)))
+       (max (min (+ n 20) xl)))
     (subseq x min max)))
 
 
@@ -67,15 +67,15 @@
   (b* (((when (= xl n))
         ;; End of string?  Error if we were escaped, or if we have not actually
         ;; read some characters yet.  Otherwise, it was okay.
-        (let ((result (str::rchars-to-string acc)))
-          (if (or bar-escape-p slash-escape-p (not some-chars-p))
+        (b* ((result (str::rchars-to-string acc))
+             ((when (or bar-escape-p slash-escape-p (not some-chars-p)))
               (mv (if nice-error-msg-p
-                      (concatenate 'string "Near " (error-context x n xl)
-                                   ": unexpected end of string while reading symbol.  "
-                                   "Characters read so far: " result)
+                      (str::cat "Near " (error-context x n xl)
+                                ": unexpected end of string while reading symbol.  "
+                                "Characters read so far: " result)
                     "Symbol Parse Error")
-                  result n)
-            (mv nil result n))))
+                  result n)))
+          (mv nil result n)))
 
        (n+1  (+ n 1))
        (char (char x n))
@@ -370,19 +370,14 @@
        (ret (str::rchars-to-string acc)))
     (mv ret state)))
 
-;; Ugh, the use of state-state here is awful.  formerly this wasn't a macro and
-;; was just took x and state.  But then I added topics-fal and base-pkg, and
-;; there's too much code that calls it directly.  So, I want to maintain some
-;; kind of interface compatibility.
-(defmacro xml-ppr-obj (x state-state
+(defmacro xml-ppr-obj (x state ;; BOZO eventually switch to &key (state 'state)
                          &key
                          (topics-fal 'nil)
                          (base-pkg   ''acl2::foo))
-  `(b* (((mv acc ,state-state)
-         (xml-ppr-obj-aux ,x ,topics-fal ,base-pkg ,state-state nil))
+  `(b* (((mv acc ,state)
+         (xml-ppr-obj-aux ,x ,topics-fal ,base-pkg ,state nil))
         (ret (str::rchars-to-string acc)))
-     (mv ret ,state-state)))
-
+     (mv ret ,state)))
 
 
 #|

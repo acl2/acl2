@@ -20,7 +20,7 @@
 
 (in-package "XDOC")
 (include-book "base")
-(include-book "sort")
+(include-book "std/osets/top" :dir :system)
 (include-book "preprocess")
 (include-book "parse-xml")
 (program)

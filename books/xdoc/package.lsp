@@ -20,10 +20,13 @@
 
 (in-package "ACL2")
 
+(include-book "std/osets/portcullis" :dir :system)
+
 (defpkg "XDOC"
   (set-difference-eq
    (union-eq (union-eq *acl2-exports*
-                       *common-lisp-symbols-from-main-lisp-package*)
+                       *common-lisp-symbols-from-main-lisp-package*
+                       sets::*sets-exports*)
              ;; Things to add:
              '(b* quit exit value defxdoc defxdoc-raw macro-args
                   xdoc-extend defsection defsection-progn lnfix
@@ -32,5 +35,5 @@
                   access theorem untranslated-theorem guard xdoc xdoc! unquote
                   undocumented assert! top explode implode))
    ;; Things to remove:
-   '(
+   '(delete union
      )))

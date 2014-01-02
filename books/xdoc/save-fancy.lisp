@@ -30,10 +30,6 @@
 (set-state-ok t)
 (program)
 
-
-
-
-
 (defun-inline json-encode-string (x acc)
   (declare (type string x))
   (cons #\" (bridge::json-encode-str x (cons #\" acc))))
@@ -170,6 +166,65 @@
 ; viz., their position in the array.  This seems like a useful capability for
 ; implementing search features.
 
+(defun short-xml-for-topic (topic topics-fal state)
+  ;; Returns (mv xml-string state)
+  (b* ((short    (or (cdr (assoc :short topic)) ""))
+       (base-pkg (cdr (assoc :base-pkg topic)))
+       (name     (cdr (assoc :name topic)))
+       ((mv short-rchars state) (preprocess-main short nil topics-fal base-pkg state nil))
+       (short-str (str::rchars-to-string short-rchars))
+       ((mv err &) (parse-xml short-str))
+       (state
+        (if err
+            (pprogn
+               (fms "~|~%WARNING: problem with :short in topic ~x0:~%"
+                    (list (cons #\0 name))
+                    *standard-co* state nil)
+               (princ$ err *standard-co* state)
+               (fms "~%~%" nil *standard-co* state nil))
+          state))
+       (short-str-xml
+        (b* (((unless err)
+              short-str)
+             (tmp nil)
+             (tmp (str::revappend-chars
+                   "<b><color rgb='#ff0000'>Markup error in :short</color></b>
+                    <code>" tmp))
+             (tmp (simple-html-encode-str err 0 (length err) tmp))
+             (tmp (str::revappend-chars "</code>" tmp)))
+          (str::rchars-to-string tmp))))
+    (mv short-str-xml state)))
+
+(defun long-xml-for-topic (topic topics-fal state)
+  ;; Returns (mv xml-string state)
+  (b* ((long     (or (cdr (assoc :long topic)) ""))
+       (base-pkg (cdr (assoc :base-pkg topic)))
+       (name     (cdr (assoc :name topic)))
+       ((mv long-rchars state) (preprocess-main long nil topics-fal base-pkg state nil))
+       (long-str (str::rchars-to-string long-rchars))
+       ((mv err &) (parse-xml long-str))
+       (state
+        (if err
+            (pprogn
+               (fms "~|~%WARNING: problem with :long in topic ~x0:~%"
+                    (list (cons #\0 name))
+                    *standard-co* state nil)
+               (princ$ err *standard-co* state)
+               (fms "~%~%" nil *standard-co* state nil))
+          state))
+       (long-str-xml
+        (b* (((unless err)
+              long-str)
+             (tmp nil)
+             (tmp (str::revappend-chars
+                   "<h3><color rgb='#ff0000'>Markup error in :long</color></h3>
+                    <code>" tmp))
+             (tmp (simple-html-encode-str err 0 (length err) tmp))
+             (tmp (str::revappend-chars "</code>" tmp)))
+          (str::rchars-to-string tmp))))
+    (mv long-str-xml state)))
+
+
 (defun json-encode-index-entry (topic topics-fal uid-map state acc)
   (b* ((name     (cdr (assoc :name topic)))
        (base-pkg (cdr (assoc :base-pkg topic)))
@@ -194,29 +249,7 @@
 
        (parent-uids (collect-uids parents uid-map))
 
-       ((mv short-rchars state) (preprocess-main short nil topics-fal base-pkg state nil))
-       (short-str (str::rchars-to-string short-rchars))
-       ((mv err &) (parse-xml short-str))
-       (state
-        (if err
-            (pprogn
-               (fms "~|~%WARNING: problem with :short in topic ~x0:~%"
-                    (list (cons #\0 name))
-                    *standard-co* state nil)
-               (princ$ err *standard-co* state)
-               (fms "~%~%" nil *standard-co* state nil))
-          state))
-
-       (short-str
-        (b* (((unless err)
-              short-str)
-             (tmp nil)
-             (tmp (str::revappend-chars
-                   "<b><color rgb='#ff0000'>Markup error in :short</color></b>
-                    <code>" tmp))
-             (tmp (simple-html-encode-str err 0 (length err) tmp))
-             (tmp (str::revappend-chars "</code>" tmp)))
-          (str::rchars-to-string tmp)))
+       ((mv short-str state) (short-xml-for-topic topic topics-fal state))
 
 ; I originally used a JSON object like {"name":"Append","rawname":"..."}  But
 ; then some back-of-the-napkin calculations said that these nice names were
@@ -251,8 +284,9 @@
 #||
 (b* ((topics (get-xdoc-table (w state)))
      (topics-fal (topics-fal topics))
+     (uid-map nil)
      ((mv acc state)
-      (json-encode-index-entry (car topics) topics-fal state nil))
+      (json-encode-index-entry (car topics) topics-fal uid-map state nil))
      (state (princ$ (str::rchars-to-string acc) *standard-co* state)))
   state)
 ||#
@@ -310,28 +344,7 @@
         (mv (er hard? __function__ "From is not a string: ~x0.~%" topic)
             state))
 
-       ((mv long-rchars state) (preprocess-main long nil topics-fal base-pkg state nil))
-       (long-str (str::rchars-to-string long-rchars))
-       ((mv err &) (parse-xml long-str))
-       (state
-        (if err
-            (pprogn
-               (fms "~|~%WARNING: problem with :long in topic ~x0:~%"
-                    (list (cons #\0 name))
-                    *standard-co* state nil)
-               (princ$ err *standard-co* state)
-               (fms "~%~%" nil *standard-co* state nil))
-          state))
-       (long-str
-        (b* (((unless err)
-              long-str)
-             (tmp nil)
-             (tmp (str::revappend-chars
-                   "<h3><color rgb='#ff0000'>Markup error in :long</color></h3>
-                    <code>" tmp))
-             (tmp (simple-html-encode-str err 0 (length err) tmp))
-             (tmp (str::revappend-chars "</code>" tmp)))
-          (str::rchars-to-string tmp)))
+       ((mv long-str state) (long-xml-for-topic topic topics-fal state))
 
        (from-xml (str::rchars-to-string
                   (simple-html-encode-chars

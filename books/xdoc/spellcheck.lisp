@@ -20,7 +20,7 @@
 
 (in-package "XDOC")
 (include-book "str/defs" :dir :system)
-(include-book "sort")
+(include-book "std/osets/top" :dir :system)
 (program)
 
 

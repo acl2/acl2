@@ -26,7 +26,6 @@
 ; XDOC topics.
 
 (in-package "XDOC")
-(include-book "base")
 (include-book "str/defs" :dir :system)
 (program)
 
@@ -39,28 +38,27 @@
 
 (defun funny-char-code (x acc)
   (declare (type character x))
-  (let* ((code  (char-code x))
-         (high  (ash code -4))
-         (low   (logand code #xF)))
+  (b* ((code  (char-code x))
+       (high  (ash code -4))
+       (low   (logand code #xF)))
     (list* (digit-to-char high)
            (digit-to-char low)
            acc)))
 
 (defun file-name-mangle-aux (x n xl acc)
   (declare (type string x))
-  (if (= n xl)
-      acc
-    (let ((char (char x n)))
-      (cond ((or (and (char<= #\a char) (char<= char #\z))
-                 (and (char<= #\A char) (char<= char #\Z))
-                 (and (char<= #\0 char) (char<= char #\9))
-                 (eql char #\-)
-                 (eql char #\.))
-             (file-name-mangle-aux x (+ n 1) xl (cons char acc)))
-            ((eql char #\:)
-             (file-name-mangle-aux x (+ n 1) xl (revappend '(#\_ #\_) acc)))
-            (t
-             (file-name-mangle-aux x (+ n 1) xl (funny-char-code char (cons #\_ acc))))))))
+  (b* (((when (= n xl))
+        acc)
+       (char (char x n))
+       ((when (or (and (char<= #\a char) (char<= char #\z))
+                  (and (char<= #\A char) (char<= char #\Z))
+                  (and (char<= #\0 char) (char<= char #\9))
+                  (eql char #\-)
+                  (eql char #\.)))
+        (file-name-mangle-aux x (+ n 1) xl (cons char acc)))
+       ((when (eql char #\:))
+        (file-name-mangle-aux x (+ n 1) xl (list* #\_ #\_ acc))))
+    (file-name-mangle-aux x (+ n 1) xl (funny-char-code char (cons #\_ acc)))))
 
 (defun file-name-mangle (x acc)
 
@@ -69,9 +67,7 @@
 ; package and the symbol name when creating file names.
 
   (declare (type symbol x))
-  (let ((str (str::cat (symbol-package-name x)
-                       "::"
-                       (symbol-name x))))
+  (b* ((str (str::cat (symbol-package-name x) "::" (symbol-name x))))
     (file-name-mangle-aux str 0 (length str) acc)))
 
 (defun url (x)
@@ -105,23 +101,25 @@
 ; X is a character list that we copy into acc (in reverse order), except that
 ; we escape any HTML entities like < into the &lt; format.
 
-  (if (atom x)
-      acc
-    (let ((acc (case (car x)
-                 (#\< (list* #\; #\t #\l #\& acc))         ;; "&lt;" (in reverse)
-                 (#\> (list* #\; #\t #\g #\& acc))         ;; "&gt;"
-                 (#\& (list* #\; #\p #\m #\a #\& acc))     ;; "&amp;"
-                 (#\" (list* #\; #\t #\o #\u #\q #\& acc)) ;; "&quot;"
-                 (t   (cons (car x) acc)))))
-      (simple-html-encode-chars (cdr x) acc))))
+  (b* (((when (atom x))
+        acc)
+       (acc (case (car x)
+              (#\< (list* #\; #\t #\l #\& acc))         ;; "&lt;" (in reverse)
+              (#\> (list* #\; #\t #\g #\& acc))         ;; "&gt;"
+              (#\& (list* #\; #\p #\m #\a #\& acc))     ;; "&amp;"
+              (#\" (list* #\; #\t #\o #\u #\q #\& acc)) ;; "&quot;"
+              (t   (cons (car x) acc)))))
+    (simple-html-encode-chars (cdr x) acc)))
 
-;(reverse (coerce (simple-html-encode-chars '(#\a #\< #\b) nil) 'string))
-;(reverse (coerce (simple-html-encode-chars '(#\a #\> #\b) nil) 'string))
-;(reverse (coerce (simple-html-encode-chars '(#\a #\& #\b) nil) 'string))
-;(reverse (coerce (simple-html-encode-chars '(#\a #\" #\b) nil) 'string))
+#||
+(reverse (implode (simple-html-encode-chars '(#\a #\< #\b) nil)))
+(reverse (implode (simple-html-encode-chars '(#\a #\> #\b) nil)))
+(reverse (implode (simple-html-encode-chars '(#\a #\& #\b) nil)))
+(reverse (implode (simple-html-encode-chars '(#\a #\" #\b) nil)))
+||#
 
 (defun sneaky-downcase (x)
-  (let ((down (str::downcase-string x)))
+  (b* ((down (str::downcase-string x)))
     (str::strsubst "acl2" "ACL2" down)))
 
 ;(sneaky-downcase "SILLY-ACL2-TUTORIAL")
@@ -195,30 +193,28 @@
 ; Characters to print are accumulated onto acc in reverse order.  BOZO think
 ; about adding keyword support?
 
-  (let* ((base-pkg (base-pkg-display-override base-pkg))
-         (name-low (name-low (rendered-name (symbol-name x))))
-         (acc (if (in-package-p x base-pkg)
-                  acc
-                (let ((pkg-low (name-low (symbol-package-name x))))
-                  (list* #\: #\:
-                         (simple-html-encode-chars (coerce pkg-low 'list) acc))))))
-    (simple-html-encode-chars (coerce name-low 'list) acc)))
+  (b* ((base-pkg (base-pkg-display-override base-pkg))
+       (name-low (name-low (rendered-name (symbol-name x))))
+       (acc (if (in-package-p x base-pkg)
+                acc
+              (let ((pkg-low (name-low (symbol-package-name x))))
+                (list* #\: #\:
+                       (simple-html-encode-chars (explode pkg-low) acc))))))
+    (simple-html-encode-chars (explode name-low) acc)))
 
 (defun sym-mangle-cap (x base-pkg acc)
 
 ; Same as sym-mangle, but upper-case the first letter.
 
   (b* ((base-pkg (base-pkg-display-override base-pkg))
-       (name-low (name-low (rendered-name (symbol-name x)))))
-    (if (in-package-p x base-pkg)
+       (name-low (name-low (rendered-name (symbol-name x))))
+       ((when (in-package-p x base-pkg))
         (let* ((name-cap (str::upcase-first name-low)))
-          (simple-html-encode-chars (explode name-cap) acc))
-      (let* ((pkg-low (name-low (symbol-package-name x)))
-             (pkg-cap (str::upcase-first pkg-low))
-             (acc (list* #\: #\:
-                         (simple-html-encode-chars (explode pkg-cap) acc))))
-        (simple-html-encode-chars (explode name-low) acc)))))
-
+          (simple-html-encode-chars (explode name-cap) acc)))
+       (pkg-low (name-low (symbol-package-name x)))
+       (pkg-cap (str::upcase-first pkg-low))
+       (acc (list* #\: #\: (simple-html-encode-chars (explode pkg-cap) acc))))
+    (simple-html-encode-chars (explode name-low) acc)))
 
 ; (reverse (implode (sym-mangle 'acl2 'acl2::foo nil)))
 ; (reverse (implode (sym-mangle 'acl2-tutorial 'acl2::foo nil)))

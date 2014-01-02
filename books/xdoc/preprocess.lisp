@@ -195,6 +195,21 @@
 (defun get-event (name world)
   (clean-up-event (get-event-aux name world)))
 
+(defun start-event (event acc)
+  (b* ((acc (str::revappend-chars "<b>" acc))
+       (acc (str::revappend-chars (case (and (consp event)
+                                             (car event))
+                                    (defun     "Function: ")
+                                    (defthm    "Theorem: ")
+                                    (defmacro  "Macro: ")
+                                    ;; not defstobj because it gets used for the
+                                    ;; stobjs and accessors...
+                                    (otherwise "Definition: "))
+                                  acc))
+       (acc (str::revappend-chars "</b>" acc)))
+    acc))
+
+
 #||
 
 (get-event-aux 'append (w state))
@@ -228,12 +243,6 @@
 
 ||#
 
-(defun get-def (fn world)
-  (get-event fn world))
-
-(defun get-theorem (name world)
-  ;; BOZO maybe do some cleaning to remove hints, etc.
-  (get-event name world))
 
 #||
 
@@ -312,12 +321,12 @@
 
 (defun read-through-some-char-aux (x n xl chars acc) ;; ==> (MV SUCCESSP STRING N-PRIME)
   (declare (type string x))
-  (if (eql xl n)
-      (mv nil (str::rchars-to-string acc) n)
-    (let ((charN (char x n)))
-      (if (member charN chars)
-          (mv t (str::rchars-to-string (cons charN acc)) n)
-        (read-through-some-char-aux x (+ 1 n) xl chars (cons charN acc))))))
+  (b* (((when (eql xl n))
+        (mv nil (str::rchars-to-string acc) n))
+       (charN (char x n))
+       ((when (member charN chars))
+        (mv t (str::rchars-to-string (cons charN acc)) n)))
+    (read-through-some-char-aux x (+ 1 n) xl chars (cons charN acc))))
 
 (defun read-through-some-char (x n xl chars)
   ;; Try to read until one of CHARS is found
@@ -366,8 +375,7 @@
 
        (t
         (mv (str::cat "In " (symbol-name command) " directive, expected ) after "
-                      (symbol-name arg)
-                      ". Near " (error-context x n xl) ".")
+                      (symbol-name arg) ". Near " (error-context x n xl) ".")
             nil nil nil n)))))
 
 #||
@@ -448,24 +456,24 @@
 ; @(see foo) just expands into a link with a (usually) lowercase name, but we go to
 ; some trouble to preserve case for things like @(see Guard).
  
-  (b* ((acc            (str::revappend-chars "<see topic=\"" acc))
-       (acc            (file-name-mangle arg acc))
-       (acc            (str::revappend-chars "\">" acc))
-       (acc            (if (want-to-preserve-case-p arg arg-raw base-pkg)
-                           (str::revappend-chars (str::trim arg-raw) acc)
-                         (sym-mangle arg base-pkg acc)))
-       (acc            (str::revappend-chars "</see>" acc)))
+  (b* ((acc (str::revappend-chars "<see topic=\"" acc))
+       (acc (file-name-mangle arg acc))
+       (acc (str::revappend-chars "\">" acc))
+       (acc (if (want-to-preserve-case-p arg arg-raw base-pkg)
+                (str::revappend-chars (str::trim arg-raw) acc)
+              (sym-mangle arg base-pkg acc)))
+       (acc (str::revappend-chars "</see>" acc)))
       (mv acc state)))
 
 (defun process-see-cap-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
 
 ; @(csee foo) just expands into a link with a capitalized name.
 
-  (b* ((acc            (str::revappend-chars "<see topic=\"" acc))
-       (acc            (file-name-mangle arg acc))
-       (acc            (str::revappend-chars "\">" acc))
-       (acc            (sym-mangle-cap arg base-pkg acc))
-       (acc            (str::revappend-chars "</see>" acc)))
+  (b* ((acc (str::revappend-chars "<see topic=\"" acc))
+       (acc (file-name-mangle arg acc))
+       (acc (str::revappend-chars "\">" acc))
+       (acc (sym-mangle-cap arg base-pkg acc))
+       (acc (str::revappend-chars "</see>" acc)))
       (mv acc state)))
 
 (defun process-tsee-directive (arg arg-raw base-pkg state acc) ;; ===> (MV ACC STATE)
@@ -584,8 +592,9 @@
 ; @(def foo) -- look up the definition for foo, pretty-print it in a <code>
 ; block, along with a source-code link.
 
-  (b* ((def            (get-def arg (w state)))
-       (acc            (str::revappend-chars "<p><b>Definition: </b>" acc))
+  (b* ((def            (get-event arg (w state)))
+       (acc            (str::revappend-chars "<p>" acc))
+       (acc            (start-event def acc))
        ((mv acc state) (process-srclink-directive arg dir state acc))
        (acc            (str::revappend-chars "</p>" acc))
        (acc            (str::revappend-chars "<code>" acc))
@@ -599,8 +608,9 @@
 ; but don't use a source-code link because this is a "Generated Definition" for
 ; which a tags-search will probably fail.
 
-  (b* ((def            (get-def arg (w state)))
-       (acc            (str::revappend-chars "<p><b>Definition: </b>" acc))
+  (b* ((def            (get-event arg (w state)))
+       (acc            (str::revappend-chars "<p>" acc))
+       (acc            (start-event def acc))
        (acc            (sym-mangle arg base-pkg acc))
        (acc            (str::revappend-chars "</p>" acc))
        (acc            (str::revappend-chars "<code>" acc))
@@ -613,12 +623,13 @@
 ; @(thm foo) -- Look up the theorem named foo, and pretty-print its event along
 ; with a source link.
 
-  (b* ((theorem        (get-theorem arg (w state)))
-       (acc            (str::revappend-chars "<p><b>Theorem: </b>" acc))
+  (b* ((def            (get-event arg (w state)))
+       (acc            (str::revappend-chars "<p>" acc))
+       (acc            (start-event def acc))
        ((mv acc state) (process-srclink-directive arg dir state acc))
        (acc            (str::revappend-chars "</p>" acc))
        (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (xml-ppr-obj-aux theorem topics-fal base-pkg state acc))
+       ((mv acc state) (xml-ppr-obj-aux def topics-fal base-pkg state acc))
        (acc            (str::revappend-chars "</code>" acc)))
       (mv acc state)))
 
@@ -627,12 +638,13 @@
 ; @(gthm foo) -- Like @(thm foo), but don't provide a source link since this is
 ; a generated theorem.
 
-  (b* ((theorem        (get-theorem arg (w state)))
-       (acc            (str::revappend-chars "<p><b>Theorem: </b>" acc))
+  (b* ((def            (get-event arg (w state)))
+       (acc            (str::revappend-chars "<p>" acc))
+       (acc            (start-event def acc))
        (acc            (sym-mangle arg base-pkg acc))
        (acc            (str::revappend-chars "</p>" acc))
        (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (xml-ppr-obj-aux theorem topics-fal base-pkg state acc))
+       ((mv acc state) (xml-ppr-obj-aux def topics-fal base-pkg state acc))
        (acc            (str::revappend-chars "</code>" acc)))
       (mv acc state)))
 

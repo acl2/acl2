@@ -151,6 +151,22 @@
   <h5><xsl:apply-templates/></h5>
 </xsl:template>
 
+<xsl:template match="table">
+  <table class="xtable"><xsl:apply-templates/></table>
+</xsl:template>
+
+<xsl:template match="tr">
+  <tr><xsl:apply-templates/></tr>
+</xsl:template>
+
+<xsl:template match="th">
+  <th><xsl:apply-templates/></th>
+</xsl:template>
+
+<xsl:template match="td">
+  <td><xsl:apply-templates/></td>
+</xsl:template>
+
 
 
 <!-- Extra stuff for Symbolic Test Vectors at Centaur -->

@@ -22,13 +22,13 @@
 (include-book "../mlib/stmt-tools")
 (local (include-book "../util/arithmetic"))
 
-(defsection vl-lint-stmt-rewrite
+(defsection lint-stmt-rewrite
   :parents (lint)
   :short "(Unsound transform) eliminate @('$display') and various other
 statements to cut down on noisy warnings about dropping unsupported
 constructs.")
 
-(local (xdoc::set-default-parents vl-lint-stmt-rewrite))
+(local (xdoc::set-default-parents lint-stmt-rewrite))
 
 (define vl-lint-throwaway-fn-p ((x vl-stmt-p))
   :returns (throwaway-p booleanp :rule-classes :type-prescription)
