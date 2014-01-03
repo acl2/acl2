@@ -40,6 +40,12 @@
 (local (table xdoc 'doc nil))
 (local (include-book "acl2-doc"))
 
+; Need the following constant non-locally for BROKEN-LINK topic, but the above
+; include-book is local:
+(make-event
+ `(defconst *acl2-broken-links-alist*
+    ',*acl2-broken-links-alist*))
+
 ; redundant (in acl2-doc.lisp), but necessary for render-doc-combined.lisp:
 (defun clhs (url title)
   (declare (xargs :guard (and (or (not url)
