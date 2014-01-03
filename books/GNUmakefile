@@ -1061,22 +1061,22 @@ special: $(BOOKS_SPECIAL_OUT)
 ### Section: Building the XDOC combined manual
 ##############################
 
+# See :DOC xdoc for more information.
+
 # The xdoc combined manual is built in directory centaur/manual/, top
 # page index.html, as a byproduct of building centaur/doc.cert with
-# ACL2(h).  The following target builds the combined manual.  You
-# might wish to issue the command below directly, so that the -j
-# option is passed to the call of make.  Don't forget to include
-# ACL2=acl2h, where acl2h is your ACL2(h) executable.
-manual:
-	$(MAKE) USE_QUICKLISP=1 centaur/doc.cert
+# ACL2(h).  The following target builds the combined manual, but you
+# may wish to issue the command below directly, so that the -j option
+# is passed to the call of make.  Don't forget to include ACL2=acl2h,
+# where acl2h is your ACL2(h) executable.
 
 # This has been tested using CCL on Linux, but may work for other
-# OS/Lisp combinations.  See also centaur/README.html.  ACL2(h) is
-# required for that build of the xdoc manual, because it is required
-# for some of the books included in centaur/doc.lisp.  You can create
-# a manual for your own books using ACL2 or ACL2(h); see topic SAVE
-# (parent topic XDOC) in the xdoc manual, either in centaur/manual/ or
-# on the web at http://fv.centtech.com/acl2/latest/doc/.
+# OS/Lisp combinations.  Note that ACL2(h) is required for that build
+# of the xdoc manual, because it is required for some of the books
+# included in centaur/doc.lisp.
+
+manual:
+	$(MAKE) USE_QUICKLISP=1 centaur/doc.cert
 
 # In order to read the acl2+books combined manual in the Emacs-based
 # ACL2-Doc browser (see :DOC acl2-doc), the file
