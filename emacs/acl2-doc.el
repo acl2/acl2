@@ -406,9 +406,12 @@ then restart the ACL2-Doc browser to view that manual."
 				    (goto-char (1+ start))
 				    (read (current-buffer))))))))))
       (cond ((arrayp sym) ;; [...]
-	     (let ((sym (aref sym 0)))
-	       (and (symbolp sym)
-		    (intern (upcase (symbol-name sym))))))
+	     (let ((ans (let ((sym (aref sym 0)))
+			  (and (symbolp sym)
+			       (intern (upcase (symbol-name sym)))))))
+	       (cond ((assoc sym (acl2-doc-state-alist))
+		      sym)
+		     (t 'BROKEN-LINK))))
 	    ((not (and sym (symbolp sym)))
 	     nil)
 	    (t
@@ -432,7 +435,8 @@ then restart the ACL2-Doc browser to view that manual."
 (defun acl2-doc-completing-read (prompt silent-error-p)
   (let* ((completion-ignore-case t)
          (default (acl2-doc-topic-at-point))
-         (default (and (assoc default (acl2-doc-state-alist))
+         (default (and (or (eq default 'BROKEN-LINK) ; optimization
+			   (assoc default (acl2-doc-state-alist)))
                        default))
          (value-read (completing-read
                       (if default
