@@ -75,7 +75,18 @@
       nil
     (cons 1 (infinite x))))
 (test-ok (infinite 0) (nil))
-(test-fail (infinite 3))
+(test-fail
+; Modified 1/3/2014 by Matt K.  In CMUCL the stack overflow from (infinite 3)
+; aborted an ACL2 (without hons) certification attempt using the standard
+; `make' process (via cert.pl), but I was unable to reproduce the problem at
+; the terminal, and a search did not yield any CMUCL-specific code in the ACL2
+; sources that might explain this oddity.  Perhaps some weird interaction with
+; `make' is responsible for the aborted certification.  At any rate, it's easy
+; enough to avoid the stack overflow in CMUCL or any other Lisp for which this
+; turns out to be an issue.
+ (if (eq (@ host-lisp) :CMU)
+     (f 3)
+   (infinite 3)))
 
 ;; Unfortunately with-local-stobj doesn't work directly, but at least it works
 ;; in a function call...
