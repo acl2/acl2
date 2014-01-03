@@ -3428,7 +3428,7 @@
 (defun return-last (fn eager-arg last-arg)
 
 ; Return-last is the one "function" in ACL2 that has no fixed output signature.
-; Rather, (return-last expr1 expr2) inherits its stobjs-out from expr2.
+; Rather, (return-last fn expr1 expr2) inherits its stobjs-out from expr2.
 ; Because of this, we make it illegal to call stobjs-out on the symbol
 ; return-last.  We think of expr1 as being evaluated eagerly because even in
 ; the raw Lisp implementation of return-last, that argument is always evaluated
@@ -50058,7 +50058,7 @@ Lisp definition."
     (sys-call)
     ))
 
-(defun oracle-apply-guard (fn args state)
+(defun ev-fncall-w-guard (fn args wrld temp-touchable-fns)
 
 ; This function should return nil if the term (cons fn (kwote-lst args)) can
 ; not be translated for execution.  See translate11.
@@ -50066,31 +50066,33 @@ Lisp definition."
 ; Note that this function is described in :doc oracle-apply.  If this function
 ; is updated, then update that :doc topic as well.
 
-  (declare (xargs :stobjs state))
-  (and (symbolp fn)
-       (not (member-eq fn
+; Warning: If this function is changed, then consider changing the table guard
+; for dive-into-macros-table.
 
-; Before removing any function from the following list, be sure to look at
-; translate11 to see that could be a mistake.
+  (declare (xargs :guard t))
+  (and (plist-worldp wrld)
+       (symbolp fn)
 
-                       '(if synp mv-list return-last)))
+; The function ev-fncall-rec-logical disallows calling the function IF,
+; presumably because one should evaluate that call lazily.  We make the same
+; restriction here.  At one time we also considered disallowing
+; return-last, synp, and mv-list, but these are truly function symbols whose
+; calls can reasonably be evaluated in the logic.
+
+       (not (eq fn 'if))
        (not (assoc-eq fn *ttag-fns-and-macros*))
        (true-listp args)
-       (let* ((wrld (w state))
-              (formals (getprop fn 'formals t 'current-acl2-world wrld))
+       (let* ((formals (getprop fn 'formals t 'current-acl2-world wrld))
               (stobjs-in (stobjs-in fn wrld))
               (untouchable-fns (global-val 'untouchable-fns wrld)))
          (and (not (eq formals t))
               (eql (len formals) (len args))
               (true-listp untouchable-fns)
               (or (not (member-eq fn untouchable-fns))
-                  (and (f-boundp-global 'temp-touchable-fns state)
-                       (or (eq t (f-get-global 'temp-touchable-fns state))
-                           (and (true-listp (f-get-global 'temp-touchable-fns
-                                                          state))
-                                (member-eq fn
-                                           (f-get-global 'temp-touchable-fns
-                                                         state))))))
+                  (and temp-touchable-fns
+                       (or (eq t temp-touchable-fns)
+                           (and (true-listp temp-touchable-fns)
+                                (member-eq fn temp-touchable-fns)))))
 
 ; Perhaps we could skip the next check.  It is equivalent to (not
 ; (stobj-creatorp fn wrld)), but stobj-creatorp is defined later.
@@ -50100,6 +50102,21 @@ Lisp definition."
                                  wrld)))
               (true-listp stobjs-in) ; needed for guard of all-nils
               (all-nils stobjs-in)))))
+
+(defun oracle-apply-guard (fn args state)
+
+; This function should return nil if the term (cons fn (kwote-lst args)) can
+; not be translated for execution.  See translate11.
+
+; Note that this function is described in :doc oracle-apply.  If this function
+; is updated, then update that :doc topic as well.
+
+  (declare (xargs :stobjs state))
+  (and (f-boundp-global 'temp-touchable-fns state)
+       (ev-fncall-w-guard fn
+                          args
+                          (w state)
+                          (f-get-global 'temp-touchable-fns state))))
 
 (defun oracle-apply (fn args state)
 
