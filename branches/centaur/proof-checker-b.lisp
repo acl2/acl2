@@ -2323,7 +2323,14 @@
 (table dive-into-macros-table nil nil
        :guard
        (and (symbolp key)
-            (or (symbolp val) ; a function to call
+            (or (and (function-symbolp val world)
+
+; We can call key using ev-fncall-w in expand-address, so we had better be sure
+; that the guard of ev-fncall-w will be satisfied.
+
+                     (equal (stobjs-in val world) '(nil nil nil nil))
+                     (not (assoc-eq val *ttag-fns-and-macros*))
+                     (not (member-eq val (global-val 'untouchable-fns world))))
                 (integerp val)
                 (null val))))
 

@@ -1402,10 +1402,6 @@
      (eq (f-get-global 'guard-checking-on *the-live-state*)
          t)))
 
-(defun untouchable-fn-p (fn w)
-  (and (not (member-eq fn *user-defined-functions-table-keys*)) ; optimization
-       (member-eq fn (global-val 'untouchable-fns w))))
-
 (defun save-ev-fncall-guard-er (fn guard stobjs-in args)
   (wormhole-eval 'ev-fncall-guard-er-wormhole
                  '(lambda (whs)
@@ -2458,13 +2454,7 @@
 
 (defun ev-fncall-w (fn args w user-stobj-alist safe-mode gc-off
                        hard-error-returns-nilp aok)
-  (declare (xargs :guard
-                  (and (plist-worldp w)
-                       (let ((formals (getprop fn 'formals t
-                                               'current-acl2-world w)))
-                         (and (not (eq formals t))
-                              (equal (length formals)
-                                     (length args)))))))
+  (declare (xargs :guard (ev-fncall-w-guard fn args w nil)))
 
 ; WARNING: Do not call this function if args contains the live state
 ; or any other live stobjs and evaluation of form could modify any of
@@ -2482,53 +2472,44 @@
 
 ; Keep the two ev-fncall-rec calls below in sync.
 
-  (cond
-   ((untouchable-fn-p fn w)
-    (mv t
-        (msg "Attempted to call ev-fncall-w with function ~x0, which is untouchable."
-             fn)))
-
-; See the comment in ev for why we don't check the time limit here.
-
-   (t
-    #-acl2-loop-only
-    (let ((*ev-shortcut-okp* t)
-          (*raw-guard-warningp* (raw-guard-warningp-binding)))
-      (state-free-global-let*
-       ((safe-mode safe-mode)
-        (guard-checking-on
+  #-acl2-loop-only
+  (let ((*ev-shortcut-okp* t)
+        (*raw-guard-warningp* (raw-guard-warningp-binding)))
+    (state-free-global-let*
+     ((safe-mode safe-mode)
+      (guard-checking-on
 
 ; Guard-checking-on will be t or nil -- not :nowarn, :all, or :none, but it
 ; doesn't seem that this would be a problem.
 
-         (not gc-off)))
-       (mv-let
-        (erp val latches)
-        (ev-fncall-rec fn args w user-stobj-alist (big-n) safe-mode gc-off
-                       nil ; latches
-                       hard-error-returns-nilp
-                       aok)
-        (progn (when latches
-                 (er hard 'ev-fncall-w
-                     "The call ~x0 returned non-nil latches."
-                     (list 'ev-fncall-w
-                           fn
-                           args
-                           '<wrld>
-                           (if user-stobj-alist
-                               '<user-stobj-alist>
-                             nil)
-                           safe-mode gc-off hard-error-returns-nilp aok)))
-               (mv erp val)))))
-    #+acl2-loop-only
-    (mv-let
-     (erp val latches)
-     (ev-fncall-rec fn args w user-stobj-alist (big-n) safe-mode gc-off
-                    nil ; latches
-                    hard-error-returns-nilp
-                    aok)
-     (declare (ignore latches))
-     (mv erp val)))))
+       (not gc-off)))
+     (mv-let
+      (erp val latches)
+      (ev-fncall-rec fn args w user-stobj-alist (big-n) safe-mode gc-off
+                     nil ; latches
+                     hard-error-returns-nilp
+                     aok)
+      (progn (when latches
+               (er hard 'ev-fncall-w
+                   "The call ~x0 returned non-nil latches."
+                   (list 'ev-fncall-w
+                         fn
+                         args
+                         '<wrld>
+                         (if user-stobj-alist
+                             '<user-stobj-alist>
+                           nil)
+                         safe-mode gc-off hard-error-returns-nilp aok)))
+             (mv erp val)))))
+  #+acl2-loop-only
+  (mv-let
+   (erp val latches)
+   (ev-fncall-rec fn args w user-stobj-alist (big-n) safe-mode gc-off
+                  nil ; latches
+                  hard-error-returns-nilp
+                  aok)
+   (declare (ignore latches))
+   (mv erp val)))
 
 (defun ev-fncall-guard-er-msg (fn guard stobjs-in args w user-stobj-alist extra)
 
@@ -3142,10 +3123,10 @@
 ; ev-rec as well.  Note that users cannot make such a call because they cannot
 ; put live stobjs into alist.
 
-; Unlike ev-fncall-w, we do not check for untouchables (by traversing the form
-; before evaluating) and hence we must make ev-w untouchable.  It would be
-; simple enough to create a user-available version of ev-w, if requested, which
-; would need to do an untouchables check.
+; Also see related functions ev-fncall-w and oracle-apply (and macro
+; oracle-funcall).  Their guards pay attention to avoiding calls of untouchable
+; functions, and hence are not themselves untouchable.  But ev-w is untouchable
+; because we don't make any such check, even in the guard.
 
 ; Note that user-stobj-alist is only used for error messages, so this function
 ; may be called in the presence of local stobjs.  Probably user-stobj-alist
