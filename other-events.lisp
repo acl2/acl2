@@ -14118,7 +14118,6 @@
          (include-book-alist0 (global-val 'include-book-alist wrld0)))
     (er-progn
      (chk-book-name user-book-name full-book-name ctx state)
-     (chk-input-object-file full-book-name ctx state)
      (revert-world-on-error
       (cond
        ((and (not (global-val 'boot-strap-flg wrld0))
@@ -14829,72 +14828,74 @@
                      '(set-compiler-enabled nil state)))
           (t state))
     (er-let*
-     ((dir-value
-       (cond (dir (include-book-dir-with-chk soft ctx dir))
-             (t (value (cbd))))))
-     (mv-let
-      (full-book-name directory-name familiar-name)
-      (parse-book-name dir-value user-book-name ".lisp" ctx state)
-      (let* ((behalf-of-certify-flg (not (eq expansion-alist :none)))
-             (load-compiled-file0 load-compiled-file)
-             (load-compiled-file (and (f-get-global 'compiler-enabled state)
-                                      load-compiled-file))
-             (cddr-event-form
-              (if (and event-form
-                       (eq load-compiled-file0
-                           load-compiled-file))
-                  (cddr event-form)
-                (append
-                 (if (not (eq load-compiled-file
-                              :default))
-                     (list :load-compiled-file
-                           load-compiled-file)
-                   nil)
-                 (if (not (eq uncertified-okp t))
-                     (list :uncertified-okp
-                           uncertified-okp)
-                   nil)
-                 (if (not (eq defaxioms-okp t))
-                     (list :defaxioms-okp
-                           defaxioms-okp)
-                   nil)
-                 (if (not (eq skip-proofs-okp t))
-                     (list :skip-proofs-okp
-                           skip-proofs-okp)
-                   nil)
-                 (if doc
-                     (list :doc doc)
-                   nil)))))
-        (cond ((or behalf-of-certify-flg
-                   #-acl2-loop-only *hcomp-book-ht*
-                   (null load-compiled-file))
+        ((dir-value
+          (cond (dir (include-book-dir-with-chk soft ctx dir))
+                (t (value (cbd))))))
+      (mv-let
+       (full-book-name directory-name familiar-name)
+       (parse-book-name dir-value user-book-name ".lisp" ctx state)
+       (er-progn
+        (chk-input-object-file full-book-name ctx state)
+        (let* ((behalf-of-certify-flg (not (eq expansion-alist :none)))
+               (load-compiled-file0 load-compiled-file)
+               (load-compiled-file (and (f-get-global 'compiler-enabled state)
+                                        load-compiled-file))
+               (cddr-event-form
+                (if (and event-form
+                         (eq load-compiled-file0
+                             load-compiled-file))
+                    (cddr event-form)
+                  (append
+                   (if (not (eq load-compiled-file
+                                :default))
+                       (list :load-compiled-file
+                             load-compiled-file)
+                     nil)
+                   (if (not (eq uncertified-okp t))
+                       (list :uncertified-okp
+                             uncertified-okp)
+                     nil)
+                   (if (not (eq defaxioms-okp t))
+                       (list :defaxioms-okp
+                             defaxioms-okp)
+                     nil)
+                   (if (not (eq skip-proofs-okp t))
+                       (list :skip-proofs-okp
+                             skip-proofs-okp)
+                     nil)
+                   (if doc
+                       (list :doc doc)
+                     nil)))))
+          (cond ((or behalf-of-certify-flg
+                     #-acl2-loop-only *hcomp-book-ht*
+                     (null load-compiled-file))
 
 ; So, *hcomp-book-ht* was previously bound by certify-book-fn or in the other
 ; case, below.
 
-               (include-book-fn1
-                user-book-name state load-compiled-file expansion-alist
-                uncertified-okp defaxioms-okp skip-proofs-okp ttags doc
+                 (include-book-fn1
+                  user-book-name state load-compiled-file expansion-alist
+                  uncertified-okp defaxioms-okp skip-proofs-okp ttags doc
 ; The following were bound above:
-                ctx full-book-name directory-name familiar-name
-                behalf-of-certify-flg cddr-event-form))
-              (t
-               (let #+acl2-loop-only ()
-                    #-acl2-loop-only
-                    ((*hcomp-book-ht* (make-hash-table :test 'equal)))
+                  ctx full-book-name directory-name familiar-name
+                  behalf-of-certify-flg cddr-event-form))
+                (t
+                 (let #+acl2-loop-only ()
+                      #-acl2-loop-only
+                      ((*hcomp-book-ht* (make-hash-table :test 'equal)))
 
 ; Populate appropriate hash tables; see the Essay on Hash Table Support for
 ; Compilation.
 
-                    #-acl2-loop-only
-                    (include-book-raw-top full-book-name directory-name
-                                          load-compiled-file dir ctx state)
-                    (include-book-fn1
-                     user-book-name state load-compiled-file expansion-alist
-                     uncertified-okp defaxioms-okp skip-proofs-okp ttags doc
+                      #-acl2-loop-only
+                      (include-book-raw-top full-book-name directory-name
+                                            load-compiled-file dir ctx state)
+                      (include-book-fn1
+                       user-book-name state load-compiled-file expansion-alist
+                       uncertified-okp defaxioms-okp skip-proofs-okp ttags doc
 ; The following were bound above:
-                     ctx full-book-name directory-name familiar-name
-                     behalf-of-certify-flg cddr-event-form))))))))))
+                       ctx full-book-name directory-name familiar-name
+                       behalf-of-certify-flg cddr-event-form)))))))))))
 
 (defun spontaneous-decertificationp1 (ibalist alist files)
 
@@ -21775,93 +21776,101 @@
 ; We check that (defstobj name . args) is well-formed and either
 ; signal an error or return nil.
 
-  (mv-let
-   (erp field-descriptors key-alist)
-   (partition-rest-and-keyword-args args *defstobj-keywords*)
-   (cond
-    (erp
-     (er soft ctx
-         "The keyword arguments to the DEFSTOBJ event must appear ~
-          after all field descriptors.  The allowed keyword ~
-          arguments are ~&0, and these may not be duplicated, and ~
-          must be followed by the corresponding value of the keyword ~
-          argument.  Thus, ~x1 is ill-formed."
-         *defstobj-keywords*
-         (list* 'defstobj name args)))
-    (t
-     (let ((renaming (cdr (assoc-eq :renaming key-alist)))
-           (doc (cdr (assoc-eq :doc key-alist)))
-           (inline (cdr (assoc-eq :inline key-alist)))
-           (congruent-to (cdr (assoc-eq :congruent-to key-alist))))
-       (cond
-        ((redundant-defstobjp name args wrld)
-         (value 'redundant))
-        ((not (booleanp inline))
-         (er soft ctx
-             "DEFSTOBJ requires the :INLINE keyword argument to have a Boolean ~
-              value.  See :DOC defstobj."))
-        ((and congruent-to
-              (not (stobjp congruent-to t wrld)))
-         (er soft ctx
-             "The :CONGRUENT-TO field of a DEFSTOBJ must either be nil or the ~
-              name of an existing stobj, but the value ~x0 is neither.  See ~
-              :DOC defstobj."
-             congruent-to))
-        ((and congruent-to ; hence stobjp holds, hence symbolp holds
-              (getprop congruent-to 'absstobj-info nil 'current-acl2-world
-                       wrld))
-         (er soft ctx
-             "The symbol ~x0 is the name of an abstract stobj in the current ~
-              ACL2 world, so it is not legal for use as the :CONGRUENT-TO ~
-              argument of DEFSTOBJ."
-             congruent-to))
-        ((and congruent-to
-              (not (congruent-stobj-fields
-                    field-descriptors
-                    (car (old-defstobj-redundancy-bundle congruent-to
-                                                         wrld)))))
-         (er soft ctx
-             "A non-nil :CONGRUENT-TO field of a DEFSTOBJ must be the name of ~
-              a stobj that has the same shape as the proposed new stobj.  ~
-              However, the proposed stobj named ~x0 does not have the same ~
-              shape as the existing stobj named ~x1.  See :DOC defstobj."
-             name congruent-to))
-        (t
-         (er-progn
+  (cond
+   ((not (symbolp name))
+    (er soft ctx
+        "The first argument of a DEFSTOBJ event must be a symbol.  Thus, ~x0 ~
+          is ill-formed."
+        (list* 'defstobj name args)))
+   (t
+    (mv-let
+     (erp field-descriptors key-alist)
+     (partition-rest-and-keyword-args args *defstobj-keywords*)
+     (cond
+      (erp
+       (er soft ctx
+           "The keyword arguments to the DEFSTOBJ event must appear after all ~
+            field descriptors.  The allowed keyword arguments are ~&0, and ~
+            these may not be duplicated, and must be followed by the ~
+            corresponding value of the keyword argument.  Thus, ~x1 is ~
+            ill-formed."
+           *defstobj-keywords*
+           (list* 'defstobj name args)))
+      (t
+       (let ((renaming (cdr (assoc-eq :renaming key-alist)))
+             (doc (cdr (assoc-eq :doc key-alist)))
+             (inline (cdr (assoc-eq :inline key-alist)))
+             (congruent-to (cdr (assoc-eq :congruent-to key-alist))))
+         (cond
+          ((redundant-defstobjp name args wrld)
+           (value 'redundant))
+          ((not (booleanp inline))
+           (er soft ctx
+               "DEFSTOBJ requires the :INLINE keyword argument to have a ~
+                Boolean value.  See :DOC defstobj."))
+          ((and congruent-to
+                (not (stobjp congruent-to t wrld)))
+           (er soft ctx
+               "The :CONGRUENT-TO field of a DEFSTOBJ must either be nil or ~
+                the name of an existing stobj, but the value ~x0 is neither.  ~
+                See :DOC defstobj."
+               congruent-to))
+          ((and congruent-to ; hence stobjp holds, hence symbolp holds
+                (getprop congruent-to 'absstobj-info nil 'current-acl2-world
+                         wrld))
+           (er soft ctx
+               "The symbol ~x0 is the name of an abstract stobj in the ~
+                current ACL2 world, so it is not legal for use as the ~
+                :CONGRUENT-TO argument of DEFSTOBJ."
+               congruent-to))
+          ((and congruent-to
+                (not (congruent-stobj-fields
+                      field-descriptors
+                      (car (old-defstobj-redundancy-bundle congruent-to
+                                                           wrld)))))
+           (er soft ctx
+               "A non-nil :CONGRUENT-TO field of a DEFSTOBJ must be the name ~
+                of a stobj that has the same shape as the proposed new stobj. ~
+                ~ However, the proposed stobj named ~x0 does not have the ~
+                same shape as the existing stobj named ~x1.  See :DOC ~
+                defstobj."
+               name congruent-to))
+          (t
+           (er-progn
 
 ; The defstobj name itself is not subject to renaming.  So we check it
 ; before we even bother to check the well-formedness of the renaming alist.
 
-          (chk-all-but-new-name name ctx 'stobj wrld state)
-          (cond ((or (eq name 'I)
-                     (eq name 'V))
-                 (er soft ctx
-                     "DEFSTOBJ does not allow single-threaded objects with ~
-                      the names I or V because those symbols are used as ~
-                      formals, along with the new stobj name itself, in ~
-                      ``primitive'' stobj functions that will be ~
-                      defined."))
-                (t (value nil)))
-          (chk-legal-defstobj-name name state)
-          (cond ((not (doublet-style-symbol-to-symbol-alistp renaming))
-                 (er soft ctx
-                     "The :RENAMING argument to DEFSTOBJ must be an ~
-                      alist containing elements of the form (sym ~
-                      sym), where each element of such a doublet is a ~
-                      symbol. Your argument, ~x0, is thus illegal."
-                     renaming))
-                (t (value nil)))
+            (chk-all-but-new-name name ctx 'stobj wrld state)
+            (cond ((or (eq name 'I)
+                       (eq name 'V))
+                   (er soft ctx
+                       "DEFSTOBJ does not allow single-threaded objects with ~
+                        the names I or V because those symbols are used as ~
+                        formals, along with the new stobj name itself, in ~
+                        ``primitive'' stobj functions that will be defined."))
+                  (t (value nil)))
+            (chk-legal-defstobj-name name state)
+            (cond ((not (doublet-style-symbol-to-symbol-alistp renaming))
+                   (er soft ctx
+                       "The :RENAMING argument to DEFSTOBJ must be an alist ~
+                        containing elements of the form (sym sym), where each ~
+                        element of such a doublet is a symbol. Your argument, ~
+                        ~x0, is thus illegal."
+                       renaming))
+                  (t (value nil)))
 
 ; We use translate-doc here just to check the string.  We throw away
 ; the section-symbol and citations returned.  We'll repeat this later.
 
-          (translate-doc name doc ctx state)
-          (er-let*
-            ((wrld1 (chk-just-new-name name 'stobj nil ctx wrld state))
-             (wrld2 (chk-just-new-name (the-live-var name) 'stobj-live-var
-                                       nil ctx wrld1 state)))
-            (chk-acceptable-defstobj1 name field-descriptors field-descriptors
-                                      renaming ctx wrld2 state nil nil))))))))))
+            (translate-doc name doc ctx state)
+            (er-let*
+                ((wrld1 (chk-just-new-name name 'stobj nil ctx wrld state))
+                 (wrld2 (chk-just-new-name (the-live-var name) 'stobj-live-var
+                                           nil ctx wrld1 state)))
+              (chk-acceptable-defstobj1 name field-descriptors field-descriptors
+                                        renaming ctx wrld2 state nil
+                                        nil))))))))))))
 
 ; Essay on Defstobj Definitions
 
