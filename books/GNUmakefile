@@ -127,7 +127,14 @@ endif # ifneq ($(ACL2_JOBS), )
 ACL2 ?= acl2
 BUILD_DIR := $(ACL2_SYSTEM_BOOKS)/build
 
+# Here is an undocumented way to specify a different shell, e.g., sh.
+# There are no guarantees that another shell will work, however!
+ifdef ACL2_SHELL_OVERRIDE
+SHELL := $(ACL2_SHELL_OVERRIDE)
+else
 SHELL := $(shell which bash)
+endif # ifdef ACL2_SHELL_OVERRIDE
+
 STARTJOB ?= $(SHELL)
 
 .SUFFIXES:
@@ -1009,11 +1016,14 @@ dummy:
 # directories, the first bad triple is a GLOBAL-VALUE for either the
 # unknown property EXTEND-PROGN! or RETRACT-PROGN!, or else is an
 # unbinding of the PREDEFINED property for PROGN! (indicating a use of
-# :REDEF); presumably these books mess with raw mode.
+# :REDEF); presumably these books mess with raw mode.  Since we have
+# had such problems with ccg/ccg.lisp (presumably because it includes
+# hacking/hacker), we exclude that book too.
 
 BOOKS_BKCHK_OUT := $(patsubst %.cert,%.bkchk.out,$(OK_CERTS))
 BOOKS_BKCHK_OUT := $(filter-out hacking/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out ccg/ccg.bkchk.out, $(BOOKS_BKCHK_OUT))
 
 .PHONY: chk-include-book-worlds
 chk-include-book-worlds: $(BOOKS_BKCHK_OUT)

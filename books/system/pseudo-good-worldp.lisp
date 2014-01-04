@@ -8,8 +8,13 @@
 
 ; This file defines the concept of a ``good world''.  But we wrestled with the
 ; question of how strong it should be.  Ultimately what we define is the
-; concept pseudo-good-worldp.  It will evolve under the demands of proofs
-; about system functions.
+; concept pseudo-good-worldp.  It will evolve under the demands of proofs about
+; system functions.  Every world "should" satisfy this predicate, though we are
+; aware of worlds created using trust tags that fail to do so, in particular
+; using community books in directories hacking/ and
+; workshops/2007/dillinger-et-al/code/.  In practice those worlds might well be
+; usable, but we should not be surprised when pseudo-good-worldp fails for such
+; worlds.
 
 ; But in the following discussion we talk about the undefined more generic
 ; notion ``good-worldp'' and its various possible meanings.
@@ -95,7 +100,7 @@
 
 ; Since the functions here will be used in guards, they need to be
 ; guard-verified.
- 
+
 (logic)
 (set-verify-guards-eagerness 2)
 
@@ -104,7 +109,7 @@
 ; We now consider each property in a good world and define a function to
 ; recognize (in the ``pseudo'' sense) good values.  We start with the property
 ; GLOBAL-VALUE and enumerate each of the symbols that can have this property
-; and what the value must be.  
+; and what the value must be.
 
 ; -----------------------------------------------------------------
 ; EVENT-INDEX [GLOBAL-VALUE]:
@@ -160,10 +165,10 @@
               (equal (cddr x)
                      (cdr (fgetprop 'event-index 'global-value nil w)))))
         (t (and (null x)
-                (null (fgetprop 'event-index 'global-value nil w))))))  
+                (null (fgetprop 'event-index 'global-value nil w))))))
 
 ; -----------------------------------------------------------------
-; COMMAND-INDEX [GLOBAL-VALUE]:  
+; COMMAND-INDEX [GLOBAL-VALUE]:
 
 ; See the handling of event-index above.
 
@@ -245,7 +250,7 @@
       (and (or (stringp (car x))
                (symbolp (car x)))
            (string-or-symbol-listp (cdr x)))))
-      
+
 
 (defun pseudo-event-landmarkp (val)
 
@@ -362,7 +367,7 @@
 ; many as there are runes (a function of the world).
 
   (natp n))
-             
+
 
 (defun type-setp (n)
   (and (integerp n)
@@ -373,7 +378,7 @@
   (case-match x
     ((fn (nume . true-ts) (false-ts . strongp) . rune)
      (and (pseudo-function-symbolp fn 1)
-          (or (null nume) (pseudo-numep nume))  ; nil corresponds to the fake rune 
+          (or (null nume) (pseudo-numep nume))  ; nil corresponds to the fake rune
           (type-setp true-ts)
           (type-setp false-ts)
           (booleanp strongp)
@@ -401,7 +406,7 @@
           (pseudo-term-listp clause)
           (pseudo-runep rune)))
     (& nil)))
-          
+
 (defun pseudo-built-in-clause-record-listp (x)
   (if (atom x)
       (null x)
@@ -455,7 +460,7 @@
           (symbol-alistp pairs)
           (r-symbol-alistp pairs)))
     (& nil)))
-          
+
 (defun pseudo-attachment-recordsp (x)
   (cond ((atom x) (null x))
         (t (and (pseudo-attachment-recordp (car x))
@@ -571,7 +576,7 @@
     ((fn formals stobjs-in stobjs-out)
      (and (pseudo-function-symbolp fn nil)   ; should be a fn name
           (pseudo-arglistp formals)          ; should be distinct vars
-          (symbol-listp stobjs-in)           ; both stobjs-in and -out should be 
+          (symbol-listp stobjs-in)           ; both stobjs-in and -out should be
           (symbol-listp stobjs-out)          ;       lists of stobj names or nil,
           (equal (len formals) (len stobjs-in)))) ;  consistent with formals
     (& nil)))
@@ -636,7 +641,7 @@
           (or (eq ignorep 'reclassifying)
               (and (consp ignorep)
                    (eq (car ignorep) 'defstobj)
-                   (pseudo-function-symbolp (cdr ignorep) nil)) ; really must be stobj-name 
+                   (pseudo-function-symbolp (cdr ignorep) nil)) ; really must be stobj-name
               (null ignorep))
           (pseudo-form-listp defs)))
     (& (pseudo-formp val))))
@@ -695,7 +700,7 @@
 ; properly.  We don't think of certify-book as producing world from which one
 ; can continue, EXCEPT by undoing.  But to know undoing is ok, we need some
 ; invariants on the world produced by certify-book and pseudo-good-worldp
-; is the natural predicate. 
+; is the natural predicate.
 
           (or (null cert-annotations)
               (cert-annotationsp cert-annotations))
@@ -734,7 +739,7 @@
 ; -----------------------------------------------------------------
 ; PCERT-BOOKS [GLOBAL-VALUE]
 
-; The pcert-books is a list of full book names. 
+; The pcert-books is a list of full book names.
 
 (defun pseudo-pcert-booksp (val)
   (string-listp val))
@@ -742,7 +747,7 @@
 ; -----------------------------------------------------------------
 ; INCLUDE-BOOK-PATH [GLOBAL-VALUE]
 
-; The include-book-path is a list of full book names. 
+; The include-book-path is a list of full book names.
 
 (defun pseudo-include-book-pathp (val)
   (string-listp val))
@@ -829,7 +834,7 @@
 
 (defun pseudo-theoryp1 (lst)
 
-; A difference between this function and the more rigorous theoryp is that 
+; A difference between this function and the more rigorous theoryp is that
 ; we do not check that the (pseudo-) runes in lst are ordered by nume.
 ; This function is called ``pseudo-theoryp1'' rather than ``pseudo-theoryp''
 ; because the latter name is defined later to check the THEORYP property
@@ -1034,7 +1039,7 @@
   (cond ((atom lst) (equal lst nil))
         (t (and (pseudo-evg-singletonp (car lst))
                 (pseudo-evg-singletonsp1 (cdr lst))))))
-         
+
 (defun lexordered-ascendingp (lst)
   (cond ((atom lst) t)
         ((atom (cdr lst)) t)
@@ -1521,7 +1526,7 @@
           (or (null hyp)                ; means there is no hyp
               (pseudo-termp hyp))
           (pseudo-termp concl)
-          (pseudo-function-symbol-listp recursivep nil) 
+          (pseudo-function-symbol-listp recursivep nil)
           (pseudo-arglistp formals)
           (pseudo-runep rune)
           (pseudo-controller-alistp controller-alist)))
@@ -1548,7 +1553,7 @@
 ;-----------------------------------------------------------------
 ; DEFCHOOSE-AXIOM
 
-; The formula of the axiom constraining sym, which was introduced by defchoose. 
+; The formula of the axiom constraining sym, which was introduced by defchoose.
 
 (defun pseudo-defchoose-axiomp (sym val)
   (declare (ignore sym))
@@ -1598,7 +1603,7 @@
 ;-----------------------------------------------------------------
 ; FORWARD-CHAINING-RULES
 
-; This is a list of 
+; This is a list of
 ; (defrec forward-chaining-rule
 ;   ((rune . nume) trigger hyps concls . match-free)
 ;   nil)
@@ -1623,7 +1628,7 @@
           (pseudo-term-listp concls)
           (pseudo-match-freep match-free)))
     (& nil)))
-          
+
 (defun pseudo-forward-chaining-rule-listp (x)
   (cond ((atom x) (null x))
         (t (and (pseudo-forward-chaining-rulep (car x))
@@ -1653,7 +1658,7 @@
     (RECOGNIZER-ALIST (pseudo-recognizer-alistp val))
     (BUILT-IN-CLAUSES (pseudo-built-in-clausesp val))
     (ATTACHMENT-RECORDS (pseudo-attachment-recordsp val))
-    (HALF-LENGTH-BUILT-IN-CLAUSES (pseudo-half-length-built-in-clausesp val)) 
+    (HALF-LENGTH-BUILT-IN-CLAUSES (pseudo-half-length-built-in-clausesp val))
     (TYPE-SET-INVERTER-RULES (pseudo-type-set-inverter-rulesp val))
     (GLOBAL-ARITHMETIC-ENABLED-STRUCTURE (pseudo-global-arithmetic-enabled-structurep val))
     (OPERATING-SYSTEM (operating-systemp val))
@@ -1701,7 +1706,7 @@
     (otherwise nil)))
 
 ;-----------------------------------------------------------------
-; GUARD 
+; GUARD
 
 (defun pseudo-guardp (sym val)
   (declare (ignore sym))
@@ -1738,7 +1743,7 @@
   (pseudo-tests-and-calls-listp val))
 
 ;-----------------------------------------------------------------
-; INDUCTION-RULES 
+; INDUCTION-RULES
 
 ; This is a list of induction-rule records:
 ; (defrec induction-rule (nume (pattern . condition) scheme . rune) nil)
@@ -1899,7 +1904,7 @@
   (natp val))
 
 ;-----------------------------------------------------------------
-; LINEAR-LEMMAS 
+; LINEAR-LEMMAS
 
 (defun pseudo-linear-lemmap (x)
   (case-match x
@@ -1928,7 +1933,7 @@
 ; MACRO-ARGS
 
 (verify-termination legal-initp)
-         
+
 (verify-termination macro-arglist-keysp)
 
 (verify-termination macro-arglist-after-restp)
@@ -2087,7 +2092,7 @@
   (booleanp val))
 
 ;-----------------------------------------------------------------
-; QUICK-BLOCK-INFO 
+; QUICK-BLOCK-INFO
 
 (defun pseudo-quick-block-info-listp (lst)
   (cond ((atom lst) (null lst))
@@ -2261,7 +2266,7 @@
                 (pseudo-stobj-field-descriptor-keyword-alistp (cddr x))))))
 
 (defun pseudo-stobj-field-descriptorp (x)
-;      (fieldi :type typei :initially vali :resizable bi)  
+;      (fieldi :type typei :initially vali :resizable bi)
   (or (pseudo-function-symbolp x nil)
       (and (true-listp x)
            (consp x)
@@ -2445,7 +2450,7 @@
 ; The len of stobjs-out is the output arity of the function sym and should have
 ; nils in the non-stobj slots and the appropriate stobj names in the stobj
 ; slots.  Those stobj names should be listed in the stobjs-in of sym too.
- 
+
 (defun pseudo-stobjs-outp (sym val)
   (declare (ignore sym))
   (symbol-listp val))
@@ -2485,7 +2490,7 @@
   (pseudo-termp val))
 
 ;-----------------------------------------------------------------
-; THEORY 
+; THEORY
 
 (defun pseudo-theoryp (sym lst)
   (declare (ignore sym))
@@ -2580,7 +2585,7 @@
 ; function is renewal-mode, which must be :erase, :overwrite or
 ; :reclassifying-overwrite), The only time :reclassifying-overwrite is the
 ; renewal-mode is when a :program function is being reclassified to an
-; identical-defp :logic function.  
+; identical-defp :logic function.
 
 ; When a name has been redefined for any reason, a REDEFINED property is stored.
 
@@ -2598,7 +2603,7 @@
 ; Conclusion: I believe it is safe to assume that, unless redefinition has been
 ; permitted, the only time we'll see *acl2-property-unbound* in a legal world
 ; is when it is part of the reclassifying of a :program mode function to :logic
-; mode. 
+; mode.
 
 ; It then becomes relevant to ask what properties might become unbound in a
 ; legal world?
@@ -2606,7 +2611,7 @@
 ; Renew-name will not unbind any GLOBAL-VALUE and cites explitly the bad
 ; consequences of messing with COMMAND-LANDMARKs.  So we can rule out unbound
 ; being a value of EVENT-INDEX (and all other world globals) ``locally'' in
-; good-worldp.  
+; good-worldp.
 
 ; One might think (naively after 8 years absence) that there are no unbound
 ; properties in the bootstrap world.  Wrong.
@@ -2634,7 +2639,7 @@
                            GUARD
                            FORMALS
                            ABSOLUTE-EVENT-NUMBER
-                           UNNORMALIZED-BODY  
+                           UNNORMALIZED-BODY
 
 ; The following property is set by primordial-event-macro-and-fn for ;
 ; ld-skip-proofsp and default-defun-mode-from-state.  (def-bodies is also set ;
@@ -2662,7 +2667,7 @@
               (print (list i (car x) (cadr x))))
           t))
 |#
-  
+
 ; -----------------------------------------------------------------
 ; Putting It All Together
 
@@ -2726,7 +2731,7 @@
            (or (eq val *acl2-property-unbound*)
                (pseudo-formalsp sym val)))
           (FORWARD-CHAINING-RULES (pseudo-forward-chaining-rulesp sym val))
-          (GLOBAL-VALUE 
+          (GLOBAL-VALUE
            (and (not (eq val *acl2-property-unbound*))
                 (pseudo-global-valuep sym val w)))
           (GUARD
@@ -2876,7 +2881,7 @@
                                              nil
                                              no-event-landmark-yetp
                                              (cdr w)))
-                     
+
                      (t (bad-world! 'good-command-blocksp1
                                     "Violation of the command blocks ~
                                      invariant, specifically that every ~
