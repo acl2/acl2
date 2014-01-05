@@ -55,12 +55,17 @@ ifdef MAKEFILE_LIST
 
 # Determine the location of this Makefile-generic.  NOTE: We have
 # tried $(realpath $(dir ...)) and similarly for abspath, but they
-# have returned the empty string, presumably an error.
+# have returned the empty string, presumably an error.  Also determine
+# a default for ACL2, which can be overridden by setting a variable on
+# the command line or in the environment.  Note that for cygwin, we
+# need to do something special to get a Unix-like pathname.
+ifneq (,$(findstring CYGWIN, $(shell uname)))
+BOOKS_DIR := $(shell cd $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))) ; cygpath -m `pwd`)
+ACL2 ?= $(shell cd $(BOOKS_DIR)/.. ; cygpath -m `pwd`)/saved_acl2
+else
 BOOKS_DIR := $(shell cd $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))) ; pwd)
-
-# Determine the default location of ACL2.  To override, set the ACL2
-# variable on the command line or in the environment.
-ACL2 ?= $(shell cd $(BOOKS_DIR)/../.. ; pwd)/saved_acl2r
+ACL2 ?= $(shell cd $(BOOKS_DIR)/.. ; pwd)/saved_acl2
+endif
 
 # Unless otherwise specified, use the books under this directory as
 # the system books.  We set the flag ACL2_SYSTEM_BOOKS_DYNAMIC if any
@@ -102,7 +107,7 @@ endif
 # Inhibit all output except the summary (which can be useful for tracking down problems).
 # Set this to "" if you do want the output.
 
-INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion))) (set-debugger-enable :bt)
+INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote history))) (set-debugger-enable :bt)
 
 # Support for make dependencies:  should be a list of book names without
 # the .lisp suffix.  Can be overridden on the command line or in a file
