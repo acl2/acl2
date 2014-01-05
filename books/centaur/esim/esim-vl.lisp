@@ -265,7 +265,7 @@ a module whose input declarations are:</p>
      (C[3] C[2] C[1] C[0]))   ;; lsb first
 })
 
-<p>See @(see make-defm-command) for details.</p>
+<p>See @(see e-conversion) for details.</p>
 
 <p>We @(see memoize) this function to minimize the expense of these checks.
 Note that esim-vl-iopattern-p is nonrecursive, so we should only need two memo

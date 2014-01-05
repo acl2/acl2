@@ -851,11 +851,6 @@
 ;  (2) sweep through the IDXHASH, looking up the affected multivectors,
 ;      and print out their updates.
 
-(defund anyp (x)
-  (declare (ignore x)
-           (xargs :guard t))
-  t)
-
 (defund vcd-index-p (x len)
   (declare (xargs :guard (natp len)))
   (and (natp x)

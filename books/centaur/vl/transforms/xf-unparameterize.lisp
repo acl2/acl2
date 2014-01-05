@@ -33,23 +33,18 @@
 
 
 
-(defund vl-annotate-modules-with-warning (x warning)
-  (declare (xargs :guard (and (vl-modulelist-p x)
-                              (vl-warning-p warning))))
+(define vl-annotate-modules-with-warning ((x vl-modulelist-p)
+                                          (warning vl-warning-p))
+  ;; BOZO find me a home
+  :parents (warnings)
+  :short "Add a warning to each module in a list of modules."
+  :returns (new-x vl-modulelist-p :hyp :fguard)
   (if (atom x)
       nil
     (cons (change-vl-module
            (car x)
            :warnings (cons warning (vl-module->warnings (car x))))
           (vl-annotate-modules-with-warning (cdr x) warning))))
-
-(defthm vl-modulelist-p-of-vl-annotate-modules-with-warning
-  (implies (and (force (vl-modulelist-p x))
-                (vl-warning-p warning))
-           (vl-modulelist-p (vl-annotate-modules-with-warning x warning)))
-  :hints(("Goal" :in-theory (enable vl-annotate-modules-with-warning))))
-
-
 
 
 (defxdoc unparameterization
@@ -112,58 +107,58 @@ done away with, we can safely remove @('plus') from our module list.</p>")
 
 
 
-; We extend the notion of a resolved exprsesion to say an instantiation of a
-; parameterized module (e.g., an instance of PLUS within M1, M2, and M3) is is
+; We extend the notion of a resolved expression to say an instantiation of a
+; parameterized module (e.g., an instance of PLUS within M1, M2, and M3) is
 ; resolved when all of its parameter expressions (e.g., its choice of SIZE) are
 ; resolved expressions.
 
-(defund vl-namedarg-resolved-p (x)
-  (declare (xargs :guard (vl-namedarg-p x)))
+(define vl-namedarg-resolved-p ((x vl-namedarg-p))
+  :parents (vl-expr-resolved-p)
   (and (vl-namedarg->expr x)
-       (vl-expr-resolved-p (vl-namedarg->expr x))))
-
-(defthm vl-expr-resolved-p-of-vl-namedarg->expr-when-vl-namedarg-resolved-p
-  (implies (vl-namedarg-resolved-p arg)
-           (vl-expr-resolved-p (vl-namedarg->expr arg)))
-  :hints(("Goal" :in-theory (enable vl-namedarg-resolved-p))))
+       (vl-expr-resolved-p (vl-namedarg->expr x)))
+  ///
+  (defthm vl-expr-resolved-p-of-vl-namedarg->expr-when-vl-namedarg-resolved-p
+    (implies (vl-namedarg-resolved-p arg)
+             (vl-expr-resolved-p (vl-namedarg->expr arg)))))
 
 (deflist vl-namedarglist-resolved-p (x)
   (vl-namedarg-resolved-p x)
   :guard (vl-namedarglist-p x)
+  :parents (vl-expr-resolved-p)
   :elementp-of-nil nil)
 
-
-
-(defund vl-plainarg-resolved-p (x)
-  (declare (xargs :guard (vl-plainarg-p x)))
+(define vl-plainarg-resolved-p ((x vl-plainarg-p))
+  :parents (vl-expr-resolved-p)
   (and (vl-plainarg->expr x)
-       (vl-expr-resolved-p (vl-plainarg->expr x))))
-
-(defthm vl-expr-resolved-p-of-vl-plainarg->expr-when-vl-plainarg-resolved-p
-  (implies (vl-plainarg-resolved-p arg)
-           (vl-expr-resolved-p (vl-plainarg->expr arg)))
-  :hints(("Goal" :in-theory (enable vl-plainarg-resolved-p))))
+       (vl-expr-resolved-p (vl-plainarg->expr x)))
+  ///
+  (defthm vl-expr-resolved-p-of-vl-plainarg->expr-when-vl-plainarg-resolved-p
+    (implies (vl-plainarg-resolved-p arg)
+             (vl-expr-resolved-p (vl-plainarg->expr arg)))))
 
 (deflist vl-plainarglist-resolved-p (x)
   (vl-plainarg-resolved-p x)
   :guard (vl-plainarglist-p x)
-  :elementp-of-nil nil)
+  :elementp-of-nil nil
+  :parents (vl-expr-resolved-p))
 
-
-(defund vl-arguments-resolved-p (x)
-  (declare (xargs :guard (vl-arguments-p x)))
+(define vl-arguments-resolved-p ((x vl-arguments-p))
+  :parents (vl-expr-resolved-p)
   (if (vl-arguments->namedp x)
       (vl-namedarglist-resolved-p (vl-arguments->args x))
     (vl-plainarglist-resolved-p (vl-arguments->args x))))
 
-(defund vl-modinst-resolvedparams-p (x)
-  (declare (xargs :guard (vl-modinst-p x)))
+(define vl-modinst-resolvedparams-p ((x vl-modinst-p))
+  :parents (unparameterization)
+  :long "Are the parameter arguments for a module instance all resolved
+expressions, in the sense of @(see vl-expr-resolved-p)?"
   (vl-arguments-resolved-p (vl-modinst->paramargs x)))
 
 (deflist vl-modinstlist-resolvedparams-p (x)
   (vl-modinst-resolvedparams-p x)
   :guard (vl-modinstlist-p x)
-  :elementp-of-nil t)
+  :elementp-of-nil t
+  :parents (unparameterization))
 
 
 
@@ -230,47 +225,45 @@ limits so that more flexible paramter declarations are supported.</p>"
   :element vl-good-paramdecl-p
   :guard (vl-paramdecllist-p x))
 
-(defwellformed vl-good-paramdecllist-p (x)
-  :guard (vl-paramdecllist-p x)
-  :body
-  (let ((names (vl-paramdecllist->names x)))
-    (@wf-progn
-     (@wf-assert (uniquep names)
-                 :vl-bad-paramdecl
-                 "Multiple declarations of parameters: ~&0."
-                 (list names))
-     (@wf-call vl-good-paramdecllist-p-aux x))))
+(defsection vl-good-paramdecllist-p
+  :parents (unparameterization)
 
-(defwellformed-list vl-good-paramdecllist-list-p (x)
-  :element vl-good-paramdecllist-p
-  :guard (vl-paramdecllist-list-p x))
+  (defwellformed vl-good-paramdecllist-p (x)
+    :guard (vl-paramdecllist-p x)
+    :body
+    (let ((names (vl-paramdecllist->names x)))
+      (@wf-progn
+       (@wf-assert (uniquep names)
+                   :vl-bad-paramdecl
+                   "Multiple declarations of parameters: ~&0."
+                   (list names))
+       (@wf-call vl-good-paramdecllist-p-aux x)))))
 
-(defsection vl-module-check-good-paramdecls
+(defsection vl-good-paramdecllist-list-p
+  :parents (unparameterization)
 
-;; BOZO document me
+  (defwellformed-list vl-good-paramdecllist-list-p (x)
+    :element vl-good-paramdecllist-p
+    :guard (vl-paramdecllist-list-p x)))
 
-  (defund vl-module-check-good-paramdecls (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((vl-module x) x)
-         ((mv okp warnings)
-          (vl-good-paramdecllist-p-warn x.paramdecls x.warnings))
-         (warnings (if okp
-                       warnings
-                     (cons (make-vl-warning
-                            :type :vl-bad-paramdecls
-                            :msg "Module ~m0 has unsupported parameter declarations."
-                            :args (list x.name)
-                            :fatalp t
-                            :fn 'vl-module-check-good-paramdecls)
-                           warnings))))
-        (change-vl-module x :warnings warnings)))
 
-  (local (in-theory (enable vl-module-check-good-paramdecls)))
+(define vl-module-check-good-paramdecls
+  :parents (unparameterization)
+  :short "Cause a fatal warning unless all parameters in a module are simple
+enough to unparameterize, e.g., as in @(see vl-good-paramdecl-p)."
+  ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard)
 
-  (defthm vl-module-p-of-vl-module-check-good-paramdecls
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-check-good-paramdecls x))))
-
+  (b* (((vl-module x) x)
+       ((mv okp warnings)
+        (vl-good-paramdecllist-p-warn x.paramdecls x.warnings))
+       (warnings (if okp
+                     warnings
+                   (fatal :type :vl-bad-paramdecls
+                          :msg "Module ~m0 has unsupported parameter declarations."
+                          :args (list x.name)))))
+    (change-vl-module x :warnings warnings))
+  ///
   (defthm vl-module->name-of-vl-module-check-good-paramdecls
     (equal (vl-module->name (vl-module-check-good-paramdecls x))
            (vl-module->name x))))
@@ -279,14 +272,17 @@ limits so that more flexible paramter declarations are supported.</p>"
   (vl-module-check-good-paramdecls x)
   :guard (vl-modulelist-p x)
   :result-type vl-modulelist-p
+  :parents (unparameterization)
   :rest
   ((defthm vl-modulelist->names-of-vl-modulelist-check-good-paramdecls
      (equal (vl-modulelist->names (vl-modulelist-check-good-paramdecls x))
             (vl-modulelist->names x)))))
 
-(defun vl-good-paramdecllist-list-p-of-vl-modulelist->paramdecls (x)
-  ;; Simple fused operation.  We leave this enabled.
-  (declare (xargs :guard (vl-modulelist-p x)))
+(define vl-good-paramdecllist-list-p-of-vl-modulelist->paramdecls
+  :parents (unparameterization)
+  :short "Simple fused operation.  We leave this enabled."
+  ((x vl-modulelist-p))
+  :enabled t
   (mbe :logic
        (vl-good-paramdecllist-list-p (vl-modulelist->paramdecls x))
        :exec
@@ -296,36 +292,26 @@ limits so that more flexible paramter declarations are supported.</p>"
          t)))
 
 
-
-(defsection vl-modules-with-params
+(define vl-modules-with-params
   :parents (unparameterization)
   :short "@(call vl-modules-with-params) gathers all modules within the module
 list @('x') that have any parameters, and returns them as a new module list."
-
-  (defund vl-modules-with-params (mods)
-    (declare (xargs :guard (vl-modulelist-p mods)))
-    (cond ((atom mods)
-           nil)
-          ((consp (vl-module->paramdecls (car mods)))
-           (cons (car mods)
-                 (vl-modules-with-params (cdr mods))))
-          (t
-           (vl-modules-with-params (cdr mods)))))
-
-  (local (in-theory (enable vl-modules-with-params)))
-
-  (defthm vl-modulelist-p-of-vl-modules-with-params
-    (implies (force (vl-modulelist-p mods))
-             (vl-modulelist-p (vl-modules-with-params mods))))
-
+  ((mods vl-modulelist-p))
+  :returns (mods-with-params vl-modulelist-p :hyp :fguard)
+  (cond ((atom mods)
+         nil)
+        ((consp (vl-module->paramdecls (car mods)))
+         (cons (car mods)
+               (vl-modules-with-params (cdr mods))))
+        (t
+         (vl-modules-with-params (cdr mods))))
+  ///
   (defthm subsetp-equal-of-vl-modules-with-params
     (subsetp-equal (vl-modules-with-params mods) mods)))
 
 
-
 (defsection vl-delete-top-level-modules-with-params
   :parents (unparameterization)
-
   :short "Procedure for eliminating parameterized modules which are no longer used."
 
   :long "<p>Once all occurrences of a parameterized module like @('plus') have

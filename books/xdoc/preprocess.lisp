@@ -179,10 +179,32 @@
       (otherwise
        event))))
 
+#!ACL2
+(defun xdoc::get-event* (name wrld)
+  ;; Historically XDOC used ACL2::GET-EVENT, but we found that this was
+  ;; sometimes returning "bad" events like VERIFY-TERMINATION and
+  ;; VERIFY-TERMINATION-BOOT-STRAP instead of function definitions.  Matt
+  ;; Kaufmann developed this modification of ACL2::GET-EVENT to avoid these
+  ;; cases.
+  (let* ((wrld1 (lookup-world-index 'event
+                                    (getprop name 'absolute-event-number 0
+                                             'current-acl2-world wrld)
+                                    wrld))
+         (ev (access-event-tuple-form (cddr (car wrld1)))))
+    (cond ((null ev) nil)
+          ((and (consp ev)
+                (member-eq (car ev)
+                           '(verify-termination
+                             verify-termination-boot-strap
+                             verify-guards)))
+           (xdoc::get-event* name (cdr wrld1)))
+          (t ev))))
+
+
 (defun get-event-aux (name world)
   ;; A general purpose event lookup as in :pe
   (b* ((props (acl2::getprops name 'current-acl2-world world))
-       (evt   (and props (acl2::get-event name world)))
+       (evt   (and props (get-event* name world)))
        ((when evt)
         evt))
     (and (xdoc-verbose-p)

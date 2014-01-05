@@ -25,7 +25,11 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (in-theory (enable* arith-equiv-forwarding)))
 
+(defsection up
+  :parents (bed)
+  :short "Preliminary implementation of UP operations described in the paper.")
 
+(local (xdoc::set-default-parents up))
 
 ; UP-PAST-VAR and UP-PAST-OP are basically the meat of the UP_ONE paper
 ; described in the paper.  That is, they're the stuff that happens under the

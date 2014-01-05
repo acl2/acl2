@@ -138,6 +138,19 @@ vl-merge-contiguous-indices).</p>"
              (natp (mv-nth 0 (vl-match-contiguous-indices n x))))))
 
 
+(define vl-merged-index-p (x)
+  :parents (vl-merge-contiguous-indices)
+  (or (not x)
+      (natp x)
+      (and (consp x)
+           (natp (car x))
+           (natp (cdr x))
+           (< (car x) (cdr x)))))
+
+(deflist vl-merged-index-list-p (x)
+  (vl-merged-index-p x)
+  :elementp-of-nil t
+  :parents (vl-merge-contiguous-indices))
 
 (defsection vl-merge-contiguous-indices
   :parents (vl-verilogify-emodwirelist)
@@ -152,31 +165,18 @@ sequences of indices into @('(low . high)') pairs."
  ((1 . 3) (5 . 10) 15 (17 . 18))
 })"
 
-  (defund vl-merged-index-p (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (natp x)
-        (and (consp x)
-             (natp (car x))
-             (natp (cdr x))
-             (< (car x) (cdr x)))))
-
-  (deflist vl-merged-index-list-p (x)
-    (vl-merged-index-p x)
-    :elementp-of-nil t)
-
   (defund vl-merge-contiguous-indices (x)
     (declare (xargs :guard (vl-maybe-nat-listp x)
                     :measure (len x)))
     (if (atom x)
         nil
       (mv-let (range-end rest)
-              (vl-match-contiguous-indices (car x) (cdr x))
-              (if (equal (car x) range-end)
-                  (cons (car x)
-                        (vl-merge-contiguous-indices (cdr x)))
-                (cons (cons (car x) range-end)
-                      (vl-merge-contiguous-indices rest))))))
+        (vl-match-contiguous-indices (car x) (cdr x))
+        (if (equal (car x) range-end)
+            (cons (car x)
+                  (vl-merge-contiguous-indices (cdr x)))
+          (cons (cons (car x) range-end)
+                (vl-merge-contiguous-indices rest))))))
 
   (local (in-theory (enable vl-merge-contiguous-indices
                             vl-merged-index-p)))

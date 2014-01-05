@@ -198,7 +198,8 @@
   (deflist vl-taskport-or-blockitem-list-p (x)
     (vl-taskport-or-blockitem-p x)
     :guard t
-    :elementp-of-nil nil)
+    :elementp-of-nil nil
+    :parents nil)
 
   (local (defthm crock
            (implies (vl-taskport-or-blockitem-p x)

@@ -388,7 +388,7 @@ only give you fresh names.</p>
 
 <ul> <li>@('names'), a fast alist that associates strings to @('t').</li>
 <li>@('pmap'), a fast alist that associates strings to natural numbers.</li>
-<li>@('plist'), a fast alist that associates strings to @('t').</li> </ul>
+<li>@('pset'), a fast alist that associates strings to @('t').</li> </ul>
 
 <p><u>Invariant B1</u>.  The @('pmap') is empty whenever @('names') is
 empty.</p>
@@ -396,7 +396,7 @@ empty.</p>
 <p><u>Invariant B2</u>.  Each @('prefix') bound in @('pmap') is bound to
 @('(vl-pgenstr-highest prefix (strip-cars names))').</p>
 
-<p><u>Invariant C1</u>.  The @('plist') binds exactly those @('prefix')es that
+<p><u>Invariant C1</u>.  The @('pset') binds exactly those @('prefix')es that
 are bound in @('pmap').</p>
 
 <p>Intuitively, the @('names') represents the set of all names that are
@@ -404,13 +404,12 @@ currently in use.  We use a fast-alist representation so that we can very
 quickly determine whether a plain name is available.</p>
 
 <p>Meanwhile, the @('pmap') allows us to use something much like the \"historic
-scheme\" to quickly generate indexed names.  In particular, it binds some
-prefixes with their highest used index.  This way, we only need to scan the
-@('names') once per prefix.</p>
+scheme\" (described in @(see vl-namefactory-p)) to quickly generate indexed
+names.  In particular, it binds some prefixes with their highest used index.
+This way, we only need to scan the @('names') once per prefix.</p>
 
-<p>The @('plist') is really just an optimization that allows us to avoid
-needing to shrink the plists.  See the discussion in @(see
-vl-compatible-with-prefix-set-p) for details.</p>")
+<p>The @('pset') is really just an optimization that allows us to avoid needing
+to shrink the psets.</p>")
 
 (defthm vl-namedb->pmap-when-no-names
   (implies (and (not (vl-namedb->names x))

@@ -29,7 +29,7 @@
 
 (defsection aig-vars-thms
   :parents (aig-vars)
-  :short "Theorems about @(see aig-vars) from @(see centaur/aig/aig-vars)."
+  :short "Theorems about @(see aig-vars) from @('centaur/aig/aig-vars')."
 
   (defthm aig-vars-cons
     (equal (aig-vars (cons x y))

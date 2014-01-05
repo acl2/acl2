@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -25,81 +25,65 @@
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
-; This is pretty lousy collection code, especially since we repeatedly
-; string-downcase all of the strings.  OTOH, it performs well enough, so
-; whatever.
+(defsection check-case
+  :parents (lint)
+  :short "Basic checker to ensure that wire names don't differ only by case."
 
-(defsection vl-collect-ieqv-strings
+  :long "<p>Stylistically, we don't think wire names ought to differ only by
+case.  Such names might indicate a typo.  They could also cause problems for
+any Verilog tools that standardize all wire names to lowercase, etc.</p>")
 
-  (defund vl-collect-ieqv-strings-aux (a x)
-    ;; Assumes A is already lowercase.
-    ;; O(n) in the length of X
-    (declare (xargs :guard (and (stringp a)
-                                (string-listp x))))
-    (cond ((atom x)
-           nil)
-          ((equal a (str::downcase-string (car x)))
-           (cons (car x)
-                 (vl-collect-ieqv-strings-aux a (cdr x))))
-          (t
-           (vl-collect-ieqv-strings-aux a (cdr x)))))
+(local (xdoc::set-default-parents check-case))
 
-  (defund vl-collect-ieqv-strings (a x)
-    ;; Returns all strings in X that are case-equivalent to A.
-    ;; O(n) in the length of X
-    (declare (xargs :guard (and (stringp a)
-                                (string-listp x))))
-    (vl-collect-ieqv-strings-aux (str::downcase-string a) x))
+(define vl-collect-ieqv-strings-aux
+  :parents (vl-collect-ieqv-strings)
+  ((a stringp      "Already lowercased.")
+   (x string-listp "Not already lowercased."))
+  :returns (equiv-strs string-listp :hyp (string-listp x))
+  :long "<p>Linear in the length of @('x').</p>"
+  (cond ((atom x)
+         nil)
+        ((equal a (str::downcase-string (car x)))
+         (cons (car x) (vl-collect-ieqv-strings-aux a (cdr x))))
+        (t
+         (vl-collect-ieqv-strings-aux a (cdr x)))))
 
-  (local (in-theory (enable vl-collect-ieqv-strings-aux
-                            vl-collect-ieqv-strings)))
+(define vl-collect-ieqv-strings ((a stringp)
+                                 (x string-listp))
+  :short "@(call vl-collect-ieqv-strings) returns all strings in the list
+@('x') that are case-equivalent to the string @('a')."
+  :long "<p>This is pretty dumb, but we at least avoid downcasing @('a')
+repeatedly.  Linear in the length of @('x').</p>"
+  :returns (equiv-strs string-listp :hyp (string-listp x))
+  (vl-collect-ieqv-strings-aux (str::downcase-string a) x))
 
-  (defthm string-listp-of-vl-collect-ieqv-strings-aux
-    (implies (force (string-listp x))
-             (string-listp (vl-collect-ieqv-strings-aux a x))))
+(define vl-find-case-equivalent-strings-aux
+  :parents (vl-find-case-equivalent-strings)
+  ((x string-listp  "Some subset of all the strings we're considering.")
+   (y string-listp  "The full list of all the strings, fixed."))
+  :returns (equiv-sets string-list-listp :hyp (string-listp y))
+  :long "<p>O(n^2) in the length of X, but X should be the list of duplicated
+  strings, so there shouldn't be many.</p>"
+  (if (atom x)
+      nil
+    (cons (vl-collect-ieqv-strings (car x) y)
+          (vl-find-case-equivalent-strings-aux (cdr x) y))))
 
-  (defthm string-listp-of-vl-collect-ieqv-strings
-    (implies (force (string-listp x))
-             (string-listp (vl-collect-ieqv-strings a x)))))
-
-
-
-(defsection vl-find-case-equivalent-strings
-
-  (defund vl-find-case-equivalent-strings-aux (x y)
-    ;; O(n^2) in the length of X, but X should be the list of duplicated strings,
-    ;; so there shouldn't be many.
-    (declare (xargs :guard (and (string-listp x)
-                                (string-listp y))))
-    (if (atom x)
-        nil
-      (cons (vl-collect-ieqv-strings (car x) y)
-            (vl-find-case-equivalent-strings-aux (cdr x) y))))
-
-  (defund vl-find-case-equivalent-strings (x)
-    ;; Returns a string list list, where each sub-list is a set of
-    ;; case-equivalent strings within X.
-    (declare (xargs :guard (string-listp x)))
-    (b* ((xl    (cwtime (str::downcase-string-list x) :mintime 1/2))                  ;; O(n) in |X|
-         (dupes (cwtime (duplicated-members xl) :mintime 1/2))                        ;; O(n log n) in |X|
-         (sets  (cwtime (vl-find-case-equivalent-strings-aux dupes x) :mintime 1/2))) ;; O(n^2) in |dupes|
-      sets))
-
-  (local (in-theory (enable vl-find-case-equivalent-strings-aux
-                            vl-find-case-equivalent-strings)))
-
-  (defthm string-list-listp-of-vl-find-case-equivalent-strings-aux
-    (implies (force (string-listp y))
-             (string-list-listp (vl-find-case-equivalent-strings-aux x y))))
-
-  (defthm string-list-listp-of-vl-find-case-equivalent-strings
-    (implies (force (string-listp x))
-             (string-list-listp (vl-find-case-equivalent-strings x))))
-
+(define vl-find-case-equivalent-strings
+  :short "Find all case-equivalent strings in a string-list."
+  ((x string-listp))
+  :returns (equiv-sets string-list-listp :hyp :fguard
+                       "Each sub-list is a set of case-equivalent strings
+                        that occur within @('x').")
+  (b* ((xl    (str::downcase-string-list x)) ;; O(n) in |X|
+       (dupes (duplicated-members xl))       ;; O(n log n) in |X|
+       (sets  (vl-find-case-equivalent-strings-aux dupes x))) ;; O(n^2) in |dupes|
+    sets)
+  ///
   (local (assert! (equal (vl-find-case-equivalent-strings
                           (list "foo" "BAR" "baz" "Foo" "Bar"))
-                         '(("BAR" "Bar") ("foo" "Foo"))))))
-
+                         '(("BAR" "Bar")
+                           ("foo" "Foo"))))))
 
 
 (define vl-equiv-strings-to-lines ((x string-list-listp) &key (ps 'ps))
@@ -109,51 +93,39 @@
      (vl-basic-cw "      - ~&0~%" (car x))
      (vl-equiv-strings-to-lines (cdr x)))))
 
-(defsection vl-module-check-case
-
-  (defund vl-module-check-case (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((vl-module x) x)
-         ;; The sort here eliminates repetitions of the same name.
-         (names       (cwtime (mergesort
-                               (vl-portdecllist->names-exec x.portdecls
-                                                            (vl-module->modnamespace-exec x)))
-                              :name check-case-gather-names
-                              :mintime 1/2))
-         (equiv-names (cwtime (vl-find-case-equivalent-strings names)
-                              :name check-case-find-equiv-strs
-                              :mintime 1/2))
-         ((unless equiv-names)
-          x)
-         (w (make-vl-warning
-             :type :vl-warn-case-sensitive-names
-             :msg "In ~a0, found names that differ only by case.  This might ~
-                   indicate a typo, and otherwise it might cause problems ~
-                   for some Verilog tools.  Details: ~%~s1"
-             :args (list x.name (with-local-ps (vl-equiv-strings-to-lines equiv-names)))
-             :fatalp nil
-             :fn 'vl-module-check-case)))
-      (change-vl-module x :warnings (cons w x.warnings))))
-
-  (local (in-theory (enable vl-module-check-case)))
-
-  (defthm vl-module-p-of-vl-module-check-case
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-check-case x))))
-
+(define vl-module-check-case ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard "Maybe with new warnings.")
+  (b* (((vl-module x) x)
+       (names (vl-module->modnamespace-exec x))
+       (names (vl-portdecllist->names-exec x.portdecls names))
+       ;; Sort them to eliminate any repetitions of the same name.
+       (names       (cwtime (mergesort names)
+                            :name check-case-gather-names
+                            :mintime 1/2))
+       (equiv-names (cwtime (vl-find-case-equivalent-strings names)
+                            :name check-case-find-equiv-strs
+                            :mintime 1/2))
+       ((unless equiv-names)
+        x)
+       (w (make-vl-warning
+           :type :vl-warn-case-sensitive-names
+           :msg "In ~a0, found names that differ only by case.  This might ~
+                 indicate a typo, and otherwise it might cause problems for ~
+                 some Verilog tools.  Details: ~%~s1"
+           :args (list x.name (with-local-ps (vl-equiv-strings-to-lines equiv-names)))
+           :fatalp nil
+           :fn __function__)))
+    (change-vl-module x :warnings (cons w x.warnings)))
+  ///
   (defthm vl-module->name-of-vl-module-check-case
     (equal (vl-module->name (vl-module-check-case x))
            (vl-module->name x))))
 
-(defsection vl-modulelist-check-case
-
-  (defprojection vl-modulelist-check-case (x)
-    (vl-module-check-case x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p)
-
-  (local (in-theory (enable vl-modulelist-check-case)))
-
+(defprojection vl-modulelist-check-case (x)
+  (vl-module-check-case x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
+  ///
   (defthm vl-modulelist->names-of-vl-modulelist-check-case
     (equal (vl-modulelist->names (vl-modulelist-check-case x))
            (vl-modulelist->names x))))

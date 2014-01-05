@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -348,38 +348,31 @@ and max, gathering their comments.</p>"
 
 
 
-
-(defund vl-inject-comments-module (x fal)
-  (declare (xargs :guard (and (vl-module-p x)
-                              (vl-commentmap-falp fal))))
-   (b* (((when (vl-module->hands-offp x))
-         x)
-        (minloc  (vl-module->minloc x))
-        (maxloc  (vl-module->maxloc x))
-        ((unless (<= (vl-location->line minloc) (vl-location->line maxloc)))
-         (let ((warning  (make-vl-warning
-                          :type :vl-warn-comment-injection
-                          :msg "Cannot add comments, minloc exceeds maxloc?~% ~
-                                minloc = ~l0; maxloc = ~l1."
-                          :args (list minloc maxloc)
-                          :fn 'vl-inject-comments-module)))
-           (change-vl-module x :warnings (cons warning (vl-module->warnings x)))))
-        (comments (vl-gather-comments-fal minloc maxloc fal)))
-       (if (not comments)
-           x
-         (change-vl-module x :comments comments))))
-
-(defthm vl-module-p-of-vl-inject-comments-module
-  (implies (and (force (vl-module-p x))
-                (force (vl-commentmap-falp fal)))
-           (vl-module-p (vl-inject-comments-module x fal)))
-  :hints(("Goal" :in-theory (enable vl-inject-comments-module))))
-
-(defthm vl-module->name-of-vl-inject-comments-module
-  (equal (vl-module->name (vl-inject-comments-module x comment-map))
-         (vl-module->name x))
-  :hints(("Goal" :in-theory (enable vl-inject-comments-module))))
-
+(define vl-inject-comments-module
+  :parents (vl-commentmap-p)
+  ((x   vl-module-p        "Module to inject some comments into.")
+   (fal vl-commentmap-falp "All comments, gathered before parsing."))
+  :returns (new-x vl-module-p :hyp :fguard
+                  "Same as @('x'), but with comments added.")
+  (b* (((when (vl-module->hands-offp x))
+        x)
+       (minloc  (vl-module->minloc x))
+       (maxloc  (vl-module->maxloc x))
+       ((unless (<= (vl-location->line minloc) (vl-location->line maxloc)))
+        (let ((warnings (warn :type :vl-warn-comment-injection
+                              :msg "Cannot add comments, minloc exceeds maxloc?~% ~
+                                    minloc = ~l0; maxloc = ~l1."
+                              :args (list minloc maxloc)
+                              :acc (vl-module->warnings x))))
+          (change-vl-module x :warnings warnings)))
+       (comments (vl-gather-comments-fal minloc maxloc fal)))
+    (if (not comments)
+        x
+      (change-vl-module x :comments comments)))
+  ///
+  (defthm vl-module->name-of-vl-inject-comments-module
+    (equal (vl-module->name (vl-inject-comments-module x comment-map))
+           (vl-module->name x))))
 
 
 (defprojection vl-inject-comments-modulelist-aux (x fal)
@@ -387,31 +380,28 @@ and max, gathering their comments.</p>"
   :guard (and (vl-modulelist-p x)
               (vl-commentmap-falp fal))
   :result-type vl-modulelist-p
+  :parents (vl-commentmap-p)
   :rest
   ((defthm vl-modulelist->names-of-vl-inject-comments-modulelist-aux
      (equal (vl-modulelist->names (vl-inject-comments-modulelist-aux x comment-map))
             (vl-modulelist->names x)))))
 
 
-(defund vl-inject-comments-modulelist (x comment-map)
-  (declare (xargs :guard (and (vl-modulelist-p x)
-                              (vl-commentmap-p comment-map))))
+(define vl-inject-comments-modulelist
+  :parents (vl-commentmap-p)
+  :short "Associate all comments with their modules."
+  ((x           vl-modulelist-p "Parsed modules.")
+   (comment-map vl-commentmap-p "Comments gathered before parsing."))
+  :returns (new-x vl-modulelist-p :hyp :fguard
+                  "Parsed modules with their comments attached.")
   (b* ((fal (vl-commentmap-fal comment-map))
-       (ret (vl-inject-comments-modulelist-aux x fal))
-       (-   (flush-hons-get-hash-table-link fal)))
-      ret))
-
-(defthm vl-modulelist-p-of-vl-inject-comments-modulelist
-  (implies (and (force (vl-modulelist-p x))
-                (force (vl-commentmap-p comment-map)))
-           (vl-modulelist-p (vl-inject-comments-modulelist x comment-map)))
-  :hints(("Goal" :in-theory (enable vl-inject-comments-modulelist))))
-
-(defthm vl-modulelist->names-of-vl-inject-comments-modulelist
-  (equal (vl-modulelist->names (vl-inject-comments-modulelist x comment-map))
-         (vl-modulelist->names x))
-  :hints(("Goal" :in-theory (enable vl-inject-comments-modulelist))))
-
+       (ret (vl-inject-comments-modulelist-aux x fal)))
+    (fast-alist-free fal)
+    ret)
+  ///
+  (defthm vl-modulelist->names-of-vl-inject-comments-modulelist
+    (equal (vl-modulelist->names (vl-inject-comments-modulelist x comment-map))
+           (vl-modulelist->names x))))
 
 
 ;; BELOW THIS LINE THERE ARE ONLY COMMENTS.

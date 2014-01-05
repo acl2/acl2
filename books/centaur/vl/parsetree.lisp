@@ -1717,8 +1717,8 @@ arguments of gate instances and most arguments of module instances.  See our
              "Indicates whether the input is a vector and, if so, how large the
               input is.  Per page 174, if there is also a net declaration, then
               the range must agree.  This is checked in @(see
-              vl-overlap-compatible-p) as part of our notion of @(see
-              reasonable) modules.")
+              vl-portdecl-and-moduleitem-compatible-p) as part of our notion of
+              @(see reasonable) modules.")
 
    (atts     vl-atts-p
              "Any attributes associated with this declaration.")

@@ -742,7 +742,8 @@ want to add additional kinds of information here.</p>")
    (vl-annotate-netdecl-with-wireinfo x alist wwires)
    :guard (and (vl-netdecllist-p x)
                (vl-wireinfo-alistp alist)
-               (string-listp wwires))))
+               (string-listp wwires))
+   :parents nil))
 
 (defthm vl-netdecllist-p-of-vl-annotate-netdecllist-with-wireinfo
   (implies (force (vl-netdecllist-p x))

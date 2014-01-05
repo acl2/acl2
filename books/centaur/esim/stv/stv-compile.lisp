@@ -142,7 +142,7 @@ turned into a list like @('(|opcode[0]| ... |opcode[n]|)').</li>
               (consp name))
          "The name of this input, and should be a list of E input bits in
           lsb-first order.  (That is, Verilog-style names should have already
-          been expanded away using @(see stv-expand-names) or similar.)")
+          been expanded away using @(see stv-expand).)")
 
    (width (equal width (len name))
           "Just the pre-computed width of this input.")
@@ -388,7 +388,7 @@ that we generate from their names.  That is, a simulation variable like
               (consp name))
          "The name of this output.  It should be a list of E input bits in
           lsb-first order.  That is, Verilog-style names should have already
-          been expanded away using @(see stv-expand-names) or similar.")
+          been expanded away using @(see stv-expand).")
 
    (width (equal width (len name))
           "Just the pre-computed width of this output.  It must be exactly
@@ -820,11 +820,13 @@ given a list of instance names and the name of the state bit."
 
 (std::defprojection stv-paths-to-override-value-stbits (x)
   (stv-path-to-override-value-stbit x)
-  :guard t)
+  :guard t
+  :parents nil)
 
 (std::defprojection stv-paths-to-override-decision-stbits (x)
   (stv-path-to-override-decision-stbit x)
-  :guard t)
+  :guard t
+  :parents nil)
 
 
 
@@ -936,7 +938,7 @@ evaluation, debugging, etc."
   ((stv stvdata-p
         "An @(see stvdata-p) that has already had its lines widened and any
          Verilog-style names expanded; see @(see stv-widen) and @(see
-         stv-expand-names).")
+         stv-expand).")
 
    (mod good-esim-modulep
         "The @(see esim) module this STV is about."))

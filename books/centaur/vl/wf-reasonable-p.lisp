@@ -22,7 +22,6 @@
 (include-book "mlib/modnamespace")
 (include-book "mlib/find-item")
 (include-book "mlib/expr-tools")
-;(include-book "writer")
 (include-book "util/defwellformed")
 (include-book "util/warnings")
 (include-book "defsort/duplicated-members" :dir :system)
@@ -61,7 +60,7 @@ because they are in the standard.</p>")
 is @(see reasonable)."
   :long "<p>We just require that any externally visible names are unique.  A
 number of additional well-formedness checks are done in @(see argresolve) and
-@(see make-defm-command).</p>"
+@(see e-conversion).</p>"
 
   :guard (vl-portlist-p x)
   :body (let* ((names (remove nil (vl-portlist->names x)))
@@ -174,18 +173,13 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
 
 (defwellformed-list vl-netdecllist-reasonable-p (x)
   :element vl-netdecl-reasonable-p
-  :guard (vl-netdecllist-p x))
-
-
+  :guard (vl-netdecllist-p x)
+  :parents (reasonable))
 
 (defwellformed vl-vardecl-reasonable-p (x)
+  :parents (reasonable)
   :guard (vl-vardecl-p x)
   :extra-decls ((ignorable x))
-
-; There is actually only a single integer declaration in all of cnb, and I
-; would like to get rid of it entirely.  It would probably be best not to have
-; any variable declarations at all!
-
   :body (@wf-assert nil
                     :vl-vardecl
                     "~l0: variable declarations like ~s1 are not supported."
@@ -194,9 +188,11 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
 
 (defwellformed-list vl-vardecllist-reasonable-p (x)
   :element vl-vardecl-reasonable-p
-  :guard (vl-vardecllist-p x))
+  :guard (vl-vardecllist-p x)
+  :parents (reasonable))
 
 (defwellformed vl-regdecl-reasonable-p (x)
+  :parents (reasonable)
   :guard (vl-regdecl-p x)
   :body (let ((arrdims (vl-regdecl->arrdims x))
               (name    (vl-regdecl->name x))
@@ -215,9 +211,11 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
 
 (defwellformed-list vl-regdecllist-reasonable-p (x)
   :element vl-regdecl-reasonable-p
-  :guard (vl-regdecllist-p x))
+  :guard (vl-regdecllist-p x)
+  :parents (reasonable))
 
 (defwellformed vl-modinst-reasonable-p (x)
+  :parents (reasonable)
   :guard (vl-modinst-p x)
   :extra-decls ((ignorable x))
 
@@ -228,15 +226,18 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
 
 (defwellformed-list vl-modinstlist-reasonable-p (x)
   :element vl-modinst-reasonable-p
-  :guard (vl-modinstlist-p x))
+  :guard (vl-modinstlist-p x)
+  :parents (reasonable))
 
 (defwellformed vl-gateinst-reasonable-p (x)
+  :parents (reasonable)
   :guard (vl-gateinst-p x)
   :body (let ((name (or (vl-gateinst->name x) "<unnamed gate>"))
               (type (vl-gateinst->type x))
               (loc  (vl-gateinst->loc x)))
           (declare (ignorable name loc))
           (@wf-progn
+           ;; BOZO is this doing anything?
            (@wf-assert (member-eq type '(:vl-and :vl-or :vl-xor :vl-nand :vl-nor
                                                  :vl-xnor :vl-not :vl-buf
                                                  :vl-bufif0 :vl-bufif1 :vl-notif0 :vl-notif1
@@ -247,10 +248,15 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
                        (list loc name type)))))
 
 (defwellformed-list vl-gateinstlist-reasonable-p (x)
+  :parents (reasonable)
   :element vl-gateinst-reasonable-p
   :guard (vl-gateinstlist-p x))
 
+
 (defwellformed vl-portdecl-and-moduleitem-compatible-p (portdecl item)
+  :parents (reasonable)
+  :short "Main function for checking whether a port declaration, which overlaps
+with some module item declaration, is a reasonable overlap."
   :guard (and (vl-portdecl-p portdecl)
               (or (vl-netdecl-p item)
                   (vl-regdecl-p item)
@@ -261,25 +267,26 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
                   (vl-taskdecl-p item)
                   (vl-modinst-p item)
                   (vl-gateinst-p item)))
+  :long "<p>For instance, we might have:</p>
 
-; This is our main function for checking whether a port declaration, which
-; overlaps with some module item declaration, is a reasonable overlap.  For
-; instance, we might have:
-;
-;    input x;
-;    wire x;
-;
-; Which is fine, or we might have:
-;
-;    input [3:0] x;
-;    wire [4:0] x;
-;
-; Which we are definitely not going to permit.
-;
-; We assume, although it is not in our guard, that the inputs we are comparing
-; are reasonable.  That is, we aren't going to worry about the type or
-; signedness on the portdecl, or any kind of arrdims or initvals and so forth
-; on the item.
+@({
+    input x;
+    wire x;
+})
+
+<p>Which is fine, or we might have:</p>
+
+@({
+    input [3:0] x;
+    wire [4:0] x;
+})
+
+<p>Which is definitely not okay.</p>
+
+<p>We assume, although it is not in our guard, that the inputs we are comparing
+are reasonable.  That is, we aren't going to worry about the type or signedness
+on the portdecl, or any kind of arrdims or initvals and so forth on the
+item.</p>"
 
   :body
 
@@ -408,6 +415,7 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
       (@wf-assert nil)))))
 
 (defwellformed vl-overlap-compatible-p (names x)
+  :parents (reasonable)
   :guard (and (string-listp names)
               (vl-module-p x)
               (subsetp-equal names (vl-portdecllist->names (vl-module->portdecls x)))
@@ -643,6 +651,7 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
 
 
 (defwellformed vl-module-reasonable-p (x)
+  :parents (reasonable)
   :guard (vl-module-p x)
   :extra-decls ((xargs :guard-debug t))
   :body
@@ -695,6 +704,7 @@ ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
      (@wf-call vl-overlap-compatible-p overlap x))))
 
 (defwellformed-list vl-modulelist-reasonable-p (x)
+  :parents (reasonable)
   :guard (vl-modulelist-p x)
   :element vl-module-reasonable-p)
 

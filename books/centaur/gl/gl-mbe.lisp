@@ -27,9 +27,31 @@
 ;; have a special meaning under symbolic execution.  Maybe we should rename
 ;; this file.
 
-(defun acl2::always-equal (x y)
-  (declare (Xargs :guard t))
-  (equal x y))
+(defsection acl2::always-equal
+  :parents (reference)
+  :short "Alias for @(see equal) that has a special meaning in @(see gl-bdd-mode)."
+
+  :long "<p>Logically this is just @(see equal), but @(see GL) treats
+@('always-equal') in a special way.</p>
+
+<p>Suppose GL is asked to prove @('(equal spec impl)') when this does not
+actually hold.  Sometimes, the symbolic objects for spec and impl can be
+created, but the BDD representing their equality is too large to fit in memory.
+This stops you from seeing any counterexamples, even though GL knows that the
+two objects aren't equal.</p>
+
+<p>To work around this, you may restate your theorem using @('always-equal')
+instead of @('equal') as the final comparison.  @('always-equal') has a custom
+symbolic counterpart that returns @('t') when its arguments are equivalent, or
+else produces a symbolic object that captures just one counterexample and is
+indeterminate in all other cases.</p>
+
+<p>Note that there is not really any reason to use @('always-equal') if you are
+using an AIG-based GL mode, such as @(see gl-satlink-mode).</p>"
+
+  (defun acl2::always-equal (x y)
+    (declare (Xargs :guard t))
+    (equal x y)))
 
 (defsection gl-assert
   :parents (reference)

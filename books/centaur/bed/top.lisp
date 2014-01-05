@@ -27,7 +27,7 @@
 (include-book "up")
 
 (defsection bed
-  :parents (boolean-reasoning)
+  :parents (acl2::boolean-reasoning)
   :short "A Hons-based implementation of Boolean Expression Diagrams, described
 by Anderson and Hulgaard."
 
@@ -35,11 +35,11 @@ by Anderson and Hulgaard."
 using this library for anything, yet.</p>
 
 <p>In this library we represent BEDs using a Hons-based approach similar to
-@(see ubdds) or @(see aig)s.  You would ordinarily expect a BED to be
-represented as a DAG.  We instead use HONS to make the DAG explicit.  This
+@(see acl2::ubdds) or @(see acl2::aig)s.  You would ordinarily expect a BED to
+be represented as a DAG.  We instead use HONS to make the DAG explicit.  This
 allows us to refer to particular nodes in the graph as if they were individual
 expressions, and makes it much easier to reason about BEDs.  It is likely that
-an approach like @(see aignet) could be used to develop a faster BED
+an approach like @(see aignet::aignet) could be used to develop a faster BED
 implementation, but we think this would be a lot more work.</p>
 
 <p>BEDs are a non-canonical representation.  The basic idea of our

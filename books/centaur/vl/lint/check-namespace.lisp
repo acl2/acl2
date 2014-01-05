@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -23,61 +23,58 @@
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
-; This is a like vl-module-check-reasonable but is more appropriate for linting
-; since it doesn't complain about perfectly valid things like signed regs and
-; initial statements.
+(defxdoc check-namespace
+  :parents (lint)
+  :short "A check for basic, incorrect constructs like name clashes."
 
-(defsection vl-module-check-namespace
+  :long "<p>This is a like @(see vl-module-check-reasonable), but is more
+appropriate for linting.  The main difference is that, here, we don't complain
+about perfectly valid Verilog constructs merely because they aren't supported
+by our transformation to @(see esim).  For instance, we don't support event
+declarations in E, but that's no reason to complain about them when
+linting.</p>")
 
-  (defund vl-module-check-namespace (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((vl-module x) x)
-         (warnings x.warnings)
-         (pdnames     (vl-portdecllist->names x.portdecls))
-         (pdnames-s   (mergesort pdnames))
-         (namespace   (vl-module->modnamespace x))
-         (namespace-s (mergesort namespace))
-         (overlap     (intersect pdnames-s namespace-s))
+(local (xdoc::set-default-parents check-namespace))
 
-         ((mv & warnings)
-          (vl-portlist-reasonable-p-warn x.ports warnings))
+(define vl-module-check-namespace ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard "Perhaps extended with warnings.")
+  (b* (((vl-module x) x)
+       (warnings x.warnings)
+       (pdnames     (vl-portdecllist->names x.portdecls))
+       (pdnames-s   (mergesort pdnames))
+       (namespace   (vl-module->modnamespace x))
+       (namespace-s (mergesort namespace))
+       (overlap     (intersect pdnames-s namespace-s))
 
-         (warnings
-          (if (mbe :logic (no-duplicatesp-equal namespace)
-                   :exec (same-lengthp namespace namespace-s))
-              warnings
-            (cons (make-vl-warning :type :vl-namespace-error
-                                   :msg "Illegal redefinition of ~&0."
-                                   :args (list (duplicated-members namespace))
-                                   :fatalp t
-                                   :fn 'vl-module-check-namespace)
-                  warnings)))
+       ((mv & warnings)
+        (vl-portlist-reasonable-p-warn x.ports warnings))
 
-         ((mv & warnings)
-          (vl-overlap-compatible-p-warn overlap x warnings)))
+       (warnings
+        (if (mbe :logic (no-duplicatesp-equal namespace)
+                 :exec (same-lengthp namespace namespace-s))
+            warnings
+          (cons (make-vl-warning :type :vl-namespace-error
+                                 :msg "Illegal redefinition of ~&0."
+                                 :args (list (duplicated-members namespace))
+                                 :fatalp t
+                                 :fn 'vl-module-check-namespace)
+                warnings)))
 
-      (change-vl-module x :warnings warnings)))
+       ((mv & warnings)
+        (vl-overlap-compatible-p-warn overlap x warnings)))
 
-  (local (in-theory (enable vl-module-check-namespace)))
-
-  (defthm vl-module-p-of-vl-module-check-namespace
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-check-namespace x))))
-
+    (change-vl-module x :warnings warnings))
+  ///
   (defthm vl-module->name-of-vl-module-check-namespace
     (equal (vl-module->name (vl-module-check-namespace x))
            (vl-module->name x))))
 
 
-(defsection vl-modulelist-check-namespace
-
-  (defprojection vl-modulelist-check-namespace (x)
-    (vl-module-check-namespace x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p)
-
-  (local (in-theory (enable vl-modulelist-check-namespace)))
-
+(defprojection vl-modulelist-check-namespace (x)
+  (vl-module-check-namespace x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
+  ///
   (defthm vl-modulelist->names-of-vl-modulelist-check-namespace
     (equal (vl-modulelist->names (vl-modulelist-check-namespace x))
            (vl-modulelist->names x))))

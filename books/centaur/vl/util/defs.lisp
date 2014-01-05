@@ -1104,3 +1104,14 @@ code that is violating guards), it just causes a hard error.</p>"
 (define vl-width-from-difference ((a integerp))
   :returns (width posp :rule-classes :type-prescription)
   (+ 1 (abs (lifix a))))
+
+
+(define anyp (x)
+  :parents (utilities)
+  :short "Recognizes any object."
+  :returns t
+  :long "<p>This just ignores @('x') and always returns @('t').  It is
+occasionally useful, e.g., when defining structures using macros that expect
+constraints for certain fields.</p>"
+  (declare (ignore x))
+  t)

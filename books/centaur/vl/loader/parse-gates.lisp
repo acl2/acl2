@@ -61,7 +61,8 @@
 
 (deflist vl-gatebldr-tuple-list-p (x)
   (vl-gatebldr-tuple-p x)
-  :elementp-of-nil nil)
+  :elementp-of-nil nil
+  :parents nil)
 
 (defund vl-build-gate-instances (loc tuples type strength delay atts)
   (declare (xargs :guard (and (vl-location-p loc)

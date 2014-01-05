@@ -69,18 +69,12 @@ own @(see extended-characters) and module items."
   :long "<p>@(call vl-location-string) is often useful in generating warning
 or error messages.  It converts a @(see vl-location-p) object into a string
 of the form <i>filename:line:col</i>.</p>"
-
+  :returns (str stringp :rule-classes :type-prescription)
   (cat (vl-location->filename loc)
        ":"
        (natstr (vl-location->line loc))
        ":"
-       (natstr (vl-location->col loc)))
-
-  ///
-
-  (defthm stringp-of-vl-location-string
-    (stringp (vl-location-string loc))
-    :rule-classes :type-prescription))
+       (natstr (vl-location->col loc))))
 
 
 (define vl-location-between-p ((x vl-location-p)
@@ -105,7 +99,6 @@ bounds."
            (or (< x.line high.line)
                (and (int= x.line high.line)
                     (<= x.col high.col))))))
-
 
 
 
@@ -165,44 +158,14 @@ arbitrarily, as follows:</p>
 will simply allow any characters from locations outside this range to be
 represented as cons structures with line, column, and character code
 components.  This is no worse than our former representation, and means that
-the interface for constructing echars can be kept simple and bound-free.</p>"
+the interface for constructing echars can be kept simple and bounds-free.</p>
+
+@(def vl-echar-p)"
+
+  :autodoc nil
 
   (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
   (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
-
-  (define vl-echarpack-p (x)
-    "Packed up LINE, COL, and CHAR-CODE."
-    (if (integerp x)
-        ;; [LINE : 30 bits, COL : 22 bits, CHAR-CODE : 8 bits]
-        (and (<= 0 x)
-             (< 0 (ash x -30)) ;; "posp of line"
-             (< x (expt 2 60)))
-      ;; ((LINE . COL) . CHAR-CODE)
-      (and (consp x)
-           (consp (car x))
-           (posp (caar x))
-           (natp (cdar x))
-           (unsigned-byte-p 8 (cdr x)))))
-
-  (define vl-echarpack ((code (unsigned-byte-p 8 code))
-                        (line posp)
-                        (col  natp))
-    :inline t ;; should only really be called from vl-echar
-    (declare (type (unsigned-byte 8) code))
-    (if (and (< (the (integer 0 *) line) (expt 2 30))
-             (< (the (integer 0 *) col)  (expt 2 22)))
-        ;; Usual case: things are small enough to be packed up nicely
-        (let* ((line-shift (the (unsigned-byte 60) (ash (the (unsigned-byte 30) line) 30)))
-               (col-shift  (the (unsigned-byte 30) (ash (the (unsigned-byte 22) col) 8))))
-          (the (unsigned-byte 60)
-            (logior (the (unsigned-byte 60)
-                      (logior (the (unsigned-byte 60) line-shift)
-                              (the (unsigned-byte 30) col-shift)))
-                    (the (unsigned-byte 8) code))))
-      ;; Degenerate case: something too big, just make a cons structure
-      (cons (cons line col) code)))
-
-  (local (in-theory (enable vl-echarpack-p vl-echarpack)))
 
   (local (defthmd l0
            (implies (and (unsigned-byte-p 8 code)
@@ -221,13 +184,52 @@ the interface for constructing echars can be kept simple and bound-free.</p>"
                                        ACL2::UNSIGNED-BYTE-P-OF-ASH)
                    :use ((:instance l0))))))
 
-  (defthm vl-echarpack-p-of-vl-echarpack
-    (implies (and (force (unsigned-byte-p 8 code))
-                  (force (posp line))
-                  (force (natp col)))
-             (vl-echarpack-p (vl-echarpack code line col))))
+  (define vl-echarpack-p (x)
+    :parents (vl-echar-p)
+    :short "Packed up LINE, COL, and CHAR-CODE in a single fixnum."
+    (if (integerp x)
+        ;; [LINE : 30 bits, COL : 22 bits, CHAR-CODE : 8 bits]
+        (and (<= 0 x)
+             (< 0 (ash x -30)) ;; "posp of line"
+             (< x (expt 2 60)))
+      ;; ((LINE . COL) . CHAR-CODE)
+      (and (consp x)
+           (consp (car x))
+           (posp (caar x))
+           (natp (cdar x))
+           (unsigned-byte-p 8 (cdr x)))))
+
+  (local (in-theory (enable vl-echarpack-p)))
+
+  (define vl-echarpack ((code (unsigned-byte-p 8 code))
+                        (line posp)
+                        (col  natp))
+    :parents (vl-echarpack-p)
+    :inline t ;; should only really be called from vl-echar
+    (declare (type (unsigned-byte 8) code))
+    (if (and (< (the (integer 0 *) line) (expt 2 30))
+             (< (the (integer 0 *) col)  (expt 2 22)))
+        ;; Usual case: things are small enough to be packed up nicely
+        (let* ((line-shift (the (unsigned-byte 60) (ash (the (unsigned-byte 30) line) 30)))
+               (col-shift  (the (unsigned-byte 30) (ash (the (unsigned-byte 22) col) 8))))
+          (the (unsigned-byte 60)
+            (logior (the (unsigned-byte 60)
+                      (logior (the (unsigned-byte 60) line-shift)
+                              (the (unsigned-byte 30) col-shift)))
+                    (the (unsigned-byte 8) code))))
+      ;; Degenerate case: something too big, just make a cons structure
+      (cons (cons line col) code))
+    ///
+    (defthm vl-echarpack-p-of-vl-echarpack
+      (implies (and (force (unsigned-byte-p 8 code))
+                    (force (posp line))
+                    (force (natp col)))
+               (vl-echarpack-p (vl-echarpack code line col)))))
+
+  (local (in-theory (enable vl-echarpack)))
 
   (define vl-echarpack->code ((x vl-echarpack-p))
+    :parents (vl-echarpack-p)
     :returns (code (unsigned-byte-p 8 code)
                    :hyp :fguard
                    :rule-classes ((:rewrite)
@@ -252,6 +254,7 @@ the interface for constructing echars can be kept simple and bound-free.</p>"
       :hints((acl2::equal-by-logbitp-hammer))))
 
   (define vl-echarpack->line ((x vl-echarpack-p))
+    :parents (vl-echarpack-p)
     :returns (line posp
                    :hyp :fguard
                    :rule-classes :type-prescription)
@@ -269,6 +272,7 @@ the interface for constructing echars can be kept simple and bound-free.</p>"
                       line))))
 
   (define vl-echarpack->col ((x vl-echarpack-p))
+    :parents (vl-echarpack-p)
     :returns (col natp
                   :hyp :fguard
                   :rule-classes :type-prescription)
@@ -308,6 +312,9 @@ the interface for constructing echars can be kept simple and bound-free.</p>"
   (define vl-echar ((char characterp)
                     (loc  vl-location-p))
     :returns (echar vl-echar-p :hyp :fguard)
+    :parents (vl-echar-p)
+    :short "High-level constructor for an @(see vl-echar-p)."
+    :long "<p>See @(see make-vl-echar-fast) for a faster alternative.</p>"
     (b* (((vl-location loc) loc))
       (cons loc.filename
             (vl-echarpack (the (unsigned-byte 8) (char-code char))
@@ -321,10 +328,11 @@ the interface for constructing echars can be kept simple and bound-free.</p>"
                               (filename stringp)
                               (line     posp)
                               (col      natp))
+    :parents (vl-echar-p)
+    :short "Fast creation of extended characters that bypasses constructing
+            @(see vl-location) objects."
     :enabled t
     :inline t
-    ;; Fast creation of extended characters that bypasses constructing
-    ;; VL-LOCATION objects
     (mbe :logic
          (vl-echar char (make-vl-location :filename filename
                                           :line line
@@ -342,6 +350,8 @@ the interface for constructing echars can be kept simple and bound-free.</p>"
     :returns (char characterp
                    :rule-classes :type-prescription
                    :hyp :fguard)
+    :parents (vl-echar-p)
+    :short "High-level accessor: get the character from an @(see vl-echar-p)."
     :inline t
     (the character
       (code-char (the (unsigned-byte 8) (vl-echarpack->code (cdr x)))))
@@ -354,6 +364,9 @@ the interface for constructing echars can be kept simple and bound-free.</p>"
 
   (define vl-echar->loc ((x vl-echar-p))
     :returns (loc vl-location-p :hyp :fguard)
+    :parents (vl-echar-p)
+    :short "High-level accessor: get the location from an @(see vl-echar-p)."
+    :long "<p>Note that this has to construct a @(see vl-location-p) object.</p>"
     (make-vl-location :filename (car x)
                       :line (vl-echarpack->line (cdr x))
                       :col  (vl-echarpack->col (cdr x)))

@@ -141,7 +141,7 @@ rewrite it away into @(see explode) or @(see implode).</p>"
 
 <p>Even though @(see coerce) is built into ACL2, we prefer to use @('explode') as
 our normal form.  We rewrite all uses of @('(coerce x 'list)') into
-@('(str::explode x')') with the following rule:</p>
+@('(str::explode x)') with the following rule:</p>
 
 @(def coerce-to-list-removal)
 
@@ -215,7 +215,7 @@ implode).</p>
 
 <p>Even though @(see coerce) is built into ACL2, we prefer to use @('implode')
 as our normal form.  We rewrite all uses of @('(coerce x 'string)') into
-@('(str::implode x')') with the following rule:</p>
+@('(str::implode x)') with the following rule:</p>
 
 @(def coerce-to-string-removal)
 

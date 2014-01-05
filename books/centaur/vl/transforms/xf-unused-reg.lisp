@@ -23,6 +23,11 @@
 (include-book "../mlib/modnamespace")
 (local (include-book "../util/arithmetic"))
 
+(defsection elim-unused-regs
+  :parents (transforms)
+  :short "Remove any @('reg') declarations that are never used.")
+
+(local (xdoc::set-default-parents elim-unused-regs))
 
 (define vl-regdecllist-elim-unused-regs
   ((regs   vl-regdecllist-p)
@@ -58,23 +63,18 @@
        (old-names (mergesort (vl-regdecllist->names regs)))
        (new-names (mergesort (vl-regdecllist->names regs-prime)))
        (unused-names (difference old-names new-names))
-       (warnings (cons (make-vl-warning
-                        :type :vl-warn-unused-reg
-                        :msg "In ~m0, eliminating spurious registers ~&1."
-                        :args (list (vl-module->name x) unused-names)
-                        :fatalp nil
-                        :fn 'vl-module-elim-unused-regs)
-                       (vl-module->warnings x)))
+       (warnings (warn :type :vl-warn-unused-reg
+                       :msg "In ~m0, eliminating spurious registers ~&1."
+                       :args (list (vl-module->name x) unused-names)
+                       :acc (vl-module->warnings x)))
        (new-x (change-vl-module x
                                 :regdecls regs-prime
                                 :warnings warnings)))
     new-x)
-
   ///
   (defthm vl-module->name-of-vl-module-elim-unused-regs
     (equal (vl-module->name (vl-module-elim-unused-regs x))
            (vl-module->name x))))
-
 
 (defprojection vl-modulelist-elim-unused-regs (x)
   (vl-module-elim-unused-regs x)
@@ -85,5 +85,4 @@
   ((defthm vl-modulelist->names-of-vl-modulelist-elim-unused-regs
      (equal (vl-modulelist->names (vl-modulelist-elim-unused-regs x))
             (vl-modulelist->names x)))))
-
 

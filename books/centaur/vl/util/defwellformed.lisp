@@ -320,7 +320,8 @@ for the mutually-recursive use of @('defwellformed').</p>")
 (defprojection wf-warn-name-list (x)
   (wf-warn-name x)
   :mode :program
-  :optimize nil)
+  :optimize nil
+  :parents nil)
 
 (defun wf-normal-defun (name formals guard body extra-decls)
   (declare (xargs :mode :program))
@@ -345,33 +346,28 @@ for the mutually-recursive use of @('defwellformed').</p>")
   (let ((name-warn (intern-in-package-of-symbol
                     (concatenate 'string (symbol-name name) "-WARN")
                     name)))
-    `(encapsulate
-      ()
-      ;; BOZO consider doing something better with the documentation
+    `(defsection ,name
+       ,@(and parents `(:parents ,parents))
+       ,@(and short   `(:short ,short))
+       ,@(and long    `(:long ,long))
 
-      ,@(and (or parents short long)
-             `((defxdoc ,name
-                 :parents ,parents
-                 :short ,short
-                 :long ,long)))
+       ,(wf-normal-defun name formals guard body extra-decls)
+       ,(wf-warn-defun name formals guard body extra-decls)
 
-      ,(wf-normal-defun name formals guard body extra-decls)
-      ,(wf-warn-defun name formals guard body extra-decls)
+       (local (in-theory (e/d (,name ,name-warn)
+                              ((force)))))
 
-      (local (in-theory (e/d (,name ,name-warn)
-                             ((force)))))
+       (defthm ,(intern-in-package-of-symbol
+                 (concatenate 'string "ELIMINATE-" (symbol-name name-warn))
+                 name-warn)
+         (equal (mv-nth 0 (,name-warn ,@formals warnings))
+                (,name ,@formals)))
 
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string "ELIMINATE-" (symbol-name name-warn))
-                name-warn)
-        (equal (mv-nth 0 (,name-warn ,@formals warnings))
-               (,name ,@formals)))
-
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string "VL-WARNINGLIST-P-OF-" (symbol-name name-warn))
-                name-warn)
-        (implies (force (vl-warninglist-p warnings))
-                 (vl-warninglist-p (mv-nth 1 (,name-warn ,@formals warnings))))))))
+       (defthm ,(intern-in-package-of-symbol
+                 (concatenate 'string "VL-WARNINGLIST-P-OF-" (symbol-name name-warn))
+                 name-warn)
+         (implies (force (vl-warninglist-p warnings))
+                  (vl-warninglist-p (mv-nth 1 (,name-warn ,@formals warnings))))))))
 
 
 (defmacro defwellformed-list (list-name formals &key element guard parents short long)

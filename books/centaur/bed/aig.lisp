@@ -27,7 +27,8 @@
 
 (defsection aig-translation
   :parents (bed)
-  :short "Translators to convert Hons @(see aig)s into BEDs, and vice-versa.")
+  :short "Translators to convert Hons @(see acl2::aig)s into BEDs, and
+  vice-versa.")
 
 (define aig-from-bed
   :parents (aig-translation)
@@ -763,6 +764,7 @@ to pattern match it against @('(IF VAR A B)')?"
     (mv ans order (hons-acons x ans memo))))
 
 (define bed-from-aig ((x "An AIG to transform into a BED."))
+  :parents (bed)
   :returns (mv (bed   "A bed that evaluates in the same way as @('x').")
                (order "An ordering on the nodes of bed for @(see bed-order)."))
   :short "Translate an AIG into a BED."

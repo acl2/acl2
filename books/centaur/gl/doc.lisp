@@ -338,11 +338,12 @@ def-gl-param-thm).</p>
 Suppose GL is asked to prove @('(equal spec impl)') when this does not actually
 hold.  Sometimes the symbolic objects for @('spec') and @('impl') can be
 created, but the BDD representing their equality is too large to fit in memory.
-The goal may then be restated with @(see always-equal) instead of @('equal') as
-the final comparison.  Logically, @('always-equal') is just @('equal').  But
-@('always-equal') has a custom symbolic counterpart that returns @('t') when
-its arguments are equivalent, or else produces a symbolic object that captures
-just one counterexample and is indeterminate in all other cases.</p>
+The goal may then be restated with @(see acl2::always-equal) instead of
+@('equal') as the final comparison.  Logically, @('always-equal') is just
+@('equal').  But @('always-equal') has a custom symbolic counterpart that
+returns @('t') when its arguments are equivalent, or else produces a symbolic
+object that captures just one counterexample and is indeterminate in all other
+cases.</p>
 
 <p>Another possible problem is that the symbolic interpreter never gets stuck,
 but keeps opening up more and more functions.  These problems might be due to
@@ -506,9 +507,9 @@ triggers a garbage collection only when the amount of free memory is below some
 threshold @('n').  A good choice for @('n') might be 20\% of the @(see
 set-max-mem) threshold.</p>
 
-<p>It can be useful to call @(see maybe-wash-memory) between proofs, or between
-the cases of parametrized theorems; see for instance the @(':run-before-cases')
-argument of @(see def-gl-param-thm).</p>")
+<p>It can be useful to call @(see acl2::maybe-wash-memory) between proofs, or
+between the cases of parametrized theorems; see for instance the
+@(':run-before-cases') argument of @(see def-gl-param-thm).</p>")
 
 
 

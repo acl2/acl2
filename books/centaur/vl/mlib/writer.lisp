@@ -476,6 +476,13 @@ displays.  The module browser's web pages are responsible for defining the
   ''("VL_ORIG_EXPR"
      "VL_EXPLICIT_PARENS"))
 
+(defsection vl-pp-expr
+  :parents (verilog-printing)
+  :short "Pretty-printer for expressions."
+  :long "<p>@(call vl-pp-expr) pretty-prints the expression @('x') to @(see
+ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>")
+
+
 (defmacro vl-pp-expr (x &key (ps 'ps))
   `(vl-pp-expr-fn ,x ,ps))
 

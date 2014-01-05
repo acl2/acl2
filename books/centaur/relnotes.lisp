@@ -21,17 +21,23 @@
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 
+; Please note:
+;
+;  - Jared often has uncommitted edits to this file.  Please coordinate with
+;    him before editing these topics!
+;
+;  - Book release notes are typically very disorganized.  This shouldn't be
+;    considered a bug until we are very close to a release.
+;
+;  - The following URL is very useful for updating the comments here:
+;       http://code.google.com/p/acl2-books/source/list
+
 (defxdoc note-6-4-books
   :parents (note-6-4)
-  :short "Release notes for the ACL2 Community Books for ACL2 6.4 (???month???,
+  :short "Release notes for the ACL2 Community Books for ACL2 6.4 (January,
 2013)."
 
-; BOZO this is pretty disorganized.  That probably doesn't matter until it's
-; time to release.
-
-; Currently covered: through revision 2342.
-; The following URL may be useful for updating the comments here:
-;   http://code.google.com/p/acl2-books/source/list
+; Currently covered: through revision 2371.
 
   :long "<p>The following is a brief summary of changes made to the <a
 href='http://acl2-books.googlecode.com/'>Community Books</a> between the
@@ -44,15 +50,49 @@ href='http://code.google.com/p/acl2-books/source/list'>commit log</a>.</p>
 
 <h3>Build System Changes</h3>
 
-<p>The @('books/Makefile') now builds far fewer books than it used to.  BOZO WE
-NEED TO DOCUMENT THIS BEFORE THE NEXT RELEASE.</p>
+<p>In previous versions of ACL2, the default @('make') command for building the
+Community Books could take several hours.  Starting in ACL2 6.4, the default
+build is much faster because it <b>excludes many books</b>.</p>
+
+<p>This particularly affects what happens when you run commands such as @('make
+regression') from the ACL2 directory, or @('make') from the @('books')
+directory.  These commands will now certify only the following, widely used
+books:</p>
+
+<ul>
+<li>arithmetic*</li>
+<li>@(see ihs)</li>
+<li>misc</li>
+<li>tools</li>
+<li>@(see std)</li>
+<li>@(see str)</li>
+<li>@(see xdoc)</li>
+<li>data-structures</li>
+</ul>
+
+<p>To build all of the libraries as before, you can instead run @('make all')
+from the @('books') directory.  But this is usually not necessary: typically
+you should be run @('make') or @(see cert.pl) able to certify the particular
+books you are interested in.  For instance, commands such as:</p>
+
+@({
+    $ make ACL2=my-acl2 -j 4 rtl/rel9/lib/top.cert
+    or
+    $ cert.pl ACL2=my-acl2 -j 4 rtl/rel9/lib/top
+})
+
+<p>should suffice to build the @('rtl/rel9') library and all of its
+dependencies, without having to build any other, unrelated libraries.</p>
+
+<p>See the comments at the top of @('books/GNUmakefile') for additional build
+options.</p>
 
 
 <h3>Deleted Stubs</h3>
 
 <p>When we move a book, we often add a <b>stub</b> book in its previous
 location to help you transition your @(see include-book) commands.  The
-@('cert.pl') build system prints warnings when a stub book is being
+@(see cert.pl) build system prints warnings when a stub book is being
 included.</p>
 
 <p>Stub books have a lifespan of one release.  The following books were stubs
@@ -102,8 +142,8 @@ in ACL2 6.3, so they have been deleted.</p>
 <h3>Book Reorganization</h3>
 
 <p>We have moved several books to new homes in an effort to clean up the
-top-level books/ directory.  Users of these libraries will need to update their
-@(see include-book) commands, and in some cases, packages may have also
+top-level @('books') directory.  Users of these libraries will need to update
+their @(see include-book) commands, and in some cases, packages may have also
 changed.</p>
 
 <p>The table below shows which libraries have moved and where they have moved
@@ -133,7 +173,9 @@ need to update your @('include-book')s eventually.</p>
     No        translators              projects/translators
     No        quadratic-reciprocity    projects/quadratic-reciprocity
 
-    No        parallel                 demos/parallel (or systems/parallel)
+    No        parallel                 misc/ or, for some books,
+                                       demos/parallel or system/parallel
+
     No        tutorial-problems        demos/tutorial-problems
 
     No        workshops/2013-greve-slind    coi/defung
@@ -143,17 +185,16 @@ need to update your @('include-book')s eventually.</p>
 
 <h3>Deprecated Books</h3>
 
-<p>Several books have been eliminated altogether.</p>
-
-<p>The @('rtl/rel7') and @('rtl/rel8') directories have been completely
-removed.  Please update to @('rtl/rel9').  Note that rel8 is essentially part
-of rel9.  If you can't directly upgrade to @('rel9'), you may try replacing</p>
+<p>The RTL @('rel7') and @('rel8') directories have been completely removed.
+Please update to @('rtl/rel9').  Note that @('rel8') is essentially part of
+@('rel9'), so if you can't directly upgrade to @('rel9'), you may try
+replacing</p>
 
 @({
     (include-book \"rtl/rel8/lib/top\" :dir :system)
 })
 
-<p>With:</p>
+<p>with</p>
 
 @({
     (include-book \"rtl/rel9/support/lib3/top\" :dir :system)
@@ -164,20 +205,24 @@ of rel9.  If you can't directly upgrade to @('rel9'), you may try replacing</p>
 
 <h3>Scripts Moved</h3>
 
-<p>Many build scripts have been relocated from the top-level @('books')
-directory, into a new @('books/build') subdirectory.  You may need to update
-paths to these files in your Makefiles or other build scripts.</p>
+<p>Many build scripts like @(see cert.pl), @('clean.pl'), and @('critpath.pl')
+have been relocated from the top-level @('books') directory, into a new
+@('books/build') directory.  You may need to update paths to these files in
+your Makefiles or other build scripts.</p>
 
 
 
 <h3>Documentation Changes</h3>
 
-<p>The ACL2 system documentation has been extracted from the ACL2 sources and
-is now located in the Community Books.  See @(see note-6-4) for details; and
-see especially @('system/doc/acl2-doc.lisp').</p>
+<p>The ACL2 system documentation has been extracted from the ACL2 sources,
+converted into @(see xdoc) format, and is now located in the Community Books.
+This allows for a tighter integration between the system and book
+documentation, e.g., system topics like @(see io) can now directly link to
+related libraries like @(see std/io).  See @(see note-6-4) for details; and see
+especially the file @('system/doc/acl2-doc.lisp').</p>
 
-<p>A new Emacs-based documentation browser has been developed by Matt Kaufmann;
-see @(see acl2-doc).</p>
+<p>A new, feature-rich Emacs-based documentation browser named @(see acl2-doc)
+has been developed by Matt Kaufmann, and has many features.</p>
 
 <p>Several @(see projects) now have at least minor @(see xdoc) documentation;
 see @(see concurrent-programs), @(see des), @(see equational), @(see jfkr),
@@ -185,81 +230,159 @@ see @(see concurrent-programs), @(see des), @(see equational), @(see jfkr),
 taspi), and @(see wp-gen).</p>
 
 <p>Significant documentation has been added for many books and utilities,
-including: the @(see cert.pl) build system, the @(see defconsts) macro, the
-@(see defrstobj) macro, and the @(see bitops) library.</p>
+including at least:</p>
 
-<p>Numerous miscellaneous documentation improvements.</p>
+<ul>
+<li>@(see cert.pl) - a build system for certifying ACL2 books</li>
+<li>@(see defconsts) - like @('defconst') but supports stobjs, state, and multiple values</li>
+<li>@(see defrstobj) - a macro for introducing record-like stobjs</li>
+<li>@(see bitops) - an arithmetic library especially for bit-vector arithmetic</li>
+<li>@(see def-universal-equiv) - a macro for universally quantified equivalences</li>
+<li>@(see arith-equivs) - equivalence relations for naturals, integers, and bits</li>
+<li>@(see set-max-mem) - a memory management scheme for ccl</li>
+<li>@(see str::base64) - base64 string encoding/decoding</li>
+</ul>
+
+<p>We've made hundreds of other minor documentation improvements, and we invite
+everyone to contribute improvements.</p>
 
 
-<h3>New Features and Enhancements</h3>
+<h3>Enhancements to Particular Libraries</h3>
 
-<p>RTL.  The @('rtl/rel9') library now certifies much faster.  Clarified
-licensing information on RTL libraries.</p>
+<h4>General Libraries</h4>
 
-<p>Some functions were renamed in @('coi/generalize') and @('witness-cp') to
-avoid name conflicts.</p>
+<h5>@(see std) - standard libraries</h5>
+<ul>
+<li>A new @(see std/basic) library has been added for basic definitions.</li>
+<li>Optimized bitset libraries (formerly in @(see bitops)) are now in @(see std/bitsets).</li>
+<li>@(see std/io) has a new @(see read-string) utility.</li>
+<li>@(see std::deflist) and @(see std::defprojection) macros now implement @(see std::define)-like @('///') syntax.</li>
+<li>The @(see std/util) macros now respect @(see xdoc::set-default-parents).</li>
+<li>@(see std::defaggregate) now prohibits duplicate keys in @('make-') and @('change-') macros.</li>
+<li>@(see std::defaggregate) macro now has a new @(':legiblep :ordered') option, which balances performance and legibility.</li>
+<li>@(see std::define) now saves some additional information about definitions in tables.</li>
+<li>Fixed bugs with the @(see untranslate-preprocess) support in @(see define).</li>
+</ul>
 
-<p>@(see str).  Added a @('str::binify') function, similar to @(see
-str::hexify).</p>
+<h5>@(see str) - string library</h5>
+<ul>
+<li>Added a @('str::binify') function, similar to @(see str::hexify).</li>
+<li>Documented @('binify') and @('hexify').</li>
+</ul>
 
-<p>@(see regex).  Added some type theorems to @('regex-ui').</p>
+<h5>coi - family of libraries</h5>
+<ul>
+<li>@('coi/util/defun-support') now numbers congruence theorems.</li>
+<li>@('coi/nary/nary') has been tweaked with @(see double-rewrite) and now
+has additional examples; see @('coi/nary/example2.lisp')</li>
+<li>Fixed name clashes between @('coi/generalize') and @('witness-cp')</li>
+</ul>
 
-<p>@(see std).  The @(see std::deflist) and @(see std::defprojection) macros
-now implement a @(see std::define)-like @('///') syntax.  The @(see std/util)
-macros now respect @(see xdoc::set-default-parents).  Added @(see read-string)
-utility.  The @(see std::defaggregate) macro now has a new
-@(':legiblep :ordered') option, which balances performance and legibility.
-@(see std::define) now saves some additional information about definitions in
-tables.  A new @(see std/basic) library has been added for basic definitions.
-Optimized bitset libraries have been pulled out of @(see bitops) and moved into
-@(see bitsets::bitsets) and @(see bitsets::sbitsets).</p>
+<h5>@(see bitops) - arithmetic library</h5>
+<ul>
+<li>Added significant documentation, including overview documentation.</li>
+<li>Added fast @(see bitops/fast-logrev) and @(see bitops/merge) functions.</li>
+<li>Reduced dependencies and use of non-local includes.</li>
+</ul>
 
-<p>@(see xdoc).  The @(':xdoc') command now shows @(':from') information and
-prints parents more nicely.  The fancy viewer now shows what package a topic is
-from to avoid confusion.  @(see xdoc::save) more nicely warns about redefined
-topics.  New @('@(`...`)') syntax allows for evaluating Lisp forms directly
-within documentation strings; see @(see xdoc::preprocessor).  Added link
-checking page to help notice broken links to external web pages.  Added
-\"download this manual\" and \"printer friendly\" features.</p>
+<h5>@('rtl') - arithmetic library</h5>
 
-<p>@(see vl).  Expanded @(see vl::always-top) with support for basic @('case')
-statements.  Expanded @(see vl::expr-simp) to make more reductions and be more
-modular.  Added new support for hierarchical identifiers.  Cleaned up support
-for gate instances.</p>
+<ul>
+<li>@('rtl/rel9') library now certifies much faster.</li>
+<li>Clarified licensing information on RTL libraries (GPL).</li>
+</ul>
 
-<p>A new @(see def-dag-measure) tool may be useful when writinf functions that
-traverse directed acyclic graphs.</p>
+<h5>@(see xdoc) - documentation system</h5>
+<ul>
+<li>Added support for @('<table>') tags.</li>
+<li>Added @(see xdoc::preprocessor) @('@(`...`)') syntax for Lisp evaluation within documentation strings.</li>
+<li>The @(':xdoc') command now shows where topics came from, and prints parents more nicely.</li>
+<li>@(see xdoc::save) now warns about redefined topics and broken (internal) links.</li>
+<li>@(see xdoc::save) now creates a <a href='linkcheck.html'>link checking page</a> to identify broken external links.</li>
+<li>@(see xdoc::xdoc-prepend) and @(see xdoc::xdoc-extend) now have additional error checking.</li>
+</ul>
 
-<p>@(see esim).  Added a compiler from @(see symbolic-test-vectors) into C++
-programs.  Guards are now verified on @('map-aig-vars-fast').</p>
+<h5>@(see defrstobj) - machine modeling library</h5>
+<ul>
+<li>Reimplemented defrstobj to be based on abstract stobjs.</li>
+<li>Large rstobjs are now faster to define.</li>
+<li>Good-rstobj predicates are no longer necessary.</li>
+<li>Generalized @(see def-typed-record) to support more general fixing functions,
+for better compatibility with new @(see gl) features.</li>
+<li>Moved old defrstobj code to @(see legacy-defrstobj).</li>
+</ul>
 
-<p>@(see aig).  New @(see aig-constructors) ruleset.  Minor documentation
-enhancements.</p>
 
-<p>@(see aignet).  Released aiger file reader/writers.</p>
+<h5>GL and Boolean Reasoning</h5>
 
-<p>@(see 4v-sexprs). Add @(see 4v-sexpr-purebool-p) and related functions for
-detecting pure Boolean four valued s-expressions.  Reworked @(see
-sexpr-rewriting) to work toward a fixpoint to better support decomposition
-proofs.</p>
+<h5>@(see gl) - bit-blasting tool</h5>
+<ul>
+<li>Optimized symbolic subtraction and @(see logeqv).</li>
+<li>Optimized path condition handling in AIG modes.</li>
+<li>Added a vacuity check in AIG modes.</li>
+<li>@(see gl-mbe) has been reimplemented using @(see gl::gl-assert), a more general mechanism.</li>
+<li>A new @(see gl::gl-concretize) utility gives more control over GL in AIG modes.</li>
+<li>Added gl-force-true-strong and gl-force-false-strong.</li>
+<li>@(see logcons) can now unify with integer g-number objects.</li>
+<li>Fixed a bug with @(see gl-mbe) printing.</li>
+<li>Tweaks for better counterexample printing.</li>
+<li>Tweaks to avoid overwriting a user's gl-mode by including GL books.</li>
+</ul>
 
-<p>@(see gl).  Aded gl-force-true-strong and gl-force-false-strong.  @(see
-logcons) can now unify with integer g-number objects.  Optimized symbolic
-subtraction and @(see logeqv).  Added a vacuity check in AIG mode.  Path
-condition handling has been made more efficient in AIG mode.  @(see gl-mbe)
-has been reimplemented using @(see gl::gl-assert), a more general mechanism.  A
-new @(see gl::gl-concretize) utility gives more control over GL in AIG mode.</p>
+<h5>@(see aig) and @(see aignet) - and inverter graph libraries</h5>
+<ul>
+<li>New @(see aig-constructors) ruleset.</li>
+<li>Added aignet <a href='http://fmv.jku.at/aiger/FORMAT'>aiger</a> file reader/writers.</li>
+</ul>
 
-<p>@('centaur/tutorial').  The multiplier proof by decomposition now has
-comments and is done by rewriting instead of by GL, using a special new theory
-available in @('esim/stv/stv-decomp-proofs.lisp').</p>
+<h5>@(see satlink) - interface to sat solvers</h5>
+<ul>
+<li>Improved compatibility with additional SAT solvers.</li>
+<li>Documented various @(see satlink::sat-solver-options) that are known to work.</li>
+<li>Added scripts for using solvers with (external, unverified) @(see satlink::unsat-checking) capabilities.</li>
+<li>Optimization to avoid stack overflows in @(see satlink::eval-formula).</li>
+<li>@(':verbose') mode no longer prints variable assignments (they were sometimes too long for Emacs to handle).</li>
+</ul>
 
-<p>coi/util/defun-support now numbers congruence theorems.</p>
+<p>@(see bed::bed) is a new, preliminary library for Boolean expression
+diagrams.</p>
 
-<p>coi/nary/nary tweaked with @(see double-rewrite) and examples; see
-@('coi/nary/example2.lisp')</p>
 
-<p>Updated version of @('models/jvm/m1/wormhole-abstraction').</p>
+<h4>Hardware Verification Libraries</h4>
+
+<h5>@(see vl) - Verilog toolkit</h5>
+<ul>
+<li>Expanded @(see vl::always-top) with support for basic @('case') statements.</li>
+<li>Expanded @(see vl::expr-simp) to make more reductions and be more modular.</li>
+<li>Added new support for hierarchical identifiers.</li>
+<li>Cleaned up support for gate instances.</li>
+<li>Multiplier synthesis now better matches GL's multipliers.</li>
+<li>Modernized and documented many files.</li>
+</ul>
+
+<h5>@(see esim) - symbolic hardware simulator</h5>
+<ul>
+<li>Added a compiler from @(see symbolic-test-vectors) into C++ programs.</li>
+<li>Guards are now verified on @('map-aig-vars-fast').</li>
+<li>@('esim/stv/stv-decomp-proofs.lisp') adds a special theory for decomposition
+proofs; see the multiplier demo in @('centaur/tutorial').</li>
+</ul>
+
+<h5>@(see 4v-sexprs) - four-valued logic of esim</h5>
+<ul>
+<li>@(see sexpr-rewriting) now works toward a fixpoint to better support decomposition proofs.</li>
+<li>Added @(see 4v-sexpr-purebool-p) for detecting pure Boolean 4v-sexprs</li>
+<li>Documented @(see sexpr-equivs).</li>
+</ul>
+
+<h5>@('centaur/tutorial') - hardware verification demos</h5>
+<ul>
+<li>The multiplier proof by decomposition now has comments</li>
+<li>Redid the decomposition proof using rewriting, instead of by GL</li>
+</ul>
+
+
+<h4>New Tools and Examples</h4>
 
 <p>A new tool, @('centaur/misc/outer-local'), lets you mark events as
 local to an external context.</p>
@@ -267,48 +390,38 @@ local to an external context.</p>
 <p>A new tool, @('tools/last-theory-change'), lets you see when a rule was last
 enabled or disabled.</p>
 
-<p>The Makefile now has many additional targets, which we should document.</p>
+<p>A new tool, @(see def-dag-measure), may be useful when writing functions
+that traverse directed acyclic graphs.</p>
 
-<p>@(see testing).  Various changes in Revision 2225.</p>
+<p>A new book, @('misc/enumerate.lisp'), demonstrates a trick by J Moore to
+separately consider all possible cases for a particular term during a
+proof.</p>
 
-<p>@(see defrstobj).  Generalized @(see def-typed-record) to support other
-kinds of fixing functions, and miscellaneous cleanup.  Reimplemented defrstobj
-to be based on abstract stobjs.  Moved old defrstobj code to @(see
-legacy-defrstobj).</p>
+<p>A new book, @('misc/multi-v-uni.lisp'), includes a result from <i>A
+Mechanically Checked Proof of a Multiprocessor Result via a Uniprocessor
+View</i> by J Moore, in Formal Methods in System Design, March 1999.</p>
 
-<p>@(see bitops).  Added fast @(see bitops/fast-logrev) and @(see bitops/merge)
-functions.  Reduced dependencies and use of non-local includes.  Added
-significant documentation.</p>
+<p>A new book, @('demos/patterned-congruences.lisp) demonstrates @(see
+patterned-congruence) rules.</p>
+
+
+<h4>Miscellaneous Libraries</h4>
+
+<p>Added some type theorems to @('regex-ui').</p>
+
+<p>Updated version of @('models/jvm/m1/wormhole-abstraction').</p>
 
 <p>@('clause-processors/magic-ev') now has special handling for OR.</p>
 
-<p>The book @('misc/multi-v-uni.lisp') has been added, which includes a result
-from <i>A Mechanically Checked Proof of a Multiprocessor Result via a
-Uniprocessor View</i> by J Moore, in Formal Methods in System Design, March
-1999.</p>
+<p>The @(see testing) library has been enhanced.</p>
 
-<p>The book @('misc/enumerate.lisp') has been added, which demonstrates a trick
-by J Moore to separately consider all possible cases for a particular term
-during a proof.</p>
+<p>@(see tshell) now has improved output-filtering capability, which @(see
+satlink) takes advantage of.</p>
 
-<h3>Bug Fixes</h3>
+<p>@(see def-universal-equiv) now features @(see xdoc) integration.</p>
 
-<p>The Makefile has been made more robust, especially for ACL2(r).</p>
-
-<p>@(see gl). Fixed bug with gl-mbe printing.  Tweaks to counterexample
-printing.  Push default @(see gl-bdd-mode) setting lower into the include books
-to avoid overwriting user settings.</p>
-
-<p>@(see xdoc). Several bugfixes and cosmetic tweaks.  Moved @(see xdoc::save)
-into its own file to make dependency scanning more reliable.  Mostly fix
-back-button issues with the fancy browser.  Fixed fancy viewer to work on
-Internet Explorer and Safari.  @('xdoc-extend') now requires the topic being
-extended to exist.  Clarified the scope of LICENSE files in XDOC manuals.
-Broken links now properly lead to the broken-link topic.</p>
-
-<p>@(see satlink).  SATLINK is now somewhat more permissive in parsing prover
-output, for compatibility with more SAT solvers.  Implemented a tail-recursive
-@(':exec') version of @(see satlink::eval-formula) to avoid stack overflows.</p>
+<p>Fixed a bug related to undoing inclusion of the @(see intern-debugging)
+book.</p>
 
 <p>Added a workaround for a program-mode bug in SULFA's
 @('sat/local-clause-simp.lisp').</p>
@@ -316,14 +429,38 @@ output, for compatibility with more SAT solvers.  Implemented a tail-recursive
 <p>Fixed guard violations in @('workshops/2004/sumners-ray/support/invp.lisp')
 and @('workshops/2009/sumners/support/kas.lisp').</p>
 
+<p>Fixed a couple of clashes between @('arithmetic-5')/@('ihs') and @(see
+bitops).</p>
+
 <p>@(see milawa).  Integrated Milawa into @('books/Makefile'); fixed some
 issues with @('ccl::') prefixes and other non-portable constructs.</p>
 
-<p>Fixed some issues with the @('centaur/misc/intern-debugging') book and
-undoing.</p>
+<p>The @('ordinals') library is now licensed under a (more permissive)
+BSD-style license.</p>
 
-<p>@(see std).  @(see std::defaggregate) now prohibits multiple occurrences of
-the same key within a @('make') or @('change') macro.</p>
 
-")
+<h3>Other Changes</h3>
+
+<h5>Make system</h5>
+<ul>
+<li>The Makefile has been made more robust, especially for ACL2(r).</li>
+<li>To improve the error message when attempting to use non-GNU implementations
+of @('make'), the file @('books/Makefile') has been renamed to
+@('books/GNUmakefile').  A trivial @('Makefile') which simply prints an error
+has been added for non-GNU makes.</li>
+</ul>
+
+<h5>XDOC Fancy Viewer - documentation web pages</h5>
+
+<ul>
+<li>Mostly fix back-button issues.</li>
+<li>Fixes for compatibility with Internet Explorer and Safari.</li>
+<li>Broken links now properly lead to the broken-link topic.</li>
+<li>Added \"package box\" to shows what package non-ACL2 topics are from,
+    to reduce confusion.</li>
+<li>Added <a href='download/'>download this manual</a> feature.</li>
+<li>Added <a href='javascript:printer_friendly()'>printer friendly</a> feature</li>
+<li>Clarified the scope of LICENSE files in XDOC manuals.</li>
+<li>Other bugfixes and cosmetic tweaks.</li>
+</ul>")
 

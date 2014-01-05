@@ -73,6 +73,7 @@
 (include-book "centaur/getopt/top" :dir :system)
 (include-book "centaur/getopt/demo" :dir :system)
 (include-book "centaur/getopt/demo2" :dir :system)
+(include-book "centaur/bed/top" :dir :system)
 
 (include-book "gl/gl")
 (include-book "gl/bfr-aig-bddify")

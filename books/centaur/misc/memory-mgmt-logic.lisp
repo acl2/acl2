@@ -40,6 +40,51 @@
   (declare (xargs :guard t))
   (cw "print-quick-memory-summary is defined under the hood~%"))
 
+(defsection maybe-wash-memory
+  :parents (hons-and-memoization)
+  :short "Conditionally trigger a @(see hons-wash) and also @(see
+  clear-memoize-tables) to reclaim memory in ACL2(h).  (CCL only; requires a
+  trust tag)"
+
+  :long "<p>@(call maybe-wash-memory) will clear out unused honses and throw
+away all currently memoized results, but only if fewer than @('n') bytes of
+memory are currently free.  If more than @('n') bytes are free, it does
+nothing.</p>
+
+<p>The general idea here is that garbage collection is slow, so you only want
+to do it if you are starting to run out of memory.  At the same time, garbage
+collection is cheaper if you can do it \"in between\" computations that are
+creating a lot of garbage, where there are fewer live objects.  Moreover, if
+you still have a lot of memory still available, then you may prefer to keep
+currently memoized results so that you aren't repeating work.</p>
+
+<p>You can use @('maybe-wash-memory') in between computations to trigger
+garbage collections in an opportunistic way: if there's ample memory still
+available, no GC will be triggered, but if memory is getting scarce, then it's
+time to trigger an expensive collection, wiping out the memo tables and
+cleaning up honses in the process.</p>
+
+<p>Here's a basic example:</p>
+
+@({
+ (include-book \"centaur/misc/memory-mgmt\" :dir :system) ;; adds ttag
+ (value-triple (set-max-mem (* 8 (expt 2 30))))           ;; 8 GB
+ ... some memory intensive stuff ...
+ (value-triple (maybe-wash-memory (* 3 (expt 2 30))))
+ ... more memory intensive stuff ...
+ (value-triple (maybe-wash-memory (* 3 (expt 2 30))))
+ ... etc ...
+})
+
+<p>If the optional @('clear') argument is @('t'), honses will be cleared using
+@(see hons-clear) instead of @(see hons-wash).  (This is generally ill
+advised.)</p>
+
+<p>This can be a good way to clean up memory in between @(see
+gl::def-gl-param-thm) cases, and in other situations.</p>")
+
+
+
 (defmacro maybe-wash-memory (n &optional clear)
   `(maybe-wash-memory-fn ,n ,clear))
 

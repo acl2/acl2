@@ -64,6 +64,7 @@
              '(*bitset-exports*
                std
                std/util
+               std/bitsets
                osets
                __function__
                raise
@@ -92,7 +93,7 @@
                lifix
                lbfix
                nat-equiv
-               int-equiv               
+               int-equiv
 
                logbitp-mismatch
                equal-by-logbitp

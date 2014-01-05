@@ -23,6 +23,12 @@
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (in-theory (enable arith-equiv-forwarding)))
 
+(define bed-mk1
+  :parents (bed)
+  :short "Low-level functions for constructing BEDs.")
+
+(local (xdoc::set-default-parents bed-mk1))
+
 (define bed-match-var
   :short "Pattern match a variable ITE node."
   ((x "The BED to pattern match against."))
@@ -47,11 +53,6 @@
                           (bed-eval left env)
                         (bed-eval right env)))))))
 
-(define bed-mk1
-  :parents (bed)
-  :short "Low-level functions for constructing BEDs.")
-
-(local (xdoc::set-default-parents bed-mk1))
 
 (define mk-var-raw ((var atom "Variable that controls the decision.")
                     (left     "True branch (a bed).")
@@ -320,7 +321,7 @@ writing @('not(x)').  This particular choice always keeps the arguments in
    (order "Table mapping nodes to ranks."))
   :returns (mv (okp   "Is @('a <= b') per this order?")
                (order "Possibly updated order table."))
-  :parents (bed-constructors)
+  :parents (bed-mk1)
   :short "Ordering mechanism for canonicalizing symmetric operators."
 
   :long "<p>One of the main drawbacks of using a Hons-based representation is

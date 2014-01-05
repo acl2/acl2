@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -25,6 +25,13 @@
 (include-book "../mlib/fmt")
 (include-book "../util/cwtime")
 (local (include-book "../util/arithmetic"))
+
+
+(defsection find-disconnected
+  :parents (lint)
+  :short "Basic check for entirely disconnected wires.")
+
+(local (xdoc::set-default-parents find-disconnected))
 
 
 (defsection vl-expr-allwires
@@ -279,234 +286,192 @@ are returned in a nonsensical order.</p>"
   (verify-guards vl-expr-allwires))
 
 
-(defsection vl-collect-flattened-hids
-
-  (defund vl-collect-flattened-hids (x)
-    (declare (xargs :guard (vl-netdecllist-p x)))
-    (if (atom x)
-        nil
-      (let ((atts (vl-netdecl->atts (car x))))
-        (if (or (assoc-equal "VL_HID_LOCAL_P" atts)
-                (assoc-equal "VL_HID_GLOBAL_P" atts))
-            (cons (car x)
-                  (vl-collect-flattened-hids (cdr x)))
-          (vl-collect-flattened-hids (cdr x))))))
-
-  (local (in-theory (enable vl-collect-flattened-hids)))
-
-  (defthm vl-netdecllist-p-of-vl-collect-flattened-hids
-    (implies (force (vl-netdecllist-p x))
-             (vl-netdecllist-p (vl-collect-flattened-hids x)))))
+(define vl-collect-flattened-hids ((x vl-netdecllist-p))
+  :returns (netdecls vl-netdecllist-p :hyp :fguard)
+  (if (atom x)
+      nil
+    (let ((atts (vl-netdecl->atts (car x))))
+      (if (or (assoc-equal "VL_HID_LOCAL_P" atts)
+              (assoc-equal "VL_HID_GLOBAL_P" atts))
+          (cons (car x)
+                (vl-collect-flattened-hids (cdr x)))
+        (vl-collect-flattened-hids (cdr x))))))
 
 
-(defsection vl-delete-emodwires-with-basenames
+(define vl-delete-emodwires-with-basenames
+  ((basenames string-listp)
+   (fal       (equal fal (make-lookup-alist basenames)))
+   (x         vl-emodwirelist-p))
+  :returns (wires vl-emodwirelist-p :hyp (force (vl-emodwirelist-p x)))
+  (cond ((atom x)
+         nil)
+        ((fast-memberp (vl-emodwire->basename (car x)) basenames fal)
+         (vl-delete-emodwires-with-basenames basenames fal (cdr x)))
+        (t
+         (cons (car x)
+               (vl-delete-emodwires-with-basenames basenames fal (cdr x))))))
 
-  (defund vl-delete-emodwires-with-basenames (basenames fal x)
-    (declare (xargs :guard (and (string-listp basenames)
-                                (equal fal (make-lookup-alist basenames))
-                                (vl-emodwirelist-p x))))
-    (cond ((atom x)
-           nil)
-          ((fast-memberp (vl-emodwire->basename (car x)) basenames fal)
-           (vl-delete-emodwires-with-basenames basenames fal (cdr x)))
-          (t
-           (cons (car x)
-                 (vl-delete-emodwires-with-basenames basenames fal (cdr x))))))
+(define vl-gather-interestingly-disconnected
+  :short "Identify wires that are only partly disconnected."
+  ((walist       vl-wirealist-p    "Wire alist for the module.")
+   (disconnected vl-emodwirelist-p "Set of all disconnected wires."))
+  :returns (report string-listp)
+  :guard (setp disconnected)
+  (b* (((when (atom walist))
+        nil)
 
-  (local (in-theory (enable vl-delete-emodwires-with-basenames)))
+       (wires1 (mergesort (cdar walist)))
 
-  (defthm vl-emodwirelist-p-of-vl-delete-emodwires-with-basenames
-    (implies (force (vl-emodwirelist-p x))
-             (vl-emodwirelist-p (vl-delete-emodwires-with-basenames basenames fal x)))
-    :hints(("Goal" :in-theory (disable (force))))))
+       ((when (not (sets::intersectp wires1 disconnected)))
+        ;; None of these wires are disconnected; not interesting.
+        (vl-gather-interestingly-disconnected (cdr walist) disconnected))
 
+       ((when (subset wires1 disconnected))
+        ;; All of these wires are disconnected; not interesting.
+        (vl-gather-interestingly-disconnected (cdr walist) disconnected))
 
+       ;; Otherwise, interesting because only some bits are disconnected.
+       (wires1-dis  (intersect wires1 disconnected))
+       (summary     (vl-verilogify-emodwirelist wires1-dis))
 
-(defsection vl-gather-interestingly-disconnected
+       (max  (nfix (vl-emodwire->index (car (cdar walist)))))
+       (min  (nfix (vl-emodwire->index (car (last (cdar walist))))))
 
-; This is kind of goofy.  The goal is to find wires where only part of the wire
-; is disconnected.
+       (msg (with-local-ps
+             (vl-cw "bits ~&0 from [~x1:~x2]" summary max min))))
+    (cons msg
+          (vl-gather-interestingly-disconnected (cdr walist) disconnected))))
 
-  (defund vl-gather-interestingly-disconnected (walist disconnected)
-    (declare (xargs :guard (and (vl-wirealist-p walist)
-                                (vl-emodwirelist-p disconnected)
-                                (setp disconnected))))
-    (b* (((when (atom walist))
-          nil)
-
-         (wires1 (mergesort (cdar walist)))
-
-         ((when (not (sets::intersectp wires1 disconnected)))
-          ;; None of these wires are disconnected; not interesting.
-          (vl-gather-interestingly-disconnected (cdr walist) disconnected))
-
-         ((when (subset wires1 disconnected))
-          ;; All of these wires are disconnected; not interesting.
-          (vl-gather-interestingly-disconnected (cdr walist) disconnected))
-
-         ;; Otherwise, interesting because only some bits are disconnected.
-         (wires1-dis  (intersect wires1 disconnected))
-         (summary     (vl-verilogify-emodwirelist wires1-dis))
-
-         (max  (nfix (vl-emodwire->index (car (cdar walist)))))
-         (min  (nfix (vl-emodwire->index (car (last (cdar walist))))))
-
-         (msg (with-local-ps
-               (vl-cw "bits ~&0 from [~x1:~x2]" summary max min))))
-      (cons msg
-            (vl-gather-interestingly-disconnected (cdr walist) disconnected))))
-
-  (local (in-theory (enable vl-gather-interestingly-disconnected)))
-
-  (defthm string-listp-of-vl-gather-interestingly-disconnected
-    (implies (and (force (vl-wirealist-p walist))
-                  (force (vl-emodwirelist-p disconnected))
-                  (force (setp disconnected)))
-             (string-listp
-              (vl-gather-interestingly-disconnected walist disconnected)))))
-
-(defund strcat-like-tilde-& (x)
-  (declare (xargs :guard (string-listp x)))
+(define strcat-like-tilde-& ((x string-listp))
+  :short "Join together strings, separating them with commas and a final \"and.\""
+  :returns (joined stringp :rule-classes :type-prescription)
   (if (atom x)
       ""
     (cat (car x)
          (if (atom (cdr x))
              ""
            (cat (if (consp (cddr x)) ", " " and ")
-                (strcat-like-tilde-& (cdr x)))))))
+                (strcat-like-tilde-& (cdr x))))))
+  ///
+  (assert! (equal (strcat-like-tilde-& '("A")) "A"))
+  (assert! (equal (strcat-like-tilde-& '("A" "B")) "A and B"))
+  (assert! (equal (strcat-like-tilde-& '("A" "B" "C")) "A, B and C"))
+  (assert! (equal (strcat-like-tilde-& '("A" "B" "C" "D")) "A, B, C and D")))
 
-(assert! (equal (strcat-like-tilde-& '("A")) "A"))
-(assert! (equal (strcat-like-tilde-& '("A" "B")) "A and B"))
-(assert! (equal (strcat-like-tilde-& '("A" "B" "C")) "A, B and C"))
-(assert! (equal (strcat-like-tilde-& '("A" "B" "C" "D")) "A, B, C and D"))
 
+(define vl-module-find-disconnected
+  :short "Find disconnected wires in a module."
+  ((x vl-module-p))
+  :returns (new-x vl-module-p "Perhaps extended with warnings."
+                  :hyp :fguard)
 
+  :prepwork
+  ((local (defthm vl-emodwirelist-p-of-append-domains
+            (implies (vl-wirealist-p x)
+                     (vl-emodwirelist-p (append-domains x))))))
 
-(defsection vl-module-find-disconnected
+  (b* (((vl-module x) x)
 
-  (local (defthm vl-emodwirelist-p-of-append-domains
-           (implies (vl-wirealist-p x)
-                    (vl-emodwirelist-p (append-domains x)))))
+       (all-exprs
+        (cwtime (vl-module-allexprs-exec x nil)
+                :mintime 1/2))
 
-  (defund vl-module-find-disconnected (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((vl-module x) x)
+       ((mv ?successp walist-warnings walist)
+        (cwtime (vl-module-wirealist x nil)
+                :mintime 1/2))
 
-         (all-exprs
-          (cwtime (vl-module-allexprs-exec x nil)
-                  :mintime 1/2))
+       ((with-fast walist))
 
-         ((mv ?successp walist-warnings walist)
-          (cwtime (vl-module-wirealist x nil)
-                  :mintime 1/2))
+       ((mv collect-warnings connected-wires)
+        (cwtime (vl-exprlist-allwires all-exprs walist)
+                :mintime 1/2))
 
-         ((with-fast walist))
+       (all-wires          (mergesort (append-domains walist)))
+       (connected-wires    (mergesort connected-wires))
+       (disconnected-wires (difference all-wires connected-wires))
 
-         ((mv collect-warnings connected-wires)
-          (cwtime (vl-exprlist-allwires all-exprs walist)
-                  :mintime 1/2))
+       ;; Originally we reported the disconnected-wires, but that was stupid
+       ;; because we don't care if this particular module uses all of the bits
+       ;; of a HID it refers to.  So, suppress any disconnected hids.
+       (hid-netdecls       (vl-collect-flattened-hids x.netdecls))
+       (hid-names          (vl-netdecllist->names hid-netdecls))
+       (hid-names-fal      (make-lookup-alist hid-names))
+       (disconnected-wires (redundant-mergesort
+                            (vl-delete-emodwires-with-basenames hid-names hid-names-fal
+                                                                disconnected-wires)))
+       (-                  (fast-alist-free hid-names-fal))
 
-         (all-wires          (mergesort (append-domains walist)))
-         (connected-wires    (mergesort connected-wires))
-         (disconnected-wires (difference all-wires connected-wires))
+       (interesting        (vl-gather-interestingly-disconnected walist disconnected-wires))
 
-         ;; Originally we reported the disconnected-wires, but that was stupid
-         ;; because we don't care if this particular module uses all of the
-         ;; bits of a HID it refers to.  So, suppress any disconnected hids.
-         (hid-netdecls       (vl-collect-flattened-hids x.netdecls))
-         (hid-names          (vl-netdecllist->names hid-netdecls))
-         (hid-names-fal      (make-lookup-alist hid-names))
-         (disconnected-wires (redundant-mergesort
-                              (vl-delete-emodwires-with-basenames hid-names hid-names-fal
-                                                                  disconnected-wires)))
-         (-                  (fast-alist-free hid-names-fal))
+       (human-readable     (vl-verilogify-emodwirelist disconnected-wires))
+       (warnings           (append-without-guard collect-warnings
+                                                 walist-warnings
+                                                 x.warnings))
+       (warnings
+        ;; Including the module name is important since this happens after
+        ;; unparameterization -- for unparameterized modules, the user may
+        ;; need to see the foo$size=5 part for the message to make sense.
+        (cond ((not disconnected-wires)
+               warnings)
+              ((or collect-warnings walist-warnings)
+               (warn :type :vl-warn-disconnected
+                     :msg "In ~m0, it appears that the following ~s1 not ~
+                           connected to anything, but note that there were ~
+                           errors ~s2, so these results may not be accurate: ~
+                           ~&3."
+                     :args (list x.name
+                                 (if (vl-plural-p disconnected-wires)
+                                     "wires are"
+                                   "wire is")
+                                 (cond ((and collect-warnings walist-warnings)
+                                        "generating and collecting wires")
+                                       (collect-warnings
+                                        "collecting wires")
+                                       (t
+                                        "generating wires"))
+                                 human-readable)))
+              (t
+               (warn :type :vl-warn-disconnected
+                     :msg "In ~m0, the following ~s1 not connected to anything: ~&2."
+                     :args (list x.name
+                                 (if (vl-plural-p disconnected-wires)
+                                     "wires are"
+                                   "wire is")
+                                 human-readable)))))
 
-         (interesting        (vl-gather-interestingly-disconnected walist disconnected-wires))
+       (warnings
+        (if (not interesting)
+            warnings
+          (warn :type :vl-warn-disconnected-interesting
+                :msg (cat "In ~m0, among the disconnected wires we found, ~
+                           these are somewhat interesting because only a ~
+                           portion of the wire is disconnected: "
+                          (strcat-like-tilde-& interesting))
+                :args (list x.name)))))
+    (change-vl-module x :warnings warnings))
 
-         (human-readable     (vl-verilogify-emodwirelist disconnected-wires))
-         (warnings           (append-without-guard collect-warnings
-                                                   walist-warnings
-                                                   x.warnings))
-         (warnings
-          ;; Including the module name is important since this happens after
-          ;; unparameterization -- for unparameterized modules, the user may
-          ;; need to see the foo$size=5 part for the message to make sense.
-          (cond ((not disconnected-wires)
-                 warnings)
-                ((or collect-warnings walist-warnings)
-                 (cons (make-vl-warning
-                        :type :vl-warn-disconnected
-                        :msg "In ~m0, it appears that the following ~s1 not connected ~
-                              to anything, but note that there were errors ~
-                              ~s2, so these results may not be accurate: ~&3."
-                        :args (list x.name
-                                    (if (vl-plural-p disconnected-wires)
-                                        "wires are"
-                                      "wire is")
-                                    (cond ((and collect-warnings walist-warnings)
-                                           "generating and collecting wires")
-                                          (collect-warnings
-                                           "collecting wires")
-                                          (t
-                                           "generating wires"))
-                                    human-readable)
-                        :fatalp nil
-                        :fn 'vl-module-find-disconnected)
-                       warnings))
-                (t
-                 (cons (make-vl-warning
-                        :type :vl-warn-disconnected
-                        :msg "In ~m0, the following ~s1 not connected to anything: ~&2."
-                        :args (list x.name
-                                    (if (vl-plural-p disconnected-wires)
-                                        "wires are"
-                                      "wire is")
-                                    human-readable)
-                        :fatalp nil
-                        :fn 'vl-module-find-disconnected)
-                       warnings))))
-
-         (warnings
-          (if (not interesting)
-              warnings
-            (cons (make-vl-warning
-                   :type :vl-warn-disconnected-interesting
-                   :msg (cat "In ~m0, among the disconnected wires we found, ~
-                              these are somewhat interesting because only a ~
-                              portion of the wire is disconnected: "
-                             (strcat-like-tilde-& interesting))
-                   :args (list x.name)
-                   :fatalp nil
-                   :fn 'vl-module-find-disconnected)
-                  warnings))))
-      (change-vl-module x :warnings warnings)))
-
-  (local (in-theory (enable vl-module-find-disconnected)))
-
-  (defthm vl-module-p-of-vl-module-find-disconnected
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-find-disconnected x))))
-
+  ///
   (defthm vl-module->name-of-vl-module-find-disconnected
     (equal (vl-module->name (vl-module-find-disconnected x))
            (vl-module->name x))))
 
 
-(defsection vl-modulelist-find-disconnected-aux
-
-  (defprojection vl-modulelist-find-disconnected-aux (x)
-    (vl-module-find-disconnected x)
-    :guard (vl-modulelist-p x)
-    :result-type vl-modulelist-p)
-
-  (local (in-theory (enable vl-modulelist-find-disconnected-aux)))
-
+(defprojection vl-modulelist-find-disconnected-aux (x)
+  (vl-module-find-disconnected x)
+  :guard (vl-modulelist-p x)
+  :result-type vl-modulelist-p
+  ///
   (defthm vl-modulelist->names-of-vl-modulelist-find-disconnected-aux
     (equal (vl-modulelist->names (vl-modulelist-find-disconnected-aux x))
            (vl-modulelist->names x))))
 
-(defun vl-modulelist-find-disconnected (x)
-  (declare (xargs :guard (vl-modulelist-p x)))
+(define vl-modulelist-find-disconnected ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p :hyp :fguard)
   (b* ((ans (vl-modulelist-find-disconnected-aux x)))
     (clear-memoize-table 'vl-module-wirealist)
-    ans))
+    ans)
+  ///
+  (defthm vl-modulelist->names-of-vl-modulelist-find-disconnected
+    (equal (vl-modulelist->names (vl-modulelist-find-disconnected x))
+           (vl-modulelist->names x))))
+

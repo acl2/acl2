@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -165,61 +165,58 @@ vl-fast-module-complete-p) for a faster alternative.</p>"
     (vl-has-modules names mods)))
 
 
-(defsection vl-fast-has-modules-of-vl-modinstlist->modnames
+(define vl-fast-has-modules-of-vl-modinstlist->modnames
   :parents (hierarchy completeness)
   :short "Fused (@(see vl-fast-has-modules) of @(see vl-modinstlist->modnames)"
+  ((x        vl-modinstlist-p)
+   (mods     vl-modulelist-p)
+   (modalist (equal modalist (vl-modalist mods))))
+  :enabled t
+  (mbe :logic
+       (vl-has-modules (vl-modinstlist->modnames x) mods)
+       :exec
+       (or (atom x)
+           (and (vl-fast-has-module (vl-modinst->modname (car x)) mods modalist)
+                (vl-fast-has-modules-of-vl-modinstlist->modnames (cdr x) mods modalist)))))
 
-  (defun vl-fast-has-modules-of-vl-modinstlist->modnames (x mods modalist)
-    (declare (xargs :guard (and (vl-modinstlist-p x)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods))))
-             (ignorable mods))
-    (mbe :logic
-         (vl-has-modules (vl-modinstlist->modnames x) mods)
-         :exec
-         (or (atom x)
-             (and (vl-fast-has-module (vl-modinst->modname (car x)) mods modalist)
-                  (vl-fast-has-modules-of-vl-modinstlist->modnames (cdr x) mods modalist))))))
-
-
-(defsection vl-fast-module-complete-p
+(define vl-fast-module-complete-p
   :parents (hierarchy completeness)
   :short "@(see vl-modalist)-optimized version of @(see vl-module-complete-p)."
+  ((x        vl-module-p)
+   (mods     vl-modulelist-p)
+   (modalist (equal modalist (vl-modalist mods))))
+  :enabled t
+  :inline t
+  (mbe :logic
+       (vl-module-complete-p x mods)
+       :exec
+       (vl-fast-has-modules-of-vl-modinstlist->modnames
+        (vl-module->modinsts x) mods modalist)))
 
-  (definline vl-fast-module-complete-p (x mods modalist)
-    (declare (xargs :guard (and (vl-module-p x)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods))))
-             (ignorable mods))
-    (mbe :logic
-         (vl-module-complete-p x mods)
-         :exec
-         (vl-fast-has-modules-of-vl-modinstlist->modnames
-          (vl-module->modinsts x) mods modalist))))
-
-
-(defsection vl-fast-has-modules-of-vl-modulelist-everinstanced
+(define vl-fast-has-modules-of-vl-modulelist-everinstanced
   :parents (hierarchy completeness)
   :short "Fused @(see vl-fast-has-modules) of @(see vl-modulelist-everinstanced)"
+  ((x        vl-modulelist-p)
+   (mods     vl-modulelist-p)
+   (modalist (equal modalist (vl-modalist mods))))
+  :enabled t
+  (mbe :logic
+       (vl-has-modules (vl-modulelist-everinstanced x) mods)
+       :exec
+       (or (atom x)
+           (and (vl-fast-has-modules-of-vl-modinstlist->modnames
+                 (vl-module->modinsts (car x)) mods modalist)
+                (vl-fast-has-modules-of-vl-modulelist-everinstanced
+                 (cdr x) mods modalist)))))
 
-  (defun vl-fast-has-modules-of-vl-modulelist-everinstanced (x mods modalist)
-    (declare (xargs :guard (and (vl-modulelist-p x)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods)))))
-    (mbe :logic
-         (vl-has-modules (vl-modulelist-everinstanced x) mods)
-         :exec
-         (or (atom x)
-             (and (vl-fast-has-modules-of-vl-modinstlist->modnames
-                   (vl-module->modinsts (car x)) mods modalist)
-                  (vl-fast-has-modules-of-vl-modulelist-everinstanced
-                   (cdr x) mods modalist))))))
 
-
-(defsection vl-modulelist-complete-p
+(define vl-modulelist-complete-p
   :parents (hierarchy completeness)
   :short "@(call vl-modulelist-complete-p) determines if every module that is
 instantiated in @('x') is defined in @('mods')."
+
+  ((x    vl-modulelist-p)
+   (mods vl-modulelist-p))
 
   :long "<p>We leave this function enabled, preferring to reason about it
 as a subset check.</p>
@@ -228,18 +225,17 @@ as a subset check.</p>
 @(see vl-modalist).  If you already have a modalist available to you, for
 better performance see @(see vl-fast-modulelist-complete-p).</p>"
 
-  (defun vl-modulelist-complete-p (x mods)
-    (declare (xargs :guard (and (vl-modulelist-p x)
-                                (vl-modulelist-p mods))))
-    (mbe :logic
-         (subsetp-equal (vl-modulelist-everinstanced x)
-                        (vl-modulelist->names mods))
-         :exec
-         (b* ((modalist (vl-modalist mods))
-              (result   (vl-fast-has-modules-of-vl-modulelist-everinstanced x mods modalist))
-              (-        (fast-alist-free modalist)))
-             result)))
-
+  :enabled t
+  (mbe :logic
+       (subsetp-equal (vl-modulelist-everinstanced x)
+                      (vl-modulelist->names mods))
+       :exec
+       (b* ((modalist (vl-modalist mods))
+            (result   (vl-fast-has-modules-of-vl-modulelist-everinstanced
+                       x mods modalist)))
+         (fast-alist-free modalist)
+         result))
+  ///
   (defthm vl-modulelist-meganames-when-complete
     (implies (vl-modulelist-complete-p x x)
              (equal (vl-modulelist-meganames x)
@@ -247,68 +243,60 @@ better performance see @(see vl-fast-modulelist-complete-p).</p>"
     :hints(("Goal" :in-theory (enable vl-modulelist-meganames)))))
 
 
-(defsection vl-fast-modulelist-complete-p
+(define vl-fast-modulelist-complete-p
   :parents (hierarchy completeness)
   :short "Faster alternative to @(see vl-modulelist-complete-p)."
 
+  ((x        vl-modulelist-p)
+   (mods     vl-modulelist-p)
+   (modalist (equal modalist (vl-modalist mods))))
+
   :long "<p>This improves upon @(see vl-modulelist-complete-p) by requiring you
 to provide it with the modalist to use.</p>"
-
-  (definline vl-fast-modulelist-complete-p (x mods modalist)
-    (declare (xargs :guard (and (vl-modulelist-p x)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods)))))
-    (mbe :logic
-         (vl-modulelist-complete-p x mods)
-         :exec
-         (vl-fast-has-modules-of-vl-modulelist-everinstanced x mods modalist))))
+  :enabled t
+  :inline t
+  (mbe :logic
+       (vl-modulelist-complete-p x mods)
+       :exec
+       (vl-fast-has-modules-of-vl-modulelist-everinstanced x mods modalist)))
 
 
-(defsection vl-module-check-complete
+
+
+
+(define vl-module-check-complete
   :parents (hierarchy completeness)
   :short "@(call vl-module-check-complete) annotates @('x') with any
 warnings about @(see completeness)."
 
+  ((x        vl-module-p)
+   (mods     vl-modulelist-p)
+   (modalist (equal modalist (vl-modalist mods))))
+
+  :returns (new-x vl-module-p :hyp (force (vl-module-p x)))
   :long "<p>If @('x') is incomplete, a fatal warning is added that says
 which missing modules it instantiates.</p>"
 
-  (define vl-module-check-complete (x mods modalist)
-    (declare (xargs :guard (and (vl-module-p x)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods)))))
-    (b* (((when (vl-fast-module-complete-p x mods modalist))
-          ;; No problems to report.
-          x)
-         ((vl-module x) x)
-         (referenced (mergesort (vl-modinstlist->modnames x.modinsts)))
-         (defined    (mergesort (vl-modulelist->names mods)))
-         (bad        (difference referenced defined))
-         (warnings   (cons (make-vl-warning
-                            :type :vl-incomplete
-                            :msg "~m0 attempts to instantiate undefined ~
-                                  module~s1 ~&2."
-                            :args (list x.name
-                                        (if (vl-plural-p bad) "s" "")
-                                        bad)
-                            :fatalp t
-                            :fn __function__)
-                           x.warnings))
-         (x-prime (change-vl-module x :warnings warnings)))
-      x-prime))
-
-  (local (in-theory (enable vl-module-check-complete)))
-
-  (defthm vl-module-p-of-vl-module-check-complete
-    (implies (and (force (vl-module-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods))))
-             (vl-module-p (vl-module-check-complete x mods modalist))))
-
+  (b* (((when (vl-fast-module-complete-p x mods modalist))
+        ;; No problems to report.
+        x)
+       ((vl-module x) x)
+       (referenced (mergesort (vl-modinstlist->modnames x.modinsts)))
+       (defined    (mergesort (vl-modulelist->names mods)))
+       (bad        (difference referenced defined))
+       (warnings   (fatal :type :vl-incomplete
+                          :msg "~m0 attempts to instantiate undefined ~
+                               module~s1 ~&2."
+                          :args (list x.name
+                                      (if (vl-plural-p bad) "s" "")
+                                      bad)
+                          :acc x.warnings))
+       (x-prime (change-vl-module x :warnings warnings)))
+    x-prime)
+  ///
   (defthm vl-module->name-of-vl-module-check-complete
     (equal (vl-module->name (vl-module-check-complete x mods modalist))
            (vl-module->name x))))
-
-
 
 (defprojection vl-modulelist-check-complete (x mods modalist)
   (vl-module-check-complete x mods modalist)
@@ -326,25 +314,26 @@ modalist.</p>"
             (vl-modulelist->names x)))))
 
 
-(defsection vl-modulelist-missing
+(define vl-modulelist-missing
   :parents (hierarchy missing)
   :short "@(call vl-modulelist-missing) gathers the names of any modules which
 are instantiated in the module list @('x') but are not defined in
 @('x'), and returns them as an ordered set."
 
-  (defund vl-modulelist-missing (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (mbe :logic
-         (let ((mentioned (mergesort (vl-modulelist-everinstanced x)))
-               (defined   (mergesort (vl-modulelist->names x))))
-           (difference mentioned defined))
-         :exec
+  ((x vl-modulelist-p))
+  :returns (names string-listp :hyp :fguard)
+
+  (mbe :logic
+       (let ((mentioned (mergesort (vl-modulelist-everinstanced x)))
+             (defined   (mergesort (vl-modulelist->names x))))
+         (difference mentioned defined))
+       :exec
 
 ; Some minor optimizations.  Since we're sorting the instnames anyway, we don't
 ; need to pay the price of reversing them and can just use the exec function
 ; directly.
 
-         (let* ((mentioned (mergesort (vl-modulelist-everinstanced-exec x nil)))
+       (let* ((mentioned (mergesort (vl-modulelist-everinstanced-exec x nil)))
 
 ; Also, since we often work with sets of modules, we can try to avoid
 ; mergesorting the names when they are known to be a set.  At best, this
@@ -357,9 +346,10 @@ are instantiated in the module list @('x') but are not defined in
 ; near its head that are out of order.  So, even when the setp check fails, it
 ; may often be that it fails pretty quickly.
 
-                (names     (vl-modulelist->names x))
-                (defined   (redundant-mergesort names)))
-           (difference mentioned defined))))
+              (names     (vl-modulelist->names x))
+              (defined   (redundant-mergesort names)))
+         (difference mentioned defined)))
+  ///
 
   (local (in-theory (enable vl-modulelist-missing)))
 
@@ -367,43 +357,33 @@ are instantiated in the module list @('x') but are not defined in
     (true-listp (vl-modulelist-missing x))
     :rule-classes :type-prescription)
 
-  (defthm string-listp-of-vl-modulelist-missing
-    (implies (force (vl-modulelist-p x))
-             (string-listp (vl-modulelist-missing x))))
-
   (defthm setp-of-vl-modulelist-missing
     (setp (vl-modulelist-missing x))))
 
 
-
-(defsection vl-modulelist-toplevel
+(define vl-modulelist-toplevel
   :parents (hierarchy)
   :short "@(call vl-modulelist-toplevel) gathers the names of any modules which
 are defined in the module list @('x') but are never instantiated in
 @('x'), and returns them as an ordered set."
 
-  (defund vl-modulelist-toplevel (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (mbe :logic
-         (let ((mentioned (mergesort (vl-modulelist-everinstanced x)))
-               (defined   (mergesort (vl-modulelist->names x))))
-           (difference defined mentioned))
-         :exec
-         ;; Optimizations as in vl-modulelist-missing
-         (let* ((mentioned (mergesort (vl-modulelist-everinstanced-exec x nil)))
-                (names     (vl-modulelist->names x))
-                (defined   (if (setp names) names (mergesort names))))
-           (difference defined mentioned))))
+  ((x vl-modulelist-p))
+  :returns (names string-listp :hyp :fguard)
 
-  (local (in-theory (enable vl-modulelist-toplevel)))
-
+  (mbe :logic
+       (let ((mentioned (mergesort (vl-modulelist-everinstanced x)))
+             (defined   (mergesort (vl-modulelist->names x))))
+         (difference defined mentioned))
+       :exec
+       ;; Optimizations as in vl-modulelist-missing
+       (let* ((mentioned (mergesort (vl-modulelist-everinstanced-exec x nil)))
+              (names     (vl-modulelist->names x))
+              (defined   (if (setp names) names (mergesort names))))
+         (difference defined mentioned)))
+  ///
   (defthm true-listp-of-vl-modulelist-toplevel
     (true-listp (vl-modulelist-toplevel x))
     :rule-classes :type-prescription)
-
-  (defthm string-listp-of-vl-modulelist-toplevel
-    (implies (force (vl-modulelist-p x))
-             (string-listp (vl-modulelist-toplevel x))))
 
   (defthm setp-of-vl-modulelist-toplevel
     (setp (vl-modulelist-toplevel x)))
@@ -416,11 +396,15 @@ are defined in the module list @('x') but are never instantiated in
     :hints((set-reasoning))))
 
 
-
-(defsection vl-modulelist-highlevel
+(define vl-modulelist-highlevel
   :parents (hierarchy)
   :short "@(call vl-modulelist-highlevel) gathers the names of any \"high
 level\" modules and return them as an ordered set."
+
+  ((x vl-modulelist-p)
+   (n natp "How many levels from the top to consider."))
+
+  :returns (names string-listp :hyp (force (vl-modulelist-p x)))
 
   :long "<p>We say a module is <b>top level</b> (@(see vl-modulelist-toplevel))
 when it is never instantiated by another module.  Similarly, we say that
@@ -433,37 +417,31 @@ these modules are possibly the \"big units\" in the chip.</p>
 <p>Historic note.  This function was once used in the \"unreasonable modules
 report.\" It may not be in use any more.</p>"
 
-  (defund vl-modulelist-highlevel (x n)
-    (declare (xargs :guard (and (vl-modulelist-p x)
-                                (natp n))
-                    :verify-guards nil))
-    (if (zp n)
-        nil
-      (let ((top (vl-modulelist-toplevel x)))
-        (union top
-               (vl-modulelist-highlevel (vl-delete-modules top x)
-                                        (- n 1))))))
-
-  (local (in-theory (enable vl-modulelist-highlevel)))
-
+  :verify-guards nil
+  (b* (((when (zp n))
+        nil)
+       (top (vl-modulelist-toplevel x)))
+    (union top
+           (vl-modulelist-highlevel (vl-delete-modules top x)
+                                    (- n 1))))
+  ///
   (defthm true-listp-of-vl-modulelist-highlevel
     (true-listp (vl-modulelist-highlevel x n))
-    :rule-classes :type-prescription)
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (disable (force)))))
 
   (defthm setp-of-vl-modulelist-highlevel
     (setp (vl-modulelist-highlevel x n)))
 
-  (defthm string-listp-of-vl-modulelist-highlevel
-    (implies (force (vl-modulelist-p x))
-             (string-listp (vl-modulelist-highlevel x n)))))
+  (verify-guards vl-modulelist-highlevel))
 
 
 
 (defsection vl-depalist-core-aux
-
-; Parent is the name of some module that contains these modinsts.  Alist is a
-; vl-depalist-p we are constructing.  Add "parent" to the list of parents for
-; every module named in modinsts.
+  :parents (vl-depalist)
+  :long "Parent is the name of some module that contains these modinsts.  Alist
+ is a vl-depalist-p we are constructing.  Add parent to the list of parents for
+ every module named in modinsts."
 
   (defund vl-depalist-core-aux (parent modinsts alist)
     (declare (xargs :guard (and (stringp parent)
@@ -506,10 +484,10 @@ report.\" It may not be in use any more.</p>"
 
 
 (defsection vl-depalist-core
-
-; X is a list of modules.  Add all the bindings for each module into the alist.
-; The resulting alist has values which are just ordinary lists, so we'll need
-; to sort them eventually.
+  :parents (vl-depalist)
+  :long "X is a list of modules.  Add all the bindings for each module into the
+ alist.  The resulting alist has values which are just ordinary lists, so we'll
+ need to sort them eventually."
 
   (defund vl-depalist-core (x alist)
     (declare (xargs :guard (and (vl-modulelist-p x)
@@ -570,7 +548,6 @@ report.\" It may not be in use any more.</p>"
                                       (vl-find-module par x)))))))))
 
 
-
 (defsection vl-depalist
   :parents (hierarchy)
   :short "Build a dependency graph for use in @(see vl-dependent-modules)."
@@ -583,8 +560,7 @@ description is given by the following theorem:</p>
   @(thm correctness-of-vl-depalist)
 
 <p>This alist is useful in dependency computations such as @(see
-vl-dependent-modules).  It satisfies @(see alistp), @(see vl-depalist-p), and
-@(see vl-set-values-p).</p>"
+vl-dependent-modules).</p>"
 
   (defund vl-depalist (x)
     (declare (xargs :guard (vl-modulelist-p x)))
@@ -933,7 +909,6 @@ right-hand side, but not in the left-hand side.</p>
 
 
 
-
 (defsection vl-dependent-modules
   :parents (hierarchy)
   :short "@(call vl-dependent-modules) gathers the names of all modules in
@@ -1116,9 +1091,9 @@ vl-necessary-modules).</p>"
 modules in @('mods') which are directly instanced by any module in
 @('names'), and returns them as an ordered set."
 
-  :long "<p>This is a logically simple function which we do not typically
-run.  See @(see vl-fast-necessary-modules) for a faster alternative which use a
-@(see vl-modalist) for faster lookups.</p>
+  :long "<p>This is a logically simple function which we do not typically run.
+See @(see vl-necessary-modules-direct-fast) for a faster alternative which use
+a @(see vl-modalist) for faster lookups.</p>
 
 <p>See also @(see vl-necessary-modules) for some additional discussion.</p>"
 
@@ -1255,22 +1230,23 @@ run.  See @(see vl-fast-necessary-modules) for a faster alternative which use a
 
 
 (defsection vl-necessary-modules-aux
+  :parents (vl-necessary-modules)
 
-; This is like vl-dependent-modules-aux, but for vl-necessary-modules
-; instead.  Prev and curr are lists of module names, and mods is the entire
-; list of modules.
-;
-; We are trying to compute the set of all modules which are necessary for
-; curr and prev.  We assume that all of prev's directly-instantiated modules
-; are already found within (curr U prev).
-;
-; So, we are looking for modules which are instantiated by modules in curr.
-; If all of these are already in curr U prev, we have reached a fixed point
-; and we can stop.
-;
-; Otherwise, newinsts - (curr U prev) contains all directly instantiated
-; modules for (curr U prev), so we can recursively begin looking for these
-; modules.
+  :long "<p>This is like vl-dependent-modules-aux, but for vl-necessary-modules
+instead.  Prev and curr are lists of module names, and mods is the entire list
+of modules.</p>
+
+<p>We are trying to compute the set of all modules which are necessary for curr
+and prev.  We assume that all of prev's directly-instantiated modules are
+already found within (curr U prev).</p>
+
+<p>So, we are looking for modules which are instantiated by modules in curr.
+If all of these are already in curr U prev, we have reached a fixed point
+and we can stop.</p>
+
+<p>Otherwise, newinsts - (curr U prev) contains all directly instantiated
+modules for (curr U prev), so we can recursively begin looking for these
+modules.</p>"
 
   (local (sets::use-osets-reasoning))
 
@@ -1630,7 +1606,7 @@ in @('names'), according to a @(see vl-deporder-alistp)."
 with entries for the modules whose level is now apparent."
 
   :long "<p>@('mods') are a list of modules, @('alist') is a partial
-@(see vl-deporder-alist), and @('sorted-cars') are the sorted cars of
+@(see vl-deporder-alistp), and @('sorted-cars') are the sorted cars of
 alist (which we have precomputed so we don't have to be recomputing it all the
 time.).</p>
 
@@ -1770,26 +1746,19 @@ order."
     :hints(("Goal" :in-theory (disable acl2::strip-cdrs-of-pairlis$)))))
 
 
-(defsection vl-deporder-sort
+(define vl-deporder-sort ((mods vl-modulelist-p))
   :parents (hierarchy)
-  :short "@(call vl-deporder-sort) reorders @('mods') so that they are
-listed in dependency order."
+  :short "Reorder modules into a dependency order (lowest-level modules first,
+top-level modules at the end of the list.)"
 
-  (defund vl-deporder-sort (mods)
-    (declare (xargs :guard (vl-modulelist-p mods)))
-    (b* ((order    (vl-deporder mods))
-         (allnames (vl-modulelist->names mods))
-         ((unless (equal (mergesort order) (mergesort allnames)))
-          (prog2$ (er hard? 'vl-deporder-sort "Expected all modules to be accounted for.")
-                  mods))
-         (modalist (vl-modalist mods))
-         (result   (vl-fast-find-modules order mods modalist))
-         (-        (fast-alist-free modalist)))
-      result))
-
-  (local (in-theory (enable vl-deporder-sort)))
-
-  (defthm vl-modulelist-p-of-vl-deporder-sort
-    (implies (force (vl-modulelist-p mods))
-             (vl-modulelist-p (vl-deporder-sort mods)))))
+  :returns (sorted-mods vl-modulelist-p :hyp :fguard)
+  (b* ((order    (vl-deporder mods))
+       (allnames (vl-modulelist->names mods))
+       ((unless (equal (mergesort order) (mergesort allnames)))
+        (prog2$ (raise "Expected all modules to be accounted for.")
+                mods))
+       (modalist (vl-modalist mods))
+       (result   (vl-fast-find-modules order mods modalist)))
+    (fast-alist-free modalist)
+    result))
 
