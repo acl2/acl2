@@ -1,0 +1,63 @@
+#! /bin/sh
+
+# This script should be run by executing
+
+#   make DOC
+
+# from the main ACL2 directory.  The environment variable ACL2 is used
+# in this script; it is typically set in ../GNUmakefile.  To run this
+# script directly in the doc/ directory, submit something like this:
+
+#   (export ACL2=~/acl2/devel/saved_acl2 ; ./create-doc)
+
+# It is our convention to keep the .fig and .gif files in graphics/
+# (under the main ACL2 source directory.  The present script copies
+# the *.gif files from that source to the doc/HTML subdirectory where
+# they will reside for convenient HTML access.
+
+if [ ! -d HTML ] ; then
+    mkdir HTML
+    chmod 775 HTML
+
+# Now copy the definitive .gif files over to HTML.
+
+    cp -p ../graphics/*.gif HTML
+
+# At one time we copid the license down to the HTML so the home
+# page can reference it, but this no longer seems necessary.
+
+# cp ../LICENSE HTML/LICENSE
+
+# Copy down the files we are allowed to change without rebuilding.
+
+    cp ../new.html HTML/new.html
+    mkdir HTML/installation
+    cp ../installation/installation.html HTML/installation/
+    cp ../installation/misc.html HTML/installation/
+    cp ../installation/obtaining-and-installing.html HTML/installation/
+    cp ../installation/requirements.html HTML/installation/
+    cp ../installation/using.html HTML/installation/
+    cp ../installation/windows7.html HTML/installation/
+    cp ../installation/windows-gcl-jared.html HTML/installation/
+    cp ../installation/installing-make.html HTML/installation/
+    cp ../other-releases.html HTML/other-releases.html
+    cp ../workshops.html HTML/workshops.html
+fi
+
+# Ok, now we are ready!
+
+# We expect ACL2 images to start up inside LP.  But rather than count
+# on that, we submit (value :q) to get us out of the loop and then
+# (lp) to get us back into the loop.
+
+echo '(value :q)' > workxxx
+echo '(lp)' >> workxxx
+echo '(certify-book "home-page")' >> workxxx
+echo ':u' >> workxxx
+echo '(include-book "home-page")' >> workxxx
+echo '(write-home-page-top)' >> workxxx
+echo ':q' >> workxxx
+echo "ACL2 = $ACL2"
+$ACL2 < workxxx > home-page.out
+
+rm -f workxxx

@@ -84,30 +84,15 @@ README
 serial.lisp
 
 doc:
+create-doc
 # The following is distributed but is not in the svn repository:
-acl2-code-size.txt
-create-acl2-code-size
-create-acl2-html
-create-acl2-tex
-create-acl2-texinfo
-# The following is distributed but is not in the svn repository:
-EMACS
+home-page.html
+home-page.lisp
 # The following is distributed but is not in the svn repository:
 HTML
-make-texinfo.el
+# The following is distributed but is not in the svn repository:
+manual
 README
-# The following is distributed but is not in the svn repository:
-TEX
-# unversioned-files.txt -- under svn control but not distributed
-write-acl2-code-size.lisp
-write-acl2-html.lisp
-write-acl2-texinfo.lisp
-
-# The following is distributed but is not in the svn repository:
-doc/EMACS:
-acl2-doc-emacs.info
-acl2-doc-emacs.info-*
-# acl2-doc-emacs.texinfo -- optional temporary file
 
 # The following is distributed but is not in the svn repository:
 doc/HTML:
@@ -128,11 +113,22 @@ windows7.html
 windows-gcl-jared.html
 
 # The following is distributed but is not in the svn repository:
-doc/TEX:
-# No longer distributed: acl2-book.dvi.gz
-# No longer distributed: acl2-book.ps.gz (but available from publications page)
+doc/manual:
+*
+
+# The following is distributed but is not in the svn repository:
+doc/manual/download:
+
+# The following is distributed but is not in the svn repository:
+doc/manual/images:
+*
+
+# The following is distributed but is not in the svn repository:
+doc/manual/lib:
+*
 
 emacs:
+acl2-doc.el
 emacs-acl2.el
 monitor.el
 README
