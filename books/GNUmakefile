@@ -49,7 +49,8 @@
 #
 #   everything    A very full build, including very slow books.  Most users
 #                 will not want to use this target.  It is useful for, e.g.,
-#                 regression testing before releases.
+#                 regression testing before releases.  Note that
+#                 EXCLUDED_PREFIXES may not work with the `everything' target.
 #
 #   <dirname>     There are targets for many top-level directories, e.g., you
 #                 may run "make coi" to build everything in coi/ directory,
