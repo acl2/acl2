@@ -134,7 +134,7 @@ endif # ifneq ($(BAD_LINKS), )
 # Also note that the parent directory provides some directory dependencies
 # that may need to be re-thought for the nonstd/ case at some point; but as
 # long as things are working, we leave well enough alone.
-include ../Makefile
+include ../GNUmakefile
 
 .PHONY: $(EXTRA_TARGETS)
 EXTRA_TARGETS := workshops/1999/calculus/book/tree/proof-outline

@@ -196,10 +196,10 @@
 (encapsulate
   ()
 
-  (local (include-book          "rtl/rel9/arithmetic/top" :dir :system))
+  (local (include-book
 ; Warning: Keep this linebreak.  This dependency is dealt with directly in
 ; the top-level Makefile for all the books, for other than ACL2(r).
-
+          "rtl/rel9/arithmetic/top" :dir :system))
 
   (defthm x*/y=1->x=y-ext
     (implies (and (rationalp x)
@@ -715,9 +715,10 @@
                   (integerp x))
              (integerp (mod x (/ y)))))
 
-  (local (include-book           "rtl/rel9/arithmetic/extra-rules" :dir :system)) ; for exp-invert
+  (local (include-book
 ; Warning: Keep this linebreak.  This dependency is dealt with directly in
 ; the top-level Makefile for all the books, for other than ACL2(r).
+          "rtl/rel9/arithmetic/extra-rules" :dir :system)) ; for exp-invert
 
   ; rule-classes nil
   (defthm exp-invert-ext

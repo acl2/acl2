@@ -649,7 +649,7 @@
                `(with-output
                  ,@(if noisy
                        nil
-                     '(:off  (expansion event warning prove proof-tree proof-checker summary)))
+                     '(:off  (history event warning prove proof-tree proof-checker summary)))
                  ,proof)
                state))))
 
