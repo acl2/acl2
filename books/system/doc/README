@@ -2,8 +2,18 @@ This directory supports building an ACL2 manual with the XDOC system.
 However, instead of opening the resulting manual/index.html in your
 browser, you might prefer to open the combined manual, which includes
 documentation not only for the ACL2 system but also for the ACL2
-community books.  The top-level Makefile in the books/ directory has
-instructions for how to build that combined manual.
+community books.  The ACL2 home page has instructions for downloading
+that manual.
+
+Most users should not need to read further, or even think about this
+directory.  In particular, to view the ACL2 User's Manual in a web
+browser, simply open the file doc/home-page.html that is distributed
+with ACL2.  If you are using an svn distribution, you may wish to
+update the documentation by standing in the top-level ACL2 directory
+and issuing the following command, where <my-acl2h> is the path to a
+CCL-based ACL2(h) executable: make DOC ACL2=<my-acl2h>.
+
+..........
 
 This directory contains files that allow you to produce the following:
 

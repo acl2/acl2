@@ -46,7 +46,21 @@
  `(defconst *acl2-broken-links-alist*
     ',*acl2-broken-links-alist*))
 
-; redundant (in acl2-doc.lisp), but necessary for render-doc-combined.lisp:
+; The following are redundant with events acl2-doc.lisp, but necessary for
+; render-doc-combined.lisp and probably for building the web-based ACL2-only
+; manual, too.
+
+(defconst *combined-manual-url*
+  "http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/")
+
+(defconst *combined-manual-link*
+  (concatenate 'string
+               "<a href='"
+               *combined-manual-url*
+               "'>"
+               *combined-manual-url*
+               "</a>"))
+
 (defun clhs (url title)
   (declare (xargs :guard (and (or (not url)
                                   (stringp url))

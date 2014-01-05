@@ -66,10 +66,9 @@
   :short "Documentation for the <a
   href=\"http://www.cs.utexas.edu/users/moore/acl2\">ACL2 Theorem Prover</a>."
 
-  :long "<p>This is a parent topic for most <see topic=\"@(url
-documentation)\">ACL2 documentation</see> that is written in the classic @(see
-doc-string) format.  (We take some liberties with the hierarchy to integrate
-certain topics into more appropriate places.)</p>")
+  :long "<p>This is a parent topic for ACL2 system @(see documentation).  (We
+take some liberties with the hierarchy present in the ACL2 User's Manual to
+integrate certain topics into more appropriate places.)</p>")
 
 (defxdoc acl2::broken-link
   :parents (documentation)
