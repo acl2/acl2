@@ -111,9 +111,7 @@
 #                         gzip /projects/acl2/v2-9/doc/TEX/acl2-book.ps
 #                         gzip /projects/acl2/v2-9/doc/TEX/acl2-book.dvi
 #   make DOC       ; Build xdoc manual and rebuild source file doc.lisp
-#   make LEGACY-DOC ; Build html and emacs info files
 #   make clean-doc ; Remove files created by make DOC
-#   make clean-legacy-doc ; Remove files created by make LEGACY-DOC
 #   make red       ; Just build full-size saved_acl2, but do so without pass 2
 #   make proofs    ; Assuming sources are compiled, initialize without skipping
 #                  ; proofs during pass 2.  Does not save an image.  Uses same
@@ -521,26 +519,50 @@ proofs: compile-ok
 
 .PHONY: DOC acl2-manual
 
-# We make doc.lisp last so that the possible "rebuild" message shows
-# up at the end.
+# The next target, DOC, is the target that should generally be used
+# for rebuilding the ACL2 User's Manual.  See the warnings for some
+# targets below.  Also note the following:
+# WARNING: even though this target may rebuild doc.lisp, that will not
+# update the documentation for the :DOC command at the terminal, of
+# course; for that, you'll need to rebuild ACL2.
 DOC: acl2-manual
-	$(MAKE) doc.lisp
+	cd books ; rm -f system/doc/render-doc.cert system/doc/rendered-doc.lsp
+	$(MAKE) doc.lisp doc/home-page.html
+
+# We remove doc/HTML before rebuilding it, in order to make sure that
+# it is up to date.  We could do that removal in doc/create-doc
+# instead, but this way create-doc provides an interface that makes
+# sense for most users, where the sources for the HTML/ files will not
+# be changing.  Still, we expect that doc/HTML is the main way people
+# will update the home page
+# WARNING: This target might be up to date even if the manual is out
+# of date with respect to books/system/doc/acl2-doc.lisp.  Consider
+# using the DOC target instead.
+doc/home-page.html: doc/home-page.lisp doc/manual
+	cd doc ; rm -rf HTML ; ./create-doc 2>&1 create-doc.out
+
+# WARNING: This target might be up to date even if the manual is out
+# of date with respect to books/system/doc/acl2-doc.lisp.  Consider
+# using the DOC target instead.
+doc/manual: books/system/doc/manual
+	rm -rf doc/manual
+	cp -pr books/system/doc/manual doc/manual
+	rm -rf doc/manual/download/*
 
 acl2-manual:
 	rm -rf books/system/doc/manual books/system/doc/acl2-manual.cert
-	cd books/system/doc ; ../../build/cert.pl acl2-manual
+	cd books ; make USE_QUICKLISP=1 system/doc/acl2-manual.cert
 
-# Warning: The dependency list just below isn't complete, since it
+# WARNING: The dependency list just below isn't complete, since it
 # doesn't consider what _those_ files depend on.
+# WARNING: even though this target may rebuild doc.lisp, that will not
+# update the documentation for the :DOC command at the terminal, of
+# course; for that, you'll need to rebuild ACL2.
 doc.lisp: books/system/doc/acl2-doc.lisp \
-	  books/system/doc/render-doc-base.lisp \
-	  books/system/doc/render-doc.lisp
+	  books/system/doc/render-doc.cert
 	if [ -f doc.lisp ] ; then \
 	  cp -p doc.lisp doc.lisp.backup ; \
 	fi
-	rm -f books/system/doc/rendered-doc.lsp
-	rm -f books/system/doc/render-doc.cert
-	cd books/system/doc ; ../../build/cert.pl render-doc.lisp
 	cp -p books/system/doc/rendered-doc.lsp doc.lisp
 	@diff doc.lisp doc.lisp.backup 2>&1 > /dev/null ; \
 	  if [ $$? != 0 ] ; then \
@@ -549,55 +571,11 @@ doc.lisp: books/system/doc/acl2-doc.lisp \
 	    echo "      you might wish to rebuild your ACL2 executable." ; \
 	  fi
 
-.PHONY: LEGACY-DOC HTML EMACS_TEX EMACS_ONLY STATS
+books/system/doc/render-doc.cert:
+	rm -f books/system/doc/rendered-doc.lsp
+	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert
 
-LEGACY-DOC: HTML EMACS_TEX STATS
-
-# Use ACL2_DOC_UNDOCUMENTED_FILE if you want to support broken links
-# (by having them point to a page acknowledging that the link is
-# broken, rather than by having doc/create-acl2-html simply fail).
-# Note that this only works for the HTML target, not for the EMACS_TEX
-# or EMACS_ONLY targets.
-HTML:
-	@if [ "$(ACL2)" = "" ]; then \
-	    ACL2="../../$(PREFIX)saved_acl2$(ACL2_SUFFIX)" ;\
-	    export ACL2 ;\
-	    doc/create-acl2-html ;\
-	else \
-	    ACL2=$(ACL2) ;\
-	    export ACL2 ;\
-	    doc/create-acl2-html ;\
-	fi
-
-# Note: doc/create-acl2-tex builds a ps file, so depends on texi2dvi
-# and dvips.  These might not be present on some systems (but is
-# present at UT CS and have been seen to be present on a Mac where
-# Latex is installed).  Use EMACS_ONLY instead of EMACS_TEX if you
-# want to avoid this issue.
-
-# Note that doc/create-acl2-texinfo certifies doc/write-acl2-texinfo,
-# but (for efficiency) doc/create-acl2-tex does not.
-EMACS_TEX:
-	@if [ "$(ACL2)" = "" ]; then \
-	    ACL2="./$(PREFIX)saved_acl2$(ACL2_SUFFIX)" ;\
-	    export ACL2 ;\
-	    doc/create-acl2-texinfo ; doc/create-acl2-tex ;\
-	else \
-	    ACL2=$(ACL2) ;\
-	    export ACL2 ;\
-	    doc/create-acl2-texinfo ; doc/create-acl2-tex ;\
-	fi
-
-EMACS_ONLY:
-	@if [ "$(ACL2)" = "" ]; then \
-	    ACL2="./$(PREFIX)saved_acl2$(ACL2_SUFFIX)" ;\
-	    export ACL2 ;\
-	    doc/create-acl2-texinfo ;\
-	else \
-	    ACL2=$(ACL2) ;\
-	    export ACL2 ;\
-	    doc/create-acl2-texinfo ;\
-	fi
+.PHONY: STATS
 
 # See the Essay on Computing Code Size in the ACL2 source code.
 STATS:
@@ -824,16 +802,6 @@ clean-doc:
 	cd books/system/doc ; ../../build/clean.pl
 	rm -rf books/system/doc/manual
 	rm -f books/system/doc/rendered-doc.lsp
-
-.PHONY: clean-legacy-doc
-clean-legacy-doc:
-	cd doc ; rm -f *.o *~* *#* TAGS *.c *.h *.data gazonk.* workxxx \
-	  *.lbin *.sbin *.fasl *.wfasl *.fas *.lib *.sparcf *.ufsl *.64ufasl *.ufasl *.x86f *.dfsl *.fn *.cert
-	rm -rf doc/EMACS
-	rm -rf doc/EMACS-old/
-	rm -rf doc/HTML
-	rm -rf doc/HTML-old
-	rm -rf doc/TEX
 
 .PHONY: clean-books
 clean-books:

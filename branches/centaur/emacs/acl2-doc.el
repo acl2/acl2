@@ -406,9 +406,12 @@ then restart the ACL2-Doc browser to view that manual."
 				    (goto-char (1+ start))
 				    (read (current-buffer))))))))))
       (cond ((arrayp sym) ;; [...]
-	     (let ((sym (aref sym 0)))
-	       (and (symbolp sym)
-		    (intern (upcase (symbol-name sym))))))
+	     (let ((ans (let ((sym (aref sym 0)))
+			  (and (symbolp sym)
+			       (intern (upcase (symbol-name sym)))))))
+	       (cond ((assoc ans (acl2-doc-state-alist))
+		      ans)
+		     (t 'BROKEN-LINK))))
 	    ((not (and sym (symbolp sym)))
 	     nil)
 	    (t
@@ -432,7 +435,8 @@ then restart the ACL2-Doc browser to view that manual."
 (defun acl2-doc-completing-read (prompt silent-error-p)
   (let* ((completion-ignore-case t)
          (default (acl2-doc-topic-at-point))
-         (default (and (assoc default (acl2-doc-state-alist))
+         (default (and (or (eq default 'BROKEN-LINK) ; optimization
+			   (assoc default (acl2-doc-state-alist)))
                        default))
          (value-read (completing-read
                       (if default
@@ -871,8 +875,16 @@ I if you want to initialize."))
 (define-key global-map "\C-tG" 'acl2-doc-go!)
 (define-key global-map "\C-t\C-G" 'acl2-doc-go)
 
-(define-key global-map "\C-Xaa" 'control-x-a-a-deprecated)
-(define-key global-map "\C-XaA" 'control-x-a-A-deprecated)
+; An early version of ACL2-Doc (from late 2013) used \C-Xaa to get to
+; the browsser instead of \C-tg.  We bind that key (and a related one,
+; \C-XaA), if not already bound, as a courtesy to early adopters of
+; ACL2-Doc.  After the release of v6-4 we should probably eliminate
+; these forms as well as the definitions of the two "-deprecated"
+; functions.
+(when (not (key-binding "\C-Xaa"))
+  (define-key global-map "\C-Xaa" 'control-x-a-a-deprecated))
+(when (not (key-binding "\C-XaA"))
+  (define-key global-map "\C-XaA" 'control-x-a-A-deprecated))
 
 (define-key acl2-doc-mode-map "g" 'acl2-doc-go)
 (define-key acl2-doc-mode-map "\C-M" 'acl2-doc-go!)

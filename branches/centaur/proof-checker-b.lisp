@@ -3054,10 +3054,6 @@
             (split-implies (fargn term 2))
             (mv (append (flatten-ands-in-lit (fargn term 1)) h) c))))
 
-(defun equiv-refinementp (equiv1 equiv2 wrld)
-  (member-eq equiv2
-             (getprop equiv1 'coarsenings nil 'current-acl2-world wrld)))
-
 (defun find-equivalence-hyp-term (term hyps target equiv w)
   ;; allows backchaining through IMPLIES
   (if (consp hyps)
@@ -3066,7 +3062,7 @@
               (if (or (variablep c)
                       (fquotep c)
                       (not (symbolp (ffn-symb c)))
-                      (not (equiv-refinementp (ffn-symb c) equiv w)))
+                      (not (refinementp (ffn-symb c) equiv w)))
                   (find-equivalence-hyp-term term (cdr hyps) target equiv w)
                 (let ((x (fargn c 1))
                       (y (fargn c 2)))
@@ -4112,7 +4108,7 @@
               (if (or (variablep c)
                       (fquotep c)
                       (not (symbolp (ffn-symb c)))
-                      (not (equiv-refinementp (ffn-symb c) equiv w)))
+                      (not (refinementp (ffn-symb c) equiv w)))
                   (find-equivalence-hyp-term-no-target
                    (1+ index) term (cdr hyps) equiv w)
                 (let* ((x (fargn c 1))

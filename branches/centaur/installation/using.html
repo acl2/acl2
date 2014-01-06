@@ -140,13 +140,13 @@ make certify-books-short
 <BR><HR><BR>
 <H3><A NAME="Certifying">Certifying ACL2 Books</A></H3>
 
-The <em>community books</em> have been contributed mainly by users and may
-be obtained
+The <em>community books</em> have been contributed mainly by users and
+may be obtained
 as <a href="obtaining-and-installing.html#Obtaining-books">explained
 elsewhere</a>, to create subdirectory <CODE>acl2-sources/books</CODE>.
 The general topic of books is discussed thoroughly in the ACL2
-documentation;
-see <CODE>http://www.cs.utexas.edu/users/moore/acl2/current/BOOKS.html</CODE>.
+see <A HREF="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/?topic=ACL2____BOOKS">books
+documentation</A>.
 
 <P>
 Books should be ``certified'' before they are used.  We do not distribute
@@ -234,105 +234,42 @@ Next proceed to the section on <A HREF="#Documentation">Documentation</A>.
 <H3><A NAME="Documentation">Documentation</A></H3>
 
 <P>
-ACL2's documentation is a hypertext document that, if printed in book
-form, is just over 2050 pages, or about 2.4 megabytes of gzipped
-postscript.  Its hypertext character makes it far more pleasing to
-read with an interactive browser.  The documentation is available in
-several formats: HTML, Texinfo, Postscript and ACL2 documentation
-strings, and more recently,
-in <a href="http://fv.centtech.com/acl2/latest/doc/">web-browsable form
-with some community books' documentation</a>, courtesy of Jared Davis.  The ACL2
-documentation is copyrighted by the Regents of the University of Texas
-under the terms of the LICENSE file distributed with ACL2.
+ACL2's documentation is a vast hypertext document that is copyrighted
+by the Regents of the University of Texas under the terms of the
+LICENSE file distributed with ACL2.  A more extensive <i>acl2+books
+combined manual</i> includes documentation for the books;
+see <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/?topic=COMMON-LISP____DOCUMENTATION">the
+documentation page in that manual</a>.  Both the ACL2 User's Manual
+and the more extensive acl2+books combined manual can be read
+in a
+<a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/?topic=ACL2____TOP">web
+browser</a>, in
+an <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/?topic=ACL2____ACL2-DOC">Emacs
+browser</a>, or
+at <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/?topic=ACL2____DOC">the
+terminal</a>.
 
 <P>
 Two Web-based guided tours of ACL2 are available from the home page
-noted below.  If you are already familiar with Nqthm, you might find
-it useful to look at the documentation node
-<CODE>NQTHM-TO-ACL2</CODE>.  Another useful documentation topic for
-beginning ACL2 users is the node <CODE>TUTORIAL</CODE>.
-
-<P>
-<B>HTML</B>
-<P>
-The ACL2 Home Page is
-<P>
+noted below, along with other introductory materials.  See "Start
+Here" near the top of the ACL2 Home Page, which can be viewed on the web
+at
 <CODE><A HREF="http://www.cs.utexas.edu/users/moore/acl2/index.html">http://www.cs.utexas.edu/users/moore/acl2/index.html</A></CODE>
-<P>
-
-The home page provides a selected bibliography, a search button (near the top
-of the page), guided tours of the system, and the complete hypertext
+and provides a selected bibliography, a search button (near the top of
+the page), guided tours of the system, and the complete hypertext
 documentation tree.
 
 <P>
-Once you have installed ACL2, the HTML form of the documentation is
-available locally as
-<I>dir</I><CODE>/acl2-sources/doc/HTML/acl2-doc.html</CODE>.
-<BR><BR>
-We urge you to browse your local copy of the documentation rather than
-our Web copy, simply to reduce Web traffic and the demand on our
-server.  (Macintosh users using MacOS 9 and earlier may, however, find
-filenames being truncated and hence will want to avoid the local
-documentation.)
-
-<P><B>Emacs Info</B><P>
-
-This is a very convenient format for accessing the ACL2 documentation from
-within Emacs.  In Emacs, invoke
-<PRE>
-meta-x info
-</PRE>
-and then, if you are unfamiliar with Info, type
-<PRE>
-control-h m
-</PRE>
-to see a list of commands available.  In particular, type
-<BR><BR>
-<CODE>g (</CODE><I>dir</I><CODE>/acl2-sources/doc/EMACS/acl2-doc-emacs.info)TOP</CODE><BR><BR>
-to enter the ACL2 documentation.  Alternatively, your system administrator can
-add an ACL2 node to the top-level Info menu.  The appropriate entry might read:
-<BR><BR>
-<CODE>* ACL2 i.j: (</CODE><I>dir</I><CODE>/acl2-sources/doc/EMACS/acl2-doc-emacs).</CODE><BR>
-&nbsp &nbsp &nbsp &nbsp &nbsp <CODE>Documentation for ACL2 version i.j.</CODE>
-<BR><BR>
-
-Note: The Emacs Info and Postscript versions of our documentation were
-created using the file <CODE>acl2-sources/doc/texinfo.tex</CODE> which
-is copyrighted by the Free Software Foundation, Inc.  (See that file
-for copyright and license information.)
+Once you have installed ACL2, you can browse the ACL2 system
+documentation locally by opening the home page in your browser to view
+the file
+<I>dir</I><CODE>/acl2-sources/doc/home-page.html</CODE>.
 
 <P>
 
-Users new to emacs may find it helpful to load into emacs the file
+Emacs users may find it helpful to load into emacs the file
 </CODE><I>dir</I><CODE>/acl2-sources/emacs/emacs-acl2.el</CODE>.  Utilities
 offered by this file are documented near the top of the file.
-
-<P><B>Postscript</B><P>
-
-The Postscript version of the documentation is not included in our
-normal distribution because it is so much less useful than the
-hyper-text versions.  But
-a <A HREF="http://www.cs.utexas.edu/users/moore/publications/acl2-book.ps.gz">gzipped
-Postscript (2.6 MB)</A> version is available.  It prints as a book of
-over 2200 pages and contains a Table of Contents and an index to all
-documented topics.
-
-<P><B>ACL2 Documentation Strings</B><P>
-
-The ACL2 system has facilities for browsing the documentation.  When you are in
-the ACL2 command loop, you may query the documentation on a given topic by
-typing the command
-<BR><BR>
-<CODE>:doc </CODE><I>topic</I>
-<BR><BR>
-where <I>topic</I> is the Lisp symbol naming the topic you want to
-learn about.  To learn more about the on-line documentation, type
-<CODE>:help</CODE> and then return.
-
-<P>
-Note, however, that you may find it more convenient to view the documentation
-in a web browser (starting at <CODE>doc/HTML/acl2-doc.html</CODE>) or in Emacs
-info (starting at <CODE>doc/EMACS/acl2-doc-emacs.info</CODE>).
 
 <p>
 
