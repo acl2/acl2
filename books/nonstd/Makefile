@@ -126,6 +126,11 @@ BAD_LINKS += misc/symbol-btree.* \
 # std/util/ is not yet supported in ACL2(r).
 BAD_LINKS += tools/defconsts.*
 
+# The arithmetic-3/extra book ext.lisp (included by top-ext.lisp) includes
+# stuff from rtl/rel9 that doesn't work in nonstd yet
+BAD_LINKS += arithmetic-3/extra/ext.* \
+             arithmetic-3/extra/top-ext.*
+
 ifneq ($(BAD_LINKS), )
 REMOVE_LINKS := $(shell rm -f $(BAD_LINKS))
 endif # ifneq ($(BAD_LINKS), )
