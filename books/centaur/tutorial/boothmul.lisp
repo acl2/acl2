@@ -394,7 +394,7 @@
 ;
 ; We used to do this using GL, but we now use a specialized theory for
 ; performing these sorts of proofs, developed in the book
-; stv-decomp-proofs.lisp.
+; stv-decomp-proofs.lisp. (See above include-book for file location.)
 
 
 ; Deciding whether to use GL or the specialized theory to perform the
@@ -444,7 +444,27 @@
                                              '(pairlis$-of-cons
                                                pairlis$-when-atom)))))))
 
+; For reference, here is the same decomposition lemma, but proven using GL
+; instead of the specialized theory:
 
+(local
+ (def-gl-thm boothmul-decomp-is-boothmul-via-GL
+   :hyp (boothmul-decomp-autohyps)
+   :concl (b* ((in-alist1 (boothmul-decomp-autoins))
+               (out-alist1 (stv-run (boothmul-decomp) in-alist1))
+
+               ((assocs pp0 pp1 pp2 pp3 pp4 pp5 pp6 pp7) out-alist1)
+               (in-alist2 (boothmul-decomp-autoins))
+               (out-alist2 (stv-run (boothmul-decomp) in-alist2))
+
+               (orig-in-alist (boothmul-direct-autoins))
+               (orig-out-alist (stv-run (boothmul-direct) orig-in-alist)))
+
+            (equal (cdr (assoc 'o out-alist2))
+                   (cdr (assoc 'o orig-out-alist))))
+   :g-bindings (boothmul-decomp-autobinds)))
+
+(local (in-theory (disable boothmul-decomp-is-boothmul-via-GL)))
 
 ; All that remains is to chain the above facts together.
 ;
