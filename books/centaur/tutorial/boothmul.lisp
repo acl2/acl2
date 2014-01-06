@@ -120,9 +120,9 @@
 
 
 ; So instead of trying to prove it directly, we'll try to do something smarter.
-; First well use the :overrides feature of STVs to allow us "cut" the circuit.
-; To draw a picture of what we're going to do, this is what our original module
-; looks like:
+; First we'll use the :overrides feature of STVs to allow us to "cut" the
+; circuit.  To draw a picture of what we're going to do, this is what our
+; original module looks like:
 ;
 ;  Inputs                              Outputs
 ;         __________________________
@@ -170,7 +170,7 @@
 ; In other words, anything we prove about boothmul-decomp is a proof about this
 ; new, cut module.  So we don't want this boothmul-decomp STV to have any part
 ; in our final theorem.  Instead, we want to prove something that is only in
-; terms of boothmul-direct!
+; terms of our original circuit, boothmul-direct!
 ;
 ; However, boothmul-decomp will be very useful for getting to this final
 ; theorem, as we'll now see.
@@ -392,10 +392,19 @@
 ;        |   |___|         |___|    |
 ;        |__________________________|
 ;
-; We could do this using GL, but sometimes this takes too much time even though
-; the two circuits we're comparing "should" be almost the same.  Instead, we
-; use a specialized theory for performing these sorts of proofs, developed in
-; the book stv-decomp-proofs.lisp.
+; We used to do this using GL, but we now use a specialized theory for
+; performing these sorts of proofs, developed in the book
+; stv-decomp-proofs.lisp.
+
+
+; Deciding whether to use GL or the specialized theory to perform the
+; composition proof is a judgement call.  Sometimes using GL takes too much
+; time, even though the two circuits being compared "should" be almost the
+; same.  In this case, the specialized theory should likely be used.  However,
+; if the decomposition/rewiring is such that the 4v-sexpr representations of
+; the circuits are completely different, but they still happen to be logically
+; equivalent, then GL should be used.  GL is necessary in this case, because
+; GL does not depend on the circuits being equal after sexpr rewriting.
 
 
 (local
