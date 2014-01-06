@@ -437,20 +437,6 @@ moreclean: clean
 ### Section: Miscellaneous custom support
 ##############################
 
-# Next, we deal with books that need special handling.
-
-# We assume that ACL2_HAS_REALS indicates a regression being done in
-# nonstd/.
-ifeq ($(ACL2_HAS_REALS), )
-
-# The following dependency is to be ignored in ACL2(r), where the
-# relevant include-book in arithmetic-3/extra/ext.lisp is guarded by
-# #-:non-standard-analysis.
-arithmetic-3/extra/ext.cert: rtl/rel9/arithmetic/top.cert \
-                             rtl/rel9/arithmetic/extra-rules.cert
-
-endif # ifeq ($(ACL2_HAS_REALS), )
-
 # BOZO.   make-event/local-elided stuff is tricky because it thinks it can tell whether
 # local-elided.lisp was provisionally certified or not, which doesn't
 # necessarily make any sense... this is the easiest way to fix it so that it

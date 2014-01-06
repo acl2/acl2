@@ -15,191 +15,16 @@
 
 (in-package "ACL2")
 
-; Theorems from arithmetic/top-with-meta
+; [Jared]: Note for ACL2(r) users!  If you were previously loading this book,
+; please now load the "ext-compat" book instead.  See comments there for an
+; explanation of why we split this book up into two books.
+
+(include-book "ext-compat") ;; Events that work with ACL2 and ACL2(r)
+
+; An encapsulate for rtl/rel9/arithmetic (which is not yet in books/nonstd/)
 (encapsulate
   ()
-
-  (local (include-book "arithmetic/top-with-meta" :dir :system))
-
-  ; Theorems about inequalities
-  (defthm /-inverts-order-1
-    (implies (and (< 0 x)
-                  (< x y)
-                  (real/rationalp x)
-                  (real/rationalp y))
-             (< (/ y) (/ x))))
-  
-  (defthm /-inverts-order-2
-    (implies (and (< y 0)
-                  (< x y)
-                  (real/rationalp x)
-                  (real/rationalp y))
-             (< (/ y) (/ x))))
-
-  (defthm /-inverts-weak-order
-    (implies (and (< 0 x)
-                  (<= x y)
-                  (real/rationalp x)
-                  (real/rationalp y))
-             (not (< (/ x) (/ y)))))
-
-  ; Theorems about equalities
-  (defthm equal-*-x-y-x
-    (equal (equal (* x y) x)
-           (or (equal x 0)
-               (and (equal y 1)
-                    (acl2-numberp x)))))
-
-  (defthm equal-*-x-y-y
-    (equal (equal (* x y) y)
-           (or (equal y 0)
-               (and (equal x 1)
-                    (acl2-numberp y)))))
-
-  (defthm equal-/
-   (implies (and (acl2-numberp x)
-                 (not (equal 0 x)))
-            (equal (equal (/ x) y)
-                   (equal 1 (* x y)))))
-
-; From rtl/rel5/arithmetic
-; Originally written as (mod (binary-* k x) (binary-* y k)), but we write is
-; this way because arithmetic-3 will rewrite (binary-* y k) to (binary-* k y).
-  (defthm mod-cancel-special-1-ext
-    (implies (if (acl2-numberp x)
-                 (if (rationalp k)
-                     (if (acl2-numberp y)
-                         (if (not (equal y '0))
-                             (not (equal k '0))
-                             'nil)
-                         'nil)
-                     'nil)
-                 'nil)
-             (equal (mod (binary-* k x) (binary-* k y))
-                    (binary-* k (mod x y)))))
-
-)
-
-; Theorems from ihs
-(encapsulate
-  ()
-
-  (local (include-book "ihs/ihs-definitions" :dir :system))
-  (local (include-book "ihs/ihs-lemmas" :dir :system))
-  (local (minimal-ihs-theory))
-
-  (defthm integerp-i/j-integerp-forward
-    (implies
-     (and (integerp (/ i j))
-	  (real/rationalp i)
-	  (integerp j)
-	  (not (zerop j)))
-     (integerp i))
-    :rule-classes
-    ((:forward-chaining
-      :corollary
-      (implies
-       (and (integerp (/ i j))
-	    (force (real/rationalp i))
-	    (integerp j)
-	    (force (not (equal 0 j))))
-       (integerp i)))
-     (:forward-chaining
-      :corollary
-      (implies
-       (and (integerp (* (/ j) i))
-	    (force (real/rationalp i))
-	    (integerp j)
-	    (force (not (equal 0 j))))
-       (integerp i)))))
-
-  (defthm justify-floor-recursion-ext
-    (implies
-     (and (force (real/rationalp x))
-          (force (real/rationalp y))
-          (force (not (equal 0 y))))
-     (and
-      (implies
-       (and (< 0 x)
-            (< 1 y))
-       (< (floor x y) x))
-      (implies
-       (and (< x -1)
-            (<= 2 y))
-       (< x (floor x y))))))
-
-; From arithmetic-2
-; Alternative: mod-x-y-=-x+y from IHS
-  (defthm mod-x-y-=-x-+-y-ext
-    (implies (and (rationalp x)
-                  (rationalp y)
-                (not (equal y 0))
-		(if (< 0 y)
-		    (and (< x 0)
-			 (<= (- x) y))
-		  (and (< 0 x)
-		       (<= y (- x)))))
-             (equal (mod x y) (+ x y)))
-    :rule-classes ((:rewrite :backchain-limit-lst 0)
-                   (:rewrite
-                    :corollary
-                    (implies (and (rationalp x)
-                                  (rationalp y)
-                                  (not (equal y 0)))
-                             (equal (equal (mod x y) (+ x y))
-                                    (if (< 0 y)
-                                        (and (< x 0)
-                                             (<= (- x) y))
-                                      (and (< 0 x)
-                                           (<= y (- x)))))))))
-
-  (defthm mod-x-i*j
-    (implies
-     (and (> i 0)
-	  (> j 0)
-	  (force (integerp i))
-	  (force (integerp j))
-	  (force (real/rationalp x)))
-     (equal (mod x (* i j))
-	    (+ (mod x i) (* i (mod (floor x i) j))))))
-
-  (defthm floor-x+i*k-i*j
-    (implies
-     (and (force (real/rationalp x))
-          (force (integerp i))
-          (force (integerp j))
-          (force (integerp k))
-          (< 0 i)
-          (< 0 j)
-          (<= 0 x)
-          (< x i))
-     (equal (floor (+ x (* i k)) (* i j))
-            (floor k j))))
-
-  (defthm mod-x+i*k-i*j
-    (implies
-     (and (force (real/rationalp x))
-          (force (integerp i))
-          (force (integerp j))
-          (force (integerp k))
-          (< 0 i)
-          (< 0 j)
-          (<= 0 x)
-          (< x i))
-     (equal (mod (+ x (* i k)) (* i j))
-            (+ x (* i (mod k j))))))
-
-)
-
-; An encapsulate for rtl/rel9/arithmetic.
-#-:non-standard-analysis ; rtl/rel9/ is not yet in books/nonstd/
-(encapsulate
-  ()
-
-  (local (include-book
-; Warning: Keep this linebreak.  This dependency is dealt with directly in
-; the top-level Makefile for all the books, for other than ACL2(r).
-          "rtl/rel9/arithmetic/top" :dir :system))
+  (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
   (defthm x*/y=1->x=y-ext
     (implies (and (rationalp x)
@@ -242,7 +67,7 @@
     (implies (rationalp x)
              (equal (integerp (* 1/2 (mod x 2)))
                     (integerp (* 1/2 x)))))
-  
+
   (defthm mod-1-integerp
     (implies (case-split (acl2-numberp x))
              (equal (integerp (mod x 1))
@@ -267,7 +92,7 @@
                     (if (not (rationalp (/ x y)))
                         x
                       (if (integerp (/ x y))
-                          0 
+                          0
                         (+ x (* -1 y (floor (* x (/ y)) 1)))
                         ))))))
 
@@ -327,7 +152,7 @@
      (implies (and (<= 0 m)
                    (case-split (rationalp m))
                    )
-              (<= (mod m n) m))  
+              (<= (mod m n) m))
      :rule-classes :linear)
 
   (defthm mod-sums-cancel-1
@@ -388,7 +213,7 @@
 
   (defthm mod-sum-elim-second
     (implies (and (case-split (not (complex-rationalp x1)))
-                  (case-split (not (complex-rationalp x2))) 
+                  (case-split (not (complex-rationalp x2)))
                   )
              (equal (mod (+ x1 (mod x2 y)) y)
                     (mod (+ x1 x2) y))))
@@ -396,7 +221,7 @@
   (defthm mod-sum-elim-second-gen
     (implies (and (integerp (/ y2 y))
                   (case-split (not (complex-rationalp x1)))
-                  (case-split (not (complex-rationalp x2))) 
+                  (case-split (not (complex-rationalp x2)))
                   (case-split (not (equal y 0)))
                   (case-split (rationalp y))
                   )
@@ -431,7 +256,7 @@
     (implies (case-split (rationalp y))
              (equal (complex-rationalp (mod x y))
                     (complex-rationalp x))))
-  
+
   (defthm mod-upper-bound-less-tight-rewrite
     (implies (and (case-split (< 0 y))
                   (case-split (not (complex-rationalp x)))
@@ -597,7 +422,7 @@
                           (rationalp y))
                    (equal (rationalp (+ y x))
                           (rationalp y)))))
-   
+
    (defthm rationalp-unary-divide
      (implies (case-split (acl2-numberp x))
               (equal (rationalp (/ x))
@@ -633,7 +458,7 @@
                      (if (and (complex-rationalp i) (complex-rationalp j) (rationalp (/ i j)))
                          (floor (/ i j) 1)
                        0))))
-   
+
    (defthm floor-of-rational-and-complex
      (implies (and (rationalp i)
                    (not (rationalp j))
@@ -642,7 +467,7 @@
                           0)
                    (equal (floor j i)
                           0))))
-   
+
    (defthm floor-when-arg-quotient-isnt-rational
      (implies (not (rationalp (* i (/ j))))
               (equal (floor i j) 0)))
@@ -681,7 +506,7 @@
                      (and (integerp (* 2 y))
                           (not (integerp y))
                           ))))
-   
+
   (defthm mod-bnd-3
     (implies (and (< m (+ (* a n) r))
 		  (<= (* a n) m)
@@ -715,10 +540,7 @@
                   (integerp x))
              (integerp (mod x (/ y)))))
 
-  (local (include-book
-; Warning: Keep this linebreak.  This dependency is dealt with directly in
-; the top-level Makefile for all the books, for other than ACL2(r).
-          "rtl/rel9/arithmetic/extra-rules" :dir :system)) ; for exp-invert
+  (local (include-book "rtl/rel9/arithmetic/extra-rules" :dir :system)) ; for exp-invert
 
   ; rule-classes nil
   (defthm exp-invert-ext
@@ -743,80 +565,4 @@
 
 )
 
-(encapsulate
-  ()
 
-  (local (include-book "arithmetic-2/meta/expt" :dir :system))
-  (local (include-book "arithmetic-2/meta/integerp" :dir :system))
-  
-  (defthm expt-1-linear-b
-    (implies (and (<= 0 x)
-                  (< x 1)
-                  (< 0 i)
-                  (real/rationalp x)
-                  (integerp i))
-             (< (expt x i) 1))
-    :rule-classes :linear)
-
-  (defthm expt-1-linear-d
-    (implies (and (<= 0 x)
-                  (<= x 1)
-                  (<= 0 i)
-                  (real/rationalp x)
-                  (integerp i))
-             (<= (expt x i) 1))
-    :rule-classes :linear)
-
-  (defthm expt-1-linear-h
-    (implies (and (< 0 x)
-                  (<= x 1)
-                  (< i 0)
-                  (real/rationalp x)
-                  (integerp i))
-             (<= 1 (expt x i)))
-    :rule-classes :linear)
-
-  (defthm nintegerp-expt
-    (implies (and (real/rationalp x)
-                  (< 1 x)
-                  (integerp n)
-                  (< n 0))
-             (not (integerp (expt x n))))
-    :hints (("Goal" :use nintegerp-expt-helper))
-    :rule-classes :type-prescription)
-
-)
-
-#|
-(encapsulate
-  ()
-
-  ; Expensive: adds ~9 seconds to test suite. Gain: 1.
-  (local (include-book "arithmetic-3/bind-free/top" :dir :system))
-  (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
-  
-  (defthm mod-x-y-=-x---y
-    (implies (and (and (rationalp x)
-                       (rationalp y)
-                       (not (equal y 0)))
-                  (if (< 0 y)
-                      (and (<= y x)
-                           (< x (* 2 y)))
-                    (and (<= x y)
-                         (< (* 2 y) x))))
-             (equal (mod x y) (- x y)))
-    :hints ((nonlinearp-default-hint stable-under-simplificationp hist pspv))
-    :rule-classes ((:rewrite :backchain-limit-lst 0)
-                   (:rewrite
-                    :corollary
-                    (implies (and (rationalp x)
-                                  (rationalp y)
-                                  (not (equal y 0)))
-                             (equal (equal (mod x y) (- x y))
-                                    (if (< 0 y)
-                                        (and (<= y x)
-                                             (< x (* 2 y)))
-                                      (and (<= x y)
-                                           (< (* 2 y) x))))))))
-)
-|#
