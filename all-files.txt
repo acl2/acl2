@@ -64,7 +64,6 @@ save-gprof.lsp
 serialize.lisp
 serialize-raw.lisp
 simplify.lisp
-sum-list-example.lisp
 # The following is distributed but is not in the svn repository:
 TAGS
 tau.lisp
@@ -114,7 +113,8 @@ windows-gcl-jared.html
 
 # The following is distributed but is not in the svn repository:
 doc/manual:
-*
+LICENSE
+*.*
 
 # The following is distributed but is not in the svn repository:
 doc/manual/download:

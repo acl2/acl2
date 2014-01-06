@@ -42,6 +42,7 @@ if [ ! -d HTML ] ; then
     cp ../installation/installing-make.html HTML/installation/
     cp ../other-releases.html HTML/other-releases.html
     cp ../workshops.html HTML/workshops.html
+    cp ../LICENSE HTML/LICENSE
 fi
 
 # Ok, now we are ready!
@@ -59,5 +60,7 @@ echo '(write-home-page-top)' >> workxxx
 echo ':q' >> workxxx
 echo "ACL2 = $ACL2"
 $ACL2 < workxxx > home-page.out
+
+cp home-page.html HTML/
 
 rm -f workxxx

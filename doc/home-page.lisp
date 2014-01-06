@@ -170,11 +170,11 @@ and <A HREF=\"http://www.cs.utexas.edu/users/moore/publications/hyper-card.html\
 
 <TR>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
-<A HREF=\"new.html\">
+<A HREF=\"HTML/new.html\">
 <IMG SRC=\"HTML/new04.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"new.html\">
+<A HREF=\"HTML/new.html\">
 Recent changes to this page</A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
@@ -195,24 +195,12 @@ Recent changes to this page</A>
 SRC=\"HTML/twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
-<A HREF=\"other-releases.html\">
+<A HREF=\"HTML/other-releases.html\">
 <IMG SRC=\"HTML/file04.gif\"  BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"other-releases.html\">
+<A HREF=\"HTML/other-releases.html\">
 Other Releases</A>
-</TD>
-</TR>
-
-<TR>
-<TD ALIGN=CENTER VALIGN=MIDDLE>
-<A HREF=\"#Contribute\">
-<IMG SRC=\"HTML/gift.gif\" BORDER=0></A>
-</TD>
-<TD>
-<A HREF=\"#Contribute\">
-How to contribute libraries and documentation
-</A>
 </TD>
 </TR>
 
