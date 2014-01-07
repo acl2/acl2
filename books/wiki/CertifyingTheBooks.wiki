@@ -1,43 +1,5 @@
 #summary How to certify all the books, for testing or use.
 
-Note: The version of ACL2 you use should match the version of the books you check out.  For example, if you are using ACL2 3.6, you should use the books from branches/3.6.  Minor version numbers (e.g. 3.6.1) may or may not have their own branches; if the matching branch does not exist, use the one numbered most closely before it.
+For instructions on certifying the books, please see the XDOC topic BOOKS-CERTIFICATION.
 
-If you encounter a build failure and the branch you are building is appropriate for the ACL2 version you are using, please either fix it or create a bug report on the [http://code.google.com/p/acl2-books/issues/list issues] page.
-
-= Creating the "standard" certification environment =
-
-It's probably easiest to:
-  # extract the current ACL2 distribution
-  # create a "books" subdirectory checked out from SVN
-  # build yourself an ACL2 image as usual to obtain the `saved_acl2` file
-
-Then, you can just go into the books directory and run `make` to certify the books, assuming that the command `acl2` invokes the desired ACL2 executable (otherwise, see next section).
-
-You can also use `make -j 2` if you have a dual-core system, `make -j 4` if you have four cores, etc., to instruct it to use more CPUs.
-
-
-= Using an alternate ACL2 image =
-
-You can use a different ACL2 image by explicitly using `make ACL2=/path/to/my-acl2 ...` when you certify.  *However*, you need to be careful because the other ACL2 image may have its own notion of where its system books are, which could lead you to a bizarre state where `(include-book "foo" :dir :system)` is being taken from your previous distribution instead of your SVN copy.  
-
-An easy way to fix this is to set the ACL2_SYSTEM_BOOKS variable in your `saved_acl2` script.  Your script will look something like this:
-
-{{{ 
-#!/bin/sh
-# Saved November 5, 2007  23:40:11
-
-exec "/[...]/gcl-saved_acl2.gcl" $*
-}}}
-
-And you just need to add two lines, as follows:
-
-{{{ 
-#!/bin/sh
-# Saved November 5, 2007  23:40:11
-
-export ACL2_SYSTEM_BOOKS
-ACL2_SYSTEM_BOOKS="/path/to/my/acl2-books"
-exec "/[...]/gcl-saved_acl2.gcl" $*
-}}}
-
-See also ACL2 documentation topic BOOKS-CERTIFICATION for more information.
+(The instructions that used to be here have been removed in an effort to consolidate the build instructions; see Issue 125 for details.)
