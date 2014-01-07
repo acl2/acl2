@@ -51,17 +51,25 @@
 ; manual, too.
 
 (defconst *combined-manual-url*
+; Warning: This event is redundant with one in acl2-doc.lisp.  Keep them in
+; sync.
   "http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/")
 
-(defconst *combined-manual-link*
+(defun combined-manual-link (filename)
+; Warning: This event is redundant with one in acl2-doc.lisp.  Keep them in
+; sync.
   (concatenate 'string
                "<a href='"
                *combined-manual-url*
+               (or filename "index.html")
                "'>"
                *combined-manual-url*
+               (or filename "index.html")
                "</a>"))
 
 (defun clhs (url title)
+; Warning: This event is redundant with one in acl2-doc.lisp.  Keep them in
+; sync.
   (declare (xargs :guard (and (or (not url)
                                   (stringp url))
                               (stringp title))))

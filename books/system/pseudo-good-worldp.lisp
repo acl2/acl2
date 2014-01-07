@@ -8,13 +8,23 @@
 
 ; This file defines the concept of a ``good world''.  But we wrestled with the
 ; question of how strong it should be.  Ultimately what we define is the
-; concept pseudo-good-worldp.  It will evolve under the demands of proofs about
-; system functions.  Every world "should" satisfy this predicate, though we are
-; aware of worlds created using trust tags that fail to do so, in particular
-; using community books in directories hacking/ and
-; workshops/2007/dillinger-et-al/code/.  In practice those worlds might well be
-; usable, but we should not be surprised when pseudo-good-worldp fails for such
-; worlds.
+; concept pseudo-good-worldp.  This is a relatively weak approximation of the
+; invariants we assume in the ACL2 system code.  (For example, this file checks
+; pseudo-termp for some parts of the world where termp is actually assumed, and
+; there are unchecked invariants assumed between components stored under
+; separate properties, e.g., pseudo-good-worldp does not check that the
+; ``equivalence relations'' stored in congruence rules are in fact known
+; equivalence relations.)  Failure of the actual world to satisfy these
+; unchecked assumptions could easily cause unsoundness or lead to hard errors.
+; Pseudo-good-worldp is both a combination of obvious shallow invariants we
+; assume plus properties required to do the proofs so far undertaken about
+; system code.  It will evolve under the demands of further proofs about system
+; functions and is liable to become more restrictive as more system properties.
+; Every world "should" satisfy this predicate, though we are aware of worlds
+; created using trust tags that fail to do so, in particular using community
+; books in directories hacking/ and workshops/2007/dillinger-et-al/code/.  In
+; practice those worlds might well be usable, but we should not be surprised
+; when pseudo-good-worldp fails for such worlds.
 
 ; But in the following discussion we talk about the undefined more generic
 ; notion ``good-worldp'' and its various possible meanings.
@@ -60,7 +70,7 @@
 ; ``super-strong'' sense of good-worldp uses termp but repeatly resets the
 ; relevant world to that current at the moment the relevant triple was stored.
 
-; Here we define just one versions of good-worldp, pseudo-good-worldp, which is
+; Here we define just one version of good-worldp, pseudo-good-worldp, which is
 ; designed to be suitable for most guard verification of functions taking world
 ; as an arg.  Of course, the proof is in the proofs, which will undoubtedly
 ; turn up ommissions from what is done initially.  Furthermore, our
