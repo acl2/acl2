@@ -203,8 +203,8 @@ has been developed by Matt Kaufmann, and has many features.</p>
 @(see jfkr), @(see milawa), @(see paco), @(see projects/leftist-trees), @(see
 sha-2), @(see taspi), and @(see wp-gen).</p>
 
-<p>We've added significant documentation has been added for many books and
-utilities, including at least:</p>
+<p>We've added significant documentation for many books and utilities,
+including at least:</p>
 
 <ul>
 <li>@(see cert.pl) - a build system for certifying ACL2 books</li>
