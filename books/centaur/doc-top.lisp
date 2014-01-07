@@ -49,10 +49,20 @@ other systems, productivity tools for better proof automation and debugging,
 and specialty libraries for areas like @(see hardware-verification).</p>
 
 <p>This manual was generated on <b>@(`(:raw (oslib::date))`)</b>.  It covers
-both ACL2 and the Community Books.  It is derived by combining the classic
-@(see doc-string)s found in the ACL2 source code and some books with the @(see
-xdoc) topics found in other books.  Besides just importing the documentation,
-we also rearrange the topic hierarchy to try to improve its organization.</p>
+both ACL2 and the Community Books.  It is derived by combining</p>
+
+<ul>
+
+<li>the documentation for the ACL2 system itself&mdash;mostly written by Matt
+Kaufmann and J Moore</li>
+
+<li>the documentation for many Community Books&mdash;contributed by numerous
+members of the ACL2 community</li>
+
+</ul>
+
+<p>Besides just importing the documentation, we also rearrange the topic
+hierarchy to try to provide a coherent organization.</p>
 
 <p>This manual is very much a work in progress.  If you would like to
 contribute to its development, please join the <a
