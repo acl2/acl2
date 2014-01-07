@@ -931,7 +931,98 @@ section, to rename variables like @('CERT_PL_CERTS'), etc.  See @('cert.pl
 --help') for a summary.</p>")
 
 
-(defxdoc |7. Distributed Builds|
+(defxdoc |7. Using Extended ACL2 Images|
+  :parents (cert.pl)
+  :short "(Advanced) how to get @(see cert.pl) to use @(see save-exec) images
+to certify parts of your project."
+
+  :long "<p>In most ACL2 projects, each book uses @(see include-book) to load
+all of its dependencies, and the same, \"stock\" ACL2 executable is used to
+certify every book.  This generally works well and certainly keeps things
+simple.</p>
+
+<p>By default, @('cert.pl') will simply try to certify all books using whatever
+ACL2 image is invoked with @('acl2'), or else whatever image it is told to use
+via the @('$ACL2') environment variable or the @('--acl2') option; see
+<i>Helping @('cert.pl') find ACL2</i> of @(see |0. Preliminaries|) for
+details.</p>
+
+<p>Unfortunately, this usual approach means that widely included books must be
+loaded repeatedly.  As your project grows, you may eventually find that you are
+spending a lot of time waiting for @(see include-book) commands.  One way to
+combat this is to use @(see save-exec) to write out a new ACL2 image that has
+your supporting books pre-loaded.  These extended ACL2 images can be re-started
+instantly.  For interactive development, images can be a very convenient way to
+quickly get back into a good starting place, with your supporting books already
+loaded.  Meanwhile, using images to re-certify books can significantly reduce
+the time spent waiting for @(see include-book) commands to finish.</p>
+
+<p>@('cert.pl') supports using extended images for certain books.  For this to
+work, you will need to get a few pieces working together.  The notes below
+explain the basics of how to set this up.  See also
+@('projects/milawa/ACL2/Makefile') for a working example of a project that uses
+around a dozen images to certify various directories of files.</p>
+
+<h3>Image Creation</h3>
+
+<p>Suppose you want to use @(see save-exec) to create an extended ACL2 image
+using the following script:</p>
+
+@({
+     ;; make-extended-acl2.lsp
+     (in-package \"ACL2\")
+     (include-book \"support\")
+     (save-exec \"extended-acl2\" \"Supporting libraries pre-loaded.\")
+})
+
+<p>While @('cert.pl') does have good support for using the resulting image to
+certify particular books, there is currently no way to directly tell
+@('cert.pl') that it needs to run this script to create the @('extended-acl2')
+image.  Instead, if you want to use extended ACL2 images, you will probably
+need to put together a @('Makefile').  See @(see |6. Static Makefiles|) for
+information about how to use @('cert.pl') to do the dependency scanning for
+your @('Makefile').</p>
+
+<p>In your @('Makefile'), you can easily explain what the dependencies of
+@('extended-acl2') are, and how to build it, e.g., as follows:</p>
+
+@({
+     extended-acl2: support.cert make-extended-acl2.lsp
+         @rm -f extended-acl2
+         $(ACL2) < make-extended-acl2.lsp &> extended-acl2.out
+         ls -l extended-acl2
+})
+
+
+<h3>Helping @('cert.pl') find your Images</h3>
+
+<p>For @('cert.pl') to find @('extended-acl2'), the easiest thing to do is make
+sure that it is located somewhere in your @('$PATH'), and we especially
+recommend this option if you are going to be invoking @('cert.pl')
+interactively, i.e., not exclusively from your @('Makefile').</p>
+
+<p>Alternately, @('cert.pl') accepts a @('--bin') option that can be used to
+indicate which directory will contain images.</p>
+
+
+<h3>Specifying the Image for each Book</h3>
+
+<p>To decide what image to use to certify @('foo.lisp'), @('cert.pl') will
+first look for a file named @('foo.image').  This file should contain a single
+line that just gives the name of the ACL2 image to use.  For instance, if we
+want to certify @('foo.lisp') using @('extended-acl2'), then @('foo.image')
+should simply contain:</p>
+
+@({
+     extended-acl2
+})
+
+<p>You can also write a @('cert.image') file to indicate a directory-wide
+default image to use.  (This is exactly analogous to how @('cert.pl') looks for
+@('.acl2') files for @(see |2. Pre Certify-Book Commands|).)</p>")
+
+
+(defxdoc |8. Distributed Builds|
   :parents (cert.pl)
   :short "(Advanced) how to distribute ACL2 book building over a cluster
 of machines."

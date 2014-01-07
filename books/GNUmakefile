@@ -850,6 +850,134 @@ critpath.txt: $(OK_CERTS)
 
 # Targets for building whole directories of books.
 
+# basic is the default set of books to build:
+.PHONY: basic
+basic: arithmetic arithmetic-2 arithmetic-3 arithmetic-5 ihs std str xdoc tools misc data-structures
+
+
+.PHONY: add-ons
+add-ons: $(filter add-ons/%, $(OK_CERTS))
+
+.PHONY: arithmetic
+arithmetic: $(filter arithmetic/%, $(OK_CERTS))
+
+.PHONY: arithmetic-2
+arithmetic-2: $(filter arithmetic-2/%, $(OK_CERTS))
+
+.PHONY: arithmetic-3
+arithmetic-3: $(filter arithmetic-3/%, $(OK_CERTS))
+
+.PHONY: arithmetic-5
+arithmetic-5: $(filter arithmetic-5/%, $(OK_CERTS))
+
+.PHONY: bdd
+bdd: $(filter bdd/%, $(OK_CERTS))
+
+.PHONY: ccg
+ccg: $(filter ccg/%, $(OK_CERTS))
+
+.PHONY: centaur
+centaur: $(filter centaur/%, $(OK_CERTS))
+
+.PHONY: cgen
+cgen: $(filter cgen/%, $(OK_CERTS))
+
+.PHONY: clause-processors
+clause-processors: $(filter clause-processors/%, $(OK_CERTS))
+
+.PHONY: coi
+coi: $(filter coi/%, $(OK_CERTS))
+
+.PHONY: cowles
+cowles: $(filter cowles/%, $(OK_CERTS))
+
+.PHONY: data-structures
+data-structures: $(filter-out data-structures/memories/%, $(filter data-structures/%, $(OK_CERTS)))
+
+.PHONY: defsort
+defsort: $(filter defsort/%, $(OK_CERTS))
+
+.PHONY: finite-set-theory
+finite-set-theory: $(filter finite-set-theory/%, $(OK_CERTS))
+
+.PHONY: hacking
+hacking: $(filter hacking/%, $(OK_CERTS))
+
+.PHONY: hints
+hints: $(filter hints/%, $(OK_CERTS))
+
+.PHONY: ihs
+ihs: $(filter ihs/%, $(OK_CERTS))
+
+.PHONY: make-event
+make-event: $(filter make-event/%, $(OK_CERTS))
+
+.PHONY: memoize
+memoize: $(filter memoize/%, $(OK_CERTS))
+
+.PHONY: meta
+meta: $(filter meta/%, $(OK_CERTS))
+
+.PHONY: misc
+misc: $(filter-out misc/misc2/%, $(filter misc/%, $(OK_CERTS)))
+
+.PHONY: models
+models: $(filter models/%, $(OK_CERTS))
+
+.PHONY: ordinals
+ordinals: $(filter ordinals/%, $(OK_CERTS))
+
+.PHONY: oslib
+oslib: $(filter oslib/%, $(OK_CERTS))
+
+.PHONY: parsers
+parsers: $(filter parsers/%, $(OK_CERTS))
+
+.PHONY: powerlists
+powerlists: $(filter powerlists/%, $(OK_CERTS))
+
+# projects are dealt with individually below
+
+.PHONY: proofstyles
+proofstyles: $(filter proofstyles/%, $(OK_CERTS))
+
+.PHONY: regex
+regex: $(filter regex/%, $(OK_CERTS))
+
+.PHONY: rtl
+rtl: $(filter rtl/%, $(OK_CERTS))
+
+.PHONY: serialize
+serialize: $(filter serialize/%, $(OK_CERTS))
+
+.PHONY: sorting
+sorting: $(filter sorting/%, $(OK_CERTS))
+
+.PHONY: std
+std: $(filter std/%, $(OK_CERTS))
+
+.PHONY: str
+str: $(filter str/%, $(OK_CERTS))
+
+.PHONY: system
+system: $(filter system/%, $(OK_CERTS))
+
+.PHONY: tau
+tau: $(filter tau/%, $(OK_CERTS))
+
+.PHONY: textbook
+textbook: $(filter textbook/%, $(OK_CERTS))
+
+.PHONY: tools
+tools: $(filter tools/%, $(OK_CERTS))
+
+.PHONY: unicode
+unicode: $(filter unicode/%, $(OK_CERTS))
+
+.PHONY: xdoc
+xdoc: $(filter xdoc/%, $(OK_CERTS))
+
+
 .PHONY: workshops \
         workshop1999 workshop2000 workshop2001 workshop2002 \
         workshop2003 workshop2004 workshop2006 workshop2007 \
@@ -868,47 +996,6 @@ workshop2009: $(filter workshops/2009/%, $(OK_CERTS))
 workshop2011: $(filter workshops/2011/%, $(OK_CERTS))
 workshop2013: $(filter workshops/2013/%, $(OK_CERTS))
 
-.PHONY: centaur
-centaur: $(filter centaur/%, $(OK_CERTS))
-
-.PHONY: coi
-coi: $(filter coi/%, $(OK_CERTS))
-
-.PHONY: xdoc
-xdoc: $(filter xdoc/%, $(OK_CERTS))
-
-.PHONY: std
-std: $(filter std/%, $(OK_CERTS))
-
-.PHONY: str
-str: $(filter str/%, $(OK_CERTS))
-
-.PHONY: arithmetic
-arithmetic: $(filter arithmetic/%, $(OK_CERTS))
-
-.PHONY: arithmetic-2
-arithmetic-2: $(filter arithmetic-2/%, $(OK_CERTS))
-
-.PHONY: arithmetic-3
-arithmetic-3: $(filter arithmetic-3/%, $(OK_CERTS))
-
-.PHONY: arithmetic-5
-arithmetic-5: $(filter arithmetic-5/%, $(OK_CERTS))
-
-.PHONY: ihs
-ihs: $(filter ihs/%, $(OK_CERTS))
-
-.PHONY: tools
-tools: $(filter tools/%, $(OK_CERTS))
-
-.PHONY: misc
-misc: $(filter-out misc/misc2/%, $(filter misc/%, $(OK_CERTS)))
-
-.PHONY: data-structures
-data-structures: $(filter-out data-structures/memories/%, $(filter data-structures/%, $(OK_CERTS)))
-
-.PHONY: basic
-basic: arithmetic arithmetic-2 arithmetic-3 arithmetic-5 ihs std str xdoc tools misc data-structures
 
 
 # Projects targets:

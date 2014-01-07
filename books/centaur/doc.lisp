@@ -501,5 +501,6 @@ circuits, etc.")
       "new-doc.lsp")
      (xdoc::save "./manual"
                  :import nil
+                 :redef-okp t
                  :expand-level 2)
      (value `(value-triple :manual)))))
