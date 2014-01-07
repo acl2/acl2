@@ -37,7 +37,7 @@
   :short "Release notes for the ACL2 Community Books for ACL2 6.4 (January,
 2013)."
 
-; Currently covered: through revision 2371.
+; Currently covered: through revision 2390.
 
   :long "<p>The following is a brief summary of changes made to the <a
 href='http://acl2-books.googlecode.com/'>Community Books</a> between the
@@ -54,38 +54,13 @@ href='http://code.google.com/p/acl2-books/source/list'>commit log</a>.</p>
 Community Books could take several hours.  Starting in ACL2 6.4, the default
 build is much faster because it <b>excludes many books</b>.</p>
 
-<p>This particularly affects what happens when you run commands such as @('make
-regression') from the ACL2 directory, or @('make') from the @('books')
-directory.  These commands will now certify only the following, widely used
-books:</p>
+<p>This particularly affects what happens when you run @('make') from the
+@('books') directory.  We have <i>not</i> changed how @('make regression')
+works from the @('acl2-sources') directory&mdash;it still builds (nearly) all
+of the books.</p>
 
-<ul>
-<li>arithmetic*</li>
-<li>@(see ihs)</li>
-<li>misc</li>
-<li>tools</li>
-<li>@(see std)</li>
-<li>@(see str)</li>
-<li>@(see xdoc)</li>
-<li>data-structures</li>
-</ul>
-
-<p>To build all of the libraries as before, you can instead run @('make all')
-from the @('books') directory.  But this is usually not necessary: typically
-you should be run @('make') or @(see cert.pl) able to certify the particular
-books you are interested in.  For instance, commands such as:</p>
-
-@({
-    $ make ACL2=my-acl2 -j 4 rtl/rel9/lib/top.cert
-    or
-    $ cert.pl ACL2=my-acl2 -j 4 rtl/rel9/lib/top
-})
-
-<p>should suffice to build the @('rtl/rel9') library and all of its
-dependencies, without having to build any other, unrelated libraries.</p>
-
-<p>See the comments at the top of @('books/GNUmakefile') for additional build
-options.</p>
+<p>See @(see books-certification) for details about how to use the new build
+system.</p>
 
 
 <h3>Deleted Stubs</h3>
@@ -96,7 +71,7 @@ location to help you transition your @(see include-book) commands.  The
 included.</p>
 
 <p>Stub books have a lifespan of one release.  The following books were stubs
-in ACL2 6.3, so they have been deleted.</p>
+in ACL2 6.3, so we've deleted them.</p>
 
 @({
    Previous Location                              New Location
@@ -141,13 +116,13 @@ in ACL2 6.3, so they have been deleted.</p>
 
 <h3>Book Reorganization</h3>
 
-<p>We have moved several books to new homes in an effort to clean up the
+<p>We've moved several books to new homes in an effort to clean up the
 top-level @('books') directory.  Users of these libraries will need to update
 their @(see include-book) commands, and in some cases, packages may have also
 changed.</p>
 
 <p>The table below shows which libraries have moved and where they have moved
-to.  Books with stubs may continue to work until the next release, but you will
+to.  Books with stubs may continue to work until the next release, but you'll
 need to update your @('include-book')s eventually.</p>
 
 @({
@@ -185,10 +160,9 @@ need to update your @('include-book')s eventually.</p>
 
 <h3>Deprecated Books</h3>
 
-<p>The RTL @('rel7') and @('rel8') directories have been completely removed.
-Please update to @('rtl/rel9').  Note that @('rel8') is essentially part of
-@('rel9'), so if you can't directly upgrade to @('rel9'), you may try
-replacing</p>
+<p>We've deleted the RTL @('rel7') and @('rel8') directories; please upgrade to
+@('rtl/rel9').  Note that @('rel8') is essentially part of @('rel9'), so if you
+can't directly upgrade to @('rel9'), you may try replacing</p>
 
 @({
     (include-book \"rtl/rel8/lib/top\" :dir :system)
@@ -205,8 +179,8 @@ replacing</p>
 
 <h3>Scripts Moved</h3>
 
-<p>Many build scripts like @(see cert.pl), @('clean.pl'), and @('critpath.pl')
-have been relocated from the top-level @('books') directory, into a new
+<p>We've moved many build scripts like @(see cert.pl), @('clean.pl'), and
+@('critpath.pl') from the top-level @('books') directory, into a new
 @('books/build') directory.  You may need to update paths to these files in
 your Makefiles or other build scripts.</p>
 
@@ -224,13 +198,13 @@ especially the file @('system/doc/acl2-doc.lisp').</p>
 <p>A new, feature-rich Emacs-based documentation browser named @(see acl2-doc)
 has been developed by Matt Kaufmann, and has many features.</p>
 
-<p>Several @(see projects) now have at least minor @(see xdoc) documentation;
-see @(see concurrent-programs), @(see des), @(see equational), @(see jfkr),
-@(see milawa), @(see paco), @(see projects/leftist-trees), @(see sha-2), @(see
-taspi), and @(see wp-gen).</p>
+<p>We've added at least some minimal @(see xdoc) documentation for several
+@(see projects): see @(see concurrent-programs), @(see des), @(see equational),
+@(see jfkr), @(see milawa), @(see paco), @(see projects/leftist-trees), @(see
+sha-2), @(see taspi), and @(see wp-gen).</p>
 
-<p>Significant documentation has been added for many books and utilities,
-including at least:</p>
+<p>We've added significant documentation has been added for many books and
+utilities, including at least:</p>
 
 <ul>
 <li>@(see cert.pl) - a build system for certifying ACL2 books</li>
@@ -378,7 +352,7 @@ proofs; see the multiplier demo in @('centaur/tutorial').</li>
 <h5>@('centaur/tutorial') - hardware verification demos</h5>
 <ul>
 <li>The multiplier proof by decomposition now has comments</li>
-<li>Redid the decomposition proof using rewriting, instead of by GL</li>
+<li>Added a decomposition proof using rewriting, instead of by GL</li>
 </ul>
 
 
