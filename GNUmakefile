@@ -746,6 +746,9 @@ else
 endif
 
 .PHONY: regression-nonstd-fresh
+# Occasionally the target regression-nonstd-fresh breaks on the first
+# try because of deletion of the link build/clean.pl.  Some day
+# someone will fix this....
 regression-nonstd-fresh: clean-books-nonstd
 ifndef ACL2
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2r regression-nonstd

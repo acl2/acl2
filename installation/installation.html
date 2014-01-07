@@ -39,8 +39,8 @@ acl2.tar.gz</A> into a new directory, say <code>acl2/v6-3/</code>.</li>
   as <A HREF="http://acl2-books.googlecode.com/files/books-6.3.tar.gz">a
   tarball from the Google Code website</A>, into your
   new <code>acl2-sources/</code> directory; then execute the following
-  in <code>acl2-sources/</code> to create
-  directory <code>books/</code>:<br>
+  in <code>acl2-sources/</code> to create a
+  <code>books/</code> subdirectory:<br>
 <code>tar xfz books-6.3.tar.gz</code></li>
 
 <li><a href="requirements.html">Obtain a Common Lisp implementation</a> if you don't
@@ -49,15 +49,16 @@ already have one.</li>
 <li>Build by connecting to your <code>acl2-sources/</code> directory
 and typing the following, which may take a few minutes to complete.
 <font color="red">Note:</font> You will need Gnu make.  We have seen
-problems with Version 3.81 of that utility, so if you encounter
+rare problems with Version 3.81 of that utility, so if you encounter
 errors, please consider our <a
 href="installing-make.html">instructions for downloading and
-installing GNU make version 3.80</a>.  (That said, in builds with
-Allegro Common Lisp we have seen problems certifying books with GNU
-make version 3.80 that seemed to be solved with version 3.81.)
+installing GNU make version 3.80</a>.
 <pre>
 make LISP=&lt;path_to_your_lisp_executable&gt;
 </pre></li>
+
+This will create a script in your <code>acl2-sources</code>
+directory for running ACL2, named <code>saved_acl2</code>.
 
 <li>OPTIONAL: Download gzipped tarfiles
 for <A HREF="http://acl2-books.googlecode.com/files/workshops-6.3.tar.gz">workshops
@@ -72,17 +73,19 @@ into the <CODE>books/</CODE> directory (but first
 
 <li><A NAME="certify-books">Certify books (but first
     create <CODE>books/</CODE> if you
-    skipped <A HREF="#create-books">that step</A>), for example as
-    follows.
+    skipped <A HREF="#create-books">that step</A>), for example with
 <pre>
 make regression
+</pre>
+or something fancier such as:
+<pre>
 (time nice make -j 8 ACL2=/u/smith/bin/acl2 regression) >& make-regression.log
 </pre>
 The resulting log file, <code>make-regression.log</code>, should
 contain no occurrences of the string ``CERTIFICATION FAILED''; a
 normal exit (status 0) should guarantee this.  If you want additional
 explanation and further options, see the documentation
-for <A HREF="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/?topic=ACL2____BOOKS-CERTIFICATION">BOOKS-CERTIFICATION</A>.
+for <A HREF="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html?topic=ACL2____BOOKS-CERTIFICATION">BOOKS-CERTIFICATION</A>.
 
 </ol>
 

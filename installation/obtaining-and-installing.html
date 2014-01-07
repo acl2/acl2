@@ -38,7 +38,7 @@
   </UL>
   <LI><A HREF="#Running">Running Without Building an Executable Image</A>
   <LI><A HREF="#Summary">Summary of Distribution</A>
-  <LI><A HREF="#Saving-Space">Saving Space</A>
+  <LI><A HREF="#Bleeding-edge">Bleeding-edge Distributions via SVN</A>
 </UL>
 
 <p><hr size=4 noshade><p>
@@ -104,7 +104,7 @@ and <code>run_acl2.exe</code> on Windows, to start an ACL2 session.
 the certificate (<code>.cert</code>) files are automatically
 fixed, according to the full pathname of your <code>books/</code> directory.)
 Also see
-the <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/?topic=ACL2____ACL2">ACL2
+the <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html?topic=ACL2____ACL2">ACL2
 documentation topic on the ACL2 Sedan</a>.
 
 
@@ -258,7 +258,7 @@ other than Gnu tar.  You can see if you have Gnu tar by running
   </li>
 
   <li><b><font color="red">OR</font></b>, obtain a read-only copy
-    using svn as a new subdirectory, <code>books/</code>:<br>
+    using SVN as a new subdirectory, <code>books/</code>:<br>
 
       <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;svn checkout http://acl2-books.googlecode.com/svn/branches/6.3 books</code>
   </li>
@@ -711,12 +711,12 @@ Some gzip'd tar'd executables; see <code><a href="http://www.cs.utexas.edu/users
 </ul>
 
 <P>
-Based on the preceding ACL2 release, we estimate that the
-entire <code>acl2.tar.gz</code> is less than 10MB, which extracts to less
-than 35MB, and the gzipped tarfile <code>books-6.3.tar.gz</code> (obtained
+Based on the preceding ACL2 release and recent changes, we estimate that the
+entire <code>acl2.tar.gz</code> is approximately 5MB, which extracts to less
+than 20MB, and the gzipped tarfile <code>books-6.3.tar.gz</code> (obtained
 as described
-<a href="#Obtaining-books">above</a>) is less than 15MB, which
-extracts to less than about 80MB.  Additional space is required to
+<a href="#Obtaining-books">above</a>) is less than 20MB, which
+extracts to less than 200MB.  Additional space is required to
 build an image, perhaps 50 to 300 megabytes depending on the platform
 (including the host Lisp); and more will be required
 to <A HREF="using.html#Certifying">certify books</A>.
@@ -724,6 +724,25 @@ to <A HREF="using.html#Certifying">certify books</A>.
 <p>
 
 <b><font size="+2">[<a href="installation.html">Back to Installation Guide.</a>]</font></b>
+
+<BR><HR noshade size=8><BR>
+<H2><A NAME="Bleeding-edge">Bleeding-edge Distributions via SVN</A></H2>
+
+We strongly recommend that ACL2 users update their local copies of the
+system and community books at each ACL2 release.  While that should
+suffice for most ACL2 users, nevertheless for those who prefer to
+obtain the latest developments, the ACL2 source code and community
+books have been made available between ACL2 releases, by way of
+revision control using SVN.
+<i>The authors of ACL2 consider SVN distributions to be experimental;
+while they will likely be fully functional in most cases, they could
+however be incomplete, fragile, and unable to pass our own
+regression.</i> If you decide to use SVN versions of either the ACL2
+or the community books, then you should use both, as they tend to be
+kept in sync.  See the project
+websites, <code><A HREF="http://acl2-books.googlecode.com/">acl2-books</A></code>
+and <code><A HREF="http://acl2-devel.googlecode.com/">acl2-devel</A></code>,
+for the ACL2 community books and development sources, respectively.
 
 <BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR>
 

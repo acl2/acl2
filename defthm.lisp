@@ -9622,8 +9622,9 @@
 ; kth slot of fn.  We are not so much watching out for the possibility that
 ; equiv1 literally occurs in the list in the kth slot -- though that could
 ; happen and the old rule be disabled so the user is unaware that it exists.
-; We are more concerned about the possibility that equiv1 is some refinement of
-; a relation already in the kth slot.
+; We are more concerned, because of efficiency when applying congruences, about
+; the possibility that equiv1 is some refinement of a relation already in the
+; kth slot.
 
   (mv-let
    (flg x)
