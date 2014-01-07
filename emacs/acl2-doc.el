@@ -852,6 +852,10 @@ ACL2-Doc browser."
    "Use Control-t g to start the ACL2-Doc browser and then
 I if you want to initialize."))
 
+(defun control-t-G-deprecated ()
+  (interactive)
+  (error "Use Control-t . to go to a browser topic."))
+
 (when (not (boundp 'ctl-t-keymap))
 
 ; Warning: Keep this in sync with the introduction of ctl-t-keymap in
@@ -872,11 +876,17 @@ I if you want to initialize."))
   )
 
 (define-key global-map "\C-tg" 'acl2-doc)
-(define-key global-map "\C-tG" 'acl2-doc-go!)
-(define-key global-map "\C-t\C-G" 'acl2-doc-go)
+; We originally bound \C-tG and \C-t\C-G to acl2-doc-go! and
+; acl2-doc-go, respectively.  But it seems more intuitive just to use
+; \C-t. (in analogy to meta-.).  We can probably eliminate the two
+; deprecated keys, along with (of course) the definition of
+; control-t-G-deprecated, after January 2014.
+(define-key global-map "\C-t." 'acl2-doc-go)
+(define-key global-map "\C-tG" 'control-t-G-deprecated)
+(define-key global-map "\C-t\C-G" 'control-t-G-deprecated)
 
 ; An early version of ACL2-Doc (from late 2013) used \C-Xaa to get to
-; the browsser instead of \C-tg.  We bind that key (and a related one,
+; the browser instead of \C-tg.  We bind that key (and a related one,
 ; \C-XaA), if not already bound, as a courtesy to early adopters of
 ; ACL2-Doc.  After the release of v6-4 we should probably eliminate
 ; these forms as well as the definitions of the two "-deprecated"
