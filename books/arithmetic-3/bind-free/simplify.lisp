@@ -330,13 +330,15 @@
            (info-list-p (cdr x)))
     (eq x nil)))
 
-(defthm test-724
-    (implies (pseudo-termp x)
-             (rationalp (addend-val x))))
+(defthm rationalp-of-addend-val
+  ;; [Jared] renaming from test-724 to something more sensible
+  (implies (pseudo-termp x)
+           (rationalp (addend-val x))))
 
-(defthm test725
-    (implies (pseudo-termp x)
-             (info-list-p (addend-info-list x))))
+(defthm info-list-p-of-addend-info-list
+  ;; [Jared] renaming from test725 to something more sensible
+  (implies (pseudo-termp x)
+           (info-list-p (addend-info-list x))))
 
 (defun assoc-addend (x info-list)
   (declare (xargs :guard (info-list-p info-list)))
@@ -502,20 +504,25 @@
                    (factor-gather-exponents-intersect-info-lists (cdr info-list1)
                                                                  info-list2)))))))
 
-(defthm test-283
-    (implies (and (info-list-p info-list)
-                  (assoc-factor-gather-exponents x info-list))
-             (info-entry-p (assoc-factor-gather-exponents x info-list))))
+(defthm info-entry-p-of-assoc-factor-gather-exponents
+  ;; [Jared] renaming from test-283 to something more sensible
+  (implies (and (info-list-p info-list)
+                (assoc-factor-gather-exponents x info-list))
+           (info-entry-p (assoc-factor-gather-exponents x info-list))))
 
-(defthm test-284
-    (implies (and (info-list-p info-list-1)
-                  (info-list-p info-list-2))
-             (info-list-p (factor-gather-exponents-intersect-info-lists
-                           info-list-1
-                           info-list-2))))
+(defthm info-list-p-of-factor-gather-exponents-intersect-info-lists
+  ;; [Jared] renaming from test-284 to something more sensible
+  (implies (and (info-list-p info-list-1)
+                (info-list-p info-list-2))
+           (info-list-p (factor-gather-exponents-intersect-info-lists
+                         info-list-1
+                         info-list-2))))
 
-(defthm test-285
-    (rationalp (factor-val-gather-exponents x)))
+(defthm rationalp-of-factor-val-gather-exponents
+  ;; [Jared] renaming from test-285 to something more sensible; also changing
+  ;; from :rewrite to :type-prescription
+  (rationalp (factor-val-gather-exponents x))
+  :rule-classes :type-prescription)
 
 (defun factor-gather-exponents-info-list (x)
   (declare (xargs :guard (pseudo-termp x)))
@@ -532,13 +539,16 @@
         (t
          (list (factor-gather-exponents-info-entry x)))))
 
-(defthm test-726
-    (implies (pseudo-termp x)
-             (rationalp (factor-val-gather-exponents x))))
+;; [Jared] removing because it is redundant with, and worse than
+;; rationalp-of-factor-val-gather-exponents
+;; (defthm test-726
+;;     (implies (pseudo-termp x)
+;;              (rationalp (factor-val-gather-exponents x))))
 
-(defthm test727
-    (implies (pseudo-termp x)
-             (info-list-p (factor-gather-exponents-info-list x))))
+(defthm info-list-p-of-factor-gather-exponents-info-list
+  ;; [Jared] renaming from test727 to something more sensible
+  (implies (pseudo-termp x)
+           (info-list-p (factor-gather-exponents-info-list x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -677,20 +687,25 @@
                    (factor-scatter-exponents-intersect-info-lists (cdr info-list1)
                                                                  info-list2)))))))
 
-(defthm test-287
-    (implies (and (info-list-p info-list)
-                  (assoc-factor-scatter-exponents x info-list))
-             (info-entry-p (assoc-factor-scatter-exponents x info-list))))
+(defthm info-entry-p-of-assoc-factor-scatter-exponents
+  ;; [Jared] renaming from test-287 to something more sensible
+  (implies (and (info-list-p info-list)
+                (assoc-factor-scatter-exponents x info-list))
+           (info-entry-p (assoc-factor-scatter-exponents x info-list))))
 
-(defthm test-288
-    (implies (and (info-list-p info-list-1)
-                  (info-list-p info-list-2))
-             (info-list-p (factor-scatter-exponents-intersect-info-lists
-                           info-list-1
-                           info-list-2))))
+(defthm info-list-p-of-factor-scatter-exponents-intersect-info-lists
+  ;; [Jared] renaming from test-288 to something more sensible
+  (implies (and (info-list-p info-list-1)
+                (info-list-p info-list-2))
+           (info-list-p (factor-scatter-exponents-intersect-info-lists
+                         info-list-1
+                         info-list-2))))
 
-(defthm test-289
-    (rationalp (factor-val-scatter-exponents x)))
+(defthm rationalp-of-factor-val-scatter-exponents
+  ;; [Jared] renaming from test-289 to something more sensible; changing from
+  ;; :rewrite to :type-prescription
+  (rationalp (factor-val-scatter-exponents x))
+  :rule-classes :type-prescription)
 
 (defun factor-scatter-exponents-info-list (x)
   (declare (xargs :guard (pseudo-termp x)))
@@ -707,13 +722,16 @@
         (t
          (list (factor-scatter-exponents-info-entry x)))))
 
-(defthm test-728
-    (implies (pseudo-termp x)
-             (rationalp (factor-val-gather-exponents x))))
+;; [Jared] removing because it's redundant with and worse than
+;; rationalp-of-factor-val-scatter-exponents
+;; (defthm test-728
+;;     (implies (pseudo-termp x)
+;;              (rationalp (factor-val-gather-exponents x))))
 
-(defthm test729
-    (implies (pseudo-termp x)
-             (info-list-p (factor-gather-exponents-info-list x))))
+(defthm info-list-p-of-factor-gather-exponents-info-list
+  ;; [Jared] renaming from test729 to something more sensible
+  (implies (pseudo-termp x)
+           (info-list-p (factor-gather-exponents-info-list x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

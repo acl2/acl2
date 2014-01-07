@@ -272,14 +272,15 @@
         (normalize-terms-such-as-a/a+b-+-b/a+b-fn-1 (cdr denominator-list)
                                                     addend rest)))))
 
-(defthm test-928
- (implies (AND (integerp int)
-               (PSEUDO-TERMP X)
-               (CONSP X)
-               (EQUAL (CAR X) 'BINARY-*)
-               (denominator-list-p ans))
-          (DENOMINATOR-LIST-P
-           (FIND-DENOMINATORS-WITH-SUMS X ans int))))
+;; [Jared]  localizing since this seems like it should be local
+(local (defthm test-928
+         (implies (AND (integerp int)
+                       (PSEUDO-TERMP X)
+                       (CONSP X)
+                       (EQUAL (CAR X) 'BINARY-*)
+                       (denominator-list-p ans))
+                  (DENOMINATOR-LIST-P
+                   (FIND-DENOMINATORS-WITH-SUMS X ans int)))))
 
 ; We do not catch things such as
 ; (+ (* a x (/ (+ a (* b x)))) (* b (expt x 2) (/ (+ a (* b x)))))
@@ -345,9 +346,10 @@
         (t
          (intersection-equal factors (factors sum)))))
 
-(defthm test529
- (implies (pseudo-termp x)
-          (pseudo-term-listp (factors x))))
+(defthm pseudo-term-listp-of-factors
+  ;; [Jared] renamed from test529 to something more sensible
+  (implies (pseudo-termp x)
+           (pseudo-term-listp (factors x))))
 
 (defun normalize-terms-such-as-1/ax+bx-fn (sum)
   (declare (xargs :guard (pseudo-termp sum)))
