@@ -39,7 +39,6 @@
                     (maybe-add-top-topic
                      (normalize-parents-list ; Should we clean-topics?
                       (get-xdoc-table (w state))))))
-       (all-topics (replace-from-with-acl2-sources all-topics nil))
        ((mv rendered state)
         (render-topics all-topics all-topics state))
        (rendered (split-acl2-topics rendered nil nil nil))
