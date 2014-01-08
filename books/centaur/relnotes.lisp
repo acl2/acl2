@@ -39,10 +39,11 @@
 
 ; Currently covered: through revision 2390.
 
-  :long "<p>The following is a brief summary of changes made to the <a
-href='http://acl2-books.googlecode.com/'>Community Books</a> between the
-release of ACL2 6.3 (svn revision 2094) and 6.4 (svn revision ????).  See also
-@(see note-6-4) for the changes made to ACL2 itself.</p>
+  :long "<p>The following is a brief summary of changes made to the @(see
+community-books) between the releases of ACL2 6.3 and 6.4.  See the <a
+href='https://code.google.com/p/acl2-books/wiki/ReleaseVersionNumbers'>acl2-books
+Wiki page on ReleaseVersionNumbers</a> for svn revision numbers corresponding
+to releases.  See also @(see note-6-4) for the changes made to ACL2 itself.</p>
 
 <p>For additional details, you may also see the raw <a
 href='http://code.google.com/p/acl2-books/source/list'>commit log</a>.</p>

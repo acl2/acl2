@@ -1159,6 +1159,12 @@ special: $(BOOKS_SPECIAL_OUT)
 # of the xdoc manual, because it is required for some of the books
 # included in centaur/doc.lisp.
 
+# BUT NOTE: Here's a simple command for building both the combined
+# manual and the ACL2-only manual.  Replace "my-acl2h" with your own
+# ACL2(h) executable, and replace -j as appropriate.
+
+# make -j 8 USE_QUICKLISP=1 ACL2=my-acl2h centaur/doc.cert system/doc/acl2-manual.cert
+
 manual:
 	$(MAKE) USE_QUICKLISP=1 centaur/doc.cert
 
@@ -1166,9 +1172,10 @@ manual:
 # ACL2-Doc browser (see :DOC acl2-doc), the file
 # system/doc/rendered-doc-combined.lsp is required.  That requires (or
 # causes) centaur/doc.cert to be built, as above, which can be
-# time-consuming.  We expect to include
-# system/doc/rendered-doc-combined.lsp with releases and also,
-# perhaps, with occasional updates on the ACL2 website.  To build this
+# time-consuming.  We do not currently include
+# system/doc/rendered-doc-combined.lsp with releases, though we do
+# make occasional updates for "bleeding-edge" (svn) users at
+# http://www.cs.utexas.edu/users/moore/acl2/manuals/.  To build this
 # text-based file after building centaur/doc.cert as above, issue the
 # following command in this directory, where acl2h is an ACL2(h)
 # executable.

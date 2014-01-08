@@ -26,6 +26,6 @@
   :long "<p>This manual is generated from ACL2 documentation only; it excludes
   documentation from the community books.</p>")
 
-(xdoc::save "./manual"
+(xdoc::save "../../../doc/manual"
             :import nil)
 
