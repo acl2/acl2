@@ -1180,7 +1180,7 @@ manual:
 # following command in this directory, where acl2h is an ACL2(h)
 # executable.
 
-#   make system/doc/render-doc-combined.cert ACL2=acl2h
+#   make system/doc/render-doc-combined.cert USE_QUICKLISP=1 ACL2=acl2h
 
 ##############################
 ### Section: Some notes

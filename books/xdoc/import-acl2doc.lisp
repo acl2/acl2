@@ -27,23 +27,11 @@
 ; documentation from the ACL2 Sources, and also from any books.  However,
 ; starting in revision 2168, the ACL2 system documentation is now in XDOC
 ; format and available in the system/doc books.  So now we can just load it
-; instead of jumping through hoops to import it.
+; instead of jumping through hoops to import it.  (Actually, for awhile there
+; still remained defdoc-style documentation in the ACL2 sources.  But that was
+; no longer true as of the time of the release of ACL 2 Version 6.4.)
 
 (include-book "system/doc/acl2-doc-wrap" :dir :system)
-
-; Well, that's almost true. :)
-;
-; There is still defdoc-style documentation in the ACL2 sources.  This didn't
-; bother us at first, because the xdoc topics just overwrote them.  But then we
-; found a topic we wanted to delete, and found that just deleting it from
-; acl2-doc.lisp didn't work, because it would then just get re-imported from
-; ACL2.  So, at least until the docs get removed from the ACL2 sources, we need
-; to work around this somehow.
-
-(make-event
- (let ((names (strip-cars (global-val 'acl2::documentation-alist (acl2::w state)))))
-   (value `(defconst xdoc::*acl2-built-in-defdoc-names*
-             ',names))))
 
 
 ; Hack for broken links to be reported differently in the community manual.
@@ -137,7 +125,9 @@ find what you want.</p>")
 ;; (table xdoc 'doc
 
 ;; ; Something subtle about this is, what do we do if there is both an ACL2 :doc
-;; ; topic and an XDOC topic?
+;; ; topic and an XDOC topic?  As of the ACL2 Version 6.4 release, that is no
+;; ; longer possible, since ACL2 :doc strings have been removed from the source
+;; ; code.  But we keep the following historical comment for now....
 ;; ;
 ;; ; Originally we appended the *acl2-ground-zero-topics* to (get-xdoc-table
 ;; ; world), which meant that built-in ACL2 documentation "won" and overwrote the
@@ -288,14 +278,6 @@ find what you want.</p>")
     (b* ((all-topics (get-xdoc-table (w state)))
          (names      (xdoc::all-topic-names all-topics))
          (skip-fal   (make-fast-alist (pairlis$ names nil)))
-
-         ;; dumb hack to make sure we don't import old defdoc stuff
-         (built-ins  (set-diff-fal *acl2-built-in-defdoc-names* skip-fal))
-         (- (or (not built-ins)
-                (not (xdoc-verbose-p))
-                (cw "; XDOC Warning: Not importing DEFDOC topics from ACL2 ~
-                     Sources with no XDOC equivalents: ~x0.~%" built-ins)))
-         (skip-fal   (extend-skip-fal built-ins skip-fal))
          ((mv ?er ?val state)
           (time$ (acl2::write-xdoc-alist :skip-topics-fal skip-fal)
                  :msg "~|; Importing acl2 :doc topics: ~st sec, ~sa bytes~%"

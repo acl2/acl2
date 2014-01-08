@@ -7,8 +7,12 @@
 (include-book "oslib/mkdir" :dir :system)
 
 ;; Remove any documentation from XDOC and just get the ACL2 topics.
+;; Matt K.: We delete two empty top-level topics, with a plan to revisit this
+;; decision eventually -- it may become moot after some manual reorganization.
 (table xdoc::xdoc 'xdoc::doc
-       *acl2-sources-xdoc-topics*)
+       (delete-assoc 'proof-automation
+                     (delete-assoc 'macro-libraries
+                                   *acl2-sources-xdoc-topics*)))
 
 (defttag :smash-raw)
 (progn!

@@ -20,6 +20,10 @@
 
 (in-package "XDOC")
 
+; Added by Matt K. when removing :doc strings from ACL2: We now seem to need
+; the following in order to get :doc topics that were formerly in ACL2.
+(include-book "system/doc/acl2-doc" :dir :system)
+
 ; Save used to be part of xdoc/top.lisp, but eventually it seemed better to
 ; move it out into its own book, so that its includes can be handled normally,
 ; and we can make sure that everything it depends on really is included.
@@ -65,6 +69,18 @@
    (mergesort (collect-multiply-defined-topics x (len x)))
    x))
 
+(defun replace-from-with-acl2-sources (all-xdoc-topics acc)
+  (cond ((endp all-xdoc-topics) (reverse acc))
+        (t (let* ((topic (car all-xdoc-topics))
+                  (from (cdr (assoc-eq :from topic))))
+             (replace-from-with-acl2-sources
+              (cdr all-xdoc-topics)
+              (cons (if (equal from "[books]/system/doc/acl2-doc.lisp")
+                        (acons :from "ACL2 Sources"
+                               (acl2::remove-keyword :from topic))
+                      topic)
+                    acc))))))
+
 (defmacro save (dir &key
                     (type      ':fancy)
                     (import    't)
@@ -95,6 +111,7 @@
                        just call XDOC::SAVE with :REDEF-OKP T to bypass this ~
                        error (and use the most recent version of each topic.)")))
            ((mv & & state) (assign acl2::writes-okp t))
+           (all-xdoc-topics (replace-from-with-acl2-sources all-xdoc-topics nil))
            (state
             ,(if (eq type :fancy)
                  `(save-fancy all-xdoc-topics ,dir state)
