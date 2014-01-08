@@ -305,7 +305,21 @@ AIG to BDD Conversion Algorithm</a>.  In ITP 2010,LNCS 6172, Springer.  Pages
   :short "Libraries for working with hardware description languages, modeling
 circuits, etc.")
 
+(defxdoc macro-libraries
+  :parents (top macros)
+  :short "Generally useful macros for writing more concise code, and frameworks
+ for quickly introducing concepts like typed structures, typed lists, defining
+ functions with type signatures, and automating other common tasks.")
 
+(defxdoc proof-automation
+  :parents (top
+
+; Including acl2 as a parent so that all ACL2 system topics can be found under
+; the graph rooted at the acl2 node.
+
+            acl2)
+  :short "Tools, utilities, and strategies for dealing with particular kinds
+of proofs.")
 
 ; Huge stupid hack.  Topics that are documented with the old :DOC system can't
 ; have XDOC topics for their parents.  So, get them all loaded and converted
