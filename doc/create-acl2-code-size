@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ -z "${ACL2_SOURCES}" ] ; then  \
+if [ -z "${ACL2_SOURCES}" ] ; then \
     echo "ERROR: Environment variable ACL2_SOURCES must have a non-empty string"
     echo "       as its value.  Perhaps you intended to call"
     echo "       $0"
@@ -33,6 +33,7 @@ echo '; Blank lines (only whitespace):'                  >> doc/acl2-wc.txt
 (cat ${ACL2_SOURCES} | grep '^[ ]*$'      | wc -lc)      >> doc/acl2-wc.txt
 echo '; TOTAL:'                                          >> doc/acl2-wc.txt
 (cat ${ACL2_SOURCES}                       | wc -lc)     >> doc/acl2-wc.txt
+wc -lc books/system/doc/acl2-doc.lisp                    >> doc/acl2-wc.txt
 
 cd doc
 

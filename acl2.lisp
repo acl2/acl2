@@ -388,8 +388,8 @@
 
 ; We also do the following for clisp, since we set the encoding on the command
 ; line (see comment above) but we want to be able to read our own source files
-; during the build.  See the comment in (defdoc character-encoding ...) in
-; axioms.lisp.
+; during the build.  See the comment in (defxdoc character-encoding ...) in
+; community book books/system/doc/acl2-doc.lisp.
 #+clisp
 (setq custom:*default-file-encoding*
       (ext:make-encoding :charset 'charset:iso-8859-1
@@ -895,7 +895,6 @@
     "other-events"
     "ld"
     "proof-checker-b"
-    "tutorial"
     "interface-raw"
     "defpkgs"
     "boot-strap-pass-2" ; at the end so that it is compiled last

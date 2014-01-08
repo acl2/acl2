@@ -1016,30 +1016,7 @@
 ; default).
 
                    '((:executable-counterpart force))
-                   (theory 'executable-counterpart-minimal-theory)))
-  :doc
-  ":Doc-Section Theories
-
-  a minimal theory to enable~/~/
-
-  This ~ilc[theory] (~pl[theories]) enables only a few built-in
-  functions and executable counterparts.  It can be useful when you
-  want to formulate lemmas that rather immediately imply the theorem
-  to be proved, by way of a ~c[:use] hint (~pl[hints]), for example as
-  follows.
-  ~bv[]
-  :use (lemma-1 lemma-2 lemma-3)
-  :in-theory (union-theories '(f1 f2) (theory 'minimal-theory))
-  ~ev[]
-  In this example, we expect the current goal to follow from lemmas
-  ~c[lemma-1], ~c[lemma-2], and ~c[lemma-3] together with rules ~c[f1]
-  and ~c[f2] and some obvious facts about built-in functions (such as
-  the ~il[definition] of ~ilc[implies] and the
-  ~c[:]~ilc[executable-counterpart] of ~ilc[car]).  The
-  ~c[:]~ilc[in-theory] hint above is intended to speed up the proof by
-  turning off all inessential rules.~/
-
-  :cited-by theory-functions")
+                   (theory 'executable-counterpart-minimal-theory))))
 
 ; See the Essay on the Status of the Tau System During and After Bootstrapping
 ; in axioms.lisp where we discuss choices (1.a), (1.b), (2.a) and (2.b)
@@ -1050,29 +1027,12 @@
                (enable (:executable-counterpart tau-system))
                (disable (:executable-counterpart tau-system))))
 
-(deftheory ground-zero (current-theory :here)
+(deftheory ground-zero
 
 ; WARNING: Keep this near the end of *acl2-pass-2-files* in order for
 ; the ground-zero theory to be as expected.
 
-  :doc
-  ":Doc-Section Theories
-
-  ~il[enable]d rules in the ~il[startup] theory~/
-
-  ACL2 concludes its initialization ~c[(boot-strapping)] procedure by
-  defining the theory ~c[ground-zero]; ~pl[theories].  In fact, this
-  theory is just the theory defined by ~c[(current-theory :here)] at
-  the conclusion of initialization; ~pl[current-theory].~/
-
-  Note that by evaluating the event
-  ~bv[]
-  (in-theory (current-theory 'ground-zero))
-  ~ev[]
-  you can restore the current theory to its value at the time you
-  started up ACL2.~/
-
-  :cited-by theory-functions")
+  (current-theory :here))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; meta-extract support

@@ -1753,69 +1753,6 @@
                   name))))
          (t (value nil)))))))
 
-(deflabel package-reincarnation-import-restrictions
-  :doc
-  ":Doc-Section Miscellaneous
-
-   re-defining undone ~ilc[defpkg]s~/
-
-   Suppose ~c[(defpkg \"pkg\" imports)] is the most recently executed
-   successful definition of ~c[\"pkg\"] in this ACL2 session and that it
-   has since been undone, as by ~c[:]~ilc[ubt].  Any future attempt in this
-   session to define ~c[\"pkg\"] as a package must specify an identical
-   imports list.~/
-
-   The restriction stems from the need to implement the reinstallation
-   of saved logical ~il[world]s as in error recovery and the ~c[:]~ilc[oops] ~il[command].
-   Suppose that the new ~ilc[defpkg] attempts to import some symbol, ~c[a::sym],
-   not imported by the previous definition of ~c[\"pkg\"].  Because it was
-   not imported in the original package, the symbol ~c[pkg::sym], different
-   from ~c[a::sym], may well have been created and may well be used in some
-   saved ~il[world]s.  Those saved ~il[world]s are Common Lisp objects being held
-   for you ``behind the scenes.''  In order to import ~c[a::sym] into
-   ~c[\"pkg\"] now we would have to unintern ~c[pkg::sym], rendering those
-   saved ~il[world]s ill-formed.  It is because of saved ~il[world]s that we do
-   not actually clear out a package when it is undone.
-
-   At one point we thought it was sound to allow the new ~ilc[defpkg] to
-   import a subset of the old.  But that is incorrect.  Suppose the old
-   definition of ~c[\"pkg\"] imported ~c[a::sym] but the new one does not.
-   Suppose we allowed that and implemented it simply by setting the
-   imports of ~c[\"pkg\"] to the new subset.  Then consider the conjecture
-   ~c[(eq a::sym pkg::sym)].  This ought not be a theorem because we did
-   not import ~c[a::sym] into ~c[\"pkg\"].  But in fact in AKCL it is a theorem
-   because ~c[pkg::sym] is read as ~c[a::sym] because of the old imports."
-
-; Once upon a time the documentation included the following additional text.
-; We deleted it on the grounds that we shouldn't tell the user how to go behind
-; our backs.  But we might want to recall this hack in the future for our own
-; use.
-
-;    If you really must change the imports list of a previously defined
-;    but now undone package, we recommend that you either invent a new
-;    package name for subsequent use in this session or that you save
-;    your state and reconstruct it in a new ACL2 session.  If you wish to
-;    try behind the scenes surgery to allow the new ~ilc[defpkg] to succeed ~-[]
-;    at the expense of ACL2's soundness in the rest of the session ~-[]
-;    exit ~ilc[lp] and type the following to raw Lisp:
-;    ~bv[]
-;    (let ((name \"pkg\")           ; fill in pkg name
-;          (new-imports '(...))     ; fill in new imports
-;          (p (find-package name)))
-;      (do-symbols (sym p) (unintern sym p))
-;      (import new-imports p)
-;      (setq *ever-known-package-alist*
-;            (cons (make-package-entry :name name :imports new-imports)
-;                  (remove-package-entry name *ever-known-package-alist*)))
-;      name)
-;    ~ev[]
-;    This will render ill-formed any saved ~il[world]s involving symbols in
-;    ~c[\"pkg\"] and it may be impossible to recover from certain errors.  In
-;    addition, because ACL2 is probably unsound after this hack we
-;    recommend that you treat the rest of the session as merely
-;    exploratory.
-)
-
 (defun chk-package-reincarnation-import-restrictions (name proposed-imports)
 
 ; Logically, this function always returns t, but it may cause a hard
@@ -2357,29 +2294,6 @@
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
 
-  ":Doc-Section Theories
-
-  intersect two ~il[theories]~/
-  ~bv[]
-  Example:
-  (intersection-theories (current-theory :here)
-                         (theory 'arith-patch))~/
-
-  General Form:
-  (intersection-theories th1 th2)
-  ~ev[]
-  where ~c[th1] and ~c[th2] are theories (~pl[theories]).  To each of
-  the arguments there corresponds a runic theory.  This function
-  returns the intersection of those two runic ~il[theories], represented as
-  a list and ordered chronologically.
-
-  This ``function'' is actually a macro that expands to a term
-  mentioning the single free variable ~ilc[world].  When theory expressions
-  are evaluated by ~ilc[in-theory] or the ~c[:]~ilc[in-theory] hint, ~ilc[world] is bound to
-  the current ACL2 ~il[world].~/
-
-  :cited-by theory-functions"
-
   (list 'intersection-theories-fn
         lst1
         lst2
@@ -2468,29 +2382,6 @@
 (defmacro union-theories (lst1 lst2)
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
-
-  ":Doc-Section Theories
-
-  union two ~il[theories]~/
-  ~bv[]
-  Example:
-  (union-theories (current-theory 'lemma3)
-                  (theory 'arith-patch))~/
-
-  General Form:
-  (union-theories th1 th2)
-  ~ev[]
-  where ~c[th1] and ~c[th2] are theories (~pl[theories]).  To each of
-  the arguments there corresponds a runic theory.  This function
-  returns the union of those two runic ~il[theories], represented as a list
-  and ordered chronologically.
-
-  This ``function'' is actually a macro that expands to a term
-  mentioning the single free variable ~ilc[world].  When theory expressions
-  are evaluated by ~ilc[in-theory] or the ~c[:]~ilc[in-theory] hint, ~ilc[world] is bound to
-  the current ACL2 ~il[world].~/
-
-  :cited-by theory-functions"
 
   (cond ((theory-fn-callp lst1)
          (list 'union-theories-fn
@@ -2584,33 +2475,6 @@
 (defmacro set-difference-theories (lst1 lst2)
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
-
-  ":Doc-Section Theories
-
-  difference of two ~il[theories]~/
-  ~bv[]
-  Example:
-  (set-difference-theories (current-theory :here)
-                           '(fact (fact)))~/
-
-  General Form:
-  (set-difference-theories th1 th2)
-  ~ev[]
-  where ~c[th1] and ~c[th2] are ~il[theories] (~pl[theories]).  To each of
-  the arguments there corresponds a runic theory.  This function
-  returns the set-difference of those two runic ~il[theories], represented
-  as a list and ordered chronologically.  That is, a ~il[rune] is in the
-  result iff it is in the first runic theory but not in the second.
-
-  The standard way to ``disable'' a theory, ~c[lst], is:
-  ~c[(in-theory (set-difference-theories (current-theory :here) lst))].
-
-  This ``function'' is actually a macro that expands to a term
-  mentioning the single free variable ~ilc[world].  When theory expressions
-  are evaluated by ~ilc[in-theory] or the ~c[:]~ilc[in-theory] hint, ~ilc[world] is bound to
-  the current ACL2 ~il[world].~/
-
-  :cited-by theory-functions"
 
   (list 'set-difference-theories-fn
         lst1
@@ -2707,48 +2571,6 @@
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
 
-  ":Doc-Section Theories
-
-  all rules as of logical name~/
-  ~bv[]
-  Examples:
-  (universal-theory :here)
-  (universal-theory 'lemma3)
-  ~ev[]
-  ~l[logical-name].~/
-  ~bv[]
-  General Form:
-  (universal-theory logical-name)
-  ~ev[]
-  Returns the theory consisting of all the ~il[rune]s that existed
-  immediately after ~ilc[logical-name] was introduced.  ~l[theories]
-  and ~pl[logical-name].  The theory includes ~ilc[logical-name] itself
-  (if there is a rule by that name).  (Note that since some ~il[events] do
-  not introduce rules (e.g., ~ilc[defmacro], ~ilc[defconst] or ~ilc[defthm] with
-  ~c[:]~ilc[rule-classes] ~c[nil]), the universal-theory does not necessarily
-  include a ~il[rune] for every event name.)  The universal-theory is very
-  long and you will probably regret printing it.
-
-  You may experience a fencepost problem in deciding which
-  ~il[logical-name] to use.  ~ilc[Deflabel] can always be used to mark
-  unambiguously for future reference a particular point in the
-  development of your theory.  This is convenient because ~ilc[deflabel]
-  does not introduce any rules and hence it doesn't matter if you
-  count it as being in the interval or not.  The order of ~il[events] in
-  the vicinity of an ~ilc[encapsulate] is confusing.  ~l[encapsulate].
-
-  This ``function'' is actually a macro that expands to a term
-  mentioning the single free variable ~ilc[world].  When theory expressions
-  are evaluated by ~ilc[in-theory] or the ~c[:]~ilc[in-theory] hint, ~ilc[world] is bound to
-  the current ACL2 ~il[world].
-
-  Also ~pl[current-theory].  ~c[Current-theory] is much more commonly used than
-  ~c[universal-theory].  The former includes only the ~il[enable]d ~il[rune]s
-  as of the given ~ilc[logical-name], which is probably what you want, while
-  the latter includes ~il[disable]d ones as well.~/
-
-  :cited-by theory-functions"
-
   (list 'universal-theory-fn
         logical-name
         'world))
@@ -2833,37 +2655,6 @@
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
 
-  ":Doc-Section Theories
-
-  function symbol rules as of logical name~/
-  ~bv[]
-  Examples:
-  (function-theory :here)
-  (function-theory 'lemma3)
-  ~ev[]
-  ~l[logical-name].~/
-  ~bv[]
-  General Form:
-  (function-theory logical-name)
-  ~ev[]
-  Returns the theory containing all the ~c[:]~ilc[definition] ~il[rune]s, whether
-  ~il[enable]d or not, that existed immediately after ~ilc[logical-name] was
-  introduced.  See the documentation for ~il[theories],
-  ~il[logical-name] and ~ilc[executable-counterpart-theory].
-
-  You may experience a fencepost problem in deciding which logical
-  name to use.  ~ilc[Deflabel] can always be used to mark unambiguously for
-  future reference a particular point in the development of your
-  theory.  The order of ~il[events] in the vicinity of an ~ilc[encapsulate] is
-  confusing.  ~l[encapsulate].
-
-  This ``function'' is actually a macro that expands to a term
-  mentioning the single free variable ~ilc[world].  When theory expressions
-  are evaluated by ~ilc[in-theory] or the ~c[:]~ilc[in-theory] hint, ~ilc[world] is bound to
-  the current ACL2 ~il[world].~/
-
-  :cited-by theory-functions"
-
   (list 'function-theory-fn
         logical-name
         'world))
@@ -2886,38 +2677,6 @@
 (defmacro executable-counterpart-theory (logical-name)
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
-
-  ":Doc-Section Theories
-
-  executable counterpart rules as of logical name~/
-  ~bv[]
-  Examples:
-  (executable-counterpart-theory :here)
-  (executable-counterpart-theory 'lemma3)
-  ~ev[]
-  ~l[logical-name].~/
-  ~bv[]
-  General Form:
-  (executable-counterpart-theory logical-name)
-  ~ev[]
-  Returns the theory containing all the ~c[:]~ilc[executable-counterpart]
-  ~il[rune]s, whether ~il[enable]d or not, that existed immediately after
-  ~ilc[logical-name] was introduced.  See the documentation for
-  ~il[theories], ~il[logical-name], ~il[executable-counterpart] and
-  ~ilc[function-theory].
-
-  You may experience a fencepost problem in deciding which logical
-  name to use.  ~ilc[Deflabel] can always be used to mark unambiguously for
-  future reference a particular point in the development of your
-  theory.  The order of ~il[events] in the vicinity of an ~ilc[encapsulate] is
-  confusing.  ~l[encapsulate].
-
-  This ``function'' is actually a macro that expands to a term
-  mentioning the single free variable ~ilc[world].  When theory expressions
-  are evaluated by ~ilc[in-theory] or the ~c[:]~ilc[in-theory] hint, ~ilc[world] is bound to
-  the current ACL2 ~il[world].~/
-
-  :cited-by theory-functions"
 
   (list 'executable-counterpart-theory-fn
         logical-name
@@ -2955,54 +2714,6 @@
 (defmacro current-theory (logical-name)
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
-
-  ":Doc-Section Theories
-
-  currently ~il[enable]d rules as of logical name~/
-  ~bv[]
-  Examples:
-  (current-theory :here)
-  (current-theory 'lemma3)
-  ~ev[]
-  ~l[logical-name].~/
-  ~bv[]
-  General Form:
-  (current-theory logical-name)
-  ~ev[]
-  Returns the current theory as it existed immediately after the
-  introduction of ~ilc[logical-name] provided it is evaluated in
-  an environment in which the variable symbol WORLD is bound to the
-  current ACL2 logical world, ~c[(w state)].  Thus,
-  ~bv[]
-  ACL2 !>(current-theory :here)
-  ~ev[]
-  will cause an (unbound variable) error while
-  ~bv[]
-  ACL2 !>(let ((world (w state))) (current-theory :here))
-  ~ev[]
-  will return the current theory in world.
-
-  ~l[theories] and ~pl[logical-name] for a discussion of
-  theories in general and why the commonly used ``theory functions''
-  such as ~c[current-theory] are really macros that expand into terms
-  involving the variable ~c[world].
-
-  The theory returned by ~c[current-theory] is in fact the theory selected by
-  the ~ilc[in-theory] event most recently preceding logical name, extended by
-  the rules introduced up through ~ilc[logical-name].
-
-  You may experience a fencepost problem in deciding which logical
-  name to use.  ~ilc[Deflabel] can always be used to mark unambiguously for
-  future reference a particular point in the development of your
-  theory.  The order of ~il[events] in the vicinity of an ~ilc[encapsulate] is
-  confusing.  ~l[encapsulate].
-
-  This ``function'' is actually a macro that expands to a term
-  mentioning the single free variable ~ilc[world].  When theory expressions
-  are evaluated by ~ilc[in-theory] or the ~c[:]~ilc[in-theory] hint, ~ilc[world] is bound to
-  the current ACL2 ~il[world].~/
-
-  :cited-by theory-functions"
 
   (list 'current-theory-fn logical-name
         'world))
@@ -3114,6 +2825,1679 @@
     (ec-call1-raw . ec-call1)
     (with-guard-checking1-raw . with-guard-checking1)))
 
+; In order to have doc sections available for books that still use classic :doc
+; strings instead of XDOC, we need to lay down classic documentation for topics
+; as of this writing (January 5, 2014).
+
+(defun doc-stub-lst (doc-alist acc)
+  (cond ((endp doc-alist) (reverse acc))
+        (t (doc-stub-lst (cdr doc-alist)
+                         (cons (let ((tuple (car doc-alist)))
+                                 (list (car tuple) (cadr tuple)))
+                               acc)))))
+
+(defun documentation-alist-stub1 (x acc)
+
+; X is a tail of *documentation-alist-stub*.
+
+  (cond ((endp x) (reverse acc))
+        (t (documentation-alist-stub1
+            (cdr x)
+            (cons `(,(caar x)
+                    ,(cadar x)
+                    nil
+                    ":Doc-Section Stub
+  stub~/
+  Legacy documentation access is no longer supported for the ACL2
+  User's Manual.  Use :DOC at the terminal, or see the discussion
+  of the User's Manual on the ACL2 home page.~/~/")
+                  acc)))))
+
+(defun documentation-alist-stub ()
+
+; The constant below was obtained from a recent version of ACl2, circa
+; 1/5/2014, by executing (doc-stub-lst (global-val 'documentation-alist (w
+; state)) nil).  This constant shouldn't need to be extended, provided new
+; documentation is written using xdoc instead of old-style :doc strings.
+
+  (documentation-alist-stub1
+   '((&ALLOW-OTHER-KEYS MISCELLANEOUS)
+     (&BODY MISCELLANEOUS)
+     (&KEY MISCELLANEOUS)
+     (&OPTIONAL MISCELLANEOUS)
+     (&REST MISCELLANEOUS)
+     (&WHOLE MISCELLANEOUS)
+     (* ACL2-BUILT-INS)
+     (*STANDARD-CI* IO)
+     (*STANDARD-CO* IO)
+     (*STANDARD-OI* IO)
+     (*TERMINAL-MARKUP-TABLE* DOCUMENTATION)
+     (+ ACL2-BUILT-INS)
+     (- ACL2-BUILT-INS)
+     (/ ACL2-BUILT-INS)
+     (/= ACL2-BUILT-INS)
+     (1+ ACL2-BUILT-INS)
+     (1- ACL2-BUILT-INS)
+     (< ACL2-BUILT-INS)
+     (<= ACL2-BUILT-INS)
+     (ACL2-PC::= PROOF-CHECKER-COMMANDS)
+     (= ACL2-BUILT-INS)
+     (> ACL2-BUILT-INS)
+     (>= ACL2-BUILT-INS)
+     (@ ACL2-BUILT-INS)
+     (|A Flying Tour of ACL2| |Pages Written Especially for the Tours|)
+     (|A Sketch of How the Rewriter Works|
+      |Pages Written Especially for the Tours|)
+     (|A Tiny Warning Sign| |Pages Written Especially for the Tours|)
+     (|A Trivial Proof| |Pages Written Especially for the Tours|)
+     (|A Typical State| |Pages Written Especially for the Tours|)
+     (|A Walking Tour of ACL2| |Pages Written Especially for the Tours|)
+     (A! MISCELLANEOUS)
+     (ABORT! MISCELLANEOUS)
+     (ABOUT-ACL2 ABOUT-ACL2)
+     (ABS ACL2-BUILT-INS)
+     (ACCUMULATED-PERSISTENCE OTHER)
+     (ACCUMULATED-PERSISTENCE-SUBTLETIES ACCUMULATED-PERSISTENCE)
+     (ACKNOWLEDGMENTS MISCELLANEOUS)
+     (|ACL2 Characters| |Pages Written Especially for the Tours|)
+     (|ACL2 Conses or Ordered Pairs| |Pages Written Especially for the Tours|)
+     (|ACL2 Strings| |Pages Written Especially for the Tours|)
+     (|ACL2 Symbols| |Pages Written Especially for the Tours|)
+     (|ACL2 System Architecture| |Pages Written Especially for the Tours|)
+     (|ACL2 as an Interactive Theorem Prover|
+      |Pages Written Especially for the Tours|)
+     (|ACL2 as an Interactive Theorem Prover (cont)|
+      |Pages Written Especially for the Tours|)
+     (|ACL2 is an Untyped Language| |Pages Written Especially for the Tours|)
+     (ACL2-AS-STANDALONE-PROGRAM ACL2-TUTORIAL)
+     (ACL2-BUILT-INS PROGRAMMING)
+     (ACL2-COUNT ACL2-BUILT-INS)
+     (ACL2-CUSTOMIZATION SWITCHES-PARAMETERS-AND-MODES)
+     (ACL2-DEFAULTS-TABLE OTHER)
+     (ACL2-HELP OTHER)
+     (ACL2-NUMBER-LISTP ACL2-BUILT-INS)
+     (ACL2-NUMBERP ACL2-BUILT-INS)
+     (ACL2-SEDAN ACL2-TUTORIAL)
+     (ACL2-TUTORIAL ACL2-TUTORIAL)
+     ("ACL2-USER" PROGRAMMING)
+     (ACL2-PC::ACL2-WRAP PROOF-CHECKER-COMMANDS)
+     (ACL2P-KEY-CHECKPOINTS PARALLEL-PROOF)
+     (ACL2S MISCELLANEOUS)
+     (ACONS ACL2-BUILT-INS)
+     (ACTIVE-RUNEP THEORIES)
+     (ACL2-PC::ADD-ABBREVIATION PROOF-CHECKER-COMMANDS)
+     (ADD-BINOP SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-CUSTOM-KEYWORD-HINT EVENTS)
+     (ADD-DEFAULT-HINTS SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-DEFAULT-HINTS! SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-DIVE-INTO-MACRO SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-INCLUDE-BOOK-DIR SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-INVISIBLE-FNS SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-LD-KEYWORD-ALIAS SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-LD-KEYWORD-ALIAS! SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-MACRO-ALIAS SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-MACRO-FN SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-MATCH-FREE-OVERRIDE SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-NTH-ALIAS SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-OVERRIDE-HINTS SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-OVERRIDE-HINTS! SWITCHES-PARAMETERS-AND-MODES)
+     (ADD-RAW-ARITY SET-RAW-MODE)
+     (ADD-TO-SET ACL2-BUILT-INS)
+     (ADD-TO-SET-EQ ACL2-BUILT-INS)
+     (ADD-TO-SET-EQL ACL2-BUILT-INS)
+     (ADD-TO-SET-EQUAL ACL2-BUILT-INS)
+     (ADVANCED-FEATURES ACL2-TUTORIAL)
+     (ACL2-PC::AL PROOF-CHECKER-COMMANDS)
+     (ALISTP ACL2-BUILT-INS)
+     (ALLOCATE-FIXNUM-RANGE ACL2-BUILT-INS)
+     (ALPHA-CHAR-P ACL2-BUILT-INS)
+     (ALPHORDER ACL2-BUILT-INS)
+     (ALTERNATIVE-INTRODUCTION ACL2-TUTORIAL)
+     (AND ACL2-BUILT-INS)
+     (ANNOTATED-ACL2-SCRIPTS ACL2-TUTORIAL)
+     (APPEND ACL2-BUILT-INS)
+     (ACL2-PC::APPLY-LINEAR PROOF-CHECKER-COMMANDS)
+     (APROPOS MISCELLANEOUS)
+     (ARCHITECTURE-OF-THE-PROVER INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (AREF1 ARRAYS)
+     (AREF2 ARRAYS)
+     (ARGS DOCUMENTATION)
+     (ARRAY1P ARRAYS)
+     (ARRAY2P ARRAYS)
+     (ARRAYS PROGRAMMING)
+     (ARRAYS-EXAMPLE ARRAYS)
+     (ASET1 ARRAYS)
+     (ASET2 ARRAYS)
+     (ASH ACL2-BUILT-INS)
+     (ASSERT$ ACL2-BUILT-INS)
+     (ASSERT-EVENT EVENTS)
+     (ASSIGN ACL2-BUILT-INS)
+     (ASSOC ACL2-BUILT-INS)
+     (ASSOC-EQ ACL2-BUILT-INS)
+     (ASSOC-EQUAL ACL2-BUILT-INS)
+     (ASSOC-KEYWORD ACL2-BUILT-INS)
+     (ASSOC-STRING-EQUAL ACL2-BUILT-INS)
+     (ATOM ACL2-BUILT-INS)
+     (ATOM-LISTP ACL2-BUILT-INS)
+     (|About Models| |Pages Written Especially for the Tours|)
+     (|About Types| |Pages Written Especially for the Tours|)
+     (|About the ACL2 Home Page| |Pages Written Especially for the Tours|)
+     (|About the Admission of Recursive Definitions|
+      |Pages Written Especially for the Tours|)
+     (|About the Prompt| |Pages Written Especially for the Tours|)
+     (|An Example Common Lisp Function Definition|
+      |Pages Written Especially for the Tours|)
+     (|An Example of ACL2 in Use| |Pages Written Especially for the Tours|)
+     (|Analyzing Common Lisp Models| |Pages Written Especially for the Tours|)
+     (BACKCHAIN-LIMIT MISCELLANEOUS)
+     (BACKCHAIN-LIMIT-RW MISCELLANEOUS)
+     (BACKTRACK MISCELLANEOUS)
+     (ACL2-PC::BASH PROOF-CHECKER-COMMANDS)
+     (BDD BDD)
+     (ACL2-PC::BDD PROOF-CHECKER-COMMANDS)
+     (BDD-ALGORITHM BDD)
+     (BDD-INTRODUCTION BDD)
+     (BIBLIOGRAPHY MISCELLANEOUS)
+     (BINARY-* ACL2-BUILT-INS)
+     (BINARY-+ ACL2-BUILT-INS)
+     (BINARY-APPEND ACL2-BUILT-INS)
+     (BIND-FREE MISCELLANEOUS)
+     (BIND-FREE-EXAMPLES BIND-FREE)
+     (ACL2-PC::BK PROOF-CHECKER-COMMANDS)
+     (BOOK-COMPILED-FILE BOOKS)
+     (BOOK-CONTENTS BOOKS)
+     (BOOK-EXAMPLE BOOKS)
+     (BOOK-MAKEFILES BOOKS)
+     (BOOK-NAME BOOKS)
+     (BOOKDATA BOOKS)
+     (ACL2-PC::BOOKMARK PROOF-CHECKER-COMMANDS)
+     (BOOKS BOOKS)
+     (BOOKS-CERTIFICATION BOOKS)
+     (BOOKS-CERTIFICATION-CLASSIC BOOKS)
+     (BOOLE$ ACL2-BUILT-INS)
+     (BOOLEANP ACL2-BUILT-INS)
+     (BOUNDERS TAU-SYSTEM)
+     (BREAK$ ACL2-BUILT-INS)
+     (BREAK-LEMMA BREAK-REWRITE)
+     (BREAK-ON-ERROR TRACE)
+     (BREAK-REWRITE BREAK-REWRITE)
+     (BREAKS ACL2-BUILT-INS)
+     (BRR BREAK-REWRITE)
+     (BRR-COMMANDS BREAK-REWRITE)
+     (BRR@ BREAK-REWRITE)
+     (BUILT-IN-CLAUSE RULE-CLASSES)
+     (BUTLAST ACL2-BUILT-INS)
+     (BY MISCELLANEOUS)
+     (CAAAAR ACL2-BUILT-INS)
+     (CAAADR ACL2-BUILT-INS)
+     (CAAAR ACL2-BUILT-INS)
+     (CAADAR ACL2-BUILT-INS)
+     (CAADDR ACL2-BUILT-INS)
+     (CAADR ACL2-BUILT-INS)
+     (CAAR ACL2-BUILT-INS)
+     (CADAAR ACL2-BUILT-INS)
+     (CADADR ACL2-BUILT-INS)
+     (CADAR ACL2-BUILT-INS)
+     (CADDAR ACL2-BUILT-INS)
+     (CADDDR ACL2-BUILT-INS)
+     (CADDR ACL2-BUILT-INS)
+     (CADR ACL2-BUILT-INS)
+     (CALLING-LD-IN-BAD-CONTEXTS LD)
+     (CANONICAL-PATHNAME ACL2-BUILT-INS)
+     (CAR ACL2-BUILT-INS)
+     (CASE ACL2-BUILT-INS)
+     (CASE-MATCH ACL2-BUILT-INS)
+     (CASE-SPLIT MISCELLANEOUS)
+     (CASE-SPLIT-LIMITATIONS MISCELLANEOUS)
+     (CASES MISCELLANEOUS)
+     (ACL2-PC::CASESPLIT PROOF-CHECKER-COMMANDS)
+     (CBD BOOKS)
+     (CDAAAR ACL2-BUILT-INS)
+     (CDAADR ACL2-BUILT-INS)
+     (CDAAR ACL2-BUILT-INS)
+     (CDADAR ACL2-BUILT-INS)
+     (CDADDR ACL2-BUILT-INS)
+     (CDADR ACL2-BUILT-INS)
+     (CDAR ACL2-BUILT-INS)
+     (CDDAAR ACL2-BUILT-INS)
+     (CDDADR ACL2-BUILT-INS)
+     (CDDAR ACL2-BUILT-INS)
+     (CDDDAR ACL2-BUILT-INS)
+     (CDDDDR ACL2-BUILT-INS)
+     (CDDDR ACL2-BUILT-INS)
+     (CDDR ACL2-BUILT-INS)
+     (CDR ACL2-BUILT-INS)
+     (CEILING ACL2-BUILT-INS)
+     (CERTIFICATE BOOKS)
+     (CERTIFY-BOOK BOOKS)
+     (CERTIFY-BOOK! OTHER)
+     (CERTIFYING-BOOKS BOOKS)
+     (ACL2-PC::CG PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::CHANGE-GOAL PROOF-CHECKER-COMMANDS)
+     (CHAR ACL2-BUILT-INS)
+     (CHAR-CODE ACL2-BUILT-INS)
+     (CHAR-DOWNCASE ACL2-BUILT-INS)
+     (CHAR-EQUAL ACL2-BUILT-INS)
+     (CHAR-UPCASE ACL2-BUILT-INS)
+     (CHAR< ACL2-BUILT-INS)
+     (CHAR<= ACL2-BUILT-INS)
+     (CHAR> ACL2-BUILT-INS)
+     (CHAR>= ACL2-BUILT-INS)
+     (CHARACTER-ALISTP ACL2-BUILT-INS)
+     (CHARACTER-ENCODING IO)
+     (CHARACTER-LISTP ACL2-BUILT-INS)
+     (CHARACTERP ACL2-BUILT-INS)
+     (CHARACTERS ACL2-BUILT-INS)
+     (CHECK-SUM ACL2-BUILT-INS)
+     (CHECKPOINT-FORCED-GOALS PROOF-TREE)
+     (ACL2-PC::CL-PROC PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::CLAIM PROOF-CHECKER-COMMANDS)
+     (CLAUSE-IDENTIFIER MISCELLANEOUS)
+     (CLAUSE-PROCESSOR RULE-CLASSES)
+     (ACL2-PC::CLAUSE-PROCESSOR PROOF-CHECKER-COMMANDS)
+     (CLEAR-HASH-TABLES HONS-AND-MEMOIZATION)
+     (CLEAR-MEMOIZE-STATISTICS HONS-AND-MEMOIZATION)
+     (CLEAR-MEMOIZE-TABLE HONS-AND-MEMOIZATION)
+     (CLEAR-MEMOIZE-TABLES HONS-AND-MEMOIZATION)
+     (CLOSE-INPUT-CHANNEL ACL2-BUILT-INS)
+     (CLOSE-OUTPUT-CHANNEL ACL2-BUILT-INS)
+     (CLOSE-TRACE-FILE TRACE)
+     (CODE-CHAR ACL2-BUILT-INS)
+     (COERCE ACL2-BUILT-INS)
+     (ACL2-PC::COMM PROOF-CHECKER-COMMANDS)
+     (COMMAND MISCELLANEOUS)
+     (COMMAND-DESCRIPTOR MISCELLANEOUS)
+     (COMMAND-LINE OTHER)
+     (ACL2-PC::COMMANDS PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::COMMENT PROOF-CHECKER-COMMANDS)
+     (COMMON-LISP MISCELLANEOUS)
+     (COMMUNITY-BOOKS BOOKS)
+     (COMP EVENTS)
+     (COMP-GCL COMP)
+     (COMPILATION PROGRAMMING)
+     (COMPILING-ACL2P PARALLELISM)
+     (COMPLEX ACL2-BUILT-INS)
+     (COMPLEX-RATIONALP ACL2-BUILT-INS)
+     (COMPLEX/COMPLEX-RATIONALP ACL2-BUILT-INS)
+     (COMPOUND-RECOGNIZER RULE-CLASSES)
+     (COMPRESS1 ARRAYS)
+     (COMPRESS2 ARRAYS)
+     (COMPUTED-HINTS MISCELLANEOUS)
+     (CONCATENATE ACL2-BUILT-INS)
+     (COND ACL2-BUILT-INS)
+     (CONGRUENCE RULE-CLASSES)
+     (CONJUGATE ACL2-BUILT-INS)
+     (CONS ACL2-BUILT-INS)
+     (CONS-SUBTREES HONS-AND-MEMOIZATION)
+     (CONSERVATIVITY-OF-DEFCHOOSE DEFCHOOSE)
+     (CONSP ACL2-BUILT-INS)
+     (CONSTRAINT MISCELLANEOUS)
+     (ACL2-PC::CONTRADICT PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::CONTRAPOSE PROOF-CHECKER-COMMANDS)
+     (COPYRIGHT MISCELLANEOUS)
+     (COROLLARY MISCELLANEOUS)
+     (COUNT ACL2-BUILT-INS)
+     (CPU-CORE-COUNT ACL2-BUILT-INS)
+     (CURRENT-PACKAGE MISCELLANEOUS)
+     (CURRENT-THEORY THEORIES)
+     (CUSTOM-KEYWORD-HINTS MISCELLANEOUS)
+     (CW ACL2-BUILT-INS)
+     (CW! ACL2-BUILT-INS)
+     (CW-GSTACK OTHER)
+     (|Common Lisp| |Pages Written Especially for the Tours|)
+     (|Common Lisp as a Modeling Language|
+      |Pages Written Especially for the Tours|)
+     (|Conversion| |Pages Written Especially for the Tours|)
+     (|Corroborating Models| |Pages Written Especially for the Tours|)
+     (DEAD-EVENTS OTHER)
+     (DEALING-WITH-KEY-COMBINATIONS-OF-FUNCTION-SYMBOLS
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (DEALING-WITH-TAU-PROBLEMS INTRODUCTION-TO-THE-TAU-SYSTEM)
+     (DECLARE PROGRAMMING)
+     (DECLARE-STOBJS STOBJ)
+     (DEFABBREV EVENTS)
+     (DEFABSSTOBJ EVENTS)
+     (DEFABSSTOBJ-MISSING-EVENTS EVENTS)
+     (DEFATTACH EVENTS)
+     (DEFAULT ARRAYS)
+     (DEFAULT-BACKCHAIN-LIMIT MISCELLANEOUS)
+     (DEFAULT-DEFUN-MODE MISCELLANEOUS)
+     (DEFAULT-HINTS MISCELLANEOUS)
+     (DEFAULT-HINTS-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (DEFAULT-PRINT-PROMPT MISCELLANEOUS)
+     (DEFAULT-RULER-EXTENDERS MISCELLANEOUS)
+     (DEFAULT-TOTAL-PARALLELISM-WORK-LIMIT PARALLEL-PROOF)
+     (DEFAULT-VERIFY-GUARDS-EAGERNESS SWITCHES-PARAMETERS-AND-MODES)
+     (DEFAXIOM EVENTS)
+     (DEFCHOOSE EVENTS)
+     (DEFCONG EVENTS)
+     (DEFCONST EVENTS)
+     (DEFDOC EVENTS)
+     (DEFEQUIV EVENTS)
+     (DEFEVALUATOR EVENTS)
+     (DEFEXEC EVENTS)
+     (DEFINE-PC-HELP PROOF-CHECKER)
+     (DEFINE-PC-MACRO PROOF-CHECKER)
+     (DEFINE-PC-META PROOF-CHECKER)
+     (DEFINE-TRUSTED-CLAUSE-PROCESSOR EVENTS)
+     (DEFINITION RULE-CLASSES)
+     (DEFLABEL EVENTS)
+     (DEFLOCK PARALLEL-PROGRAMMING)
+     (DEFMACRO EVENTS)
+     (DEFMACRO-LAST EVENTS)
+     (DEFN EVENTS)
+     (DEFND EVENTS)
+     (DEFPKG EVENTS)
+     (DEFPROXY EVENTS)
+     (DEFPUN EVENTS)
+     (DEFREFINEMENT EVENTS)
+     (DEFSTOBJ EVENTS)
+     (DEFSTUB EVENTS)
+     (DEFTHEORY EVENTS)
+     (DEFTHEORY-STATIC EVENTS)
+     (DEFTHM EVENTS)
+     (DEFTHMD EVENTS)
+     (DEFTTAG EVENTS)
+     (DEFUN EVENTS)
+     (DEFUN-INLINE EVENTS)
+     (DEFUN-MODE MISCELLANEOUS)
+     (DEFUN-MODE-CAVEAT COMMON-LISP)
+     (DEFUN-NOTINLINE EVENTS)
+     (DEFUN-NX EVENTS)
+     (DEFUN-SK EVENTS)
+     (DEFUN-SK-EXAMPLE DEFUN-SK)
+     (DEFUND EVENTS)
+     (DEFUND-INLINE EVENTS)
+     (DEFUND-NOTINLINE EVENTS)
+     (DEFUNS MISCELLANEOUS)
+     (DELETE-ASSOC ACL2-BUILT-INS)
+     (DELETE-ASSOC-EQ ACL2-BUILT-INS)
+     (DELETE-ASSOC-EQUAL ACL2-BUILT-INS)
+     (DELETE-INCLUDE-BOOK-DIR SWITCHES-PARAMETERS-AND-MODES)
+     (ACL2-PC::DEMOTE PROOF-CHECKER-COMMANDS)
+     (DENOMINATOR ACL2-BUILT-INS)
+     (DIGIT-CHAR-P ACL2-BUILT-INS)
+     (DIGIT-TO-CHAR ACL2-BUILT-INS)
+     (DIMENSIONS ARRAYS)
+     (DISABLE THEORIES)
+     (DISABLE-FORCING MISCELLANEOUS)
+     (DISABLE-IMMEDIATE-FORCE-MODEP MISCELLANEOUS)
+     (DISABLEDP MISCELLANEOUS)
+     (DISASSEMBLE$ OTHER)
+     (ACL2-PC::DIVE PROOF-CHECKER-COMMANDS)
+     (DIVE-INTO-MACROS-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (DMR OTHER)
+     (ACL2-PC::DO-ALL PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::DO-ALL-NO-PROMPT PROOF-CHECKER-COMMANDS)
+     (DO-NOT MISCELLANEOUS)
+     (DO-NOT-INDUCT MISCELLANEOUS)
+     (ACL2-PC::DO-STRICT PROOF-CHECKER-COMMANDS)
+     (DOC DOCUMENTATION)
+     (DOC! DOCUMENTATION)
+     (DOC-STRING DOCUMENTATION)
+     (DOCS DOCUMENTATION)
+     (DOCUMENTATION DOCUMENTATION)
+     (DOUBLE-REWRITE MISCELLANEOUS)
+     (ACL2-PC::DROP PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::DV PROOF-CHECKER-COMMANDS)
+     (DYNAMICALLY-MONITOR-REWRITES OTHER)
+     (E/D THEORIES)
+     (EARLY-TERMINATION PARALLEL-PROGRAMMING)
+     (EC-CALL ACL2-BUILT-INS)
+     (EIGHTH ACL2-BUILT-INS)
+     (ELIM RULE-CLASSES)
+     (ACL2-PC::ELIM PROOF-CHECKER-COMMANDS)
+     (EMACS ACL2-TUTORIAL)
+     (EMBEDDED-EVENT-FORM MISCELLANEOUS)
+     (ENABLE THEORIES)
+     (ENABLE-FORCING MISCELLANEOUS)
+     (ENABLE-IMMEDIATE-FORCE-MODEP MISCELLANEOUS)
+     (ENCAPSULATE EVENTS)
+     (ENDP ACL2-BUILT-INS)
+     (ENTER-BOOT-STRAP-MODE MISCELLANEOUS)
+     (EQ ACL2-BUILT-INS)
+     (EQL ACL2-BUILT-INS)
+     (EQLABLE-ALISTP ACL2-BUILT-INS)
+     (EQLABLE-LISTP ACL2-BUILT-INS)
+     (EQLABLEP ACL2-BUILT-INS)
+     (EQUAL ACL2-BUILT-INS)
+     (EQUALITY-VARIANTS PROGRAMMING)
+     (EQUALITY-VARIANTS-DETAILS EQUALITY-VARIANTS)
+     (ACL2-PC::EQUIV PROOF-CHECKER-COMMANDS)
+     (EQUIVALENCE RULE-CLASSES)
+     (EQUIVALENT-FORMULAS-DIFFERENT-REWRITE-RULES
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (ER ACL2-BUILT-INS)
+     (ER-PROGN ACL2-BUILT-INS)
+     (ERROR-TRIPLES STATE)
+     (ERROR-TRIPLES-AND-PARALLELISM PARALLEL-PROGRAMMING)
+     (ERROR1 ACL2-BUILT-INS)
+     (ESCAPE-TO-COMMON-LISP MISCELLANEOUS)
+     (EVALUATOR-RESTRICTIONS META)
+     (EVENP ACL2-BUILT-INS)
+     (EVENTS EVENTS)
+     (EVISC-TABLE EVENTS)
+     (EVISC-TUPLE IO)
+     (EVISCERATE-HIDE-TERMS IO)
+     (ACL2-PC::EX PROOF-CHECKER-COMMANDS)
+     (EXAMPLE-INDUCTION-SCHEME-BINARY-TREES INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (EXAMPLE-INDUCTION-SCHEME-DOWN-BY-2 INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (EXAMPLE-INDUCTION-SCHEME-NAT-RECURSION INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (EXAMPLE-INDUCTION-SCHEME-ON-LISTS INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (EXAMPLE-INDUCTION-SCHEME-ON-SEVERAL-VARIABLES
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (EXAMPLE-INDUCTION-SCHEME-UPWARDS INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (EXAMPLE-INDUCTION-SCHEME-WITH-ACCUMULATORS
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (EXAMPLE-INDUCTION-SCHEME-WITH-MULTIPLE-INDUCTION-STEPS
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (EXAMPLE-INDUCTIONS INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (EXECUTABLE-COUNTERPART MISCELLANEOUS)
+     (EXECUTABLE-COUNTERPART-THEORY THEORIES)
+     (EXISTS DEFUN-SK)
+     (EXIT OTHER)
+     (ACL2-PC::EXIT PROOF-CHECKER-COMMANDS)
+     (EXIT-BOOT-STRAP-MODE MISCELLANEOUS)
+     (EXPAND MISCELLANEOUS)
+     (ACL2-PC::EXPAND PROOF-CHECKER-COMMANDS)
+     (EXPLODE-NONNEGATIVE-INTEGER ACL2-BUILT-INS)
+     (EXPT ACL2-BUILT-INS)
+     (EXTENDED-METAFUNCTIONS MISCELLANEOUS)
+     (EXTERNAL-FORMAT IO)
+     (EXTRA-INFO GUARD)
+     (|Evaluating App on Sample Input| |Pages Written Especially for the Tours|)
+     (F-GET-GLOBAL ACL2-BUILT-INS)
+     (F-PUT-GLOBAL ACL2-BUILT-INS)
+     (ACL2-PC::FAIL PROOF-CHECKER-COMMANDS)
+     (FAILED-FORCING MISCELLANEOUS)
+     (FAILURE MISCELLANEOUS)
+     (FAST-ALIST-FREE HONS-AND-MEMOIZATION)
+     (FAST-ALIST-FREE-ON-EXIT HONS-AND-MEMOIZATION)
+     (FAST-ALIST-LEN HONS-AND-MEMOIZATION)
+     (FAST-ALIST-SUMMARY HONS-AND-MEMOIZATION)
+     (FAST-ALISTS HONS-AND-MEMOIZATION)
+     (FC-REPORT FORWARD-CHAINING-REPORTS)
+     (FIFTH ACL2-BUILT-INS)
+     (FILE-READING-EXAMPLE TUTORIAL5-MISCELLANEOUS-EXAMPLES)
+     (FINALIZE-EVENT-USER SWITCHES-PARAMETERS-AND-MODES)
+     (FIND-RULES-OF-RUNE MISCELLANEOUS)
+     (FINDING-DOCUMENTATION MISCELLANEOUS)
+     (ACL2-PC::FINISH PROOF-CHECKER-COMMANDS)
+     (FIRST ACL2-BUILT-INS)
+     (FIX ACL2-BUILT-INS)
+     (FIX-TRUE-LIST ACL2-BUILT-INS)
+     (FLET ACL2-BUILT-INS)
+     (FLOOR ACL2-BUILT-INS)
+     (FLUSH-COMPRESS ARRAYS)
+     (FLUSH-HONS-GET-HASH-TABLE-LINK HONS-AND-MEMOIZATION)
+     (FMS ACL2-BUILT-INS)
+     (FMS! ACL2-BUILT-INS)
+     (FMS!-TO-STRING ACL2-BUILT-INS)
+     (FMS-TO-STRING ACL2-BUILT-INS)
+     (FMT ACL2-BUILT-INS)
+     (FMT! ACL2-BUILT-INS)
+     (FMT!-TO-STRING ACL2-BUILT-INS)
+     (FMT-TO-COMMENT-WINDOW ACL2-BUILT-INS)
+     (FMT-TO-STRING ACL2-BUILT-INS)
+     (FMT1 ACL2-BUILT-INS)
+     (FMT1! ACL2-BUILT-INS)
+     (FMT1!-TO-STRING ACL2-BUILT-INS)
+     (FMT1-TO-STRING ACL2-BUILT-INS)
+     (FNCALL-TERM MISCELLANEOUS)
+     (FORALL DEFUN-SK)
+     (FORCE MISCELLANEOUS)
+     (FORCED MISCELLANEOUS)
+     (FORCING-ROUND MISCELLANEOUS)
+     (FORWARD-CHAINING RULE-CLASSES)
+     (FORWARD-CHAINING-REPORTS FORWARD-CHAINING-REPORTS)
+     (ACL2-PC::FORWARDCHAIN PROOF-CHECKER-COMMANDS)
+     (FOURTH ACL2-BUILT-INS)
+     (ACL2-PC::FREE PROOF-CHECKER-COMMANDS)
+     (FREE-VARIABLES RULE-CLASSES)
+     (FREE-VARIABLES-EXAMPLES FREE-VARIABLES)
+     (FREE-VARIABLES-EXAMPLES-FORWARD-CHAINING FREE-VARIABLES-EXAMPLES)
+     (FREE-VARIABLES-EXAMPLES-REWRITE FREE-VARIABLES-EXAMPLES)
+     (FREE-VARIABLES-TYPE-PRESCRIPTION FREE-VARIABLES)
+     (FREQUENTLY-ASKED-QUESTIONS-BY-NEWCOMERS INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (FULL-BOOK-NAME BOOKS)
+     (FUNCTION-THEORY THEORIES)
+     (FUNCTIONAL-INSTANTIATION-EXAMPLE TUTORIAL5-MISCELLANEOUS-EXAMPLES)
+     (FUNCTIONAL-INSTANTIATION-IN-ACL2R MISCELLANEOUS)
+     (FURTHER-INFORMATION-ON-REWRITING INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (FUTURE-WORK-RELATED-TO-THE-TAU-SYSTEM INTRODUCTION-TO-THE-TAU-SYSTEM)
+     (|Flawed Induction Candidates in App Example|
+      |Pages Written Especially for the Tours|)
+     (|Free Variables in Top-Level Input|
+      |Pages Written Especially for the Tours|)
+     (|Functions for Manipulating these Objects|
+      |Pages Written Especially for the Tours|)
+     (GAG-MODE MISCELLANEOUS)
+     (GC$ MISCELLANEOUS)
+     (GC-VERBOSE MISCELLANEOUS)
+     (GCL MISCELLANEOUS)
+     (GCS HISTORY)
+     (ACL2-PC::GENEQV PROOF-CHECKER-COMMANDS)
+     (GENERALIZE RULE-CLASSES)
+     (ACL2-PC::GENERALIZE PROOF-CHECKER-COMMANDS)
+     (GENERALIZED-BOOLEANS COMMON-LISP)
+     (GENERALIZING-KEY-CHECKPOINTS INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (GET-COMMAND-SEQUENCE HISTORY)
+     (GET-INTERNAL-TIME MISCELLANEOUS)
+     (GET-OUTPUT-STREAM-STRING$ ACL2-BUILT-INS)
+     (GET-WORMHOLE-STATUS MISCELLANEOUS)
+     (GETENV$ ACL2-BUILT-INS)
+     (GETPROP ACL2-BUILT-INS)
+     (GOAL-SPEC MISCELLANEOUS)
+     (ACL2-PC::GOALS PROOF-CHECKER-COMMANDS)
+     (GOOD-ATOM-LISTP ACL2-BUILT-INS)
+     (GOOD-BYE OTHER)
+     (GRANULARITY PARALLEL-PROGRAMMING)
+     (GROUND-ZERO THEORIES)
+     (GUARD MISCELLANEOUS)
+     (GUARD-DEBUG GUARD)
+     (GUARD-EVALUATION-EXAMPLES-LOG GUARD)
+     (GUARD-EVALUATION-EXAMPLES-SCRIPT GUARD)
+     (GUARD-EVALUATION-TABLE GUARD)
+     (GUARD-EXAMPLE TUTORIAL5-MISCELLANEOUS-EXAMPLES)
+     (GUARD-HINTS MISCELLANEOUS)
+     (GUARD-INTRODUCTION GUARD)
+     (GUARD-MISCELLANY GUARD)
+     (GUARD-OBLIGATION OTHER)
+     (GUARD-QUICK-REFERENCE GUARD)
+     (GUARDS-AND-EVALUATION GUARD)
+     (GUARDS-FOR-SPECIFICATION GUARD)
+     (|Guards| |Pages Written Especially for the Tours|)
+     (|Guessing the Type of a Newly Admitted Function|
+      |Pages Written Especially for the Tours|)
+     (|Guiding the ACL2 Theorem Prover| |Pages Written Especially for the Tours|)
+     (HANDS-OFF MISCELLANEOUS)
+     (HARD-ERROR ACL2-BUILT-INS)
+     (HEADER ARRAYS)
+     (HELP DOCUMENTATION)
+     (ACL2-PC::HELP PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::HELP! PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::HELP-LONG PROOF-CHECKER-COMMANDS)
+     (HIDDEN-DEATH-PACKAGE DEFPKG)
+     (HIDDEN-DEFPKG DEFPKG)
+     (HIDE MISCELLANEOUS)
+     (HINTS MISCELLANEOUS)
+     (HINTS-AND-THE-WATERFALL MISCELLANEOUS)
+     (HISTORY HISTORY)
+     (HONS HONS-AND-MEMOIZATION)
+     (HONS-ACONS HONS-AND-MEMOIZATION)
+     (HONS-ACONS! HONS-AND-MEMOIZATION)
+     (HONS-AND-MEMOIZATION HONS-AND-MEMOIZATION)
+     (HONS-ASSOC-EQUAL HONS-AND-MEMOIZATION)
+     (HONS-CLEAR HONS-AND-MEMOIZATION)
+     (HONS-COPY HONS-AND-MEMOIZATION)
+     (HONS-COPY-PERSISTENT HONS-AND-MEMOIZATION)
+     (HONS-EQUAL HONS-AND-MEMOIZATION)
+     (HONS-EQUAL-LITE HONS-AND-MEMOIZATION)
+     (HONS-GET HONS-AND-MEMOIZATION)
+     (HONS-NOTE HONS-AND-MEMOIZATION)
+     (HONS-RESIZE HONS-AND-MEMOIZATION)
+     (HONS-SHRINK-ALIST HONS-AND-MEMOIZATION)
+     (HONS-SHRINK-ALIST! HONS-AND-MEMOIZATION)
+     (HONS-SUMMARY HONS-AND-MEMOIZATION)
+     (HONS-WASH HONS-AND-MEMOIZATION)
+     (ACL2-PC::HYPS PROOF-CHECKER-COMMANDS)
+     (|Hey Wait!  Is ACL2 Typed or Untyped(Q)|
+      |Pages Written Especially for the Tours|)
+     (|How Long Does It Take to Become an Effective User(Q)|
+      |Pages Written Especially for the Tours|)
+     (|How To Find Out about ACL2 Functions|
+      |Pages Written Especially for the Tours|)
+     (|How To Find Out about ACL2 Functions (cont)|
+      |Pages Written Especially for the Tours|)
+     (I-AM-HERE MISCELLANEOUS)
+     (I-CLOSE REAL)
+     (I-LARGE REAL)
+     (I-LIMITED REAL)
+     (I-SMALL REAL)
+     (IDENTITY ACL2-BUILT-INS)
+     (IF ACL2-BUILT-INS)
+     (IF* BDD)
+     (IF-INTRO MISCELLANEOUS)
+     (IFF ACL2-BUILT-INS)
+     (IFIX ACL2-BUILT-INS)
+     (IGNORABLE PROGRAMMING)
+     (IGNORE PROGRAMMING)
+     (IGNORED-ATTACHMENT MISCELLANEOUS)
+     (ILLEGAL ACL2-BUILT-INS)
+     (ACL2-PC::ILLEGAL PROOF-CHECKER-COMMANDS)
+     (IMAGPART ACL2-BUILT-INS)
+     (IMMED-FORCED MISCELLANEOUS)
+     (IMMEDIATE-FORCE-MODEP MISCELLANEOUS)
+     (IMPLIES ACL2-BUILT-INS)
+     (IMPROPER-CONSP ACL2-BUILT-INS)
+     (IN-ARITHMETIC-THEORY EVENTS)
+     (IN-PACKAGE OTHER)
+     (IN-TAU-INTERVALP TAU-SYSTEM)
+     (IN-THEORY EVENTS)
+     (ACL2-PC::IN-THEORY PROOF-CHECKER-COMMANDS)
+     (INCLUDE-BOOK EVENTS)
+     (INCOMPATIBLE THEORIES)
+     (INDUCT MISCELLANEOUS)
+     (ACL2-PC::INDUCT PROOF-CHECKER-COMMANDS)
+     (INDUCTION RULE-CLASSES)
+     (INITIALIZE-EVENT-USER SWITCHES-PARAMETERS-AND-MODES)
+     (INSTRUCTIONS PROOF-CHECKER)
+     (INT= ACL2-BUILT-INS)
+     (INTEGER-LENGTH ACL2-BUILT-INS)
+     (INTEGER-LISTP ACL2-BUILT-INS)
+     (INTEGERP ACL2-BUILT-INS)
+     (INTERESTING-APPLICATIONS ACL2-TUTORIAL)
+     (INTERN ACL2-BUILT-INS)
+     (INTERN$ ACL2-BUILT-INS)
+     (INTERN-IN-PACKAGE-OF-SYMBOL ACL2-BUILT-INS)
+     (INTERSECTION$ ACL2-BUILT-INS)
+     (INTERSECTION-EQ ACL2-BUILT-INS)
+     (INTERSECTION-EQUAL ACL2-BUILT-INS)
+     (INTERSECTION-THEORIES THEORIES)
+     (INTERSECTP ACL2-BUILT-INS)
+     (INTERSECTP-EQ ACL2-BUILT-INS)
+     (INTERSECTP-EQUAL ACL2-BUILT-INS)
+     (INTRODUCTION-TO-A-FEW-SYSTEM-CONSIDERATIONS
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTION-TO-HINTS INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTION-TO-KEY-CHECKPOINTS INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTION-TO-REWRITE-RULES-PART-1 INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTION-TO-REWRITE-RULES-PART-2 INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTION-TO-THE-DATABASE INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTION-TO-THE-TAU-SYSTEM INTRODUCTION-TO-THE-TAU-SYSTEM)
+     (INTRODUCTION-TO-THE-THEOREM-PROVER ACL2-TUTORIAL)
+     (INTRODUCTORY-CHALLENGE-PROBLEM-1 INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTORY-CHALLENGE-PROBLEM-1-ANSWER INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTORY-CHALLENGE-PROBLEM-2 INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTORY-CHALLENGE-PROBLEM-2-ANSWER INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTORY-CHALLENGE-PROBLEM-3 INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTORY-CHALLENGE-PROBLEM-3-ANSWER INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTORY-CHALLENGE-PROBLEM-4 INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTORY-CHALLENGE-PROBLEM-4-ANSWER INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INTRODUCTORY-CHALLENGES INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (INVISIBLE-FNS-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (IO IO)
+     (IPRINT IO)
+     (IPRINTING IO)
+     (IRRELEVANT-FORMALS PROGRAMMING)
+     (KEEP BOOKS)
+     (KEYWORD MISCELLANEOUS)
+     (KEYWORD-COMMANDS MISCELLANEOUS)
+     (KEYWORD-VALUE-LISTP ACL2-BUILT-INS)
+     (KEYWORDP ACL2-BUILT-INS)
+     (KWOTE ACL2-BUILT-INS)
+     (KWOTE-LST ACL2-BUILT-INS)
+     (LAMBDA MISCELLANEOUS)
+     (LAST ACL2-BUILT-INS)
+     (LAST-PROVER-STEPS MISCELLANEOUS)
+     (LD OTHER)
+     (LD-ERROR-ACTION MISCELLANEOUS)
+     (LD-ERROR-TRIPLES MISCELLANEOUS)
+     (LD-EVISC-TUPLE MISCELLANEOUS)
+     (LD-KEYWORD-ALIASES SWITCHES-PARAMETERS-AND-MODES)
+     (LD-MISSING-INPUT-OK MISCELLANEOUS)
+     (LD-POST-EVAL-PRINT MISCELLANEOUS)
+     (LD-PRE-EVAL-FILTER MISCELLANEOUS)
+     (LD-PRE-EVAL-PRINT MISCELLANEOUS)
+     (LD-PROMPT MISCELLANEOUS)
+     (LD-QUERY-CONTROL-ALIST MISCELLANEOUS)
+     (LD-REDEFINITION-ACTION MISCELLANEOUS)
+     (LD-SKIP-PROOFSP MISCELLANEOUS)
+     (LD-VERBOSE MISCELLANEOUS)
+     (LEMMA-INSTANCE MISCELLANEOUS)
+     (ACL2-PC::LEMMAS-USED PROOF-CHECKER-COMMANDS)
+     (LEN ACL2-BUILT-INS)
+     (LENGTH ACL2-BUILT-INS)
+     (LET ACL2-BUILT-INS)
+     (LET* ACL2-BUILT-INS)
+     (LEXORDER ACL2-BUILT-INS)
+     (LINEAR RULE-CLASSES)
+     (LINEAR-ARITHMETIC MISCELLANEOUS)
+     (ACL2-PC::LISP PROOF-CHECKER-COMMANDS)
+     (LIST ACL2-BUILT-INS)
+     (LIST* ACL2-BUILT-INS)
+     (LISTP ACL2-BUILT-INS)
+     (LOCAL EVENTS)
+     (LOCAL-INCOMPATIBILITY MISCELLANEOUS)
+     (LOGAND ACL2-BUILT-INS)
+     (LOGANDC1 ACL2-BUILT-INS)
+     (LOGANDC2 ACL2-BUILT-INS)
+     (LOGBITP ACL2-BUILT-INS)
+     (LOGCOUNT ACL2-BUILT-INS)
+     (LOGEQV ACL2-BUILT-INS)
+     (LOGIC SWITCHES-PARAMETERS-AND-MODES)
+     (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-BASE-CASE
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-EQUALS-FOR-EQUALS
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-EVALUATION
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-INDUCTIVE-PROOF
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-INSTANCE
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-PROPOSITIONAL-CALCULUS
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-Q1-ANSWER
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-Q2-ANSWER
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-Q3-ANSWER
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-REWRITING
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (LOGIC-KNOWLEDGE-TAKEN-FOR-GRANTED-REWRITING-REPEATEDLY
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (LOGICAL-NAME MISCELLANEOUS)
+     (LOGIOR ACL2-BUILT-INS)
+     (LOGNAND ACL2-BUILT-INS)
+     (LOGNOR ACL2-BUILT-INS)
+     (LOGNOT ACL2-BUILT-INS)
+     (LOGORC1 ACL2-BUILT-INS)
+     (LOGORC2 ACL2-BUILT-INS)
+     (LOGTEST ACL2-BUILT-INS)
+     (LOGXOR ACL2-BUILT-INS)
+     (LOOP-STOPPER MISCELLANEOUS)
+     (LOWER-CASE-P ACL2-BUILT-INS)
+     (LP MISCELLANEOUS)
+     (MACRO-ALIASES-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (MACRO-ARGS MISCELLANEOUS)
+     (MACRO-COMMAND PROOF-CHECKER)
+     (MAKE-CHARACTER-LIST ACL2-BUILT-INS)
+     (MAKE-EVENT EVENTS)
+     (MAKE-EVENT-DETAILS MAKE-EVENT)
+     (MAKE-FAST-ALIST HONS-AND-MEMOIZATION)
+     (MAKE-LIST ACL2-BUILT-INS)
+     (MAKE-ORD ACL2-BUILT-INS)
+     (MAKE-TAU-INTERVAL TAU-SYSTEM)
+     (MAKE-WORMHOLE-STATUS MISCELLANEOUS)
+     (MANAGING-ACL2-PACKAGES DEFPKG)
+     (MARKUP DOCUMENTATION)
+     (MAX ACL2-BUILT-INS)
+     (MAXIMUM-LENGTH ARRAYS)
+     (MBE ACL2-BUILT-INS)
+     (MBE1 ACL2-BUILT-INS)
+     (MBT ACL2-BUILT-INS)
+     (MEASURE MISCELLANEOUS)
+     (MEMBER ACL2-BUILT-INS)
+     (MEMBER-EQ ACL2-BUILT-INS)
+     (MEMBER-EQUAL ACL2-BUILT-INS)
+     (MEMOIZE EVENTS)
+     (MEMOIZE-SUMMARY HONS-AND-MEMOIZATION)
+     (MEMSUM HONS-AND-MEMOIZATION)
+     (META RULE-CLASSES)
+     (META-EXTRACT MISCELLANEOUS)
+     (META-EXTRACT-CONTEXTUAL-FACT MISCELLANEOUS)
+     (META-EXTRACT-FORMULA MISCELLANEOUS)
+     (META-EXTRACT-GLOBAL-FACT MISCELLANEOUS)
+     (META-EXTRACT-GLOBAL-FACT+ MISCELLANEOUS)
+     (META-EXTRACT-RW+-TERM MISCELLANEOUS)
+     (MIN ACL2-BUILT-INS)
+     (MINIMAL-THEORY THEORIES)
+     (MINUSP ACL2-BUILT-INS)
+     (MISCELLANEOUS MISCELLANEOUS)
+     (MOD ACL2-BUILT-INS)
+     (MOD-EXPT ACL2-BUILT-INS)
+     (MODE MISCELLANEOUS)
+     (MONITOR BREAK-REWRITE)
+     (MONITORED-RUNES BREAK-REWRITE)
+     (MORE DOCUMENTATION)
+     (ACL2-PC::MORE PROOF-CHECKER-COMMANDS)
+     (MORE! DOCUMENTATION)
+     (ACL2-PC::MORE! PROOF-CHECKER-COMMANDS)
+     (MORE-DOC DOCUMENTATION)
+     (MSG ACL2-BUILT-INS)
+     (MUST-BE-EQUAL ACL2-BUILT-INS)
+     (MUTUAL-RECURSION EVENTS)
+     (MUTUAL-RECURSION-PROOF-EXAMPLE TUTORIAL5-MISCELLANEOUS-EXAMPLES)
+     (MV ACL2-BUILT-INS)
+     (MV-LET ACL2-BUILT-INS)
+     (MV-LIST ACL2-BUILT-INS)
+     (MV-NTH ACL2-BUILT-INS)
+     (MV? ACL2-BUILT-INS)
+     (MV?-LET ACL2-BUILT-INS)
+     (|Modeling in ACL2| |Pages Written Especially for the Tours|)
+     (|Models in Engineering| |Pages Written Especially for the Tours|)
+     (|Models of Computer Hardware and Software|
+      |Pages Written Especially for the Tours|)
+     (NAME MISCELLANEOUS)
+     (NAT-LISTP ACL2-BUILT-INS)
+     (NATP ACL2-BUILT-INS)
+     (ACL2-PC::NEGATE PROOF-CHECKER-COMMANDS)
+     (NESTED-STOBJS STOBJ)
+     (NEVER-MEMOIZE HONS-AND-MEMOIZATION)
+     (NFIX ACL2-BUILT-INS)
+     (ACL2-PC::NIL PROOF-CHECKER-COMMANDS)
+     (NIL-GOAL MISCELLANEOUS)
+     (NINTH ACL2-BUILT-INS)
+     (NO-DUPLICATESP ACL2-BUILT-INS)
+     (NO-DUPLICATESP-EQ ACL2-BUILT-INS)
+     (NO-DUPLICATESP-EQUAL ACL2-BUILT-INS)
+     (NO-THANKS MISCELLANEOUS)
+     (ACL2-PC::NOISE PROOF-CHECKER-COMMANDS)
+     (NON-EXEC ACL2-BUILT-INS)
+     (NON-EXECUTABLE MISCELLANEOUS)
+     (NON-LINEAR-ARITHMETIC MISCELLANEOUS)
+     (NONLINEARP MISCELLANEOUS)
+     (NONNEGATIVE-INTEGER-QUOTIENT ACL2-BUILT-INS)
+     (NORMALIZE MISCELLANEOUS)
+     (NORMED HONS-AND-MEMOIZATION)
+     (NOT ACL2-BUILT-INS)
+     (NOTE-2-0 RELEASE-NOTES)
+     (NOTE-2-1 RELEASE-NOTES)
+     (NOTE-2-2 RELEASE-NOTES)
+     (NOTE-2-3 RELEASE-NOTES)
+     (NOTE-2-4 RELEASE-NOTES)
+     (NOTE-2-5 RELEASE-NOTES)
+     (|NOTE-2-5(R)| RELEASE-NOTES)
+     (NOTE-2-6 RELEASE-NOTES)
+     (|NOTE-2-6(R)| RELEASE-NOTES)
+     (NOTE-2-6-GUARDS NOTE-2-6)
+     (NOTE-2-6-NEW-FUNCTIONALITY NOTE-2-6)
+     (NOTE-2-6-OTHER NOTE-2-6)
+     (NOTE-2-6-PROOF-CHECKER NOTE-2-6)
+     (NOTE-2-6-PROOFS NOTE-2-6)
+     (NOTE-2-6-RULES NOTE-2-6)
+     (NOTE-2-6-SYSTEM NOTE-2-6)
+     (NOTE-2-7 RELEASE-NOTES)
+     (|NOTE-2-7(R)| RELEASE-NOTES)
+     (NOTE-2-7-BUG-FIXES NOTE-2-7)
+     (NOTE-2-7-GUARDS NOTE-2-7)
+     (NOTE-2-7-NEW-FUNCTIONALITY NOTE-2-7)
+     (NOTE-2-7-OTHER NOTE-2-7)
+     (NOTE-2-7-PROOF-CHECKER NOTE-2-7)
+     (NOTE-2-7-PROOFS NOTE-2-7)
+     (NOTE-2-7-RULES NOTE-2-7)
+     (NOTE-2-7-SYSTEM NOTE-2-7)
+     (NOTE-2-8 RELEASE-NOTES)
+     (|NOTE-2-8(R)| RELEASE-NOTES)
+     (NOTE-2-8-BUG-FIXES NOTE-2-8)
+     (NOTE-2-8-GUARDS NOTE-2-8)
+     (NOTE-2-8-NEW-FUNCTIONALITY NOTE-2-8)
+     (NOTE-2-8-ORDINALS NOTE-2-8)
+     (NOTE-2-8-OTHER NOTE-2-8)
+     (NOTE-2-8-PROOF-CHECKER NOTE-2-8)
+     (NOTE-2-8-PROOFS NOTE-2-8)
+     (NOTE-2-8-RULES NOTE-2-8)
+     (NOTE-2-8-SYSTEM NOTE-2-8)
+     (NOTE-2-9 RELEASE-NOTES)
+     (|NOTE-2-9(R)| RELEASE-NOTES)
+     (NOTE-2-9-1 RELEASE-NOTES)
+     (NOTE-2-9-2 RELEASE-NOTES)
+     (NOTE-2-9-3 RELEASE-NOTES)
+     (NOTE-2-9-3-PPR-CHANGE NOTE-2-9-3)
+     (NOTE-2-9-4 RELEASE-NOTES)
+     (NOTE-2-9-5 RELEASE-NOTES)
+     (NOTE-3-0 RELEASE-NOTES)
+     (|NOTE-3-0(R)| RELEASE-NOTES)
+     (NOTE-3-0-1 RELEASE-NOTES)
+     (|NOTE-3-0-1(R)| RELEASE-NOTES)
+     (NOTE-3-0-2 RELEASE-NOTES)
+     (NOTE-3-1 RELEASE-NOTES)
+     (|NOTE-3-1(R)| RELEASE-NOTES)
+     (NOTE-3-2 RELEASE-NOTES)
+     (|NOTE-3-2(R)| RELEASE-NOTES)
+     (NOTE-3-2-1 RELEASE-NOTES)
+     (|NOTE-3-2-1(R)| RELEASE-NOTES)
+     (NOTE-3-3 RELEASE-NOTES)
+     (|NOTE-3-3(R)| RELEASE-NOTES)
+     (NOTE-3-4 RELEASE-NOTES)
+     (|NOTE-3-4(R)| RELEASE-NOTES)
+     (NOTE-3-5 RELEASE-NOTES)
+     (|NOTE-3-5(R)| RELEASE-NOTES)
+     (NOTE-3-6 RELEASE-NOTES)
+     (|NOTE-3-6(R)| RELEASE-NOTES)
+     (NOTE-3-6-1 RELEASE-NOTES)
+     (NOTE-4-0 RELEASE-NOTES)
+     (|NOTE-4-0(R)| RELEASE-NOTES)
+     (NOTE-4-0-WORMHOLE-CHANGES NOTE-4-0)
+     (NOTE-4-1 RELEASE-NOTES)
+     (|NOTE-4-1(R)| RELEASE-NOTES)
+     (NOTE-4-2 RELEASE-NOTES)
+     (|NOTE-4-2(R)| RELEASE-NOTES)
+     (NOTE-4-3 RELEASE-NOTES)
+     (|NOTE-4-3(R)| RELEASE-NOTES)
+     (NOTE-5-0 RELEASE-NOTES)
+     (NOTE-6-0 RELEASE-NOTES)
+     (NOTE-6-1 RELEASE-NOTES)
+     (NOTE-6-2 RELEASE-NOTES)
+     (NOTE-6-3 RELEASE-NOTES)
+     (NOTE-6-4 RELEASE-NOTES)
+     (NOTE1 RELEASE-NOTES)
+     (NOTE2 RELEASE-NOTES)
+     (NOTE3 RELEASE-NOTES)
+     (NOTE4 RELEASE-NOTES)
+     (NOTE5 RELEASE-NOTES)
+     (NOTE6 RELEASE-NOTES)
+     (NOTE7 RELEASE-NOTES)
+     (NOTE8 RELEASE-NOTES)
+     (NOTE8-UPDATE RELEASE-NOTES)
+     (NOTE9 RELEASE-NOTES)
+     (NQTHM-TO-ACL2 DOCUMENTATION)
+     (NTH ACL2-BUILT-INS)
+     (NTH-ALIASES-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (NTHCDR ACL2-BUILT-INS)
+     (NU-REWRITER MISCELLANEOUS)
+     (NULL ACL2-BUILT-INS)
+     (NUMBER-SUBTREES HONS-AND-MEMOIZATION)
+     (NUMERATOR ACL2-BUILT-INS)
+     (ACL2-PC::NX PROOF-CHECKER-COMMANDS)
+     (|Name the Formula Above| |Pages Written Especially for the Tours|)
+     (|Nontautological Subgoals| |Pages Written Especially for the Tours|)
+     (|Numbers in ACL2| |Pages Written Especially for the Tours|)
+     (O-FINP ACL2-BUILT-INS)
+     (O-FIRST-COEFF ACL2-BUILT-INS)
+     (O-FIRST-EXPT ACL2-BUILT-INS)
+     (O-INFP ACL2-BUILT-INS)
+     (O-P ACL2-BUILT-INS)
+     (O-RST ACL2-BUILT-INS)
+     (O< ACL2-BUILT-INS)
+     (O<= ACL2-BUILT-INS)
+     (O> ACL2-BUILT-INS)
+     (O>= ACL2-BUILT-INS)
+     (OBDD MISCELLANEOUS)
+     (OBSERVATION ACL2-BUILT-INS)
+     (OBSERVATION-CW ACL2-BUILT-INS)
+     (ODDP ACL2-BUILT-INS)
+     (OK-IF BREAK-REWRITE)
+     (OOPS HISTORY)
+     (OPEN-INPUT-CHANNEL ACL2-BUILT-INS)
+     (OPEN-INPUT-CHANNEL-P ACL2-BUILT-INS)
+     (OPEN-OUTPUT-CHANNEL ACL2-BUILT-INS)
+     (OPEN-OUTPUT-CHANNEL! IO)
+     (OPEN-OUTPUT-CHANNEL-P ACL2-BUILT-INS)
+     (OPEN-TRACE-FILE TRACE)
+     (OPTIMIZE PROGRAMMING)
+     (OR ACL2-BUILT-INS)
+     (ORACLE-APPLY ACL2-BUILT-INS)
+     (ORACLE-APPLY-RAW ACL2-BUILT-INS)
+     (ORACLE-FUNCALL ACL2-BUILT-INS)
+     (ORDINALS MISCELLANEOUS)
+     (ACL2-PC::ORELSE PROOF-CHECKER-COMMANDS)
+     (OTF-FLG MISCELLANEOUS)
+     (OTHER OTHER)
+     (OUTPUT-TO-FILE IO)
+     (OVERRIDE-HINTS MISCELLANEOUS)
+     (|On the Naming of Subgoals| |Pages Written Especially for the Tours|)
+     (|Other Requirements| |Pages Written Especially for the Tours|)
+     (|Overview of the Expansion of ENDP in the Base Case|
+      |Pages Written Especially for the Tours|)
+     (|Overview of the Expansion of ENDP in the Induction Step|
+      |Pages Written Especially for the Tours|)
+     (|Overview of the Final Simplification in the Base Case|
+      |Pages Written Especially for the Tours|)
+     (|Overview of the Proof of a Trivial Consequence|
+      |Pages Written Especially for the Tours|)
+     (|Overview of the Simplification of the Base Case to T|
+      |Pages Written Especially for the Tours|)
+     (|Overview of the Simplification of the Induction Conclusion|
+      |Pages Written Especially for the Tours|)
+     (|Overview of the Simplification of the Induction Step to T|
+      |Pages Written Especially for the Tours|)
+     (ACL2-PC::P PROOF-CHECKER-COMMANDS)
+     (P! MISCELLANEOUS)
+     (ACL2-PC::P-TOP PROOF-CHECKER-COMMANDS)
+     (PACKAGE-REINCARNATION-IMPORT-RESTRICTIONS MISCELLANEOUS)
+     (PAIRLIS ACL2-BUILT-INS)
+     (PAIRLIS$ ACL2-BUILT-INS)
+     (PAND PARALLEL-PROGRAMMING)
+     (PARALLEL MISCELLANEOUS)
+     (PARALLEL-EXECUTION PARALLEL-PROGRAMMING)
+     (PARALLEL-PROGRAMMING PARALLELISM)
+     (PARALLEL-PROOF PARALLELISM)
+     (PARALLEL-PUSHING-OF-SUBGOALS-FOR-INDUCTION PARALLEL-PROOF)
+     (PARALLELISM PARALLELISM)
+     (PARALLELISM-AT-THE-TOP-LEVEL PARALLEL-PROGRAMMING)
+     (PARALLELISM-BUILD MISCELLANEOUS)
+     (PARALLELISM-PERFORMANCE PARALLEL-PROGRAMMING)
+     (PARALLELISM-TUTORIAL PARALLEL-PROGRAMMING)
+     (PARGS PARALLEL-PROGRAMMING)
+     (PATHNAME BOOKS)
+     (PBT HISTORY)
+     (PC HISTORY)
+     (PCB HISTORY)
+     (PCB! HISTORY)
+     (PCS HISTORY)
+     (PE HISTORY)
+     (PE! HISTORY)
+     (PEEK-CHAR$ ACL2-BUILT-INS)
+     (PF HISTORY)
+     (PKG-IMPORTS ACL2-BUILT-INS)
+     (PKG-WITNESS ACL2-BUILT-INS)
+     (PL HISTORY)
+     (ACL2-PC::PL PROOF-CHECKER-COMMANDS)
+     (PL2 HISTORY)
+     (PLET PARALLEL-PROGRAMMING)
+     (PLUSP ACL2-BUILT-INS)
+     (POR PARALLEL-PROGRAMMING)
+     (PORTCULLIS BOOKS)
+     (POSITION ACL2-BUILT-INS)
+     (POSITION-EQ ACL2-BUILT-INS)
+     (POSITION-EQUAL ACL2-BUILT-INS)
+     (POSP ACL2-BUILT-INS)
+     (POST-INDUCTION-KEY-CHECKPOINTS INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (ACL2-PC::PP PROOF-CHECKER-COMMANDS)
+     (PPROGN ACL2-BUILT-INS)
+     (PR HISTORY)
+     (ACL2-PC::PR PROOF-CHECKER-COMMANDS)
+     (PR! HISTORY)
+     (PRACTICE-FORMULATING-STRONG-RULES INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (PRACTICE-FORMULATING-STRONG-RULES-1 INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (PRACTICE-FORMULATING-STRONG-RULES-2 INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (PRACTICE-FORMULATING-STRONG-RULES-3 INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (PRACTICE-FORMULATING-STRONG-RULES-4 INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (PRACTICE-FORMULATING-STRONG-RULES-5 INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (PRACTICE-FORMULATING-STRONG-RULES-6 INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (PRINC$ ACL2-BUILT-INS)
+     (ACL2-PC::PRINT PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::PRINT-ALL-CONCS PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::PRINT-ALL-GOALS PROOF-CHECKER-COMMANDS)
+     (PRINT-CONTROL IO)
+     (PRINT-DOC-START-COLUMN MISCELLANEOUS)
+     (PRINT-GV OTHER)
+     (ACL2-PC::PRINT-MAIN PROOF-CHECKER-COMMANDS)
+     (PRINT-OBJECT$ ACL2-BUILT-INS)
+     (PRINT-SUMMARY-USER SWITCHES-PARAMETERS-AND-MODES)
+     (PRINTING-TO-STRINGS IO)
+     (ACL2-PC::PRO PROOF-CHECKER-COMMANDS)
+     (PROFILE EVENTS)
+     (PROG2$ ACL2-BUILT-INS)
+     (PROGN EVENTS)
+     (PROGN! EVENTS)
+     (PROGN$ ACL2-BUILT-INS)
+     (PROGRAM SWITCHES-PARAMETERS-AND-MODES)
+     (PROGRAMMING PROGRAMMING)
+     (PROGRAMMING-KNOWLEDGE-TAKEN-FOR-GRANTED INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (PROGRAMMING-WITH-STATE STATE)
+     (ACL2-PC::PROMOTE PROOF-CHECKER-COMMANDS)
+     (PROMPT MISCELLANEOUS)
+     (PROOF-CHECKER PROOF-CHECKER)
+     (PROOF-CHECKER-COMMANDS PROOF-CHECKER)
+     (PROOF-OF-WELL-FOUNDEDNESS MISCELLANEOUS)
+     (PROOF-SUPPORTERS-ALIST MISCELLANEOUS)
+     (PROOF-TREE PROOF-TREE)
+     (PROOF-TREE-DETAILS PROOF-TREE)
+     (PROOF-TREE-EXAMPLES PROOF-TREE)
+     (PROOFS-CO ACL2-BUILT-INS)
+     (PROPER-CONSP ACL2-BUILT-INS)
+     (PROPS OTHER)
+     (ACL2-PC::PROTECT PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::PROVE PROOF-CHECKER-COMMANDS)
+     (PROVISIONAL-CERTIFICATION BOOKS)
+     (PSEUDO-TERMP ACL2-BUILT-INS)
+     (PSO OTHER)
+     (ACL2-PC::PSO PROOF-CHECKER-COMMANDS)
+     (PSO! OTHER)
+     (ACL2-PC::PSO! PROOF-CHECKER-COMMANDS)
+     (PSOF OTHER)
+     (PSOG OTHER)
+     (ACL2-PC::PSOG PROOF-CHECKER-COMMANDS)
+     (PSTACK OTHER)
+     (PUFF HISTORY)
+     (PUFF* HISTORY)
+     (PUSH-UNTOUCHABLE SWITCHES-PARAMETERS-AND-MODES)
+     (ACL2-PC::PUT PROOF-CHECKER-COMMANDS)
+     (PUT-ASSOC ACL2-BUILT-INS)
+     (PUT-ASSOC-EQ ACL2-BUILT-INS)
+     (PUT-ASSOC-EQL ACL2-BUILT-INS)
+     (PUT-ASSOC-EQUAL ACL2-BUILT-INS)
+     (PUTPROP ACL2-BUILT-INS)
+     (|Pages Written Especially for the Tours|
+      |Pages Written Especially for the Tours|)
+     (|Perhaps| |Pages Written Especially for the Tours|)
+     (|Popping out of an Inductive Proof|
+      |Pages Written Especially for the Tours|)
+     (|Proving Theorems about Models| |Pages Written Especially for the Tours|)
+     (Q OTHER)
+     (QUANTIFIER-TUTORIAL DEFUN-SK)
+     (QUANTIFIERS DEFUN-SK)
+     (QUANTIFIERS-USING-DEFUN-SK QUANTIFIERS)
+     (QUANTIFIERS-USING-DEFUN-SK-EXTENDED QUANTIFIERS)
+     (QUANTIFIERS-USING-RECURSION QUANTIFIERS)
+     (QUICK-AND-DIRTY-SUBSUMPTION-REPLACEMENT-STEP OTHER)
+     (ACL2-PC::QUIET PROOF-CHECKER-COMMANDS)
+     (QUIT OTHER)
+     'ACL2-BUILT-INS
+     (ACL2-PC::R PROOF-CHECKER-COMMANDS)
+     (R-EQLABLE-ALISTP ACL2-BUILT-INS)
+     (R-SYMBOL-ALISTP ACL2-BUILT-INS)
+     (RANDOM$ ACL2-BUILT-INS)
+     (RASSOC ACL2-BUILT-INS)
+     (RASSOC-EQ ACL2-BUILT-INS)
+     (RASSOC-EQUAL ACL2-BUILT-INS)
+     (RATIONAL-LISTP ACL2-BUILT-INS)
+     (RATIONALP ACL2-BUILT-INS)
+     (READ-BYTE$ ACL2-BUILT-INS)
+     (READ-CHAR$ ACL2-BUILT-INS)
+     (READ-OBJECT ACL2-BUILT-INS)
+     (READ-RUN-TIME ACL2-BUILT-INS)
+     (REAL REAL)
+     (REAL-LISTP REAL)
+     (REAL/RATIONALP ACL2-BUILT-INS)
+     (REALFIX ACL2-BUILT-INS)
+     (REALPART ACL2-BUILT-INS)
+     (REBUILD OTHER)
+     (REDEF MISCELLANEOUS)
+     (REDEF! MISCELLANEOUS)
+     (REDEF+ MISCELLANEOUS)
+     (REDEF- MISCELLANEOUS)
+     (REDEFINED-NAMES MISCELLANEOUS)
+     (REDEFINING-PROGRAMS PROGRAMMING)
+     (REDO-FLAT OTHER)
+     (ACL2-PC::REDUCE PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::REDUCE-BY-INDUCTION PROOF-CHECKER-COMMANDS)
+     (REDUNDANT-ENCAPSULATE ENCAPSULATE)
+     (REDUNDANT-EVENTS MISCELLANEOUS)
+     (REFINEMENT RULE-CLASSES)
+     (REGENERATE-TAU-DATABASE EVENTS)
+     (REGRESSION BOOKS)
+     (RELEASE-NOTES RELEASE-NOTES)
+     (REM ACL2-BUILT-INS)
+     (REMOVE ACL2-BUILT-INS)
+     (ACL2-PC::REMOVE-ABBREVIATIONS PROOF-CHECKER-COMMANDS)
+     (REMOVE-BINOP SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE-CUSTOM-KEYWORD-HINT EVENTS)
+     (REMOVE-DEFAULT-HINTS SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE-DEFAULT-HINTS! SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE-DIVE-INTO-MACRO SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE-DUPLICATES ACL2-BUILT-INS)
+     (REMOVE-DUPLICATES-EQ ACL2-BUILT-INS)
+     (REMOVE-DUPLICATES-EQUAL ACL2-BUILT-INS)
+     (REMOVE-EQ ACL2-BUILT-INS)
+     (REMOVE-EQUAL ACL2-BUILT-INS)
+     (REMOVE-INVISIBLE-FNS SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE-MACRO-ALIAS SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE-MACRO-FN SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE-NTH-ALIAS SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE-OVERRIDE-HINTS SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE-OVERRIDE-HINTS! SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE-RAW-ARITY SET-RAW-MODE)
+     (REMOVE-UNTOUCHABLE SWITCHES-PARAMETERS-AND-MODES)
+     (REMOVE1 ACL2-BUILT-INS)
+     (REMOVE1-EQ ACL2-BUILT-INS)
+     (REMOVE1-EQUAL ACL2-BUILT-INS)
+     (REORDER MISCELLANEOUS)
+     (ACL2-PC::REPEAT PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::REPEAT-REC PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::REPLAY PROOF-CHECKER-COMMANDS)
+     (RESET-FC-REPORTING FORWARD-CHAINING-REPORTS)
+     (RESET-KILL-RING HISTORY)
+     (RESET-LD-SPECIALS OTHER)
+     (RESET-PREHISTORY SWITCHES-PARAMETERS-AND-MODES)
+     (RESET-PRINT-CONTROL IO)
+     (RESIZE-LIST STOBJ)
+     (REST ACL2-BUILT-INS)
+     (ACL2-PC::RESTORE PROOF-CHECKER-COMMANDS)
+     (RESTORE-MEMOIZATION-SETTINGS EVENTS)
+     (RESTRICT MISCELLANEOUS)
+     (ACL2-PC::RETAIN PROOF-CHECKER-COMMANDS)
+     (RETRIEVE PROOF-CHECKER)
+     (ACL2-PC::RETRIEVE PROOF-CHECKER-COMMANDS)
+     (RETURN-LAST ACL2-BUILT-INS)
+     (RETURN-LAST-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (REVAPPEND ACL2-BUILT-INS)
+     (REVERSE ACL2-BUILT-INS)
+     (REWRITE RULE-CLASSES)
+     (ACL2-PC::REWRITE PROOF-CHECKER-COMMANDS)
+     (REWRITE-STACK-LIMIT MISCELLANEOUS)
+     (RFIX ACL2-BUILT-INS)
+     (ROUND ACL2-BUILT-INS)
+     (RULE-CLASSES RULE-CLASSES)
+     (RULE-NAMES THEORIES)
+     (RULER-EXTENDERS SWITCHES-PARAMETERS-AND-MODES)
+     (ACL2-PC::RUN-INSTR-ON-GOAL PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::RUN-INSTR-ON-NEW-GOALS PROOF-CHECKER-COMMANDS)
+     (RUNE THEORIES)
+     (ACL2-PC::RUNES PROOF-CHECKER-COMMANDS)
+     (|Revisiting the Admission of App| |Pages Written Especially for the Tours|)
+     (|Rewrite Rules are Generated from DEFTHM Events|
+      |Pages Written Especially for the Tours|)
+     (|Running Models| |Pages Written Especially for the Tours|)
+     (ACL2-PC::S PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::S-PROP PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::SAVE PROOF-CHECKER-COMMANDS)
+     (SAVE-AND-CLEAR-MEMOIZATION-SETTINGS EVENTS)
+     (SAVE-EXEC OTHER)
+     (SAVING-AND-RESTORING MISCELLANEOUS)
+     (SEARCH ACL2-BUILT-INS)
+     (SECOND ACL2-BUILT-INS)
+     (ACL2-PC::SEQUENCE PROOF-CHECKER-COMMANDS)
+     (SERIALIZE SERIALIZE)
+     (SERIALIZE-ALTERNATIVES SERIALIZE)
+     (SERIALIZE-IN-BOOKS SERIALIZE)
+     (SERIALIZE-READ SERIALIZE)
+     (SERIALIZE-WRITE SERIALIZE)
+     (SET-ABSSTOBJ-DEBUG SWITCHES-PARAMETERS-AND-MODES)
+     (SET-ACCUMULATED-PERSISTENCE OTHER)
+     (SET-BACKCHAIN-LIMIT SWITCHES-PARAMETERS-AND-MODES)
+     (SET-BODY EVENTS)
+     (SET-BOGUS-DEFUN-HINTS-OK SWITCHES-PARAMETERS-AND-MODES)
+     (SET-BOGUS-MUTUAL-RECURSION-OK SWITCHES-PARAMETERS-AND-MODES)
+     (SET-CASE-SPLIT-LIMITATIONS SWITCHES-PARAMETERS-AND-MODES)
+     (SET-CBD BOOKS)
+     (SET-CHECKPOINT-SUMMARY-LIMIT SWITCHES-PARAMETERS-AND-MODES)
+     (SET-COMPILE-FNS SWITCHES-PARAMETERS-AND-MODES)
+     (SET-COMPILER-ENABLED SWITCHES-PARAMETERS-AND-MODES)
+     (SET-DEBUGGER-ENABLE SWITCHES-PARAMETERS-AND-MODES)
+     (SET-DEFAULT-BACKCHAIN-LIMIT SWITCHES-PARAMETERS-AND-MODES)
+     (SET-DEFAULT-HINTS SWITCHES-PARAMETERS-AND-MODES)
+     (SET-DEFAULT-HINTS! SWITCHES-PARAMETERS-AND-MODES)
+     (SET-DEFERRED-TTAG-NOTES SWITCHES-PARAMETERS-AND-MODES)
+     (SET-DIFFERENCE$ ACL2-BUILT-INS)
+     (SET-DIFFERENCE-EQ ACL2-BUILT-INS)
+     (SET-DIFFERENCE-EQUAL ACL2-BUILT-INS)
+     (SET-DIFFERENCE-THEORIES THEORIES)
+     (SET-ENFORCE-REDUNDANCY SWITCHES-PARAMETERS-AND-MODES)
+     (SET-EVISC-TUPLE IO)
+     (SET-FC-CRITERIA FORWARD-CHAINING-REPORTS)
+     (SET-FC-REPORT-ON-THE-FLY FORWARD-CHAINING-REPORTS)
+     (SET-FMT-HARD-RIGHT-MARGIN IO)
+     (SET-FMT-SOFT-RIGHT-MARGIN IO)
+     (SET-GAG-MODE SWITCHES-PARAMETERS-AND-MODES)
+     (SET-GUARD-CHECKING SWITCHES-PARAMETERS-AND-MODES)
+     (SET-IGNORE-DOC-STRING-ERROR SWITCHES-PARAMETERS-AND-MODES)
+     (SET-IGNORE-OK SWITCHES-PARAMETERS-AND-MODES)
+     (SET-INHIBIT-OUTPUT-LST SWITCHES-PARAMETERS-AND-MODES)
+     (SET-INHIBIT-WARNINGS SWITCHES-PARAMETERS-AND-MODES)
+     (SET-INHIBIT-WARNINGS! SWITCHES-PARAMETERS-AND-MODES)
+     (SET-INHIBITED-SUMMARY-TYPES SWITCHES-PARAMETERS-AND-MODES)
+     (SET-INVISIBLE-FNS-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (SET-IPRINT IO)
+     (SET-IRRELEVANT-FORMALS-OK SWITCHES-PARAMETERS-AND-MODES)
+     (SET-LD-KEYWORD-ALIASES SWITCHES-PARAMETERS-AND-MODES)
+     (SET-LD-KEYWORD-ALIASES! SWITCHES-PARAMETERS-AND-MODES)
+     (SET-LD-REDEFINITION-ACTION SWITCHES-PARAMETERS-AND-MODES)
+     (SET-LD-SKIP-PROOFS SWITCHES-PARAMETERS-AND-MODES)
+     (SET-LD-SKIP-PROOFSP SWITCHES-PARAMETERS-AND-MODES)
+     (SET-LET*-ABSTRACTION SWITCHES-PARAMETERS-AND-MODES)
+     (SET-LET*-ABSTRACTIONP SWITCHES-PARAMETERS-AND-MODES)
+     (SET-MATCH-FREE-DEFAULT SWITCHES-PARAMETERS-AND-MODES)
+     (SET-MATCH-FREE-ERROR SWITCHES-PARAMETERS-AND-MODES)
+     (SET-MEASURE-FUNCTION SWITCHES-PARAMETERS-AND-MODES)
+     (SET-NON-LINEAR SWITCHES-PARAMETERS-AND-MODES)
+     (SET-NON-LINEARP SWITCHES-PARAMETERS-AND-MODES)
+     (SET-NU-REWRITER-MODE SWITCHES-PARAMETERS-AND-MODES)
+     (SET-OVERRIDE-HINTS SWITCHES-PARAMETERS-AND-MODES)
+     (SET-OVERRIDE-HINTS! SWITCHES-PARAMETERS-AND-MODES)
+     (SET-PARALLEL-EXECUTION SWITCHES-PARAMETERS-AND-MODES)
+     (SET-PRINT-BASE IO)
+     (SET-PRINT-CASE IO)
+     (SET-PRINT-CIRCLE IO)
+     (SET-PRINT-CLAUSE-IDS SWITCHES-PARAMETERS-AND-MODES)
+     (SET-PRINT-ESCAPE IO)
+     (SET-PRINT-LENGTH IO)
+     (SET-PRINT-LEVEL IO)
+     (SET-PRINT-LINES IO)
+     (SET-PRINT-RADIX IO)
+     (SET-PRINT-READABLY IO)
+     (SET-PRINT-RIGHT-MARGIN IO)
+     (SET-PROVER-STEP-LIMIT SWITCHES-PARAMETERS-AND-MODES)
+     (SET-RAW-MODE SWITCHES-PARAMETERS-AND-MODES)
+     (SET-RAW-MODE-ON! SWITCHES-PARAMETERS-AND-MODES)
+     (SET-RAW-PROOF-FORMAT SWITCHES-PARAMETERS-AND-MODES)
+     (SET-REWRITE-STACK-LIMIT SWITCHES-PARAMETERS-AND-MODES)
+     (SET-RULER-EXTENDERS SWITCHES-PARAMETERS-AND-MODES)
+     (SET-RW-CACHE-STATE SWITCHES-PARAMETERS-AND-MODES)
+     (SET-RW-CACHE-STATE! SWITCHES-PARAMETERS-AND-MODES)
+     (SET-SAVED-OUTPUT SWITCHES-PARAMETERS-AND-MODES)
+     (SET-SERIALIZE-CHARACTER SERIALIZE)
+     (SET-SPLITTER-OUTPUT SWITCHES-PARAMETERS-AND-MODES)
+     (SET-STATE-OK SWITCHES-PARAMETERS-AND-MODES)
+     (SET-TAU-AUTO-MODE SWITCHES-PARAMETERS-AND-MODES)
+     (SET-TOTAL-PARALLELISM-WORK-LIMIT SWITCHES-PARAMETERS-AND-MODES)
+     (SET-TOTAL-PARALLELISM-WORK-LIMIT-ERROR SWITCHES-PARAMETERS-AND-MODES)
+     (SET-TRACE-EVISC-TUPLE TRACE)
+     (SET-VERIFY-GUARDS-EAGERNESS SWITCHES-PARAMETERS-AND-MODES)
+     (SET-WATERFALL-PARALLELISM SWITCHES-PARAMETERS-AND-MODES)
+     (SET-WATERFALL-PARALLELISM-HACKS-ENABLED SWITCHES-PARAMETERS-AND-MODES)
+     (SET-WATERFALL-PARALLELISM-HACKS-ENABLED! SWITCHES-PARAMETERS-AND-MODES)
+     (SET-WATERFALL-PRINTING SWITCHES-PARAMETERS-AND-MODES)
+     (SET-WELL-FOUNDED-RELATION SWITCHES-PARAMETERS-AND-MODES)
+     (SET-WORMHOLE-DATA MISCELLANEOUS)
+     (SET-WORMHOLE-ENTRY-CODE MISCELLANEOUS)
+     (SET-WRITE-ACL2X SWITCHES-PARAMETERS-AND-MODES)
+     (SETENV$ ACL2-BUILT-INS)
+     (SEVENTH ACL2-BUILT-INS)
+     (SHARP-BANG-READER OTHER)
+     (SHARP-COMMA-READER OTHER)
+     (SHARP-DOT-READER OTHER)
+     (SHARP-U-READER OTHER)
+     (ACL2-PC::SHOW-ABBREVIATIONS PROOF-CHECKER-COMMANDS)
+     (SHOW-ACCUMULATED-PERSISTENCE OTHER)
+     (SHOW-BDD BDD)
+     (SHOW-BODIES MISCELLANEOUS)
+     (SHOW-CUSTOM-KEYWORD-HINT-EXPANSION CUSTOM-KEYWORD-HINTS)
+     (SHOW-FC-CRITERIA FORWARD-CHAINING-REPORTS)
+     (ACL2-PC::SHOW-LINEARS PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::SHOW-REWRITES PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::SHOW-TYPE-PRESCRIPTIONS PROOF-CHECKER-COMMANDS)
+     (SIGNATURE MISCELLANEOUS)
+     (SIGNED-BYTE-P ACL2-BUILT-INS)
+     (SIGNUM ACL2-BUILT-INS)
+     (SIMPLE MISCELLANEOUS)
+     (SINGLE-THREADED-OBJECTS PROGRAMMING)
+     (SIXTH ACL2-BUILT-INS)
+     (ACL2-PC::SKIP PROOF-CHECKER-COMMANDS)
+     (SKIP-PROOFS OTHER)
+     (ACL2-PC::SL PROOF-CHECKER-COMMANDS)
+     (SLOW-ALIST-WARNING HONS-AND-MEMOIZATION)
+     (SLOW-ARRAY-WARNING ARRAYS)
+     (ACL2-PC::SLS PROOF-CHECKER-COMMANDS)
+     (SOLUTION-TO-SIMPLE-EXAMPLE ANNOTATED-ACL2-SCRIPTS)
+     (SPEC-MV-LET PARALLEL-PROGRAMMING)
+     (SPECIAL-CASES-FOR-REWRITE-RULES INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (SPECIFIC-KINDS-OF-FORMULAS-AS-REWRITE-RULES
+      INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (SPECIOUS-SIMPLIFICATION MISCELLANEOUS)
+     (ACL2-PC::SPLIT PROOF-CHECKER-COMMANDS)
+     (SPLITTER MISCELLANEOUS)
+     (SPLITTER-OUTPUT MISCELLANEOUS)
+     (ACL2-PC::SR PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::ST PROOF-CHECKER-COMMANDS)
+     (STANDARD-CHAR-LISTP ACL2-BUILT-INS)
+     (STANDARD-CHAR-P ACL2-BUILT-INS)
+     (STANDARD-CO ACL2-BUILT-INS)
+     (STANDARD-OI ACL2-BUILT-INS)
+     (STANDARD-PART REAL)
+     (STANDARD-STRING-ALISTP ACL2-BUILT-INS)
+     (STANDARDP REAL)
+     (START-PROOF-TREE PROOF-TREE)
+     (STARTUP ACL2-TUTORIAL)
+     (STATE PROGRAMMING)
+     (STATE-GLOBAL-LET* ACL2-BUILT-INS)
+     (STOBJ STOBJ)
+     (STOBJ-EXAMPLE-1 STOBJ)
+     (STOBJ-EXAMPLE-1-DEFUNS STOBJ)
+     (STOBJ-EXAMPLE-1-IMPLEMENTATION STOBJ)
+     (STOBJ-EXAMPLE-1-PROOFS STOBJ)
+     (STOBJ-EXAMPLE-2 STOBJ)
+     (STOBJ-EXAMPLE-3 STOBJ)
+     (STOBJ-LET STOBJ)
+     (STOBJS MISCELLANEOUS)
+     (STOP-PROOF-TREE PROOF-TREE)
+     (STRING ACL2-BUILT-INS)
+     (STRING-APPEND ACL2-BUILT-INS)
+     (STRING-DOWNCASE ACL2-BUILT-INS)
+     (STRING-EQUAL ACL2-BUILT-INS)
+     (STRING-LISTP ACL2-BUILT-INS)
+     (STRING-UPCASE ACL2-BUILT-INS)
+     (STRING< ACL2-BUILT-INS)
+     (STRING<= ACL2-BUILT-INS)
+     (STRING> ACL2-BUILT-INS)
+     (STRING>= ACL2-BUILT-INS)
+     (STRINGP ACL2-BUILT-INS)
+     (STRIP-CARS ACL2-BUILT-INS)
+     (STRIP-CDRS ACL2-BUILT-INS)
+     (STRONG-REWRITE-RULES INTRODUCTION-TO-THE-THEOREM-PROVER)
+     (SUBLIS ACL2-BUILT-INS)
+     (SUBSEQ ACL2-BUILT-INS)
+     (SUBSETP ACL2-BUILT-INS)
+     (SUBSETP-EQ ACL2-BUILT-INS)
+     (SUBSETP-EQUAL ACL2-BUILT-INS)
+     (SUBST ACL2-BUILT-INS)
+     (SUBSTITUTE ACL2-BUILT-INS)
+     (SUBVERSIVE-INDUCTIONS MISCELLANEOUS)
+     (SUBVERSIVE-RECURSIONS MISCELLANEOUS)
+     (ACL2-PC::SUCCEED PROOF-CHECKER-COMMANDS)
+     (SWITCHES-PARAMETERS-AND-MODES SWITCHES-PARAMETERS-AND-MODES)
+     (SYMBOL-< ACL2-BUILT-INS)
+     (SYMBOL-ALISTP ACL2-BUILT-INS)
+     (SYMBOL-LISTP ACL2-BUILT-INS)
+     (SYMBOL-NAME ACL2-BUILT-INS)
+     (SYMBOL-PACKAGE-NAME ACL2-BUILT-INS)
+     (SYMBOLP ACL2-BUILT-INS)
+     (SYNTAX MISCELLANEOUS)
+     (SYNTAXP MISCELLANEOUS)
+     (SYNTAXP-EXAMPLES SYNTAXP)
+     (SYS-CALL ACL2-BUILT-INS)
+     (SYS-CALL+ ACL2-BUILT-INS)
+     (SYS-CALL-STATUS ACL2-BUILT-INS)
+     (|Subsumption of Induction Candidates in App Example|
+      |Pages Written Especially for the Tours|)
+     (|Suggested Inductions in the Associativity of App Example|
+      |Pages Written Especially for the Tours|)
+     (|Symbolic Execution of Models| |Pages Written Especially for the Tours|)
+     (TABLE EVENTS)
+     (TAKE ACL2-BUILT-INS)
+     (TAU-DATA HISTORY)
+     (TAU-DATABASE HISTORY)
+     (TAU-INTERVAL-DOM TAU-SYSTEM)
+     (TAU-INTERVAL-HI TAU-SYSTEM)
+     (TAU-INTERVAL-HI-REL TAU-SYSTEM)
+     (TAU-INTERVAL-LO TAU-SYSTEM)
+     (TAU-INTERVAL-LO-REL TAU-SYSTEM)
+     (TAU-INTERVALP TAU-SYSTEM)
+     (TAU-STATUS SWITCHES-PARAMETERS-AND-MODES)
+     (TAU-SYSTEM RULE-CLASSES)
+     (TENTH ACL2-BUILT-INS)
+     (TERM MISCELLANEOUS)
+     (TERM-ORDER ACL2-BUILT-INS)
+     (TERM-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (ACL2-PC::TH PROOF-CHECKER-COMMANDS)
+     (THE ACL2-BUILT-INS)
+     (THE-METHOD MISCELLANEOUS)
+     (ACL2-PC::THEN PROOF-CHECKER-COMMANDS)
+     (THEORIES THEORIES)
+     (THEORIES-AND-PRIMITIVES THEORIES)
+     (THEORY THEORIES)
+     (THEORY-FUNCTIONS THEORIES)
+     (THEORY-INVARIANT EVENTS)
+     (THIRD ACL2-BUILT-INS)
+     (THM OTHER)
+     (TIDBITS ACL2-TUTORIAL)
+     (TIME$ ACL2-BUILT-INS)
+     (TIME-TRACKER PROGRAMMING)
+     (TIME-TRACKER-TAU MISCELLANEOUS)
+     (TIPS ACL2-TUTORIAL)
+     (TOGGLE-PC-MACRO PROOF-CHECKER)
+     (ACL2-PC::TOP PROOF-CHECKER-COMMANDS)
+     (TOP-LEVEL OTHER)
+     (TRACE TRACE)
+     (TRACE! TRACE)
+     (TRACE$ TRACE)
+     (TRANS OTHER)
+     (TRANS! OTHER)
+     (TRANS1 OTHER)
+     (TRUE-LIST-LISTP ACL2-BUILT-INS)
+     (TRUE-LISTP ACL2-BUILT-INS)
+     (TRUNCATE ACL2-BUILT-INS)
+     (TRUST-TAG MISCELLANEOUS)
+     (TTAGS-SEEN MISCELLANEOUS)
+     (TTREE MISCELLANEOUS)
+     (TUTORIAL1-TOWERS-OF-HANOI ANNOTATED-ACL2-SCRIPTS)
+     (TUTORIAL2-EIGHTS-PROBLEM ANNOTATED-ACL2-SCRIPTS)
+     (TUTORIAL3-PHONEBOOK-EXAMPLE ANNOTATED-ACL2-SCRIPTS)
+     (TUTORIAL4-DEFUN-SK-EXAMPLE ANNOTATED-ACL2-SCRIPTS)
+     (TUTORIAL5-MISCELLANEOUS-EXAMPLES ANNOTATED-ACL2-SCRIPTS)
+     (TYPE PROGRAMMING)
+     (ACL2-PC::TYPE-ALIST PROOF-CHECKER-COMMANDS)
+     (TYPE-PRESCRIPTION RULE-CLASSES)
+     (TYPE-SET MISCELLANEOUS)
+     (TYPE-SET-INVERTER RULE-CLASSES)
+     (TYPE-SPEC DECLARE)
+     (TYPESPEC-CHECK MISCELLANEOUS)
+     (|The Admission of App| |Pages Written Especially for the Tours|)
+     (|The Associativity of App| |Pages Written Especially for the Tours|)
+     (|The Base Case in the App Example|
+      |Pages Written Especially for the Tours|)
+     (|The End of the Flying Tour| |Pages Written Especially for the Tours|)
+     (|The End of the Proof of the Associativity of App|
+      |Pages Written Especially for the Tours|)
+     (|The End of the Walking Tour| |Pages Written Especially for the Tours|)
+     (|The Event Summary| |Pages Written Especially for the Tours|)
+     (|The Expansion of ENDP in the Induction Step (Step 0)|
+      |Pages Written Especially for the Tours|)
+     (|The Expansion of ENDP in the Induction Step (Step 1)|
+      |Pages Written Especially for the Tours|)
+     (|The Expansion of ENDP in the Induction Step (Step 2)|
+      |Pages Written Especially for the Tours|)
+     (|The Falling Body Model| |Pages Written Especially for the Tours|)
+     (|The Final Simplification in the Base Case (Step 0)|
+      |Pages Written Especially for the Tours|)
+     (|The Final Simplification in the Base Case (Step 1)|
+      |Pages Written Especially for the Tours|)
+     (|The Final Simplification in the Base Case (Step 2)|
+      |Pages Written Especially for the Tours|)
+     (|The Final Simplification in the Base Case (Step 3)|
+      |Pages Written Especially for the Tours|)
+     (|The First Application of the Associativity Rule|
+      |Pages Written Especially for the Tours|)
+     (|The Induction Scheme Selected for the App Example|
+      |Pages Written Especially for the Tours|)
+     (|The Induction Step in the App Example|
+      |Pages Written Especially for the Tours|)
+     (|The Instantiation of the Induction Scheme|
+      |Pages Written Especially for the Tours|)
+     (|The Justification of the Induction Scheme|
+      |Pages Written Especially for the Tours|)
+     (|The Proof of the Associativity of App|
+      |Pages Written Especially for the Tours|)
+     (|The Q.E.D. Message| |Pages Written Especially for the Tours|)
+     (|The Rules used in the Associativity of App Proof|
+      |Pages Written Especially for the Tours|)
+     (|The Simplification of the Induction Conclusion (Step 0)|
+      |Pages Written Especially for the Tours|)
+     (|The Simplification of the Induction Conclusion (Step 1)|
+      |Pages Written Especially for the Tours|)
+     (|The Simplification of the Induction Conclusion (Step 10)|
+      |Pages Written Especially for the Tours|)
+     (|The Simplification of the Induction Conclusion (Step 11)|
+      |Pages Written Especially for the Tours|)
+     (|The Simplification of the Induction Conclusion (Step 12)|
+      |Pages Written Especially for the Tours|)
+     (|The Simplification of the Induction Conclusion (Step 2)|
+      |Pages Written Especially for the Tours|)
+     (|The Simplification of the Induction Conclusion (Step 3)|
+      |Pages Written Especially for the Tours|)
+     (|The Simplification of the Induction Conclusion (Step 4)|
+      |Pages Written Especially for the Tours|)
+     (|The Simplification of the Induction Conclusion (Step 5)|
+      |Pages Written Especially for the Tours|)
+     (|The Simplification of the Induction Conclusion (Step 6)|
+      |Pages Written Especially for the Tours|)
+     (|The Simplification of the Induction Conclusion (Step 7)|
+      |Pages Written Especially for the Tours|)
+     (|The Simplification of the Induction Conclusion (Step 8)|
+      |Pages Written Especially for the Tours|)
+     (|The Simplification of the Induction Conclusion (Step 9)|
+      |Pages Written Especially for the Tours|)
+     (|The Summary of the Proof of the Trivial Consequence|
+      |Pages Written Especially for the Tours|)
+     (|The Theorem that App is Associative|
+      |Pages Written Especially for the Tours|)
+     (|The Time Taken to do the Associativity of App Proof|
+      |Pages Written Especially for the Tours|)
+     (|The Tours| |Pages Written Especially for the Tours|)
+     (|The WARNING about the Trivial Consequence|
+      |Pages Written Especially for the Tours|)
+     (U HISTORY)
+     (UBT HISTORY)
+     (UBT! HISTORY)
+     (UBT-PREHISTORY HISTORY)
+     (UBU HISTORY)
+     (UBU! HISTORY)
+     (UNARY-- ACL2-BUILT-INS)
+     (UNARY-/ ACL2-BUILT-INS)
+     (UNCERTIFIED-BOOKS BOOKS)
+     (ACL2-PC::UNDO PROOF-CHECKER-COMMANDS)
+     (UNION$ ACL2-BUILT-INS)
+     (UNION-EQ ACL2-BUILT-INS)
+     (UNION-EQUAL ACL2-BUILT-INS)
+     (UNION-THEORIES THEORIES)
+     (UNIVERSAL-THEORY THEORIES)
+     (UNMEMOIZE EVENTS)
+     (UNMONITOR BREAK-REWRITE)
+     (UNSAVE PROOF-CHECKER)
+     (ACL2-PC::UNSAVE PROOF-CHECKER-COMMANDS)
+     (UNSIGNED-BYTE-P ACL2-BUILT-INS)
+     (UNSUPPORTED-PARALLELISM-FEATURES PARALLELISM)
+     (UNSUPPORTED-WATERFALL-PARALLELISM-FEATURES PARALLEL-PROOF)
+     (UNTRACE$ TRACE)
+     (UNTRANS-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (UNTRANSLATE ACL2-BUILT-INS)
+     (ACL2-PC::UP PROOF-CHECKER-COMMANDS)
+     (UPDATE-NTH ACL2-BUILT-INS)
+     (UPPER-CASE-P ACL2-BUILT-INS)
+     (USE MISCELLANEOUS)
+     (ACL2-PC::USE PROOF-CHECKER-COMMANDS)
+     (USER-DEFINED-FUNCTIONS-TABLE SWITCHES-PARAMETERS-AND-MODES)
+     (USING-COMPUTED-HINTS MISCELLANEOUS)
+     (USING-COMPUTED-HINTS-1 MISCELLANEOUS)
+     (USING-COMPUTED-HINTS-2 MISCELLANEOUS)
+     (USING-COMPUTED-HINTS-3 MISCELLANEOUS)
+     (USING-COMPUTED-HINTS-4 MISCELLANEOUS)
+     (USING-COMPUTED-HINTS-5 MISCELLANEOUS)
+     (USING-COMPUTED-HINTS-6 MISCELLANEOUS)
+     (USING-COMPUTED-HINTS-7 MISCELLANEOUS)
+     (USING-COMPUTED-HINTS-8 MISCELLANEOUS)
+     (USING-ENABLED-RULES MISCELLANEOUS)
+     (USING-TABLES-EFFICIENTLY TABLE)
+     (|Undocumented Topic| |Pages Written Especially for the Tours|)
+     (|Using the Associativity of App to Prove a Trivial Consequence|
+      |Pages Written Especially for the Tours|)
+     (VALUE-TRIPLE EVENTS)
+     (VERBOSE-PSTACK PSTACK)
+     (VERIFY PROOF-CHECKER)
+     (VERIFY-GUARDS EVENTS)
+     (VERIFY-GUARDS+ EVENTS)
+     (VERIFY-GUARDS-EAGERNESS SWITCHES-PARAMETERS-AND-MODES)
+     (VERIFY-GUARDS-FORMULA OTHER)
+     (VERIFY-TERMINATION EVENTS)
+     (VERSION MISCELLANEOUS)
+     (WALKABOUT OTHER)
+     (WATERFALL MISCELLANEOUS)
+     (WATERFALL-PARALLELISM PARALLEL-PROOF)
+     (WATERFALL-PARALLELISM-FOR-BOOK-CERTIFICATION PARALLELISM)
+     (WATERFALL-PRINTING PARALLEL-PROOF)
+     (WELL-FOUNDED-RELATION RULE-CLASSES)
+     (WET TRACE)
+     (WHY-BRR MISCELLANEOUS)
+     (WITH-FAST-ALIST HONS-AND-MEMOIZATION)
+     (WITH-GUARD-CHECKING SWITCHES-PARAMETERS-AND-MODES)
+     (WITH-LIVE-STATE ACL2-BUILT-INS)
+     (WITH-LOCAL-STATE STOBJ)
+     (WITH-LOCAL-STOBJ STOBJ)
+     (WITH-OUTPUT SWITCHES-PARAMETERS-AND-MODES)
+     (WITH-OUTPUT-LOCK PARALLEL-PROGRAMMING)
+     (WITH-PROVER-STEP-LIMIT OTHER)
+     (WITH-PROVER-TIME-LIMIT OTHER)
+     (WITH-SERIALIZE-CHARACTER SERIALIZE)
+     (WITH-STOLEN-ALIST HONS-AND-MEMOIZATION)
+     (WITHOUT-EVISC IO)
+     (WOF OTHER)
+     (WORLD MISCELLANEOUS)
+     (WORMHOLE MISCELLANEOUS)
+     (WORMHOLE-DATA MISCELLANEOUS)
+     (WORMHOLE-ENTRY-CODE MISCELLANEOUS)
+     (WORMHOLE-EVAL MISCELLANEOUS)
+     (WORMHOLE-IMPLEMENTATION MISCELLANEOUS)
+     (WORMHOLE-P MISCELLANEOUS)
+     (WORMHOLE-STATUSP MISCELLANEOUS)
+     (ACL2-PC::WRAP PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::WRAP-INDUCT PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::WRAP1 PROOF-CHECKER-COMMANDS)
+     (WRITE-BYTE$ ACL2-BUILT-INS)
+     (|What Is ACL2(Q)| |Pages Written Especially for the Tours|)
+     (|What is Required of the User(Q)| |Pages Written Especially for the Tours|)
+     (|What is a Mathematical Logic(Q)| |Pages Written Especially for the Tours|)
+     (|What is a Mechanical Theorem Prover(Q)|
+      |Pages Written Especially for the Tours|)
+     (|What is a Mechanical Theorem Prover(Q) (cont)|
+      |Pages Written Especially for the Tours|)
+     (ACL2-PC::X PROOF-CHECKER-COMMANDS)
+     (ACL2-PC::X-DUMB PROOF-CHECKER-COMMANDS)
+     (XARGS MISCELLANEOUS)
+     (XOR ACL2-BUILT-INS)
+     (|You Must Think about the Use of a Formula as a Rule|
+      |Pages Written Especially for the Tours|)
+     (ZERO-TEST-IDIOMS PROGRAMMING)
+     (ZEROP ACL2-BUILT-INS)
+     (ZIP ACL2-BUILT-INS)
+     (ZP ACL2-BUILT-INS)
+     (ZPF ACL2-BUILT-INS))
+   nil))
+
 (defun end-prehistoric-world (wrld)
   (let* ((wrld1 (global-set-lst
                  (list (list 'untouchable-fns
@@ -3137,7 +4521,8 @@
                              (next-absolute-event-number wrld))
                        (list 'skip-proofs-seen nil)
                        (list 'redef-seen nil)
-                       (list 'proof-supporters-alist nil))
+                       (list 'proof-supporters-alist nil)
+                       (list 'documentation-alist (documentation-alist-stub)))
                  (putprop 'acl2-defaults-table
                           'table-alist
                           *initial-acl2-defaults-table*
@@ -3182,30 +4567,6 @@
 (defmacro theory (name)
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
-
-  ":Doc-Section Theories
-
-  retrieve named theory~/
-  ~bv[]
-  Example:
-  (theory 'ground-zero)
-  ~ev[]
-  In the example above, the theory returned is the one in force when ACL2 is
-  started up (~pl[ground-zero]).~/
-
-  ~bv[]
-  General Form:
-  (theory name)
-  ~ev[]
-  where ~c[name] is the name of a previously executed ~ilc[deftheory] event
-  (otherwise a hard error occurs).  Returns the named theory.  ~l[theories].
-
-  This ``function'' is actually a macro that expands to a term mentioning the
-  single free variable ~ilc[world].  When theory expressions are evaluated by
-  ~ilc[in-theory] or the ~c[:]~ilc[in-theory] hint, ~ilc[world] is bound to the
-  current ACL2 ~il[world].~/
-
-  :cited-by theory-functions"
 
   (list 'theory-fn name 'world))
 
@@ -3464,36 +4825,6 @@
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
 
-  ":Doc-Section Theories
-
-  deletes names from current theory~/
-  ~bv[]
-  Example:
-  (disable fact (fact) associativity-of-app)~/
-
-  General Form:
-  (disable name1 name2 ... namek)
-  ~ev[]
-  where each ~c[namei] is a runic designator; ~pl[theories].  The
-  result is the theory that contains all the names in the current
-  theory except those listed.  Note that this is merely a function
-  that returns a theory.  The result is generally a very long list of
-  ~il[rune]s and you will probably regret printing it.
-
-  The standard way to ``disable'' a fixed set of names, is as follows;
-  ~pl[hints] and ~pl[in-theory].
-  ~bv[]
-  :in-theory (disable name1 name2 ... namek)    ; in a hint
-  (in-theory (disable name1 name2 ... namek))   ; as an event
-  (local ; often desirable, to avoid exporting from the current context
-   (in-theory (disable name1 name2 ... namek)))
-  ~ev[]
-  Note that all the names are implicitly quoted.  If you wish to
-  disable a computed list of names, ~c[lst], use the theory expression
-  ~c[(set-difference-theories (current-theory :here) lst)].~/
-
-  :cited-by theory-functions"
-
   (list 'set-difference-theories-fn
         '(current-theory :here)
         (kwote rst)
@@ -3503,36 +4834,6 @@
 (defmacro enable (&rest rst)
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
-
-  ":Doc-Section Theories
-
-  adds names to current theory~/
-  ~bv[]
-  Example:
-  (enable fact (fact) associativity-of-app)~/
-
-  General Form:
-  (enable name1 name2 ... namek)
-  ~ev[]
-  where each ~c[namei] is a runic designator; ~pl[theories].  The
-  result is the theory that contains all the names in the current
-  theory plus those listed.  Note that this is merely a function that
-  returns a theory.  The result is generally a very long list of ~il[rune]s
-  and you will probably regret printing it.
-
-  The standard way to ``enable'' a fixed set of names, is as follows;
-  ~pl[hints] and ~pl[in-theory].
-  ~bv[]
-  :in-theory (enable name1 name2 ... namek)  ; in a hint
-  (in-theory (enable name1 name2 ... namek)) ; as an event
-  (local ; often desirable, to avoid exporting from the current context
-   (in-theory (enable name1 name2 ... namek)))
-  ~ev[]
-  Note that all the names are implicitly quoted.  If you wish to
-  enable a computed list of names, ~c[lst], use the theory expression
-  ~c[(union-theories (current-theory :here) lst)].~/
-
-  :cited-by theory-functions"
 
   (list 'union-theories-fn
         '(current-theory :here)
@@ -3566,122 +4867,6 @@
 ; .lisp code in the book.  A hard error was caused.
 
 ; Therefore, we also define this macro as a trivial no-op in raw Lisp.
-
-  ":Doc-Section Events
-
-  user-specified invariants on ~il[theories]~/
-  ~bv[]
-  Examples:
-  (theory-invariant (not (and (active-runep '(:rewrite left-to-right))
-                              (active-runep '(:rewrite right-to-left))))
-                    :key my-invariant
-                    :error nil)
-
-  ; Equivalent to the above:
-  (theory-invariant (incompatible (:rewrite left-to-right)
-                                  (:rewrite right-to-left))
-                    :key my-invariant
-                    :error nil)~/
-
-  General Form:
-  (theory-invariant term &key key error)
-  ~ev[]
-  where:~bq[]
-
-  o ~c[term] is a term that uses no variables other than ~c[ens] and
-  ~ilc[state];
-
-  o ~c[key] is an arbitrary ``name'' for this invariant (if omitted, an integer
-  is generated and used); and
-
-  o ~c[:error] specifies the action to be taken when an invariant is violated
-  ~-[] either ~c[nil] if a warning is to be printed, else ~c[t] (the default)
-  if an error is to be caused.
-
-  ~eq[]~c[Theory-invariant] is an event that adds to or modifies the ~il[table]
-  of user-supplied theory invariants that are checked each time a theory
-  expression is evaluated.
-
-  The theory invariant mechanism is provided via a table
-  (~pl[table]) named ~c[theory-invariant-table].  In fact, the
-  ~c[theory-invariant] ``event'' is just a macro that expands into a use of the
-  ~ilc[table] event.  More general access to the ~c[theory-invariant]
-  ~il[table] is provided by ~ilc[table] itself.  For example, the ~il[table]
-  can be inspected or cleared with ~ilc[table]; you can clear an individual
-  theory invariant by setting the invariant to ~c[t], or eliminate all theory
-  invariants with the command ~c[(table theory-invariant-table nil nil :clear)].
-
-  ~c[Theory-invariant-table] maps arbitrary keys to records containing terms
-  that mention, at most, the variables ~c[ens] and ~ilc[state].  Every time an
-  alleged theory expression is evaluated, e.g., in the ~ilc[in-theory] event or
-  ~c[:]~ilc[in-theory] hint, each of the terms in ~c[theory-invariant-table] is
-  evaluated with ~c[ens] bound to a so-called ``enabled structure'' obtained
-  from the theory expression and ~ilc[state] bound to the current ACL2 state
-  (~pl[state]).  Users generally need not know about the enabled structure,
-  other than that it can be accessed using the macros ~c[active-runep] and
-  ~c[incompatible]; ~pl[active-runep] and ~pl[incompatible].  If the result is
-  ~c[nil], a message is printed and an error occurs (except, only a warning
-  occurs if ~c[:error nil] is specified).  Thus, the ~il[table] can be thought
-  of as a list of conjuncts.  Each ~c[term] in the ~il[table] has a ``name,''
-  which is just the key under which the term is stored.  When a theory violates
-  the restrictions specified by some term, both the name and the term are
-  printed.  By calling ~c[theory-invariant] with a new term but the same name,
-  you can overwrite that conjunct of the theory invariant; but see the Local
-  Redefinition Caveat at the end of this note.  You may want to avoid using
-  explicit names, since otherwise the subsequent inclusion of another book that
-  defines a theory invariant with the same name will override your theory
-  invariant.
-
-  Theory invariants are particularly useful in the context of large rule sets
-  intended for re-use.  Such sets often contain conflicting rules, e.g., rules
-  that are to be ~il[enable]d when certain function symbols are ~il[disable]d,
-  rules that rewrite in opposite directions and thus loop if simultaneously
-  ~il[enable]d, groups of rules which should be ~il[enable]d in concert, etc.
-  The developer of such rule sets understands these restrictions and probably
-  documents them.  The theory invariant mechanism allows the developer to
-  codify his restrictions so that the user is alerted when they are violated.
-
-  Since theory invariants are arbitrary terms, macros may be used to
-  express commonly used restrictions.  For example, executing the event
-  ~bv[]
-  (theory-invariant (incompatible (:rewrite left-to-right)
-                                  (:rewrite right-to-left)))
-  ~ev[]
-  would subsequently cause an error any time the current theory contained both
-  of the two ~il[rune]s shown.  Of course, ~il[incompatible] is just defined as
-  a macro.  Its definition may be inspected with ~c[:pe incompatible].
-
-  In order for a ~c[theory-invariant] event to be accepted, the proposed theory
-  invariant must be satisfied by the current theory (~pl[current-theory]).  The
-  value returned upon successful execution of the event is the key (whether
-  user-supplied or generated).
-
-  Local Redefinition Caveat.  Care needs to be taken when redefining a theory
-  invariant in a ~il[local] context.  Consider the following example.
-
-  ~bv[]
-  (theory-invariant
-   (active-runep '(:definition binary-append))
-   :key app-inv)
-
-  (encapsulate
-   ()
-   (local (theory-invariant t :key app-inv))
-   (in-theory (disable binary-append))
-   (defthm ...))
-  ~ev[]
-  The second pass of the ~ilc[encapsulate] will fail, because the
-  ~ilc[in-theory] event violates the original ~c[theory-invariant] and the
-  ~ilc[local] ~c[theory-invariant] is skipped in the second pass of the
-  ~ilc[encapsulate].  Of course, ~ilc[local] ~ilc[theory-invariant]s in
-  ~il[books] can cause the analogous problem in the second (~ilc[include-book])
-  pass of a ~ilc[certify-book].  In both cases, though, the theory invariants
-  are only checked at the conclusion of the (~c[include-book] or
-  ~c[encapsulate]) event.  Indeed, theory invariants are checked at the end of
-  every event related to ~il[theories], including ~ilc[defun], ~ilc[defthm],
-  ~ilc[in-theory], ~ilc[encapsulate], and ~ilc[include-book], except for events
-  executed on behalf of an ~ilc[include-book] or the second pass of an
-  ~ilc[encapsulate].~/"
 
   `(when-logic
     "THEORY-INVARIANT"
@@ -3760,21 +4945,6 @@
   nil)
 
 (defmacro incompatible (rune1 rune2)
-  ":Doc-Section Theories
-
-  declaring that two rules should not both be ~il[enable]d~/
-  ~bv[]
-  Example:
-  (theory-invariant (incompatible (:rewrite left-to-right)
-                                  (:rewrite right-to-left)))~/
-
-  General Form:
-  (incompatible rune1 rune2)
-  ~ev[]
-  where ~c[rune1] and ~c[rune2] are two specific ~il[rune]s.  The arguments are
-  not evaluated.  ~c[Invariant] is just a macro that expands into a term
-  that checks that not both ~il[rune]s are enabled.  ~l[theory-invariant].~/"
-
   (cond ((and (consp rune1)
               (consp (cdr rune1))
               (symbolp (cadr rune1))
@@ -3799,155 +4969,6 @@
 ; We now begin the development of the encapsulate event.  Often in this
 ; development we refer to the Encapsulate Essay.  See the comment in
 ; the function encapsulate-fn, below.
-
-(deflabel signature
-  :doc
-  ":Doc-Section Miscellaneous
-
-  how to specify the arity of a constrained function~/
-
-  We start with a gentle introduction to signatures, where we pretend that
-  there are no single-threaded objects (more on that below ~-[] for now, if you
-  don't know anything about single-threaded objects, that's fine!).  Here are
-  some simple examples of signatures.
-  ~bv[]
-  ((hd *) => *)
-  ((pair * *) => *)
-  ((foo * *) => (mv * * *))
-  ~ev[]
-  The first of these says that ~c[hd] is a function of one argument, while the
-  other two say that ~c[pair] and ~c[foo] are functions that each take two
-  arguments.  The first two say that ~c[hd] and ~c[pair] return a single
-  value.  The third says that ~c[foo] returns three values, much as the
-  following definition returns three values:
-  ~bv[]
-  (defun bar (x y)
-    (mv y x (cons x y)))
-  ~ev[]
-
-  Corresponding ``old-style'' signatures are as follows.  In each case, a
-  function symbol is followed by a list of formal parameters and then either
-  ~c[t], to denote a single value return, or ~c[(mv t t t)], to denote a
-  multiple value return (in this case, returning three values).
-  ~bv[]
-  (hd (x) t)
-  (pair (x y) t)
-  (foo (x y) (mv t t t))
-  ~ev[]
-
-  That concludes our gentle introduction.  The documentation below is more
-  general, for example covering single-threaded objects and keyword values such
-  as ~c[:guard].  When reading what follows below, it is sufficient to know
-  about single-threaded objects (or ``stobjs'') that each has a unique symbolic
-  name and that ~ilc[state] is the name of the only built-in single-threaded
-  object.  All other stobjs are introduced by the user via ~ilc[defstobj] or
-  ~ilc[defabsstobj].  An object that is not a single-threaded object is said to
-  be ``ordinary.''  For a discussion of single-threaded objects, ~pl[stobj].~/
-
-  ~bv[]
-  Examples:
-  ((hd *) => *)
-  ((hd *) => * :formals (x) :guard (consp x))
-  ((printer * state) => (mv * * state))
-  ((mach * mach-state * state) => (mv * mach-state))
-
-  General Form:
-  ((fn ...) => *)
-  ((fn ...) => stobj)
-  or
-  ((fn ...) => (mv ...))
-  or for part1 and part2 as above,
-  (part1 => part2 :kwd1 val1 ... :kwdn valn)
-  ~ev[]
-  where ~c[fn] is the constrained function symbol, ~c[...] is a list of
-  asterisks and/or the names of single-threaded objects, ~c[stobj] is a
-  single-threaded object name, and the optional ~c[:kwdi] and ~c[:vali] are as
-  described below.  ACL2 also supports an older style of signature, described
-  below after we describe the preferred style.
-
-  Signatures specify three syntactic aspects of a function symbol: (1) the
-  ``arity'' or how many arguments the function takes, (2) the ``multiplicity''
-  or how many results it returns via ~c[MV], and (3) which of those arguments
-  and results are single-threaded objects and which objects they are.
-
-  A signature typically has the form ~c[((fn x1 ... xn) => val)].  Such a
-  signature has two parts, separated by the symbol ``=>''.  The first part,
-  ~c[(fn x1 ... xn)], is suggestive of a call of the constrained function.  The
-  number of ``arguments,'' ~c[n], indicates the arity of ~c[fn].  Each ~c[xi]
-  must be a symbol.  If a given ~c[xi] is the symbol ``*'' then the
-  corresponding argument must be ordinary.  If a given ~c[xi] is any other
-  symbol, that symbol must be the name of a single-threaded object and the
-  corresponding argument must be that object.  No stobj name may occur twice
-  among the ~c[xi].
-
-  The second part, ~c[val], of a signature is suggestive of a term and
-  indicates the ``shape'' of the output of ~c[fn].  If ~c[val] is a symbol then
-  it must be either the symbol ``*'' or the name of a single-threaded object.
-  In either case, the multiplicity of ~c[fn] is 1 and ~c[val] indicates whether
-  the result is ordinary or a stobj.  Otherwise, ~c[val] is of the form
-  ~c[(mv y1 ... yk)], where ~c[k] > 1.  Each ~c[yi] must be either the symbol
-  ``*'' or the name of a stobj.  Such a ~c[val] indicates that ~c[fn] has
-  multiplicity ~c[k] and the ~c[yi] indicate which results are ordinary and
-  which are stobjs.  No stobj name may occur twice among the ~c[yi], and
-  a stobj name may appear in ~c[val] only if appears among the ~c[xi].
-
-  A signature may have the form ~c[((fn x1 ... xn) => val . k)], where ~c[k] is
-  a ~ilc[keyword-value-listp], i.e., an alternating list of keywords and values
-  starting with a keyword.  In this case ~c[((fn x1 ... xn) => val)] must be a
-  legal signature as described above.  The legal keywords in ~c[k] are
-  ~c[:GUARD] and ~c[:FORMALS] (except that for ACL2(r), also see the remark
-  about ~c[:CLASSICALP] later in this topic).  The value following ~c[:FORMALS]
-  is to be the list of formal parameters of ~c[fn], while the value following
-  ~c[:GUARD] is a term that is to be the ~il[guard] of ~c[fn].  Note that this
-  guard is never actually evaluated, and is not subject to the guard
-  verification performed on functions introduced by ~ilc[defun]
-  (~pl[verify-guards]).  Said differently: this guard need not itself have a
-  guard of ~c[t].  Indeed, the guard is only used for attachments;
-  ~pl[defattach].  Note that if ~c[:GUARD] is supplied then ~c[:FORMALS] must
-  also be supplied (in order to related the variables occurring in the guard to
-  the parameters of ~c[fn]).  One final observation about guards: if the
-  ~c[:GUARD] keyword is omitted, then the guard defaults to ~c[T].
-
-  Before ACL2 supported user-declared single-threaded objects there was only
-  one single-threaded object: ACL2's built-in notion of ~ilc[state].  The
-  notion of signature supported then gave a special role to the symbol
-  ~c[state] and all other symbols were considered to denote ordinary objects.
-  ACL2 still supports the old form of signature, but it is limited to functions
-  that operate on ordinary objects or ordinary objects and ~c[state].
-
-  ~bv[]
-  Old-Style General Form:
-  (fn formals result . k)
-  ~ev[]
-
-  where ~c[fn] is the constrained function symbol, ~c[formals] is a suitable
-  list of formal parameters for it, ~c[k] is an optional
-  ~ilc[keyword-value-listp] (see below), and ~c[result] is either a symbol
-  denoting that the function returns one result or else ~c[result] is an
-  ~ilc[mv] expression, ~c[(mv s1 ... sn)], where ~c[n>1], each ~c[si] is a
-  symbol, indicating that the function returns ~c[n] results.  At most one of
-  the formals may be the symbol ~c[STATE], indicating that corresponding
-  argument must be ACL2's built-in ~ilc[state].  If ~c[state] appears in
-  ~c[formals] then ~c[state] may appear once in ~c[result].  All ``variable
-  symbols'' other than ~c[state] in old style signatures denote ordinary
-  objects, regardless of whether the symbol has been defined to be a
-  single-threaded object name!
-
-  The optional ~c[k] is as described above for newer-style signatures, except
-  that the user is also allowed to declare which symbols (besides ~c[state])
-  are to be considered single-threaded object names.  Thus ~c[:STOBJS] is also
-  a legal keyword.  The form
-  ~bv[]
-  (fn formals result ... :stobjs names ...)
-  ~ev[]
-  specifies that ~c[names] is either the name of a single-threaded object or
-  else is a list of such names.  Every name in ~c[names] must have been
-  previously defined as a stobj via ~ilc[defstobj] or ~ilc[defabsstobj].
-
-  As promised above, we conclude with a remark about an additional keyword,
-  ~c[:CLASSICALP], that is legal for ACL2(r) (~pl[real]).  The value of this
-  keyword must be ~c[t] (the default) or ~c[nil], indicating respectively
-  whether ~c[fn] is classical or not.~/")
 
 (defconst *generic-bad-signature-string*
   "The object ~x0 is not a legal signature.  A basic signature is of one of ~
@@ -4476,157 +5497,6 @@
 ; executed and the subsequent form is read into the "ACL2" package.  The
 ; equality evaluates to NIL and GOTCHA is not a theorem.
 
-(deflabel embedded-event-form
-  :doc
-  ":Doc-Section Miscellaneous
-
-  forms that may be embedded in other ~il[events]~/
-  ~bv[]
-  Examples:
-  (defun hd (x) (if (consp x) (car x) 0))
-  (local (defthm lemma23 ...))
-  (progn (defun fn1 ...)
-         (local (defun fn2 ...))
-         ...)~/
-
-  General Form:
-  An embedded event form is a term, x, such that:~ev[]~bq[]
-
-  o ~c[x] is a call of an event function other than ~ilc[DEFPKG] (~pl[events]
-  for a listing of the event functions);
-
-  o ~c[x] is of the form ~c[(]~ilc[LOCAL]~c[ x1)] where ~c[x1] is an embedded
-  event form;
-
-  o ~c[x] is of the form ~c[(]~ilc[SKIP-PROOFS]~c[ x1)] where ~c[x1] is an
-  embedded event form;
-
-  o ~c[x] is of the form ~c[(]~ilc[MAKE-EVENT]~c[ &)], where ~c[&] is any term
-  whose expansion is an embedded event (~pl[make-event]);
-
-  o ~c[x] is of the form ~c[(]~ilc[WITH-OUTPUT]~c[ ... x1)],
-  ~c[(]~ilc[WITH-PROVER-STEP-LIMIT]~c[ ... x1 ...)], or
-  ~c[(]~ilc[WITH-PROVER-TIME-LIMIT]~c[ ... x1)], where ~c[x1] is an embedded
-  event form;
-
-  o ~c[x] is a call of ~ilc[ENCAPSULATE], ~ilc[PROGN], ~ilc[PROGN!], or
-  ~ilc[INCLUDE-BOOK];
-
-  o ~c[x] macroexpands to one of the forms above; or
-
-  o [intended only for the implementation] ~c[x] is
-  ~c[(RECORD-EXPANSION x1 x2)], where ~c[x1] and ~c[x2] are embedded event
-  forms.
-
-  ~eq[]
-  An exception: an embedded event form may not set the
-  ~ilc[acl2-defaults-table] when in the context of ~ilc[local].  Thus for
-  example, the form
-  ~bv[]
-  (local (table acl2-defaults-table :defun-mode :program))
-  ~ev[]
-  is not an embedded event form, nor is the form ~c[(local (program))],
-  since the latter sets the ~ilc[acl2-defaults-table] implicitly.  An
-  example at the end of the discussion below illustrates why there is
-  this restriction.
-
-  Only embedded event forms are allowed in a book after its initial
-  ~ilc[in-package] form.  ~l[books].  However, you may find that
-  ~ilc[make-event] allows you to get the effect you want for a form that is not
-  an embedded event form.  For example, you can put the following into a book,
-  which assigns the value 17 to ~ilc[state] global variable ~c[x]:
-  ~bv[]
-  (make-event (er-progn (assign x 17)
-                        (value '(value-triple nil)))
-              :check-expansion t)
-  ~ev[]
-
-  When an embedded event is executed while ~ilc[ld-skip-proofsp] is
-  ~c[']~ilc[include-book], those parts of it inside ~ilc[local] forms are
-  ignored.  Thus,
-  ~bv[]
-     (progn (defun f1 () 1)
-            (local (defun f2 () 2))
-            (defun f3 () 3))
-  ~ev[]
-  will define ~c[f1], ~c[f2], and ~c[f3] when ~ilc[ld-skip-proofsp] is ~c[nil]
-  or ~c[t], but will define only ~c[f1] and ~c[f3] when ~ilc[ld-skip-proofsp]
-  is ~c[']~ilc[include-book].
-
-  ~em[Discussion:]
-
-  ~ilc[Encapsulate], ~ilc[progn], and ~ilc[include-book] place restrictions on
-  the kinds of forms that may be processed.  These restrictions ensure that the
-  non-local ~il[events] are indeed admissible provided that the sequence of
-  ~ilc[local] and non-local ~il[events] is admissible when proofs are done,
-  i.e., when ~c[ld-skip-proofs] is ~c[nil].  But ~ilc[progn!] places no such
-  restrictions, hence is potentially dangerous and should be avoided unless you
-  understand the ramifications; so it is illegal unless there is an active
-  trust tag (~pl[defttag]).
-
-  ~ilc[Local] permits the hiding of an event or group of ~il[events] in the
-  sense that ~ilc[local] ~il[events] are processed when we are trying to
-  establish the admissibility of a sequence of ~il[events] embedded in
-  ~ilc[encapsulate] forms or in ~il[books], but are ignored when we are
-  constructing the ~il[world] produced by assuming that sequence.  Thus, for
-  example, a particularly ugly and inefficient ~c[:]~ilc[rewrite] rule might be
-  made ~ilc[local] to an ~il[encapsulate] that ``exports'' a desirable theorem
-  whose proof requires the ugly lemma.
-
-  To see why we can't allow just anything as an embedded event, consider
-  allowing the form
-  ~bv[]
-  (if (ld-skip-proofsp state)
-      (defun foo () 2)
-      (defun foo () 1))
-  ~ev[]
-  followed by
-  ~bv[]
-  (defthm foo-is-1 (equal (foo) 1)).
-  ~ev[]
-  When we process the ~il[events] with ~ilc[ld-skip-proofsp] is ~c[nil], the
-  second ~ilc[defun] is executed and the ~ilc[defthm] succeeds.  But when we
-  process the ~il[events] with ~ilc[ld-skip-proofsp] ~c[']~ilc[include-book],
-  the second ~ilc[defun] is executed, so that ~c[foo] no longer has the same
-  definition it did when we proved ~c[foo-is-1].  Thus, an invalid formula is
-  assumed when we process the ~ilc[defthm] while skipping proofs.  Thus, the
-  first form above is not a legal embedded event form.
-
-  If you encounter a situation where these restrictions seem to prevent you
-  from doing what you want to do, then you may find ~c[make-event] to be
-  helpful.  ~l[make-event].
-
-  ~ilc[Defpkg] is not allowed because it affects how things are read after
-  it is executed.  But all the forms embedded in an event are read
-  before any are executed.  That is,
-  ~bv[]
-  (encapsulate nil
-               (defpkg \"MY-PKG\" nil)
-               (defun foo () 'my-pkg::bar))
-  ~ev[]
-  makes no sense since ~c[my-pkg::bar] must have been read before the
-  ~ilc[defpkg] for ~c[\"MY-PKG\"] was executed.
-
-  Finally, let us elaborate on the restriction mentioned earlier
-  related to the ~ilc[acl2-defaults-table].  Consider the following form.
-  ~bv[]
-  (encapsulate
-   ()
-   (local (program))
-   (defun foo (x)
-     (if (equal 0 x)
-         0
-       (1+ (foo (- x))))))
-  ~ev[]
-  ~l[local-incompatibility] for a discussion of how ~ilc[encapsulate] processes
-  event forms.  Briefly, on the first pass through the ~il[events] the
-  definition of ~c[foo] will be accepted in ~ilc[defun] mode
-  ~c[:]~ilc[program], and hence accepted.  But on the second pass the form
-  ~c[(local (program))] is skipped because it is marked as ~ilc[local], and
-  hence ~c[foo] is accepted in ~ilc[defun] mode ~c[:]~ilc[logic].  Yet, no
-  proof has been performed in order to admit ~c[foo], and in fact, it is not
-  hard to prove a contradiction from this definition!~/")
-
 ; One can imagine adding new event forms.  The requirement is that
 ; either they not take state as an argument or else they not be
 ; sensitive to any part of state except the current ACL2 world.
@@ -5111,18 +5981,6 @@
           (value :invisible)))
 
 (defmacro set-raw-mode-on! ()
-
-  ":Doc-Section switches-parameters-and-modes
-
-  enter ``raw mode,'' a raw Lisp environment~/
-
-  This is the same as ~c[(]~ilc[set-raw-mode]~c[ t)] except that it first
-  introduces a so-called ``trust tag'' (``ttag'') so that ~c[set-raw-mode] will
-  be legal.  ~l[defttag] for a discussion of ttags and how they affect
-  ~ilc[certify-book] and ~ilc[include-book].~/
-
-  ~l[set-raw-mode] for a discussion of raw-mode.~/"
-
   '(er-progn (ld '((defttag :raw-mode-hack)
                    (set-raw-mode-on state))
                  :ld-prompt nil :ld-verbose nil :ld-post-eval-print nil)
@@ -5130,137 +5988,6 @@
 
 (defmacro set-raw-mode (flg)
   (declare (xargs :guard (member-equal flg '(t 't nil 'nil))))
-
-  ":Doc-Section switches-parameters-and-modes
-
-  enter or exit ``raw mode,'' a raw Lisp environment~/
-
-  Below we discuss raw-mode.  In brief: The simplest way to turn raw-mode on is
-  ~c[:SET-RAW-MODE-ON!], and to turn it off, ~c[:SET-RAW-MODE NIL].  Also
-  ~pl[set-raw-mode-on!].~/
-
-  ACL2 users often find its careful syntax checking to be helpful during code
-  development.  Sometimes it is even useful to do code development in
-  ~c[:]~ilc[logic] mode, where ACL2 can be used to check termination of
-  (mutually) recursive functions, verify guards, or even prove properties of
-  the functions.
-
-  However, loading code using ~ilc[include-book] is much slower than using
-  Common Lisp ~c[load] in raw Lisp, and in this sense ACL2 can get in the way
-  of efficient execution.  Unfortunately, it is error-prone to use ACL2 sources
-  (or their compilations) in raw Lisp, primarily because a number of ACL2
-  primitives will not let you do so.  Perhaps you have seen this error message
-  when trying to do so:
-  ~bv[]
-  HARD ACL2 ERROR in ACL2-UNWIND-PROTECT:  Apparently you have tried
-  to execute a form in raw Lisp that is only intended to be executed
-  inside the ACL2 loop.
-  ~ev[]
-  Even without this problem it is important to enter the ACL2 loop (~pl[lp]),
-  for example in order to set the ~ilc[cbd] and (to get more technical) the
-  readtable.
-
-  ACL2 provides a ``raw mode'' for execution of raw Lisp forms.  In this mode,
-  ~ilc[include-book] reduces essentially to a Common Lisp ~c[load].  More
-  generally, the ACL2 logical ~ilc[world] is not routinely extended in raw mode
-  (some sneaky tricks are probably required to make that happen).  To turn raw
-  mode off or on:
-  ~bv[]
-  :set-raw-mode t   ; turn raw mode on
-  :set-raw-mode nil ; turn raw mode off
-  ~ev[]
-
-  The way you can tell that you are in raw mode is by looking at the prompt
-  (~pl[default-print-prompt]), which uses a capital ``~c[P]'' (suggesting
-  something like program mode, but more so).
-  ~bv[]
-  ACL2 P>
-  ~ev[]
-
-  Typical benefits of raw mode are fast loading of source and compiled files
-  and the capability to hack arbitrary Common Lisp code in an environment with
-  the ACL2 sources loaded (and hence with ACL2 primitives available).  In
-  addition, ACL2 hard errors will put you into the Lisp debugger, rather than
-  returning you to the ACL2 loop, and this may be helpful for debugging;
-  ~pl[hard-error] and ~pl[illegal], but also ~pl[break-on-error].  However, it
-  probably is generally best to avoid raw mode unless these advantages seem
-  important.  We expect the main benefit of raw mode to be in deployment of
-  applications, where load time is much faster than the time required for a
-  full-blown ~ilc[include-book], although in certain cases the fast loading of
-  books and treatment of hard errors discussed above may be useful during
-  development.
-
-  Raw mode is also useful for those who want to build extensions of ACL2.  For
-  example, the following form can be put into a certifiable book to load an
-  arbitrary Common Lisp source or compiled file.
-  ~bv[]
-  (progn (defttag my-application)
-         (progn! (set-raw-mode t)
-                 (load \"some-file\")))
-  ~ev[]
-  Also see ~c[with-raw-mode] defined in community book
-  ~c[books/hacking/hacker.lisp], ~pl[defttag], and ~pl[progn!].
-
-  Below are several disadvantages to raw mode.  These should discourage users
-  from using it for general code development, as ~c[:]~ilc[program] mode is
-  generally preferable.
-  ~bf[]
-  -- Forms are in essence executed in raw Lisp.  Hence:
-     -- Syntax checking is turned off; and
-     -- Guard checking is completely disabled.
-  -- Table events, including ~ilc[logic], are ignored, as are many
-     other ~ilc[events], including ~ilc[defthm] and ~ilc[comp].
-  -- Soundness claims are weakened for any ACL2 session in which raw
-     mode was ever entered; ~pl[defttag].
-  -- The normal undoing mechanism (~pl[ubt]) is not supported.
-  -- Unexpected behavior may occur when you return from raw-mode.
-     For example, if you redefine a :logic mode function whose guards
-     have not been verified, you will not see the change inside the
-     ACL2 loop because there, the raw Common Lisp definition is only
-     executed after guards have been verified; ~pl[guards-and-evaluation]
-     and ~pl[guard-evaluation-table].
-  ~ef[]
-
-  We conclude with some details.
-
-  ~em[Printing results].  The rules for printing results are unchanged for raw
-  mode, with one exception.  If the value to be printed would contain any Lisp
-  object that is not a legal ACL2 object, then the ~c[print] routine is used
-  from the host Lisp, rather than the usual ACL2 printing routine.  The
-  following example illustrates the printing used when an illegal ACL2 object
-  needs to be printed.  Notice how that ``command conventions'' are observed
-  (~pl[ld-post-eval-print]); the ``~c[[Note]'' occurs one space over in the
-  second example, and no result is printed in the third example.
-  ~bv[]
-  ACL2 P>(find-package \"ACL2\")
-  [Note:  Printing non-ACL2 result.]
-  #<The ACL2 package>
-  ACL2 P>(mv nil (find-package \"ACL2\") state)
-   [Note:  Printing non-ACL2 result.]
-  #<The ACL2 package>
-  ACL2 P>(mv t (find-package \"ACL2\") state)
-  ACL2 P>(mv 3 (find-package \"ACL2\"))
-  [Note:  Printing non-ACL2 result.]
-  (3 #<The ACL2 package>)
-  ACL2 P>
-  ~ev[]
-  If you have trouble with large structures being printed out, you might want
-  to execute appropriate Common Lisp forms in raw mode, for example,
-  ~c[(setq *print-length* 5)] and ~c[(setq *print-level* 5)].
-
-  ~em[Include-book].  The ~il[events] ~ilc[add-include-book-dir] and
-  ~ilc[delete-include-book-dir] have been designed to work with raw mode.
-  However, if you enter raw mode and then evaluate such forms, then the effects
-  of these forms will disappear when you exit raw mode, in which case you can
-  expect to see a suitable warning.  Regarding ~em[include-book] itself: it
-  should work in raw mode as you might expect, at least if a compiled file or
-  expansion file was created when the book was certified; ~pl[certify-book].
-
-  ~em[Packages].  Raw mode disallows the use of ~ilc[defpkg].  If you want to
-  create a new package, first exit raw mode with ~c[:set-raw-mode nil];
-  you can subsequently re-enter raw mode with ~c[:set-raw-mode t] if you
-  wish.~/"
-
   (if (or (null flg)
           (equal flg '(quote nil)))
       '(set-raw-mode-off state)
@@ -5321,45 +6048,6 @@
   (declare (xargs :guard (and (symbolp name)
                               (or (and (integerp val) (<= 0 val))
                                   (eq val :last)))))
-
-  ":Doc-Section Set-raw-mode
-
-  add arity information for raw mode~/
-
-  Technical note: This macro is a no-op, and is not necessary, when ACL2 is
-  built with #-acl2-mv-as-values.
-
-  Users of raw mode (~pl[set-raw-mode]) can use arbitrary raw Lisp functions
-  that are not known inside the usual ACL2 loop.  In such cases, ACL2 may not
-  know how to display a multiple value returned by ACL2's ~ilc[mv] macro.  The
-  following example should make this clear.
-  ~bv[]
-  ACL2 P>(defun foo (x y) (mv y x))
-  FOO
-  ACL2 P>(foo 3 4)
-
-  Note: Unable to compute number of values returned by this evaluation
-  because function FOO is not known in the ACL2 logical world.  Presumably
-  it was defined in raw Lisp or in raw mode.  Returning the first (perhaps
-  only) value for calls of FOO.
-  4
-  ACL2 P>(add-raw-arity foo 2)
-   RAW-ARITY-ALIST
-  ACL2 P>(foo 3 4)
-  (4 3)
-  ACL2 P>
-  ~ev[]
-  The first argument of ~c[add-raw-arity] should be a symbol, representing the
-  name of a function, macro, or special form, and the second argument should
-  either be a non-negative integer (denoting the number of values returned by
-  ACL2) or else the symbol ~c[:LAST], meaning that the number of values
-  returned by the call is the number of values returned by the last
-  argument.~/
-
-  The current arity assignments can be seen by evaluating
-  ~c[(@ raw-arity-alist)].  ~l[remove-raw-arity] for how to undo a call of
-  ~c[add-raw-arity].~/"
-
   #+acl2-mv-as-values (declare (ignore name val))
   #+acl2-mv-as-values '(value nil)
   #-acl2-mv-as-values
@@ -5372,17 +6060,6 @@
 
 (defmacro remove-raw-arity (name)
   (declare (xargs :guard (symbolp name)))
-
-  ":Doc-Section Set-raw-mode
-
-  remove arity information for raw mode~/
-
-  Technical note: This macro is a no-op, and is not necessary, when ACL2 is
-  built with #-acl2-mv-as-values.
-
-  The form ~c[(remove-raw-arity fn)] undoes the effect of an earlier
-  ~c[(remove-raw-arity fn val)].  ~l[add-raw-arity].~/~/"
-
   #+acl2-mv-as-values (declare (ignore name))
   #+acl2-mv-as-values '(value nil)
   #-acl2-mv-as-values
@@ -6343,108 +7020,6 @@
         wrld3)))
      (t wrld3)))))
 
-(deflabel local-incompatibility
-  :doc
-  ":Doc-Section Miscellaneous
-
-  when non-local ~il[events] won't replay in isolation~/
-
-  Sometimes a ``~ilc[local] incompatibility'' is reported while attempting
-  to embed some ~il[events], as in an ~ilc[encapsulate] or ~ilc[include-book].  This is
-  generally due to the use of a locally defined name in a non-local
-  event or the failure to make a witnessing definition ~ilc[local].~/
-
-  ~ilc[Local] incompatibilities may be detected while trying to execute the
-  strictly non-local ~il[events] of an embedding.  For example, ~ilc[encapsulate]
-  operates by first executing all the ~il[events] (~ilc[local] and non-local)
-  with ~ilc[ld-skip-proofsp] ~c[nil], to confirm that they are all admissible.
-  Then it attempts merely to assume the non-local ones to create the
-  desired theory, by executing the ~il[events] with ~ilc[ld-skip-proofsp] set to
-  ~c[']~ilc[include-book].  Similarly, ~ilc[include-book] assumes the non-local ones,
-  with the understanding that a previously successful ~ilc[certify-book] has
-  performed the admissiblity check.
-
-  How can a sequence of ~il[events] admitted with ~ilc[ld-skip-proofsp] ~c[nil] fail
-  when ~ilc[ld-skip-proofsp] is ~c[']~ilc[include-book]?  The key observation is that
-  in the latter case only the non-local ~il[events] are processed.  The
-  ~ilc[local] ones are skipped and so the non-local ones must not depend
-  upon them.
-
-  Two typical mistakes are suggested by the detection of a ~ilc[local]
-  incompatibility: (1) a locally defined function or macro was used in
-  a non-~ilc[local] event (and, in the case of ~ilc[encapsulate], was not included
-  among the ~il[signature]s) and (2) the witnessing definition of a
-  function that was included among the ~il[signature]s of an ~ilc[encapsulate]
-  was not made ~ilc[local].
-
-  An example of mistake (1) would be to include among your
-  ~il[encapsulate]d ~il[events] both ~c[(local (defun fn ...))] and
-  ~c[(defthm lemma (implies (fn ...) ...))].  Observe that ~c[fn] is
-  defined locally but a formula involving ~c[fn] is defined
-  non-locally.  In this case, either the ~ilc[defthm] should be made
-  ~ilc[local] or the ~ilc[defun] should be made non-local.
-
-  An example of mistake (2) would be to include ~c[(fn (x) t)] among your
-  ~il[signature]s and then to write ~c[(defun fn (x) ...)] in your ~il[events],
-  instead of ~c[(local (defun fn ...))].
-
-  One subtle aspect of ~ilc[encapsulate] is that if you constrain any member
-  of a mutually recursive clique you must define the entire clique
-  locally and then you must constrain those members of it you want
-  axiomatized non-locally.
-
-  Errors due to ~ilc[local] incompatibility should never occur in the
-  assumption of a fully certified book.  Certification ensures against
-  it.  Therefore, if ~ilc[include-book] reports an incompatibility, we
-  assert that earlier in the processing of the ~ilc[include-book] a warning
-  was printed advising you that some book was uncertified.  If this is
-  not the case ~-[] if ~ilc[include-book] reports an incompatibility and there
-  has been no prior warning about lack of certification ~-[] please
-  report it to us.
-
-  When a ~ilc[local] incompatibility is detected, we roll-back to the ~il[world]
-  in which we started the ~ilc[encapsulate] or ~ilc[include-book].  That is, we
-  discard the intermediate ~il[world] created by trying to process the
-  ~il[events] skipping proofs.  This is clean, but we realize it is very
-  frustrating because the entire sequence of ~il[events] must be processed
-  from scratch.  Assuming that the embedded ~il[events] were, once upon a
-  time, processed as top-level ~il[command]s (after all, at some point you
-  managed to create this sequence of ~il[command]s so that the ~ilc[local] and
-  non-local ones together could survive a pass in which proofs were
-  done), it stands to reason that we could define a predicate that
-  would determine then, before you attempted to embed them, if ~ilc[local]
-  incompatibilities exist.  We hope to do that, eventually.
-
-  We conclude with a subtle example of ~ilc[local] incompatibility.  The problem
-  is that in order for ~c[foo-type-prescription] to be admitted using the
-  specified ~c[:typed-term] ~c[(foo x)], the conclusion ~c[(my-natp (foo x))]
-  depends on ~c[my-natp] being a ~il[compound-recognizer].  This is fine on the
-  first pass of the ~ilc[encapsulate], during which lemma ~c[my-natp-cr] is
-  admitted.  But ~c[my-natp-cr] is skipped on the second pass because it is
-  marked ~ilc[local], and this causes ~c[foo-type-prescription] to fail on the
-  second pass.
-  ~bv[]
-  (defun my-natp (x)
-    (declare (xargs :guard t))
-    (and (integerp x)
-         (<= 0 x)))
-
-  (defun foo (x)
-    (nfix x))
-
-  (encapsulate
-   ()
-   (local (defthm my-natp-cr
-            (equal (my-natp x)
-                   (and (integerp x)
-                        (<= 0 x)))
-            :rule-classes :compound-recognizer))
-   (defthm foo-type-prescription
-     (my-natp (foo x))
-     :hints ((\"Goal\" :in-theory (enable foo)))
-     :rule-classes ((:type-prescription :typed-term (foo x)))))
-  ~ev[]")
-
 (defun maybe-install-acl2-defaults-table (acl2-defaults-table state)
   (cond
    ((equal acl2-defaults-table
@@ -6505,111 +7080,6 @@
                           (fail 't)
                           (pbt 't)
                           (show 'nil))
-
-  ":Doc-Section Other
-
-  redo on failure of a ~ilc[progn], ~ilc[encapsulate], or ~ilc[certify-book]~/
-
-  When one submits an ~ilc[encapsulate], ~ilc[progn], or ~ilc[certify-book]
-  command and there is a failure, ACL2 restores its logical ~il[world] as
-  though the command had not been run.  But sometimes one would like to debug
-  the failure by re-executing all sub-events that succeeded up to the point of
-  failure, and then re-executing the failed sub-event.  Said differently,
-  imagine that the ~il[events] under an ~c[encapsulate], ~c[progn], or
-  ~c[certify-book] form were flattened into a list of events that were then
-  submitted to ACL2 up to the point of failure.  This would put us in the state
-  in which the original failed event had failed, so we could now replay that
-  failed event and try modifying it, or first proving additional events, in
-  order to get it admitted.
-
-  ~c[Redo-flat] is provided for this purpose.  Consider the following (rather
-  nonsensical) example, in which the ~ilc[defun] of ~c[f3] fails (the body is
-  ~c[y] but the formal parameter list is ~c[(x)]).
-  ~bv[]
-  (encapsulate
-   ()
-   (defun f1 (x) x)
-   (encapsulate ()
-                (local (defthm hack (equal (car (cons x y)) x))))
-   (encapsulate ()
-                (local (defthm hack (equal (+ x y) (+ y x)))))
-   (encapsulate ()
-                (make-event '(defun f2 (x) x))
-                (progn (defthm foo (equal x x) :rule-classes nil)
-                       (defun f3 (x) y)))
-   (defun f4 (x) x)
-   (defun f5 (x) y))
-  ~ev[]
-  After this attempt fails, you can evaluate the following form.
-  ~bv[]
-  (redo-flat)
-  ~ev[]
-  This will first lay down a ~ilc[deflabel] event, ~c[(deflabel r)], so that
-  you can eventually remove your debugging work with ~c[(:ubt! r)].  Then the
-  successful sub-events that preceded the failure will be executed with proofs
-  skipped (so that this execution is fast).  Then, the failed event will be
-  executed.  Finally, a ~c[:]~ilc[pbt] command is executed so that you can see
-  a summary of the events that executed successfully.
-
-  You can eliminate some of the steps above by supplying keyword values, as
-  follows.
-  ~bv[]
-  (redo-flat
-   :succ  succ ; Skip the successful sub-events if val is nil.
-   :fail  fail ; Skip the failed sub-event if val is nil.
-   :label lab  ; Skip deflabel if lab or succ is nil, else use (deflabel lab).
-   :pbt   val  ; Skip the final :pbt if val, lab, or succ is nil.
-   )
-  ~ev[]
-  Also, you can avoid skipping proofs for the successful sub-events by
-  supplying keyword ~c[:succ-ld-skip-proofsp] with a valid value for
-  ~c[ld-skip-proofsp]; ~pl[ld-skip-proofsp].  For example, you might want to
-  execute ~c[(redo-flat :succ-ld-skip-proofsp nil)] if you use the
-  ~c[must-fail] utility from community book ~c[make-event/eval.lisp], since
-  for example ~c[(must-fail (thm (equal x y)))] normally succeeds but would
-  cause an error if proofs are skipped.
-
-  If you prefer only to see the successful and failed sub-events, without any
-  events being re-executed, you may evaluate the following form instead.
-  ~bv[]
-  (redo-flat :show t)
-  ~ev[]
-  For the example above, this command produces the following output.
-  ~bv[]
-
-  List of events preceding the failure:
-
-  ((DEFUN F1 (X) X)
-   (ENCAPSULATE NIL
-                (LOCAL (DEFTHM HACK (EQUAL (CAR (CONS X Y)) X))))
-   (ENCAPSULATE NIL
-                (LOCAL (DEFTHM HACK (EQUAL (+ X Y) (+ Y X)))))
-   (MAKE-EVENT '(DEFUN F2 (X) X))
-   (DEFTHM FOO (EQUAL X X)
-           :RULE-CLASSES NIL))
-
-  Failed event:
-
-  (DEFUN F3 (X) Y)
-  ACL2 !>
-  ~ev[]
-
-  ~c[Redo-flat] uses a scheme that should not cause spurious name conflicts for
-  ~ilc[local] events.  Above, it is mentioned that events are ``flattened'';
-  now we clarify this notion.  Each sub-event that succeeds and is an
-  ~ilc[encapsulate] or ~ilc[progn] is left intact.  Only such events that fail
-  are replaced by their component events.  Thus, in the example above, there is
-  no conflict between the two ~ilc[local] sub-events named ``~c[hack],''
-  because these are contained in successful ~c[encapsulate] sub-events, which
-  are therefore not flattened.  The ~ilc[progn] and two ~ilc[encapsulate]
-  events surrounding the definition of ~c[f3] are, however, flattened, because
-  that definition failed to be admitted.
-
-  Normally, ~c[redo-flat] will have the desired effect even if you interrupted
-  a proof (with control-c).  However, ~c[redo-flat] will not produce the
-  desired result after an interrupt if you have enabled the debugger using
-  ~c[(set-debugger-enable t)],~/~/"
-
   `(if (null (f-get-global 'redo-flat-fail state))
        (pprogn (fms "There is no failure saved from an encapsulate, progn, or ~
                      certify-book.~|"
@@ -9794,91 +10264,6 @@
 ; the operating-system part of the state (as a world global), and figure
 ; everything else out about book names using that information.
 
-(deflabel books
-  :doc
-  ":Doc-Section  Books
-
-  files of ACL2 event forms~/
-
-  This ~il[documentation] topic is about ACL2 input files.  However, there are
-  two traditional (paper) books published about ACL2: a textbook and a case
-  studies book.  Further information on those two paper books is available by
-  following links from the ACL2 home page,
-  ~url[http://www.cs.utexas.edu/users/moore/acl2/].
-
-  A ``book'' is a file of ACL2 ~il[events] that have been certified as
-  admissible.  Using ~ilc[include-book] you can construct a new logical
-  ~il[world] by assuming the ~il[events] in any number of mutually compatible
-  books.  Relevant documented topics are listed below.  Following this list
-  is a ``guided tour'' through the topics.
-  ~terminal[You may start the guided tour by typing :more.]
-
-  You can contribute books to the ACL2 community and obtain updates inbetween
-  ACL2 releases by visiting the ~c[acl2-books] project web page,
-  ~url[http://acl2-books.googlecode.com/].  Also ~pl[community-books].~/
-
-  ~em[Introduction.]
-
-  A ``book'' is a file of ACL2 forms.  Books are prepared entirely by
-  the user of the system, i.e., they are ``source'' files not
-  ``object'' files.  Some of the forms in a book are marked ~ilc[local]
-  and the others are considered ``non-local.''
-
-  ~ilc[Include-book] lets you load a book into any ACL2 ~il[world].  If
-  completed without error, the inclusion of a book extends the logic
-  of the host ~il[world] by the addition of just the non-local ~il[events] in
-  the book.  You may extend the ~il[world] by successively including a
-  variety of books to obtain the desired collection of definitions and
-  rules.  Unless name conflicts occur (which are detected and
-  signalled) inclusion of a book is consistency preserving provided
-  the book itself is consistent as discussed later.  However,
-  ~ilc[include-book] merely assumes the validity of the ~il[events] in a book;
-  if you include a book that contains an inconsistency (e.g., an
-  inadmissible definition) then the resulting theory is inconsistent.
-
-  It is possible to ``certify'' a book, with ~ilc[certify-book],
-  guaranteeing that the error-free inclusion of the certified forms
-  will produce a consistent extension of a consistent logic.
-  Certification processes both the ~ilc[local] and non-local forms, so
-  you can mark as ~ilc[local] those ~il[events] you need for certification
-  that you want to hide from users of the book (e.g., hacks, crocks,
-  and kludges on the way to a good set of ~c[:]~ilc[rewrite] rules).
-  Certification can also ``compile'' a book, thereby speeding up the
-  execution of the functions defined within it.  The desire to compile
-  books is largely responsible for the restrictions we put on the
-  forms allowed in books.
-
-  Extensive ~il[documentation] is available on the various aspects of
-  books.  We recommend that you read it all before using books.  It
-  has been written so as to make sense when read in a certain linear
-  sequence, called the ``guided tour'', though in general you may
-  browse through it randomly.  If you are on the guided tour, you
-  should next read the ~il[documentation] on book-example
-  (~pl[book-example]~terminal[ and use :more to read through it]).~/
-
-  :cite include-book")
-
-(link-doc-to certifying-books books books-certification)
-(link-doc-to book-makefiles books books-certification)
-
-(deflabel community-books
-  :doc
-  ":Doc-Section  Books
-
-  ~il[books] contributed by the ACL2 community~/
-
-  For background on ACL2 books, which can contain useful definitions and
-  theorems, ~pl[books].
-
-  The ACL2 ``community books'' is a collection of books developed since the
-  early 1990s by members of the ACL2 community.  The installation instructions
-  suggest installing these books in the ~c[books/] subdirectory of your local
-  ACL2 installation.  You can contribute books to the ACL2 community and obtain
-  updates inbetween ACL2 releases by visiting the ~c[acl2-books] project web
-  page, ~url[http://acl2-books.googlecode.com/].
-
-  To certify the community books, ~pl[regression].~/~/")
-
 (defun chk-book-name (book-name full-book-name ctx state)
 
 ; Book-name is something submitted by the user as a book name.
@@ -10275,45 +10660,6 @@
           (stringp (canonical-pathname x dir-p state)))
       :rule-classes :type-prescription))))
 
-(defdoc canonical-pathname
-  ":Doc-Section ACL2::ACL2-built-ins
-
-  the true absolute filename, with soft links resolved~/
-
-  For the name ~c[fname] of a file, the form
-  ~c[(Canonical-pathname fname nil state)] evaluates to a Unix-style absolute
-  filename representing the same file as ~c[fname], but generally without any
-  use of soft links in the name.  (Below, we explain the qualifier
-  ``generally''.)  If however the file indicated by ~c[fname] does not exist,
-  ~c[(canonical-pathname fname nil state)] is ~c[nil].  Thus,
-  ~c[canonical-pathname] can be used as one would use the raw Lisp function
-  ~c[probe-file].
-
-  The specification of ~c[(Canonical-pathname fname dir-p state)] when
-  ~c[dir-p] is not ~c[nil] is simlar, except that if the specified file exists
-  but is not a directory, then the result is ~c[nil].~/
-
-  The function ~c[canonical-pathname] has a guard of ~c[t], though the second
-  argument must be the ACL2 ~ilc[state].  This function is introduced with the
-  following properties.
-  ~bv[]
-  (defthm canonical-pathname-is-idempotent
-    (equal (canonical-pathname (canonical-pathname x dir-p state) dir-p state)
-           (canonical-pathname x dir-p state)))
-  (defthm canonical-pathname-type
-    (or (equal (canonical-pathname x dir-p state) nil)
-        (stringp (canonical-pathname x dir-p state)))
-    :rule-classes :type-prescription)
-  ~ev[]
-
-  We use the qualifier ``generally'', above, because there is no guarantee that
-  the filename will be canonical without soft links, though we expect this to
-  be true in practice.  ACL2 attempts to compute the desired result and then
-  checks that the input and result have the same Common Lisp ``~c[truename]''.
-  This check is expected to succeed, but if it fails then the input string is
-  returned unchanged, and to be conservative, the value returned is ~c[nil] in
-  this case if ~c[dir-p] is true.")
-
 (defun canonical-dirname! (pathname ctx state)
   (declare (xargs :guard t))
   (or (canonical-pathname pathname t state)
@@ -10420,34 +10766,6 @@
                      state)))))))))
 
 (defmacro set-cbd (str)
-
-  ":Doc-Section books
-
-  to set the connected book directory~/
-  ~bv[]
-  Example Forms:
-  ACL2 !>:set-cbd \"/usr/home/smith/\"
-  ACL2 !>:set-cbd \"my-acl2/books\"
-  ~ev[]
-  ~l[cbd] for a description of the connected book directory.~/
-  ~bv[]
-  General Form:
-  (set-cbd str)
-  ~ev[]
-
-  where ~c[str] is a nonempty string that represents the desired
-  directory (~pl[pathname]).  This command sets the connected book
-  directory (~pl[cbd]) to the string representing the indicated
-  directory.  Thus, this command may determine which files are
-  processed by ~ilc[include-book] and ~ilc[certify-book] ~il[command]s typed at the
-  top-level.  However, the ~ilc[cbd] is also temporarily set by those two
-  book processing ~il[command]s.
-
-  ~sc[Important]:  Pathnames in ACL2 are in the Unix (trademark of AT&T)
-  style.  That is, the character ``~c[/]'' separates directory components
-  of a pathname, and pathnames are absolute when they start with this
-  character, and relative otherwise.  ~l[pathname]."
-
   `(set-cbd-fn ,str state))
 
 (defun set-cbd-state (str state)
@@ -10529,112 +10847,6 @@
            entered using (LP), has not yet been entered.")))
 
 (defmacro cbd nil
-  ":Doc-Section Books
-
-  connected book directory string~/
-  ~bv[]
-  Example:
-  ACL2 !>:cbd
-  \"/usr/home/smith/\"
-  ~ev[]
-  The connected book directory is a nonempty string that specifies a
-  directory as an absolute pathname.  (~l[pathname] for a
-  discussion of file naming conventions.)  When ~ilc[include-book] is given
-  a relative book name it elaborates it into a full book name,
-  essentially by appending the connected book directory string to the
-  left and ~c[\".lisp\"] to the right.  (For details,
-  ~pl[book-name] and also ~pl[full-book-name].)  Furthermore,
-  ~ilc[include-book] temporarily sets the connected book directory to the
-  directory string of the resulting full book name so that references
-  to inferior ~il[books] in the same directory may omit the directory.
-  ~l[set-cbd] for how to set the connected book directory string.~/
-  ~bv[]
-  General Form:
-  (cbd)
-  ~ev[]
-  This is a macro that expands into a term involving the single free
-  variable ~ilc[state].  It returns the connected book directory string.
-
-  The connected book directory (henceforth called the ``~c[cbd]'') is
-  used by ~ilc[include-book] to elaborate the supplied book name into a
-  full book name (~pl[full-book-name]).  For example, if the ~c[cbd]
-  is ~c[\"/usr/home/smith/\"] then the elaboration of the ~il[book-name]
-  ~c[\"project/task-1/arith\"] (to the ~c[\".lisp\"] extension) is
-  ~c[\"/usr/home/smith/project/task-1/arith.lisp\"].  That
-  ~il[full-book-name] is what ~il[include-book] opens to read the
-  source text for the book.
-
-  The ~c[cbd] may be changed using ~ilc[set-cbd] (~pl[set-cbd]).
-  Furthermore, during the processing of the ~il[events] in a book,
-  ~ilc[include-book] sets the ~c[cbd] to be the directory string of the
-  ~il[full-book-name] of the book.  Thus, if the ~c[cbd] is
-  ~c[\"/usr/home/smith/\"] then during the processing of ~il[events] by
-  ~bv[]
-  (include-book \"project/task-1/arith\")
-  ~ev[]
-  the ~c[cbd] will be set to ~c[\"/usr/home/smith/project/task-1/\"].
-  Note that if ~c[\"arith\"] recursively includes a subbook, say
-  ~c[\"naturals\"], that resides on the same directory, the
-  ~ilc[include-book] event for it may omit the specification of that
-  directory.  For example, ~c[\"arith\"] might contain the event
-  ~bv[]
-    (include-book \"naturals\").
-  ~ev[]
-  In general, suppose we have a superior book and several inferior
-  ~il[books] which are included by ~il[events] in the superior book.  Any
-  inferior book residing on the same directory as the superior book
-  may be referenced in the superior without specification of the
-  directory.
-
-  We call this a ``relative'' as opposed to ``absolute'' naming.  The
-  use of relative naming is preferred because it permits ~il[books]
-  (and their accompanying inferiors) to be moved between directories
-  while maintaining their ~il[certificate]s and utility.  Certified
-  ~il[books] that reference inferiors by absolute file names are unusable
-  (and rendered uncertified) if the inferiors are moved to new
-  directories.
-
-  ~em[Technical Note and a Challenge to Users:]
-
-  After elaborating the book name to a full book name, ~ilc[include-book]
-  opens a channel to the file to process the ~il[events] in it.  In some
-  host Common Lisps, the actual file opened depends upon a notion of
-  ``connected directory'' similar to our connected book directory.
-  Our intention in always elaborating book names into absolute
-  filename strings (~pl[pathname] for terminology) is to
-  circumvent the sensitivity to the connected directory.  But we may
-  have insufficient control over this since the ultimate file naming
-  conventions are determined by the host operating system rather than
-  Common Lisp (though, we do check that the operating system
-  ``appears'' to be one that we ``know'' about).  Here is a question,
-  which we'll pose assuming that we have an operating system that
-  calls itself ``Unix.''  Suppose we have a file name, filename, that
-  begins with a slash, e.g., ~c[\"/usr/home/smith/...\"].  Consider two
-  successive invocations of CLTL's
-  ~bv[]
-  (open filename :direction :input)
-  ~ev[]
-  separated only by a change to the operating system's notion of
-  connected directory.  Must these two invocations produce streams to
-  the same file?  A candidate string might be something like
-  ~c[\"/usr/home/smith/*/usr/local/src/foo.lisp\"] which includes some
-  operating system-specific special character to mean ``here insert
-  the connected directory'' or, more generally, ``here make the name
-  dependent on some non-ACL2 aspect of the host's state.''  If such
-  ``tricky'' name strings beginning with a slash exist, then we have
-  failed to isolate ACL2 adequately from the operating system's file
-  naming conventions.  Once upon a time, ACL2 did not insist that the
-  ~c[cbd] begin with a slash and that allowed the string
-  ~c[\"foo.lisp\"] to be tricky because if one were connected to
-  ~c[\"/usr/home/smith/\"] then with the empty ~c[cbd] ~c[\"foo.lisp\"]
-  is a full book name that names the same file as
-  ~c[\"/usr/home/smith/foo.lisp\"].  If the actual file one reads is
-  determined by the operating system's state then it is possible for
-  ACL2 to have two distinct ``full book names'' for the same file, the
-  ``real'' name and the ``tricky'' name.  This can cause ACL2 to
-  include the same book twice, not recognizing the second one as
-  redundant."
-
   `(cbd-fn state))
 
 ; We now develop code to "fix" the commands in the certification world before
@@ -16609,112 +16821,6 @@
                                       state)
                    (close-output-channel channel state)))))))))
 
-(defdoc bookdata
-  ":Doc-Section books
-
-  generating data about books~/
-
-  ACL2 provides a primitive capability for writing out a file of data
-  associated with a book.  This information might be useful, for example, in
-  building a database that allows you to search for name conflicts.  If you use
-  this capability and have ideas for enhancing it, please feel free to send
-  them to the ACL2 developers.
-
-  If the book has the name ~c[BK], then the output file is named
-  ~c[BK__bookdata.out].  That file is generated in the same directory as
-  ~c[BK], by certifying ~c[BK] when ~il[state] global ~c['write-bookdata] has a
-  non-~c[nil] value, for example as follows.
-  ~bv[]
-  (assign write-bookdata t)
-  (certify-book \"BK\" ...)
-  ~ev[]
-  The resulting file will contain a single form of the following shape,
-  according to the description that follows below.
-  ~bv[]
-  (\"...BK.lisp\"
-   :PKGS     port-pkgs
-   :BOOKS    (port-book-val book-val)
-   :CONSTS   (port-consts-val consts-val)
-   :FNS      (port-fns-val fns-val)
-   :LABELS   (port-labels-val labels-val)
-   :MACROS   (port-macros-val macros-val)
-   :STOBJS   (port-stobjs-val stobjs-val)
-   :THEORIES (port-theories-val theories-val)
-   :THMS     (port-thms-val thms-val))
-  ~ev[]
-
-  The values above are based on ~il[events] introduced by including ~c[BK].
-  For various values of ~c[xxx] as described below, ~c[port-]~i[xxx]~c[-val]
-  is a list of values corresponding to ~il[events] introduced in the
-  certification ~il[world] for ~c[BK] (~pl[portcullis]), and ~i[xxx]~c[-val] is
-  a list of values corresponding to ~il[events] introduced non-~ilc[local]ly by
-  ~c[BK].  These lists include only ``top-level'' events, not those that are
-  introduced by a book included either in ~c[BK] or its certification world.
-
-  ~c[Port-pkgs] is a list of names of packages introduced in the certification
-  world (at the top level, not in an included book).  Note that no packages are
-  introduced in a book itself, so we don't include a ``~c[pkgs]'' result.  Both
-  ~c[port-book-val] and ~c[book-val] are lists of full book
-  names (~pl[full-book-name]) of included books.  For the other keywords
-  ~c[:xxx], the lists ~c[port-]~i[xxx]~c[-val] and ~i[xxx]~c[-val] are actually
-  association lists (~pl[alistp]) such that each key is a package name, which
-  is associated with a list of ~il[symbol-name]s for symbols in that package
-  that are introduced for that keyword.  For example, ~c[fns-val] may be the
-  alist
-  ~bv[]
-  ((\"ACL2\" \"F1\" \"F2\")
-   (\"MY-PKG\" \"G1\" \"G2\"))
-  ~ev[]
-  if the function symbols introduced in the book are ~c[F1] and ~c[F2] in the
-  ~c[\"ACL2\"] package, as well as ~c[G1] and ~c[G2] in the ~c[\"MY-PKG\"]
-  package.
-
-  We next explain what kinds of symbols are introduced for each keyword
-  ~c[:xxx].  Each such symbol would appear in the list ~c[port-]~i[xxx]~c[-val]
-  or ~i[xxx]~c[-val], depending respectively on whether the symbol is
-  introduced at the top level of the certification world for ~c[BK] or ~c[BK]
-  itself.
-  ~bq[]
-
-  o ~c[:CONSTS]~nl[]
-  constant symbol introduced by ~c[defconst]
-
-  o ~c[:FNS]~nl[]
-  function symbol: introduced by ~c[defun], ~c[defuns], or ~c[defchoose]; or
-  constrained (by an ~ilc[encapsulate] event)
-
-  o ~c[:LABELS]~nl[]
-  symbol introduced by ~c[deflabel]
-
-  o ~c[:MACROS]~nl[]
-  macro name introduced by ~c[defmacro]
-
-  o ~c[:STOBJS]~nl[]
-  ~c[stobj] name introduced by ~c[defstobj] or ~c[defabsstobj]
-
-  o ~c[:THEORIES]~nl[]
-  theory name introduced by ~c[deftheory]
-
-  o ~c[:THMS]~nl[] theorem name, which may be introduced by ~c[defthm] or a
-  macro call expanding to a call of ~c[defthm], such as ~pl[defequiv] or
-  ~c[defaxiom]; but may be introduced by ~ilc[defpkg], for example, with name
-  ~c[\"MYPKG-PACKAGE\"] if the package name is ~c[\"MYPKG\"]
-  ~eq[]
-
-  Our hope is that people in the ACL2 community will generate and use this data
-  to improve the ACL2 community books (~pl[community-books]).  Here is an
-  example illustrating how to generate bookdata files for those books as a
-  byproduct of a regression run.  Below, we write ~c[{DIR}] as an abbreviation
-  for the ACL2 sources directory, and assume that this command is run from that
-  directory.  Of course, you may wish to use ~c[make] options like ~c[-j 8] and
-  ~c[make] variable settings like ~c[ACL2={DIR}/my-saved_acl2];
-  ~pl[books-certification] for details.
-
-  ~bv[]
-   make regression-fresh \\
-   ACL2_CUSTOMIZATION={DIR}/acl2-customization-files/bookdata.lisp
-  ~ev[]~/~/")
-
 (defun certify-book-fn (user-book-name k compile-flg defaxioms-okp
                                        skip-proofs-okp ttags ttagsx ttagsxp
                                        acl2x write-port pcert state)
@@ -17551,216 +17657,6 @@
                         (acl2x 'nil)
                         (write-port ':default)
                         (pcert ':default))
-
-  ":Doc-Section Books
-
-  how to produce a ~il[certificate] for a book~/
-  ~bv[]
-  Examples:
-  (certify-book \"my-arith\")          ; certify in a world with 0 commands
-  (certify-book \"my-arith\" 3)        ; ... in a world with 3 commands
-  (certify-book \"my-arith\" ?)        ; ... in a world without checking the
-                                       ;     number of commands
-  (certify-book \"my-arith\" 0 nil)    ; ... without compilation
-  (certify-book \"my-arith\" 0 t)      ; ... with compilation (default)
-  (certify-book \"my-arith\" 0 t :ttags (foo))
-                                       ; ... allowing trust tag (ttag) foo
-  (certify-book \"my-arith\" 0 t :ttags :all)
-                                       ; ... allowing all trust tags (ttags)
-  (certify-book \"my-arith\" t)        ; ... from world of old certificate
-  (certify-book \"my-arith\" 0 nil :acl2x t)
-                                       ; ... writing or reading a .acl2x file~/
-
-  General Form:
-  (certify-book book-name
-                k                           ; [default 0]
-                compile-flg                 ; [default t]
-                :defaxioms-okp t/nil        ; [default nil]
-                :skip-proofs-okp t/nil      ; [default nil]
-                :ttags ttags                ; [default nil]
-                :acl2x t/nil                ; [default nil]
-                :ttagsx ttags               ; [default nil]
-                :write-port t/nil           ; [default t]
-                :pcert pcert                ; [default nil]
-                )
-  ~ev[]
-  where ~c[book-name] is a book name (~pl[book-name]), ~c[k] is used to
-  indicate your approval of the ``certification ~il[world],'' and
-  ~c[compile-flg] can control whether the book is to be compiled.  The defaults
-  for ~c[compile-flg], ~c[skip-proofs-okp], ~c[acl2x], ~c[write-port], and
-  ~c[pcert] can be affected by environment variables.  All of these arguments
-  are described in detail below, except for ~c[:pcert].  (We assume below that
-  the value of ~c[:pcert] is ~c[nil] (and environment variable
-  ~c[ACL2_PCERT_ARG] is unset or the empty string).  For a discussion of this
-  argument, ~pl[provisional-certification].)
-
-  Certification occurs in some logical ~il[world], called the ``certification
-  ~il[world].''  That ~il[world] must contain the ~ilc[defpkg]s needed to read
-  and execute the forms in the book.  The ~il[command]s necessary to recreate
-  that ~il[world] from the ACL2 initial ~il[world] are called the
-  ``~il[portcullis] commands,'' and will be copied into the ~il[certificate]
-  created for the book.  Those ~il[command]s will be re-executed whenever the
-  book is included, to ensure that the appropriate packages (and all other
-  names used in the certification ~il[world]) are correctly defined.  The
-  certified book will be more often usable if the certification ~il[world] is
-  kept to a minimal extension of the ACL2 initial ~il[world] (for example, to
-  prevent name clashes with functions defined in other books).  Thus, before
-  you call ~c[certify-book] for the first time on a book, you may wish to get
-  into the initial ACL2 ~il[world] (e.g., with ~c[:ubt 1] or just starting a
-  new version of ACL2), ~ilc[defpkg] the desired packages, and then invoke
-  ~c[certify-book].
-
-  The ~c[k] argument to ~c[certify-book] must be either a nonnegative integer
-  or else one of the symbols ~c[t] or ~c[?] in any package.  If ~c[k] is an
-  integer, then it must be the number of ~il[command]s that have been executed
-  after the initial ACL2 ~il[world] to create the ~il[world] in which
-  ~c[certify-book] was called.  One way to obtain this number is by doing
-  ~c[:pbt :start] to see all the ~il[command]s back to the first one.
-
-  If ~c[k] is ~c[t] (or any symbol whose ~ilc[symbol-name] is ~c[\"T\"]), it
-  means that ~c[certify-book] should use the same ~il[world] used in the last
-  certification of this book.  ~c[K] may have such a value only if you call
-  ~c[certify-book] in the initial ACL2 ~il[world] and there is a
-  ~il[certificate] on file for the book being certified.  (Of course, the
-  ~il[certificate] is probably invalid.)  In this case, ~c[certify-book] reads
-  the old ~il[certificate] to obtain the ~il[portcullis] ~il[command]s and
-  executes them to recreate the certification ~il[world].
-
-  Finally, ~c[k] may be ~c[?] (or any symbol whose ~ilc[symbol-name] is
-  ~c[\"?\"]), in which case there is no check made on the certification world.
-  That is, if ~c[k] is such a value then no action related to the preceding two
-  paragraphs is performed, which can be a nice convenience but at the cost of
-  eliminating a potentially valuable check that the certification ~il[world]
-  may be as expected.
-
-  We next describe the meaning of ~c[compile-flg] and how it defaults.  If
-  explicit compilation has been suppressed by
-  ~c[(set-compiler-enabled nil state)], then ~c[compile-flg] is coerced to
-  ~c[nil]; ~pl[compilation].  Otherwise ~c[compile-flg] may be given the value
-  of ~c[t] (or ~c[:all], which is equivalent to ~c[t] except during provisional
-  certification; ~pl[provisional-certification]), indicating that the book is
-  to be compiled, or else ~c[nil].  (Note that compilation initially creates a
-  compiled file with a temporary file name, and then moves that temporary file
-  to the final compiled file name obtained by adding a suitable extension to
-  the book name.  Thus, a compiled file will appear atomically in its intended
-  location.)  Finally, suppose that ~c[compile-flg] is not supplied (or is
-  ~c[:default]).  If environment variable ~c[ACL2_COMPILE_FLG] is defined and
-  not the empty string, then its value should be ~c[T], ~c[NIL], or ~c[ALL]
-  after converting to upper case, in which case ~c[compile-flg] is considered
-  to have value ~c[t], ~c[nil], or ~c[:all] (respectively).  Otherwise
-  ~c[compile-flg] defaults to ~c[t].  Note that the value ~c[:all] is
-  equivalent to ~c[t] except for during the Convert procedure of provisional
-  certification; ~pl[provisional-certification].
-
-  Two keyword arguments, ~c[:defaxioms-okp] and ~c[:skip-proofs-okp], determine
-  how the system handles the inclusion of ~ilc[defaxiom] events and
-  ~ilc[skip-proofs] events, respectively, in the book.  The value ~c[t] allows
-  such events, but prints a warning message.  The value ~c[nil] causes an error
-  if such an event is found.  ~c[Nil] is the default unless keyword argument
-  ~c[:acl2x t] is provided and state global ~c['write-acl2x] is a cons
-  (~pl[set-write-acl2x]), in which case the default is ~c[t].
-
-  The keyword argument ~c[:ttags] may normally be omitted.  A few constructs,
-  used for example if you are building your own system based on ACL2, may
-  require it.  ~l[defttag] for an explanation of this argument.
-
-  When book ~c[B] is certified with value ~c[t] (the default) for keyword
-  argument ~c[:write-port], a file ~c[B.port] is written by certification
-  process.  This file contains all of the ~il[portcullis] ~il[command]s for
-  ~c[B], i.e., all user commands present in the ACL2 logical ~il[world] at the
-  time ~c[certify-book] is called.  if ~c[B.lisp] later becomes uncertified,
-  say because ~il[events] from that file or an included book have been edited,
-  then ~c[(include-book \"B\")] will consult ~c[B.port] to evaluate forms in
-  that file before evaluating the events in ~c[B.lisp].  On the other hand,
-  ~c[B.port] is ignored when including ~c[B] if ~c[B] is certified.
-
-  If you use ~il[guard]s, please note ~c[certify-book] is executed as though
-  ~c[(set-guard-checking nil)] has been evaluated; ~pl[set-guard-checking].  If
-  you want guards checked, consider using ~c[ld] instead, or in addition;
-  ~pl[ld].
-
-  For a general discussion of books, ~pl[books].  ~c[Certify-book] is akin to
-  what we have historically called a ``proveall'': all the forms in the book
-  are ``proved'' to guarantee their admissibility.  More precisely,
-  ~c[certify-book] (1) reads the forms in the book, confirming that the
-  appropriate packages are defined in the certification ~il[world]; (2) does
-  the full admissibility checks on each form (proving termination of recursive
-  functions, proving theorems, etc.), checking as it goes that each form is an
-  embedded event form (~pl[embedded-event-form]); (3) rolls the ~il[world] back
-  to the initial certification ~il[world] and does an ~ilc[include-book] of the
-  book to check for ~ilc[local] incompatibilities (~pl[local-incompatibility]);
-  (4) writes a ~il[certificate] recording not only that the book was certified
-  but also recording the ~il[command]s necessary to recreate the certification
-  ~il[world] (so the appropriate packages can be defined when the book is
-  included in other ~il[world]s) and the check sums of all the ~il[books]
-  involved (~pl[certificate]); (5) compiles the book if so directed (and then
-  loads the object file in that case).  The result of executing a
-  ~c[certify-book] ~il[command] is the creation of a single new event, which is
-  actually an ~ilc[include-book] event.  If you don't want its included
-  ~il[events] in your present ~il[world], simply execute ~c[:]~ilc[ubt]
-  ~c[:here] afterwards.
-
-  A utility is provided to assist in debugging failures of ~c[certify-book];
-  ~pl[redo-flat].)
-
-  ~c[Certify-book] requires that the default ~il[defun-mode]
-  (~pl[default-defun-mode]) be ~c[:]~ilc[logic] when certification is
-  attempted.  If the mode is not ~c[:]~ilc[logic], an error is signalled.
-
-  An error will occur if ~c[certify-book] has to deal with any uncertified book
-  other than the one on which it was called.  For example, if the book being
-  certified includes another book, that subbook must already have been
-  certified.
-
-  If you have a certified book that has remained unchanged for some time you
-  might well not remember the appropriate ~ilc[defpkg]s for it, though they are
-  stored in the ~il[certificate] file and (by default) also in the ~c[.port]
-  file.  If you begin to change the book, don't throw away its ~il[certificate]
-  file just because it has become invalid!  It is an important historical
-  document until the book is re-certified.  More important, don't throw away
-  the ~c[.port] file, as it will provide the ~il[portcullis] commands when
-  including the book as an uncertified book; ~pl[include-book].
-
-  When ~c[certify-book] is directed to produce a compiled file, it calls the
-  Common Lisp function ~c[compile-file] on the original source file.  This
-  creates a compiled file with an extension known to ACL2, e.g., if the book is
-  named ~c[\"my-book\"] then the source file is ~c[\"my-book.lisp\"] and the
-  compiled file under GCL will be ~c[\"my-book.o\"] while under SBCL it will be
-  ~c[\"my-book.fasl\"].  The compiled file is then loaded.  When
-  ~ilc[include-book] is used later on ~c[\"my-book\"] it will automatically
-  load the compiled file, provided the compiled file has a later write date
-  than the source file.  The only effect of such ~il[compilation] and loading
-  is that the functions defined in the book execute faster.  ~l[guard] for a
-  discussion of the issues, and if you want more details about ~il[books] and
-  compilation, ~pl[book-compiled-file].
-
-  When ~c[certify-book] is directed not to produce a compiled file, it will
-  delete any existing compiled file for the book, so as not to mislead
-  ~ilc[include-book] into loading the now outdated compiled file.  Otherwise,
-  ~c[certify-book] will create a temporary ``expansion file'' to compile,
-  obtained by appending the string \"@expansion.lsp\" to the end of the book
-  name.  Remark: Users may ignore that file, which is automatically deleted
-  unless ~il[state] global variable ~c['save-expansion-file] has been set,
-  presumably by a system developer, to a non-~c[nil] value;
-  ~pl[book-compiled-file] for more information about hit issue, including the
-  role of environment variable ~c[ACL2_SAVE_EXPANSION].
-
-  After execution of a ~c[certify-book] form, the value of
-  ~ilc[acl2-defaults-table] is restored to what it was immediately before that
-  ~c[certify-book] form was executed.  ~l[acl2-defaults-table].
-
-  Those who use the relatively advanced features of trust tags (~pl[defttag])
-  and ~ilc[make-event] may wish to know how to create a ~il[certificate] file
-  that avoids dependence on trust tags that are used only during
-  ~ilc[make-event] expansion.  For this, including documentation of the
-  ~c[:acl2x] and ~c[:ttagsx] keyword arguments for ~c[certify-book],
-  ~pl[set-write-acl2x].
-
-  This completes the tour through the ~il[documentation] of ~il[books].~/
-
-  :cited-by other
-  :cited-by Programming"
-
   (declare (xargs :guard (and (booleanp acl2x)
                               (member-eq compile-flg
                                          '(nil t :all
@@ -17789,1683 +17685,10 @@
                                         (compile-flg 't compile-flg-supplied-p)
                                         &rest args)
   (declare (xargs :guard (and (integerp k) (<= 0 k))))
-
-  ":Doc-Section Other
-
-  a variant of ~ilc[certify-book]~/
-  ~bv[]
-  Examples:
-  (certify-book! \"my-arith\" 3)     ;Certify in a world with 3
-                                     ; commands, starting in a world
-                                     ; with at least 3 commands.
-  (certify-book! \"my-arith\")       ;Certify in the initial world.~/
-
-  General Form:
-  (certify-book! book-name k compile-flg)
-  ~ev[]
-  where ~c[book-name] is a book name (~pl[book-name]), ~c[k] is a
-  nonnegative integer used to indicate the ``certification ~il[world],''
-  and ~c[compile-flg] indicates whether you wish to compile the
-  (functions in the) book.
-
-  This ~il[command] is identical to ~ilc[certify-book], except that the second
-  argument ~c[k] may not be ~c[t] in ~c[certify-book!] and if ~c[k]
-  exceeds the current ~il[command] number, then an appropriate ~ilc[ubt!] will
-  be executed first.  ~l[certify-book] and ~pl[ubt!].~/"
-
   `(er-progn (ubt! ,(1+ k))
              ,(if compile-flg-supplied-p
                   `(certify-book ,user-book-name ,k ,compile-flg ,@args)
                 `(certify-book ,user-book-name ,k))))
-
-(defdoc provisional-certification
-
-; Here we put random remarks about provisional certification that are not fully
-; covered in the :doc topic (which serves as a prerequisite for these remarks).
-
-; Let us consider the :pcert-info field of a cert-obj, which comes from the
-; :pcert-info field of a .pcert0 file.  The value is :PROVED when the .pcert0
-; file was created by the Pcertify+ procedure, but now we consider the value
-; when the .pcert0 file was created by the Pcertify procedure.  The value is an
-; expansion-alist that associates indices with full expansions, before applying
-; elide-locals or elide-locals-rec.  When there is no such elision in the
-; regular :expansion-alist, no entry is made in the :pcert-info field.  We do
-; not elide locals during the Pcertify procedure; then when writing out the
-; .pcert0 file, we use a strong version of
-; elide-locals-and-split-expansion-alist (essentially, a strong version of
-; elide-locals-from-expansion-alist) that dives inside encapsulates to elide
-; locals.  Note that the :pcert-info field does not contribute to the checksum
-; of a cert-obj (see check-sum-cert-obj and check-sum-cert), the reason being
-; that we want the computed checksums not to change between a .pcert0 file and
-; the .pcert1 file derived from it.
-
-; Next, we discuss issues related to include-book and provisionally certified
-; books.
-
-; ACL2 users sometimes arrange to include books to build a certification world,
-; as a precursor to a call of certify-book.  When using provisional
-; certification, the .cert files might not exist for those books.  Of course,
-; we allow .pcert0 and .pcert1 files to serve as certificate files when inside
-; a call of certify-book with a :pcert argument of :create or :convert.  But
-; the include-book forms mentioned above are executed before calling
-; certify-book.  How can we support the use of .pcert0 and .pcert1 files in
-; such cases?
-
-; Our solution is to allow .pcert0 and .pcert1 files to serve as certificate
-; files in all circumstances, with the following two kinds of special handling.
-; First, and most important, we do the following two things: (a) we make a note
-; in the world (in world global pcert-books) when cert-op is not :create-pcert,
-; :create+convert-pcert or :convert-pcert, and an include-book has taken place
-; that uses a .pcert0 or .pcert1 file as a certificate, and (b) we disallow
-; certify-book in any such world unless the :pcert argument has value :create,
-; t, or :convert (where this argument might, of course, come from environment
-; variable ACL2_PCERT_ARG).  Second, we print a warning when using a .pcert0 or
-; .pcert1 file unless we are in an environment with ACL2_PCERT set to a
-; non-empty string.  (Of course, that warning may also be inhibited by
-; set-inhibit-warnings or set-inhibit-output-lst.)
-
-  ":Doc-Section Books
-
-  certify a book in stages for improved parallelism~/
-
-  Provisional certification is a process that can increase parallelism at the
-  system level, typically using `make', when certifying a collection of
-  ~il[books].  We got this idea from Jared Davis, who developed rudimentary
-  provisional certification schemes first at Rockwell Collins and later for his
-  `Milawa' project.  Our design has also benefited from conversations with Sol
-  Swords.
-
-  To invoke provisional certification, ~pl[books-certification].  For example,
-  you could issue the following command.
-  ~bv[]
-  ACL2_PCERT=t cert.pl -j 4 `find . -name '*.lisp'`
-  ~ev[]
-
-  Alternatively, ~pl[books-certification-classic] for a discussion of classic
-  ACL2 `make'-based certification (which may disappear in a future ACL2
-  release); here we extend those instructions to show how to use provisional
-  certification.  (Also, you may wish to look at community books file
-  ~c[books/system/pcert/Makefile] for an example.)  We begin by describing a
-  few ways to do that.  A simple way is to add the line `~c[ACL2_PCERT=t]' to a
-  `make' command that you use for book certification, for example as follows.
-
-  ~bv[]
-  make -j 4 ACL2_PCERT=t
-  ~ev[]
-  The following works too, in a bash shell.
-  ~bv[]
-  (export ACL2_PCERT=t ; time make -j 4)
-  ~ev[]
-  Alternatively, add the line
-  ~bv[]
-  ACL2_PCERT ?= t
-  ~ev[]
-  to the ~c[Makefile] residing in the directory, placed above the line that
-  specifies the `~c[include]' of file ~c[Makefile-generic].  A successful
-  `make' will result in creating the desired ~il[certificate] (~c[.cert])
-  files.
-
-  Warning: If you put the line ``~c[ACL2_PCERT ?= t]'' below the include of
-  ~c[Makefile-generic], it might have no effect.  For example, try editing
-  community books file ~c[books/system/pcert/Makefile] by moving the line
-  ``~c[ACL2_PCERT ?= t]'' to the bottom of the file, and watch
-  ``~c[make top.cert]'' fail to invoke provisional certification.
-
-  The description above may be sufficient for you to use provisional
-  certification.  We provide additional documentation below for the reader who
-  wants to understand more about this process, for example when not using
-  `make'.  Below we assume prior familiarity with ~il[books], in particular
-  ~ilc[certify-book] and ~ilc[include-book].  The remainder of this
-  ~il[documentation] topic is divided into sections: Summary, Correctness Claim
-  and Issues, Combining Pcertify and Convert into Pcertify+, and Further
-  Information.~/
-
-  ~st[Summary]
-
-  Recall that certification of a book, ~c[bk], produces a ~il[certificate] file
-  ~c[bk.cert].  The provisional certification process produces this file as
-  well, but as the last of the following three steps.  All of these steps are
-  carried out by calls of ~ilc[certify-book] using its ~c[:pcert] keyword
-  argument.  We typically call these steps ``procedures'', to distinguish them
-  from the steps of an individual call of ~ilc[certify-book].
-  ~bq[]
-  o The ``Pcertify'' procedure (sometimes called the ``Create'' procedure) is
-  invoked by calling ~ilc[certify-book] with keyword argument
-  ~c[:pcert :create].  It produces a file ~c[bk.pcert0], sometimes called the
-  ``~c[.pcert0]'' file (pronounced ``dot pee cert zero'').  Proofs are skipped
-  during this procedure, which can be viewed as an elaborate syntax check,
-  augmented by compilation if specified (as it is by default).
-
-  o The ``Convert'' procedure is invoked by calling ~ilc[certify-book] with
-  keyword argument ~c[:pcert :convert].  It creates file ~c[bk.pcert1] from
-  ~c[bk.pcert0], by doing proofs for all events in ~c[bk.lisp].  Note that the
-  third argument (the `~c[compile-flg]' argument) is ignored by such a call of
-  ~c[certify-book] unless its value is ~c[:all] (either explicitly or by way of
-  environment variable ~c[ACL2_COMPILE_FLG]).  A subtlety is that if there is a
-  compiled file at least as recent as the corresponding ~c[.pcert0] file, then
-  that compiled file's write date will be updated to the current time at the
-  end of this procedure.  The usual ~il[local-incompatibility] check at the
-  end of ~ilc[certify-book] is omitted for the Convert procedure, since it was
-  performed towards the end of the Create procedure.
-
-  o The ``Complete'' procedure is invoked by calling ~ilc[certify-book] with
-  keyword argument ~c[:pcert :complete].  It checks that every included book
-  (including every one that is ~ilc[local]ly included) has a ~c[.cert] file
-  that is at least as recent as the corresponding book.  The effect is to move
-  ~c[bk.pcert1] to ~c[bk.cert].  Note that all arguments of ~c[certify-book]
-  other than the ~c[:pcert] argument are ignored for this procedure, other than
-  for some trivial argument checking.~eq[]
-
-  You can combine the Pcertify and Convert procedures into a single procedure,
-  Pcertify+, which may be useful for books that contain expensive
-  ~ilc[include-book] ~il[events] but do few proofs.  We defer discussion of
-  that feature to the section below, ``Combining Pcertify and Convert into
-  Pcertify+''.
-
-  The main idea of provisional certification is to break sequential
-  dependencies caused by ~ilc[include-book], that is, so that a book's proofs
-  are carried out even when it includes books (sometimes called ``sub-books'')
-  that have not themselves been fully certified.  For example, suppose that a
-  proof development consists of books ~c[A.lisp], ~c[B.lisp], and ~c[C.lisp],
-  where file ~c[A.lisp] contains the form ~c[(include-book \"B\")] and file
-  ~c[B.lisp] contains the form ~c[(include-book \"C\")].  Normally one would
-  first certify ~c[C], then ~c[B], and finally, ~c[A].  However, the
-  provisional certification process can speed up the process on a multi-core
-  machine, as follows: the Pcertify (pronounced ``pee certify'') procedure
-  respects this order but (one hopes) is fast since proofs are skipped; the
-  Convert procedure essentially completes the certification in parallel by
-  doing proofs and creating ~c[.pcert1] files based on ~c[.pcert0] files; and
-  the Complete procedure respects book order when quickly renaming ~c[.pcert1]
-  files to ~c[.cert] files.  In our example, the steps would be as follows, but
-  note that we need not finish all Pcertify steps before starting some Convert
-  steps, nor need we finish all Convert steps before starting some Complete
-  steps, as explained further below.
-  ~bq[]
-  o Pcertify books \"C\", \"B\",and then \"A\", sequentially, skipping proofs
-  but doing compilation.
-
-  o Do proofs in parallel for the books using the Convert procedure, where each
-  book relies on the existence of its own ~c[.pcert0] file as well as a
-  ~c[.cert], ~c[.pcert0], or ~c[.pcert1] file for each of its included
-  sub-books.  Write out a ~c[.pcert1] file for the book when the proof
-  succeeds.
-
-  o Rename the ~c[.pcert1] file to a corresponding ~c[.cert] file when a
-  ~c[.cert] file exists and is up-to-date for each included book.~eq[]
-
-  The Convert step can begin for ~c[bk.lisp] any time after ~c[bk.pcert0] is
-  built.  The Complete step can begin for this book any time after
-  ~c[bk.pcert1] and every ~c[sub-bk.cert] are built, for ~c[sub-bk] a sub-book
-  of ~c[bk].
-
-  The new procedures ~-[] Pcertify, Convert, and Complete ~-[] are invoked by
-  supplying a value for the keyword argument ~c[:pcert] of ~ilc[certify-book],
-  namely ~c[:create], ~c[:convert], or ~c[:complete], respectively.  Typically,
-  and by default, the ~c[compile-flg] argument of ~ilc[certify-book] is ~c[t]
-  for the Pcertify procedure, so that ~il[compilation] can take full advantage
-  of parallelism.  This argument is treated as ~c[nil] for the other procedures
-  except when its value is ~c[:all] in the Convert procedure, as mentioned
-  above.
-
-  For those who use ~ilc[make-event], we note that expansion is done in the
-  Pcertify procedure; the later steps use the expansion resulting from that
-  procedure.  The reason is that although a call of ~ilc[make-event] is similar
-  to a macro call, a difference is that the expansion of a ~c[make-event] form
-  can depend on the ~il[state].  Therefore, we insist on doing such an
-  expansion only once, so that all books involved agree on the expansion.  We
-  say more about ~c[make-event] below.
-
-  ~st[Correctness Claim and Issues]
-
-  The Basic Claim for certification is the same whether or not the provisional
-  certification process is employed: all books should be certified from
-  scratch, with no files written to the directories of the books except by
-  ACL2.  Moreover, no trust tags should be used (~pl[defttag]), or else it is
-  the responsibility of the user to investigate every occurrence of
-  ``~c[TTAG NOTE]'' that is printed to standard output.
-
-  But common practice is to certify a set of books in stages: certify a few
-  books, fix some books, re-certify changed books, certify some more books, and
-  so on.  In practice, we expect this process to be sound even though it does
-  not meet the preconditions for the Basic Claim above.  In particular, we
-  expect that the use of checksums in ~il[certificate]s will make it
-  exceedingly unlikely that a book is still treated as certified after any
-  events in the book or any sub-book, or any ~il[portcullis] ~il[command]s of
-  the book or any sub-book, have been modified.
-
-  Provisional certification makes it a bit easier for a determined user to
-  subvert correctness.  For example, the Complete procedure only checks write
-  dates to ensure that each sub-book's ~c[.cert] file is no older than the
-  corresponding ~c[.lisp] file, but it does not look inside ~c[.cert] files of
-  sub-books; in particular it does not look at their checksum information.  Of
-  course, the automatic dependency analysis provided by classic ACL2
-  `make'-based certification avoids accidental problems of this sort.  And,
-  checksum information will indeed be applied at ~ilc[include-book] time, at
-  least for sub-books included non-~il[local]ly.
-
-  In short: while we believe that the provisional certification process can be
-  trusted, we suggest that for maximum trust, it is best for all books in a
-  project to be certified from scratch without the provisional certification
-  process.
-
-  ~st[Combining Pcertify and Convert into Pcertify+]
-
-  You can combine the Pcertify and Convert procedure into a single procedure,
-  Pcertify+, which may be useful for books that contain expensive
-  ~ilc[include-book] ~il[events] but do few proofs.  If you are using `make' to
-  do provisional certification as described above, just set `make' variable
-  ~c[ACL2_BOOKS_PCERT_ARG_T] to the list of books for which you want the
-  Pcertify+ procedure performed instead of separate Pcertify and Convert
-  procedures.  Either of two common methods may be used to set this variable,
-  as illustrated below for the case that books ~c[sub.lisp] and ~c[mid.lisp]
-  are the ones on which you want Pcertify+ performed.  One method is to add the
-  following to your directory's Makefile, above the ~c[include] of
-  ~c[Makefile-generic].
-  ~bv[]
-  ACL2_BOOKS_PCERT_ARG_T = sub mid
-  ~ev[]
-  Alternatively, you can specify the desired books on the command line, for
-  example as follows.
-  ~bv[]
-  make -j 4 ACL2_BOOKS_PCERT_ARG_T='sub mid'
-  ~ev[]
-  Note that the books are given without their ~c[.lisp] extensions.
-
-  At the ACL2 level, the Pcertify+ procedure is performed when the value ~c[t]
-  is supplied to the ~c[:pcert] keyword argument of ~ilc[certify-book].  Thus,
-  ~c[:pcert t] can be thought of as a combination of ~c[:pcert :create] and
-  ~c[:pcert :convert].  However, what ACL2 actually does is to perform the
-  Pcertify step without skipping proofs, and at the end of the ~c[certify-book]
-  run, it writes out both the ~c[.pcert0] and ~c[.pcert1] file, with
-  essentially the same contents.  (We say ``essentially'' because the
-  implementation writes ~c[:PCERT-INFO :PROVED] to the end of the ~c[.pcert0]
-  file, but not to the ~c[.pcert1] file.)
-
-  ~st[Further Information]
-
-  Some errors during provisional certification cannot be readily solved.  For
-  example, if there are circular directory dependencies (for example, some book
-  in directory D1 includes some book in directory D2 and vice-versa), then
-  classic ACL2 `make'-based certification will quite possibly fail.  For
-  another example, perhaps your directory's Makefile is awkward to convert to
-  one with suitable dependencies.  When no fix is at hand, it might be best
-  simply to avoid provisional certification.  If you are using classic ACL2
-  `make'-based certification, you can simply add the following line to your
-  directory's ~c[Makefile], or use ``~c[ACL2_PCERT= ]'' on the `make' command
-  line, to avoid provisional certification.
-  ~bv[]
-  override ACL2_PCERT =
-  ~ev[]
-
-  We invite anyone who has troubleshooting tips to contact the ACL2 developers
-  with suggestions for adding such tips to this section.
-
-  Our next remark is relevant only to users of ~ilc[make-event], and concerns
-  the interaction of that utility with state global ~ilc[ld-skip-proofsp].
-  Normally, the global value of ~ilc[ld-skip-proofsp] is unchanged during
-  ~c[make-event] expansion, except that it is bound to ~c[nil] when the
-  ~c[make-event] form has a non-~c[nil] ~c[:check-expansion] argument.  But
-  during the Pcertify procedure (not the Pcertify+ procedure),
-  ~ilc[ld-skip-proofsp] is always bound to ~c[nil] at the start of
-  ~c[make-event] expansion.  To see why, consider for example the community
-  book ~c[books/make-event/proof-by-arith.lisp].  This book introduces a macro,
-  ~c[proof-by-arith], that expands to a call of ~ilc[make-event].  This
-  ~c[make-event] form expands by trying to prove a given theorem using a
-  succession of included arithmetic books, until the proof succeeds.  Now
-  proofs are skipped during the Pcertify procedure, and if proofs were also
-  skipped during ~c[make-event] expansion within that procedure, the first
-  arithmetic book's ~ilc[include-book] form would always be saved because the
-  theorem's proof ``succeeded'' (as it was skipped!).  Of course, the theorem's
-  proof could then easily fail during the Convert step.  If you really want to
-  inhibit proofs during ~c[make-event] expansion in the Pcertify step, consider
-  using a form such as the following:
-  ~c[(state-global-let* ((ld-skip-proofsp nil)) ...)].
-
-  Finally, we describe what it means for there to be a valid ~il[certificate]
-  file for including a certified book.  Normally, this is a file with extension
-  ~c[.cert].  However, if that ~c[.cert] file does not exist, then ACL2 looks
-  for a ~c[.pcert0] file instead; and if that also does not exist, it looks for
-  a ~c[.pcert1] file.  (To see why does the ~c[.pcert0] file take priority over
-  the ~c[.pcert1] file, note that the Convert procedure copies a ~c[.pcert0]
-  file to a ~c[.pcert1] file, so both might exist ~-[] but the ~c[.pcert1] file
-  might be incomplete if copying is in progress.)  Once the candidate
-  certificate file is thus selected, it must be valid in order for the book to
-  be considered certified (~pl[certificate]).  For the certificate file as
-  chosen above, then in order for a compiled file to be loaded, it must be at
-  least as recent as that certificate file.
-
-  Again, as discussed above, a ~c[.pcert0] or ~c[.pcert1] file may serve as a
-  valid certificate file when the ~c[.cert] file is missing.  But when that
-  happens, a warning may be printed that a ``provisionally certified'' book has
-  been included.  No such warning occurs if environment variable ~c[ACL2_PCERT]
-  has a non-empty value, or if that warning is explicitly inhibited
-  (~pl[set-inhibit-warnings] and ~pl[set-inhibit-output-lst]).")
-
-(deflabel pathname
-  :doc
-  ":Doc-Section acl2::Books
-
-  introduction to filename conventions in ACL2~/
-
-  The notion of pathname objects from Common Lisp is not supported in
-  ACL2, nor is the function ~c[pathname].  However, ACL2 supports file
-  operations, using conventions for naming files based on those of the
-  Unix (trademark of AT&T) operating system, so that the character ~c[/]
-  is used to terminate directory names.  Some file names are ``absolute''
-  (complete) descriptions of a file or directory; others are
-  ``relative'' to the current working directory or to the connected
-  book directory (~pl[cbd]).  We emphasize that even for users of
-  Windows-based systems or Macintosh computers, ACL2 file names are in
-  the Unix style.  We will call these ~em[ACL2 pathnames], often
-  omitting the ``ACL2.''~/
-
-  Pathnames starting with the directory separator (~c[/]) or the tilde
-  character (~c[~~]) are absolute pathnames.  All other pathnames are relative
-  pathnames.  An exception is in the Microsoft Windows operating system, where
-  it is illegal for the pathname to start with a tilde character but the drive
-  may be included, e.g., ~c[\"c:/home/smith/acl2/book-1.lisp\"].  In fact, the
-  drive ~em[must] be included in the portcullis of a book; ~pl[portcullis].
-  Note also that some host Common Lisps will not support pathnames starting
-  with ~c[\"~~\"], for example ~c[~~smith], though ACL2 will generally support
-  those starting with ~c[\"~~/\"] regardless of the host Common Lisp.
-
-  Consider the following examples.  The filename string
-  ~bv[]
-  \"/home/smith/acl2/book-1.lisp\"
-  ~ev[]
-  is an absolute pathname, with top-level directory ~c[\"home\"],
-  under that the directory ~c[\"smith\"] and then the directory
-  ~c[\"acl2\"], and finally, within that directory the file
-  ~c[\"book-1.lisp\"].  If the connected book directory is
-  ~c[\"/home/smith/\"] (~pl[cbd]), then the filename string above
-  also corresponds to the relative filename string \"acl2/book1.lisp\".
-
-  Finally, we note that (on non-Windows systems) the pathname ~c[\"~~\"] and
-  pathnames starting with ~c[\"~~/\"] are illegal in books being certified.
-  Otherwise, a subsidiary ~ilc[include-book] form would have a different
-  meaning at certification time than at a later time when the certified book
-  is included by a different user.~/")
-
-(deflabel book-example
-  :Doc
-  ":Doc-Section Books
-
-  how to create, certify, and use a simple book~/
-
-  Suppose you have developed a sequence of admissible ~il[events] which you
-  want to turn into a book.  We call this ``publishing'' the book.
-  This note explains how to do that.~/
-
-  A key idea of ~il[books] is that they are ``incremental'' in the
-  sense that when you include a book in a host logical ~il[world], the
-  ~il[world] is incrementally extended by the results established in that
-  book.  This is allowed only if every name defined by the incoming
-  book is either new or is already identically defined.
-  ~l[redundant-events].  This is exactly the same problem faced
-  by a programmer who wishes to provide a utility to other people: how
-  can he make sure he doesn't create name conflicts?  The solution, in
-  Common Lisp, is also the same: use packages.  While ~il[books] and
-  packages have a very tenuous formal connection (every book must
-  start with an ~ilc[in-package]), the creation of a book is intimately
-  concerned with the package issue.  Having motivated what would
-  otherwise appear as an unnecessary fascination with packages below,
-  we now proceed with a description of how to publish a book.
-
-  Just to be concrete, let's suppose you have already gotten ACL2 to
-  accept the following sequence of ~il[command]s, starting in the ACL2
-  initial ~il[state].
-  ~bv[]
-     (defpkg \"ACL2-MY-BOOK\"
-             (union-eq *common-lisp-symbols-from-main-lisp-package*
-                       *acl2-exports*))
-     (in-package \"ACL2-MY-BOOK\")
-     (defun app (x y)
-       (if (consp x) (cons (car x) (app (cdr x) y)) y))
-     (defun rev (x)
-       (if (consp x) (app (rev (cdr x)) (list (car x))) nil))
-     (defthm rev-app-hack
-       (equal (rev (app a (list x))) (cons x (rev a))))
-     (defthm rev-rev
-       (implies (acl2::true-listp x) (equal (rev (rev x)) x)))
-  ~ev[]
-  Observe that the first form above defines a package (which imports
-  the symbols defined in CLTL such as ~ilc[if] and ~ilc[cons] and the
-  symbols used to ~il[command] ACL2 such as ~ilc[defun] and ~ilc[defthm]).  The
-  second form selects that package as the current one.  All subsequent
-  forms are read into that package.  The remaining forms are just
-  event forms: ~ilc[defun]s and ~ilc[defthm]s in this case.
-
-  Typically you would have created a file with Emacs containing these
-  forms and you will have submitted each of them interactively to ACL2
-  to confirm that they are all admissible.  That interactive
-  verification should start in ACL2's initial ~il[world] ~-[] although
-  you might, of course, start your sequence of ~il[events] with some
-  ~ilc[include-book]s to build a more elaborate ~il[world].
-
-  The first step towards publishing a book containing the results
-  above is to create a file that starts with the ~ilc[in-package] and
-  then contains the rest of the forms.  Let's call that file
-  ~c[\"my-book.lisp\"].  The name is unimportant, except it must end
-  with ~c[\".lisp\"].  If there are ~il[events] that you do not wish to be
-  available to the user of the book ~-[] e.g., lemmas you proved on your
-  way toward proving the main ones ~-[] you may so mark them by
-  enclosing them in ~ilc[local] forms.  ~l[local].  Let us suppose
-  you wish to hide ~c[rev-app-hack] above.  You may also add standard Lisp
-  comments to the file.  The final content of ~c[\"my-book.lisp\"]
-  might be:
-  ~bv[]
-   ; This book contains my app and rev functions and the theorem
-   ; that rev is its own inverse.
-
-     (in-package \"ACL2-MY-BOOK\")
-     (defun app (x y)
-       (if (consp x) (cons (car x) (app (cdr x) y)) y))
-     (defun rev (x)
-       (if (consp x) (app (rev (cdr x)) (list (car x))) nil))
-
-   ; The following hack is not exported.
-     (local (defthm rev-app-hack
-       (equal (rev (app a (list x))) (cons x (rev a)))))
-
-     (defthm rev-rev
-       (implies (acl2::true-listp x) (equal (rev (rev x)) x)))
-  ~ev[]
-  The file shown above ~st[is] the book.  By the time this note is
-  done you will have seen how to certify that the book is correct, how
-  to compile it, and how to use it in other host ~il[world]s.  Observe that
-  the ~ilc[defpkg] is not in the book.  It cannot be: Common Lisp
-  compilers disagree on how to treat new package definitions appearing
-  in files to be compiled.
-
-  Since a book is just a source file typed by the user, ACL2 provides
-  a mechanism for checking that the ~il[events] are all admissible and then
-  marking the file as checked.  This is called certification.  To
-  certify ~c[\"my-book.lisp\"] you should first get into ACL2 with an
-  initial ~il[world].  Then, define the package needed by the book, by
-  typing the following ~ilc[defpkg] to the ACL2 ~il[prompt]:
-  ~bv[]
-  ACL2 !>(defpkg \"ACL2-MY-BOOK\"
-                 (union-eq *common-lisp-symbols-from-main-lisp-package*
-                           *acl2-exports*))
-  ~ev[]
-  Then execute the ~il[command]:
-  ~bv[]
-  ACL2 !>(certify-book \"my-book\" 1 t) ; the `t' is in fact the default
-  ~ev[]
-  Observe that you do not type the ~c[\".lisp\"] part of the file
-  name.  For purposes of ~il[books], the book's name is ~c[\"my-book\"] and
-  by the time all is said and done, there will be several extensions
-  in addition to the ~c[\".lisp\"] extension associated with it.
-
-  The ~c[1] tells ~ilc[certify-book] that you acknowledge that there is
-  one command in this ``certification ~il[world]'' (namely the ~ilc[defpkg]).
-  To use the book, any prospective host ~il[world] must be extended by
-  the addition of whatever ~il[command]s occurred before certification.  It
-  would be a pity to certify a book in a ~il[world] containing junk because
-  that junk will become the ``~il[portcullis]'' guarding entrance to
-  the book.  The ~c[t] above tells ~ilc[certify-book] that you wish to
-  compile ~c[\"my-book.lisp\"] also (but ~pl[compilation] for an exception).
-  ~ilc[Certify-book] makes many checks but by far the most important and
-  time-consuming one is that it ``proves'' every event in the file.
-
-  When ~ilc[certify-book] is done it will have created two new files.
-  The first will be called ~c[\"my-book.cert\"] and contains the
-  ``~il[certificate]'' attesting to the admissibility of the ~il[events] in
-  ~c[\"my-book.lisp\"].  The ~il[certificate] contains the ~ilc[defpkg] and any
-  other forms necessary to construct the certification ~il[world].  It also
-  contains various check sums used to help you keep track of which
-  version of ~c[\"my-book.lisp\"] was certified.
-
-  The second file that may be created by ~ilc[certify-book] is the
-  compiled version of ~c[\"my-book.lisp\"] and will have a name that
-  is assigned by the host compiler (e.g., ~c[\"my-book.o\"] in GCL,
-  ~c[\"my-book.fasl\"] in SBCL).  ~ilc[Certify-book] will also load
-  this object file.  When ~ilc[certify-book] is done, you may throw
-  away the logical ~il[world] it created, for example by executing the
-  ~il[command] ~c[:u].
-
-  To use the book later in any ACL2 session, just execute the event
-  ~c[(include-book \"my-book\")].  This will do the necessary
-  ~ilc[defpkg], load the non-~ilc[local] ~il[events] in
-  ~c[\"my-book.lisp\"] and then may load the compiled code for the
-  non-local functions defined in that file.  Checks are made to ensure
-  that the ~il[certificate] file exists and describes the version of
-  ~c[\"my-book.lisp\"] that is read.  The compiled code is loaded if
-  and only if it exists and has a later write date than the source
-  file (but ~pl[compilation] for an exception).
-
-  Since ~ilc[include-book] is itself an event, you may put such forms
-  into other ~il[books].  Thus it is possible for the inclusion of a single
-  book to lead to the inclusion of many others.  The check sum
-  information maintained in ~il[certificate]s helps deal with the
-  version control problem of the referenced ~il[books].  I.e., if this
-  version of ~c[\"my-book\"] is used during the certification of
-  ~c[\"your-book\"], then the ~il[certificate] for ~c[\"your-book\"] includes
-  the check sum of this version of ~c[\"my-book\"].  If a later
-  ~c[(include-book \"your-book\")] finds a version of ~c[\"my-book\"]
-  with a different check sum, an error is signalled.  But check sums
-  are not perfect and the insecurity of the host file system prevents
-  ACL2 from guaranteeing the logical soundness of an ~ilc[include-book]
-  event, even for a book that appears to have a valid ~il[certificate]
-  (they can be forged, after all).  (~l[certificate] for further
-  discussion.)
-
-  This concludes the example of how to create, certify and use a book.
-  If you wish, you could now review the ~il[documentation] for book-related
-  topics (~pl[books]) and browse through them.  They'll probably
-  make sense in this context.  Alternatively, you could continue the
-  ``guided tour'' through the rest of the ~il[documentation] of ~il[books].
-  ~l[book-name], following the pointer given at the conclusion.")
-
-(deflabel full-book-name
-  :doc
-  ":Doc-Section Books
-
-  book naming conventions assumed by ACL2~/
-
-  For this discussion we assume that the resident operating system is
-  Unix (trademark of AT&T), but analogous remarks apply to other
-  operating systems supported by ACL2, in particular, the Macintosh
-  operating system where `~c[:]' plays roughly the role of `~c[/]' in
-  Unix; ~pl[pathname].
-
-  ACL2 defines a ``full book name'' to be an ``absolute filename
-  string,'' that may be divided into contiguous sections:  a
-  ``directory string'', a ``familiar name'' and an ``extension''.
-  ~l[pathname] for the definitions of ``absolute,'' ``filename
-  string,'' and other notions pertaining to naming files.  Below we
-  exhibit the three sections of one such string:
-  ~bv[]
-  \"/usr/home/smith/project/arith.lisp\"
-
-  \"/usr/home/smith/project/\"           ; directory string
-                          \"arith\"      ; familiar name
-                               \".lisp\" ; extension~/
-  ~ev[]
-  The sections are marked by the rightmost slash and rightmost dot,
-  as shown below.
-  ~bv[]
-  \"/usr/home/smith/project/arith.lisp\"
-                          |     |
-                          slash dot
-                          |     |
-  \"/usr/home/smith/project/\"           ; directory string
-                          \"arith\"      ; familiar name
-                               \".lisp\" ; extension
-  ~ev[]
-  The directory string includes (and terminates with) the rightmost
-  slash.  The extension includes (and starts with) the rightmost dot.
-  The dot must be strictly to the right of the slash so that the
-  familiar name is well-defined and nonempty.
-
-  If you are using ACL2 on a system in which file names do not have
-  this form, please contact the authors and we'll see what we can do
-  about generalizing ACL2's conventions.")
-
-(deflabel book-name
-  :doc
-  ":Doc-Section  Books
-
-  conventions associated with book names~/
-  ~bv[]
-  Examples:
-  \"list-processing\"
-  \"/usr/home/smith/my-arith\"
-  ~ev[]
-  Book names are string constants that can be elaborated into file
-  names.  We elaborate book names by concatenating the ``connected
-  book directory'' (~pl[cbd]) string on the left and some
-  ``extension,'' such as ~c[\".lisp\"], on the right.  However, the
-  connected book directory is not added if the book name itself
-  already represents an absolute file name.  Furthermore,
-  ~ilc[include-book] and ~ilc[certify-book] temporarily reset the connected
-  book directory to be the directory of the book being processed.
-  This allows ~ilc[include-book] forms to use file names without explicit
-  mention of the enclosing book's directory.  This in turn allows
-  ~il[books] (together with those that they include, using
-  ~ilc[include-book]) to be moved between directories while maintaining
-  their certification and utility.
-
-  You may wish to read elsewhere for details of ACL2 file name
-  conventions (~pl[pathname]), for a discussion of the filename
-  that is the result of the elaboration described here
-  (~pl[full-book-name]), and for details of the concept of the
-  connected book directory (~pl[cbd]).  For details of how
-  ~ilc[include-book] (~pl[include-book]) and ~ilc[certify-book]
-  (~pl[certify-book]) use these concepts, see below.~/
-
-  Often a book name is simply the familiar name of the file.
-  (~l[full-book-name] for discussion of the notions of
-  ``directory string,'' ``familiar name,'' and ``extension''.  These
-  concepts are not on the guided tour through ~il[books] and you
-  should read them separately.)  However, it is permitted for book
-  names to include a directory or part of a directory name.  Book
-  names never include the extension, since ACL2 must routinely tack
-  several different extensions onto the name during ~ilc[include-book].
-  For example, ~ilc[include-book] uses the ~c[\".lisp\"], ~c[\".cert\"] and
-  possibly the ~c[\".o\"] or ~c[\".lbin\"] extensions of the book name.
-
-  Book names are elaborated into full file names by ~ilc[include-book]
-  and ~ilc[certify-book].  This elaboration is sensitive to the
-  ``connected book directory.'' The connected book directory is an
-  absolute filename string (~pl[pathname]) that is part of the
-  ACL2 ~ilc[state].  (You may wish to ~pl[cbd] and to
-  ~pl[set-cbd] ~-[] note that these are not on the guided tour).
-  If a book name is an absolute filename string, ACL2 elaborates it
-  simply by appending the desired extension to the right.
-  If a book name is a relative filename string, ACL2 appends the
-  connected book directory on the left and the desired extension on
-  the right.
-
-  Note that it is possible that the book name includes some partial
-  specification of the directory.  For example, if the connected book
-  directory is ~c[\"/usr/home/smith/\"] then the book name
-  ~c[\"project/task-1/arith\"] is a book name that will be elaborated
-  to
-  ~bv[]
-  \"/usr/home/smith/project/task-1/arith.lisp\".
-  ~ev[]
-
-  Observe that while the ~il[events] in this ~c[\"arith\"] book are being
-  processed the connected book directory will temporarily be set to
-  ~bv[]
-  \"/usr/home/smith/project/task-1/\".
-  ~ev[]
-  Thus, if the book requires other ~il[books], e.g.,
-  ~bv[]
-  (include-book \"naturals\")
-  ~ev[]
-  then it is not necessary to specify the directory on which they
-  reside provided that directory is the same as the superior book.
-
-  This inheritance of the connected book directory and its use to
-  elaborate the names of inferior ~il[books] makes it possible to move
-  ~il[books] and their inferiors to new directories, provided they maintain
-  the same relative relationship.  It is even possible to move with
-  ease whole collections of ~il[books] to different filesystems that use
-  a different operating system than the one under which the original
-  certification was performed.
-
-  The ~c[\".cert\"] extension of a book, if it exists, is presumed to
-  contain the most recent ~il[certificate] for the book.
-  ~l[certificate] (or, if you are on the guided tour, wait until
-  the tour gets there).
-
-  ~l[book-contents] to continue the guided tour.")
-
-(deflabel book-contents
-  :doc
-  ":Doc-Section  Books
-
-  restrictions on the forms inside ~il[books]~/
-  ~bv[]
-  Example Book:
-
-  ; This book defines my app function and the theorem that it is
-  ; associative.  One irrelevant help lemma is proved first but
-  ; it is local and so not seen by include-book.  I depend on the
-  ; inferior book \"weird-list-primitives\" from which I get
-  ; definitions of hd and tl.
-
-  (in-package \"MY-PKG\")
-
-  (include-book \"weird-list-primitives\")
-
-  (defun app (x y) (if (consp x) (cons (hd x) (app (tl x) y)) y))
-
-  (local
-   (defthm help-lemma
-     (implies (true-listp x) (equal (app x nil) x))))
-
-  (defthm app-is-associative
-    (equal (app (app a b) c) (app a (app b c))))~/
-
-  ~ev[]
-  The first form in a book must be ~c[(in-package \"pkg\")] where
-  ~c[\"pkg\"] is some package name known to ACL2 whenever the book is
-  certified.  The rest of the forms in a book are embedded event
-  forms, i.e., ~ilc[defun]s, ~ilc[defthm]s, etc., some of which may be
-  marked ~ilc[local].  ~l[embedded-event-form].  The usual Common
-  Lisp commenting conventions are provided.  Note that since a book
-  consists of embedded event forms, we can talk about the
-  ``~ilc[local]'' and ``non-local'' ~il[events] of a book.
-
-  Because ~ilc[in-package] is not an embedded event form, the only
-  ~ilc[in-package] in a book is the initial one.  Because ~ilc[defpkg] is
-  not an embedded event form, a book can never contain a ~ilc[defpkg]
-  form.  Because ~ilc[include-book] is an embedded event form, ~il[books] may
-  contain references to other ~il[books].  This makes ~il[books] structured
-  objects.
-
-  When the forms in a book are read from the file, they are read with
-  ~ilc[current-package] set to the package named in the ~ilc[in-package]
-  form at the top of the file.  The effect of this is that all symbols
-  are ~il[intern]ed in that package, except those whose packages are given
-  explicitly with the ``::'' notation.  For example, if a book begins
-  with ~c[(in-package \"ACL2-X\")] and then contains the form
-  ~bv[]
-    (defun fn (x)
-      (acl2::list 'car x))
-  ~ev[]
-  then ~ilc[defun], ~c[fn], ~c[x], and ~ilc[car] are all ~il[intern]ed in the
-  ~c[\"ACL2-X\"] package.  I.e., it is as though the following form
-  were read instead:
-  ~bv[]
-    (acl2-x::defun acl2-x::fn (acl2-x::x)
-        (acl2::list 'acl2-x::car acl2-x::x)).
-  ~ev[]
-  Of course, ~c[acl2-x::defun] would be the same symbol as
-  ~c[acl2::defun] if the ~c[\"ACL2-X\"] package imported ~c[acl2::defun].
-
-  If each book has its own unique package name and all the names
-  defined within the book are in that package, then name clashes
-  between ~il[books] are completely avoided.  This permits the construction
-  of useful logical ~il[world]s by the successive inclusion of many ~il[books].
-  Although it is often too much trouble to manage several packages,
-  their judicious use is a way to minimize name clashes.  Often, a
-  better way is to use ~c[local]; ~pl[local].
-
-  How does ~ilc[include-book] know the definitions of the packages used in a
-  book, since ~ilc[defpkg]s cannot be among the forms?  More generally,
-  how do we know that the forms in a book will be admissible in the
-  host logical ~il[world] of an ~ilc[include-book]?  ~l[certificate] for
-  answers to these questions.")
-
-(deflabel certificate
-  :doc
-  ":Doc-Section Books
-
-  how a book is known to be admissible and where its ~ilc[defpkg]s reside~/
-
-  A book, say ~c[\"arith\"], is said to have a ``certificate'' if there
-  is a file named ~c[\"arith.cert\"].  Certificates are created by the
-  function ~ilc[certify-book] and inspected by ~ilc[include-book].  Check
-  sums are used to help ensure that certificates are legitimate and
-  that the corresponding book has not been modified since
-  certification.  But because the file system is insecure and check
-  sums are not perfect it is possible for the inclusion of a book to
-  cause inconsistency even though the book carries an impeccable
-  certificate.
-
-  The certificate includes the version number of the certifying ACL2.
-  A book is considered uncertified if it is included in an ACL2
-  with a different ~il[version] number.~/
-
-  The presence of a ``valid'' certificate file for a book attests to
-  two things: all of the ~il[events] of the book are admissible in a
-  certain extension of the initial ACL2 logic, and the non-~ilc[local]
-  ~il[events] of the book are independent of the ~ilc[local] ones
-  (~pl[local-incompatibility]).  In addition, the certificate
-  contains the ~il[command]s used to construct the ~il[world] in which
-  certification occurred.  Among those ~il[command]s, of course, are the
-  ~ilc[defpkg]s defining the packages used in the book.  When a book is
-  included into a host ~il[world], that ~il[world] is first extended
-  by the ~il[command]s listed in the certificate for the book.  Unless that
-  causes an error due to name conflicts, the extension ensures that
-  all the packages used by the book are identically defined in the
-  host ~il[world].
-
-  ~em[Security:]
-
-  Because the host file system is insecure, there is no way ACL2 can
-  guarantee that the contents of a book remain the same as when its
-  certificate was written.  That is, between the time a book is
-  certified and the time it is used, it may be modified.  Furthermore,
-  certificates can be counterfeited.  Check sums (~pl[check-sum])
-  are used to help detect such problems.  But check sums provide
-  imperfect security: two different files can have the same check sum.
-
-  Therefore, from the strictly logical point of view, one must
-  consider even the inclusion of certified ~il[books] as placing a burden
-  on the user:~bq[]
-
-  The non-erroneous inclusion of a certified book is consistency
-  preserving provided (a) the objects read by ~ilc[include-book] from the
-  certificate were the objects written there by a ~ilc[certify-book] and
-  (b) the forms read by ~ilc[include-book] from the book itself are the
-  forms read by the corresponding ~ilc[certify-book].
-
-  ~eq[]We say that a given execution of ~ilc[include-book] is ``certified''
-  if a certificate file for the book is present and well-formed and
-  the check sum information contained within it supports the
-  conclusion that the ~il[events] read by the ~ilc[include-book] are the ones
-  checked by ~ilc[certify-book].  When an uncertified ~ilc[include-book]
-  occurs, warnings are printed or errors are caused.  But even if no
-  warning is printed, you must accept burdens (a) and (b) if you use
-  ~il[books].  These burdens are easier to live with if you protect your
-  ~il[books] so that other users cannot write to them, you abstain from
-  running concurrent ACL2 jobs, and you abstain from counterfeiting
-  certificates.  But even on a single user uniprocessor, you can shoot
-  yourself in the foot by using the ACL2 ~il[io] primitives to fabricate an
-  inconsistent book and the corresponding certificate.
-
-  Note that part (a) of the burden described above implies, in
-  particular, that there are no guarantees when a certificate is
-  copied.  When ~il[books] are renamed (as by copying them), it is
-  recommended that their certificates be removed and the ~il[books] be
-  recertified.  The expectation is that recertification will go
-  through without a hitch if relative ~il[pathname]s are used.
-  ~l[pathname], which is not on the guided tour.
-
-  Certificates essentially contain two parts, a ~il[portcullis] and a
-  ~il[keep].  There is a third part, an ~c[expansion-alist], in order
-  to record expansions if ~ilc[make-event] has been used, but the user
-  need not be concerned with that level of detail.
-
-  ~l[portcullis] to continue the guided tour through ~il[books].")
-
-(deflabel portcullis
-
-; This documentation string formerly concluded (just before "~l[keep] to
-; continue...") with the following discussion, until Version  2.6.  Now that we
-; change include-book forms in the portcuillis to use absolute pathnames, we do
-; not need this.
-
-;   Recall that we disallow ~ilc[include-book] ~il[events] from the portcullis
-;   unless the included book's name is an absolute filename
-;   (~l[pathname]).  Thus, for example, under the Unix operating
-;   system it is impossible to certify a book if the certification
-;   ~il[world] was created with
-;   ~bv[]
-;   ACL2 !>(~il[include-book] \"arith\")
-;   ~ev[]
-;   The problem here is that the file actually read on behalf of such
-;   an ~ilc[include-book] depends upon the then current setting of the
-;   connected book directory (~pl[cbd]).  That setting could be
-;   changed before the certification occurs.  If we were to copy
-;   ~c[(include-book \"arith\")] into the portcullis of the book being
-;   certified, there is no assurance that the ~c[\"arith\"] book included
-;   would come from the correct directory.  However, by requiring that
-;   the ~ilc[include-book]s in the certification ~il[world] give book names
-;   that begin with slash we effectively require you to specify the full
-;   file name of each book involved in creating your certification
-;   ~il[world].  Observe that the execution of
-;   ~bv[]
-;   (~il[include-book] \"/usr/local/src/acl2/library/arith\")
-;   ~ev[]
-;   does not depend on the current book directory.  On the other hand,
-;   this requirement ~-[] effectively that absolute file names be used in
-;   the certification ~il[world] ~-[] means that a book that requires
-;   another book in its certification ~il[world] will be rendered
-;   uncertified if the required book is removed to another directory.
-;   If possible, any ~ilc[include-book] ~il[command] required for a book ought
-;   to be placed in the book itself and not in the certification
-;   ~il[world].  The only time this cannot be done is if the required
-;   book is necessary to some ~ilc[defpkg] required by your book.  Of
-;   course, this is just the same advice we have been giving: keep the
-;   certification ~il[world] as elementary as possible.
-
-  :doc
-  ":Doc-Section Books
-
-  the gate guarding the entrance to a certified book~/
-
-  The certificate (~pl[certificate] for general information) of a
-  certified file is divided into two parts, a portcullis and a
-  ~il[keep].  These names come from castle lore.  The portcullis of a
-  castle is an iron grate that slides up through the ceiling of the
-  tunnel-like entrance.  The portcullis of a book ensures that
-  ~ilc[include-book] does not start to read the book until the
-  appropriate context has been created.~/
-
-  Technically, the portcullis consists of the ~il[version] number of
-  the certifying ACL2, a list of ~il[command]s used to create the
-  ``certification ~il[world]'' and an alist specifying the check sums
-  of all the ~il[books] included in that ~il[world].  The portcullis
-  is constructed automatically by ~ilc[certify-book] from the ~il[world]
-  in which ~ilc[certify-book] is called, but that ~il[world] must have
-  certain properties described below.  After listing the properties we
-  discuss the issues in a more leisurely manner.
-
-  Each ~il[command] in the portcullis must be either a ~ilc[defpkg] form or an
-  embedded event form (~pl[embedded-event-form]).
-
-  Consider a book to be certified.  The book is a file containing
-  event forms.  Suppose the file contains references to such symbols
-  as ~c[my-pkg::fn] and ~c[acl2-arith::cancel], but that the book itself
-  does not create the packages.  Then a hard Lisp error would be
-  caused merely by the attempt to read the expressions in the book.
-  The corresponding ~ilc[defpkg]s cannot be written into the book itself
-  because the book must be compilable and Common Lisp compilers differ
-  on the rules concerning the inline definition of new packages.  The
-  only safe course is to make all ~ilc[defpkg]s occur outside of compiled
-  files.
-
-  More generally, when a book is certified it is certified within some
-  logical ~il[world].  That ``certification ~il[world]'' contains not only
-  the necessary ~ilc[defpkg]s but also, perhaps, function and constant
-  definitions and maybe even references to other ~il[books].  When
-  ~ilc[certify-book] creates the ~il[certificate] for a file it recovers
-  from the certification ~il[world] the ~il[command]s used to create that
-  ~il[world] from the initial ACL2 ~il[world].  Those ~il[command]s become
-  part of the portcullis for the certified book.  In addition,
-  ~ilc[certify-book] records in the portcullis the check sums
-  (~pl[check-sum]) of all the ~il[books] included in the certification
-  ~il[world].
-
-  ~ilc[Include-book] presumes that it is impossible even to read the
-  contents of a certified book unless the portcullis can be
-  ``raised.'' To raise the portcullis we must be able to execute
-  (possibly redundantly, but certainly without error), all of the
-  ~il[command]s in the portcullis and then verify that the ~il[books] thus
-  included were identical to those used to build the certification
-  ~il[world] (up to check sum).  This raising of the portcullis must
-  be done delicately since ~ilc[defpkg]s are present: we cannot even read
-  a ~il[command] in the portcullis until we have successfully executed the
-  previous ones, since packages are being defined.
-
-  Clearly, a book is most useful if it is certified in the most
-  elementary extension possible of the initial logic.  If, for
-  example, your certification ~il[world] happens to contain a
-  ~ilc[defpkg] for ~c[\"MY-PKG\"] and the function ~c[foo], then those
-  definitions become part of the portcullis for the book.  Every time
-  the book is included, those names will be defined and will have to
-  be either new or redundant (~pl[redundant-events]).  But if
-  those names were not necessary to the certification of the book,
-  their presence would unnecessarily restrict the utility of the book.
-
-  ~l[keep] to continue the guided tour of ~il[books].")
-
-(deflabel version
-  :doc
-  ":Doc-Section Miscellaneous
-
-  ACL2 Version Number~/
-
-  To determine the version number of your copy of ACL2, evaluate the form
-  ~c[(@ acl2-version)].  The value will be a string.  For example,
-  ~bv[]
-  ACL2 !>(@ acl2-version)
-  \"ACL2 Version 3.4\"
-  ~ev[]
-  ~/
-
-  The part of the string after ~c[\"ACL2 Version \"] is of the form ~c[x.y] or
-  ~c[x.y.z], optionally followed by a succession of values in parentheses,
-  where ~c[x], ~c[y], and ~c[z] are natural numbers.  If ~c[z] is omitted then
-  it is implicitly 0.  We refer to ~c[X], ~c[y], and ~c[z] as the ``major'',
-  ``minor'', and ``incrl'' fields, respectively.  The incrl field is used for
-  incremental releases.  The discussion just below assumes that incremental
-  releases are not employed at the user's site, i.e., the incrl fields are
-  always 0.  We remove this assumption when we discuss incremental releases at
-  the end of this documenttation topic.
-
-  ~il[Books] are considered certified only in the same version of ACL2
-  in which the certification was done.  The ~il[certificate] file
-  records the version number of the certifying ACL2 and
-  ~il[include-book] considers the book uncertified if that does not
-  match the current version number.  Thus, each time we release a new
-  version of ACL2, previously certified books should be recertified.
-
-  Note that there are over 150 constants in the system, most having to do with
-  the fact that ACL2 is coded in ACL2.  Many of these, for example
-  ~c[*common-lisp-specials-and-constants*] and ~c[*acl2-exports*], may change
-  from version to version, and this can cause unsoundness.  For example, the
-  symbol ~c['set-difference-eq] was added to ~c[*acl2-exports*] in Version_2.9,
-  so we can certify a book in Version_2.8 containing the following theorem,
-  which is false in Version_2.9.
-  ~bv[]
-  (null (member 'set-difference-eq *acl2-exports*))
-  ~ev[]
-  Therefore, we need to disallow inclusion of such a book in a Version_2.9
-  session, which otherwise would allow us to prove ~c[nil].  Furthermore, it is
-  possible that from one version of the system to another we might change, say,
-  the default values on some system function or otherwise make ``intentional''
-  changes to the axioms.  It is even possible one version of the system is
-  discovered to be unsound and we release a new version to correct our error.
-
-  Therefore we adopted the draconian policy that books are certified
-  by a given version of ACL2 and ``must'' be recertified to be used
-  in other versions.  We put ``must'' in quotes because in fact, ACL2
-  allows a book that was certified in one ACL2 version to be included
-  in a later version, using ~ilc[include-book].  But ACL2 does not allow
-  ~ilc[certify-book] to succeed when such an ~ilc[include-book] is executed on its
-  behalf.  Also, you may experience undesirable behavior if you avoid
-  recertification when moving to a different version.  Hence we
-  recommend that you stick to the draconion policy of recertifying
-  books when updating to a new ACL2 version.
-
-  The string ~c[(@ acl2-version)] can contain implementation-specific
-  information in addition to the version number.  For example, in
-  Macintosh Common Lisp (MCL) ~c[(char-code #\Newline)] is 13, while as
-  far as we know, it is 10 in every other Common Lisp.  Our concern is
-  that one could certify a book in an MCL-based ACL2 with the theorem
-  ~bv[]
-  (equal (char-code #\Newline) 13)
-  ~ev[]
-  and then include this book in another Lisp and thereby prove ~c[nil].
-  So, when a book is certified in an MCL-based ACL2, the book's
-  ~il[certificate] mentions ``MCL'' in its version string.  Moreover,
-  ~c[(@ acl2-version)] similarly mentions ``MCL'' when the ACL2 image has
-  been built on top of MCL.  Thus, an attempt to include a book in an
-  MCL-based ACL2 that was certified in a non-MCL-based ACL2, or
-  vice-versa, will be treated like an attempt to include an
-  uncertified book.
-
-  ~em[Incremental releases.]
-
-  From time to time, so-called ``incremental releases'' of ACL2 are made
-  available.  These releases are thoroughly tested on at least two platforms;
-  ``normal'' releases, on the other hand, are thoroughly tested on many more
-  platforms (perhaps a dozen or so) and are accompanied by updates to the ACL2
-  home page.  We provide incremental releases in order to provide timely
-  updates for ACL2 users who want them, without imposing unnecessary burdens on
-  either on the ACL2 implementors or on ACL2 users who prefer to update less
-  frequently.  The implementors expect users to update their copies of ACL2
-  when normal releases are made available, but not necessarily when incremental
-  releases are made available.
-
-  Incremental releases are accompanied by a bump in the incrl field of the
-  version field, while normal releases are accompanied by a bump in the minor
-  or (much less frequently) major field and zeroing out of the incrl field.
-  Note that incremental releases are full-fledged releases.~/")
-
-(deflabel keep
-  :doc
-  ":Doc-Section Books
-
-  how we know if ~ilc[include-book] read the correct files~/
-
-  The certificate (~pl[certificate] for general information) of a
-  certified file is divided into two parts, a ~il[portcullis] and a
-  keep.  These names come from castle lore.  The keep is the strongest
-  and usually tallest tower of a castle from which the entire
-  courtyard can be surveyed by the defenders.  The keep of a book is a
-  list of file names and check sums used after the book has been
-  included, to determine if the files read were (up to check sum)
-  those certified.~/
-
-  Once the ~il[portcullis] is open, ~ilc[include-book] can enter the book
-  and read the event forms therein.  The non-~ilc[local] event forms are
-  in fact executed, extending the host theory.  That may read in other
-  ~il[books].  When that has been finished, the keep of the
-  ~il[certificate] is inspected.  The keep is a list of the book names
-  which are included (hereditarily through all subbooks) in the
-  certified book (including the certified book itself) together with
-  the check sums of the objects in those ~il[books] at the time of
-  certification.  We compare the check sums of the ~il[books] just included
-  to the check sums of the ~il[books] stored in the keep.  If differences
-  are found then we know that the book or one of its subbooks has been
-  changed since certification.
-
-  ~l[include-book] to continue the guided tour through ~il[books].")
-
-; The documentation for include-book is in axioms.lisp, where the
-; include-book event is defined.
-
-(deflabel uncertified-books
-  :doc
-  ":Doc-Section Books
-
-  invalid ~il[certificate]s and uncertified ~il[books]~/
-
-  For relevant background ~pl[books], ~pl[certificate], and ~pl[portcullis].
-
-  ~ilc[Include-book] has a special provision for dealing with an uncertified
-  book, i.e., a file with no ~il[certificate] or an invalid
-  ~il[certificate] (i.e., one whose check sums describe files other than the
-  ones actually read).  In this case, a warning is printed and the book is
-  otherwise processed much as though it were certified and had an open
-  ~il[portcullis].
-
-  If a book ~c[B.lisp] is uncertified and a file ~c[B.port] exists, then the
-  forms in ~c[B.port] are evaluated before the forms in ~c[B.lisp].  Such a
-  file ~c[B.port] is typically created calling ~ilc[certify-book] on book
-  ~c[\"B\"] with argument ~c[:write-port t], so that ~c[B.port] contains the
-  ~il[portcullis] ~il[command]s for ~c[B] (the commands present in the
-  ~il[world] when that certification was attempted).
-
-  Inclusion of uncertified books can be handy, but it can have disastrous
-  consequences.~/
-
-  The provision allowing uncertified ~il[books] to be included can have
-  disastrous consequences, ranging from hard lisp errors, to damaged memory, to
-  quiet logical inconsistency.
-
-  It is possible for the inclusion of an uncertified book to render the logic
-  inconsistent.  For example, one of its non-~ilc[local] ~il[events] might be
-  ~c[(defthm t-is-nil (equal t nil))].  It is also possible for the inclusion
-  of an uncertified book to cause hard errors or ~il[breaks] into raw Common
-  Lisp.  For example, if the file has been edited since it was certified, it
-  may contain too many open parentheses, causing Lisp to read past ``end of
-  file.'' Similarly, it might contain non-ACL2 objects such as ~c[3.1415] or
-  ill-formed event forms that cause ACL2 code to break.
-
-  Even if a book is perfectly well formed and could be certified (in a suitable
-  extension of ACL2's initial ~il[world]), its uncertified inclusion might
-  cause Lisp errors or inconsistencies!  For example, it might mention packages
-  that do not exist in the host ~il[world], especially if the ~c[.port] file
-  (discussed above) does not exist from an earlier certification attempt.  The
-  ~il[portcullis] of a certified book ensures that the correct ~ilc[defpkg]s
-  have been admitted, but if a book is read without actually raising its
-  ~il[portcullis], symbols in the file, e.g., ~c[acl2-arithmetic::fn], could
-  cause ``unknown package'' errors in Common Lisp.  Perhaps the most subtle
-  disaster occurs if the host ~il[world] does have a ~ilc[defpkg] for each
-  package used in the book but the host ~ilc[defpkg] imports different symbols
-  than those required by the ~il[portcullis].  In this case, it is possible
-  that formulas which were theorems in the certified book are non-theorems in
-  the host ~il[world], but those formulas can be read without error and will
-  then be quietly assumed.
-
-  In short, if you include an uncertified book, ~st[all bets are off] regarding
-  the validity of the future behavior of ACL2.
-
-  That said, it should be noted that ACL2 is pretty tough and if errors don't
-  occur, the chances are that deductions after the inclusion of an uncertified
-  book are probably justified in the (possibly inconsistent) logical extension
-  obtained by assuming the admissibility and validity of the definitions and
-  conjectures in the book.")
-
-(deflabel books-certification-classic
-  :Doc
-  ":Doc-Section Books
-
-  classic ACL2 `make'-based certification of ~il[books]~/
-
-  This ~il[documentation] topic explains an approach to certifying directories
-  of books, which we call ``classic ACL2 `make'-based certification''.
-
-  Warning: The capability described in this section might be replaced at any
-  time by a capability based on corresponding support for community books
-  (~pl[books-certification]).  If you think that would be a hardship, please
-  contact the ACL2 implementors.
-
-  This topic discusses a way to certify a directory of books other than the
-  ACL2 community books.  ~l[books-certification] for how to certify the set of
-  ACL2 community ~il[books].  There is also a section in that
-  ~il[documentation] topic, ``Restricting to Specific Directories and Books'',
-  that provides an alternative to classic ACL2 `make'-based certification (as
-  discussed in the present topic) for certifying specified sets of books.
-
-  We assume here a familiarity with Unix/Linux `make'.  We also assume that
-  you are using GNU `make' rather than some other flavor of `make'.  And
-  finally, we assume, as is typically the case by following the standard
-  installation instructions, that you install the ACL2 community books in the
-  ~c[books/] subdirectory of your ACL2 distribution.  We will refer below to
-  that directory as ~c[BOOKS].
-
-  In summary: to use `make' to certify ~il[books] under a given directory, you
-  may create a simple Makefile in that directory (as explained below) so that
-  when you stand in that directory, you can submit the command, `make', to
-  certify those books.  If you have a multi-processor machine or the like, then
-  you can use the `~c[-j] flag `make'-level parallelism by specifying the
-  number of concurrent processes.  For example:
-  ~bv[]
-  make -j 4
-  ~ev[]
-  For each book ~c[foo.lisp], a file ~c[foo.out] in the same directory as
-  ~c[foo.lisp] will contain the output from the corresponding certification
-  attempt.  If you have previously executed such a command, then you might
-  first want to delete ~il[certificate] files and other generated files by
-  executing the following command.
-  ~bv[]
-  make clean
-  ~ev[]
-
-  Note that when you run `make', then by default, the first error will cause
-  the process to stop.  You can use ~c[make -i] to force `make' to ignore
-  errors, thus continuing past them.  Or, use ~c[make -k] to keep going, but
-  skipping certification for any book that includes another whose certification
-  has failed.
-
-  By default, your acl2-customization file (~pl[acl2-customization]) is ignored
-  by such `make' commands.  However, you can specify the use of an
-  acl2-customization file by setting the value of environment variable
-  ~c[ACL2_CUSTOMIZATION] to the empty string, indicating a default such file,
-  or to the desired absolute pathname.  For example:
-  ~bv[]
-  make ACL2_CUSTOMIZATION=''
-  make ACL2_CUSTOMIZATION='~~/acl2-customization.lisp'
-  ~ev[]
-
-  We now discuss how to create makefiles to support `make' commands as
-  discussed above.~/
-
-  First we give five steps for creating a ~c[Makefile] to support certification
-  of a directory of books, without subdirectories.  For examples of such
-  Makefiles you can look in community book directories (which, however, might
-  disappear in future versions of ACL2).
-  ~bq[]
-  1. Include the file ~c[Makefile-generic] from the ~c[books/] subdirectory of
-  your ACL2 sources directory, but first perhaps define the variable
-  `~c[ACL2]'.  Consider the following example.
-  ~bv[]
-  ACL2 ?= /Users/john_doe/acl2/acl2-sources/saved_acl2
-  include /Users/john_doe/acl2/acl2-sources/books/Makefile-generic
-  ~ev[]
-  In this example, you can omit the first line, because the default ACL2
-  executable is file ~c[saved_acl2] in the directory immediately above the
-  directory of the specified ~c[Makefile-generic] file.  Indeed, that is the
-  common case.  Note the use of ~c[?=] instead of ~c[=] or ~c[:=], so that
-  ~c[ACL2] can instead be defined by the environment or provided on the command
-  line as part of the `make' command.
-
-  2. (Optional; usually skipped.)  Set the ~c[INHIBIT] variable if you want to
-  see more than the summary output.  For example, if you want to see the same
-  output as you would normally see at the terminal, put this line in your
-  Makefile after the `~c[include]' lines.
-  ~bv[]
-  INHIBIT = (assign inhibit-output-lst (list (quote proof-tree)))
-  ~ev[]
-  For other values to use for ~c[INHIBIT], ~pl[set-inhibit-output-lst] and see
-  the original setting of ~c[INHIBIT] in ~c[books/Makefile-generic].
-
-  3. Specify the books to be certified.  Normally, every file with extension
-  ~c[.lisp] will be a book that you want to certify, in which case you can skip
-  this step.  Otherwise, put a line in your ~c[Makefile] after the ones above
-  that specifies the books to be certified.  The following example, from an old
-  version of community books file ~c[books/finite-set-theory/osets/Makefile],
-  should make this clear.
-  ~bv[]
-  BOOKS = computed-hints fast instance map membership outer primitives \\
-          quantify set-order sets sort
-  ~ev[]
-  But better yet, use the extension ~c[.lsp] for any Lisp or ACL2 files that
-  are not to be certified, so that the definition of ~c[BOOKS] can be omitted.
-
-  4. Create ~c[.acl2] files for books that are to be certified in other than
-  the initial ACL2 world (~pl[portcullis]).  For example, if you look in
-  community books file ~c[books/arithmetic/equalities.acl2] you will see
-  ~ilc[defpkg] forms followed by a ~ilc[certify-book] command, because it was
-  determined that ~ilc[defpkg] forms were necessary in the certification world
-  in order to certify the ~c[equalities] book.  In general, for each
-  ~c[<book-name>.lisp] whose certification requires a non-initial certification
-  world, you will need a corresponding ~c[<book-name>.acl2] file that ends with
-  the appropriate ~ilc[certify-book] command.
-
-  You also have the option of creating a file ~c[cert.acl2] that has a special
-  role.  When file ~c[<book-name>.lisp] is certified, if there is no file
-  ~c[<book-name>.acl2] but there is a file ~c[cert.acl2], then ~c[cert.acl2]
-  will be used as ~c[<book-name>.acl2] would have been used, as described in
-  the preceding paragraph, except that the appropriate ~ilc[certify-book]
-  command will be generated automatically.  Thus, no ~c[certify-book] command
-  should occur in ~c[cert.acl2].
-
-  It is actually allowed to put raw lisp forms in a ~c[.acl2] file (presumably
-  preceded by ~c[:q] or ~c[(value :q)] and followed by ~c[(lp)]).  But this is
-  not recommended; we make no guarantees about certification performed any time
-  after raw Lisp has been entered in the ACL2 session.
-
-  5. Generally, the next step is to include the following line after the
-  `~c[include]' of ~c[Makefile-generic] (see the first step above).
-  ~bv[]
-  -include Makefile-deps
-  ~ev[]
-  This will cause `make' to create and then include a file
-  ~c[Makefile-deps] that contains ``dependency'' lines needed by `make'.
-  If those dependencies are somehow flawed, it may be because you have
-  ~ilc[include-book] forms that are not truly including books, for example in
-  multi-line comments (~c[#|..|#]).  These will be ignored if preceded by a
-  semicolon (~c[;]), or if you add a line break after ``~c[include-book].''
-  But instead of adding the `~c[-include]' line above, you can create
-  dependency lines yourself by running the command
-  ~bv[]
-  make dependencies
-  ~ev[]
-  and pasting the result into the end of your ~c[Makefile], and editing as you
-  see fit.~eq[]
-
-  This concludes the basic instructions for creating a ~c[Makefile] in a
-  directory including books.  Here are some other capabilities offered by
-  community books file ~c[books/Makefile-subdirs].  Not included below is a
-  discussion of how to increase parallelism by avoiding the need to certify
-  included books before certifying a given book;
-  ~pl[provisional-certification].
-
-  ~st[Subdirectory Support]
-
-  There is support for using `make' to certify books in subdirectories.
-  Consider the following example.
-  ~bv[]
-  DIRS = pass1 bind-free floor-mod
-  include ../Makefile-subdirs
-  ~ev[]
-  This indicates that we are to run `make' in subdirectories ~c[pass1/],
-  ~c[bind-free/], and ~c[floor-mod/] of the current directory.
-
-  You can combine this subdirectory support with the support already discussed
-  for certifying books in the top-level directory.  Here is an example, which
-  as of this writing is in community books file ~c[books/arithmetic-3/Makefile]
-  contains the following lines.
-  ~bv[]
-  arith-top: top all
-  all: top
-
-  DIRS = pass1 bind-free floor-mod
-  include ../Makefile-subdirs
-  include ../Makefile-generic
-
-  -include Makefile-deps
-  ~ev[]
-  The `~c[top]' target is defined in ~c[../Makefile-subdirs] to call `make' in
-  each subdirectory specified in ~c[DIRS].  We have set the default target in
-  the example above to a new name, ~c[arith-top], that makes that ~c[top]
-  target before making the `~c[all]' target which, in turn, is the default
-  target in any ~c[Makefile-generic], and is responsible for certifying books
-  in the current directory as discussed in the five steps displayed above.
-
-  Use ~c[Makefile-psubdirs] instead of ~c[Makefile-subdirs] if certification of
-  a book in a subdirectory never depends on certification of a book in a
-  different subdirectory, because then the ~c[-j] option of `make' can allow
-  subdirectories to be processed in parallel.
-
-  ~st[Cleaning Up]
-
-  We note that there is a ~c[clean] target.  Thus,
-  ~bv[]
-  make clean
-  ~ev[]
-  will remove generated files including ~c[.cert], ~c[.out] files, and compiled
-  files.
-
-  ~st[System Books]
-
-  An environment variable ~c[ACL2_SYSTEM_BOOKS] is generally set automatically,
-  so you can probably skip reading the following paragraph unless your attempt
-  to certify books fails to locate those books properly.
-
-  The environment variable ~c[ACL2_SYSTEM_BOOKS] can be set to the top-level
-  directory of the ACL2 community books.  A Unix-style pathname, typically
-  ending in ~c[books/] or ~c[books], is permissible.  In most cases, your ACL2
-  executable is a small script in which you can set this environment variable
-  just above the line on which the actual ACL2 image is invoked, for example:
-  ~bv[]
-  export ACL2_SYSTEM_BOOKS
-  ACL2_SYSTEM_BOOKS=/home/acl2/v3-2/acl2-sources/books
-  ~ev[]
-  However, you can also set ~c[ACL2_SYSTEM_BOOKS] as a `make' variable, by
-  setting it in your ~c[Makefile] before the first target definition, e.g.:
-  ~bv[]
-  ACL2_SYSTEM_BOOKS ?= /home/acl2/v3-2/acl2-sources/books
-  ~ev[]
-
-  ~st[Compilation Support]
-
-  The file ~c[books/Makefile-generic] provides support for compiling books that
-  are already certified (but ~pl[compilation] for an exception).  For example,
-  suppose that you have certified books using GCL as the host Lisp, resulting
-  in compiled files with the ~c[.o] extension.  Now suppose you would like to
-  compile the books for Allegro Common Lisp, whose compiled files have the
-  ~c[.fasl] extension.  The following command will work if you have included
-  ~c[books/Makefile-generic] in your ~c[Makefile].
-  ~bv[]
-  make fasl
-  ~ev[]
-  In general, the compiled file extension for a Lisp supported by ACL2 will be
-  a target name for building compiled files for all your books (after
-  certifying the books, if not already up-to-date on certification).
-
-  If you run into problems, you can get help by joining the ~c[acl2-help] email
-  list (follow the link from the ACL2 home page) and sending a message to that
-  list.  Also consider trying another version of GNU `make'; for example, we
-  have found that versions 3.81 and 3.82 sometimes cause errors on Linux where
-  version 3.80 does not.")
-
-(defdoc books-certification
-
-  ":Doc-Section Books
-
-  certifying ACL2 community ~il[books]~/
-
-  For background on the ACL2 community books, ~pl[community-books].  Here we
-  explain how to certify those books, or some of those books, with ACL2.  We
-  thank Bishop Brock, Jared Davis, and Sol Swords for their substantial
-  contributions to this methodology.  See ~c[books/Makefile], in the community
-  books, for more about ``Credits and History'', and for additional technical
-  details not covered in this topic (for example, how to build a local copy of
-  the xdoc manual for those who may wish to do that).
-
-  For more information about installing ACL2, see the installation
-  instructions, either by following a link from the ACL2 home page or by going
-  directly to the page
-  ~url[http://www.cs.utexas.edu/users/moore/acl2/current/installation/installation.html].
-  For information about so-called ``classic ACL2 `make'-based certification'',
-  which provides support for certifying directories of books but may disappear
-  in a future ACL2 release, ~pl[books-certification-classic].
-
-  ~st[The Basics]
-
-  We make the following assumptions.
-  ~bq[]
-  o Gnu `make' is available on your system via the `make' command (rather
-  than some other flavor of `make').  (Execute `~c[make --version] to verify
-  this.)
-
-  o You have built or obtained an ACL2 executable.
-
-  o The ACL2 community books are installed in the ~c[books/] subdirectory of
-  your ACL2 distribution, as is the case when you have followed the standard
-  installation instructions.
-
-  o All commands shown below are issued in the top-level (ACL2 sources)
-  directory of your ACL2 distribution.~eq[]
-
-  By default the ACL2 executable is file ~c[saved_acl2] in your ACL2 sources
-  directory, and you can issue the following command to the shell in order to
-  do a ``regression run'' that certifies all of the community books using that
-  executable.
-  ~bv[]
-  make regression
-  ~ev[]
-  Better yet, save a log file in case there are problems, for example as
-  follows.
-  ~bv[]
-  (make regression) >& make-regression.log
-  ~ev[]
-  or perhaps better yet:
-  ~bv[]
-  (time nice make regression) >& make-regression.log
-  ~ev[]
-  For the sake of brevity, below we'll skip mentioning any of `~c[time]',
-  `~c[nice]', or `~c[>& make-regression.log]'.  But saving a log file, in
-  particular, is useful in case you encounter problems to report.
-
-  If you fetched the community books using svn, then you will have a directory
-  ~c[books/workshops/] that is not necessary for certifying the other books.
-  If you want to skip certification of the books under ~c[books/workshops/],
-  use target `~c[certify-books]' instead of target `~c[regression]', for
-  example as follows.
-  ~bv[]
-  (time nice make certify-books) >& make-certify-books.log
-  ~ev[]
-
-  Whether you use target `~c[regression]' or target `~c[certify-books]', then
-  for each book ~c[foo.lisp] whose certification is attempted, a file
-  ~c[foo.cert.out] in the same directory will contain the output from the
-  book's certification attempt.
-
-  A regression run may take a few hours, but if you have a multiprocessing
-  computer, you can speed it up by certifying some books in parallel, by
-  providing a value for `make' option ~c[-j].  For example, if you have 8
-  hardware threads then you might want to issue the following command.
-  ~bv[]
-  make regression -j 8
-  ~ev[]~/
-
-  ~st[Specifying the ACL2 Executable]
-
-  If your ACL2 executable is not file ~c[saved_acl2] in the ACL2 sources
-  directory, then you will need to specify that executable.  You can do that by
-  setting variable ~c[ACL2], either as an environment variable or, as displayed
-  below, as a `make' variable.  Either way, you will need to avoid relative
-  pathnames.  For example, the first two forms below are legal, but the third
-  is not, assuming that ~c[my-acl2] is on your ~c[PATH] in a Unix-like
-  environment (e.g., linux or MacOS) and that ~c[my-saved_acl2] is just a
-  pathname relative to your ACL2 sources directory, which is not on your path.
-  ~bv[]
-  make regression -j 8 ACL2=my-acl2
-  make regression -j 8 ACL2=/u/smith/bin/acl2
-  # The following only works if my-saved_acl2 is on your path (see above).
-  make regression -j 8 ACL2=my-saved_acl2
-  ~ev[]
-
-  ~st[Cleaning]
-
-  You can delete files generated by book certification (including ~c[.cert]
-  files, ~c[.out] files, compiled files, and more) by issuing the following
-  command (again, in your ACL2 sources directory).
-  ~bv[]
-  make clean-books
-  ~ev[]
-  If you want to cause such deletion and then do a regression, simply replace
-  the `~c[regression]' or `~c[certify-books]' target by `~c[regression-fresh]'
-  or `~c[certify-books-fresh]', respectively, for example as follows.
-  follows.
-  ~bv[]
-  make -j 4 regression-fresh
-  make -j 4 certify-books-fresh
-  ~ev[]
-
-  If however you only want to clean up generated files residing under a given
-  directory (or its subdirectories, and recursively), you can issue the
-  following command while standing in that directory, where ~c[DIR] is a
-  pathname of your ~c[books] directory.
-  ~bv[]
-  DIR/clean.pl
-  ~ev[]
-  For example, to clean up generated files under ~c[books/arithmetic], you
-  could do the following.
-  ~bv[]
-  cd books/arithmetic
-  ../clean.pl
-  cd - # to return to the ACL2 sources directory, if you wish to do so
-  ~ev[]
-
-  ~st[Restricting to Specific Directories and Books]
-
-  You can specify which books you want certified by using any or all of the
-  variables ~c[EXCLUDED_PREFIXES], ~c[ACL2_BOOK_CERTS], or ~c[ACL2_BOOK_DIRS].
-  First, the set of desired ~c[.cert] files is restricted to those that do not
-  start with any string that is one of the words in the value of
-  ~c[EXCLUDED_PREFIXES].  Then ~c[ACL2_BOOK_CERTS] and ~c[ACL2_BOOK_DIRS], if
-  supplied, specify which books should be certified, as illustrated by the
-  following example.
-  ~bv[]
-  make -j 8 regression-fresh \\
-   ACL2_BOOK_DIRS=\"symbolic paco\" \\
-   ACL2_BOOK_CERTS=\" \\
-    workshops/2006/cowles-gamboa-euclid/Euclid/ed6a.cert \\
-    workshops/2006/cowles-gamboa-euclid/Euclid/ed4bb.cert \\
-    \"
-  ~ev[]
-  Then all book in directories ~c[symbolic] and ~c[paco] will be certified, as
-  will the books ~c[workshops/2006/cowles-gamboa-euclid/Euclid/ed6a.lisp] and
-  ~c[workshops/2006/cowles-gamboa-euclid/Euclid/ed4bb.lisp].  Note that all
-  pathnames should be relative to your community books directory; in
-  particular, they should not be absolute pathnames.  Also notice the ~c[.cert]
-  extension used in files supplied for ~c[ACL2_BOOK_CERTS].
-
-  Alternatively, you may wish to invoke ~c[books/cert.pl] while standing in a
-  directory under which you want to certify books.  This will certify not only
-  those books, but all supporting books ~-[] even those not under the current
-  directory ~-[] that do not have up-to-date ~c[.cert] files.  The following is
-  a simple command to invoke that will certify all books in the current
-  directory, where if the ~c[books/] directory is not on your path, you will
-  need to provide a suitable filename, e.g. ~c[../../cert.pl] or
-  ~c[~~/acl2/books/cert.pl].
-  ~bv[]
-  cert.pl -j 4 *.lisp
-  ~ev[]
-  Here is a more complex command, which illustrates a way to certify books in
-  subdirectories (as well as the current directory), the use of provisional
-  certification (~pl[provisional-certification]), and `make'-level parallelism
-  (in this case specifying four parallel processes).
-  ~bv[]
-  ACL2_PCERT=t cert.pl -j 4 `find . -name '*.lisp'`
-  ~ev[]
-  Note that with this approach, unlike classic ACL2 `make'-based certification
-  (~pl[books-certification-classic], out-of-date ~c[.cert] files that are not
-  under the current directory will also be built.  For documentation of
-  ~c[cert.pl] invoke:
-  ~bv[]
-  cert.pl -h
-  ~ev[]
-  See the top of ~c[cert.pl] for authorship and copyright information.
-
-  Finally, we give a brief summary of how to use so-called ``classic ACL2
-  `make'-based certification'' for community books;
-  ~pl[books-certification-classic] for details.  Note that support for this
-  approach might be eliminated in a future ACL2 release.  We welcome comments
-  from the ACL2 community about whether or not that would be a good thing to
-  do.  See the discussion above about ~c[ACL2_BOOK_DIRS] for the ``modern'' way
-  to accomplish the same thing.
-
-  Many community book directories have a ~c[Makefile].  If you modify books
-  only in such a directory, you can recertify by standing in that directory and
-  issuing a `make' command.  This command can optionally specify an ACL2
-  executable as well as parallelism, for example as follows, where the first
-  line (~c[make clean]) is optional.
-  ~bv[]
-  make clean
-  (time nice make -j 8 ACL2=my-acl2)
-  ~ev[]
-
-  ~st[ACL2 Customization Files]
-
-  By default, your acl2-customization file (~pl[acl2-customization]) is ignored
-  by all flavors of ``~c[make regression]''.  However, you can specify the use
-  of an acl2-customization file by setting the value of environment variable
-  ~c[ACL2_CUSTOMIZATION] to the empty string, indicating a default such file,
-  or to the desired absolute pathname.  For example:
-  ~bv[]
-  make regression ACL2_CUSTOMIZATION=''
-  make regression ACL2_CUSTOMIZATION='~~/acl2-customization.lisp'
-  ~ev[]
-
-  ~st[Regressions for Experimental Extensions of ACL2]
-
-  The instructions are unchanged if you are using ACL2(h)
-  (~pl[hons-and-memoization]).  However, note that the default executable (when
-  ~c[ACL2] is not specified) remains ~c[saved_acl2] in your ACL2 sources
-  directory, not ~c[saved_acl2h] as one might expect for ACL2(h)(p),
-  respectively.  So probably you'll want to supply ``~c[ACL2=<your_acl2>]''
-  explicitly with your `make' command.
-
-  The comments above also pertain pertain to using ACL2(p) (~pl[parallel]); the
-  default is ~c[saved_acl2] rather than ~c[saved_acl2p].  However, we recommend
-  that you use ACL2, not ACL2(p), for your regression.  Then you can use
-  ACL2(p) for your own proof developments.  (The analogous comment applies to
-  ACL2(hp), which combines capabilities of ACL2(h) and ACL2(p), i.e., we
-  recommend that you use ACl2(h) for your regression in that case.)  However,
-  if you want to use ACL2(p) or ACL2(hp) for your regression,
-  ~pl[waterfall-parallelism-for-book-certification].
-
-  If you intend to certify books in the ~c[nonstd] subdirectory of the
-  community books, you will want to use ACL2(r) (~pl[real]).  In that case,
-  substitute target ~c[regression-nonstd] for target ~c[regression].  The
-  default executable (when ~c[ACL2] is not specified) will be file
-  ~c[saved_acl2r] in your ACL2 sources directory, rather than ~c[saved_acl2].
-
-  ~st[Provisional Certification]
-
-  To use provisional certification (~pl[provisional-certification]), supply
-  ~c[ACL2_PCERT=t] with your `make' command.  Here is an example.
-  ~bv[]
-  time nice make regression -j 4 ACL2_BOOK_DIRS=deduction ACL2_PCERT=t
-  ~ev[]
-
-  ~st[Miscellany]
-
-  Other control of the certification process may be found by perusing community
-  books file ~c[books/make_cert].  In particular, the ~c[INHIBIT] variable
-  may be set to a call of ~ilc[set-inhibit-output-lst], for example as
-  follows to obtain the output one would get by default in an (interactive)
-  ACL2 session.
-  ~bv[]
-  time nice make regression -j 4 ACL2_BOOK_DIRS=arithmetic \\
-    INHIBIT='(set-inhibit-output-lst proof-tree)'
-  ~ev[]
-
-  ~st[Troubleshooting]
-
-  If you run into problems, you can get help by joining the ~c[acl2-help] email
-  list (follow the link from the ACL2 home page) and sending a message to that
-  list.  Also consider trying another version of GNU `make'; for example, we
-  have found that versions 3.81 and 3.82 sometimes cause errors on Linux where
-  version 3.80 does not.  Note however that Version 3.80 does not print certain
-  informational messages that are printed by later versions.~/")
-
-(link-doc-to regression books books-certification)
 
 ; Next we implement defchoose and defun-sk.
 
@@ -19904,285 +18127,6 @@
                          (classicalp 't classicalp-p)
                          (witness-dcls
                           '((declare (xargs :non-executable t)))))
-
-  ":Doc-Section Events
-
-  define a function whose body has an outermost quantifier~/
-  ~bv[]
-  Examples:
-  (defun-sk exists-x-p0-and-q0 (y z)
-    (exists x
-            (and (p0 x y z)
-                 (q0 x y z))))
-
-  (defun-sk exists-x-p0-and-q0 (y z) ; equivalent to the above
-    (exists (x)
-            (and (p0 x y z)
-                 (q0 x y z))))
-
-  (defun-sk forall-x-y-p0-and-q0 (z)
-    (forall (x y)
-            (and (p0 x y z)
-                 (q0 x y z)))
-    :strengthen t)~/
-
-  General Form:
-  (defun-sk fn (var1 ... varn) body
-    &key rewrite doc quant-ok skolem-name thm-name witness-dcls strengthen)
-  ~ev[]
-  where ~c[fn] is the symbol you wish to define and is a new symbolic
-  name (~pl[name]), ~c[(var1 ... varn)] is its list of formal
-  parameters (~pl[name]), and ~c[body] is its body, which must be
-  quantified as described below.  The ~c[&key] argument ~ilc[doc] is an optional
-  ~il[documentation] string to be associated with ~c[fn]; for a description
-  of its form, ~pl[doc-string].  In the case that ~c[n] is 1, the list
-  ~c[(var1)] may be replaced by simply ~c[var1].  The other arguments are
-  explained below.
-
-  For a simple example, ~pl[defun-sk-example].  For a more elaborate example,
-  ~pl[Tutorial4-Defun-Sk-Example].  ~l[quantifier-tutorial] for a careful
-  beginner's introduction that takes you through typical kinds of
-  quantifier-based reasoning in ACL2.  Also ~pl[quantifiers] for an example
-  illustrating how the use of recursion, rather than explicit quantification
-  with ~c[defun-sk], may be preferable.
-
-  Below we describe the ~c[defun-sk] event precisely.  First, let us
-  consider the examples above.  The first example, again, is:
-  ~bv[]
-  (defun-sk exists-x-p0-and-q0 (y z)
-    (exists x
-            (and (p0 x y z)
-                 (q0 x y z))))
-  ~ev[]
-  It is intended to represent the predicate with formal parameters ~c[y]
-  and ~c[z] that holds when for some ~c[x], ~c[(and (p0 x y z) (q0 x y z))]
-  holds.  In fact ~c[defun-sk] is a macro that adds the following two
-  ~il[events], as shown just below.  The first event guarantees that if
-  this new predicate holds of ~c[y] and ~c[z], then the term shown,
-  ~c[(exists-x-p0-and-q0-witness y z)], is an example of the ~c[x] that is
-  therefore supposed to exist.  (Intuitively, we are axiomatizing
-  ~c[exists-x-p0-and-q0-witness] to pick a witness if there is one.
-  We comment below on the use of ~ilc[defun-nx]; for now, consider ~c[defun-nx]
-  to be ~ilc[defun].)  Conversely, the second event below guarantees that if
-  there is any ~c[x] for which the term in question holds, then the new
-  predicate does indeed hold of ~c[y] and ~c[z].
-  ~bv[]
-  (defun-nx exists-x-p0-and-q0 (y z)
-    (let ((x (exists-x-p0-and-q0-witness y z)))
-      (and (p0 x y z) (q0 x y z))))
-  (defthm exists-x-p0-and-q0-suff
-    (implies (and (p0 x y z) (q0 x y z))
-             (exists-x-p0-and-q0 y z)))
-  ~ev[]
-  Now let us look at the third example from the introduction above:
-  ~bv[]
-  (defun-sk forall-x-y-p0-and-q0 (z)
-    (forall (x y)
-            (and (p0 x y z)
-                 (q0 x y z))))
-  ~ev[]
-  The intention is to introduce a new predicate
-  ~c[(forall-x-y-p0-and-q0 z)] which states that the indicated conjunction
-  holds of all ~c[x] and all ~c[y] together with the given ~c[z].  This time, the
-  axioms introduced are as shown below.  The first event guarantees
-  that if the application of function ~c[forall-x-y-p0-and-q0-witness] to
-  ~c[z] picks out values ~c[x] and ~c[y] for which the given term
-  ~c[(and (p0 x y z) (q0 x y z))] holds, then the new predicate
-  ~c[forall-x-y-p0-and-q0] holds of ~c[z].  Conversely, the (contrapositive
-  of) the second axiom guarantees that if the new predicate holds of
-  ~c[z], then the given term holds for all choices of ~c[x] and ~c[y] (and that
-  same ~c[z]).
-  ~bv[]
-  (defun-nx forall-x-y-p0-and-q0 (z)
-    (mv-let (x y)
-            (forall-x-y-p0-and-q0-witness z)
-            (and (p0 x y z) (q0 x y z))))
-  (defthm forall-x-y-p0-and-q0-necc
-    (implies (not (and (p0 x y z) (q0 x y z)))
-             (not (forall-x-y-p0-and-q0 z))))
-  ~ev[]
-  The examples above suggest the critical property of ~c[defun-sk]:  it
-  indeed does introduce the quantified notions that it claims to
-  introduce.
-
-  Notice that the ~ilc[defthm] event just above, ~c[forall-x-y-p0-and-q0-necc],
-  may not be of optimal form as a rewrite rule.  Users sometimes find that when
-  the quantifier is ~c[forall], it is useful to state this rule in a form where
-  the new quantified predicate is a hypothesis instead.  In this case that form
-  would be as follows:
-  ~bv[]
-  (defthm forall-x-y-p0-and-q0-necc
-    (implies (forall-x-y-p0-and-q0 z)
-             (and (p0 x y z) (q0 x y z))))
-  ~ev[]
-  ACL2 will turn this into one ~c[:]~ilc[rewrite] rule for each conjunct,
-  ~c[(p0 x y z)] and ~c[(q0 x y z)], with hypothesis
-  ~c[(forall-x-y-p0-and-q0 z)] in each case.  In order to get this effect, use
-  ~c[:rewrite :direct], in this case as follows.
-  ~bv[]
-  (defun-sk forall-x-y-p0-and-q0 (z)
-    (forall (x y)
-            (and (p0 x y z)
-                 (q0 x y z)))
-    :rewrite :direct)
-  ~ev[]
-
-  We now turn to a detailed description of ~c[defun-sk], starting with a
-  discussion of its arguments as shown in the \"General Form\" above.
-
-  The third argument, ~c[body], must be of the form
-  ~bv[]
-  (Q bound-vars term)
-  ~ev[]
-  where:  ~c[Q] is the symbol ~ilc[forall] or ~ilc[exists] (in the \"ACL2\"
-  package), ~c[bound-vars] is a variable or true list of variables
-  disjoint from ~c[(var1 ... varn)] and not including ~ilc[state], and
-  ~c[term] is a term.  The case that ~c[bound-vars] is a single variable
-  ~c[v] is treated exactly the same as the case that ~c[bound-vars] is
-  ~c[(v)].
-
-  The result of this event is to introduce a ``Skolem function,'' whose name is
-  the keyword argument ~c[skolem-name] if that is supplied, and otherwise is
-  the result of modifying ~c[fn] by suffixing \"-WITNESS\" to its name.  The
-  following definition and one of the following two theorems (as indicated) are
-  introduced for ~c[skolem-name] and ~c[fn] in the case that ~c[bound-vars]
-  (see above) is a single variable ~c[v].  The name of the ~ilc[defthm] event
-  may be supplied as the value of the keyword argument ~c[:thm-name]; if it is
-  not supplied, then it is the result of modifying ~c[fn] by suffixing
-  \"-SUFF\" to its name in the case that the quantifier is ~ilc[exists], and
-  \"-NECC\" in the case that the quantifier is ~ilc[forall].
-  ~bv[]
-  (defun-nx fn (var1 ... varn)
-    (let ((v (skolem-name var1 ... varn)))
-      term))
-
-  (defthm fn-suff ;in case the quantifier is EXISTS
-    (implies term
-             (fn var1 ... varn)))
-
-  (defthm fn-necc ;in case the quantifier is FORALL
-    (implies (not term)
-             (not (fn var1 ... varn))))
-  ~ev[]
-
-  In the ~c[forall] case, however, the keyword pair ~c[:rewrite :direct] may be
-  supplied after the body of the ~c[defun-sk] form, in which case the
-  contrapositive of the above form is used instead:
-  ~bv[]
-  (defthm fn-necc ;in case the quantifier is FORALL
-    (implies (fn var1 ... varn)
-             term))
-  ~ev[]
-  This is often a better choice for the \"-NECC\" rule, provided ACL2 can parse
-  ~c[term] as a ~c[:]~ilc[rewrite] rule.  A second possible value of the
-  ~c[:rewrite] argument of ~c[defun-sk] is ~c[:default], which gives the same
-  behavior as when ~c[:rewrite] is omitted.  Otherwise, the value of
-  ~c[:rewrite] should be the term to use as the body of the ~c[fn-necc] theorem
-  shown above; ACL2 will attempt to do the requisite proof in this case.  If
-  that term is weaker than the default, the properties introduced by
-  ~c[defun-sk] may of course be weaker than they would be otherwise.  Finally,
-  note that the ~c[:rewrite] keyword argument for ~c[defun-sk] only makes sense
-  if the quantifier is ~c[forall]; it is thus illegal if the quantifier is
-  ~c[exists].  Enough said about ~c[:rewrite]!
-
-  In the case that ~c[bound-vars] is a list of at least two variables, say
-  ~c[(bv1 ... bvk)], the definition above (with no keywords) is the following
-  instead, but the theorem remains unchanged.
-  ~bv[]
-  (defun-nx fn (var1 ... varn)
-    (mv-let (bv1 ... bvk)
-            (skolem-name var1 ... varn)
-            term))
-  ~ev[]
-
-  In order to emphasize that the last element of the list, ~c[body], is a
-  term, ~c[defun-sk] checks that the symbols ~ilc[forall] and ~ilc[exists] do
-  not appear anywhere in it.  However, on rare occasions one might
-  deliberately choose to violate this convention, presumably because
-  ~ilc[forall] or ~ilc[exists] is being used as a variable or because a
-  macro call will be eliminating ``calls of'' ~ilc[forall] and ~ilc[exists].
-  In these cases, the keyword argument ~c[quant-ok] may be supplied a
-  non-~c[nil] value.  Then ~c[defun-sk] will permit ~ilc[forall] and
-  ~ilc[exists] in the body, but it will still cause an error if there is
-  a real attempt to use these symbols as quantifiers.
-
-  The use of ~ilc[defun-nx] above, rather than ~ilc[defun], disables certain
-  checks that are required for evaluation, in particular the single-threaded
-  use of ~ilc[stobj]s.  However, there is a price: calls of these defined
-  functions cannot be evaluated; ~pl[defun-nx].  Normally that is not a
-  problem, since these notions involve quantifiers.  But you are welcome to
-  replace this ~ilc[declare] form with your own, as follows: if you supply a
-  list of ~c[declare] forms to keyword argument ~c[:witness-dcls], these will
-  become the declare forms in the generated ~ilc[defun].  Note that if your
-  value of ~c[witness-dcls] does not contain the form
-  ~c[(declare (xargs :non-executable t))], then the appropriate wrapper for
-  non-executable functions will not be added automatically, i.e., ~ilc[defun]
-  will be used in place of ~c[defun-nx].  Note also that if ~il[guard]
-  verification is attempted, then it will likely fail with an error message
-  complaining that ``guard verification may depend on local properties.''  In
-  that case, you may wish to delay guard verification, as in the following
-  example.
-  ~bv[]
-  (encapsulate
-   ()
-   (defun-sk foo (x)
-     (exists n (and (integerp n)
-                    (< n x)))
-     :witness-dcls ((declare (xargs :guard (integerp x)
-                                    :verify-guards nil))))
-   (verify-guards foo))
-  ~ev[]
-
-  ~c[Defun-sk] is a macro implemented using ~ilc[defchoose].  Hence, it should
-  only be executed in ~il[defun-mode] ~c[:]~ilc[logic]; ~pl[defun-mode] and
-  ~pl[defchoose].  Advanced feature: If argument ~c[:strengthen t] is passed to
-  ~c[defun-sk], then ~c[:strengthen t] will generate the extra constraint that
-  that is generated for the corresponding ~c[defchoose] event; ~pl[defchoose].
-  You can use the command ~c[:]~ilc[pcb!] to see the event generated by a call
-  of the ~c[defun-sk] macro.
-
-  If you find that the rewrite rules introduced with a particular use of
-  ~c[defun-sk] are not ideal, even when using the ~c[:rewrite] keyword
-  discussed above (in the ~c[forall] case), then at least two reasonable
-  courses of action are available for you.  Perhaps the best option is to prove
-  the ~ilc[rewrite] rules you want.  If you see a pattern for creating rewrite
-  rules from your ~c[defun-sk] events, you might want to write a macro that
-  executes a ~c[defun-sk] followed by one or more ~ilc[defthm] events.  Another
-  option is to write your own variant of the ~c[defun-sk] macro, say,
-  ~c[my-defun-sk], for example by modifying a copy of the definition of
-  ~c[defun-sk] from the ACL2 sources.
-
-  If you want to represent nested quantifiers, you can use more than one
-  ~c[defun-sk] event.  For example, in order to represent
-  ~bv[]
-  (forall x (exists y (p x y z)))
-  ~ev[]
-  you can use ~c[defun-sk] twice, for example as follows.
-  ~bv[]
-  (defun-sk exists-y-p (x z)
-    (exists y (p x y z)))
-
-  (defun-sk forall-x-exists-y-p (z)
-    (forall x (exists-y-p x z)))
-  ~ev[]
-
-  Some distracting and unimportant warnings are inhibited during
-  ~c[defun-sk].
-
-  Note for ACL2(r) users (~pl[real]): In ACL2(r), the keyword ~c[:CLASSICALP]
-  is also supported.  Its legal values are ~c[t] (the default) and ~c[nil], and
-  it determines whether or not (respectively) ACL2(r) will consider ~c[fn] to
-  be a classical function.  It must be the case that the value is
-  ~c[t] (perhaps implicitly, by default) if and only if ~c[body] is classical.
-
-  Note that this way of implementing quantifiers is not a new idea.  Hilbert
-  was certainly aware of it 60 years ago!  Also
-  ~pl[conservativity-of-defchoose] for a technical argument that justifies the
-  logical conservativity of the ~ilc[defchoose] event in the sense of the paper
-  by Kaufmann and Moore entitled ``Structured Theory Development for a
-  Mechanized Logic'' (Journal of Automated Reasoning 26, no. 2 (2001),
-  pp. 161-203).~/"
-
   (let* ((exists-p (and (true-listp body)
                         (symbolp (car body))
                         (equal (symbol-name (car body)) "EXISTS")))
@@ -20269,925 +18213,6 @@
          ,@(if doc
                `((defdoc ,name ,doc))
              nil))))))
-
-(deflabel forall
-  :doc
-  ":Doc-Section Defun-sk
-
-  universal quantifier~/~/
-
-  The symbol ~c[forall] (in the ACL2 package) represents universal
-  quantification in the context of a ~ilc[defun-sk] form.
-  ~l[defun-sk] and ~pl[exists].
-
-  ~l[quantifiers] for an example illustrating how the use of
-  recursion, rather than explicit quantification with ~ilc[defun-sk], may be
-  preferable.")
-
-(deflabel exists
-  :doc
-  ":Doc-Section Defun-sk
-
-  existential quantifier~/~/
-
-  The symbol ~c[exists] (in the ACL2 package) represents existential
-  quantification in the context of a ~ilc[defun-sk] form.
-  ~l[defun-sk] and ~pl[forall].
-
-  ~l[quantifiers] for an example illustrating how the use of
-  recursion, rather than explicit quantification with ~ilc[defun-sk], may be
-  preferable.")
-
-(deflabel defun-sk-example
-  :doc
-  ":Doc-Section Defun-sk
-
-  a simple example using ~ilc[defun-sk]~/~/
-
-  For a more through, systematic beginner's introduction to quantification in
-  ACL2, ~pl[quantifier-tutorial].
-
-  The following example illustrates how to do proofs about functions defined
-  with ~ilc[defun-sk].  The events below can be put into a certifiable book
-  (~pl[books]).  The example is contrived and rather silly, in that it shows
-  how to prove that a quantified notion implies itself, where the antecedent
-  and conclusion are defined with different ~ilc[defun-sk] events.  But it
-  illustrates the formulas that are generated by ~ilc[defun-sk], and how to use
-  them.  Thanks to Julien Schmaltz for presenting this example as a challenge.
-  ~bv[]
-  (in-package \"ACL2\")
-
-  (encapsulate
-   (((p *) => *)
-    ((expr *) => *))
-
-   (local (defun p (x) x))
-   (local (defun expr (x) x)))
-
-  (defun-sk forall-expr1 (x)
-    (forall (y) (implies (p x) (expr y))))
-
-  (defun-sk forall-expr2 (x)
-    (forall (y) (implies (p x) (expr y)))))
-
-  ; We want to prove the theorem my-theorem below.  What axioms are there that
-  ; can help us?  If you submit the command
-
-  ; :pcb! forall-expr1
-
-  ; then you will see the following two key events.  (They are completely
-  ; analogous of course for FORALL-EXPR2.)
-
-  ;   (DEFUN FORALL-EXPR1 (X)
-  ;     (LET ((Y (FORALL-EXPR1-WITNESS X)))
-  ;          (IMPLIES (P X) (EXPR Y))))
-  ;
-  ;   (DEFTHM FORALL-EXPR1-NECC
-  ;     (IMPLIES (NOT (IMPLIES (P X) (EXPR Y)))
-  ;              (NOT (FORALL-EXPR1 X)))
-  ;     :HINTS
-  ;     ((\"Goal\" :USE FORALL-EXPR1-WITNESS)))
-
-  ; We see that the latter has value when FORALL-EXPR1 occurs negated in a
-  ; conclusion, or (therefore) positively in a hypothesis.  A good rule to
-  ; remember is that the former has value in the opposite circumstance: negated
-  ; in a hypothesis or positively in a conclusion.
-
-  ; In our theorem, FORALL-EXPR2 occurs positively in the conclusion, so its
-  ; definition should be of use.  We therefore leave its definition enabled,
-  ; and disable the definition of FORALL-EXPR1.
-
-  ;   (thm
-  ;     (implies (and (p x) (forall-expr1 x))
-  ;              (forall-expr2 x))
-  ;     :hints ((\"Goal\" :in-theory (disable forall-expr1))))
-  ;
-  ;   ; which yields this unproved subgoal:
-  ;
-  ;   (IMPLIES (AND (P X) (FORALL-EXPR1 X))
-  ;            (EXPR (FORALL-EXPR2-WITNESS X)))
-
-  ; Now we can see how to use FORALL-EXPR1-NECC to complete the proof, by
-  ; binding y to (FORALL-EXPR2-WITNESS X).
-
-  ; We use defthmd below so that the following doesn't interfere with the
-  ; second proof, in my-theorem-again that follows.
-  (defthmd my-theorem
-    (implies (and (p x) (forall-expr1 x))
-             (forall-expr2 x))
-    :hints ((\"Goal\"
-             :use ((:instance forall-expr1-necc
-                              (x x)
-                              (y (forall-expr2-witness x)))))))
-
-  ; The following illustrates a more advanced technique to consider in such
-  ; cases.  If we disable forall-expr1, then we can similarly succeed by having
-  ; FORALL-EXPR1-NECC applied as a :rewrite rule, with an appropriate hint in how
-  ; to instantiate its free variable.  See :doc hints.
-
-  (defthm my-theorem-again
-    (implies (and (P x) (forall-expr1 x))
-             (forall-expr2 x))
-    :hints ((\"Goal\"
-             :in-theory (disable forall-expr1)
-             :restrict ((forall-expr1-necc
-                         ((y (forall-expr2-witness x))))))))
-  ~ev[]")
-
-(defdoc quantifier-tutorial
-  ":Doc-Section Defun-sk
-
-  A Beginner's Guide to Reasoning about Quantification in ACL2~/
-
-  The initial version of this tutorial was written by Sandip Ray.  Additions
-  and revisions are welcome.  Sandip has said:
-  ~bq[]
-  ``This is a collection of notes that I wrote to remind myself of how to
-  reason about quantifiers when I just started.  Most users after they have
-  gotten the hang of quantifiers probably will not need this and will be able
-  to use their intuitions to guide them in the process.  But since many ACL2
-  users are not used to quantification, I am hoping that this set of notes
-  might help them to think clearly while reasoning about quantifiers in
-  ACL2.''~eq[]
-
-  Many ACL2 papers start with the sentence ``ACL2 is a quantifier-free
-  first-order logic of recursive functions.''  It is true that the ~em[syntax]
-  of ACL2 is quantifier-free; every formula is assumed to be universally
-  quantified over all free variables in the formula.  But the ~em[logic] in
-  fact does afford arbitrary first-order quantification.  This is obtained in
-  ACL2 using a construct called ~c[defun-sk].  ~l[defun-sk].
-
-  Many ACL2 users do not think in terms of ~il[quantifiers].  The focus is
-  almost always on defining recursive functions and reasoning about them using
-  induction.  That is entirely justified, in fact, since proving theorems about
-  recursive functions by induction plays to the strengths of the theorem
-  prover.  Nevertheless there are situations where it is reasonable and often
-  useful to think in terms of quantifiers.  However, reasoning about
-  quantifiers requires that you get into the mindset of thinking about theorems
-  in terms of quantification.  This note is about how to do this effectively
-  given ACL2's implementation of quantification.  This does not discuss
-  ~ilc[defun-sk] in detail, but merely shows some examples.  A detailed
-  explanation of the implementation is in the ACL2 ~il[documentation]
-  (~pl[defun-sk]); also ~pl[conservativity-of-defchoose].
-
-  [Note: Quantifiers can be used for some pretty cool things in ACL2.  Perhaps
-  the most interesting example is the way of using quantifiers to introduce
-  arbitrary tail-recursive equations; see the paper ``Partial Functions in
-  ACL2'' by Panagiotis Manolios and J Strother Moore.  This note does not
-  address applications of quantifiers, but merely how you would reason about
-  them once you think you want to use them.]~/
-
-  Assume that you have some function ~c[P].  I have just left ~c[P] as a unary
-  function stub below, since I do not care about what ~c[P] is.
-  ~bv[]
-  (defstub P (*) => *)
-  ~ev[]
-  Now suppose you want to specify the concept that ``there exists some ~c[x]
-  such that ~c[(P x)] holds''.  ACL2 allows you to write that directly using
-  quantifiers.
-  ~bv[]
-  (defun-sk exists-P () (exists x (P x)))
-  ~ev[]
-  If you submit the above form in ACL2 you will see that the theorem prover
-  specifies two functions ~c[exists-p] and ~c[exists-p-witness], and exports
-  the following constraints:
-  ~bv[]
-  1.  (defun exists-P () (P (exists-P-witness)))
-  2.  (defthm exists-P-suff (implies (p x) (exists-p)))
-  ~ev[]
-  Here ~c[exists-P-witness] is a new function symbol in the current ACL2
-  theory.  What do the constraints above say?  Notice the constraint
-  ~c[exists-p-suff].  It says that if you can provide any ~c[x] such that
-  ~c[(P x)] holds, then you know that ~c[exists-p] holds.  Think of the other
-  constraint (definition of ~c[exists-p]) as going the other way.  That is, it
-  says that if ~c[exists-p] holds, then there is some ~c[x], call it
-  ~c[(exists-p-witness)], for which ~c[P] holds.  Notice that nothing else is
-  known about ~c[exists-p-witness] than the two constraints above.
-
-  [Note: ~c[exists-p-witness] above is actually defined in ACL2 using a special
-  form called ~c[defchoose].  ~l[defchoose].  This note does not talk about
-  ~c[defchoose].  So far as this note is concerned, think of
-  ~c[exists-p-witness] as a new function symbol that has been generated somehow
-  in ACL2, about which nothing other than the two facts above is known.]
-
-  Similarly, you can talk about the concept that ``for all ~c[x] ~c[(P x)]
-  holds.'' This can be specified in ACL2 by the form:
-  ~bv[]
-  (defun-sk forall-P () (forall x (P x)))
-  ~ev[]
-  This produces the following two constraints:
-  ~bv[]
-  1.  (defun forall-P () (P (forall-p-witness)))
-  2.  (defthm forall-p-necc (implies (not (P x)) (not (forall-p))))
-  ~ev[]
-  To understand these, think of ~c[for-all-p-witness] as producing some ~c[x]
-  which does not satisfy ~c[P], if such a thing exists.  The constraint
-  ~c[forall-p-necc] merely says that if ~c[forall-p] holds then ~c[P] is
-  satisfied for every ~c[x].  (To see this more clearly, just think of the
-  contrapositive of the formula shown.) The other constraint (definition of
-  ~c[forall-p]) implies that if ~c[forall-p] does not hold then there is some
-  ~c[x], call it ~c[(forall-p-witness)], which does not satisfy ~c[P].  To see
-  this, just consider the following formula which is immediately derivable from
-  the definition.
-  ~bv[]
-  (implies (not (forall-p)) (not (P (forall-witness))))
-  ~ev[]
-  The description above suggests that to reason about quantifiers, the
-  following Rules of Thumb, familiar to most any student of logic, are useful.
-  ~bq[]
-  RT1: To prove ~c[(exists-p)], construct some object ~c[A] such that ~c[P]
-  holds for ~c[A] and then use ~c[exists-P-suff].
-
-  RT2: If you assume ~c[exists-P] in your hypothesis, use the definition of
-  ~c[exists-p] to know that ~c[P] holds for ~c[exists-p-witness].  To use this
-  to prove a theorem, you must be able to derive the theorem based on the
-  hypothesis that ~c[P] holds for something, whatever the something is.
-
-  RT3: To prove ~c[forall-P], prove the theorem ~c[(P x)] (that is, that ~c[P]
-  holds for an arbitrary ~c[x]), and then simply instantiate the definition of
-  ~c[forall-p], that is, show that ~c[P] holds for the witness.
-
-  RT4: If you assume ~c[forall-p] in the hypothesis of the theorem, see how you
-  can prove your conclusion if indeed you were given ~c[(P x)] as a theorem.
-  Possibly for the conclusion to hold, you needed that ~c[P] holds for some
-  specific set of ~c[x] values.  Then use the theorem ~c[forall-p-necc] by
-  instantiating it for the specific ~c[x] values you care about.~eq[]
-
-  Perhaps the above is too terse.  In the remainder of the note, we will
-  consider several examples of how this is done to prove theorems in ACL2 that
-  involve quantified notions.
-
-  Let us consider two trivial theorems.  Assume that for some unary function
-  ~c[r], you have proved ~c[(r x)] as a theorem.  Let us see how you can prove
-  that (1) there exists some x such that ~c[(r x)] holds, and (2) for all ~c[x]
-  ~c[(r x)] holds.
-
-  We first model these things using ~ilc[defun-sk].  Below, ~c[r] is simply
-  some function for which ~c[(r x)] is a theorem.
-  ~bv[]
-  (encapsulate
-   (((r *) => *))
-   (local (defun r (x) (declare (ignore x)) t))
-   (defthm r-holds (r x)))
-
-  (defun-sk exists-r () (exists x (r x)))
-  (defun-sk forall-r () (forall x (r x)))
-  ~ev[]
-  ACL2 does not have too much reasoning support for quantifiers.  So in most
-  cases, one would need ~c[:use] hints to reason about quantifiers.  In order
-  to apply ~c[:use] ~il[hints], it is preferable to keep the function
-  definitions and theorems disabled.
-  ~bv[]
-  (in-theory (disable exists-r exists-r-suff forall-r forall-r-necc))
-  ~ev[]
-  Let us now prove that there is some ~c[x] such that ~c[(r x)] holds.  Since
-  we want to prove ~c[exists-r], we must use ~c[exists-r-suff] by RT1.  We do
-  not need to construct any instance here since ~c[r] holds for all ~c[x] by
-  the theorem above.
-  ~bv[]
-  (defthm exists-r-holds
-    (exists-r)
-    :hints ((\"Goal\" :use ((:instance exists-r-suff)))))
-  ~ev[]
-  Let us now prove the theorem that for all ~c[x], ~c[(r x)] holds.  By RT3, we
-  must be able to prove it by definition of ~c[forall-r].
-  ~bv[]
-  (defthm forall-r-holds
-    (forall-r)
-    :hints ((\"Goal\" :use ((:instance (:definition forall-r))))))
-  ~ev[]
-  [Note: Probably no ACL2 user in his or her right mind would prove the
-  theorems ~c[exists-r-holds] and ~c[forall-r-holds] above.  The theorems shown
-  are only for demonstration purposes.]
-
-  For the remainder of this note we will assume that we have two stubbed out
-  unary functions ~c[M] and ~c[N], and we will look at proving some quantified
-  properties of these functions.
-  ~bv[]
-  (defstub M (*) => *)
-  (defstub N (*) => *)
-  ~ev[]
-  Let us now define the predicates ~c[all-M], ~c[all-N], ~c[ex-M], and ~c[ex-N]
-  specifying the various quantifications.
-  ~bv[]
-  (defun-sk all-M () (forall x (M x)))
-  (defun-sk all-N () (forall x (N x)))
-  (defun-sk some-M () (exists x (M x)))
-  (defun-sk some-N () (exists x (N x)))
-
-  (in-theory (disable all-M all-N all-M-necc all-N-necc))
-  (in-theory (disable some-M some-N some-M-suff some-N-suff))
-  ~ev[]
-  Let us prove the classic distributive properties of quantification: the
-  distributivity of universal quantification over conjunction, and the
-  distributivity of existential quantification over disjunction.  We can state
-  these properties informally in ``pseudo ACL2'' notation as follows:
-  ~bv[]
-  1.  (exists x: (M x)) or (exists x: (N x)) <=> (exists x: (M x) or (N x))
-  2.  (forall x: (M x)) and (forall: x (N x)) <=> (forall x: (M x) and (N x))
-  ~ev[]
-  To make these notions formal we of course need to define the formulas at the
-  right-hand sides of 1 and 2.  So we define ~c[some-MN] and ~c[all-MN] to
-  capture these concepts.
-  ~bv[]
-  (defun-sk some-MN () (exists x (or (M x) (N x))))
-  (defun-sk all-MN () (forall x (and (M x) (N x))))
-
-  (in-theory (disable all-MN all-MN-necc some-MN some-MN-suff))
-  ~ev[]
-  First consider proving property 1.  The formal statement of this theorem would
-  be: ~c[(iff (some-MN) (or (some-M) (some-N)))].
-
-  How do we prove this theorem?  Looking at RT1-RT4 above, note that they
-  suggest how one should reason about quantification when one has an
-  ``implication''.  But here we have an ``equivalence''.  This suggests another
-  rule of thumb.
-  ~bq[]
-  RT5: Whenever possible, prove an equivalence involving quantifiers by proving
-  two implications.~eq[]
-
-  Let us apply RT5 to prove the theorems above.  So we will first prove:
-  ~c[(implies (some-MN) (or (some-M) (some-N)))]
-
-  How can we prove this?  This involves assuming a quantified predicate
-  ~c[(some-MN)], so we must use RT2 and apply the definition of ~c[some-MN].
-  Since the conclusion involves a disjunction of two quantified predicates, by
-  RT1 we must be able to construct two objects ~c[A] and ~c[B] such that either
-  ~c[M] holds for ~c[A] or ~c[N] holds for ~c[B], so that we can then invoke
-  ~c[some-M-suff] and ~c[some-N-suff] to prove the conclusion.  But now notice
-  that if ~c[some-MN] is true, then there is already an object, in fact
-  ~c[some-MN-witness], such that either ~c[M] holds for it, or ~c[N] holds for
-  it.  And we know this is the case from the definition of ~c[some-MN]! So we
-  will simply prove the theorem instantiating ~c[some-M-suff] and
-  ~c[some-N-suff] with this witness.  The conclusion is that the following
-  event will go through with ACL2.
-  ~bv[]
-  (defthm le1
-    (implies (some-MN)
-             (or (some-M) (some-N)))
-    :rule-classes nil
-    :hints ((\"Goal\"
-              :use ((:instance (:definition some-MN))
-                    (:instance some-M-suff
-                               (x (some-MN-witness)))
-                    (:instance some-N-suff
-                               (x (some-MN-witness)))))))
-  ~ev[]
-  This also suggests the following rule of thumb:
-  ~bq[]
-  RT6: If a conjecture involves assuming an existentially quantified predicate
-  in the hypothesis from which you are trying to prove an existentially
-  quantified predicate, use the witness of the existential quantification in
-  the hypothesis to construct the witness for the existential quantification in
-  the conclusion.~eq[]
-
-  Let us now try to prove the converse of le1, that is:
-  ~c[(implies (or (some-M) (some-N)) (some-MN))]
-
-  Since the hypothesis is a disjunction, we will just prove each case
-  individually instead of proving the theorem by a :~c[cases] hint.  So we
-  prove the following two lemmas.
-  ~bv[]
-  (defthm le2
-    (implies (some-M) (some-MN))
-    :rule-classes nil
-    :hints ((\"Goal\"
-              :use ((:instance (:definition some-M))
-                    (:instance some-MN-suff
-                               (x (some-M-witness)))))))
-
-  (defthm le3
-    (implies (some-N) (some-MN))
-    :rule-classes nil
-    :hints ((\"Goal\"
-              :use ((:instance (:definition some-N))
-                    (:instance some-MN-suff
-                               (x (some-N-witness)))))))
-  ~ev[]
-  Note that the hints above are simply applications of RT6 as in ~c[le1].  With
-  these lemmas, of course the main theorem is trivial.
-  ~bv[]
-  (defthmd |some disjunction|
-    (iff (some-MN) (or (some-M) (some-N)))
-    :hints ((\"Goal\"
-              :use ((:instance le1)
-                    (:instance le2)
-                    (:instance le3)))))
-  ~ev[]
-  Let us now prove the distributivity of universal quantification over
-  conjunction, that is, the formula: ~c[(iff (all-MN) (and (all-M) (all-N)))]
-
-  Applying RT5, we will again decompose this into two implications.  So
-  consider first the one-way implication:
-  ~c[(implies (and (all-M) (all-N)) (all-MN))].
-
-  Here we get to assume ~c[all-M] and ~c[all-N].  Thus by RT4 we can use
-  ~c[all-M-necc] and ~c[all-N-necc] to think as if we are given the formulas
-  ~c[(M x)] and ~c[(N x)] as theorems.  The conclusion here is also a universal
-  quantification, namely we have to prove ~c[all-MN].  Then RT3 tells us to
-  proceed as follows.  Take any object ~c[y].  Try to find an instantiation
-  ~c[z] of the hypothesis that implies ~c[(and (M y) (N y))].  Then instantiate
-  ~c[y] with ~c[all-MN-witness].  Note that the hypothesis lets us assume
-  ~c[(M x)] and ~c[(N x)] to be theorems.  Thus to justify we need to
-  instantiate ~c[x] with ~c[y], and in this case, therefore, with
-  ~c[all-MN-witness].  To make the long story short, the following event goes
-  through with ACL2:
-  ~bv[]
-  (defthm lf1
-     (implies (and (all-M) (all-N))
-              (all-MN))
-      :rule-classes nil
-      :hints ((\"Goal\"
-                :use ((:instance (:definition all-MN))
-                      (:instance all-M-necc (x (all-MN-witness)))
-                      (:instance all-N-necc (x (all-MN-witness)))))))
-  ~ev[]
-  This suggests the following rule of thumb which is a dual of RT6:
-  ~bq[]
-  RT7: If a conjecture assumes some universally quantified predicate in the
-  hypothesis and its conclusion asserts a universallly quantified predicate,
-  then instantiate the ``necessary condition'' (~c[forall-mn-necc]) of the
-  hypothesis with the witness of the conclusion to prove the conjecture.~eq[]
-
-  Applying RT7 now we can easily prove the other theorems that we need to show
-  that universal quantification distributes over conjunction.  Let us just go
-  through this motion in ACL2.
-  ~bv[]
-  (defthm lf2
-    (implies (all-MN)
-             (all-M))
-    :rule-classes nil
-    :hints ((\"Goal\"
-              :use ((:instance (:definition all-M))
-                    (:instance all-MN-necc
-                               (x (all-M-witness)))))))
-
-  (defthm lf3
-    (implies (all-MN)
-             (all-N))
-    :rule-classes nil
-    :hints ((\"Goal\"
-              :use ((:instance (:definition all-N))
-                    (:instance all-MN-necc
-                               (x (all-N-witness)))))))
-
-  (defthmd |all conjunction|
-    (iff (all-MN)
-         (and (all-M) (all-N)))
-   :hints ((\"Goal\" :use ((:instance lf1)
-                         (:instance lf2)
-                         (:instance lf3)))))
-  ~ev[]
-  The rules of thumb for universal and existential quantification should make
-  you realize the duality of their use.  Every reasoning method about universal
-  quantification can be cast as a way of reasoning about existential
-  quantification, and vice versa.  Whether you reason using universal and
-  existential quantifiers depends on what is natural in a particular context.
-  But just for the sake of completeness let us prove the duality of universal
-  and existential quantifiers.  So what we want to prove is the following:
-  ~bv[]
-  3.  (forall x (not (M x))) = (not (exists x (M x)))
-  ~ev[]
-  We first formalize the notion of ~c[(forall x (not (M x)))] as a
-  quantification.
-  ~bv[]
-  (defun-sk none-M () (forall x (not (M x))))
-  (in-theory (disable none-M none-M-necc))
-  ~ev[]
-  So we now want to prove: ~c[(equal (none-M) (not (some-M)))].
-
-  As before, we should prove this as a pair of implications.  So let us prove
-  first: ~c[(implies (none-M) (not (some-M)))].
-
-  This may seem to assert an existential quantification in the conclusion, but
-  rather, it asserts the ~em[negation] of an existential quantification.  We
-  are now trying to prove that something does not exist.  How do we do that?
-  We can show that nothing satisfies ~c[M] by just showing that
-  ~c[(some-M-witness)] does not satisfy ~c[M].  This suggests the following
-  rule of thumb:
-  ~bq[]
-  RT8: When you encounter the negation of an existential quantification think
-  in terms of a universal quantification, and vice-versa.
-  ~eq[]
-  Ok, so now applying RT8 and RT3 you should be trying to apply the definition of
-  ~c[some-M].  The hypothesis is just a pure (non-negated) universal quantification
-  so you should apply RT4.  A blind application lets us prove the theorem as
-  below.
-  ~bv[]
-  (defthm nl1
-    (implies (none-M) (not (some-M)))
-    :rule-classes nil
-    :hints ((\"Goal\"
-              :use ((:instance (:definition some-M))
-                    (:instance none-M-necc (x (some-M-witness)))))))
-  ~ev[]
-  How about the converse implication?  I have deliberately written it as
-  ~c[(implies (not (none-M)) (some-M))] instead of switching the left-hand and
-  right-hand sides of ~c[nl1], which would have been equivalent.  Again, RH8
-  tells us how to reason about it, in this case using RH2, and we succeed.
-  ~bv[]
-  (defthm nl2
-    (implies (not (none-M)) (some-M))
-    :rule-classes nil
-    :hints ((\"Goal\"
-              :use ((:instance (:definition none-M))
-                    (:instance some-M-suff (x (none-M-witness)))))))
-  ~ev[]
-  So finally we just go through the motions of proving the equality.
-  ~bv[]
-  (defthmd |forall not = not exists|
-    (equal (none-M) (not (some-M)))
-    :hints ((\"Goal\"
-              :use ((:instance nl1)
-                    (:instance nl2)))))
-  ~ev[]
-  Let us now see if we can prove a slightly more advanced theorem which can be
-  stated informally as: If there is a natural number ~c[x] which satisfies
-  ~c[M], then there is a least natural number ~c[y] that satisfies ~c[M].
-
-  [Note: Any time I have had to reason about existential quantification I have
-  had to do this particular style of reasoning and state that if there is an
-  object satisfying a predicate, then there is also a ``minimal'' object
-  satisfying the predicate.]
-
-  Let us formalize this concept.  We first define the concept of existence of a
-  natural number satisfying ~c[x].
-  ~bv[]
-  (defun-sk some-nat-M () (exists x (and (natp x) (M x))))
-  (in-theory (disable some-nat-M some-nat-M-suff))
-  ~ev[]
-  We now talk about what it means to say that ~c[x] is the least number
-  satisfying ~c[M].
-  ~bv[]
-  (defun-sk none-below (y)
-    (forall r (implies (and (natp r) (< r y)) (not (M r))))))
-  (in-theory (disable none-below none-below-necc))
-
-  (defun-sk min-M () (exists y (and (M y) (natp y) (none-below y))))
-  (in-theory (disable min-M min-M-suff))
-  ~ev[]
-  The predicate ~c[none-below] says that no natural number less than ~c[y]
-  satisfies ~c[M].  The predicate ~c[min-M] says that there is some natural
-  number ~c[y] satisfying ~c[M] such that ~c[none-below] holds for ~c[y].
-
-  So the formula we want to prove is: ~c[(implies (some-nat-M) (min-M))].
-
-  Since the formula requires that we prove an existential quantification, RT1
-  tells us to construct some object satisfying the predicate over which we are
-  quantifying.  We should then be able to instantiate ~c[min-M-suff] with this
-  object.  That predicate says that the object must be the least natural number
-  that satisfies ~c[M].  Since such an object is uniquely computable if we know
-  that there exists some natural number satisfying ~c[M], let us just write a
-  recursive function to compute it.  This function is ~c[least-M] below.
-  ~bv[]
-  (defun least-M-aux (i bound)
-    (declare (xargs :measure (nfix (- (1+ bound) i))))
-    (cond ((or (not (natp i))
-               (not (natp bound))
-               (> i bound))
-           0)
-         ((M i) i)
-         (t (least-M-aux (+ i 1) bound))))
-
-  (defun least-M (bound) (least-M-aux 0 bound))
-  ~ev[]
-  Let us now reason about this function as one does typically.  So we prove
-  that this object is indeed the least natural number that satisfies ~c[M],
-  assuming that ~c[bound] is a natural number that satisfies ~c[M].
-  ~bv[]
-  (defthm least-aux-produces-an-M
-    (implies (and (natp i)
-                  (natp bound)
-                  (<= i bound)
-                  (M bound))
-             (M (least-M-aux i bound))))
-
-  (defthm least-<=bound
-    (implies (<= 0 bound)
-             (<= (least-M-aux i bound) bound)))
-
-  (defthm least-aux-produces-least
-    (implies (and (natp i)
-                  (natp j)
-                  (natp bound)
-                  (<= i j)
-                  (<= j bound)
-                  (M j))
-              (<= (least-M-aux i bound) j)))
-
-  (defthm least-aux-produces-natp
-    (natp (least-M-aux i bound)))
-
-  (defthmd least-is-minimal-satisfying-m
-    (implies (and (natp bound)
-                  (natp i)
-                   (< i (least-M bound)))
-             (not (M i)))
-    :hints ((\"Goal\"
-              :in-theory (disable least-aux-produces-least least-<=bound)
-              :use ((:instance least-<=bound
-                               (i 0))
-                    (:instance least-aux-produces-least
-                               (i 0)
-                               (j i))))))
-
-  (defthm least-has-m
-    (implies (and (natp bound)
-                  (m bound))
-             (M (least-M bound))))
-
-  (defthm least-is-natp
-    (natp (least-M bound)))
-  ~ev[]
-  So we have done that, and hopefully this is all that we need about
-  ~c[least-M].  So we disable everything.
-  ~bv[]
-  (in-theory (disable least-M natp))
-  ~ev[]
-  Now of course we note that the statement of the conjecture we are interested
-  in has two quantifiers, an inner ~c[forall] (from ~c[none-below]) and an
-  outer ~c[exists] (from ~c[min-M]).  Since ACL2 is not very good with
-  quantification, we hold its hands to reason with the quantifier part.  So we
-  will first prove something about the ~c[forall] and then use it to prove what
-  we need about the ~c[exists].
-  ~bq[]
-  RT9: When you face nested quantifiers, reason about each nesting
-  separately.~eq[]
-
-  So what do we want to prove about the inner quantifier?  Looking carefully at
-  the definition of ~c[none-below] we see that it is saying that for all natural
-  numbers ~c[r] < ~c[y], ~c[(M r)] does not hold.  Well, how would we want to
-  use this fact when we want to prove our final theorem?  We expect that we
-  will instantiate ~c[min-M-suff] with the object ~c[(least-M bound)] where we
-  know (via the outermost existential quantifier) that ~c[M] holds for
-  ~c[bound], and we will then want to show that ~c[none-below] holds for
-  ~c[(least-M bound)].  So let us prove that for any natural number (call it
-  ~c[bound]), ~c[none-below] holds for ~c[(least-M bound)].  For the final
-  theorem we only need it for natural numbers satisfying ~c[M], but note that
-  from the lemma ~c[least-is-minimal-satisfying-m] we really do not need that
-  ~c[bound] satisfies ~c[M].
-
-  So we are now proving:
-  ~c[(implies (natp bound) (none-below (least-M bound)))].
-
-  Well since this is a standard case of proving a universally quantified
-  predicate, we just apply RT3.  We have proved that for all naturals ~c[i] <
-  ~c[(least-M bound)], ~c[i] does not satisfy ~c[M] (lemma
-  ~c[least-is-minimal-satisfying-M]), so we merely need the instantiation of
-  that lemma with ~c[none-below-witness] of the thing we are trying to prove,
-  that is, ~c[(least-M bound)].  The theorem below thus goes through.
-  ~bv[]
-  (defthm least-is-minimal
-    (implies (natp bound)
-             (none-below (least-M bound)))
-    :hints ((\"Goal\"
-              :use ((:instance (:definition none-below)
-                               (y (least-M bound)))
-                    (:instance least-is-minimal-satisfying-m
-                               (i (none-below-witness (least-M bound))))))))
-  ~ev[]
-  Finally we are in the outermost existential quantifier, and are in the
-  process of applying ~c[min-M-suff].  What object should we instantiate it
-  with?  We must instantiate it with ~c[(least-M bound)] where ~c[bound] is an
-  object which must satisfy ~c[M] and is a natural.  We have such an object,
-  namely ~c[(some-nat-M-witness)] which we know have all these qualities given
-  the hypothesis.  So the proof now is just RT1 and RT2.
-  ~bv[]
-  (defthm |minimal exists|
-    (implies (some-nat-M) (min-M))
-    :hints ((\"Goal\"
-              :use ((:instance min-M-suff
-                               (y (least-M (some-nat-M-witness))))
-                    (:instance (:definition some-nat-M))))))
-  ~ev[]
-
-  If you are comfortable with the reasoning above, then you are comfortable
-  with quantifiers and probably will not need these notes any more.  In my
-  opinion, the best way of dealing with ACL2 is to ask yourself why you think
-  something is a theorem, and the rules of thumb above are simply guides to the
-  questions that you need to ask when you are dealing with quantification.
-
-  Here are a couple of simple exercises for you to test if you understand
-  the reasoning process.
-
-  ~st[Exercise 1].  Formalize and prove the following theorem.  Suppose there
-  exists ~c[x] such that ~c[(R x)] and suppose that all ~c[x] satisfy
-  ~c[(P x)].  Then prove that there exists ~c[x] such that ~c[(P x) & (R x)].
-  (See
-  ~url[http://www.cs.utexas.edu/users/moore/acl2/contrib/quantifier-exercise-1-solution.html]
-  for a solution.)
-
-  ~st[Exercise 2].  Recall the example just before the preceding exercise,
-  where we showed that if there exists a natural number ~c[x] satisfying ~c[M]
-  then there is another natural number ~c[y] such that ~c[y] satisfies ~c[M]
-  and for every natural number ~c[z] < ~c[y], ~c[z] does not.  What would
-  happen if we remove the restriction of ~c[x], ~c[y], and ~c[z] being
-  naturals?  Of course, we will not talk about ~c[<] any more, but suppose you
-  use the total order on all ACL2 objects (from community book
-  ~c[\"books/misc/total-order\"]).  More concretely, consider the definition of
-  ~c[some-M] above.  Let us now define two other functions:
-  ~bv[]
-  (include-book \"misc/total-order\" :dir :system)
-
-  (defun-sk none-below-2 (y)
-    (forall r (implies (<< r y) (not (M r)))))
-
-  (defun-sk min-M2 () (exists y (and (M y) (none-below-2 y))))
-  ~ev[]
-  The question is whether ~c[(implies (some-M) (min-M2))] is a theorem.  Can
-  you prove it?  Can you disprove it?~/")
-
-(deflabel quantifiers
-  :doc
-  ":Doc-Section Defun-sk
-
-  issues about quantification in ACL2~/
-
-  ACL2 supports first-order quantifiers ~ilc[exists] and ~ilc[forall] by way of
-  the ~ilc[defun-sk] event.  However, proof support for quantification is quite
-  limited.  Therefore, you may prefer using recursion in place of ~c[defun-sk]
-  when possible (following common ACL2 practice).~/
-
-  For example, the notion ``every member of ~c[x] has property ~c[p]'' can be
-  defined either with recursion or explicit quantification, but proofs may be
-  simpler when recursion is used.  We illustrate this point with two proofs of
-  the same informal claim, one of which uses recursion which the other uses
-  explicit quantification.  Notice that with recursion, the proof goes through
-  fully automatically; but this is far from true with explicit quantification
-  (especially notable is the ugly hint).
-
-  The informal claim for our examples is:  If every member ~c[a] of each
-  of two lists satisfies the predicate ~c[(p a)], then this holds of their
-  ~ilc[append]; and, conversely.
-
-  ~l[quantifiers-using-recursion] for a solution to this example using
-  recursion.
-
-  ~l[quantifiers-using-defun-sk] for a solution to this example using
-  ~ilc[defun-sk].  Also ~l[quantifiers-using-defun-sk-extended] for an
-  elaboration on that solution.
-
-  But perhaps first, ~pl[defun-sk] for an ACL2 utility to introduce first-order
-  quantification in a direct way.  Examples of the use of ~c[defun-sk] are also
-  available: ~pl[defun-sk-example] and ~pl[Tutorial4-Defun-Sk-Example] for
-  basic examples, and ~pl[quantifier-tutorial] for a more complete, careful
-  beginner's introduction that takes you through typical kinds of
-  quantifier-based reasoning in ACL2.~/")
-
-(deflabel quantifiers-using-recursion
-  :doc
-  ":Doc-Section Quantifiers
-
-  recursion for implementing quantification~/
-
-  The following example illustrates the use of recursion as a means of
-  avoiding proof difficulties that can arise from the use of explicit
-  quantification (via ~ilc[defun-sk]).  ~l[quantifiers] for more about
-  the context of this example.~/
-  ~bv[]
-  (in-package \"ACL2\")
-
-  ; We prove that if every member A of each of two lists satisfies the
-  ; predicate (P A), then this holds of their append; and, conversely.
-
-  ; Here is a solution using recursively-defined functions.
-
-  (defstub p (x) t)
-
-  (defun all-p (x)
-    (if (atom x)
-        t
-      (and (p (car x))
-           (all-p (cdr x)))))
-
-  (defthm all-p-append
-    (equal (all-p (append x1 x2))
-           (and (all-p x1) (all-p x2))))
-  ~ev[]")
-
-(deflabel quantifiers-using-defun-sk
-  :doc
-  ":Doc-Section Quantifiers
-
-  quantification example~/
-
-  ~l[quantifiers] for the context of this example.  It should be
-  compared to a corresponding example in which a simpler proof is
-  attained by using recursion in place of explicit quantification;
-  ~pl[quantifiers-using-recursion].~/
-  ~bv[]
-  (in-package \"ACL2\")
-
-  ; We prove that if every member A of each of two lists satisfies the
-  ; predicate (P A), then this holds of their append; and, conversely.
-
-  ; Here is a solution using explicit quantification.
-
-  (defstub p (x) t)
-
-  (defun-sk forall-p (x)
-    (forall a (implies (member a x)
-                       (p a))))
-
-  (defthm member-append
-    (iff (member a (append x1 x2))
-         (or (member a x1) (member a x2))))
-
-  (defthm forall-p-append
-    (equal (forall-p (append x1 x2))
-           (and (forall-p x1) (forall-p x2)))
-    :hints ((\"Goal\" ; ``should'' disable forall-p-necc, but no need
-             :use
-             ((:instance forall-p-necc
-                         (x (append x1 x2))
-                         (a (forall-p-witness x1)))
-              (:instance forall-p-necc
-                         (x (append x1 x2))
-                         (a (forall-p-witness x2)))
-              (:instance forall-p-necc
-                         (x x1)
-                         (a (forall-p-witness (append x1 x2))))
-              (:instance forall-p-necc
-                         (x x2)
-                         (a (forall-p-witness (append x1 x2))))))))
-  ~ev[]
-
-  Also ~pl[quantifiers-using-defun-sk-extended] for an
-  elaboration on this example.")
-
-(deflabel quantifiers-using-defun-sk-extended
-  :doc
-  ":Doc-Section Quantifiers
-
-  quantification example with details~/
-
-  ~l[quantifiers-using-defun-sk] for the context of this example.~/
-  ~bv[]
-  (in-package \"ACL2\")
-
-  ; We prove that if every member A of each of two lists satisfies the
-  ; predicate (P A), then this holds of their append; and, conversely.
-
-  ; Here is a solution using explicit quantification.
-
-  (defstub p (x) t)
-
-  (defun-sk forall-p (x)
-    (forall a (implies (member a x)
-                       (p a))))
-
-  ; The defun-sk above introduces the following axioms.  The idea is that
-  ; (FORALL-P-WITNESS X) picks a counterexample to (forall-p x) if there is one.
-
-  ;   (DEFUN FORALL-P (X)
-  ;     (LET ((A (FORALL-P-WITNESS X)))
-  ;          (IMPLIES (MEMBER A X) (P A))))
-  ;
-  ;   (DEFTHM FORALL-P-NECC
-  ;     (IMPLIES (NOT (IMPLIES (MEMBER A X) (P A)))
-  ;              (NOT (FORALL-P X)))
-  ;     :HINTS ((\"Goal\" :USE FORALL-P-WITNESS)))
-
-  ; The following lemma seems critical.
-
-  (defthm member-append
-    (iff (member a (append x1 x2))
-         (or (member a x1) (member a x2))))
-
-  ; The proof of forall-p-append seems to go out to lunch, so we break into
-  ; directions as shown below.
-
-  (defthm forall-p-append-forward
-    (implies (forall-p (append x1 x2))
-             (and (forall-p x1) (forall-p x2)))
-    :hints ((\"Goal\" ; ``should'' disable forall-p-necc, but no need
-             :use
-             ((:instance forall-p-necc
-                         (x (append x1 x2))
-                         (a (forall-p-witness x1)))
-              (:instance forall-p-necc
-                         (x (append x1 x2))
-                         (a (forall-p-witness x2)))))))
-
-  (defthm forall-p-append-reverse
-    (implies (and (forall-p x1) (forall-p x2))
-             (forall-p (append x1 x2)))
-    :hints ((\"Goal\"
-             :use
-             ((:instance forall-p-necc
-                         (x x1)
-                         (a (forall-p-witness (append x1 x2))))
-              (:instance forall-p-necc
-                         (x x2)
-                         (a (forall-p-witness (append x1 x2))))))))
-
-  (defthm forall-p-append
-    (equal (forall-p (append x1 x2))
-           (and (forall-p x1) (forall-p x2)))
-    :hints ((\"Goal\" :use (forall-p-append-forward
-                          forall-p-append-reverse))))
-
-  ~ev[]")
 
 ; Here is the defstobj event.
 
@@ -23471,641 +20496,6 @@
                               concrete recognizer creator corr-fn exports
                               protect-default
                               congruent-to missing-only doc)
-
-  ":Doc-Section Events
-
-  define a new abstract single-threaded object ~/
-
-  We assume familiarity with single-threaded objects; ~pl[stobj] and
-  ~pl[defstobj].  The event ~c[defabsstobj] defines a so-called ``abstract
-  stobj'', a notion we introduce briefly now and then explain in more depth
-  below.
-
-  The evaluation of a ~il[defstobj] event produces logical definitions for
-  several functions: a recognizer, which characterizes the ~il[stobj] in terms
-  of lists; a creator, which produces an initial suitable list structure; and
-  field accessors and updators, defined in terms of ~ilc[nth] and
-  ~ilc[update-nth].  ~c[Defabsstobj] provides a way to define alternate
-  definitions for ``stobj primitives'' for a corresponding single-threaded
-  object.  These stobj primitives include a recognizer, a creator, and other
-  ``exported'' functions.  In essence, ~c[defabsstobj] establishes interface
-  functions, or ``exports'', on a new stobj that is a copy of an indicated
-  ``concrete'' stobj that already exists.
-
-  We begin below with an introduction to abstract ~il[stobj]s.  We then explain
-  the ~ilc[defabsstobj] event by way of an example.  We conclude by giving
-  summary documentation for the ~c[defabsstobj] event.
-
-  For another introduction to abstract stobjs, see the paper ``Abstract Stobjs
-  and Their Application to ISA Modeling'' by Shilpi Goel, Warren A. Hunt, Jr.,
-  and Matt Kaufmann, in the proceedings of ACL2 Workshop 2013,
-  ~url[http://www.cs.uwyo.edu/~~ruben/acl2-13].~/
-
-  ~st[INTRODUCTION]
-
-  We start with a brief review of ~il[stobj]s and some potential problems with
-  them, followed by an introduction to abstract stobjs and how they can avoid
-  these problems.  Prior experience with stobjs will probably help the reader
-  to absorb the ideas below.
-
-  Recall that single-threaded objects, or ~il[stobj]s, provide a way for ACL2
-  users to stay within the ACL2 logic, where every data object is an atom or a
-  ~ilc[cons] of data objects, while obtaining the benefits of fast evaluation
-  through destructive updates.  Consider for example this very simple event.
-  ~bv[]
-  (defstobj st fld)
-  ~ev[]
-  This event introduces a recognizer, ~c[stp], and a creator, ~c[create-st],
-  for a data structure consisting of a single field accessed and updated by
-  functions ~c[fld] and ~c[update-fld], respectively.  Each of these four
-  primitive functions has both a logical definition, which is used when the
-  prover reasons about the function, and an executable definition, which is
-  used in raw Lisp.  In the logic, ~c[stp] recognizes objects that have the
-  requisite fields.  In raw Lisp, there is a ``live stobj'', which is an array
-  object whose fields correspond to those specified by the ~ilc[defstobj]
-  event, implemented as Lisp arrays.
-
-  Here are the logical definition and the executable definition, respectively,
-  that are introduced for the field accessor, ~c[fld], introduced above.
-  Notice that since a stobj is represented in raw Lisp using an array, the raw
-  Lisp accessor uses a raw Lisp array accessor, ~c[svref].  (You can see all
-  the logical and executable definitions by evaluating the form
-  ~c[(trace$ defstobj-axiomatic-defs defstobj-raw-defs)] before evaluating the
-  ~ilc[defstobj] form.)
-  ~bv[]
-  ; logical definition
-  (defun fld (st)
-    (declare (xargs :guard (stp st)
-                    :verify-guards t))
-    (nth 0 st))
-
-  ; executable (raw Lisp) definition
-  (defun fld (st)
-    (svref st 0))
-  ~ev[]
-
-  Sophisticated programming with stobjs can provide efficient implementations
-  of algorithms, but may require the preservation of a complex invariant.  One
-  can, of course, define a function to implement such an invariant after
-  introducing the stobj, as follows.
-  ~bv[]
-  ; Introduce a stobj.
-  (defstobj st fld1 ... fldk)
-
-  ; Define an invariant on that stobj.
-  (defun good-stp (st)
-    (declare (xargs :stobjs st))
-    ...)
-
-  ; Define some basic functions that update the stobj and preserve the
-  ; invariant.
-  (defun update-st (... st ...)
-    (declare (xargs :stobjs st
-                    :guard (and (good-stp st) ...)))
-    ...)
-  ...
-
-  ; Prove that the invariant is indeed preserved by those basic functions.
-  (defthm good-stp-update-st
-    (implies (and (good-stp st)
-                  ...)
-             (good-stp (update-st ... st ...))))
-  ...
-
-  ; Implement algorithms built on the basic functions.
-  (defun foo (... st ...)
-    (declare (xargs :stobjs st
-                    :guard (and (good-stp st) ...)))
-    ... (update-st ... st ...) ...)
-
-  ; Prove invariance theorems about these algorithms.
-  (defthm good-stp-foo
-    (implies (and (good-stp st)
-                  ...)
-             (good-stp (foo ... st ...))))
-  ...
-
-  ; Prove other properties of these algorithms.
-  (defthm foo-is-correct
-    (implies (and (good-stp st)
-                  ...)
-             (some-property (foo ... st ...))))
-  ...
-  ~ev[]
-
-  But there are at least two potential difficulties in using stobjs as
-  described above.
-  ~bq[]
-  1. When ~c[foo] is executed on concrete data in the ACL2 loop, the guard
-  check may be expensive because ~c[(good-stp st)] is expensive.
-
-  2. Reasoning about ~c[foo] (using rules like ~c[foo-is-correct] above)
-  involves proving hypotheses of invariance theorems, which may be complicated
-  for the user to manage or slow for the theorem prover.~eq[]
-
-  The ~c[defabsstobj] event offers an opportunity to address these issues.  It
-  introduces a new stobj, which we call an ``abstract stobj'', which is
-  associated with a corresponding ``concrete stobj'' introduced by an earlier
-  ~ilc[defstobj] event.  The ~c[defabsstobj] event specifies a logical
-  (~c[:LOGIC]) and an executable (~c[:EXEC]) definition for each primitive
-  operation, or ``stobj primitive'', involving that stobj.  As is the case for
-  ~ilc[defstobj], the logical definition is what ACL2 reasons about, and is
-  appropriate to apply to an ACL2 object satisfying the logical definition of
-  the recognizer function for the stobj.  The executable definition is applied
-  in raw Lisp to a live stobj, which is an array object associated with the
-  given stobj name.
-
-  We can picture a sequence of updates to corresponding abstract and concrete
-  stobjs as follows.  Initially in this picture, ~c[st$a0] and ~c[st$c0] are a
-  corresponding abstract and concrete stobj (respectively).  Then an update,
-  ~c[u1], is applied with ~c[:LOGIC] and ~c[:EXEC] functions ~c[u$a1] and
-  ~c[u$c1], respectively.  The resulting abstract and concrete stobj, ~c[st$a1]
-  and ~c[st$c1], correspond as before.  Then a second update, ~c[u2], is
-  applied with ~c[:LOGIC] and ~c[:EXEC] functions ~c[u$a2] and ~c[u$c2],
-  respectively ~-[] again preserving the correspondence.  And so on.
-
-  ~bv[]
-  Abstract               u$a1       u$a2       u$a3
-  (:logic)         st$a0  --> st$a1  --> st$a2  -->   ...
-
-                     ^          ^          ^               ^
-  Correspondence     |          |          |          ...  |
-                     v          v          v               v
-
-                         u$c1       u$c2       u$c3
-  Concrete         st$c0  --> st$c1  --> st$c2  -->   ...
-  (:exec)
-  ~ev[]
-
-  We conclude this introduction with some remarks about implementation.
-  Consider an abstract stobj ~c[st] with corresponding concrete stobj ~c[st$c].
-  The live stobjs for ~c[st] and ~c[st$c] have the same structure, but are
-  distinct arrays.  Indeed, the raw Lisp creator function for ~c[st$c] is
-  called to create a new initial live stobj for ~c[st].  As we will see below,
-  reads and writes in raw Lisp to the live stobj for ~c[st] are ultimately
-  performed using the primitive accessors and updaters defined for ~c[st$c].
-  One might think of the live stobjs for ~c[st] and ~c[st$c] as being congruent
-  stobjs (~pl[defstobj]), except that the stobjs themselves are not congruent:
-  the stobj primitives introduced for ~c[st] may be applied to ~c[st] but not
-  arbitrary field updaters of ~c[st$c], for example.  As one might expect, the
-  ~c[:EXEC] function for an exported function is applied to the live stobj for
-  ~c[st] in raw Lisp.
-
-  ~st[EXAMPLE]
-
-  We present examples, with detailed comments intended to explain abstract
-  stobjs, in two community books: ~c[books/misc/defabsstobj-example-1.lisp] and
-  ~c[books/misc/defabsstobj-example-2.lisp].  In this section we outline the
-  first of these.  We suggest that after you finish this ~il[documentation]
-  topic, you read through those two books.
-
-  Here is the first of two closely related ~c[defabsstobj] ~il[events] from the
-  book ~c[defabsstobj-example-1.lisp], but in expanded form.  We will show the
-  abbreviated form later, which omits most of data in the form that is
-  immediately below.  Thus most of the information shown here is default
-  information.  We believe that the comments below explain most or all of what
-  you need to know in order to start using ~c[defabsstobj], and that you will
-  learn the remainder when you see error messages.  For example, we do not say
-  in the comments below that every ~c[:LOGIC] and ~c[:EXEC] function must be
-  ~il[guard]-verified, but that is indeed a requirement.
-
-  ~bv[]
-  (defabsstobj st ; The new abstract stobj is named st.
-
-  ; The concrete stobj corresponding to st is st$c:
-
-    :concrete st$c
-
-  ; The recognizer for the new abstract stobj is stp, which is defined to be
-  ; st$ap in the logic, and is executed on the live stobj in raw Lisp using
-  ; st$cp.
-
-    :recognizer (stp :logic st$ap :exec st$cp)
-
-  ; The initial stobj is defined as create-st (a function of no arguments),
-  ; which is defined logically as create-st$a, though create-st$c is invoked to
-  ; create the initial live stobj for st.  The :correspondence and :preserved
-  ; keywords refer to proof obligations, discussed below.
-
-    :creator (create-st :logic create-st$a :exec create-st$c
-                        :correspondence create-st{correspondence}
-                        :preserved create-st{preserved})
-
-  ; Proof obligations are generated that involve a correspondence between the
-  ; new abstract stobj and corresponding concrete stobj.  The function
-  ; st$corr, which need not be executable (see :DOC defun-nx), takes two
-  ; arguments, a concrete stobj and an abstract stobj.  This function symbol is
-  ; used in the statements of the proof obligations.
-
-    :corr-fn st$corr
-
-  ; In this example we have four exports.  In each case a new function is
-  ; introduced that has the same signature as its :EXEC function, except that
-  ; st$c is replaced by st.  The :LOGIC and :EXEC functions are as specified,
-  ; and the other keywords refer to proof obligations that we discuss below.
-
-    :exports ((lookup :logic lookup$a
-                      :exec mem$ci
-                      :correspondence lookup{correspondence}
-                      :guard-thm lookup{guard-thm})
-              (update :logic update$a
-                      :exec update-mem$ci
-                      :correspondence update{correspondence}
-                      :preserved update{preserved}
-                      :guard-thm update{guard-thm})
-              (misc :logic misc$a
-                    :exec misc$c
-                    :correspondence misc{correspondence})
-              (update-misc :logic update-misc$a
-                           :exec update-misc$c
-                           :correspondence update-misc{correspondence}
-                           :preserved update-misc{preserved}))
-    :doc nil)
-  ~ev[]
-
-  Note that all stobj primitives (recognizer, creator, and exported functions)
-  are defined in the ACL2 loop in terms of their ~c[:LOGIC] functions and in
-  raw Lisp in terms of their ~c[:EXEC] functions.  In the ACL2 loop, a
-  ~ilc[defun] form defines a function, while in raw Lisp, a ~ilc[defmacro] form
-  defines a macro (for efficiency).  We first illustrate how that works for the
-  recognizer.  (You can see all the logical and executable definitions by
-  evaluating the form
-  ~c[(trace$ defabsstobj-axiomatic-defs defabsstobj-raw-defs)] before
-  evaluating the ~ilc[defstobj] form.)
-  ~bv[]
-  ; In the ACL2 loop:
-  (defun stp (st)
-    (declare (xargs :guard 't))
-    (st$ap st))
-
-  ; In raw Lisp:
-  (defmacro stp (&rest args) (cons 'st$cp args))
-  ~ev[]
-
-  The definitions are made similarly for exported functions, with ~il[guard]s
-  derived from their ~c[:LOGIC] functions as follows.  Consider the exported
-  function ~c[update] in our example.  Its ~c[:LOGIC] function, ~c[update$a],
-  has formals ~c[(k val st$a)] and the following guard.
-  ~bv[]
-  (and (and (integerp k) (<= 0 k) (<= k 49))
-       (and (integerp val) (<= 0 val))
-       (st$ap st$a)
-       (mem$c-entryp val))
-  ~ev[]
-  The formals of ~c[update] are obtained by starting with the formals of its
-  ~c[:EXEC] function, ~c[update-mem$ci] ~-[] which are ~c[(i v st$c)] ~-[] and
-  replacing the concrete stobj name ~c[st$c] by the new stobj name ~c[st].  The
-  formals of ~c[update] are thus ~c[(i v st)].  The guard for ~c[update] is
-  obtained in two steps.  The first step is to substitute the formals of
-  ~c[update] for the formals of ~c[update$a] in the guard for ~c[update$a], to
-  obtain the following.
-  ~bv[]
-  (and (and (integerp i) (<= 0 i) (<= i 49))
-       (and (integerp v) (<= 0 v))
-       (st$ap st)
-       (mem$c-entryp v))
-  ~ev[]
-  The second step is to replace, for each new stobj primitive ~c[p], the
-  ~c[:LOGIC] function for ~c[p] by ~c[p] itself.  The only ~c[:LOGIC] function
-  occurring in the formula just above is ~c[st$ap], which is the ~c[:LOGIC]
-  funcction for ~c[stp].  The guard for ~c[update] is thus as follows.
-  ~bv[]
-  (and (and (integerp i) (<= 0 i) (<= i 49))
-       (and (integerp v) (<= 0 v))
-       (stp st)
-       (mem$c-entryp v))
-  ~ev[]
-
-  We turn now to the proof obligations, as promised above.  There are three
-  types: ~c[:CORRESPONDENCE], ~c[:PRESERVED], and ~c[:GUARD-THM].  All required
-  lemmas may be printed simply by defining the necessary ~c[:LOGIC] and
-  ~c[:EXEC] functions and then submitting the ~c[defabsstobj] event.
-  (To advanced users: also ~pl[defabsstobj-missing-events] for a utility that
-  returns the required formulas in translated form.)  Although the
-  ~c[defabsstobj] event will fail if the required lemmas have not been proved,
-  first it will print the ~ilc[defthm] forms that must be admitted in order to
-  complete submission of the ~c[defabsstobj] event.
-
-  The detailed theory explaining the need for these lemmas may be found in a
-  comment in ACL2 source file ~c[other-events.lisp], in a comment entitled
-  ``Essay on the Correctness of Abstract Stobjs''.  Here, we give an informal
-  sense of the importance of these lemmas as we present examples of them.
-  Fundamental is the notion of evaluation in the logic versus evaluation using
-  live stobjs, where one imagines tracking the current value of each abstract
-  stobj during each of these two evaluations.
-
-  We start with the ~c[:CORRESPONDENCE] lemmas.  These guarantee that
-  evaluation in the logic agrees with evaluation using live stobjs, in the
-  sense that the only difference is between a logical stobj and a live stobj,
-  where the two correspond in the sense of the function specified by
-  ~c[:CORR-FN].  We start with the ~c[:CREATOR] function where the statement is
-  quite simple, stating that the ~c[:CORR-FN] holds initially.
-  ~bv[]
-  (defthm create-st{correspondence}
-    (st$corr (create-st$c) (create-st$a)))
-  ~ev[]
-  For the exported functions, there are essentially two cases.  If an exported
-  function returns other than the new abstract stobj, then the theorem asserts
-  the equality of the results of applying the ~c[:LOGIC] and ~c[:EXEC]
-  functions for the exported function.  Hypotheses include the ~c[:CORR-FN]
-  correspondence followed by the ~il[guard] for the ~c[:LOGIC] function, which
-  is stated in terms of the formal parameters of the ~c[:EXEC] function except
-  using the abstract stobj (here, ~c[st]) in place of the concrete stobj (here,
-  ~c[st$c]).  The conclusion uses the ~c[:EXEC] formals, modified in the call
-  of the ~c[:LOGIC] function (here, ~c[lookup$a]) to use the abstract stobj, as
-  in the hypotheses.
-  ~bv[]
-  (defthm lookup{correspondence}
-    (implies (and (st$corr st$c st)
-                  (integerp i) (<= 0 i) (<= i 49)
-                  (st$ap st))
-             (equal (mem$ci i st$c)
-                    (lookup$a i st)))
-    :rule-classes nil)
-  ~ev[]
-  By contrast, if the exported function returns the new abstract stobj, then
-  the conclusion uses the correspondence function insted of ~c[EQUAL], as in
-  the following.
-  ~bv[]
-  (defthm update{correspondence}
-    (implies (and (st$corr st$c st)
-                  (integerp i) (<= 0 i) (<= i 49)
-                  (integerp v) (<= 0 v)
-                  (st$ap st)
-                  (mem$c-entryp v))
-             (st$corr (update-mem$ci i v st$c)
-                      (update$a i v st)))
-    :rule-classes nil)
-  ~ev[]
-  For exported functions that return multiple values, such conclusions are
-  conjoined together over the returned values.
-
-  The ~c[:PRESERVED] lemmas guarantee that updates to the abstract stobj
-  preserve its recognizer.  The fact that every exported function has this
-  property provides justification for an optimization performed by ACL2 during
-  generation of proof obligations for ~il[guard] verification, by assuming that
-  the recognizer always holds.  The ~c[:PRESERVED] lemma for the ~c[:CREATOR]
-  shows that the recognizer holds initially.
-  ~bv[]
-  (defthm create-st{preserved}
-    (st$ap (create-st$a)))
-  ~ev[]
-  Here is a typical such lemma, for the exported function ~c[update].  Note
-  that there is no such lemma for ~c[lookup], since ~c[lookup] does not return
-  ~c[st].
-  ~bv[]
-  (defthm update{preserved}
-    (implies (and (integerp i) (<= 0 i) (<= i 49)
-                  (integerp v) (<= 0 v)
-                  (st$ap st)
-                  (mem$c-entryp v))
-             (st$ap (update$a i v st))))
-  ~ev[]
-
-  Finally, we consider the ~c[:GUARD-THM] lemmas.  These serve to guarantee
-  that the ~il[guard] holds for each call of an ~c[:EXEC] function.  During
-  guard verification, logical definitions are used; in particular, since each
-  exported function is defined in the logic as the corresponding call of its
-  ~c[:LOGIC] function, guard verification shows that each call of the
-  ~c[:LOGIC] function for an exported function satisfies that function's guard.
-  But why is this true for raw Lisp evaluation using live stobjs, where the
-  ~c[:EXEC] function is called for an exported function?  The ~c[:GUARD-THM]
-  lemmas provide the answer, as they state that if the ~c[:LOGIC] function's
-  guard holds, then the ~c[:EXEC] function's guard holds.  Here is an example.
-  Note that the hypotheses come from the correspondence of the concrete and
-  abstract function as guaranteed by the ~c[:CORR] function, together with the
-  guard of the ~c[:LOGIC] function; and the conclusion comes from the guard of
-  the ~c[:EXEC] function.
-  ~bv[]
-  (defthm lookup{guard-thm}
-    (implies (and (st$corr st$c c)
-                  (integerp i)
-                  (<= 0 i)
-                  (<= i 49)
-                  (st$ap st))
-             (and (integerp i)
-                  (<= 0 i)
-                  (< i (mem$c-length st$c))))
-    :rule-classes nil)
-  ~ev[]
-
-  We conclude this EXAMPLE section by showing a short form for the
-  ~c[defabsstobj] form displayed above.
-  ~bv[]
-  (defabsstobj st
-    :exports ((lookup :exec mem$ci)
-              (update :exec update-mem$ci)
-              misc update-misc))
-  ~ev[]
-
-  ~st[SUMMARY DOCUMENTATION]
-
-  The General Form is as shown below, where the order of keywords is unimportant.
-  Duplicate keywords are discouraged; while permitted, only the first
-  (leftmost) occurrence of a given keyword is used.  Only the ~c[:exports]
-  keyword is required.
-  ~bv[]
-  (defabsstobj st
-    :concrete concrete
-    :recognizer recognizer
-    :creator creator
-    :corr-fn corr-fn
-    :congruent-to congruent-to
-    :protect-default protect-default
-    :exports (e1 ... ek)
-    :doc doc)
-  ~ev[]
-  The keyword argument ~c[:EXPORTS] must be supplied, and missing or ~c[nil]
-  keyword arguments have defaults as indicated below.  All arguments must
-  satisfy the conditions below.
-
-  Before we describe the arguments, we define a notion of a ``function spec''
-  and its ``completion''.  A function spec is either a symbol or else a list of
-  the form
-  ~bv[]
-  (fn ~c[:kwd1] val1 ... ~c[:kwdn] valn),
-  ~ev[]
-  that is, a symbol followed by a ~ilc[keyword-value-listp].  We view the case
-  of a symbol, ~c[s], as the function spec ~c[(s)], with no keywords.  There
-  must be no duplicate keywords.  In each case that we expect a function spec,
-  the context provides a set of valid keywords for that function spec; it is an
-  error to provide any other keyword in the function spec.  Each function spec
-  is interpreted as its ``completion'', obtained by extending the function spec
-  with a default value for each valid keyword as indicated below.  With that
-  interpretation, the ``exported function'' of a function spec is its ~c[car],
-  and that function symbol and each keyword value must be a guard-verified
-  function symbol; and moreover, the ~c[:EXEC] function must not include the
-  new abstract stobj name, ~c[st], among its formals.
-
-  We are ready to describe the arguments of ~c[defabsstobj].
-  ~bq[]
-  ~c[St] is a symbol, which names the new abstract stobj.
-
-  ~c[Concrete] is the name of an existing stobj that is not an abstract stobj,
-  i.e., was introduced with ~ilc[defstobj] (not ~ilc[defabsstobj]).
-
-  ~c[Recognizer] is a function spec (for the recognizer function).  The valid
-  keywords are ~c[:LOGIC] and ~c[:EXEC].  The default for ~c[recognizer] is
-  obtained by adding the suffix ~c[\"P\"] to ~c[name].  The default value for
-  ~c[:LOGIC] is formed by adding the suffix ~c[\"$AP\"] to ~c[recognizer]; for
-  ~c[:EXEC], by adding the suffix ~c[\"$CP\"].  The ~c[:EXEC] function must be
-  the recognizer for the specified ~c[:CONCRETE] stobj.
-
-  ~c[Creator] is a function spec (for the creator function).  The valid
-  keywords are ~c[:LOGIC] and ~c[:EXEC].  The default for ~c[creator] is
-  obtained by adding the prefix ~c[\"CREATE-\"] to ~c[name].  The default value
-  for ~c[:LOGIC] is formed by adding the suffix ~c[\"$A\"] to ~c[creator]; for
-  ~c[:EXEC], by adding the suffix ~c[\"$C\"].  The ~c[:CREATOR] function must
-  be the creator for the specified ~c[:CONCRETE] stobj, as ACL2 checks that the
-  ~c[:CREATOR] function takes no arguments and returns the ~c[:CONCRETE] stobj.
-
-  ~c[Corr-fn] is a known function symbol that takes two arguments (for the
-  correspondence theorems).  The default for ~c[corr-fn] is obtained by adding
-  the suffix ~c[\"$CORR\"] to ~c[name].
-
-  ~c[Congruent-to] should either be ~c[nil] (the default) or the name of an
-  abstract stobj previously introduced (by ~ilc[defabsstobj]).  In the latter
-  case, the current and previous abstract stobj should have the same concrete
-  stobj (not merely congruent concrete stobjs), and their ~c[:EXPORTS] fields
-  should have the same length and also correspond, as follows: the ith export
-  of each should have the same ~c[:LOGIC] and ~c[:EXEC] symbols.  ~l[defstobj]
-  for more about congruent stobjs.  Note that if two names are congruent, then
-  they are either both ordinary stobjs or both abstract stobjs.
-
-  ~c[Protect-default] should either be ~c[nil] (the default) or ~c[t].  It
-  provides the value of keyword ~c[:PROTECT] for each member of ~c[exports]
-  that does not explicitly specify ~c[:PROTECT].  See the discussion of
-  ~c[exports] below.
-
-  An important aspect of the ~c[congruent-to] parameter is that if it is not
-  ~c[nil], then the checks for lemmas ~-[] ~c[{CORRESPONDENCE}],
-  ~c[{GUARD-THM}], and ~c[{PRESERVED}] ~-[] are omitted.  Thus, the values of
-  keyword ~c[:CORR-FN], and the values of keywords ~c[:CORRESPONDENCE],
-  ~c[:GUARD-THM], and ~c[:PRESERVED] in each export (as we discuss next), are
-  irrelevant; they are not inferred and they need not be supplied.
-
-  The value of ~c[:EXPORTS] is a non-empty true list.  Each ~c[ei] is a
-  function spec (for an exported function).  The valid keywords are ~c[:LOGIC],
-  ~c[:EXEC], ~c[:CORRESPONDENCE], and ~c[:GUARD-THM], ~c[:PROTECT], and also
-  ~c[:PRESERVED] if and only if the specified ~c[:EXEC] function returns the
-  ~c[:CONCRETE] stobj.  The default values for all of these keywords except
-  ~c[:PROTECT] are obtained by respectively adding the suffix ~c[\"$A\"]
-  ~c[\"$C\"], ~c[\"{CORRESPONDENCE}\"], ~c[\"{GUARD-THM}\"], or
-  ~c[\"{PRESERVED}\"].  For ~c[:PROTECT], the default is ~c[nil] unless the
-  ~c[defabsstobj] event specifies ~c[:PROTECT-DEFAULT t].
-
-  ~c[Doc], if non-~c[nil], is a ~il[documentation] string
-  (~pl[doc-string]).~eq[]
-
-  Not shown is the keyword, ~c[:MISSING]; the effect of ~c[:missing t] is to
-  turn the call of ~c[defabsstobj] into a corresponding call of
-  ~ilc[defabsstobj-missing-events].
-
-  Note that a ~c[defabsstobj] event will fail if the required lemmas ~-[] that
-  is, those for valid keywords ~c[:CORRESPONDENCE], ~c[:GUARD-THM], and
-  ~c[:PRESERVED] ~-[] have not been proved, unless proofs are being skipped.
-  The exemption when skipping proofs allows the supporting lemmas to be
-  ~ilc[local] to ~il[books] and ~ilc[encapsulate] ~il[events].  If the ~ilc[ld]
-  special ~ilc[ld-skip-proofsp] is ~c[t], then the missing ~il[events] are
-  printed with a warning before the ~c[defabsstobj] event is admitted; but if
-  ~c[ld-skip-proofsp] is the symbol ~c[INCLUDE-BOOK], then that warning is
-  omitted.  (Also ~pl[skip-proofs] and ~pl[ld-skip-proofsp].)  If however
-  proofs are not being skipped, then the ~c[defabsstobj] event will fail after
-  printing the missing events.  Advanced users may wish to
-  ~pl[defabsstobj-missing-events] for a utility that returns a data structure
-  containing the missing lemmas.
-
-  Let ~c[st] be an abstract stobj with corresponding concrete stobj ~c[st$c].
-  let ~c[f] be an exported function for ~c[st] and let ~c[f$a] and ~c[f$c] be
-  the corresponding ~c[:LOGIC] and ~c[:EXEC] functions, respectively.  The
-  formals of ~c[f] are obtained by taking the formals of ~c[f$c] and replacing
-  ~c[st$c] by ~c[st].  The ~il[guard] for ~c[f] is derived as follows from the
-  guard of ~c[f$a].  First, the formals of ~c[f$a] are replaced by the formals
-  of ~c[f] in the guard of ~c[f$a], to obtain a term we denote here as
-  ~c[guard-pre].  Now for each exported function symbol ~c[g] of ~c[st] with
-  corresponding ~c[:LOGIC] function ~c[g$a], form a functional substitution by
-  consing ~c[g$a] with ~c[g].  Finally, apply that functional substitution to
-  ~c[guard-pre]; the result is the guard of ~c[f].  That guard must satisfy the
-  usual conditions of a guard: thus, it must return a single non-~il[stobj]
-  value and satisfy normal syntactic restrictions, including
-  single-threadedness in its handling of stobjs.
-
-  ~c[Remark].  Because of how guards are created for exported functions, and in
-  particular because ~c[:LOGIC] functions are replaced as discussed above, a
-  good discipline is to define ~c[:LOGIC] functions that are not intended for
-  general use, but are intended only for use as ~c[:LOGIC] functions of
-  corresponding stobj primitives.  For example, suppose that you use ~c[length]
-  as the ~c[:LOGIC] function for some stobj primitive, ~c[f] (as opposed to
-  using your own function, say, ~c[foo-length] or ~c[foo$a]).  Then every call
-  of ~c[length] will be replaced by ~c[f] when creating the guard of a stobj
-  primitive from the guard of its ~c[:LOGIC] function.  This might not be what
-  you intended if you were using ~c[length] in that guard simply to compute the
-  length of an ordinary list.
-
-  There are a few additional restrictions, as follows.
-
-  ~bq[]
-  All exported function names must be new (unless redefinition is on;
-  ~pl[ld-redefinition-action]), and there must be no duplicates among them.
-
-  The ~c[:CONCRETE] stobj name must be a formal parameter of the ~c[:EXEC] fn
-  of every function spec, except for the ~c[:CREATOR] function spec.  Also the
-  input signatures of the ~c[:LOGIC] and ~c[:EXEC] function for a function spec
-  must agree, except perhaps at the position of that ~c[:CONCRETE] formal.
-
-  For function specs other than the ~c[:CREATOR] function spec, the output
-  signatures of the ~c[:LOGIC] and ~c[:EXEC] functions must have the same
-  length and must agree, except perhaps at position ~c[p_out] of the
-  ~c[:CONCRETE] stobj in the ~c[:EXEC] function's output.  If ~c[p_in] is the
-  position of the ~c[:CONCRETE] stobj in the ~c[:EXEC] function's formals, then
-  the ~c[:LOGIC] function's output at position ~c[p_out] should match the
-  ~c[:LOGIC] function's formal at position ~c[p_in].
-
-  The ~c[:PROTECT] keyword is something that you should ignore unless you get
-  an error message about it, pertaining to modifying the concrete stobj
-  non-atomically.  In that case, you can eliminate the error by providing
-  ~c[:PROTECT t] in the function spec, or by providing ~c[defabsstobj] keyword
-  argument ~c[:PROTECT-DEFAULT t] at the top level.  The above explanation is
-  probably all you need to know about ~c[:PROTECT], but just below is a more
-  complete explanation for those who desire it.  Further information is also
-  available if you need it; ~pl[set-absstobj-debug], and see the example uses
-  of these keywords in community book
-  ~c[books/misc/defabsstobj-example-2.lisp].~eq[]
-
-  For those who are interested, here is a more detailed discussion of
-  ~c[:PROTECT] and ~c[:PROTECT-DEFAULT], as promised above.  It applies to any
-  function spec for an export (hence not to the ~c[:CREATOR] function spec).
-  If the ~c[:EXEC] function is a stobj primitive, then clearly the following
-  property holds: any execution of a call of that function can only update the
-  concrete stobj at most once ~-[] i.e., modification of the concrete stobj is
-  atomic.  ACL2 can deduce this property not only for stobj primitives but for
-  many other functions as well.  However, if ACL2 cannot deduce this property,
-  then it will cause an error saying that the ~c[:EXEC] function ``appears
-  capable of modifying the concrete stobj, ~c[<stobj_name>], non-atomically.''
-  That message also explains how to eliminate this error: provide
-  ~c[:PROTECT t] for the function spec.  Alternatively, all function specs
-  without an explicit ~c[:PROTECT] keyword can be implicitly supplied
-  ~c[:PROTECT t] by supplying the value ~c[t] for the ~c[:PROTECT-DEFAULT]
-  keyword parameter of the ~c[defabsstobj] event.  However, beware that when
-  ~c[:PROTECT] is ~c[t], the generated raw Lisp code runs slightly less
-  efficiently ~-[] though perhaps with negligible efficiency loss if the
-  ~c[:EXEC] function is not trivial.  Community books
-  ~c[books/misc/defabsstobj-example-3.lisp] and
-  ~c[books/misc/defabsstobj-example-4.lisp] provide related information.
-
-  We conclude with some remarks.
-
-  Unlike ~ilc[defstobj], there is no ~c[:renaming] argument.  Instead, the
-  scheme described above provides a flexible way to assign names.
-
-  Those who use the experimental extension ACL2(h), which includes function
-  memoization (~pl[memoize]), may be aware that the memo table for a function
-  is flushed whenever it is the case that one of its stobj inputs is updated.
-  In fact, such flushing happens even when a stobj that is congruent to one of
-  its stobj inputs is updated.  For that purpose, an abstract stobj is
-  considered to be congruent to its corresponding concrete stobj.
-  ~/"
-
   (declare (xargs :guard (and (symbolp name)
                               (booleanp protect-default))))
   (list 'defabsstobj-fn
@@ -24136,30 +20526,6 @@
                                              concrete recognizer creator
                                              corr-fn exports protect-default
                                              congruent-to doc)
-
-  ":Doc-Section Events
-
-  obtain the ~il[events] needed to admit a ~ilc[defabsstobj] event~/
-
-  We assume familiarity with ~ilc[defabsstobj].  ~c[Defabsstobj-missing-events]
-  is a macro is for advanced users (who, for example, understand the role of
-  the ~c[translate] and ~c[untranslate] functions), who want programmatic
-  access to the ~ilc[defthm] events required to admit a specific
-  ~c[defabsstobj] event.~/
-
-  This macro has the same syntax as ~ilc[defabsstobj] ~-[] to use it, just
-  replace a call of ~ilc[defabsstobj] by a call of
-  ~c[defabsstobj-missing-events] on the same arguments.  The result is an error
-  triple ~c[(mv erp val state)].  If ~c[erp] is ~c[nil], then ~c[val] is the
-  list of all objects ~c[(name formula . old-formula)], where a ~ilc[defthm]
-  event named ~c[name] remains to be admitted whose translated formula is
-  ~c[formula], and where ~c[old-formula] is ~c[nil] unless the indicated event
-  already exists (hence with a different formula), in which case
-  ~c[old-formula] is the existing translated formula.
-
-  To build a ~ilc[defthm] event from the above value, ~c[val], we suggest
-  evaluating a form like ~c[(untranslate formula t (w state))].~/"
-
   (declare (xargs :guard (symbolp name)))
   (list 'defabsstobj-fn1
         (list 'quote name)
@@ -25658,1082 +22024,6 @@
    (defabsstobj-fn1 st-name st$c recognizer creator corr-fn exports
      protect-default congruent-to missing-only doc ctx state event-form)))
 
-(deflabel stobj
-  :doc
-  ":Doc-Section stobj
-
-  single-threaded objects or ``von Neumann bottlenecks''~/
-
-  In ACL2, a ``single-threaded object'' is a data structure whose use is so
-  syntactically restricted that only one instance of the object need ever exist
-  and its fields can be updated by destructive assignments.
-
-  Note: Novices are advised to avoid using single-threaded objects, perhaps
-  instead using community book ~c[books/data-structures/structures.lisp].  At
-  the least, consider using ~c[(]~ilc[set-verify-guards-eagerness]~c[ 0)] to
-  avoid ~il[guard] verification.
-
-  The documentation in this section is laid out in the form of a tour that
-  visits the documented topics in a reasonable order.  We recommend that you
-  follow the tour the first time you read about stobjs.  The list of all stobj
-  topics is shown below.  The tour starts immediately afterwards.  Also
-  ~pl[defstobj] and, for so-called abstract stobjs, ~pl[defabsstobj].~/
-
-  As noted, a ``single-threaded object'' is a data structure whose use is so
-  syntactically restricted that only one instance of the object need ever
-  exist.  Updates to the object must be sequentialized.  This allows us to
-  update its fields with destructive assignments without wrecking the axiomatic
-  semantics of update-by-copy.  For this reason, single-threaded objects are
-  sometimes called ``von Neumann bottlenecks.''
-
-  From the logical perspective, a single-threaded object is an ordinary ACL2
-  object, e.g., composed of integers and conses.  Logically speaking, ordinary
-  ACL2 functions are defined to allow the user to ``access'' and ``update'' its
-  fields.  Logically speaking, when fields in the object, obj, are ``updated''
-  with new values, a new object, obj', is constructed.
-
-  But suppose that by syntactic means we could ensure that there were no more
-  references to the ``old'' object, obj.  Then we could create obj' by
-  destructively modifying the memory locations involved in the representation
-  of obj.  The syntactic means is pretty simple but draconian: the only
-  reference to obj is in the variable named ~c[OBJ].
-
-  The consequences of this simple rule are far-reaching and require some
-  getting used to.  For example, if ~c[OBJ] has been declared as a
-  single-threaded object name, then the following consequences ensue (but see
-  the discussion of congruent stobjs below for a slight relaxation).
-
-  o ~c[OBJ] is a top-level global variable that contains the current object,
-  obj.
-
-  o If a function uses the formal parameter ~c[OBJ], the only ``actual
-  expression'' that can be passed into that slot is the variable ~c[OBJ], not
-  merely a term that ``evaluates to an obj''; thus, such functions can only
-  operate on the current object.  So for example, instead of
-  ~c[(FOO (UPDATE-FIELD1 3 ST))] write
-  ~c[(LET ((ST (UPDATE-FIELD1 3 ST))) (FOO ST))].
-
-  o The accessors and updaters have a formal parameter named ~c[OBJ], so by the
-  rule just above, those functions can only be applied to the current object.
-  The recognizer is the one exception to the rule: it may be applied either the
-  ~c[OBJ] or to an ordinary (non-stobj) object.
-
-  o The ACL2 primitives, such as ~c[CONS], ~c[CAR] and ~c[CDR], may not be
-  applied to the variable ~c[OBJ].  Thus, for example, obj may not be consed
-  into a list (which would create another pointer to it) or accessed or copied
-  via ``unapproved'' means.
-
-  o The updaters return a ``new ~c[OBJ] object'', i.e., obj'; thus, when an
-  updater is called, the only variable which can hold its result is ~c[OBJ].
-
-  o If a function calls an ~c[OBJ] updater, it must return an ~c[OBJ] object
-  (either as the sole value returned, or in ~c[(mv ... OBJ ...)]; ~pl[mv]).
-
-  o When a top-level expression involving ~c[OBJ] returns an ~c[OBJ] object,
-  that object becomes the new current value of ~c[OBJ].
-
-  There are other functional languages supporting single-threadedness, for
-  example Haskell's ``monads'' and Clean's ``uniqueness type system''.  Of
-  course, ACL2 provides a theorem prover that can prove theorems that involve
-  such constructs.
-
-  Note that the syntactic restrictions noted above are enforced only when
-  single-threaded objects are encountered directly in the top-level loop or are
-  used in function definitions; the accessor and update functions for
-  single-threaded objects may be used without restriction in formulas to be
-  proved.  Since function evaluation is sometimes necessary during proofs, ACL2
-  must be able to evaluate these functions on logical constants representing
-  the object, even when the constant is not ``the current object.''  Thus, ACL2
-  supports both the efficient von Neumann semantics and the clean applicative
-  semantics, and uses the first in contexts where execution speed is paramount
-  and the second during proofs.
-
-  ~ilc[Defstobj] and ~ilc[defabsstobj] ~il[events] introduce stobjs.
-  ~l[defstobj] for more details about stobjs.  In particular, a relatively
-  advanced notion of ``congruent stobjs'' is discussed there.  The idea is to
-  allow a stobj, ~c[st2], of the same ``shape'' as a given stobj, ~c[st1], to
-  be used in place of ~c[st1].  Other ~ilc[defstobj] keywords allow inlining
-  and renaming of stobj accessors and updaters.
-
-  But we are getting ahead of ourselves.  To start the stobj tour,
-  ~pl[stobj-example-1].~/
-
-  :cite defstobj
-  :cite defabsstobj")
-
-(deflabel stobj-example-1
-  :doc
-  ":Doc-Section stobj
-
-  an example of the use of single-threaded objects~/
-
-  Suppose we want to sweep a tree and (1) count the number of interior
-  nodes, (2) count the number of tips and (3) keep a record of every
-  tip we encounter that is an integer.  We could use a single-threaded
-  object as our ``accumulator''.  Such an object would have three
-  fields, one holding the number of nodes seen so far, one holding the
-  number of tips, and one holding all the integer tips seen.~/
-
-  The following event declares ~c[counters] to be a single-threaded object.
-  ~bv[]
-  (defstobj counters
-    (NodeCnt     :type integer :initially 0)
-    (TipCnt      :type integer :initially 0)
-    (IntTipsSeen :type t       :initially nil))
-  ~ev[]
-  It has three fields, ~c[NodeCnt], ~c[TipCnt], and ~c[IntTipsSeen].
-  (As always in ACL2, capitalization is irrelevant in simple symbol
-  names, so the first name could be written ~c[nodecnt] or
-  ~c[NODECNT], etc.) Those are the name of the accessor functions for
-  the object.  The corresponding update functions are named
-  ~c[update-NodeCnt], ~c[update-TipCnt] and ~c[update-IntTipsSeen].
-
-  If you do not like the default function names chosen above, there is
-  a feature in the ~ilc[defstobj] event that allows you to specify other
-  names.
-
-  If you want to see the ACL2 definitions of all the functions defined
-  by this event, look at ~il[stobj-example-1-defuns].
-
-  If, after this event, we evaluate the top-level ``global variable''
-  ~c[counters] in the ACL2 read-eval-print loop we get:
-  ~bv[]
-  ACL2 !>counters
-  <counters>
-  ~ev[]
-  Note that the value printed is ``~c[<counters>]''.  Actually, the
-  value of ~c[counters] in the logic is ~c[(0 0 NIL)].  But ACL2 always prints
-  single-threaded objects in this non-informative way because they are
-  usually so big that to do otherwise would be unpleasant.
-
-  Had you tried to evaluate the ``global variable'' ~c[counters] before
-  declaring it a single-threaded object, ACL2 would have complained that
-  it does not support global variables.  So a lesson here is that
-  once you have declared a new single-threaded object your top-level
-  forms can reference it.  In versions of ACL2 prior to Version  2.4
-  the only variable enjoying this status was ~c[STATE].  single-threaded
-  objects are a straightforward generalization of the long-implemented
-  von Neumann ~ilc[state] feature of ACL2.
-
-  We can access the fields of ~c[counters] as with:
-  ~bv[]
-  ACL2 !>(NodeCnt counters)
-  0
-  ACL2 !>(IntTipsSeen counters)
-  NIL
-  ~ev[]
-  and we can set the fields of ~c[counters] as with:
-  ~bv[]
-  ACL2 !>(update-NodeCnt 3 counters)
-  <counters>
-  ACL2 !>(NodeCnt counters)
-  3
-  ~ev[]
-  Observe that when we evaluate an expression that returns a
-  counter object, that object becomes the ``current value'' of
-  ~c[counters].
-
-  Here is a function that ``converts'' the ~c[counters] object to its
-  ``ordinary'' representation:
-  ~bv[]
-  (defun show-counters (counters)
-    (declare (xargs :stobjs (counters)))
-    (list (NodeCnt counters)
-          (TipCnt counters)
-          (IntTipsSeen counters)))
-  ~ev[]
-  Observe that we ~em[must] declare, at the top of the ~c[defun], that
-  we mean to use the formal parameter ~c[counters] as a single-threaded
-  object!  If we did not make this declaration, the body of
-  ~c[show-counters] would be processed as though ~c[counters] were an
-  ordinary object.  An error would be caused because the accessors
-  used above cannot be applied to anything but the single-threaded
-  object ~c[counters].  If you want to know why we insist on this
-  declaration, ~pl[declare-stobjs].
-
-  When ~c[show-counters] is admitted, the following message is printed:
-  ~bv[]
-  Since SHOW-COUNTERS is non-recursive, its admission is trivial.  We
-  observe that the type of SHOW-COUNTERS is described by the theorem
-  (AND (CONSP (SHOW-COUNTERS COUNTERS))
-       (TRUE-LISTP (SHOW-COUNTERS COUNTERS))).
-  We used primitive type reasoning.
-
-  (SHOW-COUNTERS COUNTERS) => *.
-
-  The guard conjecture for SHOW-COUNTERS is trivial to prove.
-  SHOW-COUNTERS is compliant with Common Lisp.
-  ~ev[]
-  The line above containing the ``=>'' is called the ``signature'' of
-  ~c[show-counters]; it conveys the information that the first argument
-  is the single-threaded object ~c[counters] and the only result is an
-  ordinary object.  Here is an example of another signature:
-  ~bv[]
-  (PROCESSOR * * COUNTERS) => (MV * COUNTERS)
-  ~ev[]
-  which indicates that the function ~c[PROCESSOR] (which we haven't
-  shown you) takes three arguments, the third of which is the
-  ~c[COUNTERS] stobj, and returns two results, the second of which
-  is the modified ~c[COUNTERS].
-
-  Returning to the admission of ~c[show-counters] above, the last
-  sentence printed indicates that the ~ilc[guard] conjectures for the
-  function were proved.  When some argument of a function is declared
-  to be a single-threaded object via the ~c[xargs] ~c[:stobj], we
-  automatically add (conjoin) to the guard the condition that the
-  argument satisfy the recognizer for that single-threaded object.  In
-  the case of ~c[show-counters] the guard is ~c[(countersp counters)].
-
-  Here is an example of ~c[show-counters] being called:
-  ~bv[]
-  ACL2 !>(show-counters counters)
-  (3 0 NIL)
-  ~ev[]
-  This is what we would see had we set the ~c[NodeCnt] field of the
-  initial value of ~c[counters] to ~c[3], as we did earlier in this
-  example.
-
-  We next wish to define a function to reset the ~c[counters] object.
-  We could define it this way:
-  ~bv[]
-  (defun reset-counters (counters)
-    (declare (xargs :stobjs (counters)))
-    (let ((counters (update-NodeCnt 0 counters)))
-      (let ((counters (update-TipCnt 0 counters)))
-        (update-IntTipsSeen nil counters))))
-  ~ev[]
-  which ``successively'' sets the ~c[NodeCnt] field to ~c[0], then the
-  ~c[TipCnt] field to ~c[0], and then the ~c[IntTipsSeen] field to ~c[nil] and
-  returns the resulting object.
-
-  However, the nest of ~c[let] expressions is tedious and we use this
-  definition instead.  This definition exploits a macro, here named
-  ``~c[seq]'' (for ``sequentially'') which evaluates each of the forms
-  given, binding their results successively to the stobj name given.
-  ~bv[]
-  (defun reset-counters (counters)
-    (declare (xargs :stobjs (counters)))
-    (seq counters
-         (update-NodeCnt 0 counters)
-         (update-TipCnt 0 counters)
-         (update-IntTipsSeen nil counters)))
-  ~ev[]
-  This definition is syntactically identical to the one above, after macro
-  expansion.  Our definition of ~c[seq] is shown below and is not part of
-  native ACL2.
-  ~bv[]
-  (defmacro seq (stobj &rest rst)
-    (cond ((endp rst) stobj)
-          ((endp (cdr rst)) (car rst))
-          (t `(let ((,stobj ,(car rst)))
-               (seq ,stobj ,@(cdr rst))))))
-  ~ev[]
-
-  The signature printed for ~c[reset-counters] is
-  ~bv[]
-  (RESET-COUNTERS COUNTERS) => COUNTERS.
-  ~ev[]
-
-  Here is an example.
-  ~bv[]
-  ACL2 !>(show-counters counters)
-  (3 0 NIL)
-  ACL2 !>(reset-counters counters)
-  <counters>
-  ACL2 !>(show-counters counters)
-  (0 0 NIL)
-  ~ev[]
-
-  Here finally is a function that uses ~c[counters] as a single-threaded
-  accumulator to collect the desired information about the tree ~c[x].
-  ~bv[]
-  (defun sweep-tree (x counters)
-    (declare (xargs :stobjs (counters)))
-    (cond ((atom x)
-           (seq counters
-                (update-TipCnt (+ 1 (TipCnt counters)) counters)
-                (if (integerp x)
-                    (update-IntTipsSeen (cons x (IntTipsSeen counters))
-                                    counters)
-                  counters)))
-          (t (seq counters
-                  (update-NodeCnt (+ 1 (NodeCnt counters)) counters)
-                  (sweep-tree (car x) counters)
-                  (sweep-tree (cdr x) counters)))))
-  ~ev[]
-  We can paraphrase this definition as follows.  If ~c[x] is an atom,
-  then increment the ~c[TipCnt] field of ~c[counters] and ~em[then],
-  if ~c[x] is an integer, add ~c[x] to the ~c[IntTipsSeen] field, and
-  return ~c[counters].  On the other hand, if ~c[x] is not
-  an atom, then increment the ~c[NodeCnt] field of ~c[counters], and
-  ~em[then] sweep the ~c[car] of ~c[x] and ~em[then] sweep the ~c[cdr]
-  of ~c[x] and return the result.
-
-  Here is an example of its execution.  We have displayed the input tree
-  in full dot notation so that the number of interior nodes is just the
-  number of dots.
-  ~bv[]
-  ACL2 !>(sweep-tree '((((a . 1) . (2 . b)) . 3)
-                       . (4 . (5 . d)))
-                     counters)
-  <counters>
-  ACL2 !>(show-counters counters)
-  (7 8 (5 4 3 2 1))
-  ACL2 !>(reset-counters counters)
-  <counters>
-  ACL2 !>(show-counters counters)
-  (0 0 NIL)
-  ~ev[]
-
-  The ~c[counters] object has two integer fields and a field whose
-  type is unrestricted.  single-threaded objects support other types of
-  fields, such as arrays.  We deal with that in the ~il[stobj-example-2].
-  But we recommend that you first consider the implementation issues for
-  the ~c[counters] example (in ~il[stobj-example-1-implementation]) and
-  then consider the proof issues (in ~il[stobj-example-1-proofs]).
-
-  To continue the stobj tour, ~pl[stobj-example-2].~/")
-
-(deflabel declare-stobjs
-  :doc
-  ":Doc-Section stobj
-
-  declaring a formal parameter name to be a single-threaded object~/
-
-  When a ~ilc[defun] uses one of its formals as a single-threaded object
-  (~il[stobj]), the ~c[defun] ~em[must] include a declaration that the
-  formal is to be so used.  An exception is the formal ``~ilc[state],'' which
-  if not declared as explained below, may still be used provided an
-  appropriate global ``declaration'' is issued:
-  ~pl[set-state-ok].~/
-
-  If the formal in question is ~c[counters] then an appropriate declaration
-  is
-  ~bv[]
-  (declare (xargs :stobjs counters))
-  ~ev[]
-  or, more generally,
-  ~bv[]
-  (declare (xargs :stobjs (... counters ...)))
-  ~ev[]
-  where all the single-threaded formals are listed.
-
-  For such a declaration to be legal it must be the case that all the names
-  have previously been defined as single-threaded objects with ~ilc[defstobj].
-
-  When an argument is declared to be single-threaded the guard of the
-  function is augmented by conjoining to it the condition that the
-  argument satisfy the recognizer for the single-threaded object.
-  Furthermore, the syntactic checks done to enforce the legal use of
-  single-threaded objects are also sufficient to allow these guard
-  conjuncts to be automatically proved.
-
-  The obvious question arises:  Why does ACL2 insist that you declare
-  stobj names before using them in ~c[defun]s if you can only declare names
-  that have already been defined with ~c[defstobj]?  What would go wrong if
-  a formal were treated as a single-threaded object if and only if it had
-  already been so defined?
-
-  Suppose that one user, say Jones, creates a book in which ~c[counters]
-  is defined as a single-threaded object.  Suppose another user, Smith,
-  creates a book in which ~c[counters] is used as an ordinary formal
-  parameter.  Finally, suppose a third user, Brown, wishes to use both
-  books.  If Brown includes Jones' book first and then Smith's, then
-  Smith's function treats ~c[counters] as single-threaded.  But if Brown
-  includes Smith's book first, the argument is treated as ordinary.
-
-  ACL2 insists on the declaration to ensure that the definition is
-  processed the same way no matter what the context.~/")
-
-(deflabel stobj-example-1-defuns
-  :doc
-  ":Doc-Section stobj
-
-  the defuns created by the ~c[counters] stobj~/
-
-  Consider the event shown in ~il[stobj-example-1]:
-  ~bv[]
-  (defstobj counters
-    (NodeCnt     :type integer :initially 0)
-    (TipCnt      :type integer :initially 0)
-    (IntTipsSeen :type t       :initially nil))
-  ~ev[]
-
-  Here is a complete list of the defuns added by the event.~/
-
-  The careful reader will note that the ~c[counters] argument below is
-  ~em[not] declared with the ~c[:stobjs] ~c[xarg] even though we
-  insist that the argument be a stobj in calls of these functions.
-  This ``mystery'' is explained below.
-
-  ~bv[]
-  (defun NodeCntp (x)                 ;;; Recognizer for 1st field
-    (declare (xargs :guard t :verify-guards t))
-    (integerp x))
-
-  (defun TipCntp (x)                  ;;; Recognizer for 2nd field
-    (declare (xargs :guard t :verify-guards t))
-    (integerp x))
-
-  (defun IntTipsSeenp (x)             ;;; Recognizer for 3rd field
-    (declare (xargs :guard t :verify-guards t) (ignore x))
-    t)
-
-  (defun countersp (counters)         ;;; Recognizer for object
-    (declare (xargs :guard t :verify-guards t))
-    (and (true-listp counters)
-         (= (length counters) 3)
-         (NodeCntp (nth 0 counters))
-         (TipCntp (nth 1 counters))
-         (IntTipsSeenp (nth 2 counters))
-         t))
-
-  (defun create-counters ()           ;;; Creator for object
-    (declare (xargs :guard t :verify-guards t))
-    (list '0 '0 'nil))
-
-  (defun NodeCnt (counters)           ;;; Accessor for 1st field
-    (declare (xargs :guard (countersp counters) :verify-guards t))
-    (nth 0 counters))
-
-  (defun update-NodeCnt (v counters)  ;;; Updater for 1st field
-    (declare (xargs :guard
-                    (and (integerp v)
-                         (countersp counters))
-                    :verify-guards t))
-    (update-nth 0 v counters))
-
-  (defun TipCnt (counters)            ;;; Accessor for 2nd field
-    (declare (xargs :guard (countersp counters) :verify-guards t))
-    (nth 1 counters))
-
-  (defun update-TipCnt (v counters)   ;;; Updater for 2nd field
-    (declare (xargs :guard
-                    (and (integerp v)
-                         (countersp counters))
-                    :verify-guards t))
-    (update-nth 1 v counters))
-
-  (defun IntTipsSeen (counters)       ;;; Accessor for 3rd field
-    (declare (xargs :guard (countersp counters) :verify-guards t))
-    (nth 2 counters))
-
-  (defun update-IntTipsSeen (v counters) ;;; Updater for 3rd field
-    (declare (xargs :guard (countersp counters) :verify-guards t))
-    (update-nth 2 v counters))
-  ~ev[]
-
-  Observe that there is a recognizer for each of the three fields and
-  then a recognizer for the ~c[counters] object itself.  Then, for each
-  field, there is an accessor and an updater.
-
-  Observe also that the functions are guarded so that they expect a
-  ~c[countersp] for their ~c[counters] argument and an appropriate value
-  for the new field values.
-
-  You can see all of the ~c[defuns] added by a ~c[defstobj] event by
-  executing the event and then using the ~c[:pcb!] command on the stobj
-  name.  E.g.,
-  ~bv[]
-  ACL2 !>:pcb! counters
-  ~ev[]
-  will print the defuns above.
-
-  We now clear up the ``mystery'' mentioned above.  Note, for example
-  in ~c[TipCnt], that the formal ~c[counters] is used.  From the
-  discussion in ~il[stobj-example-1] it has been made clear that
-  ~c[TipCnt] can only be called on the ~c[counters] object.  And yet,
-  in that same discussion it was said that an argument is so treated
-  only if it it declared among the ~c[:stobjs] in the definition of
-  the function.  So why doesn't ~c[TipCnt] include something like
-  ~c[(declare (xargs :stobjs (counters)))]?
-
-  The explanation of this mystery is as follows.  At the time
-  ~c[TipCnt] was defined, during the introduction of the ~c[counters]
-  stobj, the name ``~c[counters]'' was not yet a single-threaded
-  object.  The introduction of a new single-threaded object occurs in
-  three steps: (1) The new primitive recognizers, accessors, and
-  updaters are introduced as ``ordinary functions,'' producing their
-  logical axiomatizations.  (2) The executable counterparts are
-  defined in raw Lisp to support destructive updating.  (3) The new
-  name is declared a single-threaded object to ensure that all future
-  use of these primitives respects the single-threadedness of the
-  object.  The functions defined as part of the introduction of a new
-  single-threaded object are the only functions in the system that
-  have undeclared stobj formals other than ~c[state].
-
-  You may return to ~il[stobj-example-1] here.~/")
-
-(deflabel stobj-example-1-implementation
-  :doc
-  ":Doc-Section stobj
-
-  the implementation of the ~c[counters] stobj~/
-
-  the event
-  ~bv[]
-  (defstobj counters
-    (NodeCnt     :type integer :initially 0)
-    (TipCnt      :type integer :initially 0)
-    (IntTipsSeen :type t       :initially nil))
-  ~ev[]
-  discussed in ~il[stobj-example-1], creates a Common Lisp object to
-  represent the current value of ~c[counters].  That object is created
-  by evaluating either of the following ``raw'' (non-ACL2) Common Lisp
-  forms:
-  ~bv[]
-  (create-counters)
-
-  (vector (make-array 1 :element-type 'integer
-                        :initial-element '0)
-          (make-array 1 :element-type 'integer
-                        :initial-element '0)
-          'nil)
-  ~ev[]
-  and the value is stored in the Common Lisp global variable named
-  ~c[*the-live-counters*].
-  ~/
-
-  Thus, the ~c[counters] object is an array of length three.  The first
-  two elements are arrays of size 1 and are used to hold the
-  ~c[NodeCnt] and ~c[TipCnt] fields.  The third element is the
-  ~c[IntTipsSeen] field.  The first two fields are represented by
-  arrays so that we can implement the ~c[integer] type specification
-  efficiently.  Generally, integers are ``boxed'' in some Common Lisp
-  implementations, for example, GCL.  Creating a new integer requires
-  creating a new box to put it in.  But in some lisps, including GCL,
-  the integers inside arrays of integers are not boxed.
-
-  The function ~c[NodeCnt] is defined in raw Lisp as:
-  ~bv[]
-  (defun NodeCnt (counters)
-    (the integer
-         (aref (the (simple-array integer (1))
-                    (svref counters 0))
-               0)))
-  ~ev[]
-  Observe that the form ~c[(svref counters 0)] is evaluated to get
-  an array of size 1, which is followed by a call of ~c[aref] to
-  access the 0th element of that array.
-
-  The function ~c[update-NodeCnt] is defined in raw Lisp as:
-  ~bv[]
-  (defun update-NodeCnt (v counters)
-    (declare (type integer v))
-    (progn
-     (setf (aref (the (simple-array integer (1))
-                      (svref counters 0))
-                 0)
-           (the integer v))
-     counters))
-  ~ev[]
-  Note that when this function is called, it does not create a new
-  vector of length three, but ``smashes'' the existing one.
-
-  One way to see all the raw Lisp functions defined by a given ~c[defstobj] is
-  to evaluate the ~c[defstobj] event and then evaluate, in the ACL2 loop, the
-  expression ~c[(nth 4 (global-val 'cltl-command (w state)))].  Those functions
-  that contain ~c[(DECLARE (STOBJ-INLINE-FN T))] will generate ~ilc[defabbrev]
-  forms because the ~c[:inline] keyword of ~ilc[defstobj] was supplied the
-  value ~c[t].  The rest will generate ~ilc[defun]s.
-
-  We now recommend that you look at ~il[stobj-example-1-proofs].~/")
-
-(deflabel stobj-example-1-proofs
-  :doc
-  ":Doc-Section stobj
-
-  some proofs involving the ~c[counters] stobj~/
-
-  Consider again the event
-  ~bv[]
-  (defstobj counters
-    (NodeCnt     :type integer :initially 0)
-    (TipCnt      :type integer :initially 0)
-    (IntTipsSeen :type t       :initially nil))
-  ~ev[]
-  discussed in ~il[stobj-example-1], followed by the definition
-  ~bv[]
-  (defun reset-counters (counters)
-    (declare (xargs :stobjs (counters)))
-    (seq counters
-         (update-NodeCnt 0 counters)
-         (update-TipCnt 0 counters)
-         (update-IntTipsSeen nil counters)))
-  ~ev[]
-  which, because of the ~c[seq] macro in ~il[stobj-example-1], is just
-  syntactic sugar for
-  ~bv[]
-  (defun reset-counters (counters)
-    (declare (xargs :stobjs (counters)))
-    (let ((counters (update-NodeCnt 0 counters)))
-      (let ((counters (update-TipCnt 0 counters)))
-        (update-IntTipsSeen nil counters)))).
-  ~ev[]
-
-  Here is a simple theorem about ~c[reset-counters].
-
-  ~bv[]
-  (defthm reset-counters-is-constant
-    (implies (countersp x)
-             (equal (reset-counters x)
-                    '(0 0 nil))))
-  ~ev[]
-  ~/
-  Before we talk about how to prove this theorem, note that the theorem
-  is unusual in two respects.
-
-  First, it calls ~c[reset-counters] on an argument other than the
-  variable ~c[counters]!  That is allowed in theorems; logically
-  speaking, the stobj functions are indistinguishable from ordinary
-  functions.  Their use is syntactically restricted only in
-  ~c[defun]s, which might be compiled and run in raw Lisp.  Those
-  restrictions allow us to implement stobj modification destructively.
-  But logically speaking, ~c[reset-counters] and other stobj
-  ``modifying'' functions just create new objects, constructively.
-
-  Second, the theorem above explicitly provides the hypothesis that
-  ~c[reset-counters] is being applied to an object satisfying
-  ~c[countersp].  Such a hypothesis is not always required:
-  ~c[reset-counters] is total and will do something no matter what
-  ~c[x] is.  But in this particular case, the result is not ~c['(0 0 nil)]
-  unless ~c[x] is, at least, a true-list of length three.
-
-  To make a long story short, to prove theorems about stobj functions you
-  behave in exactly the way you would to prove the same theorems about the
-  same functions defined without the stobj features.
-
-  How can we prove the above theorem?  Unfolding the definition of
-  ~c[reset-counters] shows that ~c[(reset-counters x)] is equal to
-  ~bv[]
-  (update-IntTipsSeen nil
-    (update-TipCnt 0
-      (update-NodeCnt 0 x)))
-  ~ev[]
-  which in turn is
-  ~bv[]
-  (update-nth 2 nil
-   (update-nth 1 0
-    (update-nth 0 0 x))).
-  ~ev[]
-  Opening up the definition of ~c[update-nth] reduces this to
-  ~bv[]
-  (list* 0 0 nil (cdddr x)).
-  ~ev[]
-  This is clearly equal to ~c['(0 0 nil)], provided we know that ~c[(cdddr x)]
-  is ~c[nil].
-
-  Unfortunately, that last fact requires a lemma.  The most specific lemma we
-  could provide is
-  ~bv[]
-  (defthm special-lemma-for-counters
-    (implies (countersp x)
-             (equal (cdddr x) nil)))
-  ~ev[]
-  but if you try to prove that lemma you will find that it requires some
-  reasoning about ~c[len] and ~c[true-listp].  Furthermore, the special
-  lemma above is of interest only for ~c[counters].
-
-  The following lemma about ~c[len] is the one we prefer.
-  ~bv[]
-  (defthm equal-len-n
-    (implies (syntaxp (quotep n))
-             (equal (equal (len x) n)
-                    (if (integerp n)
-                        (if (< n 0)
-                            nil
-                          (if (equal n 0)
-                              (atom x)
-                            (and (consp x)
-                                 (equal (len (cdr x)) (- n 1)))))
-                      nil))))
-  ~ev[]
-  This lemma will simplify any equality in which a ~c[len] expression
-  is equated to any explicitly given constant ~em[n], e.g.,
-  ~c[3], reducing the equation to a conjunction of ~c[consp] terms
-  about the first ~em[n] ~c[cdr]s.
-
-  If the above lemma is available then ACL2 immediately proves
-  ~bv[]
-  (defthm reset-counters-is-constant
-    (implies (countersp x)
-             (equal (reset-counters x)
-                    '(0 0 nil))))
-  ~ev[]
-
-  The point is presumably well made: proving theorems about
-  single-threaded object accessors and updaters is no different than
-  proving theorems about other recursively defined functions on lists.
-
-  As we have seen, operations on ~il[stobj]s turn into definitions
-  involving ~ilc[nth] and ~ilc[update-nth] in the logic.  Here are two lemmas
-  that are useful for simplifying terms involving ~c[nth] and ~c[update-nth],
-  which are therefore useful in reasoning about single-threaded objects.
-  ~bv[]
-  (defthm update-nth-update-nth-same
-    (implies (equal (nfix i1) (nfix i2))
-             (equal (update-nth i1 v1 (update-nth i2 v2 l))
-                    (update-nth i1 v1 l))))
-
-  (defthm update-nth-update-nth-diff
-    (implies (not (equal (nfix i1) (nfix i2)))
-             (equal (update-nth i1 v1 (update-nth i2 v2 l))
-                    (update-nth i2 v2 (update-nth i1 v1 l))))
-    :rule-classes ((:rewrite :loop-stopper ((i1 i2)))))
-  ~ev[]
-  These lemmas are due to Matt Wilding.  ~l[nu-rewriter] for a
-  discussion of the efficient simplification of terms of the form
-  ~c[(nth n (update-nth key val lst))], which can be critical in
-  settings involving sequential bindings that commonly arise in
-  operations involving stobjs.
-
-  We now recommend that you ~pl[stobj-example-2].~/")
-
-(deflabel stobj-example-2
-  :doc
-  ":Doc-Section stobj
-
-  an example of the use of arrays in single-threaded objects~/
-
-  The following event
-  ~bv[]
-  (defstobj ms
-    (pcn  :type integer                  :initially 0)
-    (mem  :type (array integer (100000)) :initially -1)
-    (code :type t                        :initially nil))
-  ~ev[]
-  introduces a single-threaded object named ~c[ms] (which stands for
-  ``machine state'').  The object has three fields, a ~c[pcn] or program
-  counter, a ~c[mem] or memory, and a ~c[code] field.
-
-  The ~c[mem] field is occupied by an object initially of type
-  ~c[(array integer (100000))].  Logically speaking, this is a list of
-  length ~c[100000], each element of which is an integer.  But in the
-  underlying implementation of the ~c[ms] object, this field is occupied
-  by a raw Lisp array, initially of size 100000.~/
-
-  You might expect the above ~c[defstobj] to define the accessor function
-  ~c[mem] and the updater ~c[update-mem].  ~em[That does not happen!].
-
-  The above event defines the accessor function ~c[memi] and the updater
-  ~c[update-memi].  These functions do not access/update the ~c[mem] field of
-  the ~c[ms] object; they access/update the individual elements of the
-  array in that field.
-
-  In particular, the logical definitions of the two functions are:
-  ~bv[]
-  (defun memi (i ms)
-    (declare (xargs :guard
-                    (and (msp ms)
-                         (integerp i)
-                         (<= 0 i)
-                         (< i (mem-length ms)))))
-    (nth i (nth 1 ms)))
-
-  (defun update-memi (i v ms)
-    (declare (xargs :guard
-                    (and (msp ms)
-                         (integerp i)
-                         (<= 0 i)
-                         (< i (mem-length ms))
-                         (integerp v))))
-    (update-nth-array 1 i v ms))
-  ~ev[]
-
-  For example, to access the 511th (0-based) memory location of the
-  current ~c[ms] you could evaluate:
-  ~bv[]
-  ACL2 !>(memi 511 ms)
-  -1
-  ~ev[]
-  The answer is ~c[-1] initially, because that is the above-specified
-  initial value of the elements of the ~c[mem] array.
-
-  To set that element you could do
-  ~bv[]
-  ACL2 !>(update-memi 511 777 ms)
-  <ms>
-  ACL2 !>(memi 511 ms)
-  777
-  ~ev[]
-
-  The raw Lisp implementing these two functions is shown below.
-  ~bv[]
-  (defun memi (i ms)
-    (declare (type (and fixnum (integer 0 *)) i))
-    (the integer
-         (aref (the (simple-array integer (*))
-                    (svref ms 1))
-               (the (and fixnum (integer 0 *)) i))))
-
-  (defun update-memi (i v ms)
-    (declare (type (and fixnum (integer 0 *)) i)
-             (type integer v))
-    (progn
-     (setf (aref (the (simple-array integer (*))
-                      (svref ms 1))
-                 (the (and fixnum (integer 0 *)) i))
-           (the integer v))
-     ms))
-  ~ev[]
-
-  If you want to see the raw Lisp supporting a ~c[defstobj], execute the
-  ~c[defstobj] and then evaluate the ACL2 form
-  ~c[(nth 4 (global-val 'cltl-command (w state)))].
-
-  To continue the stobj tour, ~pl[stobj-example-3].~/")
-
-(deflabel stobj-example-3
-  :doc
-  ":Doc-Section stobj
-
-  another example of a single-threaded object~/
-
-  The event
-  ~bv[]
-  (defstobj $s
-    (x :type integer :initially 0)
-    (a :type (array (integer 0 9) (3)) :initially 9 :resizable t))
-  ~ev[]
-  introduces a stobj named ~c[$S].  The stobj has two fields, ~c[X] and
-  ~c[A].  The ~c[A] field is an array.  The ~c[X] field contains an
-  integer and is initially 0.  The ~c[A] field contains a list of
-  integers, each between 0 and 9, inclusively.  (Under the hood, this
-  ``list'' is actually implemented as an array.)  Initially, the ~c[A]
-  field has three elements, each of which is 9.~/
-
-  This event introduces the following sequence of function definitions:
-  ~bv[]
-  (DEFUN XP (X) ...)               ; recognizer for X field
-  (DEFUN AP (X) ...)               ; recognizer of A field
-  (DEFUN $SP ($S) ...)             ; top-level recognizer for stobj $S
-  (DEFUN CREATE-$S NIL ...)        ; creator for stobj $S
-  (DEFUN X ($S) ...)               ; accessor for X field
-  (DEFUN UPDATE-X (V $S) ...)      ; updater for X field
-  (DEFUN A-LENGTH ($S) ...)        ; length of A field
-  (DEFUN RESIZE-A (K $S) ...)      ; resizer for A field
-  (DEFUN AI (I $S) ...)            ; accessor for A field at index I
-  (DEFUN UPDATE-AI (I V $S) ...)   ; updater for A field at index I
-  ~ev[]
-
-  Here is the definition of ~c[$SP]:
-  ~bv[]
-  (DEFUN $SP ($S)
-    (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T))
-    (AND (TRUE-LISTP $S)
-         (= (LENGTH $S) 2)
-         (XP (NTH 0 $S))
-         (AP (NTH 1 $S))
-         T))
-  ~ev[]
-  This reveals that in order to satisfy ~c[$SP] an object must be
-  a true list of length 2 whose first element satisfies ~c[XP] and whose
-  second satisfies ~c[AP].  By printing the definition of ~c[AP] one
-  learns that it requires its argument to be a true list, each element
-  of which is an integer between 0 and 9.
-
-  The initial value of stobj ~c[$S] is given by zero-ary ``creator''
-  function ~c[CREATE-$S].  Creator functions may only be used in limited
-  contexts.  ~l[with-local-stobj].
-
-  Here is the definition of ~c[UPDATE-AI], the updater for the ~c[A] field
-  at index ~c[I]:
-  ~bv[]
-  (DEFUN UPDATE-AI (I V $S)
-    (DECLARE (XARGS :GUARD
-                    (AND ($SP $S)
-                         (INTEGERP I)
-                         (<= 0 I)
-                         (< I (A-LENGTH $S))
-                         (AND (INTEGERP V) (<= 0 V) (<= V 9)))
-                    :VERIFY-GUARDS T))
-    (UPDATE-NTH-ARRAY 1 I V $S))
-  ~ev[]
-  By definition ~c[(UPDATE-NTH-ARRAY 1 I V $S)] is
-  ~c[(UPDATE-NTH 1 (UPDATE-NTH I V (NTH 1 $S)) $S)].
-  This may be a little surprising but should be perfectly clear.
-
-  First, ignore the guard, since it is irrelevant in the logic.
-  Reading from the inside out, ~c[(UPDATE-AI I V $S)] extracts ~c[(NTH 1 $S)],
-  which is array ~c[a] of ~c[$S].  (Recall that ~ilc[NTH] is
-  0-based.)  The next higher expression in the definition above,
-  ~c[(UPDATE-NTH I V a)], ``modifies'' ~c[a] by setting its ~c[I]th
-  element to ~c[V].  Call this ~c[a'].  The next higher expression,
-  ~c[(UPDATE-NTH 1 a' $S)], ``modifies'' ~c[$S] by setting its 1st
-  component to ~c[a'].  Call this result ~c[$s'].  Then ~c[$s'] is
-  the result returned by ~c[UPDATE-AI].
-
-  So the first useful observation is that from the perspective of the
-  logic, the type ``restrictions'' on stobjs are irrelevant.  They
-  are ``enforced'' by ACL2's guard mechanism, not by the definitions
-  of the updater functions.
-
-  As one might also imagine, the accessor functions do not really
-  ``care,'' logically, whether they are applied to well-formed stobjs
-  or not.  For example, ~c[(AI I $S)] is defined to be ~c[(NTH I (NTH 1 $S))].
-
-  Thus, you will not be able to prove that (AI 2 $S) is an
-  integer.  That is,
-  ~bv[]
-  (integerp (AI 2 $S))
-  ~ev[]
-  is not a theorem, because ~c[$S] may not be well-formed.
-
-  Now ~c[(integerp (AI 2 $S))] will always evaluate to ~c[T] in the
-  top-level ACL2 command loop, because we insist that the current value of
-  the stobj ~c[$S] always satisfies ~c[$SP] by enforcing the guards on
-  the updaters, independent of whether guard checking is on or off;
-  ~pl[set-guard-checking].  But in a theorem ~c[$S] is just
-  another variable, implicitly universally quantified.
-
-  So ~c[(integerp (AI 2 $S))] is not a theorem because it is not true when
-  the variable ~c[$S] is instantiated with, say,
-  ~bv[]
-  '(1 (0 1 TWO))
-  ~ev[]
-  because, logically speaking, ~c[(AI 2 '(1 (0 1 TWO)))] evaluates to
-  the symbol ~c[TWO].  That is,
-  ~bv[]
-  (equal (AI 2 '(1 (0 1 TWO))) 'TWO)
-  ~ev[]
-  is true.
-
-  However,
-  ~bv[]
-  (implies (and ($SP $S) (< 2 (A-LENGTH $S))) (integerp (AI 2 $S)))
-  ~ev[]
-  is a theorem.  To prove it, you will have to prove a lemma about
-  ~c[AP].  The following will do:
-  ~bv[]
-  (defthm ap-nth
-    (implies (and (AP x)
-                  (integerp i)
-                  (<= 0 i)
-                  (< i (len x)))
-             (integerp (nth i x)))).
-  ~ev[]
-
-  Similarly,
-  ~bv[]
-  (implies (and (integerp i)
-                (<= 0 i)
-                (< i (A-LENGTH $S))
-                (integerp v)
-                (<= 0 v)
-                (<= v 9))
-           ($SP (UPDATE-AI i v $S)))
-  ~ev[]
-  is not a theorem until you add the additional hypothesis ~c[($SP $S)].
-  To prove the resulting theorem, you will need a lemma such as the
-  following.
-  ~bv[]
-  (defthm ap-update-nth
-    (implies (and (AP a)
-                  (integerp v)
-                  (<= 0 v)
-                  (<= v 9)
-                  (integerp i)
-                  (<= 0 i)
-                  (< i (len a)))
-             (AP (update-nth i v a))))
-  ~ev[]
-
-  The moral here is that from the logical perspective, you must
-  provide the hypotheses that, as a programmer, you think are
-  implicit on the structure of your stobjs, and you must prove their
-  invariance.  This is a good area for further support, perhaps in
-  the form of a library of macros.
-
-  ~em[Resizing Array Fields]
-
-  Recall the specification of the array field, ~c[A] for the stobj ~c[$S]
-  introduced above:
-  ~bv[]
-  (a :type (array (integer 0 9) (3)) :initially 9 :resizable t)
-  ~ev[]
-  Logically, this field is a list, initially of length 3.  Under the
-  hood, this field is implemented using a Common Lisp array with 3
-  elements.  In some applications, one may wish to lengthen an array
-  field, or even (to reclaim space) to shrink an array field.  The
-  ~ilc[defstobj] event provides functions to access the current length
-  of an array field and to change the array field, with default names
-  obtained by suffixing the field name with ``~c[LENGTH-]'' or prefixing
-  it with ``~c[RESIZE-],'' respectively.  The following log shows the uses
-  of these fields in the above example.
-  ~bv[]
-  ACL2 !>(A-LENGTH $S)
-  3
-  ACL2 !>(RESIZE-A 10 $S) ; change length of A to 10
-  <$s>
-  ACL2 !>(A-LENGTH $S)
-  10
-  ACL2 !>(AI 7 $S)        ; new elements get value from :initially
-  9
-  ACL2 !>(RESIZE-A 2 $S)  ; truncate A down to first 2 elements
-  <$s>
-  ACL2 !>(A-LENGTH $S)
-  2
-  ACL2 !>(AI 7 $S)        ; error:  access past array bound
-
-
-  ACL2 Error in TOP-LEVEL:  The guard for the function symbol AI, which
-  is (AND ($SP $S) (INTEGERP I) (<= 0 I) (< I (A-LENGTH $S))), is violated
-  by the arguments in the call (AI 7 $S).
-
-  ACL2 !>
-  ~ev[]
-  Here are the definitions of the relevant functions for the above
-  example; also ~pl[resize-list].
-  ~bv[]
-  (DEFUN A-LENGTH ($S)
-    (DECLARE (XARGS :GUARD ($SP $S) :VERIFY-GUARDS T))
-    (LEN (NTH 1 $S)))
-
-  (DEFUN RESIZE-A (K $S)
-    (DECLARE (XARGS :GUARD ($SP $S) :VERIFY-GUARDS T))
-    (UPDATE-NTH 1
-                (RESIZE-LIST (NTH 1 $S) K 9)
-                $S))
-  ~ev[]
-
-  It is important to note that the implementation of array resizing in
-  ACL2 involves copying the entire array into a newly allocated space
-  and thus can be quite costly if performed often.  This approach was
-  chosen in order to make array access and update as efficient as
-  possible, with the suspicion that for most applications, array
-  access and update are considerably more frequent than resizing
-  (especially if the programmer is aware of the relative costs
-  beforehand).
-
-  It should also be noted that computations of lengths of stobj array
-  fields should be fast (constant-time) in all or most Common Lisp
-  implementations.
-
-  Finally, if ~c[:resizable t] is not supplied as shown above, then
-  an attempt to resize the array will result in an error.  If you do
-  not intend to resize the array, it is better to omit the ~c[:resizable]
-  option (or to supply ~c[:resizable nil]), since then the length
-  function will be defined to return a constant, namely the initial
-  length, which can simplify guard proofs (compare with the definition
-  of ~c[A-LENGTH] above).
-
-  This completes the tour through the documentation of ~il[stobj]s.
-  However, you may now wish to read the documentation for the event
-  that introduces a new single-threaded object; ~pl[defstobj].~/")
-
-(defdoc resize-list
-  ":Doc-Section Stobj
-
-  list resizer in support of stobjs~/
-
-  ~c[(Resize-list lst n default-value)] takes a list, ~c[lst], and a desired
-  length, ~c[n], for the result list, as well as a ~c[default-value] to use
-  for the extra elements if ~c[n] is greater than the length of ~c[lst].~/
-
-  ~c[Resize-list] has a guard of ~c[t].  This function is called in the body
-  of function, ~c[resize-<a>] where ~c[<a>] is an array field of a ~il[stobj].
-  ~l[stobj] and ~pl[defstobj].~/")
-
 #-acl2-loop-only
 (defun-one-output mv-let-for-with-local-stobj (mv-let-form st creator flet-fns w)
 
@@ -27037,179 +22327,11 @@
                    See :DOC with-local-stobj.")
             (mv-let-for-with-local-stobj mv-let-form st creator nil nil))))
 
-(deflabel with-local-stobj
-  :doc
-  ":Doc-Section Stobj
-
-  locally bind a single-threaded object~/
-
-  ~l[stobj] for an introduction to single-threaded objects.
-  ~bv[]
-  Example Form:
-  (with-local-stobj
-   st
-   (mv-let (result st)
-           (compute-with-st x st)
-           result))
-  ~ev[]
-  ~c[With-local-stobj] can be thought of as a macro, where the example
-  form above expands as follows.
-  ~bv[]
-  (mv-let (result st)
-          (let ((st (create-st)))
-            (compute-with-st x st))
-          (declare (ignore st))
-          result)
-  ~ev[]
-  However, ACL2 expects you to use ~c[with-local-stobj], not its
-  expansion.  More precisely, stobj creator functions are not allowed
-  except (implicitly) via ~c[with-local-stobj] and in logic-only
-  situations (like theorems and hints).  Moreover, neither
-  ~c[with-local-stobj] nor its expansions are legal when typed directly at
-  the top-level loop.  ~l[top-level] for a way to use ~c[with-local-stobj]
-  in the top-level loop.~/
-  ~bv[]
-  General Forms:
-  (with-local-stobj stobj-name mv-let-form)
-  (with-local-stobj stobj-name mv-let-form creator-name)
-  ~ev[]
-  where ~c[stobj-name] is the name of a ~il[stobj], ~c[mv-let-form] is a call
-  of ~ilc[mv-let], and if ~c[creator-name] is supplied then it should be the
-  name of the creator function for ~c[stobj-name]; ~pl[defstobj].  For the
-  example form above, its expansion would use ~c[creator-name], if supplied, in
-  place of ~c[create-st].  Note that ~c[stobj-name] must not be ~ilc[state]
-  (the ACL2 state), except in special situations probably of interest only to
-  system developers; ~pl[with-local-state].
-
-  ~c[With-local-stobj] can be useful when a stobj is used to memoize
-  intermediate results during a computation, yet it is desired not to
-  make the ~c[stobj] a formal parameter for the function and its
-  callers.
-
-  ACL2 can reason about these ``local stobjs,'' and in particular
-  about stobj creator functions.  For technical reasons, ACL2 will not
-  allow you to enable the ~c[:EXECUTABLE-COUNTERPART] ~il[rune] of a stobj
-  creator function.
-
-  Finally, here is a small example concocted in order to illustrate that
-  ~c[with-local-stobj] calls can be nested.
-  ~bv[]
-  (defstobj st fld1)
-
-  (defun foo ()
-    (with-local-stobj
-     st ; Let us call this the ``outer binding of st''.
-     (mv-let (val10 val20 st)
-       (let ((st (update-fld1 10 st)))
-         ;; At this point the outer binding of st has fld1 = 10.
-         (let ((result (with-local-stobj
-                        st ; Let us call this the ``inner binding of st''.
-                        (mv-let (val st)
-                          (let ((st (update-fld1 20 st)))
-                            ;; Now fld1 = 20 for the inner binding of st.
-                            (mv (fld1 st) st))
-                          val))))
-           ;; So result has been bound to 20 above, but here we are once again
-           ;; looking at the outer binding of st, where fld1 is still 10.
-           (mv (fld1 st) result st)))
-       (mv val10 val20))))
-
-  (thm (equal (foo) (mv 10 20))) ; succeeds
-  ~ev[]~/")
-
 (defun create-state ()
   (declare (xargs :guard t))
   (coerce-object-to-state *default-state*))
 
 (defmacro with-local-state (mv-let-form)
-
-  ":Doc-Section Stobj
-
-  locally bind state~/
-
-  This is an advanced topic, probably of interest only to system developers.
-
-  Consider the following example form:
-  ~bv[]
-  (with-local-state
-   (mv-let (result state)
-           (compute-with-state x state)
-           result))
-  ~ev[]
-  This is equivalent to the following form.
-  ~bv[]
-  (with-local-stobj
-   state
-   (mv-let (result state)
-           (compute-with-state x state)
-           result))
-  ~ev[]
-  By default, this form is illegal, because ACL2 does not have a way to unwind
-  all changes to the ACL2 ~il[state]; we say more on this issue below.  There
-  may however be situations where you are willing to manage or overlook this
-  issue.  In that case you may execute the following form to enable the use of
-  ~c[with-local-state], by enabling the use of ~ilc[with-local-stobj] on
-  ~c[state]; but note that it requires an active trust tag (~pl[defttag]).
-  ~bv[]
-  (remove-untouchable create-state t)
-  ~ev[]
-
-  Please be aware that no local ~il[state] is actually created, however!  In
-  particular, users of ~c[with-local-state] need either to ensure that channels
-  are closed and state global variables are returned to their original values,
-  or else be willing to live with changes made to state that are not justified
-  by the code that has been evaluated.  You are welcome to look in the the ACL2
-  source code at the definition of macro ~c[channel-to-string], which employs
-  ~c[with-local-state] to create a local ~il[state] for the purpose of creating
-  a string.~/
-
-  Here is an example use of ~c[with-local-state].  Notice the use of
-  ~ilc[defttag] ~-[] and indeed, please understand that we are just hacking
-  here, and in general it takes significant effort to be sure that one is using
-  ~c[with-local-state] correctly!
-  ~bv[]
-  (defttag t)
-
-  (remove-untouchable create-state t)
-
-  (set-state-ok t)
-
-  (defun foo (state)
-    (declare (xargs :mode :program))
-    (mv-let
-     (channel state)
-     (open-input-channel \"my-file\" :object state)
-     (mv-let (eofp obj state)
-             (read-object channel state)
-             (declare (ignore eofp))
-             (let ((state (close-input-channel channel state)))
-               (mv obj state)))))
-
-  (defun bar ()
-    (declare (xargs :mode :program))
-    (with-local-state (mv-let (result state)
-                              (foo state)
-                              result)))
-
-  ; Multiple-value return version:
-
-  (defun foo2 (state)
-    (declare (xargs :mode :program))
-    (mv-let
-     (channel state)
-     (open-input-channel \"my-file\" :object state)
-     (mv-let (eofp obj state)
-             (read-object channel state)
-             (let ((state (close-input-channel channel state)))
-               (mv eofp obj state)))))
-
-  (defun bar2 ()
-    (declare (xargs :mode :program))
-    (with-local-state (mv-let (eofp result state)
-                              (foo2 state)
-                              (mv eofp result))))
-  ~ev[]~/"
-
   `(with-local-stobj state ,mv-let-form))
 
 ; Essay on Nested Stobjs
@@ -27410,579 +22532,12 @@
 
 ; End of Essay on Nested Stobjs
 
-(defdoc nested-stobjs
-
-; WARNING: This documentation contains examples from community book
-; misc/nested-stobj-tests.lisp.  If you change those examples here, change them
-; also in that book.
-
-  ":Doc-Section stobj
-
-  using ~il[stobj]s that contain stobjs~/
-
-  For this topic we assume that you already understand the basics of
-  single-threaded objects in ACL2.  ~l[stobj], and in particular,
-  ~pl[defstobj].  The latter topic mentions briefly that a stobj field can
-  itself be a stobj or an array of stobjs.  That discussion is the subject of
-  the present ~il[documentation] topic.
-
-  Our presentation is in four sections.  First we augment the documentation for
-  ~ilc[defstobj] by explaining how stobjs may be specified for fields in a new
-  stobj definition.  Then we explain an aliasing problem, which accounts for a
-  prohibition against making direct calls to accessors and updaters involving
-  stobj fields of stobjs.  Next, we introduce an ACL2 primitive, ~c[stobj-let],
-  which provides the only way to read and write stobj components of stobjs.
-  The final section provides precise documentation for ~c[stobj-let].
-
-  See also ACL2 community book ~c[demos/modeling/nested-stobj-toy-isa.lisp] for
-  a worked example, which applies nested stobj structures to the problem of
-  defining interpreters.  A variety of small additional examples may be found
-  in ACL2 community book ~c[misc/nested-stobj-tests.lisp].  For further
-  discussion, you are welcome to read the ``Essay on Nested Stobjs'', a long
-  comment in ACL2 source file ~c[other-events.lisp].  However, this
-  documentation topic is intended to be self-contained for those familiar with
-  ~il[stobj]s.
-
-  SECTION: Extension of ~ilc[defstobj] to permit ~il[stobj]s within stobjs
-
-  Recall that the ~c[:type] keyword of a ~ilc[defstobj] field descriptor can be
-  a ``type-indicator'' that specifies the type of the field as a
-  type-spec (~pl[type-spec]).  For example, the following specifies an integer
-  field and a field that is an array of bytes.
-  ~bv[]
-    (defstobj st
-      (int-field :type integer :initially 0)
-      (ar-field :type (array unsigned-byte (10)) :initially 0))
-  ~ev[]
-  But the ~c[:type] of a stobj field descriptor may instead be based on a
-  stobj.  For example, the following sequence of three ~il[events] is legal.
-  The first field descriptor of ~c[top], named ~c[sub1-field], illustrates one
-  new kind of value for ~c[:type]: the name of a previously-introduced stobj,
-  which here is ~c[sub1]. The second field descriptor of ~c[top], named
-  ~c[sub2-ar-field], illustrates the other new kind of value for ~c[:type]: an
-  array whose elements are specified by the name of a previously-introduced
-  stobj, in this case, the stobj ~c[sub2].
-  ~bv[]
-    (defstobj sub1 fld1)
-    (defstobj sub2 fld2)
-    (defstobj top
-      (sub1-field :type sub1)
-      (sub2-ar-field :type (array sub2 (10))))
-  ~ev[]
-  The ~c[:initially] keyword is illegal for fields whose ~c[:type] is a stobj
-  or an array of stobjs.  Each such initial value is provided by a
-  corresponding call of the stobj creator for that stobj.  In particular, in
-  the case of an array of stobjs, the stobj creator is called once for each
-  element of the array, so that the array elements are distinct.  For example,
-  each element of ~c[sub2-ar-field] in the example above is initially provided
-  by a separate call of ~c[create-sub2].  Each initial element is thus unique,
-  and in particular is distinct from the initial global value of the stobj.
-  Similarly, the initial global stobj for ~c[sub1] is distinct from the initial
-  ~c[sub1-field] field of the global stobj for ~c[top], as these result from
-  separate calls of ~c[create-sub1].
-
-  When a stobj is used in a field of another stobj, we may refer to the former
-  field as a ``child stobj'' and the latter stobj as a ``parent stobj''.  So in
-  the example above, ~c[sub1-field] is a child stobj of type ~c[sub1] for
-  parent stobj ~c[top], and ~c[sub2-ar-field] is an array of child stobjs of
-  type ~c[sub2] for parent stobj ~c[top].  A child stobj has the same
-  structural shape as the global stobj of its type, but as explained above,
-  these are distinct structures.  We follow standard terminology by saying
-  ``isomorphic'' to indicate the same structural shape.  So for example, (the
-  value of) ~c[sub1-field] is isomorphic to ~c[sub1], though these are distinct
-  structures.
-
-  SECTION: An aliasing problem
-
-  Before introducing ~c[stobj-let] below, we provide motivatation for this
-  ACL2 primitive.
-
-  Consider the following ~il[events].
-  ~bv[]
-    (defstobj child fld)
-    (defstobj parent
-      (fld2 :type child))
-  ~ev[]
-  Now suppose we could evaluate the following code, to be run immediately after
-  admitting the two ~ilc[defstobj] events above.
-  ~bv[]
-    (let* ((child (fld2 parent))
-           (child (update-fld 3 child)))
-      (mv child parent))
-  ~ev[]
-  Now logically there is no change to ~c[parent]: ~c[parent] is passed through
-  unchanged.  We can indeed prove that fact!
-  ~bv[]
-    (thm (equal (mv-nth 1
-                        (let* ((child (fld2 parent))
-                               (child (update-fld 3 child)))
-                          (mv child parent)))
-                parent))
-  ~ev[]
-  But recall that stobjs are updated with destructive assignments.  That is, we
-  really are updating ~c[(fld2 parent)] to be the new value of ~c[child],
-  whether this is explained logically or not.  Thus, evaluation of the above
-  ~ilc[let*] form does in fact change the actual global stobj, ~c[parent].
-
-  (Aside: Here is an explanation involving raw Lisp, for those who might find
-  this useful.  We escape to raw Lisp and execute the following; note that
-  ~c[*the-live-parent*] is the Lisp variable representing the global value of
-  ~c[parent].
-  ~bv[]
-  (let ((parent *the-live-parent*))
-    (let* ((child (fld2 parent))
-           (child (update-fld 4 child)))
-      (mv child parent)))
-  ~ev[]
-  Then, in raw Lisp, ~c[(fld (fld2 *the-live-parent*))] evaluates to ~c[4],
-  illustrating the destructive update.  End of Aside.)
-
-  Such aliasing can permit a change to a child stobj to cause a
-  logically-inexplicable change to the parent stobj.  Similarly, unfettered
-  accessing of stobj fields can result in logically inexplicable changes to the
-  child stobj when the parent stobj is changed.  Thus, ACL2 disallows direct
-  calls of stobj accessors and updaters for fields whose ~c[:type] is a stobj
-  or an array of stobjs.  Instead, ACL2 provides ~c[stobj-let] for reading and
-  writing such fields in a sound manner.
-
-  SECTION: Accessing and updating stobj fields of stobjs using ~c[stobj-let]
-
-  ACL2 provides a primitive, ~c[stobj-let], to access and update stobj fields
-  of stobjs, in a manner that avoids the aliasing problem discussed above.  In
-  this section we provide an informal introduction to ~c[stobj-let], using
-  examples, to be followed in the next section by precise documentation.
-
-  We begin by returning to a slight variant of the example above.
-  ~bv[]
-    (defstobj child fld)
-    (defstobj parent
-      (fld2 :type child)
-      fld3)
-  ~ev[]
-  The following form returns the result of updating the ~c[fld2] field of
-  ~c[parent], which is a stobj isomorphic to ~c[child], to have a value of 3.
-  Below we explain the terms ``bindings'', ``producer variables'',
-  ``producer'', and ``consumer'', as well as how to understand this form.
-  ~bv[]
-    (stobj-let
-     ((child (fld2 parent)))  ; bindings
-     (child)                  ; producer variable(s)
-     (update-fld 3 child)     ; producer
-     (update-fld3 'a parent)) ; consumer
-  ~ev[]
-  The four lines under ``~c[stobj-let]'' just above can be understood as
-  follows.
-  ~bf[]
-  o Bindings:
-      Bind ~c[child] to ~c[(fld2 parent)].
-  o Producer variable(s) and producer:
-      Then bind the variable, ~c[child], to
-      the value of the producer, ~c[(update-fld 3 child)].
-  o Implicit update of parent:
-      Update ~c[fld2] of ~c[parent] with the producer variable, ~c[child].
-  o Consumer:
-      Finally, return ~c[(update-fld3 'a parent)].
-  ~ef[]
-  Thus, the logical expansion of the ~c[stobj-let] form above is the following
-  expression, though this is approximate (see below).
-  ~bv[]
-    (let ((child (fld2 parent))) ; bindings
-      (let ((child (update-fld 3 child))) ; bind producer vars to producer
-        (let ((parent (update-fld2 child parent))) ; implicit update of parent
-          (update-fld3 'a parent))))
-  ~ev[]
-  The bindings always bind distinct names to child stobjs of a unique parent
-  stobj, where the child stobj corresponds to the ~c[:type] associated with the
-  indicated accessor in the ~ilc[defstobj] form for the parent stobj.  Thus in
-  this case, for the unique binding, variable ~c[child] is bound to the stobj
-  of `type' ~c[child] for accessor ~c[fld2] of the parent stobj, ~c[parent].
-  We refer to ~c[child] from the bindings as a ``stobj-let-bound variable''.
-  Note also that the ``implicit extra step'' mentioned above is generated by
-  macroexpansion of ~c[stobj-let]; it logically updates the parent with new
-  child values, just before calling the consumer.  Implementation note:
-  Destructive updating in raw Lisp lets us omit this implicit extra step.
-
-  The form above is equivalent to the form displayed just below, which differs
-  only in specifying an explicit stobj updater corresponding to the stobj
-  accessor, ~c[fld2].  Here we show the default updater name, whose name has
-  ~c[\"UPDATE-\"] prepended to the name of the accessor.  But if the
-  ~c[:RENAMING] field of the ~c[defstobj] event specified a different updater
-  name corresponding to ~c[fld2], then that would need to be included where we
-  have added ~c[update-fld2] below.
-  ~bv[]
-    (stobj-let
-     ((child (fld2 parent) update-fld2)) ; bindings, including updater(s)
-     (child)                  ; producer variables
-     (update-fld 3 child)     ; producer
-     (update-fld3 'a parent)) ; consumer
-  ~ev[]
-
-  You can experiment using ~c[:]~ilc[trans1] to see the single-step
-  macroexpansion of a ~c[stobj-let] form in the logic.  For example, here is
-  how that works for a ~c[stobj-let] form that binds three fields and updates
-  two of them.  Notice that because more than one field is updated, an
-  ~ilc[mv-let] form is generated to bind the two fields to their values
-  returned by the producer, rather than a ~ilc[let] form as previously
-  generated.  First, let's introduce some events.
-
-  ~bv[]
-  (defstobj child1 child1-fld)
-  (defstobj child2 child2-fld)
-  (defstobj child3 child3-fld)
-  (defstobj mom
-    (fld1 :type child1)
-    (fld2 :type child2)
-    (fld3 :type child3))
-  ; Silly stub:
-  (defun update-last-op (op mom)
-    (declare (xargs :stobjs mom))
-    (declare (ignore op))
-    mom)
-  (defun new-mom (mom)
-    (declare (xargs :stobjs mom))
-    (stobj-let
-     ((child1 (fld1 mom))
-      (child2 (fld2 mom))
-      (child3 (fld3 mom)))
-     (child1 child3)
-     (let* ((child1 (update-child1-fld 'one child1))
-            (child3 (update-child3-fld 'three child3)))
-       (mv child1 child3))
-     (update-last-op 'my-compute mom)))
-  ~ev[]
-  Now let's look at the single-step macroexpansion of the above ~c[stobj-let]
-  form.
-  ~bv[]
-  ACL2 !>:trans1 (stobj-let
-                  ((child1 (fld1 mom))
-                   (child2 (fld2 mom))
-                   (child3 (fld3 mom)))
-                  (child1 child3)
-                  (let* ((child1 (update-child1-fld 'one child1))
-                         (child3 (update-child3-fld 'three child3)))
-                    (mv child1 child3))
-                  (update-last-op 'my-compute mom))
-   (PROGN$
-    (LET
-     ((CHILD1 (FLD1 MOM))
-      (CHILD2 (FLD2 MOM))
-      (CHILD3 (FLD3 MOM)))
-     (DECLARE (IGNORABLE CHILD1 CHILD2 CHILD3))
-     (MV-LET
-        (CHILD1 CHILD3)
-        (CHECK-VARS-NOT-FREE (MOM)
-                             (LET* ((CHILD1 (UPDATE-CHILD1-FLD 'ONE CHILD1))
-                                    (CHILD3 (UPDATE-CHILD3-FLD 'THREE CHILD3)))
-                                   (MV CHILD1 CHILD3)))
-        (LET* ((MOM (UPDATE-FLD1 CHILD1 MOM))
-               (MOM (UPDATE-FLD3 CHILD3 MOM)))
-              (CHECK-VARS-NOT-FREE (CHILD1 CHILD2 CHILD3)
-                                   (UPDATE-LAST-OP 'MY-COMPUTE MOM))))))
-  ACL2 !>
-  ~ev[]
-
-  If you try to evaluate a ~c[stobj-let] form directly in the top-level loop,
-  rather than from within a function body, you will get an error.  The example
-  above illustrates how ~c[stobj-let] may be used in function bodies; here is
-  another example, presented using an edited log.
-  ~bv[]
-    ACL2 !>(defstobj child fld)
-
-    Summary
-    Form:  ( DEFSTOBJ CHILD ...)
-    Rules: NIL
-    Time:  0.02 seconds (prove: 0.00, print: 0.00, other: 0.02)
-     CHILD
-    ACL2 !>(defstobj parent
-             (fld2 :type child)
-             fld3)
-
-    Summary
-    Form:  ( DEFSTOBJ PARENT ...)
-    Rules: NIL
-    Time:  0.02 seconds (prove: 0.00, print: 0.00, other: 0.02)
-     PARENT
-    ACL2 !>(defun f (parent)
-             (declare (xargs :stobjs parent))
-             (stobj-let
-              ((child (fld2 parent)))   ; bindings
-              (child)                   ; producer variables
-              (update-fld 3 child)      ; producer
-              (update-fld3 'a parent))) ; consumer
-    [[output omitted]]
-     F
-    ACL2 !>(f parent)
-    <parent>
-    ACL2 !>(defun check-f (parent)
-             ; returns the value of the field of the child stobj
-             (declare (xargs :stobjs parent))
-             (stobj-let
-              ((child (fld2 parent))) ; bindings
-              (val)                   ; producer variables
-              (fld child)             ; producer
-              val))                   ; consumer
-    [[output omitted]]
-     CHECK-F
-    ACL2 !>(check-f parent)
-    3
-    ACL2 !>
-  ~ev[]
-
-  Notice that the second function defined above, ~c[check-f], uses a
-  ~c[stobj-let] form that returns an ordinary value: it reads a value from a
-  child stobj, but does not write to the child stobj, as indicated by the lack
-  of a child stobj among the producer variables.  So for that ~c[stobj-let]
-  form, there is no implicit extra step.
-
-  We labeled a ~c[stobj-let] expansion above as ``approximate'' for two
-  reasons, which we give here informally.  (Now you know how to apply
-  ~c[:]~ilc[trans1] to that ~c[stobj-let] call to see the precise expansion.)
-  First, ~c[stobj-let] declares the stobj-let-bound variables to be
-  ~c[ignorable] for the top ~c[let] bindings.  Second, and more importantly,
-  ~c[stobj-let] imposes the following restrictions on the producer and
-  consumer, to avoid the aliasing problem: it disallows references to the
-  parent stobj in the producer and it also disallows references to any bound
-  stobj (i.e., bound in the bindings) in the consumer.
-
-  We conclude this section with examples based on a slight variation of the
-  nested stobj example from the first section above.  These events can also be
-  found in ACL2 community book ~c[misc/nested-stobj-tests.lisp], immediately
-  under the following comment:
-  ~bv[]
-  ; As promised in :doc stobj-let, we begin with an example from that :doc.
-  ~ev[]
-  Note that some lemmas were needed in order to complete the ~il[guard] proof
-  for the function ~c[update-top], which may be found in the above file; they
-  are omitted below.
-
-  First we introduce three stobjs.
-  ~bv[]
-    (defstobj kid1 fld1)
-    (defstobj kid2 fld2)
-    (defstobj mom
-      (kid1-field :type kid1)
-      (kid2-ar-field :type (array kid2 (5)))
-      last-op)
-  ~ev[]
-  The next function takes a given index and a ~c[mom] stobj, and swaps the
-  value stored in the stobj in ~c[mom]'s ~c[kid2-ar-field] array at that index
-  with the value stored in the stobj in ~c[mom]'s ~c[kid1-field] field.
-  ~bv[]
-    (defun mom-swap-fields (index mom)
-      (declare (xargs :stobjs mom
-                      :guard (and (natp index)
-                                  (< index (kid2-ar-field-length mom)))))
-      (stobj-let
-       ((kid1 (kid1-field mom))
-        (kid2 (kid2-ar-fieldi index mom)))
-       (kid1 kid2)
-       (let* ((val1 (fld1 kid1))
-              (val2 (fld2 kid2))
-              (kid1 (update-fld1 val2 kid1))
-              (kid2 (update-fld2 val1 kid2)))
-         (mv kid1 kid2))
-       (update-last-op 'swap mom)))
-  ~ev[]
-  Function ~c[mom.kid1-fld1] stores a given value in the given ~c[mom]'s
-  ~c[kid1-fld1] field.
-  ~bv[]
-    (defun mom.kid1-fld1 (val mom)
-      (declare (xargs :stobjs mom))
-      (stobj-let
-       ((kid1 (kid1-field mom)))
-       (kid1)
-       (update-fld1 val kid1)
-       (update-last-op val mom)))
-  ~ev[]
-  We next combine the two functions above, according to an ~c[op] argument, as
-  indicated by the following definition.
-  ~bv[]
-    (defun update-mom (op mom)
-      (declare (xargs :stobjs mom))
-      (cond ((and (consp op)
-                  (eq (car op) 'swap)
-                  (natp (cdr op))
-                  (< (cdr op) (kid2-ar-field-length mom)))
-             (mom-swap-fields (cdr op) mom))
-            (t (mom.kid1-fld1 op mom))))
-  ~ev[]
-  The following checker function uses a ~c[stobj-let] form like the ones above,
-  a major difference being that the producer variable is not a stobj, since the
-  producer does not modify any stobjs.
-  ~bv[]
-    (defun check-update-mom (index val1 val2 last-op mom)
-        (declare (xargs :stobjs mom
-                        :mode :program
-                        :guard
-                        (or (null index)
-                            (and (natp index)
-                                 (< index (kid2-ar-field-length mom))))))
-        (and (equal (last-op mom) last-op)
-             (stobj-let
-              ((kid1 (kid1-field mom))
-               (kid2 (kid2-ar-fieldi index mom)))
-              (val) ; producer variables
-              (and (equal val1 (fld1 kid1))
-                   (equal val2 (fld2 kid2)))
-              val)))
-  ~ev[]
-  Now let us run our update function to populate some fields within the ~c[mom]
-  stobj.
-  ~bv[]
-    (let* ((mom ; set mom to (3 (x0 x1 x2 x3 x4))
-             (update-mom 3 mom))
-            (mom ; set mom to (x1 (x0 3 x2 x3 x4))
-             (update-mom '(swap . 1) mom))
-            (mom ; set mom to (7 (x0 3 x2 x3 x4))
-             (update-mom 7 mom))
-            (mom ; set mom to (x0 (7 3 x2 x3 x4))
-             (update-mom '(swap . 0) mom))
-            (mom ; set mom to (5 (7 3 x2 x3 x4))
-             (update-mom 5 mom))
-            (mom ; set mom to (7 (5 3 x2 x3 x4))
-             (update-mom '(swap . 0) mom)))
-       mom)
-  ~ev[]
-  Are the above values of 7, 5, and 3 as expected, with a last operation being
-  a swap?  Yes!
-  ~bv[]
-    ACL2 !>(and (check-update-mom 0 7 5 'swap mom)
-                (check-update-mom 1 7 3 'swap mom))
-    T
-    ACL2 !>
-  ~ev[]
-  Notice that above, we never tried to access two different entries of the
-  array.  This can be done, but we need to bind two different stobjs to those
-  fields.  Fortunately, congruent stobjs make this possible; ~pl[defstobj], in
-  particular the discussion of congruent stobjs.  Since we want to bind two
-  stobjs to values in the array that are isomorphic to the stobj ~c[kid2], we
-  introduce a stobj congruent to ~c[kid2].
-  ~bv[]
-    (defstobj kid2a fld2a :congruent-to kid2)
-  ~ev[]
-  Then we can define our swapping function as follows.  The ~il[guard] proof
-  obligation includes the requirement that the two indices be distinct, again
-  to avoid an aliasing problem.
-  ~bv[]
-    (defun mom-swap-indices (i1 i2 mom)
-      (declare (xargs :stobjs mom
-                      :guard (and (natp i1)
-                                  (< i1 (kid2-ar-field-length mom))
-                                  (natp i2)
-                                  (< i2 (kid2-ar-field-length mom))
-                                  (not (equal i1 i2)))))
-      (stobj-let
-       ((kid2 (kid2-ar-fieldi i1 mom))
-        (kid2a (kid2-ar-fieldi i2 mom)))
-       (kid2 kid2a)
-       (let* ((val2 (fld2 kid2))
-              (val2a (fld2 kid2a))
-              (kid2 (update-fld2 val2a kid2))
-              (kid2a (update-fld2 val2 kid2a)))
-         (mv kid2 kid2a))
-       mom))
-  ~ev[]
-  The aforementioned community book, ~c[misc/nested-stobj-tests.lisp], contains
-  a corresponding checker immediately following this definition.
-
-  SECTION: Precise documentation for ~c[stobj-let]
-
-  ~bv[]
-  General Form:
-  (stobj-let
-   BINDINGS
-   PRODUCER-VARIABLES
-   PRODUCER
-   CONSUMER)
-  ~ev[]
-  where ~c[PRODUCER-VARIABLES] is a non-empty true list of legal variable names
-  without duplicates, ~c[PRODUCER] and ~c[CONSUMER] are expressions, and
-  ~c[BINDINGS] is a list subject to the following requirements.
-
-  ~c[BINDINGS] is a non-empty true list of tuples, each of which has the form
-  ~c[(VAR ACCESSOR)] or ~c[(VAR ACCESSOR UPDATER)].  There is a stobj name,
-  ~c[ST], previously introduced by ~ilc[defstobj] (not ~ilc[defabsstobj]), such
-  that each ~c[accessor] is of the form ~c[(ACC ST)] or ~c[(ACCi I ST)], with
-  the same stobj name (~c[ST]) for each binding.  In the case ~c[(ACC ST)],
-  ~c[ACC] is the accessor for a non-array field of ~c[ST].  In the case
-  ~c[(ACCi I ST)], ~c[ACCi] is the accessor for an array field of ~c[ST], and
-  ~c[I] is either a variable, a natural number, a list ~c[(quote N)] where
-  ~c[N] is a natural number, or a symbol introduced by ~ilc[defconst].  If
-  ~c[UPDATER] is supplied, then it is a symbol that is the name of the stobj
-  updater for the field of ~c[ST] accessed by ~c[ACCESSOR].  If ~c[UPDATER] is
-  not supplied, then for the discussion below we consider it to be, implicitly,
-  the symbol in the same package as the function symbol of ~c[ACCESSOR] (i.e.,
-  ~c[ACC] or ~c[ACCi]), obtained by prepending the string ~c[\"UPDATE-\"] to
-  the ~ilc[symbol-name] of that function symbol.  Finally, ~c[ACCESSOR] has a
-  ~il[signature] specifying a return value that is either ~c[ST] or is stobj
-  that is congruent to ~c[ST].
-
-  If the conditions above are met, then the General Form expands to the one of
-  the following expressions, depending on whether the list
-  ~c[PRODUCER-VARIABLES] has one member or more than one member, respectively.
-  (But see below for extra code that may be inserted if there are stobj array
-  accesses in ~c[BINDINGS].)  Here we write ~c[STOBJ-LET-BOUND-VARS] for the
-  list of variables ~c[VAR] discussed above, i.e., for
-  ~c[(strip-cars BINDINGS)].  And, we write ~c[UPDATES] for the result of
-  mapping through ~c[PRODUCER-VARIABLES] and, for each variable ~c[VAR] that
-  has a binding ~c[(VAR ACCESSOR UPDATER)] in ~c[BINDINGS] (where ~c[UPDATER]
-  may be implicit, as discussed above), collect into ~c[UPDATES] the tuple
-  ~c[(ST (UPDATER VAR ST))].
-
-  For ~c[PRODUCER-VARIABLES] = ~c[(PRODUCER-VAR)]:
-  ~bv[]
-    (let BINDINGS
-      (declare (ignorable . STOBJ-LET-BOUND-VARIABLES))
-      (let ((PRODUCER-VAR PRODUCER))
-        (let* UPDATES
-          CONSUMER)))
-  ~ev[]
-
-  Otherwise:
-  ~bv[]
-    (let BINDINGS
-      (declare (ignorable . STOBJ-LET-BOUND-VARIABLES))
-      (mv-let PRODUCER-VARS
-              PRODUCER
-              (let* UPDATES
-                CONSUMER)))
-  ~ev[]
-  Moreover, ACL2 places restrictions on the resulting expression: ~c[ST] must
-  not occur free in ~c[PRODUCER], and every variable in
-  ~c[STOBJ-LET-BOUND-VARIABLES] must not occur free in ~c[CONSUMER].
-
-  ~c[Stobj-let] forms can be evaluated using ordinary objects in theorem
-  contexts, much as any form.  They can also, of course, appear in function
-  bodis.  However, a ~c[stobj-let] form cannot be evaluated directly in the
-  top-level loop or other top-level contexts for execution (such as during
-  ~ilc[make-event] expansion).
-
-  Finally, let ~c[FORM] denote the form displayed above (either case).  We
-  explain how ~c[FORM] is actually replaced by an expression of the form
-  ~c[(PROGN$ ... FORM)].  This expression generates an extra ~il[guard] proof
-  obligation, which guarantees that no aliasing occurs from binding two
-  stobj-let-bound variables to the same array access.  So fix a stobj array
-  accessor ~c[ACCi] for which some stobj is bound to ~c[(ACCi I ST)] in
-  ~c[BINDINGS]; we define an expression ~c[ACCi-CHECK] as follows.  Collect up
-  all such index expressions ~c[I], where if ~c[I] is of the form ~c[(quote N)]
-  then replace ~c[I] by ~c[N].  If the resulting list of index expressions for
-  ~c[ACCi] consists solely of distinct numbers, or if it is of length 1, then
-  no extra check is generated for ~c[ACCi].  Otherwise, let ~c[ACCi-CHECK] be
-  the form ~c[(chk-no-duplicatesp (list I1 ... Ik))], where ~c[I1], ..., ~c[Ik]
-  are the index expressions for ~c[ACCi].  Note: ~c[chk-no-duplicatesp] is a
-  function that returns nil, but has a ~il[guard] that its argument is an
-  ~ilc[eqlable-listp] that satisfies ~ilc[no-duplicatesp].  Finally, ~c[FORM]
-  is replaced by ~c[(PROGN$ CHK1 ... CHKn FORM)], where the ~c[CHKm] range over
-  all of the above ~c[ACCi-CHECK].~/~/")
-
 (defmacro stobj-let (&whole x &rest args)
   (declare (ignore args))
   #+acl2-loop-only
   (stobj-let-fn x)
   #-acl2-loop-only
   (stobj-let-fn-raw x))
-
-(link-doc-to stobj-let stobj nested-stobjs)
 
 (defun push-untouchable-fn (name fn-p state doc event-form)
 
@@ -28103,32 +22658,6 @@
                  (def-body-lemmas (cdr def-bodies) lemmas)))))
 
 (defmacro show-bodies (fn)
-
-  ":Doc-Section Miscellaneous
-
-  show the potential definition bodies~/
-  ~bv[]
-  Examples:
-  (show-bodies foo)
-  :show-bodies foo
-  ~ev[]
-  A definition made using ~ilc[defun] installs a so-called ``body'' of a
-  function symbol, as do certain ~c[:]~ilc[definition] rules.  Such bodies are
-  used in a number of ways, including the application of ~c[:expand]
-  ~il[hints]; ~pl[definition], in particular the discussion of ``body'' there,
-  and ~pl[hints] for a discussion of the ~c[:expand] hint.  Also ~pl[set-body]
-  for how to change which of the available definitions (among the original
-  definition and appropriate ~c[:]~ilc[definition] rules) is the one that
-  provides the body.  The ~c[show-bodies] command displays the available such
-  bodies in an appropriate format, starting with the one that is currently used
-  as the body.
-
-  ~bv[]
-  General Forms:
-  (show-bodies function-symbol)
-  :show-bodies function-symbol
-  ~ev[]~/~/"
-
   (declare (xargs :guard (or (symbolp fn)
                              (and (true-listp fn)
                                   (eql (length fn) 2)
@@ -28207,31 +22736,6 @@
                         state))))))
 
 ; Section:  trace/untrace
-
-(defdoc trace
-  ":Doc-Section Trace
-
-  tracing functions in ACL2~/
-
-  ACL2 provides a trace utility, ~ilc[trace$], with corresponding reverse
-  operation ~ilc[untrace$].  These can be used without any dependence on the
-  underlying Lisp utility, and are the tracing utilities of choice in ACL2;
-  ~pl[trace$] and ~pl[untrace$].
-
-  However, for advanced users we note that the underlying host Lisp may also
-  provide a trace utility, ~c[trace], and corresponding ~c[untrace].  Moreover,
-  these have been modified in the case that the host Lisp is GCL, Allegro CL,
-  or CCL (OpenMCL), to provide limited support for ~c[:entry], ~c[:exit], and
-  perhaps ~c[:cond] keywords, to hide certain large data structures (world,
-  enabled structure, rewrite constant), and to trace executable counterparts.
-  See source files ~c[*-trace.lisp].  For the above Lisps, you can invoke the
-  original ~c[trace] and ~c[untrace] by invoking ~c[old-trace] and
-  ~c[old-untrace], respectively, in raw Lisp rather than in the normal ACL2
-  loop.~/~/
-
-  :cite acl2::time-tracker
-  :cited-by acl2::other
-  :cited-by acl2::programming")
 
 #-acl2-loop-only
 (progn
@@ -28392,59 +22896,6 @@
           (stobj-evisceration-alist (user-stobj-alist state) state)))
 
 (defun set-trace-evisc-tuple (val state)
-
-  ":Doc-Section Trace
-
-  set the trace evisc tuple~/
-
-  A trace evisc-tuple, which is set by this utility, provides a means to
-  restrict printing during tracing.  ~l[evisc-tuple] for an introduction to
-  evisc-tuples; also ~pl[set-evisc-tuple] and ~pl[set-iprint].
-
-  By default the ACL2 ~il[trace] mechanism, ~ilc[trace$], automatically deals
-  with stobjs, the logical world, and certain other large structures.
-  ~l[trace$], in particular the documentation of ~c[trace$] option ~c[:hide].
-  However, even with that default behavior you may want to restrict what is
-  printed according to the print-level and print-length of an evisc-tuple;
-  ~pl[evisc-tuple].
-
-  ~bv[]
-  Examples:
-
-  ; Set trace evisc tuple to a standard value, using current Lisp *print-level*
-  ; and *print-length* variables:
-  (set-trace-evisc-tuple t state)
-
-  ; Set trace evisc tuple back to its default:
-  (set-trace-evisc-tuple nil state)
-
-  ; Set trace evisc tuple to restrict print-level to 3 and print-length to 4,
-  ; while hiding the logical world and suitably printing stobjs even if trace$
-  ; option ``:hide nil'' is used.  (Note: calling ~c[trace-evisceration-alist]
-  ; directly requires removing this function as `untouchable', which requires a
-  ; trust tag; ~pl[remove-untouchable].)
-  (set-trace-evisc-tuple
-   (evisc-tuple 3 4 (trace-evisceration-alist state) nil)
-   state)~/
-
-  General Forms:
-
-  (set-trace-evisc-tuple nil state) ; trace evisc-tuple set to standard value
-  (set-trace-evisc-tuple   t state) ; trace evisc-tuple set to hide the logical
-                                    ;   world and deal with stobjs even when
-                                    ;   trace$ option ``:hide nil'' is supplied
-  (set-trace-evisc-tuple evisc-tuple state)
-                                    ; tracing set to use indicated evisc-tuple
-  ~ev[]
-
-  ~l[trace$] for a discussion of ACL2 tracing.  The ~il[evisc-tuple] used by
-  that trace utility is the one last installed by ~c[set-trace-evisc-tuple]
-  (or by ~ilc[set-evisc-tuple] for the trace-evisc-tuple) ~-[] initially to the
-  default of ~c[nil] ~-[] unless overriden by trace option ~c[:evisc-tuple].
-
-  ~st[Remark].  If you use value ~c[t], then ACL2 will ensure that the logical
-  world and stobjs are kept up-to-date in the trace evisc-tuple."
-
   #+acl2-loop-only
   (declare (ignore val))
   #-acl2-loop-only
@@ -29243,519 +23694,6 @@
                       tspecs))))))
 
 (defmacro trace$ (&rest trace-specs)
-
-  ":Doc-Section Trace
-
-  trace function evaluations~/
-  ~bv[]
-  Examples:
-  (trace$ foo bar)     ; trace foo and bar
-  (trace$)             ; return current trace info (no new tracing specified)
-  (trace$ (foo :entry  ; trace foo, printing first actual parameter upon entry
-               (car arglist)))
-  (trace$ (foo :exit   ; trace foo, using fmt to print upon exit
-               (:fmt (msg \"Exiting FOO with ~~x0\"
-                          value))))
-  (trace$ (foo :native t))
-
-  General Forms:
-  (trace$ spec1 spec2 ... specn) ; n >= 1
-  (trace$)
-  ~ev[]
-  where the ~c[speci] are trace specs, as described below.
-
-  ~c[Trace$] installs alternate code for the indicated functions that prints
-  information upon entry to, and exit from, calls of the functions.  For an
-  alternate tracing utility used for educational purposes in ACL2s
-  (~url[http://acl2s.ccs.neu.edu/acl2s/doc/]), see community book
-  ~c[books/misc/trace-star.lisp].
-
-  From a logical perspective all trace printing is a fiction.  (But ~pl[trace!]
-  for a way to get around this and modify ~il[state].)  For a related fiction,
-  ~pl[cw].  ~c[(Trace$)] returns the list of currently-active trace specs,
-  while the application of ~c[trace$] to at least one argument returns the list
-  of its arguments that are successfully acted on.
-
-  Output from ~ilc[trace$] normally goes to the screen, i.e., to
-  ~ilc[standard-co].  But it can be redirected to a file;
-  ~pl[open-trace-file].
-
-  ~l[untrace$] for how to undo the effect of ~ilc[trace$].  Also ~pl[trace] for
-  mention of modifications made to raw Lisp trace, which is accessible (as
-  described below) using the ~c[:native] keyword.
-
-  Note that when ~c[trace$] is applied to a function without option
-  ~c[:native], that function's declarations and documentation are discarded.~/
-
-  Next, we introduce tracing with some examples.  After that, we provide
-  reference documentation for individual trace options allowed in a trace spec.
-  Note that although our example focuses on user-defined functions, ~c[trace$]
-  can also be applied to built-in functions, though perhaps only system hackers
-  should take advantage of this observation.
-
-  We begin by illustrating the simplest sort of trace spec: a function symbol.
-  For example, the form ~c[(trace$ foo bar)] directs the tracing of functions
-  ~c[foo] and ~c[bar] by virtue of the two trace specs ~c[foo] and ~c[bar].  We
-  can see tracing in action by first defining:
-  ~bv[]
-  (defun f (x)
-    (cons x x))
-
-  (defun g (x)
-    (list (f x) 3))
-  ~ev[]
-
-  The following log then illustrates tracing of these two functions.  Notice
-  that before ~il[guard]s have been verified, the so-called ``*1*'' functions
-  (sometimes called ``executable counterpart functions'' or ``logic
-  functions'') are called but the corresponding raw Lisp functions are not; but
-  after guard verification of ~c[f], the raw Lisp counterpart of ~c[f] is
-  indeed called.  (~l[guard] and ~pl[guard-evaluation-examples-log].)
-  ~bv[]
-  ACL2 !>(trace$ f g)
-   ((F) (G))
-  ACL2 !>(g 7)
-  1> (ACL2_*1*_ACL2::G 7)
-    2> (ACL2_*1*_ACL2::F 7)
-    <2 (ACL2_*1*_ACL2::F (7 . 7))
-  <1 (ACL2_*1*_ACL2::G ((7 . 7) 3))
-  ((7 . 7) 3)
-  ACL2 !>(verify-guards f)
-
-  Computing the guard conjecture for F....
-
-  The guard conjecture for F is trivial to prove.  F is compliant with
-  Common Lisp.
-
-  Summary
-  Form:  ( VERIFY-GUARDS F)
-  Rules: NIL
-  Warnings:  None
-  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
-   F
-  ACL2 !>(g 7)
-  1> (ACL2_*1*_ACL2::G 7)
-    2> (ACL2_*1*_ACL2::F 7)
-      3> (F 7)
-      <3 (F (7 . 7))
-    <2 (ACL2_*1*_ACL2::F (7 . 7))
-  <1 (ACL2_*1*_ACL2::G ((7 . 7) 3))
-  ((7 . 7) 3)
-  ACL2 !>
-  ~ev[]
-
-  The following example introduces trace specs other than function symbols.
-  Consider the following definition.
-  ~bv[]
-  (defun fact (n)
-    (declare (xargs :guard (natp n)))
-    (if (zp n)
-        1
-      (* n (fact (1- n)))))
-  ~ev[]
-  The following log illustrates the use of trace options ~c[:cond] (condition
-  for entering trace), ~c[:entry] (what to print on entry), and ~c[:exit] (what
-  to print on exit).  The reason for two calls on argument 4 is that we are
-  seeing such calls for the executable counterpart of ~c[fact] and also its raw
-  Lisp function.
-  ~bv[]
-  ACL2 !>(trace$ (fact :cond (evenp (car arglist))
-                       :entry (cons 'factorial-call arglist)
-                       :exit (car values)))
-   ((FACT :COND (EVENP (CAR ARGLIST))
-          :ENTRY (CONS 'FACTORIAL-CALL ARGLIST)
-          :EXIT (CAR VALUES)))
-  ACL2 !>(fact 4)
-  1> (FACTORIAL-CALL 4)
-    2> (FACTORIAL-CALL 4)
-      3> (FACTORIAL-CALL 2)
-        4> (FACTORIAL-CALL 0)
-        <4 1
-      <3 2
-    <2 24
-  <1 24
-  24
-  ACL2 !>
-  ~ev[]
-  Notice that ~c[VALUES] above is the list of all values returned, which is a
-  one-element list unless ~ilc[mv] return is used, as illustrated in the
-  following example, after defining: ~c[(defun two-vals (x) (mv x 7))].
-  ~bv[]
-  ACL2 !>(trace$ two-vals)
-   ((TWO-VALS))
-  ACL2 !>(two-vals 3)
-  1> (ACL2_*1*_ACL2::TWO-VALS 3)
-  <1 (ACL2_*1*_ACL2::TWO-VALS 3 7)
-  (3 7)
-  ACL2 !>(verify-guards two-vals)
-
-  Computing the guard conjecture for TWO-VALS....
-
-  The guard conjecture for TWO-VALS is trivial to prove, given the :executable-
-  counterpart of CONS.  TWO-VALS is compliant with Common Lisp.
-
-  Summary
-  Form:  ( VERIFY-GUARDS TWO-VALS)
-  Rules: ((:EXECUTABLE-COUNTERPART CONS))
-  Warnings:  None
-  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
-   TWO-VALS
-  ACL2 !>(two-vals 3)
-  1> (ACL2_*1*_ACL2::TWO-VALS 3)
-    2> (TWO-VALS 3)
-    <2 (TWO-VALS 3 7)
-  <1 (ACL2_*1*_ACL2::TWO-VALS 3 7)
-  (3 7)
-  ACL2 !>
-  ~ev[]
-
-  We now document all of the options that may appear in a trace spec.  A trace
-  spec with options is of the form
-  ~bv[]
-  (fn :kwd1 val1 :kwd2 val2 ... :kwdn valn)
-  ~ev[]
-  and here we document each legal keyword ~c[:kwdi] and corresponding expected
-  value ~c[vali].  Note that ~c[trace$] is intended primarily for functions
-  defined in the ACL2 command loop (~pl[lp]).  If you want to trace a function
-  that defined in raw Lisp, then you can use option ~c[:native] (see below),
-  but then many other ~c[trace$] options will not be available to you: all of
-  them except ~c[:multiplicity] and ~c[:native] itself will be passed directly
-  to the ~c[trace] utility of the underlying Common Lisp.
-
-  ~c[:COND], ~c[:ENTRY], and ~c[:EXIT]
-
-  ~st[Introduction].  For each of these three options, the value is a
-  (user-level) term, except that for ~c[:entry] and ~c[:exit] the value can be
-  of the form ~c[(:fmt u)] or ~c[(:fmt! u)], where ~c[u] is a user-level term.
-  We skip these two latter cases for now and return to them later.  Then the
-  indicated term is evaluated as indicated in the next paragraph, and if the
-  ~c[:cond] term is omitted or evaluates to non-~c[nil], then the value of the
-  ~c[:entry] term is printed on entry and the value of the ~c[:exit] term is
-  printed on exit.  By default, where ~c[:entry] is omitted or is specified as
-  ~c[nil], the value printed for ~c[:entry] is the list obtained by consing the
-  calling function symbol onto the list of actual parameters: in the notation
-  described below, this is ~c[(cons TRACED-FN ARGLIST)].  Similarly, the
-  default for printing at the exit of the function call, i.e. where ~c[:exit]
-  is omitted or is specified as ~c[nil], is ~c[(cons TRACED-FN VALUES)] where
-  ~c[VALUES] is the list of values returned as described below.
-
-  In the evaluations of the term described below upon a call of ~c[fn], each
-  formal parameter of the definition of ~c[fn] will be bound to the
-  corresponding actual of the call, the variable ~c[ARGLIST] will be bound to
-  the list of actuals, and the variable ~c[TRACED-FN] will be bound to the
-  function being called (either ~c[fn] or its executable counterpart function;
-  see above).  Additionally in the case of ~c[:exit], the variable ~c[VALUES]
-  will be bound to the multiple values returned (thus, a one-element list if
-  ~ilc[mv] is not used in the return).  Also for ~c[:exit], we bind ~c[VALUE]
-  to the logical value returned, i.e., to the suitable list of values returned
-  in the ~ilc[mv] case and otherwise to the single value returned.  So in the
-  ~c[mv] case, ~c[VALUE] is the same as ~c[VALUES], and otherwise ~c[VALUE] is
-  ~c[(car VALUES)].  Other than these variables and ~ilc[STATE], no other
-  variable may occur in the term, whose value must be a single non-~ilc[stobj]
-  value, unless there is an active trust tag (~pl[defttag]).
-
-  Now suppose ~c[fn] is called.  First: If ~c[:cond] is supplied and the result
-  of evaluating the ~c[:cond] term is ~c[nil], then no tracing is done.
-  Otherwise tracing proceeds as follows.  First the ~c[:entry] form is
-  evaluated, and the result is printed.  Then the call of ~c[fn] is evaluated.
-  Finally the ~c[:exit] term is evaluated and the result is printed.  As
-  indicated above, the default for the ~c[:entry] term if omitted or explicitly
-  ~c[nil] is ~c[(cons TRACED-FN ARGLIST)], and the default for the ~c[:exit]
-  term if omitted or explicitly ~c[nil] is ~c[(cons TRACED-FN VALUES)].
-
-  Note that if the function has a formal named ~c[ARGLIST], then ~c[ARGLIST]
-  will nevertheless refer to the entire list of formals, not the single formal
-  named ~c[ARGLIST]; similarly for ~c[TRACED-FN], and additionally for
-  ~c[VALUE] and ~c[VALUES] in the case of ~c[:exit].
-
-  As mentioned above, for each of ~c[:entry] and ~c[:exit], a value of ~c[nil]
-  specifies the default behavior.  If you really want a value of ~c[nil], use a
-  non-~c[nil] form that evaluates to ~c[nil], for example ~c[(car nil)] or
-  ~c['nil].  However, for ~c[:cond] a value of ~c[nil] means what it says: do
-  not evaluate the ~c[:entry] or ~c[:exit] forms.
-
-  Finally we discuss the case that the ~c[:entry] or ~c[:exit] term is of the
-  form ~c[(:fmt u)] or ~c[(:fmt! u)].  In these cases, the term ~c[u] is
-  evaluated as described above to produce a value, say ~c[msg], but instead of
-  printing ~c[msg] directly, ACL2 calls ~c[fmt1] using the string ~c[\"~~@0\"]
-  and the alist that binds just character ~c[#\\0] to ~c[msg].  The following
-  example illustrates this point, where ~c[fact] is defined as above.  Also
-  ~pl[fmt].  Note that ~c[(msg string . vals)] produces a value suitable for a
-  ~c[\"~~@\"] directive to the ~c[fmt] family of print functions.
-  ~bv[]
-  ACL2 !>(trace$
-          (fact
-           :entry (:fmt (msg \"Tracing ~~x0 on ~~x1\" traced-fn arglist))
-           :exit (car values)))
-   ((FACT :ENTRY (:FMT (MSG \"Tracing ~~x0 on ~~x1\" TRACED-FN ARGLIST))
-          :EXIT (CAR VALUES)))
-  ACL2 !>(fact 3)
-  1> Tracing ACL2_*1*_ACL2::FACT on (3)
-    2> Tracing FACT on (3)
-      3> Tracing FACT on (2)
-        4> Tracing FACT on (1)
-          5> Tracing FACT on (0)
-          <5 1
-        <4 1
-      <3 2
-    <2 6
-  <1 6
-  6
-  ACL2 !>
-  ~ev[]
-  If ~c[:fmt!] is used instead of ~c[:fmt], then indentation as is the prefix
-  string, ~c[\"n> \"] or ~c[\"<n \"].  The following example illustrates the
-  use of ~c[:fmt!].
-  ~bv[]
-  ACL2 !>(trace$
-          (fact
-           :entry (:fmt! (msg \"Tracing ~~x0 on ~~x1\" traced-fn arglist))
-           :exit (:fmt! (msg \"From input ~~x0: ~~x1\"
-                             (car arglist) (car values)))))
-   ((FACT :ENTRY (:FMT! (MSG \"Tracing ~~x0 on ~~x1\" TRACED-FN ARGLIST))
-          :EXIT (:FMT! (MSG \"From input ~~x0: ~~x1\" (CAR ARGLIST)
-                            (CAR VALUES)))))
-  ACL2 !>(fact 3)
-  Tracing ACL2_*1*_ACL2::FACT on (3)
-  Tracing FACT on (3)
-  Tracing FACT on (2)
-  Tracing FACT on (1)
-  Tracing FACT on (0)
-  From input 0: 1
-  From input 1: 1
-  From input 2: 2
-  From input 3: 6
-  From input 3: 6
-  6
-  ACL2 !>
-  ~ev[]
-  Here is the same example, with user-managed indentation.
-  ~bv[]
-  ACL2 !>(trace$
-          (fact
-           :entry (:fmt! (msg \"~~t0Tracing ~~x1 on ~~x2\"
-                              (+ 3 (* 2 (@ trace-level)))
-                              traced-fn arglist))
-           :exit (:fmt! (msg \"~~t0From input ~~x1: ~~x2\"
-                             (1+ (* 2 (@ trace-level)))
-                             (car arglist) (car values)))))
-   ((FACT :ENTRY (:FMT! (MSG \"~~t0Tracing ~~x1 on ~~x2\"
-                             (+ 3 (* 2 (@ TRACE-LEVEL)))
-                             TRACED-FN ARGLIST))
-          :EXIT (:FMT! (MSG \"~~t0From input ~~x1: ~~x2\"
-                            (1+ (* 2 (@ TRACE-LEVEL)))
-                            (CAR ARGLIST)
-                            (CAR VALUES)))))
-  ACL2 !>(fact 3)
-     Tracing ACL2_*1*_ACL2::FACT on (3)
-       Tracing FACT on (3)
-         Tracing FACT on (2)
-           Tracing FACT on (1)
-             Tracing FACT on (0)
-             From input 0: 1
-           From input 1: 1
-         From input 2: 2
-       From input 3: 6
-     From input 3: 6
-  6
-  ACL2 !>
-  ~ev[]
-
-  ~st[ADVANCED OPTIONS] (alphabetical list)
-
-  ~c[:COMPILE]
-
-  The tracing of ~c[fn] installs a substitute definition of ~c[fn] that prints
-  trace information.  If the ~c[:compile] option is omitted or has value
-  ~c[:same], then the new definition will be compiled if and only if the
-  existing definition is already compiled.  Otherwise, the new definition will
-  be compiled exactly when the value of ~c[:compile] is not ~c[nil].
-
-  ~c[:DEF], ~c[:MULTIPLICITY]
-
-  ACL2's ~c[trace$] mechanism often needs to know the number of outputs of a
-  traced function, in the sense of ~ilc[mv].  If you trace a function that was
-  not defined inside the ACL2 loop (hence you are using the ~c[:native]
-  option), or if you provide an alternative definition using option ~c[:def]
-  (see below) and the new definition changes the number of values returned,
-  then a natural number value for ~c[:multiplicity] informs the trace utility
-  of the number of expected outputs of the function being traced.  In the case
-  that ~c[:native] is supplied, the effect of a non-~c[nil] ~c[:multiplicity]
-  value depends on the host Lisp.  In the case of Lisps for which ACL2 uses the
-  built-in Lisp mechanism for returning multiple values (~pl[mv]), which are
-  CCL and threaded SBCL as of June, 2010, ~c[:multiplicity] is not needed and
-  is ignored with ~c[:native t].  For GCL and Allegro CL, ~c[:multiplicity] is
-  used to generate a suitable ~c[:exit] form if the ~c[:exit] keyword was not
-  already supplied.  For the other Lisps, the ~c[:multiplicity] value is
-  treated essentially as 1 whether it is supplied or not, because we do not
-  know how to pass suitable information based on this value to the host Lisp's
-  built-in tracing mechanism.
-
-  Note that even supplying a ~c[:multiplicity] option does not change the
-  meaning of the variable ~c[values].  See the discussion of ~c[:native]
-  below.
-
-  A useful option can be to supply a definition as the value of ~c[:def].
-  (Again, note that if ~c[:native] is used, then all options other than
-  ~c[:multiplicity] are passed directly to the underlying Lisp; in particular,
-  ~c[:def] will have no effect with ~c[:native] except in the unlikely case
-  that the raw Lisp provides some sort of support for ~c[:def].)  Note that
-  this definition should be like a ~ilc[defun] form, but without the leading
-  ~c[defun] symbol; and it should define the function symbol being traced, with
-  the same formal parameter list.  However, tracing of the so-called
-  ``executable counterpart'' of a function (sometimes referred to as the ``*1*
-  function'', for evaluation in the ACL2 loop; ~pl[guards] for related
-  discussion) is not sensitive to the ~c[:def] option; rather, if a function
-  has an executable counterpart then that executable counterpart is traced.
-
-  ~c[:EVISC-TUPLE]
-
-  The printing described above is, by default, done using the current default
-  trace evisc-tuple, which can be set using ~ilc[set-trace-evisc-tuple] (for
-  the shape of this tuple, ~pl[evisc-tuple]); ~pl[set-trace-evisc-tuple].
-  This tuple is based by default on the raw Lisp variables ~c[*print-level*]
-  and ~c[*print-length*], and will hide the ACL2 ~c[world] and handle
-  ~il[stobj]s appropriately.  You may override this default by supplying an
-  evisc tuple with the ~c[:evisc-tuple] argument in your trace spec.  Be
-  careful to supply a valid evisc-tuple, or you may get a raw Lisp error!
-
-  A special value, ~c[:print], is useful if you are doing system hacking that
-  can produce objects that are not valid ACL2 objects, such as raw Lisp arrays
-  or objects in supporting packages not visible in the ACL2 read-eval-print
-  loop.  If you supply ~c[:evisc-tuple :print], then the printing described
-  above will be done with raw Lisp printing rather than ACL2 printing:
-  specifically, with ~c[(format *trace-output* \"~s~%\" x)], where ~c[x] is the
-  value to be printed.
-
-  A second special value for ~c[:evisc-tuple], ~c[:no-print], avoids printing
-  the values of the ~c[:entry] and ~c[:exit] forms (or their defaults, if not
-  specified).  This option is of use for side effects; for an example see
-  community book ~c[books/misc/wet.lisp].
-
-  Note that if ~c[:evisc-tuple X] is supplied, then the form ~c[X] will be
-  evaluated before the function body is entered.  You can thus pull some tricks
-  to print extra information before the ~c[:entry] form is evaluated, for
-  example as follows for a factorial function, ~c[fact].
-  ~bv[]
-  ACL2 !>(trace$ (fact :evisc-tuple
-                       (prog2$ (cw \"~~|**** HERE IS CW ****~~|\")
-                               nil)))
-   ((FACT :EVISC-TUPLE (PROG2$ (CW \"~~|**** HERE IS CW ****~~|\")
-                               NIL)))
-  ACL2 !>(fact 3)
-  **** HERE IS CW ****
-  1> (ACL2_*1*_ACL2::FACT 3)
-  **** HERE IS CW ****
-    2> (ACL2_*1*_ACL2::FACT 2)
-  **** HERE IS CW ****
-      3> (ACL2_*1*_ACL2::FACT 1)
-  **** HERE IS CW ****
-        4> (ACL2_*1*_ACL2::FACT 0)
-        <4 (ACL2_*1*_ACL2::FACT 1)
-      <3 (ACL2_*1*_ACL2::FACT 1)
-    <2 (ACL2_*1*_ACL2::FACT 2)
-  <1 (ACL2_*1*_ACL2::FACT 6)
-  6
-  ACL2 !>
-  ~ev[]
-
-  ~c[:FORMALS]
-
-  Normally ACL2 can figure out the formals for a given function.  This is
-  always the case for functions defined in the ACL2 command loop and when
-  option ~c[:def] is supplied.  If neither of these cases applies then you can
-  still trace a function (even without using the ~c[:native] option) by
-  supplying option ~c[:notinline :fncall], but you will still need to supply
-  the list of formal parameters.  The value of the ~c[:formals] option should
-  be the list of formals in this case.
-
-  ~c[:HIDE]
-
-  The default value for this advanced option is ~c[t], which causes ~il[stobj]s
-  and the logical ~il[world] to be printed as single symbols, along with
-  certain large structures of interest to developers (rewrite contants, enabled
-  structures, and event and command index structures).  If however the value
-  ~c[nil] is supplied, then this default behavior is defeated.  In that case,
-  you can still arrange to print the logical world as a symbol and to print
-  ~il[stobj]s without breaking the trace printing: ~pl[set-trace-evisc-tuple]
-  for how to do this globally, or similarly use the ~c[:evisc-tuple] option to
-  ~c[trace$] to do this with a single trace spec.  Note however that with value
-  ~c[nil] specified for ~c[:hide], such use of an evisc-tuple will not deal
-  properly with local stobjs (~pl[with-local-stobj]) or stobjs bound by
-  ~ilc[stobj-let], or with the aforementioned large structures other than the
-  logical ~il[world].
-
-  ~c[:NATIVE]
-
-  If ~c[:native] is supplied with a non-~c[nil] value, then the trace spec is
-  passed to the native Lisp trace (after removing the ~c[:native] option).  A
-  trust tag (~pl[defttag]) is required in order to use this option, because no
-  syntactic check is made on the ~c[:cond], ~c[:entry], or ~c[:exit] forms --
-  arbitrary raw Lisp may occur in them!
-
-  Note that by ``native Lisp trace'' we mean the currently installed ~c[trace].
-  As discussed briefly elsewhere (~pl[trace]), ACL2 has modified that trace to
-  be more useful if the underlying host Lisp is GCL, Allegro CL, or CCL
-  (OpenMCL).  If you need the original trace utility supplied for those Lisps,
-  quit the ACL2 loop with ~c[:q] and call ~c[old-trace] and ~c[old-untrace] in
-  raw Lisp where you would otherwise call ~c[trace] and ~c[untrace].  Note that
-  the original trace utility supplied with a given Lisp will not hide the ACL2
-  logical ~il[world] or give special treatment to ~il[stobj]s.
-
-  It is important to understand that if ~c[:native t] is specified, then all
-  other options are interpreted by the native Lisp trace.  For example, that
-  trace probably has no understanding of the use of ~c[:fmt] described above
-  for ~c[:entry] or ~c[:exit].  Indeed, the native trace may not even accept
-  any of ~c[:cond], ~c[:entry] or ~c[:exit], let alone any of the advanced
-  options!  Moreover, if ~c[:native t] is specified, then even a
-  ~c[:multiplicity] option does not provide the meaning of the variable
-  ~c[values] that one might desire.  In GCL for example, in the case of an
-  ~ilc[mv] return of a function defined only in raw Lisp (not in ACL2), this
-  variable will be bound to a list containing only the first result.
-
-  ~c[:NOTINLINE]
-
-  By default, a new definition installed by ~c[trace$] will include a
-  ~c[notinline] declaration so that recursive calls will always be traced.  To
-  avoid this declaration, supply value ~c[nil].
-
-  A special value for ~c[:notinline], ~c[:fncall], will cause the traced
-  function to call its original definition.  Without this special value, the
-  new installed definition for the traced function will include the body of the
-  original definition.  This ~c[:fncall] behavior is the default only in the
-  following cases:
-  ~bq[]
-  o for functions whose definitions are built into ACL2;
-
-  o for functions that have been added (using a trust tag, an advanced feature,
-  so most users can probably ignore this case) to either of the ~ilc[state]
-  global variables ~c[program-fns-with-raw-code] or
-  ~c[logic-fns-with-raw-code];
-
-  o (`HONS' extension only; ~pl[hons-and-memoization]) for ~ilc[memoize]d
-  functions.~eq[]
-
-  The legal values for ~c[:notinline] are ~c[t] (the default for other than the
-  cases displayed above), ~c[nil], and ~c[:fncall].  (Except: For the 'HONS'
-  extension, only ~c[:fncall] is legal.)
-
-  ~st[Remarks].
-
-  (1) If some of the given trace specs have errors, then ~c[trace$] will
-  generally print error messages for those but will still process those that do
-  not have errors.  The value returned will indicate the trace specs that were
-  processed successfully.
-
-  (2) If you certify or include a book that redundantly defines a function that
-  is currently traced, then tracing behavior may disappear if a compiled
-  definition is installed for the function or its in-the-logic (so-called
-  `*1*') counterpart.
-
-  (3) Some predefined functions are called during tracing.  In order to avoid
-  infinite loops, such calls of traced predefined functions will be made using
-  the original predefined functions, not using their code installed by
-  ~c[trace$].~/"
-
   (cond
    ((null trace-specs)
     '(value (f-get-global 'trace-specs state)))
@@ -29791,222 +23729,6 @@
                (value :invisible))))
 
 (defmacro trace! (&rest fns)
-
-  ":Doc-Section Trace
-
-  trace the indicated functions after creating an active trust tag~/
-  ~bv[]
-  Example:
-  (trace! (fact :native t :entry *foo*))~/
-
-  General Form:
-  (trace! spec1 ... specn)
-  ~ev[]
-  where the ~c[fni] are suitable arguments to ~ilc[trace$].
-
-  ~c[Trace!] is a version of ~ilc[trace$] that avoids the need for an
-  already-active trust tag (or ``ttag''; ~pl[defttag]), as explained below.
-  ~l[trace$] for when a trust tag can be necessary.
-
-  ~l[untrace$] for how to undo the effect of ~ilc[trace!].
-
-  The evaluation of a ~c[trace!] form causes temporary creation of an active
-  trust tag, ~c[:trace!], followed by the corresponding ~c[trace$] form.  The
-  trust tag will disappear when the call to ~c[trace!] completes.  Even though
-  ~c[trace!] will remove its temporary ttag, it will still print a
-  ``~c[TTAG NOTE]'', which indicates that the session is suspect.  ~l[defttag]
-  and ~pl[ttags-seen] for further remarks on this issue.
-
-  Because of the active trust tag, it is possible to do things with ~c[trace!]
-  that are useful but without logical justification.  Below is an example of
-  how to use ~c[trace!] to cause a function call to change ~il[state], even
-  though the function does not take ~ilc[state] as a parameter.
-
-  ~bv[]
-  ACL2 !>(defun fact (n)
-           (declare (xargs :guard (natp n) :verify-guards nil))
-           (if (zp n)
-               1
-             (* n (fact (1- n)))))
-
-  The admission of FACT is trivial, using the relation O< (which is known
-  to be well-founded on the domain recognized by O-P) and the measure
-  (ACL2-COUNT N).  We observe that the type of FACT is described by the
-  theorem (AND (INTEGERP (FACT N)) (< 0 (FACT N))).  We used the :compound-
-  recognizer rule ZP-COMPOUND-RECOGNIZER and primitive type reasoning.
-
-  Summary
-  Form:  ( DEFUN FACT ...)
-  Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
-          (:FAKE-RUNE-FOR-TYPE-SET NIL))
-  Warnings:  None
-  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
-   FACT
-  ACL2 !>(defun update-foo (n value state)
-           (declare (xargs :stobjs state :verify-guards nil))
-           (assign foo (cons (cons n value) (@ foo))))
-
-  Since UPDATE-FOO is non-recursive, its admission is trivial.  We observe
-  that the type of UPDATE-FOO is described by the theorem
-  (AND (CONSP (UPDATE-FOO N VALUE STATE))
-       (TRUE-LISTP (UPDATE-FOO N VALUE STATE))).
-  We used primitive type reasoning.
-
-  (UPDATE-FOO * * STATE) => (MV * * STATE).
-
-  Summary
-  Form:  ( DEFUN UPDATE-FOO ...)
-  Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
-  Warnings:  None
-  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
-   UPDATE-FOO
-  ACL2 !>(trace! (fact :exit (update-foo n value state)))
-
-  TTAG NOTE: Adding ttag :TRACE! from the top level loop.
-   ((FACT :EXIT (UPDATE-FOO N VALUE STATE)))
-  ACL2 !>(assign foo nil)
-   NIL
-  ACL2 !>(fact 7)
-  1> (ACL2_*1*_ACL2::FACT 7)
-    2> (ACL2_*1*_ACL2::FACT 6)
-      3> (ACL2_*1*_ACL2::FACT 5)
-        4> (ACL2_*1*_ACL2::FACT 4)
-          5> (ACL2_*1*_ACL2::FACT 3)
-            6> (ACL2_*1*_ACL2::FACT 2)
-              7> (ACL2_*1*_ACL2::FACT 1)
-                8> (ACL2_*1*_ACL2::FACT 0)
-                <8 NIL
-              <7 NIL
-            <6 NIL
-          <5 NIL
-        <4 NIL
-      <3 NIL
-    <2 NIL
-  <1 NIL
-  5040
-  ACL2 !>(@ foo)
-  ((7 . 5040)
-   (6 . 720)
-   (5 . 120)
-   (4 . 24)
-   (3 . 6)
-   (2 . 2)
-   (1 . 1)
-   (0 . 1))
-  ACL2 !>(verify-guards fact)
-
-  Computing the guard conjecture for FACT....
-
-  The guard conjecture for FACT is trivial to prove, given the :compound-
-  recognizer rules NATP-COMPOUND-RECOGNIZER and ZP-COMPOUND-RECOGNIZER,
-  primitive type reasoning and the :type-prescription rule FACT.  FACT
-  is compliant with Common Lisp.
-
-  Summary
-  Form:  ( VERIFY-GUARDS FACT)
-  Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
-          (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
-          (:FAKE-RUNE-FOR-TYPE-SET NIL)
-          (:TYPE-PRESCRIPTION FACT))
-  Warnings:  None
-  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
-   FACT
-  ACL2 !>(assign foo nil)
-   NIL
-  ACL2 !>(fact 7)
-  1> (ACL2_*1*_ACL2::FACT 7)
-    2> (FACT 7)
-      3> (FACT 6)
-        4> (FACT 5)
-          5> (FACT 4)
-            6> (FACT 3)
-              7> (FACT 2)
-                8> (FACT 1)
-                  9> (FACT 0)
-                  <9 NIL
-                <8 NIL
-              <7 NIL
-            <6 NIL
-          <5 NIL
-        <4 NIL
-      <3 NIL
-    <2 NIL
-  <1 NIL
-  5040
-  ACL2 !>(@ foo)
-  ((7 . 5040)
-   (7 . 5040)
-   (6 . 720)
-   (5 . 120)
-   (4 . 24)
-   (3 . 6)
-   (2 . 2)
-   (1 . 1)
-   (0 . 1))
-  ACL2 !>(trace! (fact :exit (progn (update-foo n value state)
-                                    (cons traced-fn values))))
-
-  TTAG NOTE: Adding ttag :TRACE! from the top level loop.
-   ((FACT :EXIT (PROGN (UPDATE-FOO N VALUE STATE)
-                       (CONS TRACED-FN VALUES))))
-  ACL2 !>(assign foo nil)
-   NIL
-  ACL2 !>(fact 7)
-  1> (ACL2_*1*_ACL2::FACT 7)
-    2> (FACT 7)
-      3> (FACT 6)
-        4> (FACT 5)
-          5> (FACT 4)
-            6> (FACT 3)
-              7> (FACT 2)
-                8> (FACT 1)
-                  9> (FACT 0)
-                  <9 (FACT 1)
-                <8 (FACT 1)
-              <7 (FACT 2)
-            <6 (FACT 6)
-          <5 (FACT 24)
-        <4 (FACT 120)
-      <3 (FACT 720)
-    <2 (FACT 5040)
-  <1 (ACL2_*1*_ACL2::FACT 5040)
-  5040
-  ACL2 !>(@ foo)
-  ((7 . 5040)
-   (7 . 5040)
-   (6 . 720)
-   (5 . 120)
-   (4 . 24)
-   (3 . 6)
-   (2 . 2)
-   (1 . 1)
-   (0 . 1))
-  ACL2 !>
-  ~ev[]
-
-  Finally, we remark that the use ~c[trace!] can cause errors in situations
-  where tracing is automatically suspended and re-introduced.  This is likely
-  to be a rare occurrence, but consider the following example.
-  ~bv[]
-  (trace! (lexorder :native t :multiplicity 1))
-  (certify-book \"foo\" 0 t)
-  ~ev[]
-  If the certify-book causes compilation, you may see an error such as the
-  following.
-  ~bv[]
-
-  ACL2 Error in (CERTIFY-BOOK \"foo\" ...):  The keyword :NATIVE cannot
-  be used in a trace spec unless there is an active trust tag.  The trace
-  spec (LEXORDER :NATIVE T :MULTIPLICITY 1) is thus illegal.  Consider
-  using trace! instead.  The complete list of keywords that require a
-  trust tag for use in a trace spec is: (:NATIVE :DEF :MULTIPLICITY).
-
-  ~ev[]
-  This error is harmless.  The function will appear, when calling ~c[(trace$)],
-  to remain traced, but in fact there will be no tracing behavior, so you may
-  want to call ~ilc[untrace$] on the function symbol in question.
-  ~/"
-
   (let ((form
          `(with-ubt!
            (with-output
@@ -30032,27 +23754,6 @@
     form))
 
 (defmacro untrace$ (&rest fns)
-
-  ":Doc-Section Trace
-
-  untrace functions~/
-  ~bv[]
-  Examples:
-  (untrace$)         ; untrace all functions previously
-                     ; traced (e.g. with trace$ or trace!)
-  (untrace$ foo bar) ; as above, except only untrace foo and bar~/
-
-  General Forms:
-  (untrace$)                 ; untrace all (as noted above)
-  (untrace$ fn1 fn2 ... fnk) ; untrace the indicated functions
-  ~ev[]
-  where the ~c[fni] were previously traced (e.g. with ~ilc[trace$] or
-  ~ilc[trace!]).
-
-  ~c[Untrace$] undoes the effect of ~ilc[trace$].  ~l[trace$].  The value
-  returned by ~c[untrace$] gives the list of functions for which tracing is
-  being removed.~/"
-
   `(untrace$-fn ',fns state))
 
 (defun open-trace-file-fn (filename state)
@@ -30082,22 +23783,6 @@
                state)))))
 
 (defmacro open-trace-file (filename)
-
-  ":Doc-Section Trace
-
-  redirect trace output to a file~/
-  ~bv[]
-  Example:
-  (open-trace-file \"foo\") ; trace output will go to file foo~/
-
-  General Form:
-  (open-trace-file filename) ; trace output will go to file filename
-  ~ev[]
-
-  Output from ~ilc[trace$] normally goes to the screen, i.e.,
-  ~ilc[standard-co].  But it can be redirected to a file as shown above.
-  ~l[close-trace-file] for how to send trace output back to the screen.~/"
-
   (declare (xargs :guard (stringp filename)))
   `(pprogn (close-trace-file-fn t state)
            (open-trace-file-fn ,filename state)))
@@ -30116,19 +23801,6 @@
             (f-put-global 'trace-co *standard-co* state))))
 
 (defmacro close-trace-file ()
-
-  ":Doc-Section Trace
-
-  stop redirecting trace output to a file~/
-  ~bv[]
-  General Form:
-  (close-trace-file) ; trace output is no longer redirected to a file~/
-  ~ev[]
-
-  Output from ~ilc[trace$] normally goes to the screen, or more precisely,
-  ~ilc[standard-co].  It can be redirected to a file; ~pl[open-trace-file].
-  Use ~c[close-trace-file] to redirect trace output to ~ilc[standard-co].~/"
-
   '(close-trace-file-fn nil state))
 
 (defmacro break-on-error (&optional (on 't))
@@ -30137,46 +23809,6 @@
 ; hard errors into soft errors (mv t msg latches), which in turn cause calls of
 ; error1 in trans-eval.  We trace on exit so that the error message will be
 ; printed.
-
-  ":Doc-Section Trace
-
-  break when encountering a hard or soft error caused by ACL2~/
-  ~bv[]
-  General forms:
-  (break-on-error t)    ; installs a trace causing a continuable error (break)
-                        ;   when an error is invoked by ACL2.
-  (break-on-error)      ; same as above
-  (break-on-error :all) ; same as above, but even when inside the prover
-  (break-on-error nil)  ; uninstall any above trace
-  ~ev[]
-  ~c[(Break-on-error)] generates a suitable trace of error functions.  Evaluate
-  ~c[(trace$)] after ~c[(break-on-error)] if you want to see the specific trace
-  forms (which you can modify and then submit directly to ~c[trace$], if you
-  wish).  This ~il[trace] should cause entry to the Lisp debugger whenever ACL2
-  calls its error routines, except for certain errors when inside the theorem
-  prover, and also at those times if option :all is supplied.
-
-  NOTE: For technical reasons, you may see some error messages more than once.
-
-  Finally, note that you are welcome to define your own version of
-  ~c[break-on-error] by modifying a copy of the source definition (search for
-  ``~c[(defmacro break-on-error]'' in ACL2 source file other-events.lisp).
-  Please feel free to send your version of ~c[break-on-error] to the ACL2
-  implementors, for possible inclusion into ACL2.
-
-  ~c[Break-on-error] is implmented using ACL2 ~ilc[trace$].  ~l[trace!] if you
-  want an explanation of the ``~c[TTAG NOTE]'' that is printed.
-
-  The argument, if supplied, is evaluated and must evaluate to ~c[t], ~c[nil],
-  or ~c[:all].
-
-  Also ~pl[set-debugger-enable] for how to get raw-Lisp backtrace information
-  when an error occurs as a result of ~c[break-on-error], or even of a raw Lisp
-  error, by calling ~c[set-debugger-enable] with argument ~c[:bt],
-  ~c[:bt-break], or ~c[:break-bt].  Note that for ACL2 errors (as opposed to
-  raw Lisp errors), i.e. errors affected by ~c[break-on-error], all three of
-  those keyword values are treated equivalently (and, all are ignored for
-  non-ANSI GCL; ~pl[set-debugger-enable]).~/~/"
 
   (let* ((error1-trace-form
           '(error1 :entry (:fmt (msg "[Breaking on error:]"))
@@ -30479,203 +24111,6 @@
               nil nil nil nil nil)))))))
 
 (defmacro defexec (&whole whole fn formals &rest rest)
-
-  ":Doc-Section Events
-
-  attach a terminating executable function to a definition~/
-
-  Suppose you define a function ~c[(fn x)] with a ~il[guard] of
-  ~c[(good-input-p x)], and you know that when the guard holds, the measure
-  decreases on each recursive call.  Unfortunately, the definitional principle
-  (~pl[defun]) ignores the guard.  For example, if the definition has the form
-  ~bv[]
-  (defun fn (x)
-    (declare (xargs :guard (good-input-p x)))
-    (if (not-done-yet x)
-        (... (fn (destr x)) ...)
-      ...))
-  ~ev[]
-  then in order to admit this definition, ACL2 must prove the appropriate
-  formula asserting that ~c[(destr x)] is ``smaller than'' ~c[x] under the
-  assumption ~c[(not-done-yet x)] but without the assumption
-  ~c[(good-input-p x)], even if ~c[(not-done-yet x)] is true.  In essence, it
-  may be necessary to submit instead the following definition.
-  ~bv[]
-  (defun fn (x)
-    (declare (xargs :guard (good-input-p x)))
-    (if (good-input-p x)
-        (if (not-done-yet x)
-            (... (fn (destr x)) ...)
-          ...)
-      nil)
-  ~ev[]
-  But it is unfortunate that when calls of ~c[fn] are evaluated, for example
-  when ~c[fn] is applied to an explicit constant during a proof, then a call of
-  ~c[good-input-p] must now be evaluated on each recursive call.
-
-  Fortunately, ~c[defexec] provides a way to keep the execution efficient.  For
-  the example above we could use the following form.
-  ~bv[]
-  (defexec fn (x)
-    (declare (xargs :guard (good-input-p x)))
-    (mbe :logic (if (good-input-p x)
-                    (if (not-done-yet x)
-                        (... (fn (destr x)) ...)
-                      ...)
-                  nil)
-         :exec  (if (not-done-yet x)
-                    (... (fn (destr x)) ...)
-                  ...)))
-  ~ev[]
-  Here ``~ilc[mbe]'' stands for ``must be equal'' and, roughly speaking, its
-  call above is logically equal to the ~c[:logic] form but is evaluated using
-  the ~c[:exec] form when the guard holds.  ~l[mbe].  The effect is thus to
-  define ~c[fn] as shown in the ~ilc[defun] form above, but to cause execution
-  of ~c[fn] using the ~c[:exec] body.  The use of ~c[defexec] instead of
-  ~ilc[defun] in the example above causes a termination proof to be performed,
-  in order to guarantee that evaluation always theoretically terminates, even
-  when using the ~c[:exec] form for evaluation.
-  ~bv[]
-  Example:
-
-  ; Some of the keyword arguments in the declarations below are irrelevant or
-  ; unnecessary, but they serve to illustrate their use.
-
-  (defexec f (x)
-    (declare (xargs :measure (+ 15 (acl2-count x))
-                    :ruler-extenders :basic
-                    :hints ((\"Goal\" :in-theory (disable nth)))
-                    :guard-hints ((\"Goal\" :in-theory (disable last)))
-                    :guard (and (integerp x) (<= 0 x) (< x 25)))
-             (exec-xargs
-                    :test (and (integerp x) (<= 0 x))
-                    :default-value 'undef ; defaults to nil
-                    :measure (nfix x)
-                    :ruler-extenders :basic
-                    :well-founded-relation o<))
-    (mbe :logic (if (zp x)
-                    1
-                  (* x (f (- x 1))))
-         :exec  (if (= x 0)
-                    1
-                  (* x (f (- x 1))))))
-  ~ev[]
-  The above example macroexpands to the following.
-  ~bv[]
-  (ENCAPSULATE ()
-   (LOCAL
-    (ENCAPSULATE ()
-     (SET-IGNORE-OK T)
-     (SET-IRRELEVANT-FORMALS-OK T)
-     (LOCAL (DEFUN F (X)
-              (DECLARE
-               (XARGS :VERIFY-GUARDS NIL
-                      :HINTS ((\"Goal\" :IN-THEORY (DISABLE NTH)))
-                      :MEASURE (NFIX X)
-                      :RULER-EXTENDERS :BASIC
-                      :WELL-FOUNDED-RELATION O<))
-              (IF (AND (INTEGERP X) (<= 0 X))
-                  (IF (= X 0) 1 (* X (F (- X 1))))
-                  'UNDEF)))
-     (LOCAL (DEFTHM F-GUARD-IMPLIES-TEST
-              (IMPLIES (AND (INTEGERP X) (<= 0 X) (< X 25))
-                       (AND (INTEGERP X) (<= 0 X)))
-              :RULE-CLASSES NIL))))
-   (DEFUN F (X)
-     (DECLARE (XARGS :MEASURE (+ 15 (ACL2-COUNT X))
-                     :RULER-EXTENDERS :BASIC
-                     :HINTS ((\"Goal\" :IN-THEORY (DISABLE NTH)))
-                     :GUARD-HINTS ((\"Goal\" :IN-THEORY (DISABLE LAST)))
-                     :GUARD (AND (INTEGERP X) (<= 0 X) (< X 25))))
-     (MBE :LOGIC
-          (IF (ZP X) 1 (* X (F (- X 1))))
-          :EXEC
-          (IF (= X 0) 1 (* X (F (- X 1)))))))
-  ~ev[]
-  Notice that in the example above, the ~c[:]~ilc[hints] in the ~ilc[local]
-  definition of ~c[F] are inherited from the ~c[:hints] in the ~ilc[xargs] of
-  the ~c[defexec] form.  We discuss such inheritance below.
-
-  ~sc[Caveat]: Termination is not considered for calls of ~ilc[mbe] under the
-  top-level call.  Moreover, the ~c[:exec] part of an ~ilc[mbe] call under the
-  ~c[:logic] part of any superior ~c[mbe] call is completely ignored.
-
-  ~bv[]
-  General Form:
-  (defexec fn (var1 ... varn) doc-string dcl ... dcl
-    (mbe :LOGIC logic-body
-         :EXEC  exec-body))
-  ~ev[]
-  where the syntax is identical to the syntax of ~ilc[defun] where the body is
-  a call of ~c[mbe], with the exceptions described below.  Thus, ~c[fn] is the
-  symbol you wish to define and is a new symbolic name and ~c[(var1 ... varn)]
-  is its list of formal parameters (~pl[name]).  The first exception is that at
-  least one ~c[dcl] (i.e., ~ilc[declare] form) must specify a ~c[:guard],
-  ~c[guard].  The second exception is that one of the ~c[dcl]s is allowed to
-  contain an element of the form ~c[(exec-xargs ...)].  The ~c[exec-xargs]
-  form, if present, must specify a non-empty ~ilc[keyword-value-listp] each of
-  whose keys is one of ~c[:test], ~c[:default-value], or one of the standard
-  ~ilc[xargs] keys of ~c[:measure], ~c[:ruler-extenders],
-  ~c[:well-founded-relation], ~c[:hints], or ~c[:stobjs].  Any of these five
-  standard ~c[xargs] keys that is present in an ~c[xargs] of some ~c[dcl] but
-  is not specified in the (possibly nonexistent) ~c[exec-xargs] form is
-  considered to be specified in the ~c[exec-xargs] form, as illustrated in the
-  example above for ~c[:hints].  (So for example, if you want ~c[:hints] in the
-  final, non-local definition but not in the local definition, then specify the
-  ~c[:hints] in the ~c[xargs] but specify ~c[:hints nil] in the
-  ~c[exec-xargs].)  If ~c[:test] is specified and not ~c[nil], let ~c[test] be
-  its value; otherwise let ~c[test] default to ~c[guard].  If
-  ~c[:default-value] is specified, let ~c[default-value] be its value; else
-  ~c[default-value] is ~c[nil].  ~c[Default-value] should have the same
-  ~il[signature] as ~c[exec-body]; otherwise the ~c[defexec] form will fail to
-  be admitted.
-
-  The above General Form's macroexpansion is of the form
-  ~c[(PROGN encap final-def)], where ~c[encap] and ~c[final-def] are as
-  follows.  ~c[Final-def] is simply the result of removing the ~c[exec-xargs]
-  declaration (if any) from its ~ilc[declare] form, and is the result of
-  evaluating the given ~c[defexec] form, since ~c[encap] is of the following
-  form.
-  ~bv[]
-  ; encap
-  (ENCAPSULATE ()
-    (set-ignore-ok t)             ; harmless for proving termination
-    (set-irrelevant-formals-ok t) ; harmless for proving termination
-    (local local-def)
-    (local local-thm))
-  ~ev[]
-  The purpose of ~c[encap] is to ensure the the executable version of ~c[name]
-  terminates on all arguments.  Thus, ~c[local-def] and ~c[local-thm] are as
-  follows, where the ~c[xargs] of the ~ilc[declare] form are the result of
-  adding ~c[:VERIFY-GUARDS NIL] to the result of removing the ~c[:test] and
-  (optional) ~c[:default-value] from the ~c[exec-xargs].
-  ~bv[]
-  ; local-def
-  (DEFUN fn formals
-    (DECLARE (XARGS :VERIFY-GUARDS NIL ...))
-    (IF test
-        exec-body
-      default-value))
-
-  ; local-thm
-  (DEFTHM fn-EXEC-GUARD-HOLDS
-    (IMPLIES guard test)
-    :RULE-CLASSES NIL)
-  ~ev[]
-  We claim that if the above ~c[local-def] and ~c[local-thm] are admitted, then
-  all evaluations of calls of ~c[fn] terminate.  The concern is that the use
-  of ~ilc[mbe] in ~c[final-def] allows for the use of ~c[exec-body] for a call
-  of ~c[fn], as well as for subsequent recursive calls, when ~c[guard] holds
-  and assuming that the guards have been verified for ~c[final-def].  However,
-  by ~c[local-thm] we can conclude in this case that ~c[test] holds, in which
-  case the call of ~c[fn] may be viewed as a call of the version of ~c[fn]
-  defined in ~c[local-def].  Moreover, since guards have been verified for
-  ~c[final-def], then guards hold for subsequent evaluation of ~c[exec-body],
-  and in particular for recursive calls of ~c[fn], which can thus continue to
-  be viewed as calls using ~c[local=def].~/~/
-
-  :cited-by mbe"
-
   (let ((dcls-and-strings (butlast rest 1))
         (body (car (last rest))))
     (mv-let (erp exec-body)
@@ -31667,83 +25102,9 @@
    (t (pl2-fn name nil 'pl state))))
 
 (defmacro pl (name)
-
-  ":Doc-Section History
-
-  print the rules for the given name or term~/
-  ~bv[]
-  Examples:
-  :pl foo     ; prints rules that rewrite some call of foo
-  :pl (+ x y) ; prints rules that rewrite (+ x y)
-  ~ev[]~/
-
-  Also ~pl[pl2], which restricts output to rules that you specify for a given
-  term.
-
-  ~c[Pl] takes one argument, which should be a symbol or a term.
-
-  First suppose that the argument is a symbol.  Then it should be either a
-  function symbol or else a macro alias for a function symbol
-  (~pl[macro-aliases-table]), which is treated as the corresponding function
-  symbol.  In this case ~c[:pl] displays rules that apply to terms whose top
-  function symbol is the one specified, specifically, rules of class
-  ~c[:]~ilc[rewrite], ~c[:]~ilc[definition], ~c[:]~ilc[meta],
-  ~c[:]~ilc[linear], ~c[:]~ilc[type-prescription], ~c[:]~ilc[forward-chaining],
-  ~c[:]~ilc[elim], and ~c[:]~ilc[induction].
-
-  Otherwise the argument should be a term (in user syntax, so that for example
-  macros are permitted).  In this case, ~c[:pl] displays the
-  ~c[:]~ilc[rewrite], ~c[:]~ilc[definition], and ~c[:meta] rules that rewrite
-  the specified term, followed by the applicable ~c[:]~ilc[type-prescription]
-  rules.  Each rule is displayed with additional information, such as the
-  hypotheses that remain after applying some simple techniques to discharge
-  them that are likely to apply in any context.  Note that for ~c[:]~ilc[meta]
-  rules, only those are displayed that meet two conditions: the application of
-  the metafunction returns a term different from the input term, and if there
-  is a hypothesis metafunction then it also returns a term.  (A subtlety: In
-  the case of extended metafunctions (~pl[extended-metafunctions]), a trivial
-  metafunction context is used for the application of the metafunction.)
-
-  Note that some rule classes are not handled by ~c[:pl].  In particular, if
-  you want to see all ~c[:]~ilc[clause-processor] rules, issue the command
-  ~c[:print-clause-processor-rules], and for trusted clause-processors,
-  ~c[(table trusted-clause-processor-table)]; ~pl[clause-processor] and
-  ~pl[define-trusted-clause-processor].~/"
-
   (list 'pl-fn name 'state))
 
 (defmacro pl2 (form rule-id)
-
-  ":Doc-Section History
-
-  print rule(s) for the given form~/
-  ~bv[]
-  Examples:
-  :pl2 (+ x y) nil ; prints rules that apply to (+ x y)
-  :pl2 (+ x y) foo ; prints rules named foo that apply to (+ x y)
-  :pl2 (+ x y) (:rewrite foo) ; if the rule with rune (:rewrite foo) applies
-                              ;   to (+ x y), then print it
-  :pl2 (+ x y) (:type-prescription foo)
-                              ; as above, but for the indicated
-                              ;   type-prescription rule
-  ~ev[]~/
-
-  ~c[Pl2] takes two arguments.  The first is a term.  The second is either
-  ~c[nil] or a ``rule-id'' that is either a symbol or a ~il[rune].  The result
-  is to print rules of class ~c[:]~ilc[rewrite], ~c[:]~ilc[definition],
-  ~c[:meta], ~c[:]~ilc[linear], and ~c[:]~ilc[type-prescription] that apply to
-  the given term.  Indeed, ~c[:pl2] prints exactly what is printed by applying
-  ~c[:]~ilc[pl] to the first argument ~-[] ~pl[pl] ~-[] except that if the
-  second argument is not ~c[nil] then it is used to filter the rules printed,
-  as follows.~bq[]
-
-  If the rule-id is a symbol, then only rules whose name is that symbol will be
-  printed.
-
-  If the rule-id is a ~il[rune], then at most one rule will be printed: the
-  rule named by that rune (if the rule would be printed by
-  ~c[:]~ilc[pl]).~eq[]~/"
-
   (list 'pl2-fn form rule-id ''pl2 'state))
 
 ; Essay on Include-book-dir-alist
@@ -32085,12 +25446,6 @@
                               state
                               '(table custom-keywords-table))))))))))
 
-(link-doc-to set-non-linear switches-parameters-and-modes set-non-linearp)
-(link-doc-to set-let*-abstraction switches-parameters-and-modes
-             set-let*-abstractionp)
-(link-doc-to set-ld-skip-proofs switches-parameters-and-modes
-             set-ld-skip-proofsp)
-
 #-acl2-loop-only
 (defmacro reset-prehistory (&rest args)
   (declare (ignore args))
@@ -32104,46 +25459,6 @@
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
 ; skip-proofs".
-
-  ":Doc-Section switches-parameters-and-modes
-
-  reset the prehistory~/
-  ~bv[]
-  Examples:
-  (reset-prehistory)     ; restart command numbering at 0
-  (reset-prehistory nil) ; same as above
-  (reset-prehistory t)   ; as above except also disable ubt-prehistory~/
-
-  General Forms:
-  (reset-prehistory)
-  (reset-prehistory permanent-p)
-  (reset-prehistory permanent-p doc-string)
-  ~ev[]
-  where ~c[permanent-p] is ~c[t] or ~c[nil], and ~c[doc-string] is an optional
-  ~il[documentation] string not beginning with ``~c[:Doc-Section] ...''.  After
-  execution of this command, ACL2 will change the numbering provided by its
-  ~il[history] utilities so that this ~c[reset-prehistory] command (or the
-  top-level compound ~il[command] containing it, which for example might be an
-  ~ilc[include-book]) is assigned the number 0.  The only way to undo this
-  command is with command ~ilc[ubt-prehistory].  However, even that is
-  disallowed if ~c[permanent-p] is ~c[t].
-
-  Note that the second argument of ~ilc[certify-book], which specifies the
-  number of commands in the certification world (i.e., since ground-zero), is
-  not sensitive to ~c[reset-prehistory]; rather, it expects the number of
-  commands since ground-zero.  To see such commands,
-  ~c[:]~ilc[pbt]~c[ :start].
-
-  A ~c[reset-prehistory] event with value ~c[nil] for ~c[permanent-p] (the
-  default) is always skipped during ~ilc[certify-book] and ~ilc[include-book]
-  (indeed, whenever ~ilc[ld-skip-proofsp] is ~c[t]).  Otherwise one would find
-  the history numbering reset to 0 just by virtue of including (or certifying) a
-  book ~-[] probably not what was intended.
-
-  ~l[ubt-prehistory] for how to undo a ~c[reset-prehistory] command that does
-  not have a ~c[permanent-p] of ~c[t].~/"
-
-; Warning: See the Important Boot-Strapping Invariants before modifying!
 
   (declare (xargs :guard (member-eq permanent-p '(t nil))))
   (list 'reset-prehistory-fn
@@ -32205,35 +25520,6 @@
 )
 
 (defun reset-kill-ring (n state)
-
-  ":Doc-Section History
-
-  save memory by resetting and perhaps resizing the kill ring used by ~ilc[oops]~/
-
-  By default, ACL2 holds on to old logical ~il[world]s when you undo
-  ~il[command]s (~pl[ubt]), as documented elswhere; ~pl[oops].  You can free up
-  memory by deleting those old worlds using ~c[reset-kill-ring].
-  ~bv[]
-  Examples:
-  (reset-kill-ring t state)   ; replace each element of the kill ring by nil
-  (reset-kill-ring 2 state)   ; create a new kill ring of '(nil nil)
-  (reset-kill-ring 0 state)   ; create a new kill ring that is empty
-  (reset-kill-ring nil state) ; just return the length of the kill ring
-
-  General form:
-  (reset-kill-ring n state)
-  ~ev[]
-  where ~c[n] evaluates either to ~c[t], to ~c[nil], or to a nonnegative
-  integer (a ~ilc[natp]).  If ~c[n] evaluates to ~c[t], it is treated as the
-  length of the current kill ring.  If ~c[n] is ~c[nil], then the length ~c[k]
-  of the current kill ring is returned as a value triple ~c[(mv nil k state)].
-  If ~c[n] is a ~ilc[natp], then the kill ring is replaced with a list of ~c[n]
-  ~c[nil]s.
-
-  In particular, use ~c[(reset-kill-ring 0 state)] to avoid saving any old
-  logical ~il[world]s, at the cost of disabling the effect of the ~ilc[oops]
-  ~il[command].~/~/"
-
   (declare (xargs :guard (or (eq n t) (natp n))))
   (let ((n (if (eq n t)
                (length (f-get-global 'undone-worlds-kill-ring state))
@@ -32632,160 +25918,6 @@
                                         (world-evisceration-alist state nil)
                                         nil ; hiding-cars
                                         )))
-  ":Doc-Section Other
-
-  print a form whose evaluation caused a guard violation~/
-
-  By default, ACL2 checks input constraints on functions, known as
-  ~il[guard]s.  When guards are violated, an informative message is printed;
-  but sometimes it is useful to investigate why the guard check fails.  The
-  utility ~c[print-gv] is provided for that purpose.  (Alternatively, you may
-  prefer to avoid guards entirely with ~c[(set-guard-checking :none)];
-  ~pl[set-guard-checking].)
-  ~bv[]
-  Example Forms:
-  (print-gv)
-  (print-gv :evisc-tuple (evisc-tuple 4 4 nil nil))
-  (print-gv :evisc-tuple (evisc-tuple 4 ; print-level
-                                      5 ; print-length
-                                      (world-evisceration-alist state nil)
-                                      nil ; hiding-cars
-                                      ))
-  ~ev[]~/
-  ~bv[]
-  General Form:
-  (print-gv :evisc-tuple x)
-  ~ev[]
-  where the ~c[:evisc-tuple] argument is optional and defaults to one that
-  hides only the ACL2 logical ~il[world], by printing ~c[<world>] instead of a
-  very large structure.  ~l[evisc-tuple] for a discussion of evisc-tuples.
-
-  To see how one might use ~c[print-gv], consider the following definition.
-  ~bv[]
-  (defun foo (x)
-    (declare (xargs :guard (and (my-first-predicate x)
-                                (my-second-predicate x))))
-    (cdr x))
-  ~ev[]
-  Now suppose we evaluate a call of ~c[foo] and obtain a guard violation.
-  ~bv[]
-  ACL2 !>(foo 3)
-
-
-  ACL2 Error in TOP-LEVEL:  The guard for the function call (FOO X),
-  which is (AND (MY-FIRST-PREDICATE X) (MY-SECOND-PREDICATE X)), is violated
-  by the arguments in the call (FOO 3).  To debug: See :DOC print-gv,
-  see :DOC trace, and see :DOC wet.  See :DOC set-guard-checking for
-  information about suppressing this check with (set-guard-checking :none),
-  as recommended for new users.
-
-  ACL2 !>
-  ~ev[]
-  We can obtain (in essence) the guard form that was false, as follows.
-  ~bv[]
-  ACL2 !>(print-gv)
-
-  (LET ((X '3))
-       (DECLARE (IGNORABLE X))
-       (AND (MY-FIRST-PREDICATE X)
-            (MY-SECOND-PREDICATE X)))
-
-  ACL2 !>
-  ~ev[]
-  But which conjunct is to blame?  With a bit of editing we can try each
-  conjunct in turn.
-  ~bv[]
-  ACL2 !>(LET ((X '3))
-              (DECLARE (IGNORABLE X))
-              (MY-FIRST-PREDICATE X))
-  T
-  ACL2 !>(LET ((X '3))
-              (DECLARE (IGNORABLE X))
-              (MY-SECOND-PREDICATE X))
-  NIL
-  ACL2 !>
-  ~ev[]
-  Aha!  Now we can investigate why the second predicate fails for 3.
-
-  The following hack will give you access in raw Lisp to the form printed by
-  ~c[(print-gv)].  After a guard violation, just submit this form to raw Lisp:
-  ~bv[]
-  (print-gv1 (wormhole-data (cdr (assoc 'ev-fncall-guard-er-wormhole
-                                        *wormhole-status-alist*)))
-             state)
-  ~ev[]
-
-  If you use local ~il[stobj]s (~pl[with-local-stobj]) or stobj fields of
-  stobjs, you may need to edit the output of ~c[print-gv] in order to evaluate
-  it.  Consider the following example.
-  ~bv[]
-  (defstobj st fld)
-
-  (defun g (x st)
-    (declare (xargs :guard (consp x) :stobjs st)
-             (ignore x))
-    (fld st))
-
-  (defun test ()
-    (with-local-stobj
-     st
-     (mv-let (result st)
-             (mv (g 3 st) st)
-             result)))
-
-  (test)
-  ~ev[]
-  Then ~c[:print-gv] yields the result shown below.
-  ~bv[]
-  (FLET ((G{GUARD} (X ST)
-                   (DECLARE (IGNORABLE X ST))
-                   (AND (STP ST) (CONSP X))))
-        (G{GUARD} '3 |<some-stobj>|))
-  ~ev[]
-  In this example you could replace ``~c[|<some-stobj>|]'' by ``~c[st]'' to
-  obtain a result of ~c[nil].  But similar cases may require the use of a local
-  stobj that is no longer available, in which case you may need to be creative
-  in order to take advantage of ~c[:print-gv].  Here is such an example.
-  ~bv[]
-  (defstobj st2 fld2)
-
-  (defun g2 (st2)
-    (declare (xargs :guard (null (fld2 st2)) :stobjs st2))
-    (mv 0 st2))
-
-  (defun test2 ()
-    (with-local-stobj
-     st2
-     (mv-let (result st2)
-             (let ((st2 (update-fld2 17 st2)))
-               (g2 st2))
-             result)))
-
-  (test2)
-  ~ev[]
-  In this case, ~c[:print-gv] yields the following.
-  ~bv[]
-  (FLET ((G2{GUARD} (ST2)
-                    (DECLARE (IGNORABLE ST2))
-                    (AND (ST2P ST2) (NULL (FLD2 ST2)))))
-        (G2{GUARD} |<some-stobj>|))
-  ~ev[]
-  But if you replace ``~c[|<some-stobj>|]'' by ``~c[st]'', the guard holds; it
-  is only the local stobj, which is no longer available, that produced a guard
-  violation (because its field had been updated to a cons).
-  ~bv[]
-  ACL2 !>(FLET ((G2{GUARD} (ST2)
-                           (DECLARE (IGNORABLE ST2))
-                           (AND (ST2P ST2) (NULL (FLD2 ST2)))))
-               (G2{GUARD} st2))
-  T
-  ACL2 !>
-  ~ev[]
-
-  Finally, we note that while ~c[print-gv] is a utility for debugging guard
-  violations, in contrast, ~pl[guard-debug] for a utility to assist in
-  debugging failed proofs arising from guard verification.~/"
-
   `(print-gv-fn ,evisc-tuple state))
 
 (defun disable-iprint-ar (state)
@@ -32906,198 +26038,6 @@
                                             soft-bound-p)
                                 (hard-bound '1 ; default ignored
                                             hard-bound-p))
-
-  ":Doc-Section IO
-
-  control whether abbreviated output can be read back in~/
-
-  When ACL2 pretty-prints large expressions using formatted printing
-  (~pl[fmt]), it may save time and space by printing tokens `~c[#]' or
-  `~c[...]' in place of certain subexpressions.  By default this only happens
-  for a few settings such as error and warning messages; ~pl[set-evisc-tuple]
-  for controlling such elision in general.  The full expression is unavailable
-  to the user when `~c[#]' or `~c[...]' is printed, but that is easily solved
-  by evaluating the form
-  ~bv[]
-    (set-iprint t)
-  ~ev[]
-  to enable a mode called ``iprinting''.  Then, instead of printing `~c[#]' or
-  `~c[...]', ACL2 prints `~c[#@i#]' for ~c[i] = 1,2,3,... ~-[] all in base 10.
-  ACL2 can read back in such `~c[#@i#]' because under the hood, ~c[i] is
-  associated with its corresponding elided form.  Thus the term ``iprint'' can
-  be viewed as suggesting ``interactive print'' or ``index print''.  We also
-  think of ``iprint'' as suggesting ``~c[i] printing'', to suggest the printing
-  of token `~c[#@i#]'.  We call ~c[i] the ``iprint index'' of that token.
-
-  The following example should suffice to illustrate how to recover elided
-  subexpressions.  (Below this example we provide details that may be of
-  interest only to advanced users.)  Here we cause an error by defining a macro
-  of one argument and then calling it with two arguments.  By default, error
-  messages abbreviate subexpressions deeper than level 5 with `~c[#]' and past
-  the 7th element of a list with `~c[...]'.  We see this behavior below.
-  ~bv[]
-  ACL2 !>(defmacro foo (x) x)
-
-  Summary
-  Form:  ( DEFMACRO FOO ...)
-  Rules: NIL
-  Warnings:  None
-  Time:  0.02 seconds (prove: 0.00, print: 0.00, other: 0.02)
-   FOO
-  ACL2 !>(foo arg1 (a (b (c (d (e (f (g)))))) h i j k l m n))
-
-
-  ACL2 Error in macro expansion:  Wrong number of args in macro expansion
-  of (FOO ARG1 (A (B (C (D #))) H I J K L ...)).  (See :DOC set-iprint
-  to be able to see elided values in this message.)
-
-  ACL2 !>(set-iprint t)
-
-  ACL2 Observation in SET-IPRINT:  Iprinting has been enabled.
-  ACL2 !>(foo arg1 (a (b (c (d (e (f (g)))))) h i j k l m n))
-
-
-  ACL2 Error in macro expansion:  Wrong number of args in macro expansion
-  of (FOO ARG1 (A (B (C (D #@1#))) H I J K L . #@2#)).
-
-  ACL2 !>(acl2-count '(FOO ARG1 (A (B (C (D #@1#))) H I J K L . #@2#)))
-  23
-  ACL2 !>
-  ~ev[]
-  Sometimes you may want to supply the abbreviated form not to compute with it,
-  as in the ~ilc[acl2-count] example just above, but so that you can see it.
-  The macro ~ilc[without-evisc] eliminates elision during printing.  Below we
-  show two ways to use this utility: first, we use it to print the elided form,
-  and then, we use it instead on the original input form to print the entire
-  error message.
-  ~bv[]
-  ACL2 !>(without-evisc '(FOO ARG1 (A (B (C (D #@1#))) H I J K L . #@2#)))
-  (FOO ARG1
-       (A (B (C (D (E (F (G))))))
-          H I J K L M N))
-  ACL2 !>(without-evisc (foo arg1 (a (b (c (d (e (f (g)))))) h i j k l m n)))
-
-
-  ACL2 Error in macro expansion:  Wrong number of args in macro expansion
-  of (FOO ARG1 (A (B (C (D (E (F (G)))))) H I J K L M N)).
-
-  ACL2 !>
-  ~ev[]
-
-  The documentation above probably suffices for most users.  For those who want
-  more details, below we detail all the ways to use the ~c[set-iprint]
-  utility.~/
-
-  ~bv[]
-  Example Forms:
-  (set-iprint t)   ; enable iprinting (elision with #@i@)
-  (set-iprint nil) ; disable iprinting
-
-  General Form:
-  (set-iprint action        ; t, nil, :reset, :reset-enable, or :same
-              :soft-bound s ; initially  1000
-              :hard-bound h ; initially 10000)
-  ~ev[]
-  where all arguments are optional, but ACL2 queries for ~c[action] if it is
-  omitted.   We defer the explanations of ~c[:soft-bound] and ~c[:hard-bound].
-  The values for ~c[action] are as follows:
-  ~bq[]
-
-  ~c[T] ~-[] Enable iprinting.
-
-  ~c[NIL] ~-[] Disable iprinting.
-
-  ~c[:RESET] ~-[] Reset iprinting to its initial disabled state, so that when
-  enabled, the first index ~c[i] for which `~c[#@i#] is printed will be 1.
-  Note that all stored information for existing iprint indices will be erased.
-
-  ~c[:RESET-ENABLE] ~-[] Reset iprinting as with ~c[:reset], and then enable
-  iprinting.
-
-  ~c[:SAME] ~-[] Make no change to the iprinting state (other than setting the
-  ~c[:soft-bound] and/or ~c[:hard-bound] if specified, as explained
-  below).~eq[]
-
-  Immediately after a top-level form is read, hence before it is evaluated, a
-  check is made for whether the latest iprint index exceeds a certain bound,
-  ~c[(iprint-soft-bound state)] ~-[] 1000, by default.  If so, then the
-  ~c[(iprint-last-index state)] is set back to 0.  This soft bound can be
-  changed to any positive integer ~c[k] by calling ~c[set-iprint] with
-  ~c[:soft-bound k], typically ~c[(set-iprint :same :soft-bound k])].
-
-  The above ``soft bound'' is applied once for each top-level form, but you may
-  want finer control by applying a bound after the pretty-printing of each
-  individual form (since many forms may be pretty-printed between successive
-  evaluations of top-level forms).  That bound is
-  ~c[(iprint-hard-bound state)], and can be set with the ~c[:hard-bound]
-  argument in analogy to how ~c[:soft-bound] is set, as described above.
-
-  A ``rollover'' is the detection that the soft or hard bound has been
-  exceeded, along with a state update so that the next iprint index will be 1.
-  When a rollover occurs, any index beyond the latest iprint index is no longer
-  available for reading.  At the top level of the ACL2 read-eval-print loop,
-  this works as follows: ACL2 reads the next top-level form according to the
-  current iprint state, then handles a rollover if the latest iprint index
-  exceeded the current soft bound.  The following log illustrates a rollover,
-  which follows the description above.
-  ~bv[]
-  ACL2 !>(set-iprint t :soft-bound 3)
-
-  ACL2 Observation in SET-IPRINT:  The soft-bound for iprinting has been
-  set to 3.
-
-  ACL2 Observation in SET-IPRINT:  Iprinting has been enabled.
-  ACL2 !>(set-evisc-tuple (evisc-tuple 2 3 nil nil) :sites :ld)
-   (:LD)
-  ACL2 !>'((a b c d e f g) (a b c d e f g) (a b c d e f g))
-  ((A B C . #@1#) (A B C . #@2#) (A B C . #@3#))
-  ACL2 !>'((a b c d e f g) (a b c d e f g) (a b c d e f g))
-  ((A B C . #@4#) (A B C . #@5#) (A B C . #@6#))
-  ACL2 !>(without-evisc '((A B C . #@4#) (A B C . #@5#) (A B C . #@6#)))
-  ((A B C D E F G)
-   (A B C D E F G)
-   (A B C D E F G))
-  ACL2 !>'(1 2 3 4 5)
-  (1 2 3 . #@1#)
-  ACL2 !>'((a b c d e f g) (a b c d e f g) (a b c d e f g))
-  ((A B C . #@2#) (A B C . #@3#) (A B C . #@4#))
-  ACL2 !>(without-evisc '((A B C . #@4#) (A B C . #@5#) (A B C . #@6#)))
-  ((A B C D E F G)
-   (A B C D E F G)
-   (A B C D E F G))
-  ACL2 !>(without-evisc '((A B C . #@4#) (A B C . #@5#) (A B C . #@6#)))
-
-  ***********************************************
-  ************ ABORTING from raw Lisp ***********
-  Error:  Out-of-bounds index in #@5#.  See :DOC set-iprint.
-  ***********************************************
-
-  If you didn't cause an explicit interrupt (Control-C),
-  then the root cause may be call of a :program mode
-  function that has the wrong guard specified, or even no
-  guard specified (i.e., an implicit guard of t).
-  See :DOC guards.
-
-  To enable breaks into the debugger (also see :DOC acl2-customization):
-  (SET-DEBUGGER-ENABLE T)
-  ACL2 !>
-  ~ev[]
-
-  We conclude by mentioning two cases where iprinting and evisc-tuples are
-  ignored.  (1) This is typically the case when printing results in raw Lisp
-  outside the ACL2 loop.  To use iprinting and evisc-tuples in raw Lisp, use
-  raw-mode; ~pl[set-raw-mode].  In raw-mode, results that are ACL2 objects will
-  be printed in the same way that ACL2 would print those results if not in
-  raw-mode.  (2) Iprinting and evisc-tuples are ignored by ~ilc[print-object$],
-  which however is sensitive to many settings that do not affect formatted
-  (~ilc[fmt] etc.) printing; ~pl[print-control].
-
-  The reader interested in design and implementation issues considered during
-  the addition of iprinting to ACL2 is invited to read the paper ``Abbreviated
-  Output for Input in ACL2: An Implementation Case Study''; see the proceedings
-  of ACL2 Workshop 2009,
-  ~url[http://www.cs.utexas.edu/users/moore/acl2/workshop-2009/]."
-
   (declare (xargs :guard ; the setters deal with illegal values
                   t))
   `(er-progn ,@(and hard-bound-p
@@ -33305,180 +26245,12 @@
                                    iprint-p)
                            (sites 'nil ; irrelevant default
                                   sites-p))
-
-  ":Doc-Section IO
-
-  control suppression of details when printing~/
-
-  ACL2 output is generally printed in full.  However, ACL2 can be directed to
-  abbreviate, or ``eviscerate'', objects before printing them, though the use
-  of a so-called ``evisc-tuple''.  ~l[evisc-tuple] for a discussion of
-  evisc-tuples.  The utility ~c[set-evisc-tuple] modifies certain global
-  evisc-tuples, as explained below, to affect the extent to which ACL2
-  eviscerates objects during printing, for example during proof output or when
-  printing top-level evaluation results.
-
-  ~bv[]
-  General Form:
-  (set-evisc-tuple evisc-tuple ; a legal evisc-tuple, or :DEFAULT
-                  :iprint val  ; one of *iprint-actions*
-                  :sites sites ; either :ALL, or an element or a subset of the
-                               ;   list (:TERM :LD :TRACE :ABBREV)
-  ~ev[]
-  where the value of ~c[:iprint] is passed to ~ilc[set-iprint], ~c[:sites :all]
-  abbreviates ~c[:sites '(:TERM :LD :TRACE :ABBREV)], and other documentation
-  is provided below.  Note that all arguments are evaluated.
-
-  ~l[without-evisc] for how to avoid evisceration for ACL2 output.
-
-  The following example illustrates an invocation of ~c[set-evisc-tuple] that
-  limits the print-level to 3 ~-[] only three descents into list structures are
-  permitted before eviscerating a subterm ~-[] and limits the print-length to 4
-  ~-[] only the first four elements of any list structure will be printed.
-  ~bv[]
-  ACL2 !>(set-evisc-tuple (evisc-tuple 3   ; print-level
-                                       4   ; print-length
-                                       nil ; alist
-                                       nil ; hiding-cars
-                                       )
-                          :iprint :same ; better yet, T
-                          :sites :all)
-   (:TERM :LD :TRACE :ABBREV)
-  ACL2 !>'((a b ((c d)) e f g) u v w x y)
-  ((A B (#) E ...) U V W ...)
-  ACL2 !>
-  ~ev[]
-  We recommend however using ~c[:iprint t] so that eviscerated terms may be
-  read back in; ~pl[set-iprint].  Indeed, the ~c[:iprint] argument is required
-  as a reminder to the user to consider that issue, unless iprinting has been
-  enabled at least once.  If ~c[:sites] or a required ~c[:iprint] argument is
-  omitted, however, ACL2 will query the user for the missing arguments rather
-  than causing an error.
-
-  ACL2 eviscerates by default only in a few cases, primarily in informational
-  messages for errors, warnings, and queries (i.e., in the ~c[:EVISC] case
-  below).  Users can modify the default behavior by supplying a suitable
-  argument to ~c[set-evisc-tuple].  The argument may be ~c[:default], which
-  denotes the evisceration provided when ACL2 starts up.  Otherwise that
-  argument is an evisc-tuple, which is either ~c[nil] (no evisceration) or as
-  described above.  Moreover, there are four evisc-tuple ``evisceration
-  contexts'', each with its own evisceration control.  The value returned by
-  ~c[set-evisc-tuple] indicates the evisceration contexts whose evisc-tuple has
-  been set.  The evisceration contexts are as follows, all of which use a
-  default value of ~c[nil] for the hiding-cars.  Accessors are also shown for
-  retrieving the corresponding evisc-tuple.
-  ~bq[]
-
-  o ~c[:TERM] ~-[] used for printing terms.  The accessor is
-  ~c[(term-evisc-tuple flg state)], where ~c[flg] is ignored if
-  ~c[set-evisc-tuple] has been called for ~c[:term] with value other than
-  ~c[:default], and otherwise (hence initially): a ~c[flg] of ~c[nil] indicates
-  an evisc-tuple of ~c[nil], and otherwise the term-evisc-tuple has a
-  print-level of 3 and print-length of 4.
-
-  o ~c[:ABBREV] ~-[] used for printing informational messages for errors,
-  warnings, and queries.  Initially, the alist abbreviates the ACL2
-  ~c[world], print-level is 5, and print-level is 7.  The accessor is
-  ~c[(abbrev-evisc-tuple state)].
-
-  o ~c[:GAG-MODE] ~-[] used for printing induction schemes (and perhaps, in the
-  future, for other printing) when ~il[gag-mode] is on.  If gag-mode is off,
-  the value used for this ~il[evisc-tuple] is ~c[(term-evisc-tuple nil state)].
-  But if gag-mode is on (i.e., ~c[(gag-mode)] evaluates to a non-~c[nil]
-  value), then with one exception, the value is an evisc-tuple or ~c[nil], to
-  be used in gag-mode for printing of induction schemes and, during proofs, the
-  ``The non-trivial part of the guard conjecture''.  The exceptional value is
-  ~c[t], which indicates that in gag-mode, no printing of induction schemes
-  should be and the guard conjecture should be printed using
-  ~c[(term-evisc-tuple t state)].  The accessor is
-  ~c[(gag-mode-evisc-tuple state)].
-
-  o ~c[:LD] ~-[] used by the ACL2 read-eval-print loop.  The accessor is
-  ~c[(]~ilc[ld-evisc-tuple]~c[ state)].
-
-  o ~c[:TRACE] ~-[] used for printing ~il[trace] output.  No accessor is
-  available (though in raw Lisp, ~c[(trace-evisc-tuple)] returns the
-  trace-evisc-tuple).~eq[]
-
-  Each context ~c[ectx] also has an updater,
-  ~c[(set-ectx-evisc-tuple val state)], where ~c[val] is a legal value for
-  ~c[set-evisc-tuple] as described above: ~c[:default] or an ~il[evisc-tuple]
-  (possibly ~c[nil]).~/
-
-  Note that the ~il[break-rewrite] commands and the ~il[proof-checker]
-  generally do their printing using the term-evisc-tuple.~/"
-
   `(set-evisc-tuple-fn ,evisc-tuple
                        ,iprint ,iprint-p
                        ,sites ,sites-p
                        state))
 
 (defmacro top-level (form &rest declares)
-  ":Doc-Section Other
-
-  evaluate a top-level form as a function body~/
-
-  Some forms, such as calls of ~ilc[with-local-stobj], are illegal when
-  supplied directly to the ACL2 top-level loop.  The macro ~c[top-level]
-  provides a workaround in such cases, by defining a temporary
-  ~c[:]~ilc[program]-mode function named ~c[top-level-fn] whose only argument
-  is ~c[state] and whose body is the form to be evaluated.  When the call of
-  ~c[top-level] returns there is no change to the existing ACL2 logical
-  ~il[world].  The following edited log illustrates all of the above points.
-
-  ~bv[]
-  ACL2 !>:pbt 0
-            0  (EXIT-BOOT-STRAP-MODE)
-  ACL2 !>(defstobj st fld)
-
-  Summary
-  Form:  ( DEFSTOBJ ST ...)
-  Rules: NIL
-  Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
-   ST
-  ACL2 !>(top-level
-          (with-local-stobj
-           st
-           (mv-let (result st)
-                   (let ((st (update-fld 17 st)))
-                     (mv (fld st) st))
-                   result)))
-  17
-  ACL2 !>(top-level
-          (with-local-stobj
-           st
-           (mv-let (result st)
-                   (let ((st (update-fld 17 st)))
-                     (mv (fld st) st))
-                   (mv nil result state))))
-   17
-  ACL2 !>(top-level
-          (with-local-stobj
-           st
-           (mv-let (result st)
-                   (let ((st (update-fld 17 st)))
-                     (mv (fld st) st))
-                   (mv result state))))
-  (17 <state>)
-  ACL2 !>:pbt 0
-            0  (EXIT-BOOT-STRAP-MODE)
-     d      1:x(DEFSTOBJ ST FLD)
-  ACL2 !>
-  ~ev[]~/
-
-  Each argument of ~c[top-level] after the first should be a ~ilc[declare] form
-  or ~il[documentation] string, as the list of these extra arguments will be
-  placed before the first argument when forming the definition of
-  ~c[top-level-fn].
-
-  ~ilc[Top-level] generates a call of ~ilc[ld], so that the value returned is
-  printed in the normal way.  The call of ~ilc[top-level] itself actually
-  evaluates to ~c[(mv erp :invisible state)], where ~c[erp] is ~c[t] if and
-  only evaluation of the call of ~c[top-level-fn] caused an error, which
-  normally results in no additional output.  (For details about ``caused an
-  error'', see the definition of ~c[top-level] in the ACL2 source code, and
-  ~pl[ld-error-action].)~/"
-
   `(mv-let (erp val state)
            (ld '((pprogn ; ensure initialization
                   (f-put-global 'top-level-errorp nil state)
@@ -35987,41 +28759,7 @@
        :guard
        (chk-return-last-entry key val world))
 
-(defdoc return-last-table
-  ":Doc-Section switches-parameters-and-modes
-
-  install special raw Lisp behavior~/
-
-  Please first ~pl[return-last] for relevant background.
-
-  This ~il[table] is for advanced users only, and requires an active trust
-  tag (~pl[defttag]).  We recommend that you do not modify this table directly,
-  but instead use the macro ~c[defmacro-last].  Here we augment that discussion
-  with some highly technical observations that can probably be ignored if you
-  use ~c[defmacro-last].~/
-
-  This ~il[table] has a ~c[:guard] requiring that each key be a symbol defined
-  in raw Lisp, generally as a macro, and requiring that each non-~c[nil] value
-  be associated either with a symbol that names a macro defined in ACL2, or
-  else with a list of one element containing such a symbol.  The table can only
-  be modified when there is an active trust tag; ~pl[defttag].  If a key is
-  associated with the value ~c[nil], then that key is treated as though it were
-  not in the table.
-
-  Note that keys of this table are not eligible to be bound by ~ilc[flet].  The
-  current value of this table may be obtained by evaluating the form
-  ~c[(table-alist 'return-last-table (w state))].  The built-in constant
-  ~c[*initial-return-last-table*] holds the initial value of this table.~/")
-
 (defmacro defmacro-last (fn &key raw (top-level-ok 't))
-
-  ":Doc-Section Events
-
-  define a macro that returns its last argument, but with side effects~/
-
-  This is an advanced feature that requires a trust tag.  For explanation,
-  including an example, ~pl[return-last].~/~/"
-
   (declare (xargs :guard (and (symbolp fn)
                               (symbolp raw))))
   (let ((raw (or raw (intern-in-package-of-symbol
@@ -36035,64 +28773,6 @@
 ; Formatted printing to strings requires local stobjs (actually
 ; with-local-state), so we place the relevant code below.  It could certainly
 ; go in later source files if that is desired.
-
-(defdoc printing-to-strings
-
-  ":Doc-Section IO
-
-  printing to strings instead of files or standard output~/
-
-  Each of ACL2's formatted printing functions, ~c[FM*], has an analoguous macro
-  ~c[FM*-TO-STRING] indicated below.  These functions do not include a channel
-  or ~ilc[state] as an argument, and ~c[FM*-TO-STRING] returns the string that
-  ~c[FM*] would print to the state, in place of ~c[state]; ~pl[fmt].  The legal
-  keyword arguments are described below.
-
-  ~bv[]
-  General Forms:                                 result
-  (fms-to-string string alist &key ...)          ; string
-  (fmt-to-string string alist &key ...)          ; (mv col string)
-  (fmt1-to-string string alist column &key ...)  ; (mv col string)
-  (fms!-to-string string alist &key ...)         ; string
-  (fmt!-to-string string alist &key ...)         ; (mv col string)
-  (fmt1!-to-string string alist column &key ...) ; (mv col string)
-  ~ev[]
-
-  The legal keyword arguments are as follows.  They are all optional with a
-  default of ~c[nil].
-  ~bq[]
-  ~c[Evisc-tuple] is evaluated, and corresponds exactly to the ~c[evisc-tuple]
-  argument of the corresponding ~c[FM*] function; ~pl[fmt].
-
-  ~c[Fmt-control-alist] should typically evaluate to an alist that maps
-  print-control variables to values; ~pl[print-control].  Any alist mapping
-  variables to values is legal, however.  By default the print controls are set
-  according to the value of constant ~c[*fmt-control-defaults*];
-  ~c[fmt-control-alist] overrides these defaults.  For example,
-  ~c[*fmt-control-defaults*] sets the right margin just as it is set in the
-  initial ACL2 ~il[state], by binding ~c[fmt-soft-right-margin] and
-  ~c[fmt-hard-right-margin] to their respective defaults of
-  ~c[*fmt-soft-right-margin-default*] and ~c[*fmt-hard-right-margin-default*].
-  The following example shows how you can override those defaults, in this case
-  arranging to print flat by setting the right margin to a large number.
-  ~bv[]
-  (fmt-to-string \"~~x0\"
-                 (list (cons #\\0 (make-list 30)))
-                 :fmt-control-alist
-                 `((fmt-soft-right-margin . 10000)
-                   (fmt-hard-right-margin . 10000)))
-  ~ev[]
-
-  ~c[Iprint] is typically ~c[nil], but ~c[t] is also a legal value.
-  ~l[set-iprint] for the effect of value ~c[t], which however is local to this
-  call of a ~c[FM*-TO-STRING] function; the behavior if iprinting afterwards is
-  not affected by this call.  In particular, you will not be able to look at
-  the values of iprint tokens printed by this call, so the value ~c[t] is
-  probably of limited utility at best.~eq[]
-
-  Also ~pl[io] for a discussion of the utility ~c[get-output-stream-string$],
-  which allows for accumulating the results of more than one printing call into
-  a single string but requires the use of ~ilc[state].~/~/")
 
 (defconst *fmt-control-defaults*
 
@@ -36329,92 +29009,6 @@
                                iprint)
   (declare (xargs :guard (member-eq iprint '(t nil))))
   `(fmt1!-to-string-fn ,str ,alist ,col ,evisc-tuple ,fmt-control-alist ,iprint))
-
-(link-doc-to fms-to-string acl2-built-ins printing-to-strings)
-(link-doc-to fms!-to-string acl2-built-ins printing-to-strings)
-(link-doc-to fmt-to-string acl2-built-ins printing-to-strings)
-(link-doc-to fmt!-to-string acl2-built-ins printing-to-strings)
-(link-doc-to fmt1-to-string acl2-built-ins printing-to-strings)
-(link-doc-to fmt1!-to-string acl2-built-ins printing-to-strings)
-
-(defdoc dead-events
-
-  ":Doc-Section Other
-
-  using proof supporters to identify dead code and unused theorems~/
-
-  Below, when we talk about ``an event ~c[A]'', we mean an event whose name is
-  ~c[A].
-
-  When event ~c[A] is used in a proof performed to admit event ~c[B] that you
-  submit to ACL2, we say that ~c[A] is a ``proof-supporter'' of ~c[B].  ACL2
-  stores an association list such that for every event ~c[B] with at least one
-  proof-supporter, ~c[B] is associated with a list of all of its
-  proof-supporters, sorted by ~ilc[symbol-<].  The following form evaluates to
-  that alist, which is called the ``proof-supporters-alist''.
-  ~bv[]
-  (global-val 'proof-supporters-alist (w state))
-  ~ev[]
-  By ``used in a proof'' above, we mean: applied as a rule or supplied
-  explicitly via ~il[hints] of type ~c[:use], ~c[:by], or
-  ~c[:clause-processor].  That is, the ~il[events] ``used in a proof'' for
-  admitting an event ~c[E] are those listed in the summary printed at the
-  conclusion of admitting ~c[E].~/
-
-  Note that if proofs are skipped when admitting event ~c[E], say because the
-  last admission of ~c[E] was done by ~ilc[include-book] (or ~c[certify-book],
-  which ends with an ~ilc[include-book]), then there will be no entry in that
-  alist for ~c[E].  (An exception is made however for ~ilc[encapsulate]
-  ~il[events], where proof-supporters are remembered from the first pass; see
-  below.)  So if you want the proof-supporters-alist to include supporters for
-  events in a book, use ~ilc[ld] rather than ~ilc[include-book] or
-  ~ilc[certify-book] to process the events in that book.  If however you are
-  interested in the proof-supporters FROM a book that support a later event,
-  then it is fine to include that book.
-
-  The case for ~ilc[encapsulate] is slightly tricky.  Consider an example of
-  the following form.
-  ~bv[]
-  A ; event preceding the encapsulate
-  (encapsulate
-   ()
-   B
-   (local C) ; uses A and B in a proof
-   D ; uses C in a proof
-   )
-  ~ev[]
-  At the conclusion of this ~ilc[encapsulate] event, the proof-supporters-alist
-  associates ~c[D] with ~c[A] and ~c[B], but not ~c[C] (which has disappeared,
-  since it is ~il[local]).
-
-  Note that this sort of ``transitive closure'' operation is only performed
-  when necessary due to the disappearance of ~il[local] ~il[events].  For
-  example, if we replace ~c[(local C)] above by just ~c[C], then ~c[D] is
-  associated in the proof-supporters-alist only with ~c[C], not with ~c[A] or
-  ~c[B].  If you want the transitive closure of the relation computed by the
-  proof-supporters-alist, you have to compute it yourself. (This was a
-  deliberate design decision, in order to avoid slowing down event processing.)
-  However, there is help available on how to do such a computation:
-
-  A community book, ~c[books/misc/dead-events.lisp], does such a transitive
-  closure, and moreover uses that information to find ``dead events'' relative
-  to a list of ``desired'' events.  For example, suppose you use ~ilc[LD] to
-  process the events, with proofs, in a book intended to prove theorems
-  ~c[MAIN-1] and ~c[MAIN-2].  (Remember, ~ilc[certify-book] will not save such
-  information.)  Suppose furthermore that the book begins with some
-  ~ilc[include-book] forms followed by ~c[(deflabel book-start)].  You could
-  evaluate this form:
-  ~bv[]
-  (dead-events '(main-1 main-2) :start 'book-start)
-  ~ev[]
-  The result is a list of events that you probably can delete from the book
-  without causing any proofs to fail.  See the ~c[dead-events.lisp] book for
-  further documentation.
-
-  You might also find the code in the above book to be helpful for writing your
-  own utilities based on the proof-supporters-alist.~/")
-
-(link-doc-to proof-supporters-alist miscellaneous dead-events)
 
 ; Essay on Memoization with Attachments (relevant for #+hons version only)
 
@@ -36682,119 +29276,12 @@
 
 (defmacro defun-inline (name formals &rest lst)
 
-  ":Doc-Section acl2::Events
-
-  define a potentially inlined function symbol and associated macro~/
-
-  You may be able to improve performance by replacing an event
-  ~c[(defun f ...)] with a corresponding event ~c[(defun-inline f ...)], in
-  order to encourage the host Lisp compiler to inline calls of ~c[f].
-
-  ~bv[]
-  Example Form:
-  (defun-inline lng (x)
-    (declare (xargs :guard (true-listp x)))
-    (if (endp x) 0 (1+ (lng (cdr x)))))~/
-
-  General Form:
-  (defun-inline fn (var1 ... varn) doc-string dcl ... dcl body)
-  ~ev[]
-  satisfying the same requirements as in the General Form for ~ilc[defun].  The
-  effect is to define a macro ~c[fn] and a function ~c[fn$inline] (i.e., a
-  symbol in the same package as ~c[fn] but whose ~ilc[symbol-name] has the
-  suffix ~c[\"$INLINE\"], such that each call of ~c[fn] expands to a call of
-  the function symbol ~c[fn$inline] on the same arguments.  If ~c[doc-string]
-  is supplied, then it is associated with ~c[fn], not with ~c[fn$inline].
-  Moreover, ~ilc[table] ~il[events] are generated that allow the use of ~c[fn]
-  in ~il[theory] expressions to represent ~c[fn$inline] and that cause any
-  untranslated (user-level) call of ~c[fn$inline] to be printed as the
-  corresponding call of ~c[fn].
-
-  A form ~c[(defun-inline f ...)] actually defines a function named
-  ~c[f$inline] and a corresponding macro named ~c[f] whose calls expand to
-  calls of ~c[f$inline], while providing the illusion that there is just the
-  ``function'' ~c[f].  For example, the Example Form above macroexpands in one
-  step to the following form.
-  ~bv[]
-  (progn (defmacro lng (non-stobj-var0)
-           (list 'lng$inline non-stobj-var0))
-         (add-macro-fn lng lng$inline)
-         (defun lng$inline (x)
-           (declare (xargs :guard (true-listp x)))
-           (if (endp x) 0 (1+ (lng (cdr x))))))
-  ~ev[]
-  Note that the above call of ~ilc[add-macro-fn] generates the aforementioned
-  two table events (~pl[add-macro-fn]), which provide the illusion that we are
-  just defining a function ~c[lng], as you can see in the following log:
-  ~c[lng] appears rather than ~c[lng$inline].
-  ~bv[]
-  ACL2 !>(set-gag-mode nil)
-  <state>
-  ACL2 !>(thm (equal (lng (append x y))
-                     (+ (lng x) (lng y)))
-              :hints ((\"Goal\" :in-theory (enable lng))))
-
-  [.. output omitted ..]
-
-  Subgoal *1/2
-  (IMPLIES (AND (NOT (ENDP X))
-                (EQUAL (LNG (APPEND (CDR X) Y))
-                       (+ (LNG (CDR X)) (LNG Y))))
-           (EQUAL (LNG (APPEND X Y))
-                  (+ (LNG X) (LNG Y)))).
-
-  [.. output omitted ..]
-  ~ev[]
-
-  Under the hood, ACL2 arranges that every function symbol with suffix
-  ~c[\"$INLINE\"] is presented to the compiler as one whose calls we would
-  prefer to inline.  Technically: the Common Lisp form
-  ~c[(declaim (inline f$inline))] is generated for a function symbol
-  ~c[f$inline] before that symbol's definition is submitted.  However, the
-  Common Lisp spec explicitly avoids requiring that the compiler respect this
-  ~c[declaim] form.  Fortunately, Common Lisp implementations often do respect
-  it.
-
-  Also ~pl[defund-inline], ~pl[defun-notinline], and ~pl[defund-notinline].
-
-  ~em[Remarks].
-
-  (1) None of these macros (including ~c[defun-inline]) is supported for use
-  inside a ~ilc[mutual-recursion].
-
-  (2) Every function symbol defined in ACL2 whose ~ilc[symbol-name] has the
-  suffix ~c[\"$INLINE\"] is proclaimed to be inline; similarly for
-  ~c[\"$NOTINLINE\"] and notinline.
-
-  (3) No special treatment for inlining (or notinlining) is given for function
-  symbols locally defined by ~ilc[flet], with two exceptions: when explicitly
-  declared ~c[inline] or ~c[notinline] by the ~c[flet] form, and for symbols
-  discussed in (1) and (2) above that, at some point in the current ACL2
-  session, were defined as function symbols in ACL2 (even if not currently
-  defined because of undoing or being ~il[local]).
-
-  (4) The function symbol actually being defined by ~c[(defun-inline foo ...)]
-  is ~c[foo$inline].  As mentioned above, one can be oblivious to this fact
-  when writing ~il[theory] expressions or perusing prover output.  However, for
-  other purposes (for example, ~ilc[verify-guards] and ~ilc[defabsstobj]
-  ~c[:exports]) you will need to supply the name of the function symbol rather
-  than the name of the macro; e.g., for the above form
-  ~c[(defun-inline foo ...)], you may subsequently issue the event
-  ~c[(verify-guards foo$inline)] but not ~c[(verify-guards foo)].
-
-  (5) Obscure Remark.  Suppose that you certify a book with compilation (the
-  default) in one host Lisp, saving the expansion file.  Suppose that you then
-  compile in another host Lisp by using ~ilc[include-book] with argument
-  ~c[:load-compiled-file :comp].  Then in subsequent sessions, including that
-  book with the second host Lisp will not result in any inline or notinline
-  behavior for functions defined in the book.  This may be fixed in a future
-  release if someone complains.~/"
-
-; Implementor hint for (5) above: Search for ";;; Declaim forms:" in
-; write-expansion-file, and notice the printing just below it of a readtime
-; conditional for the host Lisp, so that declaim forms are restricted to that
-; Lisp.  This mechanism was probably put into place so that declaiming for GCL
-; didn't result in declaiming for Allegro CL, or something along those lines.
+; Implementor hint for "(5) Obscure Remark" in :DOC defun-inline Search for
+; ";;; Declaim forms:" in write-expansion-file, and notice the printing just
+; below it of a readtime conditional for the host Lisp, so that declaim forms
+; are restricted to that Lisp.  This mechanism was probably put into place so
+; that declaiming for GCL didn't result in declaiming for Allegro CL, or
+; something along those lines.
 
   (defun-inline-form name formals lst 'defun *inline-suffix*))
 
@@ -36802,49 +29289,17 @@
 
 ; Warning: Keep this in sync with defun-inline.
 
-  ":Doc-Section acl2::Events
-
-  define a potentially disabled, inlined function symbol and associated macro~/
-
-  ~c[Defund-inline] is a variant of ~ilc[defun-inline], the difference being
-  that ~c[defund-inline] disables the newly-defined function symbol.
-  ~l[defun-inline].~/~/"
-
   (defun-inline-form name formals lst 'defund *inline-suffix*))
 
 (defmacro defun-notinline (name formals &rest lst)
 
 ; Warning: Keep this in sync with defund-notinline.
 
-  ":Doc-Section acl2::Events
-
-  define a not-to-be-inlined function symbol and associated macro~/
-
-  ~l[defun-inline] for an analogous utility that supports inlining.  The
-  present utility is probably far less useful; it tells the compiler ~em[not]
-  to inline calls of the function being defined.  Also ~pl[defund-notinline]
-  for a variant of this event that disables the newly-defined function symbol.
-
-  Under the hood, ~c[(defun-inline f ...)] and ~c[(defun-notinline f ...)]
-  cause evaluation of Common Lisp forms ~c[(declaim (inline f$inline))] and
-  ~c[(declaim (notinline f$notinline))], respectively.  According to the Common
-  Lisp spec, the compiler need not respect the first of these (for ~c[inline]),
-  but it must respect the second of these (for ~c[notinline]).  Fortunately,
-  Common Lisp implementations often do respect the first of these as well.~/~/"
-
   (defun-inline-form name formals lst 'defun *notinline-suffix*))
 
 (defmacro defund-notinline (name formals &rest lst)
 
 ; Warning: Keep this in sync with defun-inline.
-
-  ":Doc-Section acl2::Events
-
-  define a disabled, not-to-be-inlined function symbol and associated macro~/
-
-  ~c[Defund-notinline] is a variant of ~ilc[defun-notinline], the difference
-  being that ~c[defund-notinline] disables the newly-defined function symbol.
-  ~l[defun-notinline].~/~/"
 
   (defun-inline-form name formals lst 'defund *notinline-suffix*))
 
@@ -37245,48 +29700,6 @@
 
 #+acl2-loop-only
 (defmacro defund (&rest def)
-
-  ":Doc-Section acl2::Events
-
-  define a function symbol and then disable it~/~/
-
-  Use ~c[defund] instead of ~ilc[defun] when you want to disable a function
-  immediately after its definition in ~c[:]~ilc[logic] mode.  This macro has
-  been provided for users who prefer working in a mode where functions are only
-  enabled when explicitly directed by ~c[:]~ilc[in-theory].  Specifically, the
-  form
-  ~bv[]
-  (defund NAME FORMALS ...)
-  ~ev[]
-  expands to:
-  ~bv[]
-  (progn
-    (defun NAME FORMALS ...)
-    (with-output
-     :off summary
-     (in-theory (disable NAME)))
-    (value-triple '(:defund NAME))).
-  ~ev[]
-  Only the ~c[:]~ilc[definition] rule (and, for recursively defined functions,
-  the ~c[:]~ilc[induction] rule) for the function are disabled.  In particular,
-  ~c[defund] does not disable either the ~c[:]~ilc[type-prescription] or the
-  ~c[:]~ilc[executable-counterpart] rule.  Also, the summary for the
-  ~ilc[in-theory] event is suppressed.
-
-  If the function is defined in ~c[:]~ilc[program] mode, either because the
-  ~il[default-defun-mode] is ~c[:]~ilc[program] or because ~c[:mode :program]
-  has been specified in an ~ilc[xargs] form of a ~ilc[declare] form, then no
-  ~ilc[in-theory] event is executed.  (More precisely, ~ilc[in-theory] events
-  are ignored when the ~il[default-defun-mode] is ~c[:]~ilc[program], and if
-  ~c[:mode :program] is specified then ~c[defund] does not generate an
-  ~ilc[in-theory] event.)
-
-  Note that ~c[defund] commands are never redundant (~pl[redundant-events])
-  when the ~il[default-defun-mode] is ~c[:]~ilc[logic], because the
-  ~ilc[in-theory] event will always be executed.
-
-  ~l[defun] for documentation of ~c[defun]."
-
   (declare (xargs :guard (and (true-listp def)
                               (symbolp (car def))
                               (symbol-listp (cadr def)))))

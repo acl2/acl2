@@ -290,30 +290,6 @@
 ; ; 2.5 conses.  Furthermore, we can effectively union all 5 contaminants of
 ; ; two different polys in one cons!
 
-(deflabel ttree
-  :doc
-  ":Doc-Section Miscellaneous
-
-  tag-trees~/
-
-  Many low-level ACL2 functions take and return ``tag trees'' or
-  ``ttrees'' (pronounced ``tee-trees'') which contain various useful bits of
-  information such as the lemmas used, the linearize assumptions made, etc.~/
-
-  Abstractly a tag-tree represents a list of sets, each member set having a
-  name given by one of the ``tags'' (which are symbols) of the ttree.  The
-  elements of the set named ~c[tag] are all of the objects tagged ~c[tag] in
-  the tree.  You are invited to browse the source code.  Definitions of
-  primitives are labeled with the comment ``; Note: Tag-tree primitive''.
-
-  The rewriter, for example, takes a term and a ttree (among other things), and
-  returns a new term, term', and new ttree, ttree'.  Term' is equivalent to
-  term (under the current assumptions) and the ttree' is an extension of ttree.
-  If we focus just on the set associated with the tag ~c[LEMMA] in the ttrees,
-  then the set for ttree' is the extension of that for ttree obtained by
-  unioning into it all the ~il[rune]s used by the rewrite.  The set associated
-  with ~c[LEMMA] can be obtained by ~c[(tagged-objects 'LEMMA ttree)].")
-
 ; The following function determines whether val with tag tag occurs in
 ; tree:
 
@@ -1479,87 +1455,6 @@
 ; Thus, the coefficients in our polys must be rational.
 
 ; End of Essay on the Logical Basis for Linear Arithmetic.
-
-(deflabel linear-arithmetic
-  :doc
-  ":Doc-Section Miscellaneous
-
-  A description of the linear arithmetic decision procedure~/~/
-
-  We describe the procedure very roughly here.
-  Fundamental to the procedure is the notion of a linear polynomial
-  inequality.  A ``linear polynomial'' is a sum of terms, each of
-  which is the product of a rational constant and an ``unknown.''  The
-  ``unknown'' is permitted to be ~c[1] simply to allow a term in the sum
-  to be constant.  Thus, an example linear polynomial is
-  ~c[3*x + 7*a + 2]; here ~c[x] and ~c[a] are the (interesting) unknowns.
-  However, the unknowns need not be variable symbols.  For
-  example, ~c[(length x)] might be used as an unknown in a linear
-  polynomial.  Thus, another linear polynomial is ~c[3*(length x) + 7*a].
-  A ``linear polynomial inequality'' is an inequality
-  (either ~ilc[<] or ~ilc[<=])
-  relation between two linear polynomials.  Note that an equality may
-  be considered as a pair of inequalities; e.q., ~c[3*x + 7*a + 2 = 0]
-  is the same as the conjunction of ~c[3*x + 7*a + 2 <= 0] and
-  ~c[0 <= 3*x + 7*a + 2].
-
-  Certain linear polynomial
-  inequalities can be combined by cross-multiplication and addition to
-  permit the deduction of a third inequality with
-  fewer unknowns.  If this deduced inequality is manifestly false, a
-  contradiction has been deduced from the assumed inequalities.
-
-  For example, suppose we have two assumptions
-  ~bv[]
-  p1:       3*x + 7*a <  4
-  p2:               3 <  2*x
-  ~ev[]
-  and we wish to prove that, given ~c[p1] and ~c[p2], ~c[a < 0].  As
-  suggested above, we proceed by assuming the negation of our goal
-  ~bv[]
-  p3:               0 <= a.
-  ~ev[]
-  and looking for a contradiction.
-
-  By cross-multiplying and adding the first two inequalities, (that is,
-  multiplying ~c[p1] by ~c[2], ~c[p2] by ~c[3] and adding the respective
-  sides), we deduce the intermediate result
-  ~bv[]
-  p4:  6*x + 14*a + 9 < 8 + 6*x
-  ~ev[]
-  which, after cancellation, is:
-  ~bv[]
-  p4:        14*a + 1 <  0.
-  ~ev[]
-  If we then cross-multiply and add ~c[p3] to ~c[p4], we get
-  ~bv[]
-  p5:               1 <= 0,
-  ~ev[]
-  a contradiction.  Thus, we have proved that ~c[p1] and ~c[p2] imply the
-  negation of ~c[p3].
-
-  All of the unknowns of an inequality must be eliminated by
-  cancellation in order to produce a constant inequality.  We can
-  choose to eliminate the unknowns in any order, but we eliminate them in
-  term-order, largest unknowns first.  (~l[term-order].)  That is, two
-  polys are cancelled against each other only when they have the same
-  largest unknown.  For instance, in the above example we see that ~c[x]
-  is the largest unknown in each of ~c[p1] and ~c[p2], and ~c[a] in
-  ~c[p3] and ~c[p4].
-
-  Now suppose that this procedure does not produce a contradiction but
-  instead yields a set of nontrivial inequalities.  A contradiction
-  might still be deduced if we could add to the set some additional
-  inequalities allowing further cancellations.  That is where
-  ~c[:linear] lemmas come in.  When the set of inequalities has stabilized
-  under cross-multiplication and addition and no contradiction is
-  produced, we search the database of ~c[:]~ilc[linear] rules for rules about
-  the unknowns that are candidates for cancellation (i.e., are the
-  largest unknowns in their respective inequalities).  ~l[linear]
-  for a description of how ~c[:]~ilc[linear] rules are used.
-
-  See also ~ilc[non-linear-arithmetic] for a description of an extension
-  to the linear-arithmetic procedure described here.")
 
 ;=================================================================
 

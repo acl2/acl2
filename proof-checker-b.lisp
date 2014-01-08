@@ -39,57 +39,9 @@
                                     ,formals ,doc ,body))))
 
 (defmacro define-pc-meta (raw-name formals &rest body)
-
-  ":Doc-Section Proof-checker
-
-  define a proof-checker meta command~/
-
-  Built-in proof-checker meta commands include ~c[undo] and ~c[restore], and
-  others (~c[lisp], ~c[exit], and ~c[sequence]); ~pl[proof-checker-commands].
-  The advanced proof-checker user can define these as well.  See ACL2
-  source file ~c[proof-checker-b.lisp] for examples, and contact the ACL2
-  implementors if those examples do not provide sufficient
-  documentation.~/~/"
-
   (define-pc-meta-or-macro-fn 'meta raw-name formals body))
 
 (defmacro define-pc-macro (raw-name formals &rest body)
-
-  ":Doc-Section Proof-checker
-
-  define a proof-checker macro command~/
-  ~bv[]
-  Example:
-  (define-pc-macro ib (&optional term)
-    (value
-     (if term
-         `(then (induct ,term) bash)
-       `(then induct bash))))
-  ~ev[]
-  The example above captures a common paradigm:  one attempts to prove
-  the current goal by inducting and then simplifying the resulting
-  goals.  (~pl[proof-checker-commands] for documentation of the
-  command ~c[then], which is itself a pc-macro command, and commands
-  ~c[induct] and ~c[bash].)  Rather than issuing ~c[(then induct bash)], or
-  worse yet issuing ~c[induct] and then issuing ~c[bash] for each resulting
-  goals, the above definition of ~c[ib] would let you issue ~c[ib] and get the
-  same effect.~/
-
-  ~bv[]
-  General Form:
-  (define-pc-macro cmd args doc-string dcl ... dcl body)
-  ~ev[]
-  where ~c[cmd] is the name of the pc-macro than you want to define,
-  ~c[args] is its list of formal parameters.  ~c[Args] may include lambda-list
-  keywords ~c[&optional] and ~c[&rest]; ~pl[macro-args], but note that
-  here, ~c[args] may not include ~c[&key] or ~c[&whole].
-
-  The value of ~c[body] should be an error triple (~pl[error-triples]), of the
-  form ~c[(mv erp xxx state)] for some ~c[erp] and ~c[xxx].  If ~c[erp] is
-  ~c[nil], then ~c[xxx] is handed off to the proof-checker's instruction
-  interpreter.  Otherwise, evaluation typically halts.  We may write more on
-  the full story later if there is interest in reading it.~/"
-
   (define-pc-meta-or-macro-fn 'macro raw-name formals body))
 
 (defmacro define-pc-atomic-macro (raw-name formals &rest body)
@@ -100,27 +52,6 @@
                               (or (null new-tp)
                                   (member-equal (symbol-name new-tp)
                                                 '("MACRO" "ATOMIC-MACRO"))))))
-
-  ":Doc-Section Proof-checker
-
-  change an ordinary macro command to an atomic macro, or vice-versa~/
-  ~bv[]
-  Example:
-  (toggle-pc-macro pro)
-  ~ev[]
-  Change ~c[pro] from an atomic macro command to an ordinary one (or
-  vice-versa, if ~c[pro] happens to be an ordinary macro command)~/
-
-  ~bv[]
-  General Form:
-  (toggle-pc-macro name &optional new-tp)
-  ~ev[]
-  If name is an
-  atomic macro command then this turns it into an ordinary one, and
-  vice-versa.  However, if ~c[new-tp] is supplied and not ~c[nil], then it
-  should be the new type (the symbol ~c[macro] or ~c[atomic-macro], in any
-  package), or else there is no change."
-
   `(toggle-pc-macro-fn ',(make-official-pc-command name) ',new-tp state))
 
 (defmacro define-pc-primitive (raw-name formals &rest body)
@@ -148,21 +79,6 @@
         (add-pc-command ,name 'primitive)))))
 
 (define-pc-primitive comment (&rest x)
-
-  "insert a comment~/
-  ~bv[]
-  Example:
-  (comment now begin difficult final goal)~/
-
-  General Form:
-  (comment &rest x)
-  ~ev[]
-  This instruction makes no change in the state except to insert the
-  ~c[comment] instruction.
-
-  Some comments can be used to improve the display of commands; see
-  documentation for ~c[comm]."
-
   (declare (ignore x))
   (mv pc-state state))
 
@@ -190,23 +106,6 @@
     nil))
 
 (define-pc-primitive drop (&rest nums)
-
-  "drop top-level hypotheses~/
-  ~bv[]
-  Examples:
-  (drop 2 3) -- drop the second and third hypotheses
-  drop       -- drop all top-level hypotheses~/
-
-  General Forms:
-  (drop n1 n2 ...) -- Drop the hypotheses with the indicated indices.
-
-  drop             -- Drop all the top-level hypotheses.
-  ~ev[]
-  ~st[Remark:]  If there are no top-level hypotheses, then the instruction
-  ~c[drop] will fail.  If any of the indices is out of range, i.e. is not
-  an integer between one and the number of top-level hypotheses
-  ~c[(inclusive)], then ~c[(drop n1 n2 ...)] will fail."
-
   (if nums
       (let ((bad-nums (non-bounded-nums nums 1 (length hyps))))
         (if bad-nums
@@ -230,51 +129,6 @@
       (print-no-change2 "There are no hypotheses to drop!"))))
 
 (define-pc-meta lisp (form)
-
-  "evaluate the given form in Lisp~/
-  ~bv[]
-  Example:
-  (lisp (assign xxx 3))~/
-
-  General Form:
-  (lisp form)
-  ~ev[]
-  Evaluate ~c[form].  The ~c[lisp] command is mainly of interest for side
-  effects.  See also ~c[print], ~c[skip], and ~c[fail].
-
-  The rest of the documentation for ~c[lisp] is of interest only to those who
-  use it in macro commands.  If the Lisp evaluation (by ~c[trans-eval]) of form
-  returns an error triple (~pl[error-triples]) of the form
-  ~c[(mv erp ((NIL NIL STATE) . (erp-1 val-1 &)) state)], then the ~c[lisp]
-  command returns the appropriate error triple
-  ~bv[]
-  (mv (or erp erp-1)
-      val-1
-      state) .
-  ~ev[]
-  Otherwise, the ~c[trans-eval] of form must return an error triple of the form
-  ~c[(mv erp (cons stobjs-out val) &)], and the ~c[lisp] command returns the
-  appropriate error triple
-  ~bv[]
-  (mv erp
-      val
-      state).
-  ~ev[]
-
-  Note that the output signature of the form has been lost.  The user
-  must know the signature in order to use the output of the ~c[lisp]
-  command.  Trans-eval, which is undocumented except by comments in
-  the ACL2 source code, has replaced, in ~c[val], any occurrence of
-  the current state or the current values of stobjs by simple symbols
-  such as ~c[REPLACED-STATE].  The actual values of these objects may
-  be recovered, in principle, from the ~c[state] returned and the
-  ~c[user-stobj-alist] within that state.  However, in practice, the
-  stobjs cannot be recovered because the user is denied access to
-  ~c[user-stobj-alist].  The moral is: do not try to write macro
-  commands that manipulate stobjs.  Should the returned ~c[val]
-  contain ~c[REPLACED-STATE] the value may simply be ignored and
-  ~c[state] used, since that is what ~c[REPLACED-STATE] denotes."
-
   (cond ((not (f-get-global 'in-verify-flg state))
          (er soft 'acl2-pc::lisp
              "You may only invoke the proof-checker LISP command when ~
@@ -298,44 +152,11 @@
   (mv nil state))
 
 (define-pc-macro fail (&optional hard)
-
-  "cause a failure~/
-  ~bv[]
-  Examples:
-  fail
-  (fail t)~/
-
-  General Form:
-  (fail &optional hard)
-  ~ev[]
-  This is probably only of interest to writers of macro commands.
-  The only function of ~c[fail] is to fail to ``succeed''.
-
-  The full story is that ~c[fail] and ~c[(fail nil)] simply return
-  ~c[(mv nil nil state)], while ~c[(fail hard)] returns ~c[(mv hard nil state)] if
-  ~c[hard] is not ~c[nil].  See also ~c[do-strict], ~c[do-all], and ~c[sequence]."
-
   (if hard
       (value '(lisp (mv hard nil state)))
     (value 'fail-primitive)))
 
 (define-pc-macro illegal (instr)
-
-  "illegal instruction~/
-  ~bv[]
-  Example:
-  (illegal -3)~/
-
-  General Form:
-  (illegal instruction)
-  ~ev[]
-  Probably not of interest to most users; always ``fails'' since it
-  expands to the ~c[fail] command.
-
-  The ~c[illegal] command is used mainly in the implementation.  For
-  example, the instruction ~c[0] is ``read'' as ~c[(illegal 0)], since ~c[dive]
-  expects positive integers.~/"
-
   (pprogn (print-no-change "Illegal interactive instruction, ~x0.~%  An instruction must be a ~
                             symbol or a proper list headed by a symbol."
                            (list (cons #\0 instr)))
@@ -391,71 +212,6 @@
               nil state))
 
 (define-pc-meta exit (&optional event-name rule-classes do-it-flg)
-
-  "exit the interactive proof-checker~/
-  ~bv[]
-  Examples:
-  exit                        -- exit the interactive proof-checker
-  (exit t)                    -- exit after printing a bogus defthm event
-  (exit append-associativity) -- exit and create a defthm
-                                 event named append-associativity~/
-
-  General Forms:
-
-  exit --  Exit without storing an event.
-
-  (exit t) -- Exit after printing a bogus defthm event, showing :INSTRUCTIONS.
-
-  (exit event-name &optional rule-classes do-it-flg) --
-  Exit, and perhaps store an event
-  ~ev[]
-  The command ~c[exit] returns you to the ACL2 loop.  At a later time,
-  ~c[(verify)] may be executed to get back into the same proof-checker
-  state, as long as there hasn't been an intervening use of the
-  proof-checker (otherwise see ~c[save]).
-
-  When given one or more arguments as shown above, ~c[exit] still returns
-  you to the ACL2 loop, but first, if the interactive proof is
-  complete, then it attempts create a ~c[defthm] event with the specified
-  ~c[event-name] and ~c[rule-classes] (which defaults to ~c[(:rewrite)] if not
-  supplied).  The event will be printed to the terminal, and then
-  normally the user will be queried whether an event should really be
-  created.  However, if the final optional argument ~c[do-it-flg] is
-  supplied and not ~c[nil], then an event will be made without a query.
-
-  For example, the form
-  ~bv[]
-  (exit top-pop-elim (:elim :rewrite) t)
-  ~ev[]
-  causes a ~c[defthm] event named ~c[top-pop-elim] to be created with
-  rule-classes ~c[(:elim :rewrite)], without a query to the user (because
-  of the argument ~c[t]).
-
-  ~st[Remark:] it is permitted for ~c[event-name] to be ~c[nil].  In that case,
-  the name of the event will be the name supplied during the original call of
-  ~c[verify].  (See the documentation for ~c[verify] and ~c[commands].)  Also
-  in that case, if ~c[rule-classes] is not supplied then it defaults to the
-  rule-classes supplied in the original call of ~c[verify].
-
-  ~c[Comments] on ``success'' and ``failure''.  An ~c[exit] instruction will
-  always ``fail'', so for example, if it appears as an argument of a
-  ~c[do-strict] instruction then none of the later (instruction) arguments
-  will be executed.  Moreover, the ``failure'' will be ``hard'' if an
-  event is successfully created or if the instruction is simply ~c[exit];
-  otherwise it will be ``soft''.  See the documentation for ~c[sequence]
-  for an explanation of hard and soft ``failures''.  An obscure but
-  potentially important fact is that if the ``failure'' is hard, then
-  the error signal is a special signal that the top-level interactive
-  loop can interpret as a request to exit.  Thus for example, a
-  sequencing command that turns an error triple ~c[(mv erp val state)]
-  into ~c[(mv t val state)] would never cause an exit from the interactive
-  loop.
-
-  If the proof is not complete, then ~c[(exit event-name ...)] will not
-  cause an exit from the interactive loop.  However, in that case it
-  will print out the original user-supplied goal (the one that was
-  supplied with the call to ~c[verify]) and the current list of
-  instructions."
 
 ; We allow (exit .. nil ..) to indicate that information is to be picked up
 ; from the initial pc-state.
@@ -557,32 +313,6 @@
               (mv *pc-complete-signal* nil state)))))
 
 (define-pc-meta undo (&optional n)
-
-  "undo some instructions~/
-  ~bv[]
-  Examples:
-  (undo 7)
-  undo~/
-
-  General Forms:
-
-  (undo n) -- Undo the last n instructions.  The argument n should be
-              a positive integer.
-
-  undo     -- Same as (undo 1).
-  ~ev[]
-  ~st[Remark:]  To remove the effect of an ~c[undo] command, use ~c[restore].
-  See the documentation for details.
-
-  ~st[Remark:]  If the argument ~c[n] is greater than the total number of
-  interactive instructions in the current session, then ~c[(undo n)] will
-  simply take you back to the start of the session.
-
-  The ~c[undo] meta command always ``succeeds''; it returns
-  ~c[(mv nil t state)] unless its optional argument is supplied and of
-  the wrong type (i.e. not a positive integer) or there are no
-  instructions to undo."
-
   (if (and args
            (not (and (integerp n)
                      (< 0 n))))
@@ -611,25 +341,6 @@
                 (mv nil t state))))))
 
 (define-pc-meta restore ()
-
-  "remove the effect of an UNDO command~/
-  ~bv[]
-  Example and General Form:
-  restore
-  ~ev[]~/
-
-  ~c[Restore] removes the effect of an ~c[undo] command.  This always works as
-  expected if ~c[restore] is invoked immediately after ~c[undo], without
-  intervening instructions.  However, other commands may also interact
-  with ~c[restore], notably ``sequencing'' commands such as ~c[do-all],
-  ~c[do-strict], ~c[protect], and more generally, ~c[sequence].
-
-  ~st[Remark:]  Another way to control the saving of proof-checker state is
-  with the ~c[save] command; see the documentation for ~c[save].
-
-  The ~c[restore] command always ``succeeds''; it returns
-  ~c[(mv nil t state)]."
-
   (let ((old-ss (pc-value old-ss)))
     (if (null old-ss)
         (pprogn (io? proof-checker nil state
@@ -687,49 +398,9 @@
   (value `(sequence ,instr-list nil nil nil nil t)))
 
 (define-pc-macro skip ()
-
-  "``succeed'' without doing anything~/
-  ~bv[]
-  Example and General Form:
-  skip
-  ~ev[]~/
-
-  Make no change in the state-stack, but ``succeed''.  Same as
-  ~c[(sequence nil)]."
-
   (value '(sequence-no-restore nil)))
 
 (defmacro define-pc-help (name args &rest body)
-
-  ":Doc-Section Proof-checker
-  define a macro command whose purpose is to print something~/
-  ~bv[]
-  Example:
-  (define-pc-help pp ()
-    (if (goals t)
-        (io? proof-checker nil state
-             (state-stack)
-             (fms0 \"~~|~~y0~~|\"
-                   (list (cons #\0
-                               (fetch-term (conc t)
-                                           (current-addr t))))))
-      (print-all-goals-proved-message state)))~/
-
-  General Form:
-  (define-pc-help name args &rest body)
-  ~ev[]
-  This defines a macro command named ~c[name], as explained further below.
-  The ~c[body] should (after removing optional declarations) be a form
-  that returns ~c[state] as its single value.   Typically, it will just
-  print something.
-
-  What ~c[(define-pc-help name args &rest body)] really does is to create
-  a call of ~c[define-pc-macro] that defines ~c[name] to take arguments ~c[args],
-  to have the declarations indicated by all but the last form in ~c[body],
-  and to have a body that (via ~c[pprogn]) first executes the form in the
-  last element of body and then returns a call to the command ~c[skip]
-  (which will return ~c[(mv nil t state)])."
-
   `(define-pc-macro ,name ,args ,@(butlast body 1)
      (pprogn ,(car (last body))
              (value 'skip))))
@@ -789,33 +460,6 @@
   (mark-unfinished-instrs (reverse (evisc-indexed-instrs-rec (reverse indexed-instrs)))))
 
 (define-pc-help commands (&optional n evisc-p)
-
-  "display instructions from the current interactive session~/
-  ~bv[]
-  Examples:
-  commands
-  (commands 10 t)~/
-
-  General Forms:
-
-  commands or (commands nil)
-  Print out all the instructions (in the current state-stack) in
-  reverse order, i.e. from the most recent instruction to the starting
-  instruction.
-
-  (commands n) [n a positive integer]
-  Print out the most recent n instructions (in the current
-  state-stack), in reverse order.
-
-  (commands x abbreviate-flag)
-  Same as above, but if abbreviate-flag is non-NIL, then do not
-  display commands between ``matching bookends''.  See documentation
-  for comm for an explanation of matching bookends.
-  ~ev[]
-  ~st[Remark]:  If there are more than ~c[n] instructions in the state-stack,
-  then ~c[(commands n)] is the same as ~c[commands] (and also,
-  ~c[(commands n abb)] is the same as ~c[(commands nil abb)])."
-
   (if (and n (not (and (integerp n) (> n 0))))
       (io? proof-checker nil state
            (n)
@@ -831,59 +475,6 @@
                       state))))
 
 (define-pc-macro comm (&optional n)
-
-  "display instructions from the current interactive session~/
-  ~bv[]
-  Examples:
-  comm
-  (comm 10)~/
-
-  General Form:
-  (comm &optional n)
-  ~ev[]
-  Prints out instructions in reverse order.  This is actually the same
-  as ~c[(commands n t)] ~-[] or, ~c[(commands nil t)] if ~c[n] is not supplied.  As
-  explained in the documentation for ~c[commands], the final argument of ~c[t]
-  causes suppression of instructions occurring between so-called
-  ``matching bookends,'' which we now explain.
-
-  A ``begin bookend'' is an instruction of the form
-  ~bv[]
-  (COMMENT :BEGIN x . y).
-  ~ev[]
-  Similarly, an ``end bookend'' is an instruction of the form
-  ~bv[]
-  (COMMENT :END x' . y').
-  ~ev[]
-  The ``name'' of the first bookend is ~c[x] and the ``name'' of the
-  second bookend is ~c[x'].  When such a pair of instructions occurs in
-  the current state-stack, we call them ``matching bookends'' provided
-  that they have the same name (i.e. ~c[x] equals ~c[x']) and if no other
-  begin or end bookend with name ~c[x] occurs between them.  The idea now
-  is that ~c[comm] hides matching bookends together with the instructions
-  they enclose.  Here is a more precise explanation of this
-  ``hiding''; probably there is no value in reading on!
-
-  A ~c[comm] instruction hides bookends in the following manner.  (So does
-  a ~c[comment] instruction when its second optional argument is supplied
-  and non-~c[nil].)  First, if the first argument ~c[n] is supplied and not
-  ~c[nil], then we consider only the last ~c[n] instructions from the
-  state-stack; otherwise, we consider them all.  Now the resulting
-  list of instructions is replaced by the result of applying the
-  following process to each pair of matching bookends:  the pair is
-  removed, together with everything in between the begin and end
-  bookend of the pair, and all this is replaced by the ``instruction''
-  ~bv[]
-  (\"***HIDING***\" :COMMENT :BEGIN name ...)
-  ~ev[]
-  where ~c[(comment begin name ...)] is the begin bookend of the pair.
-  Finally, after applying this process to each pair of matching
-  bookends, each begin bookend of the form ~c[(comment begin name ...)]
-  that remains is replaced by
-  ~bv[]
-  (\"***UNFINISHED***\" :COMMENT :BEGIN name ...) .
-  ~ev[]"
-
   (value (list 'commands n t)))
 
 (defun promote-guts (pc-state goals hyps x y no-flatten-flg)
@@ -899,31 +490,6 @@
          (cdr goals))))
 
 (define-pc-primitive promote (&optional do-not-flatten-flag)
-
-  "move antecedents of conclusion's ~c[implies] term to top-level
-  hypotheses~/
-  ~bv[]
-  Examples:
-  promote
-  (promote t)
-  ~ev[]
-  For example, if the conclusion is ~c[(implies (and x y) z)], then
-  after execution of ~c[promote], the conclusion will be ~c[z] and the terms ~c[x]
-  and ~c[y] will be new top-level hypotheses.~/
-  ~bv[]
-  General Form:
-  (promote &optional do-not-flatten-flag)
-  ~ev[]
-  Replace conclusion of ~c[(implies hyps exp)] or ~c[(if hyps exp t)] with
-  simply ~c[exp], adding ~c[hyps] to the list of top-level hypotheses.
-  Moreover, if ~c[hyps] is viewed as a conjunction then each conjunct will
-  be added as a separate top-level hypothesis.  An exception is that
-  if ~c[do-not-flatten-flag] is supplied and not ~c[nil], then only one
-  top-level hypothesis will be added, namely ~c[hyps].
-
-  ~st[Remark]:  You must be at the top of the conclusion in order to use this
-  command.  Otherwise, first invoke ~c[top]."
-
   (if current-addr
       (print-no-change2 "You must be at the top ~
                          of the goal in order to promote the ~
@@ -950,27 +516,6 @@
 ;;; does return just one result, then fms0 isn't even called but instead
 ;;; an appropriate error message is printed.
 (define-pc-macro print (form &optional without-evisc)
-
-  "print the result of evaluating the given form~/
-  ~bv[]
-  Example:
-  (print (append '(a b) '(c d)))
-  Print the list (a b c d) to the terminal~/
-
-  General Forms:
-  (print form)
-  (print form t)
-  ~ev[]
-  Prettyprints the result of evaluating form.  The evaluation of ~c[form]
-  should return a single value that is not ~ilc[state] or a single-threaded
-  object (~pl[stobj]).  The optional second argument causes printing to be done
-  without elision (so-called ``evisceration''; ~pl[evisc-tuple]).
-
-  If the form you want to evaluate does not satisfy the criterion
-  above, you should create an appropriate call of the ~c[lisp] command
-  instead.  Notice that this command always returns
-  ~c[(mv nil nil state)] where the second result will always be
-  ~c[REPLACED-STATE]."
 
 ; NOTE: The saved-output mechanism described in the Essay on Saved-output won't
 ; work here, because there is no call of io?.  We can't call io? because form
@@ -1180,41 +725,10 @@
                                        abbreviations))))))
 
 (define-pc-help p ()
-
-  "prettyprint the current term~/
-  ~bv[]
-  Example and General Form:
-  p
-  ~ev[]~/
-
-  Prettyprint the current term.  The usual user syntax is used, so
-  that for example one would see ~c[(and x y)] rather than ~c[(if x y 'nil)].
-  (See also ~c[pp].)  Also, abbreviations are inserted where appropriate;
-  see ~c[add-abbreviation].
-
-  The ``current term'' is the entire conclusion unless ~c[dive] commands
-  have been given, in which case it may be a subterm of the
-  conclusion.
-
-  If all goals have been proved, a message saying so will be printed
-  (as there will be no current ~c[term]!)."
-
   (when-goals
    (p-body (conc t) (current-addr t) (abbreviations t) state)))
 
 (define-pc-help pp ()
-
-  "prettyprint the current term~/
-  ~bv[]
-  Example and General Form:
-  pp
-  ~ev[]~/
-
-  This is the same as ~c[p] (see its documentation), except that raw
-  syntax (internal form) is used.  So for example, one would see
-  ~c[(if x y 'nil)] rather than ~c[(and x y)].  Abbreviations are however
-  still inserted, as with ~c[p].~/"
-
   (when-goals
    (io? proof-checker nil state
         (state-stack)
@@ -1287,47 +801,6 @@
     nil))
 
 (define-pc-macro hyps (&optional hyps-indices govs-indices)
-
-  "print the hypotheses~/
-  ~bv[]
-  Examples:
-  hyps               -- print all (top-level) hypotheses
-  (hyps (1 3) (2 4)) -- print hypotheses 1 and 3 and governors 2 and 4
-  (hyps (1 3) t)     -- print hypotheses 1 and 3 and all governors~/
-
-  General Form:
-  (hyps &optional hyps-indices govs-indices)
-  ~ev[]
-  Print the indicated top-level hypotheses and governors.  (The notion
-  of ``governors'' is defined below.)  Here, ~c[hyps-indices] and
-  ~c[govs-indices] should be lists of indices of hypotheses and governors
-  (respectively), except that the atom ~c[t] may be used to indicate that
-  one wants all hypotheses or governors (respectively).
-
-  The list of ``governors'' is defined as follows.  Actually, we
-  define here the notion of the governors for a pair of the form
-  ~c[<term], address>]; we're interested in the special case where the
-  term is the conclusion and the address is the current address.  If
-  the address is ~c[nil], then there are no governors, i.e., the list of
-  governors is ~c[nil].  If the term is of the form ~c[(if x y z)] and the
-  address is of the form ~c[(2 . rest)] or ~c[(3 . rest)], then the list of
-  governors is the result of ~c[cons]ing ~c[x] or its negation (respectively)
-  onto the list of governors for the pair ~c[<y, rest>] or the pair
-  ~c[<z, rest>] (respectively).  If the term is of the form ~c[(implies x y)]
-  and the address is of the form ~c[(2 . rest)], then the list of
-  governors is the result of ~c[cons]ing ~c[x] onto the list of governors for
-  the pair ~c[<y, rest>].  Otherwise, the list of governors for the pair
-  ~c[<term, (n .  rest)>] is exactly the list of governors for the pair
-  ~c[<argn, rest>] where ~c[argn] is the ~c[n]th argument of ~c[term].
-
-  If all goals have been proved, a message saying so will be printed.
-  (as there will be no current hypotheses or governors!).
-
-  The ~c[hyps] command never causes an error.  It ``succeeds'' (in fact
-  its value is ~c[t]) if the arguments (when supplied) are appropriate,
-  i.e.  either ~c[t] or lists of indices of hypotheses or governors,
-  respectively.  Otherwise it ``fails'' (its value is ~c[nil])."
-
   (when-goals-trip
    (let* ((hyps (hyps t))
           (len-hyps (length hyps))
@@ -1405,33 +878,6 @@
           (value 'skip))))))))
 
 (define-pc-primitive demote (&rest rest-args)
-
-  "move top-level hypotheses to the conclusion~/
-  ~bv[]
-  Examples:
-  demote        -- demote all top-level hypotheses
-  (demote 3 5)  -- demote hypotheses 3 and 5
-  ~ev[]
-  For example, if the top-level hypotheses are ~c[x] and ~c[y] and the
-  conclusion is ~c[z], then after execution of ~c[demote], the conclusion will
-  be ~c[(implies (and x y) z)] and there will be no (top-level)
-  hypotheses.~/
-  ~bv[]
-  General Form:
-  (demote &rest hyps-indices)
-  ~ev[]
-  Eliminate the indicated (top-level) hypotheses, but replace the
-  conclusion ~c[conc] with ~c[(implies hyps conc)] where ~c[hyps] is the
-  conjunction of the hypotheses that were eliminated.  If no arguments
-  are supplied, then all hypotheses are demoted, i.e. ~c[demote] is the
-  same as ~c[(demote 1 2 ... n)] where ~c[n] is the number of top-level
-  hypotheses.
-
-  ~st[Remark]:  You must be at the top of the conclusion in order to use
-  this command.  Otherwise, first invoke ~c[top].  Also, ~c[demote] fails if
-  there are no top-level hypotheses or if indices are supplied that
-  are out of range.~/"
-
   (cond
    (current-addr
     (print-no-change2 "You must be at the top of the conclusion in order to ~
@@ -1641,34 +1087,6 @@
   (remove-tag-from-tag-tree :bye ttree))
 
 (define-pc-primitive prove (&rest rest-args)
-
-  "call the ACL2 theorem prover to prove the current goal~/
-  ~bv[]
-  Examples:
-  prove -- attempt to prove the current goal
-  (prove :otf-flg t
-         :hints ((\"Subgoal 2\" :by foo) (\"Subgoal 1\" :use bar)))
-        -- attempt to prove the current goal, with the indicated hints
-           and with OTF-FLG set~/
-
-  General Form:
-  (prove &rest rest-args)
-  ~ev[]
-  Attempt to prove the current goal, where ~c[rest-args] is as in the
-  keyword arguments to ~c[defthm] except that only ~c[:hints] and ~c[:otf-flg] are
-  allowed.  The command succeeds exactly when the corresponding ~c[defthm]
-  would succeed, except that it is all right for some goals to be
-  given ``bye''s.  Each goal given a ``bye'' will be turned into a new
-  subgoal.  (~l[hints] for an explanation of ~c[:by] hints.)
-
-  ~st[Remark:]  Use ~c[(= t)] instead if you are not at the top of the
-  conclusion.  Also note that if there are any hypotheses in the
-  current goal, then what is actually attempted is a proof of
-  ~c[(implies hyps conc)], where ~c[hyps] is the conjunction of the
-  top-level hypotheses and ~c[conc] is the goal's conclusion.
-
-  ~st[Remark:]  It is allowed to use abbreviations in the hints."
-
   (cond
    (current-addr
     (print-no-change2 "The PROVE command should only be used at ~
@@ -1759,34 +1177,6 @@
     ("[1]Subgoal 15" :by nil)))
 
 (define-pc-atomic-macro bash (&rest hints)
-
-  "call the ACL2 theorem prover's simplifier~/
-  ~bv[]
-  Examples:
-  bash -- attempt to prove the current goal by simplification alone
-  (bash (\"Subgoal 2\" :by foo) (\"Subgoal 1\" :use bar))
-       -- attempt to prove the current goal by simplification alone,
-          with the indicated hints~/
-
-  General Form:
-  (bash &rest hints)
-  ~ev[]
-  Call the theorem prover's simplifier, creating a subgoal for each
-  resulting goal.
-
-  Notice that unlike ~c[prove], the arguments to ~c[bash] are spread out, and
-  are all hints.
-
-  ~c[Bash] is similar to ~c[reduce] in that neither of these allows induction.
-  But ~c[bash] only allows simplification, while ~c[reduce] allows processes
-  ~c[eliminate-destructors], ~c[fertilize], ~c[generalize], and
-  ~c[eliminate-irrelevance].
-
-  ~st[Remark:]  All forcing rounds will be skipped (unless there are more
-  than 15 subgoals generated in the first forcing round, an injustice
-  that should be rectified, but might remain unless there is pressure to
-  fix it)."
-
   (if (alistp hints)
       (value (list :prove :hints
                    (append
@@ -1811,46 +1201,6 @@
             (value :fail))))
 
 (define-pc-primitive dive (n &rest rest-addr)
-
-  "move to the indicated subterm~/
-  ~bv[]
-  Examples:
-  (DIVE 1)    -- assign the new current subterm to be the first
-                 argument of the existing current subterm
-  (DIVE 1 2)  -- assign the new current subterm to be the result of
-                 first taking the 1st argument of the existing
-                 current subterm, and then the 2nd argument of that
-  ~ev[]
-  For example, if the current subterm is
-  ~bv[]
-  (* (+ a b) c),
-  ~ev[]
-  then after ~c[(dive 1)] it is
-  ~bv[]
-  (+ a b).
-  ~ev[]
-  If after that, then ~c[(dive 2)] is invoked, the new current subterm
-  will be
-  ~bv[]
-  b.
-  ~ev[]
-  Instead of ~c[(dive 1)] followed by ~c[(dive 2)], the same current subterm
-  could be obtained by instead submitting the single instruction
-  ~c[(dive 1 2)].~/
-  ~bv[]
-  General Form:
-  (dive &rest naturals-list)
-  ~ev[]
-  If ~c[naturals-list] is a non-empty list ~c[(n_1 ... n_k)] of natural
-  numbers, let the new current subterm be the result of selecting the
-  ~c[n_1]-st argument of the current subterm, and then the ~c[n_2]-th subterm
-  of that, ..., finally the ~c[n_k]-th subterm.
-
-  ~st[Remark:]  ~c[Dive] is related to the command ~c[pp], in that the diving
-  is done according to raw (translated, internal form) syntax.  Use the
-  command ~c[dv] if you want to dive according to the syntax displayed by
-  the command ~c[p].  Note that ~c[(dv n)] can be abbreviated by simply ~c[n]."
-
   (if (not (bounded-integer-listp 1 'infinity args))
       (print-no-change2 "The arguments to DIVE must all be positive integers.")
     (mv-let (subterm cl)
@@ -1872,40 +1222,6 @@
 ; Keep this in sync with translate-in-theory-hint.
 
 (define-pc-atomic-macro split ()
-
-  "split the current goal into cases~/
-  ~bv[]
-  Example:
-  split
-  ~ev[]
-  For example, if the current goal has one hypothesis ~c[(or x y)] and a
-  conclusion of ~c[(and a b)], then ~c[split] will create four new goals:
-  ~bv[]
-  one with hypothesis X and conclusion A
-  one with hypothesis X and conclusion B
-  one with hypothesis Y and conclusion A
-  one with hypothesis Y and conclusion B.~/
-
-  General Form:
-  SPLIT
-  ~ev[]
-  Replace the current goal by subgoals whose conjunction is equivalent
-  (primarily by propositional reasoning) to the original goal, where
-  each such goal cannot be similarly split.
-
-  ~st[Remark:]  The new goals will all have their hypotheses promoted; in
-  particular, no conclusion will have a top function symbol of
-  ~c[implies].  Also note that ~c[split] will fail if there is exactly one new
-  goal created and it is the same as the existing current goal.
-
-  The way ~c[split] really works is to call the ACL2 theorem prover with only
-  simplification (and preprocessing) turned on, and with only a few built-in
-  functions (especially, propositional ones) enabled, namely, the ones in the
-  list ~c[(theory 'minimal-theory)].  However, because the prover is called,
-  type-set reasoning can be used to eliminate some cases.  For example, if
-  ~c[(true-listp x)] is in the hypotheses, then probably
-  ~c[(true-listp (cdr x))] will be reduced to ~c[t]."
-
   (value '(:prove :hints
                   (("Goal"
                     :do-not-induct proof-checker
@@ -1914,52 +1230,6 @@
                     :in-theory (theory 'minimal-theory))))))
 
 (define-pc-primitive add-abbreviation (var &optional raw-term)
-
-  "add an abbreviation~/
-
-  Example:  ~c[(add-abbreviation v (* x y))] causes future occurrences of
-  ~c[(* x y)] to be printed as ~c[(? v)], until (unless) a corresponding
-  invocation of ~c[remove-abbreviations] occurs.  In this case we say that
-  ~c[v] ``abbreviates'' ~c[(* x y)].~/
-  ~bv[]
-  General Form:
-  (add-abbreviation var &optional raw-term)
-  ~ev[]
-  Let ~c[var] be an abbreviation for ~c[raw-term], if ~c[raw-term] is supplied,
-  else for the current subterm.  Note that ~c[var] must be a variable that
-  does not already abbreviate some term.
-
-  A way to think of abbreviations is as follows.  Imagine that
-  whenever an abbreviation is added, say ~c[v] abbreviates ~c[expr], an entry
-  associating ~c[v] to ~c[expr] is made in an association list, which we will
-  call ``~c[*abbreviations-alist*]''.  Then simply imagine that ~c[?] is a
-  function defined by something like:
-  ~bv[]
-  (defun ? (v)
-    (let ((pair (assoc v *abbreviations-alist*)))
-      (if pair (cdr pair)
-        (error ...))))
-  ~ev[]
-  Of course the implementation isn't exactly like that, since the
-  ``constant'' ~c[*abbreviations-alist*] actually changes each time an
-  ~c[add-abbreviation] instruction is successfully invoked.  Nevertheless,
-  if one imagines an appropriate redefinition of the ``constant''
-  ~c[*abbreviations-alist*] each time an ~c[add-abbreviation] is invoked, then
-  one will have a clear model of the meaning of such an instruction.
-
-  The effect of abbreviations on output is that before printing a
-  term, each subterm that is abbreviated by a variable ~c[v] is first
-  replaced by ~c[(? v)].
-
-  The effect of abbreviations on input is that every built-in
-  proof-checker command accepts abbreviations wherever a term is
-  expected as an argument, i.e., accepts the syntax ~c[(? v)] whenever ~c[v]
-  abbreviates a term.  For example, the second argument of
-  ~c[add-abbreviation] may itself use abbreviations that have been defined
-  by previous ~c[add-abbreviation] instructions.
-
-  See also ~c[remove-abbreviations] and ~c[show-abbreviations]."
-
   (mv-let (erp term state)
           (if (cdr args)
               (trans0 raw-term abbreviations :add-abbreviation)
@@ -1991,30 +1261,6 @@
     nil))
 
 (define-pc-primitive remove-abbreviations (&rest vars)
-
-  "remove one or more abbreviations~/
-  ~bv[]
-  Examples:
-  remove-abbreviations -- remove all abbreviations
-  (remove-abbreviations v w)
-                       -- assuming that V and W currently abbreviate
-                          terms, then they are ``removed'' in the
-                          sense that they are no longer considered to
-                          abbreviate those terms~/
-
-  General Forms:
-  (remove-abbreviations &rest vars)
-  ~ev[]
-  If vars is not empty (i.e., not ~c[nil]), remove the variables in ~c[vars]
-  from the current list of abbreviations, in the sense that each
-  variable in ~c[vars] will no longer abbreviate a term.
-
-  ~st[Remark:]  The instruction fails if at least one of the arguments
-  fails to be a variable that abbreviates a term.
-
-  See also the documentation for ~c[add-abbreviation], which contains a
-  discussion of abbreviations in general, and ~c[show-abbreviations]."
-
   (if (null abbreviations)
       (print-no-change2 "There are currently no abbreviations.")
     (let ((badvars (and args (not-in-domain-eq vars abbreviations))))
@@ -2077,34 +1323,6 @@
      (print-abbreviations (cdr vars) abbreviations state))))
 
 (define-pc-help show-abbreviations (&rest vars)
-
-  "display the current abbreviations~/
-  ~bv[]
-  Examples:
-  (show-abbreviations v w)
-     -- assuming that v and w currently abbreviate terms,
-        then this instruction displays them together with
-        the terms they abbreviate
-  show-abbreviations
-     -- display all abbreviations
-  ~ev[]
-  See also ~c[add-abbreviation] and ~c[remove-abbreviations].  In
-  particular, the documentation for ~c[add-abbreviation] contains a
-  general discussion of abbreviations.~/
-  ~bv[]
-  General Form:
-  (show-abbreviations &rest vars)
-  ~ev[]
-  Display each argument in ~c[vars] together with the term it abbreviates
-  (if any).  If there are no arguments, i.e. the instruction is simply
-  ~c[show-abbreviations], then display all abbreviations together with the
-  terms they abbreviate.
-
-  If the term abbreviated by a variable, say ~c[v], contains a proper
-  subterm that is also abbreviate by (another) variable, then both the
-  unabbreviated term and the abbreviated term (but not using ~c[(? v)] to
-  abbreviate the term) are displayed with together with ~c[v]."
-
   (if (null (abbreviations t))
       (io? proof-checker nil state
            nil
@@ -2119,25 +1337,6 @@
   (take (- (length l) n) l))
 
 (define-pc-primitive up (&optional n)
-
-  "move to the parent (or some ancestor) of the current subterm~/
-  ~bv[]
-  Examples:  if the conclusion is (= x (* (- y) z)) and the
-             current subterm is y, then we have:
-  up or (up 1) -- the current subterm becomes (- y)
-  (up 2)       -- the current subterm becomes (* (- y) z)
-  (up 3)       -- the current subterm becomes the entire conclusion
-  (up 4)       -- no change; can't go up that many levels~/
-
-  General Form:
-  (up &optional n)
-  ~ev[]
-  Move up ~c[n] levels in the conclusion from the current subterm, where ~c[n]
-  is a positive integer.  If ~c[n] is not supplied or is ~c[nil], then move up
-  1 level, i.e., treat the instruction as ~c[(up 1)].
-
-  See also ~c[dive], ~c[top], ~c[nx], and ~c[bk]."
-
   (let ((n (or n 1)))
     (cond ((null current-addr)
            (print-no-change2 "Already at the top."))
@@ -2159,21 +1358,6 @@
                                    (cons #\1 (zero-one-or-more (length current-addr)))))))))
 
 (define-pc-atomic-macro top ()
-
-  "move to the top of the goal~/
-  ~bv[]
-  Example and General Form:
-  top
-  ~ev[]
-  For example, if the conclusion is ~c[(= x (* (- y) z))] and the
-  current subterm is ~c[y], then after executing ~c[top], the current subterm
-  will be the same as the conclusion, i.e., ~c[(= x (* (- y) z))].~/
-
-  ~c[Top] is the same as ~c[(up n)], where ~c[n] is the number of times one needs
-  to execute ~c[up] in order to get to the top of the conclusion.  The ~c[top]
-  command fails if one is already at the top of the conclusion.
-
-  See also ~c[up], ~c[dive], ~c[nx], and ~c[bk]."
   (when-goals-trip
    (let ((current-addr (current-addr t)))
      (value (list :up (length current-addr))))))
@@ -2335,77 +1519,12 @@
                 (null val))))
 
 (defmacro add-dive-into-macro (name val)
-
-  ":Doc-Section switches-parameters-and-modes
-
-  associate ~il[proof-checker] diving function with macro name~/
-  ~bv[]
-  Examples:
-  (add-dive-into-macro cat expand-address-cat)
-  ~ev[]
-  This feature is used so that the ~il[proof-checker]'s ~c[DV] command and
-  numeric diving commands (e.g., ~c[3]) will dive properly into subterms.
-  Please ~pl[dive-into-macros-table].~/~/"
-
   `(table dive-into-macros-table ',name ',val))
 
 (defmacro remove-dive-into-macro (name)
-
-  ":Doc-Section switches-parameters-and-modes
-
-  removes association of ~il[proof-checker] diving function with macro name~/
-  ~bv[]
-  Example:
-  (remove-dive-into-macro logand)
-  ~ev[]
-  This feature undoes the effect of ~ilc[add-dive-into-macro], which is used
-  so that the ~il[proof-checker]'s ~c[DV] command and numeric diving commands
-  (e.g., ~c[3]) will dive properly into subterms.  Please
-  ~pl[add-dive-into-macro] and especially ~pl[dive-into-macros-table].~/~/"
-
   `(table dive-into-macros-table ',name nil))
 
 (defun dive-into-macros-table (wrld)
-
-  ":Doc-Section switches-parameters-and-modes
-
-  right-associated function information for the ~il[proof-checker]~/
-  ~bv[]
-  Examples:
-  ACL2 !>(dive-into-macros-table (w state))
-  ((CAT . EXPAND-ADDRESS-CAT)
-   (LXOR . EXPAND-ADDRESS-LXOR)
-  ~ev[]
-  This table associates macro names with functions used by the
-  ~il[proof-checker]'s ~c[DV] and numeric diving commands (e.g., ~c[3]) in
-  order to dive properly into subterms.  ~l[proof-checker], in particular the
-  documentation for ~c[DV].
-
-  This table can be extended easily.  ~l[add-dive-into-macro] and also
-  ~pl[remove-dive-into-macro].
-
-  The symbol associated with a macro should be a function symbol taking four
-  arguments, in this order:
-  ~bf[]
-  ~c[car-addr] ; the first number in the list given to the ~il[proof-checker]'s
-             ~c[DV] command
-  ~c[raw-term] ; the untranslated term into which we will dive
-  ~c[term]     ; the translated term into which we will dive
-  ~c[wrld]     ; the current ACL2 logical ~il[world]
-  ~ef[]
-  The function will normally return a list of positive integers, representing
-  the (one-based) address for diving into ~c[term] that corresponds to the
-  single-address dive into ~c[raw-term] by ~c[car-address].  However, it can
-  return ~c[(cons str alist)], where ~c[str] is a string suitable for ~ilc[fmt]
-  and ~c[args] is the corresponding alist for ~ilc[fmt].
-
-  Referring to the example above, ~c[expand-address-cat] would be such a
-  function, which will be called on ~c[raw-term] values that are calls of
-  ~c[cat].  See the community book ~c[books/misc/rtl-untranslate.lisp] for the
-  definition of such a function.
-
-  ~l[table] for a general discussion of tables.~/~/"
-
   (declare (xargs :guard (plist-worldp wrld)))
   (table-alist 'dive-into-macros-table wrld))
 
@@ -2788,78 +1907,6 @@
            (mv t nil state)))
 
 (define-pc-atomic-macro dv (&rest rest-args)
-
-  "move to the indicated subterm~/
-  ~bv[]
-  Examples:
-  (dv 1)    -- assign the new current subterm to be the first argument
-               of the existing current subterm
-  (dv 1 2)  -- assign the new current subterm to be the result of
-               first taking the 1st argument of the existing
-               current subterm, and then the 2nd argument of that
-  ~ev[]
-  For example, if the current subterm is
-  ~bv[]
-  (* (+ a b) c),
-  ~ev[]
-  then after ~c[(dv 1)] it is
-  ~bv[]
-  (+ a b).
-  ~ev[]
-  If after that, then ~c[(dv 2)] is invoked, the new current subterm
-  will be
-  ~bv[]
-  b.
-  ~ev[]
-  Instead of ~c[(dv 1)] followed by ~c[(dv 2)], the same current subterm
-  could be obtained by instead submitting the single instruction
-  ~c[(dv 1 2)].~/
-  ~bv[]
-  General Form:
-  (dv &rest naturals-list)
-  ~ev[]
-  If ~c[naturals-list] is a non-empty list ~c[(n_1 ... n_k)] of natural
-  numbers, let the new current subterm be the result of selecting the
-  ~c[n_1]-st argument of the current subterm, and then the ~c[n_2]-th subterm
-  of that, ..., finally the ~c[n_k]-th subterm.
-
-  ~st[Remark:]  ~c[(dv n)] may be abbreviated by simply ~c[n], so we could have
-  typed ~c[1] instead of ~c[(dv 1)] in the first example above.
-
-  ~st[Remark:]  See also ~c[dive], which is related to the command ~c[pp], in
-  that the diving is done according to raw (translated, internal form)
-  syntax.  Use the command ~c[dv] if you want to dive according to the
-  syntax displayed by the command ~c[p].  Thus, the command ``~c[up]'' is the
-  inverse of ~c[dive], not of ~c[dv].  The following example illustrates this
-  point.
-  ~bv[]
-  ACL2 !>(verify (equal (* a b c) x))
-  ->: p ; print user-level term
-  (EQUAL (* A B C) X)
-  ->: pp ; print internal-form (translated) term
-  (EQUAL (BINARY-* A (BINARY-* B C)) X)
-  ->: exit
-  Exiting....
-   NIL
-  ACL2 !>(verify (equal (* a b c) x))
-  ->: p
-  (EQUAL (* A B C) X)
-  ->: 1 ; same as (dv 1)
-  ->: p ; print user-level term
-  (* A B C)
-  ->: pp ; print internal-form (translated) term
-  (BINARY-* A (BINARY-* B C))
-  ->: 3 ; dive to third argument of (* A B C)
-  ->: p
-  C
-  ->: up ; go up one level in (BINARY-* A (BINARY-* B C))
-  ->: p
-  (* B C)
-  ->: pp
-  (BINARY-* B C)
-  ->:
-  ~ev[]"
-
   (let* ((conc (conc t))
          (current-addr (current-addr t))
          (abbreviations (abbreviations t))
@@ -3082,47 +2129,6 @@
             (flatten-ands-in-lit-lst (cdr x)))))
 
 (define-pc-primitive equiv (x y &optional equiv)
-
-  "attempt an equality (or congruence-based) substitution~/
-  ~bv[]
-  Examples:
-  (equiv (* x y) 3) -- replace (* x y) by 3 everywhere inside the
-                       current subterm, if their equality is among the
-                       top-level hypotheses or the governors
-  (equiv x t iff)   -- replace x by t everywhere inside the current
-                       subterm, where only propositional equivalence
-                       needs to be maintained at each occurrence of x~/
-
-  General form:
-  (equiv old new &optional relation)
-  ~ev[]
-  Substitute new for old everywhere inside the current subterm,
-  provided that either (relation old new) or (relation new old) is
-  among the top-level hypotheses or the governors (possibly by way of
-  backchaining and/or refinement; see below).  If relation is ~c[nil] or
-  is not supplied, then it defaults to ~c[equal].  See also the command ~c[=],
-  which is much more flexible.  Note that this command fails if no
-  substitution is actually made.
-
-  ~st[Remark:]  No substitution takes place inside explicit values.  So for
-  example, the instruction ~c[(equiv 3 x)] will cause ~c[3] to be replaced by
-  ~c[x] if the current subterm is, say, ~c[(* 3 y)], but not if the current
-  subterm is ~c[(* 4 y)] even though ~c[4 = (1+ 3)].
-
-  The following remarks are quite technical and mostly describe a
-  certain weak form of ``backchaining'' that has been implemented for
-  ~c[equiv] in order to support the ~c[=] command.  In fact neither the term
-  ~c[(relation old new)] nor the term ~c[(relation new old)] needs to be
-  ~st[explicitly] among the current ``assumptions'', i.e., the top-level
-  hypothesis or the governors.  Rather, there need only be such an
-  assumption that ``tells us'' ~c[(r old new)] or ~c[(r new old)], for ~st[some]
-  equivalence relation ~c[r] that ~st[refines] ~c[relation].  Here, ``tells us''
-  means that either one of the indicated terms is among those
-  assumptions, or else there is an assumption that is an implication
-  whose conclusion is one of the indicated terms and whose hypotheses
-  (gathered up by appropriately flattening the first argument of the
-  ~c[implies] term) are all among the current assumptions."
-
   (mv-let
    (current-term governors)
    (fetch-term-and-cl conc current-addr nil)
@@ -3195,56 +2201,6 @@
 
 (define-pc-primitive casesplit
   (expr &optional use-hyps-flag do-not-flatten-flag)
-
-  "split into two cases~/
-  ~bv[]
-  Example:
-  (casesplit (< x y)) -- assuming that we are at the top of the
-                         conclusion, add (< x y) as a new top-level
-                         hypothesis in the current goal, and create a
-                         subgoal identical to the current goal except
-                         that it has (not (< x y)) as a new top-level
-                         hypothesis~/
-
-  General Form:
-  (casesplit expr &optional use-hyps-flag do-not-flatten-flag)
-  ~ev[]
-  When the current subterm is the entire conclusion, this instruction
-  adds ~c[expr] as a new top-level hypothesis, and create a subgoal
-  identical to the existing current goal except that it has the
-  negation of ~c[expr] as a new top-level hypothesis.  See also ~c[claim].
-  The optional arguments control the use of governors and the
-  ``flattening'' of new hypotheses, as we now explain.
-
-  The argument ~c[use-hyps-flag] is only of interest when there are
-  governors.  (To read about governors, see the documentation for the
-  command ~c[hyps]).  In that case, if ~c[use-hyps-flag] is not supplied or is
-  ~c[nil], then the description above is correct; but otherwise, it is not
-  ~c[expr] but rather it is ~c[(implies govs expr)] that is added as a new
-  top-level hypothesis (and whose negation is added as a top-level
-  hypothesis for the new goal), where ~c[govs] is the conjunction of the
-  governors.
-
-  If ~c[do-not-flatten-flag] is supplied and not ~c[nil], then that is
-  all there is to this command.  Otherwise (thus this is the default),
-  when the claimed term (first argument) is a conjunction (~c[and]) of
-  terms and the ~c[claim] instruction succeeds, then each (nested)
-  conjunct of the claimed term is added as a separate new top-level
-  hypothesis.  Consider the following example, assuming there are no
-  governors.
-  ~bv[]
-  (casesplit (and (and (< x y) (integerp a)) (equal r s)) t)
-  ~ev[]
-  Three new top-level hypotheses are added to the current goal, namely
-  ~c[(< x y)], ~c[(integerp a)], and ~c[(equal r s)].  In that case, only
-  one hypothesis is added to create the new goal, namely the negation
-  of ~c[(and (< x y) (integerp a) (equal r s))].  If the negation of this
-  term had been ~c[claim]ed, then it would be the other way around:  the
-  current goal would get a single new hypothesis while the new goal
-  would be created by adding three hypotheses.
-
-  ~st[Remark:]  It is allowed to use abbreviations in the hints."
-
   (mv-let
    (erp term state)
    (trans0 expr abbreviations :casesplit)
@@ -3316,48 +2272,6 @@
   (value `(do-strict top? contrapose-last drop-last)))
 
 (define-pc-atomic-macro claim (expr &rest rest-args)
-
-  "add a new hypothesis~/
-  ~bv[]
-  Examples:
-  (claim (< x y))   -- attempt to prove (< x y) from the current
-                       top-level hypotheses and if successful, then
-                       add (< x y) as a new top-level hypothesis in
-                       the current goal
-  (claim (< x y)
-         :otf-flg t
-         :hints ((\"Goal\" :induct t)))
-                    -- as above, but call the prover using the
-                       indicated values for the otf-flg and hints
-  (claim (< x y) 0) -- as above, except instead of attempting to
-                       prove (< x y), create a new subgoal with the
-                       same top-level hypotheses as the current goal
-                       that has (< x y) as its conclusion
-  (claim (< x y) :hints :none)
-                    -- same as immediately above~/
-
-  General Form:
-  (claim expr &rest rest-args)
-  ~ev[]
-  This command creates a new subgoal with the same top-level
-  hypotheses as the current goal but with a conclusion of ~c[expr].  If
-  ~c[rest-args] is a non-empty list headed by a non-keyword, then there
-  will be no proof attempted for the new subgoal.  With that possible
-  exception, ~c[rest-args] should consist of keyword arguments.  The
-  keyword argument ~c[:do-not-flatten] controls the ``flattening'' of new
-  hypotheses, just as with the ~c[casesplit] command (as described in its
-  documentation).  The remaining ~c[rest-args] are used with a call the
-  ~c[prove] command on the new subgoal, except that if ~c[:hints] is a non-~c[nil]
-  atom, then the prover is not called ~-[] rather, this is the same as
-  the situation described above, where ~c[rest-args] is a non-empty list
-  headed by a non-keyword.
-
-  ~st[Remarks:]  (1) Unlike the ~c[casesplit] command, the ~c[claim]
-  command is completely insensitive to governors. (2) It is allowed to
-  use abbreviations in the hints.  (3) The keyword :~c[none] has the
-  special role as a value of :~c[hints] that is shown clearly in an
-  example above."
-
   (when-goals-trip
    (value
     (let ((rest-args-1 (if (and rest-args
@@ -3383,31 +2297,6 @@
               (prove ,@remaining-rest-args)))))))))
 
 (define-pc-atomic-macro induct (&optional raw-term)
-
-  "generate subgoals using induction~/
-  ~bv[]
-  Examples:
-  induct, (induct t)
-     -- induct according to a heuristically-chosen scheme, creating
-        a new subgoal for each base and induction step
-  (induct (append (reverse x) y))
-     -- as above, but choose an induction scheme based on the term
-        (append (reverse x) y) rather than on the current goal~/
-
-  General Form:
-  (induct &optional term)
-  ~ev[]
-  Induct as in the corresponding ~c[:induct] hint given to the theorem
-  prover, creating new subgoals for the base and induction steps.  If
-  term is ~c[t] or is not supplied, then use the current goal to determine
-  the induction scheme; otherwise, use that term.
-
-  ~st[Remark:]  As usual, abbreviations are allowed in the term.
-
-  ~st[Remark:]  ~c[Induct] actually calls the ~c[prove] command with all
-  processes turned off.  Thus, you must be at top of the goal for an ~c[induct]
-  instruction."
-
   (when-goals-trip
    (if (and (goals t)
             (current-addr t))
@@ -3432,18 +2321,6 @@
             (print-on-separate-lines (cdr vals) evisc-tuple chan state))))
 
 (define-pc-help goals ()
-
-  "list the names of goals on the stack~/
-  ~bv[]
-  Example and General Form:
-  goals
-  ~ev[]~/
-
-  ~c[Goals] lists the names of all goals that remain to be proved.  They
-  are listed in the order in which they appear on the stack of
-  remaining goals, which is relevant for example to the effect of a
-  ~c[change-goal] instruction."
-
   (io? proof-checker nil state
        (state-stack)
        (when-goals
@@ -3496,82 +2373,6 @@
   ;; translator failing because erp and val aren't declared ignored when
   ;; they should be.
 
-  "run the given list of instructions according to a multitude of
-  options~/
-  ~bv[]
-  Example:
-  (sequence (induct p prove) t)
-  ~ev[]
-  See also the definitions of commands ~c[do-all], ~c[do-strict], ~c[protect], and
-  ~c[succeed].~/
-
-  ~bv[]
-  General Form:
-  (sequence
-   instruction-list
-   &optional
-   strict-flg protect-flg success-expr no-prompt-flg no-restore-flg)
-  ~ev[]
-  Each instruction in the list ~c[instruction-list] is run, and the
-  instruction ``succeeds'' if every instruction in ~c[instruction-list]
-  ``succeeds''.  However, it might ``succeed'' even if some
-  instructions in the list ``fail''; more generally, the various
-  arguments control a number of aspects of the running of the
-  instructions.  All this is explained in the paragraphs below.  First
-  we embark on a general discussion of the instruction interpreter,
-  including the notions of ``succeed'' and ``fail''.
-
-  ~st[Remark:]  The arguments are ~st[not] evaluated, except (in a sense) for
-  ~c[success-expr], as described below.
-
-  Each primitive and meta instruction can be thought of as returning an error
-  triple, say ~c[(erp val state)]; ~pl[error-triples].  An
-  instruction (primitive or meta) ``succeeds'' if ~c[erp] is ~c[nil] and
-  ~c[val] is not ~c[nil]; otherwise it ``fails''.  (When we use the words
-  ``succeed'' or ``fail'' in this technical sense, we'll always include them in
-  double quotes.)  If an instruction ``fails,'' we say that that the failure is
-  ``soft'' if ~c[erp] is ~c[nil]; otherwise the failure is ``hard''.  The
-  ~c[sequence] command gives the user control over how to treat ``success'' and
-  ``failure'' when sequencing instructions, though we have created a number of
-  handy macro commands for this purpose, notably ~c[do-all], ~c[do-strict] and
-  ~c[protect].
-
-  Here is precisely what happens when a ~c[sequence] instruction is run.
-  The instruction interpreter is run on the instructions supplied in
-  the argument ~c[instruction-list] (in order).  The interpreter halts the
-  first time there is a hard ``failure.'' except that if ~c[strict-flg] is
-  supplied and not ~c[nil], then the interpreter halts the first time
-  there is any ``failure.''  The error triple ~c[(erp val state)] returned
-  by the ~c[sequence] instruction is the triple returned by the last
-  instruction executed (or, the triple ~c[(nil t state)] if
-  ~c[instruction-list] is ~c[nil]), except for the following provision.  If
-  ~c[success-expr] is supplied and not ~c[nil], then it is evaluated with the
-  state global variables ~c[pc-erp] and ~c[pc-val] (in the \"ACL2\" package)
-  bound to the corresponding components of the error triple returned (as
-  described above).  At least two values should be returned, and the first two
-  of these will be substituted for ~c[erp] and ~c[val] in the triple finally
-  returned by ~c[sequence].  For example, if ~c[success-expr] is ~c[(mv erp val)],
-  then no change will be made to the error triple, and if instead it
-  is ~c[(mv nil t)], then the ~c[sequence] instruction will ``succeed''.
-
-  That concludes the description of the error triple returned by a
-  ~c[sequence] instruction, but it remains to explain the effects of the
-  arguments ~c[protect-flg] and ~c[no-prompt-flg].
-
-  If ~c[protect-flg] is supplied and not ~c[nil] and if also the instruction
-  ``fails'' (i.e., the error component of the triple is not ~c[nil] or the
-  value component is ~c[nil]), then the state is reverted so that the
-  proof-checker's state (including the behavior of ~c[restore]) is set
-  back to what it was before the ~c[sequence] instruction was executed.
-  Otherwise, unless ~c[no-restore-flg] is set, the state is changed so
-  that the ~c[restore] command will now undo the effect of this ~c[sequence]
-  instruction (even if there were nested calls to ~c[sequence]).
-
-  Finally, as each instruction in ~c[instruction-list] is executed, the
-  prompt and that instruction will be printed, unless the global state
-  variable ~c[pc-print-prompt-and-instr-flg] is unbound or ~c[nil] and the
-  parameter ~c[no-prompt-flg] is supplied and not ~c[nil]."
-
   ;; This is the only place where the pc-prompt gets lengthened.
   ;; Also note that we always lengthen the prompt, but we only do the printing
   ;; if no-prompt-flg is nil AND pc-print-prompt-and-instr-flg is non-nil.
@@ -3614,20 +2415,6 @@
                                  (mv erp val state)))))))))
 
 (define-pc-macro negate (&rest instr-list)
-
-  "run the given instructions, and ``succeed'' if and only if they ``fail''~/
-
-  Example:
-  (negate prove)~/
-  ~bv[]
-  General form:
-  (negate &rest instruction-list)
-  ~ev[]
-  Run the indicated instructions exactly in the sense of ~c[do-all], and
-  ``succeed'' if and only if they ``fail''.
-
-  ~st[Remark:]  ~c[Negate] instructions will never produce hard ``failures''."
-
   (value (list :sequence instr-list nil nil
                '(mv nil
                     (if (or (f-get-global 'pc-erp state)
@@ -3640,109 +2427,24 @@
   ;; I won't make this atomic, since I view this as just a sequencer
   ;; command that should ultimately "disappear" in favor of its arguments.
 
-  "run the given instructions, and ``succeed''~/
-  ~bv[]
-  Example:
-  (succeed induct p prove)~/
-
-  General Form:
-  (succeed &rest instruction-list)
-  ~ev[]
-  Run the indicated instructions until there is a hard ``failure'',
-  and ``succeed''.  (See the documentation for ~c[sequence] for an
-  explanation of ``success'' and ``failure''.)"
-
   (mv nil
       (list :sequence
             instr-list nil nil '(mv nil t))
       state))
 
 (define-pc-macro do-all (&rest instr-list)
-
-  "run the given instructions~/
-  ~bv[]
-  Example:
-  (do-all induct p prove)~/
-
-  General Form:
-  (do-all &rest instruction-list)
-  ~ev[]
-  Run the indicated instructions until there is a hard ``failure''.
-  The instruction ``succeeds'' if and only if each instruction in
-  ~c[instruction-list] does.  (See the documentation for ~c[sequence] for an
-  explanation of ``success'' and ``failure.'')  As each instruction is
-  executed, the system will print the usual prompt followed by that
-  instruction, unless the global state variable
-  ~c[pc-print-prompt-and-instr-flg] is ~c[nil].
-
-  ~st[Remark:]  If ~c[do-all] ``fails'', then the failure is hard if and only
-  if the last instruction it runs has a hard ``failure''.
-
-  Obscure point:  For the record, ~c[(do-all ins_1 ins_2 ... ins_k)] is
-  the same as ~c[(sequence (ins_1 ins_2 ... ins_k))]."
-
   (mv nil (list :sequence instr-list)
       state))
 
 (define-pc-macro do-strict (&rest instr-list)
-
-  "run the given instructions, halting once there is a ``failure''~/
-  ~bv[]
-  Example:
-  (do-strict induct p prove)~/
-
-  General Form:
-  (do-strict &rest instruction-list)
-  ~ev[]
-  Run the indicated instructions until there is a (hard or soft)
-  ``failure''.  In fact ~c[do-strict] is identical in effect to ~c[do-all],
-  except that ~c[do-all] only halts once there is a hard ``failure''.  See
-  the documentation for ~c[do-all]."
-
   (mv nil (list :sequence instr-list t)
       state))
 
 (define-pc-macro do-all-no-prompt (&rest instr-list)
-
-  "run the given instructions, halting once there is a ``failure''~/
-  ~bv[]
-  Example:
-  (do-all-no-prompt induct p prove)~/
-
-  General Form:
-  (do-all-no-prompt &rest instruction-list)
-  ~ev[]
-  ~c[Do-all-no-prompt] is the same as ~c[do-all], except that the prompt and
-  instruction are not printed each time, regardless of the value of
-  ~c[pc-print-prompt-and-instr-flg].  Also, restoring is disabled.  See the
-  documentation for ~c[do-all]."
-
   (mv nil (list :sequence instr-list nil nil nil t t)
       state))
 
 (define-pc-macro th (&optional hyps-indices govs-indices)
-
-  "print the top-level hypotheses and the current subterm~/
-  ~bv[]
-  Examples:
-  th               -- print all (top-level) hypotheses and the current
-                      subterm
-  (th (1 3) (2 4)) -- print hypotheses 1 and 3 and governors 2 and 4,
-                      and the current subterm
-  (th (1 3) t)     -- print hypotheses 1 and 3 and all governors, and
-                      the current subterm~/
-
-  General Form:
-  (th &optional hyps-indices govs-indices)
-  ~ev[]
-  Print hypotheses and the current subterm.  The printing of
-  hypotheses (and perhaps governors) are controlled as in the ~c[hyps]
-  command; see its documentation.
-
-  Historical note:  The name ~c[th] is adapted from the Gypsy Verification
-  Environment, where ~c[th] abbreviates the command ~c[theorem], which
-  says to print information on the current goal."
-
   (declare (ignore hyps-indices govs-indices))
 
   (when-goals-trip
@@ -3753,22 +2455,6 @@
                              p))))
 
 (define-pc-macro protect (&rest instr-list)
-
-  "run the given instructions, reverting to existing state upon
-  failure~/
-  ~bv[]
-  Example:
-  (protect induct p prove)~/
-
-  General Form:
-  (protect &rest instruction-list)
-  ~ev[]
-  ~c[Protect] is the same as ~c[do-strict], except that as soon as an
-  instruction ``fails'', the state-stack reverts to what it was before
-  the ~c[protect] instruction began, and ~c[restore] is given the same meaning
-  that it had before the ~c[protect] instruction began.  See the
-  documentation for ~c[do-strict]."
-
   (mv nil (list :sequence instr-list t t) state))
 
 (defun extract-goal (name goals)
@@ -3782,23 +2468,6 @@
     (mv nil goals)))
 
 (define-pc-primitive change-goal (&optional name end-flg)
-
-  "change to another goal.~/
-  ~bv[]
-  Examples:
-  (change-goal (main . 1)) -- change to the goal (main . 1)
-  change-goal              -- change to the next-to-top goal~/
-
-  General Form:
-  (change-goal &optional goal-name end-flg)
-  ~ev[]
-  Change to the goal with the name ~c[goal-name], i.e. make it the
-  current goal.  However, if ~c[goal-name] is ~c[nil] or is not supplied, then
-  it defaults to the next-to-top goal, i.e., the second goal in the
-  stack of goals.  If ~c[end-flg] is supplied and not ~c[nil], then move the
-  current goal to the end of the goal stack; else merely swap it with
-  the next-to-top goal.  Also see documentation for ~c[cg]."
-
   (cond
    ((null goals)
     (pprogn (print-all-goals-proved-message state)
@@ -3835,19 +2504,6 @@
                                 (list (cons #\0 name))))))))
 
 (define-pc-macro cg (&optional name)
-
-  "change to another goal.~/
-  ~bv[]
-  Examples:
-  (cg (main . 1)) -- change to the goal (main . 1)
-  cg              -- change to the next-to-top goal~/
-
-  General Form:
-  (CG &OPTIONAL goal-name)
-  ~ev[]
-  Same as ~c[(change-goal goal-name t)], i.e. change to the indicated
-  and move the current goal to the end of the goal stack."
-
   (value `(change-goal ,name t)))
 
 (defun change-by-position (lst index new)
@@ -3861,25 +2517,6 @@
           (change-by-position (cdr lst) (1- index) new))))
 
 (define-pc-primitive contrapose (&optional n)
-
-  "switch a hypothesis with the conclusion, negating both~/
-  ~bv[]
-  Example:
-  (contrapose 3)~/
-
-  General Form:
-  (contrapose &optional n)
-  ~ev[]
-  The (optional) argument ~c[n] should be a positive integer that does
-  not exceed the number of hypotheses.  Negate the current conclusion
-  and make it the ~c[n]th hypothesis, while negating the current ~c[n]th
-  hypothesis and making it the current conclusion.  If no argument is
-  supplied then the effect is the same as for ~c[(contrapose 1)].
-
-  ~st[Remark:] By ``negate'' we mean an operation that replaces ~c[nil] by
-  ~c[t], ~c[x] by ~c[nil] for any other explicit value ~c[x], ~c[(not x)] by
-  ~c[x], and any other ~c[x] by ~c[(not x)]."
-
   (let ((n (if args n 1)))
     (if hyps
         (if current-addr
@@ -3901,47 +2538,13 @@
       (print-no-change2 "There are no top-level hypotheses."))))
 
 (define-pc-macro contradict (&optional n)
-
-  "same as ~c[contrapose]~/
-
-  see documentation for ~c[contrapose]~/ "
-
   (declare (ignore n))
   (value (cons :contrapose args)))
 
 (define-pc-atomic-macro pro ()
-
-  "repeatedly apply promote~/
-  ~bv[]
-  Example and General Form:
-  pro
-  ~ev[]~/
-
-  Apply the ~c[promote] command until there is no change.  This command
-  ``succeeds'' exactly when at least one call of ~c[promote] ``succeeds''.
-  In that case, only a single new proof-checker state will be
-  created."
-
   (value '(quiet (repeat promote))))
 
 (define-pc-atomic-macro nx ()
-
-  "move forward one argument in the enclosing term~/
-  ~bv[]
-  Example and General Form:
-  nx
-  ~ev[]
-  For example, if the conclusion is ~c[(= x (* (- y) z))] and the
-  current subterm is ~c[x], then after executing ~c[nx], the current
-  subterm will be ~c[(* (- y) z)].~/
-
-  This is the same as ~c[up] followed by ~c[(dive n+1)], where ~c[n] is the
-  position of the current subterm in its parent term in the
-  conclusion.  Thus in particular, the ~c[nx] command fails if one is
-  already at the top of the conclusion.
-
-  See also ~c[up], ~c[dive], ~c[top], and ~c[bk]."
-
   (when-goals-trip
    (let ((current-addr (current-addr t)))
      (if current-addr
@@ -3950,25 +2553,6 @@
                (value :fail))))))
 
 (define-pc-atomic-macro bk ()
-
-  "move backward one argument in the enclosing term~/
-  ~bv[]
-  Example and General Form:
-  bk
-  ~ev[]
-  For example, if the conclusion is ~c[(= x (* (- y) z))] and the current
-  subterm is ~c[(* (- y) z)], then after executing ~c[bk], the current subterm
-  will be ~c[x].~/
-
-  Move to the previous argument of the enclosing term.
-
-  This is the same as ~c[up] followed by ~c[(dive n-1)], where ~c[n] is the
-  position of the current subterm in its parent term in the
-  conclusion.  Thus in particular, the ~c[nx] command fails if one is
-  already at the top of the conclusion.
-
-  See also ~c[up], ~c[dive], ~c[top], and ~c[bk]."
-
   (when-goals-trip
    (let ((current-addr (current-addr t)))
      (if current-addr
@@ -3981,26 +2565,6 @@
                (value :fail))))))
 
 (define-pc-help p-top ()
-
-  "prettyprint the conclusion, highlighting the current term~/
-  ~bv[]
-  Example and General Form:
-  p-top
-  ~ev[]
-  For example, if the conclusion is ~c[(equal (and x (p y)) (foo z))] and
-  the current subterm is ~c[(p y)], then ~c[p-top] will print
-  ~c[(equal (and x (*** (p y) ***)) (foo z))].~/
-
-  Prettyprint the the conclusion, highlighting the current term.  The
-  usual user syntax is used, as with the command ~c[p] (as opposed to ~c[pp]).
-  This is illustrated in the example above, where one would ~c[*not*] see
-  ~c[(equal (if x (*** (p y) ***) 'nil) (foo z))].
-
-  ~st[Remark] (obscure): In some situations, a term of the form ~c[(if x t y)]
-  occurring inside the current subterm will not print as ~c[(or x y)], when
-  ~c[x] isn't a call of a boolean primitive.  There's nothing incorrect about
-  this, however."
-
   (when-goals
    (let ((conc (conc t))
          (current-addr (current-addr t))
@@ -4019,29 +2583,9 @@
                              (abbreviations t)))))))))
 
 (define-pc-macro repeat (instr)
-
-  "repeat the given instruction until it ``fails''~/
-  ~bv[]
-  Example:
-  (repeat promote)~/
-
-  General Form:
-  (repeat instruction)
-  ~ev[]
-  The given ~c[instruction] is run repeatedly until it ``fails''.
-
-  ~st[Remark:]  There is nothing here in general to prevent the instruction
-  from being run after all goals have been proved, though this is
-  indeed the case for primitive instructions."
-
   (value `(succeed (repeat-rec ,instr))))
 
 (define-pc-macro repeat-rec (instr)
-
-  "auxiliary to ~c[repeat]~/
-
-  See documentation for ~c[repeat].~/ "
-
   (value `(do-strict ,instr (repeat-rec ,instr))))
 
 (defmacro define-pc-bind (name args &optional doc-string declare-form)
@@ -4064,39 +2608,10 @@
 (define-pc-bind quiet
   (inhibit-output-lst
    (union-eq '(prove proof-checker proof-tree warning observation)
-             (f-get-global 'inhibit-output-lst state)))
+             (f-get-global 'inhibit-output-lst state))))
 
-  "run instructions without output~/
-  ~bv[]
-  Example:
-  (quiet induct prove)~/
-
-  General Form:
-  (quiet &rest instruction-list)
-  ~ev[]
-  Run the ~c[instruction-list] through the top-level loop with no output.
-
-  See also ~c[noise]."
-)
-
-(define-pc-bind noise (inhibit-output-lst nil)
-
-  "run instructions with output~/
-  ~bv[]
-  Example:
-  (noise induct prove)~/
-
-  General Form:
-  (noise &rest instruction-list)
-  ~ev[]
-  Run the ~c[instruction-list] through the top-level loop with output.
-
-  In fact, having output is the default.  ~c[Noise] is useful inside a
-  surrounding call of ~c[quiet], when one temporarily wants output.  For
-  example, if one wants to see output for a ~c[prove] command immediately
-  following an ~c[induct] command but before an ~c[s] command, one may want to
-  submit an instruction like ~c[(quiet induct (noise prove) s)].  See also
-  ~c[quiet].")
+(define-pc-bind noise
+  (inhibit-output-lst nil))
 
 (defun find-equivalence-hyp-term-no-target (index term hyps equiv w)
   ;; Allows backchaining through IMPLIES.  Returns an appropriate target.
@@ -4144,96 +2659,6 @@
     (value :skip)))
 
 (define-pc-atomic-macro = (&optional x y &rest rest-args)
-
-  "attempt an equality (or equivalence) substitution~/
-  ~bv[]
-  Examples:
-  =     -- replace the current subterm by a term equated to it in
-           one of the hypotheses (if such a term exists)
-  (= x) -- replace the current subterm by x, assuming that the prover
-           can show that they are equal
-  (= (+ x y) z)
-        -- replace the term (+ x y) by the term z inside the current
-           subterm, assuming that the prover can prove
-           (equal (+ x y) z) from the current top-level hypotheses
-           or that this term or (equal z (+ x y)) is among the
-           current top-level hypotheses or the current governors
-  (= & z)
-        -- exactly the same as above, if (+ x y) is the current
-           subterm
-  (= (+ x y) z :hints :none)
-        -- same as (= (+ x y) z), except that a new subgoal is
-           created with the current goal's hypotheses and governors
-           as its top-level hypotheses and (equal (+ x y) z) as its
-           conclusion
-  (= (+ x y) z 0)
-        -- exactly the same as immediately above
-  (= (p x)
-     (p y)
-     :equiv iff
-     :otf-flg t
-     :hints ((\"Subgoal 2\" :BY FOO) (\"Subgoal 1\" :use bar)))
-        -- same as (= (+ x y) z), except that the prover uses
-           the indicated values for otf-flg and hints, and only
-           propositional (iff) equivalence is used (however, it
-           must be that only propositional equivalence matters at
-           the current subterm)~/
-
-  General Form:
-  (= &optional x y &rest keyword-args)
-  ~ev[]
-  If terms ~c[x] and ~c[y] are supplied, then replace ~c[x] by ~c[y] inside the
-  current subterm if they are ``known'' to be ``equal''.  Here
-  ``known'' means the following:  the prover is called as in the ~c[prove]
-  command (using ~c[keyword-args]) to prove ~c[(equal x y)], except that a
-  keyword argument ~c[:equiv] is allowed, in which case ~c[(equiv x y)] is
-  proved instead, where ~c[equiv] is that argument.  (See below for how
-  governors are handled.)
-
-  Actually, ~c[keyword-args] is either a single non-keyword or is a list
-  of the form ~c[((kw-1 x-1) ... (kw-n x-n))], where each ~c[kw-i] is one of
-  the keywords ~c[:equiv], ~c[:otf-flg], ~c[:hints].  Here ~c[:equiv] defaults to
-  ~c[equal] if the argument is not supplied or is ~c[nil], and otherwise
-  should be the name of an ACL2 equivalence relation.  ~c[:Otf-flg] and
-  ~c[:hints] give directives to the prover, as explained above and in the
-  documentation for the ~c[prove] command; however, no prover call is made
-  if ~c[:hints] is a non-~c[nil] atom or if ~c[keyword-args] is a single
-  non-keyword (more on this below).
-
-  ~em[Remarks on defaults]
-
-     (1) If there is only one argument, say ~c[a], then ~c[x] defaults to the
-  current subterm, in the sense that ~c[x] is taken to be the current
-  subterm and ~c[y] is taken to be ~c[a].
-
-     (2) If there are at least two arguments, then ~c[x] may be the symbol
-  ~c[&], which then represents the current subterm.  Thus, ~c[(= a)] is
-  equivalent to ~c[(= & a)].  (Obscure point:  actually, ~c[&] can be in any
-  package, except the keyword package.)
-
-     (3) If there are no arguments, then we look for a top-level
-  hypothesis or a governor of the form ~c[(equal c u)] or ~c[(equal u c)],
-  where ~c[c] is the current subterm.  In that case we replace the current
-  subterm by ~c[u].
-
-  As with the ~c[prove] command, we allow goals to be given ``bye''s in
-  the proof, which may be generated by a ~c[:hints] keyword argument in
-  ~c[keyword-args].  These result in the creation of new subgoals.
-
-  A proof is attempted unless the ~c[:hints] argument is a non-~c[nil]
-  atom other than :~c[none], or unless there is one element of
-  ~c[keyword-args] and it is not a keyword.  In that case, if there are
-  any hypotheses in the current goal, then what is attempted is a
-  proof of the implication whose antecedent is the conjunction of the
-  current hypotheses and governors and whose conclusion is the
-  appropriate ~c[equal] term.
-
-  ~st[Remarks:]  (1) It is allowed to use abbreviations in the hints.
-  (2) The keyword :~c[none] has the special role as a value of
-  :~c[hints] that is shown clearly in an example above.  (3) If there
-  are governors, then the new subgoal has as additional hypotheses the
-  current governors."
-
   (when-goals-trip
    (let ((conc (conc t))
          (hyps (hyps t))
@@ -4349,23 +2774,6 @@
   (value `(sequence (,instr) nil nil ,form)))
 
 (define-pc-macro orelse (instr1 instr2)
-
-  "run the first instruction; if (and only if) it ``fails'', run the
-  second~/
-  ~bv[]
-  Example:
-  (orelse top (print \"Couldn't move to the top\"))~/
-
-  General form:
-  (orelse instr1 instr2)
-  ~ev[]
-  Run the first instruction.  Then if it ``fails'', run the second
-  instruction also; otherwise, stop after the first.
-
-  This instruction ``succeeds'' if and only if either ~c[instr1]
-  ``succeeds'', or else ~c[instr2] ``succeeds''.  If it ``fails'', then
-  the failure is soft."
-
   (value `(negate (do-strict (negate ,instr1) (negate ,instr2)))))
 
 (defun applicable-rewrite-rules (current-term conc current-addr target-name-or-rune
@@ -4388,34 +2796,6 @@
    1 target-name-or-rune target-index wrld))
 
 (define-pc-help show-rewrites (&optional rule-id enabled-only-flg)
-
-  "display the applicable ~il[rewrite] rules~/
-  ~bv[]
-  Example:
-  show-rewrites~/
-
-  General Form:
-  (show-rewrites &optional rule-id enabled-only-flg)
-  ~ev[]
-  This command displays ~il[rewrite] rules whose left-hand side matches the
-  current subterm, and shows how that command can be applied.  For each rule
-  displayed, hypotheses are shown that would need to be proved after the rule
-  is applied.  Note that hypotheses are omitted from the display when the
-  system can trivially verify that they hold; to see all hypotheses for each
-  rule in a display that is independent of the arguments of the current
-  subterm, use the ~c[pl] or ~c[pr] command.
-
-  Here are details on the arguments and the output.  If ~c[rule-id] is supplied
-  and is a name (non-~c[nil] symbol) or a ~c[:]~ilc[rewrite] or
-  ~c[:]~ilc[definition] ~il[rune], then only the corresponding rewrite rule(s)
-  will be displayed, while if ~c[rule-id] is a positive integer ~c[n], then
-  only the ~c[n]th rule that would be in the list is displayed.  In each case,
-  the display will point out when a rule is currently disabled (in the
-  interactive environment), except that if ~c[enabled-only-flg] is supplied and
-  not ~c[nil], then disabled rules will not be displayed at all.  Finally,
-  among the free variables of any rule (~pl[free-variables]), those that would
-  remain free if the rule were applied will be displayed.  Also ~pl[rewrite]."
-
   (when-goals
    (let ((conc (conc t))
          (current-addr (current-addr t))
@@ -4432,36 +2812,9 @@
         nil state)))))
 
 (define-pc-macro sr (&rest args)
-
-  "same as SHOW-REWRITES~/
-  ~bv[]
-  Example:
-  sr~/
-
-  General Form:
-  (sr &optional rule-id enabled-only-flg)
-  ~ev[]
-  See the documentation for ~c[show-rewrites], as ~c[sr] and ~c[show-rewrites]
-  are identical."
-
   (value (cons :show-rewrites args)))
 
 (define-pc-help show-linears (&optional rule-id enabled-only-flg)
-
-  "display the applicable ~il[linear] rules~/
-  ~bv[]
-  Example:
-  show-linears~/
-
-  General Form:
-  (show-linears &optional rule-id enabled-only-flg)
-  ~ev[]
-  This command displays ~il[linear] rules with a trigger term that matches the
-  current subterm, and shows how they can be applied.  This command is
-  analogous to the ~c[show-rewrites] ~il[proof-checker] command; see its
-  ~il[documentation] for details.  Also see the ~il[documentation] for
-  proof-checker command ~c[apply-linear] for how to apply linear rules."
-
   (when-goals
    (let ((conc (conc t))
          (current-addr (current-addr t))
@@ -4478,41 +2831,9 @@
         nil state)))))
 
 (define-pc-macro sls (&rest args)
-
-  "same as SHOW-LINEARS~/
-  ~bv[]
-  Example:
-  srs~/
-
-  General Form:
-  (srs &optional rule-id enabled-only-flg)
-  ~ev[]
-  See the documentation for ~c[show-linears], as ~c[sls] and ~c[show-linears]
-  are identical.  NOTE: In analogy to the ~c[sr] abbreviation for
-  ~c[show-rewrites], one might expect this command to be ~c[sl]; but that name
-  was taken (``simplify with lemmas'') before ~c[sls] was implemented.~/"
-
   (value (cons :show-linears args)))
 
 (define-pc-macro pl (&optional x)
-
-  "print the rules for a given name~/
-  ~bv[]
-  Examples:
-  pl
-  (pl foo)~/
-
-  General Form:
-  (pl &optional x)
-  ~ev[]
-  This command simply invokes the corresponding command of the top-level ACL2
-  loop; ~pl[pl].  If no argument is given, or if the argument is ~c[nil], then
-  the current subterm should be a call of a function symbol, and the argument
-  is taken to be that symbol.
-
-  If you want information about applying rewrite rules to the current subterm,
-  consider the ~c[show-rewrites] (or equivalently, ~c[sr]) command."
-
   (cond (x (value `(lisp (pl ',x))))
         ((null (goals))
          (pprogn (print-all-goals-proved-message state)
@@ -4529,24 +2850,6 @@
                    (t (value `(lisp (pl ',(ffn-symb current-term))))))))))
 
 (define-pc-macro pr (&optional x)
-
-  "print the rules for a given name~/
-  ~bv[]
-  Examples:
-  pr
-  (pr foo)~/
-
-  General Form:
-  (pr &optional x)
-  ~ev[]
-  This command simply invokes the corresponding command of the top-level ACL2
-  loop; ~pl[pr].  If no argument is given, or if the argument is ~c[nil], then
-  the current subterm should be a call of a function symbol, and the argument
-  is taken to be that symbol.
-
-  If you want information about applying rewrite rules to the current subterm,
-  consider the ~c[show-rewrites] (or equivalently, ~c[sr]) command."
-
   (cond (x (value `(lisp (pr ',x))))
         ((null (goals))
          (pprogn (print-all-goals-proved-message state)
@@ -4563,22 +2866,6 @@
                    (t (value `(lisp (pr ',(ffn-symb current-term))))))))))
 
 (define-pc-help show-type-prescriptions (&optional rule-id)
-
-  "display the applicable ~il[type-prescription] rules~/
-  ~bv[]
-  Example:
-  show-type-prescriptions~/
-
-  General Form:
-  (show-type-prescriptions &optional rule-id)
-  ~ev[]
-  Display ~il[type-prescription] rules that apply to the current subterm.  If
-  ~c[rule-id] is supplied and is a name (non-~c[nil] symbol) or a
-  ~c[:]~ilc[rewrite] or ~c[:]~ilc[definition] ~il[rune], then only the
-  corresponding rewrite rule(s) will be displayed.  In each case, the display
-  will point out when a rule is currently disabled (in the interactive
-  environment).  Also ~pl[type-prescription]."
-
   (when-goals
    (let ((conc (conc t))
          (current-addr (current-addr t)))
@@ -4590,18 +2877,6 @@
                                      all-hyps ens state)))))
 
 (define-pc-macro st (&rest args)
-
-  "same as SHOW-TYPE-PRESCRIPTIONS~/
-  ~bv[]
-  Example:
-  sr~/
-
-  General Form:
-  (st &optional rule-id)
-  ~ev[]
-  See the documentation for ~c[show-type-prescriptions], as ~c[st] and
-  ~c[show-type-prescriptions] are identical."
-
   (value (cons :show-type-prescriptions args)))
 
 (defun translate-subst-abb1 (sub abbreviations state)
@@ -4694,114 +2969,6 @@
 (define-pc-primitive rewrite (&optional rule-id raw-sub instantiate-free)
 
 ; Warning: Keep this in sync with the proof-checker apply-linear command.
-
-  "apply a rewrite rule~/
-  ~bv[]
-  Examples:
-  (rewrite reverse-reverse)
-     -- apply the rewrite rule `reverse-reverse'
-  (rewrite (:rewrite reverse-reverse))
-     -- same as above
-  (rewrite 2)
-     -- apply the second rewrite rule, as displayed by show-rewrites
-  rewrite
-     -- apply the first rewrite rule, as displayed by show-rewrites
-  (rewrite transitivity-of-< ((y 7)))
-     -- apply the rewrite rule transitivity-of-< with the substitution
-        that associates 7 to the ``free variable'' y
-  (rewrite foo ((x 2) (y 3)) t)
-     -- apply the rewrite rule foo by substituting 2 and 3 for free
-        variables x and y, respectively, and also binding all other
-        free variables possible by using the current context
-        (hypotheses and governors)~/
-
-  General Form:
-  (rewrite &optional rule-id substitution instantiate-free)
-  ~ev[]
-  Replace the current subterm with a new term by applying a ~il[rewrite] or
-  ~il[definition] rule.  The replacement will be done according to the
-  information provided by the ~c[show-rewrites] (~c[sr]) command.
-
-  See also the ~c[linear] command, for an analogous command to use with
-  ~il[linear] rules.
-
-  If ~c[rule-id] is a positive integer ~c[n], then the ~c[n]th rule as
-  displayed by ~c[show-rewrites] is the one that is applied.  If ~c[rule-id] is
-  ~c[nil] or is not supplied, then it is treated as the number 1.  Otherwise,
-  ~c[rule-id] should be either a symbol or else a ~c[:rewrite] or
-  ~c[:definition] ~il[rune].  If a symbol is supplied, then any (~c[:rewrite]
-  or ~c[:definition]) rule of that name may be used.  We say more about this,
-  and describe the other optional arguments, below.
-
-  Consider first the following example.  Suppose that the current subterm is
-  ~c[(reverse (reverse y))] and that there is a ~il[rewrite] rule called
-  ~c[reverse-reverse] of the form
-  ~bv[]
-  (implies (true-listp x)
-           (equal (reverse (reverse x)) x)) .
-  ~ev[]
-  Then the instruction ~c[(rewrite reverse-reverse)] causes the current
-  subterm to be replaced by ~c[y] and creates a new goal with conclusion
-  ~c[(true-listp y)].  An exception is that if the top-level hypotheses imply
-  ~c[(true-listp y)] using only ``trivial reasoning''
-  (more on this below), then no new goal is created.
-
-  If the ~c[rule-id] argument is a number or is not supplied, then the system
-  will store an instruction of the form ~c[(rewrite name ...)], where ~c[name]
-  is the name of a rewrite rule; this is in order to make it easier to replay
-  instructions when there have been changes to the history.  Except: instead
-  of the name (whether the name is supplied or calculated), the system stores
-  the ~il[rune] if there is any chance of ambiguity.  (Formally, ``ambiguity''
-  here means that the rune being applied is of the form
-  ~c[(:rewrite name . index)], where index is not ~c[nil].)
-
-  Speaking in general, then, a ~c[rewrite] instruction works as follows:
-
-  First, a ~il[rewrite] or ~il[definition] rule is selected according to the
-  arguments of the ~c[rewrite] instruction.  The selection is made as explained
-  under ``General Form'' above.
-
-  Next, the left-hand side of the rule is matched with the current subterm,
-  i.e., a substitution ~c[unify-subst] is found such that if one instantiates
-  the left-hand side of the rule with ~c[unify-subst], then one obtains the
-  current subterm.  If this match fails, then the instruction fails.
-
-  Next, an attempt is made to relieve (discharge) the hypotheses, much as the
-  theorem prover relieves hypotheses except that there is no call to the
-  rewriter.  First, the substitution ~c[unify-subst] is extended with the
-  ~c[substitution] argument, which may bind free variables
-  (~pl[free-variables]).  Each hypothesis of the rule is then considered in
-  turn, from first to last.  For each hypothesis, first the current
-  substitution is applied, and then the system checks whether the hypothesis is
-  ``clearly'' true in the current context.  If there are variables in the
-  hypotheses of the rule that are not bound by the current substitution, then a
-  weak attempt is made to extend that substitution so that the hypothesis is
-  present in the current context (see the documentation for the proof-checker
-  ~c[hyps] command under ~il[proof-checker-commands]), much as would be done by
-  the theorem prover's rewriter.
-
-  If in the process above there are free variables (~pl[free-variables]), but
-  the proof-checker can see how to bind them to relieve all hypotheses, then it
-  will do so in both the ~c[show-rewrites] (~c[sr]) and ~c[rewrite] commands.
-  But normally, if even one hypothesis remains unrelieved, then no automatic
-  extension of the substitution is made.  Except, if ~c[instantiate-free] is
-  not ~c[nil], then that extension to the substitution is kept.  (Technical
-  note: in the case of an unrelieved hypothesis and a non-~c[nil] value of
-  ~c[instantiate-free], if a ~ilc[bind-free] hypothesis produces a list of
-  binding alists, then the last of those alists is the one that is used to
-  extend the substitution.)
-
-  Finally, the instruction is applied as follows.  The current subterm is
-  replaced by applying the final substitution described above to the right-hand
-  side of the selected rule.  And, one new subgoal is created for each
-  unrelieved hypothesis of the rule, whose top-level hypotheses are the
-  governors and top-level hypotheses of the current goal and whose conclusion
-  and current subterm are the instance, by that same final substitution, of
-  that unrelieved hypothesis.
-
-  ~st[Remark:]  The substitution argument should be a list whose elements
-  have the form ~c[(variable term)], where ~c[term] may contain
-  abbreviations."
 
   (mv-let
    (erp sub state)
@@ -4971,107 +3138,6 @@
 
 ; Warning: Keep this in sync with the proof-checker rewrite command.
 
-  "apply a linear rule~/
-  ~bv[]
-  Examples:
-  (apply-linear foo)
-     -- apply the linear rule `foo'
-  (apply-linear (:linear foo))
-     -- same as above
-  (apply-linear 2)
-     -- apply the second linear rule, as displayed by show-linears
-  rewrite
-     -- apply the first rewrite rule, as displayed by show-rewrites
-  (apply-linear foo ((y 7)))
-     -- apply the linear rule foo with the substitution
-        that associates 7 to the ``free variable'' y
-  (apply-linear foo ((x 2) (y 3)) t)
-     -- apply the linear rule foo by substituting 2 and 3 for free
-        variables x and y, respectively, and also binding all other
-        free variables possible by using the current context
-        (hypotheses and governors)~/
-
-  General Form:
-  (apply-linear &optional rule-id substitution instantiate-free)
-  ~ev[]
-  Add a new top-level hypothesis by applying a ~il[linear] rule to the current
-  subterm.  The new hypothesis will be created according to the information
-  provided by the ~c[show-linears] (~c[sls]) command.
-
-  A short name for this command is ~c[al].
-
-  We assume familiarity with the ~il[proof-checker]'s ~c[rewrite] (~c[r])
-  command.  In brief, the ~c[apply-linear] command is an analogue of the
-  ~c[rewrite] command, but for ~il[linear] rules in place of ~il[rewrite]
-  rules.  There is a significant difference: for the ~c[apply-linear] command,
-  instead of rewriting the current subterm as is done by the ~c[rewrite]
-  command, the conclusion of the applicable linear rule, suitably instantiated,
-  is added as a new (and last) top-level hypothesis of the goal.  There is
-  another significant difference: the automatic application of ~il[linear]
-  rules in the theorem prover is somewhat more complex than the automatic
-  application of ~il[rewrite] rules, so the ~c[apply-linear] command may
-  not correspond as closely to the prover's automatic use of a linear rule as
-  the ~c[rewrite] command corresponds to the prover's automatic use of a
-  rewrite rule.
-
-  Below, we refer freely to the ~il[documentation] for the proof-checker's
-  ~c[rewrite] command.
-
-  The ~c[rule-id] is treated just as it is by the ~c[rewrite] command.  If
-  ~c[rule-id] is a positive integer ~c[n], then the ~c[n]th rule as displayed
-  by ~c[show-linears] is the one that is applied.  If ~c[rule-id] is ~c[nil] or
-  is not supplied, then it is treated as the number 1.  Otherwise, ~c[rule-id]
-  should be either a symbol or else a ~c[:linear] ~il[rune].  If a symbol is
-  supplied, then any ~il[linear] rule of that name may be used.
-
-  Consider the following example.  Suppose that the current subterm is
-  ~c[(< (g (h y)) y)] and that ~c[foo] is the name of the following linear
-  rule.
-  ~bv[]
-  (implies (true-listp x)
-           (< (g x) 15))
-  ~ev[]
-
-  Then the instruction ~c[(apply-linear foo)] applies ~c[foo] by adding a new
-  hypothesis ~c[(< (g (h y)) 15)].  In addition, a new goal with conclusion
-  ~c[(true-listp y)] is created unless the current context (top-level
-  hypotheses and governors) implies ~c[(true-listp y)] using only ``trivial
-  reasoning'', just as for the ~c[rewrite] command.
-
-  If the ~c[rule-id] argument is a number or is not supplied, then the system
-  will store an instruction of the form ~c[(apply-linear name ...)], where
-  ~c[name] is the name of a ~il[linear] rule; this is in order to make it
-  easier to replay instructions when there have been changes to the history.
-  Except: instead of the name (whether the name is supplied or calculated), the
-  system stores the ~il[rune] if there is any chance of ambiguity.  (Formally,
-  ``ambiguity'' here means that the rune being applied is of the form
-  ~c[(:rewrite name . index)], where index is not ~c[nil].)
-
-  Speaking in general, then, an ~c[apply-linear] instruction works as follows.
-
-  First, a ~il[linear] rule is selected according to the arguments of the
-  instruction.  The selection is made as explained under ``General Form''
-  above.
-
-  Next, a trigger term of the rule (~pl[linear]) is matched with the current
-  subterm, i.e., a substitution ~c[unify-subst] is found such that if one
-  instantiates that trigger term of the rule with ~c[unify-subst], then one
-  obtains the current subterm.  If this match fails, then the instruction
-  fails.
-
-  Next, an attempt is made to relieve (discharge) the hypotheses, possibly
-  handling free variables (~pl[free-variables]), exactly as is done with
-  hypotheses when applying the ~il[proof-checker] command, ~c[rewrite] (~c[r]).
-
-  Finally, the instruction is applied exactly as the ~c[rewrite] instruction is
-  applied, except instead of replacing the current subterm, the rule's
-  instantiated conclusion is added to the end of the list of top-level
-  hypotheses of the goal.
-
-  Note that as for the ~c[rewrite] command, the substitution argument should be
-  a list whose elements have the form ~c[(variable term)], where ~c[term] may
-  contain abbreviations."
-
   (mv-let
    (erp sub state)
    (translate-subst-abb raw-sub abbreviations state)
@@ -5213,16 +3279,6 @@
                            state)))))))))))))))))
 
 (define-pc-macro al (&rest args)
-
-  "same as apply-linear~/
-  ~bv[]
-  Example:
-  (al 3)~/
-
-  ~ev[]
-  See the documentation for ~c[apply-linear], as ~c[al] and ~c[apply-linear]
-  are identical."
-
   (value (cons :apply-linear args)))
 
 (defun pc-help-fn (name state)
@@ -5278,65 +3334,6 @@
            state))
 
 (define-pc-help help (&optional instr)
-
-  "proof-checker help facility~/
-  ~bv[]
-  Examples:
-
-  (help all)     -- list all proof-checker commands
-  (help rewrite) -- partial documentation on the rewrite command; the
-                    rest is available using more or more!
-
-  (help! rewrite) -- full documentation on the rewrite command
-
-  help, help!     -- this documentation (in part, or in totality,
-                     respectively)~/
-
-  General Forms:
-  (help &optional command)
-  (help! &optional command)
-  more
-  more!
-  ~ev[]
-  The proof checker supports the same kind of documentation as does
-  ACL2 proper.  The main difference is that you need to type
-  ~bv[]
-  (help command)
-  ~ev[]
-  in a list rather than ~c[:doc command].  So, to get all the
-  documentation on ~c[command], type ~c[(help! command)] inside the
-  interactive loop, but to get only a one-line description of the
-  command together with some examples, type ~c[(help command)].  In the
-  latter case, you can get the rest of the help by typing ~c[more!]; or
-  type ~c[more] if you don't necessarily want all the rest of the help at
-  once.  (Then keep typing ~c[more] if you want to keep getting more of
-  the help for that command.)
-
-  An exception is ~c[(help all)], which prints the documentation topic
-  ~c[proof-checker-commands], to show you all possible proof-checker commands.
-  So for example, when you see ~c[ACL2-PC::USE] in that list, you can then
-  submit ~c[(help use)] or ~c[(help! use)] to get documentation for the
-  proof-checker ~c[use] command.
-
-  But summarizing for other than the case of ~c[all]:  as with ACL2, you can
-  type either of the following:
-  ~bv[]
-  more, more!
-  -- to obtain more (or, all the rest of) the documentation last
-     requested by help (or, outside the proof-checker's loop, :doc)
-  ~ev[]
-  It has been arranged that the use of ~c[(help command)] will tell you
-  just about everything you could want to know about ~c[command], almost
-  always by way of examples.  For more details about a command, use
-  ~c[help!], ~c[more], or ~c[more!].
-
-  We use the word ``command'' to refer to the name itself, e.g.
-  ~c[rewrite].  We use the word ``instruction'' to refer to an input to
-  the interactive system, e.g. ~c[(rewrite foo)] or ~c[(help split)].  Of
-  course, we allow commands with no arguments as instructions in many
-  cases, e.g. ~c[rewrite].  In such cases, ~c[command] is treated identically
-  to ~c[(command)]."
-
   (let ((comm (make-official-pc-command (if args
                                             (if (consp instr) (car instr) instr)
                                           'help))))
@@ -5385,51 +3382,18 @@
                         (more-fn t state)))))))))
 
 (define-pc-help help! (&optional instr)
-
-  "proof-checker help facility~/
-
-  Same as ~c[help], except that the entire help message is printed without
-  any need to invoke ~c[more!] or ~c[more].~/
-
-  Invoke ~c[help] for documentation about the proof-checker help facility."
-
   (let ((comm (make-official-pc-command (if instr
                                             (if (consp instr) (car instr) instr)
                                           'help))))
     (state-only (pc-help!-fn comm state))))
 
 (define-pc-macro help-long (&rest args)
-
-  "same as ~c[help!]~/
-
-  See the documentation for ~c[help!].~/
-
-  ~c[Help-long] has been included in addition to ~c[help!] for historical
-  reasons.  (Such a command is included in Pc-Nqthm)."
-
   (value (cons 'help! args)))
 
 (define-pc-help more ()
-
-  "proof-checker help facility~/
-
-  Continues documentation of last proof-checker command visited with
-  ~c[help].~/
-
-  Invoke ~c[help] for documentation about the proof-checker help
-  facility."
-
   (state-only (more-fn 0 state)))
 
 (define-pc-help more! ()
-
-  "proof-checker help facility~/
-
-  Continues documentation of last proof-checker command visited with
-  ~c[help], until all documentation on that command is printed out.~/
-
-  Invoke ~c[help] for documentation about the proof-checker help facility."
-
   (state-only (more-fn t state)))
 
 (defun pc-rewrite*-1
@@ -5517,68 +3481,6 @@
 (defconst *default-s-repeat-limit* 10)
 
 (define-pc-primitive s (&rest args)
-
-  "simplify the current subterm~/
-  ~bv[]
-  Examples:
-  S  -- simplify the current subterm
-  (S :backchain-limit 2 :normalize t :expand (append x z))
-     -- simplify the current subterm, but during the rewriting
-        process first ``normalize'' it by pushing IFs to the
-        top-level, and also force the term (append x z) to be
-        expanded during the rewriting process~/
-
-  General Form:
-  (s &key rewrite normalize backchain-limit repeat in-theory hands-off
-          expand)
-  ~ev[]
-  Simplify the current subterm according to the keyword parameters
-  supplied.  First if-normalization is applied (unless the ~c[normalize]
-  argument is ~c[nil]), i.e., each subterm of the form
-  ~c[(f ... (if test x y) ...)]  is replaced by the term
-  ~c[(if test (f ... x ...) (f ... y ...))]  except, of course, when
-  ~c[f] is ~c[if] and the indicated ~c[if] subterm is in the second or
-  third argument position.  Then rewriting is applied (unless the
-  rewrite argument is ~c[nil]).  Finally this pair of actions is
-  repeated ~-[] until the rewriting step causes no change in the term.
-  A description of each parameter follows.
-  ~bv[]
-  :rewrite -- default t
-  ~ev[]
-  When non-~c[nil], instructs the system to use ACL2's rewriter (or,
-  something close to it) during simplification.
-  ~bv[]
-  :normalize -- default t
-  ~ev[]
-  When non-~c[nil], instructs the system to use if-normalization (as
-  described above) during simplification.
-  ~bv[]
-  :backchain-limit -- default 0
-  ~ev[]
-  Sets the number of recursive calls to the rewriter that are
-  allowed for backchaining.  Even with the default of 0, some
-  reasoning is allowed (technically speaking, type-set reasoning is
-  allowed) in the relieving of hypotheses.  The value should be
-  ~c[nil] or a non-negative integer, and limits backchaining only
-  for rewriting, not for type-set reasoning.
-  ~bv[]
-  :repeat -- default 0
-  ~ev[]
-  Sets the number of times the current term is to be rewritten.  If
-  this value is ~c[t], then the default is used (as specified by the
-  constant ~c[*default-s-repeat-limit*]).
-  ~bv[]
-  :in-theory, :hands-off, :expand
-  ~ev[]
-  These have their usual meaning; ~pl[hints].
-
-  ~st[Remark:]  if conditional rewrite rules are used that cause case splits
-  because of the use of ~c[force], then appropriate new subgoals will be
-  created, i.e., with the same current subterm (and address) but with
-  each new (forced) hypothesis being negated and then used to create a
-  corresponding new subgoal.  In that case, the current goal will have
-  all such new hypotheses added to the list of top-level hypotheses."
-
   (cond
    ((not (keyword-value-listp args))
     (print-no-change2
@@ -5801,63 +3703,6 @@
             :array-name-suffix new-suffix)))
 
 (define-pc-primitive in-theory (&optional theory-expr)
-
-  "set the current proof-checker theory~/
-  ~bv[]
-  Example:
-  (in-theory
-     (union-theories (theory 'minimal-theory) '(true-listp binary-append)))~/
-
-  General Form:
-  (in-theory &optional atom-or-theory-expression)
-  ~ev[]
-  If the argument is not supplied, then this command sets the
-  current proof-checker theory (see below for explanation) to agree
-  with the current ACL2 theory.  Otherwise, the argument should be a
-  theory expression, and in that case the proof-checker theory is set
-  to the value of that theory expression.
-
-  The current proof-checker theory is used in all calls to the ACL2 theorem
-  prover and rewriter from inside the proof-checker.  Thus, the most recent
-  ~c[in-theory] instruction in the current ~c[state-stack] has an effect in the
-  proof-checker totally analogous to the effect caused by an ~c[in-theory] hint
-  or event in ACL2.  All ~c[in-theory] instructions before the last are
-  ignored, because they refer to the current theory in the ACL2 ~ilc[state],
-  not to the existing proof-checker theory.  For example:
-  ~bv[]
-     ACL2 !>:trans1 (enable bar)
-      (UNION-THEORIES (CURRENT-THEORY :HERE)
-                      '(BAR))
-     ACL2 !>:trans1 (CURRENT-THEORY :HERE)
-      (CURRENT-THEORY-FN :HERE WORLD)
-     ACL2 !>
-  ~ev[]
-  Thus ~c[(in-theory (enable bar))] modifies the current theory of the current
-  ACL2 world.  So for example, suppose that ~c[foo] is disabled outside the
-  proof checker and you execute the following instructions, in this order.
-  ~bv[]
-     (in-theory (enable foo))
-     (in-theory (enable bar))
-  ~ev[]
-  Then after the second of these, ~c[bar] will be enabled in the proof-checker,
-  but ~c[foo] will be disabled.  The reason is that
-  ~c[(in-theory (enable bar))] instructs the proof-checker to modify the
-  current theory (from outside the proof-checker, not from inside the
-  proof-checker) by enabling ~c[bar].
-
-  Note that ~c[in-theory] instructions in the proof-checker have no effect
-  outside the proof-checker's interactive loop.
-
-  If the most recent ~c[in-theory] instruction in the current state of the
-  proof-checker has no arguments, or if there is no ~c[in-theory]
-  instruction in the current state of the proof-checker, then the
-  proof-checker will use the current ACL2 theory.  This is true even
-  if the user has interrupted the interactive loop by exiting and
-  changing the global ACL2 theory.  However, if the most recent
-  ~c[in-theory] instruction in the current state of the proof-checker had
-  an argument, then global changes to the current theory will have no
-  effect on the proof-checker state."
-
   (let ((w (w state))
         (ens (ens state)))
     (if args
@@ -5893,80 +3738,12 @@
             state)))))
 
 (define-pc-atomic-macro s-prop (&rest names)
-
-  "simplify propositionally~/
-  ~bv[]
-  Example:
-  s-prop~/
-
-  General Form:
-  (s-prop &rest names)
-  ~ev[]
-  Simplify, using the default settings for ~c[s] (which include
-  if-normalization and rewriting without real backchaining), but with respect
-  to a theory in which only basic functions and rules (the ones in
-  ~c[(theory 'minimal-theory)]), together with the names (or parenthesized
-  names) in the ~c[&rest] argument ~c[names], are enabled.
-
-  See also the documentation for ~c[s]."
-
   (value `(s :in-theory ,(if names
                              `(union-theories ',names
                                               (theory 'minimal-theory))
                            '(theory 'minimal-theory)))))
 
 (define-pc-atomic-macro x (&rest args)
-
-  "expand and (maybe) simplify function call at the current subterm~/
-  ~bv[]
-  Examples:
-  x --  expand and simplify.
-  ~ev[]
-  For example, if the current subterm is (append a b), then after ~c[x]
-  the current subterm will probably be (cons (car a) (append (cdr a)
-  b)) if (consp a) and (true-listp a) are among the top-level
-  hypotheses and governors.  If there are no top-level hypotheses and
-  governors, then after ~c[x] the current subterm will probably be:
-  ~bv[]
-  (if (true-listp x)
-      (if x
-          (cons (car x) (append (cdr x) y))
-        y)
-    (apply 'binary-append (list x y))).~/
-
-  General Form:
-  (X &key
-     rewrite normalize backchain-limit in-theory hands-off expand)
-  ~ev[]
-  Expand the function call at the current subterm, and simplify
-  using the same conventions as with the ~c[s] command (see documentation
-  for ~c[s]).
-
-  Unlike ~c[s], it is permitted to set both ~c[:rewrite] and ~c[:normalize] to
-  ~c[nil], which will result in no simplification; see ~c[x-dumb].
-
-  ~st[Remark] (obscure):  On rare occasions the current address may be
-  affected by the use of ~c[x].  For example, suppose we have the
-  definition
-  ~bv[]
-  (defun g (x) (if (consp x) x 3))
-  ~ev[]
-  and then we enter the proof-checker with
-  ~bv[]
-  (verify (if (integerp x) (equal (g x) 3) t)) .
-  ~ev[]
-  Then after invoking the instruction ~c[(dive 2 1)], so that the
-  current subterm is ~c[(g x)], followed by the instruction ~c[x], we would
-  expect the conclusion to be ~c[(if (integerp x) (equal 3 3) t)].
-  However, the system actually replaces ~c[(equal 3 3)] with ~c[t] (because we
-  use the ACL2 term-forming primitives), and hence the conclusion is actually
-  ~c[(if (integerp x) t t)].  Therefore, the current address is put at ~c[(2)]
-  rather than ~c[(2 1)].  In such cases, a warning ``~c[NOTE]'' will be printed
-  to the terminal.
-
-  The other primitive commands to which the above ``truncation'' note
-  applies are ~c[equiv], ~c[rewrite], and ~c[s]."
-
   (value `(do-strict (expand t) (succeed (s ,@args)))))
 
 ;; It was tempting to use the rewrite command to implement expand, but
@@ -5977,36 +3754,6 @@
 (define-pc-primitive expand (&optional
                              ;; nil means eliminate the lambda:
                              do-not-expand-lambda-flg)
-
-  "expand the current function call without simplification~/
-  ~bv[]
-  Examples:
-  expand -- expand and do not simplify.
-  ~ev[]
-  For example, if the current subterm is ~c[(append a b)], then after
-  ~c[(expand t)] the current subterm will be the term:
-  ~bv[]
-  (if (true-listp x)
-      (if x
-          (cons (car x) (append (cdr x) y))
-        y)
-    (apply 'binary-append (list x y)))
-  ~ev[]
-  regardless of the top-level hypotheses and the governors.~/
-
-  ~bv[]
-  General Form:
-  (expand &optional do-not-expand-lambda-flg)
-  ~ev[]
-  Expand the function call at the current subterm, and do not
-  simplify.  The options have the following meanings:
-  ~bv[]
-  do-not-expand-lambda-flg:   default is nil; otherwise, the result
-                              should be a lambda expression
-
-  ~ev[]
-  See also ~c[x], which allows simplification."
-
   (let ((w (w state))
         (term (fetch-term conc current-addr)))
     (cond
@@ -6072,37 +3819,10 @@
                         state)))))))))
 
 (define-pc-atomic-macro x-dumb ()
-
-  "expand function call at the current subterm, without simplifying~/
-  ~bv[]
-  General Form:
-  x-dumb:  expand without simplification.
-  ~ev[]~/
-  Same as ~c[(expand t new-goals-flg keep-all-guards-flg)].  See
-  documentation for ~c[expand].
-
-  See also ~c[x], which allows simplification."
-
   (value `(expand t)))
 
 ;; **** consider unwinding the effect if there is no change
 (define-pc-macro bookmark (tag &rest instr-list)
-
-  "insert matching ``bookends'' comments~/
-  ~bv[]
-  Example:
-  (bookmark final-goal)~/
-
-  General Form:
-  (bookmark name &rest instruction-list)
-  ~ev[]
-  Run the instructions in ~c[instruction-list] (as though this were a
-  call of ~c[do-all]; see the documentation for ~c[do-all]), but first insert
-  a begin bookend with the given name and then, when the instructions
-  have been completed, insert an end bookend with that same name.  See
-  the documentation of ~c[comm] for an explanation of bookends and how
-  they can affect the display of instructions."
-
   (value `(do-all (comment :begin ,tag)
                   ,@instr-list
                   (comment :end ,tag))))
@@ -6141,29 +3861,6 @@
                   ss-alist))))
 
 (define-pc-macro save (&optional name do-it-flg)
-
-  "save the proof-checker state (state-stack)~/
-  ~bv[]
-  Example:
-  (save lemma3-attempt)~/
-
-  General Form:
-  (save &optional name do-it-flg)
-  ~ev[]
-  Saves the current proof-checker state by ``associating'' it with
-  the given name.  Submit ~c[(retrieve name)] to Lisp to get back to this
-  proof-checker state.  If ~c[verify] was originally supplied with an
-  event name, then the argument can be omitted in favor of that name
-  as the default.
-
-  ~st[Remark] that if a ~c[save] has already been done with the indicated name
-  (or the default event name), then the user will be queried regarding
-  whether to go ahead with the save ~-[] except, if ~c[do-it-flg] is
-  supplied and not ~c[nil], then there will be no query and the ~c[save] will
-  be effected.
-
-  See also the documentation for ~c[retrieve] and ~c[unsave]."
-
   (let ((name (or name (car (event-name-and-types-and-raw-term state-stack))))
         (ss-alist (ss-alist)))
     (if name
@@ -6189,44 +3886,9 @@
               (value :fail)))))
 
 (defmacro retrieve (&optional name)
-
-  ":Doc-Section Proof-checker
-
-  re-enter a (specified) ~il[proof-checker] state~/
-  ~bv[]
-  Examples:
-  (retrieve associativity-of-permutationp)
-  retrieve~/
-
-  General Form:
-  (retrieve &optional name)
-  ~ev[]
-  ~l[acl2-pc::retrieve], or use ~c[(help retrieve)] inside the
-  interactive ~il[proof-checker] loop.  Also ~pl[unsave]."
-
   `(retrieve-fn ',name state))
 
 (define-pc-macro retrieve ()
-
-  "re-enter the proof-checker~/
-  ~bv[]
-  Examples:
-  (retrieve associativity-of-permutationp)
-  retrieve~/
-
-  General Form:
-  (retrieve &optional name)
-  ~ev[]
-  Must be used from ~c[outside] the interactive proof-checker loop.  If
-  name is supplied and not ~c[nil], this causes re-entry to the
-  interactive proof-checker loop in the state at which ~c[save] was last
-  executed for the indicated name.  (See documentation for ~c[save].)  If
-  ~c[name] is ~c[nil] or is not supplied, then the user is queried regarding
-  which proof-checker state to re-enter.  The query is omitted,
-  however, if there only one proof-checker state is present that was
-  saved with ~c[save], in which case that is the one that is used.  See
-  also ~c[unsave]."
-
   (pprogn (print-no-change "RETRIEVE can only be used ouside the ~
                             interactive loop.  Please exit first.  To ~
                             save your state upon exit, use EX rather than EXIT.")
@@ -6237,43 +3899,9 @@
              (delete-assoc-eq name (ss-alist))))
 
 (defmacro unsave (name)
-  ":Doc-Section Proof-checker
-
-  remove a ~il[proof-checker] state~/
-  ~bv[]
-  Example:
-  (unsave assoc-of-append)~/
-
-  General Form:
-  (unsave name)
-  ~ev[]
-  Eliminates the association of a ~il[proof-checker] state with ~c[name].
-  ~l[unsave] or ~pl[acl2-pc::unsave].
-
-  Also ~pl[acl2-pc::save] and ~pl[retrieve]."
-
   `(unsave-fn ',name state))
 
 (define-pc-help unsave (&optional name)
-
-  "remove a proof-checker state~/
-  ~bv[]
-  Example:
-  (unsave assoc-of-append)~/
-
-  General Form:
-  (unsave &optional name)
-  ~ev[]
-  Eliminates the association of a proof-checker state with ~c[name], if
-  ~c[name] is supplied and not ~c[nil].  The name may be ~c[nil] or not supplied,
-  in which case it defaults to the event name supplied with the
-  original call to ~c[verify] (if there is one ~-[] otherwise, the
-  instruction ``fails'' and there is no change).  The ACL2 function
-  ~c[unsave] may also be executed outside the interactive loop, with the
-  same syntax.
-
-  See also documentation for ~c[save] and ~c[retrieve]."
-
   (let ((name (or name (car (event-name-and-types-and-raw-term state-stack)))))
     (if (null name)
         (print-no-change "You must specify a name to UNSAVE, because you didn't ~
@@ -6350,15 +3978,6 @@
             (print-all-goals (cdr goals) state))))
 
 (define-pc-help print-all-goals ()
-
-  "print all the (as yet unproved) goals~/
-
-  Example and General Form:
-  print-all-goals~/
-
-  Prints all the goals that remain to be proved, in a pleasant
-  format.  See also the proof-checker command ~c[print-all-concs]."
-
   (print-all-goals (goals t) state))
 
 (defmacro print-conc (&optional acl2::goal)
@@ -6381,16 +4000,6 @@
             (print-all-concs (cdr goals) state))))
 
 (define-pc-help print-all-concs ()
-
-  "print all the conclusions of (as yet unproved) goals~/
-
-  Example and General Form:
-  print-all-concs~/
-
-  Prints all the conclusions of goals that remain to be proved, in a
-  pleasant format.  See also the proof-checker command
-  ~c[print-all-goals]."
-
   (print-all-concs (acl2::goals t) state))
 
 (defun gen-var-marker (x)
@@ -6512,44 +4121,6 @@
             (all-vars-goals (access pc-state pc-state :goals))))
 
 (define-pc-primitive generalize (&rest args)
-
-  "perform a generalization~/
-  ~bv[]
-  Example:
-  (generalize
-   ((and (true-listp x) (true-listp y)) 0)
-   ((append x y) w))~/
-
-  General Form:
-  (generalize &rest substitution)
-  ~ev[]
-  Generalize using the indicated substitution, which should be a
-  non-empty list.  Each element of that list should be a two-element
-  list of the form ~c[(term variable)], where ~c[term] may use abbreviations.
-  The effect of the instruction is to replace each such term in the
-  current goal by the corresponding variable.  This replacement is
-  carried out by a parallel substitution, outside-in in each
-  hypothesis and in the conclusion.  More generally, actually, the
-  ``variable'' (second) component of each pair may be ~c[nil] or a number,
-  which causes the system to generate a new name of the form ~c[_] or ~c[_n],
-  with ~c[n] a natural number; more on this below.  However, when a
-  variable is supplied, it must not occur in any goal of the current
-  proof-checker state.
-
-  When the ``variable'' above is ~c[nil], the system will treat it as the
-  variable ~c[|_|] if that variable does not occur in any goal of the
-  current proof-checker state.  Otherwise it treats it as ~c[|_0|], or
-  ~c[|_1|], or ~c[|_2|], and so on, until one of these is not among the
-  variables of the current proof-checker state.  If the ``variable''
-  is a non-negative integer ~c[n], then the system treats it as ~c[|_n|]
-  unless that variable already occurs among the current goals, in
-  which case it increments n just as above until it obtains a new
-  variable.
-
-  ~st[Remark:]  The same variable may not occur as the variable component of
-  two different arguments (though ~c[nil] may occur arbitrarily many
-  times, as may a positive integer)."
-
   (cond
    (current-addr
     (print-no-change2
@@ -6579,27 +4150,6 @@
            state))))))
 
 (define-pc-atomic-macro use (&rest args)
-
-  "use a lemma instance~/
-  ~bv[]
-  Example:
-  (USE true-listp-append
-       (:instance assoc-of-append (x a) (y b) (z c)))
-  -- Add two top-level hypotheses, one the lemma called
-     true-listp-append, and the other an instance of the lemma called
-     assoc-of-append by the substitution in which x is assigned a, y
-     is assigned b, and z is assigned c.~/
-
-  General Form:
-  (use &rest args)
-  ~ev[]
-  Add the given lemma instances to the list of top-level hypotheses.
-  ~l[hints] for the syntax of ~c[:use] hints in ~c[defthm], which is
-  essentially the same as the syntax here (see the example above).
-
-  This command calls the ~c[prove] command, and hence should only be used
-  at the top of the conclusion."
-
   (value `(prove :hints
                  (("Goal" :use ,args
                    :do-not-induct proof-checker
@@ -6607,28 +4157,6 @@
                  :otf-flg t)))
 
 (define-pc-atomic-macro clause-processor (&rest cl-proc-hints)
-
-  "use a clause-processor~/
-  ~bv[]
-  Example:
-  (cl-proc :function
-           note-fact-clause-processor
-          :hint
-          '(equal a a))
-  -- Invoke the indicated clause processor function with the indicated hint
-  argument (see the beginning of community book
-  ~c[books/clause-processors/basic-examples.lisp].~/
-
-  General Form:
-  (cl-proc &rest cl-proc-args)
-  ~ev[]
-  Invoke a clause-processor as indicated by cl-proc-args, which is a list of
-  arguments that can serve as the value of a ~c[:]~ilc[clause-processor] hint;
-  ~pl[hints].
-
-  This command calls the ~c[prove] command, and hence should only be used
-  at the top of the conclusion."
-
   (value `(:prove :hints
                   (("Goal"
                     :clause-processor (,@cl-proc-hints)
@@ -6637,12 +4165,6 @@
                   :otf-flg t)))
 
 (define-pc-macro cl-proc (&rest cl-proc-hints)
-
-  "same as ~c[clause-processor]~/
-
-  See the documentation for ~ilc[proof-checker] command ~c[clause-processor],
-  which is identical to ~c[cl-proc].~/~/"
-
   (value `(:clause-processor ,@cl-proc-hints)))
 
 (defun fromto (i j)
@@ -6652,25 +4174,7 @@
     (cons i (fromto (1+ i) j))))
 
 (define-pc-atomic-macro retain (arg1 &rest rest-args)
-
-  "drop all ~st[but] the indicated top-level hypotheses~/
-  ~bv[]
-  Example:
-  (RETAIN 2 3) -- keep the second and third hypotheses, and drop
-                  the rest~/
-
-  General Form:
-  (retain &rest args)
-  ~ev[]
-  Drop all top-level hypotheses ~st[except] those with the indicated
-  indices.
-
-  There must be at least one argument, and all must be in range (i.e.
-  integers between one and the number of top-level hypotheses,
-  inclusive)."
-
   (declare (ignore arg1 rest-args))
-
   (when-goals-trip
    (let* ((hyps (hyps t))
           (bad-nums (non-bounded-nums args 1 (length hyps))))
@@ -6686,34 +4190,6 @@
                    (mv t nil state))))))))
 
 (define-pc-atomic-macro reduce (&rest hints)
-
-  "call the ACL2 theorem prover's simplifier~/
-  ~bv[]
-  Examples:
-  reduce -- attempt to prove the current goal without using induction
-  (reduce (\"Subgoal 2\" :by foo) (\"Subgoal 1\" :use bar))
-         -- attempt to prove the current goal without using
-            induction, with the indicated hints~/
-
-  General Form:
-  (reduce &rest hints)
-  ~ev[]
-  Attempt to prove the current goal without using induction, using the
-  indicated hints (if any).  A subgoal will be created for each goal
-  that would have been pushed for proof by induction in an ordinary
-  proof.
-
-  Notice that unlike ~c[prove], the arguments to ~c[reduce] are spread out,
-  and are all hints.
-
-  ~c[Reduce] is similar to ~c[bash] in that neither of these allows induction.
-  But ~c[bash] only allows simplification, while ~c[reduce] allows processes
-  ~c[eliminate-destructors], ~c[fertilize], ~c[generalize], and
-  ~c[eliminate-irrelevance].
-
-  ~st[Remark:]  Induction will be used to the extent that it is ordered
-  explicitly in the hints."
-
   (if (alistp hints)
       (value (list :prove :hints
                    (add-string-val-pair-to-string-val-alist
@@ -6730,11 +4206,6 @@
             (value :fail))))
 
 (define-pc-macro run-instr-on-goal (instr goal-name)
-
-  "auxiliary to THEN~/
-
-  See documentation for ~c[then].~/ "
-
   (when-goals-trip
    (if (equal goal-name (goal-name t))
        (value instr)
@@ -6749,11 +4220,6 @@
 
 (define-pc-macro run-instr-on-new-goals (instr existing-goal-names
                                                &optional must-succeed-flg)
-
-  "auxiliary to ~c[then]~/
-
-  See documentation for ~c[then].~/ "
-
   (value (cons 'do-strict
                (run-instr-on-goals-guts
                 (if must-succeed-flg instr (list :succeed instr))
@@ -6761,23 +4227,6 @@
                                       existing-goal-names)))))
 
 (define-pc-macro then (instr &optional completion must-succeed-flg)
-
-  "apply one instruction to current goal and another to new subgoals~/
-  ~bv[]
-  Example:
-  (then induct prove)~/
-
-  General Form:
-  (then first-instruction &optional completion must-succeed-flg)
-  ~ev[]
-  Run ~c[first-instruction], and then run ~c[completion] (another
-  instruction) on each subgoal created by ~c[first-instruction].  If
-  ~c[must-succeed-flg] is supplied and not ~c[nil], then halt at the first
-  ``failure'' and remove the effects of the invocation of ~c[completion] that
-  ``failed''.
-
-  The default for completion is ~c[reduce]."
-
   (value (list 'do-strict
                instr
                (list 'run-instr-on-new-goals
@@ -6822,20 +4271,6 @@
   `(print-all-pc-help-fn ,(or filename "pc-help.out") state))
 
 (define-pc-macro nil ()
-
-  "used for interpreting ~c[control-d]~/
-
-  ~bv[]
-  Example and General form:
-  nil
-  ~ev[]
-  (or, ~c[control-d]).~/
-
-  The whole point of this command is that in some Lisps (including
-  akcl), if you type ~c[control-d] then it seems, on occasion, to get
-  interpreted as ~c[nil].  Without this command, one seems to get into an
-  infinite loop."
-
   (value 'exit))
 
 ;; OK, here's a plan for free variables.  When the user thinks that
@@ -6850,19 +4285,6 @@
 ;; heuristic test on suitability of the PUT).
 
 (define-pc-atomic-macro free (var)
-
-  "create a ``free variable''~/
-  ~bv[]
-  Example:
-  (free x)~/
-
-  General Form:
-  (free var)
-  ~ev[]
-  Mark ~c[var] as a ``free variable''.  Free variables are only of
-  interest for the ~c[put] command; see its documentation for an
-  explanation."
-
   (er-let* ((var (trans0 var nil :free)))
            (if (variablep var)
                (value `(add-abbreviation ,var (hide ,var)))
@@ -6873,32 +4295,6 @@
                      (value :fail)))))
 
 (define-pc-macro replay (&optional n replacement-instr)
-
-  "replay one or more instructions~/
-  ~bv[]
-  Examples:
-  REPLAY     -- replay all instructions in the current session
-                (i.e., state-stack)
-  (REPLAY 5) -- replay the most recent 5 instructions
-  (REPLAY 5
-          (COMMENT deleted dive command here))
-             -- replace the 5th most recent instruction with the
-                indicated comment instruction, and then replay it
-                followed by the remaining 4 instructions~/
-
-  General Form:
-  (REPLAY &OPTIONAL n replacement-instruction)
-  ~ev[]
-  Replay the last ~c[n] instructions if ~c[n] is a positive integer; else ~c[n]
-  should be ~c[nil] or not supplied, and replay all instructions.
-  However, if ~c[replacement-instruction] is supplied and not ~c[nil], then
-  before the replay, replace the ~c[nth] instruction (from the most
-  recent, as shown by ~c[commands]) with ~c[replacement-instruction].
-
-  If this command ``fails'', then the ~c[restore] command will revert the
-  state-stack to its value present before the ~c[replay] instruction was
-  executed."
-
   ;; So that I can use instructions-of-state-stack, I'll make
   ;; n 1-bigger than it ought to be.
   (if (or (null n) (and (integerp n) (> n 0)))
@@ -6940,38 +4336,6 @@
     nil))
 
 (define-pc-macro put (var expr)
-
-  "substitute for a ``free variable''~/
-  ~bv[]
-  Example:
-  (put x 17)~/
-
-  General Form:
-  (put var expr)
-  ~ev[]
-  Substitute ~c[expr] for the ``free variable'' ~c[var], as explained below.
-
-  A ``free variable'' is, for our purposes, a variable ~c[var] such that
-  the instruction ~c[(free var)] has been executed earlier in the
-  state-stack.  What ~c[(free var)] really does is to let ~c[var] be an
-  abbreviation for the term ~c[(hide var)] (see documentation for
-  ~c[add-abbreviation]).  What ~c[(put var expr)] really does is to unwind the
-  state-stack, replacing that ~c[free] instruction with the instruction
-  ~c[(add-abbreviation var expr)], so that future references to ~c[(? var)]
-  become reference to ~c[expr] rather than to ~c[(hide var)], and then to
-  replay all the other instructions that were unwound.  Because ~c[hide]
-  was used, the expectation is that in most cases, the instructions
-  will replay successfully and ~c[put] will ``succeed''.  However, if any
-  replayed instruction ``fails'', then the entire replay will abort
-  and ``fail'', and the state-stack will revert to its value before
-  the ~c[put] instruction was executed.
-
-  If ~c[(put var expr)] ``succeeds'', then ~c[(remove-abbreviation var)] will
-  be executed at the end.
-
-  ~st[Remark]:  The ~c[restore] command will revert the state-stack to its
-  value present before the ~c[put] instruction was executed."
-
   (let ((n (find-possible-put var state-stack)))
     (if n
         (value `(do-strict (replay ,n
@@ -6982,33 +4346,6 @@
               (value :fail)))))
 
 (define-pc-macro reduce-by-induction (&rest hints)
-
-  "call the ACL2 prover without induction, after going into
-  induction~/
-  ~bv[]
-  Examples:
-  reduce-by-induction
-    -- attempt to prove the current goal after going into induction,
-       with no further inductions
-
-  (reduce-by-induction (\"Subgoal 2\" :by foo) (\"Subgoal 1\" :use bar))
-    -- attempt to prove the current goal after going into induction,
-       with no further inductions, using the indicated hints~/
-
-  General Form:
-  (reduce-by-induction &rest hints)
-  ~ev[]
-  A subgoal will be created for each goal that would have been
-  pushed for proof by induction in an ordinary proof, except that the
-  proof begins with a top-level induction.
-
-  Notice that unlike ~c[prove], the arguments to ~c[reduce-by-induction] are
-  spread out, and are all hints.  See also ~c[prove], ~c[reduce], and ~c[bash].
-
-  ~st[Remark]:  Induction and the various processes will be used to the
-  extent that they are ordered explicitly in the ~c[:induct] and ~c[:do-not]
-  hints."
-
   (if (alistp hints)
       (value (cons :reduce
                    (add-string-val-pair-to-string-val-alist
@@ -7024,38 +4361,9 @@
             (value :fail))))
 
 (define-pc-macro r (&rest args)
-
-  "same as rewrite~/
-  ~bv[]
-  Example:
-  (r 3)~/
-
-  ~ev[]
-  See the documentation for ~c[rewrite], as ~c[r] and ~c[rewrite] are identical."
-
   (value (cons :rewrite args)))
 
 (define-pc-atomic-macro sl (&optional backchain-limit)
-
-  "simplify with lemmas~/
-  ~bv[]
-  Examples:
-  sl
-  (sl 3)~/
-
-  General Form:
-  (sl &optional backchain-limit)
-  ~ev[]
-  Simplify, but with all function definitions disabled
-  (~pl[function-theory] in the top-level ACL2 loop), except for a
-  few basic functions (the ones in ~c[(theory 'minimal-theory)]).  The
-  ~c[backchain-limit] has a default of 0, but if is supplied and
-  not ~c[nil], then it should be a nonnegative integer; see the
-  documentation for ~c[s].
-
-  WARNING: This command completely ignores ~c[in-theory] commands that are
-  executed inside the proof-checker."
-
   (value (if backchain-limit
              `(s :backchain-limit ,backchain-limit
                  :in-theory (union-theories (theory 'minimal-theory)
@@ -7068,18 +4376,6 @@
                                            (function-theory :here)))))))
 
 (define-pc-atomic-macro elim ()
-
-  "call the ACL2 theorem prover's elimination process~/
-  ~bv[]
-  Example and General Form:
-  elim
-  ~ev[]~/
-
-  Upon running the ~c[elim] command, the system will create a subgoal will
-  be created for each goal that would have been pushed for proof by
-  induction in an ordinary proof, where ~st[only] elimination is used; not
-  even simplification is used!"
-
   (value (list :prove :otf-flg t
                :hints
                '(("Goal" :do-not-induct proof-checker
@@ -7087,18 +4383,6 @@
                                              '(eliminate-destructors)))))))
 
 (define-pc-macro ex ()
-
-  "exit after possibly saving the state~/
-  ~bv[]
-  Example and General Form:
-  ex
-  ~ev[]~/
-
-  Same as ~c[exit], except that first the instruction ~c[save] is executed.
-
-  If ~c[save] queries the user and is answered negatively, then the exit
-  is aborted."
-
   (value '(do-strict save exit)))
 
 (defun save-fc-report-settings ()
@@ -7132,59 +4416,6 @@
    nil))
 
 (define-pc-help type-alist (&optional concl-flg govs-flg fc-report-flg)
-
-  "display the type-alist from the current context~/
-  ~bv[]
-  Examples:
-  (type-alist t t)     ; display type-alist based on conclusion and governors
-  (type-alist t t t)   ; as above, but also display forward-chaining report
-  type-alist           ; same as (type-alist nil t) -- governors only
-  (type-alist nil)     ; same as (type-alist nil t) -- governors only
-  (type-alist t)       ; same as (type-alist t nil) -- conclusion only
-  (type-alist nil nil) ; display type-alist without considering
-                       ; conclusion or governors~/
-
-  General Form:
-  (type-alist &optional concl-flg govs-flg fc-report-flg)
-  ~ev[]
-  where if ~c[govs-flg] is omitted then it defaults to ~c[(not concl-flg)],
-  and ~c[concl-flg] and ~c[fc-report-flg] default to ~c[nil].
-
-  Display the current assumptions as a type-alist.  Note that this display
-  includes the result of forward chaining.  When ~c[fc-report-flg] is supplied
-  a non-~c[nil] value, the display also includes a forward-chaining report;
-  otherwise,the presence or absence of such a report is controlled by the usual
-  global settings (~pl[forward-chaining-reports]).
-
-  There are two basic reasons contemplated for using this command.
-
-  1. The theorem prover has failed (either outside the proof-checker or using a
-  proof-checker command such as ~c[bash] or ~c[reduce] and you want to
-  debug by getting an idea of what the prover knows about the context.~bq[]
-
-  a. You really are interested in the context for the current term.  Include
-  hypotheses and governors (i.e., accounting for tests of surrounding
-  ~c[if]-expressions that must be true or false) but not the current conclusion
-  (which the theorem prover's heuristics would generally ignore for contextual
-  information).  Command:~nl[]
-  ~c[(type-alist nil t)] ; equivalently, ~c[type-alist] or ~c[(type-alist nil)]
-
-  b. You are not thinking in particular about the current term; you just want
-  to get an idea of the context that the prover would build at the top-level,
-  for forward-chaining.  Incorporate the conclusion but not the governors.
-  Command:~nl[]
-  ~c[(type-alist t nil)] ; equivalently, ~c[(type-alist t)]~eq[]
-
-  2. You intend to use one of the ~il[proof-checker-commands] that does
-  simplification, such as ~c[s] or ~c[x], and you want to see the context.
-  Then include the surrounding ~c[if]-term governors but not the goal's
-  conclusion.  Command:~nl[]
-  ~c[(type-alist nil t)] ; equivalently, ~c[type-alist] or ~c[(type-alist nil)]
-
-  ~l[type-set] (also ~pl[type-prescription]) for information about
-  ACL2's type system, which can assist in understanding the output of the
-  ~c[type-alist] command."
-
   (when-goals
    (let ((conc (conc t))
          (current-addr (current-addr t))
@@ -7235,93 +4466,18 @@
                         state))))))))))
 
 (define-pc-help print-main ()
-
-  "print the original goal~/
-  ~bv[]
-  Example and General Form:
-  print-main
-  ~ev[]~/
-
-  Print the goal as originally entered."
-
   (print-pc-goal (car (access pc-state (car (last state-stack)) :goals))))
 
 (define-pc-macro pso ()
-
-  "print the most recent proof attempt from inside the proof-checker~/
-  ~bv[]
-  Example and General Form:
-  pso
-  ~ev[]~/
-
-  Print the most recent proof attempt from inside the proof-checker assuming
-  you are in ~ilc[gag-mode] or have saved output (~pl[set-saved-output]).  This
-  includes all calls to the prover, including for example ~il[proof-checker]
-  commands ~c[induct], ~c[split], and ~c[bash], in addition to ~c[prove].  So
-  for example, you can follow ~c[(quiet prove)] with ~c[pso] to see the proof,
-  including ~il[proof-tree] output, if it failed.
-
-  See also documentation for related ~il[proof-checker] commands ~c[psog] and
-  ~c[pso!]."
-
   (value '(lisp (pso))))
 
 (define-pc-macro psog ()
-
-  "print the most recent proof attempt from inside the proof-checker~/
-  ~bv[]
-  Example and General Form:
-  psog
-  ~ev[]~/
-
-  Print the most recent proof attempt from inside the proof-checker, including
-  goal names, assuming you are in ~ilc[gag-mode] or have saved output
-  (~pl[set-saved-output]).  This includes all calls to the prover, including
-  for example ~il[proof-checker] commands ~c[induct], ~c[split], and ~c[bash],
-  in addition to ~c[prove].  So for example, you can follow ~c[(quiet prove)]
-  with ~c[psog] to see the proof, including ~il[proof-tree] output, if it
-  failed.
-
-  See also documentation for related ~il[proof-checker] commands ~c[pso] and
-  ~c[pso!]."
-
   (value '(lisp (psog))))
 
 (define-pc-macro pso! ()
-
-  "print the most recent proof attempt from inside the proof-checker~/
-  ~bv[]
-  Example and General Form:
-  pso!
-  ~ev[]~/
-
-  Print the most recent proof attempt from inside the proof-checker, including
-  ~il[proof-tree] output, assuming you are in ~ilc[gag-mode] or have saved output
-  (~pl[set-saved-output]).  This includes all calls to the prover, including
-  for example ~il[proof-checker] commands ~c[induct], ~c[split], and ~c[bash],
-  in addition to ~c[prove].  So for example, you can follow ~c[(quiet prove)]
-  with ~c[pso!] to see the proof, including ~il[proof-tree] output, if it
-  failed.
-
-  See also documentation for related ~il[proof-checker] commands ~c[pso] and
-  ~c[psog]."
-
   (value '(lisp (pso!))))
 
 (define-pc-macro acl2-wrap (x)
-
-  "same as ~c[(lisp x)]~/
-  ~bv[]
-  Example:
-  (acl2-wrap (pe :here))~/
-
-  General Form:
-  (acl2-wrap form)
-  ~ev[]
-  Same as ~c[(lisp form)].  This is provided for interface tools that
-  want to be able to execute the same form in raw Lisp, in the
-  proof-checker, or in the ACL2 top-level loop ~c[(lp)]."
-
   (value `(lisp ,x)))
 
 (defmacro acl2-wrap (x)
@@ -7348,33 +4504,6 @@
         (quiet (check-proved-goal ,goal-name ,x)))))))
 
 (define-pc-atomic-macro forwardchain (hypn &optional hints quiet-flg)
-
-  "forward chain from an implication in the hyps~/
-  ~bv[]
-  Example:
-  (forwardchain 2) ; Second hypothesis should be of the form
-                   ; (IMPLIES hyp concl), and the result is to replace
-                   ; that hypothesis with concl.
-  ~/
-  General Forms:
-  (forwardchain hypothesis-number)
-  (forwardchain hypothesis-number hints)
-  (forwardchain hypothesis-number hints quiet-flg)
-  ~ev[]
-
-  This command replaces the hypothesis corresponding to given index,
-  which should be of the form ~c[(IMPLIES hyp concl)], with its
-  consequent ~c[concl].  In fact, the given hypothesis is dropped, and
-  the replacement hypothesis will appear as the final hypothesis after
-  this command is executed.
-
-  The prover must be able to prove the indicated hypothesis from the
-  other hypotheses, or else the command will fail.  The ~c[:hints]
-  argument is used in this prover call, and should have the usual
-  syntax of hints to the prover.
-
-  Output is suppressed if ~c[quiet-flg] is supplied and not ~c[nil]."
-
   (when-goals-trip
    (let* ((hyps (hyps))
           (len (length hyps)))
@@ -7432,23 +4561,6 @@
            (value 'fail)))))))
 
 (define-pc-atomic-macro bdd (&rest kw-listp)
-
-  "prove the current goal using bdds~/
-  ~bv[]
-  Examples:
-  bdd
-  (bdd :vars nil :bdd-constructors (cons) :prove t :literal :all)
-  ~ev[]
-  ~/
-  The general form is as shown in the latter example above, but with
-  any keyword-value pairs omitted and with values as described for the
-  ~c[:]~ilc[bdd] hint; ~pl[hints].
-
-  This command simply calls the theorem prover with the indicated bdd
-  hint for the top-level goal.  Note that if ~c[:prove] is ~c[t] (the
-  default), then the proof will succeed entirely using bdds or else
-  it will fail immediately.  ~l[bdd]."
-
   (let ((bdd-hint (if (assoc-keyword :vars kw-listp)
                       kw-listp
                     (list* :vars nil kw-listp))))
@@ -7456,32 +4568,11 @@
                     (("Goal" :bdd ,bdd-hint))))))
 
 (define-pc-macro runes (&optional flg)
-
-  "print the runes (definitions, lemmas, ...) used~/
-  ~bv[]
-  Examples and general forms:
-  (runes t)   ; print all ~il[rune]s used during this interactive proof
-  (runes nil) ; print all ~il[rune]s used by the most recent command
-  (runes)     ; same as (runes nil)
-  runes       ; same as (runes nil)
-  ~ev[]~/
-  This command does not change the ~il[proof-checker] state.  Rather, it
-  simply reports runes (~pl[rune]) that have participated in the interactive
-  proof.
-
-  Note that ~c[(runes nil)] will show the ~il[rune]s used by the most recent
-  primitive or macro command (as displayed by ~c[:comm])."
-
   (value `(print (merge-sort-runes
                   (all-runes-in-ttree (,(if flg 'tag-tree 'local-tag-tree))
                                       nil)))))
 
 (define-pc-macro lemmas-used (&optional flg)
-
-  "print the runes (definitions, lemmas, ...) used~/
-
-  This is just an alias for ~c[runes].~/~/"
-
   (value `(runes ,flg)))
 
 (defun goal-terms (goals)
@@ -7532,38 +4623,6 @@
                     removed-goals)))))
 
 (define-pc-primitive wrap1 (&optional kept-goal-names)
-
-  "combine goals into a single goal~/
-
-  ~bv[]
-  Examples:
-  ; Keep (main . 1) and (main . 2) if they exist, as well as the current goal;
-  ; and for each other goal, conjoin it into the current goal and delete it:
-  (wrap1 ((main . 1) (main . 2)))
-
-  ; As explained below, conjoin all subsequent siblings of the current goal
-  ; into the current goal, and then delete them:
-  (wrap1)~/
-
-  General Form:
-  (wrap1 &optional kept-goal-names)
-  ~ev[]
-  If ~c[kept-goal-names] is not ~c[nil], the current goal is replaced by
-  conjoining it with all goals other than the current goal and those indicated
-  by ~c[kept-goal-names], and those other goals are deleted.  If
-  ~c[kept-goal-names] is omitted, then the the current goal must be of the form
-  ~c[(name . n)], and the goals to conjoin into the current goal (and delete)
-  are those with names of the form ~c[(name . k)] for ~c[k] >= ~c[n].
-
-  NOTE: ~c[Wrap1] always ``succeeds'', even if there are no other goals to
-  conjoin into the current goal (a message is printed in that case), and it
-  always leaves you with no hypotheses at the top of the current goal's
-  conclusion (as though ~c[top] and ~c[demote] had been executed, if
-  necessary).
-
-  Also see proof-checker documentation for ~c[wrap]
-  (~pl[proof-checker-commands])."
-
   (let* ((current-goal (car goals))
          (current-goal-name (access goal current-goal :goal-name)))
     (cond
@@ -7611,26 +4670,6 @@
              state)))))))
 
 (define-pc-atomic-macro wrap (&rest instrs)
-
-  "execute the indicated instructions and combine all the new goals~/
-  ~bv[]
-  Example:
-  (wrap induct) ; induct, then replace first new goal by the conjunction of all
-                ; the new goals, and drop all new goals after the first~/
-
-  General Form:
-  (wrap &rest instrs)
-  ~ev[]
-  First the instructions in ~c[instrs] are executed, as in ~c[do-all].  If this
-  ``fails'' then no additional action is taken.  Otherwise, the current goal
-  after execution of ~c[instrs] is conjoined with all ``new'' goals, in the
-  sense that their names are not among the names of goals at the time
-  ~c[instrs] was begun.  This conjunction becomes the new current goal and
-  those ``new'' goals are dropped.
-
-  See the code for the proof-checker command wrap-induct for an example of the
-  use of ~c[wrap]."
-
   (cond
    ((null instrs)
     (pprogn (print-no-change
@@ -7657,33 +4696,6 @@
            t nil nil t))))))
 
 (define-pc-atomic-macro wrap-induct (&optional raw-term)
-
-  "same as induct, but create a single goal~/
-  ~bv[]
-  Examples:
-  wrap-induct
-  (wrap-induct t)
-  (wrap-induct (append (reverse x) y))~/
-
-  General Form:
-  (wrap-induct &optional term)
-  ~ev[]
-  The ~c[wrap-induct] command is identical to the ~ilc[proof-checker]
-  ~c[induct] command, except that only a single goal is created:  the
-  conjunction of the base and induction steps.
-
-  Note:  The output will generally indicate that more than goal has been
-  created, e.g.:
-  ~bv[]
-  Creating two new goals:  (MAIN . 1) and (MAIN . 2).
-  ~ev[]
-  However, ~c[wrap-induct] always creates a unique goal (when it succeeds).  A
-  subsequent message clarifies this, for example:
-  ~bv[]
-  NOTE: Created ONLY one new goal, which is the current goal:
-    (MAIN . 1)
-  ~ev[]"
-
   (value (if raw-term
              `(wrap (induct ,raw-term))
            `(wrap induct))))
@@ -7694,22 +4706,6 @@
       instrs))
 
 (define-pc-macro finish (&rest instrs)
-
-  "require completion of instructions; save error if inside ~c[:]~ilc[hints]~/
-  ~bv[]
-  Example:
-  (finish induct prove bash)~/
-
-  General Form:
-  (finish &rest instructions)
-  ~ev[]
-  Run the indicated instructions, stopping at the first failure.  If there is
-  any failure, or if any new goals are created and remain at the end of the
-  indicated instructions, then consider the call of ~c[finish] to be a
-  failure.  ~l[proof-checker-commands] and visit the documentation for
-  ~c[sequence] for a discussion of the notion of ``failure'' for proof-checker
-  commands."
-
   (value `(then (check-proved (do-strict ,@instrs))
                 (finish-error ,instrs)
                 t)))
@@ -7723,30 +4719,6 @@
                  (show-geneqv (cdr x) with-runes-p)))))
 
 (define-pc-macro geneqv (&optional with-runes-p)
-
-  "show the generated equivalence relation maintained at the current subterm~/
-  ~bv[]
-  General Forms:
-  geneqv     ; show list of equivalence relations being maintained
-  (geneqv t) ; as above, but pair each relation with a justifying rune~/
-  ~ev[]
-  This is an advanced command, whose effect is to print the so-called
-  ``generated equivalence relation'' (or ``geneqv'') that is maintained at the
-  current subterm of the conclusion.  That structure is a list of equivalence
-  relations, representing the transitive closure ~c[E] of the union of those
-  relations, such that it suffices to maintain ~c[E] at the current subterm: if
-  that subterm, ~c[u], is replaced in the goal's conclusion, ~c[G], by another
-  term equivalent to ~c[u] with respect to ~c[E], then the resulting conclusion
-  is Boolean equivalent to ~c[G].  Also ~pl[defcong].
-
-  The command `~c[geneqv]' prints the above list of equivalence relations, or
-  more precisely, the list of function symbols for those relations.  If however
-  ~c[geneqv] is given a non-~c[nil] argument, then a list is printed whose
-  elements are each of the form ~c[(s r)], where ~c[s] is the symbol for an
-  equivalence relation and ~c[r] is a ~c[:]~ilc[congruence] ~il[rune]
-  justifying the inclusion of ~c[s] in the list of equivalence relations being
-  maintained at the current subterm."
-
   (value `(print (show-geneqv
                   (geneqv-at-subterm-top (conc)
                                          (current-addr)
