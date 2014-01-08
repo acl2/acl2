@@ -287,9 +287,6 @@ then restart the ACL2-Doc browser to view that manual."
 ; approach might conceivably be useful for people who are navigating
 ; lisp forms in the acl2-doc buffer.
 
-; Warning: If you change the value for :syntax-table, consider the
-; effect on the use of lisp-mode in function acl2-doc-index.
-
   :syntax-table lisp-mode-syntax-table)
 
 ; Arrange that files ending in .acl2-doc come up in acl2-doc mode.
@@ -378,7 +375,8 @@ then restart the ACL2-Doc browser to view that manual."
 ;;; that it removes the leading and trailing bracket for [...].
 
   (let ((sym (sexp-at-point))
-	(go t))
+	(go t)
+	(arrayp nil))
     (while go
       (cond ((and (consp sym)
 		  (equal (length sym) 2)
@@ -386,51 +384,65 @@ then restart the ACL2-Doc browser to view that manual."
 			  '(\` quote)))
 	     (setq sym (car (cdr sym))))
 	    (t (setq go nil))))
-    (let* ((sym (or sym
+
+;;; Deal with array case.
+
+    (cond
+     ((null sym)
 
 ;;; We have found that (sexp-at-point) returns nil when standing in
 ;;; text that ends in a square bracket followed by a period, e.g.,
 ;;; "[loop-stopper]."  So we try again.
 
-		    (save-excursion
-		      (if (< (point) (point-max))
-			  (forward-char 1)) ; in case we are at "["
-		      (let* ((saved-point (point))
-			     (start (and (re-search-backward "[^]]*[[]" nil t)
-					 (match-beginning 0))))
-			(and start
-			     (let ((end (and (re-search-forward "[^ ]*]" nil t)
-					     (match-end 0))))
-			       (and end
-				    (<= saved-point end)
-				    (goto-char (1+ start))
-				    (read (current-buffer))))))))))
-      (cond ((arrayp sym) ;; [...]
-	     (let ((ans (let ((sym (aref sym 0)))
-			  (and (symbolp sym)
-			       (intern (upcase (symbol-name sym)))))))
-	       (cond ((assoc ans (acl2-doc-state-alist))
-		      ans)
-		     (t 'BROKEN-LINK))))
-	    ((not (and sym (symbolp sym)))
-	     nil)
-	    (t
-	     (let* ((name (symbol-name sym))
-		    (max-orig (1- (length name)))
-		    (max max-orig)
-		    (name (cond ((equal (aref name 0) ?:)
-				 (setq max (1- max))
-				 (substring name 1))
-				(t name)))
-		    (go t))
-	       (while (and go (< 1 max))
-		 (cond ((member (aref name max)
-				'(?. ?\' ?:))
-			(setq max (1- max)))
-		       (t (setq go nil))))
-	       (intern (upcase (cond ((equal max max-orig)
-				      name)
-				     (t (substring name 0 (1+ max))))))))))))
+      (setq sym
+	    (save-excursion
+	      (if (< (point) (point-max))
+		  (forward-char 1))	; in case we are at "["
+	      (let* ((saved-point (point))
+		     (start (and (re-search-backward "[^]]*[[]" nil t)
+				 (match-beginning 0))))
+		(and start
+		     (let ((end (and (re-search-forward "[^ ]*]" nil t)
+				     (match-end 0))))
+		       (and end
+			    (<= saved-point end)
+			    (goto-char (1+ start))
+			    (read (current-buffer))))))))
+      (when sym
+	(setq arrayp t)))
+     ((arrayp sym) ;; [...]
+      (setq sym (and (not (equal sym []))
+		     (aref sym 0)))
+      (when sym
+	(setq arrayp t))))
+
+;;; Now we have sym and arrayp.
+
+    (cond (arrayp ;; [...]
+	   (let ((tmp (and (symbolp sym)
+			   (intern (upcase (symbol-name sym))))))
+	     (cond ((assoc tmp (acl2-doc-state-alist))
+		    tmp)
+		   (t 'BROKEN-LINK))))
+	  ((not (and sym (symbolp sym)))
+	   nil)
+	  (t
+	   (let* ((name (symbol-name sym))
+		  (max-orig (1- (length name)))
+		  (max max-orig)
+		  (name (cond ((equal (aref name 0) ?:)
+			       (setq max (1- max))
+			       (substring name 1))
+			      (t name)))
+		  (go t))
+	     (while (and go (< 1 max))
+	       (cond ((member (aref name max)
+			      '(?. ?\' ?:))
+		      (setq max (1- max)))
+		     (t (setq go nil))))
+	     (intern (upcase (cond ((equal max max-orig)
+				    name)
+				   (t (substring name 0 (1+ max)))))))))))
 
 (defun acl2-doc-completing-read (prompt silent-error-p)
   (let* ((completion-ignore-case t)
