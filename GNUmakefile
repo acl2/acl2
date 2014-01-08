@@ -527,6 +527,7 @@ proofs: compile-ok
 # course; for that, you'll need to rebuild ACL2.
 DOC: acl2-manual
 	cd books ; rm -f system/doc/render-doc.cert system/doc/rendered-doc.lsp
+	rm -f doc/home-page.html
 	$(MAKE) doc.lisp doc/home-page.html
 
 # We remove doc/HTML before rebuilding it, in order to make sure that
@@ -538,20 +539,13 @@ DOC: acl2-manual
 # WARNING: This target might be up to date even if the manual is out
 # of date with respect to books/system/doc/acl2-doc.lisp.  Consider
 # using the DOC target instead.
-doc/home-page.html: doc/home-page.lisp doc/manual
+doc/home-page.html: doc/home-page.lisp
 	cd doc ; rm -rf HTML ; ./create-doc 2>&1 create-doc.out
 
-# WARNING: This target might be up to date even if the manual is out
-# of date with respect to books/system/doc/acl2-doc.lisp.  Consider
-# using the DOC target instead.
-doc/manual: books/system/doc/manual
-	rm -rf doc/manual
-	cp -pr books/system/doc/manual doc/manual
-	rm -rf doc/manual/download/*
-
 acl2-manual:
-	rm -rf books/system/doc/manual books/system/doc/acl2-manual.cert
+	rm -rf doc/manual books/system/doc/acl2-manual.cert
 	cd books ; make USE_QUICKLISP=1 system/doc/acl2-manual.cert
+	rm -rf doc/manual/download/*
 
 # WARNING: The dependency list just below isn't complete, since it
 # doesn't consider what _those_ files depend on.
@@ -803,7 +797,7 @@ devel-check:
 .PHONY: clean-doc
 clean-doc:
 	cd books/system/doc ; ../../build/clean.pl
-	rm -rf books/system/doc/manual
+	rm -rf doc/manual
 	rm -f books/system/doc/rendered-doc.lsp
 
 .PHONY: clean-books

@@ -11,7 +11,9 @@
         (t (cons (cons (car chars)
                        (concatenate 'string
                                     url
-                                    "index.html?topic=ACL2____"
+                                    "index.html?topic="
+                                    (symbol-package-name (car names))
+                                    "____"
                                     (symbol-name (car names))))
                  (topic-to-url-list url (cdr chars) (cdr names))))))
 
@@ -233,15 +235,16 @@ by the members of the ACL2 community.  For more information, see the <code><A
 HREF=\"http://acl2-books.googlecode.com/\">acl2-books</A></code> project
 page.</li>
 
-<li><b>Documentation.</b><br>There is an extensive user's manual for the ACL2
-system, and an even more comprehensive manual that documents not only the ACL2
-system but also many community books.  Follow <A HREF=\"#User's-Manual\">this
-link</A> to learn more.</li>
+<li><b><A NAME=\"documentation\">Documentation</A>.</b><br>There is an
+extensive user's manual for the ACL2 system, and an even more comprehensive
+manual that documents not only the ACL2 system but also many community books.
+See <A HREF=\"#User's-Manual\">below</A> to learn more.</li>
 
 <li><b>License and Copyright.</b><br>ACL2 is freely available under the terms
-of the <a href=\"HTML/LICENSE\">LICENSE</a> file distributed with ACL2.  Follow
-<a href=\"~s1index.html?topic=ACL2____COPYRIGHT\">this link</a> for license, copyright,
-and authorship information.</li>
+of the <a href=\"HTML/LICENSE\">LICENSE</a> file distributed with ACL2.  <a
+href=\"~s1index.html?topic=ACL2____COPYRIGHT\">License, copyright, and
+authorship</a> information is available from the ACL2 <a
+href=\"#documentation\">documentation</a>.</li>
 
 <li><b>Extensions.</b><br>The ACL2 distribution includes the following
 extensions, which were developed by the individuals shown.
@@ -304,9 +307,9 @@ remembered from their past experiences with ACL2.
 <P>
 
 The <i>ACL2+books combined manual</i> includes not only ACL2 User's Manual, but
-also documentats many of the <A href=\"#Tools\">community
-books</A> (libraries).  This manual, which is written by many authors, is thus
-more extensive than the ACL2 system, and thus potentially more useful.
+also documents many of the <A href=\"#Tools\">community books</A> (libraries).
+This manual, which is written by many authors, is thus more extensive than the
+ACL2 system, and thus potentially more useful.
 
 <P>
 
@@ -329,6 +332,12 @@ HREF=\"~ss\">DOCUMENTATION</A></CODE>.
 
 <P>
 
+Once you have installed ACL2, you can browse the ACL2 User's Manual locally by
+opening the home page in your browser to view the file
+<CODE>doc/home-page.html</CODE> in your ACL2 sources directory.
+
+<P>
+
 <BR><HR><BR>
 <H2><A NAME=\"Tools\">Community Books: Lemma Libraries and Utilities, and How to Contribute</A></H2>
 
@@ -344,10 +353,9 @@ install the community books.
 <p>
 
 We strongly encourage users to submit additional books or improve existing
-books, by following the instructions at the acl2-books project page hosted at
-<code><A
-HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com</a></code>.
-In particular, the community book <code>books/system/doc/acl2-doc.lisp</code>
+books, by following the instructions at the <A
+HREF=\"http://acl2-books.googlecode.com/\">acl2-books project page</A>.  In
+particular, the community book <code>books/system/doc/acl2-doc.lisp</code>
 contains the ACL2 system documentation.  Members of the acl2-books project are
 welcome to edit that book in order to improve the system documentation.
 
@@ -372,9 +380,12 @@ each of these.
 
 <ul>
 
-<li>
-The following link will take you to a search box on a Google page,
-which has the following contents.
+<li>The <a href=\"#User's-Manual\">documentation</a> for ACL2 (and optionally,
+books) comes with a search capability, whether viewed in the <A
+HREF=\"~so\">ACL2-Doc Emacs browser</A> or (where this link includes book
+documentation) <A HREF=\"~s2\">on the web</A>.  Alternatively, you may wish to
+follow the link displayed below to get to a search box on a Google page,
+pre-filled as follows.
 <pre>
 search_term site:http://www.cs.utexas.edu/users/moore/acl2/v6-3
 </pre>
