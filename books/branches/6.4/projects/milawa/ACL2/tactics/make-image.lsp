@@ -1,0 +1,12 @@
+(in-package "MILAWA")
+(include-book "../rewrite/fast-crewrite-clause")
+(include-book "../rewrite/traces/trace-arities")
+(include-book "../rewrite/theory-arities")
+(include-book "../rewrite/urewrite-clause")
+(include-book "../clauses/split-bldr")
+(include-book "../clauses/compiler")
+(include-book "../clauses/disjoined-update-clause-bldr")
+(include-book "../rewrite/gather")
+(ACL2::reset-prehistory)
+:q
+(ACL2::save-exec "../acl2-images/tactics-acl2" "Supporting books pre-loaded.")

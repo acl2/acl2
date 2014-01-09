@@ -1,0 +1,124 @@
+#!/usr/bin/perl
+
+# Usage: 
+#   Each argument either gives a directory via "-dir <directory>"
+# or a file name "<file-name>".  
+
+# The idea is to take out the SAT results from a .out file or
+# series of files.  For example "make_results benchmark.out" will
+# output the #variables, #clauses, conversion time, and SAT time,
+# for every thereom in benchmark.lisp that used SAT.
+
+sub printOut;
+
+$num_files = 0;
+$multi_file_sat_total = 0;
+$multi_file_acl2_total = 0;
+$i = 0;
+#print "# args: " . $#ARGV . "\n";
+
+while ($n_arg <= $#ARGV) {
+
+    if ($ARGV[$n_arg] eq "-dir") 
+    {
+        $dir_name = $ARGV[1+$n_arg];
+        #print "Directories not handled yet\n";
+
+        $dir = ".";
+            
+        open(LSOUT, "ls -R1 " . $dir_name . " |");
+
+        while ($line = <LSOUT>) {
+            #print "hi";
+
+            if ($line =~ /(.*):$/) {
+                $dir = $1;
+            }
+
+            if ($line =~ /\.out$/) {
+                printOut($dir . "/" . $line);	
+	    }	
+        }
+
+        close LSOUT;        
+        $n_arg += 2;
+    } else { 
+        printOut($ARGV[$n_arg]);
+        $n_arg += 1;
+    }
+    
+    #print "n_arg: " . $n_arg . ", # args: " . $#ARGV . "\n";
+}
+
+if ($num_files > 1) {
+    print "\n---------------------------------------------------------------\n";
+    print "Number of Files: " . $num_files . "\n";
+    print "Multi-file ACL2 Total: " . $multi_file_acl2_total . "s, Multi-file SAT Total " . $multi_file_sat_total . "s\n";
+    print "Multi-file Overall Total: " . ($multi_file_acl2_total + $multi_file_sat_total) . "s \n";
+    print "---------------------------------------------------------------\n\n";
+}
+
+sub printOut {
+    $filename = $_[0];
+
+    print "\n---------------------------------------------------------------\n";
+    print "File: " . $filename . "\n\n";
+
+    #print "DEBUG: " . $denom_name . "\n";
+
+    $num_num = -1;
+    $denom_num = -1;
+
+    open(INFILE, $filename);
+
+    $i = -1;
+
+    $SAT_time = 0;
+    $SAT_used = 0;
+    $file_acl2_time = 0;
+    $file_sat_time = 0;
+    while ($line = <INFILE>) {
+	if ($line =~ /^Time: (.+) seconds/) { 
+            #print "DEBUG: " . $line . "\n";
+            $ACL2_time = $1;
+            if ($SAT_used == 1) {
+                print "Theorem's total ACL2 Time: " . $ACL2_time . "s, SAT Time: " . $SAT_time;
+                print "s, Overall Time: " . ($ACL2_time + $SAT_time) . "s\n";
+                print "Theorem's Name: " . $Form . "\n\n";            
+            }
+            $file_acl2_time += $ACL2_time;
+            $file_sat_time += $SAT_time;
+            $SAT_time = 0;
+            $SAT_used = 0;
+        } elsif ($line =~ /^Form:  [(] DEFTHM (.*) ...[)]/ ) {
+            #print "DEBUG: " . $line . "\n";
+            $Form = $1;
+	} elsif ($line =~ /^Calling SAT solver.  Num-vars: ([0-9]+), Num-clauses: (.+)$/ ) 
+        {
+            print "--- Call to SAT --- # Vars: " . $1 . ", # Clauses: " . $2;
+	} elsif ($line =~ /^Time spent by SAT solver: (.+)$/ ) {
+            #print "DEBUG: " . $line . "\n";
+            $curr_SAT_time = $1;
+            $SAT_time += $curr_SAT_time;
+            $SAT_used = 1;
+            print ", SAT Time: " . $curr_SAT_time . "s\n";
+	}
+    }
+    #print "DEBUG: " . $names[0] . $names[1] . "\n";
+
+    print "File's total ACL2 time: " . $file_acl2_time . "s, File's total SAT time " . $file_sat_time . "s\n";
+    print "File's total Overall time: " . ($file_acl2_time + $file_sat_time) . " seconds\n\n";
+
+    close(INFILE);
+
+    $num_files += 1;
+    $multi_file_acl2_total += $file_acl2_time;
+    $multi_file_sat_total += $file_sat_time;
+}
+
+
+
+
+
+
+

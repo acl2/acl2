@@ -1,0 +1,2 @@
+(include-book "tmi-reductions")
+(certify-book "implementation" ? t)

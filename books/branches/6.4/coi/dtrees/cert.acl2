@@ -1,0 +1,16 @@
+#|-*-Lisp-*-=================================================================|#
+#|                                                                           |#
+#| coi: Computational Object Inference                                       |#
+#|                                                                           |#
+#|===========================================================================|#
+(ld "dtree-defpkg.lsp")
+
+;(include-book "../bags/bag-pkg")
+(ld "../bags/bag-defpkg.lsp")
+
+;(include-book "../osets/sets-pkg")
+(ld "../osets/set-defpkg.lsp")
+
+;(include-book "../paths/path-pkg")
+(ld "../paths/path-defpkg.lsp")
+

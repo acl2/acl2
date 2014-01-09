@@ -1,0 +1,74 @@
+Dependency Trees for Data Dependency Analysis
+Jared Davis 
+
+
+INTRODUCTION
+
+Dependency Trees ("dtrees") are intended to represent the date dependences of C
+state components such as primitive variables, arrays, and structs.  Each node
+in a dtree contains a set of "local" dependences, and perhaps some named
+children nodes.
+
+An example is illustrative.  Suppose we were modelling the dependences of the C
+object "foo" below, which itself has various subcomponents.
+
+  struct { 
+    int bar[100];
+    int baz;
+  } foo;
+
+Our intention is that the dependences of foo should be modelled as follows: Foo
+itself would be represented as a dtree with two children, bar and baz.  Baz
+would be a leaf node, i.e., a dtree with no children.  Bar would be another
+dtree, perhaps with named children such as 0 and 5.  Each of Bar's children
+would be leaf nodes with no children of their own.
+
+Attached to every node in this tree is a set of local dependences, but we also
+define each node's dependence set, (deps x), as the union of x's local
+dependences, recursively unioned with the dependence set of each of x's
+children.
+
+For example, suppose foo.baz depends on x, foo.bar[0] depends on y, and
+foo.bar[5] depends on z.  Further suppose that foo.baz, foo.bar, and foo
+themselves have no local dependences.  Then, (deps foo) = { x, y, z }, (deps
+foo.bar) = { y,z } and so forth.
+
+As you can see, dtrees are hierarchical structures wherein the dependence set
+of each node inherits the dependences of all of that node's children.  This is
+important because it allows us to speak of the dependences of our objects at
+various levels of granularity.  For example, I can talk about either "foo"
+itself, about "foo.bar", or about "foo.bar[1]", and this all still makes sense.
+
+Node names create "paths" through the dtree.  We have written "foo.bar[5]" and
+so forth above to appeal to your intuition, but really what we mean is the list
+'(foo bar 5), which we call a path.
+
+
+
+OUTLINE
+
+We begin our work in base.lisp with the recognizers and basic accessors for
+dtrees.  We have a lookup operation ("lookup") that accepts such paths and
+retrieves the appropriate portion of the tree.  We also have a membership check
+("in") that can determine if a path is present within the tree.  We also define
+an operation ("domain") which can constructively build for you the set of all
+paths which are present in the tree.
+
+... bzo document more...
+
+After we define these basic operations, our attention turns to describing the
+relations among trees.  We define a relation, (subtree x y), so that "subtree"
+returns true only when forall paths p in x, p is also in y and (deps (lookup p
+x)) is a subset of (deps (lookup p y)).  In other words, x is a subtree of y
+whenever every dependence mentioned for any path of x is also present for that
+same path in y.
+
+We are then ready to introduce (equiv x y), our major equivalence relation
+for dtrees.  Two trees are said to be equivalent only when they are mutual
+subtrees of one another -- in other words, x and y are equivalent only when
+the dependence sets for every path in x and y are the same.  This is the
+fundamental equivalence that most dtree reasoning should be based on.
+
+We conclude by defining the dtree manipulation functions which allow you to
+remove nodes from dtrees ("erase") and change the dtrees at various nodes
+("update").

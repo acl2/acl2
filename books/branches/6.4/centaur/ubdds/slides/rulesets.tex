@@ -1,0 +1,50 @@
+\subsection{Rulesets}
+
+\begin{frame}[fragile] 
+\frametitle{Rulesets}
+
+\Highlight{Rulesets} are extensible deftheories
+\begin{itemize}
+\item \Code{(include-book "tools/rulesets" :dir :system)}
+\end{itemize}
+
+\SmallSkip
+Defining and extending rulesets
+\begin{itemize}
+\item \Code{(def-ruleset foo '(car-cons cdr-cons))}
+\item \Code{(add-to-ruleset foo '(default-car default-cdr))}
+\end{itemize}
+
+\SmallSkip
+Enabling and disabling rulesets
+\begin{itemize}
+\item \Code{(in-theory (enable* (:ruleset foo)))}
+\item \Code{(in-theory (disable* append (:ruleset foo) reverse))}
+\item \Code{(in-theory (e/d* (reverse member) ((:ruleset foo))))}
+\end{itemize}
+\end{frame}
+
+
+
+\begin{frame}[fragile] 
+\frametitle{Ruleset fanciness}
+
+Rulesets can contain pointers to other rulesets
+\begin{itemize}
+\item \Code{(def-ruleset foo '(car-cons))}
+\item \Code{(def-ruleset bar '(cdr-cons (:ruleset foo)))}
+\end{itemize}
+
+\SmallSkip
+These really are like pointers
+\begin{itemize}
+\item \Code{(add-to-ruleset foo '(append))}
+\item \Code{(in-theory (disable* (:ruleset bar)))} ;; append is disabled
+\end{itemize}
+
+\SmallSkip
+If you use your own package, it's easy to make \Code{FOO::enable} be an alias to
+\Code{enable*}, etc.
+
+
+\end{frame}

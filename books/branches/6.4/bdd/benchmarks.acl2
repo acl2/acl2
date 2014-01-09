@@ -1,0 +1,5 @@
+(ld "create-benchmarks.lsp")
+
+:u
+
+(certify-book "benchmarks" ? t)

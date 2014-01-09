@@ -1,0 +1,9 @@
+;; IVY operation: PROVE
+;;
+;; This is the Lifschitz theorem from the Otter examples.
+
+(exists x (exists x1 (all y (exists z (exists z1 
+
+   (and (or (not (p y y)) (p x x) (not (s z x)))
+	(or (s x y) (not (s y z)) (q z1 z1))
+        (or (q x1 y) (not (q y z1)) (s x1 x1))))))))

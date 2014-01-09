@@ -1,0 +1,77 @@
+------------------------------------------------------------------------------
+
+                              VL MODEL README
+
+------------------------------------------------------------------------------
+
+You can use VL's "model" tool to translate Verilog designs into formal models
+that can be analyzed by the ACL2 theorem prover.
+
+
+                              PREREQUISITES
+
+  To get any use out of this, you would typically need to know how to use ACL2.
+  For basic information about the theorem prover, see its homepage:
+
+    http://www.cs.utexas.edu/users/moore/acl2/
+
+  VL itself is an ACL2 library for processing Verilog files.  It is distributed
+  as part of the ACL2 Community Books project, see the centaur/vl directory:
+
+    http://acl2-books.googlecode.com/
+
+  VL has considerable documentation.  The documentation corresponding to the
+  latest ACL2 release is found at:
+
+   http://fv.centtech.com/acl2/latest/doc/frames2.html?topic=ACL2____VL
+
+  More bleeding-edge documentation can be generated from the sources (which you
+  can get from the acl2-books project, above).
+
+  After getting a copy of VL and glancing through its documentation, you should
+  probably complete the small Centaur Hardware Verification Tutorial.  The
+  starting point is:
+
+    acl2-books/centaur/tutorial/intro.lisp
+
+
+                             THE VL MODEL TOOL
+
+  The "vl model" command is really nothing more than a command-line interface
+  to the DEFMODULES command.  It lets you parse Verilog files and translate
+  them into E modules directly, without, for instance, having to load the VL
+  books into ACL2 (which can take as long as a minute).
+
+  "vl model" can convert Verilog designs into two .sao files.
+
+     (The extension .sao stands for "Serialized ACL2 Object."  These files can
+      be quickly read into ACL2 using serialize-read.  For more information,
+      see:
+        http://fv.centtech.com/acl2/latest/doc/frames2.html?topic=ACL2____SERIALIZE)
+
+
+    model.sao -- This is just the serialized VL-TRANSLATION-P object produced
+                 by DEFMODULES.  It contains a lot of information, including
+                 for instance
+
+                   - the original source code that was read in,
+                   - the original, parsed versions of your Verilog modules,
+                   - the final, "fully simplified" versions of your modules,
+                   - the corresponding E modules for successful modules,
+                   - warnings that were encountered,
+                   - etc., etc.
+
+                 All of this stuff tends to make model.sao rather large, but
+                 can be very useful for exploring a translation.  (We use it
+                 as the basis for a web-based Verilog browsing tool.)
+
+
+
+    esims.sao -- This is a much smaller file that includes only the final
+                 E modules for successfully translated modules.
+
+                 Since this is much smaller than model.sao, it can be loaded
+                 more quickly.  We usually use this file as the basis for our
+                 ACL2 proofs.
+
+------------------------------------------------------------------------------
