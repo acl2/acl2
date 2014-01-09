@@ -303,10 +303,10 @@ endif
 ifeq ($(ACL2_HAS_ANSI), )
 
 $(CERT_PL_ANSI_ONLY):
-	$(MAKE) no_hons_error NO_RESCAN=1 CERT_PL_ANSI_ONLY_BOOK=$@
+	$(MAKE) no_ansi_error NO_RESCAN=1 CERT_PL_ANSI_ONLY_BOOK=$@
 
-.PHONY: no_hons_error
-no_hons_error:
+.PHONY: no_ansi_error
+no_ansi_error:
 	@echo "Error! Target $(CERT_PL_ANSI_ONLY_BOOK) requires ANSI Common Lisp."
 	@exit 1
 
