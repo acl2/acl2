@@ -50,14 +50,36 @@
 ; render-doc-combined.lisp and probably for building the web-based ACL2-only
 ; manual, too.
 
+(defconst *acl2-url*
+
+; Warning: This event appears identically in acl2-doc.lisp and
+; acl2-doc-wrap.lisp.  If you change one, then change the other the same way!
+
+; We use the specific release rather than "current" in the URL, so that those
+; who are looking at an older version of ACL2 will see the corresponding
+; combined manual at this link.
+
+  "http://www.cs.utexas.edu/users/moore/acl2/v6-4/")
+
+(defconst *installation-url*
+
+; Warning: This event appears identically in acl2-doc.lisp and
+; acl2-doc-wrap.lisp.  If you change one, then change the other the same way!
+
+  (concatenate 'string *acl2-url* "HTML/installation/installation.html"))
+
 (defconst *combined-manual-url*
-; Warning: This event is redundant with one in acl2-doc.lisp.  Keep them in
-; sync.
-  "http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/")
+
+; Warning: This event appears identically in acl2-doc.lisp and
+; acl2-doc-wrap.lisp.  If you change one, then change the other the same way!
+
+  (concatenate 'string *acl2-url* "combined-manual/"))
 
 (defun combined-manual-link (filename)
-; Warning: This event is redundant with one in acl2-doc.lisp.  Keep them in
-; sync.
+
+; Warning: This event appears identically in acl2-doc.lisp and
+; acl2-doc-wrap.lisp.  If you change one, then change the other the same way!
+
   (concatenate 'string
                "<a href='"
                *combined-manual-url*
@@ -68,8 +90,10 @@
                "</a>"))
 
 (defun clhs (url title)
-; Warning: This event is redundant with one in acl2-doc.lisp.  Keep them in
-; sync.
+
+; Warning: This event appears identically in acl2-doc.lisp and
+; acl2-doc-wrap.lisp.  If you change one, then change the other the same way!
+
   (declare (xargs :guard (and (or (not url)
                                   (stringp url))
                               (stringp title))))
