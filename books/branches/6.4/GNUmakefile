@@ -686,7 +686,7 @@ $(info Done scanning.)
 
 endif # ifndef NO_RESCAN
 
-include Makefile-comp
+include $(BUILD_DIR)/Makefile-comp
 
 # Define books to be skipped for multi-lisp compilation.
 
