@@ -298,15 +298,14 @@ no_hons_error:
 	@echo "Error! Target $(CERT_PL_HONS_ONLY_BOOK) requires hons."
 	@exit 1
 
-# We don't need to cause an error if hons and ansi are both false,
-# because that means we are using GCL/CLtL1 with #+hons, which is
-# completely illegal.  By using "else" here we avoid warnings from
-# `make'.
-else
+endif # ifeq ($(ACL2_HAS_HONS), )
 
 ifeq ($(ACL2_HAS_ANSI), )
 
-$(CERT_PL_ANSI_ONLY):
+# We are presumably running GCL/CLtL1.  There is no need to cause an
+# error in the ansi-only case, because the code above will already
+# handle that.
+$(filter-out $(CERT_PL_HONS_ONLY), $(CERT_PL_ANSI_ONLY)):
 	$(MAKE) no_ansi_error NO_RESCAN=1 CERT_PL_ANSI_ONLY_BOOK=$@
 
 .PHONY: no_ansi_error
@@ -315,7 +314,6 @@ no_ansi_error:
 	@exit 1
 
 endif # ifeq ($(ACL2_HAS_ANSI), )
-endif # ifeq ($(ACL2_HAS_HONS), )
 
 # End of "Cause error for illegal certification attempts".
 
