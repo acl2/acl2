@@ -16,5 +16,11 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 
+#+acl2-par
+; The proof goes in an unfortunate direction for ACL2(p), for
+; (define stv2c-output-stuff-aux ...): specifically,
+;  RETURN-TYPE-OF-STV2C-OUTPUT-STUFF-AUX.
+(set-waterfall-parallelism nil)
+
 (include-book "../../portcullis")
 ; cert-flags: ? t :ttags :all

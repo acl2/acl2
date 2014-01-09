@@ -34,6 +34,9 @@
     (let* ((state (princ$ #+hons "ACL2_HAS_HONS := 1"
                           #-hons "ACL2_HAS_HONS := "
                           channel state))
+           (state (princ$ #-(and gcl (not ansi-cl)) "ACL2_HAS_ANSI := 1"
+                          #+(and gcl (not ansi-cl)) "ACL2_HAS_ANSI := "
+                          channel state))
            (state (newline channel state))
            (state (princ$ #+acl2-par "ACL2_HAS_PARALLEL := 1"
                           #-acl2-par "ACL2_HAS_PARALLEL := "

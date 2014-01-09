@@ -277,6 +277,7 @@ endif # ifdef GLUCOSE_EXISTS
 # if ACL2 isn't built.
 -include $(BUILD_DIR)/Makefile-features
 $(info ACL2_HAS_HONS     := $(ACL2_HAS_HONS))
+$(info ACL2_HAS_ANSI     := $(ACL2_HAS_ANSI))
 $(info ACL2_HAS_PARALLEL := $(ACL2_HAS_PARALLEL))
 $(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
 $(info ACL2_COMP_EXT     := $(ACL2_COMP_EXT))
@@ -299,6 +300,18 @@ no_hons_error:
 
 endif
 
+ifeq ($(ACL2_HAS_ANSI), )
+
+$(CERT_PL_ANSI_ONLY):
+	$(MAKE) no_hons_error NO_RESCAN=1 CERT_PL_ANSI_ONLY_BOOK=$@
+
+.PHONY: no_hons_error
+no_hons_error:
+	@echo "Error! Target $(CERT_PL_ANSI_ONLY_BOOK) requires ANSI Common Lisp."
+	@exit 1
+
+endif
+
 # End of "Cause error for illegal certification attempts".
 
 OK_CERTS := $(CERT_PL_CERTS)
@@ -310,6 +323,14 @@ ${info Excluding books that need ACL2(h) [...]}
 OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
 
 endif # ifeq ($(ACL2_HAS_HONS), )
+
+ifeq ($(ACL2_HAS_ANSI), )
+
+# We use "{...}" delimeters to avoid errors in version 3.80 of make.
+${info Excluding books that need ANSI Common Lisp [...]}
+OK_CERTS := $(filter-out $(CERT_PL_ANSI_ONLY), $(OK_CERTS))
+
+endif # ifeq ($(ACL2_HAS_ANSI), )
 
 ifeq ($(OS_HAS_GLUCOSE), )
 
@@ -1359,6 +1380,10 @@ clean: clean_vl
 #       - Books that depend on ACL2(h), such as
 #         centaur/tutorial/alu16-book.lisp, contain this line:
 #           ; cert_param: (hons-only)
+#       - Books that depend on ANSI Common Lisp, such as
+#         oslib/*.lisp, contain this line (or in this case,
+#         file cert.acl2 contains this line):
+#           ; cert_param: (ansi-only)
 #       - Books that require glucose (a SAT solver) contain this line:
 #           ; cert_param: (uses-glucose)
 #       - Books that require quicklisp contain this line:

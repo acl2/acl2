@@ -1,1 +1,5 @@
+#+acl2-par
+; Avoid "Not owner of hash table" errors:
+(set-waterfall-parallelism nil)
+
 ; cert-flags: ? t :ttags :all :skip-proofs-okp t :defaxioms-okp t
