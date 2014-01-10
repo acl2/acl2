@@ -114,7 +114,7 @@ acl2::local).</p>
 @({
   (defrule baz            -->  (local
       ...                        (encapsulate ()
-                                   (defthm baz ...)))
+      :local t)                    (defthm baz ...)))
 })")
 
 (defxdoc defruled
