@@ -87,6 +87,12 @@ they're part of the theory that is inherited by all subgoals.</p>
 they are actually integrated with the @(see acl2::rulesets) book.  In
 particular, these keywords are always translated into an @(see acl2::e/d*).</p>
 
+<h3>Support for @('Local')</h3>
+
+<p>Another option is to provide a non-@('nil') value to the keyword argument
+@(':local').  This results in surrounding the rule with a @(see
+acl2::local).</p>
+
 <p>Some examples:</p>
 
 @({
@@ -103,6 +109,12 @@ particular, these keywords are always translated into an @(see acl2::e/d*).</p>
      :disable revappend                                  (logior)
      :e/d ((logior) (logand)))                           (logand)))
                                  (defthm bar ...))
+})
+
+@({
+  (defrule baz            -->  (local
+      ...                        (encapsulate ()
+                                   (defthm baz ...)))
 })")
 
 (defxdoc defruled
@@ -122,7 +134,8 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
                  :long
                  :enable
                  :disable
-                 :e/d)
+                 :e/d
+                 :local)
                acl2::*hint-keywords*))
 
 (defun split-alist (keys al)
@@ -198,6 +211,7 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
 
        (hints (cdr (assoc :hints kwd-alist)))
        (hints (merge-keyword-hints-alist-into-ordinary-hints hint-alist hints))
+       (local (cdr (assoc :local kwd-alist)))
 
        ((unless (tuplep 1 args))
         (er hard? 'defrule
@@ -219,18 +233,22 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
                    (and look `(:rule-classes ,(cdr look))))
                :otf-flg      ,(cdr (assoc :otf-flg kwd-alist))
                :instructions ,(cdr (assoc :instructions kwd-alist))
-               :doc          ,(cdr (assoc :doc kwd-alist)))))
+               :doc          ,(cdr (assoc :doc kwd-alist))))
 
-    (if (and (not want-xdoc)
-             (not theory-hint))
-        thm
-      `(defsection ,name
-         ,@(and parents `(:parents ,parents))
-         ,@(and short   `(:short ,short))
-         ,@(and long    `(:long ,long))
-         ,@(and theory-hint
-                `(,theory-hint))
-         ,thm))))
+       (event
+        (if (and (not want-xdoc)
+                 (not theory-hint))
+            thm
+          `(defsection ,name
+             ,@(and parents `(:parents ,parents))
+             ,@(and short   `(:short ,short))
+             ,@(and long    `(:long ,long))
+             ,@(and theory-hint
+                    `(,theory-hint))
+             ,thm))))
+    (if local
+        `(local ,event)
+      event)))
 
 (defmacro defrule (name &rest args)
   (defrule-fn name args nil))
