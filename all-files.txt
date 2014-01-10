@@ -24,6 +24,7 @@ defpkgs.lisp
 defthm.lisp
 defuns.lisp
 doc
+doc.lisp
 emacs
 futures-raw.lisp
 GNUmakefile
@@ -74,6 +75,7 @@ type-set-b.lisp
 workshops.html
 
 acl2-customization-files:
+bookdata.lisp
 parallel-full.lisp
 parallel-resource-based.lisp
 parallel-top-level.lisp

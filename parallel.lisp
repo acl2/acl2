@@ -1,5 +1,5 @@
-; ACL2 Version 6.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2013, Regents of the University of Texas
+; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -783,7 +783,7 @@
 ;               (cons (cons term rewritten-args)
 ;                     (cons-tag-trees ttree1 ttree2)))))))
 
-; Preliminary code for parallelizing the rewriter for ACL2 version 6.3.
+; Preliminary code for parallelizing the rewriter.
 
 ; Note that the following code treats step-limits a little differently from how
 ; they are treated in the sequential version.  If we keep this treatment, we

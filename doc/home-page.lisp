@@ -1,3 +1,23 @@
+; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2014, Regents of the University of Texas
+
+; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
+
+; This program is free software; you can redistribute it and/or modify
+; it under the terms of the LICENSE file distributed with ACL2.
+
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; LICENSE for more details.
+
+; Written by:  Matt Kaufmann               and J Strother Moore
+; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
+; Department of Computer Science
+; University of Texas at Austin
+; Austin, TX 78712 U.S.A.
+
 (in-package "ACL2")
 
 (set-state-ok t)
@@ -33,7 +53,7 @@
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-6-3                            ;;; g   ; current release notes
+    note-6-4                            ;;; g   ; current release notes
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -195,7 +215,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"HTML/note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 6.2</A><A HREF=\"~sq\"> <IMG
+<A HREF=\"~sg\">Differences from Version 6.3</A><A HREF=\"~sq\"> <IMG
 SRC=\"HTML/twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
@@ -387,18 +407,18 @@ documentation) <A HREF=\"~s2\">on the web</A>.  Alternatively, you may wish to
 follow the link displayed below to get to a search box on a Google page,
 pre-filled as follows.
 <pre>
-search_term site:http://www.cs.utexas.edu/users/moore/acl2/v6-3
+search_term site:http://www.cs.utexas.edu/users/moore/acl2/v6-4
 </pre>
 Now simply replace the word `search_term' with your topic.  For example, replace
 `<code>search_term</code>' by `<code>tail recursion</code>' to get
 documentation about tail recursion.
 <pre>
-tail recursion site:http://www.cs.utexas.edu/users/moore/acl2/v6-3
+tail recursion site:http://www.cs.utexas.edu/users/moore/acl2/v6-4
 </pre>
 Now you are ready to follow the link.
 <p>
 <a href=\"http://www.google.com/search?q=search_term
-                 site:http://www.cs.utexas.edu/users/moore/acl2/v6-3\">SEARCH
+                 site:http://www.cs.utexas.edu/users/moore/acl2/v6-4\">SEARCH
                  THE DOCUMENTATION</a>
 </li>
 

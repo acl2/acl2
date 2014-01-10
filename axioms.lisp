@@ -1,5 +1,5 @@
-; ACL2 Version 6.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2013, Regents of the University of Texas
+; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -12947,7 +12947,7 @@
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 6.3
+; ACL2 Version 6.4
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed out with the
@@ -12973,7 +12973,7 @@
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 6.3"
+                                "ACL2 Version 6.4"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))

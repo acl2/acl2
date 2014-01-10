@@ -1,5 +1,5 @@
-; ACL2 Version 6.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2013, Regents of the University of Texas
+; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -7822,7 +7822,8 @@
                              section name, ~x2.  This is not allowed.  See ~
                              :DOC defdoc."
                             name (cadr old-doc-tuple) section-sym))
-                   (t ; (or (equal section-sym name) (doc-topicp section-sym wrld))
+                   ((or (equal section-sym name)
+                        (doc-topicp section-sym wrld))
                     (let ((citations
                            (read-doc-string-citations section-sym doc)))
                       (let ((msg
