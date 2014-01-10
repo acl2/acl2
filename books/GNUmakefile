@@ -277,6 +277,7 @@ endif # ifdef GLUCOSE_EXISTS
 # if ACL2 isn't built.
 -include $(BUILD_DIR)/Makefile-features
 $(info ACL2_HAS_HONS     := $(ACL2_HAS_HONS))
+$(info ACL2_HAS_ANSI     := $(ACL2_HAS_ANSI))
 $(info ACL2_HAS_PARALLEL := $(ACL2_HAS_PARALLEL))
 $(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
 $(info ACL2_COMP_EXT     := $(ACL2_COMP_EXT))
@@ -297,7 +298,22 @@ no_hons_error:
 	@echo "Error! Target $(CERT_PL_HONS_ONLY_BOOK) requires hons."
 	@exit 1
 
-endif
+endif # ifeq ($(ACL2_HAS_HONS), )
+
+ifeq ($(ACL2_HAS_ANSI), )
+
+# We are presumably running GCL/CLtL1.  There is no need to cause an
+# error in the ansi-only case, because the code above will already
+# handle that.
+$(filter-out $(CERT_PL_HONS_ONLY), $(CERT_PL_ANSI_ONLY)):
+	$(MAKE) no_ansi_error NO_RESCAN=1 CERT_PL_ANSI_ONLY_BOOK=$@
+
+.PHONY: no_ansi_error
+no_ansi_error:
+	@echo "Error! Target $(CERT_PL_ANSI_ONLY_BOOK) requires ANSI Common Lisp."
+	@exit 1
+
+endif # ifeq ($(ACL2_HAS_ANSI), )
 
 # End of "Cause error for illegal certification attempts".
 
@@ -310,6 +326,14 @@ ${info Excluding books that need ACL2(h) [...]}
 OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
 
 endif # ifeq ($(ACL2_HAS_HONS), )
+
+ifeq ($(ACL2_HAS_ANSI), )
+
+# We use "{...}" delimeters to avoid errors in version 3.80 of make.
+${info Excluding books that need ANSI Common Lisp [...]}
+OK_CERTS := $(filter-out $(CERT_PL_ANSI_ONLY), $(OK_CERTS))
+
+endif # ifeq ($(ACL2_HAS_ANSI), )
 
 ifeq ($(OS_HAS_GLUCOSE), )
 
@@ -665,7 +689,7 @@ $(info Done scanning.)
 
 endif # ifndef NO_RESCAN
 
-include Makefile-comp
+include $(BUILD_DIR)/Makefile-comp
 
 # Define books to be skipped for multi-lisp compilation.
 
@@ -1359,6 +1383,10 @@ clean: clean_vl
 #       - Books that depend on ACL2(h), such as
 #         centaur/tutorial/alu16-book.lisp, contain this line:
 #           ; cert_param: (hons-only)
+#       - Books that depend on ANSI Common Lisp, such as
+#         oslib/*.lisp, contain this line (or in this case,
+#         file cert.acl2 contains this line):
+#           ; cert_param: (ansi-only)
 #       - Books that require glucose (a SAT solver) contain this line:
 #           ; cert_param: (uses-glucose)
 #       - Books that require quicklisp contain this line:

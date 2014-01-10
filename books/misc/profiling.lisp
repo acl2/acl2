@@ -40,7 +40,17 @@
 
 (progn!
  (set-raw-mode t)
- (load (concatenate 'string (cbd) "profiling-raw.lsp")))
+
+; In SBCL 1.1.11 and 1.1.14 installations at the Univ. of Texas, the value of
+; sb-ext:*module-provider-functions* is (SB-IMPL::MODULE-PROVIDE-CONTRIB).  In
+; 1.1.11, (SB-IMPL::MODULE-PROVIDE-CONTRIB :sb-sprof) evaluates to t, but in
+; 1.1.14, it evaluates to nil, which explains why the form (require :sb-sprof)
+; in profiling-raw.lsp causes an error in SBCL 1.1.14.  The following is an
+; easy way to avoid an error, but it could certainly be made nicer, for example
+; by checking if there really is an error.  Anyone in the acl2-books project is
+; welcome to make such an improvement!
+
+ (our-ignore-errors (load (concatenate 'string (cbd) "profiling-raw.lsp"))))
 
 (defmacro-last with-profiling)
 

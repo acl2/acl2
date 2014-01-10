@@ -1428,6 +1428,9 @@
 ; whose elements is of the form (equiv pequiv1 ... pequivk), where equiv is
 ; some equivalence relation and each pequivi is a pequiv record.
 
+(verify-termination legal-variable-or-constant-namep)
+(verify-termination legal-variablep)
+
 (defun pseudo-pequiv-pattern-p (p)
   (or (legal-variablep p)
       (and (weak-pequiv-pattern-p p)
