@@ -172,9 +172,11 @@ field of each @(see vl-module-p).</p>")
        (wires1 (cdr entry1))
        ((mv warnings rest)
         (vl-collect-msb-bits-for-wires (cdr names) walist warnings))
-       (warnings (warn :type :vl-design-wires
-                       :msg "No walist entry for ~s0."
-                       :args (list name1))))
+       (warnings (if entry1
+                     warnings
+                   (warn :type :vl-design-wires
+                         :msg "No walist entry for ~s0."
+                         :args (list name1)))))
     (mv warnings (append wires1 rest))))
 
 (define vl-collect-design-wires
