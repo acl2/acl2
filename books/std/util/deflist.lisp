@@ -490,7 +490,10 @@ of which recognizers require true-listp and which don't.</p>")
     :long
     :true-listp
     :rest
-    :verbosep))
+    :verbosep
+    ;; Undocumented option for customizing the theory, mainly meant for
+    ;; problematic cases, e.g., built-in functions where ACL2 "knows too much"
+    :theory-hack))
 
 (defun deflist-fn (name formals element kwd-alist other-events state)
   (declare (xargs :mode :program))
@@ -532,6 +535,7 @@ of which recognizers require true-listp and which don't.</p>")
        (elementp-of-nil  (getarg :elementp-of-nil  :unknown kwd-alist))
        (short            (getarg :short            nil      kwd-alist))
        (long             (getarg :long             nil      kwd-alist))
+       (theory-hack      (getarg :theory-hack      nil      kwd-alist))
 
        (rest             (append
                           (getarg :rest nil kwd-alist)
@@ -660,6 +664,7 @@ of which recognizers require true-listp and which don't.</p>")
                                     deflist-local-booleanp-element-thm
                                     )))
           (local (enable-if-theorem deflist-local-elementp-of-nil-thm))
+          ,@theory-hack
 
           (defthm ,(mksym name '-when-not-consp)
             (implies (not (consp ,x))

@@ -1,5 +1,5 @@
 ; Standard Typed Lists Library
-; Copyright (C) 2008-2013 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,10 +19,15 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-
+(include-book "acl2-number-listp")
 (include-book "atom-listp")
+(include-book "boolean-listp")
 (include-book "character-listp")
+(include-book "eqlable-listp")
+(include-book "integer-listp")
 (include-book "nat-listp")
+(include-book "pseudo-term-listp")
+(include-book "rational-listp")
 (include-book "string-listp")
 (include-book "symbol-listp")
 (include-book "signed-byte-listp")
@@ -51,9 +56,6 @@ that deal with the typed lists you are interested in.  For instance,</p>
 })
 
 <p>Most of the typed-lists library is generated automatically by @(see
-std::deflist).  You may find this macro useful for introducing your own,
-custom typed lists.</p>
-
-<p>BOZO this library is not very complete.  We should probably add books
-about the other kinds of typed-list recognizers.</p>")
+std::deflist).  You may find this macro useful for introducing your own, custom
+typed lists.</p>")
 

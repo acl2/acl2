@@ -32,12 +32,21 @@
 ;  - The following URL is very useful for updating the comments here:
 ;       http://code.google.com/p/acl2-books/source/list
 
+(defxdoc note-6-5-books
+  :parents (note-6-5)
+  :short "Release notes for the ACL2 Community Books for ACL2 6.4 (BOZO month)"
+
+; Currently covered: through revision 2412.
+
+  :long "<p>VL: fixed excessive, bogus warnings about design wires in toe transform.</p>
+
+<p>STD: @(see defrule) now has a @(':local') option.</p>")
+
+
 (defxdoc note-6-4-books
   :parents (note-6-4)
   :short "Release notes for the ACL2 Community Books for ACL2 6.4 (January,
 2013)."
-
-; Currently covered: through revision 2390.
 
   :long "<p>The following is a brief summary of changes made to the @(see
 community-books) between the releases of ACL2 6.3 and 6.4.  See the <a
