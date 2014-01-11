@@ -1,1 +1,3 @@
-:release
+"$Revision$"
+Sat Jan 11 10:34:04 CST 2014
+Books Revision: 2414
