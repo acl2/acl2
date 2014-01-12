@@ -1,0 +1,35 @@
+WARNING: The makefile mechanism under books/nonstd/ isn't currently set up to
+use ACL2(r) automatically.  When you execute make, be sure to do so from this
+directory and use a command of the form
+
+  make ACL2=your_saved_acl2r
+
+This is the books directory for ACL2(r), the extension of ACL2 supporting the
+real numbers via non-standard analysis, which was conceived and first
+implemented by Ruben Gamboa in his Ph.D. dissertation work.  This directory is
+subdirectory books/nonstd of the top-level ACL2 directory.
+
+The subdirectories here include most of those from subdirectory books of the
+top-level ACL2 directory, referred to below as ../../books.  The directories
+below that do not have corresponding directories under ../../books rely on
+ACL2(r); they are expected to contain books all of which are certifiable in
+ACL2(r), but not necessarily ACL2.
+
+Before certifying any of these books, it is necessary to build ACL2(r).  This
+can be accomplished on systems understanding the make command (e.g., Unix) by
+standing in the top-level ACL2 directory and executing "make small-acl2r".
+
+After that, it is necessary to create links to books in ../../books.  This may
+be accomplished by standing in the directory of this README file (i.e.,
+books/nonstd under the top-level ACL2 directory) and issuing the following
+command.
+
+make links
+
+Then the books most likely to be of use under here, i.e., under books/nonstd,
+may be certified using the command "make" in this directory, or if it is
+desired to certify all the books under here (including the two case studies
+under case-studies/), "make all-plus".
+
+The modifications in ACL2(r) to ACL2 are only minimally documented.  See :doc
+REAL for more information.

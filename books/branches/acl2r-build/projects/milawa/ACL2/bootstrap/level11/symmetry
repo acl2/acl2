@@ -1,0 +1,2 @@
+#!/bin/sh
+exec ../../acl2-images/level11-symmetry "$@"

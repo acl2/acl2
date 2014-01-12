@@ -1,0 +1,5 @@
+File l3-to-acl2.lisp implements a translator from L3 to ACL2.  See the
+macro at the end for how to invoke it, or see ../README.
+
+File l3.lisp is a supporting library -- really, a book with some
+necessary definitions.

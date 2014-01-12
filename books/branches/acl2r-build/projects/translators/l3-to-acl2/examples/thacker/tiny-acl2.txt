@@ -1,0 +1,822 @@
+(val _ = Construct
+  (sqbkt ("funcT"
+           (sqbkt ("fADD" []) ("fSUB" []) ("fINC" []) ("fDEC" [])
+                  ("fAND" []) ("fOR" []) ("fXOR" []) ("fReserved" [])))))
+
+
+(val _ = Construct
+  (sqbkt ("shiftT"
+           (sqbkt ("noShift" []) ("RCY1" []) ("RCY8" []) ("RCY16" [])))))
+
+
+(val _ = Construct
+  (sqbkt ("conditionT"
+           (sqbkt ("skipNever" []) ("skipNeg" []) ("skipZero" [])
+                  ("skipInRdy" [])))))
+
+
+(val _ = Construct
+  (sqbkt ("instruction"
+           (sqbkt ("In"
+                    (sqbkt (PTy CTy"funcT"
+                             (PTy CTy"shiftT"
+                               (PTy CTy"conditionT"
+                                 (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+                  ("Jump"
+                    (sqbkt (PTy CTy"funcT"
+                             (PTy CTy"shiftT"
+                               (PTy (FTy 7) (PTy (FTy 7) (FTy 7)))))))
+                  ("LoadConstant" (sqbkt (PTy (FTy 7) (FTy 24))))
+                  ("LoadDM"
+                    (sqbkt (PTy CTy"funcT"
+                             (PTy CTy"shiftT"
+                               (PTy CTy"conditionT"
+                                 (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+                  ("Normal"
+                    (sqbkt (PTy CTy"funcT"
+                             (PTy CTy"shiftT"
+                               (PTy CTy"conditionT"
+                                 (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+                  ("Out"
+                    (sqbkt (PTy CTy"funcT"
+                             (PTy CTy"shiftT"
+                               (PTy CTy"conditionT"
+                                 (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+                  ("ReservedInstr" [])
+                  ("StoreDM"
+                    (sqbkt (PTy CTy"funcT"
+                             (PTy CTy"shiftT"
+                               (PTy CTy"conditionT"
+                                 (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+                  ("StoreIM"
+                    (sqbkt (PTy CTy"funcT"
+                             (PTy CTy"shiftT"
+                               (PTy CTy"conditionT"
+                                 (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))))))
+
+
+(val _ = Construct
+  (sqbkt ("exception" (sqbkt ("NoException" []) ("Reserved" [])))))
+
+
+(val _ = Record
+  ("state"
+    (sqbkt ("DM" (ATy (FTy 10) F32)) ("IM" (ATy (FTy 10) F32))
+           ("InData" F32) ("InRdy" bTy) ("OutStrobe" F32) ("PC" (FTy 10))
+           ("R" (ATy (FTy 7) F32)) ("exception" CTy"exception"))))
+
+
+(Def "raise'exception" (Var "e" CTy"exception")
+  (Close qVar"state"
+    (TP
+      (sqbkt (LX VTy"a")
+             (ITE
+               (EQ (Dest "exception" CTy"exception" qVar"state")
+                 (LC "NoException" CTy"exception"))
+               (Rupd "exception"
+                 (TP (sqbkt qVar"state" (Var "e" CTy"exception"))))
+               qVar"state")))))
+
+
+(Def "function"
+  (TP (sqbkt (Var "func" CTy"funcT") (Var "a" F32) (Var "b" F32)))
+  (Close qVar"state"
+    (CS (Var "func" CTy"funcT")
+      (sqbkt ((LC "fADD" CTy"funcT")
+               (TP
+                 (sqbkt (Bop Add (Var "a" F32) (Var "b" F32)) qVar"state")))
+             ((LC "fSUB" CTy"funcT")
+               (TP
+                 (sqbkt (Bop Sub (Var "a" F32) (Var "b" F32)) qVar"state")))
+             ((LC "fINC" CTy"funcT")
+               (TP (sqbkt (Bop Add (Var "b" F32) (LW 1 32)) qVar"state")))
+             ((LC "fDEC" CTy"funcT")
+               (TP (sqbkt (Bop Sub (Var "b" F32) (LW 1 32)) qVar"state")))
+             ((LC "fAND" CTy"funcT")
+               (TP
+                 (sqbkt (Bop BAnd (Var "a" F32) (Var "b" F32)) qVar"state")))
+             ((LC "fOR" CTy"funcT")
+               (TP
+                 (sqbkt (Bop BOr (Var "a" F32) (Var "b" F32)) qVar"state")))
+             ((LC "fXOR" CTy"funcT")
+               (TP
+                 (sqbkt (Bop BXor (Var "a" F32) (Var "b" F32)) qVar"state")))
+             ((AVar CTy"funcT")
+               (Apply
+                 (Call "raise'exception" (ATy qTy (PTy F32 qTy))
+                   (LC "Reserved" CTy"exception")) qVar"state"))))))
+
+
+(Def "shifter" (TP (sqbkt (Var "shift" CTy"shiftT") (Var "a" F32)))
+  (CS (Var "shift" CTy"shiftT")
+    (sqbkt ((LC "noShift" CTy"shiftT") (Var "a" F32))
+           ((LC "RCY1" CTy"shiftT") (Bop Ror (Var "a" F32) (LN 1)))
+           ((LC "RCY8" CTy"shiftT") (Bop Ror (Var "a" F32) (LN 8)))
+           ((LC "RCY16" CTy"shiftT") (Bop Ror (Var "a" F32) (LN 16))))))
+
+
+(Def "ALU"
+  (TP
+    (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT") (Var "a" F32)
+           (Var "b" F32)))
+  (Close qVar"state"
+    (Let (TP (sqbkt (Var "v" F32) qVar"s"))
+      (Apply
+        (Call "function" (ATy qTy (PTy F32 qTy))
+          (TP (sqbkt (Var "func" CTy"funcT") (Var "a" F32) (Var "b" F32))))
+        qVar"state")
+      (TP
+        (sqbkt (Call "shifter" F32
+                 (TP (sqbkt (Var "shift" CTy"shiftT") (Var "v" F32))))
+               qVar"s")))))
+
+
+(Def "incPC" (TP (sqbkt (Var "skip" CTy"conditionT") (Var "alu" F32)))
+  (Close qVar"state"
+    (CS (Var "skip" CTy"conditionT")
+      (sqbkt ((LC "skipNever" CTy"conditionT")
+               (TP
+                 (sqbkt LU
+                        (Rupd "PC"
+                          (TP
+                            (sqbkt qVar"state"
+                                   (Bop Add
+                                     (Dest "PC" (FTy 10) qVar"state")
+                                     (LW 1 10))))))))
+             ((LC "skipNeg" CTy"conditionT")
+               (TP
+                 (sqbkt LU
+                        (Rupd "PC"
+                          (TP
+                            (sqbkt qVar"state"
+                                   (Bop Add
+                                     (Dest "PC" (FTy 10) qVar"state")
+                                     (ITE
+                                       (Bop Lt (Var "alu" F32) (LW 0 32))
+                                       (LW 2 10) (LW 1 10)))))))))
+             ((LC "skipZero" CTy"conditionT")
+               (TP
+                 (sqbkt LU
+                        (Rupd "PC"
+                          (TP
+                            (sqbkt qVar"state"
+                                   (Bop Add
+                                     (Dest "PC" (FTy 10) qVar"state")
+                                     (ITE (EQ (Var "alu" F32) (LW 0 32))
+                                       (LW 2 10) (LW 1 10)))))))))
+             ((LC "skipInRdy" CTy"conditionT")
+               (TP
+                 (sqbkt LU
+                        (Rupd "PC"
+                          (TP
+                            (sqbkt qVar"state"
+                                   (Bop Add
+                                     (Dest "PC" (FTy 10) qVar"state")
+                                     (ITE (Dest "InRdy" bTy qVar"state")
+                                       (LW 2 10) (LW 1 10)))))))))))))
+
+
+(Def "norm"
+  (TP
+    (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+           (Var "skip" CTy"conditionT") bVar"wback" bVar"strobe"
+           (Var "w" (FTy 7)) (Var "a" (FTy 7)) (Var "b" (FTy 7))))
+  (Close qVar"state"
+    (Let (TP (sqbkt (Var "v" F32) qVar"s"))
+      (Apply
+        (Call "ALU" (ATy qTy (PTy F32 qTy))
+          (TP
+            (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+                   (Apply (Dest "R" (ATy (FTy 7) F32) qVar"state")
+                     (Var "a" (FTy 7)))
+                   (Apply (Dest "R" (ATy (FTy 7) F32) qVar"state")
+                     (Var "b" (FTy 7)))))) qVar"state")
+      (Let qVar"s"
+        (ITE bVar"wback"
+          (Rupd "R"
+            (TP
+              (sqbkt qVar"s"
+                     (Fupd (Dest "R" (ATy (FTy 7) F32) qVar"s")
+                       (Var "w" (FTy 7)) (Var "v" F32))))) qVar"s")
+        (Apply
+          (Call "incPC" (ATy qTy (PTy uTy qTy))
+            (TP (sqbkt (Var "skip" CTy"conditionT") (Var "v" F32))))
+          (ITE bVar"strobe"
+            (Rupd "OutStrobe" (TP (sqbkt qVar"s" (Var "v" F32)))) qVar"s"))))))
+
+
+(Def "dfn'Normal"
+  (TP
+    (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+           (Var "skip" CTy"conditionT") (Var "w" (FTy 7))
+           (Var "a" (FTy 7)) (Var "b" (FTy 7))))
+  (Close qVar"state"
+    (Apply
+      (Call "norm" (ATy qTy (PTy uTy qTy))
+        (TP
+          (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+                 (Var "skip" CTy"conditionT") LT LF (Var "w" (FTy 7))
+                 (Var "a" (FTy 7)) (Var "b" (FTy 7))))) qVar"state")))
+
+
+(Def "dfn'StoreDM"
+  (TP
+    (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+           (Var "skip" CTy"conditionT") (Var "w" (FTy 7))
+           (Var "a" (FTy 7)) (Var "b" (FTy 7))))
+  (Close qVar"state"
+    (Apply
+      (Call "norm" (ATy qTy (PTy uTy qTy))
+        (TP
+          (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+                 (Var "skip" CTy"conditionT") LT LF (Var "w" (FTy 7))
+                 (Var "a" (FTy 7)) (Var "b" (FTy 7)))))
+      (Rupd "DM"
+        (TP
+          (sqbkt qVar"state"
+                 (Fupd (Dest "DM" (ATy (FTy 10) F32) qVar"state")
+                   (Mop (Cast (FTy 10))
+                     (Apply (Dest "R" (ATy (FTy 7) F32) qVar"state")
+                       (Var "b" (FTy 7))))
+                   (Apply (Dest "R" (ATy (FTy 7) F32) qVar"state")
+                     (Var "a" (FTy 7))))))))))
+
+
+(Def "dfn'StoreIM"
+  (TP
+    (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+           (Var "skip" CTy"conditionT") (Var "w" (FTy 7))
+           (Var "a" (FTy 7)) (Var "b" (FTy 7))))
+  (Close qVar"state"
+    (Apply
+      (Call "norm" (ATy qTy (PTy uTy qTy))
+        (TP
+          (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+                 (Var "skip" CTy"conditionT") LT LF (Var "w" (FTy 7))
+                 (Var "a" (FTy 7)) (Var "b" (FTy 7)))))
+      (Rupd "IM"
+        (TP
+          (sqbkt qVar"state"
+                 (Fupd (Dest "IM" (ATy (FTy 10) F32) qVar"state")
+                   (Mop (Cast (FTy 10))
+                     (Apply (Dest "R" (ATy (FTy 7) F32) qVar"state")
+                       (Var "b" (FTy 7))))
+                   (Apply (Dest "R" (ATy (FTy 7) F32) qVar"state")
+                     (Var "a" (FTy 7))))))))))
+
+
+(Def "dfn'Out"
+  (TP
+    (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+           (Var "skip" CTy"conditionT") (Var "w" (FTy 7))
+           (Var "a" (FTy 7)) (Var "b" (FTy 7))))
+  (Close qVar"state"
+    (Apply
+      (Call "norm" (ATy qTy (PTy uTy qTy))
+        (TP
+          (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+                 (Var "skip" CTy"conditionT") LT LT (Var "w" (FTy 7))
+                 (Var "a" (FTy 7)) (Var "b" (FTy 7))))) qVar"state")))
+
+
+(Def "dfn'LoadDM"
+  (TP
+    (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+           (Var "skip" CTy"conditionT") (Var "w" (FTy 7))
+           (Var "a" (FTy 7)) (Var "b" (FTy 7))))
+  (Close qVar"state"
+    (Apply
+      (Call "norm" (ATy qTy (PTy uTy qTy))
+        (TP
+          (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+                 (Var "skip" CTy"conditionT") LF LF (Var "w" (FTy 7))
+                 (Var "a" (FTy 7)) (Var "b" (FTy 7)))))
+      (Rupd "R"
+        (TP
+          (sqbkt qVar"state"
+                 (Fupd (Dest "R" (ATy (FTy 7) F32) qVar"state")
+                   (Var "w" (FTy 7))
+                   (Apply (Dest "DM" (ATy (FTy 10) F32) qVar"state")
+                     (Mop (Cast (FTy 10))
+                       (Apply (Dest "R" (ATy (FTy 7) F32) qVar"state")
+                         (Var "b" (FTy 7))))))))))))
+
+
+(Def "dfn'In"
+  (TP
+    (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+           (Var "skip" CTy"conditionT") (Var "w" (FTy 7))
+           (Var "a" (FTy 7)) (Var "b" (FTy 7))))
+  (Close qVar"state"
+    (Apply
+      (Call "norm" (ATy qTy (PTy uTy qTy))
+        (TP
+          (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+                 (Var "skip" CTy"conditionT") LF LF (Var "w" (FTy 7))
+                 (Var "a" (FTy 7)) (Var "b" (FTy 7)))))
+      (Rupd "R"
+        (TP
+          (sqbkt qVar"state"
+                 (Fupd (Dest "R" (ATy (FTy 7) F32) qVar"state")
+                   (Var "w" (FTy 7)) (Dest "InData" F32 qVar"state"))))))))
+
+
+(Def "dfn'Jump"
+  (TP
+    (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+           (Var "w" (FTy 7)) (Var "a" (FTy 7)) (Var "b" (FTy 7))))
+  (Close qVar"state"
+    (Let qVar"s"
+      (Rupd "R"
+        (TP
+          (sqbkt qVar"state"
+                 (Fupd (Dest "R" (ATy (FTy 7) F32) qVar"state")
+                   (Var "w" (FTy 7))
+                   (Mop (Cast F32)
+                     (Bop Add (Dest "PC" (FTy 10) qVar"state") (LW 1 10)))))))
+      (Let (TP (sqbkt (Var "v" (FTy 10)) qVar"s"))
+        (Let (TP (sqbkt (Var "v" F32) qVar"s"))
+          (Apply
+            (Call "ALU" (ATy qTy (PTy F32 qTy))
+              (TP
+                (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+                       (Apply (Dest "R" (ATy (FTy 7) F32) qVar"s")
+                         (Var "a" (FTy 7)))
+                       (Apply (Dest "R" (ATy (FTy 7) F32) qVar"s")
+                         (Var "b" (FTy 7)))))) qVar"s")
+          (TP (sqbkt (Mop (Cast (FTy 10)) (Var "v" F32)) qVar"s")))
+        (TP
+          (sqbkt LU (Rupd "PC" (TP (sqbkt qVar"s" (Var "v" (FTy 10)))))))))))
+
+
+(Def "dfn'LoadConstant"
+  (TP (sqbkt (Var "w" (FTy 7)) (Var "imm" (FTy 24))))
+  (Close qVar"state"
+    (Let qVar"s"
+      (Rupd "R"
+        (TP
+          (sqbkt qVar"state"
+                 (Fupd (Dest "R" (ATy (FTy 7) F32) qVar"state")
+                   (Var "w" (FTy 7))
+                   (Mop (Cast F32) (Var "imm" (FTy 24)))))))
+      (TP
+        (sqbkt LU
+               (Rupd "PC"
+                 (TP
+                   (sqbkt qVar"s"
+                          (Bop Add (Dest "PC" (FTy 10) qVar"s") (LW 1 10))))))))))
+
+
+(Def "dfn'ReservedInstr" qVar"state"
+  (Apply
+    (Call "raise'exception" (ATy qTy (PTy uTy qTy))
+      (LC "Reserved" CTy"exception")) qVar"state"))
+
+
+(Def "Run" (Var "v0" CTy"instruction")
+  (Close qVar"state"
+    (CS (Var "v0" CTy"instruction")
+      (sqbkt ((Const "ReservedInstr" CTy"instruction")
+               (Apply (Const "dfn'ReservedInstr" (ATy qTy (PTy uTy qTy)))
+                 qVar"state"))
+             ((Call "In" CTy"instruction"
+                 (Var "v1"
+                   (PTy CTy"funcT"
+                     (PTy CTy"shiftT"
+                       (PTy CTy"conditionT"
+                         (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+               (Apply
+                 (Call "dfn'In" (ATy qTy (PTy uTy qTy))
+                   (Var "v1"
+                     (PTy CTy"funcT"
+                       (PTy CTy"shiftT"
+                         (PTy CTy"conditionT"
+                           (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+                 qVar"state"))
+             ((Call "Jump" CTy"instruction"
+                 (Var "v2"
+                   (PTy CTy"funcT"
+                     (PTy CTy"shiftT" (PTy (FTy 7) (PTy (FTy 7) (FTy 7)))))))
+               (Apply
+                 (Call "dfn'Jump" (ATy qTy (PTy uTy qTy))
+                   (Var "v2"
+                     (PTy CTy"funcT"
+                       (PTy CTy"shiftT"
+                         (PTy (FTy 7) (PTy (FTy 7) (FTy 7)))))))
+                 qVar"state"))
+             ((Call "LoadConstant" CTy"instruction"
+                 (Var "v3" (PTy (FTy 7) (FTy 24))))
+               (Apply
+                 (Call "dfn'LoadConstant" (ATy qTy (PTy uTy qTy))
+                   (Var "v3" (PTy (FTy 7) (FTy 24)))) qVar"state"))
+             ((Call "LoadDM" CTy"instruction"
+                 (Var "v4"
+                   (PTy CTy"funcT"
+                     (PTy CTy"shiftT"
+                       (PTy CTy"conditionT"
+                         (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+               (Apply
+                 (Call "dfn'LoadDM" (ATy qTy (PTy uTy qTy))
+                   (Var "v4"
+                     (PTy CTy"funcT"
+                       (PTy CTy"shiftT"
+                         (PTy CTy"conditionT"
+                           (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+                 qVar"state"))
+             ((Call "Normal" CTy"instruction"
+                 (Var "v5"
+                   (PTy CTy"funcT"
+                     (PTy CTy"shiftT"
+                       (PTy CTy"conditionT"
+                         (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+               (Apply
+                 (Call "dfn'Normal" (ATy qTy (PTy uTy qTy))
+                   (Var "v5"
+                     (PTy CTy"funcT"
+                       (PTy CTy"shiftT"
+                         (PTy CTy"conditionT"
+                           (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+                 qVar"state"))
+             ((Call "Out" CTy"instruction"
+                 (Var "v6"
+                   (PTy CTy"funcT"
+                     (PTy CTy"shiftT"
+                       (PTy CTy"conditionT"
+                         (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+               (Apply
+                 (Call "dfn'Out" (ATy qTy (PTy uTy qTy))
+                   (Var "v6"
+                     (PTy CTy"funcT"
+                       (PTy CTy"shiftT"
+                         (PTy CTy"conditionT"
+                           (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+                 qVar"state"))
+             ((Call "StoreDM" CTy"instruction"
+                 (Var "v7"
+                   (PTy CTy"funcT"
+                     (PTy CTy"shiftT"
+                       (PTy CTy"conditionT"
+                         (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+               (Apply
+                 (Call "dfn'StoreDM" (ATy qTy (PTy uTy qTy))
+                   (Var "v7"
+                     (PTy CTy"funcT"
+                       (PTy CTy"shiftT"
+                         (PTy CTy"conditionT"
+                           (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+                 qVar"state"))
+             ((Call "StoreIM" CTy"instruction"
+                 (Var "v8"
+                   (PTy CTy"funcT"
+                     (PTy CTy"shiftT"
+                       (PTy CTy"conditionT"
+                         (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+               (Apply
+                 (Call "dfn'StoreIM" (ATy qTy (PTy uTy qTy))
+                   (Var "v8"
+                     (PTy CTy"funcT"
+                       (PTy CTy"shiftT"
+                         (PTy CTy"conditionT"
+                           (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+                 qVar"state"))))))
+
+
+(Def "Decode" (Var "opc" F32)
+  (Let
+    (TP
+      (sqbkt bVar"b'31" bVar"b'30" bVar"b'29" bVar"b'28" bVar"b'27"
+             bVar"b'26" bVar"b'25" bVar"b'24" bVar"b'23" bVar"b'22"
+             bVar"b'21" bVar"b'20" bVar"b'19" bVar"b'18" bVar"b'17"
+             bVar"b'16" bVar"b'15" bVar"b'14" bVar"b'13" bVar"b'12"
+             bVar"b'11" bVar"b'10" bVar"b'9" bVar"b'8" bVar"b'7" bVar"b'6"
+             bVar"b'5" bVar"b'4" bVar"b'3" bVar"b'2" bVar"b'1" bVar"b'0"))
+    (BL 32 (Var "opc" F32))
+    (ITE bVar"b'24"
+      (Call "LoadConstant" CTy"instruction"
+        (TP
+          (sqbkt (EX (Var "opc" F32) (LN 31) (LN 25) (FTy 7))
+                 (EX (Var "opc" F32) (LN 23) (LN 0) (FTy 24)))))
+      (Let (Var "Rw" (FTy 7)) (EX (Var "opc" F32) (LN 31) (LN 25) (FTy 7))
+        (Let (Var "Rb" (FTy 7))
+          (EX (Var "opc" F32) (LN 16) (LN 10) (FTy 7))
+          (Let (Var "Ra" (FTy 7))
+            (EX (Var "opc" F32) (LN 23) (LN 17) (FTy 7))
+            (Let (Var "func" CTy"funcT")
+              (Mop (Cast CTy"funcT")
+                (EX (Var "opc" F32) (LN 9) (LN 7) (FTy 3)))
+              (Let (Var "shift" CTy"shiftT")
+                (Mop (Cast CTy"shiftT")
+                  (EX (Var "opc" F32) (LN 6) (LN 5) (FTy 2)))
+                (Let (Var "skip" CTy"conditionT")
+                  (Mop (Cast CTy"conditionT")
+                    (EX (Var "opc" F32) (LN 4) (LN 3) (FTy 2)))
+                  (CS (EX (Var "opc" F32) (LN 2) (LN 0) (FTy 3))
+                    (sqbkt ((LW 0 3)
+                             (Call "Normal" CTy"instruction"
+                               (TP
+                                 (sqbkt (Var "func" CTy"funcT")
+                                        (Var "shift" CTy"shiftT")
+                                        (Var "skip" CTy"conditionT")
+                                        (Var "Rw" (FTy 7))
+                                        (Var "Ra" (FTy 7))
+                                        (Var "Rb" (FTy 7))))))
+                           ((LW 1 3)
+                             (Call "StoreDM" CTy"instruction"
+                               (TP
+                                 (sqbkt (Var "func" CTy"funcT")
+                                        (Var "shift" CTy"shiftT")
+                                        (Var "skip" CTy"conditionT")
+                                        (Var "Rw" (FTy 7))
+                                        (Var "Ra" (FTy 7))
+                                        (Var "Rb" (FTy 7))))))
+                           ((LW 2 3)
+                             (Call "StoreIM" CTy"instruction"
+                               (TP
+                                 (sqbkt (Var "func" CTy"funcT")
+                                        (Var "shift" CTy"shiftT")
+                                        (Var "skip" CTy"conditionT")
+                                        (Var "Rw" (FTy 7))
+                                        (Var "Ra" (FTy 7))
+                                        (Var "Rb" (FTy 7))))))
+                           ((LW 3 3)
+                             (Call "Out" CTy"instruction"
+                               (TP
+                                 (sqbkt (Var "func" CTy"funcT")
+                                        (Var "shift" CTy"shiftT")
+                                        (Var "skip" CTy"conditionT")
+                                        (Var "Rw" (FTy 7))
+                                        (Var "Ra" (FTy 7))
+                                        (Var "Rb" (FTy 7))))))
+                           ((LW 4 3)
+                             (Call "LoadDM" CTy"instruction"
+                               (TP
+                                 (sqbkt (Var "func" CTy"funcT")
+                                        (Var "shift" CTy"shiftT")
+                                        (Var "skip" CTy"conditionT")
+                                        (Var "Rw" (FTy 7))
+                                        (Var "Ra" (FTy 7))
+                                        (Var "Rb" (FTy 7))))))
+                           ((LW 5 3)
+                             (Call "In" CTy"instruction"
+                               (TP
+                                 (sqbkt (Var "func" CTy"funcT")
+                                        (Var "shift" CTy"shiftT")
+                                        (Var "skip" CTy"conditionT")
+                                        (Var "Rw" (FTy 7))
+                                        (Var "Ra" (FTy 7))
+                                        (Var "Rb" (FTy 7))))))
+                           ((LW 6 3)
+                             (Call "Jump" CTy"instruction"
+                               (TP
+                                 (sqbkt (Var "func" CTy"funcT")
+                                        (Var "shift" CTy"shiftT")
+                                        (Var "Rw" (FTy 7))
+                                        (Var "Ra" (FTy 7))
+                                        (Var "Rb" (FTy 7))))))
+                           ((LW 7 3)
+                             (Const "ReservedInstr" CTy"instruction")))))))))))))
+
+
+(Def "Next" qVar"state"
+  (Let (Var "v" CTy"instruction")
+    (Call "Decode" CTy"instruction"
+      (Apply (Dest "IM" (ATy (FTy 10) F32) qVar"state")
+        (Dest "PC" (FTy 10) qVar"state")))
+    (ITE
+      (Mop Not
+        (EQ (Var "v" CTy"instruction")
+          (Const "ReservedInstr" CTy"instruction")))
+      (Apply
+        (Call "Run" (ATy qTy (PTy uTy qTy)) (Var "v" CTy"instruction"))
+        qVar"state") (TP (sqbkt LU qVar"state")))))
+
+
+(Def "enc"
+  (TP
+    (sqbkt (Var "args"
+             (PTy CTy"funcT"
+               (PTy CTy"shiftT"
+                 (PTy CTy"conditionT" (PTy (FTy 7) (PTy (FTy 7) (FTy 7)))))))
+           (Var "opc" (FTy 3))))
+  (Let
+    (TP
+      (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+             (Var "skip" CTy"conditionT") (Var "w" (FTy 7))
+             (Var "a" (FTy 7)) (Var "b" (FTy 7))))
+    (Var "args"
+      (PTy CTy"funcT"
+        (PTy CTy"shiftT"
+          (PTy CTy"conditionT" (PTy (FTy 7) (PTy (FTy 7) (FTy 7)))))))
+    (CC(sqbkt (Var "w" (FTy 7)) (LW 0 1) (Var "a" (FTy 7))
+              (Var "b" (FTy 7))
+              (Mop (Cast (FTy 3)) (Var "func" CTy"funcT"))
+              (Mop (Cast (FTy 2)) (Var "shift" CTy"shiftT"))
+              (Mop (Cast (FTy 2)) (Var "skip" CTy"conditionT"))
+              (Var "opc" (FTy 3))))))
+
+
+(Def "Encode" (Var "i" CTy"instruction")
+  (CS (Var "i" CTy"instruction")
+    (sqbkt ((Call "LoadConstant" CTy"instruction"
+               (TP (sqbkt (Var "Rw" (FTy 7)) (Var "imm" (FTy 24)))))
+             (CC(sqbkt (Var "Rw" (FTy 7)) (LW 1 1) (Var "imm" (FTy 24)))))
+           ((Call "Normal" CTy"instruction"
+               (Var "args"
+                 (PTy CTy"funcT"
+                   (PTy CTy"shiftT"
+                     (PTy CTy"conditionT"
+                       (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+             (Call "enc" F32
+               (TP
+                 (sqbkt (Var "args"
+                          (PTy CTy"funcT"
+                            (PTy CTy"shiftT"
+                              (PTy CTy"conditionT"
+                                (PTy (FTy 7) (PTy (FTy 7) (FTy 7)))))))
+                        (LW 0 3)))))
+           ((Call "StoreDM" CTy"instruction"
+               (Var "args"
+                 (PTy CTy"funcT"
+                   (PTy CTy"shiftT"
+                     (PTy CTy"conditionT"
+                       (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+             (Call "enc" F32
+               (TP
+                 (sqbkt (Var "args"
+                          (PTy CTy"funcT"
+                            (PTy CTy"shiftT"
+                              (PTy CTy"conditionT"
+                                (PTy (FTy 7) (PTy (FTy 7) (FTy 7)))))))
+                        (LW 1 3)))))
+           ((Call "StoreIM" CTy"instruction"
+               (Var "args"
+                 (PTy CTy"funcT"
+                   (PTy CTy"shiftT"
+                     (PTy CTy"conditionT"
+                       (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+             (Call "enc" F32
+               (TP
+                 (sqbkt (Var "args"
+                          (PTy CTy"funcT"
+                            (PTy CTy"shiftT"
+                              (PTy CTy"conditionT"
+                                (PTy (FTy 7) (PTy (FTy 7) (FTy 7)))))))
+                        (LW 2 3)))))
+           ((Call "Out" CTy"instruction"
+               (Var "args"
+                 (PTy CTy"funcT"
+                   (PTy CTy"shiftT"
+                     (PTy CTy"conditionT"
+                       (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+             (Call "enc" F32
+               (TP
+                 (sqbkt (Var "args"
+                          (PTy CTy"funcT"
+                            (PTy CTy"shiftT"
+                              (PTy CTy"conditionT"
+                                (PTy (FTy 7) (PTy (FTy 7) (FTy 7)))))))
+                        (LW 3 3)))))
+           ((Call "LoadDM" CTy"instruction"
+               (Var "args"
+                 (PTy CTy"funcT"
+                   (PTy CTy"shiftT"
+                     (PTy CTy"conditionT"
+                       (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+             (Call "enc" F32
+               (TP
+                 (sqbkt (Var "args"
+                          (PTy CTy"funcT"
+                            (PTy CTy"shiftT"
+                              (PTy CTy"conditionT"
+                                (PTy (FTy 7) (PTy (FTy 7) (FTy 7)))))))
+                        (LW 4 3)))))
+           ((Call "In" CTy"instruction"
+               (Var "args"
+                 (PTy CTy"funcT"
+                   (PTy CTy"shiftT"
+                     (PTy CTy"conditionT"
+                       (PTy (FTy 7) (PTy (FTy 7) (FTy 7))))))))
+             (Call "enc" F32
+               (TP
+                 (sqbkt (Var "args"
+                          (PTy CTy"funcT"
+                            (PTy CTy"shiftT"
+                              (PTy CTy"conditionT"
+                                (PTy (FTy 7) (PTy (FTy 7) (FTy 7)))))))
+                        (LW 5 3)))))
+           ((Call "Jump" CTy"instruction"
+               (TP
+                 (sqbkt (Var "func" CTy"funcT") (Var "shift" CTy"shiftT")
+                        (Var "Rw" (FTy 7)) (Var "Ra" (FTy 7))
+                        (Var "Rb" (FTy 7)))))
+             (Call "enc" F32
+               (TP
+                 (sqbkt (TP
+                          (sqbkt (Var "func" CTy"funcT")
+                                 (Var "shift" CTy"shiftT")
+                                 (LC "skipNever" CTy"conditionT")
+                                 (Var "Rw" (FTy 7)) (Var "Ra" (FTy 7))
+                                 (Var "Rb" (FTy 7)))) (LW 6 3)))))
+           ((Const "ReservedInstr" CTy"instruction") (LW 7 32)))))
+
+
+(tDef "LoadIM"
+  (TP (sqbkt (Var "a" (FTy 10)) (Var "i" (LTy CTy"instruction"))))
+  (Close qVar"state"
+    (CS (Var "i" (LTy CTy"instruction"))
+      (sqbkt ((LNL CTy"instruction") (TP (sqbkt LU qVar"state")))
+             ((LLC (sqbkt (Var "h" CTy"instruction"))
+                 (Var "t" (LTy CTy"instruction")))
+               (Apply
+                 (Call "LoadIM" (ATy qTy (PTy uTy qTy))
+                   (TP
+                     (sqbkt (Bop Add (Var "a" (FTy 10)) (LW 1 10))
+                            (Var "t" (LTy CTy"instruction")))))
+                 (Rupd "IM"
+                   (TP
+                     (sqbkt qVar"state"
+                            (Fupd
+                              (Dest "IM" (ATy (FTy 10) F32) qVar"state")
+                              (Var "a" (FTy 10))
+                              (Call "Encode" F32
+                                (Var "h" CTy"instruction")))))))))))
+  (Close (Var "x" (PTy (PTy (FTy 10) (LTy CTy"instruction")) qTy))
+    (CS (Var "x" (PTy (PTy (FTy 10) (LTy CTy"instruction")) qTy))
+      (sqbkt ((TP
+                 (sqbkt (TP
+                          (sqbkt (Var "a" (FTy 10))
+                                 (Var "i" (LTy CTy"instruction"))))
+                        (AVar qTy)))
+               (Mop Length (Var "i" (LTy CTy"instruction"))))))))
+
+
+(Def "initialize" (Var "p" (LTy CTy"instruction"))
+  (Close qVar"state"
+    (Apply
+      (Call "LoadIM" (ATy qTy (PTy uTy qTy))
+        (TP (sqbkt (LW 0 10) (Var "p" (LTy CTy"instruction")))))
+      (Rupd "IM"
+        (TP
+          (sqbkt (Rupd "OutStrobe"
+                   (TP
+                     (sqbkt (Rupd "InData"
+                              (TP
+                                (sqbkt (Rupd "InRdy"
+                                         (TP
+                                           (sqbkt (Rupd "DM"
+                                                    (TP
+                                                      (sqbkt (Rupd "R"
+                                                               (TP
+                                                                 (sqbkt (Rupd
+                                                                          "PC"
+                                                                          (TP
+                                                                            (sqbkt qVar"state"
+                                                                                   (LW
+                                                                                     0
+                                                                                     10))))
+                                                                        (Mop
+                                                                          (K1
+                                                                            (FTy
+                                                                              7))
+                                                                          (LW
+                                                                            0
+                                                                            32)))))
+                                                             (Mop
+                                                               (K1
+                                                                 (FTy 10))
+                                                               (LW 0 32)))))
+                                                  LF))) (LW 0 32))))
+                            (LW 0 32))))
+                 (Mop (K1 (FTy 10))
+                   (Call "Encode" F32
+                     (Const "ReservedInstr" CTy"instruction")))))))))
+
+
+(Def0 "test_prog"
+  (LL(sqbkt (Call "LoadConstant" CTy"instruction"
+              (TP (sqbkt (LW 0 7) (LW 0 24))))
+            (Call "LoadConstant" CTy"instruction"
+              (TP (sqbkt (LW 1 7) (LW 1000 24))))
+            (Call "LoadConstant" CTy"instruction"
+              (TP (sqbkt (LW 2 7) (LW 1010 24))))
+            (Call "LoadConstant" CTy"instruction"
+              (TP (sqbkt (LW 3 7) (LW 4 24))))
+            (Call "StoreDM" CTy"instruction"
+              (TP
+                (sqbkt (LC "fINC" CTy"funcT") (LC "noShift" CTy"shiftT")
+                       (LC "skipNever" CTy"conditionT") (LW 1 7) (LW 1 7)
+                       (LW 1 7))))
+            (Call "Normal" CTy"instruction"
+              (TP
+                (sqbkt (LC "fXOR" CTy"funcT") (LC "noShift" CTy"shiftT")
+                       (LC "skipZero" CTy"conditionT") (LW 4 7) (LW 1 7)
+                       (LW 2 7))))
+            (Call "Jump" CTy"instruction"
+              (TP
+                (sqbkt (LC "fADD" CTy"funcT") (LC "noShift" CTy"shiftT")
+                       (LW 4 7) (LW 3 7) (LW 0 7))))
+            (Call "Out" CTy"instruction"
+              (TP
+                (sqbkt (LC "fADD" CTy"funcT") (LC "noShift" CTy"shiftT")
+                       (LC "skipNever" CTy"conditionT") (LW 1 7) (LW 1 7)
+                       (LW 0 7)))))))

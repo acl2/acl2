@@ -1,0 +1,9 @@
+(in-package "ACL2")
+
+(DEFPKG "ACL2-ASG"
+  (SET-DIFFERENCE-EQUAL
+   (UNION-EQ *ACL2-EXPORTS* 
+	     *COMMON-LISP-SYMBOLS-FROM-MAIN-LISP-PACKAGE*)
+   '(ZERO)))
+
+(certify-book "ed1" ? t)

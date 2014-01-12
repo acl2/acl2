@@ -1,0 +1,26 @@
+
+CUTIL has moved to STD/UTIL
+
+To properly port your books:
+
+    Change any portcullis/package stuff to point to std/
+
+      cutil/package.lsp      --> std/package.lsp
+      cutil/portcullis.lisp  --> std/portcullis.lisp
+      cutil::*cutil-exports* --> std::*std-exports*
+
+    Change any include-books to point to std/util/, e.g.,:
+
+      cutil/top.lisp         --> std/util/top.lisp
+
+    Search for any remaining uses of cutil:: and #!CUTIL, and replace them
+    with std:: or #!STD, e.g.,
+
+      grep -i 'cutil::' `find . -name "*.lisp"`
+      grep -i '#!cutil' `find . -name "*.lisp"`
+
+The above should probably be sufficient in almost all cases.
+
+If you run into trouble, please ask Jared for help.
+
+

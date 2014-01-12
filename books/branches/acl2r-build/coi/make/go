@@ -1,0 +1,7 @@
+#!/bin/sh
+# This script is just a shortcut for `make -f Makelibs`.  You can just
+# invoke it using ./go
+
+make -f Makelibs
+
+

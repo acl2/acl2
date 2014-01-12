@@ -1,0 +1,73 @@
+To attempt to run the translator in this directory (but there will be
+errors):
+
+(include-book "../../translator/l3-to-acl2")
+(l3-to-acl2 "mips-acl2.txt" ; input file
+            "mips.lisp"     ; output file
+            :str-to-sym
+            '(("LOAD" . is_load)
+              ("STORE" . is_store)
+              ("INSTRUCTION" . is_instruction)
+              ("DATA" . is_data)
+              ("gpr" . gpregs))
+            )
+
+Here are a number of translator issues exposed by attempts to run the
+translator as above.
+
+I'm a bit stuck here in ../../translator/l3-to-acl2.lisp (but see
+below):
+
+(defun l3-get-type-mop (mop expr ctx bindings)
+; Keep in sync with l3-trans-map.
+; !! Need to support fst and snd.
+
+I think it's time to redo things so that tuples are mapped to conses
+rather than true lists, i.e., so that PTY is always the type of conses
+of its FST and SND.  This might not be difficult, but it would involve
+going through ../../translator/l3-to-acl2.lisp and
+../../translator/l3.lisp and making appropriate changes.
+
+Regarding records, indicated by REC: Currently we assume that there is
+only one record, which represents the processor state.  I've left some
+comments in l3-to-acl2.lisp (marked with !!) for where we'll need to
+make changes when allowing other records, as in the MIPS example.
+Those comments kind of assume that we handle state records differently
+from how we handle other records.  But a different way to go is to
+handle them all the same, without stobjs, and see how badly we lose in
+performance.  For array fields, then, we might instead use alists or
+even ACL2 records (normed alists), where we omit default values
+(typically 0, but maybe 7 [reserved instruction number] in the case of
+instructions) from the alist.  At any rate, fields that correspond to
+excessively large arrays -- say with dimension greater than a limit
+specified by the user in the call of l3-to-acl2 (and certainly smaller
+than 64) -- would need to be translated to alists instead of arrays,
+even for the state record.
+
+Note regarding special handling for patterns: we expect to handle
+these for records like we handle calls of CONSTRUCT functions.
+
+We might simplify some code, as suggested by Anthony Fox, by storing
+ctx in bindings so that ctx needn't be passed explicitly.
+
+Consider this sort of thing:
+               (BOP MDFY
+                    (CLOSE (TP (SQBKT NVAR "i" (AVAR BTY)))
+                           (ITB (SQBKT ((EQ NVAR "i" (LN 31))
+                           ....
+Anthony and I discussed it, and we expect to be able simply to update
+each bit of the indicated starting bit vector.
+
+Handle ITB in general: easy to translate to COND, where the final
+argument is the T branch at the end.
+
+Support anonymous variables, (AVAR ...), in formals.  We can probably
+use generated names together with IGNORE declarations.
+
+(LX typ) is ARB of type typ.
+
+Regarding (SE (FTY 65)) -- sign-extend, which is like a cast, but
+conditionally on the sign bit may extend with ones.
+
+(LS "MFLO") is a literal string.
+

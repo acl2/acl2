@@ -1,0 +1,75 @@
+Milawa/Sources/ACL2 Directory
+
+This directory contains most everything in Milawa.
+
+Files:
+
+   package.lsp
+     -- Definition of the Milawa package, used to create modified-acl2.
+
+   patches.lsp
+     -- Fixes, generally from Matt Kaufmann, for things that are wrong with
+        ACL2.  Sometimes this file is empty, sometimes it has stuff.
+
+   modified-acl2
+     -- A modified ACL2 image that includes the Milawa package pre-loaded
+        and any patches we want to apply to ACL2.  This is the ACL2 image
+        we use to build everything else.
+
+Directories:
+
+   Sources/ACL2/acl2-hacks/
+     -- Low-level ACL2 patches and macros for things like our MILAWA::defun,
+        MILAWA::defthm, MILAWA::force, macro expansion stuff, computed hints
+        to disable forcing and generalization, inlining, string manipulation,
+        etc.
+
+   Sources/ACL2/bootstrap/
+     -- Contains the code to translate the ACL2 proofs to Milawa, the progression
+        of proof checkers, and so on.
+
+   Sources/ACL2/build/
+     -- ACL2 definitions for build.modus-ponens, build.commute-pequal, and other
+        simple proof-building functions, and ACL2 proofs of their correctness
+
+   Sources/ACL2/classic/
+     -- Not too important.  Some of this may be outdated and/or broken.  This
+        was for "classic" derived rules of inference such as tautology checking,
+        equivalence substitution, the deduction law, etc., which might be of
+        some minor interest to logicians but are not particularly useful for
+        heuristic theorem proving.
+
+   Sources/ACL2/clauses/
+     -- ACL2 definitions to introduce clauses, clause cleaning, clause updating,
+        if-lifting, case splitting, and so on, and all of the ACL2 proofs about
+        these things.
+
+   Sources/ACL2/defderiv/
+     -- The very useful defderiv and deftheorem macros, contexts, latex output
+        for derivations, etc.
+
+   Sources/ACL2/interface/
+     -- ACL2 macros which make up the Milawa user interface, which is sometimes
+        called "symmetry".  This is used by all the bootstrapping stuff.
+
+   Sources/ACL2/logic/
+     -- ACL2 definitions for functions in the Milawa logic.  Introduces terms,
+        formulas, proofs, substitutions and matching, base evaluation, macro
+        translation, and so on.  Also contains all the ACL2 proofs about these
+        definitions.
+
+   Sources/ACL2/rewrite/
+     -- ACL2 definitions and proofs for everything having to do with rewriting,
+        including the assumptions system, traces, trace compilation, evaluation,
+        definition of rules, theories, and control structures, and caches.
+        Includes our unconditional, conditional, and fast rewriters.
+
+   Sources/ACL2/tactics/
+     -- ACL2 definitions and proofs for our tactic application and validation
+        functions.  Also includes worlds and the skeleton compiler.
+
+   Sources/ACL2/utilities/
+     -- This is where we introduce rules about arithmetic, simple functions like
+        len and app, and macros like deflist and defprojection.  This is pretty
+        much the simplest ACL2 stuff you can imagine.
+

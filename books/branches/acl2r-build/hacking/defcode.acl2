@@ -1,0 +1,3 @@
+(ld "hacker-pkg.lsp")
+; cert-flags: ? t :ttags ((defcode))
+(certify-book "defcode" ? t :ttags ((defcode)))
