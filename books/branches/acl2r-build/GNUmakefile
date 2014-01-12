@@ -365,15 +365,19 @@ nonstd/workshops/1999/calculus/book/proof-outline.cert: nonstd/workshops/1999/ca
 
 nonstd/workshops/1999/calculus/book/tree.cert: nonstd/workshops/1999/calculus/book/tree.lisp
 	cd nonstd/workshops/1999/calculus/book/ ; \
-	$(MAKE) tree.cert
+	   $(STARTJOB) -c "$(MAKE) tree.cert"
+	ls -l nonstd/workshops/1999/calculus/book/tree.cert
 
 nonstd/workshops/1999/calculus/book/tree.lisp:
-	cd nonstd/workshops/1999/calculus/book ; $(MAKE) -f Makefile-essence tree.lisp
+	cd nonstd/workshops/1999/calculus/book ; \
+	   $(STARTJOB) -c "$(MAKE) -f Makefile-essence tree.lisp"
+	ls -l nonstd/workshops/1999/calculus/book/tree.lisp
 
 nonstd/workshops/1999/calculus/book/tree/proof-outline: \
 	nonstd/workshops/1999/calculus/book/tree.cert \
 	nonstd/workshops/1999/calculus/book/proof-outline.cert
-	cd nonstd/workshops/1999/calculus/book/ ; $(MAKE) proof-outline
+	cd nonstd/workshops/1999/calculus/book/ ; \
+           $(STARTJOB) -c "$(MAKE) proof-outline"
 
 
 endif # ifneq ($(ACL2_HAS_REALS), )
