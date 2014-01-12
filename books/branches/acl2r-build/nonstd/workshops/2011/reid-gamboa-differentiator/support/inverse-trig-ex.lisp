@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
-(include-book "nsa/inverse-monotone" :dir :system)
-(include-book "nsa/trig" :dir :system)
+(include-book "nonstd/nsa/inverse-monotone" :dir :system)
+(include-book "nonstd/nsa/trig" :dir :system)
 (include-book "nsa-ex")
 
 ; Added by Matt K. for v2-7.

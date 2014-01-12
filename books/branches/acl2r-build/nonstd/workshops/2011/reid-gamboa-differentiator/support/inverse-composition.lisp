@@ -6,8 +6,8 @@
  (certify-book "inverse-composition" 1)
 |#
 
-(include-book "nsa/nsa" :dir :system)
-(include-book "nsa/inverse-monotone" :dir :system)
+(include-book "nonstd/nsa/nsa" :dir :system)
+(include-book "nonstd/nsa/inverse-monotone" :dir :system)
 (include-book "arithmetic/top" :dir :system)
 (include-book "composition-helpers")
 

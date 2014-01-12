@@ -23,6 +23,7 @@
 ; Author: David M. Russinoff (david@russinoff.com)
 
 (in-package "ACL2")
+; cert_param: (non-acl2r)
 
 (local (include-book "predicate"))
 (local (include-book "fp2"))

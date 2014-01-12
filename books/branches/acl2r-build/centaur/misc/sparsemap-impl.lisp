@@ -30,6 +30,7 @@
 (local (include-book "std/alists/strip-cars" :dir :system))
 (local (in-theory (enable* arith-equiv-forwarding)))
 
+; cert_param: (non-acl2r)
 
 (defthm nth-out-of-bounds
   (implies (<= (len lst) (nfix idx))

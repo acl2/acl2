@@ -8,9 +8,9 @@ differentiable functions.)
 
 (in-package "ACL2")
 
-(include-book "../../../nsa/nsa")
-(include-book "../../../arithmetic/top")
-(include-book "../../../arithmetic/realp")
+(include-book "nonstd/nsa/nsa" :dir :system)
+(include-book "arithmetic/top" :dir :system)
+(include-book "arithmetic/realp" :dir :system)
 
 ;; First, we define a generic continuous function, f1.  This is just a
 ;; rewrite of the definition in continuity.lisp for rcfn.

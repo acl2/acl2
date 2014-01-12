@@ -23,6 +23,7 @@
 ; Author: David M. Russinoff (david@russinoff.com)
 
 (in-package "ACL2")
+; cert_param: (non-acl2r)
 
 ;These rules may cause case splits, but that's sort of the point.
 

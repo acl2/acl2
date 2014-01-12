@@ -4,6 +4,7 @@
 
 (in-package "ACL2")
 (include-book "../gen-trees/sets-lists-trees")
+; cert_param: (non-acl2r)
 
 ;; Pairs first-taxon with rest of term it appears in
 (defun pair-key-with-value (lst)

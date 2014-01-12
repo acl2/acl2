@@ -5,7 +5,7 @@
 (include-book "../replete/replete-guards")
 (include-book "../gen-trees/btrees-bdds-sets")
 (include-book "../gen-trees/app-rev-lists")
-
+; cert_param: (non-acl2r)
 (make-event
 
 ; David Rager, 3/1/2013: Disabling waterfall parallelism because this book

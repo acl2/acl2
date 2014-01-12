@@ -7,9 +7,9 @@
 ;; theorems; i.e., a continuous function achieves its maximum and
 ;; minimum over a closed interval.
 
-(include-book "../../../nsa/nsa")
-(include-book "../../../arithmetic/top")
-(include-book "../../../arithmetic/realp")
+(include-book "nonstd/nsa/nsa" :dir :system)
+(include-book "arithmetic/top" :dir :system)
+(include-book "arithmetic/realp" :dir :system)
 
 ;; First, we introduce rcfn - a Real Continuous FunctioN of a single
 ;; argument.  It is assumed to return standard values for standard

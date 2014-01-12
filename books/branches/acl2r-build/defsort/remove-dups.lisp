@@ -21,6 +21,8 @@
 (in-package "ACL2")
 (include-book "uniquep")
 
+; cert_param: (non-acl2r)
+
 (defund remove-adjacent-duplicates (x)
   (declare (xargs :guard t))
   (cond ((atom x)

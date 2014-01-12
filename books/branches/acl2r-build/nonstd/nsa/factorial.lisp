@@ -3,7 +3,7 @@
 
 (in-package "ACL2")
 
-(include-book "../arithmetic/factorial")
+(include-book "arithmetic/factorial" :dir :system)
 (include-book "nsa")
 
 ; Added by Matt K. for v2-7.

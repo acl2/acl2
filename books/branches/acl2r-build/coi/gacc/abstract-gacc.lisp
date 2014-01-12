@@ -4,7 +4,7 @@
 #|                                                                           |#
 #|===========================================================================|#
 (in-package "ACL2")
-
+; cert_param: (non-acl2r)
 (include-book "../records/defrecord")
 
 ;; This file represents the beginnings of the future of gacc.

@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-(include-book "nsa/sqrt" :dir :system)
+(include-book "nonstd/nsa/sqrt" :dir :system)
 (include-book "arithmetic/top" :dir :system)
 
 

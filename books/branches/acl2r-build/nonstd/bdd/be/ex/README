@@ -1,5 +1,0 @@
-Note to ACL2 developers only:
-
-This file is here merely to prevent the directory from being empty
-when running "make copy-nonstd".  See the comment in our-probe-file
-about GCL.

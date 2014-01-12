@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
-(local (include-book "../arithmetic/idiv"))
-(local (include-book "../arithmetic/realp"))
+(local (include-book "arithmetic/idiv" :dir :system))
+(local (include-book "arithmetic/realp" :dir :system))
 
 (include-book "inverse-monotone")
 (include-book "exp")

@@ -20,6 +20,8 @@
 
 (in-package "ACL2")
 
+; cert_param: (non-acl2r)
+
 ;; Note: Putting an entry FUNCTION -> DEF-RULE in the  GL::PREFERRED-DEFS table
 ;; causes MAKE-G-WORLD to assume that DEF-RULE is the name of a :definition
 ;; rule for FUNCTION and use that definition rule as the definition instead of

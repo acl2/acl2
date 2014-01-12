@@ -55,6 +55,8 @@ to students to see their definitions as warm-up exercises.
 
 (in-package "M1")
 
+; cert_param: (non-acl2r)
+
 ; -----------------------------------------------------------------
 ; Stack Manipulation -- Step 1:  Define the (well-guarded) functions
 

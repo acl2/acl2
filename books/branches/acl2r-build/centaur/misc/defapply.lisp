@@ -21,6 +21,8 @@
 ; defapply.lisp -- introduces an executable apply function that recognizes a
 ; specified set of function symbols.
 
+; cert_param: (non-acl2r)
+
 (in-package "ACL2")
 
 (local

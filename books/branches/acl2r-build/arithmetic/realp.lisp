@@ -10,6 +10,12 @@
 ;;; same problems apply to ACL2(r) with the reals, so we include those
 ;;; simple theorems here.
 
+#+non-standard-analysis
+; [Jared] adding #+non-standard-analysis so that we can include this book in
+; ordinary ACL2, and hence keep the include-book commands uniform across both
+; ACL2 and ACL2(r).
+(progn
+
 (defthm realp-+
   (implies (and (realp x) (realp y))
 	   (realp (+ x y))))
@@ -25,3 +31,5 @@
 (defthm realp-udiv
   (implies (realp x)
 	   (realp (/ x))))
+
+)

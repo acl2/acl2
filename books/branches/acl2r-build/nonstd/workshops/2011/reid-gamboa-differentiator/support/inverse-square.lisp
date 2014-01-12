@@ -7,7 +7,7 @@
 |#
 
 
-(include-book "nsa/inverse-square" :dir :system)
+(include-book "nonstd/nsa/inverse-square" :dir :system)
 (include-book "differentiator")
 
 (defun sqr (x)

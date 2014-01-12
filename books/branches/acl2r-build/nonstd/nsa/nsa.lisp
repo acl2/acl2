@@ -1,7 +1,9 @@
 (in-package "ACL2")
 
-(local (include-book "../arithmetic/idiv"))
-(local (include-book "../arithmetic/realp"))
+; cert_param: (uses-acl2r)
+
+(local (include-book "arithmetic/idiv" :dir :system))
+(local (include-book "arithmetic/realp" :dir :system))
 
 ; Added by Matt K. for v2-7.
 (add-match-free-override :once t)

@@ -1,4 +1,5 @@
 (in-package "ACL2")
+; cert_param: (uses-acl2r)
 
 (defmacro standard-numberp (x)
   `(and (acl2-numberp ,x)

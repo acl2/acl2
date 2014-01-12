@@ -25,8 +25,9 @@ appropriate certify-book command.  Something like the following will work:
 
 (in-package "POWERLISTS")
 
-(include-book "fft-omega"
-	      :load-compiled-file nil)
+; cert_param: (uses-acl2r)
+
+(include-book "fft-omega")
 
 ;; We begin by axiomatizing the functions sine and cosine, as well as the
 ;; constant pi.  We don't need too many axioms about these; however, it is hard

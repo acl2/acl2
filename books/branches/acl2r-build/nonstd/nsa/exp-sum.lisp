@@ -5,9 +5,9 @@
 
 (in-package "ACL2")
 
-(local (include-book "../arithmetic/idiv"))
-(local (include-book "../arithmetic/realp"))
-(include-book "../arithmetic/binomial")
+(local (include-book "arithmetic/idiv" :dir :system))
+(local (include-book "arithmetic/realp" :dir :system))
+(include-book "arithmetic/binomial" :dir :system)
 
 (include-book "inner-sums")
 (include-book "exp")

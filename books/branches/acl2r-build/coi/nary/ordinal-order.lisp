@@ -7,6 +7,8 @@
 
 (include-book "ordinals/lexicographic-ordering" :dir :system)
 
+; cert_param: (non-acl2r)
+
 (defun o1-test (o1)
   (declare (type t o1))
   (and (consp o1)

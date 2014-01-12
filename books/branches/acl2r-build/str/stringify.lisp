@@ -23,6 +23,8 @@
 (include-book "cat")
 (include-book "natstr")
 
+; cert_param: (non-acl2r)
+
 (defun stringify-integer (x)
   (declare (Xargs :guard (integerp x)))
   (if (and (mbt (integerp x))

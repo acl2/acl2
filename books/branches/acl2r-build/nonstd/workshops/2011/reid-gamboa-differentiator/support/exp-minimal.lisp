@@ -1,12 +1,12 @@
 (in-package "ACL2")
 
-(local (include-book "nsa/norm" :dir :system))
-(local (include-book "nsa/factorial" :dir :system))
+(local (include-book "nonstd/nsa/norm" :dir :system))
+(local (include-book "nonstd/nsa/factorial" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "arithmetic/sumlist" :dir :system))
 (local (include-book "arithmetic/abs" :dir :system))
-(include-book "nsa/exp" :dir :system)
-(include-book "nsa/exp-continuous" :dir :system)
+(include-book "nonstd/nsa/exp" :dir :system)
+(include-book "nonstd/nsa/exp-continuous" :dir :system)
 
 (local 
  (defun f-term (x counter)
@@ -453,7 +453,7 @@
                      1))))
 
 ;;; theorem 5
-(include-book "nsa/exp-sum" :dir :system)
+(include-book "nonstd/nsa/exp-sum" :dir :system)
 (include-book "defderivative")
 
 (local

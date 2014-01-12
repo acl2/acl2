@@ -1,10 +1,6 @@
 
-
-
-
-
 (in-package "ACL2")
-
+; cert_param: (non-acl2r)
 
 (include-book "regex-parse-bracket")
 (include-book "regex-parse-brace")
