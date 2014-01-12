@@ -24,7 +24,7 @@
 (include-book "str/top" :dir :system)
 (include-book "std/io/base" :dir :system)
 (include-book "std/util/define" :dir :system)
-(include-book "parallel/with-waterfall-parallelism" :dir :system)
+(include-book "misc/with-waterfall-parallelism" :dir :system)
 
 (include-book "object-representations")
 (include-book "strings")

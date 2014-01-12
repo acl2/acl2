@@ -34,11 +34,40 @@
 
 (defxdoc note-6-5-books
   :parents (note-6-5)
-  :short "Release notes for the ACL2 Community Books for ACL2 6.4 (BOZO month)"
+  :short "Release notes for the ACL2 Community Books for ACL2 6.5 (BOZO month)"
 
 ; Currently covered: through revision 2412.
 
-  :long "<p>VL: fixed excessive, bogus warnings about design wires in toe transform.</p>
+  :long "<h3>Deleted Stubs</h3>
+
+<p>When we move a book, we often add a <b>stub</b> book in its previous
+location to help you transition your @(see include-book) commands.  The
+@(see cert.pl) build system prints warnings when a stub book is being
+included.</p>
+
+<p>Stub books have a lifespan of one release.  The following books were stubs
+in ACL2 6.4, so we've deleted them.</p>
+
+@({
+     Previous Location                         New Location
+   ------------------------------------------------------------------
+     cutil/*.lisp                              std/util/*.lisp
+     tools/defconsts                           std/util/defconsts
+
+     parallel/with-waterfall-parallelism       misc/with-waterfall-parallelism
+     parallel/without-waterfall-parallelism    misc/without-waterfall-parallelism
+
+     serialize/unsound-read                    std/io/unsound-read
+
+     centaur/bitops/bitsets                    std/bitsets/bitsets
+     centaur/bitops/bitsets-opt                std/bitsets/bitsets-opt
+     centaur/bitops/sbitsets                   std/bitsets/sbitsets
+   ------------------------------------------------------------------
+})
+
+<h3>Other Changes</h3>
+
+<p>VL: fixed excessive, bogus warnings about design wires in toe transform.</p>
 
 <p>STD: @(see defrule) now has a @(':local') option.</p>")
 

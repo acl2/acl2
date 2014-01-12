@@ -1,5 +1,5 @@
-; Built-In Typed Lists
-; Copyright (C) 2008-2013 Centaur Technology
+; Standard Typed Lists Library
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group

@@ -1,5 +1,5 @@
-; CUTIL - Centaur Basic Utilities
-; Copyright (C) 2008-2011 Centaur Technology
+; Standard Utilities Library
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -1013,7 +1013,8 @@ optimization altogether.</p>")
         (mv (raise "~x0: Too many field specifiers: ~x1" name field-specs) state))
        (efields     (parse-formals ctx (car field-specs)
                                    (append '(:rule-classes :default)
-                                           extra-field-keywords)))
+                                           extra-field-keywords)
+                                   (w state)))
        (field-names (formallist->names efields))
        (field-defaults (formallist->defaults efields))
        ((unless (no-duplicatesp field-names))

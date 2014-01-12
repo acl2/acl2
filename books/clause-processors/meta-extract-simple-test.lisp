@@ -11,7 +11,7 @@
 ; The following is only needed for developer builds (using ACL2_DEVEL), which
 ; put some meta-extract functions in :program mode.
 (include-book "system/meta-extract" :dir :system)
-(include-book "parallel/without-waterfall-parallelism" :dir :system)
+(include-book "misc/without-waterfall-parallelism" :dir :system)
 
 (encapsulate
  ((bar (x) t))
