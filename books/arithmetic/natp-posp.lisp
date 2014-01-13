@@ -43,6 +43,8 @@
 ;; 360 Huntington Avenue
 ;; Boston, Massachusetts 02115 U.S.A. 
 
+;; Modified by Jared Davis in January 2014 to add XDOC documentation
+
 (in-package "ACL2")
 
 (include-book "inequalities")
@@ -53,6 +55,19 @@
 ; here for predicates natp and posp.  However, such rules are in the ACL2
 ; sources starting with ACL2 Version 2.9.2, under the names
 ; natp-compound-recognizer and posp-compound-recognizer).
+
+(defsection arithmetic/natp-posp
+  :parents (arithmetic-1)
+  :short "Lemmas for reasoning about when the basic arithmetic operators
+produce natural and positive integer results."
+
+  :long "<p>This is a good, lightweight book for working with @(see natp) and
+@(see posp).</p>
+
+<p>For a somewhat heavier and more comprehensive alternative, you may also wish
+to see the @(see arith-equivs) book, which introduces, @(see equivalence) relations
+like @(see int-equiv) and @(see nat-equiv), and many useful @(see congruence) rules
+about these equivalences.</p>"
 
 (defthm natp-fc-1
   (implies (natp x)
@@ -159,3 +174,5 @@
 |#
 
 (in-theory (disable natp posp))
+
+)

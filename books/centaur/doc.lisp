@@ -159,6 +159,7 @@
 ;; Not much doc here, but some theorems from arithmetic-5 are referenced by
 ;; other topics...
 (include-book "arithmetic-5/top" :dir :system)
+(include-book "arithmetic/top" :dir :system)
 
 #||
 

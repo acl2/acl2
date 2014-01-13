@@ -52,6 +52,7 @@
 (include-book "subseq")
 (include-book "take")
 (include-book "true-listp")
+(include-book "update-nth")
 (include-book "list-defuns")
 
 ; BOZO it might be best to move these disables into the corresponding

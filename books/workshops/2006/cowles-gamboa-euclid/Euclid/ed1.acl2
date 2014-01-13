@@ -1,9 +1,7 @@
 (in-package "ACL2")
 
-(DEFPKG "ACL2-ASG"
-  (SET-DIFFERENCE-EQUAL
-   (UNION-EQ *ACL2-EXPORTS* 
-	     *COMMON-LISP-SYMBOLS-FROM-MAIN-LISP-PACKAGE*)
-   '(ZERO)))
+; [Jared] changed this to load the packages directly from cowles, instead of
+; redefining them, so we can more easily change them.
+(ld "cowles/packages.lsp" :dir :system)
 
 (certify-book "ed1" ? t)

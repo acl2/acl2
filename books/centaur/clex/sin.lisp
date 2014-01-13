@@ -23,6 +23,7 @@
 (include-book "centaur/misc/absstobjs" :dir :system)
 (include-book "str/strpos" :dir :system)
 (local (include-book "arithmetic"))
+(local (in-theory (disable acl2::update-nth-when-zp)))
 
 (defxdoc sin
   :parents (clex)
