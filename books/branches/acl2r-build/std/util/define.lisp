@@ -1,5 +1,5 @@
-; CUTIL - Centaur Basic Utilities
-; Copyright (C) 2008-2012 Centaur Technology
+; Standard Utilities Library
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -669,7 +669,7 @@ some kind of separator!</p>
                            (make-wrapper-macro fnname fnname-fn formals)))
        (raw-formals   formals)
        (formals       (remove-macro-args fnname formals nil))
-       (formals       (parse-formals fnname formals '(:type)))
+       (formals       (parse-formals fnname formals '(:type) world))
        (formal-names  (formallist->names formals))
        (formal-guards (remove t (formallist->guards formals)))
        (formal-types  (formallist->types formals))

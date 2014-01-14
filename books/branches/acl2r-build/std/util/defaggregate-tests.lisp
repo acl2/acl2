@@ -1,5 +1,5 @@
-; CUTIL - Centaur Basic Utilities
-; Copyright (C) 2008-2011 Centaur Technology
+; Standard Utilities Library
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -215,10 +215,21 @@
            (and (equal (employee->name emp) "foo")
                 (equal (employee->salary emp) 25))))
 
+;; Shouldn't give a bind-warning
 (assert! (b* ((emp (make-employee :name "foo"))
               ((employee emp) emp))
            (and (equal emp.name "foo")
                 (equal emp.salary 25))))
+
+;; No warning -- same name.
+(assert! (b* ((emp (make-employee :name "foo"))
+              ((employee emp) emp))
+           (and (equal emp.name "foo")
+                (equal emp.salary 25)
+                emp)))
+
+
+
 
 
 

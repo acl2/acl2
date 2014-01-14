@@ -1,5 +1,5 @@
-; Defconsts -- A defconst that can do multiple values
-; Copyright (C) 2010 Centaur Technology
+; Standard Utilities Library
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group

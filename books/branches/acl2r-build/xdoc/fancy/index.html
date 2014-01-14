@@ -29,6 +29,40 @@
 <link rel="stylesheet" type="text/css" href="style.css"/>
 <link rel="shortcut icon" href="favicon.png"/>
 
+<script language="javascript">
+<!--
+function abandon_ship () {
+  document.write("<body><p><b>Error: Unsupported Browser</b></p>");
+  document.write("<p>This XDOC manual requires features that are "
+   + "not implemented by your web browser.<br/>  Please try again with a "
+   + "supported browser, such as:</p><ul>"
+   + "<li>Mozilla Firefox (any recent version)</li>"
+   + "<li>Chromium (any recent version)</li>"
+   + "<li>Google Chrome (any recent version)</li>"
+   + "<li>Microsoft Internet Explorer (Version 10 or later)</li>"
+   + "<li>Apple Safari (Version 5 or later)</li>"
+   + "<li>Opera (Version 18 or later)</li>"
+   + "</ul>"
+   + "<p>Other modern browsers may also work.</p>");
+
+  // try to prevent rendering anything else in legitimate ways
+  if (window.stop) { window.stop(); }
+  if (document.execCommand) { document.execCommand("Stop"); }
+
+  // last resort, make the whole page look like some crazy, unknown
+  // script so that the browser hopefully won't render it.
+  document.write("<script type='text/undefined'>");
+}
+
+if (!window.history || !window.history.replaceState) {
+  // I've tested that this check gets triggered on IE8 and IE9.  It's
+  // important to not allow IE8, because Windows XP users are stuck
+  // with it, so unfortunately it's still widely used.
+  abandon_ship();
+}
+// -->
+</script>
+
 <!-- General Libraries -->
 <script src="lib/jquery-2.0.3.min.js"></script>
 <script src="lib/jquery.base64.js"></script>

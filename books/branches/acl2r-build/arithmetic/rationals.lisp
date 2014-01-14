@@ -27,6 +27,8 @@
      Depends on the Arithmetic Inequalities book and the
          Arithmetic Nonnegative Integer Mod and Gcd book.
 
+Modified by Jared Davis in January 2014 to add xdoc section.
+
 This book proves all the axioms in the
      Arithmetic Rationals-with-axioms book
 
@@ -36,7 +38,7 @@ This book proves all the axioms in the
 |#
 
 
-#| This comment is copied from the 
+#| This comment is copied from the
               Arithmetic Rationals-with-axioms book:
 
 ; ACL2 books on arithmetic
@@ -196,7 +198,7 @@ Then (* (/ x) r) = n/(x*d), so by the Basic Fact,
 
 (encapsulate
  ()
- 
+
  (local
   (defthm numerator-/x-positive-case
     (implies
@@ -234,90 +236,74 @@ Then (* (/ x) r) = n/(x*d), so by the Basic Fact,
 (include-book "inequalities")
 
 (local (include-book "mod-gcd"))
-	
-(defthm
-  Denominator-unary-minus
+
+(defsection more-rational-identities
+  :parents (arithmetic-1 numerator denominator)
+  :short "Rules about @(see numerator) and @(see denominator) in the
+@('arithmetic/rationals') book."
+
+(defthm Denominator-unary-minus
   (implies (rationalp x)
 	   (equal (denominator (- x))
 		  (denominator x)))
- :hints (("Goal"
-	  :use (:instance
-		Unique-rationalp
-		(d (denominator x))
-		(n (- (numerator x)))))))
+ :hints (("Goal" :use (:instance Unique-rationalp
+                                 (d (denominator x))
+                                 (n (- (numerator x)))))))
 
-(defthm
-  Numerator-goes-down-by-integer-division
+(defthm Numerator-goes-down-by-integer-division
   (implies (and (integerp x)
 		(< 0 x)
 		(rationalp r))
 	   (<= (abs (numerator (* (/ x) r)))
 	       (abs (numerator r))))
-  :rule-classes ((:linear
-		  :corollary
-		  (implies (and (integerp x)
-				(< 0 x)
-				(rationalp r)
-				(>= r 0))
-			   (<= (numerator (* (/ x) r))
-			       (numerator r))))
-		 (:linear
-		  :corollary
-		  (implies (and (integerp x)
-				(< 0 x)
-				(rationalp r)
-				(<= r 0))
-			   (<= (numerator r)
-			       (numerator (* (/ x) r))))))
-  :hints (("Goal"
-	   :use (:instance
-		 LEAST-numerator-denominator-<=
-		 (n (numerator r))
-		 (d (* x (denominator r)))))))
+  :rule-classes ((:linear :corollary
+                          (implies (and (integerp x)
+                                        (< 0 x)
+                                        (rationalp r)
+                                        (>= r 0))
+                                   (<= (numerator (* (/ x) r))
+                                       (numerator r))))
+		 (:linear :corollary
+                          (implies (and (integerp x)
+                                        (< 0 x)
+                                        (rationalp r)
+                                        (<= r 0))
+                                   (<= (numerator r)
+                                       (numerator (* (/ x) r))))))
+  :hints (("Goal" :use (:instance LEAST-numerator-denominator-<=
+                                  (n (numerator r))
+                                  (d (* x (denominator r)))))))
 
-(defthm 
-  Denominator-plus
+(defthm Denominator-plus
   (implies (and (rationalp r)
 		(integerp i))
            (equal (denominator (+ i r))
                   (denominator r)))
-  :hints (("Goal"
-	   :use ((:instance
-		  Unique-rationalp
-		  (d (denominator r))
-		  (n (+ (numerator r)(* i (denominator r)))))
-		 (:instance
-		  Nonneg-int-gcd-abs
-		  (x (numerator r))
-		  (j i)
-		  (n (denominator r)))))))
+  :hints (("Goal" :use ((:instance Unique-rationalp
+                                   (d (denominator r))
+                                   (n (+ (numerator r)(* i (denominator r)))))
+                        (:instance Nonneg-int-gcd-abs
+                                   (x (numerator r))
+                                   (j i)
+                                   (n (denominator r)))))))
 
 ; Here are some axioms that Bishop wanted.
 
-(defthm 
-  Numerator-minus
+(defthm Numerator-minus
   (equal (numerator (- i))
 	 (- (numerator i)))
-  :hints (("Goal"
-	   :cases ((rationalp i)))
-	  ("Subgoal 1"
-	   :use (:instance
-		 Unique-rationalp
-		 (d (denominator i))
-		 (n (- (numerator i)))))))
+  :hints (("Goal" :cases ((rationalp i)))
+	  ("Subgoal 1" :use (:instance Unique-rationalp
+                                       (d (denominator i))
+                                       (n (- (numerator i)))))))
 
-(defthm 
-  Numerator-/x
+(defthm Numerator-/x
   (implies (and (integerp x)
 		(not (equal x 0)))
-	   (equal (numerator (/ x)) 
+	   (equal (numerator (/ x))
 		  (signum x)))
-  :hints
-  (("Goal"
-    :use (:instance
-	  Unique-rationalp
-	  (n (signum x))
-	  (d (abs x))))))
+  :hints (("Goal" :use (:instance Unique-rationalp
+                                  (n (signum x))
+                                  (d (abs x))))))
 
-
-
+)

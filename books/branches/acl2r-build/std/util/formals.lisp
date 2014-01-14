@@ -1,5 +1,5 @@
-; CUTIL - Centaur Basic Utilities
-; Copyright (C) 2008-2012 Centaur Technology
+; Standard Utilities Library
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -214,6 +214,28 @@ occasionally improve efficiency.</p>")
            ctx varname)
     'default-valid-legal-variablep))
 
+(defun check-formal-guard
+  (ctx      ; context for error messages
+   varname  ; name of this formal (for better error reporting)
+   item     ; the symbolp the user wrote as a guard
+   world)
+  (b* ((__function__ 'check-formal-guard)
+       (macro-args (getprop item 'acl2::macro-args :bad 'acl2::current-acl2-world world))
+       ((unless (eq macro-args :bad))
+        ;; The shorthand guard is a macro.  Can't really check anything.
+        nil)
+       ;; Not a macro.  It had better be a unary function.
+       (formals (getprop item 'acl2::formals :bad 'acl2::current-acl2-world world))
+       ((when (eq formals :bad))
+        (raise "Error in ~x0: the guard for ~x1 is ~x2, but there is no ~
+                function or macro named ~x2." ctx varname item))
+       ((when (tuplep 1 formals))
+        ;; Okay, seems fine.
+        nil))
+    (raise "Error in ~x0: the guard for ~x1 should take a single argument, ~
+            but ~x2 takes ~x3 arguments."
+           ctx varname item (len formals))))
+
 (defun parse-formal-item
   ;; parses guard/doc item inside an extended formal
   ;;   (doesn't deal with keyword/value opts)
@@ -222,6 +244,7 @@ occasionally improve efficiency.</p>")
    item     ; the actual thing we're parsing
    guards   ; accumulator for guards (for this formal only)
    docs     ; accumulator for docs (for this formal only)
+   world
    )
   "Returns (mv guards docs)"
   (declare (xargs :guard (legal-variablep varname)))
@@ -229,6 +252,7 @@ occasionally improve efficiency.</p>")
        ((when (booleanp item))
         (mv (cons item guards) docs))
        ((when (symbolp item))
+        (check-formal-guard ctx varname item world)
         (mv (cons `(,item ,varname) guards) docs))
        ((when (and (consp item)
                    (not (eq (car item) 'quote))))
@@ -240,7 +264,7 @@ occasionally improve efficiency.</p>")
            ctx varname item)
     (mv guards docs)))
 
-(defun parse-formal-items (ctx varname items guards docs)
+(defun parse-formal-items (ctx varname items guards docs world)
   "Returns (mv guards docs)"
   (declare (xargs :guard (legal-variablep varname)))
   (b* ((__function__ 'parse-formal-items)
@@ -252,13 +276,14 @@ occasionally improve efficiency.</p>")
                ctx varname items)
         (mv guards docs))
        ((mv guards docs)
-        (parse-formal-item ctx varname (car items) guards docs)))
-    (parse-formal-items ctx varname (cdr items) guards docs)))
+        (parse-formal-item ctx varname (car items) guards docs world)))
+    (parse-formal-items ctx varname (cdr items) guards docs world)))
 
 (defun parse-formal
   (ctx        ; context for error messages
    formal     ; thing the user wrote for this formal
    legal-kwds ; what keywords are allowed in the item list
+   world
    )
   "Returns a formal-p"
   (declare (xargs :guard t))
@@ -272,7 +297,7 @@ occasionally improve efficiency.</p>")
        (varname (parse-formal-name ctx (car formal)))
        (items   (cdr formal))
        ((mv opts items)  (extract-keywords (cons ctx varname) legal-kwds items nil))
-       ((mv guards docs) (parse-formal-items ctx varname items nil nil))
+       ((mv guards docs) (parse-formal-items ctx varname items nil nil world))
        (guard (cond ((atom guards) 't)
                     ((atom (cdr guards)) (car guards))
                     (t (raise "~x0: formal ~x1: expected a single guard term, ~
@@ -288,7 +313,7 @@ occasionally improve efficiency.</p>")
                  :doc doc
                  :opts opts)))
 
-(defun parse-formals (ctx formals legal-kwds)
+(defun parse-formals (ctx formals legal-kwds world)
   ;; Assumes lambda-list keywords have already been removed from formals.
   (declare (xargs :guard t))
   (b* ((__function__ 'parse-formals)
@@ -297,8 +322,8 @@ occasionally improve efficiency.</p>")
        ((when (atom formals))
         (raise "~x0: expected formals to be nil-terminated, but found ~x1 as ~
                 the final cdr." ctx formals)))
-    (cons (parse-formal ctx (car formals) legal-kwds)
-          (parse-formals ctx (cdr formals) legal-kwds))))
+    (cons (parse-formal ctx (car formals) legal-kwds world)
+          (parse-formals ctx (cdr formals) legal-kwds world))))
 
 
 

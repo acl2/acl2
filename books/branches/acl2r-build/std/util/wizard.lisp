@@ -1,5 +1,5 @@
-; CUTIL - Centaur Basic Utilities
-; Copyright (C) 2010-2012 Centaur Technology
+; Standard Utilities Library
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group

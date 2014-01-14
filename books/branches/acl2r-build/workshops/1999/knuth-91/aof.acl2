@@ -28,24 +28,9 @@
 
 (in-package "ACL2")
 
-(defpkg 
-  "ACL2-ASG"
-  (set-difference-equal
-   (union-eq *acl2-exports*
-             *common-lisp-symbols-from-main-lisp-package*)
-   '(zero)))
-(defpkg 
-  "ACL2-AGP"
-  (set-difference-equal
-   (union-eq *acl2-exports*
-             *common-lisp-symbols-from-main-lisp-package*)
-   '(zero)))
-(defpkg 
-  "ACL2-CRG"
-  (set-difference-equal
-   (union-eq *acl2-exports*
-             *common-lisp-symbols-from-main-lisp-package*)
-   '(zero)))
+; [Jared] switching this to LD the packages from cowles instead of
+; redefining them, to make them easier to update.
+(ld "cowles/packages.lsp" :dir :system)
 
 ; cert-flags: ? nil
 (certify-book "aof" ? nil)

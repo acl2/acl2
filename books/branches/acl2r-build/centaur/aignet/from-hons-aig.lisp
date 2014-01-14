@@ -1097,11 +1097,12 @@
 (encapsulate nil
   (local
    (progn
-     (defthm nthcdr-of-update-nth
-       (equal (nthcdr n (update-nth n v x))
-              (cons v
-                    (nthcdr (1+ (nfix n)) x)))
-       :hints(("Goal" :in-theory (e/d (update-nth)))))
+     ;; no longer necessary with std/lists/update-nth
+     ;; (defthm nthcdr-of-update-nth
+     ;;   (equal (nthcdr n (update-nth n v x))
+     ;;          (cons v
+     ;;                (nthcdr (1+ (nfix n)) x)))
+     ;;   :hints(("Goal" :in-theory (e/d (update-nth)))))
      (defthm nthcdr-empty
        (implies (and (true-listp lst)
                      (<= (len lst) (nfix n)))

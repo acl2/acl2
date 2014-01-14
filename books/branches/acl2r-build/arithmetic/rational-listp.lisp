@@ -22,15 +22,26 @@
 ; Austin, TX 78703-4776 U.S.A.
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 
-(defthm append-preserves-rational-listp
-  (implies (true-listp x)
-           (equal (rational-listp (append x y))
-                  (and (rational-listp x)
-                       (rational-listp y)))))
+(defsection arithmetic/rational-listp
+  :parents (rational-listp)
+  :short "Lemmas about @(see rational-listp) available in the
+@('arithmetic/rational-listp') book."
 
-(defthm rationalp-car-rational-listp
-  (implies (and (rational-listp x)
-		x)
-	   (rationalp (car x)))
-  :rule-classes :forward-chaining)
+  :long "<p>Note: this book is extremely minimal.  You should probably
+generally instead see @(see std/typed-lists/rational-listp).</p>
+
+<p>BOZO Should we get rid of this book?</p>"
+
+  (defthm append-preserves-rational-listp
+    (implies (true-listp x)
+             (equal (rational-listp (append x y))
+                    (and (rational-listp x)
+                         (rational-listp y)))))
+
+  (defthm rationalp-car-rational-listp
+    (implies (and (rational-listp x)
+                  x)
+             (rationalp (car x)))
+    :rule-classes :forward-chaining))
