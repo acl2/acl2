@@ -27,11 +27,8 @@ appropriate certify-book command.  Something like the following will work:
 
 (in-package "POWERLISTS")
 
-(include-book "../arithmetic/top"
-	      :load-compiled-file nil)
-
-(include-book "../powerlists/algebra"
-	      :load-compiled-file nil)
+(include-book "arithmetic/top" :dir :system)
+(include-book "powerlists/algebra" :dir :system)
 
 ;; We begin with the basic definitions about polynomial evaluation.
 

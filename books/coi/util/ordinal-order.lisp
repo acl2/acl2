@@ -4,7 +4,7 @@
 #|                                                                           |#
 #|===========================================================================|#
 (in-package "ACL2")
-
+; cert_param: (non-acl2r)
 (include-book "ordinals/lexicographic-ordering" :dir :system)
 
 (defun o1-test (o1)

@@ -48,8 +48,7 @@ To load this book, it is sufficient to do something like this:
 
 (in-package "ACL2")		; We're too lazy to build our own package
 
-(include-book "../arithmetic/top"
-	      :load-compiled-file nil)
+(include-book "arithmetic/top" :dir :system)
 
 ;;
 ;; We start out by defining the bisection approximation to square root.  At one

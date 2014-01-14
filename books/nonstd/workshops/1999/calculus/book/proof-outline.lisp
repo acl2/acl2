@@ -8,6 +8,7 @@
 ;;; Kluwer Academic Publishers, June, 2000.
 
 (in-package "ACL2")
+; cert_param: (uses-acl2r)
 
 (program)
 

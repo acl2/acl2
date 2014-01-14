@@ -230,7 +230,7 @@ $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|nonstd|centaur/quicklisp|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/$(EGREP_EXTRA_EXCLUDE_STRING))' \
+    | egrep -v '^(\./)?(interface|centaur/quicklisp|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
   > $(BUILD_DIR)/Makefile-books; \
   ls -l $(BUILD_DIR)/Makefile-books)
@@ -342,10 +342,52 @@ OK_CERTS := $(filter-out $(CERT_PL_USES_GLUCOSE), $(OK_CERTS))
 
 endif # ifeq ($(OS_HAS_GLUCOSE), )
 
+
+ifeq ($(ACL2_HAS_REALS), )
+
+$(info Excluding ACL2(r)-only books: [$(CERT_PL_USES_ACL2R)])
+OK_CERTS := $(filter-out $(CERT_PL_USES_ACL2R), $(OK_CERTS))
+
+endif # ifeq ($(ACL2_HAS_REALS), )
+
+
+ifneq ($(ACL2_HAS_REALS), )
+
+$(info Excluding non-ACL2(r) books: [$(CERT_PL_NON_ACL2R)])
+OK_CERTS := $(filter-out $(CERT_PL_NON_ACL2R), $(OK_CERTS))
+
+all: nonstd/workshops/1999/calculus/book/proof-outline.cert
+all: nonstd/workshops/1999/calculus/book/tree.cert
+all: nonstd/workshops/1999/calculus/book/tree/proof-outline
+
+# Some additional special instructions for generated ACL2(r)-only books.
+nonstd/workshops/1999/calculus/book/proof-outline.cert: nonstd/workshops/1999/calculus/book/tree.cert
+
+nonstd/workshops/1999/calculus/book/tree.cert: nonstd/workshops/1999/calculus/book/tree.lisp
+	cd nonstd/workshops/1999/calculus/book/ ; \
+	   $(STARTJOB) -c "$(MAKE) tree.cert"
+	ls -l nonstd/workshops/1999/calculus/book/tree.cert
+
+nonstd/workshops/1999/calculus/book/tree.lisp:
+	cd nonstd/workshops/1999/calculus/book ; \
+	   $(STARTJOB) -c "$(MAKE) -f Makefile-essence tree.lisp"
+	ls -l nonstd/workshops/1999/calculus/book/tree.lisp
+
+nonstd/workshops/1999/calculus/book/tree/proof-outline: \
+	nonstd/workshops/1999/calculus/book/tree.cert \
+	nonstd/workshops/1999/calculus/book/proof-outline.cert
+	cd nonstd/workshops/1999/calculus/book/ ; \
+           $(STARTJOB) -c "$(MAKE) proof-outline"
+
+
+endif # ifneq ($(ACL2_HAS_REALS), )
+
+
 ifeq ($(USE_QUICKLISP), )
 $(info Excluding books that depend on Quicklisp: [$(CERT_PL_USES_QUICKLISP)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_QUICKLISP), $(OK_CERTS))
 endif
+
 
 # SLOW_BOOKS is a list of books that are too slow to include as part
 # of an ordinary regression.  There are currently comments in some of
@@ -947,6 +989,9 @@ misc: $(filter-out misc/misc2/%, $(filter misc/%, $(OK_CERTS)))
 
 .PHONY: models
 models: $(filter models/%, $(OK_CERTS))
+
+.PHONY: nonstd
+nonstd: $(filter nonstd/%, $(OK_CERTS))
 
 .PHONY: ordinals
 ordinals: $(filter ordinals/%, $(OK_CERTS))

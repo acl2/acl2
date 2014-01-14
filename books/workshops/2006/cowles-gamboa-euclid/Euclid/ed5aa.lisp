@@ -136,6 +136,8 @@ To certify this book, first, create a world with the following package:
 ; Make temporary use of an ACL2 Arithmetic Book and a book containing facts
 ;  about FLOOR and MOD to help certify this book
 
+; cert_param: (non-acl2r)
+
 (local
  (include-book "arithmetic/top" :dir :system 
 ; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to

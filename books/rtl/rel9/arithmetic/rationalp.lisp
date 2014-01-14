@@ -24,6 +24,8 @@
 
 (in-package "ACL2")
 
+; cert_param: (non-acl2r)
+
 (local (include-book "predicate"))
 
 (defthm rationalp-product-when-one-arg-is-rational

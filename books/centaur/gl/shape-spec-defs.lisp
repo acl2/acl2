@@ -22,6 +22,8 @@
 (include-book "gobject-types")
 (include-book "symbolic-arithmetic-fns")
 
+; cert_param: (non-acl2r)
+
 ; Modified slightly 12/4/2012 by Matt K. to be redundant with new ACL2
 ; definition.
 (defund nat-listp (l)

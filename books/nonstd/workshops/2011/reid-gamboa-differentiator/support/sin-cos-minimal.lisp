@@ -1,5 +1,5 @@
 (in-package "ACL2")
-(include-book "nsa/trig" :dir :system)
+(include-book "nonstd/nsa/trig" :dir :system)
 (include-book "exp-minimal")
 
 (local

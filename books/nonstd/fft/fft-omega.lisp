@@ -21,8 +21,7 @@ appropriate certify-book command.  Something like the following will work:
 
 (in-package "POWERLISTS")
 
-(include-book "eval-poly"
-	      :load-compiled-file nil)
+(include-book "eval-poly")
 
 ;; This first theorem shows how to evaluate a polynomial at a vector with the
 ;; special property v = < u | -u >.  This special property is the heart of the

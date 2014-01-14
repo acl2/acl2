@@ -6,8 +6,8 @@
 
 (in-package "ACL2")
 
-(local (include-book "../arithmetic/top"))
-(include-book "../arithmetic/sumlist")
+(local (include-book "arithmetic/top" :dir :system))
+(include-book "arithmetic/sumlist" :dir :system)
 
 ; Added by Matt K. for v2-7.
 (add-match-free-override :once t)

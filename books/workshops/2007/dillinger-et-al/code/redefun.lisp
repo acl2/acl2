@@ -4,6 +4,7 @@
 (acl2::begin-book t :ttags ((defcode)));$ACL2s-Preamble$|#
 
 (in-package "ACL2")
+; cert_param: (non-acl2r)
 
 (program)
 (set-state-ok t)

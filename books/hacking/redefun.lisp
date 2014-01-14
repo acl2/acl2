@@ -6,6 +6,8 @@
 (program)
 (set-state-ok t)
 
+; cert_param: (non-acl2r)
+
 
 (defun chk-acceptable-redefun (def ctx wrld state)
   (er-let*

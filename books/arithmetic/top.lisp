@@ -33,24 +33,17 @@
 ; The following depends on nothing.
 
 (include-book "rational-listp")
-
 (include-book "nat-listp")
 
 ;; Ruben Gamboa added the following books for ACL2(r) (see :doc real).
 
-#+:non-standard-analysis
-(include-book ;; jared -- newline keeps these out of deps
- "realp")
-#+:non-standard-analysis
-(include-book ;; jared -- newline keeps these out of deps
- "real-listp")
+(include-book "realp")
+(include-book "real-listp")
 
 ; The following two depend individually on the first.
 
 (include-book "inequalities")
-
 (include-book "natp-posp")
-
 (include-book "rationals")
 
 

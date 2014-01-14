@@ -2,6 +2,8 @@
 
 ;These rules may cause case splits, but that's sort of the point.
 
+; cert_param: (non-acl2r)
+
 (local (include-book "predicate"))
 (local (include-book "fp2"))
 

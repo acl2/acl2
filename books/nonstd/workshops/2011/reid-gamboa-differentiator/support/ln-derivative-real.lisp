@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
 (include-book "exp-minimal")
-(include-book "nsa/ln" :dir :system)
+(include-book "nonstd/nsa/ln" :dir :system)
 (include-book "inverse-derivative")
 (include-book "exp-properties")
 

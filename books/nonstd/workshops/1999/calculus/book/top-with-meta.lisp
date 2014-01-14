@@ -1,3 +1,5 @@
 (in-package "ACL2")
 
-(include-book "../../../../arithmetic/top-with-meta")
+;; [Jared] I tried changing this to use :dir :system, but that breaks the proof-alist-aux code
+;; that generates the proof outline.
+(include-book "../../../../../arithmetic/top-with-meta")

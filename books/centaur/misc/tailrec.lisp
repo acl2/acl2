@@ -24,6 +24,7 @@
 ;; This book defines def-tr, which is similar to Greve's defminterm.  See the
 ;; local form at the bottom for a usage example.
 
+; cert_param: (non-acl2r)
 
 (include-book "tools/bstar" :dir :system)
 (include-book "tools/mv-nth" :dir :system)

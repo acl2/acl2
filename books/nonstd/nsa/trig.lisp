@@ -4,10 +4,10 @@
 
 (in-package "ACL2")
 
-(local (include-book "../arithmetic/idiv"))
-(local (include-book "../arithmetic/realp"))
-(local (include-book "../arithmetic/abs"))
-(local (include-book "../arithmetic/top"))
+(local (include-book "arithmetic/idiv" :dir :system))
+(local (include-book "arithmetic/realp" :dir :system))
+(local (include-book "arithmetic/abs" :dir :system))
+(local (include-book "arithmetic/top" :dir :system))
 
 (include-book "exp")
 (include-book "exp-sum")

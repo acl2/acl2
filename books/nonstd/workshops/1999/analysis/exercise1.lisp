@@ -48,8 +48,8 @@ regardless of p and q, it suffices only to consider p & q in lowest terms
 |#
 
 (in-package "ACL2")		; We're too lazy to build our own package
-
-(include-book "../../../arithmetic/top")
+; cert_param: (uses-acl2r)
+(include-book "arithmetic/top" :dir :system)
 
 ;; We define the following macro purely for readability.  (divisible n p) is
 ;; true iff p divides n.

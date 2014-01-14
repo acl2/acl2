@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-(include-book "nsa/nsa" :dir :system)
+(include-book "nonstd/nsa/nsa" :dir :system)
 (include-book "arithmetic/top" :dir :system)
 (include-book "composition-helpers")
 

@@ -24,6 +24,7 @@
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
+; cert_param: (non-acl2r)
 
 (defthm equal-complexes-rw
   (implies (and (acl2-numberp x)

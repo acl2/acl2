@@ -1,8 +1,8 @@
 (in-package "ACL2")
 
-(include-book "nsa/sqrt" :dir :system)
+(include-book "nonstd/nsa/sqrt" :dir :system)
 (include-book "ln-derivative-real")
-(include-book "nsa/raise" :dir :system)
+(include-book "nonstd/nsa/raise" :dir :system)
 
 (local
  (defderivative sqrt-expr 

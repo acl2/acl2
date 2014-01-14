@@ -1,5 +1,6 @@
 (in-package "PROOF")
 ; (include-book "omerge-good-order")
+; cert_param: (non-acl2r)
 
 (defun ofringe (flg x order)
   (declare (xargs :measure (make-ord (1+ (acl2-count x))

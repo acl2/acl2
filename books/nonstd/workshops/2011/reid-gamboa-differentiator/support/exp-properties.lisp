@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-(include-book "nsa/exp-continuous" :dir :system)
+(include-book "nonstd/nsa/exp-continuous" :dir :system)
 (include-book "nsa-ex")
 
 (defthm exp-limited-for-limited
@@ -34,7 +34,7 @@
 
  ; The ln book already proves this theorem, but I don't want the
  ; rest of the book.
- (local (include-book "nsa/ln" :dir :system))
+ (local (include-book "nonstd/nsa/ln" :dir :system))
 
  (defthm exp-real-positive
    (implies (realp x)

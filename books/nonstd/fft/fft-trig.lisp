@@ -27,8 +27,7 @@ appropriate certify-book command.  Something like the following will work:
 
 (include-book "fft-omega")
 
-(include-book "../nsa/trig"
-	      :load-compiled-file nil)
+(include-book "nonstd/nsa/trig" :dir :system)
 
 ;; We begin by introducing the functions sine and cosine, as well as the
 ;; constant pi.  We choose to constrain the trigonometric functions
