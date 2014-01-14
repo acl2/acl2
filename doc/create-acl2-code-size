@@ -8,6 +8,16 @@ if [ -z "${ACL2_SOURCES}" ] ; then \
     exit 1 ;\
 fi
 
+# Here we remove doc.lisp from the sources, since its contents are a
+# direct extraction of the contents of books/system/doc/acl2-doc.lisp,
+# whose size is reported separately.  Actually, this step isn't
+# necessary (as of this writing) when executing "make STATS" in the
+# parent directory (i.e., the ACL2 sources directory), because
+# doc.lisp is explicitly excluded from ACL2_SOURCES there.  But
+# because we exclude doc.lisp ourselves, we do not depend on that
+# exclusion.
+actual_sources=`echo $ACL2_SOURCES | sed 's/doc.lisp//'`
+
 echo 'Computing code size statistics.'
 
 echo '; Lines / Characters'                               > doc/acl2-wc.txt
@@ -26,13 +36,13 @@ echo '; Code lines (whitespace followed by non-whitespace other than ; ):' >> do
 #  other-events.lisp:  multi-line comments (~c[#|..|#]).  These will be ignored if preceded by a
 #  ~/acl2/devel$ 
 
-(cat ${ACL2_SOURCES} | grep '^[ ]*[^ ;]' | wc -lc)       >> doc/acl2-wc.txt
+(cat ${actual_sources} | grep '^[ ]*[^ ;]' | wc -lc)       >> doc/acl2-wc.txt
 echo '; Comment lines ( ; preceded only by whitespace):' >> doc/acl2-wc.txt
-(cat ${ACL2_SOURCES} | grep '^[ ]*;'      | wc -lc)      >> doc/acl2-wc.txt
+(cat ${actual_sources} | grep '^[ ]*;'      | wc -lc)      >> doc/acl2-wc.txt
 echo '; Blank lines (only whitespace):'                  >> doc/acl2-wc.txt
-(cat ${ACL2_SOURCES} | grep '^[ ]*$'      | wc -lc)      >> doc/acl2-wc.txt
+(cat ${actual_sources} | grep '^[ ]*$'      | wc -lc)      >> doc/acl2-wc.txt
 echo '; TOTAL:'                                          >> doc/acl2-wc.txt
-(cat ${ACL2_SOURCES}                       | wc -lc)     >> doc/acl2-wc.txt
+(cat ${actual_sources}                       | wc -lc)     >> doc/acl2-wc.txt
 wc -lc books/system/doc/acl2-doc.lisp                    >> doc/acl2-wc.txt
 
 cd doc
