@@ -6515,10 +6515,7 @@
                           (canonical-dirname! (our-pwd)
                                               'enter-boot-strap-mode
                                               *the-live-state*)
-                          #-:non-standard-analysis
-                          "books/"
-                          #+:non-standard-analysis
-                          "books/nonstd/")
+                          "books/")
                          *the-live-state*)))
 
 ; Inhibit proof-tree output during the build, including pass-2 if present.
