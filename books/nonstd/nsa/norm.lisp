@@ -579,6 +579,34 @@
 	    ("Subgoal 1.1'"
 	     :use ((:instance norm-2c-triangle-inequality-lemma-key))))))
 
+; Added by Matt K., 1/14/2014:
+; The following two lemmas are the versions of lemmas that existed though the
+; time of the ACL2 6.4 release.  The new versions, whose conclusions are calls
+; of equal instead of iff, cause the proof of lemma-1 below to fail; so we
+; :use these old ones instead.
+
+  (local
+   (defthm <-*-right-cancel-old
+     (implies (and (fc (real/rationalp x))
+                   (fc (real/rationalp y))
+                   (fc (real/rationalp z)))
+              (iff (< (* x z) (* y z))
+                   (cond ((< 0 z)     (< x y))
+                         ((equal z 0) nil)
+                         (t           (< y x)))))
+     :rule-classes nil))
+
+  (local
+   (defthm <-*-left-cancel-old
+     (implies (and (fc (real/rationalp x))
+                   (fc (real/rationalp y))
+                   (fc (real/rationalp z)))
+              (iff (< (* z x) (* z y))
+                   (cond ((< 0 z)     (< x y))
+                         ((equal z 0) nil)
+                         (t           (< y x)))))
+     :rule-classes nil))
+
  ;; This is a trivial lemma that we need below.... x<y => x^2 < y^2
  ;; for positive x, y.
 
@@ -591,8 +619,8 @@
 		  (< x y))
 	     (< (* x x) (* y y)))
     :hints (("Goal"
-	     :use ((:instance <-*-left-cancel (x x) (y y) (z x))
-		   (:instance <-*-right-cancel (x x) (y y) (z y)))
+	     :use ((:instance <-*-left-cancel-old (x x) (y y) (z x))
+		   (:instance <-*-right-cancel-old (x x) (y y) (z y)))
 	     :in-theory (disable <-*-left-cancel <-*-right-cancel)))))
 
  ;; And finally, we establish the triangle inequality:
