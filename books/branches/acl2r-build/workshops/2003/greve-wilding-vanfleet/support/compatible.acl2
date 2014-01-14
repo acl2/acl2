@@ -1,4 +1,0 @@
-(value :q)
-(lp)
-(include-book "separation")
-(certify-book "compatible" ? t)
