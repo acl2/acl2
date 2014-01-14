@@ -1,5 +1,5 @@
-; ACL2 Version 6.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2013, Regents of the University of Texas
+; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -715,7 +715,7 @@ implementations.")
   (concatenate
    'string
    "~% ~a built ~a.~
-    ~% Copyright (C) 2013, Regents of the University of Texas"
+    ~% Copyright (C) 2014, Regents of the University of Texas"
    "~% ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you~
     ~% are welcome to redistribute it under certain conditions.  For details,~
     ~% see the LICENSE file distributed with ACL2.~%"
@@ -1574,9 +1574,13 @@ implementations.")
         str
 
 ; In order to profile, Nikodemus Siivola has told us that we "need to set
-; SBCL_HOME to the location of the contribs".  Using apropos we found the
-; function SB-INT:SBCL-HOMEDIR-PATHNAME that returns the right directory in
-; SBCL Version 1.0.23.  So we'll use that.
+; SBCL_HOME to the location of the contribs".  We used contrib/ through SBCL
+; 1.1.11.  But we noticed in SBCL 1.1.14 that the suitable contrib/ directory
+; (at least for requiring sb-sprof) is obj/sbcl-home/contrib/, an impression
+; that seemed to be confirmed via email from fahree@gmail.com on 1/13/2014.
+; Since directory obj/sbcl-home/ doesn't exist in (our installation of) SBCL
+; 1.1.11, we simply look for that first.  But we noticed that it doesn't work
+; to include the trailing "contrib/" when using obj/sbcl-home/.
 
         ("~a~%"
          (let ((contrib-dir
@@ -1587,6 +1591,13 @@ implementations.")
                         (let* ((core-dir
                                 (pathname-directory
                                  sb-ext::*core-pathname*))
+                               (contrib-dir-pathname-new ; see comment above
+                                (and (equal (car (last core-dir))
+                                            "output")
+                                     (make-pathname
+                                      :directory
+                                      (append (butlast core-dir 1)
+                                              (list "obj/sbcl-home")))))
                                (contrib-dir-pathname
                                 (and (equal (car (last core-dir))
                                             "output")
@@ -1594,9 +1605,13 @@ implementations.")
                                       :directory
                                       (append (butlast core-dir 1)
                                               (list "contrib"))))))
-                          (and (probe-file contrib-dir-pathname)
-                               (setq *sbcl-contrib-dir*
-                                     (namestring contrib-dir-pathname)))))))))
+                          (cond ((probe-file contrib-dir-pathname-new)
+                                 (setq *sbcl-contrib-dir*
+                                       (namestring contrib-dir-pathname-new)))
+                                ((probe-file contrib-dir-pathname)
+                                 (setq *sbcl-contrib-dir*
+                                       (namestring contrib-dir-pathname)))
+                                (t nil))))))))
            (if contrib-dir
                (format nil
                        "export SBCL_HOME=~s"

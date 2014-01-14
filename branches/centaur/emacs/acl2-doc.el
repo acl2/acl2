@@ -1,5 +1,5 @@
-; ACL2 Version 6.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2013, Regents of the University of Texas
+; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
@@ -287,9 +287,6 @@ then restart the ACL2-Doc browser to view that manual."
 ; approach might conceivably be useful for people who are navigating
 ; lisp forms in the acl2-doc buffer.
 
-; Warning: If you change the value for :syntax-table, consider the
-; effect on the use of lisp-mode in function acl2-doc-index.
-
   :syntax-table lisp-mode-syntax-table)
 
 ; Arrange that files ending in .acl2-doc come up in acl2-doc mode.
@@ -378,7 +375,8 @@ then restart the ACL2-Doc browser to view that manual."
 ;;; that it removes the leading and trailing bracket for [...].
 
   (let ((sym (sexp-at-point))
-	(go t))
+	(go t)
+	(arrayp nil))
     (while go
       (cond ((and (consp sym)
 		  (equal (length sym) 2)
@@ -386,51 +384,65 @@ then restart the ACL2-Doc browser to view that manual."
 			  '(\` quote)))
 	     (setq sym (car (cdr sym))))
 	    (t (setq go nil))))
-    (let* ((sym (or sym
+
+;;; Deal with array case.
+
+    (cond
+     ((null sym)
 
 ;;; We have found that (sexp-at-point) returns nil when standing in
 ;;; text that ends in a square bracket followed by a period, e.g.,
 ;;; "[loop-stopper]."  So we try again.
 
-		    (save-excursion
-		      (if (< (point) (point-max))
-			  (forward-char 1)) ; in case we are at "["
-		      (let* ((saved-point (point))
-			     (start (and (re-search-backward "[^]]*[[]" nil t)
-					 (match-beginning 0))))
-			(and start
-			     (let ((end (and (re-search-forward "[^ ]*]" nil t)
-					     (match-end 0))))
-			       (and end
-				    (<= saved-point end)
-				    (goto-char (1+ start))
-				    (read (current-buffer))))))))))
-      (cond ((arrayp sym) ;; [...]
-	     (let ((ans (let ((sym (aref sym 0)))
-			  (and (symbolp sym)
-			       (intern (upcase (symbol-name sym)))))))
-	       (cond ((assoc ans (acl2-doc-state-alist))
-		      ans)
-		     (t 'BROKEN-LINK))))
-	    ((not (and sym (symbolp sym)))
-	     nil)
-	    (t
-	     (let* ((name (symbol-name sym))
-		    (max-orig (1- (length name)))
-		    (max max-orig)
-		    (name (cond ((equal (aref name 0) ?:)
-				 (setq max (1- max))
-				 (substring name 1))
-				(t name)))
-		    (go t))
-	       (while (and go (< 1 max))
-		 (cond ((member (aref name max)
-				'(?. ?\' ?:))
-			(setq max (1- max)))
-		       (t (setq go nil))))
-	       (intern (upcase (cond ((equal max max-orig)
-				      name)
-				     (t (substring name 0 (1+ max))))))))))))
+      (setq sym
+	    (save-excursion
+	      (if (< (point) (point-max))
+		  (forward-char 1))	; in case we are at "["
+	      (let* ((saved-point (point))
+		     (start (and (re-search-backward "[^]]*[[]" nil t)
+				 (match-beginning 0))))
+		(and start
+		     (let ((end (and (re-search-forward "[^ ]*]" nil t)
+				     (match-end 0))))
+		       (and end
+			    (<= saved-point end)
+			    (goto-char (1+ start))
+			    (read (current-buffer))))))))
+      (when sym
+	(setq arrayp t)))
+     ((arrayp sym) ;; [...]
+      (setq sym (and (not (equal sym []))
+		     (aref sym 0)))
+      (when sym
+	(setq arrayp t))))
+
+;;; Now we have sym and arrayp.
+
+    (cond (arrayp ;; [...]
+	   (let ((tmp (and (symbolp sym)
+			   (intern (upcase (symbol-name sym))))))
+	     (cond ((assoc tmp (acl2-doc-state-alist))
+		    tmp)
+		   (t 'BROKEN-LINK))))
+	  ((not (and sym (symbolp sym)))
+	   nil)
+	  (t
+	   (let* ((name (symbol-name sym))
+		  (max-orig (1- (length name)))
+		  (max max-orig)
+		  (name (cond ((equal (aref name 0) ?:)
+			       (setq max (1- max))
+			       (substring name 1))
+			      (t name)))
+		  (go t))
+	     (while (and go (< 1 max))
+	       (cond ((member (aref name max)
+			      '(?. ?\' ?:))
+		      (setq max (1- max)))
+		     (t (setq go nil))))
+	     (intern (upcase (cond ((equal max max-orig)
+				    name)
+				   (t (substring name 0 (1+ max)))))))))))
 
 (defun acl2-doc-completing-read (prompt silent-error-p)
   (let* ((completion-ignore-case t)
@@ -852,6 +864,10 @@ ACL2-Doc browser."
    "Use Control-t g to start the ACL2-Doc browser and then
 I if you want to initialize."))
 
+(defun control-t-G-deprecated ()
+  (interactive)
+  (error "Use Control-t . to go to a browser topic."))
+
 (when (not (boundp 'ctl-t-keymap))
 
 ; Warning: Keep this in sync with the introduction of ctl-t-keymap in
@@ -872,11 +888,17 @@ I if you want to initialize."))
   )
 
 (define-key global-map "\C-tg" 'acl2-doc)
-(define-key global-map "\C-tG" 'acl2-doc-go!)
-(define-key global-map "\C-t\C-G" 'acl2-doc-go)
+; We originally bound \C-tG and \C-t\C-G to acl2-doc-go! and
+; acl2-doc-go, respectively.  But it seems more intuitive just to use
+; \C-t. (in analogy to meta-.).  We can probably eliminate the two
+; deprecated keys, along with (of course) the definition of
+; control-t-G-deprecated, after January 2014.
+(define-key global-map "\C-t." 'acl2-doc-go)
+(define-key global-map "\C-tG" 'control-t-G-deprecated)
+(define-key global-map "\C-t\C-G" 'control-t-G-deprecated)
 
 ; An early version of ACL2-Doc (from late 2013) used \C-Xaa to get to
-; the browsser instead of \C-tg.  We bind that key (and a related one,
+; the browser instead of \C-tg.  We bind that key (and a related one,
 ; \C-XaA), if not already bound, as a courtesy to early adopters of
 ; ACL2-Doc.  After the release of v6-4 we should probably eliminate
 ; these forms as well as the definitions of the two "-deprecated"

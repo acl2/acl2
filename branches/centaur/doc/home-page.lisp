@@ -1,3 +1,23 @@
+; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2014, Regents of the University of Texas
+
+; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
+
+; This program is free software; you can redistribute it and/or modify
+; it under the terms of the LICENSE file distributed with ACL2.
+
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; LICENSE for more details.
+
+; Written by:  Matt Kaufmann               and J Strother Moore
+; email:       Kaufmann@cs.utexas.edu      and Moore@cs.utexas.edu
+; Department of Computer Science
+; University of Texas at Austin
+; Austin, TX 78712 U.S.A.
+
 (in-package "ACL2")
 
 (set-state-ok t)
@@ -11,7 +31,9 @@
         (t (cons (cons (car chars)
                        (concatenate 'string
                                     url
-                                    "index.html?topic=ACL2____"
+                                    "index.html?topic="
+                                    (symbol-package-name (car names))
+                                    "____"
                                     (symbol-name (car names))))
                  (topic-to-url-list url (cdr chars) (cdr names))))))
 
@@ -31,7 +53,7 @@
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-6-3                            ;;; g   ; current release notes
+    note-6-4                            ;;; g   ; current release notes
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -42,6 +64,8 @@
     acl2-doc                            ;;; o
     acl2                                ;;; p
     |A_02Tiny_02Warning_02Sign|         ;;; q
+    doc                                 ;;; r
+    documentation                       ;;; s
   ))
 
 (defconst *home-page*
@@ -94,7 +118,7 @@ Software System Award</A>.<P>
 </TABLE>
 <HR>
 
-<TABLE CELLPADDING=3>
+<TABLE CELLPADDING=3 ALIGN=\"center\">
 
 <TR>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
@@ -191,7 +215,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"HTML/note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 6.2</A><A HREF=\"~sq\"> <IMG
+<A HREF=\"~sg\">Differences from Version 6.3</A><A HREF=\"~sq\"> <IMG
 SRC=\"HTML/twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
@@ -223,7 +247,7 @@ Welcome to the ACL2 home page!  We highlight a few aspects of ACL2:
 
 <ul>
 
-<li><b>Libraries (books).</b><br>Libraries of <i>books</i> (files containing
+<li><b>Libraries (Books).</b><br>Libraries of <i>books</i> (files containing
 definitions and theorems) extend the code that we have written.  The <A
 HREF=\"HTML/installation/installation.html\">installation instructions</A> explain
 how to fetch the <i>community books</i>, which are contributed and maintained
@@ -231,22 +255,16 @@ by the members of the ACL2 community.  For more information, see the <code><A
 HREF=\"http://acl2-books.googlecode.com/\">acl2-books</A></code> project
 page.</li>
 
-<li><b>Documentation.</b><br>There is an extensive user's manual for the ACL2
-system, and an even more comprehensive manual that documents not only the ACL2
-system but also many community books.  Follow <A HREF=\"#User's-Manual\">this
-link</A> to learn more.</li>
+<li><b><A NAME=\"documentation\">Documentation</A>.</b><br>There is an
+extensive user's manual for the ACL2 system, and an even more comprehensive
+manual that documents not only the ACL2 system but also many community books.
+See <A HREF=\"#User's-Manual\">below</A> to learn more.</li>
 
-<li><a name=\"bleeding-edge\"><b>Bleeding-edge distributions.</b></a><br>The
-libraries and the ACL2 source code are under revision control, using svn.
-Thus, versions of ACL2 and the libraries are available between ACL2 releases.
-<i>The authors of ACL2 consider svn distributions to be experimental; while
-they will likely be fully functional in most cases, they could however be
-incomplete, fragile, and unable to pass our own regression.</i> If you decide
-to use svn versions of either the libraries or ACL2, then you should use both,
-as they tend to be kept in sync.  See the project websites, <code><A
-HREF=\"http://acl2-books.googlecode.com/\">acl2-books</A></code> and <code><A
-HREF=\"http://acl2-devel.googlecode.com/\">acl2-devel</A></code>, for the ACL2
-libraries and development sources, respectively.</li>
+<li><b>License and Copyright.</b><br>ACL2 is freely available under the terms
+of the <a href=\"HTML/LICENSE\">LICENSE</a> file distributed with ACL2.  <a
+href=\"~s1index.html?topic=ACL2____COPYRIGHT\">License, copyright, and
+authorship</a> information is available from the ACL2 <a
+href=\"#documentation\">documentation</a>.</li>
 
 <li><b>Extensions.</b><br>The ACL2 distribution includes the following
 extensions, which were developed by the individuals shown.
@@ -308,15 +326,18 @@ remembered from their past experiences with ACL2.
 
 <P>
 
-The documentation is available for reading in a Web browser, in the <A
-HREF=\"~so\">ACL2-Doc Emacs browser</A>, and by using the ACL2
-<CODE>:DOC</CODE> command at the terminal.  You will probably want to view the
-<i>ACL2+books combined manual</i>, which includes documentation for not only
-the ACL2 system but also for many of the <A href=\"#Tools\">community
-books</A> (libraries); but an ACL2-only manual is also available.  Here are
-links to those manuals on the web; also see the <A HREF=\"~so\">documentation
-for the ACL2-Doc Emacs browser</A>, if you want to view either of those two
-manuals in Emacs.
+The <i>ACL2+books combined manual</i> includes not only ACL2 User's Manual, but
+also documents many of the <A href=\"#Tools\">community books</A> (libraries).
+This manual, which is written by many authors, is thus more extensive than the
+ACL2 system, and thus potentially more useful.
+
+<P>
+
+The following links take you to these two manuals.  The manuals can however be
+read not only in a Web browser, but in the <A HREF=\"~so\">ACL2-Doc Emacs
+browser</A> or by using the ACL2 <CODE><A HREF=\"~sr\">:DOC</A></CODE> command
+at the terminal; see the documetation topic, <CODE><A
+HREF=\"~ss\">DOCUMENTATION</A></CODE>.
 
 <ul>
 
@@ -325,14 +346,17 @@ manuals in Emacs.
 <li><A HREF=\"~s2\">ACL2+books combined manual</A></li>
 
 <li><A HREF=\"~s3\">ACL2+books combined manual</A> for
-\"<A HREF=\"#bleeding-edge\">bleeding edge</A>\" distributions</li>
+\"<A HREF=\"HTML/installation/obtaining-and-installing.html#Bleeding-edge\">bleeding edge</A>\" distributions</li>
 
 </ul>
 
 <P>
 
-You can build local copies of the manuals from the ACL2 community
-books, following instructions in <code>books/GNUmakefile</code>.
+Once you have installed ACL2, you can browse the ACL2 User's Manual locally by
+opening the home page in your browser to view the file
+<CODE>doc/home-page.html</CODE> in your ACL2 sources directory.
+
+<P>
 
 <BR><HR><BR>
 <H2><A NAME=\"Tools\">Community Books: Lemma Libraries and Utilities, and How to Contribute</A></H2>
@@ -349,10 +373,9 @@ install the community books.
 <p>
 
 We strongly encourage users to submit additional books or improve existing
-books, by following the instructions at the acl2-books project page hosted at
-<code><A
-HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com</a></code>.
-In particular, the community book <code>books/system/doc/acl2-doc.lisp</code>
+books, by following the instructions at the <A
+HREF=\"http://acl2-books.googlecode.com/\">acl2-books project page</A>.  In
+particular, the community book <code>books/system/doc/acl2-doc.lisp</code>
 contains the ACL2 system documentation.  Members of the acl2-books project are
 welcome to edit that book in order to improve the system documentation.
 
@@ -367,6 +390,7 @@ Books and Papers about ACL2 and Its Applications</A>.  Some of the
 papers mentioned in that collection contain utilities, scripts, or
 ACL2 books for the problem domains in question.
 
+<BR><HR><BR>
 <H2><A NAME=\"search\">Searching documentation and books</A></H2>
 
 The links below may help you to search the ACL2 documentation and the ACL2
@@ -376,22 +400,25 @@ each of these.
 
 <ul>
 
-<li>
-The following link will take you to a search box on a Google page,
-which has the following contents.
+<li>The <a href=\"#User's-Manual\">documentation</a> for ACL2 (and optionally,
+books) comes with a search capability, whether viewed in the <A
+HREF=\"~so\">ACL2-Doc Emacs browser</A> or (where this link includes book
+documentation) <A HREF=\"~s2\">on the web</A>.  Alternatively, you may wish to
+follow the link displayed below to get to a search box on a Google page,
+pre-filled as follows.
 <pre>
-search_term site:http://www.cs.utexas.edu/users/moore/acl2/v6-3
+search_term site:http://www.cs.utexas.edu/users/moore/acl2/v6-4
 </pre>
 Now simply replace the word `search_term' with your topic.  For example, replace
 `<code>search_term</code>' by `<code>tail recursion</code>' to get
 documentation about tail recursion.
 <pre>
-tail recursion site:http://www.cs.utexas.edu/users/moore/acl2/v6-3
+tail recursion site:http://www.cs.utexas.edu/users/moore/acl2/v6-4
 </pre>
 Now you are ready to follow the link.
 <p>
 <a href=\"http://www.google.com/search?q=search_term
-                 site:http://www.cs.utexas.edu/users/moore/acl2/v6-3\">SEARCH
+                 site:http://www.cs.utexas.edu/users/moore/acl2/v6-4\">SEARCH
                  THE DOCUMENTATION</a>
 </li>
 
@@ -416,12 +443,6 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
 </li>
 
 </ul>
-
-<BR><HR><BR><BR><BR><BR><BR><BR>
-<BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR>
-<BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR>
-<BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR>
-<BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR><BR>
 
 </BODY>
 </HTML>

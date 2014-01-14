@@ -1,7 +1,7 @@
 #  -*- Fundamental -*- 
 
-# ACL2 Version 6.3 -- A Computational Logic for Applicative Common Lisp
-# Copyright (C) 2013, Regents of the University of Texas
+# ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+# Copyright (C) 2014, Regents of the University of Texas
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 # (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
@@ -525,8 +525,9 @@ proofs: compile-ok
 # WARNING: even though this target may rebuild doc.lisp, that will not
 # update the documentation for the :DOC command at the terminal, of
 # course; for that, you'll need to rebuild ACL2.
-DOC: acl2-manual
+DOC: acl2-manual STATS
 	cd books ; rm -f system/doc/render-doc.cert system/doc/rendered-doc.lsp
+	rm -f doc/home-page.html
 	$(MAKE) doc.lisp doc/home-page.html
 
 # We remove doc/HTML before rebuilding it, in order to make sure that
@@ -538,20 +539,13 @@ DOC: acl2-manual
 # WARNING: This target might be up to date even if the manual is out
 # of date with respect to books/system/doc/acl2-doc.lisp.  Consider
 # using the DOC target instead.
-doc/home-page.html: doc/home-page.lisp doc/manual
+doc/home-page.html: doc/home-page.lisp
 	cd doc ; rm -rf HTML ; ./create-doc 2>&1 create-doc.out
 
-# WARNING: This target might be up to date even if the manual is out
-# of date with respect to books/system/doc/acl2-doc.lisp.  Consider
-# using the DOC target instead.
-doc/manual: books/system/doc/manual
-	rm -rf doc/manual
-	cp -pr books/system/doc/manual doc/manual
-	rm -rf doc/manual/download/*
-
 acl2-manual:
-	rm -rf books/system/doc/manual books/system/doc/acl2-manual.cert
+	rm -rf doc/manual books/system/doc/acl2-manual.cert
 	cd books ; make USE_QUICKLISP=1 system/doc/acl2-manual.cert
+	rm -rf doc/manual/download/*
 
 # WARNING: The dependency list just below isn't complete, since it
 # doesn't consider what _those_ files depend on.
@@ -746,6 +740,9 @@ else
 endif
 
 .PHONY: regression-nonstd-fresh
+# Occasionally the target regression-nonstd-fresh breaks on the first
+# try because of deletion of the link build/clean.pl.  Some day
+# someone will fix this....
 regression-nonstd-fresh: clean-books-nonstd
 ifndef ACL2
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2r regression-nonstd
@@ -800,7 +797,7 @@ devel-check:
 .PHONY: clean-doc
 clean-doc:
 	cd books/system/doc ; ../../build/clean.pl
-	rm -rf books/system/doc/manual
+	rm -rf doc/manual
 	rm -f books/system/doc/rendered-doc.lsp
 
 .PHONY: clean-books

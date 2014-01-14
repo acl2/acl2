@@ -1,5 +1,5 @@
-; ACL2 Version 6.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2013, Regents of the University of Texas
+; ACL2 Version 6.4 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2014, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -388,8 +388,8 @@
 
 ; We also do the following for clisp, since we set the encoding on the command
 ; line (see comment above) but we want to be able to read our own source files
-; during the build.  See the comment in (defdoc character-encoding ...) in
-; axioms.lisp.
+; during the build.  See the comment in (defxdoc character-encoding ...) in
+; community book books/system/doc/acl2-doc.lisp.
 #+clisp
 (setq custom:*default-file-encoding*
       (ext:make-encoding :charset 'charset:iso-8859-1
@@ -895,7 +895,6 @@
     "other-events"
     "ld"
     "proof-checker-b"
-    "tutorial"
     "interface-raw"
     "defpkgs"
     "boot-strap-pass-2" ; at the end so that it is compiled last
@@ -954,7 +953,7 @@ ACL2 from scratch.")
    (setq acl2::*copy-of-acl2-version*
 ;  Keep this in sync with the value of acl2-version in *initial-global-table*.
          (concatenate 'string
-                      "ACL2 Version 6.3"
+                      "ACL2 Version 6.4"
                       #+non-standard-analysis
                       "(r)"
                       #+(and mcl (not ccl))

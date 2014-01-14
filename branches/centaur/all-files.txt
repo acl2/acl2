@@ -24,6 +24,7 @@ defpkgs.lisp
 defthm.lisp
 defuns.lisp
 doc
+doc.lisp
 emacs
 futures-raw.lisp
 GNUmakefile
@@ -68,13 +69,13 @@ simplify.lisp
 TAGS
 tau.lisp
 translate.lisp
-tutorial.lisp
 type-set-a.lisp
 type-set-b.lisp
 # unversioned-files.txt -- under svn control but not distributed
 workshops.html
 
 acl2-customization-files:
+bookdata.lisp
 parallel-full.lisp
 parallel-resource-based.lisp
 parallel-top-level.lisp
@@ -83,6 +84,9 @@ README
 serial.lisp
 
 doc:
+# The following is distributed but is not in the svn repository:
+acl2-code-size.txt
+create-acl2-code-size
 create-doc
 # The following is distributed but is not in the svn repository:
 home-page.html
@@ -92,6 +96,7 @@ HTML
 # The following is distributed but is not in the svn repository:
 manual
 README
+write-acl2-code-size.lisp
 
 # The following is distributed but is not in the svn repository:
 doc/HTML:
