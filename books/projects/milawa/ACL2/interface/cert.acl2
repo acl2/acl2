@@ -1,1 +1,5 @@
+; Avoid "Not owner of hash table" error (seen when certifying primitives.lisp
+; with ACL2(hp)):
+#!acl2(set-waterfall-parallelism nil)
+
 ; cert-flags: ? t :ttags :all :skip-proofs-okp t :defaxioms-okp t

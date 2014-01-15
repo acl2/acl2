@@ -125,7 +125,6 @@ ifneq ($(ACL2_JOBS), )
 ${error Error: variable ACL2_JOBS is obsolete -- use -j instead -- see :DOC book-makefiles }
 endif # ifneq ($(ACL2_JOBS), )
 
-ACL2 ?= acl2
 BUILD_DIR := $(ACL2_SYSTEM_BOOKS)/build
 
 # Here is an undocumented way to specify a different shell, e.g., sh.
@@ -137,6 +136,19 @@ SHELL := $(shell which bash)
 endif # ifdef ACL2_SHELL_OVERRIDE
 
 STARTJOB ?= $(SHELL)
+
+# We avoid ?= below because we want to be sure that the check below is
+# done only after ACL2 has been assigned, and because we want to treat
+# an empty $(ACL2) the same as an undefined ACL2.
+ifeq ($(ACL2),)
+ACL2 := acl2
+endif # ifndef ACL2
+
+# Check that $(ACL2) is an executable.
+ifeq ($(shell which $(ACL2) 2> /dev/null),)
+${error Error: Illegal value for ACL2: $(ACL2). \
+  Use make ACL2=<path_to_acl2> ...}
+endif # $($(shell which $(ACL2) 2> /dev/null),)
 
 .SUFFIXES:
 .SUFFIXES: .cert .lisp

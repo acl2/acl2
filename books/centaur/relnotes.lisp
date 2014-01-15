@@ -69,7 +69,10 @@ in ACL2 6.4, so we've deleted them.</p>
 
 <p>VL: fixed excessive, bogus warnings about design wires in toe transform.</p>
 
-<p>STD: @(see defrule) now has a @(':local') option.</p>")
+<p>STD: @(see defrule) now has a @(':local') option.</p>
+
+<p>Running the @('make') command now causes an error if variable ACL2 is not
+bound to an executable.</p>")
 
 
 (defxdoc note-6-4-books
