@@ -18,8 +18,6 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-;; cert_param: (uses-glucose)
-
 (in-package "ACL2")
 (include-book "common")
 

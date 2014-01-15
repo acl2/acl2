@@ -11,6 +11,8 @@
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 
 (in-package "ACL2")
+; cert_param: (hons-only)
+; cert_param: (uses-glucose)
 
 (include-book "centaur/vl/top" :dir :system)
 (include-book "centaur/gl/gl" :dir :system)

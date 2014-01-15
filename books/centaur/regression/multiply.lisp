@@ -10,8 +10,6 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 
-;; cert_param: (uses-glucose)
-
 ; Modified by Jared Davis <jared@centtech.com> on 2013-12-17 after changes to
 ; improve compatibility between VL and GL multiplies, to verify the multipliers
 ; up through 64 bits.
