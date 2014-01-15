@@ -3865,14 +3865,21 @@ the calls took.")
 
 ; Keep in sync with acl2h-init-memoizations.
 
+; We avoid unmemoizing functions when their memoization does not interfere with
+; waterfall parallelism.  We formerly also unmemoized here the functions
+; fchecksum-obj and expansion-alist-pkg-names-memoize, with the result that
+; certification of community book books/system/doc/render-doc-combined with
+; ACL2(hp) went out to lunch (specifically, it seemed looking at a backtrace,
+; because of fchecksum-obj).
+
+; We avoid memoizing bad-lisp-objectp because the *1* function for
+; symbol-package-name calls chk-bad-lisp-object, and of course
+; symbol-package-name can be called during the waterfall.
+
   (when (memoizedp-raw 'bad-lisp-objectp)
     (unmemoize-fn 'bad-lisp-objectp))
   (when (memoizedp-raw 'worse-than-builtin)
-    (unmemoize-fn 'worse-than-builtin))
-  (when (memoizedp-raw 'fchecksum-obj)
-    (unmemoize-fn 'fchecksum-obj))
-  (when (memoizedp-raw 'expansion-alist-pkg-names-memoize)
-    (unmemoize-fn 'expansion-alist-pkg-names-memoize)))
+    (unmemoize-fn 'worse-than-builtin)))
 
 ;;;;;;;;;;
 ;;; Start memory management code (start-sol-gc)

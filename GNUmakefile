@@ -705,7 +705,11 @@ endif
 # Certify main books from scratch.
 .PHONY: certify-books-fresh
 certify-books-fresh: clean-books
-	$(MAKE) $(ACL2_IGNORE) certify-books
+ifndef ACL2
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2 certify-books
+else
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) certify-books
+endif
 
 # Do regression tests from scratch.
 # Success can generally be determined by checking for the absence of ** in the
