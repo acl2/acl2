@@ -1362,10 +1362,8 @@
 		  (<= 0 y)
 		  (< x y))
 	     (< (* x x) (* y y)))
-    :hints (("Goal"
-	     :use ((:instance <-*-left-cancel (x x) (y y) (z x))
-		   (:instance <-*-right-cancel (x x) (y y) (z y)))
-	     :in-theory (disable <-*-left-cancel <-*-right-cancel)))))
+    :hints(("Goal"
+            :cases ((< (* x x) (* x y)))))))
 
  ;; Moreover, if x^2<y^2, then x<y.
 
@@ -1698,10 +1696,8 @@
 		  (<= 0 y)
 		  (< x y))
 	     (< (* x x) (* y y)))
-    :hints (("Goal"
-	     :use ((:instance <-*-left-cancel (x x) (y y) (z x))
-		   (:instance <-*-right-cancel (x x) (y y) (z y)))
-	     :in-theory (disable <-*-left-cancel <-*-right-cancel)))))
+    :hints(("Goal"
+            :cases ((< (* x x) (* x y)))))))
 
  ;; So we can conclude that 0 < standard-part(Taylor(sine(x))), for x
  ;; in (0, 2).

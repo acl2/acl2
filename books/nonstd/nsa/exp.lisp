@@ -420,6 +420,13 @@
  ;; between 0 and 1.  There should be a simpler proof of this, but I
  ;; just don't see one.
 
+ (local
+  ;; [Jared]: Awful hack to deal with awful, brittle :instructions in the proof
+  ;; below.  This is a !&@(* nightmare.  I'm pretty sure a proper fix is beyond
+  ;; me.  Thanks very much to Matt Kaufmann for a very useful hint toward
+  ;; figuring out that this lemma was the one causing the damage.
+  (in-theory (disable <-*-/-right-commuted)))
+
  (defthm sumlist-norm-real-geometric
    (implies (and (geometric-sequence-p seq ratio)
 		 (acl2-numberp (car seq))
