@@ -1,0 +1,21 @@
+#summary Tips and Tricks for using ACL2
+
+= Introduction =
+
+Random "gotchas" that Rager has discovered while using ACL2 at an intermediate level.  These could be folded into the ACL2 documentation (I think there might already be such a topic that these could be added to) at some point, but I'm just writing them here for now.
+
+= Gotchas =
+
+  * :use hints only add the instance of the theorem being used to the hypotheses of the subgoal you're trying to prove.  They do not tell the prover to actually use (or complain to you when it can't actually use) the theorem.  The hypothesis will only help rewrite the conclusion of the subgoal if the RHS of the instantiated theorem (what becomes the additional hypothesis) is "less complex" (determined via some implementation-specific heuristics) than the LHS.
+
+  A couple work-arounds are to either (1) write a better theorem (at the same level of abstraction) that fires automatically as a rewrite rule (avoiding the :use hint) or to (2) prove an intermediate rewrite rule that more thoroughly guides the prover.
+
+  * When writing rewrite rules that use arithmetic (e.g., using +), you probably want your arguments to arithmetic "functions" (like +) to be in term order.  So instead of writing
+
+  {{{(defthm foo (equal (+ c b a) ...))}}}
+
+  You probably want to write:
+
+  {{{defthm foo (equal (+ a b c) ...))}}}
+
+  This is because ACL2 (and also most any arithmetic library you would use) tends to canonicalize the order of arguments to arithmetic "functions" (like +).  So, unless you disable associativity-of-+ and commutativity-of-+, any checkpoint you're likely to see will probably present the arithmetic term that ACL2 is "stuck on" in term order.
