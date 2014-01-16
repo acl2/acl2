@@ -10,12 +10,16 @@ Random "gotchas" that Rager has discovered while using ACL2 at an intermediate l
 
   A couple work-arounds are to either (1) write a better theorem (at the same level of abstraction) that fires automatically as a rewrite rule (avoiding the :use hint) or to (2) prove an intermediate rewrite rule that more thoroughly guides the prover.
 
-  * When writing rewrite rules that use arithmetic (e.g., using +), you probably want your arguments to arithmetic "functions" (like +) to be in term order.  So instead of writing
+  * When writing rewrite rules that use arithmetic (e.g., using +), you probably want your arguments to arithmetic "functions" (like +) to match the term order of the checkpoints that you're seeing.  It's unlikely that you will see a checkpoint of the following (where _a_, _b_, and _c_ represent terms themselves where the correct "term order" (see :DOC topic _term order_) indicates that _a_ < _b_ < _c_):
 
-  {{{(defthm foo (equal (+ c b a) ...))}}}
+  (equal (+ _c_ _b_ _a_) ...)
 
-  You probably want to write:
+  Presuming associativity-of-+ and commutativity-of-+ are enabled (which they typically are), it's more likely you will see this checkpoint:
 
-  {{{defthm foo (equal (+ a b c) ...))}}}
+  (equal (+ _a_ _b_ _c_) ...)
 
-  This is because ACL2 (and also most any arithmetic library you would use) tends to canonicalize the order of arguments to arithmetic "functions" (like +).  So, unless you disable associativity-of-+ and commutativity-of-+, any checkpoint you're likely to see will probably present the arithmetic term that ACL2 is "stuck on" in term order.
+  This is because ACL2 (and also most any arithmetic library you would use) tends to canonicalize the order of arguments to arithmetic "functions" (like +).  So, unless you disable associativity-of-+ and commutativity-of-+, any checkpoint you're likely to see will probably present the arithmetic term that ACL2 is "stuck on" in term order.  Thus, you should write your rewrite rules with the term order of the arithmetic expressions that you're likely to see in checkpoints in mind.
+
+  Here is some further paraphrased discussion from Davis on the matter:
+
+  It doesn't really make sense to worry about term-order when writing the LHS of a rule.  The term-order matters in the subgoal and you have to have general enough rules to match whatever order you happen to encounter.   There isn't a "correct" way to write your rewrite rule that will solve the general problem.  It's the term order of the terms you're *matching* that matters, and you generally don't have any control over that when you're writing the rule.
