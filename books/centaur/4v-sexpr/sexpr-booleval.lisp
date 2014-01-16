@@ -27,6 +27,8 @@
 (include-book "sexpr-rewrites")
 (include-book "centaur/gl/gl-util" :dir :system)
 (include-book "centaur/gl/def-gl-rewrite" :dir :system)
+(include-book "centaur/vl/util/cwtime" :dir :system)
+
 ; Suppose you have a hardware module represented as a 4v-sexpr and you want to
 ; prove that it implements a certain function.
 ;
@@ -104,7 +106,9 @@
     (defthm 4v-sexpr-eval-default-in-terms-of-4v-sexpr-eval
       (implies (subsetp-equal (4v-sexpr-vars x) vars)
                (equal (4v-sexpr-eval-default x env default)
-                      (4v-sexpr-eval x (append env (bind-to-each vars default)))))
+                      (4v-sexpr-eval x (append env (bind-to-each
+                                                    (set-difference$ vars (alist-keys env))
+                                                    default)))))
       :hints ('(:expand ((4v-sexpr-eval-default x env default)
                          (:free (env) (4v-sexpr-eval x env)))
                 :in-theory (enable 4v-sexpr-apply)))
@@ -112,7 +116,9 @@
     (defthm 4v-sexpr-eval-default-list-in-terms-of-4v-sexpr-eval
       (implies (subsetp-equal (4v-sexpr-vars-list x) vars)
                (equal (4v-sexpr-eval-default-list x env default)
-                      (4v-sexpr-eval-list x (append env (bind-to-each vars default)))))
+                      (4v-sexpr-eval-list x (append env (bind-to-each
+                                                         (set-difference$ vars (alist-keys env))
+                                                         default)))))
       :hints ('(:expand ((4v-sexpr-eval-default-list x env default)
                          (:free (env) (4v-sexpr-eval-list x env)))))
       :flag sexpr-list))
@@ -120,10 +126,50 @@
   (defthmd 4v-sexpr-eval-alist-default-in-terms-of-4v-sexpr-eval-alist
     (implies (subsetp-equal (4v-sexpr-vars-list (alist-vals x)) vars)
              (equal (4v-sexpr-eval-default-alist x env default)
-                    (4v-sexpr-eval-alist x (append env (bind-to-each vars default)))))
+                    (4v-sexpr-eval-alist x (append env (bind-to-each
+                                                        (set-difference$ vars (alist-keys env))
+                                                        default)))))
     :hints(("Goal" :in-theory (e/d (4v-sexpr-eval-default-alist)
                                    (4v-sexpr-eval-default
                                     4v-sexpr-eval)))))
+
+
+  (local
+   (defthm-4v-sexpr-flag
+     (defthm 4v-sexpr-eval-default-append-envs-commute
+       (equal (4v-sexpr-eval x (append (bind-to-each
+                                        (set-difference$ vars (alist-keys env))
+                                        default)
+                                       env))
+              (4v-sexpr-eval x (append env (bind-to-each
+                                            (set-difference$ vars (alist-keys env))
+                                            default))))
+       :hints ('(:expand ((4v-sexpr-eval-default x env default)
+                          (:free (env) (4v-sexpr-eval x env)))))
+       :flag sexpr)
+     (defthm 4v-sexpr-eval-default-list-append-envs-commute
+       (equal (4v-sexpr-eval-list x (append (bind-to-each
+                                             (set-difference$ vars (alist-keys env))
+                                             default)
+                                            env))
+              (4v-sexpr-eval-list x (append env (bind-to-each
+                                                 (set-difference$ vars (alist-keys env))
+                                                 default))))
+       :hints ('(:expand ((4v-sexpr-eval-default-list x env default)
+                          (:free (env) (4v-sexpr-eval-list x env)))))
+       :flag sexpr-list)))
+
+  (local (defthm 4v-sexpr-eval-alist-append-envs-commute
+           (equal (4v-sexpr-eval-alist x (append (bind-to-each
+                                                  (set-difference$ vars (alist-keys env))
+                                                  default)
+                                                 env))
+                  (4v-sexpr-eval-alist x (append env (bind-to-each
+                                                      (set-difference$ vars (alist-keys env))
+                                                      default))))
+           :hints(("Goal" :in-theory (e/d (4v-sexpr-eval-default-alist)
+                                          (4v-sexpr-eval-default
+                                           4v-sexpr-eval))))))
 
   (local (in-theory (disable 4v-sexpr-eval-default-in-terms-of-4v-sexpr-eval
                              4v-sexpr-eval-default-list-in-terms-of-4v-sexpr-eval)))
@@ -138,22 +184,39 @@
                                          (4v-sexpr-vars x-equiv)))
                            (x x-equiv))))))
 
+  (defun 4v-sexpr-eval-default-alist-gl (x env default)
+    (b* ((vars (cwtime (4v-sexpr-vars-1pass-list (alist-vals x)) :mintime 1))
+         (keys (alist-keys env))
+         (vars (cwtime (hons-set-diff vars keys) :mintime 1))
+         (defaults (cwtime (bind-to-each vars default) :mintime 1))
+         (full-env (if (< (len keys) (len vars))
+                       (cwtime (append env defaults) :mintime 1)
+                     (cwtime (append defaults env) :mintime 1))))
+      (cwtime (4v-sexpr-eval-alist
+               x full-env))))
+
   (defthmd 4v-sexpr-eval-default-alist-gl-def
     (equal (4v-sexpr-eval-default-alist x env default)
-           (4v-sexpr-eval-alist
-            x
-            (append env (bind-to-each (4v-sexpr-vars-1pass-list (alist-vals x)) default))))
+           (4v-sexpr-eval-default-alist-gl x env default))
     :hints (("Goal" :use ((:instance 4v-sexpr-eval-alist-default-in-terms-of-4v-sexpr-eval-alist
                            (vars (4v-sexpr-vars-list (alist-vals x)))))))
     :rule-classes ((:definition :install-body nil)))
 
   (gl::set-preferred-def 4v-sexpr-eval-default-alist 4v-sexpr-eval-default-alist-gl-def)
 
+  (defun 4v-sexpr-eval-default-list-gl (x env default)
+    (b* ((vars (cwtime (4v-sexpr-vars-1pass-list x) :mintime 1))
+         (keys (alist-keys env))
+         (vars (cwtime (hons-set-diff vars keys) :mintime 1))
+         (defaults (cwtime (bind-to-each vars default) :mintime 1))
+         (full-env (if (< (len keys) (len vars))
+                       (cwtime (append env defaults) :mintime 1)
+                     (cwtime (append defaults env) :mintime 1))))
+      (cwtime (4v-sexpr-eval-list x full-env) :mintime 1)))
+
   (defthmd 4v-sexpr-eval-default-list-gl-def
     (equal (4v-sexpr-eval-default-list x env default)
-           (4v-sexpr-eval-list
-            x
-            (append env (bind-to-each (4v-sexpr-vars-1pass-list x) default))))
+           (4v-sexpr-eval-default-list-gl x env default))
     :hints (("Goal" :use ((:instance 4v-sexpr-eval-default-list-in-terms-of-4v-sexpr-eval
                            (vars (4v-sexpr-vars-list x))))))
     :rule-classes ((:definition :install-body nil)))
@@ -224,7 +287,9 @@
     (defthm 4v-sexpr-eval-default-of-4v-bool-alist-extract
       (implies (subsetp (4v-sexpr-vars x) vars)
                (equal (4v-sexpr-eval-default x (append env
-                                                       (4v-bool-alist-extract vars dc))
+                                                       (4v-bool-alist-extract
+                                                        (set-difference$ vars (alist-keys env))
+                                                        dc))
                                              'f)
                       (4v-sexpr-eval-default x (append env
                                                        (4v-bool-alist-fix dc))
@@ -234,7 +299,9 @@
     (defthm 4v-sexpr-eval-default-list-of-4v-bool-alist-extract
       (implies (subsetp (4v-sexpr-vars-list x) vars)
                (equal (4v-sexpr-eval-default-list x (append env
-                                                            (4v-bool-alist-extract vars dc))
+                                                            (4v-bool-alist-extract
+                                                             (set-difference$ vars (alist-keys env))
+                                                             dc))
                                                   'f)
                       (4v-sexpr-eval-default-list x (append env
                                                             (4v-bool-alist-fix dc))
@@ -246,7 +313,9 @@
   (defthm 4v-sexpr-eval-default-alist-of-4v-bool-alist-extract
     (implies (subsetp (4v-sexpr-vars-list (alist-vals x)) vars)
              (equal (4v-sexpr-eval-default-alist x (append env
-                                                          (4v-bool-alist-extract vars dc))
+                                                          (4v-bool-alist-extract
+                                                           (set-difference$ vars (alist-keys env))
+                                                           dc))
                                                 'f)
                     (4v-sexpr-eval-default-alist x (append env
                                                            (4v-bool-alist-fix dc))
@@ -254,14 +323,15 @@
     :hints(("Goal" :in-theory (enable 4v-sexpr-eval-default-alist alist-vals))))
 
   (defun 4v-sexpr-alist-check-independent-gl (x cares dont-cares)
-    (b* ((eval-dce (4v-sexpr-eval-default-alist
-                    x (make-fast-alist
-                       (append cares
-                               (4v-bool-alist-extract
-                                (4v-sexpr-vars-1pass-list (alist-vals x))
-                                (make-fast-alist dont-cares)))) 'f))
-         (eval-squash
-          (4v-sexpr-eval-default-alist x (make-fast-alist cares) 'f)))
+    (b* ((eval-squash
+          (cwtime (4v-sexpr-eval-default-alist x cares 'f) :name eval-squash :mintime 1))
+         (vars (cwtime (4v-sexpr-vars-1pass-list (alist-vals x)) :mintime 1))
+         (vars (cwtime (hons-set-diff vars (alist-keys cares)) :mintime 1))
+         (extract (cwtime (4v-bool-alist-extract
+                           vars
+                           (make-fast-alist dont-cares)) :mintime 1))
+         (dce (cwtime (append cares extract) :name dce :mintime 1))
+         (eval-dce (cwtime (4v-sexpr-eval-default-alist x dce 'f) :name eval-dce :mintime 1)))
       (equal eval-dce eval-squash)))
 
   (defthmd 4v-sexpr-alist-check-independent-fix-vars

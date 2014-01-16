@@ -30,6 +30,7 @@
 (include-book "centaur/aig/faig-base" :dir :system)
 (include-book "centaur/misc/fast-alists" :dir :system)
 (include-book "centaur/misc/hons-sets" :dir :system)
+(include-book "centaur/vl/util/cwtime" :dir :system)
 (local (include-book "data-structures/no-duplicates" :dir :system))
 
 
@@ -256,7 +257,9 @@
 
 (defun sig-al-to-svar-al (al svarmap)
   (declare (xargs :guard (good-svarmap svarmap)))
-  (sig-al-to-svar-al1 al (mbe :logic (svarmap-fix svarmap) :exec svarmap)))
+  (b* ((svarmap (mbe :logic (cwtime (svarmap-fix svarmap) :mintime 1)
+                     :exec svarmap)))
+    (cwtime (sig-al-to-svar-al1 al svarmap) :mintime 1)))
 
 (defcong alist-equiv alist-equiv (sig-al-to-svar-al env svarmap) 1
   :hints (("goal" :use ((:instance sig-al-to-svar-al1-fake-cong

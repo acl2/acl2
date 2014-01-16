@@ -178,15 +178,16 @@
     faig-eval-al))))
 
 (defun 4v-sexpr-eval-by-faig-list (x al opt)
-  (let* ((vars (alist-keys al))
-         ;; hons-copy the varmap so that 4v-sexpr-to-faig-opt memoization can happen
-         (onoff-al (make-fast-alist (num-varmap vars 0)))
-         (faig-eval-al (sig-al-to-svar-al
-                        (4v-alist->faig-const-alist al) onoff-al)))
-  (faig-const-list->4v-list
-   (faig-eval-list
-    (4v-sexpr-to-faig-list x onoff-al :optimize opt)
-    faig-eval-al))))
+  (b* ((vars (alist-keys al))
+       ;; hons-copy the varmap so that 4v-sexpr-to-faig-opt memoization can happen
+       (onoff-al (make-fast-alist (cwtime (num-varmap vars 0) :mintime 1)))
+       (faig-eval-al (sig-al-to-svar-al
+                      (cwtime (4v-alist->faig-const-alist al) :mintime 1)
+                      onoff-al))
+       (faig-list (cwtime (4v-sexpr-to-faig-list x onoff-al :optimize opt)
+                          :mintime 1))
+       (evals (cwtime (faig-eval-list faig-list faig-eval-al) :mintime 1)))
+    (cwtime (faig-const-list->4v-list evals) :mintime 1)))
 
 (defthmd 4v-sexpr-eval-by-faig-list-alt-def
   (equal (4v-sexpr-eval-by-faig-list x al opt)
