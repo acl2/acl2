@@ -116,6 +116,13 @@
      ((mutual-recursion progn)
       (event-forms-collect-fn-names (cdr x))))))
 
+(defund glcp-term-obj-p (x)
+  (declare (xargs :guard t))
+  (and (consp x)
+       (let* ((tag (car x)))
+         (or (eq tag :g-apply)
+             (eq tag :g-var)))))
+
 (defconst *glcp-interp-template*
   `(progn
 
@@ -148,6 +155,8 @@
               (glcp-interp-error "The clock ran out.~%"))
              ((glcp-er xobj)
               (interp-term x alist contexts . ,*glcp-common-inputs*))
+             ((unless (glcp-term-obj-p xobj))
+              (glcp-value xobj))
              ((mv er xobj) (try-equivalences-loop xobj
                                                   pathcond
                                                   contexts clk
