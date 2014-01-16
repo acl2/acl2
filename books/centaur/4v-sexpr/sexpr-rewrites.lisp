@@ -1238,6 +1238,7 @@ which rewrites to
                                   4v-sexpr-eval 4v-sexpr-eval-list))))
 
 
+  (local (in-theory (enable 4v-sexpr-apply)))
 
   (defthm rewrite-ite-by-var-ok-simpl
     (4v-<= (4v-xor (4v-xor (4v-sexpr-eval v env) (4v-sexpr-eval v env))
@@ -2006,6 +2007,30 @@ simplifying using the known signals."
             :use ((:instance 4v-sexpr-boolean-rulep-necc
                    (al (4v-alist-bool-special (sexpr-bool-special-vars)
                                               (4v-sexpr-vars x) al))))))))
+
+
+(defsection 4v-bool-alist-fix
+
+
+  (defun 4v-bool-alist-fix (x)
+    (declare (xargs :guard t))
+    (if (atom x)
+        nil
+      (if (consp (car x))
+          (mbe :logic (cons (cons (caar x) (4v-bool-fix (cdar x)))
+                            (4v-bool-alist-fix (cdr x)))
+               :exec (if (4v-boolp (cdar x))
+                         (cons (car x) (4v-bool-alist-fix (cdr x)))
+                       (cons (cons (caar x) (4v-bool-fix (cdar x)))
+                             (4v-bool-alist-fix (cdr x)))))
+        (4v-bool-alist-fix (cdr x)))))
+
+  (defthm lookup-in-4v-bool-alist-fix
+    (equal (hons-assoc-equal k (4v-bool-alist-fix x))
+           (let ((look (hons-assoc-equal k x)))
+             (and look (cons k (4v-bool-fix (cdr look))))))
+    :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
+
              
 
 

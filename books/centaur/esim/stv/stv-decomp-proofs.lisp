@@ -618,6 +618,8 @@
 
 (def-ruleset stv-decomp-rules
   '(stv-run-fn
+    stv-run-make-eval-env
+    stv-run-collect-eval-signals
     car-cons cdr-cons
     make-fast-alist
     4v-sexpr-simp-and-eval-alist

@@ -194,11 +194,13 @@
              nil
            (cons (4v-sexpr-eval-by-faig (car x) al opt)
                  (4v-sexpr-eval-by-faig-list (cdr x) al opt))))
-  :hints(("Goal" :in-theory (e/d () (faig-eval 4v-sexpr-to-faig-opt
-                                               faig-const->4v
-                                               4v->faig-const
-                                               4v-sexpr-to-faig-plain
-                                               4v-sexpr-eval))))
+  :hints(("Goal" :in-theory (e/d (4v-list->faig-const-list
+                                  faig-const-list->4v-list)
+                                 (faig-eval 4v-sexpr-to-faig-opt
+                                            faig-const->4v
+                                            4v->faig-const
+                                            4v-sexpr-to-faig-plain
+                                            4v-sexpr-eval))))
   :rule-classes ((:definition :install-body nil)))
 
 
@@ -388,7 +390,7 @@
          (num-varmap (alist-keys al) 0))))
       al)
      :hints (("goal" :do-not-induct t
-              :in-theory (e/d (faig-eval aig-env-lookup)
+              :in-theory (e/d (faig-eval aig-env-lookup 4v->faig-const)
                               (4v-fix faig-const->4v faig-fix)))
              (witness :ruleset 4v-env-equiv-witnessing)
              (and stable-under-simplificationp
@@ -562,56 +564,62 @@
 (gl::gl-set-uninterpreted bool-to-4v)
 (gl::gl-set-uninterpreted faig-const->4v)
 (gl::def-gl-rewrite 4v->faig-const-of-bool-to-4v-gl
-                    (equal (4v->faig-const (bool-to-4v x))
-                           (cons (not (not x)) (not x))))
+  (equal (4v->faig-const (bool-to-4v x))
+         (cons (not (not x)) (not x))))
+
 (gl::def-gl-rewrite faig-const->4v-equal-x-gl
-                    (equal (equal (faig-const->4v a) 'x)
-                           (not (or (equal a (faig-t))
-                                    (equal a (faig-f))
-                                    (equal a (faig-z))))))
+  (equal (equal (faig-const->4v a) 'x)
+         (not (or (equal a (faig-t))
+                  (equal a (faig-f))
+                  (equal a (faig-z)))))
+  :hints(("Goal" :in-theory (enable faig-const->4v))))
 
 (gl::def-gl-rewrite 4v->faig-const-of-faig-const->4v-gl
-                    (equal (4v->faig-const (faig-const->4v x))
-                           (if (and (consp x)
-                                    (booleanp (car x))
-                                    (booleanp (cdr x)))
-                               x
-                             '(t . t))))
+  (equal (4v->faig-const (faig-const->4v x))
+         (if (and (consp x)
+                  (booleanp (car x))
+                  (booleanp (cdr x)))
+             x
+           '(t . t)))
+  :hints(("Goal" :in-theory (enable faig-const-fix
+                                    faig-const-p))))
 
 (gl::def-gl-rewrite 4vp-of-faig-const->4v-rewrite
-                    (equal (4vp (faig-const->4v x)) t))
+  (equal (4vp (faig-const->4v x)) t))
 
 ;; the following 4 theorems are not needed in STV proofs but end up being
 ;; useful in non-STV ones
 (gl::def-gl-rewrite equal-of-bool-to-4v-1
-                    (equal (equal (bool-to-4v x) y)
-                           (or (and x (equal y (4vt)))
-                               (and (equal x nil) (equal y (4vf))))))
+  (equal (equal (bool-to-4v x) y)
+         (or (and x (equal y (4vt)))
+             (and (equal x nil) (equal y (4vf))))))
 
 (gl::def-gl-rewrite equal-of-bool-to-4v-2
-                    (equal (equal y (bool-to-4v x))
-                           (or (and x (equal y (4vt)))
-                               (and (equal x nil) (equal y (4vf))))))
+  (equal (equal y (bool-to-4v x))
+         (or (and x (equal y (4vt)))
+             (and (equal x nil) (equal y (4vf))))))
 
 (gl::def-gl-rewrite equal-of-faig-const->4v-1
-                    (equal (equal (faig-const->4v x) y)
-                           (or (and (equal x (faig-t)) (equal y (4vt)))
-                               (and (equal x (faig-f)) (equal y (4vf)))
-                               (and (equal x (faig-z)) (equal y (4vz)))
-                               (and (not (equal x (faig-t)))
-                                    (not (equal x (faig-f)))
-                                    (not (equal x (faig-z)))
-                                    (equal y (4vx))))))
+  (equal (equal (faig-const->4v x) y)
+         (or (and (equal x (faig-t)) (equal y (4vt)))
+             (and (equal x (faig-f)) (equal y (4vf)))
+             (and (equal x (faig-z)) (equal y (4vz)))
+             (and (not (equal x (faig-t)))
+                  (not (equal x (faig-f)))
+                  (not (equal x (faig-z)))
+                  (equal y (4vx)))))
+  :hints(("Goal" :in-theory (enable faig-const->4v))))
 
 (gl::def-gl-rewrite equal-of-faig-const->4v-2
-                    (equal (equal y (faig-const->4v x))
-                           (or (and (equal x (faig-t)) (equal y (4vt)))
-                               (and (equal x (faig-f)) (equal y (4vf)))
-                               (and (equal x (faig-z)) (equal y (4vz)))
-                               (and (not (equal x (faig-t)))
-                                    (not (equal x (faig-f)))
-                                    (not (equal x (faig-z)))
-                                    (equal y (4vx))))))
+  (equal (equal y (faig-const->4v x))
+         (or (and (equal x (faig-t)) (equal y (4vt)))
+             (and (equal x (faig-f)) (equal y (4vf)))
+             (and (equal x (faig-z)) (equal y (4vz)))
+             (and (not (equal x (faig-t)))
+                  (not (equal x (faig-f)))
+                  (not (equal x (faig-z)))
+                  (equal y (4vx)))))
+  :hints(("Goal" :in-theory (enable faig-const->4v))))
 
 
 ;; this is used in STVs
@@ -628,6 +636,7 @@
          (b* (((when (atom x)) 0)
               (rest (4v-to-nat (cdr x))))
            (4v-to-nat-cons (car x) rest)))
+  :hints(("Goal" :in-theory (enable 4v->faig-const)))
   :rule-classes ((:definition :install-body nil)))
            
 (gl::set-preferred-def 4v-to-nat 4v-to-nat-redef)

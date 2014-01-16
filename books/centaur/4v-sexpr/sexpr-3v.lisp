@@ -61,4 +61,5 @@
                     nil))
     :hints(("Goal"
             :expand ((4v-sexpr-eval x env))
-            :in-theory (disable* (:ruleset 4v-op-defs))))))
+            :in-theory (e/d* (4v-sexpr-apply)
+                             ((:ruleset 4v-op-defs)))))))

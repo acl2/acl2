@@ -135,7 +135,10 @@ FAIGs.</p>"
     (cons (aig-not (aig-and a0 (aig-not a1)))
           (aig-not (aig-and a1 (aig-not a0)))))
   ///
-  (prove-faig-op-commutes f-aig-unfloat (a)))
+  (prove-faig-op-commutes f-aig-unfloat (a))
+
+  (defcong faig-fix-equiv equal (f-aig-unfloat a) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 
 (define t-aig-not (a)
@@ -147,7 +150,10 @@ evaluate to Z."
   (b* (((faig a1 a0) a))
     (cons a0 a1))
   ///
-  (prove-faig-op-commutes t-aig-not (a)))
+  (prove-faig-op-commutes t-aig-not (a))
+
+  (defcong faig-fix-equiv equal (t-aig-not a) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 (define f-aig-not (a)
   :parents (faig-constructors)
@@ -157,7 +163,10 @@ evaluate to Z."
     (cons (aig-not (aig-and a1 (aig-not a0)))
           (aig-not (aig-and a0 (aig-not a1)))))
   ///
-  (prove-faig-op-commutes f-aig-not (a)))
+  (prove-faig-op-commutes f-aig-not (a))
+
+  (defcong faig-fix-equiv equal (f-aig-not a) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 
 (define t-aig-and (a b)
@@ -170,7 +179,12 @@ assuming they cannot evaluate to Z."
     (cons (aig-and a1 b1)
           (aig-or  a0 b0)))
   ///
-  (prove-faig-op-commutes t-aig-and (a b)))
+  (prove-faig-op-commutes t-aig-and (a b))
+
+  (defcong faig-fix-equiv equal (t-aig-and a b) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (t-aig-and a b) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 (define f-aig-and (a b)
   :parents (faig-constructors)
@@ -180,7 +194,12 @@ assuming they cannot evaluate to Z."
        (b (f-aig-unfloat b)))
     (t-aig-and a b))
   ///
-  (prove-faig-op-commutes f-aig-and (a b)))
+  (prove-faig-op-commutes f-aig-and (a b))
+
+  (defcong faig-fix-equiv equal (f-aig-and a b) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (f-aig-and a b) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 
 (define t-aig-or (a b)
@@ -193,7 +212,12 @@ assuming they cannot evaluate to Z."
     (cons (aig-or  a1 b1)
           (aig-and a0 b0)))
   ///
-  (prove-faig-op-commutes t-aig-or (a b)))
+  (prove-faig-op-commutes t-aig-or (a b))
+  
+  (defcong faig-fix-equiv equal (t-aig-or a b) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (t-aig-or a b) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 (define f-aig-or (a b)
   :parents (faig-constructors)
@@ -203,7 +227,12 @@ assuming they cannot evaluate to Z."
        (b (f-aig-unfloat b)))
     (t-aig-or a b))
   ///
-  (prove-faig-op-commutes f-aig-or (a b)))
+  (prove-faig-op-commutes f-aig-or (a b))
+  
+  (defcong faig-fix-equiv equal (f-aig-or a b) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (f-aig-or a b) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 
 (define t-aig-xor (a b)
@@ -214,7 +243,12 @@ assuming they cannot evaluate to Z."
   (t-aig-or (t-aig-and a (t-aig-not b))
             (t-aig-and (t-aig-not a) b))
   ///
-  (prove-faig-op-commutes t-aig-xor (a b)))
+  (prove-faig-op-commutes t-aig-xor (a b))
+
+  (defcong faig-fix-equiv equal (t-aig-xor a b) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (t-aig-xor a b) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 (define f-aig-xor (a b)
   :parents (faig-constructors)
@@ -224,7 +258,12 @@ assuming they cannot evaluate to Z."
        (b (f-aig-unfloat b)))
     (t-aig-xor a b))
   ///
-  (prove-faig-op-commutes f-aig-xor (a b)))
+  (prove-faig-op-commutes f-aig-xor (a b))
+
+  (defcong faig-fix-equiv equal (f-aig-xor a b) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (f-aig-xor a b) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 
 (define t-aig-iff (a b)
@@ -235,7 +274,12 @@ assuming they cannot evaluate to Z."
   (t-aig-or (t-aig-and a b)
             (t-aig-and (t-aig-not a) (t-aig-not b)))
   ///
-  (prove-faig-op-commutes t-aig-iff (a b)))
+  (prove-faig-op-commutes t-aig-iff (a b))
+
+  (defcong faig-fix-equiv equal (t-aig-iff a b) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (t-aig-iff a b) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 (define f-aig-iff (a b)
   :parents (faig-constructors)
@@ -245,7 +289,12 @@ assuming they cannot evaluate to Z."
        (b (f-aig-unfloat b)))
     (t-aig-iff a b))
   ///
-  (prove-faig-op-commutes f-aig-iff (a b)))
+  (prove-faig-op-commutes f-aig-iff (a b))
+
+  (defcong faig-fix-equiv equal (f-aig-iff a b) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (f-aig-iff a b) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 
 (define t-aig-ite (c a b)
@@ -262,7 +311,14 @@ for discussion related to this issue.</p>"
     (cons (aig-or (aig-and c1 a1) (aig-and c0 b1))
           (aig-or (aig-and c1 a0) (aig-and c0 b0))))
   ///
-  (prove-faig-op-commutes t-aig-ite (c a b)))
+  (prove-faig-op-commutes t-aig-ite (c a b))
+
+  (defcong faig-fix-equiv equal (t-aig-ite c a b) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (t-aig-ite c a b) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (t-aig-ite c a b) 3
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 (define f-aig-ite (c a b)
   :parents (faig-constructors)
@@ -277,7 +333,14 @@ for discussion related to this issue.</p>"
        (b (f-aig-unfloat b)))
     (t-aig-ite c a b))
   ///
-  (prove-faig-op-commutes f-aig-ite (c a b)))
+  (prove-faig-op-commutes f-aig-ite (c a b))
+
+  (defcong faig-fix-equiv equal (f-aig-ite c a b) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (f-aig-ite c a b) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (f-aig-ite c a b) 3
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 
 (define t-aig-ite* (c a b)
@@ -295,7 +358,13 @@ for discussion related to this issue.</p>"
     (cons (aig-or x (aig-or (aig-and c1 a1) (aig-and c0 b1)))
           (aig-or x (aig-or (aig-and c1 a0) (aig-and c0 b0)))))
   ///
-  (prove-faig-op-commutes t-aig-ite* (c a b)))
+  (prove-faig-op-commutes t-aig-ite* (c a b))
+  (defcong faig-fix-equiv equal (t-aig-ite* c a b) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (t-aig-ite* c a b) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (t-aig-ite* c a b) 3
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 (define f-aig-ite* (c a b)
   :parents (faig-constructors)
@@ -310,7 +379,14 @@ for discussion related to this issue.</p>"
        (b (f-aig-unfloat b)))
     (t-aig-ite* c a b))
   ///
-  (prove-faig-op-commutes f-aig-ite* (c a b)))
+  (prove-faig-op-commutes f-aig-ite* (c a b))
+
+  (defcong faig-fix-equiv equal (f-aig-ite* c a b) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (f-aig-ite* c a b) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (f-aig-ite* c a b) 3
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 (define f-aig-zif (c a b)
   :parents (faig-constructors)
@@ -322,7 +398,14 @@ conversion.</p>"
   (b* ((c (f-aig-unfloat c)))
     (t-aig-ite* c a b))
   ///
-  (prove-faig-op-commutes f-aig-zif (c a b)))
+  (prove-faig-op-commutes f-aig-zif (c a b))
+
+  (defcong faig-fix-equiv equal (f-aig-zif c a b) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (f-aig-zif c a b) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (f-aig-zif c a b) 3
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 (define f-aig-res (x y)
   :parents (faig-constructors)
@@ -335,7 +418,12 @@ the @(see faig) equivalent.</p>"
        ((faig y1 y0) y))
     (cons (aig-or x1 y1) (aig-or x0 y0)))
   ///
-  (prove-faig-op-commutes f-aig-res (a b)))
+  (prove-faig-op-commutes f-aig-res (a b))
+
+  (defcong faig-fix-equiv equal (f-aig-res x y) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (f-aig-res x y) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 
 ;; Theorem: no F-AIG-UNFLOAT needed around the answer of f-aig-ite.
@@ -384,7 +472,12 @@ buffer whose inputs are known to be non-X."
     (cons (aig-and (aig-not float) (aig-not (aig-and set off)))
           (aig-and (aig-not float) (aig-not (aig-and set on)))))
   ///
-  (prove-faig-op-commutes t-aig-tristate (c a)))
+  (prove-faig-op-commutes t-aig-tristate (c a))
+
+  (defcong faig-fix-equiv equal (t-aig-tristate c a) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix))))
+  (defcong faig-fix-equiv equal (t-aig-tristate c a) 2
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 (define f-aig-pullup (a)
   :parents (faig-constructors)
@@ -395,7 +488,10 @@ resistor."
        (a-floating (aig-not a-not-aig-floating)))
     (cons (aig-or a-floating a1) a0))
   ///
-  (prove-faig-op-commutes f-aig-pullup (a)))
+  (prove-faig-op-commutes f-aig-pullup (a))
+
+  (defcong faig-fix-equiv equal (f-aig-pullup a) 1
+    :hints(("Goal" :in-theory (enable faig-fix-equiv faig-fix)))))
 
 
 (def-ruleset f-aig-defs

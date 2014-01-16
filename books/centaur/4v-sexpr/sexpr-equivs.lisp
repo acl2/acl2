@@ -36,51 +36,6 @@
 (local (xdoc::set-default-parents sexpr-equivs))
 
 
-(def-universal-equiv 4v-equiv
-  :equiv-terms ((equal (4v-fix x)))
-  :short "Equivalence of four-valued constants, i.e., @(see 4vp)s."
-  :long "<p>@('X') === @('Y') in the sense of four-valued objects if they fix
-to the same @(see 4vp).  That is, except for @('(4vf)'), @('(4vz)'), and
-@('(4vt)'), all objects are equivalent to @('(4vx)') under this
-relationship.</p>")
-
-(defun prove-4v-equiv-congs (n f ins)
-  (declare (xargs :measure (nfix n)))
-  (if (zp n)
-      nil
-    (cons `(defcong 4v-equiv equal (,f . ,ins) ,n)
-          (prove-4v-equiv-congs (1- n) f ins))))
-
-(defmacro prove-4v-equiv-cong (f ins)
-  `(progn
-     . ,(prove-4v-equiv-congs (len ins) f ins)))
-
-
-(defsection 4v-equiv-thms
-  :extension 4v-equiv
-
-  (in-theory (enable 4v-equiv))
-
-  (defthm 4v-equiv-4v-fix
-    (4v-equiv (4v-fix x) x))
-
-  (defcong 4v-equiv equal (4v-<= a b) 1)
-  (defcong 4v-equiv equal (4v-<= a b) 2)
-
-  (prove-4v-equiv-cong 4v-fix (a))
-  (prove-4v-equiv-cong 4v-unfloat (a))
-  (prove-4v-equiv-cong 4v-not (a))
-  (prove-4v-equiv-cong 4v-and (a b))
-  (prove-4v-equiv-cong 4v-or (a b))
-  (prove-4v-equiv-cong 4v-xor (a b))
-  (prove-4v-equiv-cong 4v-iff (a b))
-  (prove-4v-equiv-cong 4v-res (a b))
-  (prove-4v-equiv-cong 4v-ite (c a b))
-  (prove-4v-equiv-cong 4v-ite* (c a b))
-  (prove-4v-equiv-cong 4v-zif (c a b))
-  (prove-4v-equiv-cong 4v-tristate (c a))
-  (prove-4v-equiv-cong 4v-pullup (a)))
-
 
 (def-universal-equiv 4v-cdr-equiv
   :equiv-terms ((4v-equiv (cdr x)))
@@ -160,7 +115,7 @@ relationship.</p>")
            (witness :ruleset 4v-env-equiv-4v-lookup-ex)))
 
   (defcong 4v-env-equiv 4v-cdr-equiv (hons-assoc-equal x y) 2
-    :hints (("Goal" :in-theory (disable 4v-fix))
+    :hints (("Goal" :in-theory (e/d (4v-equiv) (4v-fix)))
             (witness :ruleset 4v-env-equiv-hons-assoc-equal-ex)))
 
   (defcong 4v-cdr-consp-equiv 4v-env-equiv (cons a b) 1
@@ -279,7 +234,8 @@ additionally requires the keys match between the two alists.")
                   (member-equal key keys))
              (equal (equal (4v-lookup key al1)
                            (4v-lookup key al2))
-                    t)))
+                    t))
+    :hints(("Goal" :in-theory (disable 4v-fix))))
 
   (defthm 4v-alists-agree-self
     (4v-alists-agree k x x))
@@ -788,3 +744,41 @@ ordinarily disabled.</p>
 
   (defcong 4v-sexpr-alist-equiv 4v-sexpr-alist-equiv
     (4v-sexpr-alist-extract keys al) 2))
+
+
+(defsection 4v-boolp
+  ;; no particular reason this should be here but here it is
+
+  (defund 4v-boolp (x)
+    (declare (xargs :guard t))
+    (member x '(t f)))
+
+  (local (in-theory (enable 4v-boolp)))
+
+  (defcong 4v-equiv equal (4v-boolp x) 1
+    :hints(("Goal" :in-theory (enable 4v-equiv))))
+
+  (defun 4v-bool-listp (x)
+    (declare (xargs :guard t))
+    (if (atom x)
+        (eq x nil)
+      (and (4v-boolp (car x))
+           (4v-bool-listp (cdr x))))))
+
+
+(defsection 4v-bool-fix
+  (defund 4v-bool-fix (x)
+    (declare (xargs :guard t))
+    (if (eq x t) 't 'f))
+
+  (local (in-theory (enable 4v-bool-fix 4v-boolp)))
+
+  (defthm 4v-boolp-of-4v-bool-fix
+    (4v-boolp (4v-bool-fix x)))
+
+  (defthm 4v-bool-fix-when-4v-boolp
+    (implies (4v-boolp x)
+             (equal (4v-bool-fix x) x))))
+
+
+

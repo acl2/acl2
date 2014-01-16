@@ -218,7 +218,9 @@ equivalent sexpr environments."
   (local (defthm faig-const-list->4v-list-of-4v-list->faig-const-list
            (equal (faig-const-list->4v-list
                    (4v-list->faig-const-list x))
-                  (4v-list-fix x))))
+                  (4v-list-fix x))
+           :hints(("Goal" :in-theory (enable faig-const-list->4v-list
+                                             4v-list->faig-const-list)))))
 
   (local (defthm 4v-list-fix-of-4v-sexpr-eval-list
            (equal (4v-list-fix (4v-sexpr-eval-list sexprs env))

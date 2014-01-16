@@ -640,7 +640,7 @@
 
 
 
-(def-universal-equiv faig-fix-equiv
+(def-universal-equiv faig-onoff-equiv
   :equiv-terms ((iff (consp x))
                 (faig-equiv x))
   :parents (faig)
@@ -661,32 +661,32 @@ let @('y') be @('(t . t)').  Then, @('x') and @('y') are @('faig-equiv'), but
 their cars are not @('aig-equiv') because the car of @('x') is @('nil'),
 constant false, whereas the car of @('y') is @('t'), constant true.</p>
 
-<p>So, @(call faig-fix-equiv) corrects for this by insisting that @('x') and
+<p>So, @(call faig-onoff-equiv) corrects for this by insisting that @('x') and
 @('y') are either both atoms or both conses.  This way, the car/cdr of
-@('faig-fix-equiv') objects are always @(see aig-equiv).</p>")
+@('faig-onoff-equiv') objects are always @(see aig-equiv).</p>")
 
-(defsection faig-fix-equiv-thms
-  :extension faig-fix-equiv
+(defsection faig-onoff-equiv-thms
+  :extension faig-onoff-equiv
 
-  (defrefinement faig-fix-equiv faig-equiv
-    :hints(("Goal" :in-theory (enable faig-fix-equiv))))
+  (defrefinement faig-onoff-equiv faig-equiv
+    :hints(("Goal" :in-theory (enable faig-onoff-equiv))))
 
-  (defcong faig-equiv faig-fix-equiv (faig-fix x) 1
-    :hints(("Goal" :in-theory (enable faig-fix faig-fix-equiv
+  (defcong faig-equiv faig-onoff-equiv (faig-fix x) 1
+    :hints(("Goal" :in-theory (enable faig-fix faig-onoff-equiv
                                       faig-eval))
            (witness :ruleset (faig-equiv-witnessing
                               faig-equiv-instancing
                               faig-equiv-example)))
     :otf-flg t)
 
-  (defcong faig-fix-equiv aig-equiv (car x) 1
-    :hints(("Goal" :in-theory (enable faig-eval faig-fix-equiv))
+  (defcong faig-onoff-equiv aig-equiv (car x) 1
+    :hints(("Goal" :in-theory (enable faig-eval faig-onoff-equiv))
            (witness :ruleset (aig-equiv-witnessing
                               faig-equiv-instancing
                               faig-equiv-aig-eval-ex))))
 
-  (defcong faig-fix-equiv aig-equiv (cdr x) 1
-    :hints(("Goal" :in-theory (enable faig-eval faig-fix-equiv))
+  (defcong faig-onoff-equiv aig-equiv (cdr x) 1
+    :hints(("Goal" :in-theory (enable faig-eval faig-onoff-equiv))
            (witness :ruleset (aig-equiv-witnessing
                               faig-equiv-instancing
                               faig-equiv-aig-eval-ex)))))

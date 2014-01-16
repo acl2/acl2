@@ -69,20 +69,6 @@
      (4v-bitspec-entry-vars (car spec))
      (4v-bitspec-vars (cdr spec)))))
 
-(defun 4v-boolp (x)
-  (declare (xargs :guard t))
-  (member x '(t f)))
-
-(defcong 4v-equiv equal (4v-boolp x) 1)
-(in-theory (disable 4v-boolp))
-
-(defun 4v-bool-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (eq x nil)
-    (and (4v-boolp (car x))
-         (4v-bool-listp (cdr x)))))
-
 (defun 4v-lookup-list (keys al)
   (declare (xargs :guard t))
   (if (atom keys)

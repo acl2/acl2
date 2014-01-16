@@ -198,3 +198,93 @@ must be a function call.</li>
 
   (defmacro def-gl-branch-merge (name body &key hints otf-flg)
     (def-gl-branch-merge-fn name body hints otf-flg)))
+
+
+
+
+
+
+;; recursively match patterns, e.g.:
+;; set (equal (logcar (logcdr (logcdr x))) 1) to t
+;; --> set (logcar (logcdr (logcdr x))) to 1
+;; --> set (logbitp 0 (logcdr (logcdr x))) to t
+;; --> set (logbitp 1 (logcdr x)) to t
+;; --> set (logbitp 2 x) to t
+;; --> set x to (logior (ash 1 2) x)
+
+(defun translate-pair (pair ctx state)
+  (declare (xargs :stobjs state :mode :program))
+  (b* (((list a b) pair)
+       ((er aa) (acl2::translate a t t t ctx (w state) state))
+       ((er bb) (acl2::translate b t t t ctx (w state) state)))
+    (value (list aa bb))))
+
+(defun translate-pair-list (pairs ctx state)
+  (declare (xargs :stobjs state :mode :program))
+  (b* (((when (atom pairs)) (value nil))
+       ((er first) (translate-pair (car pairs) ctx state))
+       ((er rest) (translate-pair-list (cdr pairs) ctx state)))
+    (value (cons first rest))))
+
+(defun def-glcp-ctrex-rewrite-fn (from test tos state)
+  (declare (xargs :mode :program :stobjs state))
+  (b* (((er fromtrans) (translate-pair from 'def-gplcp-ctrex-rewrite state))
+       ((er tostrans) (translate-pair-list tos 'def-gplcp-ctrex-rewrite state))
+       ((er testtrans) (acl2::translate test t t t 'def-gplcp-ctrex-rewrite (w state) state))
+       (entry (list* fromtrans testtrans tostrans))
+       (fnsym (caar fromtrans)))
+    (value `(table glcp-ctrex-rewrite
+                   ',fnsym
+                   (cons ',entry
+                         (cdr (assoc ',fnsym (table-alist
+                                              'glcp-ctrex-rewrite world))))))))
+
+(defsection def-glcp-ctrex-rewrite
+  :parents (reference)
+  :short "Define a heuristic for GL to use when generating counterexamples"
+  :long
+  "<p>Usage:</p>
+
+@({
+ (gl::def-glcp-ctrex-rewrite
+   ;; from:
+   (lhs-lvalue lhs-rvalue)
+   ;; to:
+   (rhs-lvalue rhs-rvalue)
+   :test syntaxp-term)
+ })
+<p>Example:</p>
+@({
+ (gl::def-glcp-ctrex-rewrite
+   ((logbitp n x) t)
+   (x (logior (ash 1 n) x))
+   :test (quotep n))
+})
+
+<p>If GL has generated Boolean variables corresponding to term-level objects,
+then an assignment to the Boolean variables does not directly induce an
+assignment of ACL2 objects to the ACL2 variables.  Instead, we have terms that
+are assigned true or false by the Boolean assignment, and to generate a
+counterexample, we must find an assignment for the variables in those terms
+that cause the terms to take the required truth values.  Ctrex-rewrite rules
+tell GL how to move from a valuation of a term to valuations of its
+components.</p>
+
+<p>The example rule above says that if we want @('(logbitp n x)') to be @('t'),
+and @('n') is (syntactically) a quoted constant, then assign @('x') a new value
+by effectively setting its @('n')th bit to T (that is, bitwise ORing X with the
+appropriate mask).</p>
+
+<p>Note that this rule does not always yield the desired result -- for example,
+in the case where N is a negative integer.  Because these are just heuristics
+for generating counterexamples, there is no correctness requirement and no
+checking of these rules.  Bad counterexample rules can't make anything unsound,
+but they can cause generated counterexamples to be nonsense.  Be careful!</p>"
+
+  (defmacro def-glcp-ctrex-rewrite (from to &key (test 't))
+    `(make-event
+      (def-glcp-ctrex-rewrite-fn ',from ',test ',(list to) state))))
+
+(defmacro def-glcp-ctrex-split-rewrite (from tos &key (test 't))
+  `(make-event
+    (def-glcp-ctrex-rewrite-fn ',from ',test ',tos state)))

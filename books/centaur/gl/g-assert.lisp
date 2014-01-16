@@ -37,9 +37,12 @@
                         (bfr-not x-nonnil)))
         ((mv false-sat false-succ ?false-ctrex)
          (bfr-sat false))
+        (gmsg (if (general-concretep gmsg)
+                  (general-concrete-obj gmsg)
+                "GL-ASSERT failed!"))
         ((when (and false-sat false-succ))
          (make-fast-alist false-ctrex)
-
+         
          (ec-call
           (glcp-print-single-ctrex false-ctrex
                                    "Error:"

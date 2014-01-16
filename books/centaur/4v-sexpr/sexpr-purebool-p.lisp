@@ -53,24 +53,25 @@
                 (len x))
          :hints(("Goal" :in-theory (enable 4v-sexpr-eval-list)))))
 
-(local (defthm nth-of-4v-list->faig-const-list
+(local (defthm nth-of-4v-list->faig-const-list-equal
          (equal (nth n (4v-list->faig-const-list x))
                 (and (< (nfix n) (len x))
                      (4v->faig-const (nth n x))))
          :hints(("Goal" :in-theory (enable 4v-list->faig-const-list)))))
 
-(local (defthm nth-of-4v-sexpr-eval-list
+(local (defthm nth-of-4v-sexpr-eval-list-equal
          (equal (nth n (4v-sexpr-eval-list x env))
                 (and (< (nfix n) (len x))
                      (4v-sexpr-eval (nth n x) env)))
          :hints(("Goal" :in-theory (enable 4v-sexpr-eval-list)))))
 
-(local (defthm nth-of-faig-const-list->4v-list
+(local (defthm nth-of-faig-const-list->4v-list-equal
          (equal (nth n (faig-const-list->4v-list x))
                 (and (< (nfix n) (len x))
-                     (faig-const->4v (nth n x))))))
+                     (faig-const->4v (nth n x))))
+         :hints(("Goal" :in-theory (enable faig-const-list->4v-list)))))
 
-(local (defthm nth-of-faig-eval-list
+(local (defthm nth-of-faig-eval-list-equal
          (equal (nth n (faig-eval-list x env))
                 (and (< (nfix n) (len x))
                      (faig-eval (nth n x) env)))))

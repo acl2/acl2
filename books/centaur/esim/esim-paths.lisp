@@ -275,7 +275,8 @@ fast-canonicalize-path).</p>"
 
 (defthm good-esim-occs-of-occs-when-good-esim-modulep
   (implies (good-esim-modulep mod)
-           (good-esim-occsp (gpl :occs mod))))
+           (good-esim-occsp (gpl :occs mod)))
+  :hints(("Goal" :in-theory (enable good-esim-modulep))))
 
 (defthm good-esim-modulep-of-op-when-good-esim-occ
   (implies (good-esim-occp occ)

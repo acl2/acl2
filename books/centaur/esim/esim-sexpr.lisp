@@ -398,15 +398,18 @@
 
   (defthm no-duplicatesp-equal-ins-of-good-module
     (implies (good-esim-modulep mod)
-             (no-duplicatesp-equal (pat-flatten1 (gpl :i mod)))))
+             (no-duplicatesp-equal (pat-flatten1 (gpl :i mod))))
+    :hints(("Goal" :in-theory (enable good-esim-modulep))))
 
   (defthm no-duplicatesp-equal-sts-of-good-module
     (implies (good-esim-modulep mod)
-             (no-duplicatesp-equal (pat-flatten1 (mod-state mod)))))
+             (no-duplicatesp-equal (pat-flatten1 (mod-state mod))))
+    :hints(("Goal" :in-theory (enable good-esim-modulep))))
 
   (defthm no-duplicatesp-equal-outs-of-good-module
     (implies (good-esim-modulep mod)
-             (no-duplicatesp-equal (pat-flatten1 (gpl :o mod)))))
+             (no-duplicatesp-equal (pat-flatten1 (gpl :o mod))))
+    :hints(("Goal" :in-theory (enable good-esim-modulep))))
 
   (defthm no-duplicate-internals-when-good-esim-probe-modulep
     (implies (good-esim-probe-modulep mod)

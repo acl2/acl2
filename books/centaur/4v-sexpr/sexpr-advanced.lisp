@@ -145,3 +145,45 @@
           (witness :ruleset 4v-sexpr-alist-<=-hons-assoc-equal-example)))
 
 
+
+(defsection bind-to-each
+  (defun bind-to-each (keys val)
+    (declare (xargs :guard t))
+    (if (atom keys)
+        nil
+      (cons (cons (car keys) val)
+            (bind-to-each (cdr keys) val))))
+
+  (defthm lookup-in-bind-to-each
+    (equal (hons-assoc-equal k (bind-to-each keys val))
+           (and (member k keys)
+                (cons k val)))))
+
+
+(defsection 4v-al-to-sexpr-al
+  (defun 4v-al-to-sexpr-al (al)
+    (declare (xargs :guard t))
+    (cond ((atom al) nil)
+          ((atom (car al)) (4v-al-to-sexpr-al (cdr al)))
+          (t (cons (cons (caar al) (hons (4v-fix (cdar al)) nil))
+                   (4v-al-to-sexpr-al (cdr al))))))
+
+  (defthm 4v-al-to-sexpr-al-lookup
+    (equal (hons-assoc-equal x (4v-al-to-sexpr-al al))
+           (and (hons-assoc-equal x al)
+                (cons x (list (4v-fix (cdr (hons-assoc-equal x al)))))))
+    :hints(("Goal" :in-theory (e/d (hons-assoc-equal) (4v-fix)))))
+
+  (defthm 4v-sexpr-eval-of-list-4v-fix
+    (equal (4v-sexpr-eval (list (4v-fix x)) env)
+           (4v-fix x)))
+
+  (local (in-theory (disable 4v-sexpr-eval 4v-fix)))
+
+  (defthm 4v-sexpr-eval-alist-of-4v-al-to-sexpr-al
+    (4v-env-equiv (4v-sexpr-eval-alist (4v-al-to-sexpr-al al) env)
+                  al)
+    :hints ((witness))))
+
+
+

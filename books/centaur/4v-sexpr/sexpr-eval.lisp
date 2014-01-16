@@ -129,7 +129,7 @@ of fixnums to hold the values, or similar.</p>"
     :long "<p>See @(see 4v-sexpr-eval); this is just its mutually recursive
 counterpart.</p>")
 
-  (defun 4v-sexpr-apply (fn args)
+  (defund 4v-sexpr-apply (fn args)
     (declare (xargs :guard (true-listp args)))
     (b* (((when (or (eq fn (4vt))
                     (eq fn (4vf))
@@ -157,7 +157,7 @@ counterpart.</p>")
         ;; (wor      (4v-wor   arg1 arg2))
         (otherwise (4vx)))))
 
-
+  (local (in-theory (enable 4v-sexpr-apply)))
 ; [Jared] I was tempted to make a 4v-sexpr-eval1 function in the style of
 ; 4v-sexpr-eval-alist1, but this seems troublesome because it would mean
 ; changing all of our clear-memoize-table call functions.  I'm just going to
@@ -264,7 +264,11 @@ counterpart.</p>")
                  '(:use ((:instance 4v-alist-<=-necc
                                     (k x)
                                     (x env)
-                                    (y env1))))))))
+                                    (y env1)))))))
+
+  (defthm nth-of-4v-sexpr-eval-list
+    (4v-equiv (nth n (4v-sexpr-eval-list x env))
+              (4v-sexpr-eval (nth n x) env))))
 
 
 (defsection 4v-sexpr-eval-alist
@@ -702,3 +706,130 @@ by @('a'):</p>
   (verify-guards 4v-sexpr-alist-extract)
 
   (defcong alist-equiv equal (4v-sexpr-alist-extract keys al) 2))
+
+
+
+
+
+(defsection 4v-sexpr-eval-default
+  (defsection 4v-lookup-default
+
+    (defun 4v-lookup-default (k env default)
+      (declare (xargs :guard t))
+      (let ((look (hons-get k env)))
+        (prog2$ (and (not look) (4v-lookup-not-found k))
+                (4v-fix (if look (cdr look) default)))))
+
+    (defthm 4vp-of-4v-lookup-default
+      (4vp (4v-lookup-default k env default)))
+
+    (defthm 4v-fix-4v-lookup-default
+      (equal (4v-fix (4v-lookup-default k env default))
+             (4v-lookup-default k env default))))
+
+
+  (mutual-recursion
+   (defun 4v-sexpr-eval-default (x env default)
+     (declare (xargs :guard t))
+     (b* (((when (atom x))
+           ;; NIL is regarded as X, which is important in 4v-sexpr-compose and
+           ;; perhaps other places.  Any other atom is a variable and we look
+           ;; up its value in env.
+           (if x
+               (4v-lookup-default x env default)
+             (4vx)))
+          (fn   (car x))
+          (args (4v-sexpr-eval-default-list (cdr x) env default)))
+       (4v-sexpr-apply fn args)))
+
+   (defun 4v-sexpr-eval-default-list (x env default)
+     (declare (xargs :guard t))
+     (if (atom x)
+         nil
+       (cons (4v-sexpr-eval-default (car x) env default)
+             (4v-sexpr-eval-default-list (cdr x) env default)))))
+
+  (memoize '4v-sexpr-eval-default :condition '(and (consp x) (consp (cdr x))))
+
+  (in-theory (disable 4v-sexpr-eval-default)))
+
+
+(defsection 4v-sexpr-eval-default-alist
+
+  (defund 4v-sexpr-eval-default-alist1 (x env default)
+    "Assumes ENV is fast"
+    (declare (xargs :guard t))
+    (cond ((atom x)
+           nil)
+          ((atom (car x))
+           (4v-sexpr-eval-default-alist1 (cdr x) env default))
+          (t
+           (cons (cons (caar x) (4v-sexpr-eval-default (cdar x) env default))
+                 (4v-sexpr-eval-default-alist1 (cdr x) env default)))))
+
+  (defund 4v-sexpr-eval-default-alist (x env default)
+    "Makes ENV fast if necessary"
+    (declare (xargs :guard t :verify-guards nil))
+    (mbe :logic
+         (cond ((atom x)
+                nil)
+               ((atom (car x))
+                (4v-sexpr-eval-default-alist (cdr x) env default))
+               (t
+                (cons (cons (caar x) (4v-sexpr-eval-default (cdar x) env default))
+                      (4v-sexpr-eval-default-alist (cdr x) env default))))
+         :exec
+         (with-fast-alist env (4v-sexpr-eval-default-alist1 x env default))))
+
+  (local (in-theory (enable 4v-sexpr-eval-default-alist
+                            4v-sexpr-eval-default-alist1)))
+
+
+  (defund 4v-sexpr-eval-default-alists1 (x env default)
+    (declare (xargs :guard t))
+    (if (atom x)
+        nil
+      (cons (4v-sexpr-eval-default-alist1 (car x) env default)
+            (4v-sexpr-eval-default-alists1 (cdr x) env default))))
+
+  (defund 4v-sexpr-eval-default-alists (x env default)
+    "Makes ENV fast if necessary"
+    (declare (xargs :guard t :verify-guards nil))
+    (mbe :logic
+         (if (atom x)
+             nil
+           (cons (4v-sexpr-eval-default-alist (car x) env default)
+                 (4v-sexpr-eval-default-alists (cdr x) env default)))
+         :exec
+         (with-fast-alist env (4v-sexpr-eval-default-alists1 x env default))))
+
+  (local (in-theory (enable 4v-sexpr-eval-default-alists
+                            4v-sexpr-eval-default-alists1)))
+
+
+  (defthm 4v-sexpr-eval-default-alist1-removal
+    (equal (4v-sexpr-eval-default-alist1 x env default)
+           (4v-sexpr-eval-default-alist x env default)))
+
+  (defthm 4v-sexpr-eval-default-alists1-removal
+    (equal (4v-sexpr-eval-default-alists1 x env default)
+           (4v-sexpr-eval-default-alists x env default))
+    :hints(("Goal" :in-theory (e/d ()
+                                   (4v-sexpr-eval-default)))))
+
+  (verify-guards 4v-sexpr-eval-default-alist)
+  (verify-guards 4v-sexpr-eval-default-alists)
+
+  (defthm lookup-sexpr-eval-default-alist
+    (equal (hons-assoc-equal x (4v-sexpr-eval-default-alist al env default))
+           (and (hons-assoc-equal x al)
+                (cons x (4v-sexpr-eval-default (cdr (hons-assoc-equal x al)) env default)))))
+
+  (defthm 4v-sexpr-eval-default-alist-append
+    (equal (4v-sexpr-eval-default-alist (append a b) env default)
+           (append (4v-sexpr-eval-default-alist a env default)
+                   (4v-sexpr-eval-default-alist b env default))))
+
+  (defthm alist-keys-4v-sexpr-eval-default-alist
+    (equal (alist-keys (4v-sexpr-eval-default-alist a env default))
+           (alist-keys a))))

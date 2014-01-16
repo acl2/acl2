@@ -391,6 +391,8 @@
 
 (memoize 'good-esim-modulep :condition '(gpl :occs x))
 
+(in-theory (disable good-esim-modulep))
+
 
 
 
@@ -567,8 +569,9 @@
          (not (good-esim-occsp x)))
     :flag occs)
   :hints(("Goal"
-          :in-theory (disable hons-intersect-p hons-dups-p
-                              hons-member-equal))))
+          :in-theory (e/d (good-esim-modulep)
+                          (hons-intersect-p hons-dups-p
+                                            hons-member-equal)))))
 
 
 

@@ -173,7 +173,8 @@
                                        (pat-flatten1 (gpl :i mod))))
                 (not (intersectp-equal (pat-flatten1 (gpl :i mod))
                                        (pat-flatten1 (mod-state mod))))))
-  :hints ((set-reasoning)))
+  :hints (("goal" :in-theory (enable good-esim-modulep))
+          (set-reasoning)))
 
 (add-to-ruleset! good-esim-mod-impl
                  '(good-esim-modulep-ins-not-intersecting-states))
@@ -2501,7 +2502,8 @@
                 (not (gpl :x mod)))
            (equal (alist-keys (esim-sexpr-occs-nst mod (alist-keys (occmap mod))))
                   (pat-flatten1 (mod-state mod))))
-  :hints(("Goal" :expand ((mod-state mod)))))
+  :hints(("Goal" :expand ((mod-state mod))
+          :in-theory (enable good-esim-modulep))))
 
 (defthm alist-keys-eapply-sexpr-nst
   (implies (and (good-esim-modulep mod)
@@ -2553,7 +2555,8 @@
 
 (defthm no-duplicates-occmap-keys-when-good-modulep
   (implies (good-esim-modulep mod)
-           (no-duplicatesp-equal (alist-keys (occmap mod)))))
+           (no-duplicatesp-equal (alist-keys (occmap mod))))
+  :hints(("Goal" :in-theory (enable good-esim-modulep))))
 
 
 (defthmd state-of-occ-not-intersecting-member
@@ -2971,12 +2974,14 @@
 
 (defthm good-esim-modulep-implies-no-dups-driven-signals
   (implies (good-esim-modulep mod)
-           (no-duplicatesp-equal (driven-signals mod))))
+           (no-duplicatesp-equal (driven-signals mod)))
+  :hints(("Goal" :in-theory (enable good-esim-modulep))))
 
 (defthm good-esim-modulep-implies-driven-and-ins-not-intersecting
   (implies (good-esim-modulep mod)
            (not (intersectp-equal (pat-flatten1 (gpl :i mod))
-                                  (driven-signals mod)))))
+                                  (driven-signals mod))))
+  :hints(("Goal" :in-theory (enable good-esim-modulep))))
 
 (add-to-ruleset good-esim-mod-impl
                 '(good-esim-modulep-implies-no-dups-driven-signals
@@ -3330,7 +3335,8 @@
 (defthm state-not-intersecting-driven-when-good-esim-modulep
   (implies (good-esim-modulep mod)
            (not (intersectp-equal (pat-flatten1 (mod-state mod))
-                                  (driven-signals mod)))))
+                                  (driven-signals mod))))
+  :hints(("Goal" :in-theory (enable good-esim-modulep))))
 
 (defthm 4v-sexpr-eval-of-esim-sexpr-fixpoint-nst
   (implies (and (good-esim-modulep mod)

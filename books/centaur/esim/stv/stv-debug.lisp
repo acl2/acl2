@@ -43,6 +43,15 @@
 (local (defthm cons-list-listp-of-4v-sexpr-restrict-with-rw-alists
          (vl::cons-list-listp (4v-sexpr-restrict-with-rw-alists x al))))
 
+(local (defthm cons-listp-4v-sexpr-eval-default-alist
+         (vl::cons-listp (4v-sexpr-eval-default-alist x al default))
+         :hints(("Goal" :in-theory (e/d (4v-sexpr-eval-default-alist)
+                                        (4v-sexpr-eval-default-when-4v-sexpr-eval-non-x))))))
+
+(local (defthm cons-list-listp-of-4v-sexpr-eval-default-alists
+         (vl::cons-list-listp (4v-sexpr-eval-default-alists x al default))
+         :hints(("Goal" :in-theory (e/d (4v-sexpr-eval-default-alists))))))
+
 (local (defthm cons-listp-of-4v-sexpr-eval-alist
          (vl::cons-listp (4v-sexpr-eval-alist x al))))
 
@@ -125,6 +134,8 @@ generate a waveform."
    input-alist
    &key
    ((filename stringp) '"stv.debug")
+   dontcare-ins
+   (default-signal-val ''x)
    ((viewer   (or (stringp viewer) (not viewer))) '"gtkwave")
    (state    'state))
   :guard-debug t
@@ -170,23 +181,24 @@ especially the first time before things are memoized.</p>"
          (make-fast-alist cstv.in-usersyms))
 
         (ev-alist
-         (time$ (make-fast-alist
-                 (stv-simvar-inputs-to-bits input-alist in-usersyms))
+         (time$ (append (stv-simvar-inputs-to-bits input-alist in-usersyms)
+                        dontcare-ins)
                 :mintime 1/2
                 :msg "; stv-debug ev-alist: ~st sec, ~sa bytes.~%"))
 
+        
+        ((with-fast ev-alist))
+
         (evaled-out-bits
          (time$ (make-fast-alist
-                 (4v-sexpr-eval-alist pstv.relevant-signals ev-alist))
+                 (4v-sexpr-eval-default-alist pstv.relevant-signals ev-alist default-signal-val))
                 :mintime 1/2
                 :msg "; stv-debug evaluating sexprs: ~st sec, ~sa bytes.~%"))
 
         (evaled-snapshots
-         (time$ (4v-sexpr-eval-alists snapshots ev-alist)
+         (time$ (4v-sexpr-eval-default-alists snapshots ev-alist default-signal-val)
                 :mintime 1/2
                 :msg "; stv-debug evaluating snapshots: ~st sec, ~sa bytes.~%"))
-
-        (- (fast-alist-free ev-alist))
 
         (assembled-outs
          (time$ (stv-assemble-output-alist evaled-out-bits cstv.out-usersyms)

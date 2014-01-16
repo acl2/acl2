@@ -61,7 +61,8 @@
 (defthm good-esim-modulep-good-occp-lookup-in-occmap
   (implies (and (good-esim-modulep mod)
                 (hons-assoc-equal u (occmap mod)))
-           (good-esim-occp (cdr (hons-assoc-equal u (occmap mod))))))
+           (good-esim-occp (cdr (hons-assoc-equal u (occmap mod)))))
+  :hints(("Goal" :in-theory (enable good-esim-modulep))))
 
 
 

@@ -28,9 +28,15 @@
 (include-book "centaur/vl/util/defs" :dir :system)
 (include-book "centaur/4v-sexpr/bitspecs" :dir :system)
 (include-book "centaur/4v-sexpr/sexpr-rewrites" :dir :system)
+(include-book "centaur/4v-sexpr/sexpr-booleval" :dir :system)
 (include-book "centaur/gl/gl-util" :dir :system)
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
 
+
+(defthm true-listp-of-safe-pairlis-onto-acc
+  (implies (true-listp acc)
+           (true-listp (safe-pairlis-onto-acc x y acc)))
+  :rule-classes :type-prescription)
 
 (define stv-simvar-inputs-to-bits
   :parents (stv-run)
@@ -172,6 +178,73 @@ output is X.</p>"
        (- (cw "  ~s0:~t1~s2~%" key 20 (str::hexify val))))
     (stv-print-alist (cdr x))))
 
+(define stv-run-collect-eval-signals ((pstv processed-stv-p)
+                                      (skip))
+  :returns (mv (sigs "alist binding the bits that we need to evaluate")
+               (out-usersyms
+                "for those outputs that aren't skipped, the mapping from names to bitname lists"))
+
+  (b* (((processed-stv pstv) pstv)
+       ((compiled-stv cstv) pstv.compiled-stv)
+
+       (out-usersyms cstv.out-usersyms)
+
+       ;; Start with all of the signals that we have in our STV.  These have
+       ;; the expressions for the bits of the output simulation variables.
+       (sigs        pstv.relevant-signals)
+
+       ((when skip)
+        (time$
+         (b* (
+              ;; As a sanity check, complain if there are any bits
+              ;; that are being skipped that don't actually exist.
+              (skip     (sets::mergesort skip))
+              (outnames (sets::mergesort (alist-keys out-usersyms)))
+              ((unless (sets::subset skip outnames))
+               (b* ((bad  (sets::difference skip outnames))
+                    ;; Don't use - or implicit progn$ on these, we want to make sure
+                    ;; these get evaluated during GL runs.
+                    (?msg (cw "Invalid skip!  Not outputs: ~&0." bad))
+                    (?err (er hard? 'stv-run-fn "Invalid skip!  Not outputs: ~&0." bad)))
+                 (mv sigs out-usersyms)))
+
+              ;; Filter the out-usersyms down to just those that we want.
+              (keep         (sets::difference outnames skip))
+              (out-usersyms (b* ((tmp (make-fal out-usersyms nil))
+                                 (ret (fal-extract keep tmp)))
+                              (fast-alist-free tmp)
+                              ret))
+
+              ;; Also filter the sigs down to just the bits we need.
+              (keep-bits (vl::append-domains out-usersyms))
+              (sigs      (b* ((tmp (make-fal sigs nil))
+                              (ret (fal-extract keep-bits tmp)))
+                           (fast-alist-free tmp)
+                           ret)))
+
+           (mv sigs out-usersyms))
+         
+         :mintime 1/2
+         :msg "; stv-run skips: ~st sec, ~sa bytes.")))
+    
+    (mv sigs out-usersyms)))
+
+(define stv-run-make-eval-env ((pstv processed-stv-p)
+                               (input-alist))
+  (b* ((in-usersyms
+        ;; These should already be a fast alist, but in case the object was
+        ;; serialized and reloaded or something, we'll go ahead and try to
+        ;; make them fast again.
+        (make-fast-alist
+         (compiled-stv->in-usersyms
+          (processed-stv->compiled-stv pstv)))))
+    
+    ;; Construct the alist to evaluate with
+    (time$ (stv-simvar-inputs-to-bits input-alist in-usersyms)
+           :mintime 1/2
+           :msg "; stv-run ev-alist: ~st sec, ~sa bytes.~%")))
+
+
 
 (define stv-run
   :parents (symbolic-test-vectors)
@@ -221,64 +294,15 @@ computing the flags as you verify these instructions, which may lead to a big
 savings when BDDs are involved.</p>"
 
   (time$
-   (b* (((processed-stv pstv) pstv)
-        ((compiled-stv cstv) pstv.compiled-stv)
+   (b* (((mv sigs out-usersyms)
+         (stv-run-collect-eval-signals pstv skip))
 
         (- (or quiet
                (cw "STV Raw Inputs: ~x0.~%" input-alist)))
 
-        (out-usersyms cstv.out-usersyms)
-        (in-usersyms
-         ;; These should already be a fast alist, but in case the object was
-         ;; serialized and reloaded or something, we'll go ahead and try to
-         ;; make them fast again.
-         (make-fast-alist cstv.in-usersyms))
+        (ev-alist (stv-run-make-eval-env pstv input-alist))
 
-        ;; Start with all of the signals that we have in our STV.  These have
-        ;; the expressions for the bits of the output simulation variables.
-        (sigs        pstv.relevant-signals)
-
-        ;; Prune away any signals that the user says he wants to skip.
-        ((mv sigs out-usersyms)
-         (time$ (b* (((unless skip)
-                      (mv sigs out-usersyms))
-
-                     ;; As a sanity check, complain if there are any bits
-                     ;; that are being skipped that don't actually exist.
-                     (skip     (sets::mergesort skip))
-                     (outnames (sets::mergesort (alist-keys out-usersyms)))
-                     ((unless (sets::subset skip outnames))
-                      (b* ((bad  (sets::difference skip outnames))
-                           ;; Don't use - or implicit progn$ on these, we want to make sure
-                           ;; these get evaluated during GL runs.
-                           (?msg (cw "Invalid skip!  Not outputs: ~&0." bad))
-                           (?err (er hard? 'stv-run-fn "Invalid skip!  Not outputs: ~&0." bad)))
-                        (mv sigs out-usersyms)))
-
-                     ;; Filter the out-usersyms down to just those that we want.
-                     (keep         (sets::difference outnames skip))
-                     (out-usersyms (b* ((tmp (make-fal out-usersyms nil))
-                                        (ret (fal-extract keep tmp)))
-                                     (fast-alist-free tmp)
-                                     ret))
-
-                     ;; Also filter the sigs down to just the bits we need.
-                     (keep-bits (vl::append-domains out-usersyms))
-                     (sigs      (b* ((tmp (make-fal sigs nil))
-                                     (ret (fal-extract keep-bits tmp)))
-                                  (fast-alist-free tmp)
-                                  ret)))
-
-                  (mv sigs out-usersyms))
-                :mintime 1/2
-                :msg "; stv-run skips: ~st sec, ~sa bytes."))
-
-        ;; Construct the alist to evaluate with
-        (ev-alist
-         (time$ (make-fast-alist
-                 (stv-simvar-inputs-to-bits input-alist in-usersyms))
-                :mintime 1/2
-                :msg "; stv-run ev-alist: ~st sec, ~sa bytes.~%"))
+        ((with-fast ev-alist))
 
         ;; Evaluate the non-skipped signals.
         (evaled-out-bits
@@ -308,4 +332,265 @@ savings when BDDs are involved.</p>"
    :msg "; stv-run: ~st sec, ~sa bytes.~%"
    :mintime 1))
 
+
+
+(define stv-run-squash-dontcares
+  :parents (symbolic-test-vectors)
+  :short "Evaluate a symbolic test vector at particular, concrete inputs, and set all inputs and initial states that aren't bound to false."
+
+  ((pstv        processed-stv-p
+                "The symbolic test vector to run.")
+
+   (input-alist "An alist that should typically bind at least some of the input
+                 simulation variables to natural numbers, or to the symbol X.
+                 Any inputs that aren't mentioned are implicitly bound to X.")
+   &key
+   (skip        "Advanced option to avoid computing certain outputs; see below.")
+
+   (quiet       "Suppress debugging output.  By default, @('stv-run') will print
+                 certain debugging information.  This is generally convenient in
+                 @(see def-gl-thm) forms involving an @('stv-run'), and will allow
+                 you to see nicely-formatted debugging info when counter-examples
+                 are found.  But you can use @(':quiet t') to suppress it."))
+
+  :returns (out-alist "Alist binding user-level STV outputs to either natural
+                       numbers or X.")
+
+  :long "<p>See @(see stv-run).  The only difference between @(see stv-run) and
+this function is that this function uses @(see 4v-sexpr-eval-default) instead
+of @(see 4v-sexpr-eval), which means that any variables not bound by the
+user-provided inputs are set to false, instead of (effectively) X.</p>"
+
+  
+  (time$
+   (b* (((mv sigs out-usersyms)
+         (stv-run-collect-eval-signals pstv skip))
+
+        (- (or quiet
+               (cw "STV Raw Inputs: ~x0.~%" input-alist)))
+
+        (ev-alist (stv-run-make-eval-env pstv input-alist))
+        ((with-fast ev-alist))
+
+        ;; Evaluate the non-skipped signals.
+        (evaled-out-bits
+         (time$ (make-fast-alist (4v-sexpr-eval-default-alist sigs ev-alist 'f))
+                :mintime 1/2
+                :msg "; stv-run out-bits: ~st sec, ~sa bytes.~%"))
+
+        (- (fast-alist-free ev-alist))
+
+        ;; Assemble the non-skipped outputs.
+        (assembled-outs
+         (time$ (stv-assemble-output-alist evaled-out-bits out-usersyms)
+                :mintime 1/2
+                :msg "; stv-run outs: ~st sec, ~sa bytes.~%"))
+
+        (- (fast-alist-free evaled-out-bits))
+
+        ;; Debugging Support
+        (- (or quiet
+               (progn$ (cw "~%STV Inputs:~%")
+                       (stv-print-alist input-alist)
+                       (cw "~%STV Outputs:~%")
+                       (stv-print-alist assembled-outs)
+                       (cw "~%")))))
+
+     assembled-outs)
+   :msg "; stv-run-squash-dontcares: ~st sec, ~sa bytes.~%"
+   :mintime 1))
+
+
+(define stv-run-check-dontcares
+  :parents (symbolic-test-vectors)
+  :short "Test that a given setting of the don't-care bits of an STV are indeed
+don't-cares under the given input alist."
+
+  ((pstv        processed-stv-p
+                "The symbolic test vector to run.")
+
+   (input-alist "An alist that should typically bind at least some of the input
+                 simulation variables to natural numbers, or to the symbol X.
+                 Any inputs that aren't mentioned are implicitly bound to X.")
+   (dontcare-env "An alist that determines the setting of the don't-care inputs
+                 to test.  This is fixed so that it binds variables only to T or F.")
+   &key
+   (skip        "Advanced option to avoid computing certain outputs; see below.")
+
+   (quiet       "Suppress debugging output.  By default, @('stv-run') will print
+                 certain debugging information.  This is generally convenient in
+                 @(see def-gl-thm) forms involving an @('stv-run'), and will allow
+                 you to see nicely-formatted debugging info when counter-examples
+                 are found.  But you can use @(':quiet t') to suppress it."))
+
+  :returns (out-alist "Alist binding user-level STV outputs to either natural
+                       numbers or X.")
+
+  :long "<p>Useful for cases where an STV output is X, this can be used to
+prove a somewhat weaker theorem about a hardware module.  This function tests
+that the evaluation of the non-skipped signals under the given input alist is
+the same when:</p>
+<ul>
+<li>the s-expression variables not determined by the input alist are all set to
+false, and</li>
+<li>they are instead set according to the dontcare-env.</li>
+</ul>
+<p>It returns T if the two evaluations match and NIL if there is any difference.</p>
+
+<p>If you prove (using GL) that this function always returns T under a given
+input alist, you have shown that any Boolean setting of the initial states,
+off-pipe inputs, etc., is irrelevant to the value produced under the given
+input alist (which presumably includes settings for various control bits
+specific to the instruction of interest).  You can then prove, say, that the
+circuit meets its spec under a setting of all these don't-care bits to false,
+and this then implies that the circuit meets its spec under every Boolean
+setting of those bits.</p>"
+
+  
+  (time$
+   (b* (((mv sigs ?out-usersyms)
+         (stv-run-collect-eval-signals pstv skip))
+
+        (- (or quiet
+               (cw "STV Raw Inputs: ~x0.~%" input-alist)))
+
+        (ev-alist (stv-run-make-eval-env pstv input-alist)))
+     (4v-sexpr-alist-check-independent sigs ev-alist dontcare-env))
+   :msg "; stv-run-check-dontcares: ~st sec, ~sa bytes.~%"
+   :mintime 1)
+  ///
+  (defthm stv-run-check-dontcares-normalize-quiet
+    (implies (syntaxp (not (equal quiet ''nil)))
+             (equal (stv-run-check-dontcares pstv input-alist dontcare-env
+                                             :skip skip :quiet quiet)
+                    (stv-run-check-dontcares pstv input-alist dontcare-env
+                                             :skip skip)))))
+
+(defsection stv-run-independent-of-dontcares
+  (defun-sk stv-run-independent-of-dontcares (pstv input-alist skip)
+    (forall dontcare-env
+            (stv-run-check-dontcares pstv input-alist dontcare-env :skip skip))
+    :rewrite :direct)
+
+  (in-theory (disable stv-run-independent-of-dontcares)))
+
+(define stv-run-for-all-dontcares
+  :parents (symbolic-test-vectors)
+  :short "Test that a given setting of the don't-care bits of an STV are indeed
+don't-cares under the given input alist."
+
+  ((pstv        processed-stv-p
+                "The symbolic test vector to run.")
+
+   (input-alist "An alist that should typically bind at least some of the input
+                 simulation variables to natural numbers, or to the symbol X.
+                 Any inputs that aren't mentioned are implicitly bound to X.")
+   &key
+   (skip        "Advanced option to avoid computing certain outputs; see below.")
+
+   (quiet       "Suppress debugging output.  By default, @('stv-run') will print
+                 certain debugging information.  This is generally convenient in
+                 @(see def-gl-thm) forms involving an @('stv-run'), and will allow
+                 you to see nicely-formatted debugging info when counter-examples
+                 are found.  But you can use @(':quiet t') to suppress it."))
+
+  :returns (out-alist "Alist binding user-level STV outputs to either natural
+                       numbers or X.")
+
+  :long "<p>NOTE: This function is not always executable; read on for details.</p>
+
+<p>This function evaluates an STV under the input alist, like @(see stv-run).
+However, @(see stv-run) effectively binds to X all input and initial state
+variables not set by the input alist (the don't-cares).  Thus, for each output,
+@(see stv-run) produces either</p>
+
+<ul>
+<li>an integer giving the value of that output, signifying that the don't-cares
+do not effect that output</li>
+<li>an X, signifying that for some bit of that output, either the don't-cares
+may effect the value, or the value is X independent of the don't-cares.</li>
+</ul>
+
+<p>This function instead produces:</p>
+<ul>
+<li>an integer giving the value of that output, signifying that the don't-cares
+do not effect that output <em>as long as they are Boolean-valued</em></li>
+<li>an X, signifying that for some bit of that output, either the don't-cares
+may effect the value <em>even when they are restricted to Boolean values</em>,
+or the value is X independent of the don't-cares.</li>
+</ul>
+
+<p>This function cannot always be straightforwardly computed: it may sometimes
+require solving a SAT problem to show that all possible assignments of Boolean
+values to the don't-care bits produce the same value of the outputs.  Rather
+than calling a SAT solver in the midst of computing this function, we instead
+compute the result when it is straightforward, and produce an error (by calling
+a non-executable function) when it isn't.</p>
+
+<p>Even when this function does not execute, it may be possible to prove that
+its result (say) matches a spec function, by doing the following:</p>
+
+<ul>
+<li>Prove that the desired property holds of @(see stv-run-squash-dontcares)</li>
+<li>Prove that @(see stv-run-check-dontcares) holds of the inputs to this
+function, for all don't-care alists.</li>
+</ul>
+"
+
+  
+  (time$
+   (b* (((mv sigs out-usersyms)
+         (stv-run-collect-eval-signals pstv skip))
+
+        (- (or quiet
+               (cw "STV Raw Inputs: ~x0.~%" input-alist)))
+
+        (ev-alist (stv-run-make-eval-env pstv input-alist))
+        ((with-fast ev-alist))
+
+        ;; Evaluate the non-skipped signals.
+        (evaled-out-bits
+         (time$ (make-fast-alist (4v-sexpr-boolconst-eval-alist sigs ev-alist))
+                :mintime 1/2
+                :msg "; stv-run out-bits: ~st sec, ~sa bytes.~%"))
+
+        (- (fast-alist-free ev-alist))
+
+        ;; Assemble the non-skipped outputs.
+        (assembled-outs
+         (time$ (stv-assemble-output-alist evaled-out-bits out-usersyms)
+                :mintime 1/2
+                :msg "; stv-run outs: ~st sec, ~sa bytes.~%"))
+
+        (- (fast-alist-free evaled-out-bits))
+
+        ;; Debugging Support
+        (- (or quiet
+               (progn$ (cw "~%STV Inputs:~%")
+                       (stv-print-alist input-alist)
+                       (cw "~%STV Outputs:~%")
+                       (stv-print-alist assembled-outs)
+                       (cw "~%")))))
+
+     assembled-outs)
+   :msg "; stv-run-for-all-dontcares: ~st sec, ~sa bytes.~%"
+   :mintime 1)
+  ///
+  (defthm stv-run-for-all-dontcares-when-independent
+    (implies (stv-run-independent-of-dontcares pstv input-alist skip)
+             (equal (stv-run-for-all-dontcares pstv input-alist :skip skip :quiet quiet)
+                    (stv-run-squash-dontcares pstv input-alist :skip skip :quiet quiet)))
+    :hints(("Goal" :in-theory (e/d (stv-run-for-all-dontcares
+                                    stv-run-squash-dontcares
+                                    stv-run-check-dontcares)
+                                   (stv-run-independent-of-dontcares-necc
+                                    4v-sexpr-boolconst-eval-alist-when-independent))
+            :use ((:instance stv-run-independent-of-dontcares-necc
+                   (dontcare-env (4v-sexpr-boolconst-eval-alist-find-env-for-diff
+                                  (mv-nth 0 (stv-run-collect-eval-signals pstv skip))
+                                  (stv-run-make-eval-env pstv input-alist))))
+                  (:instance 4v-sexpr-boolconst-eval-alist-when-independent
+                   (x (mv-nth 0 (stv-run-collect-eval-signals pstv skip)))
+                   (env (stv-run-make-eval-env pstv input-alist))))))))
+                    
 

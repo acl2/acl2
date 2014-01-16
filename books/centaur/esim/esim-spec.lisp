@@ -1509,7 +1509,7 @@
   (implies (good-esim-modulep x)
            (and (not (member-equal nil (alist-vals (occmap x))))
                 (not (hons-rassoc-equal nil (occmap x)))))
-  :hints(("Goal" :in-theory (enable occmap))))
+  :hints(("Goal" :in-theory (enable occmap good-esim-modulep))))
 
 (defthm hons-rassoc-equal-fal-extract
   (implies (not (hons-rassoc-equal x al))
@@ -1529,7 +1529,7 @@
 (defthm not-hons-assoc-equal-nil-of-good-occmap
   (implies (good-esim-modulep mod)
            (not (hons-assoc-equal nil (occmap mod))))
-  :hints(("Goal" :in-theory (enable occmap))))
+  :hints(("Goal" :in-theory (enable occmap good-esim-modulep))))
 
 (defthm hons-assoc-equal-occmap1
   (implies (not (hons-assoc-equal nil (occmap1 occs)))
@@ -2748,7 +2748,8 @@
             (:instance least-fixpointp-esim-least-fixpoint))
 
            :in-theory (e/d (4v-alists-agree-trans1
-                            4v-alists-agree-commute)
+                            4v-alists-agree-commute
+                            good-esim-modulep)
                            (esim-fixpoint
                             esim-fixpoint-p
                             no-duplicatesp-equal-non-cons
@@ -2936,7 +2937,8 @@
   (implies (and (good-esim-modulep mod)
                 (not (gpl :x mod)))
            (subsetp-equal (pat-flatten1 (gpl :o mod))
-                          (esim-driven-signals mod))))
+                          (esim-driven-signals mod)))
+  :hints(("Goal" :in-theory (enable good-esim-modulep))))
 
 
 (defthm esim-out-in-terms-of-least-fixpoint

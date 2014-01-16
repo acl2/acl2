@@ -31,6 +31,7 @@
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/top" :dir :system)
 (include-book "misc/definline" :dir :system)
+(include-book "centaur/misc/universal-equiv" :dir :system)
 
 ;; Local Variables:
 ;; eval: (put '4vcases 'lisp-indent-function 1)
@@ -135,7 +136,41 @@ non-@(see 4vp) objects are coerced to X.</p>"
 
   (defthm 4v-fix-when-4vp
     (implies (4vp x)
-             (equal (4v-fix x) x))))
+             (equal (4v-fix x) x)))
+
+  (defthm 4vp-of-4v-fix
+    (4vp (4v-fix x))))
+
+(defsection 4v-equiv
+  (def-universal-equiv 4v-equiv
+    :equiv-terms ((equal (4v-fix x)))
+    :short "Equivalence of four-valued constants, i.e., @(see 4vp)s."
+    :long "<p>@('X') === @('Y') in the sense of four-valued objects if they fix
+to the same @(see 4vp).  That is, except for @('(4vf)'), @('(4vz)'), and
+@('(4vt)'), all objects are equivalent to @('(4vx)') under this
+relationship.</p>")
+
+  (local (in-theory (enable 4v-fix 4v-equiv)))
+
+  (defthm 4v-equiv-4v-fix
+    (4v-equiv (4v-fix x) x))
+
+  (defun prove-4v-equiv-congs (n f ins)
+    (declare (xargs :measure (nfix n)))
+    (if (zp n)
+        nil
+      (cons `(defcong 4v-equiv equal (,f . ,ins) ,n
+               :hints(("Goal" :in-theory (enable 4v-equiv))))
+            (prove-4v-equiv-congs (1- n) f ins))))
+
+  (defmacro prove-4v-equiv-cong (f ins)
+    `(progn
+       . ,(prove-4v-equiv-congs (len ins) f ins)))
+
+
+  (prove-4v-equiv-cong 4v-fix (a)))
+
+
 
 
 (defxdoc 4v-operations
@@ -213,7 +248,9 @@ values are treated as X.</p>"
          (equal (4v-unfloat (4vf)) (4vf))
          (equal (4v-unfloat (4vx)) (4vx))
          (equal (4v-unfloat (4vz)) (4vx)))
-    :rule-classes nil))
+    :rule-classes nil)
+
+  (prove-4v-equiv-cong 4v-unfloat (a)))
 
 
 
@@ -249,7 +286,9 @@ truth table:</p>
          (equal (4v-not (4vf)) (4vt))
          (equal (4v-not (4vx)) (4vx))
          (equal (4v-not (4vz)) (4vx)))
-    :rule-classes nil))
+    :rule-classes nil)
+
+  (prove-4v-equiv-cong 4v-not (a)))
 
 
 
@@ -284,7 +323,9 @@ truth table:</p>
                      (eq b (4vt)))
                 (4vt))
                (t
-                (4vx))))))
+                (4vx)))))
+
+  (prove-4v-equiv-cong 4v-and (a b)))
 
 
 (defsection 4v-or
@@ -318,7 +359,9 @@ truth table:</p>
                      (eq b (4vf)))
                 (4vf))
                (t
-                (4vx))))))
+                (4vx)))))
+
+  (prove-4v-equiv-cong 4v-or (a b)))
 
 
 (defsection 4v-xor
@@ -352,7 +395,9 @@ truth table:</p>
                       ((eq b (4vf)) (4vf))
                       (t            (4vx))))
                (t
-                (4vx))))))
+                (4vx)))))
+
+  (prove-4v-equiv-cong 4v-xor (a b)))
 
 
 (defsection 4v-iff
@@ -386,7 +431,9 @@ truth table:</p>
                       ((eq b (4vf)) (4vt))
                       (t            (4vx))))
                (t
-                (4vx))))))
+                (4vx)))))
+
+  (prove-4v-equiv-cong 4v-iff (a b)))
 
 
 
@@ -560,7 +607,10 @@ get to carry out this kind of optimization.</p>"
                     b
                   (4vx)))
                (t
-                (4vx))))))
+                (4vx)))))
+
+  (prove-4v-equiv-cong 4v-ite (c a b))
+  (prove-4v-equiv-cong 4v-ite* (c a b)))
 
 (defsection 4v-zif
   :parents (4v-operations)
@@ -584,7 +634,9 @@ experimental composition features in @(see esim).</p>"
          (cond ((eq c (4vt)) (4v-fix a))
                ((eq c (4vf)) (4v-fix b))
                (t
-                (4vx))))))
+                (4vx)))))
+
+  (prove-4v-equiv-cong 4v-zif (c a b)))
 
 
 (defsection 4v-tristate
@@ -637,7 +689,9 @@ also @(see 4v-res).</p>"
                          (eq a (4vf))))
                 a)
                (t
-                (4vx))))))
+                (4vx)))))
+
+  (prove-4v-equiv-cong 4v-tristate (c a)))
 
 
 (defsection 4v-pullup
@@ -666,7 +720,9 @@ by the following truth table:</p>
       (t (4vt))
       (z (4vt))
       (f (4vf))
-      (& (4vx)))))
+      (& (4vx))))
+
+  (prove-4v-equiv-cong 4v-pullup (a)))
 
 
 
@@ -754,7 +810,9 @@ produces a short circuit!</p>"
                              (eq a (4vf)))
                          (eq a b))
                     a
-                  (4vx)))))))
+                  (4vx))))))
+
+  (prove-4v-equiv-cong 4v-res (a b)))
 
 
 (defsection 4v-wand
@@ -835,7 +893,9 @@ specification).</p>
          (equal (4v-wand (4vz) (4vt)) (4vt))
          (equal (4v-wand (4vz) (4vx)) (4vx))
          (equal (4v-wand (4vz) (4vz)) (4vz)))
-    :rule-classes nil))
+    :rule-classes nil)
+
+  (prove-4v-equiv-cong 4v-wand (a b)))
 
 
 
@@ -916,7 +976,9 @@ specification).</p>
          (equal (4v-wor (4vz) (4vt)) (4vt))
          (equal (4v-wor (4vz) (4vx)) (4vx))
          (equal (4v-wor (4vz) (4vz)) (4vz)))
-    :rule-classes nil))
+    :rule-classes nil)
+
+  (prove-4v-equiv-cong 4v-wand (a b)))
 
 
 
@@ -1002,7 +1064,9 @@ imposed between T, F, and Z.</p>
 
   (defthm 4v-<=-of-4v-fix-2
     (equal (4v-<= a (4v-fix b))
-           (4v-<= a b))))
+           (4v-<= a b)))
+
+  (prove-4v-equiv-cong 4v-<= (a b)))
 
 
 
