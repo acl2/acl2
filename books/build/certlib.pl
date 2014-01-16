@@ -1017,35 +1017,40 @@ sub src_events {
     my $entry = $evcache->{$fname};
     my $entry_ok = 0;
 
-    if (-e $fname) {
-	if ($entry) {
-	    if ($believe_cache || $checked->{$entry}) {
-		print "cached events for $fname\n" if $debugging;
-	    $entry_ok = 1;
-	    } elsif (ftimestamp($fname) && (ftimestamp($fname) <= $entry->[1])) {
-		$checked->{$entry} = 1;
-		$entry_ok = 1;
-	    }
-	}
-	if ($entry_ok) {
-	    print "cached events for $fname\n" if $debugging;
-	    return $entry->[0];
-	} else {
-	    print "reading events for $fname\n" if $debugging;
-	    (my $events, my $timestamp) = scan_src($fname);
-	    my $cache_entry = [$events, $timestamp];
-	    print "caching events for $fname\n" if $debugging;
-	    $evcache->{$fname} = $cache_entry;
-	    $checked->{$fname} = 1;
-	    return $events;
-	}
-    } else {
-	print "Warning: missing file $fname in src_events\n";
+    if ($entry && ($believe_cache || $checked->{$fname})) {
+	print "cache believed for $fname\n" if $debugging;
+	$checked->{$fname} = 1;
+	$entry_ok = 1;
+    }
+
+    if (! $entry_ok && ! -e $fname) {
+	print "Warning: missing file $fname";
 	if ($parent) {
-	    print "(Required by $parent)\n";
+	    print " (required by $parent)";
 	}
+	print "\n";
 	return [];
     }
+
+    if ($entry && ! $entry_ok && (ftimestamp($fname) <= $entry->[1])) {
+	print "timestamp of $fname ok\n" if $debugging;
+	$checked->{$fname} = 1;
+	$entry_ok = 1;
+    }
+
+    if ($entry_ok) {
+	print "returning cached events for $fname\n" if $debugging;
+	return $entry->[0];
+    }
+
+    print "reading events for $fname\n" if $debugging;
+    (my $events, my $timestamp) = scan_src($fname);
+    my $cache_entry = [$events, $timestamp];
+    print "caching events for $fname\n" if $debugging;
+    $evcache->{$fname} = $cache_entry;
+    $checked->{$fname} = 1;
+    return $events;
+
 }
 
 sub expand_dirname_cmd {
@@ -1138,6 +1143,11 @@ sub src_deps {
 	print "events: $fname";
 	print_events($events);
     }
+    if (! ($believe_cache || $tscache->{$fname})) {
+	# The file doesn't exist.  We've already printed an error message.
+	return;
+    }
+    push(@$srcdeps, $fname);
 
     foreach my $event (@$events) {
 	my $type = $event->[0];
@@ -1186,7 +1196,6 @@ sub src_deps {
 	    my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
 					      $local_dirs, "loads", "");
 	    if ($fullname) {
-		push(@$srcdeps, $fullname);
 		src_deps($fullname, $cache,
 			 $local_dirs,
 			 $certdeps,
@@ -1211,7 +1220,6 @@ sub src_deps {
 		my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
 						  $local_dirs, "ld", "");
 		if ($fullname) {
-		    push(@$srcdeps, $fullname);
 		    src_deps($fullname, $cache,
 			     $local_dirs,
 			     $certdeps,
@@ -1272,7 +1280,7 @@ sub find_deps {
 
     my $bookdeps = [];
     my $portdeps = [];
-    my $srcdeps = [ $lispfile ];
+    my $srcdeps = [];
     my $otherdeps = [];
     my $local_dirs = {};
 
@@ -1299,7 +1307,6 @@ sub find_deps {
 	# Scan the .acl2 file first so that we get the add-include-book-dir
 	# commands before the include-book commands.
 	if ($acl2file) {
-	    push(@$srcdeps, $acl2file);
 	    src_deps($acl2file, $cache,
 		     $local_dirs, 
 		     $portdeps,
@@ -1548,7 +1555,7 @@ sub add_deps {
 	print "\n";
     }
 
-    # Accumulate the set of sources.
+    # Accumulate the set of sources.  We haven't checked yet if they exist.
     foreach my $dep (@$srcdeps) {
 	$sources->{$dep} = 1;
     }
