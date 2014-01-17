@@ -20,6 +20,7 @@
 
 (in-package "ACL2")
 (include-book "def-typed-record")
+(include-book "ihs/basic-definitions" :dir :system)
 
 ; This book just has some examples of def-typed-record commands.  Sometimes
 ; you have to do various tricks (like supplying the :in-package-of argument,
