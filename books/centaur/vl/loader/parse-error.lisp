@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "lexer-tokens")
+(include-book "lexer/tokens")
 (include-book "../mlib/fmt")
 
 (defsection vl-report-parse-error

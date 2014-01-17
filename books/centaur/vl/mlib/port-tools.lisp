@@ -258,11 +258,10 @@ return a list of strings.</p>"
    (port      vl-port-p))
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
-      (warnings vl-warninglist-p
-                :hyp (force (vl-warninglist-p warnings)))
+      (warnings vl-warninglist-p)
       (directions true-listp :rule-classes :type-prescription))
   (b* (((when (atom names))
-        (mv t warnings nil))
+        (mv t (ok) nil))
        (decl (vl-fast-find-portdecl (car names) portdecls palist))
        ((mv successp warnings directions)
         (vl-port-direction-aux (cdr names) portdecls palist warnings port))
@@ -296,8 +295,7 @@ return a list of strings.</p>"
                warnings."
               vl-warninglist-p))
   :returns
-  (mv (warnings  vl-warninglist-p
-                 :hyp (force (vl-warninglist-p warnings)))
+  (mv (warnings  vl-warninglist-p)
       (maybe-dir "The direction for this port, or @('nil') on failure."
                  vl-maybe-direction-p
                  :hints(("Goal" :in-theory (enable vl-maybe-direction-p)))
@@ -326,13 +324,13 @@ and add a warning that this case is very unusual.</p>"
        ((mv successp warnings dirs)
         (vl-port-direction-aux names portdecls palist warnings port))
        ((unless successp)
-        (mv warnings nil))
+        (mv (ok) nil))
 
        ((when (or (atom (cdr dirs))
                   (all-equalp :vl-input dirs)
                   (all-equalp :vl-output dirs)
                   (all-equalp :vl-inout dirs)))
-        (mv warnings (car dirs))))
+        (mv (ok) (car dirs))))
     (mv (warn :type :vl-bad-port
               :msg "~a0 refers to ~&1, which do not all agree upon a ~
                       direction.  We do not support this. Directions: ~&2."

@@ -22,17 +22,7 @@
 (include-book "transforms/occform/simple")
 (local (include-book "util/arithmetic"))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
-
-(make-event
-
-; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.  
-
- (if (and (ACL2::hons-enabledp state) 
-          (f-get-global 'ACL2::parallel-execution-enabled state)) 
-     (er-progn (set-waterfall-parallelism nil)
-               (value '(value-triple nil)))
-   (value '(value-triple nil))))
+(local (non-parallel-book))
 
 (defxdoc onehot
   :parents (transforms)

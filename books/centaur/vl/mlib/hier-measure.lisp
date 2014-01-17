@@ -19,13 +19,9 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "VL")
-
-(include-book "centaur/vl/parsetree" :dir :system)
-(include-book "centaur/vl/mlib/modnamespace" :dir :system)
+(include-book "modnamespace")
 (include-book "find-module")
 (include-book "centaur/misc/dag-measure" :dir :system)
-
-
 
 
 (defsection vl-modhier-measure

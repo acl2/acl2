@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -23,7 +23,6 @@
 (include-book "defsort/remove-dups" :dir :system)
 (local (include-book "arithmetic"))
 
-
 (defxdoc warnings
   :parents (vl)
   :short "Support for handling warnings and errors."
@@ -32,8 +31,8 @@
 want to issue a variety of warnings.</p>
 
 <p>Our original approach to handling warnings was quite ad-hoc.  We sometimes
-printed messages to standard output using the @('cw') function, and we
-sometimes caused errors using @('er').  But this approach had a number of
+printed messages to standard output using the @(see cw) function, and we
+sometimes caused errors using @(see er).  But this approach had a number of
 problems.  In particular,</p>
 
 <ul>
@@ -52,9 +51,9 @@ there are 30 if-statements to clean up.</li>
 users might not even see the warnings that had been generated for the modules
 they are working on.</li>
 
-<li>There is no way to recover form an error created with @('er'), so if we ran
-into some bad problem with a particular module, it could actually prevent us
-from translating <i>any</i> of the modules.</li>
+<li>There is no way to recover form an error created with @(see er), so if we
+ran into some bad problem with a particular module, it could actually prevent
+us from translating <i>any</i> of the modules.</li>
 
 </ul>
 
@@ -117,103 +116,155 @@ encountered.</p>
 
 <p>After carrying out some transformation, we can scan the list of modules for
 any fatal warnings, and these modules (and their dependents) can be easily
-thrown out using @(see vl-propagate-errors).</p>
-
-<h3>Printing Warnings</h3>
-
-See @(see vl::printer) for information on printing warnings.")
-
+thrown out using @(see vl-propagate-errors).</p>")
 
 (defaggregate vl-warning
-  (type msg args fatalp fn)
-  :require ((symbolp-of-vl-warning->type
-             (symbolp type)
-             :rule-classes :type-prescription)
-            (stringp-of-vl-warning->msg
-             (stringp msg)
-             :rule-classes :type-prescription)
-            (true-listp-of-vl-warning->args
-             (true-listp args)
-             :rule-classes :type-prescription)
-            (booleanp-of-vl-warning->fatalp
-             (booleanp fatalp)
-             :rule-classes :type-prescription)
-            (symbolp-of-vl-warning->fn
-             (symbolp fn)
-             :rule-classes :type-prescription))
-  :tag :vl-warning
   :parents (warnings)
-
   :short "Fundamental warning object used throughout VL."
+  :tag :vl-warning
 
-  :long "<p>The @('type') of each warning is a symbol (typically a keyword
-symbol) that describes very broadly what kind of warning this is.  There is not
-currently any particular discipline or strategy for assigning types to
-warnings, but the goal is to be able to use types to filter out or group
-warnings.</p>
+  ((type symbolp :rule-classes :type-prescription
+         "A symbol, typically a keyword symbol, that describes very broadly
+          what kind of warning this is.  There is not currently any particular
+          discipline or strategy for assigning types to warnings, but the goal
+          is to be able to use types to filter out or group warnings.")
 
-<p>The @('msg') of each warning is a more detailed message describing what went
-wrong.  This string should be acceptable to @(see vl-fmt); it is similar to the
-\"format strings\" used by ACL2's @('cw') function, but there are some
-important differences.  In particular, we do <b>NOT</b> support all of the
-directives that ACL2's printer can use, and we have certain extra support for
-printing locations, module names, and so on.</p>
+   (msg  stringp :rule-classes :type-prescription
+         "A more detailed message describing what went wrong.  This string
+          should be acceptable to @(see vl-fmt); it is similar to the \"format
+          strings\" used by ACL2's @(see cw) function, but there are some
+          important differences, e.g., not all @(see fmt) directives are
+          supported, and extra Verilog-specific directives are available.")
 
-<p>The @('args') are composed with the tilde directives in @('msg') when the
-warning is displayed to the user.  That is, a directive like @('~x0') refers to
-the first argument, @('~x1') to the second, etc.</p>
+   (args true-listp :rule-classes :type-prescription
+         "Arguments that will be composed with the tilde directives in @('msg')
+          when the warning is displayed to the user.  That is, a directive like
+          @('~x0') refers to the first argument, @('~x1') to the second, etc.")
 
-<p>The @('fatalp') flag indicates whether this error is so severe that the
-module ought to be thrown away and not subjected to further translation.  See
-the general discussion in @(see warnings) for more information on how this is
-used.</p>
+   (fatalp booleanp :rule-classes :type-prescription
+           "Indicates whether this error is so severe that the module ought to
+            be thrown away and not subjected to further translation.  See the
+            general discussion in @(see warnings) for more information on how
+            this is used.")
 
-<p>The @('fn') is supposed to be the name of the function that caused the
-warning.  We added this later, so some warnings might not have this field set
-at the moment.</p>")
+   (fn symbolp :rule-classes :type-prescription
+       "The name of the function that caused the warning.  This is intended to
+        be useful for debugging.  Note that nothing but good discipline ensures
+        that this is correct.  Also, we added this field later, so note that
+        some legacy routines may not always install a @('fn') properly.")))
 
 (deflist vl-warninglist-p (x)
-  (vl-warning-p x)
-  :elementp-of-nil nil
   :parents (warnings)
-  :rest
-  ((defthm vl-warninglist-p-of-remove-adjacent-duplicates
-     (implies (force (vl-warninglist-p x))
-              (vl-warninglist-p (acl2::remove-adjacent-duplicates x)))
-     :hints(("Goal" :in-theory (enable acl2::remove-adjacent-duplicates))))))
+  :elementp-of-nil nil
+  (vl-warning-p x)
+  ///
+  (defthm vl-warninglist-p-of-remove-adjacent-duplicates
+    (implies (force (vl-warninglist-p x))
+             (vl-warninglist-p (acl2::remove-adjacent-duplicates x)))
+    :hints(("Goal" :in-theory (enable acl2::remove-adjacent-duplicates)))))
 
 (defprojection vl-warninglist->types (x)
-  (vl-warning->type x)
+  :parents (warnings)
   :guard (vl-warninglist-p x)
   :nil-preservingp t
-  :parents (warnings))
+  (vl-warning->type x))
 
+(define vl-warninglist-fix
+  :parents (warnings)
+  :short "Fast fixing function for warnings lists."
+  ((x vl-warninglist-p))
+  :returns (x-fix vl-warninglist-p)
+  :long "<p>See @(see warnings) for background about warnings, particularly
+warnings accumulators.</p>
+
+<p>Many functions throughout VL extend warnings accumulators.  To allow these
+functions to unconditionally return a @(see vl-warninglist-p), it is useful to
+have them call @('vl-warninglist-fix') on their input warnings.  Doing this
+eliminates @('vl-warninglist-p') hypotheses on many, many theorems.</p>
+
+<p>Our use of @(see mbe) and inlining should ensure that, in the execution,
+this fixing is (nearly) free.</p>"
+  :inline t
+  (mbe :logic (and (vl-warninglist-p x)
+                   x)
+       :exec x)
+  ///
+  (defthm vl-warninglist-fix-when-vl-warninglist-p
+    (implies (vl-warninglist-p x)
+             (equal (vl-warninglist-fix x)
+                    x))))
+
+(defsection ok
+  :parents (warnings)
+  :short "Don't extend (but do fix) a @(see warnings) accumulator."
+  :long "<p>@('(ok)') is just syntactic sugar for:</p>
+
+@({
+   (vl-warninglist-fix warnings)
+})
+
+<p>This is often useful as a base case in functions that sometimes create
+warnings.  The name of the warnings accumulator to fix can also be specified,
+e.g.,:</p>
+
+@({
+    (ok acc) == (vl-warninglist-fix acc)
+})
+
+@(def ok)"
+
+  (defmacro ok (&optional (warnings 'warnings))
+    `(vl-warninglist-fix ,warnings))
+
+  (defthm ok-correct
+    (and (equal (ok x) (vl-warninglist-fix x))
+         (equal (ok) (vl-warninglist-fix warnings)))
+    :rule-classes nil))
 
 (defsection warn
   :parents (warnings)
   :short "Extend a @(see warnings) accumulator with a non-fatal warning."
 
-  :long "@(ccall warn)
+  :long "<p>Syntax:</p>
 
-<p>This macro builds a new warning @('w') from the given @('type'), @('msg'),
-@('args'), and @('fn'), then conses @('w') onto the @(see warnings) accumulator
-@('acc')</p>
+@({
+    (warn [:type type]
+          [:msg msg]
+          [:args args]
+          [:fn fn]         ;; defaults to __function__
+          [:acc warnings]  ;; defaults to warnings
+          )
+       -->
+    warnings'
+})
 
-<p>Note that @('warn') always builds non-fatal warnings.  If you want to build
-a fatal warning instead, use the macro @(see fatal), which has an identical
-interface.</p>
+<p>This macro builds a new, <b>non-fatal</b> warning @('w') from the given
+@('type'), @('msg'), @('args'), and @('fn'), then conses @('w') onto the @(see
+warnings) accumulator @('acc').</p>
 
-<p>There are a couple of interfacing tricks:</p>
+<p>See also @(see fatal); it is identical except that it builds fatal
+warnings.</p>
 
-<p>Note that @('acc') defaults to @('warnings') because we often use
-@('warnings') as the name of the warnings accumulator we are working with.
-That is, as long as your warnings accumulator is named @('warnings'), you don't
-have to give an @('acc') argument.</p>
+<p>We make use of a few interfacing tricks:</p>
 
-<p>Note that @('fn') defaults to @('__function__').  Macros like @(see define)
-often bind this symbol to the name of the current function, so if you are using
-a macro like this you don't have to give a @('fn') argument.  But you will need
-to explicitly give a function name when using raw @(see defun).</p>"
+<ul>
+
+<li>@('acc') defaults to @('warnings') because we often use @('warnings') as
+the name of the warnings accumulator we are working with.  That is, as long as
+your warnings accumulator is named @('warnings'), you don't have to give an
+@('acc') argument.</li>
+
+<li>@('fn') defaults to @('__function__').  Macros like @(see define) often
+bind this symbol to the name of the current function, so if you are using a
+macro like this you don't have to give a @('fn') argument.  But you will need
+to explicitly give a function name when using raw @(see defun).</li>
+
+<li>We cons the new warning not onto @('acc'), but instead onto
+@('(vl-warninglist-fix acc)').  This ensures that code written using @('warn')
+can unconditionally produce @(see vl-warninglist-p)s, without needing to do
+explicit fixing.</li>
+
+</ul>"
 
   (defmacro warn (&key type msg args
                        (fn '__function__)
@@ -223,15 +274,13 @@ to explicitly give a function name when using raw @(see defun).</p>"
                             :args ,args
                             :fatalp nil
                             :fn ,fn)
-           ,acc)))
+           (vl-warninglist-fix ,acc))))
 
 (defsection fatal
   :parents (warnings)
   :short "Extend a @(see warnings) accumulator with a fatal warning."
-  :long "@(ccall fatal)
-
-<p>This is identical to @(see warn), except that it produces fatal warnings
-instead of non-fatal warnings.</p>"
+  :long "<p>See @(see warn); @('fatal') is identical except that it produces
+fatal warnings instead of non-fatal warnings.</p>"
 
   (defmacro fatal (&key type msg args
                         (fn '__function__)
@@ -241,8 +290,7 @@ instead of non-fatal warnings.</p>"
                             :args ,args
                             :fatalp t
                             :fn ,fn)
-           ,acc)))
-
+           (vl-warninglist-fix ,acc))))
 
 (define vl-warning-< ((x vl-warning-p)
                       (y vl-warning-p))
@@ -268,7 +316,6 @@ instead of non-fatal warnings.</p>"
     (<< x.fatalp y.fatalp))
 
   ///
-
   (defthm vl-warning-<-transitive
     (implies (and (vl-warning-< x y)
                   (vl-warning-< y z)
@@ -302,18 +349,19 @@ instead of non-fatal warnings.</p>"
 
 
 (define vl-clean-warnings ((x vl-warninglist-p))
-  :returns (ans vl-warninglist-p :hyp :fguard)
+  :returns (ans vl-warninglist-p)
   :parents (warnings)
   :short "Sort warnings and remove duplicates."
 
   (ACL2::remove-adjacent-duplicates
    (vl-warning-sort
-    (redundant-list-fix x))))
+    (redundant-list-fix
+     (vl-warninglist-fix x)))))
 
 
 (define vl-remove-warnings ((types symbol-listp)
                             (x vl-warninglist-p))
-  :returns (ans vl-warninglist-p :hyp :guard)
+  :returns (ans vl-warninglist-p :hyp (force (vl-warninglist-p x)))
   :parents (warnings)
   :short "Remove warnings of certain types."
   :long "<p>This can be useful to filter out mundane warnings that you do not
@@ -329,7 +377,7 @@ want to bother the user with.</p>"
 
 (define vl-keep-warnings ((types symbol-listp)
                           (x vl-warninglist-p))
-  :returns (ans vl-warninglist-p :hyp :guard)
+  :returns (ans vl-warninglist-p :hyp (force (vl-warninglist-p x)))
   :parents (warnings)
   :short "Keep only warnings of certain types."
   :long "<p>This can be useful to highlight certain warnings that are of
@@ -346,7 +394,7 @@ particular interest.</p>"
 (define vl-some-warning-fatalp ((x vl-warninglist-p))
   :parents (warnings)
   :short "Check if any warning is marked as fatal."
-
+  :returns bool
   (if (atom x)
       nil
     (or
@@ -356,7 +404,6 @@ particular interest.</p>"
      (vl-some-warning-fatalp (cdr x))))
 
   ///
-
   (defthm vl-some-warning-fatalp-when-not-consp
     (implies (not (consp x))
              (equal (vl-some-warning-fatalp x)
@@ -388,6 +435,7 @@ particular interest.</p>"
 
 (define vl-some-warning-of-type-p ((types symbol-listp)
                                    (x vl-warninglist-p))
+  :returns bool
   :parents (warnings)
   :short "Check if there are any warnings of certain types."
   :long "<p>Note that we leave this function enabled.</p>"
@@ -401,6 +449,3 @@ particular interest.</p>"
               t)
              (t
               (vl-some-warning-of-type-p types (cdr x))))))
-
-
-

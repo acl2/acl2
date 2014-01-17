@@ -114,6 +114,18 @@ For debugging, so the program doesn't quit on you at random.
                 :parser getopt::parse-string
                 :merge acl2::cons)
 
+   (edition     vl::vl-edition-p
+                :argname "EDITION"
+                "Which edition of the Verilog standard to implement?
+                 Default: \"SystemVerilog\" (IEEE 1800-2012).  You can
+                 alternately use \"Verilog\" for IEEE 1364-2005, i.e.,
+                 Verilog-2005."
+                :default :system-verilog-2012)
+
+   (strict      booleanp
+                :rule-classes :type-prescription
+                "Disable VL extensions to Verilog.")
+
    (mem         posp
                 :alias #\m
                 :argname "GB"
@@ -298,6 +310,8 @@ BOZO finish this readme
         (parse-stv-file opts.stv))
 
        (loadconfig (vl::make-vl-loadconfig
+                    :edition     opts.edition
+                    :strictp     opts.strict
                     :start-files opts.start-files
                     :search-path opts.search-path
                     :search-exts opts.search-exts

@@ -216,8 +216,8 @@ occur.</p>"
 (defsection q-not
   :parents (ubdd-constructors)
   :short "Negate a UBDD."
-  :long "<p>@(call q-not) builds a new UBDD representing ~c[(not x)].  That is,
-the the following is a theorem:</p>
+  :long "<p>@(call q-not) builds a new UBDD representing @('(not x)').  That
+is, the the following is a theorem:</p>
 
 @({
  (equal (eval-bdd (q-not x) values)

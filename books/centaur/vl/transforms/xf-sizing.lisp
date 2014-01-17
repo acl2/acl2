@@ -403,7 +403,7 @@ List Archives, specifically a <a
 href=\"http://www.boydtechinc.com/btf/archive/btf_1999/0642.html\">signed shift
 errata?</a> thread started by Stuart Sutherland on Monday, July 19, 1999, the
 followup to which suggests that Verilog-XL is in the wrong and that this is one
-area where NCVerilog was designed to match the standard instead of
+area where NCVerilog was designed to match the Verilog-2005 standard instead of
 Verilog-XL.</p>
 
 <p>We follow NCVerilog's behavior, but issue a warning if we see a signed
@@ -1998,7 +1998,7 @@ the expression is an unsupported system call).  In such cases we just return
                    :type :vl-warn-vague-spec
                    :msg "~a0: expression ~a1 has a type which is not ~
                          necessarily clear according to the discussion in the ~
-                         Verilog standard.  We believe its type should be ~
+                         Verilog-2005 standard.  We believe its type should be ~
                          ~s2, but think it would be easy for other Verilog ~
                          systems to mistakenly interpret the expression as ~
                          ~s3.  To reduce any potential confusion, you may ~
@@ -3136,10 +3136,10 @@ a signed value since Verilog-XL doesn't handle them correctly.</p>"
              :type :vl-warn-signed-shift
              :msg "~a0: found a shift-expression with a signed shift amount, ~
                    ~a1.  This is dangerous because whereas NCVerilog properly ~
-                   follows the Verilog standard (5.1.12) and treats the ~
+                   follows the Verilog-2005 standard (5.1.12) and treats the ~
                    right-hand side as unsigned, Verilog-XL incorrectly treats ~
                    negative right-shifts as left-shifts.  We follow the ~
-                   standard and mimick NCVerilog, but to ensure ~
+                   Verilog-2005 standard and mimick NCVerilog, but to ensure ~
                    compatibility, you should probably rewrite this expression ~
                    to ensure that the right-hand side is unsigned.  For ~
                    example, you might wrap the right-hand side in a ~

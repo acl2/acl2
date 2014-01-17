@@ -548,7 +548,7 @@ vl-moditem-alist).</p>"
              :type :vl-bad-function-parameter
              :msg "In ~a0, parameter ~s1 has the same name as ~a2; we don't ~
                    allow function parameters to shadow other module items ~
-                   because it seems underspecified by the Verilog standard ~
+                   because it seems underspecified by the Verilog-2005 standard ~
                    and generally somewhat error-prone."
              :args (list function name1 item1)
              :fatalp t
@@ -904,8 +904,8 @@ In particular, we want to ensure that the function's body:</p>
 
 <p>Practically speaking there are a lot of other things that our function
 expansion code doesn't support (complex case statements, loops, functions that
-don't write to registers before reading them, etc.) but that the standard
-doesn't prohibit, so this is not a very complete check as far as VL is
+don't write to registers before reading them, etc.) but that the Verilog-2005
+standard doesn't prohibit, so this is not a very complete check as far as VL is
 concerned.  But, I think it's nice to explicitly check for the \"officially
 forbidden\" stuff first.</p>"
 
@@ -1405,16 +1405,17 @@ generated list of assignments.  Otherwise we fail with fatal warnings.</p>"
          ((mv successp warnings) (vl-fun-stmt-okp body warnings x))
          ((unless successp) (mv nil warnings nil))
 
-         ;; So that we can handle functions with nested sub-blocks, etc., we use
-         ;; our ordinary rewriter to simplify the body.  Now, vl-stmt-rewrite
-         ;; does some rewriting that isn't necessarily okay in the context of
-         ;; function statements (i.e., it converts $display calls into null
-         ;; statements, but $display statements aren't allowed in function bodies
-         ;; whereas null statements are).  But this is okay: we've already
-         ;; checked with VL-FUN-STMT-OKP that the function is okay with respect
-         ;; to the rules of the Verilog standard, so if we're here then we
-         ;; already know the statement is "good," so rewriting the body won't let
-         ;; us accidentally accept illegal functions.
+         ;; So that we can handle functions with nested sub-blocks, etc., we
+         ;; use our ordinary rewriter to simplify the body.  Now,
+         ;; vl-stmt-rewrite does some rewriting that isn't necessarily okay in
+         ;; the context of function statements (i.e., it converts $display
+         ;; calls into null statements, but $display statements aren't allowed
+         ;; in function bodies whereas null statements are).  But this is okay:
+         ;; we've already checked with VL-FUN-STMT-OKP that the function is
+         ;; okay with respect to the rules of the Verilog-2005 standard, so if
+         ;; we're here then we already know the statement is "good," so
+         ;; rewriting the body won't let us accidentally accept illegal
+         ;; functions.
          ((mv warnings body) (vl-stmt-rewrite body 1000 warnings))
 
          ;; The following is intended to let us uniformly treat functions that

@@ -496,8 +496,7 @@ problematic lvalues encountered.</p>" long)))
        ((x ,rec)
         ,@extra-formals
         (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
-       :returns (new-warnings vl-warninglist-p
-                              :hyp (force (vl-warninglist-p warnings)))
+       :returns (new-warnings vl-warninglist-p)
        :parents (,rec lvaluecheck)
        :short ,short
        :long ,long
@@ -509,7 +508,7 @@ problematic lvalues encountered.</p>" long)))
   :body
   (b* ((lvalue (vl-assign->lvalue x))
        ((when (vl-expr-lvaluep lvalue))
-        warnings)
+        (ok))
        (loc (vl-assign->loc x)))
     (warn :type :vl-bad-lvalue
           :msg "~l0: assignment to bad lvalue ~a1."
@@ -519,7 +518,7 @@ problematic lvalues encountered.</p>" long)))
   :type vl-assignlist
   :body
   (if (atom x)
-      warnings
+      (ok)
     (b* ((warnings (vl-assign-lvaluecheck (car x) warnings)))
       (vl-assignlist-lvaluecheck (cdr x) warnings))))
 
@@ -535,7 +534,7 @@ problematic lvalues encountered.</p>" long)))
        (expr (vl-plainarg->expr x))
        ((unless expr)
         ;; Nothing to check.
-        warnings)
+        (ok))
        ((unless dir)
         (warn :type :vl-programming-error
               :msg "~l0: expected arguments of instance ~w1 to be resolved, ~
@@ -543,10 +542,10 @@ problematic lvalues encountered.</p>" long)))
               :args (list loc instname)))
        ((when (eq dir :vl-input))
         ;; Input to a submodule -- not an lvalue, nothing to check.
-        warnings)
+        (ok))
        ((when (vl-expr-lvaluep expr))
         ;; Good lvalue to an lvalue port.
-        warnings))
+        (ok)))
     (warn :type :vl-bad-lvalue
           :msg "~l0: expression for ~s1 port ~s2 of instance ~w3 is not a ~
                 valid lvalue: ~a4.~%"
@@ -563,7 +562,7 @@ problematic lvalues encountered.</p>" long)))
               (maybe-stringp instname))
   :body
   (if (atom x)
-      warnings
+      (ok)
     (b* ((warnings (vl-plainarg-lvaluecheck (car x) loc instname warnings)))
       (vl-plainarglist-lvaluecheck (cdr x) loc instname warnings))))
 
@@ -592,7 +591,7 @@ problematic lvalues encountered.</p>" long)))
   :type vl-modinstlist
   :body
   (if (atom x)
-      warnings
+      (ok)
     (b* ((warnings (vl-modinst-lvaluecheck (car x) warnings)))
       (vl-modinstlist-lvaluecheck (cdr x) warnings))))
 
@@ -608,7 +607,7 @@ problematic lvalues encountered.</p>" long)))
   :type vl-gateinstlist
   :body
   (if (atom x)
-      warnings
+      (ok)
     (b* ((warnings (vl-gateinst-lvaluecheck (car x) warnings)))
       (vl-gateinstlist-lvaluecheck (cdr x) warnings))))
 
@@ -617,7 +616,7 @@ problematic lvalues encountered.</p>" long)))
   :body
   (b* ((lvalue (vl-assignstmt->lvalue x))
        ((when (vl-expr-lvaluep lvalue))
-        warnings)
+        (ok))
        (loc (vl-assignstmt->loc x)))
     (warn :type :vl-bad-lvalue
           :msg "~l0: assignment to bad lvalue, ~a1."
@@ -628,7 +627,7 @@ problematic lvalues encountered.</p>" long)))
   :body
   (b* ((lvalue (vl-deassignstmt->lvalue x))
        ((when (vl-expr-lvaluep lvalue))
-        warnings))
+        (ok)))
     (warn :type :vl-bad-lvalue
           ;; BOZO add locations to deassign statements
           :msg "Deassignment to bad lvalue, ~a0."
@@ -640,7 +639,7 @@ problematic lvalues encountered.</p>" long)))
   (case (tag x)
     (:vl-assignstmt   (vl-assignstmt-lvaluecheck x warnings))
     (:vl-deassignstmt (vl-deassignstmt-lvaluecheck x warnings))
-    (otherwise        warnings)))
+    (otherwise        (ok))))
 
 (defsection vl-stmt-lvaluecheck
 
@@ -661,13 +660,13 @@ problematic lvalues encountered.</p>" long)))
            ((vl-forstmt-p x)
             (b* (((vl-forstmt x) x)
                  (warnings (if (vl-expr-lvaluep x.initlhs)
-                               warnings
+                               (ok)
                              (warn :type :vl-bad-lvalue
                                    :msg "Bad lvalue in for-loop initialization: ~a0."
                                    :args (list x.initlhs)
                                    :fn 'vl-stmt-lvaluecheck)))
                  (warnings (if (vl-expr-lvaluep x.nextlhs)
-                               warnings
+                               (ok)
                              (warn :type :vl-bad-lvalue
                                    :msg "Bad lvalue in for-loop step: ~a0."
                                    :args (list x.nextlhs)
@@ -682,7 +681,7 @@ problematic lvalues encountered.</p>" long)))
                                  (vl-warninglist-p warnings))
                      :measure (two-nats-measure (acl2-count x) 0)))
      (if (atom x)
-         warnings
+         (ok)
        (let ((warnings (vl-stmt-lvaluecheck (car x) warnings)))
          (vl-stmtlist-lvaluecheck (cdr x) warnings)))))
 
@@ -692,11 +691,9 @@ problematic lvalues encountered.</p>" long)))
                                   (vl-stmtlist-lvaluecheck . list)))
 
   (defthm-vl-flag-stmt-lvaluecheck lemma
-    (stmt (implies (vl-warninglist-p warnings)
-                   (vl-warninglist-p (vl-stmt-lvaluecheck x warnings)))
+    (stmt (vl-warninglist-p (vl-stmt-lvaluecheck x warnings))
           :name vl-warninglist-p-of-vl-stmt-lvaluecheck)
-    (list (implies (vl-warninglist-p warnings)
-                   (vl-warninglist-p (vl-stmtlist-lvaluecheck x warnings)))
+    (list (vl-warninglist-p (vl-stmtlist-lvaluecheck x warnings))
           :name vl-warninglist-p-of-vl-stmtlist-lvaluecheck)
     :hints(("Goal"
             :induct (vl-flag-stmt-lvaluecheck flag x warnings)
@@ -713,7 +710,7 @@ problematic lvalues encountered.</p>" long)))
   :type vl-alwayslist
   :body
   (if (atom x)
-      warnings
+      (ok)
     (b* ((warnings (vl-always-lvaluecheck (car x) warnings)))
         (vl-alwayslist-lvaluecheck (cdr x) warnings))))
 
@@ -725,7 +722,7 @@ problematic lvalues encountered.</p>" long)))
   :type vl-initiallist
   :body
   (if (atom x)
-      warnings
+      (ok)
     (b* ((warnings (vl-initial-lvaluecheck (car x) warnings)))
         (vl-initiallist-lvaluecheck (cdr x) warnings))))
 
@@ -737,7 +734,7 @@ problematic lvalues encountered.</p>" long)))
   :type vl-fundecllist
   :body
   (if (atom x)
-      warnings
+      (ok)
     (b* ((warnings (vl-fundecl-lvaluecheck (car x) warnings)))
         (vl-fundecllist-lvaluecheck (cdr x) warnings))))
 
@@ -749,33 +746,26 @@ problematic lvalues encountered.</p>" long)))
   :type vl-taskdecllist
   :body
   (if (atom x)
-      warnings
+      (ok)
     (b* ((warnings (vl-taskdecl-lvaluecheck (car x) warnings)))
         (vl-taskdecllist-lvaluecheck (cdr x) warnings))))
 
 
 
-(defsection vl-module-lvaluecheck
-
-  (defund vl-module-lvaluecheck (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((vl-module x) x)
-         (warnings  x.warnings)
-         (warnings  (vl-assignlist-lvaluecheck   x.assigns   warnings))
-         (warnings  (vl-modinstlist-lvaluecheck  x.modinsts  warnings))
-         (warnings  (vl-gateinstlist-lvaluecheck x.gateinsts warnings))
-         (warnings  (vl-alwayslist-lvaluecheck   x.alwayses  warnings))
-         (warnings  (vl-initiallist-lvaluecheck  x.initials  warnings))
-         (warnings  (vl-fundecllist-lvaluecheck  x.fundecls  warnings))
-         (warnings  (vl-taskdecllist-lvaluecheck x.taskdecls warnings)))
-      (change-vl-module x :warnings warnings)))
-
-  (local (in-theory (enable vl-module-lvaluecheck)))
-
-  (defthm vl-module-p-of-vl-module-lvaluecheck
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-lvaluecheck x))))
-
+(define vl-module-lvaluecheck ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard
+                  "Perhaps extended with some warnings.")
+  (b* (((vl-module x) x)
+       (warnings  x.warnings)
+       (warnings  (vl-assignlist-lvaluecheck   x.assigns   warnings))
+       (warnings  (vl-modinstlist-lvaluecheck  x.modinsts  warnings))
+       (warnings  (vl-gateinstlist-lvaluecheck x.gateinsts warnings))
+       (warnings  (vl-alwayslist-lvaluecheck   x.alwayses  warnings))
+       (warnings  (vl-initiallist-lvaluecheck  x.initials  warnings))
+       (warnings  (vl-fundecllist-lvaluecheck  x.fundecls  warnings))
+       (warnings  (vl-taskdecllist-lvaluecheck x.taskdecls warnings)))
+    (change-vl-module x :warnings warnings))
+  ///
   (defthm vl-module->name-of-vl-module-lvaluecheck
     (equal (vl-module->name (vl-module-lvaluecheck x))
            (vl-module->name x))))
@@ -783,12 +773,12 @@ problematic lvalues encountered.</p>" long)))
 
 
 (defprojection vl-modulelist-lvaluecheck (x)
-  (vl-module-lvaluecheck x)
   :guard (vl-modulelist-p x)
   :result-type vl-modulelist-p
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-lvaluecheck
-     (equal (vl-modulelist->names (vl-modulelist-lvaluecheck x))
-            (vl-modulelist->names x)))))
+  (vl-module-lvaluecheck x)
+  ///
+  (defthm vl-modulelist->names-of-vl-modulelist-lvaluecheck
+    (equal (vl-modulelist->names (vl-modulelist-lvaluecheck x))
+           (vl-modulelist->names x))))
 
 

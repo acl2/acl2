@@ -206,7 +206,7 @@ find any incompatible sizes."
   :returns
   (warnings vl-warninglist-p)
 
-  :long "<p>Regarding the sizing of case expressions, the Verilog
+  :long "<p>Regarding the sizing of case expressions, the Verilog-2005
 standard (9.5) says:</p>
 
 <box><p>Care is needed in specifying the expressions in the case statement.

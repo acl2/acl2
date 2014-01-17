@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -20,27 +20,29 @@
 
 (in-package "VL")
 (include-book "lexer")
-(local (include-book "../util/arithmetic"))
+(local (include-book "../../util/arithmetic"))
 
 (program)
 
 
 ;; This will get run any time the book is included.
-(make-event (prog2$ (cw "lexer-tests.lisp is being included.  You ~
+(make-event (prog2$ (cw "VL's lexer tests are being included.  You ~
                          almost certainly do not want to do this.~%")
                     (value '(value-triple :invisible)))
             :check-expansion t)
 
 
-(defmacro vl-lex-op-testcase (&key input
-                                   successp
-                                   (remainder '"")
-                                   type
-                                   (nwarnings '0))
+(defmacro vl-lex-op-testcase
+  (&key input             ;; Input to lex
+        successp          ;; Expected success/failure
+        (remainder '"")   ;; Expected remainder
+        type              ;; Expected resulting token type
+        (config '*vl-default-lexconfig*) ;; Configuration to use
+        (nwarnings '0))
   `(assert!
-    (b* ((echars             (vl-echarlist-from-str ,input))
-         ((mv tok remainder warnings)
-          (vl-lex-token echars nil))
+    (b* ((echars (vl-echarlist-from-str ,input))
+         (st     (vl-lexstate-init ,config))
+         ((mv tok remainder warnings) (vl-lex-token echars st nil))
          (- (cw "Echars: ~x0~%Tok: ~x1~%Remainder: ~x2~%Warnings:~x3~%"
                 echars tok remainder warnings)))
         (debuggable-and ,@(if successp
@@ -57,91 +59,168 @@
                               (equal (len warnings) ,nwarnings)))))))
 
 
-(defconst *punctuation-alist*
-  (list (cons "[" :vl-lbrack)
-        (cons "]" :vl-rbrack)
-        (cons "(" :vl-lparen)
-        (cons ")" :vl-rparen)
-        (cons "{" :vl-lcurly)
-        (cons "}" :vl-rcurly)
-        (cons ":" :vl-colon)
-        (cons "+:" :vl-pluscolon)
-        (cons "-:" :vl-minuscolon)
-        (cons ";" :vl-semi)
-        (cons "#" :vl-pound)
-        (cons "," :vl-comma)
-        (cons "." :vl-dot)
-        (cons "@" :vl-atsign)
-        (cons "(*" :vl-beginattr)
-        (cons "*)" :vl-endattr)
-        (cons "=" :vl-equalsign)
-        (cons "+" :vl-plus)
-        (cons "-" :vl-minus)
-        (cons "*" :vl-times)
-        (cons "/" :vl-div)
-        (cons "%" :vl-rem)
-        (cons "**" :vl-power)
-        (cons "^" :vl-xor)
-        (cons "?" :vl-qmark)
-        (cons "<" :vl-lt)
-        (cons "<=" :vl-lte)
-        (cons "<<" :vl-shl)
-        (cons "<<<" :vl-ashl)
-        (cons ">" :vl-gt)
-        (cons ">=" :vl-gte)
-        (cons ">>" :vl-shr)
-        (cons ">>>" :vl-ashr)
-        (cons "!==" :vl-cne)
-        (cons "!=" :vl-neq)
-        (cons "!" :vl-lognot)
-        (cons "~&" :vl-nand)
-        (cons "~|" :vl-nor)
-        (cons "~^" :vl-xnor)
-        (cons "^~" :vl-xnor)
-        (cons "~" :vl-bitnot)
-        (cons "||" :vl-logor)
-        (cons "|" :vl-bitor)
-        (cons "&&" :vl-logand)
-        (cons "&" :vl-bitand)
-        (cons "===" :vl-ceq)
-        (cons "==" :vl-eq)
-        (cons "&&&" :vl-andandand)))
+(defconst *verilog-2005-punctuation-alist*
+  '(("["   . :vl-lbrack)
+    ("]"   . :vl-rbrack)
+    ("("   . :vl-lparen)
+    (")"   . :vl-rparen)
+    ("{"   . :vl-lcurly)
+    ("}"   . :vl-rcurly)
+    (":"   . :vl-colon)
+    ("+:"  . :vl-pluscolon)
+    ("-:"  . :vl-minuscolon)
+    (";"   . :vl-semi)
+    ("#"   . :vl-pound)
+    (","   . :vl-comma)
+    ("."   . :vl-dot)
+    ("@"   . :vl-atsign)
+    ("(*"  . :vl-beginattr)
+    ("*)"  . :vl-endattr)
+    ("="   . :vl-equalsign)
+    ("+"   . :vl-plus)
+    ("-"   . :vl-minus)
+    ("*"   . :vl-times)
+    ("/"   . :vl-div)
+    ("%"   . :vl-rem)
+    ("**"  . :vl-power)
+    ("^"   . :vl-xor)
+    ("?"   . :vl-qmark)
+    ("<"   . :vl-lt)
+    ("<="  . :vl-lte)
+    ("<<"  . :vl-shl)
+    ("<<<" . :vl-ashl)
+    (">"   . :vl-gt)
+    (">="  . :vl-gte)
+    (">>"  . :vl-shr)
+    (">>>" . :vl-ashr)
+    ("!==" . :vl-cne)
+    ("!="  . :vl-neq)
+    ("!"   . :vl-lognot)
+    ("~&"  . :vl-nand)
+    ("~|"  . :vl-nor)
+    ("~^"  . :vl-xnor)
+    ("^~"  . :vl-xnor)
+    ("~"   . :vl-bitnot)
+    ("||"  . :vl-logor)
+    ("|"   . :vl-bitor)
+    ("&&"  . :vl-logand)
+    ("&"   . :vl-bitand)
+    ("===" . :vl-ceq)
+    ("=="  . :vl-eq)
+    ("&&&" . :vl-andandand)))
 
-(defun make-punctuation-tests (alist)
+(defconst *verilog-2012-punctuation-alist*
+  (append *verilog-2005-punctuation-alist*
+          '(("=>"   . :vl-eqarrow)
+            ("->>"  . :vl-arrowgt)
+            ("*>"   . :vl-stararrow)
+            ("|->"  . :vl-bararrow)
+            ("|=>"  . :vl-bareqarrow)
+            ("<->"  . :vl-equiv)
+            ("==?"  . :vl-wildeq)
+            ("!=?"  . :vl-wildneq)
+            (".*"   . :vl-dotstar)
+            (":="   . :vl-coloneq)
+            (":/"   . :vl-colonslash)
+            ("::"   . :vl-scope)
+            ("#-#"  . :vl-pounddash)
+            ("#=#"  . :vl-poundequal)
+            ("##"   . :vl-poundpound)
+            ("+="   . :vl-pluseq)
+            ("-="   . :vl-minuseq)
+            ("*="   . :vl-timeseq)
+            ("/="   . :vl-diveq)
+            ("%="   . :vl-remeq)
+            ("&="   . :vl-andeq)
+            ("|="   . :vl-oreq)
+            ("^="   . :vl-xoreq)
+            ("<<="  . :vl-shleq)
+            (">>="  . :vl-shreq)
+            ("<<<=" . :vl-ashleq)
+            (">>>=" . :vl-ashreq)
+            ("'{"   . :vl-assignpat))))
+
+(defun make-punctuation-tests (alist config)
   (if (consp alist)
-      (list* `(vl-lex-op-testcase :input ,(caar alist)
-                                 :successp t
-                                 :type ,(cdar alist))
-             `(vl-lex-op-testcase :input ,(cat (caar alist) " foo")
-                                  :successp t
-                                  :remainder " foo"
-                                  :type ,(cdar alist))
-             `(vl-lex-op-testcase :input ,(cat (caar alist) "1")
-                                  :successp t
-                                  :remainder "1"
-                                  :type ,(cdar alist))
-            (make-punctuation-tests (cdr alist)))
+      (list*
+       ;; Does it work for OP itself?
+       `(vl-lex-op-testcase :input ,(caar alist)
+                            :config ',config
+                            :successp t
+                            :type ,(cdar alist))
+       ;; How about for "OP foo"?
+       `(vl-lex-op-testcase :input ,(cat (caar alist) " foo")
+                            :config ',config
+                            :successp t
+                            :remainder " foo"
+                            :type ,(cdar alist))
+       ;; How about for "OP1"?
+       `(vl-lex-op-testcase :input ,(cat (caar alist) "1")
+                            :config ',config
+                            :successp t
+                            :remainder "1"
+                            :type ,(cdar alist))
+       (make-punctuation-tests (cdr alist) config))
     nil))
 
-(make-event `(progn ,@(make-punctuation-tests *punctuation-alist*)))
 
 
-(defun make-keyword-tests (alist)
+(make-event
+ `(progn
+    (value-triple (cw "Checking operator handling for Verilog-2005.~%"))
+    ,@(make-punctuation-tests *verilog-2005-punctuation-alist*
+                              (make-vl-lexconfig :edition :verilog-2005
+                                                 :strictp nil))
+    ,@(make-punctuation-tests *verilog-2005-punctuation-alist*
+                              (make-vl-lexconfig :edition :verilog-2005
+                                                 :strictp t))
+    (value-triple (cw "Checking old operator handling for SystemVerilog-2012.~%"))
+    ,@(make-punctuation-tests *verilog-2005-punctuation-alist*
+                              (make-vl-lexconfig :edition :system-verilog-2012
+                                                 :strictp nil))
+    ,@(make-punctuation-tests *verilog-2005-punctuation-alist*
+                              (make-vl-lexconfig :edition :system-verilog-2012
+                                                 :strictp t))
+    (value-triple (cw "Checking new operator handling for SystemVerilog-2012.~%"))
+    ,@(make-punctuation-tests *verilog-2012-punctuation-alist*
+                              (make-vl-lexconfig :edition :system-verilog-2012
+                                                 :strictp nil))
+    ,@(make-punctuation-tests *verilog-2012-punctuation-alist*
+                              (make-vl-lexconfig :edition :system-verilog-2012
+                                                 :strictp t))
+    ))
+
+
+
+(defun make-keyword-tests (alist config)
   (if (consp alist)
       (list* `(vl-lex-op-testcase :input ,(caar alist)
-                                 :successp t
-                                 :type ,(cdar alist))
+                                  :successp t
+                                  :config ',config
+                                  :type ,(cdar alist))
              `(vl-lex-op-testcase :input ,(cat (caar alist) " foo")
                                   :successp t
+                                  :config ',config
                                   :remainder " foo"
                                   :type ,(cdar alist))
-             (make-keyword-tests (cdr alist)))
+             (make-keyword-tests (cdr alist) config))
     nil))
 
-(make-event `(progn ,@(make-keyword-tests *vl-keyword-table*)))
-
-
-
+;; BOZO generalize to other keywords, etc.
+(make-event
+ `(progn ,@(make-keyword-tests *vl-2005-keyword-table-strict*
+                               (make-vl-lexconfig :edition :verilog-2005
+                                                  :strictp t))
+         ,@(make-keyword-tests *vl-2005-keyword-table*
+                               (make-vl-lexconfig :edition :verilog-2005
+                                                  :strictp nil))
+         ,@(make-keyword-tests *vl-2012-keyword-table-strict*
+                               (make-vl-lexconfig :edition :system-verilog-2012
+                                                  :strictp t))
+         ,@(make-keyword-tests *vl-2012-keyword-table*
+                               (make-vl-lexconfig :edition :system-verilog-2012
+                                                  :strictp nil))
+         ))
 
 
 
@@ -149,9 +228,11 @@
                                        successp
                                        (remainder '"")
                                        expansion
-                                       (nwarnings '0))
+                                       (nwarnings '0)
+                                       (config '*vl-default-lexconfig*))
   `(assert!
-    (b* ((echars             (vl-echarlist-from-str ,input))
+    (b* ((echars    (vl-echarlist-from-str ,input))
+         (?st        (vl-lexstate-init ,config))
          ((mv tok remainder)
           (vl-lex-string echars))
          (- (cw "Echars: ~x0~%Tok: ~x1~%Remainder: ~x2~%~%"
@@ -164,7 +245,7 @@
                                        echars)
                                 (equal (vl-echarlist->string remainder) ,remainder)
                                 (mv-let (lextok lexrem warnings)
-                                        (vl-lex-token echars nil)
+                                        (vl-lex-token echars st nil)
                                         (debuggable-and (equal tok lextok)
                                                         (equal remainder lexrem)
                                                         (equal (len warnings) ,nwarnings)
@@ -232,9 +313,11 @@
                                         value
                                         bits
                                         wasunsized
-                                        (nwarnings '0))
+                                        (nwarnings '0)
+                                        (config '*vl-default-lexconfig*))
   `(assert!
     (b* ((echars (vl-echarlist-from-str ,input))
+         (?st (vl-lexstate-init ,config))
          ((mv tok remainder warnings)
           (vl-lex-integer echars nil))
          (- (cw "lex-integer: tok is ~x0~%rem is ~x1~%warnings is ~x2~%"
@@ -253,7 +336,7 @@
                                 (equal (vl-echarlist->string remainder) ,remainder)
                                 (equal (len warnings) ,nwarnings)
                                 (mv-let (lextok lexrem lexwrn)
-                                        (vl-lex-token echars nil)
+                                        (vl-lex-token echars st nil)
                                         (debuggable-and
                                          (equal lextok tok)
                                          (equal lexrem remainder)
@@ -502,11 +585,13 @@
                                      successp
                                      value
                                      (remainder '"")
-                                     (nwarnings '0))
+                                     (nwarnings '0)
+                                     (config '*vl-default-lexconfig*))
   `(assert!
     (b* ((echars             (vl-echarlist-from-str ,input))
+         (?st                (vl-lexstate-init ,config))
          ((mv tok remainder warnings)
-          (vl-lex-token echars nil))
+          (vl-lex-token echars st nil))
          (-                  (cw "Echars: ~x0~%Tok: ~x1~%Remainder: ~x2~%~%" echars tok remainder)))
         (debuggable-and ,@(if successp
                               `((vl-realtoken-p tok)

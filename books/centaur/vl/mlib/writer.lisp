@@ -22,7 +22,7 @@
 (include-book "find-module")
 (include-book "stmt-tools")
 (include-book "modnamespace") ;; bozo at least for portdecllist->names
-(include-book "../loader/lexer") ; yucky, for simple-id-tail-p, etc.
+(include-book "../loader/lexer/lexer") ; yucky, for simple-id-tail-p, etc.
 (include-book "../util/print")
 (include-book "str/strrpos" :dir :system)
 (local (include-book "../util/arithmetic"))
@@ -567,11 +567,11 @@ ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>")
 ;  a & &b
 ;  a | |b
 ;
-; even though they seem legal per the spec.  So, in our pretty-printer we
-; now add parens around the 2nd operand when we hit these cases, just so
-; that when we write out test benches they work.  We tried a lot of other
-; combinations like a ^ ^b, a && &b, etc., but these tools don't seem to
-; care about those things.
+; even though they seem legal per the Verilog-2005 standard.  So, in our
+; pretty-printer we now add parens around the 2nd operand when we hit these
+; cases, just so that when we write out test benches they work.  We tried a lot
+; of other combinations like a ^ ^b, a && &b, etc., but these tools don't seem
+; to care about those things.
 
                   (or (and (eq op :vl-binary-bitand)
                            (eq op2 :vl-unary-bitand))

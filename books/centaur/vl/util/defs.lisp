@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2013 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -30,10 +30,8 @@
 ; other, conflicting theorems about.
 
 (include-book "std/util/top" :dir :system)
-(include-book "std/util/defconsts" :dir :system)
 (include-book "std/misc/two-nats-measure" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
-(include-book "centaur/bitops/integer-length" :dir :system)
 (include-book "centaur/misc/alist-equiv" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "str/top" :dir :system)
@@ -41,32 +39,12 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 
-
-(defxdoc utilities
-  :parents (vl)
-  :short "Generic utilities that are unrelated to Verilog processing, but which
-are provided by the VL books.")
-
-(defxdoc transforms
-  :parents (vl)
-  :short "High-level transformations for rewriting and simplifying Verilog
-modules.")
-
-(defxdoc mlib
-  :parents (vl)
-  :short "<b>M</b>odule <b>Lib</b>rary -- A collection of various functions for
-working with Verilog modules.")
-
-
-
 (defsection *nls*
   :parents (utilities)
   :short "A string consisting of a newline character."
 
   (defconst *nls*
     (implode (list #\Newline))))
-
-
 
 (define redundant-mergesort
   (x &key
@@ -1115,3 +1093,35 @@ occasionally useful, e.g., when defining structures using macros that expect
 constraints for certain fields.</p>"
   (declare (ignore x))
   t)
+
+
+
+(defsection non-parallel-book
+  :parents (utilities)
+  :short "Mark a book as incompatible with ACL2(p) waterfall parallelism."
+  :long "<p>ACL2(h)'s memoization code isn't thread safe, and this can
+sometimes cause problems for users of ACL2(hp).  This macro disables waterfall
+parallelism if running on ACL2(hp).</p>"
+
+  (defmacro non-parallel-book ()
+    '(make-event
+      (if (and (ACL2::hons-enabledp state)
+               (f-get-global 'ACL2::parallel-execution-enabled state))
+          (er-progn (set-waterfall-parallelism nil)
+                    (value '(value-triple nil)))
+        (value '(value-triple nil))))))
+
+
+(defenum vl-edition-p
+  (:verilog-2005 :system-verilog-2012)
+  :parents (utilities)
+  :short "Editions of the Verilog or SystemVerilog standards that VL attempts
+to implement."
+
+  :long "<p>Certain parts of VL are configurable and can try follow different
+versions of the standard.  We currently have some support for:</p>
+
+<ul>
+<li>@(':verilog-2005') corresponds to IEEE Std 1364-2005.</li>
+<li>@(':system-verilog-2012') corresponds to IEEE Std 1800-2012.</li>
+</ul>")

@@ -443,7 +443,7 @@ mutual recursion as simple as possible.</p>"
 
 ; Note that on Verilog-XL, in a 4-bit context, when there are X bits involved,
 ; a < b produces 4'bXXXX instead of 4'b000X like NCVerilog produces.  From the
-; Verilog standard, it seems that NCVerilog gets it right: the answer from an
+; Verilog-2005 standard, it seems that NCVerilog gets it right: the answer from an
 ; addition is supposed to be one-bit unsigned.  So, this rewrite doesn't agree
 ; with the Verilog-XL interpretation in all cases, but that's okay because
 ; Verilog-XL is wrong.

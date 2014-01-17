@@ -22,8 +22,6 @@
 (include-book "../parsetree")
 (local (include-book "../util/arithmetic"))
 
-
-
 (defxdoc filtering-by-name
   :parents (mlib)
   :short "Functions for filtering lists of module elements by their names."

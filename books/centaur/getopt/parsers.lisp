@@ -31,11 +31,11 @@
 of options.  For instance:</p>
 
 <ul>
-<li>ssh takes a port number between 0 and 65535,</li>
-<li>svn takes a revision number that can be a natural or a
-    special word like HEAD, BASE, or PREV,</li>
-<li>wget takes a URL,</li>
-<li>mail takes an email address, and so on.</li>
+<li>@('ssh') takes a port number between 0 and 65535,</li>
+<li>@('svn') takes a revision number that can be a natural or a
+    special word like @('HEAD'), @('BASE'), or @('PREV'),</li>
+<li>@('wget') takes a URL,</li>
+<li>@('mail') takes an email address, and so on.</li>
 </ul>
 
 <p>There's no way for @(see getopt) to anticipate and support everything that
@@ -77,9 +77,9 @@ defparser).</p>
 e.g., it might be @('--verbose').  This is included so that the parser can
 provide a nice error message.</li>
 
-<li>@('explicit-value') is NIL unless the use types something like
+<li>@('explicit-value') is @('nil') unless the use types something like
 @('--foo=bar'), in which case it is the value being assigned, e.g.,
-@('\"bar\").</li>
+@('\"bar\"').</li>
 
 <li>@('args') is a @(see string-listp) with the full command line arguments
 that the user typed in after the @('name') and, if applicable, the

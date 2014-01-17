@@ -20,7 +20,7 @@
 
 (in-package "VL")
 (include-book "../loader/parse-lvalues")
-(include-book "../loader/lexer")
+(include-book "../loader/lexer/lexer")
 (include-book "../mlib/fmt")
 (include-book "../checkers/oddexpr") ;; bozo for *fake-modelement*
 (include-book "../toe/toe-wirealist")
@@ -225,7 +225,10 @@ warning in the list @('x') to @('new-type')."
          (echars (vl-comment-body-echars x loc))
 
          ;; Lexing...
-         ((mv okp tokens lwarnings) (vl-lex echars nil))
+         ((mv okp tokens lwarnings) (vl-lex echars
+                                            ;; bozo?
+                                            :config *vl-default-lexconfig*
+                                            :warnings nil))
          ((unless okp)
           (b* ((lwarnings (vl-warninglist-change-types :use-set-syntax-error lwarnings))
                (lwarnings (vl-prefix-warnings

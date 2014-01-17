@@ -164,7 +164,7 @@
  (encapsulate
   ()
 
-  (local (include-book "lexer"))
+  (local (include-book "lexer/lexer"))
 
   (program)
 

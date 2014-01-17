@@ -19,9 +19,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "config")
 (include-book "read-file")
 (include-book "find-file")
-(include-book "lexer")
+(include-book "lexer/lexer")
 (include-book "preprocessor")
 (include-book "parser")
 (include-book "filemap")
@@ -35,7 +36,6 @@
 (include-book "defsort/duplicated-members" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
-
 
 (defxdoc loader
   :parents (vl)
@@ -91,71 +91,6 @@ assign foo = bar;
 <p><b>BOZO</b> where should things like VL-Only comments be documented?  There
 are lots of special implementation details (and extensions like @(see
 overrides)) that we should probably discuss somewhere.</p>")
-
-
-(defaggregate vl-loadconfig
-  :parents (loader)
-  :short "Options for how to load Verilog modules."
-
-  ((start-files    string-listp
-                   "A list of file names (not module names) that you want to
-                    load; @(see vl-load) begins by trying to read, preprocess,
-                    lex, and parse the contents of these files.")
-
-   (start-modnames string-listp
-                   "Instead of (or in addition to) explicitly providing the
-                    @('start-files'), you can also provide a list of module
-                    names that you want to load.  @(see vl-load) will look for
-                    these modules in the search path, unless they happen to get
-                    loaded while processing the @('start-files').")
-
-   (search-path    string-listp
-                   "A list of directories to search (in order) for modules in
-                    @('start-modnames') that were in the @('start-files'), and
-                    for <see topic=\"@(url vl-modulelist-missing)\">missing
-                    modules</see>.  This is similar to \"library directories\"
-                    in tools like Verilog-XL and NCVerilog.")
-
-   (search-exts    string-listp
-                   :default '("v")
-                   "List of file extensions to search (in order) to find files
-                    in the @('search-path').  The default is @('(\"v\")'),
-                    meaning that only files like @('foo.v') are considered.")
-
-   (include-dirs   string-listp
-                   "A list of directories that will be searched (in order) when
-                    @('`include') directives are encountered.  This is similar
-                    to the \"include directories\" for Verilog-XL.  Any
-                    includes with relative path names are searched for in (1)
-                    the current directory, then (2) these include dirs, in the
-                    specified order.")
-
-   (defines        vl-defines-p
-                   "A list of initial definitions (i.e., @('`define')s) that
-                    will be given to the @(see preprocessor).  You may want to
-                    see @(see vl-make-initial-defines), and you should probably
-                    be aware of the @(see scope-of-defines).")
-
-   (filemapp       booleanp
-                   :rule-classes :type-prescription
-                   :default t
-                   "This flag controls whether a @(see vl-filemap-p) will be
-                    constructed for the files we have loaded.  You may wish to
-                    turn this off to save some memory.")
-
-   (override-dirs  string-listp
-                   "Directories to scan for any @(see overrides).")
-
-   (flush-tries    posp
-                   :default 10000
-                   "How many rounds of @(see vl-flush-out-modules) are
-                    allowed.")
-
-   (mintime        :default 1
-                   "Minimum time threshold for performance messages."))
-
-  :tag :vl-loadconfig)
-
 
 
 (defaggregate vl-loadstate
@@ -419,8 +354,12 @@ our internal representation of Verilog.</li>
              (st       (change-vl-loadstate st :warnings warnings)))
           (mv st state)))
 
+       (lexconfig (make-vl-lexconfig :edition config.edition
+                                     :strictp config.strictp))
        ((mv successp lexed warnings)
-        (time$ (vl-lex preprocessed warnings)
+        (time$ (vl-lex preprocessed
+                       :config lexconfig
+                       :warnings warnings)
                :msg "; ~s0: lex: ~st sec, ~sa bytes~%"
                :args (list filename)
                :mintime config.mintime))
@@ -520,6 +459,7 @@ our internal representation of Verilog.</li>
                (state state-p1       :hyp (force (state-p1 state))))
   :parents (loader)
   :short "Try to load a module from the search path."
+  :prepwork ((local (in-theory (disable (force)))))
 
   (b* (((vl-loadstate st) st)
        ((vl-loadconfig config) st.config)

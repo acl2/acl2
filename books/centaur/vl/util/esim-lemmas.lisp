@@ -25,19 +25,10 @@
 ; This book is only intended to be locally included!
 
 (in-package "VL")
+(include-book "defs")
 (include-book "centaur/esim/esim-sexpr-support" :dir :system)
 (include-book "centaur/esim/esim-sexpr-support-thms" :dir :system)
-
-(make-event
-
-; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.  
-
- (if (and (ACL2::hons-enabledp state) 
-          (f-get-global 'ACL2::parallel-execution-enabled state)) 
-     (er-progn (set-waterfall-parallelism nil)
-               (value '(value-triple nil)))
-   (value '(value-triple nil))))
+(local (non-parallel-book))
 
 (in-theory (disable good-esim-primitivep
                     good-esim-modulep

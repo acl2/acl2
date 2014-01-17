@@ -50,7 +50,7 @@ semantic correctness of the modules we are examining.</p>
 the simple pragmatic reason that we are only really interested in dealing with
 the small subset of Verilog that we actually encounter at Centaur.  There is
 little motivation for us to support things like complicated port lists merely
-because they are in the standard.</p>")
+because they are in the Verilog-2005 standard.</p>")
 
 
 

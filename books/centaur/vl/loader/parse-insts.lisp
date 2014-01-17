@@ -462,7 +462,7 @@
  (encapsulate
   ()
 
-  (local (include-book "lexer")) ;; for making test inputs from strings
+  (local (include-book "lexer/lexer")) ;; for making test inputs from strings
 
 
   (defund vl-pretty-plainarg (x)

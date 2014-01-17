@@ -651,12 +651,12 @@ module instance."
                        dangerous because whereas NCVerilog properly carries ~
                        out a comparison between 2's complement numbers, ~
                        Verilog-XL incorrectly uses an unsigned comparison.  ~
-                       We follow the standard and mimick NCVerilog, but to ~
-                       ensure compatibility across Verilog implementations, ~
-                       you should probably not use signed comparisons.  Some ~
-                       typical causes of signedness are plain decimal numbers ~
-                       like 17, and the use of integer variables instead of ~
-                       regs."
+                       We follow the Verilog-2005 standard and mimick ~
+                       NCVerilog, but to ensure compatibility across Verilog ~
+                       implementations, you should probably not use signed ~
+                       comparisons.  Some typical causes of signedness are ~
+                       plain decimal numbers like 17, and the use of integer ~
+                       variables instead of regs."
                  :args (list x)
                  :fatalp nil
                  :fn 'vl-gte-occform)

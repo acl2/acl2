@@ -77,7 +77,7 @@ wires that are only implicitly declared.  This allows subsequent transforms to
 expect that every wire should have a declaration.</p>
 
 
-<h3>Implicit Wires in the Standard</h3>
+<h3>Implicit Wires in the Verilog-2005 Standard</h3>
 
 <p>Verilog allows wires to be implicitly declared in certain cases.</p>
 
@@ -90,9 +90,9 @@ much work, since our new approach of going through the module elements
 sequentially means that we have easy access to location information.)</p>
 
 <p>We think wires need to be declared, explicitly or implicitly, before being
-used.  The standard seems not to explicitly say whether or not this is the
-case, and the language at the start of Section 4.5 is somewhat vague: we are
-supposed to assume implicit nets <i>in the absence of an explicit
+used.  The Verilog-2005 standard seems not to explicitly say whether or not
+this is the case, and the language at the start of Section 4.5 is somewhat
+vague: we are supposed to assume implicit nets <i>in the absence of an explicit
 declaration</i> in certain situations.  But later in 4.5 we find some language
 that pretty strongly suggests we are only to consider whether or not there is
 an explicit declaration <i>before</i> the use of the net: \"<i>and that
@@ -108,8 +108,8 @@ details).</p>
 
 <p>Note: I think that throughout Section 4.5, the words <i>port expression
 declaration</i> are a typo that should be <i>port declaration</i>; nowhere else
-in the standard do the words <i>port expression declaration</i> occur, at least
-according to Acrobat's find function.)</p>
+in the Verilog-2005 standard do the words <i>port expression declaration</i>
+occur, at least according to Acrobat's find function.)</p>
 
 <h4>Case 1</h4>
 
@@ -155,9 +155,9 @@ right-hand side of an @('assign') statement.  This seems to agree with Case
 
 <p><b>#3</b>.  As expected, NCVerilog allows us to infer implicit nets from the
 left-hand sides of @('assign') elements.  Unfortunately, Verilog-XL complains
-about such wires, which seems to contradict the standard.  As a compromise, our
-approach is to mimick NCVerilog and infer the implicit net, but warn that some
-other tools like Verilog-XL may not allow the construct.</p>
+about such wires, which seems to contradict the Verilog-2005 standard.  As a
+compromise, our approach is to mimick NCVerilog and infer the implicit net, but
+warn that some other tools like Verilog-XL may not allow the construct.</p>
 
 <p>A subtle case is, what if #2 and #3 overlap, i.e., an undeclared wire occurs
 on both the left-hand and right-hand sides?  NCVerilog seems to process the
@@ -255,7 +255,7 @@ some other tools do not permit this.</p>
 and inferred an implicit wire whenever a wire was used in a context that
 permitted it.  We now try to be more faithful to other Verilog systems and
 require that wires be declared before their first uses, since this seems like
-the right way to interpret the standard.</p>
+the right way to interpret the Verilog-2005 standard.</p>
 
 <p>We add declarations for implicit wires before we even construct a proper
 @(see vl-module-p).  This makes it easy for us to consider the order of module
@@ -892,7 +892,7 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
                          :type :vl-tricky-implicit
                          :msg "~a0: wire~s1 ~&2 ~s3 implicitly declared by ~
                                 the left-hand side of this assignment.  This ~
-                                is perfectly valid according to the Verilog ~
+                                is perfectly valid according to the Verilog-2005 ~
                                 standard, but some Verilog tools tools (like ~
                                 Verilog-XL) do not support it, so for better ~
                                 compatibility you may wish to add ~s4."

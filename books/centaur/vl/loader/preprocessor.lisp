@@ -27,7 +27,7 @@
 (include-book "../util/cwtime")
 (include-book "read-file")
 (include-book "find-file")
-(include-book "lexer")
+(include-book "lexer/lexer")
 (include-book "defines")
 (local (include-book "../util/arithmetic"))
 

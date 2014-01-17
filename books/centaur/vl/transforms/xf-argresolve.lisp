@@ -151,7 +151,7 @@ plainarg for it.</p>"
 caused a fatal warning.  This is no longer the case.</p>
 
 <p>A missing port is obviously a concern and we should at least cause a
-warning.  But the Verilog standard does not seem to say that it is an error,
+warning.  But the Verilog-2005 standard does not seem to say that it is an error,
 and at least some other Verilog tools, like Verilog-XL and NCVerilog, merely
 warn about the situation and then simply treat the port as unconnected.</p>
 

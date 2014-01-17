@@ -124,6 +124,7 @@
 ;; (include-book "vcd/vcd-impl")
 
 (include-book "vl/top")
+(include-book "vl/doc")
 (include-book "vl/kit/top")
 (include-book "vl/mlib/clean-concats")
 (include-book "vl/mlib/atts")
@@ -174,6 +175,7 @@
 (include-book "std/util/defmapappend-tests" :dir :system)
 (include-book "std/util/defprojection-tests" :dir :system)
 (include-book "std/util/defredundant-tests" :dir :system)
+(include-book "std/util/defval-tests" :dir :system)
 (include-book "std/util/extensions/assert-return-thms" :dir :system)
 (include-book "centaur/misc/tshell-tests" :dir :system)
 

@@ -101,7 +101,7 @@
 (local
  (encapsulate
    ()
-   (local (include-book "lexer")) ;; for making test inputs from strings
+   (local (include-book "lexer/lexer")) ;; for making test inputs from strings
 
    (defmacro test-parse-expr (&key input (successp 't) expect remainder)
      `(with-output

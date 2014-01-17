@@ -1,0 +1,277 @@
+; VL Verilog Toolkit
+; Copyright (C) 2008-2014 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Jared Davis <jared@centtech.com>
+
+(in-package "VL")
+(include-book "config")
+(include-book "tokens")
+
+(defsection lexstate
+  :parents (lexer)
+  :short "Low level, internal configuration for the lexer, which allows us to
+switch between supported Verilog editions."
+
+  :long "<p>You should typically never create a lexstate directly.  Instead,
+see @(see vl-lexstate-init), which creates an appropriate lexstate for a
+particular, high-level @(see vl-lexconfig-p).</p>")
+
+(define vl-plaintoken-alistp (x)
+  :parents (lexstate)
+  :short "Recognize alists binding strings to plaintoken types."
+  :long "<p>We use these for configurable operator handling, based on the
+particular standard we're implementing.</p>"
+  (if (atom x)
+      t
+    (and (consp (car x))
+         (stringp (caar x))
+         (not (equal (caar x) ""))
+         (vl-plaintokentype-p (cdar x))
+         (vl-plaintoken-alistp (cdr x))))
+  ///
+  (defthm vl-plaintoken-alistp-when-atom
+    (implies (atom x)
+             (equal (vl-plaintoken-alistp x)
+                    t)))
+  (defthm vl-plaintoken-alistp-of-cons
+    (equal (vl-plaintoken-alistp (cons a x))
+           (and (consp a)
+                (stringp (car a))
+                (not (equal (car a) ""))
+                (vl-plaintokentype-p (cdr a))
+                (vl-plaintoken-alistp x))))
+  (defthm vl-plaintoken-alistp-of-append
+    (equal (vl-plaintoken-alistp (append x y))
+           (and (vl-plaintoken-alistp x)
+                (vl-plaintoken-alistp y)))))
+
+
+(defaggregate vl-lexstate
+  :parents (lexstate)
+  :short "Internal representation of the lexer's configuration."
+  :legiblep nil
+  :tag nil
+
+  ((kwdtable vl-keyword-table-p
+             "The set of @(see keywords) that are currently supported; this
+              could be, e.g., the Verilog 2005 keywords or the SystemVerilog
+              2012 keywords, and might or might not include VL extensions.")
+
+   (bangops  vl-plaintoken-alistp "Operators starting with @('!').")
+   (poundops vl-plaintoken-alistp "Operators starting with @('#').")
+   (remops   vl-plaintoken-alistp "Operators starting with @('%').")
+   (andops   vl-plaintoken-alistp "Operators starting with @('&').")
+   (starops  vl-plaintoken-alistp "Operators starting with @('*').")
+   (plusops  vl-plaintoken-alistp "Operators starting with @('+').")
+   (dashops  vl-plaintoken-alistp "Operators starting with @('-').")
+   (dotops   vl-plaintoken-alistp "Operators starting with @('.').")
+   (divops   vl-plaintoken-alistp "Operators starting with @('/').")
+   (colonops vl-plaintoken-alistp "Operators starting with @(':').")
+   (lessops  vl-plaintoken-alistp "Operators starting with @('<').")
+   (gtops    vl-plaintoken-alistp "Operators starting with @('>').")
+   (eqops    vl-plaintoken-alistp "Operators starting with @('=').")
+   (xorops   vl-plaintoken-alistp "Operators starting with @('^').")
+   (barops   vl-plaintoken-alistp "Operators starting with @('|').")
+
+   (assignpatp booleanp "Is '{ supported?")))
+
+
+(define vl-lexstate->plainalist
+  :parents (lexstate)
+  :short "Just used for sanity checking."
+  ((x vl-lexstate-p))
+  :returns (al vl-plaintoken-alistp :hyp :fguard)
+  (b* (((vl-lexstate x) x))
+    (append-without-guard
+     x.bangops x.poundops x.remops x.andops x.starops
+     x.plusops x.dashops x.dotops x.divops x.colonops
+     x.lessops x.gtops x.eqops x.xorops x.barops))
+  :prepwork ((local (in-theory (disable (:t acl2::true-listp-append)
+                                        (:t binary-append))))))
+
+
+(defval *vl-2005-strict-lexstate*
+  :parents (lexstate)
+  :short "Configuration for strict Verilog-2005 mode."
+  (make-vl-lexstate
+   :kwdtable *vl-2005-keyword-table-strict*
+   :bangops  '(("!==" . :vl-cne)        ;; Longest tokens first in each alist!
+               ("!="  . :vl-neq)
+               ("!"   . :vl-lognot))
+   :poundops '(("#"   . :vl-pound))
+   :remops   '(("%"   . :vl-rem))
+   :andops   '(("&&&" . :vl-andandand)
+               ("&&"  . :vl-logand)
+               ("&"   . :vl-bitand))
+   :starops  '(("**"  . :vl-power)
+               ("*)"  . :vl-endattr)
+               ("*"   . :vl-times))
+   :plusops  '(("+:"  . :vl-pluscolon)
+               ("+"   . :vl-plus))
+   :dashops  '(("->"  . :vl-arrow)
+               ("-:"  . :vl-minuscolon)
+               ("-"   . :vl-minus))
+   :dotops   '(("."   . :vl-dot))
+   :divops   '(("/"   . :vl-div))
+   :colonops '((":"   . :vl-colon))
+   :lessops  '(("<<<" . :vl-ashl)
+               ("<<"  . :vl-shl)
+               ("<="  . :vl-lte)
+               ("<"   . :vl-lt))
+   :gtops    '((">>>"  . :vl-ashr)
+               (">>"   . :vl-shr)
+               (">="   . :vl-gte)
+               (">"    . :vl-gt))
+   :eqops    '(("===" . :vl-ceq)
+               ("=="  . :vl-eq)
+               ("="   . :vl-equalsign))
+   :xorops   '(("^~" . :vl-xnor)
+               ("^"  . :vl-xor))
+   :barops   '(("||"   . :vl-logor)
+               ("|"    . :vl-bitor))
+   :assignpatp nil
+   )
+  ///
+  (assert!
+   ;; Basic sanity check, everything should be unique and valid.
+   (let ((al (vl-lexstate->plainalist *vl-2005-strict-lexstate*)))
+     (and (subsetp-equal (alist-vals al) *vl-2005-plain-nonkeywords*)
+          (uniquep (alist-keys al))
+          (uniquep (alist-vals al)))))
+  (assert!
+   (not (vl-lexstate->assignpatp *vl-2005-strict-lexstate*))))
+
+(defval *vl-2005-lexstate*
+  :parents (lexstate)
+  :short "Configuration for extended (non-strict) Verilog-2005 mode."
+  (change-vl-lexstate *vl-2005-strict-lexstate*
+                      :kwdtable *vl-2005-keyword-table*))
+
+(defval *vl-2012-strict-lexstate*
+  :parents (lexstate)
+  :short "Configuration for strict SystemVerilog-2012 mode."
+
+  (make-vl-lexstate
+   :kwdtable *vl-2012-keyword-table-strict*
+   :bangops  '(("!=="  . :vl-cne)         ;; Longest tokens first in each alist!
+               ("!=?"  . :vl-wildneq)
+               ("!="   . :vl-neq)
+               ("!"    . :vl-lognot))
+   :poundops '(("#-#"  . :vl-pounddash)
+               ("#=#"  . :vl-poundequal)
+               ("##"   . :vl-poundpound)
+               ("#"    . :vl-pound))
+   :remops   '(("%="   . :vl-remeq)
+               ("%"    . :vl-rem))
+   :andops   '(("&&&"  . :vl-andandand)
+               ("&="   . :vl-andeq)
+               ("&&"   . :vl-logand)
+               ("&"    . :vl-bitand))
+   :starops  '(("**"   . :vl-power)
+               ("*)"   . :vl-endattr)
+               ("*="   . :vl-timeseq)
+               ("*>"   . :vl-stararrow)
+               ("*"    . :vl-times))
+   :plusops  '(("+:"   . :vl-pluscolon)
+               ("+="   . :vl-pluseq)
+               ("+"    . :vl-plus))
+   :dashops  '(("->>"  . :vl-arrowgt)
+               ("->"   . :vl-arrow)
+               ("-="   . :vl-minuseq)
+               ("-:"   . :vl-minuscolon)
+               ("-"    . :vl-minus))
+   :dotops   '((".*"   . :vl-dotstar)
+               ("."    . :vl-dot))
+   :divops   '(("/="   . :vl-diveq)
+               ("/"    . :vl-div))
+   :colonops '((":="   . :vl-coloneq)
+               (":/"   . :vl-colonslash)
+               ("::"   . :vl-scope)
+               (":"    . :vl-colon))
+   :lessops  '(("<<<=" . :vl-ashleq)
+               ("<<<"  . :vl-ashl)
+               ("<<="  . :vl-shleq)
+               ("<->"  . :vl-equiv)
+               ("<<"   . :vl-shl)
+               ("<="   . :vl-lte)
+               ("<"    . :vl-lt))
+   :gtops    '((">>>=" . :vl-ashreq)
+               (">>>"  . :vl-ashr)
+               (">>="  . :vl-shreq)
+               (">>"   . :vl-shr)
+               (">="   . :vl-gte)
+               (">"    . :vl-gt))
+   :eqops    '(("==="  . :vl-ceq)
+               ("==?"  . :vl-wildeq)
+               ("=="   . :vl-eq)
+               ("=>"   . :vl-eqarrow)
+               ("="    . :vl-equalsign))
+   :xorops   '(("^~"   . :vl-xnor)
+               ("^="   . :vl-xoreq)
+               ("^"    . :vl-xor))
+   :barops   '(("|->"  . :vl-bararrow)
+               ("|=>"  . :vl-bareqarrow)
+               ("|="   . :vl-oreq)
+               ("||"   . :vl-logor)
+               ("|"    . :vl-bitor))
+   :assignpatp t)
+  ///
+  (assert!
+   ;; Basic sanity check, everything should be unique and valid.
+   (let ((al (vl-lexstate->plainalist *vl-2012-strict-lexstate*)))
+     (and (subsetp-equal (alist-vals al) *vl-2012-plain-nonkeywords*)
+          (uniquep (alist-keys al))
+          (uniquep (alist-vals al)))))
+  (assert!
+   ;; Make sure all new SystemVerilog keywords are accounted for.
+   (let* ((al-2005  (vl-lexstate->plainalist *vl-2005-strict-lexstate*))
+          (al-2012  (vl-lexstate->plainalist *vl-2012-strict-lexstate*))
+          (kwds-2005 (alist-vals al-2005))
+          (kwds-2012 (alist-vals al-2012))
+          (new-used  (set-difference-equal kwds-2012 kwds-2005))
+          (new-spec
+           ;; SystemVerilog adds these keywords
+           (set-difference-equal *vl-2012-plain-nonkeywords*
+                                 *vl-2005-plain-nonkeywords*)))
+     (equal (mergesort new-used)
+            (delete :vl-assignpat (mergesort new-spec))))))
+
+(defval *vl-2012-lexstate*
+  :parents (lexstate)
+  :short "Configuration for extended (non-strict) SystemVerilog-2012 mode."
+  (change-vl-lexstate *vl-2012-strict-lexstate*
+                      :kwdtable *vl-2012-keyword-table*))
+
+(define vl-lexstate-init
+  :parents (lexstate)
+  :short "User-level constructor for internal lexer states."
+  ((config vl-lexconfig-p))
+  :returns (st vl-lexstate-p)
+  (b* (((vl-lexconfig config) config))
+    (case config.edition
+      (:verilog-2005 (if config.strictp
+                         *vl-2005-strict-lexstate*
+                       *vl-2005-lexstate*))
+      (:system-verilog-2012 (if config.strictp
+                                *vl-2012-strict-lexstate*
+                              *vl-2012-lexstate*))
+      (otherwise
+       ;; Logically default to a good lexstate, for an unconditional return
+       ;; value theorem.
+       (progn$ (impossible)
+               *vl-2012-lexstate*)))))

@@ -22,18 +22,8 @@
 (include-book "shl")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
+(local (non-parallel-book))
 (local (in-theory (disable vl-maybe-module-p-when-vl-module-p)))
-
-(make-event
-
-; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.  
-
- (if (and (ACL2::hons-enabledp state) 
-          (f-get-global 'ACL2::parallel-execution-enabled state)) 
-     (er-progn (set-waterfall-parallelism nil)
-               (value '(value-triple nil)))
-   (value '(value-triple nil))))
 
 ; basically identical to shl.lisp, reuses some stuff from there.
 

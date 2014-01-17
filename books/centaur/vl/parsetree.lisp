@@ -19,1439 +19,28 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "util/defs")
-(include-book "util/bits")
+(include-book "expr")
 (include-book "util/commentmap")
 (include-book "util/warnings")
-(include-book "util/echars")
 (include-book "tools/flag" :dir :system)
 (local (include-book "util/arithmetic"))
 
-(defxdoc modules
+(defxdoc syntax
   :parents (vl)
-  :short "Representation of Verilog modules."
+  :short "Representation of Verilog structures."
 
-  :long "<p>We now describe our representation of Verilog modules.  For each
-kind of Verilog construct (expressions, statements, declarations, instances,
-etc.) we introduce recognizer, constructor, and accessor functions that enforce
-certain basic well-formedness criteria.</p>
+  :long "<p>We now describe our representation of Verilog's syntactic
+structures.  For each kind of Verilog construct (expressions, statements,
+declarations, instances, etc.) we introduce recognizer, constructor, and
+accessor functions that enforce certain basic well-formedness criteria.</p>
 
 <p>These structures correspond fairly closely to parse trees in the Verilog
 grammar, although we make many simplifcations and generally present a much more
 regular view of the source code.</p>")
 
-
-
-(defsection *vl-ops-table*
-  :parents (vl-expr-p)
-  :short "Table of operators and their arities."
-
-  :long "<p>The constant @(srclink *vl-ops-table*) defines the valid operators
-for @(see vl-nonatom-p) expressions.  It is preferred not to access this table
-directly, but rather to use @(see vl-op-p) and @(see vl-op-arity).</p>
-
-<p>The @('*vl-ops-table*') is an alist that maps our operators (keyword
-symbols) to their arities.  For operations that do not have fixed
-arities (e.g., concatenation, function calls, ...), we map the operator to
-@('nil').</p>
-
-<p>Here is how we represent the various Verilog operators:</p>
-
-<h5>Basic Unary Operators (arity 1)</h5>
-
-<ul>
-<li>@(' +  ') becomes @(':vl-unary-plus')</li>
-<li>@(' -  ') becomes @(':vl-unary-minus')</li>
-<li>@(' !  ') becomes @(':vl-unary-lognot')</li>
-<li>@(' ~  ') becomes @(':vl-unary-bitnot')</li>
-<li>@(' &  ') becomes @(':vl-unary-bitand')</li>
-<li>@(' ~& ') becomes @(':vl-unary-nand')</li>
-<li>@(' |  ') becomes @(':vl-unary-bitor')</li>
-<li>@(' ~| ') becomes @(':vl-unary-nor')</li>
-<li>@(' ^  ') becomes @(':vl-unary-xor')</li>
-<li>@(' ^~ ') or @(' ~^ ') becomes @(':vl-unary-xnor')</li>
-</ul>
-
-<h5>Basic Binary Operators (arity 2)</h5>
-
-<ul>
-<li>@(' +   ') becomes @(':vl-binary-plus')</li>
-<li>@(' -   ') becomes @(':vl-binary-minus')</li>
-<li>@(' *   ') becomes @(':vl-binary-times')</li>
-<li>@(' /   ') becomes @(':vl-binary-div')</li>
-<li>@(' %   ') becomes @(':vl-binary-rem')</li>
-<li>@(' ==  ') becomes @(':vl-binary-eq')</li>
-<li>@(' !=  ') becomes @(':vl-binary-neq')</li>
-<li>@(' === ') becomes @(':vl-binary-ceq')</li>
-<li>@(' !== ') becomes @(':vl-binary-cne')</li>
-<li>@(' &&  ') becomes @(':vl-binary-logand')</li>
-<li>@(' ||  ') becomes @(':vl-binary-logor')</li>
-<li>@(' **  ') becomes @(':vl-binary-power')</li>
-<li>@(' <   ') becomes @(':vl-binary-lt')</li>
-<li>@(' <=  ') becomes @(':vl-binary-lte')</li>
-<li>@(' >   ') becomes @(':vl-binary-gt')</li>
-<li>@(' >=  ') becomes @(':vl-binary-gte')</li>
-<li>@(' &   ') becomes @(':vl-binary-bitand')</li>
-<li>@(' |   ') becomes @(':vl-binary-bitor')</li>
-<li>@(' ^   ') becomes @(':vl-binary-xor')</li>
-<li>@(' ^~  ') or @(' ~^ ') becomes @(':vl-binary-xnor')</li>
-<li>@(' >>  ') becomes @(':vl-binary-shr')</li>
-<li>@(' <<  ') becomes @(':vl-binary-shl')</li>
-<li>@(' >>> ') becomes @(':vl-binary-ashr')</li>
-<li>@(' <<< ') becomes @(':vl-binary-ashl')</li>
-</ul>
-
-<h5>Basic Ternary Operators (arity 3)</h5>
-
-<ul>
-<li>@('a ? b : c') becomes @(':vl-qmark')     (conditional operator)</li>
-<li>@('a : b : c') becomes @(':vl-mintypmax') (min/typ/max delay operator)</li>
-</ul>
-
-<h5>Selection Operators</h5>
-
-<ul>
-<li>@('foo[1]')      becomes @(':vl-bitselect') or @(':vl-array-index') (arity 2)</li>
-<li>@('foo[3 : 1]')  becomes @(':vl-partselect-colon') (arity 3)</li>
-<li>@('foo[3 +: 1]') becomes @(':vl-partselect-pluscolon') (arity 3)</li>
-<li>@('foo[3 -: 1]') becomes @(':vl-partselect-minuscolon') (arity 3)</li>
-</ul>
-
-<p>Note that upon parsing, there are no @(':vl-array-index') operators; these
-must be introduced by the @(see array-indexing) transform.</p>
-
-<h5>Concatenation and Replication Operators</h5>
-
-<ul>
-<li>@('{1, 2, 3, ...}') becomes @(':vl-concat') (arity @('nil'))</li>
-<li>@('{ 3 { 2, 1 } }') becomes @(':vl-multiconcat') (arity 2)</li>
-</ul>
-
-<h5>Function Calls</h5>
-
-<ul>
-<li>@('foo(1,2,3)') becomes @(':vl-funcall') (arity @('nil'))</li>
-<li>@('$foo(1,2,3)') becomes @(':vl-syscall') (arity @('nil'))</li>
-</ul>
-
-<h5>Hierarchical Identifiers</h5>
-
-<p>Note: see @(see vl-hidpiece-p) for some additional discussion about
-hierarchical identifiers.</p>
-
-<ul>
-<li>@('foo.bar') becomes @(':vl-hid-dot') (arity 2)</li>
-<li>@('foo[3].bar') becomes @(':vl-hid-arraydot') (arity 3)</li>
-</ul>"
-
-  (defconst *vl-ops-table*
-    (list
-     ;; Basic Unary Operators
-     (cons :vl-unary-plus            1) ;;; +
-     (cons :vl-unary-minus           1) ;;; -
-     (cons :vl-unary-lognot          1) ;;; !
-     (cons :vl-unary-bitnot          1) ;;; ~
-     (cons :vl-unary-bitand          1) ;;; &
-     (cons :vl-unary-nand            1) ;;; ~&
-     (cons :vl-unary-bitor           1) ;;; |
-     (cons :vl-unary-nor             1) ;;; ~|
-     (cons :vl-unary-xor             1) ;;; ^
-     (cons :vl-unary-xnor            1) ;;; ~^ or ^~
-
-     ;; Basic Binary Operators
-     (cons :vl-binary-plus           2) ;;; +
-     (cons :vl-binary-minus          2) ;;; -
-     (cons :vl-binary-times          2) ;;; *
-     (cons :vl-binary-div            2) ;;; /
-     (cons :vl-binary-rem            2) ;;; %
-     (cons :vl-binary-eq             2) ;;; ==
-     (cons :vl-binary-neq            2) ;;; !=
-     (cons :vl-binary-ceq            2) ;;; ===
-     (cons :vl-binary-cne            2) ;;; !==
-     (cons :vl-binary-logand         2) ;;; &&
-     (cons :vl-binary-logor          2) ;;; ||
-     (cons :vl-binary-power          2) ;;; **
-     (cons :vl-binary-lt             2) ;;; <
-     (cons :vl-binary-lte            2) ;;; <=
-     (cons :vl-binary-gt             2) ;;; >
-     (cons :vl-binary-gte            2) ;;; >=
-     (cons :vl-binary-bitand         2) ;;; &
-     (cons :vl-binary-bitor          2) ;;; |
-     (cons :vl-binary-xor            2) ;;; ^
-     (cons :vl-binary-xnor           2) ;;; ~^ or ^~
-     (cons :vl-binary-shr            2) ;;; >>
-     (cons :vl-binary-shl            2) ;;; <<
-     (cons :vl-binary-ashr           2) ;;; >>>
-     (cons :vl-binary-ashl           2) ;;; <<<
-
-     ;; Basic Ternary Operators
-     (cons :vl-qmark                 3) ;;; e.g., 1 ? 2 : 3
-     (cons :vl-mintypmax             3) ;;; e.g., (1 : 2 : 3)
-
-     ;; Selection Operators
-     (cons :vl-bitselect             2) ;;; e.g., foo[1]
-     (cons :vl-array-index           2) ;;; e.g., foo[1]
-     (cons :vl-partselect-colon      3) ;;; e.g., foo[3:1]
-     (cons :vl-partselect-pluscolon  3) ;;; e.g., foo[3 +: 1]
-     (cons :vl-partselect-minuscolon 3) ;;; e.g., foo[3 -: 1]
-
-     ;; Concatenation and Replication Operators
-     (cons :vl-concat                nil) ;;; e.g., { 1, 2, 3 }
-     (cons :vl-multiconcat           2)   ;;; e.g., { 3 { 2, 1 } }
-
-     ;; Function Calls
-     (cons :vl-funcall               nil) ;;; e.g., foo(1,2,3)
-     (cons :vl-syscall               nil) ;;; e.g., $foo(1,2,3)
-
-     ;; Hierarchical Identifiers
-     (cons :vl-hid-dot               2) ;;; e.g., foo.bar
-     (cons :vl-hid-arraydot          3) ;;; e.g., foo[3].bar
-     )))
-
-
-(define vl-op-p (x)
-  :parents (vl-expr-p)
-  :short "Recognizer for valid operators."
-
-  :long "<p>@(call vl-op-p) checks that @('x') is one of the operators listed
-in the @(see *vl-ops-table*).</p>
-
-<p>We prefer to use @('vl-op-p') instead of looking up operators directly in
-the table, since this way we can disable @('vl-op-p') and avoid large case
-splits.</p>"
-
-  :inline t
-
-  ;; Per basic testing, assoc is faster than hons-get here.
-  (if (assoc x *vl-ops-table*)
-      t
-    nil)
-
-  ///
-
-  (defthm type-when-vl-op-p
-    (implies (vl-op-p x)
-             (and (symbolp x)
-                  (not (equal x t))
-                  (not (equal x nil))))
-    :rule-classes :compound-recognizer))
-
-(deflist vl-oplist-p (x)
-  (vl-op-p x)
-  :guard t
-  :parents (vl-expr-p))
-
-
-
-
-(define vl-op-arity ((x vl-op-p))
-  :inline t
-  :parents (vl-expr-p)
-  :short "Look up the arity of an operator."
-
-  :long "<p>@(call vl-op-arity) determines the arity of the operator @('x') by
-consulting the @(see *vl-ops-table*).  If @('x') does not have a fixed
-arity (e.g., it might be a function call or concatenation operation), then we
-return @('nil').</p>
-
-<p>We prefer to use @('vl-op-arity') instead of looking up operators directly
-in the table, since this way we can disable @('vl-op-arity') and avoid large
-case splits.</p>"
-
-  (cdr (assoc x *vl-ops-table*))
-
-  ///
-  (defthm type-of-vl-op-arity
-    (maybe-natp (vl-op-arity x))
-    :rule-classes :type-prescription))
-
-
-
-(defenum vl-exprtype-p (:vl-signed :vl-unsigned)
-  :parents (vl-expr-p)
-  :short "Valid types for expressions."
-  :long "<p>Each expression should be either @(':vl-signed') or
-@(':vl-unsigned').  We may eventually expand this to include other types, such
-as real and string.</p>")
-
-
-
-(define vl-maybe-exprtype-p (x)
-  :inline t
-  :parents (vl-expr-p)
-  :short "Recognizer for an @(see vl-exprtype-p) or @('nil')."
-
-  :long "<p>We use this for the @('sign') fields in our expressions.  It allows
-us to represent expressions whose signs have not yet been computed.</p>"
-
-  (or (not x)
-      (vl-exprtype-p x))
-
-  ///
-
-  (defthm vl-maybe-exprtype-p-when-vl-exprtype-p
-    (implies (vl-exprtype-p x)
-             (vl-maybe-exprtype-p x)))
-
-  (defthm vl-exprtype-p-when-vl-maybe-exprtype-p
-    (implies (vl-maybe-exprtype-p x)
-             (equal (vl-exprtype-p x)
-                    (if x t nil))))
-
-  (defthm type-when-vl-maybe-exprtype-p
-    (implies (vl-maybe-exprtype-p x)
-             (and (symbolp x)
-                  (not (equal x t))))
-    :rule-classes :compound-recognizer))
-
-
-(defaggregate vl-constint
-  :parents (vl-expr-p)
-  :short "Representation for constant integer literals with no X or Z bits."
-  :tag :vl-constint
-  :hons t
-  :legiblep nil
-
-  ((value      natp
-               :rule-classes :type-prescription
-               "The most important part of a constant integer.  Even
-                immediately upon parsing the value has already been determined
-                and is available to you as an ordinary natural number.")
-
-   (origwidth  posp
-               :rule-classes :type-prescription
-               "Subtle; generally should <b>not be used</b>; see below.")
-
-   (origtype   vl-exprtype-p
-               :rule-classes
-               ((:rewrite)
-                (:type-prescription
-                 :corollary
-                 (implies (force (vl-constint-p x))
-                          (and (symbolp (vl-constint->origtype x))
-                               (not (equal (vl-constint->origtype x) nil))
-                               (not (equal (vl-constint->origtype x) t))))))
-               "Subtle; generally should <b>not be used</b>; see below.")
-
-   (wasunsized booleanp
-               :rule-classes :type-prescription
-               "Set to @('t') by the parser for unsized constants like @('5')
-                and @(''b0101'), but not for sized ones like @('4'b0101')."))
-
-  :require
-  ((upper-bound-of-vl-constint->value
-    (< value (expt '2 origwidth))
-    :rule-classes ((:rewrite) (:linear))))
-
-  :long "<p>Constant integers are produced from source code constructs like
-@('5'), @('4'b0010'), and @('3'h0').</p>
-
-<p>Note that the value of a constant integer is never negative.  In Verilog
-there are no negative literals; instead, an expression like @('-5') is
-basically parsed the same as @('-(5)'), so the negative sign is not part of the
-literal.  See Section 3.5.1 of the spec.</p>
-
-<p>The @('origwidth') and @('origtype') fields are subtle.  They indicate the
-<i>original</i> width and signedness of the literal as specified in the source
-code, e.g., if the source code contains @('8'sd 65'), then the origwidth will
-be 8 and the origtype will be @(':vl-signed.')  These fields are subtle because
-@(see expression-sizing) generally alters the widths and types of
-subexpressions, so these may not represent the final widths and types of these
-constants in the context of the larger expression.  Instead, the preferred way
-to determine a constint's final width and sign is to inspect the @('vl-atom-p')
-that contains it.</p>
-
-<p>We insist that @('0 <= value <= 2^origwidth') for every constant integer.
-If our @(see lexer) encounters something ill-formed like @('3'b 1111'), it
-emits a warning and truncates from the left, as required by Section 3.5.1 (page
-10) of the spec.</p>
-
-<p>Note that in Verilog, unsized integer constants like @('5') or @(''b101')
-have an implementation-dependent size of at least 32 bits.  VL historically
-tried to treat such numbers in an abstract way, saying they had \"integer
-size\".  But we eventually decided that this was too error-prone and we now
-instead act like a 32-bit implementation even at the level of our lexer.  This
-conveniently makes the width of a constant integer just a positive number.  On
-the other hand, some expressions may produce different results on 32-bit
-versus, say, 64-bit implementations.  Because of this, we added the
-@('wasunsized') field so that we might later statically check for problematic
-uses of unsized constants.</p>
-
-<p>All constints are automatically created with @(see hons).  This is probably
-pretty trivial, but it seems nice.  For instance, the constant integers from
-0-32 are probably used thousands of times throughout a design for bit-selects
-and wire ranges, so sharing their memory may be useful.</p>")
-
-
-(defaggregate vl-weirdint
-  :parents (vl-expr-p)
-  :short "Representation for constant integer literals with X or Z bits."
-  :tag :vl-weirdint
-  :hons t
-  :legiblep nil
-
-  ((bits        vl-bitlist-p
-                "An MSB-first list of the four-valued Verilog bits making up
-                 this constant's value; see @(see vl-bit-p).")
-
-   (origwidth   posp
-                :rule-classes :type-prescription
-                "Subtle; generally should <b>not be used</b>; see below.")
-
-   (origtype    vl-exprtype-p
-                :rule-classes
-                ((:rewrite)
-                 (:type-prescription
-                  :corollary
-                  (implies (force (vl-weirdint-p x))
-                           (and (symbolp (vl-weirdint->origtype x))
-                                (not (equal (vl-weirdint->origtype x) nil))
-                                (not (equal (vl-weirdint->origtype x) t))))))
-                "Subtle; generally should <b>not be used</b>; see below.")
-
-   (wasunsized  booleanp
-                :rule-classes :type-prescription
-                "Did this constant have an explicit size?"))
-
-  :require
-  ((len-of-vl-weirdint->bits
-    (equal (len bits) origwidth)
-    :rule-classes ((:rewrite)
-                   (:type-prescription
-                    :corollary (implies (force (vl-weirdint-p x))
-                                        (consp (vl-weirdint->bits x)))))))
-
-  :long "<p>Weird integers are produced by source code constructs like
-@('1'bz'), @('3'b0X1'), and so on.</p>
-
-<p>The @('origwidth'), @('origtype'), and @('wasunsized') fields are analogous
-to those from @(see vl-constint-p); see the discussion there for details.  But
-unlike a constint, a weirdint does not have a natural-number @('value').
-Instead it has a list of four-valued @('bits') that may include X and Z
-values.</p>
-
-<p>Like constinsts, all weirdints are automatically constructed with @(see
-hons).  This may not be worthwhile since there are probably usually not too
-many weirdints, but by the same reasoning it shouldn't be too harmful.</p>")
-
-
-(defaggregate vl-string
-  :parents (vl-expr-p)
-  :short "Representation for string literals."
-  :tag :vl-string
-  :legiblep nil
-
-  ((value stringp
-          :rule-classes :type-prescription
-          "An ordinary ACL2 string where, e.g., special sequences like @('\\n')
-           and @('\\t') have been resolved into real newline and tab
-           characters, etc.")))
-
-
-(defaggregate vl-real
-  :parents (vl-expr-p)
-  :short "Representation of real (floating point) literals."
-  :tag :vl-real
-  :legiblep nil
-
-  ((value   stringp
-            :rule-classes :type-prescription
-            "The actual characters found in the source code, i.e., it might be
-             a string such as @('\"3.41e+12\"')."))
-
-  :long "<p>We have almost no support for working with real numbers.  You
-should probably not rely on our current representation, since q we will almost
-certainly want to change it as soon as we want to do anything with real
-numbers.</p>")
-
-
-(defaggregate vl-id
-  :parents (vl-expr-p)
-  :short "Representation for simple identifiers."
-  :tag :vl-id
-  :hons t
-  :legiblep nil
-
-  ((name stringp
-         :rule-classes :type-prescription
-         "This identifier's name.  Our structure only requires that this is an
-          ACL2 string; in practice the name can include <b>any character</b>
-          besides whitespace and should be non-empty.  Note that for escaped
-          identifiers like @('\\foo '), the @('\\') and trailing space are not
-          included in the name; see @(see vl-read-escaped-identifier)."))
-
-  :long "<p>@('vl-id-p') objects are used to represent identifiers used in
-expressions which might be the names of wires, ports, parameters, registers,
-and so on.</p>
-
-<p>A wonderful feature of our representation @('vl-id-p') atoms are guaranteed
-to not be part of any hierarchical identifier, nor are they the names of
-functions or system functions.  See the discussion in @(see vl-hidpiece-p) for
-more information.</p>
-
-<p>Like @(see vl-constint-p)s, we automatically create these structures with
-@(see hons).  This seems quite nice, since the same names may be used many
-times throughout all the expressions in a design.</p>")
-
-
-(defaggregate vl-hidpiece
-  :parents (vl-expr-p)
-  :short "Represents one piece of a hierarchical identifier."
-  :tag :vl-hidpiece
-  :legiblep nil
-
-  ((name stringp :rule-classes :type-prescription))
-
-  :long "<p>We represent hierarchical identifiers like
-@('top.processor[2].reset') as non-atomic expressions.  To represent this
-particular expression, we build a @(see vl-expr-p) that is something like
-this:</p>
-
-@({
- (:vl-hid-dot top (:vl-hid-arraydot processor 2 reset))
-})
-
-<p>In other words, the @(':vl-hid-dot') operator is used to join pieces of a
-hierarchical identifier, and @(':vl-hid-arraydot') is used when instance arrays
-are accessed.</p>
-
-<p>To add slightly more precision, our representation is really more like the
-following:</p>
-
-@({
- (:vl-hid-dot (hidpiece \"top\")
-              (:vl-hid-arraydot (hidpiece \"processor\")
-                                (constint 2)
-                                (hidpiece \"reset\")))
-})
-
-<p>In other words, the individual identifiers used throughout a hierarchical
-identifier are actually @('vl-hidpiece-p') objects instead of @(see vl-id-p)
-objects.</p>
-
-<p>We make this distinction so that in the ordinary course of working with the
-parse tree, you can freely assume that any @('vl-id-p') you come across really
-refers to some module item, and not to some part of a hierarchical
-identifier.</p>")
-
-
-(defaggregate vl-sysfunname
-  :parents (vl-expr-p)
-  :short "Represents a system function name."
-  :tag :vl-sysfunname
-  :legiblep nil
-
-  ((name stringp :rule-classes :type-prescription))
-
-  :long "<p>We use a custom representation for the names of system functions,
-so that we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
-
-
-(defaggregate vl-funname
-  :parents (vl-expr-p)
-  :short "Represents a (non-system) function name."
-  :tag :vl-funname
-  :legiblep nil
-
-  ((name stringp :rule-classes :type-prescription))
-
-  :long "<p>We use a custom representation for the names of functions, so that
-we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
-
-
-(define vl-atomguts-p (x)
-  :parents (vl-expr-p)
-  :short "The main contents of a @(see vl-atom-p)."
-
-  :long "<p>The guts of an atom are its main contents.  See @(see vl-expr-p)
-for a discussion of the valid types.</p>"
-
-  ;; BOZO some kind of defsum macro could eliminate a lot of this boilerplate
-
-  (mbe :logic (or (vl-constint-p x)
-                  (vl-weirdint-p x)
-                  (vl-string-p x)
-                  (vl-real-p x)
-                  (vl-id-p x)
-                  (vl-hidpiece-p x)
-                  (vl-funname-p x)
-                  (vl-sysfunname-p x))
-       :exec (case (tag x)
-               (:vl-id       (vl-id-p x))
-               (:vl-constint (vl-constint-p x))
-               (:vl-weirdint (vl-weirdint-p x))
-               (:vl-string   (vl-string-p x))
-               (:vl-real     (vl-real-p x))
-               (:vl-hidpiece (vl-hidpiece-p x))
-               (:vl-funname  (vl-funname-p x))
-               (otherwise    (vl-sysfunname-p x))))
-
-  ///
-
-  (defthm consp-when-vl-atomguts-p
-    (implies (vl-atomguts-p x)
-             (consp x))
-    :rule-classes :compound-recognizer)
-
-  (defthm vl-atomguts-p-when-vl-constint-p
-    (implies (vl-constint-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-atomguts-p-when-vl-weirdint-p
-    (implies (vl-weirdint-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-atomguts-p-when-vl-real-p
-    (implies (vl-real-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-atomguts-p-when-vl-string-p
-    (implies (vl-string-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-atomguts-p-when-vl-id-p
-    (implies (vl-id-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-atomguts-p-when-vl-hidpiece-p
-    (implies (vl-hidpiece-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-atomguts-p-when-vl-sysfunname-p
-    (implies (vl-sysfunname-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-atomguts-p-when-vl-funname-p
-    (implies (vl-funname-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-constint-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-constint)
-                  (vl-atomguts-p x))
-             (vl-constint-p x)))
-
-  (defthm vl-weirdint-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-weirdint)
-                  (vl-atomguts-p x))
-             (vl-weirdint-p x)))
-
-  (defthm vl-string-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-string)
-                  (vl-atomguts-p x))
-             (vl-string-p x)))
-
-  (defthm vl-real-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-real)
-                  (vl-atomguts-p x))
-             (vl-real-p x)))
-
-  (defthm vl-id-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-id)
-                  (vl-atomguts-p x))
-             (vl-id-p x)))
-
-  (defthm vl-hidpiece-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-hidpiece)
-                  (vl-atomguts-p x))
-             (vl-hidpiece-p x)))
-
-  (defthm vl-funname-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-funname)
-                  (vl-atomguts-p x))
-             (vl-funname-p x)))
-
-  (defthm vl-sysfunname-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-sysfunname)
-                  (vl-atomguts-p x))
-             (vl-sysfunname-p x))))
-
-
-(define vl-fast-id-p ((x vl-atomguts-p))
-  :inline t
-  :enabled t
-  :parents (vl-atomguts-p vl-id-p)
-  :short "Faster version of @(see vl-id-p), given that @(see vl-atomguts-p) is
-already known."
-  :long "<p>We leave this function enabled and reason about @('vl-id-p')
-instead.</p>"
-  (mbe :logic (vl-id-p x)
-       :exec (eq (tag x) :vl-id)))
-
-(define vl-fast-constint-p ((x vl-atomguts-p))
-  :inline t
-  :enabled t
-  :parents (vl-atomguts-p vl-constint-p)
-  :short "Faster version of @(see vl-constint-p), given that @(see
-vl-atomguts-p) is already known."
-  :long "<p>We leave this function enabled and reason about @('vl-constint-p')
-instead.</p>"
-  (mbe :logic (vl-constint-p x)
-       :exec (eq (tag x) :vl-constint)))
-
-(define vl-fast-weirdint-p ((x vl-atomguts-p))
-  :inline t
-  :enabled t
-  :parents (vl-atomguts-p vl-weirdint-p)
-  :short "Faster version of @(see vl-weirdint-p), given that @(see
-vl-atomguts-p) is already known."
-  :long "<p>We leave this function enabled and reason about @('vl-weirdint-p')
-instead.</p>"
-  (mbe :logic (vl-weirdint-p x)
-       :exec (eq (tag x) :vl-weirdint)))
-
-(define vl-fast-string-p ((x vl-atomguts-p))
-  :inline t
-  :enabled t
-  :parents (vl-atomguts-p vl-string-p)
-  :short "Faster version of @(see vl-string-p), given that @(see
-vl-atomguts-p) is already known."
-  :long "<p>We leave this function enabled and reason about @('vl-string-p')
-instead.</p>"
-  (mbe :logic (vl-string-p x)
-       :exec (eq (tag x) :vl-string)))
-
-(define vl-fast-hidpiece-p ((x vl-atomguts-p))
-  :inline t
-  :enabled t
-  :parents (vl-atomguts-p vl-hidpiece-p)
-  :short "Faster version of @(see vl-hidpiece-p), given that @(see
-vl-atomguts-p) is already known."
-  :long "<p>We leave this function enabled and reason about @('vl-hidpiece-p')
-instead.</p>"
-  (mbe :logic (vl-hidpiece-p x)
-       :exec (eq (tag x) :vl-hidpiece)))
-
-(define vl-fast-funname-p ((x vl-atomguts-p))
-  :inline t
-  :enabled t
-  :parents (vl-atomguts-p vl-funname-p)
-  :short "Faster version of @(see vl-funname-p), given that @(see
-vl-atomguts-p) is already known."
-  :long "<p>We leave this function enabled and reason about @('vl-funname-p')
-instead.</p>"
-  (mbe :logic (vl-funname-p x)
-       :exec (eq (tag x) :vl-funname)))
-
-(define vl-fast-sysfunname-p ((x vl-atomguts-p))
-  :inline t
-  :enabled t
-  :parents (vl-atomguts-p vl-sysfunname-p)
-  :short "Faster version of @(see vl-sysfunname-p), given that @(see
-vl-atomguts-p) is already known."
-  :long "<p>We leave this function enabled and reason about
-@('vl-sysfunname-p') instead.</p>"
-  (mbe :logic (vl-sysfunname-p x)
-       :exec (eq (tag x) :vl-sysfunname)))
-
-
-(defaggregate vl-atom
-  :parents (vl-expr-p)
-  :short "Representation of atomic expressions."
-  :long "<p>See the discussion in @(see vl-expr-p).</p>"
-  :tag :vl-atom
-  :legiblep nil
-
-  ((guts       vl-atomguts-p)
-
-   (finalwidth maybe-natp
-               :rule-classes :type-prescription)
-
-   (finaltype  vl-maybe-exprtype-p
-               :rule-classes
-               ((:rewrite)
-                (:type-prescription
-                 :corollary
-                 (implies (force (vl-atom-p x))
-                          (and (symbolp (vl-atom->finaltype x))
-                               (not (equal (vl-atom->finaltype x) t)))))))))
-
-(deflist vl-atomlist-p (x)
-  (vl-atom-p x)
-  :guard t
-  :elementp-of-nil nil
-  :parents (vl-expr-p))
-
-
-(defaggregate vl-nonatom
-  :parents (vl-expr-p)
-  :short "Structural validity of non-atomic expressions."
-  :long "<p>This is only a simple structural check, and does not imply
-@('vl-expr-p').  See @(see vl-expr-p) for details.</p>"
-  :tag :vl-nonatom
-  :legiblep nil
-
-  ((op   vl-op-p
-         :rule-classes
-         ((:rewrite)
-          (:type-prescription
-           :corollary
-           ;; I previously forced the hyp, but it got irritating because it
-           ;; kept screwing up termination proofs.  Consider case-split?
-           (implies (vl-nonatom-p x)
-                    (and (symbolp (vl-nonatom->op x))
-                         (not (equal (vl-nonatom->op x) t))
-                         (not (equal (vl-nonatom->op x) nil)))))))
-
-   (atts "No requirements (yet) due to mutual recursion.")
-   (args "No requirements (yet) due to mutual recursion.")
-
-   (finalwidth maybe-natp
-               :rule-classes :type-prescription)
-
-   (finaltype  vl-maybe-exprtype-p
-               :rule-classes
-               ((:rewrite)
-                (:type-prescription
-                 :corollary
-                 ;; I previously forced this, but maybe that's a bad idea for
-                 ;; the same reasons as vl-op-p-of-vl-nonatom->op?
-                 (implies (vl-nonatom-p x)
-                          (and (symbolp (vl-nonatom->finaltype x))
-                               (not (equal (vl-nonatom->finaltype x) t))))))))
-
-  :rest
-  ((defthm acl2-count-of-vl-nonatom->args
-     (and (<= (acl2-count (vl-nonatom->args x))
-              (acl2-count x))
-          (implies (consp x)
-                   (< (acl2-count (vl-nonatom->args x))
-                      (acl2-count x))))
-     :hints(("Goal" :in-theory (enable vl-nonatom->args)))
-     :rule-classes ((:rewrite) (:linear)))
-
-   (defthm acl2-count-of-vl-nonatom->args-when-vl-nonatom->op
-     ;; This is a funny rule that is occasionally useful in avoiding artificial
-     ;; termination checks for functions that recur over expressions.
-     (implies (vl-nonatom->op x)
-              (not (equal (acl2-count (vl-nonatom->args x))
-                          (acl2-count x))))
-     :hints(("Goal" :in-theory (enable vl-nonatom->op vl-nonatom->args))))
-
-   (defthm acl2-count-of-vl-nonatom->atts
-     (and (<= (acl2-count (vl-nonatom->atts x))
-              (acl2-count x))
-          (implies (consp x)
-                   (< (acl2-count (vl-nonatom->atts x))
-                      (acl2-count x))))
-     :hints(("Goal" :in-theory (enable vl-nonatom->atts)))
-     :rule-classes ((:rewrite) (:linear)))))
-
-
-
-(defsection vl-expr-p
-  :parents (modules)
-  :short "Representation of Verilog expressions."
-
-  :long "<p>One goal of our expression representation was for the recursive
-structure of expressions to be as simple as possible.  More specifically, I did
-not want to have a different representation for a unary expression than for a
-binary expression, etc.  Instead, I just wanted each operator to take a list of
-arguments, each of which were themselves valid subexpressions.</p>
-
-<h3>Basic Terminology</h3>
-
-<h5>Atomic Expressions</h5>
-
-<p>The atomic expressions are recognized by @(see vl-atom-p).  Each
-atomic expression includes some <b>guts</b>, which refer to either an:</p>
-
-<ul>
-
-<li>@(see vl-constint-p): an integer literal with no X or Z bits,</li>
-
-<li>@(see vl-weirdint-p): an integer literal with some X or Z bits,</li>
-
-<li>@(see vl-real-p): a \"real literal\", i.e., a floating point number,</li>
-
-<li>@(see vl-string-p): a string literal,</li>
-
-<li>@(see vl-id-p): a simple, non-hierarchical identifier,</li>
-
-<li>@(see vl-hidpiece-p): one piece of a hierarchical identifier,</li>
-
-<li>@(see vl-funname-p): the name of an ordinary function, or</li>
-
-<li>@(see vl-sysfunname-p): the name of a system function (e.g.,
-@('$display')).</li>
-
-</ul>
-
-<p>The last three of these are probably not things you would ordinarily think
-of as atomic expressions.  However, by accepting them as atomic expressions, we
-are able to achieve the straightforward recursive structure we desire.</p>
-
-<p>In addition to their guts, each @(see vl-atom-p) includes a</p>
-
-<ul>
-
-<li>@('finalwidth'), which is a @(see maybe-natp), and</li>
-
-<li>@('finaltype'), which is a @(see vl-maybe-exprtype-p).</li>
-
-</ul>
-
-<p>Typically, when we have just parsed the modules, these fields are left
-@('nil'): their values are only filled in during our expression typing and
-sizing computations.</p>
-
-<h5>Non-Atomic Expressions</h5>
-
-<p>All non-atomic expressions share a common cons structure, and @(see
-vl-nonatom-p) is a simple, non-recursive, structural validity check to see if
-this structure is obeyed at the top level.  Note that @(see vl-nonatom-p) is
-<b>not</b> sufficient to ensure that the object is a valid expression, because
-additional constraints (e.g., arity checks, recursive well-formedness) are
-imposed by @('vl-expr-p').</p>
-
-<p>Like atomic expressions, each @('vl-nonatom-p') includes @('finalwidth') and
-@('finaltype') fields, which are @('nil') upon parsing and may later be filled
-in by our expression typing and sizing computations.  To be accepted by
-@('vl-nonatom-p'), the @('finalwidth') and @('finaltype') must be valid @(see
-maybe-natp) and @(see vl-maybe-exprtype-p) objects, respectively.</p>
-
-<p>Additionally, each non-atomic expression includes:</p>
-
-<ul>
-
-<li>@('op'), the operation being applied.  For structural validity, @('op')
-must be one of the known operators found in @(see *vl-ops-table*).</li>
-
-<li>@('args'), the arguments the operation is being applied to.  No structural
-constraints are imposed upon @('args').</li>
-
-<li>@('atts'), which represent any attributes written in the @('(* foo = bar,
-baz *)') style that Verilog-2005 permits.  No structural constraints are placed
-upon @('atts').</li>
-
-</ul>
-
-<h5>Valid Expressions</h5>
-
-<p>The valid expressions are recognized by @(see vl-expr-p), which extends our
-basic structural checks recursively over the expression, and also ensures that
-each operator has the proper arity.</p>"
-
-  (mutual-recursion
-   (defund vl-expr-p (x)
-     (declare (xargs :guard t))
-     (or (vl-atom-p x)
-         (and (vl-nonatom-p x)
-              (let ((name  (vl-nonatom->op x))
-                    (atts  (vl-nonatom->atts x))
-                    (args  (vl-nonatom->args x)))
-                (and (vl-atts-p atts)
-                     (vl-exprlist-p args)
-                     (let ((arity (vl-op-arity name)))
-                       (or (not arity)
-                           (equal (len args) arity))))))))
-
-   (defund vl-atts-p (x)
-     ;; Search for "defsection vl-atts-p" below for documentation.
-     (declare (xargs :guard t))
-     (if (consp x)
-         (and (consp (car x))
-              (stringp (caar x))
-              (or (not (cdar x))
-                  (vl-expr-p (cdar x)))
-              (vl-atts-p (cdr x)))
-       (eq x nil)))
-
-   (defund vl-exprlist-p (x)
-     (declare (xargs :guard t))
-     (if (consp x)
-         (and (vl-expr-p (car x))
-              (vl-exprlist-p (cdr x)))
-       t)))
-
-  (local (in-theory (enable vl-expr-p)))
-
-  (defthm vl-expr-p-when-vl-atom-p
-    (implies (vl-atom-p x)
-             (vl-expr-p x)))
-
-  (defthm vl-atom-p-by-tag-when-vl-expr-p
-    (implies (and (equal (tag x) :vl-atom)
-                  (vl-expr-p x))
-             (vl-atom-p x)))
-
-  (defthm consp-when-vl-expr-p
-    (implies (vl-expr-p x)
-             (consp x))
-    :rule-classes :compound-recognizer
-    :hints(("Goal" :expand (vl-expr-p x))))
-
-  (defthm vl-expr-p-of-vl-nonatom
-    (implies (and (force (vl-op-p op))
-                  (force (vl-atts-p atts))
-                  (force (vl-exprlist-p args))
-                  (force (implies (vl-op-arity op)
-                                  (equal (len args) (vl-op-arity op))))
-                  (force (maybe-natp finalwidth))
-                  (force (vl-maybe-exprtype-p finaltype)))
-             (vl-expr-p (make-vl-nonatom :op op
-                                         :atts atts
-                                         :args args
-                                         :finalwidth finalwidth
-                                         :finaltype finaltype))))
-
-  (defthm len-of-vl-nonatom->args-when-vl-expr-p
-    (implies (and (vl-op-arity (vl-nonatom->op x))
-                  (force (vl-expr-p x))
-                  (force (vl-nonatom-p x)))
-             (equal (len (vl-nonatom->args x))
-                    (vl-op-arity (vl-nonatom->op x)))))
-
-  (defthm vl-exprlist-p-of-vl-nonatom->args
-    (implies (and (force (vl-expr-p x))
-                  (force (vl-nonatom-p x)))
-             (vl-exprlist-p (vl-nonatom->args x))))
-
-  (defthm vl-nonatom-p-when-not-vl-atom-p
-    ;; BOZO strengthen?  rewrite vl-nonatom-p to "not vl-atom-p"?
-    (implies (and (not (vl-atom-p x))
-                  (vl-expr-p x))
-             (vl-nonatom-p x)))
-
-  (defthm vl-atts-p-of-vl-nonatom->atts
-    (implies (and (force (vl-expr-p x))
-                  (force (vl-nonatom-p x)))
-             (vl-atts-p (vl-nonatom->atts x)))))
-
-
-(define vl-fast-atom-p ((x vl-expr-p))
-  :inline t
-  :enabled t
-  :parents (vl-atom-p vl-expr-p)
-  :short "Faster version of @(see vl-atom-p), given that @(see vl-expr-p) is
-already known."
-  :long "<p>We leave this function enabled and reason about @('vl-atom-p')
-instead.</p>"
-  (mbe :logic (vl-atom-p x)
-       :exec (eq (tag x) :vl-atom)))
-
-(define vl-expr->finalwidth ((x vl-expr-p))
-  :inline t
-  :parents (vl-expr-p)
-  :short "Get the @('finalwidth') from an expression."
-  :long "<p>See @(see vl-expr-p) for a discussion of widths.  The result is a
-@(see maybe-natp).</p>"
-  (if (eq (tag x) :vl-atom)
-      (vl-atom->finalwidth x)
-    (vl-nonatom->finalwidth x))
-
-  :prepwork ((local (in-theory (enable vl-expr-p))))
-
-  ///
-
-  (defthm maybe-natp-of-vl-expr->finalwidth
-    (implies (force (vl-expr-p x))
-             (maybe-natp (vl-expr->finalwidth x)))
-    :rule-classes :type-prescription)
-
-  (defthm vl-expr->finalwidth-of-vl-atom
-    (equal (vl-expr->finalwidth (vl-atom guts finalwidth finaltype))
-           finalwidth))
-
-  (defthm vl-expr->finalwidth-of-vl-nonatom
-    (equal (vl-expr->finalwidth (make-vl-nonatom :op op
-                                            :atts atts
-                                            :args args
-                                            :finalwidth finalwidth
-                                            :finaltype finaltype))
-           finalwidth)))
-
-
-(define vl-expr->finaltype ((x vl-expr-p))
-  :inline t
-  :parents (vl-expr-p)
-  :short "Get the @('finaltype') from an expression."
-  :long "<p>See @(see vl-expr-p) for a discussion of types.  The result
-is a @(see vl-maybe-exprtype-p).</p>"
-  (if (eq (tag x) :vl-atom)
-      (vl-atom->finaltype x)
-    (vl-nonatom->finaltype x))
-
-  :prepwork ((local (in-theory (enable vl-expr-p))))
-  ///
-  (defthm vl-maybe-exprtype-p-of-vl-expr->finaltype
-    (implies (force (vl-expr-p x))
-             (vl-maybe-exprtype-p (vl-expr->finaltype x)))
-    :rule-classes ((:rewrite)
-                   (:type-prescription
-                    :corollary (implies (force (vl-expr-p x))
-                                        (and (symbolp (vl-expr->finaltype x))
-                                             (not (equal (vl-expr->finaltype x) t)))))))
-
-  (defthm vl-expr->finaltype-of-vl-atom
-    (equal (vl-expr->finaltype (vl-atom guts finalwidth finaltype))
-           finaltype))
-
-  (defthm vl-expr->finaltype-of-vl-nonatom
-    (equal (vl-expr->finaltype (make-vl-nonatom :op op
-                                                :atts atts
-                                                :args args
-                                                :finalwidth finalwidth
-                                                :finaltype finaltype))
-           finaltype)))
-
-
-(defsection vl-atts-p
-  :parents (vl-expr-p)
-  :short "Representation of @('(* foo = 3, baz *)') style attributes."
-
-  :long "<p>Verilog 2005 allows many constructs, (e.g., module instances, wire
-declarations, assignments, subexpressions, and so on) to be annotated with
-<i>attributes</i>.  Each individual attribute can either be a single key with
-no value (e.g., @('baz') above), or can have the form @('key = value').  The
-keys are always identifiers, and the values (if provided) are expressions.</p>
-
-<p>We represent attributes as alists mapping keys to their values.  We use
-ordinary ACL2 strings to represent the keys.  Each value is represented by a
-@(see vl-expr-p) object, and keys with no values are bound to @('nil')
-instead.</p>
-
-<h3>Attributes Used by VL</h3>
-
-<p><b>BOZO</b> this list may not be complete.  Try to keep it up to date.</p>
-
-<dl>
-
-<dt>Modules</dt>
-
-<dd>@('VL_HANDS_OFF') indicates that the module is special and should be left
-alone by transformations.  It is generally intended to be used for built-in VL
-modules like @('VL_1_BIT_FLOP') and @('VL_1_BIT_LATCH').</dd>
-
-
-<dt>Expressions</dt>
-
-<dd>@('VL_ORIG_EXPR'), with some value, is added to many expressions in the
-@(see origexprs) transformation.  It allows us to remember the \"original
-version\" of the expression before simplification has taken place.</dd>
-
-<dd>@('VL_ZERO_EXTENSION') is added when we create certain zero-extension
-expressions, mainly to pad operands during @(see expression-sizing).</dd>
-
-
-<dt>Net Declarations</dt>
-
-<dd>@('VL_IMPLICIT'), with no value, is given to implicitly declared wires by
-@(see make-implicit-wires).  This attribute also plays a role in @(see
-typo-detection).</dd>
-
-<dd>@('VL_PORT_IMPLICIT'), with no value, is given to wires that are declared
-to be ports (i.e., @('input a;')) but which are not also declared to be
-wires (i.e., @('wire a;')) by @(see make-implicit-wires)</dd>
-
-<dd>@('VL_UNUSED') and @('VL_MAYBE_UNUSED') may be added by @(see use-set) when
-a wire appears to be unused.</dd>
-
-<dd>@('VL_UNSET') and @('VL_MAYBE_UNSET') may be added by @(see use-set) when a
-wire appears to be unset.</dd>
-
-<dd>@('VL_ACTIVE_HIGH') and @('VL_ACTIVE_LOW') may be declared by the user or
-inferred in the cross-active transformation.</dd>
-
-<dd>@('VL_CONVERTED_REG') may be attached during latch/flop inference, when a
-@('reg') is turned into a @('wire').</dd>
-
-
-<dt>Port Declarations</dt>
-
-<dd>@('VL_ACTIVE_HIGH') and @('VL_ACTIVE_LOW') may be declared by the user or
-inferred in the cross-active transformation.</dd>
-
-
-<dt>Assignments</dt>
-
-<dd>@('TRUNC_<i>WIDTH</i>') attributes are given to assignment statements which
-are involve implicit truncations, by @(see trunc).  <b>BOZO</b> probably change
-to @('VL_TRUNC = width') format.</dd>
-
-
-<dt>Gate Instances</dt>
-
-<dd>@('VL_FROM_GATE_ARRAY'), with no value, is given to gate instances that are
-the result of splitting an array such as @('buf foo [13:0] (o, i);') by @(see
-replicate).  This property is also given to module instances as described
-below.</dd>
-
-<dd>@('VL_GATESPLIT') is added when certain gates are simplified, e.g., when we
-split @('not(o1,o2,...,on, i);') into @('not(o1,i);'), @('not(o2,i)'), ...,
-@('not(on, i);') in @(see gatesplit).  <b>BOZO</b> make this annotation more
-consistent.</dd>
-
-
-<dt>Module Instances</dt>
-
-<dd>@('VL_FROM_GATE_ARRAY'), with no value, is given to module instances that
-are the result of splitting an array such as @('mymod foo [13:0] (o, i);') by
-@(see replicate).  This property is also given to gate instances as described
-above.  <b>BOZO</b> probably switch this to VL_FROM_MOD_ARRAY.</dd>
-
-<dd>@('VL_GATE_REDUX'), with no value, is given to module instances that are
-the result of converting gates such as @('bufif0'), @('notif1'), @('pmos'),
-etc., into module instances.  It is also given to certain gate instances as
-described above.</dd>
-
-
-<dt>Plain Arguments</dt>
-
-<dd>@('VL_ACTIVE_HIGH') or @('VL_ACTIVE_LOW') may be added during @(see
-argresolve), and indicate whether the corresponding formal is considered active
-high or low.</dd>
-
-</dl>"
-
-  (local (in-theory (enable vl-atts-p)))
-
-  (defthm vl-atts-p-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-atts-p x)
-                    (not x))))
-
-  (defthm vl-atts-of-cons
-    (equal (vl-atts-p (cons a x))
-           (and (consp a)
-                (stringp (car a))
-                (or (not (cdr a))
-                    (vl-expr-p (cdr a)))
-                (vl-atts-p x))))
-
-  (defthm vl-atts-p-of-append
-    (implies (and (vl-atts-p x)
-                  (vl-atts-p y))
-             (vl-atts-p (append x y)))
-    :hints(("Goal" :induct (len x))))
-
-  (defthm true-listp-when-vl-atts-p
-    (implies (vl-atts-p x)
-             (true-listp x))
-    :hints(("Goal" :induct (len x)))
-    :rule-classes ((:rewrite) (:compound-recognizer)))
-
-  (defthm alistp-when-vl-atts-p
-    (implies (vl-atts-p x)
-             (alistp x))
-    :hints(("Goal" :induct (len x))))
-
-  (defthm vl-expr-p-of-cdr-of-hons-assoc-equal-when-vl-atts-p
-    (implies (vl-atts-p atts)
-             (equal (vl-expr-p (cdr (hons-assoc-equal key atts)))
-                    (if (cdr (hons-assoc-equal key atts))
-                        t
-                      nil)))
-    :hints(("Goal"
-            :in-theory (enable hons-assoc-equal)
-            :induct (hons-assoc-equal key atts))))
-
-  (defthm vl-atts-p-of-vl-remove-keys
-    (implies (force (vl-atts-p x))
-             (vl-atts-p (vl-remove-keys keys x)))
-    :hints(("Goal" :induct (len x)))))
-
-
-
-(deflist vl-exprlist-p (x)
-  (vl-expr-p x)
-  :elementp-of-nil nil
-  :verify-guards nil
-  :already-definedp t
-  :parents (modules)
-
-  :rest
-  ( ;; These are useful for seeing that arguments exist.
-   (defthm first-under-iff-when-vl-exprlist-p
-     (implies (vl-exprlist-p x)
-              (iff (first x)
-                   (consp x)))
-     :rule-classes ((:rewrite :backchain-limit-lst 1)))
-
-   (defthm second-under-iff-when-vl-exprlist-p
-     (implies (vl-exprlist-p x)
-              (iff (second x)
-                   (consp (cdr x))))
-     :rule-classes ((:rewrite :backchain-limit-lst 1)))
-
-   (defthm third-under-iff-when-vl-exprlist-p
-     (implies (vl-exprlist-p x)
-              (iff (third x)
-                   (consp (cddr x))))
-     :rule-classes ((:rewrite :backchain-limit-lst 1)))))
-
-(defprojection vl-exprlist->finalwidths (x)
-  (vl-expr->finalwidth x)
-  :guard (vl-exprlist-p x)
-  :result-type vl-maybe-nat-listp
-  :nil-preservingp t
-  :parents (vl-exprlist-p))
-
-(defprojection vl-exprlist->finaltypes (x)
-  (vl-expr->finaltype x)
-  :guard (vl-exprlist-p x)
-  :nil-preservingp t
-  :parents (vl-exprlist-p))
-
-
-(deflist vl-exprlistlist-p (x)
-  (vl-exprlist-p x)
-  :guard t
-  :elementp-of-nil t
-  :rest
-  ((defthm vl-exprlist-p-of-flatten
-     (implies (vl-exprlistlist-p x)
-              (vl-exprlist-p (flatten x))))
-
-   (defthm vl-exprlistlist-p-of-pairlis$
-     (implies (and (vl-exprlist-p a)
-                   (vl-exprlistlist-p x))
-              (vl-exprlistlist-p (pairlis$ a x)))
-     :hints(("Goal" :in-theory (enable pairlis$))))))
-
-
-(define vl-maybe-expr-p (x)
-  :inline t
-  :parents (modules vl-expr-p)
-  :short "Representation for a @(see vl-expr-p) or @('nil')."
-  :long "<p>This is a basic option type for expressions.</p>"
-  (or (not x)
-      (vl-expr-p x))
-  ///
-  (defthm vl-maybe-expr-p-when-vl-expr-p
-    (implies (vl-expr-p x)
-             (vl-maybe-expr-p x)))
-
-  (defthm vl-expr-p-when-vl-maybe-expr-p
-    (implies (vl-maybe-expr-p x)
-             (equal (vl-expr-p x)
-                    (if x t nil))))
-
-  (defthm type-when-vl-maybe-expr-p
-    (implies (vl-maybe-expr-p x)
-             (or (consp x)
-                 (not x)))
-    :rule-classes :compound-recognizer))
-
-
-(defun vl-expr-induct (flag x)
-
-; BOZO should we really have this, or would make-flag be better?  I guess this
-; is in some ways cleaner.
-
-  (declare (xargs :measure (two-nats-measure (acl2-count x)
-                                             (if (eq flag 'expr) 1 0))))
-  (cond ((eq flag 'expr)
-         (if (vl-atom-p x)
-             nil
-           (list (vl-expr-induct 'atts (vl-nonatom->atts x))
-                 (vl-expr-induct 'list (vl-nonatom->args x)))))
-        ((eq flag 'atts)
-         (if (consp x)
-             (list (vl-expr-induct 'expr (cdar x))
-                   (vl-expr-induct 'atts (cdr x)))
-           nil))
-        (t
-         (if (consp x)
-             (list (vl-expr-induct 'expr (car x))
-                   (vl-expr-induct 'list (cdr x)))
-           nil))))
-
-
-(defsection arity-reasoning
-
-; These rules have evolved a lot over time.  The current iteration seems to be
-; fairly good and fixes some problems with previous versions.
-;
-; One previous approach was just to separately recognize each unary, binary,
-; and ternary operator, e.g.,
-;
-;    (implies (and (or (equal (vl-nonatom->op x) :vl-unary-plus)
-;                      (equal (vl-nonatom->op x) :vl-unary-minus)
-;                      ...)
-;                 ...)
-;             (and (vl-nonatom->args x)
-;                  ...))
-;
-; These rules seemed to be pretty effective, but they were slow.  To fix the
-; slowness, I tried using a free variable to only apply the rule when the op was
-; exactly known, e.g.,
-;
-;   (implies (and (equal (vl-nonatom->op x) op)
-;                 (<= (vl-op-arity op) 1)
-;                 ...)
-;            (and (vl-nonatom->args x)
-;                 ...))
-;
-; This did seem to be quite a bit faster and also seemed to wrok well when the
-; operands were known precisely.  But it did not handle cases like VL-HIDEXPR-P
-; very well, where if we know (not (equal (vl-nonatom->op x) :vl-hid-dot)) then
-; we should be able to infer that this is a :vl-hid-arraydot.  I had trouble
-; getting ACL2 to always canonicalize such things the "positive" form.
-;
-; The new rules don't have a free-variable, but still avoid the big case split.
-; We don't ask about particular operands, but instead just ask whether the
-; arity is known.  This works and should be pretty efficient when a direct
-; equality is known, e.g., if we know (equal (vl-nonatom->op x)
-; :vl-binary-times), then we'll backchain to (vl-op-arity (vl-nonatom->op x)),
-; which type-set should settle to (vl-op-arity :vl-binary-times) and which we
-; should then get by evaluation.
-;
-; But since there isn't a free-variable, we'll also get a chance to apply any
-; rules that tell us what the arity is in some other way, which allows us to
-; fairly easily solve the HIDEXPR problem.
-
-  (local (defthm iff-when-vl-expr-p
-           (implies (vl-expr-p x)
-                    (iff x t))
-           :rule-classes nil))
-
-  (local (in-theory (enable len)))
-
-  (defthm arg1-exists-by-arity
-    (let ((arity (vl-op-arity (vl-nonatom->op x))))
-      (implies (and arity
-                    (force (vl-expr-p x))
-                    (force (not (vl-atom-p x))))
-               (and (implies (<= 1 arity)
-                             (vl-nonatom->args x))
-                    (iff (first (vl-nonatom->args x))
-                         (<= 1 arity))
-                    (equal (consp (vl-nonatom->args x))
-                           (<= 1 arity)))))
-    :hints(("Goal"
-            :expand ((vl-expr-p x))
-            :use ((:instance iff-when-vl-expr-p (x (car (vl-nonatom->args x))))))))
-
-  (defthm arg2-exists-by-arity
-    (let ((arity (vl-op-arity (vl-nonatom->op x))))
-      (implies (and arity
-                    (force (vl-expr-p x))
-                    (force (not (vl-atom-p x))))
-               (and (implies (<= 2 arity) (cdr (vl-nonatom->args x)))
-                    (iff (second (vl-nonatom->args x)) (<= 2 arity))
-                    (equal (consp (cdr (vl-nonatom->args x))) (<= 2 arity)))))
-    :hints(("Goal"
-            :expand ((vl-expr-p x))
-            :use ((:instance iff-when-vl-expr-p (x (car (vl-nonatom->args x))))
-                  (:instance iff-when-vl-expr-p (x (cadr (vl-nonatom->args x))))))))
-
-  (defthm arg3-exists-by-arity
-    (let ((arity (vl-op-arity (vl-nonatom->op x))))
-      (implies (and arity
-                    (force (vl-expr-p x))
-                    (force (not (vl-atom-p x))))
-               (and (implies (<= 3 arity) (cddr (vl-nonatom->args x)))
-                    (iff (third (vl-nonatom->args x)) (<= 3 arity))
-                    (equal (consp (cddr (vl-nonatom->args x))) (<= 3 arity)))))
-    :hints(("Goal"
-            :expand ((vl-expr-p x))
-            :use ((:instance iff-when-vl-expr-p (x (car (vl-nonatom->args x))))
-                  (:instance iff-when-vl-expr-p (x (cadr (vl-nonatom->args x))))
-                  (:instance iff-when-vl-expr-p (x (caddr (vl-nonatom->args x)))))))))
-
+(local (xdoc::set-default-parents syntax))
 
 (defaggregate vl-range
-  :parents (modules)
   :short "Representation of ranges on wire declarations, instance array
 declarations, and so forth."
   :tag :vl-range
@@ -1470,7 +59,7 @@ resolve to constants.  Note that the parser does not try to simplify these
 expressions, but some simplification is performed in transformations such as
 @(see rangeresolve) and @(see unparameterization).</p>
 
-<p>Even after the expressions have become constants, the Verilog specification
+<p>Even after the expressions have become constants, the Verilog-2005 standard
 does not require @('msb') to be greater than @('lsb'), and neither index is
 required to be zero.  In fact, even negative indicies seem to be permitted,
 which is quite amazing and strange.</p>
@@ -1479,13 +68,11 @@ which is quite amazing and strange.</p>
 transformations expect the indices to be resolved to integers.  However, we now
 try to support the use of both ascending and descending ranges.</p>")
 
-
-
 (define vl-maybe-range-p (x)
-  :inline t
-  :parents (modules vl-range-p)
+  :parents (syntax vl-range-p)
   :short "Representation for a @(see vl-range-p) or @('nil')."
   :long "<p>This is a basic option type for ranges.</p>"
+  :inline t
   (or (not x)
       (vl-range-p x))
   ///
@@ -1506,22 +93,18 @@ try to support the use of both ascending and descending ranges.</p>")
 
 (deflist vl-maybe-range-list-p (x)
   (vl-maybe-range-p x)
-  :elementp-of-nil t
-  :parents (modules))
+  :elementp-of-nil t)
 
 (deflist vl-rangelist-p (x)
   (vl-range-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 (deflist vl-rangelist-list-p (x)
   (vl-rangelist-p x)
-  :elementp-of-nil t
-  :parents (modules))
+  :elementp-of-nil t)
 
 
 (defaggregate vl-port
-  :parents (modules)
   :short "Representation of a single Verilog port."
   :tag :vl-port
   :legiblep nil
@@ -1547,7 +130,7 @@ try to support the use of both ascending and descending ranges.</p>")
    (loc  vl-location-p
          "Where this port came from in the Verilog source code."))
 
-  :long "<p>Ports are described in Section 12.3 of the standard.  In simple
+  :long "<p>Ports are described in Section 12.3 of Verilog-2005.  In simple
 cases, a module's ports look like this:</p>
 
 @({
@@ -1624,33 +207,31 @@ expression-sizing) for details.</p>")
 
 (deflist vl-portlist-p (x)
   (vl-port-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 (defprojection vl-portlist->exprs (x)
-  (vl-port->expr x)
+  :parents (vl-portlist-p)
   :guard (vl-portlist-p x)
   :nil-preservingp t
-  :parents (vl-portlist-p)
-  :rest
-  ((defthm vl-exprlist-p-of-vl-portlist->exprs
-     (implies (force (vl-portlist-p x))
-              (equal (vl-exprlist-p (vl-portlist->exprs x))
-                     (not (member nil (vl-portlist->exprs x))))))
+  (vl-port->expr x)
+  ///
+  (defthm vl-exprlist-p-of-vl-portlist->exprs
+    (implies (force (vl-portlist-p x))
+             (equal (vl-exprlist-p (vl-portlist->exprs x))
+                    (not (member nil (vl-portlist->exprs x))))))
 
-   (defthm vl-exprlist-p-of-remove-equal-of-vl-portlist->exprs
-     (implies (force (vl-portlist-p x))
-              (vl-exprlist-p (remove-equal nil (vl-portlist->exprs x)))))))
+  (defthm vl-exprlist-p-of-remove-equal-of-vl-portlist->exprs
+    (implies (force (vl-portlist-p x))
+             (vl-exprlist-p (remove-equal nil (vl-portlist->exprs x))))))
 
 (defprojection vl-portlist->names (x)
-  (vl-port->name x)
+  :parents (vl-portlist-p)
   :guard (vl-portlist-p x)
   :nil-preservingp t
-  :parents (vl-portlist-p))
+  (vl-port->name x))
 
 
 (defenum vl-direction-p (:vl-input :vl-output :vl-inout)
-  :parents (modules)
   :short "Direction for a port declaration (input, output, or inout)."
 
   :long "<p>Each port declaration (see @(see vl-portdecl-p)) includes a
@@ -1664,10 +245,9 @@ arguments of gate instances and most arguments of module instances.  See our
 
 
 (define vl-maybe-direction-p (x)
-  :inline t
-  :parents (modules)
   :short "Representation for a @(see vl-direction-p) or @('nil')."
   :long "<p>This is a basic option type for directions.</p>"
+  :inline t
   (or (not x)
       (vl-direction-p x))
   ///
@@ -1688,7 +268,6 @@ arguments of gate instances and most arguments of module instances.  See our
 
 
 (defaggregate vl-portdecl
-  :parents (modules)
   :short "Representation of Verilog port declarations."
   :tag :vl-portdecl
   :legiblep nil
@@ -1726,9 +305,9 @@ arguments of gate instances and most arguments of module instances.  See our
    (loc      vl-location-p
              "Where the port was declared in the source code."))
 
-  :long "<p>Port declarations, described in Section 12.3.3 of the
-specification, ascribe certain properties (direction, signedness, size, and so
-on) to the ports of a module.  Here is an example:</p>
+  :long "<p>Port declarations, described in Section 12.3.3 of the Verilog-2005
+standard, ascribe certain properties (direction, signedness, size, and so on)
+to the ports of a module.  Here is an example:</p>
 
 @({
 module m(a, b) ;
@@ -1753,33 +332,25 @@ input supply0 b;
 })
 
 <p>And so on.  For some time, our @('vl-port-p') structures included a
-@('type') field.  However, upon a closer reading of the specification, we have
-learned that the proper way to handle these is to simultaneously introduce a
-@(see vl-netdecl-p) alongside the @('vl-portdecl-p') that we would ordinarily
-create for a port declaration.  See, e.g., the second paragraph from the bottom
-on Page 174.</p>")
+@('type') field.  However, upon a closer reading of the Verilog-2005 standard,
+we have learned that the proper way to handle these is to simultaneously
+introduce a @(see vl-netdecl-p) alongside the @('vl-portdecl-p') that we would
+ordinarily create for a port declaration.  See, e.g., the second paragraph from
+the bottom on Page 174.</p>")
 
 (deflist vl-portdecllist-p (x)
   (vl-portdecl-p x)
-  :elementp-of-nil nil
-  :parents (modules))
-
+  :elementp-of-nil nil)
 
 
 (defaggregate vl-gatedelay
-  :parents (modules)
   :short "Representation of delay expressions."
   :tag :vl-gatedelay
   :legiblep nil
 
-  ((rise vl-expr-p
-         "Rising delay.")
-
-   (fall vl-expr-p
-         "Falling delay.")
-
-   (high vl-maybe-expr-p
-         "High-impedence delay or charge decay time." ))
+  ((rise vl-expr-p "Rising delay.")
+   (fall vl-expr-p "Falling delay.")
+   (high vl-maybe-expr-p "High-impedence delay or charge decay time." ))
 
   :long "<p><b>WARNING</b>.  We have not paid much attention to delays, and our
 transformations probably do not handle them properly.</p>
@@ -1806,12 +377,10 @@ transformations probably do not handle them properly.</p>
 left as @('nil').  Simulators that care about this will need to carefully
 review the rules for correctly computing these delays.</p>")
 
-
 (define vl-maybe-gatedelay-p (x)
-  :inline t
-  :parents (modules)
   :short "Representation for a @(see vl-gatedelay-p) or @('nil')."
   :long "<p>This is a basic option type for gatedelays.</p>"
+  :inline t
   (or (not x)
       (vl-gatedelay-p x))
   ///
@@ -1843,12 +412,11 @@ objects."
   :long "<p>We represent Verilog's drive strengths with the keyword symbols
 recognized by @(call vl-dstrength-p).</p>
 
-<p>BOZO add references to the Verilog standard, description of what these
+<p>BOZO add references to the Verilog-2005 standard, description of what these
 are.</p>")
 
 
 (defaggregate vl-gatestrength
-  :parents (modules)
   :short "Representation of strengths for a assignment statements, gate
 instances, and module instances."
   :tag :vl-gatestrength
@@ -1860,30 +428,25 @@ instances, and module instances."
   :long "<p><b>WARNING</b>.  We have not paid much attention to strengths, and
 our transformations probably do not handle them properly.</p>
 
-<p>See sections 7.1.2 and 7.9 for discussion of strength modelling.  Every
-regular gate has, associated with it, two drive strengths; a \"strength0\"
-which says how strong its output is when it is a logical zero, and
-\"strength1\" which says how strong the output is when it is a logical one.
-Strengths also seem to be used on assignments and module instances.</p>
+<p>See sections 7.1.2 and 7.9 of the Verilog-2005 standard for discussion of
+strength modelling.  Every regular gate has, associated with it, two drive
+strengths; a \"strength0\" which says how strong its output is when it is a
+logical zero, and \"strength1\" which says how strong the output is when it is
+a logical one.  Strengths also seem to be used on assignments and module
+instances.</p>
 
 <p>There seem to be some various rules for default strengths in 7.1.2, and also
 in 7.13.  But our parser does not try to implement these defaults, and we only
 associate strengths onto module items where they are explicitly
 specified.</p>")
 
-
-(defsection vl-maybe-gatestrength-p
-  :parents (modules)
+(define vl-maybe-gatestrength-p (x)
   :short "Representation for a @(see vl-gatestrength-p) or @('nil')."
   :long "<p>This is a basic option type for gatestrengths.</p>"
-
-  (defund vl-maybe-gatestrength-p (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (vl-gatestrength-p x)))
-
-  (local (in-theory (enable vl-maybe-gatestrength-p)))
-
+  :inline t
+  (or (not x)
+      (vl-gatestrength-p x))
+  ///
   (defthm vl-maybe-gatestrength-p-when-vl-gatestrength-p
     (implies (vl-gatestrength-p x)
              (vl-maybe-gatestrength-p x)))
@@ -1901,21 +464,19 @@ specified.</p>")
 
 
 (defenum vl-cstrength-p (:vl-large :vl-medium :vl-small)
-  :parents (modules)
   :short "Representation of charge strengths."
 
   :long "<p>We represent Verilog's charge strengths with the keyword symbols
 recognized by @(call vl-cstrength-p).</p>
 
-<p>BOZO add references to the Verilog standard, description of what these
+<p>BOZO add references to the Verilog-2005 standard, description of what these
 are.</p>")
 
 
 (define vl-maybe-cstrength-p (x)
-  :inline t
-  :parents (modules)
   :short "Representation for a @(see vl-cstrength-p) or @('nil')."
   :long "<p>This is a basic option type for cstrengths.</p>"
+  :inline t
   (or (not x)
       (vl-cstrength-p x))
   ///
@@ -1936,7 +497,6 @@ are.</p>")
 
 
 (defaggregate vl-assign
-  :parents (modules)
   :short "Representation of a continuous assignment statement."
   :tag :vl-assign
   :legiblep nil
@@ -2002,8 +562,8 @@ assignments.</p>
 
 <p>The @('expr') is the expression being assigned to this lvalue.  We do not in
 any way restrict the expression, nor have we found any restrictions discussed
-in the Verilog standard.  Even so, it seems there must be some limits.  For
-instance, what does it mean to assign, say, a minimum/typical/maximum delay
+in the Verilog-2005 standard.  Even so, it seems there must be some limits.
+For instance, what does it mean to assign, say, a minimum/typical/maximum delay
 expression?  For these sorts of reasons, some transforms may wish to only
 permit a subset of all expressions here.</p>
 
@@ -2046,17 +606,16 @@ properly preserve them.</p>")
 
 (deflist vl-assignlist-p (x)
   (vl-assign-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 (defprojection vl-assignlist->lvalues (x)
-  (vl-assign->lvalue x)
+  :parents (vl-assignlist-p)
   :guard (vl-assignlist-p x)
-  :result-type vl-exprlist-p
   :nil-preservingp t
-  :parents (vl-assignlist-p))
+  :result-type vl-exprlist-p
+  (vl-assign->lvalue x))
 
-; BOZO I'm not going to introduce this yet.  I think we shoudl rename the expr
+; BOZO I'm not going to introduce this yet.  I think we should rename the expr
 ; field to rhs first, to prevent confusion between this and allexprs.
 
 ;; (defprojection vl-assignlist->exprs (x)
@@ -2078,20 +637,18 @@ properly preserve them.</p>")
    :vl-uwire
    :vl-wand
    :vl-wor)
-  :parents (modules)
+  :parents (vl-netdecl-p)
   :short "Representation of wire types."
 
   :long "<p>Wires in Verilog can be given certain types.  We
 represent these types using certain keyword symbols, whose names
 correspond to the possible types.</p>")
 
-
-
 (define vl-maybe-netdecltype-p (x)
-  :inline t
-  :parents (modules)
+  :parents (vl-netdecl-p)
   :short "Representation for a @(see vl-netdecltype-p) or @('nil')."
   :long "<p>This is a basic option type for netdecltypes.</p>"
+  :inline t
   (or (not x)
       (vl-netdecltype-p x))
   ///
@@ -2110,9 +667,7 @@ correspond to the possible types.</p>")
                   (not (equal x t))))
     :rule-classes :compound-recognizer))
 
-
 (defaggregate vl-netdecl
-  :parents (modules)
   :short "Representation of net (wire) declarations."
   :tag :vl-netdecl
   :legiblep nil
@@ -2237,7 +792,7 @@ parser should handle them just fine.</p>
 <p>These are only set to @('t') when the keywords @('vectored') or
 @('scalared') are explicitly provided; i.e., they may both be @('nil').</p>
 
-<p>I do not know what these keywords are supposed to mean; the Verilog
+<p>I do not know what these keywords are supposed to mean; the Verilog-2005
 specification says almost nothing about it, and does not even say what the
 default is.</p>
 
@@ -2291,12 +846,11 @@ our transformations may not preserve it correctly.</p>")
 
 (deflist vl-netdecllist-p (x)
   (vl-netdecl-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 
 (defaggregate vl-plainarg
-  :parents (modules vl-arguments-p)
+  :parents (syntax vl-arguments-p)
   :short "Representation of a single argument in a plain argument list."
   :tag :vl-plainarg
   :legiblep nil
@@ -2359,42 +913,38 @@ portnames.</p>")
 
 (deflist vl-plainarglist-p (x)
   (vl-plainarg-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 (deflist vl-plainarglistlist-p (x)
   (vl-plainarglist-p x)
   :elementp-of-nil t
-  :parents (modules)
-  :rest
-  ((defthm vl-plainarglist-p-of-strip-cars
-     (implies (and (vl-plainarglistlist-p x)
-                   (all-have-len x n)
-                   (not (zp n)))
-              (vl-plainarglist-p (strip-cars x))))
+  ///
+  (defthm vl-plainarglist-p-of-strip-cars
+    (implies (and (vl-plainarglistlist-p x)
+                  (all-have-len x n)
+                  (not (zp n)))
+             (vl-plainarglist-p (strip-cars x))))
 
-   (defthm vl-plainarglistlist-p-of-strip-cdrs
-     (implies (vl-plainarglistlist-p x)
-              (vl-plainarglistlist-p (strip-cdrs x))))))
+  (defthm vl-plainarglistlist-p-of-strip-cdrs
+    (implies (vl-plainarglistlist-p x)
+             (vl-plainarglistlist-p (strip-cdrs x)))))
 
 (defprojection vl-plainarglist->exprs (x)
-  (vl-plainarg->expr x)
   :guard (vl-plainarglist-p x)
   :nil-preservingp t
-  :rest
-  ((defthm vl-exprlist-p-of-vl-plainarglist->exprs
-     (implies (force (vl-plainarglist-p x))
-              (equal (vl-exprlist-p (vl-plainarglist->exprs x))
-                     (not (member nil (vl-plainarglist->exprs x))))))
+  (vl-plainarg->expr x)
+  ///
+  (defthm vl-exprlist-p-of-vl-plainarglist->exprs
+    (implies (force (vl-plainarglist-p x))
+             (equal (vl-exprlist-p (vl-plainarglist->exprs x))
+                    (not (member nil (vl-plainarglist->exprs x))))))
 
-   (defthm vl-exprlist-p-of-remove-nil-of-plainarglist->exprs
-     (implies (vl-plainarglist-p x)
-              (vl-exprlist-p (remove nil (vl-plainarglist->exprs x)))))))
-
+  (defthm vl-exprlist-p-of-remove-nil-of-plainarglist->exprs
+    (implies (vl-plainarglist-p x)
+             (vl-exprlist-p (remove nil (vl-plainarglist->exprs x))))))
 
 
 (defaggregate vl-namedarg
-  :parents (modules)
   :short "Representation of a single argument in a named argument list."
   :tag :vl-namedarg
   :legiblep nil
@@ -2423,13 +973,10 @@ directions.</p>")
 
 (deflist vl-namedarglist-p (x)
   (vl-namedarg-p x)
-  :elementp-of-nil nil
-  :parents (modules))
-
+  :elementp-of-nil nil)
 
 
 (defsection vl-arguments-p
-  :parents (modules)
   :short "Representation of arguments to a module instance (for ports and also
 for parameters)."
 
@@ -2545,13 +1092,11 @@ variety.  Each @('vl-arguments-p') structure is an aggregate of two fields:</p>
 
 (deflist vl-argumentlist-p (x)
   (vl-arguments-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 
 
 (defaggregate vl-modinst
-  :parents (modules)
   :short "Representation of a single module (or user-defined primitive)
 instance."
   :tag :vl-modinst
@@ -2615,8 +1160,7 @@ represents exactly one instance (or instance array).</p>")
 
 (deflist vl-modinstlist-p (x)
   (vl-modinst-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 
 (defenum vl-gatetype-p
@@ -2646,13 +1190,11 @@ represents exactly one instance (or instance array).</p>")
    :vl-rtran
    :vl-pulldown
    :vl-pullup)
-  :parents (modules)
   :short "Representation of gate types."
   :long "<p>We represent Verilog's gate types with the keyword symbols
 recognized by @(call vl-gatetype-p).</p>")
 
 (defaggregate vl-gateinst
-  :parents (modules)
   :short "Representation of a single gate instantiation."
   :tag :vl-gateinst
   :legiblep nil
@@ -2687,11 +1229,12 @@ recognized by @(call vl-gatetype-p).</p>")
 
    (strength vl-maybe-gatestrength-p
              "The parser leaves this as @('nil') unless it is explicitly provided.
-              Note from Section 7.8 that pullup and pulldown gates are special
-              in that the strength0 from a pullup source and the strength1 on a
-              pulldown source are supposed to be ignored.  <b>Warning:</b> in
-              general we have not paid much attention to strengths, so we may
-              not handle them correctly in our various transforms.")
+              Note from Section 7.8 of the Verilog-2005 standard that pullup
+              and pulldown gates are special in that the strength0 from a
+              pullup source and the strength1 on a pulldown source are supposed
+              to be ignored.  <b>Warning:</b> in general we have not paid much
+              attention to strengths, so we may not handle them correctly in
+              our various transforms.")
 
    (delay    vl-maybe-gatedelay-p
              "The parser leaves this as @('nil') unless it is explicitly provided.
@@ -2727,8 +1270,7 @@ enforces these restrictions, we do not encode them into the definition of
 
 (deflist vl-gateinstlist-p (x)
   (vl-gateinst-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 
 
@@ -2737,7 +1279,6 @@ enforces these restrictions, we do not encode them into the definition of
    :vl-real
    :vl-time
    :vl-realtime)
-  :parents (modules)
   :short "Representation of variable types."
   :long "<p>We represent Verilog's variable types with the keyword symbols
 recognized by @(call vl-vardecltype-p).</p>
@@ -2745,9 +1286,7 @@ recognized by @(call vl-vardecltype-p).</p>
 <p><b>BOZO</b> consider consolidating variable and register declarations into a
 single parse tree element by adding an extra reg type to vl-vardecl-p.</p>")
 
-
 (defaggregate vl-vardecl
-  :parents (modules)
   :short "Representation of a single variable declaration."
   :tag :vl-vardecl
   :legiblep nil
@@ -2785,7 +1324,6 @@ one declaration.</p>")
 
 
 (defaggregate vl-regdecl
-  :parents (modules)
   :short "Representation of a single @('reg') declaration."
   :tag :vl-regdecl
   :legiblep nil
@@ -2826,7 +1364,6 @@ only one declaration.</p>")
 
 
 (defaggregate vl-eventdecl
-  :parents (modules)
   :short "Representation of a single event declaration."
   :tag :vl-eventdecl
   :legiblep nil
@@ -2852,7 +1389,6 @@ only one declaration.</p>")
    :vl-realtime
    :vl-time
    :vl-signed)
-  :parents (modules)
   :short "Representation of parameter types."
   :long "<p>We represent Verilog's parameter types with the keyword symbols
 recognized by @(call vl-paramdecltype-p).  The valid keywords are visible in
@@ -2888,7 +1424,6 @@ use @(':vl-plain').</li>
 </ul>")
 
 (defaggregate vl-paramdecl
-  :parents (modules)
   :short "Representation of a single @('parameter') or @('localparam')
 declaration."
   :tag :vl-paramdecl
@@ -2938,33 +1473,27 @@ endmodule
 
 (deflist vl-vardecllist-p (x)
   (vl-vardecl-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 (deflist vl-regdecllist-p (x)
   (vl-regdecl-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 (deflist vl-eventdecllist-p (x)
   (vl-eventdecl-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 (deflist vl-paramdecllist-p (x)
   (vl-paramdecl-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 (deflist vl-paramdecllist-list-p (x)
   (vl-paramdecllist-p x)
-  :elementp-of-nil t
-  :parents (modules))
+  :elementp-of-nil t)
 
 
 
 (define vl-blockitem-p (x)
-  :parents (modules)
   :short "Recognizer for a valid block item."
   :long "<p>@('vl-blockitem-p') is a sum-of-products style type for recognizing
 valid block items.  The valid block item declarations are register
@@ -3034,7 +1563,6 @@ and @(see vl-paramdecl-p) objects, respectively.</p>"
 (deflist vl-blockitemlist-p (x)
   (vl-blockitem-p x)
   :elementp-of-nil nil
-  :parents (modules)
   :rest
   ((defthm vl-blockitemlist-p-when-vl-regdecllist-p
      (implies (vl-regdecllist-p x)
@@ -3069,7 +1597,6 @@ and @(see vl-paramdecl-p) objects, respectively.</p>"
 atoms like @('a') and @('b') in @('always @(a or b)').</p>")
 
 (defaggregate vl-evatom
-  :parents (modules)
   :short "A single item in an event control list."
   :tag :vl-evatom
   :legiblep nil
@@ -3089,13 +1616,10 @@ applied to a Verilog expression.</p>")
 
 (deflist vl-evatomlist-p (x)
   (vl-evatom-p x)
-  :elementp-of-nil nil
-  :parents (modules))
-
+  :elementp-of-nil nil)
 
 
 (defaggregate vl-eventcontrol
-  :parents (modules)
   :short "Representation of an event controller like @('@(posedge clk)') or
 @('@(a or b)')."
   :tag :vl-eventcontrol
@@ -3116,7 +1640,6 @@ applied to a Verilog expression.</p>")
 event controller as a @('vl-eventcontrol-p') aggregates.</p>")
 
 (defaggregate vl-delaycontrol
-  :parents (modules)
   :short "Representation of a delay controller like @('#6')."
   :tag :vl-delaycontrol
   :legiblep nil
@@ -3129,7 +1652,6 @@ event controller as a @('vl-eventcontrol-p') aggregates.</p>")
 })")
 
 (defaggregate vl-repeateventcontrol
-  :parents (modules)
   :short "Representation of @('repeat') constructs in intra-assignment delays."
   :tag :vl-repeat-eventcontrol
   :legiblep nil
@@ -3141,9 +1663,9 @@ event controller as a @('vl-eventcontrol-p') aggregates.</p>")
          "Says which event to wait for, e.g., @('@(posedge clk)') in the below
           example."))
 
-  :long "<p>See Section 9.7.7.  These are used to represent special
-intra-assignment delays, where the assignment should not occur until some
-number of occurrences of an event.  For instance:</p>
+  :long "<p>See Section 9.7.7 of the Verilog-2005 standard.  These are used to
+represent special intra-assignment delays, where the assignment should not
+occur until some number of occurrences of an event.  For instance:</p>
 
 @({
    a = repeat(3) @(posedge clk)   <-- repeat expr ctrl
@@ -3156,7 +1678,6 @@ least extend eventcontrol with a maybe-expr that is its count, and get
 rid of repeateventcontrol.</p>")
 
 (define vl-delayoreventcontrol-p (x)
-  :parents (modules)
   :short "BOZO document this."
   (mbe :logic
        (or (vl-delaycontrol-p x)
@@ -3203,11 +1724,9 @@ rid of repeateventcontrol.</p>")
                     nil))
     :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
-
 (define vl-maybe-delayoreventcontrol-p (x)
-  :inline t
-  :parents (modules)
   :short "BOZO document this."
+  :inline t
   (or (not x)
       (vl-delayoreventcontrol-p x))
   ///
@@ -3234,7 +1753,7 @@ bar'), respectively.</p>
 
 <p>@(':vl-assign') and @(':vl-force') are for procedural continuous
 assignments, e.g., @('assign foo = bar') or @('force foo = bar'),
-respectivley.</p>")
+respectively.</p>")
 
 (defaggregate vl-assignstmt
   :parents (vl-stmt-p)
@@ -3246,11 +1765,11 @@ respectivley.</p>")
            "Kind of assignment statement, e.g., blocking, nonblocking, etc.")
 
    (lvalue vl-expr-p
-           "Location being assigned to.  Note that the specification places
-            various restrictions on lvalues, e.g., for a procedural assignment
-            the lvalue may contain only plain variables, and bit-selects,
-            part-selects, memory words, and nested concatenations of these
-            things.  We do not enforce these restrictions in
+           "Location being assigned to.  Note that the Verilog-2005 standard
+            places various restrictions on lvalues, e.g., for a procedural
+            assignment the lvalue may contain only plain variables, and
+            bit-selects, part-selects, memory words, and nested concatenations
+            of these things.  We do not enforce these restrictions in
             @('vl-assignstmt-p'), but only require that the lvalue is an
             expression.")
 
@@ -3743,7 +2262,6 @@ statement has the right number of expressions.</p>"
 
 
 (defsection vl-stmt-p
-  :parents (modules)
   :short "Representation of a statement."
 
   :long "<p>Verilog includes a number of statements for behavioral modelling.
@@ -3845,58 +2363,57 @@ statements are recognized with @(see vl-compoundstmt-p).</p>"
 
 
 (define vl-fast-atomicstmt-p ((x vl-stmt-p))
-  :inline t
-  :enabled t
   :parents (vl-atomicstmt-p vl-stmt-p)
   :short "Faster version of @(see vl-atomicstmt-p), given that @(see vl-stmt-p)
 is already known."
   :long "<p>We leave this function enabled and reason about
 @('vl-atomicstmt-p') instead.</p>"
-
+  :inline t
+  :enabled t
   (mbe :logic (vl-atomicstmt-p x)
        :exec (not (eq (tag x) :vl-compoundstmt))))
 
 (define vl-fast-compoundstmt-p ((x vl-stmt-p))
-  :inline t
-  :enabled t
   :parents (vl-compoundstmt-p vl-stmt-p)
   :short "Faster version of @(see vl-compoundstmt-p), given that @(see
 vl-stmt-p) is already known."
   :long "<p>We leave this function enabled and reason about
 @('vl-compoundstmt-p') instead.</p>"
+  :inline t
+  :enabled t
   (mbe :logic (vl-compoundstmt-p x)
        :exec (eq (tag x) :vl-compoundstmt)))
 
 (define vl-fast-nullstmt-p ((x vl-stmt-p))
-  :inline t
-  :enabled t
   :parents (vl-nullstmt-p vl-stmt-p)
   :short "Faster version of @(see vl-nullstmt-p), given that @(see vl-stmt-p)
 is already known."
   :long "<p>We leave this function enabled and reason about @('vl-nullstmt-p')
 instead.</p>"
+  :inline t
+  :enabled t
   (mbe :logic (vl-nullstmt-p x)
        :exec (eq (tag x) :vl-nullstmt)))
 
 (define vl-fast-assignstmt-p ((x vl-stmt-p))
-  :inline t
-  :enabled t
   :parents (vl-assignstmt-p vl-stmt-p)
   :short "Faster version of @(see vl-assignstmt-p), given that @(see vl-stmt-p)
 is already known."
   :long "<p>We leave this function enabled and reason about
 @('vl-assignstmt-p') instead.</p>"
+  :inline t
+  :enabled t
   (mbe :logic (vl-assignstmt-p x)
        :exec (eq (tag x) :vl-assignstmt)))
 
 (define vl-fast-enablestmt-p ((x vl-stmt-p))
-  :inline t
-  :enabled t
   :parents (vl-enablestmt-p vl-stmt-p)
   :short "Faster version of @(see vl-enablestmt-p), given that @(see vl-stmt-p)
 is already known."
   :long "<p>We leave this function enabled and reason about
 @('vl-enablestmt-p') instead.</p>"
+  :inline t
+  :enabled t
   (mbe :logic (vl-enablestmt-p x)
        :exec (eq (tag x) :vl-enablestmt)))
 
@@ -3921,10 +2438,10 @@ is already known."
          (:vl-eventtriggerstmt (vl-eventtriggerstmt->atts x)))))
 
 (define vl-stmt->atts ((x vl-stmt-p))
-  :inline t
   :returns (atts vl-atts-p :hyp :fguard)
   :parents (vl-stmt-p)
   :short "Get the attributes from any statement."
+  :inline t
   (if (vl-fast-atomicstmt-p x)
       (vl-atomicstmt->atts x)
     (vl-compoundstmt->atts x)))
@@ -3937,7 +2454,6 @@ is already known."
 ; attributes.
 
 (defaggregate vl-initial
-  :parents (modules)
   :short "Representation of an initial statement."
   :tag :vl-initial
   :legiblep nil
@@ -3967,7 +2483,6 @@ register and variable declarations with initial values, i.e., @('reg r =
 
 
 (defaggregate vl-always
-  :parents (modules)
   :short "Representation of an always statement."
   :tag :vl-always
   :legiblep nil
@@ -3994,13 +2509,11 @@ endmodule
 
 (deflist vl-initiallist-p (x)
   (vl-initial-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 (deflist vl-alwayslist-p (x)
   (vl-always-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 
 
@@ -4011,7 +2524,6 @@ endmodule
    :vl-real
    :vl-realtime
    :vl-time)
-  :parents (modules)
   :short "Representation for the type of task ports, function return types, and
 function inputs."
 
@@ -4045,7 +2557,6 @@ instance, we use @(':vl-unsigned') for a function like:</p>
 types.</p>")
 
 (defaggregate vl-taskport
-  :parents (modules)
   :short "Representation of a task port or a function input."
   :tag :vl-taskport
   :legiblep nil
@@ -4101,19 +2612,16 @@ have input ports that are very similar to task ports.  So, we reuse
 
 (deflist vl-taskportlist-p (x)
   (vl-taskport-p x)
-  :guard t
   :elementp-of-nil nil)
 
 (defprojection vl-taskportlist->names (x)
-  (vl-taskport->name x)
   :guard (vl-taskportlist-p x)
   :nil-preservingp t
-  :result-type string-listp)
-
+  :result-type string-listp
+  (vl-taskport->name x))
 
 
 (defaggregate vl-fundecl
-  :parents (modules)
   :short "Representation of a single Verilog function."
   :tag :vl-fundecl
   :legiblep nil
@@ -4172,8 +2680,8 @@ have input ports that are very similar to task ports.  So, we reuse
    (loc        vl-location-p
                "Where this declaration was found in the source code."))
 
-  :long "<p>Functions are described in Section 10.4 of the standard.  An
-example of a function is:</p>
+  :long "<p>Functions are described in Section 10.4 of the Verilog-2005
+standard.  An example of a function is:</p>
 
 @({
 function [3:0] lower_bits;
@@ -4193,19 +2701,16 @@ assign to a function's name to indicate its return value.</p>")
 
 (deflist vl-fundecllist-p (x)
   (vl-fundecl-p x)
-  :guard t
   :elementp-of-nil nil)
 
 (defprojection vl-fundecllist->names (x)
-  (vl-fundecl->name x)
   :guard (vl-fundecllist-p x)
   :nil-preservingp t
-  :result-type string-listp)
-
+  :result-type string-listp
+  (vl-fundecl->name x))
 
 
 (defaggregate vl-taskdecl
-  :parents (modules)
   :short "Representation of a single Verilog task."
   :tag :vl-taskdecl
   :legiblep nil
@@ -4240,8 +2745,8 @@ assign to a function's name to indicate its return value.</p>")
    (loc        vl-location-p
                "Where this task was found in the source code."))
 
-  :long "<p>Tasks are described in Section 10.2 of the standard.  An example
-of a task is:</p>
+  :long "<p>Tasks are described in Section 10.2 of the Verilog-2005 standard.
+An example of a task is:</p>
 
 @({
 task automatic dostuff;
@@ -4267,19 +2772,16 @@ include delays, etc.</p>")
 
 (deflist vl-taskdecllist-p (x)
   (vl-taskdecl-p x)
-  :guard t
   :elementp-of-nil nil)
 
 (defprojection vl-taskdecllist->names (x)
-  (vl-taskdecl->name x)
   :guard (vl-taskdecllist-p x)
   :nil-preservingp t
-  :result-type string-listp)
-
+  :result-type string-listp
+  (vl-taskdecl->name x))
 
 
 (defaggregate vl-module
-  :parents (modules)
   :short "Representation of a single module."
   :tag :vl-module
   :legiblep nil
@@ -4387,8 +2889,7 @@ include delays, etc.</p>")
 
 (deflist vl-modulelist-p (x)
   (vl-module-p x)
-  :elementp-of-nil nil
-  :parents (modules))
+  :elementp-of-nil nil)
 
 (defthm vl-module-identity
   ;; This is occasionally useful when we want to prove that some optimized
@@ -4408,7 +2909,6 @@ include delays, etc.</p>")
                           (std::da-accessor-names 'vl-module agg.fields))))))
 
 (define vl-module->hands-offp ((x vl-module-p))
-  :inline t
   :returns hands-offp
   :parents (vl-module-p)
   :short "Attribute that says a module should not be transformed."
@@ -4433,46 +2933,43 @@ is trying to instantiate itself!</p>
 in a primitive flop/latch with instances of flop/latch primitives, etc.  So as
 a general rule, we mark the primitives with @('VL_HANDS_OFF') and code our
 transforms to not modules with this attribute.</p>"
-
+  :inline t
   (consp (assoc-equal "VL_HANDS_OFF" (vl-module->atts x))))
 
 (defprojection vl-modulelist->names (x)
-  (vl-module->name x)
+  :parents (vl-modulelist-p)
   :guard (vl-modulelist-p x)
   :result-type string-listp
   :nil-preservingp t
-  :parents (vl-modulelist-p))
-
+  (vl-module->name x))
 
 (defprojection vl-modulelist->paramdecls (x)
-  (vl-module->paramdecls x)
+  :parents (vl-modulelist-p)
   :guard (vl-modulelist-p x)
   :result-type vl-paramdecllist-list-p
   :nil-preservingp t
-  :parents (vl-modulelist-p))
+  (vl-module->paramdecls x))
 
 (defmapappend vl-modulelist->modinsts (x)
   (vl-module->modinsts x)
+  :parents (vl-modulelist-p)
   :guard (vl-modulelist-p x)
   :transform-true-list-p nil
-  :parents (vl-modulelist-p)
-  :rest
-  ((defthm vl-modinstlist-p-of-vl-modulelist->modinsts
-     (implies (force (vl-modulelist-p x))
-              (vl-modinstlist-p (vl-modulelist->modinsts x))))))
+  :rest ((defthm vl-modinstlist-p-of-vl-modulelist->modinsts
+           (implies (force (vl-modulelist-p x))
+                    (vl-modinstlist-p (vl-modulelist->modinsts x))))))
 
 (defprojection vl-modulelist->esims (x)
-  (vl-module->esim x)
+  :parents (vl-modulelist-p)
   :guard (vl-modulelist-p x)
   :nil-preservingp t
-  :parents (vl-modulelist-p))
-
+  (vl-module->esim x))
 
 
 (define vl-maybe-module-p (x)
-  :inline t
-  :parents (vl-expr-p)
+  :parents (vl-module-p)
   :short "Recognizer for an @(see vl-module-p) or @('nil')."
+  :inline t
   (or (not x)
       (vl-module-p x))
   ///
@@ -4490,3 +2987,20 @@ transforms to not modules with this attribute.</p>"
              (or (not x)
                  (consp x)))
     :rule-classes :compound-recognizer))
+
+
+(defaggregate design
+  :short "Top level representation of all modules, interfaces, programs, etc.,
+resulting from parsing some Verilog source code."
+  :tag :vl-design
+  :legiblep nil
+  ((mods vl-modulelist-p
+         "List of all modules")
+   (udps       "List of user defined primtives")
+   (interfaces "List of interfaces")
+   (programs   "List of all programs")
+   (packages   "List of all packages")
+   ;; package items?
+   ;; bind directives?
+   (configs    "List of configurations")))
+

@@ -22,7 +22,7 @@
 (include-book "../util/defs")
 (include-book "../util/string-alists")
 (include-book "../util/character-list-listp")
-(include-book "../loader/lexer-utils")
+(include-book "../loader/lexer/defchar")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 

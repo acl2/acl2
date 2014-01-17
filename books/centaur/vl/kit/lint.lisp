@@ -19,18 +19,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-
-(make-event
-
-; Disabling waterfall parallelism because this book allegedly uses memoization
-; while performing its proofs.
-
- (if (and (ACL2::hons-enabledp state)
-          (f-get-global 'ACL2::parallel-execution-enabled state))
-     (er-progn (set-waterfall-parallelism nil)
-               (value '(value-triple nil)))
-   (value '(value-triple nil))))
-
 (include-book "../loader/loader")
 
 (include-book "../lint/bit-use-set")
@@ -87,6 +75,7 @@
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "progutils")
 
+(local (non-parallel-book))
 
 (defsection lint
   :parents (vl)
@@ -192,6 +181,18 @@ Verilog, reusing much of @(see vl).</p>")
                  check.  Otherwise, limit the scope of the check to at most N
                  sub-expressions."
                 :default 0)
+
+   (edition     vl-edition-p
+                :argname "EDITION"
+                "Which edition of the Verilog standard to implement?
+                 Default: \"SystemVerilog\" (IEEE 1800-2012).  You can
+                 alternately use \"Verilog\" for IEEE 1364-2005, i.e.,
+                 Verilog-2005."
+                :default :system-verilog-2012)
+
+   (strict      booleanp
+                :rule-classes :type-prescription
+                "Disable VL extensions to Verilog.")
 
    (mem         posp
                 :alias #\m
@@ -539,6 +540,8 @@ shown.</p>"
               (cw "Lint configuration: ~x0~%" config)))
 
        (loadconfig (make-vl-loadconfig
+                    :edition       config.edition
+                    :strictp       config.strict
                     :start-files   config.start-files
                     :search-path   config.search-path
                     :search-exts   config.search-exts))

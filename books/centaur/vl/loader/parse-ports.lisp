@@ -501,7 +501,7 @@
 (local
  (encapsulate
    ()
-   (local (include-book "lexer")) ;; for making test inputs from strings
+   (local (include-book "lexer/lexer")) ;; for making test inputs from strings
 
    (defmacro test-parse-port (&key input (successp 't) name expr)
      `(with-output

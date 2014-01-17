@@ -20,7 +20,7 @@
 
 (in-package "VL")
 (include-book "read-file")
-(include-book "lexer")
+(include-book "lexer/lexer")
 (include-book "preprocessor")
 (include-book "parse-utils")
 (include-book "parse-error")
@@ -611,7 +611,11 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
             (mv nil nil filemap defines comment-map walist state)))
 
          ((mv successp lexed warnings)
-          (cwtime (vl-lex preprocessed nil) :mintime 1/2))
+          (cwtime (vl-lex preprocessed
+                          ;; BOZO, this should be configurable...
+                          :config *vl-default-lexconfig*
+                          :warnings nil)
+                  :mintime 1/2))
          (walist (if warnings
                      (vl-extend-modwarningalist-list modname warnings walist)
                    walist))
@@ -1026,11 +1030,11 @@ within @('tokens').</p>"
     ;; matching.
     (declare (xargs :guard (and (vl-token-p x)
                                 (vl-token-p y))
-                    :guard-hints (("Goal" :in-theory (enable vl-token-p)))))
+                    :guard-hints (("Goal"
+                                   :in-theory (enable vl-token-p
+                                                      tag-when-vl-plaintoken-p)))))
     (and (eq (tag x) (tag y))
          (case (tag x)
-           (:vl-plaintoken
-            (eq (vl-plaintoken->type x) (vl-plaintoken->type y)))
            (:vl-idtoken
             (equal (the string (vl-idtoken->name x))
                    (the string (vl-idtoken->name y))))
@@ -1043,9 +1047,14 @@ within @('tokens').</p>"
            (:vl-stringtoken
             (equal (the string (vl-stringtoken->expansion x))
                    (the string (vl-stringtoken->expansion y))))
-           (otherwise
+           (:vl-realtoken
             (vl-echarlist-equiv-p (vl-realtoken->etext x)
-                                  (vl-realtoken->etext y))))))
+                                  (vl-realtoken->etext y)))
+           (otherwise
+            ;; Plain tokens.  The tags being the same means that the
+            ;; types are the same.
+            (mbt
+             (eq (vl-plaintoken->type x) (vl-plaintoken->type y)))))))
 
   (defund vl-tokenlist-equiv-p (x y)
     ;; Determine if two token lists are the same length and have

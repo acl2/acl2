@@ -31,15 +31,15 @@
 also in module- and gate-instance declarations to describe arrays of modules
 or gates.</p>
 
-<p>For gate and module instances, the spec is pretty clear.  7.1.5 covers gate
-instances and 12.1.2 says that module instances have the same rules.  In short,
-neither side has to be larger than the other, neither side has to be zero, and
-it always specifies abs(left-right)+1 occurrences (so that if they're the same
-it means one gate).</p>
+<p>For gate and module instances, the Verilog-2005 standard is pretty clear.
+7.1.5 covers gate instances and 12.1.2 says that module instances have the same
+rules.  In short, neither side has to be larger than the other, neither side
+has to be zero, and it always specifies abs(left-right)+1 occurrences (so that
+if they're the same it means one gate).</p>
 
 <p>BOZO consider \"negative\" numbers and what they might mean.</p>
 
-<p>There specification doesn't give similarly crisp semantics to net and reg
+<p>The specification doesn't give similarly crisp semantics to net and reg
 ranges.  Verilog-XL is horribly permissive, allowing even negative indexes and
 such.  But Verilog-XL indeed seems to treat w[1:1] as a single bit, and in the
 Centaur design there are occurrences of [0:0] and [1:1] and such.  So it may be

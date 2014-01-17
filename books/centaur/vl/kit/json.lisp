@@ -63,6 +63,18 @@
                  as a single, monolithic object."
                 :rule-classes :type-prescription)
 
+   (edition     vl-edition-p
+                :argname "EDITION"
+                "Which edition of the Verilog standard to implement?
+                 Default: \"SystemVerilog\" (IEEE 1800-2012).  You can
+                 alternately use \"Verilog\" for IEEE 1364-2005, i.e.,
+                 Verilog-2005."
+                :default :system-verilog-2012)
+
+   (strict      booleanp
+                :rule-classes :type-prescription
+                "Disable VL extensions to Verilog.")
+
    (mem         posp
                 :alias #\m
                 :argname "GB"
@@ -133,10 +145,16 @@ Options:" *nls* *nls* *vl-json-opts-usage* *nls*))
        (state (must-be-directories! opts.search-path))
 
        (- (cw "Parsing Verilog sources...~%"))
+       (loadconfig (make-vl-loadconfig
+                          :edition opts.edition
+                          :strictp opts.strict
+                          :start-files start-files
+                          :search-path opts.search-path
+                          :filemapp nil))
+       (- (or (not opts.debug)
+              (cw "vl load configuration: ~x0~%" loadconfig)))
        ((mv (vl-loadresult res) state)
-        (cwtime (vl-load (make-vl-loadconfig :start-files start-files
-                                             :search-path opts.search-path
-                                             :filemapp nil))))
+        (cwtime (vl-load loadconfig)))
 
        (- (cw "JSON-Encoding Modules...~%"))
        (state

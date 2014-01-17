@@ -62,7 +62,7 @@
 
 (program)
 
-(include-book "lexer")
+(include-book "lexer/lexer")
 
 
 (let ((tokens (vl-make-test-tstream "foo = bar ;")))

@@ -20,6 +20,7 @@
 
 (in-package "VL")
 (include-book "oslib/file-types" :dir :system)
+(include-book "centaur/getopt/parsers" :dir :system)
 (include-book "../util/defs")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
@@ -95,3 +96,26 @@
 
 
 
+(define vl-parse-edition
+  :parents (vl-edition-p)
+  :short "@(see Getopt) option parser for Verilog editions."
+  ((name stringp)
+   (explicit-value (or (not explicit-value)
+                       (stringp explicit-value)))
+   (args string-listp))
+  :returns (mv err
+               (value vl-edition-p)
+               (rest-args string-listp :hyp (force (string-listp args))))
+  (b* (((mv err val args) (getopt::parse-string name explicit-value args))
+       ((when err)
+        ;; Propagate error, fix up default value for unconditional return type
+        (mv err :system-verilog-2012 args))
+       ((when (str::istreqv val "Verilog"))
+        (mv nil :verilog-2005 args))
+       ((when (str::istreqv val "SystemVerilog"))
+        (mv nil :system-verilog-2012 args)))
+    (mv (msg "Option ~s0 must be 'Verilog' or 'SystemVerilog', but got ~x1"
+             name val)
+        :system-verilog-2012 args))
+  ///
+  (getopt::defparser vl-parse-edition :predicate vl-edition-p))

@@ -57,6 +57,7 @@
                defruled
                define
                defconsts
+               defval
                xdoc
 ;               defaggregate
 ;               defenum
@@ -144,6 +145,8 @@
     define
     defrule
     defruled
+    defval
+    defconsts
     raise
     __function__))
 

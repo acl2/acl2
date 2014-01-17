@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -22,62 +22,32 @@
 (include-book "../parsetree")
 (local (include-book "../util/arithmetic"))
 
+(define vl-gather-portdecls-with-attribute ((x vl-portdecllist-p)
+                                            (att stringp))
+  :returns (sub-x vl-portdecllist-p :hyp :fguard)
+  (cond ((atom x)
+         nil)
+        ((assoc-equal att (vl-portdecl->atts (car x)))
+         (cons (car x) (vl-gather-portdecls-with-attribute (cdr x) att)))
+        (t
+         (vl-gather-portdecls-with-attribute (cdr x) att))))
 
-(defsection vl-gather-portdecls-with-attribute
+(define vl-gather-netdecls-with-attribute ((x vl-netdecllist-p)
+                                           (att stringp))
+  :returns (sub-x vl-netdecllist-p :hyp :fguard)
+  (cond ((atom x)
+         nil)
+        ((assoc-equal att (vl-netdecl->atts (car x)))
+         (cons (car x) (vl-gather-netdecls-with-attribute (cdr x) att)))
+        (t
+         (vl-gather-netdecls-with-attribute (cdr x) att))))
 
-  (defund vl-gather-portdecls-with-attribute (x att)
-    (declare (xargs :guard (and (vl-portdecllist-p x)
-                                (stringp att))))
-    (cond ((atom x)
-           nil)
-          ((assoc-equal att (vl-portdecl->atts (car x)))
-           (cons (car x) (vl-gather-portdecls-with-attribute (cdr x) att)))
-          (t
-           (vl-gather-portdecls-with-attribute (cdr x) att))))
-
-  (local (in-theory (enable vl-gather-portdecls-with-attribute)))
-
-  (defthm vl-portdecllist-p-of-vl-gather-portdecls-with-attribute
-    (implies (force (vl-portdecllist-p x))
-             (vl-portdecllist-p (vl-gather-portdecls-with-attribute x att)))))
-
-
-
-(defsection vl-gather-netdecls-with-attribute
-
-  (defund vl-gather-netdecls-with-attribute (x att)
-    (declare (xargs :guard (and (vl-netdecllist-p x)
-                                (stringp att))))
-    (cond ((atom x)
-           nil)
-          ((assoc-equal att (vl-netdecl->atts (car x)))
-           (cons (car x) (vl-gather-netdecls-with-attribute (cdr x) att)))
-          (t
-           (vl-gather-netdecls-with-attribute (cdr x) att))))
-
-  (local (in-theory (enable vl-gather-netdecls-with-attribute)))
-
-  (defthm vl-netdecllist-p-of-vl-gather-netdecls-with-attribute
-    (implies (force (vl-netdecllist-p x))
-             (vl-netdecllist-p (vl-gather-netdecls-with-attribute x att)))))
-
-
-
-(defsection vl-gather-regdecls-with-attribute
-
-  (defund vl-gather-regdecls-with-attribute (x att)
-    (declare (xargs :guard (and (vl-regdecllist-p x)
-                                (stringp att))))
-    (cond ((atom x)
-           nil)
-          ((assoc-equal att (vl-regdecl->atts (car x)))
-           (cons (car x) (vl-gather-regdecls-with-attribute (cdr x) att)))
-          (t
-           (vl-gather-regdecls-with-attribute (cdr x) att))))
-
-  (local (in-theory (enable vl-gather-regdecls-with-attribute)))
-
-  (defthm vl-regdecllist-p-of-vl-gather-regdecls-with-attribute
-    (implies (force (vl-regdecllist-p x))
-             (vl-regdecllist-p (vl-gather-regdecls-with-attribute x att)))))
-
+(define vl-gather-regdecls-with-attribute ((x vl-regdecllist-p)
+                                           (att stringp))
+  :returns (sub-x vl-regdecllist-p :hyp :fguard)
+  (cond ((atom x)
+         nil)
+        ((assoc-equal att (vl-regdecl->atts (car x)))
+         (cons (car x) (vl-gather-regdecls-with-attribute (cdr x) att)))
+        (t
+         (vl-gather-regdecls-with-attribute (cdr x) att))))

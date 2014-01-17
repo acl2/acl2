@@ -294,7 +294,7 @@
 ; Everything about expressions is mutually recursive, so this is complicated.
 ; I have put the grammar rules in front of the functions that parse them, but
 ; note that the productions found below are not exactly the same as those in
-; the Verilog standard:
+; the Verilog-2005 standard:
 ;
 ;    1. I have removed any "bare aliases" which only served to complicate
 ;       the grammar, such as "base_expression ::= expression" and

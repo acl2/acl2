@@ -159,7 +159,7 @@
 (local
  (encapsulate
   ()
-  (local (include-book "lexer"))
+  (local (include-book "lexer/lexer"))
 
   (assert! (b* (((mv err val tokens warnings)
                  (vl-parse-delay-or-event-control (vl-make-test-tstream "@(foo or bar or baz)")

@@ -26,10 +26,10 @@
   :parents (mlib)
   :short "Functions related to a module's namespace."
 
-  :long "<p>Namespaces are discussed in Section 4.11 of the spec.  In
-particular, note that ports and port declarations are given special treatment:
-they are said to be in a separate namespace which \"overlaps\" the regular
-module namespace.</p>
+  :long "<p>Namespaces are discussed in Section 4.11 of the Verilog-2005
+standard.  In particular, note that ports and port declarations are given
+special treatment: they are said to be in a separate namespace which
+\"overlaps\" the regular module namespace.</p>
 
 <p>I think this distinction is only made so that you can refer to both ports and
  to items in the regular module namespace from expressions, etc.  The
@@ -207,7 +207,7 @@ the number of gate instances in the list.</p>"
   :parents (vl-modinstlist-p modnamespace)
   :short "Collect all instance names (not module names!) from a @(see
 vl-modinstlist-p)."
-  :long "<p>The Verilog specification requires that module instances be named,
+  :long "<p>The Verilog-2005 Standard requires that module instances be named,
 but we relaxed that restriction in our definition of @(see vl-modinst-p)
 because of user-defined primitives, which may be unnamed.  So, as with @(see
 vl-gateinstlist->names), here we simply skip past any unnamed module
