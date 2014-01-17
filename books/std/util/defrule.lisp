@@ -217,7 +217,8 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
         (er hard? 'defrule
             (if (atom args)
                 "In ~x0: no formula found?"
-              "In ~x0: multiple formulas found?")
+              "In ~x0: multiple formulas found?  Forget parens around a list ~
+               of runes?")
             ctx))
        (formula (car args))
 
