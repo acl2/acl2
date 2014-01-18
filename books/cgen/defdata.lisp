@@ -4767,9 +4767,9 @@ nor a predefined typename~%" dtexp)
     `(with-output
       :stack :pop
       :off ,(cond ((get-acl2s-defdata-debug)
-                    '(summary proof-checker))
+                    '(proof-checker))
                    ((get-acl2s-defdata-verbose)
-                    '(summary warning! observation warning proof-checker acl2::history))
+                    '(warning! observation warning proof-checker acl2::history))
                    (t
                     #!acl2(remove1-eq 'error *valid-output-names*))
                
@@ -5003,7 +5003,7 @@ constant-everywhere in tau-system.
        :off ,(cond ((get-acl2s-defdata-debug)
                     'acl2::proof-checker)
                    ((get-acl2s-defdata-verbose)
-                    '(warning! observation warning acl2::proof-checker event acl2::history))
+                    '(warning! observation warning acl2::proof-checker acl2::history))
                    (t
                     #!acl2(remove1-eq 'error *valid-output-names*))
                
@@ -5070,7 +5070,7 @@ constant-everywhere in tau-system.
                     'proof-checker)
                    ((get-acl2s-defdata-verbose)
                     '(warning! observation warning 
-                               proof-checker event acl2::history))
+                               proof-checker acl2::history))
                    (t
                     #!acl2(remove1-eq 'error *valid-output-names*))
                

@@ -15,6 +15,12 @@
 (include-book "library-support")
 (include-book "random-state")
 
+(make-event 
+ (er-progn
+  (defdata::set-acl2s-defdata-verbose t)
+  (value '(value-triple :invisible)))
+ :check-expansion t)
+
 ;TODO.NOTE: constructors are now stored in globals and it 
 ;seems that include-book does not carry globals?? is it true?
 
