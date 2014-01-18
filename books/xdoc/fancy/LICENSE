@@ -44,11 +44,6 @@ Copyright for main source files:
 
 Copyrights for Supporting Libraries: (within the "lib" directory)
 
-   Hogan:
-     Copyright 2011 Twitter, Inc.
-     Released under Apache License
-     http://twitter.github.io/hogan.js/
-
    jQuery:
      Copyright 2005, 2013 jQuery Foundation, Inc. and other contributors
      Released under the MIT license.

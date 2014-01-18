@@ -831,6 +831,12 @@ $(document).ready(function()
 });
 
 
+function jump_render(datum) {
+    var key = datum["value"];
+    return "<p><b class=\"sf\">" + topic_name(key) + "</b> &mdash; " +
+	topic_short_plaintext(key) + "<br/><tt>" + key + "</tt></p>";
+}
+
 function jump_init() {
 
     var ta_data = [];
@@ -840,20 +846,17 @@ function jump_init() {
         var tokens = [];
         tokens.push(topic_rawname(key));
         var entry = {"value": key,
-                     "nicename": topic_name(key),
-                     "short": render_text(topic_short(key)),
+		     "nicename": topic_name(key),
                      "tokens": tokens};
         ta_data.push(entry);
     }
 
     $("#jump").typeahead([{
-            name: "topics",
-            local: ta_data,
-            limit: 6,
+        name: "topics",
+	local: ta_data,
+	limit: 6,
 	autoselect: 'first',
-            template: "<p><b class=\"sf\">{{{nicename}}}</b> &mdash; {{{short}}}<br/>"
-                     + "<tt>{{value}}</tt></p>",
-            engine: Hogan
+	template: jump_render
     }]);
 
     $("#jump").bind('typeahead:selected', jump_go);
