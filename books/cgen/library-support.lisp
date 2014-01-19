@@ -95,11 +95,12 @@
   :hints (("Goal" :in-theory (enable sets::empty)))
   :rule-classes :forward-chaining)
 
-(defthm good-map-implies-not-ifmp
-  (implies (good-map x) (and (not (ifmp x))
-                             (well-formed-map x)))
-  :rule-classes ((:rewrite :backchain-limit-lst 1)
-                 (:forward-chaining)))
+;; (defthm good-map-implies-not-ifmp
+;;   (implies (good-map x) 
+;;            (and (not (ifmp x))
+;;                 (well-formed-map x)))
+;;   :rule-classes ((:rewrite :backchain-limit-lst 1)
+;;                  (:forward-chaining)))
 
 
 (local
