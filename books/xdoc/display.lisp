@@ -48,10 +48,10 @@
 (defconst *throwaway-tags*
   ;; We leave "img" and "icon" in this list even thouggh we process them in
   ;; merge-text below, because we don't want to process </img> or </icon>.
-  (list "b" "i" "u" "tt" "v" "color" "sf" "a" "box" "img" "icon"
+  (list "b" "i" "u" "tt" "v" "color" "sf" "box" "img" "icon"
         "page"))
 
-(defun merge-text (x acc codes)
+(defun merge-text (x acc codes href)
   ;; CODES is number of open <code> tags -- we don't normalize whitespace
   ;; within them, but entities still get converted.
   (b* (((when (atom x))
@@ -65,40 +65,42 @@
                       codes)))
           (cond ((equal name "img")
                  (b* ((tok  (list :TEXT "{IMAGE}")))
-                   (merge-text (cons tok rest) acc codes)))
+                   (merge-text (cons tok rest) acc codes href)))
                 ((equal name "icon")
                  (b* ((tok  (list :TEXT "{ICON}")))
-                   (merge-text (cons tok rest) acc codes)))
+                   (merge-text (cons tok rest) acc codes href)))
                 ((member-equal name *throwaway-tags*)
-                 (merge-text rest acc codes))
+                 (merge-text rest acc codes nil))
                 ((equal name "a")
-                 (b* ((href (cdr (assoc :href (opentok-atts tok1))))
-                      (href (if (stringp href) href ""))
-                      (tok  (list :TEXT (str::cat "[" href " "))))
-                   (merge-text (cons tok rest) acc codes)))
+                 (b* ((href (cdr (assoc-equal "href" (opentok-atts tok1))))
+                      (tok  (list :TEXT (str::cat "{"))))
+                   (merge-text (cons tok rest) acc codes href)))
                 ((equal name "see")
                  (b* ((tok  (list :TEXT "[")))
-                   (merge-text (cons tok rest) acc codes)))
+                   (merge-text (cons tok rest) acc codes href)))
                 ((equal name "srclink")
                  (b* ((tok  (list :TEXT "<")))
-                   (merge-text (cons tok rest) acc codes)))
+                   (merge-text (cons tok rest) acc codes href)))
                 (t
-                 (merge-text rest (cons tok1 acc) codes)))))
+                 (merge-text rest (cons tok1 acc) codes href)))))
        ((when (closetok-p tok1))
         (b* ((name  (closetok-name tok1))
              (codes (if (equal name "code")
                         (- 1 codes)
                       codes)))
           (cond ((member-equal name *throwaway-tags*)
-                 (merge-text rest acc codes))
-                ((member-equal name '("a" "see"))
+                 (merge-text rest acc codes href))
+                ((member-equal name '("see"))
                  (let ((tok (list :TEXT "]")))
-                   (merge-text (cons tok rest) acc codes)))
+                   (merge-text (cons tok rest) acc codes href)))
+                ((member-equal name '("a"))
+                 (let ((tok (list :TEXT (str::cat " | " href "}"))))
+                   (merge-text (cons tok rest) acc codes href)))
                 ((equal name "srclink")
                  (let ((tok (list :TEXT ">")))
-                   (merge-text (cons tok rest) acc codes)))
+                   (merge-text (cons tok rest) acc codes href)))
                 (t
-                 (merge-text rest (cons tok1 acc) codes)))))
+                 (merge-text rest (cons tok1 acc) codes href)))))
        (tok1
         ;; Goofy.  Convert any entities into ordinary text.  Normalize
         ;; whitespace for any non-code tokens.
@@ -111,11 +113,11 @@
                ;; Inside a <code> block, so don't touch ws.
                tok1)))
        ((unless (texttok-p (car acc)))
-        (merge-text rest (cons tok1 acc) codes))
+        (merge-text rest (cons tok1 acc) codes href))
 
        (merged-tok (list :TEXT (str::cat (texttok-text (car acc))
                                          (texttok-text tok1)))))
-    (merge-text rest (cons merged-tok (cdr acc)) codes)))
+    (merge-text rest (cons merged-tok (cdr acc)) codes href)))
 
 
 (defun has-tag-above (tag open-tags)
@@ -358,7 +360,7 @@
           state))
 ;       (- (cw "Tokens are ~x0.~%" tokens))
 ;       (- (cw "Merging tokens...~%"))
-       (merged-tokens (reverse (merge-text tokens nil 0)))
+       (merged-tokens (reverse (merge-text tokens nil 0 nil)))
 ;       (- (cw "Merged tokens are ~x0.~%" merged-tokens))
        (terminal (str::rchars-to-string
                   (tokens-to-terminal merged-tokens 70 nil nil nil)))
@@ -437,7 +439,7 @@
           state))
 ;       (- (cw "Tokens are ~x0.~%" tokens))
 ;       (- (cw "Merging tokens...~%"))
-       (merged-tokens (reverse (merge-text tokens nil 0)))
+       (merged-tokens (reverse (merge-text tokens nil 0 nil)))
 ;       (- (cw "Merged tokens are ~x0.~%" merged-tokens))
        (terminal (str::rchars-to-string (tokens-to-terminal merged-tokens 70 nil nil nil)))
        (state (princ$ "    " *standard-co* state))

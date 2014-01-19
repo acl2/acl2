@@ -87,7 +87,7 @@
           (er hard? 'make-topic-text "Failed to process topic ~x0.~%" name)
           (mv nil state)))
 
-       (merged-tokens (reverse (merge-text tokens nil 0)))
+       (merged-tokens (reverse (merge-text tokens nil 0 nil)))
        (acc (tokens-to-terminal merged-tokens 70 nil nil nil))
        (terminal (str::trim (str::rchars-to-string acc))))
 
