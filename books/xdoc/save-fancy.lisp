@@ -512,8 +512,7 @@
 
        (- (cw "Copying fancy viewer library files...~%"))
        (state          (stupid-copy-files xdoc/fancy/lib
-                                          (list "hogan-2.0.0.js"
-                                                "jquery-2.0.3.js"
+                                          (list "jquery-2.0.3.js"
                                                 "jquery-2.0.3.min.js"
                                                 "jquery.base64.js"
                                                 "jquery.powertip.css"

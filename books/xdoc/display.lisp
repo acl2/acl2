@@ -94,7 +94,7 @@
                  (let ((tok (list :TEXT "]")))
                    (merge-text (cons tok rest) acc codes href)))
                 ((member-equal name '("a"))
-                 (let ((tok (list :TEXT (str::cat " | " href "}"))))
+                 (let ((tok (list :TEXT (str::cat " | " (and href "") "}"))))
                    (merge-text (cons tok rest) acc codes href)))
                 ((equal name "srclink")
                  (let ((tok (list :TEXT ">")))
