@@ -16,23 +16,13 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
-; Original authors: Jared Davis <jared@centtech.com>
-;                   Sol Swords <sswords@centtech.com>
+; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "OSLIB")
-(ql:quickload "iolib.syscalls")
+(in-package "ACL2")
+(include-book "../getpid")
+(include-book "std/util/defconsts" :dir :system)
 
-(defun getpid-fn (state)
+(defconsts (*pid* state)
+  (oslib::getpid))
 
-  (unless (live-state-p state)
-    (er hard? 'getpid "Getpid can only be called on a live state.")
-    (mv nil state))
-
-  (let ((pid (handler-case (iolib.syscalls::getpid)
-                           (error (condition)
-                                  (format nil "getpid: ~a" condition)))))
-    (if (natp pid)
-        (mv pid state)
-      (mv (cw "getpid error: (iolib.syscalls::getpid) returned ~a." pid)
-          state))))
-
+(assert! (natp *pid*))

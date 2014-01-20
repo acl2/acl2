@@ -19,20 +19,36 @@
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
-(in-package "OSLIB")
-(ql:quickload "iolib.syscalls")
+(in-package "ACL2")
+(include-book "../date")
+(include-book "std/util/defconsts" :dir :system)
+(include-book "str/defs" :dir :system)
 
-(defun getpid-fn (state)
+(defconsts (*date* state)
+  (oslib::date))
 
-  (unless (live-state-p state)
-    (er hard? 'getpid "Getpid can only be called on a live state.")
-    (mv nil state))
+(assert! (stringp *date*))
 
-  (let ((pid (handler-case (iolib.syscalls::getpid)
-                           (error (condition)
-                                  (format nil "getpid: ~a" condition)))))
-    (if (natp pid)
-        (mv pid state)
-      (mv (cw "getpid error: (iolib.syscalls::getpid) returned ~a." pid)
-          state))))
+(defconst *tokens* (str::strtok *date* '(#\Space #\, #\:)))
+
+(assert! (equal (len *tokens*) 6))
+
+(defconst *months* '("January" "February" "March" "April" "May" "June"
+                     "July" "August" "September" "October" "November" "December"))
+
+(defconsts (*month* *day* *year* *hour* *minute* *second*)
+  (mv (first *tokens*)
+      (str::strval (second *tokens*))
+      (str::strval (third *tokens*))
+      (str::strval (fourth *tokens*))
+      (str::strval (fifth *tokens*))
+      (str::strval (sixth *tokens*))))
+
+(assert! (member-equal *month* *months*))
+(assert! (and (natp *day*) (<= *day* 31)))
+(assert! (and (natp *year*) (<= 2014 *year*)))
+(assert! (and (natp *hour*) (<= *hour* 23)))
+(assert! (and (natp *minute*) (<= *minute* 59)))
+(assert! (and (natp *second*) (<= *second* 59)))
+
 

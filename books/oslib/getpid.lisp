@@ -21,8 +21,13 @@
 
 (in-package "OSLIB")
 (include-book "logic-defs")
+(include-book "centaur/quicklisp/top" :dir :system)
 ; (depends-on "getpid-raw.lsp")
+; cert_param: (uses-quicklisp)
 
 (defttag oslib)
-(include-raw "getpid-raw.lsp")
+(include-raw "getpid-raw.lsp"
+             :host-readtable t
+             :do-not-compile t)
+
 

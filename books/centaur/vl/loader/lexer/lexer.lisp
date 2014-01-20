@@ -906,6 +906,7 @@ refer to a valid ASCII character.</p>"
 
 
 (define vl-binary-digits-to-bitlist ((digits character-listp))
+  :parents (vl-lex-integer)
   :returns (bits vl-bitlist-p)
   :short "Convert MSB-First Binary Digits into an MSB-First Bitlist"
   (if (consp digits)
@@ -925,6 +926,7 @@ refer to a valid ASCII character.</p>"
            (len x))))
 
 (define vl-octal-digits-to-bitlist ((digits character-listp))
+  :parents (vl-lex-integer)
   :returns (bits vl-bitlist-p)
   :short "Convert MSB-First Octal Digits into an MSB-First Bitlist"
   (if (consp digits)
@@ -951,6 +953,7 @@ refer to a valid ASCII character.</p>"
 
 
 (define vl-decimal-digits-to-bitlist ((digits character-listp))
+  :parents (vl-lex-integer)
   :returns (bits vl-bitlist-p)
   :long "<p>The only time this should be called is if digits is a singleton
   list containing exactly the digit x or z.</p>"
@@ -972,6 +975,7 @@ refer to a valid ASCII character.</p>"
 
 
 (define vl-hex-digits-to-bitlist ((digits character-listp))
+  :parents (vl-lex-integer)
   :returns (bits vl-bitlist-p)
   :short "Converts MSB-First Digits into an MSB-First Bitlist"
   (if (consp digits)
@@ -1542,6 +1546,7 @@ following it, e.g., it will give you \"3\" when you try to parse \"3.4\".</p>"
 
 
 (define vl-lex-plain-alist
+  :parents (lexer)
   ((echars (and (vl-echarlist-p echars)
                 (true-listp echars)))
    (alist vl-plaintoken-alistp)

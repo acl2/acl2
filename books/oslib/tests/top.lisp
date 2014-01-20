@@ -19,20 +19,8 @@
 ; Original authors: Jared Davis <jared@centtech.com>
 ;                   Sol Swords <sswords@centtech.com>
 
-(in-package "OSLIB")
-(ql:quickload "iolib.syscalls")
-
-(defun getpid-fn (state)
-
-  (unless (live-state-p state)
-    (er hard? 'getpid "Getpid can only be called on a live state.")
-    (mv nil state))
-
-  (let ((pid (handler-case (iolib.syscalls::getpid)
-                           (error (condition)
-                                  (format nil "getpid: ~a" condition)))))
-    (if (natp pid)
-        (mv pid state)
-      (mv (cw "getpid error: (iolib.syscalls::getpid) returned ~a." pid)
-          state))))
+(in-package "ACL2")
+(include-book "date")
+(include-book "getpid")
+(include-book "file-types")
 

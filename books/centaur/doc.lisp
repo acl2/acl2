@@ -181,6 +181,7 @@
 (include-book "std/util/defval-tests" :dir :system)
 (include-book "std/util/extensions/assert-return-thms" :dir :system)
 (include-book "centaur/misc/tshell-tests" :dir :system)
+(include-book "oslib/tests/top" :dir :system)
 
 (include-book "ubdds/sanity-check-macros")
 
