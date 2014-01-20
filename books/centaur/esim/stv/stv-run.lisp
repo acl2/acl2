@@ -102,7 +102,7 @@ in the bit-level alist.</p>"
        (nvars (len vars))
 
        (vals (cond ((eq val *4vx*)
-                    (repeat *4vx* nvars))
+                    (replicate nvars *4vx*))
                    ((and (natp val)
                          (< val (ash 1 nvars)))
                     (bool-to-4v-lst (int-to-v val nvars)))
@@ -111,7 +111,7 @@ in the bit-level alist.</p>"
                      (raise "Value ~x0 given for ~x1, but this value is not X ~
                              or in range for a ~x2-bit unsigned number."
                             val name nvars)
-                     (repeat *4vx* nvars))))))
+                     (replicate nvars *4vx*))))))
 
     (safe-pairlis-onto-acc vars vals rest)))
 

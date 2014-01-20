@@ -104,8 +104,6 @@
 
 (include-book "regex/regex-ui" :dir :system)
 
-(include-book "regression/common")
-
 (include-book "std/top" :dir :system)
 (include-book "std/io/unsound-read" :dir :system)
 (include-book "std/bitsets/top" :dir :system)
@@ -152,9 +150,14 @@
 (include-book "hints/consider-hint" :dir :system)
 (include-book "tools/do-not" :dir :system)
 
-(include-book "tutorial/intro")
-(include-book "tutorial/alu16-book")
-(include-book "tutorial/counter")
+; [Jared] removing these to speed up the manual build
+;(include-book "tutorial/intro")
+;(include-book "tutorial/alu16-book")
+;(include-book "tutorial/counter")
+
+; [Jared] removed this to avoid depending on glucose and to speed up
+; the manual build
+; (include-book "regression/common")
 
 
 ;; Not much doc here, but some theorems from arithmetic-5 are referenced by

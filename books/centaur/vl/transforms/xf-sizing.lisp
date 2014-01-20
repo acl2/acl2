@@ -2582,7 +2582,7 @@ that it deals with @(see vl-weirdint-p)s.</p>"
          ;; signed, and we want to do a sign-extension.
          ((when (eq finaltype :vl-unsigned))
           ;; Just do a zero-extension.
-          (b* ((new-bits (append (repeat :vl-0val (- finalwidth guts.origwidth))
+          (b* ((new-bits (append (replicate (- finalwidth guts.origwidth) :vl-0val)
                                  (redundant-list-fix guts.bits)))
                (new-guts (change-vl-weirdint guts
                                              :bits new-bits
@@ -2596,7 +2596,7 @@ that it deals with @(see vl-weirdint-p)s.</p>"
 
          ;; Else, we want a sign-extension.
          (sign-bit  (car guts.bits))
-         (new-bits  (append (repeat sign-bit (- finalwidth guts.origwidth))
+         (new-bits  (append (replicate (- finalwidth guts.origwidth) sign-bit)
                             (redundant-list-fix guts.bits)))
          (new-guts  (change-vl-weirdint guts
                                         :bits new-bits

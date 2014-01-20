@@ -173,20 +173,20 @@ value.</p>")
                    (not supply1s)
                    (equal warnings warnings-prime)))
         x)
-       (zeroes (repeat (make-vl-atom :guts (make-vl-constint :origwidth 1
-                                                             :origtype :vl-unsigned
-                                                             :value 0)
-                                     ;; BOZO is this width stuff right??
-                                     :finalwidth 1
-                                     :finaltype :vl-unsigned)
-                       (length supply0s)))
-       (ones (repeat (make-vl-atom :guts (make-vl-constint :origwidth 1
-                                                           :origtype :vl-unsigned
-                                                           :value 1)
-                                   ;; BOZO is this width stuff right??
-                                   :finalwidth 1
-                                   :finaltype :vl-unsigned)
-                     (length supply1s)))
+       (zeroes (replicate (length supply0s)
+                          (make-vl-atom :guts (make-vl-constint :origwidth 1
+                                                                :origtype :vl-unsigned
+                                                                :value 0)
+                                        ;; BOZO is this width stuff right??
+                                        :finalwidth 1
+                                        :finaltype :vl-unsigned)))
+       (ones (replicate (length supply1s)
+                        (make-vl-atom :guts (make-vl-constint :origwidth 1
+                                                              :origtype :vl-unsigned
+                                                              :value 1)
+                                      ;; BOZO is this width stuff right??
+                                      :finalwidth 1
+                                      :finaltype :vl-unsigned)))
        (sigma  (revappend (pairlis$ supply0s zeroes)
                           (pairlis$ supply1s ones)))
        ((with-fast sigma))

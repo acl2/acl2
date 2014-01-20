@@ -181,10 +181,10 @@ turned into a list like @('(|opcode[0]| ... |opcode[n]|)').</li>
         (mv (bool-to-4v-sexpr-lst (int-to-v entry width)) gensyms usersyms))
 
        ((when (eq entry 'x))
-        (mv (repeat *4vx-sexpr* width) gensyms usersyms))
+        (mv (replicate width *4vx-sexpr*) gensyms usersyms))
 
        ((when (eq entry :ones))
-        (mv (repeat *4vt-sexpr* width) gensyms usersyms))
+        (mv (replicate width *4vt-sexpr*) gensyms usersyms))
 
        ((when (eq entry '~))
         (or (= width 1)
@@ -216,7 +216,7 @@ turned into a list like @('(|opcode[0]| ... |opcode[n]|)').</li>
         (raise "Phase ~x0 for ~x1: value ~x2 is not legal for input lines of ~
                 symbolic test vectors.  See :xdoc symbolic-test-vector-format ~
                 for help." pnum name entry)
-        (mv (repeat *4vx-sexpr* width) gensyms usersyms))
+        (mv (replicate width *4vx-sexpr*) gensyms usersyms))
 
        (my-syms (stv-gensyms (symbol-name entry) width))
        (look    (hons-get entry usersyms)))
@@ -671,36 +671,36 @@ and which bit of which simulation variable the name corresponds to.</p>"
             (raise "Phase ~x0 for ~x1: value ~x2 is too wide to fit in ~x3 ~
                     bits!" pnum name entry width))
         (mv (bool-to-4v-sexpr-lst (int-to-v entry width))
-            (repeat *4vt-sexpr* width)
+            (replicate width *4vt-sexpr*)
             '_
             in-usersyms
             out-usersyms))
 
        ((when (eq entry 'x))
-        (mv (repeat *4vx-sexpr* width)
-            (repeat *4vt-sexpr* width)
+        (mv (replicate width *4vx-sexpr*)
+            (replicate width *4vt-sexpr*)
             '_
             in-usersyms
             out-usersyms))
 
        ((when (eq entry :ones))
-        (mv (repeat *4vt-sexpr* width)
-            (repeat *4vt-sexpr* width)
+        (mv (replicate width *4vt-sexpr*)
+            (replicate width *4vt-sexpr*)
             '_
             in-usersyms
             out-usersyms))
 
        ((when (eq entry '~))
         (raise "Phase ~x0 for ~x1: value ~~ is not legal on overrides." pnum name)
-        (mv (repeat *4vx-sexpr* width)
-            (repeat *4vt-sexpr* width)
+        (mv (replicate width *4vx-sexpr*)
+            (replicate width *4vt-sexpr*)
             '_
             in-usersyms
             out-usersyms))
 
        ((when (eq entry '_))
-        (mv (repeat *4vx-sexpr* width)
-            (repeat *4vf-sexpr* width)
+        (mv (replicate width *4vx-sexpr*)
+            (replicate width *4vf-sexpr*)
             '_
             in-usersyms
             out-usersyms))
@@ -710,8 +710,8 @@ and which bit of which simulation variable the name corresponds to.</p>"
         (raise "Phase ~x0 for ~x1: value ~x2 is not legal for override lines of ~
                 symbolic test vectors.  See :xdoc symbolic-test-vector-format ~
                 for help." pnum name entry)
-        (mv (repeat *4vx-sexpr* width)
-            (repeat *4vt-sexpr* width)
+        (mv (replicate width *4vx-sexpr*)
+            (replicate width *4vt-sexpr*)
             '_
             in-usersyms
             out-usersyms))
@@ -732,7 +732,7 @@ and which bit of which simulation variable the name corresponds to.</p>"
                 ~x4-bit wire." pnum name entry width (len (cdr in-look))))
 
     (mv my-syms
-        (repeat *4vt-sexpr* width)
+        (replicate width *4vt-sexpr*)
         my-syms
         (if in-look in-usersyms (hons-acons entry my-syms in-usersyms))
         (hons-acons entry my-syms out-usersyms))))

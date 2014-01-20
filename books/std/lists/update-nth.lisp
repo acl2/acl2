@@ -36,8 +36,8 @@ library."
   ;; BOZO may be too weird
   (implies (atom x)
            (equal (update-nth n v x)
-                  (append (repeat nil n) (list v))))
-  :hints(("Goal" :in-theory (enable repeat))))
+                  (append (replicate n nil) (list v))))
+  :hints(("Goal" :in-theory (enable replicate))))
 
 (defthm update-nth-when-zp
   ;; BOZO may not always be wanted

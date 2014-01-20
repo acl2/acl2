@@ -47,12 +47,12 @@
   :hints(("Goal" :in-theory (enable nth))))
 
 
-(defthm car-of-repeat
-  (equal (car (acl2::repeat x n))
+(defthm car-of-replicate
+  (equal (car (replicate n x))
          (if (zp n)
              nil
            x))
-  :hints(("Goal" :in-theory (enable acl2::repeat))))
+  :hints(("Goal" :in-theory (enable replicate))))
 
 (defthm len-of-nonempty-string-is-positive
   (implies (and (stringp x)
@@ -131,10 +131,10 @@
   (implies (character-listp x)
            (character-listp (cdr x))))
 
-(defthm character-listp-of-repeat
+(defthm character-listp-of-replicate
   (implies (characterp x)
-           (character-listp (acl2::repeat x n)))
-  :hints(("Goal" :in-theory (enable acl2::repeat))))
+           (character-listp (replicate n x)))
+  :hints(("Goal" :in-theory (enable replicate))))
 
 (defthm character-listp-of-take
   (implies (character-listp x)

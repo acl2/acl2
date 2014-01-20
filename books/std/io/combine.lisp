@@ -55,13 +55,13 @@ interpretation of @('(a1 << 8) | a0')."
   (defund-inline combine16s (a1 a0)
     (declare (type (unsigned-byte 8) a1 a0))
     (mbe :logic
-         (logior (ash (sign-extend 8 (nfix a1)) 8)
+         (logior (ash (fast-logext 8 (nfix a1)) 8)
                  (nfix a0))
          :exec
          (the (signed-byte 16)
            (logior (the (signed-byte 16)
                      (ash (the (signed-byte 8)
-                            (sign-extend 8 a1))
+                            (fast-logext 8 a1))
                           8))
                    a0))))
 
@@ -121,7 +121,7 @@ signed interpretation of @('(a3 << 24) | (a2 << 16) | (a1 << 8) | a0')."
   (defund-inline combine32s (a3 a2 a1 a0)
     (declare (type (unsigned-byte 8) a3 a2 a1 a0))
     (mbe :logic
-         (logior (ash (sign-extend 8 (nfix a3)) 24)
+         (logior (ash (fast-logext 8 (nfix a3)) 24)
                  (ash (nfix a2) 16)
                  (ash (nfix a1) 8)
                  (nfix a0))
@@ -129,7 +129,7 @@ signed interpretation of @('(a3 << 24) | (a2 << 16) | (a1 << 8) | a0')."
          ;; Ugly series of LOGIORs because CCL won't optimize multi-arg LOGIORs
          ;; into fixnum computations...
          (b* ((a3  (the (signed-byte 32)
-                     (ash (the (signed-byte 8) (sign-extend 8 a3))
+                     (ash (the (signed-byte 8) (fast-logext 8 a3))
                           24)))
               (a2  (the (unsigned-byte 24) (ash a2 16)))
               (a1  (the (unsigned-byte 16) (ash a1 8)))
@@ -225,7 +225,7 @@ unsigned interpretation of @('{a7, a6, a5, a4, a3, a2, a1, a0}')."
   (defund-inline combine64s (a7 a6 a5 a4 a3 a2 a1 a0)
     (declare (type (unsigned-byte 8) a7 a6 a5 a4 a3 a2 a1 a0))
     (mbe :logic
-         (logior (ash (sign-extend 8 (nfix a7)) 56)
+         (logior (ash (fast-logext 8 (nfix a7)) 56)
                  (ash (nfix a6) 48)
                  (ash (nfix a5) 40)
                  (ash (nfix a4) 32)
@@ -262,7 +262,7 @@ unsigned interpretation of @('{a7, a6, a5, a4, a3, a2, a1, a0}')."
                              (the (unsigned-byte 56) ans))))
               ;; Can't really do better here... :(
               (a7 (the (signed-byte 64)
-                    (ash (the (signed-byte 8) (sign-extend 8 a7))
+                    (ash (the (signed-byte 8) (fast-logext 8 a7))
                          56))))
            (the (signed-byte 64)
              (logior (the (signed-byte 64) a7)

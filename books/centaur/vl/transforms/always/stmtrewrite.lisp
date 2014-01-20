@@ -177,7 +177,7 @@ occurred.</p>"
             ;; This works even when N is 0 or 1.  We expect our later block
             ;; cleaning rewrites to further simplify those cases.
             (make-vl-blockstmt :sequentialp t
-                               :stmts (repeat body count)
+                               :stmts (replicate count body)
                                :atts (acons "VL_UNROLL_REPEAT" nil atts)))))
     (mv (warn :type :vl-unroll-fail
               ;; BOZO it'd be nice to have a context here

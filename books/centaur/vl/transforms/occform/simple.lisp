@@ -420,7 +420,7 @@ when the select is X.  So, we generally set @('approxp') to T.</p>"
        (a-wires   (vl-make-list-of-bitselects a-expr 0 (- n 1)))
        (b-wires   (vl-make-list-of-bitselects b-expr 0 (- n 1)))
 
-       (insts     (vl-simple-inst-list onebitmux "bit" out-wires (repeat sel-expr n) a-wires b-wires))
+       (insts     (vl-simple-inst-list onebitmux "bit" out-wires (replicate n sel-expr) a-wires b-wires))
 
        (mod  (make-vl-module :name      name
                              :origname  name
@@ -475,7 +475,7 @@ actually handles both cases.</p>"
 
        (out-wires        (vl-make-list-of-bitselects out-expr 0 (- n 1)))
        (a-wires          (vl-make-list-of-bitselects a-expr 0 (- n 1)))
-       (insts            (vl-simple-inst-list *vl-1-bit-zmux* "bit" out-wires (repeat sel-expr n) a-wires))
+       (insts            (vl-simple-inst-list *vl-1-bit-zmux* "bit" out-wires (replicate n sel-expr) a-wires))
 
        (mod (make-vl-module :name      name
                             :origname  name
@@ -605,7 +605,7 @@ endmodule
        (x-inst (vl-simple-inst *vl-1-bit-x* "xdriver" x-expr))
 
        (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
-       (in-wires  (repeat x-expr n))
+       (in-wires  (replicate n x-expr))
        (out-insts (vl-simple-inst-list *vl-1-bit-assign* "bit" out-wires in-wires)))
 
     (list (make-vl-module :name      name

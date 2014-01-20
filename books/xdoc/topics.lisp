@@ -472,7 +472,7 @@ want.  When the result of your evaluation is large, you can use a spcial
 sophisticated uses of evaluation, e.g., to generate hyperlinks, etc.  The
 special @(':raw') prefix can be used to insert exactly the contents of a
 string, with no automatic escaping.  For instance:
-  @('  @(`(:raw \"a &lt; b\")`)  ') produces 
+  @('  @(`(:raw \"a &lt; b\")`)  ') produces
        @(`(:raw \"a &lt; b\")`).
 Note that it is quite easy to use @(':raw') incorrectly; you have to escape
 things properly yourself!</p>
@@ -1153,9 +1153,9 @@ any of these keywords are provided, they will be used to introduce a @(see
 defxdoc) command; otherwise no documentation will be generated.</p>
 
 <p>By default, the @(':long') string you give will be automatically extended
-with a \"Definitions and Theorems\" part that lists all the (non-local)
-definitions and theorems introduced in the section.  In the above example, the
-@(':long') field would be extended with:</p>
+with a \"Definitions and Theorems\" part that lists all the (non-local,
+non-redundant) definitions and theorems introduced in the section.  In the
+above example, the @(':long') field would be extended with:</p>
 
 @({
  <h3>Definition and Theorems</h3>

@@ -33,31 +33,31 @@
                        (equal (car x) a)
                        (equal (cdr x) b)))))
 
-  (local (defthm repeat-len-hack
-           (implies (equal x (repeat a n))
+  (local (defthm replicate-len-hack
+           (implies (equal x (replicate n a))
                     (equal (len x) (nfix n)))
            :rule-classes nil))
 
   (local (defthm l0
            (implies (and (equal (vl-emodwirelist->basenames x)
-                                (repeat basename (len x)))
+                                (replicate (len x) basename))
                          (member-equal a x))
                     (equal (vl-emodwire->basename a) basename))
            :hints(("Goal" :induct (len x)))))
 
   (local (defthm l1
            (implies (and (equal (vl-emodwirelist->basenames x)
-                                (repeat basename n))
+                                (replicate n basename))
                          (member-equal a x))
                     (equal (vl-emodwire->basename a) basename))
-           :hints(("Goal" :use ((:instance repeat-len-hack
+           :hints(("Goal" :use ((:instance replicate-len-hack
                                            (x (vl-emodwirelist->basenames x))
                                            (a basename)
                                            (n n)))))))
 
   (local (defthm l2
            (implies (and (equal (vl-emodwirelist->basenames x)
-                                (repeat basename (len x)))
+                                (replicate (len x) basename))
                          (vl-emodwire-p a)
                          (vl-emodwirelist-p x))
                     (iff (member-equal a x)
@@ -68,21 +68,21 @@
 
   (local (defthm l3
            (implies (and (equal (vl-emodwirelist->basenames x)
-                                (repeat basename n))
+                                (replicate n basename))
                          (vl-emodwire-p a)
                          (vl-emodwirelist-p x))
                     (iff (member-equal a x)
                          (and (equal (vl-emodwire->basename a) basename)
                               (member-equal (vl-emodwire->index a)
                                             (vl-emodwirelist->indices x)))))
-           :hints(("Goal" :use ((:instance repeat-len-hack
+           :hints(("Goal" :use ((:instance replicate-len-hack
                                            (x (vl-emodwirelist->basenames x))
                                            (a basename)
                                            (n n)))))))
 
   (defthm empty-intersect-of-vl-emodwires-by-basename
-    (implies (and (equal (vl-emodwirelist->basenames x) (repeat xname (len x)))
-                  (equal (vl-emodwirelist->basenames y) (repeat yname (len y)))
+    (implies (and (equal (vl-emodwirelist->basenames x) (replicate (len x) xname))
+                  (equal (vl-emodwirelist->basenames y) (replicate (len y) yname))
                   (not (equal xname yname))
                   (vl-emodwirelist-p x)
                   (vl-emodwirelist-p y))
@@ -494,17 +494,17 @@ are the same you still get one wire.</p>"
                      (nfix (- (nfix high) (nfix low)))
                      (len acc)))))
 
-  (local (defthm cons-same-onto-repeat
-           (equal (cons a (repeat a n))
-                  (repeat a (+ 1 (nfix n))))
-           :hints(("Goal" :in-theory (enable repeat)))))
+  (local (defthm cons-same-onto-replicate
+           (equal (cons a (replicate n a))
+                  (replicate (+ 1 (nfix n)) a))
+           :hints(("Goal" :in-theory (enable replicate)))))
 
   (local (defthm vl-emodwirelist->basenames-of-simpler-aux-function
            (implies (and (stringp name)
                          (natp high)
                          (natp low))
                     (equal (vl-emodwirelist->basenames (simpler-aux-function name high low acc))
-                           (append (repeat name (+ 1 (nfix (- (nfix high) (nfix low)))))
+                           (append (replicate (+ 1 (nfix (- (nfix high) (nfix low)))) name)
                                    (vl-emodwirelist->basenames acc))))
            :hints(("Goal" :do-not '(generalize fertilize)))))
 
@@ -560,8 +560,8 @@ are the same you still get one wire.</p>"
 
   (defthm basenames-of-vl-emodwires-from-high-to-low
     (equal (vl-emodwirelist->basenames (vl-emodwires-from-high-to-low name high low))
-           (repeat (string-fix name)
-                   (len (vl-emodwires-from-high-to-low name high low)))))
+           (replicate (len (vl-emodwires-from-high-to-low name high low))
+                   (string-fix name))))
 
   (defthm member-equal-of-indicies-of-vl-emodwires-from-high-to-low
     (implies (>= (nfix high) (nfix low))
@@ -677,7 +677,7 @@ successp warnings wires)').</p>"
     (implies (vl-netdecl-p x)
              (let ((wires (mv-nth 2 (vl-netdecl-msb-emodwires x warnings))))
                (equal (vl-emodwirelist->basenames wires)
-                      (repeat (vl-netdecl->name x) (len wires)))))
+                      (replicate (len wires) (vl-netdecl->name x)))))
     :hints(("Goal" :in-theory (enable vl-plain-wire-name))))
 
   (defthm unique-indicies-of-vl-netdecl-msb-emodwires
@@ -784,7 +784,7 @@ possible.  Any failure will result in at least one fatal warning.</p>"
     (implies (vl-regdecl-p x)
              (let ((wires (mv-nth 2 (vl-regdecl-msb-emodwires x warnings))))
                (equal (vl-emodwirelist->basenames wires)
-                      (repeat (vl-regdecl->name x) (len wires)))))
+                      (replicate (len wires) (vl-regdecl->name x)))))
     :hints(("Goal" :in-theory (enable vl-plain-wire-name))))
 
   (defthm unique-indicies-of-vl-regdecl-msb-emodwires
@@ -1391,7 +1391,7 @@ name in MSB order.</p>"
          (extension-bit (if (eq type :vl-signed)
                             (car wires)
                           'acl2::f))
-         (wires (append (repeat extension-bit (- width nwires)) wires)))
+         (wires (append (replicate (- width nwires) extension-bit) wires)))
 
       (mv t warnings wires)))
 

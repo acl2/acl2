@@ -49,6 +49,7 @@
       strip-cadrs
       simpler-take
       repeat
+      replicate
       list-fix
       list-equiv
       same-lengthp

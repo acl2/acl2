@@ -145,14 +145,14 @@ recommend using @('take-redefinition') instead of @('(:definition take)').</p>"
              (subsetp (take n x) x)))
 
   (defthm take-fewer-of-take-more
-    ;; Note: see also repeat.lisp for related cases and a stronger rule that
+    ;; Note: see also replicate.lisp for related cases and a stronger rule that
     ;; case-splits.
     (implies (<= (nfix a) (nfix b))
              (equal (take a (take b x))
                     (take a x))))
 
   (defthm take-of-take-same
-    ;; Note: see also repeat.lisp for related cases and a stronger rule that
+    ;; Note: see also replicate.lisp for related cases and a stronger rule that
     ;; case-splits.
     (equal (take a (take a x))
            (take a x))))
@@ -167,18 +167,18 @@ guard does not require @('(true-listp x)')."
 just get rewritten into @('take').  You should typically never write a theorem
 about @('first-n'): write theorems about @('take') instead.</p>"
 
-  (local (defun repeat (x n)
+  (local (defun replicate (n x)
            (if (zp n)
                nil
-             (cons x (repeat x (- n 1))))))
+             (cons x (replicate (- n 1) x)))))
 
   (local (defthm l0
-           (equal (append (repeat x n) (cons x y))
-                  (cons x (append (repeat x n) y)))))
+           (equal (append (replicate n x) (cons x y))
+                  (cons x (append (replicate n x) y)))))
 
   (local (defthm l1
            (equal (make-list-ac n val acc)
-                  (append (repeat val n) acc))
+                  (append (replicate n val) acc))
            :hints(("Goal"
                    :induct (make-list-ac n val acc)))))
 

@@ -495,12 +495,12 @@ case there are any bugs, but perhaps we should re-integrate it.</p>"
   (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
   (local (defthm l0
-           (implies (and (equal (vl-exprlist->finalwidths x) (repeat 1 (len x)))
+           (implies (and (equal (vl-exprlist->finalwidths x) (replicate (len x) 1))
                          (natp n)
                          (<= n (len x)))
                     (equal (vl-exprlist->finalwidths (nthcdr n x))
-                           (repeat 1 (- (len x) n))))
-           :hints(("Goal" :in-theory (enable repeat nthcdr)))))
+                           (replicate (- (len x) n) 1)))
+           :hints(("Goal" :in-theory (enable replicate nthcdr)))))
 
   (defund vl-partition-msb-bitslices (n x)
     (declare (xargs :guard (and (posp n)
@@ -536,14 +536,14 @@ case there are any bugs, but perhaps we should re-integrate it.</p>"
   (defthm vl-exprlist->finalwidths-of-vl-partition-msb-bitslices
     (implies (force (posp n))
              (equal (vl-exprlist->finalwidths (vl-partition-msb-bitslices n x))
-                    (repeat n (floor (len x) n))))
-    :hints(("Goal" :in-theory (enable repeat))))
+                    (replicate (floor (len x) n) n)))
+    :hints(("Goal" :in-theory (enable replicate))))
 
   (defthm vl-exprlist->finaltypes-of-vl-partition-msb-bitslices
     (implies (force (posp n))
              (equal (vl-exprlist->finaltypes (vl-partition-msb-bitslices n x))
-                    (repeat :vl-unsigned (floor (len x) n))))
-    :hints(("Goal" :in-theory (enable repeat))))
+                    (replicate (floor (len x) n) :vl-unsigned)))
+    :hints(("Goal" :in-theory (enable replicate))))
 
   (local (defthm c0
            (implies (and (all-equalp 1 (vl-exprlist->finalwidths x))
@@ -630,7 +630,7 @@ width of the port, as described in @(see argument-partitioning).</p>"
           ;; Special case for blanks: If we have a blank in an array of
           ;; instances, we just want to send blank to each member of the
           ;; instance.
-          (mv t warnings (repeat arg insts)))
+          (mv t warnings (replicate insts arg)))
 
          (expr-width (vl-expr->finalwidth expr))
          ((unless (posp expr-width))
@@ -647,7 +647,7 @@ width of the port, as described in @(see argument-partitioning).</p>"
           ;; The port is exactly as wide as the argument being given to it.
           ;; We are to replicate the argument, verbatim, across all of the
           ;; instances we are creating.
-          (mv t warnings (repeat arg insts)))
+          (mv t warnings (replicate insts arg)))
 
          ;; Otherwise, the port is not the same width as the argument.  In this
          ;; case, the argument's width should be a multiple of the port's
@@ -1005,7 +1005,7 @@ to split it into a list of @('nil')-ranged, simple gates.  The
 
          ;; Claim: The port widths for gates are always 1.  BOZO is there any
          ;; evidence to support this claim, from the Verilog spec?
-         (port-widths (repeat 1 (len x.args)))
+         (port-widths (replicate (len x.args) 1))
 
          ;; Partition the args into their slices, then transpose the slices to
          ;; form the new argument lists for the instances we are going to

@@ -39,8 +39,8 @@
 (defthm resize-list-when-atom
   (implies (atom lst)
            (equal (resize-list lst n default-value)
-                  (repeat default-value n)))
-  :hints(("Goal" :in-theory (enable repeat))))
+                  (replicate n default-value)))
+  :hints(("Goal" :in-theory (enable replicate))))
 
 (local (defun my-induct (n m lst)
          (if (zp n)

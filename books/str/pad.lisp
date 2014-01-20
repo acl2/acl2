@@ -56,12 +56,12 @@ performed.</p>"
              (type integer len))
     (mbe :logic
          (append (make-character-list x)
-                 (repeat #\Space (nfix (- (nfix len) (len x)))))
+                 (replicate (nfix (- (nfix len) (len x))) #\Space))
          :exec
          (let* ((x-len (length (the list x)))
                 (diff  (- len x-len)))
            (if (> diff 0)
-               (append x (repeat #\Space diff))
+               (append x (replicate diff #\Space))
              x))))
 
   (local (in-theory (enable rpadchars)))
@@ -111,7 +111,7 @@ coercion is performed.</p>"
          (let* ((x-len (length (the string x)))
                 (diff  (- len x-len)))
            (if (> diff 0)
-               (let ((spaces (repeat #\Space diff)))
+               (let ((spaces (replicate diff #\Space)))
                  (implode (mbe :logic (append-chars x spaces)
                                :exec (if (zp x-len)
                                          spaces
@@ -160,7 +160,7 @@ performed.</p>"
                                 (natp len)))
              (type integer len))
     (mbe :logic
-         (append (repeat #\Space (nfix (- (nfix len) (len x))))
+         (append (replicate (nfix (- (nfix len) (len x))) #\Space)
                  (make-character-list x))
          :exec
          (let* ((x-len (length x))

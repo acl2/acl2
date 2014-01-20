@@ -1027,7 +1027,7 @@
                        (<= (nfix n) (len x)))
                   (lit-listp (take n x)))
          :hints(("Goal" :in-theory (enable take
-                                           acl2::repeat)))))
+                                           acl2::replicate)))))
 
 (local (defthm lit-listp-of-nthcdr
          (implies (lit-listp x)
@@ -1046,7 +1046,7 @@
                   (aignet-lit-listp (take n x) aignet))
          :hints(("Goal" :in-theory (enable aignet-lit-listp
                                            take
-                                           acl2::repeat)))))
+                                           acl2::replicate)))))
 
 (local (defthm aignet-lit-listp-of-nthcdr
          (implies (aignet-lit-listp x aignet)
@@ -1066,7 +1066,7 @@
   (implies (<= (nfix n) (len x))
            (equal (lit-eval-list (take n x) in-vals reg-vals aignet)
                   (take n (lit-eval-list x in-vals reg-vals aignet))))
-  :hints(("Goal" :in-theory (enable take acl2::repeat
+  :hints(("Goal" :in-theory (enable take acl2::replicate
                                     acl2::nfix))))
 
 (defthm aig-eval-list-of-append
@@ -1250,12 +1250,6 @@
   (local (defthm lit-listp-true-listp
            (implies (lit-listp x)
                     (true-listp x))))
-
-  (defthm repeat-when-zp
-    (implies (zp n)
-             (equal (acl2::repeat x n) nil))
-    :hints(("Goal" :in-theory (enable acl2::repeat))))
-
 
 
   (defthm add-to-varmap-preserves-lookup

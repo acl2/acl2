@@ -66,7 +66,7 @@ proper, @('nil')-terminated @(see alistp) which can be used with either
       (equal (strip-cdrs (pairlis$ x y))
              (if (<= (len x) (len y))
                  (take (len x) y)
-               (append y (repeat nil (- (len x) (len y))))))))
+               (append y (replicate (- (len x) (len y)) nil))))))
 
 
   (defthm pairlis$-of-list-fix-left

@@ -1052,7 +1052,7 @@ case.</li>
        ((when (eql actual-len 0))
         ;; BOZO could probably prove this never happens
         (raise "Expected at least one bit.")
-        (mv warnings (repeat :vl-0val desired-len)))
+        (mv warnings (replicate desired-len :vl-0val)))
 
        (pad-bit (case (car bits)
                   (:vl-zval :vl-zval)
@@ -1106,7 +1106,7 @@ case.</li>
           (mv warnings bits-prime)))
 
        ;; Else, desired-len > actual-len
-       (pad        (repeat pad-bit (- desired-len actual-len)))
+       (pad        (replicate (- desired-len actual-len) pad-bit))
        (bits-prime (append pad bits)))
 
     (mv warnings bits-prime))
@@ -1171,8 +1171,8 @@ case.</li>
                                         nil)))
                 (and (not warn)
                      (equal (vl-bitlist->string bits)
-                            (implode (append (repeat #\0 29)
-                                             (repeat #\1 3)))))))
+                            (implode (append (replicate 29 #\0)
+                                             (replicate 3 #\1)))))))
 
      (assert! (b* (((mv warn ?bits)
                     (vl-correct-bitlist *vl-fakeloc*
@@ -1181,8 +1181,8 @@ case.</li>
                                         nil)))
                 (and (consp warn)
                      (equal (vl-bitlist->string bits)
-                            (implode (append (repeat #\Z 29)
-                                             (repeat #\1 3))))))))))
+                            (implode (append (replicate 29 #\Z)
+                                             (replicate 3 #\1))))))))))
 
 
 (defsection vl-lex-integer

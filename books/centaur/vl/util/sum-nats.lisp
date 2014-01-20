@@ -293,7 +293,7 @@ reasonable default we say the minimum of the empty list is @('0').</p>"
             (if (< (nfix k) (nfix (- (nfix b) (nfix a))))
                 (nats-from a (+ (nfix a) (nfix k)))
               (append (nats-from a b)
-                      (repeat nil (- (nfix k) (nfix (- (nfix b) (nfix a))))))))
+                      (replicate (- (nfix k) (nfix (- (nfix b) (nfix a)))) nil))))
      :hints(("Goal"
              :induct (ind k a b)
              :in-theory (enable acl2::take-redefinition nats-from)))))

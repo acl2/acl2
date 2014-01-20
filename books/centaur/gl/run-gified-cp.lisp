@@ -1055,7 +1055,7 @@
      (implies (gobj-listp gobj)
               (gobj-listp (acl2::take n gobj)))
      :hints(("Goal" :in-theory (enable gobj-listp acl2::take-redefinition
-                                       acl2::repeat))))
+                                       acl2::replicate))))
 
    (defun count-down2-cdr (n m l)
      (if (zp n)
@@ -1232,7 +1232,7 @@
                               n a b c))))
             (and stable-under-simplificationp
                  '(:in-theory (e/d (my-run-gified-ev-constraint-0
-                                    acl2::repeat))))))
+                                    acl2::replicate))))))
 
    (encapsulate nil
      (local (defthm nthcdr-is-nil

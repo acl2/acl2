@@ -519,7 +519,7 @@
                          :signedp nil
                          :value nil
                          :wasunsized t
-                         :bits (implode (repeat #\X 32))
+                         :bits (implode (replicate 32 #\X))
                          :nwarnings 1)
 
 (vl-lex-integer-testcase :input "'hxxx"
@@ -529,7 +529,7 @@
                          :signedp nil
                          :value nil
                          :wasunsized t
-                         :bits (implode (repeat #\X 32))
+                         :bits (implode (replicate 32 #\X))
                          :nwarnings 1)
 
 (vl-lex-integer-testcase :input "'bz"
@@ -539,7 +539,7 @@
                          :signedp nil
                          :value nil
                          :wasunsized t
-                         :bits (implode (repeat #\Z 32))
+                         :bits (implode (replicate 32 #\Z))
                          :nwarnings 1)
 
 (vl-lex-integer-testcase :input "'o zzz"
@@ -549,7 +549,7 @@
                          :signedp nil
                          :value nil
                          :wasunsized t
-                         :bits (implode (repeat #\Z 32))
+                         :bits (implode (replicate 32 #\Z))
                          :nwarnings 1)
 
 (vl-lex-integer-testcase :input "'bx1"
@@ -559,7 +559,7 @@
                          :signedp nil
                          :value nil
                          :wasunsized t
-                         :bits (implode (append (repeat #\X 31) (list #\1)))
+                         :bits (implode (append (replicate 31 #\X) (list #\1)))
                          :nwarnings 1)
 
 

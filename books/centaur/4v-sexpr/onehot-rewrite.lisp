@@ -144,17 +144,17 @@ sexprs.</p>")
                  x)
      :hints((witness)))
 
-   (defthm car-of-repeat
-     (equal (car (repeat a n))
+   (defthm car-of-replicate
+     (equal (car (replicate n a))
             (if (zp n)
                 nil
               a))
-     :hints(("Goal" :in-theory (enable repeat))))
+     :hints(("Goal" :in-theory (enable replicate))))
 
-   (defthm cdr-of-repeat
-     (equal (cdr (repeat a n))
-            (repeat a (- n 1)))
-     :hints(("Goal" :in-theory (enable repeat))))
+   (defthm cdr-of-replicate
+     (equal (cdr (replicate n a))
+            (replicate (- n 1) a))
+     :hints(("Goal" :in-theory (enable replicate))))
 
    (defthm hons-assoc-equal-of-atom
      (implies (atom alist)
@@ -1033,7 +1033,7 @@ implement.</p>"
     (declare (xargs :guard t :verify-guards nil))
     (b* (((when (atom vars))
           (fast-alist-free false-bindings)
-          (repeat (4vs-x) (len sexprs)))
+          (replicate (len sexprs) (4vs-x)))
 
          (var             (car vars))
          (bindings        (hons-acons var (4vs-t) false-bindings))
@@ -1238,7 +1238,7 @@ that don't mention any of the variables we are assuming to be one-hot.</p>"
            (new-sexprs
             (4vs-ite*-list-dumb (4vs-onehot vars)
                            (4v-onehot-sexpr-list-prime vars sexprs)
-                           (repeat (4vs-x) (len sexprs)))))
+                           (replicate (len sexprs) (4vs-x)))))
       (pairlis$ names new-sexprs)))
 
   (defund 4v-onehot-rw-sexpr-alist-aux (vars sexpr-alist)

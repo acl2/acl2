@@ -130,13 +130,13 @@
 
   (defthm vl-exprlist->finalwidths-of-vl-make-list-of-bitselects
     (equal (vl-exprlist->finalwidths (vl-make-list-of-bitselects expr low high))
-           (repeat 1 (+ 1 (nfix (- (nfix high) (nfix low))))))
-    :hints(("Goal" :in-theory (enable repeat))))
+           (replicate (+ 1 (nfix (- (nfix high) (nfix low)))) 1))
+    :hints(("Goal" :in-theory (enable replicate))))
 
   (defthm vl-exprlist->finaltypes-of-vl-make-list-of-bitselects
     (equal (vl-exprlist->finaltypes (vl-make-list-of-bitselects expr low high))
-           (repeat :vl-unsigned (+ 1 (nfix (- (nfix high) (nfix low))))))
-    :hints(("Goal" :in-theory (enable repeat)))))
+           (replicate (+ 1 (nfix (- (nfix high) (nfix low)))) :vl-unsigned))
+    :hints(("Goal" :in-theory (enable replicate)))))
 
 
 (defsection vl-make-msb-to-lsb-bitselects
@@ -171,13 +171,13 @@
 
   (defthm vl-exprlist->finalwidths-of-vl-make-msb-to-lsb-bitselects
     (equal (vl-exprlist->finalwidths (vl-make-msb-to-lsb-bitselects expr msb lsb))
-           (repeat 1 (+ 1 (abs (- (nfix msb) (nfix lsb))))))
-    :hints(("Goal" :in-theory (enable repeat))))
+           (replicate (+ 1 (abs (- (nfix msb) (nfix lsb)))) 1))
+    :hints(("Goal" :in-theory (enable replicate))))
 
   (defthm vl-exprlist->finaltypes-of-vl-make-msb-to-lsb-bitselects
     (equal (vl-exprlist->finaltypes (vl-make-msb-to-lsb-bitselects expr msb lsb))
-           (repeat :vl-unsigned (+ 1 (abs (- (nfix msb) (nfix lsb))))))
-    :hints(("Goal" :in-theory (enable repeat)))))
+           (replicate (+ 1 (abs (- (nfix msb) (nfix lsb)))) :vl-unsigned))
+    :hints(("Goal" :in-theory (enable replicate)))))
 
 
 (defsection vl-default-n-bit-expr

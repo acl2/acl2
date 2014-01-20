@@ -128,12 +128,17 @@
                             (flatten (cdr x)))
     nil))
 
-(defund repeat (x n)
+(defund replicate-fn (n x)
   (declare (xargs :guard (natp n)))
   (mbe :logic (if (zp n)
                   nil
-                (cons x (repeat x (- n 1))))
+                (cons x (replicate-fn (- n 1) x)))
        :exec (make-list n :initial-element x)))
+
+(defmacro replicate (n x)
+  `(replicate-fn ,n ,x))
+
+(add-macro-alias replicate replicate-fn)
 
 (defund final-cdr (x)
   (declare (xargs :guard t))

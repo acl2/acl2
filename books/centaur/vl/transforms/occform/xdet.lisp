@@ -126,7 +126,7 @@ vector.</p>"
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input 1))
        ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b" :vl-input n))
 
-       (a-wires   (repeat a-expr n))
+       (a-wires   (replicate n a-expr))
        (b-wires   (vl-make-list-of-bitselects b-expr 0 (- n 1)))
        (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
        (insts     (vl-simple-inst-list *vl-1-bit-xor* "bit" out-wires a-wires b-wires)))

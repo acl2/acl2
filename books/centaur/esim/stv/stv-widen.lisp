@@ -61,7 +61,7 @@ replicate simulation variables.</p>"
                           to be extended when they end with an underscore."
                          line1-name repeat-me))
                  (append line1-phases
-                         (repeat repeat-me (- number-of-phases line1-nphases)))))
+                         (replicate (- number-of-phases line1-nphases) repeat-me))))
               (t
                (prog2$
                 (er hard? 'stv-widen-lines

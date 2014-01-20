@@ -563,7 +563,7 @@
   (b* ((words (remove-equal "" (str::strtok sentence '(#\Space))))
        ;; Initialize charts, one chart per word in the sentence (plus an extra
        ;; chart that we won't use, in slot 0)
-       (chart-list (repeat (make-chart) (1+ (length words))))
+       (chart-list (replicate (1+ (length words)) (make-chart)))
        ;; Start off by enqueuing a dummy state in the first chart
        (chart-list (update-nth 0 (enqueue (make-pstate :source "G"
                                                        :targets '("S")

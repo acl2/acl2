@@ -964,16 +964,16 @@ of which recognizers require true-listp and which don't.</p>")
                              (:free (,x ,y)
                                     (,name ,@(subst `(cons ,x ,y) x formals)))))))
 
-          (defthm ,(mksym name '-of-repeat)
-            (equal (,name ,@(subst `(repeat ,x ,n) x formals))
+          (defthm ,(mksym name '-of-replicate)
+            (equal (,name ,@(subst `(replicate ,n ,x) x formals))
                    (or ,(cond (negatedp
                                `(not (,elementp ,@formals)))
                               (t
                                `(,elementp ,@formals)))
                        (zp ,n)))
             :hints(("Goal"
-                    :induct (repeat ,x ,n)
-                    :in-theory (enable repeat deflist-local-booleanp-element-thm)
+                    :induct (replicate ,n ,x)
+                    :in-theory (enable replicate deflist-local-booleanp-element-thm)
                     :expand ((,name ,@formals)
                              (:free (,x ,y)
                                     (,name ,@(subst `(cons ,x ,y) x formals)))))))

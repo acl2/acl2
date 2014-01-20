@@ -121,10 +121,10 @@ for some reason that's what you want to do.</p>"
            (revappend (strip-cdrs x)
                       (strip-cdrs y))))
 
-  (defthm strip-cdrs-of-repeat
-    (equal (strip-cdrs (repeat x n))
-           (repeat (cdr x) n))
-    :hints(("Goal" :in-theory (enable repeat))))
+  (defthm strip-cdrs-of-replicate
+    (equal (strip-cdrs (replicate n x))
+           (replicate n (cdr x)))
+    :hints(("Goal" :in-theory (enable replicate))))
 
   (defthm strip-cdrs-of-take
     (equal (strip-cdrs (take n x))
@@ -146,8 +146,8 @@ for some reason that's what you want to do.</p>"
     (equal (strip-cdrs (pairlis$ x y))
            (if (<= (len x) (len y))
                (take (len x) y)
-             (append y (repeat nil (- (len x) (len y))))))
+             (append y (replicate (- (len x) (len y)) nil))))
     :hints(("Goal"
             :induct (pairlis$ x y)
-            :in-theory (enable repeat)))))
+            :in-theory (enable replicate)))))
 

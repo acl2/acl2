@@ -223,9 +223,9 @@ alist, and hence is a hash table lookup.</p>"
 @('a')."
 
   :long "<p>In the logic, we define @('all-equalp') in terms of
-@('repeat').</p>
+@('replicate').</p>
 
-<p>We usually leave this enabled and prefer to reason about @('repeat')
+<p>We usually leave this enabled and prefer to reason about @('replicate')
 instead.  On the other hand, we also sometimes disable it and reason about it
 recursively, so we do prove a few theorems about it.</p>
 
@@ -234,14 +234,14 @@ consing.</p>"
   :enabled t
 
   (mbe :logic
-       (equal (list-fix x) (repeat a (len x)))
+       (equal (list-fix x) (replicate (len x) a))
        :exec
        (if (consp x)
            (and (equal a (car x))
                 (all-equalp a (cdr x)))
          t))
 
-  :guard-hints(("Goal" :in-theory (enable all-equalp repeat)))
+  :guard-hints(("Goal" :in-theory (enable all-equalp replicate)))
 
   ///
   (defrule all-equalp-when-atom
@@ -252,7 +252,7 @@ consing.</p>"
     (equal (all-equalp a (cons b x))
            (and (equal a b)
                 (all-equalp a x)))
-    :enable repeat)
+    :enable replicate)
 
   (local (in-theory (disable all-equalp)))
 
@@ -276,11 +276,11 @@ consing.</p>"
            (all-equalp a x))
     :induct (len x))
 
-  (defrule all-equalp-of-repeat
-    (equal (all-equalp a (repeat b n))
+  (defrule all-equalp-of-replicate
+    (equal (all-equalp a (replicate n b))
            (or (equal a b)
                (zp n)))
-    :enable repeat)
+    :enable replicate)
 
   (defrule all-equalp-of-take
     (implies (all-equalp a x)

@@ -70,10 +70,10 @@
               (NVARS (LEN VARS))
               (VALS
                (COND
-                ((EQ VAL *4VX*) (REPEAT *4VX* NVARS))
+                ((EQ VAL *4VX*) (REPLICATE NVARS *4VX*))
                 ((AND (NATP VAL) (< VAL (ASH 1 NVARS)))
                  (BOOL-TO-4V-LST (INT-TO-V VAL NVARS)))
-                (T (REPEAT *4VX* NVARS)))))
+                (T (REPLICATE NVARS *4VX*)))))
            (SAFE-PAIRLIS-ONTO-ACC VARS VALS REST)))
   :hints(("Goal" :in-theory (enable stv-simvar-inputs-to-bits))))
 

@@ -121,10 +121,10 @@ for some reason that's what you want to do.</p>"
            (revappend (strip-cars x)
                       (strip-cars y))))
 
-  (defthm strip-cars-of-repeat
-    (equal (strip-cars (repeat x n))
-           (repeat (car x) n))
-    :hints(("Goal" :in-theory (enable repeat))))
+  (defthm strip-cars-of-replicate
+    (equal (strip-cars (replicate n x))
+           (replicate n (car x)))
+    :hints(("Goal" :in-theory (enable replicate))))
 
   (defthm strip-cars-of-take
     (equal (strip-cars (take n x))

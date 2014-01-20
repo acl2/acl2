@@ -72,6 +72,7 @@
                progn$
                simpler-take
                repeat
+               replicate
                list-fix
                rev
                rcons

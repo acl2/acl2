@@ -332,7 +332,7 @@ endmodule
                                    (append q-exprs (list q-expr))
                                    (cons |n'b0| a-exprs)
                                    (cons e-expr q-exprs)
-                                   (repeat d~-expr n))))
+                                   (replicate n d~-expr))))
     (cons (make-vl-module :name      name
                           :origname  name
                           :portdecls (list q-portdecl r-portdecl e-portdecl d-portdecl)

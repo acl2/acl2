@@ -94,6 +94,6 @@
 
 (defcong nats-equiv nats-equiv (make-list-ac n val ac) 3)
 
-(defcong nat-equiv nats-equiv (repeat x n) 1
-  :hints(("Goal" :in-theory (enable repeat))))
+(defcong nat-equiv nats-equiv (replicate n x) 2
+  :hints(("Goal" :in-theory (enable replicate))))
 

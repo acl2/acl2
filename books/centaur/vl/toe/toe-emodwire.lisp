@@ -701,13 +701,13 @@ details.</p>"
 
   ;; (in-theory (disable nthcdr-of-increment))
 
-  ;; (defthm str::take-leading-digits-of-repeat
-  ;;   (equal (str::take-leading-digits (repeat char n))
+  ;; (defthm str::take-leading-digits-of-replicate
+  ;;   (equal (str::take-leading-digits (replicate n char))
   ;;          (if (str::digitp char)
-  ;;              (repeat char n)
+  ;;              (replicate n char)
   ;;            nil))
   ;;   :hints(("Goal" :in-theory (enable str::take-leading-digits
-  ;;                                     repeat))))
+  ;;                                     replicate))))
 
 
   ;; (defthm c1

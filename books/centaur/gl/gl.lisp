@@ -91,18 +91,18 @@
                (vars (cadr (car x)))
                (body (caddr (car x))))
             `(b* ,(pairlis$ 
-                   (pairlis$ (acl2::repeat 'mv (len vars))
+                   (pairlis$ (acl2::replicate (len vars) 'mv)
                              (pairlis$ vars
-                                       (pairlis$ (acl2::repeat 'hyp (len vars))
+                                       (pairlis$ (acl2::replicate (len vars) 'hyp)
                                                  nil)))
                    (pairlis$ result-exprs nil))
                ,(dumb-gify-body body))))
          (t (b* ((result-exprs (dumb-gify-body-lst (cdr x)))
                  (vars (mk-xes (len (cdr x)) 0)))
               `(b* ,(pairlis$ 
-                     (pairlis$ (acl2::repeat 'mv (len vars))
+                     (pairlis$ (acl2::replicate (len vars) 'mv)
                                (pairlis$ vars
-                                         (pairlis$ (acl2::repeat 'hyp (len vars))
+                                         (pairlis$ (acl2::replicate (len vars) 'hyp)
                                                    nil)))
                      (pairlis$ result-exprs nil))
                  (glr ,(car x)

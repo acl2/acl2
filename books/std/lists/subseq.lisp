@@ -90,7 +90,7 @@ ability to write nice rules about @('subseq-list').</p>
     :hints(("Goal" :in-theory (enable take-redefinition))))
 
 ; We could strengthen the above rules by turning them into something like (take
-; n (append x (repeat nil (- start)))) in the negative case, but that is
+; n (append x (replicate (- start) nil))) in the negative case, but that is
 ; probably nothing anyone would expect to see or should ever try to reason
 ; about.
 

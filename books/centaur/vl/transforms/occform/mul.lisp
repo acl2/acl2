@@ -95,13 +95,13 @@ endmodule
        (a-name (hons-copy "a"))
        (a-expr (vl-idexpr a-name n :vl-unsigned))
        (a[i]   (vl-make-bitselect a-expr i))
-       (a-high (repeat a[i] (len p-high)))
+       (a-high (replicate (len p-high) a[i]))
 
        (b-name (hons-copy "b"))
        (b-expr (vl-idexpr b-name n :vl-unsigned))
        (b-bits (vl-make-list-of-bitselects b-expr 0 (- n 1)))
        (b-high (take (len p-high) b-bits))
-       (b-low  (repeat |*sized-1'b0*| (len p-low)))
+       (b-low  (replicate (len p-low) |*sized-1'b0*|))
 
        (ands (vl-simple-inst-list *vl-1-bit-and* (cat "mk_" p-name "_high")
                                   p-high a-high b-high))
@@ -210,7 +210,7 @@ explicitly, which adds a layer of X-detection around the core circuitry.</p>"
 
                                         (cons (car (last p-exprs)) (butlast s-exprs 1))
                                         (cdr (rev p-exprs))
-                                        (repeat |*sized-1'b0*| (- n 1))))
+                                        (replicate (- n 1) |*sized-1'b0*|)))
 
        ;; this is the answer except for x-detection
        (ans (car (last s-exprs)))

@@ -59,7 +59,7 @@
     (b* (((mv byte state) (read-byte$ channel state))
          ((unless byte)
           (mv nil state)))
-      (mv (sign-extend 8 byte) state)))
+      (mv (fast-logext 8 byte) state)))
 
   (local (in-theory (enable read-8s)))
 

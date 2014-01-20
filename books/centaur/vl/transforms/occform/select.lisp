@@ -348,7 +348,7 @@ endmodule
 
        ;; pad-expr = { (2^bitlen-n)'bxxx...xxx, in }
        (padlen        (- 2^bitlength n))
-       (|padlen'bxxx| (make-vl-atom :guts (make-vl-weirdint :bits (repeat :vl-xval padlen)
+       (|padlen'bxxx| (make-vl-atom :guts (make-vl-weirdint :bits (replicate padlen :vl-xval)
                                                             :origwidth padlen :origtype :vl-unsigned)
                                     :finalwidth padlen
                                     :finaltype :vl-unsigned))

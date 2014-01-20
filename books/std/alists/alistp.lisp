@@ -85,11 +85,11 @@ Accordingly, you may not really need to reason about @('alistp') at all.</p>"
     (implies (alistp x)
              (alistp (member a x))))
 
-  (defthm alistp-of-repeat
-    (equal (alistp (repeat x n))
+  (defthm alistp-of-replicate
+    (equal (alistp (replicate n x))
            (or (zp n)
                (consp x)))
-    :hints(("Goal" :in-theory (enable repeat))))
+    :hints(("Goal" :in-theory (enable replicate))))
 
   (defthm alistp-of-take
     (implies (alistp x)

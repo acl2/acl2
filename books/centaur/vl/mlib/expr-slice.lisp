@@ -270,13 +270,13 @@ already correct and that no extensions are necessary.</p>"
 
   (defthm vl-exprlist->finalwidths-of-vl-lsb-bitslice-constint-aux
     (equal (vl-exprlist->finalwidths (vl-lsb-bitslice-constint-aux len value))
-           (repeat 1 (nfix len)))
-    :hints(("Goal" :in-theory (enable repeat))))
+           (replicate (nfix len) 1))
+    :hints(("Goal" :in-theory (enable replicate))))
 
   (defthm vl-exprlist->finaltypes-of-vl-lsb-bitslice-constint-aux
     (equal (vl-exprlist->finaltypes (vl-lsb-bitslice-constint-aux len value))
-           (repeat :vl-unsigned (nfix len)))
-    :hints(("Goal" :in-theory (enable repeat))))
+           (replicate (nfix len) :vl-unsigned))
+    :hints(("Goal" :in-theory (enable replicate))))
 
   (defthm vl-exprlist-welltyped-p-of-vl-lsb-bitslice-constint-aux
     (vl-exprlist-welltyped-p (vl-lsb-bitslice-constint-aux len value)))
@@ -340,14 +340,14 @@ already correct and that no extensions are necessary.</p>"
                   (force (vl-atom-welltyped-p x))
                   (force (vl-constint-p (vl-atom->guts x))))
              (equal (vl-exprlist->finalwidths (vl-msb-bitslice-constint x))
-                    (repeat 1 (vl-atom->finalwidth x)))))
+                    (replicate (vl-atom->finalwidth x) 1))))
 
   (defthm vl-exprlist->finaltypes-of-vl-msb-bitslice-constint
     (implies (and (force (vl-atom-p x))
                   (force (vl-atom-welltyped-p x))
                   (force (vl-constint-p (vl-atom->guts x))))
              (equal (vl-exprlist->finaltypes (vl-msb-bitslice-constint x))
-                    (repeat :vl-unsigned (vl-atom->finalwidth x)))))
+                    (replicate (vl-atom->finalwidth x) :vl-unsigned))))
 
   (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-constint
     (implies (and (force (vl-atom-p x))
@@ -419,17 +419,17 @@ already correct and that no extensions are necessary.</p>"
   (defthm vl-exprlist->finalwidths-of-vl-bitlist-to-sized-exprs
     (implies (force (vl-bitlist-p x))
              (equal (vl-exprlist->finalwidths (vl-bitlist-to-sized-exprs x))
-                    (repeat 1 (len x))))
+                    (replicate (len x) 1)))
     :hints(("Goal"
-            :in-theory (enable repeat)
+            :in-theory (enable replicate)
             :induct (len x))))
 
   (defthm vl-exprlist->finaltypes-of-vl-bitlist-to-sized-exprs
     (implies (force (vl-bitlist-p x))
              (equal (vl-exprlist->finaltypes (vl-bitlist-to-sized-exprs x))
-                    (repeat :vl-unsigned (len x))))
+                    (replicate (len x) :vl-unsigned)))
     :hints(("Goal"
-            :in-theory (enable repeat)
+            :in-theory (enable replicate)
             :induct (len x))))
 
   (defthm vl-exprlist-welltyped-p-of-vl-bitlist-to-sized-exprs
@@ -469,14 +469,14 @@ already correct and that no extensions are necessary.</p>"
                   (force (vl-atom-welltyped-p x))
                   (force (vl-weirdint-p (vl-atom->guts x))))
              (equal (vl-exprlist->finalwidths (vl-msb-bitslice-weirdint x))
-                    (repeat 1 (vl-atom->finalwidth x)))))
+                    (replicate (vl-atom->finalwidth x) 1))))
 
   (defthm vl-exprlist->finaltypes-of-vl-msb-bitslice-weirdint
     (implies (and (force (vl-atom-p x))
                   (force (vl-atom-welltyped-p x))
                   (force (vl-weirdint-p (vl-atom->guts x))))
              (equal (vl-exprlist->finaltypes (vl-msb-bitslice-weirdint x))
-                    (repeat :vl-unsigned (vl-atom->finalwidth x)))))
+                    (replicate (vl-atom->finalwidth x) :vl-unsigned))))
 
   (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-weirdint
     (implies (and (force (vl-atom-p x))
@@ -598,13 +598,13 @@ already correct and that no extensions are necessary.</p>"
 
   (local (defthm j2
            (equal (equal (append x (list y))
-                         (repeat a n))
+                         (replicate n a))
                   (and (posp n)
                        (equal y a)
-                       (equal (list-fix x) (repeat a (- n 1)))))
+                       (equal (list-fix x) (replicate (- n 1) a))))
            :hints(("Goal"
                    :induct (cdr-dec-induct x n)
-                   :in-theory (enable repeat)))))
+                   :in-theory (enable replicate)))))
 
   (local (defthm c0
            (all-equalp 1 (vl-exprlist->finalwidths
@@ -659,15 +659,15 @@ already correct and that no extensions are necessary.</p>"
   (defthm vl-exprlist->finalwidths-of-vl-msb-bitslice-name
     (let ((ret (vl-msb-bitslice-name x mod ialist warnings)))
       (equal (vl-exprlist->finalwidths (mv-nth 2 ret))
-             (repeat 1 (len (mv-nth 2 ret)))))
+             (replicate (len (mv-nth 2 ret)) 1)))
     :hints (("goal" :in-theory (disable vl-msb-bitslice-name main)
              :use main)))
 
 
-  (local (defthm vl-exprlist->finaltypes-of-repeat
-           (equal (vl-exprlist->finaltypes (repeat a n))
-                  (repeat (vl-expr->finaltype a) n))
-           :hints(("Goal" :in-theory (enable repeat)))))
+  (local (defthm vl-exprlist->finaltypes-of-replicate
+           (equal (vl-exprlist->finaltypes (replicate n a))
+                  (replicate n (vl-expr->finaltype a)))
+           :hints(("Goal" :in-theory (enable replicate)))))
 
   (local (defthm d0
            (all-equalp :vl-unsigned (vl-exprlist->finaltypes
@@ -708,7 +708,7 @@ already correct and that no extensions are necessary.</p>"
   (defthm vl-exprlist->finaltypes-of-vl-msb-bitslice-name
     (let ((ret (vl-msb-bitslice-name x mod ialist warnings)))
       (equal (vl-exprlist->finaltypes (mv-nth 2 ret))
-             (repeat :vl-unsigned (len (mv-nth 2 ret)))))
+             (replicate (len (mv-nth 2 ret)) :vl-unsigned)))
     :hints (("goal" :in-theory (disable vl-msb-bitslice-name main2)
              :use main2)))
 
@@ -847,13 +847,13 @@ already correct and that no extensions are necessary.</p>"
 
   (local (defthm j2
            (equal (equal (append x (list y))
-                         (repeat a n))
+                         (replicate n a))
                   (and (posp n)
                        (equal y a)
-                       (equal (list-fix x) (repeat a (- n 1)))))
+                       (equal (list-fix x) (replicate (- n 1) a))))
            :hints(("Goal"
                    :induct (cdr-dec-induct x n)
-                   :in-theory (enable repeat)))))
+                   :in-theory (enable replicate)))))
 
   (local (defthm c0
            (all-equalp 1 (vl-exprlist->finalwidths
@@ -919,15 +919,15 @@ already correct and that no extensions are necessary.</p>"
                   (vl-expr-welltyped-p x))
              (let ((ret (vl-msb-bitslice-hid x warnings)))
                (equal (vl-exprlist->finalwidths (mv-nth 2 ret))
-                      (repeat 1 (len (mv-nth 2 ret))))))
+                      (replicate (len (mv-nth 2 ret)) 1))))
     :hints (("goal" :in-theory (disable vl-msb-bitslice-hid main)
              :use main)))
 
 
-  (local (defthm vl-exprlist->finaltypes-of-repeat
-           (equal (vl-exprlist->finaltypes (repeat a n))
-                  (repeat (vl-expr->finaltype a) n))
-           :hints(("Goal" :in-theory (enable repeat)))))
+  (local (defthm vl-exprlist->finaltypes-of-replicate
+           (equal (vl-exprlist->finaltypes (replicate n a))
+                  (replicate n (vl-expr->finaltype a)))
+           :hints(("Goal" :in-theory (enable replicate)))))
 
   (local (defthm d0
            (all-equalp :vl-unsigned (vl-exprlist->finaltypes
@@ -979,7 +979,7 @@ already correct and that no extensions are necessary.</p>"
                   (vl-expr-welltyped-p x))
              (let ((ret (vl-msb-bitslice-hid x warnings)))
                (equal (vl-exprlist->finaltypes (mv-nth 2 ret))
-                      (repeat :vl-unsigned (len (mv-nth 2 ret))))))
+                      (replicate (len (mv-nth 2 ret)) :vl-unsigned))))
     :hints (("goal" :in-theory (disable vl-msb-bitslice-hid main2)
              :use main2)))
 
@@ -1115,7 +1115,7 @@ wire [0:3] w;
          (extension-bit (if (eq x.finaltype :vl-signed)
                             (car main-bits) ;; sign extension
                           |*sized-1'b0*|))  ;; zero extension
-         (bits (append (repeat extension-bit (- x.finalwidth nwires))
+         (bits (append (replicate (- x.finalwidth nwires) extension-bit)
                        main-bits)))
       (mv t warnings bits)))
 
@@ -1150,20 +1150,20 @@ wire [0:3] w;
                       (vl-atom->finalwidth x)))))
 
 
-  (local (defthm vl-exprlist->finalwidths-of-repeat
-           (equal (vl-exprlist->finalwidths (repeat a n))
-                  (repeat (vl-expr->finalwidth a) n))
-           :hints(("Goal" :in-theory (enable repeat)))))
+  (local (defthm vl-exprlist->finalwidths-of-replicate
+           (equal (vl-exprlist->finalwidths (replicate n a))
+                  (replicate n (vl-expr->finalwidth a)))
+           :hints(("Goal" :in-theory (enable replicate)))))
 
   (local (in-theory (disable car-of-vl-exprlist->finalwidths)))
   (local (defthm vl-expr->finalwidth-of-first
            (equal (vl-expr->finalwidth (first x))
                   (first (vl-exprlist->finalwidths x)))))
 
-  (local (defthm first-repeat
+  (local (defthm first-replicate
            (implies (not (zp len))
-                    (equal (first (repeat v len)) v))
-           :hints(("Goal" :in-theory (enable repeat)))))
+                    (equal (first (replicate len v)) v))
+           :hints(("Goal" :in-theory (enable replicate)))))
 
   (defthm vl-exprlist->finalwidths-of-vl-msb-bitslice-id
     (let ((ret (vl-msb-bitslice-id x mod ialist warnings)))
@@ -1174,12 +1174,12 @@ wire [0:3] w;
                     (force (vl-module-p mod))
                     (force (equal ialist (vl-moditem-alist mod))))
                (equal (vl-exprlist->finalwidths (mv-nth 2 ret))
-                      (repeat 1 (vl-atom->finalwidth x))))))
+                      (replicate (vl-atom->finalwidth x) 1)))))
 
-  (local (defthm vl-exprlist->finaltypes-of-repeat
-           (equal (vl-exprlist->finaltypes (repeat a n))
-                  (repeat (vl-expr->finaltype a) n))
-           :hints(("Goal" :in-theory (enable repeat)))))
+  (local (defthm vl-exprlist->finaltypes-of-replicate
+           (equal (vl-exprlist->finaltypes (replicate n a))
+                  (replicate n (vl-expr->finaltype a)))
+           :hints(("Goal" :in-theory (enable replicate)))))
 
   (local (in-theory (disable car-of-vl-exprlist->finaltypes)))
   (local (defthm vl-expr->finaltype-of-first
@@ -1195,7 +1195,7 @@ wire [0:3] w;
                     (force (vl-module-p mod))
                     (force (equal ialist (vl-moditem-alist mod))))
                (equal (vl-exprlist->finaltypes (mv-nth 2 ret))
-                      (repeat :vl-unsigned (vl-atom->finalwidth x))))))
+                      (replicate (vl-atom->finalwidth x) :vl-unsigned)))))
 
 
 
@@ -1390,7 +1390,7 @@ wire [0:3] b;
                     (force (vl-module-p mod))
                     (force (equal ialist (vl-moditem-alist mod))))
                (equal (vl-exprlist->finalwidths (mv-nth 2 ret))
-                      (repeat 1 (vl-nonatom->finalwidth x))))))
+                      (replicate (vl-nonatom->finalwidth x) 1)))))
 
   (defthm vl-exprlist->finaltypes-of-vl-msb-bitslice-partselect
     (let ((ret (vl-msb-bitslice-partselect x mod ialist warnings)))
@@ -1403,7 +1403,7 @@ wire [0:3] b;
                     (force (vl-module-p mod))
                     (force (equal ialist (vl-moditem-alist mod))))
                (equal (vl-exprlist->finaltypes (mv-nth 2 ret))
-                      (repeat :vl-unsigned (vl-nonatom->finalwidth x))))))
+                      (replicate (vl-nonatom->finalwidth x) :vl-unsigned)))))
 
   (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-partselect
     (let ((ret (vl-msb-bitslice-partselect x mod ialist warnings)))
@@ -1511,7 +1511,7 @@ a flat list of MSB-ordered, single-bit expressions."
            (vl-msb-bitslice-expr concat mod ialist warnings))
           ((unless successp)
            (mv nil warnings nil))
-          (full-bits (flatten (repeat concat-bits (vl-resolved->val mult)))))
+          (full-bits (flatten (replicate (vl-resolved->val mult) concat-bits))))
        (mv successp warnings full-bits)))
 
    (defund vl-msb-bitslice-exprlist (x mod ialist warnings)
@@ -1609,10 +1609,10 @@ a flat list of MSB-ordered, single-bit expressions."
             :expand ((vl-msb-bitslice-expr x mod ialist warnings)
                      (vl-msb-bitslice-exprlist x mod ialist warnings)))))
 
-  (local (defthm len-of-flatten-of-repeat
-           (equal (len (flatten (repeat a n)))
+  (local (defthm len-of-flatten-of-replicate
+           (equal (len (flatten (replicate n a)))
                   (* (nfix n) (len a)))
-           :hints(("Goal" :in-theory (enable repeat)))))
+           :hints(("Goal" :in-theory (enable replicate)))))
 
   (defthm-vl-flag-msb-bitslice-expr
     (defthm len-of-vl-msb-bitslice-expr
@@ -1644,11 +1644,11 @@ a flat list of MSB-ordered, single-bit expressions."
 
 
 
-  (local (defthm all-equalp-of-vl-exprlist->finalwidths-of-flatten-repeat
-           (equal (all-equalp a (vl-exprlist->finalwidths (flatten (repeat x n))))
+  (local (defthm all-equalp-of-vl-exprlist->finalwidths-of-flatten-replicate
+           (equal (all-equalp a (vl-exprlist->finalwidths (flatten (replicate n x))))
                   (or (zp n)
                       (all-equalp a (vl-exprlist->finalwidths x))))
-           :hints(("Goal" :in-theory (enable repeat)))))
+           :hints(("Goal" :in-theory (enable replicate)))))
 
   (local (defthm-vl-flag-msb-bitslice-expr
            (defthm l0
@@ -1686,7 +1686,7 @@ a flat list of MSB-ordered, single-bit expressions."
                     (force (vl-module-p mod))
                     (force (equal ialist (vl-moditem-alist mod))))
                (equal (vl-exprlist->finalwidths (mv-nth 2 ret))
-                      (repeat 1 (vl-expr->finalwidth x)))))
+                      (replicate (vl-expr->finalwidth x) 1))))
     :hints(("Goal"
             :in-theory (disable l0)
             :use ((:instance l0)))))
@@ -1700,7 +1700,7 @@ a flat list of MSB-ordered, single-bit expressions."
                     (force (vl-module-p mod))
                     (force (equal ialist (vl-moditem-alist mod))))
                (equal (vl-exprlist->finalwidths (mv-nth 2 ret))
-                      (repeat 1 (sum-nats (vl-exprlist->finalwidths x))))))
+                      (replicate (sum-nats (vl-exprlist->finalwidths x)) 1))))
     :hints(("Goal"
             :in-theory (disable l1)
             :use ((:instance l1)))))
@@ -1708,11 +1708,11 @@ a flat list of MSB-ordered, single-bit expressions."
 
 
 
-  (local (defthm all-equalp-of-vl-exprlist->finaltypes-of-flatten-repeat
-           (equal (all-equalp a (vl-exprlist->finaltypes (flatten (repeat x n))))
+  (local (defthm all-equalp-of-vl-exprlist->finaltypes-of-flatten-replicate
+           (equal (all-equalp a (vl-exprlist->finaltypes (flatten (replicate n x))))
                   (or (zp n)
                       (all-equalp a (vl-exprlist->finaltypes x))))
-           :hints(("Goal" :in-theory (enable repeat)))))
+           :hints(("Goal" :in-theory (enable replicate)))))
 
   (local (defthm-vl-flag-msb-bitslice-expr
            (defthm m0
@@ -1750,7 +1750,7 @@ a flat list of MSB-ordered, single-bit expressions."
                     (force (vl-module-p mod))
                     (force (equal ialist (vl-moditem-alist mod))))
                (equal (vl-exprlist->finaltypes (mv-nth 2 ret))
-                      (repeat :vl-unsigned (vl-expr->finalwidth x)))))
+                      (replicate (vl-expr->finalwidth x) :vl-unsigned))))
     :hints(("Goal"
             :in-theory (disable m0)
             :use ((:instance m0)))))
@@ -1764,18 +1764,18 @@ a flat list of MSB-ordered, single-bit expressions."
                     (force (vl-module-p mod))
                     (force (equal ialist (vl-moditem-alist mod))))
                (equal (vl-exprlist->finaltypes (mv-nth 2 ret))
-                      (repeat :vl-unsigned (sum-nats (vl-exprlist->finalwidths x))))))
+                      (replicate (sum-nats (vl-exprlist->finalwidths x)) :vl-unsigned))))
     :hints(("Goal"
             :in-theory (disable m1)
             :use ((:instance m1)))))
 
 
 
-  (local (defthm vl-exprlist-welltyped-p-of-flatten-of-repeat
-           (equal (vl-exprlist-welltyped-p (flatten (repeat x n)))
+  (local (defthm vl-exprlist-welltyped-p-of-flatten-of-replicate
+           (equal (vl-exprlist-welltyped-p (flatten (replicate n x)))
                   (or (zp n)
                       (vl-exprlist-welltyped-p x)))
-           :hints(("Goal" :in-theory (enable repeat)))))
+           :hints(("Goal" :in-theory (enable replicate)))))
 
   (defthm-vl-flag-msb-bitslice-expr
     (defthm vl-exprlist-welltyped-p-of-vl-msb-bitslice-expr
