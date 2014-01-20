@@ -339,6 +339,13 @@ OK_CERTS := $(filter-out $(CERT_PL_HONS_ONLY), $(OK_CERTS))
 
 endif # ifeq ($(ACL2_HAS_HONS), )
 
+
+ifneq (CCL, $(ACL2_HOST_LISP))
+${info Excluding books that are CCL-only: [$(CERT_PL_CCL_ONLY)]}
+OK_CERTS := $(filter-out $(CERT_PL_CCL_ONLY), $(OK_CERTS))
+endif
+
+
 ifeq ($(ACL2_HAS_ANSI), )
 
 # We use "{...}" delimeters to avoid errors in version 3.80 of make.
