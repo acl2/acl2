@@ -847,12 +847,7 @@ in the module.</li>
        (vl-gatesplit-nand/nor x nf warnings))
 
       (otherwise
-       (mv (cons (make-vl-warning
-                  :type :vl-bad-gate
-                  :msg "~a0: unsupported gate type ~x1."
-                  :args (list x (vl-gateinst->type x))
-                  :fn 'vl-gateinst-gatesplit)
-                 warnings)
+       (mv warnings
            nil
            (list x)
            nf))))
