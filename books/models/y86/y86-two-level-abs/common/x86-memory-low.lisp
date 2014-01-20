@@ -894,8 +894,8 @@
 
 (defthm mem-arrayp-repeat
   (implies (unsigned-byte-p 8 x)
-           (mem-arrayp (repeat x n)))
-  :hints(("Goal" :in-theory (enable repeat))))
+           (mem-arrayp (replicate n x)))
+  :hints(("Goal" :in-theory (enable replicate))))
 
 (defthm mem-arrayp-resize-list
   (implies (and (mem-arrayp lst)

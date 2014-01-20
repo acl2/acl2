@@ -631,7 +631,7 @@ fix-cert/fix-cert.cert:
 # potentially large memory requirements.
 ifneq ($(ACL2_HAS_HONS), )
 models/y86-target.cert:
-	cd $(@D)/y86 ; $(STARTJOB) -c "$(MAKE) -j 1"
+	cd $(@D)/y86 ; $(STARTJOB) -c "$(MAKE) -j 1 &> make.log"
 endif
 
 projects/translators/l3-to-acl2/target.cert: \
