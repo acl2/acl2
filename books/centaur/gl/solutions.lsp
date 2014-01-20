@@ -22,6 +22,11 @@
 ; Original authors: Sol Swords <sswords@centtech.com>
 ;                   Jared Davis <jared@centtech.com>
 
+; This is a certifiable book, or would be if it were named .lisp.  For some
+; time we called it solutions.lisp.  However, it frequently causes resource
+; problems for certain Lisps, so we've renamed it to solutions.lsp so that
+; it won't get automatically certified.
+
 (in-package "ACL2")
 (include-book "gl")
 ; cert_param: (hons-only)

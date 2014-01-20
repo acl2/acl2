@@ -616,7 +616,7 @@ using GL.</p>
 
 <p>These exercises will get you into some rough spots, so that you can learn
 how to get out.  If you get stuck, you can see our solutions in the file
-@('centaur/gl/solutions.lisp').</p>
+@('centaur/gl/solutions.lsp').</p>
 
 <p>We recommend trying to carry out these exercises in a new file.  You will
 probably want to start your file with:</p>

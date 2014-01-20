@@ -24,6 +24,7 @@
 
 
 (defsection defchar
+  :parents (lexer)
   :short "Introduce lexing utilites from a character recognizer."
 
   :long "<p>@('Defchar') is a macro for quickly introducing character classes
