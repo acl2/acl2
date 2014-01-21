@@ -8146,6 +8146,19 @@
                     (term-evisc-tuple t state)
                     (free-vars-display-limit state))))
              (value :invisible))))
+       (:wonp
+        0 (lambda nil
+            (prog2$
+             (if (get-brr-local 'wonp state)
+                 (cw "? ~F0 succeeded.~%"
+                     (access rewrite-rule
+                             (get-brr-local 'lemma state)
+                             :rune))
+               (cw "? ~F0 failed.~%"
+                     (access rewrite-rule
+                             (get-brr-local 'lemma state)
+                             :rune)))
+             (value :invisible))))
        (:path
         0 (lambda nil
             (prog2$ (cw-gstack)

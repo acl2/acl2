@@ -567,7 +567,12 @@ doc.lisp: books/system/doc/acl2-doc.lisp \
 
 books/system/doc/render-doc.cert:
 	rm -f books/system/doc/rendered-doc.lsp
-	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert
+ifndef ACL2
+	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2_WD)/saved_acl2
+else
+	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2)
+endif
+
 
 .PHONY: STATS
 
