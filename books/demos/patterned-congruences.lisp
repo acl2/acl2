@@ -8,14 +8,173 @@
 ; of the examples are lower-level than others, so this file serves several
 ; purposes, as follows.
 
+; - It provides a demo of congruence-based reasoning and patterned congruences.
 ; - It serves as a regression test for patterned congruences.
 ; - It augments the user-level documentation.
 ; - It contains some lower-level discussion that can help ACL2 implementors
 ;   understand issues that might arise.
 
+; We start with a demo, and then proceed with what are essentially regression
+; tests.
+
 (in-package "ACL2")
 
 (include-book "misc/eval" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Demo
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; In this demo we introduce a notion of tree equivalence, where two binary
+; trees are equivalent if one can be obtained by the other by a sequence of
+; "flips", swapping left and right child at a subtree.  It is split into the
+; following sections.
+
+; Demo Section 1: A tree equivalence
+; Demo Section 2: An equivalence-based rewrite rule
+; Demo Section 3: Traditional congruence-based reasoning example
+; Demo Section 4: Patterned congruence example
+
+;;;;;;;;;;
+; Demo Section 1: A tree equivalence
+;;;;;;;;;;
+
+(defun tree-equiv (t1 t2)
+  (cond ((or (atom t1) (atom t2))
+         (equal t1 t2))
+        (t (or (and (tree-equiv (car t1) (car t2))
+                    (tree-equiv (cdr t1) (cdr t2)))
+               (and (tree-equiv (car t1) (cdr t2))
+                    (tree-equiv (cdr t1) (car t2)))))))
+
+; An induction hint is needed to prove transitivity (below):
+
+(defun defequiv-tree-equiv-induction-hint (t1 t2 t3)
+  (cond
+   ((or (atom t1) (atom t2) (atom t3))
+    t)
+   (t (and (defequiv-tree-equiv-induction-hint (car t1) (car t2) (car t3))
+           (defequiv-tree-equiv-induction-hint (car t1) (car t2) (cdr t3))
+           (defequiv-tree-equiv-induction-hint (car t1) (cdr t2) (car t3))
+           (defequiv-tree-equiv-induction-hint (car t1) (cdr t2) (cdr t3))
+           (defequiv-tree-equiv-induction-hint (cdr t1) (car t2) (car t3))
+           (defequiv-tree-equiv-induction-hint (cdr t1) (car t2) (cdr t3))
+           (defequiv-tree-equiv-induction-hint (cdr t1) (cdr t2) (car t3))
+           (defequiv-tree-equiv-induction-hint (cdr t1) (cdr t2) (cdr t3))))))
+
+(defequiv tree-equiv
+  :hints (("Goal" :induct (defequiv-tree-equiv-induction-hint x y z))))
+
+;;;;;;;;;;
+; Demo Section 2: An equivalence-based rewrite rule
+;;;;;;;;;;
+
+; The following function swaps every pair of children in a binary tree.
+
+(defun mirror (tree)
+  (cond ((atom tree) tree)
+        (t (cons (mirror (cdr tree))
+                 (mirror (car tree))))))
+
+; Notice that the following rewrite rule is based on tree-equiv, not equal.  It
+; will replace (mirror x) by x at a subterm occurrence for which it is
+; sufficient to preserve the tree-equiv relation.
+
+(defthm tree-equiv-mirror
+  (tree-equiv (mirror x)
+              x))
+
+;;;;;;;;;;
+; Demo Section 3: Traditional congruence-based reasoning example
+;;;;;;;;;;
+
+(defun tree-product (tree)
+
+; Returns the product of the numeric fringe of tree.
+
+  (cond ((acl2-numberp tree)
+         tree)
+        ((atom tree)
+         1)
+        (t (* (tree-product (car tree))
+              (tree-product (cdr tree))))))
+
+; Just a test (proved by evaluation):
+
+(defthm test-tree-product
+  (equal (tree-product '((3 (4 (5 3 a 6) 7 b (4 2)))))
+         (* 3 4 5 3 6 7 4 2))
+  :rule-classes nil)
+
+; This congruence rule says that the argument of tree-product can be rewritten
+; to preserve the tree-equiv relation.
+
+(defthm tree-equiv-implies-equal-tree-product
+  (implies (tree-equiv x y)
+           (equal (tree-product x)
+                  (tree-product y)))
+  :rule-classes :congruence)
+
+; This little example is proved automatically by rewriting the term (mirror x).
+; Of course, it is easy to prove this theorem directly, without
+; tree-equiv-mirror or tree-equiv-implies-equal-tree-product; here, we are just
+; giving a simple illustration of congruence-based rewriting.
+
+(defthm tree-product-mirror
+  (equal (tree-product (mirror x))
+         (tree-product x))
+  :rule-classes nil)
+
+;;;;;;;;;;
+; Demo Section 4: Patterned congruence example
+;;;;;;;;;;
+
+; Now suppose we want to sweep the tree to collect not only the product of the
+; numeric leaves, but additional information as well.  Function tree-data does
+; that, using function combine-tree-data to combine recursive calls.
+
+(defun combine-tree-data (t1 t2)
+  (list (* (first t1) (first t2))
+        (append (second t1) (second t2))))
+
+(defun tree-data (tree)
+
+; Returns (list product leaves), where leaves is the numeric fringe of tree and
+; product is the product of those leaves.
+
+  (cond ((acl2-numberp tree)
+         (list tree (list tree)))
+        ((atom tree)
+         (list 1 nil))
+        (t (combine-tree-data (tree-data (car tree))
+                              (tree-data (cdr tree))))))
+
+; Test (proved by evaluation):
+
+(defthm tree-data-test
+  (equal (tree-data '((3 (4 (5 3 a 6) 7 b (4 2)))))
+         (list (* 3 4 5 3 6 7 4 2)
+               '(3 4 5 3 6 7 4 2)))
+  :rule-classes nil)
+
+; Here comes a patterned congruence rule.
+
+(defthm tree-equiv-implies-equal-first-tree-data
+  (implies (tree-equiv x y)
+           (equal (first (tree-data x))
+                  (first (tree-data y))))
+  :rule-classes :congruence)
+
+; The following example is proved by the rewrite of (mirror x) to x.  While
+; this example is trivial, imagine that there are k1 functions like mirror and
+; k2 like tree-data.  If we prove k1 rules like tree-equiv-mirror and k2 rules
+; like tree-equiv-implies-equal-first-tree-data, then these k1+k2 rules set us
+; up to perform automatically all k1*k2 rewrites like first-tree-data-mirror.
+
+(defthm first-tree-data-mirror
+  (equal (first (tree-data (mirror x)))
+         (first (tree-data x)))
+  :rule-classes nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; General utilities for displaying pequivs and such
