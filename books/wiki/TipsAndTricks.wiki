@@ -1,4 +1,4 @@
-#summary Tips and Tricks for Navigating ACL2 Library Code
+#summary Tips and Tricks for Using ACL2 Books
 
 = Introduction =
 
@@ -22,3 +22,27 @@ The following command can provide that information on some Linux systems.  (Ther
 {{{
 ps axww
 }}}
+
+== How do I use a proxy to download Quicklisp? ==
+
+First, you have to manually edit the file books/centaur/quicklisp/install.lsp so that it uses the :proxy option:
+
+    (quicklisp-quickstart:install :proxy "http://myproxy.site.com:8080/")
+
+"Only plain HTTP (no SSL) is supported at this time. Proxy authentication is also not yet supported.
+
+You can change the proxy value after initial installation with this:
+
+    (setf (ql-config:config-value "proxy-url") "http://proxy.value.here")
+
+The value is preserved between Quicklisp sessions."
+http://www.quicklisp.org/beta/faq.html
+
+Alternatively, since the value is preserved between sessions via file books/centaur/quicklisp/config/proxy-url.txt, you can just manually edit the file and place your equivalent of the following in it:
+
+{{{
+http://myproxy.site.com:8080/
+
+}}}
+
+This also means you can revert your changes to install.lsp.
