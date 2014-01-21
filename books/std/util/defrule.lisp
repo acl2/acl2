@@ -30,7 +30,7 @@
   :parents (std/util)
   :short "A slightly enhanced version of @(see defthm)."
 
-  :long "<p>@('defrule') is an drop-in replacement for @('defthm') that
+  :long "<p>@('defrule') is a drop-in replacement for @('defthm') that
 adds:</p>
 
 <ul>
