@@ -25,7 +25,13 @@ ps axww
 
 == How do I use a proxy to download Quicklisp? ==
 
-First, you have to manually edit the file books/centaur/quicklisp/install.lsp so that it uses the :proxy option:
+There are two steps to installing Quicklisp:
+
+(1) You have to procure quicklisp.lisp (typically done via a call of "make"... that is, until "make" breaks).  You can either download the file manually from http://beta.quicklisp.org/quicklisp.lisp, or if you're using curl via the GNUMakefile, you can use curl's -x option.
+
+(2) Second you have to tell quicklisp itself where to get its supporting files.  There are a couple approaches to this.
+
+One is to manually edit the file books/centaur/quicklisp/install.lsp so that it uses the :proxy option:
 
     (quicklisp-quickstart:install :proxy "http://myproxy.site.com:8080/")
 
@@ -36,7 +42,7 @@ You can change the proxy value after initial installation with this:
     (setf (ql-config:config-value "proxy-url") "http://proxy.value.here")
 
 The value is preserved between Quicklisp sessions."
-http://www.quicklisp.org/beta/faq.html
+[ http://www.quicklisp.org/beta/faq.html ]
 
 Alternatively, since the value is preserved between sessions via file books/centaur/quicklisp/config/proxy-url.txt, you can just manually edit the file and place your equivalent of the following in it:
 
