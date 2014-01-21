@@ -278,6 +278,9 @@ of `inferior-acl2-program').  Runs the hooks from
   (interactive (list (if current-prefix-arg
 			 (read-string "Run lisp: " inferior-acl2-program)
 		       inferior-acl2-program)))
+  (if (not (executable-find inferior-acl2-program))
+      (error "ACL2 executable not found; evaluate %s"
+	     '(setq inferior-acl2-program "<path_to_acl2>")))
   (if (not (comint-check-proc "*inferior-acl2*"))
       (let ((cmdlist (inferior-acl2-args-to-list cmd)))
 	(set-buffer (apply (function make-comint)

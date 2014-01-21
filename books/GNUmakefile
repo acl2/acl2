@@ -144,12 +144,6 @@ ifeq ($(ACL2),)
 ACL2 := acl2
 endif # ifndef ACL2
 
-# Check that $(ACL2) is an executable.
-ifeq ($(shell which $(ACL2) 2> /dev/null),)
-${error Error: Illegal value for ACL2: $(ACL2). \
-  Use make ACL2=<path_to_acl2> ...}
-endif # $($(shell which $(ACL2) 2> /dev/null),)
-
 .SUFFIXES:
 .SUFFIXES: .cert .lisp
 
@@ -921,8 +915,11 @@ all: $(OK_CERTS)
 # on a first pass through the Makefile without USE_QUICKLISP being
 # set.
 .PHONY: everything
+# Note: We add centaur/doc.cert explicitly, even though that might not
+# be necessary, because at one point centaur/doc.cert was not
+# otherwise made (something related to glucose).
 everything:
-	$(MAKE) all $(ADDED_BOOKS) USE_QUICKLISP=1
+	$(MAKE) all USE_QUICKLISP=1 $(ADDED_BOOKS) centaur/doc.cert
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
@@ -1253,6 +1250,9 @@ special: $(BOOKS_SPECIAL_OUT)
 
 # make -j 8 USE_QUICKLISP=1 ACL2=my-acl2h centaur/doc.cert system/doc/acl2-manual.cert
 
+# WARNING: Do not make this target with other targets if using a value
+# for -j that is greater than 1.  Otherwise, overlapping parallel
+# processes might attempt to make the same target.
 manual:
 	$(MAKE) USE_QUICKLISP=1 centaur/doc.cert
 

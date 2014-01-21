@@ -68,26 +68,18 @@
 
   (concatenate 'string *acl2-url* "HTML/installation/installation.html"))
 
-(defconst *combined-manual-url*
+(defun combined-manual-ref ()
 
 ; Warning: This event appears identically in acl2-doc.lisp and
 ; acl2-doc-wrap.lisp.  If you change one, then change the other the same way!
 
-  (concatenate 'string *acl2-url* "combined-manual/"))
-
-(defun combined-manual-link (filename)
-
-; Warning: This event appears identically in acl2-doc.lisp and
-; acl2-doc-wrap.lisp.  If you change one, then change the other the same way!
-
-  (concatenate 'string
-               "<a href='"
-               *combined-manual-url*
-               (or filename "index.html")
-               "'>"
-               *combined-manual-url*
-               (or filename "index.html")
-               "</a>"))
+  (concatenate
+   'string
+   "<a href='"
+   (concatenate 'string *acl2-url* "combined-manual/index.html") ; url
+   "'>"
+   "acl2+books combined manual"
+   "</a>"))
 
 (defun clhs (url title)
 

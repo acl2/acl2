@@ -71,8 +71,10 @@ in ACL2 6.4, so we've deleted them.</p>
 
 <p>STD: @(see defrule) now has a @(':local') option.</p>
 
-<p>Running the @('make') command now causes an error if variable ACL2 is not
-bound to an executable.</p>")
+<p>(File interface/emacs/inf-acl2.el) One now gets a clear error, suggesting a
+solution, when Emacs command @('meta-x run-acl2') cannot find an ACL2
+executable.  Thanks to Scott Staley for helpful correspondence leading to this
+fix.</p>")
 
 
 (defxdoc note-6-4-books
