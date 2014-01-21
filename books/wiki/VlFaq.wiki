@@ -47,4 +47,8 @@ Questions
    res))
 }}}
 
-Note that the above code is pseudo-code derived from code that actually worked, so I (Rager) can imagine that there are typos.
+  Note that the above code is pseudo-code derived from code that actually worked, so I (Rager) can imagine that there are typos.
+
+  * Why won't my rewrite rule fire?
+
+  It may be the case that you haven't disabled the executable counterparts of your stvs.  One way to figure out that you haven't done so is that your checkpoints have massive terms that look like the expansion of the stv.  If you use Rager's untranslate mechanism for stv-run, that can further obscure the issue.
