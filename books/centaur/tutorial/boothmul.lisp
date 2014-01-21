@@ -51,6 +51,7 @@
 ; (depends-on "boothmul.v")
 ; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
+; cert_param: (ccl-only)
 (value-triple (set-max-mem (* 3 (expt 2 30))))
 (value-triple (tshell-ensure))
 
