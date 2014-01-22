@@ -1,0 +1,55 @@
+
+To run the symbol name conflict analyzer on the ACL2 system books,
+perform the following steps from within the ACL2 books directory:
+
+> make clean
+> make certify-books ACL2_CUSTOMIZATION=/path/to/acl2-sources/acl2-customization-files/bookdata.lisp
+
+Of course you can tailor the clean and build targets to meet your
+needs.  The key is that the books you wish to analyze must be built
+with the appropriate ACL2_CUSTOMIZATION flags set to generate the
+bookdata reports.  Keep in mind, however, that book-conflicts
+currently requires books from coi, arithmetic-5 and str.
+
+This directory (tools/book-conflicts) is not built as part of the
+standard ACL2 regressions.  It currently builds only with ACL2 on CCL.
+To make this directory, simply type make.  From the ACL2 books
+directory, that would be:
+
+> (cd tools/book-conflicts && make)
+
+From the ACL2 books directory you can now run:
+
+> tools/book-conflicts/find-conflicts-here
+
+This will produce a report detailing the various symbol name conflicts
+found in any of the generated bookdata files anywhere in the books
+hierarchy.  Note that this process sometimes falsely flags redundant
+(compatible) symbol re-definitions as conflicts.  You can, however,
+teach the tool that a particular set of books is compatible by
+including the set of books all together in one (new) book and then
+generating bookdata as a part of certifying that book.
+
+The symbol conflicts are printed as a list whose entries have the
+following form:
+
+(pkg-symbol-name-listp . book-list)
+
+Where book-list is a list of paths to the offending books and
+pkg-symbol-name-listp is an association list with package names as
+keys and symbol name lists as values.
+
+For example, the conflict:
+
+((("STD" "M0-EXEC" "M0-EXEC-REMOVAL"
+         "M0-OF-LIST-FIX" "M1-EXEC"
+         "M1-EXEC-REMOVAL" "M1-OF-LIST-FIX"
+         "M2-EXEC" "M2-EXEC-REMOVAL"
+         "M2-OF-LIST-FIX" "M3-EXEC"
+         "M3-EXEC-REMOVAL" "M3-OF-LIST-FIX"))
+ "/local/src/acl2-6.4/books/std/util/defmapappend-tests.lisp"
+ "/local/src/acl2-6.4/books/std/util/defprojection-tests.lisp")
+
+says that there is a conflict in the "STD" package between a set of
+symbols including "M0-EXEC" in the files defmapappend-tests.lisp and
+defprojection-tests.lisp in the std/util/ books directory.
