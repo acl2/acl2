@@ -129,6 +129,8 @@ book.  It recognizes LD forms in these .acl2 files and scans the
 loaded files as well.  When that is finished, it scans the book
 itself.
 
+DEPENDENCY SCAN
+
 Cert.pl recognize several kinds of forms as producing or affecting
 dependencies.  All such forms must be contained on a single line or
 cert.pl will not recognize them.  As such, if you want to hide, say,
@@ -171,6 +173,8 @@ expansion (acl2xskip).
 See files make-targets and regression-targets for example uses of
 cert.pl.
 
+SPECIAL MAKEFILE VARIABLES
+
 An advanced feature of cert.pl is the ability to set up Make variables
 that contain the recursive dependencies of certain sources.  For example,
 
@@ -185,7 +189,36 @@ CDE_CERTS.  This is sometimes useful in case you wish to set up a
 makefile with several distinct targets that depend on overlapping sets
 of books.
 
-OPTIONS:
+CERT_PL_EXCLUDE FILES
+
+Cert.pl can be prevented from exploring a directory (recursively) by
+creating a file called \"cert_pl_exclude\".  Any book found to be
+under a directory containing that file will not be scanned for
+dependencies and won\'t have any dependencies added for it.  However,
+only certain directories are searched, depending on where the book is
+relative to where cert.pl is invoked.  To illustrate:
+
+(1) If cert.pl reaches a book whose relative path is foo/bar/baz.lisp,
+then it will skip the dependency scan if any of the following exist:
+  ./cert_pl_exclude
+  foo/cert_pl_exclude
+  foo/bar/cert_pl_exclude
+but not:
+  ../cert_pl_exclude.
+
+(2) If cert.pl reaches a book whose relative path is
+../../foo/bar/baz.lisp, then it will skip the dependency scan if any
+of the following exist:
+  ../../cert_pl_exclude
+  ../../foo/cert_pl_exclude
+  ../../foo/bar/cert_pl_exclude
+but not:
+  ./cert_pl_exclude
+  ../cert_pl_exclude
+  ../../../cert_pl_exclude.
+
+
+COMMAND LINE OPTIONS
 
    --help
    -h

@@ -964,7 +964,8 @@ sub newer_than {
 sub excludep {
     my $prev = shift;
     my $dirname = dirname($prev);
-    while ($dirname ne $prev) {
+    # Memoize this?
+    while ($dirname ne $prev && basename($prev) ne "..") {
 	if (-e File::Spec->catfile($dirname, "cert_pl_exclude")) {
 	    # (-e rel_path($dirname, "cert_pl_exclude")) {
 	    return 1;
