@@ -1137,6 +1137,8 @@ suffice to prove the goal formula, it also does another @(see def-gl-thm)-style
 proof that establishes that any inputs satisfying the hypothesis are covered by
 some case.</p>
 
+<h3>A First Example</h3>
+
 <p>Here is how we might split the proof for @('fast-logcount-32') into five
 subgoals.  One goal handles the case where the most significant bit is 1.  The
 other four goals assume the most significant bit is 0, and separately handle
@@ -1200,7 +1202,79 @@ the settings of @('msb') and @('low') satisfies the @(':param-hyp') for this
 
 <p>This proof is also done in the @(see def-gl-thm) style, so we need we need
 one last set of symbolic bindings, which is provided by the @(':cov-bindings')
-argument.</p>")
+argument.</p>
+
+<h3>Another Example</h3>
+
+<p>Suppose we want to prove the commutativity of @('*') for two finite natural
+numbers, @('a') and @('n'), but that GL isn't able to prove this property
+unless we case-split on the eight possible values for @('n').  We can do so
+with the following call of @(see def-gl-param-thm)</p>
+
+@({
+
+(def-gl-param-thm finite-commute-of-*
+  :hyp (and (natp a)
+            (< a (expt 2 16))
+            (natp n)
+            (< n 8))
+  :concl (equal (* n a)
+                (* a n))
+  :param-bindings `((((lsb 0) (mid-sb 0) (high-sb 0))
+                     ,(gl::auto-bindings (:nat a 16)
+                                         (:nat n 3)))
+                    (((lsb 0) (mid-sb 0) (high-sb 1))
+                     ,(gl::auto-bindings (:nat a 16)
+                                         (:nat n 3)))
+                    (((lsb 0) (mid-sb 1) (high-sb 0))
+                     ,(gl::auto-bindings (:nat a 16)
+                                         (:nat n 3)))
+                    (((lsb 0) (mid-sb 1) (high-sb 1))
+                     ,(gl::auto-bindings (:nat a 16)
+                                         (:nat n 3)))
+                    (((lsb 1) (mid-sb 0) (high-sb 0))
+                     ,(gl::auto-bindings (:nat a 16)
+                                         (:nat n 3)))
+                    (((lsb 1) (mid-sb 0) (high-sb 1))
+                     ,(gl::auto-bindings (:nat a 16)
+                                         (:nat n 3)))
+                    (((lsb 1) (mid-sb 1) (high-sb 0))
+                     ,(gl::auto-bindings (:nat a 16)
+                                         (:nat n 3)))
+                    (((lsb 1) (mid-sb 1) (high-sb 1))
+                     ,(gl::auto-bindings (:nat a 16)
+                                         (:nat n 3))))
+  :param-hyp (equal n
+                    (logapp 1 lsb
+                            (logapp 1 mid-sb
+                                    high-sb)))
+
+  :cov-bindings (gl::auto-bindings (:nat a 16)
+                                   (:nat n 3)))
+
+})
+
+<p>The @(':hyp') and @(':concl') are the same as in a @('def-gl-thm').  The
+@(':gl-bindings') becomes @(':cov-bindings').  And we must add the
+@(':param-bindings') and @(':param-hyp').</p>
+
+<p>As in the previous example, the @(':param-hyp') specifies the relationship
+between the variables in the theorem that we want to case-split and the values
+given in @(':param-bindings').  In this example, we essentially encode a truth
+table into @(':param-bindings') using the least significant bit (@('lsb')),
+middle significant bit
+(@'(mid-sb')), and most significant bit (@('high-sb')).  We then indicate that
+these three significant-bit variables appended together represent the variable
+@('n') in our theorem.</p>
+
+<p>The syntax for specifying the variable ordering for each case-split is a bit
+strange.  Currently, for each @(':param-bindings') entry, one must specify the
+symbolic objects (BDD ordering, number of bits required, etc.) for each
+case-split.  Thus, in this example, you see the bindings specified many times.
+We could write a macro (perhaps using @(see ACL2::pairlis$)) so we didn't
+have to type so much, but for clarity of instruction, we leave the expansion in
+this example.</p>
+")
 
 
 
