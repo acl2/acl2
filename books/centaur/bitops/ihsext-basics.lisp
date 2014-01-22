@@ -1032,6 +1032,10 @@ off looking at the source code.</p>")
   ;;          (lognot x)))
 
   ;; (add-to-ruleset ihsext-basic-thms lognot-of-ifix)
+  (defthm lognot-of-lognot
+    (equal (lognot (lognot x))
+           (ifix x)))
+
 
   (defthmd lognot**
     ;; Better than lognot* since there are no hyps.
@@ -3224,6 +3228,49 @@ off looking at the source code.</p>")
                               (loghead-identity))
              :expand ((:free (a) (loghead n a))
                       (ash 1 n))))))
+
+(defsection logmask**
+
+  (local (in-theory (enable logmask)))
+
+  (defthmd logmask**
+    (equal (logmask n)
+           (if (zp n)
+               0
+             (logcons 1 (logmask (1- n)))))
+    :hints(("Goal" :in-theory (e/d* (ihsext-inductions
+                                     logmask
+                                     logcons
+                                     expt-2-is-ash
+                                     ihsext-recursive-redefs)
+                                    ((force)))))
+    :rule-classes ((:definition :clique (logmask$inline)
+                    :controller-alist ((logmask$inline t)))))
+
+  (local (in-theory (disable logmask)))
+
+  (defthmd logmask-induct
+    t
+    :rule-classes ((:induction
+                    :pattern (logmask i)
+                    :scheme (integer-length-ind i))))
+
+  (add-to-ruleset ihsext-redefs logmask**)
+  (add-to-ruleset ihsext-recursive-redefs logmask**)
+  (add-to-ruleset ihsext-inductions logmask-induct)
+
+  (local (in-theory (enable* ihsext-recursive-redefs
+                             ihsext-inductions)))
+
+  (defthm bitmaskp-of-logmask
+    (bitmaskp (logmask n))
+    :hints (("goal" :in-theory (enable logmask expt-2-is-ash))))
+
+  (defthm integer-length-of-logmask
+    (equal (integer-length (logmask width))
+           (nfix width))
+    :hints (("goal" :in-theory (enable logmask expt-2-is-ash)))))
+
 
 
 
