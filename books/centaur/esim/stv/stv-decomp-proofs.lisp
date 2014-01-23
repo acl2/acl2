@@ -63,6 +63,7 @@
 (defthmd stv-simvar-inputs-to-bits-open
   (equal (stv-simvar-inputs-to-bits (cons (cons name val) alist) in-usersyms)
          (b* ((rest (stv-simvar-inputs-to-bits alist in-usersyms))
+              (in-usersyms (make-fast-alist in-usersyms))
               (LOOK (HONS-GET NAME IN-USERSYMS))
               ((UNLESS LOOK)
                REST)
