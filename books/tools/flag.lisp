@@ -395,7 +395,7 @@ effect.  We simply translate subgoal hints to computed hints:</p>
           fn)))
 
 (defun get-formals (fn world)
-  (getprop fn 'formals nil 'current-acl2-world world))
+  (getprop fn 'formals :none 'current-acl2-world world))
 
 (defun get-body (fn world)
   ;; This gets the original, normalized or non-normalized body based on what
@@ -1127,3 +1127,278 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
                    ignore-test-f)
 
   ))
+
+
+
+
+(defxdoc def-doublevar-induction
+  :parents (mutual-recursion)
+  :short "Create an induction scheme that adds a duplicate variable to the substitution."
+  :long "<p>Certain types of proofs require inductions that are rather simple
+modifications of existing induction schemes.  For example, to prove a
+congruence on some recursive function, typically you want to induct
+<em>almost</em> on that function, but with the simple modification that for
+each substitution in the induction scheme, you want to basically copy the
+substitution of an existing variable into a new variable.</p>
+
+<p>For example, consider our attempt to prove that sum-pairs-list is nat-list congruent:</p>
+@({
+ (defun nat-list-equiv (x y)
+   (if (atom x)
+       (atom y)
+     (and (consp y)
+          (equal (nfix (car x)) (nfix (car y)))
+          (nat-list-equiv (cdr x) (cdr y)))))
+ 
+ (defun sum-pairs-list (x)
+   (if (atom x)
+       nil
+     (if (atom (cdr x))
+         (list (nfix (car x)))
+       (cons (+ (nfix (car x)) (nfix (cadr x)))
+             (sum-pairs-list (cddr x))))))
+ 
+ (defequiv nat-list-equiv)
+
+ (defthm sum-pairs-list-nat-list-equiv-congruence
+   (implies (nat-list-equiv x y)
+            (equal (sum-pairs-list x) (sum-pairs-list y)))
+   :rule-classes :congruence)
+})
+
+<p>The proof of the congruence rule fails with no hint, and neither of the
+following induction hints don't help either:</p>
+
+@({
+  :hints ((\"goal\" :induct (nat-list-equiv x y))))
+  :hints ((\"goal\" :induct (list (sum-pairs-list x)
+                                  (sum-pairs-list y))))
+})
+
+<p>What we really want is an induction scheme that inducts as sum-pairs-list
+on (say) x, but does a similar substitution on y, e.g.,</p>
+
+@({
+ (defun sum-pairs-list-double-manual (x y)
+   (declare (ignorable y))
+   (if (atom x)
+       nil
+     (if (atom (cdr x))
+         (list (nfix (car x)))
+       (cons (+ (nfix (car x)) (nfix (cadr x)))
+             (sum-pairs-list-double-manual (cddr x) (cddr y))))))
+ 
+ (defthm sum-pairs-list-nat-list-equiv-congruence ;; sum-pairs-list-double-manual works
+   (implies (nat-list-equiv x y)
+            (equal (sum-pairs-list x) (sum-pairs-list y)))
+   :hints ((\"goal\" :induct (sum-pairs-list-double-manual x y)))
+   :rule-classes :congruence)
+})
+
+<p>Def-doublevar-ind automatically generates a function like this, e.g.:</p>
+
+@({
+ (def-doublevar-induction sum-pairs-list-double
+   :orig-fn sum-pairs-list
+   :old-var x :new-var y)
+ 
+ (defthm sum-pairs-list-nat-list-equiv-congruence ;; sum-pairs-list-double works
+   (implies (nat-list-equiv x y)
+            (equal (sum-pairs-list x) (sum-pairs-list y)))
+   :hints ((\"goal\" :induct (sum-pairs-list-double x y)))
+   :rule-classes :congruence)
+})
+
+<p>This can be used with flag functions and their defthm macros (see @(see make-flag)): use def-doublevar-ind to define a new induction scheme based on the flag function, and give a hint to the flag defthm macro to use that induction scheme. For example,</p>
+@({
+ (flag::make-flag foo-flag foo-mutualrec ...)
+
+ (flag::def-doublevar-ind foo-doublevar-ind
+   :orig-fn foo-flag
+   :old-var x :new-var y)
+
+ (defthm-foo-flag
+  (defthm foo1-thm ...)
+  (defthm foo2-thm ...)
+  :hints ((\"goal\" :induct (foo-doublevar-ind flag x a b y))))
+})
+")
+
+
+(defun doublevar-transform-calls (calls fnname old-var-index old-var new-var)
+  (if (atom calls)
+      nil
+    (let ((actuals (cdr (car calls))))
+      (cons (cons fnname (append actuals
+                                 (list
+                                  (acl2::subst-var new-var old-var (nth old-var-index actuals)))))
+            (doublevar-transform-calls (cdr calls) fnname old-var-index old-var new-var)))))
+
+(defun doublevar-different-equals-p (test1 test2)
+  (and (consp test1)
+       (consp test2)
+       (eq (car test1) 'equal)
+       (eq (car test2) 'equal)
+       (let* ((quote1 (if (quotep (cadr test1))
+                          (cadr test1)
+                        (and (quotep (caddr test1))
+                             (caddr test1))))
+              (quote2 (if (quotep (cadr test2))
+                          (cadr test2)
+                        (and (quotep (caddr test2))
+                             (caddr test2)))))
+         (and quote1
+              quote2
+              (not (equal quote1 quote2))
+              (or (equal (cadr test1) (cadr test2))
+                  (equal (cadr test1) (caddr test2))
+                  (equal (caddr test1) (cadr test2))
+                  (equal (caddr test1) (caddr test2)))))))
+
+(defun doublevar-place-calls-in-body (tests term calls-term)
+  (declare (xargs :measure (make-ord 1 (+ 1 (acl2-count term))
+                                     (acl2-count tests))
+                  :mode :program))
+  (if (atom tests)
+      calls-term
+    (let* ((negp (and (consp (car tests))
+                      (eq (caar tests) 'not)))
+           (test-term (if negp (cadar tests) (car tests)))
+           (diff-equals (and (not negp)
+                             (doublevar-different-equals-p
+                              test-term (cadr term))))
+           (matchp (and (eq (car term) 'if)
+                        (or (equal (cadr term) test-term)
+                            diff-equals)))
+           (new-subterm (doublevar-place-calls-in-body
+                         (if diff-equals tests (cdr tests))
+                         (if diff-equals
+                             (cadddr term)
+                           (if matchp
+                               (if negp
+                                   (cadddr term)
+                                 (caddr term))
+                             nil))
+                         calls-term)))
+      (if diff-equals
+          (list 'if (cadr term) (caddr term) new-subterm)
+        (if negp
+            (list 'if test-term (and matchp (caddr term)) new-subterm)
+          (list 'if test-term new-subterm (and matchp (cadddr term))))))))
+
+(defun doublevar-ind-body-add-tests/calls (tests term calls-term)
+  (declare (xargs :mode :program))
+  (doublevar-place-calls-in-body tests term calls-term))
+
+
+(defun doublevar-ind-body (ind-machine fnname old-var-index old-var new-var term)
+  (declare (xargs :mode :program))
+  (if (atom ind-machine)
+      term
+    (let* ((tests (access acl2::tests-and-calls (car ind-machine) :tests))
+           (calls (access acl2::tests-and-calls (car ind-machine) :calls))
+           (calls-term `(list ,(len ind-machine)
+                              . ,(doublevar-transform-calls
+                                  calls fnname old-var-index old-var new-var)))
+           (new-term (doublevar-ind-body-add-tests/calls tests term calls-term)))
+      (doublevar-ind-body (cdr ind-machine) fnname old-var-index old-var new-var new-term))))
+  
+
+
+(defun def-doublevar-induction-fn (name f old-var new-var hints w)
+  (declare (xargs :mode :program))
+  (let* ((formals (get-formals f w))
+         (ind-machine (getprop f 'acl2::induction-machine :none 'current-acl2-world w)))
+    (cond ((eq formals :none)
+           (er hard? 'def-doublevar-induction-fn "Not a function -- no formals~%"))
+          ((not (member-eq old-var formals))
+           (er hard? 'def-doublevar-induction-fn "~x0 is not an existing formal of ~x1~%"
+               old-var f))
+          ((eq ind-machine :none)
+           (er hard? 'def-doublevar-induction-fn "No induction machine -- not singly recursive?~%"))
+          (t
+           (let* ((measure (get-measure f w))
+                  (wfr (get-wfr f w))
+                  (old-var-index (search (list old-var) formals))
+                  (all-formals (append formals (list new-var))))
+             `(defun-nx ,name ,all-formals
+                (declare (xargs :verify-guards nil
+                                :measure ,measure
+                                :hints ,hints
+                                :well-founded-relation ,wfr
+                                :mode :logic)
+                         (ignorable . ,all-formals))
+                ,(doublevar-ind-body ind-machine name old-var-index old-var new-var nil)))))))
+
+(defmacro def-doublevar-induction (name &key orig-fn old-var new-var hints)
+  `(make-event
+    (def-doublevar-induction-fn ',name ',orig-fn ',old-var ',new-var ',hints (w state))))
+
+
+(local
+ (progn
+
+   (defun nat-list-equiv (x y)
+     (if (atom x)
+         (atom y)
+       (and (consp y)
+            (equal (nfix (car x)) (nfix (car y)))
+            (nat-list-equiv (cdr x) (cdr y)))))
+
+   (defun sum-pairs-list (x)
+     (if (atom x)
+         nil
+       (if (atom (cdr x))
+           (list (nfix (car x)))
+         (cons (+ (nfix (car x)) (nfix (cadr x)))
+               (sum-pairs-list (cddr x))))))
+
+   ;; It is a *MIRACLE* that this works given how many sub-inductions it does.
+   (defequiv nat-list-equiv)
+
+   ;; ;; no hint fails
+   ;; (defthm sum-pairs-list-nat-list-equiv-congruence 
+   ;;   (implies (nat-list-equiv x y)
+   ;;            (equal (sum-pairs-list x) (sum-pairs-list y)))
+   ;;   :rule-classes :congruence)
+
+   ;; ;; induct equiv hint fails
+   ;; (defthm sum-pairs-list-nat-list-equiv-congruence
+   ;;   (implies (nat-list-equiv x y)
+   ;;            (equal (sum-pairs-list x) (sum-pairs-list y)))
+   ;;   :rule-classes :congruence
+   ;;   :hints (("goal" :induct (nat-list-equiv x y))))
+
+   ;; ;; induct both hint fails
+   ;; (defthm sum-pairs-list-nat-list-equiv-congruence
+   ;;   (implies (nat-list-equiv x y)
+   ;;            (equal (sum-pairs-list x) (sum-pairs-list y)))
+   ;;   :rule-classes :congruence
+   ;;   :hints (("goal" :induct (list (sum-pairs-list x) (sum-pairs-list y)))))
+
+   ;; (defun sum-pairs-list-double-manual (x y)
+   ;;   (declare (ignorable y))
+   ;;   (if (atom x)
+   ;;       nil
+   ;;     (if (atom (cdr x))
+   ;;         (list (nfix (car x)))
+   ;;       (cons (+ (nfix (car x)) (nfix (cadr x)))
+   ;;             (sum-pairs-list-double-manual (cddr x) (cddr y))))))
+
+   ;; ;; sum-pairs-list-double-manual works but is not what we want to test
+   ;; (defthm sum-pairs-list-nat-list-equiv-congruence
+   ;;   (implies (nat-list-equiv x y)
+   ;;            (equal (sum-pairs-list x) (sum-pairs-list y)))
+   ;;   :rule-classes :congruence
+   ;;   :hints (("goal" :induct (sum-pairs-list-double-manual x y))))
+
+   (def-doublevar-induction sum-pairs-list-double
+     :orig-fn sum-pairs-list
+     :old-var x :new-var y)
+
+   (defthm sum-pairs-list-nat-list-equiv-congruence ;; sum-pairs-list-double works
+     (implies (nat-list-equiv x y)
+              (equal (sum-pairs-list x) (sum-pairs-list y)))
+     :rule-classes :congruence
+     :hints (("goal" :induct (sum-pairs-list-double x y))))))
+
