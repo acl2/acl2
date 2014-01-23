@@ -39,28 +39,41 @@
 ; Demo Section 1: A tree equivalence
 ;;;;;;;;;;
 
+; We begin with some macros to assist those not fluent in Lisp.
+
+(defmacro leaf-p (x) ; a leaf of a binary CONS tree
+  `(atom ,x))
+(defmacro left (x)
+  `(car ,x))
+(defmacro right (x)
+  `(cdr ,x))
+
+; The following equivalence relation on binary trees holds, roughly speaking,
+; when one tree can be transformed to the other by a sequence of "flips":
+; switching left and right children of a node.
+
 (defun tree-equiv (t1 t2)
-  (cond ((or (atom t1) (atom t2))
+  (cond ((or (leaf-p t1) (leaf-p t2))
          (equal t1 t2))
-        (t (or (and (tree-equiv (car t1) (car t2))
-                    (tree-equiv (cdr t1) (cdr t2)))
-               (and (tree-equiv (car t1) (cdr t2))
-                    (tree-equiv (cdr t1) (car t2)))))))
+        (t (or (and (tree-equiv (left t1) (left t2))
+                    (tree-equiv (right t1) (right t2)))
+               (and (tree-equiv (left t1) (right t2))
+                    (tree-equiv (right t1) (left t2)))))))
 
 ; An induction hint is needed to prove transitivity (below):
 
 (defun defequiv-tree-equiv-induction-hint (t1 t2 t3)
   (cond
-   ((or (atom t1) (atom t2) (atom t3))
+   ((or (leaf-p t1) (leaf-p t2) (leaf-p t3))
     t)
-   (t (and (defequiv-tree-equiv-induction-hint (car t1) (car t2) (car t3))
-           (defequiv-tree-equiv-induction-hint (car t1) (car t2) (cdr t3))
-           (defequiv-tree-equiv-induction-hint (car t1) (cdr t2) (car t3))
-           (defequiv-tree-equiv-induction-hint (car t1) (cdr t2) (cdr t3))
-           (defequiv-tree-equiv-induction-hint (cdr t1) (car t2) (car t3))
-           (defequiv-tree-equiv-induction-hint (cdr t1) (car t2) (cdr t3))
-           (defequiv-tree-equiv-induction-hint (cdr t1) (cdr t2) (car t3))
-           (defequiv-tree-equiv-induction-hint (cdr t1) (cdr t2) (cdr t3))))))
+   (t (and (defequiv-tree-equiv-induction-hint (left t1) (left t2) (left t3))
+           (defequiv-tree-equiv-induction-hint (left t1) (left t2) (right t3))
+           (defequiv-tree-equiv-induction-hint (left t1) (right t2) (left t3))
+           (defequiv-tree-equiv-induction-hint (left t1) (right t2) (right t3))
+           (defequiv-tree-equiv-induction-hint (right t1) (left t2) (left t3))
+           (defequiv-tree-equiv-induction-hint (right t1) (left t2) (right t3))
+           (defequiv-tree-equiv-induction-hint (right t1) (right t2) (left t3))
+           (defequiv-tree-equiv-induction-hint (right t1) (right t2) (right t3))))))
 
 (defequiv tree-equiv
   :hints (("Goal" :induct (defequiv-tree-equiv-induction-hint x y z))))
@@ -72,9 +85,9 @@
 ; The following function swaps every pair of children in a binary tree.
 
 (defun mirror (tree)
-  (cond ((atom tree) tree)
-        (t (cons (mirror (cdr tree))
-                 (mirror (car tree))))))
+  (cond ((leaf-p tree) tree)
+        (t (cons (mirror (right tree))
+                 (mirror (left tree))))))
 
 ; Notice that the following rewrite rule is based on tree-equiv, not equal.  It
 ; will replace (mirror x) by x at a subterm occurrence for which it is
@@ -94,10 +107,10 @@
 
   (cond ((acl2-numberp tree)
          tree)
-        ((atom tree)
+        ((leaf-p tree)
          1)
-        (t (* (tree-product (car tree))
-              (tree-product (cdr tree))))))
+        (t (* (tree-product (left tree))
+              (tree-product (right tree))))))
 
 ; Just a test (proved by evaluation):
 
@@ -109,7 +122,7 @@
 ; This congruence rule says that the argument of tree-product can be rewritten
 ; to preserve the tree-equiv relation.
 
-(defthm tree-equiv-implies-equal-tree-product
+(defthm tree-equiv-->-equal-tree-product
   (implies (tree-equiv x y)
            (equal (tree-product x)
                   (tree-product y)))
@@ -117,12 +130,12 @@
 
 ; This little example is proved automatically by rewriting the term (mirror x).
 ; Of course, it is easy to prove this theorem directly, without
-; tree-equiv-mirror or tree-equiv-implies-equal-tree-product; here, we are just
+; tree-equiv-mirror or tree-equiv-->-equal-tree-product; here, we are just
 ; giving a simple illustration of congruence-based rewriting.
 
 (defthm tree-product-mirror
-  (equal (tree-product (mirror x))
-         (tree-product x))
+  (equal (tree-product (mirror y))
+         (tree-product y))
   :rule-classes nil)
 
 ;;;;;;;;;;
@@ -144,10 +157,10 @@
 
   (cond ((acl2-numberp tree)
          (list tree (list tree)))
-        ((atom tree)
+        ((leaf-p tree)
          (list 1 nil))
-        (t (combine-tree-data (tree-data (car tree))
-                              (tree-data (cdr tree))))))
+        (t (combine-tree-data (tree-data (left tree))
+                              (tree-data (right tree))))))
 
 ; Test (proved by evaluation):
 
@@ -159,7 +172,7 @@
 
 ; Here comes a patterned congruence rule.
 
-(defthm tree-equiv-implies-equal-first-tree-data
+(defthm tree-equiv-->-equal-first-tree-data
   (implies (tree-equiv x y)
            (equal (first (tree-data x))
                   (first (tree-data y))))
@@ -168,12 +181,12 @@
 ; The following example is proved by the rewrite of (mirror x) to x.  While
 ; this example is trivial, imagine that there are k1 functions like mirror and
 ; k2 like tree-data.  If we prove k1 rules like tree-equiv-mirror and k2 rules
-; like tree-equiv-implies-equal-first-tree-data, then these k1+k2 rules set us
+; like tree-equiv-->-equal-first-tree-data, then these k1+k2 rules set us
 ; up to perform automatically all k1*k2 rewrites like first-tree-data-mirror.
 
 (defthm first-tree-data-mirror
-  (equal (first (tree-data (mirror x)))
-         (first (tree-data x)))
+  (equal (first (tree-data (mirror y)))
+         (first (tree-data y)))
   :rule-classes nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1416,3 +1429,42 @@
                 (f11 (f10 x) y2)))
   :hints (("Goal" :in-theory (disable f10)))
   :rule-classes nil)
+
+; Our next test checks that we account for matches connecting the argument
+; containing the unique variable and arguments after that one.
+
+(defun e6 (x y)
+  (equal x y))
+
+(defequiv e6)
+
+(defun f12 (x y)
+  (equal x y))
+
+(defun f13 (x y)
+  (declare (ignore y))
+  x)
+
+(defthm e1-implies-equal-f12-f13-cong-2
+  (implies (e6 y1 y2)
+           (equal (f12 (f13 x y1) x)
+                  (f12 (f13 x y2) x)))
+  :rule-classes (:congruence))
+
+(defun f14 (x)
+  x)
+
+(defthm f14-is-id
+  (e6 (f14 x) x))
+
+(in-theory (disable e6 (:t e6) f12 (:t f12) f13 (:t f13) f14 (:t f14)))
+
+(defthm test-12
+  (equal (f12 (f13 x (f14 y)) x)
+         (f12 (f13 x y) x))
+  :rule-classes nil)
+
+(must-fail
+ (thm
+  (equal (f12 (f13 x (f14 y)) x2)
+         (f12 (f13 x y) x2))))
