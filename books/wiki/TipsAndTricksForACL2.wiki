@@ -2,15 +2,15 @@
 
 = Introduction =
 
-Random "gotchas" that Rager has discovered while using ACL2 at an intermediate level.  These could be folded into the ACL2 documentation (I think there might already be such a topic that these could be added to) at some point, but I'm just writing them here for now.
+Random "gotchas" that Rager has discovered while using ACL2 at an intermediate level.  These could be folded into the ACL2 documentation topics TIPS or TIDBITS at some point, but I'm just writing them here for now.
 
 = Gotchas =
 
-  * :use hints only add the instance of the theorem being used to the hypotheses of the subgoal you're trying to prove.  They do not tell the prover to actually use (or complain to you when it can't actually use) the theorem.  The hypothesis will only help rewrite the conclusion of the subgoal if the RHS of the instantiated theorem (what becomes the additional hypothesis) is "less complex" (determined via some implementation-specific heuristics) than the LHS.
+  * :use hints only add the instance of the theorem being used to the hypotheses of the subgoal you're trying to prove.  They do not tell the prover to actually use to substitute the LHS of the instantiation for the RHS (provided its an equals relation).  The hypothesis will only help rewrite the conclusion of the subgoal if the RHS of the instantiated theorem (what becomes the additional hypothesis) is "less complex" (determined via some implementation-specific heuristics) than the LHS.
 
-  A couple work-arounds are to either (1) write a better theorem (at the same level of abstraction) that fires automatically as a rewrite rule (avoiding the :use hint) or to (2) prove an intermediate rewrite rule that more thoroughly guides the prover.
+  A potential work-around is to write a rewrite-rule that is basically the instantiation of the lemma you want, but due to the theorem prover only using rewrite-rules in a relatively strict manner (compared to if the instantiation was part of the hypotheses, where it can be used in the context of the conclusion, etc.).
 
-  * When writing rewrite rules that use arithmetic (e.g., using +), you probably want your arguments to arithmetic "functions" (like +) to match the term order of the checkpoints that you're seeing.  It's unlikely that you will see a checkpoint of the following (where _a_, _b_, and _c_ represent terms themselves where the correct "term order" (see :DOC topic _term order_) indicates that _a_ < _b_ < _c_):
+  * When writing rewrite rules that use arithmetic (e.g., using +), you probably want your arguments to arithmetic "functions" (like +) to match the term order of the checkpoints that you're seeing.  It's unlikely that you will see a checkpoint like the following (where _a_, _b_, and _c_ represent terms themselves where the correct "term order" (see :DOC topic _term order_) indicates that _a_ < _b_ < _c_):
 
   (equal (+ _c_ _b_ _a_) ...)
 
@@ -18,7 +18,7 @@ Random "gotchas" that Rager has discovered while using ACL2 at an intermediate l
 
   (equal (+ _a_ _b_ _c_) ...)
 
-  This is because ACL2 (and also most any arithmetic library you would use) tends to canonicalize the order of arguments to arithmetic "functions" (like +).  So, unless you disable associativity-of-+ and commutativity-of-+, any checkpoint you're likely to see will probably present the arithmetic term that ACL2 is "stuck on" in term order.  Thus, you should write your rewrite rules with the term order of the arithmetic expressions that you're likely to see in checkpoints in mind.
+  This is because ACL2 (even with most any arithmetic libraries) tends to canonicalize the order of arguments to arithmetic "functions" (like +).  So, unless you disable associativity-of-+ and commutativity-of-+, any checkpoint you're likely to see will probably present the arithmetic term that ACL2 is "stuck on" in term order.  Thus, you should write your rewrite rules with the term order of the arithmetic expressions that you're likely to see in checkpoints in mind.
 
   Here is some further paraphrased discussion from Davis on the matter:
 
