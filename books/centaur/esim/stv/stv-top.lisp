@@ -379,7 +379,7 @@ quite fast (it's mostly involving the STV instead of the module), and it only
 needs to be done once per STV.</p>
 
 <p>Separately, we do a fully general symbolic simulation of the @(see esim)
-module for as many phases are necessary to evaluate this STV; see @(see
+module for as many phases as are necessary to evaluate this STV; see @(see
 stv-fully-general-simulation-run).  Symbolically simulating a module for many
 steps can be very expensive.  On the other hand, this cost can be shared across
 all STVs that target the same module, and it can even be at least partly shared
