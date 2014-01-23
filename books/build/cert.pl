@@ -192,7 +192,7 @@ of books.
 CERT_PL_EXCLUDE FILES
 
 Cert.pl can be prevented from exploring a directory (recursively) by
-creating a file called \"cert_pl_exclude\".  Any book found to be
+creating a file called "cert_pl_exclude".  Any book found to be
 under a directory containing that file will not be scanned for
 dependencies and won\'t have any dependencies added for it.  However,
 only certain directories are searched, depending on where the book is
@@ -239,7 +239,7 @@ COMMAND LINE OPTIONS
    -a <cmd>
            Use <cmd> as the ACL2 executable, overriding the ACL2
            environment variable and the location of an executable
-           named \"acl2\" in the PATH.
+           named "acl2" in the PATH.
 
    --acl2-books <dir>
    -b <dir>
@@ -377,8 +377,8 @@ COMMAND LINE OPTIONS
           If for a book named foo.lisp either a file foo.image or
           cert.image exists in the same directory, then cert.pl reads
           a line from that file and takes that line to be the name of
-          the image to use.  The default is \"acl2\".  If the image
-          name is not \"acl2\" and a --bin directory is set, then
+          the image to use.  The default is "acl2".  If the image
+          name is not "acl2" and a --bin directory is set, then
           cert.pl adds a foo.cert dependency on
           <bin_dir>/<image_name>, and uses <bin_dir>/<image_name> to
           certify the book.  Otherwise, no additional dependency is
