@@ -4,6 +4,20 @@
 
 Random "gotchas" that Rager has discovered while using ACL2 at an intermediate level.  These could be folded into the ACL2 documentation topics TIPS or TIDBITS at some point, but I'm just writing them here for now.
 
+= Tips =
+
+  * When you have the desire to trace ACL2's rewriter and look through the output, you probably really want to use :brr and brr commands (see doc topic "brr-commands") like :path.  Also, consider using the brr@ macro (which is documented under topic 'brr@').  Also consider Jared's "why" macro (found in books/centaur/jared-customization.lsp) to help you see what rules are being tried.  Not including the ":go" portion of that macro will cause :brr to break whenever the provided rule is tried.
+
+  * To set the width of the text before carriage returns occur, use something like the following:
+
+  (set-fmt-soft-right-margin 190 state)
+  (set-fmt-hard-right-margin 205 state)
+
+  * When making theory changes in books that you expect to prevent your later books from completing, the following can be helpful.  
+
+  # Make a *copy of all .cert.out* files for reference
+  # When a theorem fails in the later book, examine the appropriate .cert.out file to see why it passed under the original theory.
+
 = Gotchas =
 
   * :use hints only add the instance of the theorem being used to the hypotheses of the subgoal you're trying to prove.  They do not tell the prover to actually use to substitute the LHS of the instantiation for the RHS (provided its an equals relation).  The hypothesis will only help rewrite the conclusion of the subgoal if the RHS of the instantiated theorem (what becomes the additional hypothesis) is "less complex" (determined via some implementation-specific heuristics) than the LHS.
@@ -23,17 +37,3 @@ Random "gotchas" that Rager has discovered while using ACL2 at an intermediate l
   Here is some further paraphrased discussion from Davis on the matter:
 
   It doesn't really make sense to worry about term-order when writing the LHS of a rule.  The term-order matters in the subgoal and you have to have general enough rules to match whatever order you happen to encounter.   There isn't a "correct" way to write your rewrite rule that will solve the general problem.  It's the term order of the terms you're *matching* that matters, and you generally don't have any control over that when you're writing the rule.
-
-= Tips =
-
-  * When you have the desire to trace ACL2's rewriter and look through the output, you probably really want to use :brr and brr commands (see doc topic "brr-commands") like :path.  Also, consider using the brr@ macro (which is documented under topic 'brr@').  Also consider Jared's "why" macro (found in books/centaur/jared-customization.lsp) to help you see what rules are being tried.  Not including the ":go" portion of that macro will cause :brr to break whenever the provided rule is tried.
-
-  * To set the width of the text before carriage returns occur, use something like the following:
-
-  (set-fmt-soft-right-margin 190 state)
-  (set-fmt-hard-right-margin 205 state)
-
-  * When making theory changes in books that you expect to prevent your later books from completing, the following can be helpful.  
-
-  # Make a copy of all *.cert.out files for reference
-  # When a theorem fails in the later book, examine the appropriate *.cert.out file to see why it passed under the original theory.
