@@ -22,7 +22,7 @@
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
 (include-book "support")
-(include-book "str/ieqv" :dir :system)
+(include-book "std/strings/ieqv" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (program)
 

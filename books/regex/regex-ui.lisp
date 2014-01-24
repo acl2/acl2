@@ -21,7 +21,7 @@
 
 (include-book "regex-parse")
 (include-book "regex-exec")
-(include-book "str/case-conversion" :dir :system)
+(include-book "std/strings/case-conversion" :dir :system)
 (include-book "std/util/define" :dir :system)
 (local (include-book "tools/mv-nth" :dir :system))
 (local (include-book "misc/assert" :dir :system))

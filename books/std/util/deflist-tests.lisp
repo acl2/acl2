@@ -24,7 +24,7 @@
 
 (in-package "STD")
 (include-book "deflist")
-(include-book "str/top" :dir :system)
+(include-book "std/strings/top" :dir :system)
 (include-book "misc/assert" :dir :system)
 
 (make-event

@@ -24,10 +24,10 @@
 (in-package "ACL2")
 (include-book "stv-util")
 (include-book "stv-widen")
-(include-book "str/stringify" :dir :system)
+(include-book "std/strings/stringify" :dir :system)
 (include-book "centaur/vl/util/print-htmlencode" :dir :system)
 (local (include-book "std/typed-lists/character-listp" :dir :system))
-(local (include-book "str/explode-nonnegative-integer" :dir :system))
+(local (include-book "std/strings/explode-nonnegative-integer" :dir :system))
 
 (defsection stv-doc
   :parents (symbolic-test-vectors)

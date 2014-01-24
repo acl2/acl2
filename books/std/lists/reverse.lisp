@@ -17,7 +17,7 @@
 (in-package "ACL2")
 (include-book "list-fix")
 (local (include-book "revappend"))
-(local (include-book "str/coerce" :dir :system))
+(local (include-book "std/strings/coerce" :dir :system))
 
 (defsection std/lists/reverse
   :parents (std/lists reverse)

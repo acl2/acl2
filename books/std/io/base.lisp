@@ -29,7 +29,7 @@
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "std/lists/revappend" :dir :system))
 (local (include-book "std/lists/rev" :dir :system))
-(local (include-book "str/coerce" :dir :system))
+(local (include-book "std/strings/coerce" :dir :system))
 
 (defsection bytep
 
@@ -891,8 +891,8 @@ output channels when you are done with them to avoid resource leaks.</p>"
   :long "<p>ACL2 has nice documentation for @(see princ$).  The @(see std/io)
 library adds the following lemmas:</p>"
 
-  (local (include-book "str/explode-nonnegative-integer" :dir :system))
-  (local (include-book "str/explode-atom" :dir :system))
+  (local (include-book "std/strings/explode-nonnegative-integer" :dir :system))
+  (local (include-book "std/strings/explode-atom" :dir :system))
 
   (defthm state-p1-of-princ$
     (implies (and (state-p1 state)

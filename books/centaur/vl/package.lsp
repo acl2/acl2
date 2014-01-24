@@ -20,7 +20,6 @@
 
 (in-package "ACL2")
 
-(include-book "std/osets/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 (include-book "oslib/portcullis" :dir :system)
 (include-book "centaur/bridge/portcullis" :dir :system)

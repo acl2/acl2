@@ -21,5 +21,5 @@
 #!ACL2
 (in-package "ACL2")
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
-(ld "package.lsp")
+(include-book "std/portcullis" :dir :system)
 (in-package "BITSETS")

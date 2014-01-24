@@ -19,6 +19,5 @@
 ; Original authors: Jared Davis <jared@kookamara.com>
 
 (in-package "ACL2")
-(ld "../std/package.lsp")
-(ld "../str/package.lsp")
+(include-book "std/portcullis" :dir :system)
 (certify-book "lint" ? t)

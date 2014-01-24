@@ -1041,9 +1041,6 @@ sorting: $(filter sorting/%, $(OK_CERTS))
 .PHONY: std
 std: $(filter std/%, $(OK_CERTS))
 
-.PHONY: str
-str: $(filter str/%, $(OK_CERTS))
-
 .PHONY: system
 system: $(filter system/%, $(OK_CERTS))
 

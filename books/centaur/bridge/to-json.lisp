@@ -20,10 +20,10 @@
 
 (in-package "BRIDGE")
 (include-book "misc/definline" :dir :system)
-(include-book "str/cat" :dir :system)
-(include-book "str/natstr" :dir :system)
+(include-book "std/strings/cat" :dir :system)
+(include-book "std/strings/natstr" :dir :system)
 (include-book "std/misc/two-nats-measure" :dir :system)
-(local (include-book "str/explode-atom" :dir :system))
+(local (include-book "std/strings/explode-atom" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
@@ -469,7 +469,7 @@ to fix up atoms.</p>"
               (acc (json-comma-and-maybe-newline acc)))
          (json-encode-improper-cons-list (cdr x) acc)))))
 
-  (local (include-book "str/strtok" :dir :system))
+  (local (include-book "std/strings/strtok" :dir :system))
 
   (local (defun collapse-newlines (x)
            (string-append-lst (str::strtok x '(#\Newline)))))

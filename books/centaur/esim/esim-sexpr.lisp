@@ -26,8 +26,8 @@
 
 (include-book "esim-paths")
 (include-book "esim-sexpr-support")
-(include-book "str/strsubst" :dir :system)
-(include-book "str/substrp" :dir :system)
+(include-book "std/strings/strsubst" :dir :system)
+(include-book "std/strings/substrp" :dir :system)
 (include-book "centaur/misc/ap" :dir :system)
 (include-book "centaur/4v-sexpr/sexpr-fixpoint" :dir :system)
 (include-book "centaur/4v-sexpr/sexpr-to-faig" :dir :system)

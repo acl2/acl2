@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "XDOC")
-(include-book "str/defs" :dir :system)
+(include-book "std/strings/defs" :dir :system)
 (include-book "std/osets/top" :dir :system)
 (program)
 

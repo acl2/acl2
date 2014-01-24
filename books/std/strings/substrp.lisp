@@ -1,5 +1,5 @@
-; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2011 Centaur Technology
+; ACL2 String Library
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,22 +18,27 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
+(in-package "STR")
+(include-book "strpos")
+(local (include-book "arithmetic"))
 
-(include-book "std/osets/portcullis" :dir :system)
 
-(defpkg "XDOC"
-  (set-difference-eq
-   (union-eq (union-eq *acl2-exports*
-                       *common-lisp-symbols-from-main-lisp-package*
-                       sets::*sets-exports*)
-             ;; Things to add:
-             '(b* quit exit value defxdoc defxdoc-raw macro-args
-                  xdoc-extend defsection defsection-progn lnfix
-                  set-default-parents
-                  getprop formals justification def-bodies current-acl2-world def-body
-                  access theorem untranslated-theorem guard xdoc xdoc! unquote
-                  undocumented assert! top explode implode))
-   ;; Things to remove:
-   '(delete union
-     )))
+(defsection substrp
+  :parents (substrings)
+  :short "Case-sensitive test for the existence of a substring."
+  :long "<p>@(call substrp) determines if x ever occurs as a substring of y.
+The test is case-sensitive.</p>
+
+<p>See also @(see isubstrp) for a case-insensitive version, and @(see strpos)
+or @(see strrpos) for alternatives that say where a match occurs.</p>"
+
+  (definline substrp (x y)
+    (declare (type string x y))
+    (mbe :logic (sublistp (explode x) (explode y))
+         :exec (if (strpos x y)
+                   t
+                 nil)))
+
+  (defcong streqv equal (substrp x y) 1)
+  (defcong streqv equal (substrp x y) 2))
+

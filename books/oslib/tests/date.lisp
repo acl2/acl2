@@ -22,7 +22,7 @@
 (in-package "ACL2")
 (include-book "../date")
 (include-book "std/util/defconsts" :dir :system)
-(include-book "str/defs" :dir :system)
+(include-book "std/strings/defs" :dir :system)
 
 (defconsts (*date* state)
   (oslib::date))

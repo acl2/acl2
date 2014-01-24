@@ -1,5 +1,5 @@
 (ld "package.lsp")
-(include-book "std/osets/portcullis" :dir :system)
+(include-book "std/portcullis" :dir :system)
 
 ; Added by Matt K., 9/28/2013, because defdata ultimately invokes
 ; with-local-state, which an error message says is disallowed with

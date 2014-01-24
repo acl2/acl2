@@ -28,7 +28,7 @@
 (include-book "xdoc/fmt-to-str" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/names" :dir :system)
-(include-book "str/cat" :dir :system)
+(include-book "std/strings/cat" :dir :system)
 (set-state-ok t)
 
 (program)

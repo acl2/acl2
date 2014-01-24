@@ -21,7 +21,7 @@
 (in-package "ACL2")
 (include-book "std/util/da-base" :dir :system)
 (include-book "system/origin" :dir :system)
-(include-book "str/cat" :dir :system)
+(include-book "std/strings/cat" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (include-book "misc/assert" :dir :system)
 (include-book "defsort/duplicated-members" :dir :system)

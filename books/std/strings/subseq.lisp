@@ -15,31 +15,43 @@
 ; more details.  You should have received a copy of the GNU General Public
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+
+
+; subseq.lisp
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
+(in-package "STR")
+(local (include-book "arithmetic"))
+(local (include-book "std/lists/take" :dir :system))
+(local (include-book "std/lists/nthcdr" :dir :system))
+(local (include-book "coerce"))
 
-(defpkg "STR"
-  (set-difference-eq
-   (union-eq *acl2-exports*
-             *common-lisp-symbols-from-main-lisp-package*
-             '(quit exit simpler-take list-fix list-equiv rev
-                    prefixp str b* assert! repeat replicate
-                    listpos sublistp implode explode
-                    a b c d e f g h i j k l m n o p q r s t u v w x y z
-                    top)
-             '(defxdoc defsection lnfix definlined definline
-                define defaggregate unsigned-byte-p signed-byte-p
-                raise))
+;; NOTE: These get globally disabled by including this book!  This is probably
+;; how things ought to be.
 
-   ;; Remove some "bad" acl2 string functions to try to prevent users from
-   ;; accidentally using them.
-   '(upper-case-p
-     lower-case-p
-     char-upcase
-     char-downcase
-     string-upcase1
-     string-downcase1
-     string-upcase
-     string-downcase)))
+(in-theory (disable subseq subseq-list))
+
+(local (in-theory (enable subseq subseq-list)))
+
+(defthm len-of-subseq-list
+  (equal (len (subseq-list x start end))
+         (nfix (- end start))))
+
+(defthm true-listp-subseq-list
+  (true-listp (subseq-list x start end))
+  :rule-classes :type-prescription)
+
+(defthm stringp-of-subseq
+  (equal (stringp (subseq x start end))
+         (stringp x)))
+
+(defthm length-of-subseq
+  (equal (length (subseq x start end))
+         (nfix (- (or end (length x)) start))))
+
+(defthm len-of-subseq
+  (equal (len (subseq x start end))
+         (if (stringp x)
+             0
+           (nfix (- (or end (len x)) start)))))

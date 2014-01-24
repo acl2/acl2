@@ -18,5 +18,5 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "package.lsp")
+(ld "std/package.lsp" :dir :system)
 (in-package "XDOC")

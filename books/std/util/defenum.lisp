@@ -20,7 +20,7 @@
 
 (in-package "STD")
 (include-book "support")
-(include-book "str/cat" :dir :system)
+(include-book "std/strings/cat" :dir :system)
 (set-state-ok t)
 
 (defxdoc defenum

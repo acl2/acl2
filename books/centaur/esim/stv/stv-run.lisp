@@ -23,7 +23,7 @@
 
 (in-package "ACL2")
 (include-book "stv-util")
-(include-book "str/hexify" :dir :system)
+(include-book "std/strings/hexify" :dir :system)
 (include-book "centaur/misc/vecs-ints" :dir :system)
 (include-book "centaur/vl/util/defs" :dir :system)
 (include-book "centaur/4v-sexpr/bitspecs" :dir :system)

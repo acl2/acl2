@@ -20,7 +20,7 @@
 
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
-(include-book "str/cat" :dir :system)
+(include-book "std/strings/cat" :dir :system)
 (include-book "support")
 (set-state-ok t)
 (program)

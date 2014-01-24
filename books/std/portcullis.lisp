@@ -24,3 +24,17 @@
 ; consolidate all of our portcullis commands into a single, usually-redundant
 ; include-book command.  This simply improves the efficiency of our build
 ; process.
+
+#!SETS
+(progn
+  ;; These allow SETS:: versions of enable, disable, and e/d to use rulesets
+  ;; natively.
+
+  (defmacro enable (&rest args)
+    `(acl2::enable* . ,args))
+
+  (defmacro disable (&rest args)
+    `(acl2::disable* . ,args))
+
+  (defmacro e/d (&rest args)
+    `(acl2::e/d* . ,args)))

@@ -108,8 +108,8 @@
 (include-book "std/io/unsound-read" :dir :system)
 (include-book "std/bitsets/top" :dir :system)
 
-(include-book "str/top" :dir :system)
-(include-book "str/base64" :dir :system)
+(include-book "std/strings/top" :dir :system)
+(include-book "std/strings/base64" :dir :system)
 
 (include-book "ubdds/lite")
 (include-book "ubdds/param")
@@ -172,6 +172,7 @@
 ;; anywhere.  This just tricks the dependency scanner into building
 ;; these books.
 
+(include-book "xdoc/all" :dir :system)
 (include-book "defrstobj/basic-tests")
 (include-book "std/util/deflist-tests" :dir :system)
 (include-book "std/util/defalist-tests" :dir :system)

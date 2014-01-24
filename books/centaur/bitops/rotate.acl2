@@ -19,7 +19,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "std/osets/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 (include-book "centaur/gl/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all

@@ -1,5 +1,6 @@
-; CUTIL - Centaur Basic Utilities
-; Copyright (C) 2008-2011 Centaur Technology
+; ACL2 Standard Library Packages
+; Portions are Copyright (c) 2008-2014 Centaur Technology
+; Portions are Copyright (c) 2003-2012 by Jared Davis <jared@cs.utexas.edu>
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -20,11 +21,213 @@
 
 (in-package "ACL2")
 
-; We load these here now so we can import their symbols into std/util as desired.
-(include-book "str/portcullis" :dir :system)
-(include-book "xdoc/portcullis" :dir :system)
-(include-book "osets/portcullis")
-(include-book "bitsets/portcullis" )
+(defpkg "STR"
+  (set-difference-eq
+   (union-eq *acl2-exports*
+             *common-lisp-symbols-from-main-lisp-package*
+             '(quit exit simpler-take list-fix list-equiv rev
+                    prefixp str b* assert! repeat replicate
+                    listpos sublistp implode explode
+                    a b c d e f g h i j k l m n o p q r s t u v w x y z
+                    top)
+             '(defxdoc defsection lnfix definlined definline
+                define defaggregate unsigned-byte-p signed-byte-p
+                raise))
+
+   ;; Remove some "bad" acl2 string functions to try to prevent users from
+   ;; accidentally using them.
+   '(upper-case-p
+     lower-case-p
+     char-upcase
+     char-downcase
+     string-upcase1
+     string-downcase1
+     string-upcase
+     string-downcase)))
+
+
+; Packages for the ordered sets library.  We should probably consolidate this
+; stuff into the sets package, eventually.
+
+(defpkg "INSTANCE"
+  (union-eq *acl2-exports*
+            *common-lisp-symbols-from-main-lisp-package*))
+
+(defpkg "COMPUTED-HINTS"
+  (union-eq '(mfc-ancestors
+	      mfc-clause
+	      string-for-tilde-@-clause-id-phrase
+	      INSTANCE::instance-rewrite)
+            *acl2-exports*
+            *common-lisp-symbols-from-main-lisp-package*))
+
+(defpkg "SETS"
+  (set-difference-equal
+   (union-eq '(defsection
+               defxdoc
+               definline
+               definlined
+               lexorder
+               lnfix
+               <<
+               <<-irreflexive
+               <<-transitive
+               <<-asymmetric
+               <<-trichotomy
+               <<-implies-lexorder
+               fast-<<
+               fast-lexorder
+               COMPUTED-HINTS::rewriting-goal-lit
+               COMPUTED-HINTS::rewriting-conc-lit
+               def-ruleset
+               def-ruleset!
+               add-to-ruleset
+               ;; To make Sets::Osets print as just Osets in the XDOC index
+               osets
+               ;; For similar nice-documentation reasons
+               std)
+             *acl2-exports*
+             *common-lisp-symbols-from-main-lisp-package*)
+
+; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
+;  (intersectp was added to *acl2-exports*).]
+
+   '(union delete find map intersectp
+           enable disable e/d)))
+
+#!SETS
+(defconst *sets-exports*
+  ;; This just contains the user-level set functions, and a couple of theroems
+  ;; that frequently need to be enabled/disabled.
+  '(<<
+    setp
+    empty
+    sfix
+    head
+    tail
+    insert
+    in
+    subset
+    delete
+    union
+    intersect
+    ;; intersectp -- we leave this out because of the existing ACL2 function
+    ;; called intersectp.
+    difference
+    cardinality
+    mergesort
+    ;; A couple of theorems that frequently need to be enabled/disabled.
+    double-containment
+    pick-a-point-subset-strategy
+    ))
+
+
+(defpkg "XDOC"
+  (set-difference-eq
+   (union-eq (union-eq *acl2-exports*
+                       *common-lisp-symbols-from-main-lisp-package*
+                       sets::*sets-exports*)
+             ;; Things to add:
+             '(b* quit exit value defxdoc defxdoc-raw macro-args
+                  xdoc-extend defsection defsection-progn lnfix
+                  set-default-parents
+                  getprop formals justification def-bodies current-acl2-world def-body
+                  access theorem untranslated-theorem guard xdoc xdoc! unquote
+                  undocumented assert! top explode implode))
+   ;; Things to remove:
+   '(delete union
+     )))
+
+(defconst *bitset-exports*
+  '(bitsets
+    bitset-singleton
+    bitset-insert
+    bitset-list
+    bitset-list*
+    bitset-delete
+    bitset-union
+    bitset-intersect
+    bitset-difference
+    bitset-memberp
+    bitset-intersectp
+    bitset-subsetp
+    bitset-cardinality
+    bitset-members
+
+    equal-bitsets-by-membership
+    bitset-witnessing
+    bitset-equal-witnessing
+    bitset-equal-instancing
+    bitset-equal-example
+    bitset-fns
+
+    sbitsets
+    sbitsetp
+    sbitset-fix
+    sbitset-members
+    sbitset-singleton
+    sbitset-union
+    sbitset-intersect
+    sbitset-difference
+    ))
+
+(defconst *bitsets-pkg-symbols*
+  (set-difference-eq
+   (union-eq sets::*sets-exports*
+             *bitset-exports*
+             *acl2-exports*
+             *common-lisp-symbols-from-main-lisp-package*
+             '(*bitset-exports*
+               std
+               std/util
+               std/bitsets
+               osets
+               __function__
+               raise
+               define
+               defrule
+               defsection
+               defxdoc
+               defwitness
+               definstantiate
+               defexample
+               include-raw
+               witness
+               xdoc
+               assert!
+               b*
+               progn$
+
+               enable*
+               disable*
+               e/d*
+               sets::enable
+               sets::disable
+               sets::e/d
+
+               rev
+
+               arith-equiv-forwarding
+               lnfix
+               lifix
+               lbfix
+               nat-equiv
+               int-equiv
+
+               logbitp-mismatch
+               equal-by-logbitp
+               logbitp-hyp
+               logbitp-lhs
+               logbitp-rhs
+
+               a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+               ))
+
+   '(union delete find map intersectp
+           enable disable e/d)))
+
+(defpkg "BITSETS" *bitsets-pkg-symbols*)
 
 (defconst *std-pkg-symbols*
   (set-difference-eq
@@ -152,4 +355,3 @@
     __function__))
 
 (assign acl2::verbose-theory-warning nil)
-

@@ -15,7 +15,7 @@
 (in-package "ACL2")
 (include-book "file-measure")
 (include-book "std/lists/list-defuns" :dir :system)
-(include-book "str/cat" :dir :system)
+(include-book "std/strings/cat" :dir :system)
 (local (include-book "base"))
 (local (include-book "std/lists/revappend" :dir :system))
 (local (include-book "std/lists/append" :dir :system))

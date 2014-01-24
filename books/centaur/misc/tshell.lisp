@@ -22,7 +22,7 @@
 (in-package "ACL2")
 (include-book "tools/include-raw" :dir :system)
 (include-book "std/util/define" :dir :system)
-(include-book "str/defs" :dir :system) ;; used in the raw code
+(include-book "std/strings/defs" :dir :system) ;; used in the raw code
 ;; (depends-on "tshell-raw.lsp")
 
 (defxdoc tshell

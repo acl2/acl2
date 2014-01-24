@@ -24,7 +24,7 @@
 (include-book "modnamespace") ;; bozo at least for portdecllist->names
 (include-book "../loader/lexer/lexer") ; yucky, for simple-id-tail-p, etc.
 (include-book "../util/print")
-(include-book "str/strrpos" :dir :system)
+(include-book "std/strings/strrpos" :dir :system)
 (local (include-book "../util/arithmetic"))
 
 (defxdoc verilog-printing

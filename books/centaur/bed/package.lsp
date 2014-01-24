@@ -18,9 +18,7 @@
 ;
 ; Original authors: Jared Davis <jared@centtech.com>
 
-(include-book "std/osets/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
-(include-book "str/portcullis" :dir :system)
 
 (defpkg "BED"
   (set-difference-eq

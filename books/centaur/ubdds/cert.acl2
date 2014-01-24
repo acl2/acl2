@@ -18,5 +18,5 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 
-(include-book "xdoc/portcullis" :dir :system)
+(include-book "std/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all

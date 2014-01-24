@@ -15,4 +15,4 @@ workxxx.*
 *.acl2x
 startjob.*
 centaur/manual/
-
+*.fasl

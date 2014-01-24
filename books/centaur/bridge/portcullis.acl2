@@ -22,6 +22,5 @@
 
 (ld "package.lsp")
 (ld "tools/flag-package.lsp" :dir :system)
-(include-book "str/portcullis" :dir :system)
-(include-book "xdoc/portcullis" :dir :system)
+(include-book "std/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all

@@ -19,8 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (set-deferred-ttag-notes t state)
-(include-book "xdoc/portcullis" :dir :system)
-(include-book "str/portcullis" :dir :system)
+(include-book "std/portcullis" :dir :system)
 (include-book "oslib/portcullis" :dir :system)
 (include-book "centaur/bridge/portcullis" :dir :system)
 (include-book "centaur/satlink/portcullis" :dir :system)

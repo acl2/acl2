@@ -26,7 +26,7 @@
 ; XDOC topics.
 
 (in-package "XDOC")
-(include-book "str/defs" :dir :system)
+(include-book "std/strings/defs" :dir :system)
 (program)
 
 

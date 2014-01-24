@@ -22,7 +22,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 (include-book "xdoc/names" :dir :system)
-(include-book "str/case-conversion" :dir :system)
+(include-book "std/strings/case-conversion" :dir :system)
 (local (include-book "arithmetic"))
 
 
@@ -326,7 +326,7 @@ automatically.</p>")
 
 ;; Some unit tests
 
-(include-book "str/digitp" :dir :system)
+(include-book "std/strings/digitp" :dir :system)
 
 (defcharset whitespace
   (or (eql x #\Newline)

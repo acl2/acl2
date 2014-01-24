@@ -18,8 +18,35 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "portcullis")
-(include-book "std/portcullis" :dir :system)
-; cert-flags: ? t :ttags :all
+(in-package "STR")
+(include-book "iless")
+(include-book "defsort/defsort" :dir :system)
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
+(ACL2::defsort
+ :comparablep stringp
+ :compare< istr<
+ :prefix istr)
 
+(defthm istr-list-p-removal
+  (equal (istr-list-p x)
+         (string-listp (list-fix x)))
+  :hints(("Goal" :in-theory (enable istr-list-p))))
+
+(defthm string-listp-of-istr-sort
+  (implies (force (string-listp x))
+           (string-listp (istr-sort x)))
+  :hints(("Goal"
+          :in-theory (disable istr-sort-creates-comparable-listp)
+          :use ((:instance istr-sort-creates-comparable-listp)))))
+
+(defsection istrsort
+  :parents (ordering)
+  :short "Case-insensitively sort a string list."
+  :long "<p>This is an efficient, stable mergesort for string lists based on
+@(see istr<) and implemented with the defsort book.</p>"
+
+  (defmacro istrsort (x)
+    `(istr-sort ,x)))
+
+(add-macro-alias istrsort istr-sort)

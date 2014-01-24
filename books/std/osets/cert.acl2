@@ -11,5 +11,8 @@
 ; ense along with this program; if not, write to the Free Soft- ware
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-(include-book "xdoc/portcullis" :dir :system)
-(include-book "portcullis")
+#!ACL2
+(in-package "ACL2")
+(include-book "std/portcullis" :dir :system)
+; cert-flags: ? t :ttags :all
+

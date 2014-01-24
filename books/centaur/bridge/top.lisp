@@ -21,7 +21,7 @@
 (in-package "BRIDGE")
 (include-book "xdoc/top" :dir :system)
 (include-book "tools/include-raw" :dir :system)
-(include-book "str/top" :dir :system)
+(include-book "std/strings/top" :dir :system)
 (include-book "to-json")
 ; (depends-on "bridge-raw.lsp")
 

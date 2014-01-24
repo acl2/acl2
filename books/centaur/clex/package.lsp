@@ -21,7 +21,6 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
-(include-book "str/portcullis" :dir :system)
 
 (defpkg "CLEX"
   (set-difference-eq

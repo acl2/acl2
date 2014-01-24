@@ -32,7 +32,7 @@
 ;;                                                                           ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(ld "str/package.lsp" :dir :system)
+(ld "std/package.lsp" :dir :system)
 
 (defpkg "MILAWA"
   '(nil

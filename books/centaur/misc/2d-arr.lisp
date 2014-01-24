@@ -614,8 +614,8 @@
                       (_prefix_-set-width$g ncols _stobj-name_)
                     (ec-call (_prefix_-set-width$g ncols _stobj-name_)))))))
 
-(include-book "str/substrp" :dir :system)
-(include-book "str/strsubst" :dir :system)
+(include-book "std/strings/substrp" :dir :system)
+(include-book "std/strings/strsubst" :dir :system)
 
 (defun subst-substrs (alist x)
   (declare (xargs :guard (and (alistp alist)

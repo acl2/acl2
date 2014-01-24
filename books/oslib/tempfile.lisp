@@ -22,8 +22,8 @@
 (in-package "OSLIB")
 (include-book "getpid")
 (include-book "catpath")
-(include-book "str/natstr" :dir :system)
-(include-book "str/cat" :dir :system)
+(include-book "std/strings/natstr" :dir :system)
+(include-book "std/strings/cat" :dir :system)
 
 (defsection tempfile
   :parents (oslib)

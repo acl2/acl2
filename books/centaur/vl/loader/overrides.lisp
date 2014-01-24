@@ -28,7 +28,7 @@
 (include-book "../util/cwtime")
 (include-book "../mlib/warnings")
 (include-book "oslib/ls" :dir :system)
-(include-book "str/top" :dir :system)
+(include-book "std/strings/top" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 

@@ -34,8 +34,8 @@
 (include-book "std/lists/list-defuns" :dir :system)
 (include-book "centaur/misc/alist-equiv" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
-(include-book "str/top" :dir :system)
-(include-book "str/fast-cat" :dir :system)
+(include-book "std/strings/top" :dir :system)
+(include-book "std/strings/fast-cat" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
 

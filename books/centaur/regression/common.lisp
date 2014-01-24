@@ -22,7 +22,7 @@
 (include-book "centaur/4v-sexpr/top" :dir :system)
 (include-book "tools/plev-ccl" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
-(include-book "str/top" :dir :system)
+(include-book "std/strings/top" :dir :system)
 
 (set-waterfall-parallelism nil) ; for below call of def-gl-clause-processor
 

@@ -20,7 +20,7 @@
 
 (in-package "ACL2")
 (include-book "std/util/top" :dir :system)
-(include-book "str/top" :dir :system)
+(include-book "std/strings/top" :dir :system)
 (include-book "../esim/esim-paths")
 
 (make-event

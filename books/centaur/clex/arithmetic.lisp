@@ -21,7 +21,7 @@
 (in-package "ACL2")
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/lists/top" :dir :system)
-(include-book "str/arithmetic" :dir :system)
+(include-book "std/strings/arithmetic" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 

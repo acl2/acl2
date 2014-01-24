@@ -62,41 +62,42 @@
 
 
 #!ACL2
-(defmacro d (name)
-  ;; A handy macro that lets you write :d fn to disassemble a function.  I
-  ;; mostly have this because my fingers always type ":diassemble$" instead of
-  ;; ":disassemble$"
-  (cond ((symbolp name)
-         `(disassemble$ ',name :recompile nil))
-        ((and (quotep name)
-              (symbolp (unquote name)))
-         `(disassemble$ ',(unquote name) :recompile nil))
-        ((and (quotep name)
-              (quotep (unquote name))
-              (symbolp (unquote (unquote name))))
-         `(disassemble$ ',(unquote (unquote name)) :recompile nil))
-        (t
-         (er hard? 'd "Not a symbol or quoted symbol: ~x0~%" name))))
+(with-output
+  :off (summary event)
+  (progn
+    (defmacro d (name)
+      ;; A handy macro that lets you write :d fn to disassemble a function.  I
+      ;; mostly have this because my fingers always type ":diassemble$" instead of
+      ;; ":disassemble$"
+      (cond ((symbolp name)
+             `(disassemble$ ',name :recompile nil))
+            ((and (quotep name)
+                  (symbolp (unquote name)))
+             `(disassemble$ ',(unquote name) :recompile nil))
+            ((and (quotep name)
+                  (quotep (unquote name))
+                  (symbolp (unquote (unquote name))))
+             `(disassemble$ ',(unquote (unquote name)) :recompile nil))
+            (t
+             (er hard? 'd "Not a symbol or quoted symbol: ~x0~%" name))))
 
-#!ACL2
-(defmacro why (rule)
-  ;; A handy macro that lets you figure out why a rule isn't firing.
-  ;; This is useful to me because I can never remember the :monitor
-  ;; syntax.
-  `(er-progn
-    (brr t)
-    (monitor '(:rewrite ,rule) ''(:eval :go t))))
+    (defmacro why (rule)
+      ;; A handy macro that lets you figure out why a rule isn't firing.
+      ;; This is useful to me because I can never remember the :monitor
+      ;; syntax.
+      `(er-progn
+        (brr t)
+        (monitor '(:rewrite ,rule) ''(:eval :go t))))
 
-#!ACL2
-(defmacro with-redef (&rest forms)
-  ;; A handy macro you can use to temporarily enable redefinition, but then
-  ;; keep it disabled for the rest of the session
-  `(progn
-     (defttag with-redef)
-     (progn!
-      (set-ld-redefinition-action '(:doit . :overwrite) state)
-      (progn . ,forms)
-      (set-ld-redefinition-action nil state))))
+    (defmacro with-redef (&rest forms)
+      ;; A handy macro you can use to temporarily enable redefinition, but then
+      ;; keep it disabled for the rest of the session
+      `(progn
+         (defttag with-redef)
+         (progn!
+          (set-ld-redefinition-action '(:doit . :overwrite) state)
+          (progn . ,forms)
+          (set-ld-redefinition-action nil state))))))
 
 
 
@@ -104,84 +105,83 @@
 ; FIRST, SECOND, THIRD, FOURTH, etc.
 
 #!ACL2
-(include-book "misc/untranslate-patterns" :dir :system)
+(with-output
+  :off (summary event)
+  (progn
+    (include-book "misc/untranslate-patterns" :dir :system)
+    (add-untranslate-pattern (car ?x)
+                             (first ?x))
 
-#!ACL2
-(progn
+    (add-untranslate-pattern (cdr ?x)
+                             (rest ?x))
 
-  (add-untranslate-pattern (car ?x)
-                           (first ?x))
+    (add-untranslate-pattern (car (car ?x))
+                             (first (first ?x)))
 
-  (add-untranslate-pattern (cdr ?x)
-                           (rest ?x))
+    (add-untranslate-pattern (car (cdr ?x))
+                             (second ?x))
 
-  (add-untranslate-pattern (car (car ?x))
-                           (first (first ?x)))
+    (add-untranslate-pattern (car (car (cdr ?x)))
+                             (first (second ?x)))
 
-  (add-untranslate-pattern (car (cdr ?x))
-                           (second ?x))
+    (add-untranslate-pattern (car (cdr (car (cdr ?x))))
+                             (second (second ?x)))
 
-  (add-untranslate-pattern (car (car (cdr ?x)))
-                           (first (second ?x)))
+    (add-untranslate-pattern (car (cdr (car ?x)))
+                             (second (first ?x)))
 
-  (add-untranslate-pattern (car (cdr (car (cdr ?x))))
-                           (second (second ?x)))
+    (add-untranslate-pattern (car (cdr (cdr ?x)))
+                             (third ?x))
 
-  (add-untranslate-pattern (car (cdr (car ?x)))
-                           (second (first ?x)))
+    (add-untranslate-pattern (car (car (cdr (cdr ?x))))
+                             (first (third ?x)))
 
-  (add-untranslate-pattern (car (cdr (cdr ?x)))
-                           (third ?x))
+    (add-untranslate-pattern (car (cdr (car (cdr (cdr ?x)))))
+                             (second (third ?x)))
 
-  (add-untranslate-pattern (car (car (cdr (cdr ?x))))
-                           (first (third ?x)))
+    (add-untranslate-pattern (car (cdr (cdr (car (cdr (cdr ?x))))))
+                             (second (third ?x)))
 
-  (add-untranslate-pattern (car (cdr (car (cdr (cdr ?x)))))
-                           (second (third ?x)))
+    (add-untranslate-pattern (car (cdr (cdr (car (cdr ?x)))))
+                             (third (second ?x)))
 
-  (add-untranslate-pattern (car (cdr (cdr (car (cdr (cdr ?x))))))
-                           (second (third ?x)))
+    (add-untranslate-pattern (car (cdr (cdr (car ?x))))
+                             (third (first ?x)))
 
-  (add-untranslate-pattern (car (cdr (cdr (car (cdr ?x)))))
-                           (third (second ?x)))
+    (add-untranslate-pattern (car (cdr (cdr (cdr ?x))))
+                             (fourth ?x))
 
-  (add-untranslate-pattern (car (cdr (cdr (car ?x))))
-                           (third (first ?x)))
+    (add-untranslate-pattern (car (car (cdr (cdr (cdr ?x)))))
+                             (first (fourth ?x)))
 
-  (add-untranslate-pattern (car (cdr (cdr (cdr ?x))))
-                           (fourth ?x))
+    (add-untranslate-pattern (car (cdr (car (cdr (cdr (cdr ?x))))))
+                             (second (fourth ?x)))
 
-  (add-untranslate-pattern (car (car (cdr (cdr (cdr ?x)))))
-                           (first (fourth ?x)))
+    (add-untranslate-pattern (car (cdr (cdr (car (cdr (cdr (cdr ?x)))))))
+                             (third (fourth ?x)))
 
-  (add-untranslate-pattern (car (cdr (car (cdr (cdr (cdr ?x))))))
-                           (second (fourth ?x)))
+    (add-untranslate-pattern (car (cdr (cdr (cdr (car (cdr (cdr (cdr ?x))))))))
+                             (fourth (fourth ?x)))
 
-  (add-untranslate-pattern (car (cdr (cdr (car (cdr (cdr (cdr ?x)))))))
-                           (third (fourth ?x)))
+    (add-untranslate-pattern (car (cdr (cdr (cdr (car (cdr (cdr ?x)))))))
+                             (fourth (third ?x)))
 
-  (add-untranslate-pattern (car (cdr (cdr (cdr (car (cdr (cdr (cdr ?x))))))))
-                           (fourth (fourth ?x)))
+    (add-untranslate-pattern (car (cdr (cdr (cdr (car (cdr ?x))))))
+                             (fourth (second ?x)))
 
-  (add-untranslate-pattern (car (cdr (cdr (cdr (car (cdr (cdr ?x)))))))
-                           (fourth (third ?x)))
+    (add-untranslate-pattern (car (cdr (cdr (cdr (car ?x)))))
+                             (fourth (first ?x)))
 
-  (add-untranslate-pattern (car (cdr (cdr (cdr (car (cdr ?x))))))
-                           (fourth (second ?x)))
+    (add-untranslate-pattern (first (cdr ?x))
+                             (second ?x))
 
-  (add-untranslate-pattern (car (cdr (cdr (cdr (car ?x)))))
-                           (fourth (first ?x)))
+    (add-untranslate-pattern (first (cdr (cdr ?x)))
+                             (third ?x))
 
-  (add-untranslate-pattern (first (cdr ?x))
-                           (second ?x))
+    (add-untranslate-pattern (first (cdr (cdr (cdr ?x))))
+                             (fourth ?x))
 
-  (add-untranslate-pattern (first (cdr (cdr ?x)))
-                           (third ?x))
-
-  (add-untranslate-pattern (first (cdr (cdr (cdr ?x))))
-                           (fourth ?x))
-
-  (optimize-untranslate-patterns))
+    (optimize-untranslate-patterns)))
 
 
 
@@ -214,7 +214,9 @@
 ; Before loading jared-customization.lsp.
 
 #!ACL2
-(ld "xdoc/package.lsp" :dir :system)
+(with-output
+  :off (summary event)
+  (ld "std/package.lsp" :dir :system))
 
 #!ACL2
 (make-event

@@ -20,7 +20,7 @@
 
 (in-package "CLEX")
 (include-book "std/util/defprojection" :dir :system)
-(include-book "str/eqv" :dir :system)
+(include-book "std/strings/eqv" :dir :system)
 
 (defprojection charlist-fix (x)
   (str::char-fix x)

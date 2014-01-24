@@ -20,5 +20,5 @@
 
 ;; Special .acl2 file for base.lisp, so that base.lisp won't need to include
 ;; the portcullis files for libraries other than XDOC.
-(include-book "portcullis")
+(include-book "std/portcullis" :dir :system)
 

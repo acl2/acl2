@@ -25,7 +25,7 @@
 (include-book "returnspecs")
 (include-book "xdoc/fmt-to-str" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
-(include-book "str/cat" :dir :system)
+(include-book "std/strings/cat" :dir :system)
 (set-state-ok t)
 (program)
 

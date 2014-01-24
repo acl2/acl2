@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "str/top" :dir :system)
+(include-book "std/strings/top" :dir :system)
 (include-book "string-alists")
 (include-book "nat-alists")
 (local (include-book "arithmetic"))

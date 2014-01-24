@@ -23,7 +23,7 @@
 
 (in-package "XDOC")
 (include-book "autolink")
-(include-book "str/defs" :dir :system)
+(include-book "std/strings/defs" :dir :system)
 (include-book "std/io/read-string" :dir :system)
 (include-book "unsound-eval")
 (include-book "verbosep")
@@ -1076,17 +1076,21 @@ baz
 ")))))
 
 
-(defun fancy-trim-start (x n xl new-start)
+(defun fancy-trim-start (x n xl current-line-start)
+  ;; Say a blank line consists of nothing but spaces.  We throw away all blank
+  ;; lines at the start of a string.
   (b* (((when (eql n xl))
-        ;; saw nothing but spaces and newlines, turn it into the empty string.
+        ;; It was all whitespace.
         n)
        (c (char x n))
        (n (+ 1 n))
        ((when (eql c #\Space))
-        (fancy-trim-start x n xl new-start))
+        ;; Another space, stick with current line
+        (fancy-trim-start x n xl current-line-start))
        ((when (eql c #\Newline))
+        ;; Advance to the next line
         (fancy-trim-start x n xl n)))
-    new-start))
+    current-line-start))
 
 (defun fancy-trim-stop (x n start)
   ;; N counts down from (length x) to start.
@@ -1103,10 +1107,12 @@ baz
 
 (defun fancy-extract-block (x start end)
   (b* ((start (fancy-trim-start x start end start))
-       (end   (+ 1 (fancy-trim-stop x end start)))
-       ((unless (<= start end))
-        ""))
+       ((when (eql start end))
+        "")
+       (end   (+ 1 (fancy-trim-stop x end start))))
     (subseq x start end)))
+
+
 
 
 ; Support for Lisp Evaluation
@@ -1239,12 +1245,22 @@ baz
                (b* (((when (and (< (+ n 2) xl)
                                 (eql (char x (+ n 2)) #\')))
                      ;; @(' directive -- turns into raw <tt> block with auto linking
-                     (b* ((end (str::strpos-fast "')" x (+ n 2) 2 xl))
+                     (b* ((end
+                           ;; Bugfix January 2014: some of the indices were off here -- I was looking
+                           ;; for ') at N+2, but we need to start at N+3 because:
+                           ;;    N == @, N+1 == (, N+2 == opening ', so N+3 == first char OR closing '
+                           (str::strpos-fast "')" x (+ n 3)
+                                             2 ;; length of string we're looking for
+                                             xl))
                           ((unless end)
                            (prog2$ (and (xdoc-verbose-p)
                                         (cw "; xdoc error: no closing ') found for @(' ...~%"))
                                    (mv acc state)))
-                          (sub (fancy-extract-block x (+ n 3) end))
+                          (sub
+                           ;; Change January 2014: we were using fancy-extract-block here, but it
+                           ;; doesn't make sense to be worrying about initial/trailing whitespace
+                           ;; in @('...'), so changing to just use a simple subseq
+                           (subseq x (+ n 3) end))
                           (acc (str::revappend-chars "<v>" acc))
                           (acc (autolink-and-encode sub 0 (length sub) topics-fal base-pkg kpa acc))
                           (acc (str::revappend-chars "</v>" acc)))
@@ -1253,7 +1269,9 @@ baz
                     ((when (and (< (+ n 2) xl)
                                 (eql (char x (+ n 2)) #\{)))
                      ;; @({ directive -- turns into raw <code> block with auto linking
-                     (b* ((end (str::strpos-fast "})" x (+ n 2) 2 xl))
+                     (b* ((end
+                           ;; Bugfix January 2014: similar issue as with @('...') handling
+                           (str::strpos-fast "})" x (+ n 3) 2 xl))
                           ((unless end)
                            (prog2$ (and (xdoc-verbose-p)
                                         (cw "; xdoc error: no closing }) found for @({ ...~%"))

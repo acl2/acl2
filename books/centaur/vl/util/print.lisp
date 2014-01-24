@@ -23,7 +23,7 @@
 (include-book "print-urlencode")
 (include-book "print-htmlencode")
 (include-book "cw-unformatted")
-(include-book "str/natstr" :dir :system)
+(include-book "std/strings/natstr" :dir :system)
 (local (include-book "arithmetic"))
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "std/io/base" :dir :system))

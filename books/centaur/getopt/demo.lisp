@@ -20,7 +20,7 @@
 
 (in-package "GETOPT-DEMO")
 (include-book "top")
-(include-book "str/top" :dir :system)
+(include-book "std/strings/top" :dir :system)
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (defoptions demo

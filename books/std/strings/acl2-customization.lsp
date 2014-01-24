@@ -1,5 +1,5 @@
-; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2011 Centaur Technology
+; ACL2 String Library
+; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,5 +18,8 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "package.lsp")
-
+(in-package "ACL2")
+(assign :suppress-preload-xdoc t)
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
+(ld "std/package.lsp" :dir :system)
+(in-package "STR")

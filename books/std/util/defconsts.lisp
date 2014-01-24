@@ -21,7 +21,7 @@
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
 (include-book "tools/bstar" :dir :system)
-(local (include-book "str/explode-atom" :dir :system))
+(local (include-book "std/strings/explode-atom" :dir :system))
 (local (include-book "../typed-lists/symbol-listp"))
 
 (defxdoc defconsts
