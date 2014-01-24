@@ -15311,6 +15311,30 @@
 ; place.)  We write out that expansion file, instead causing an error if we
 ; cannot open it.
 
+; The following issue came up when attempting to compile an expansion file with
+; GCL that had been created with CCL.  (We don't officially support using more
+; than one host Lisp on the same files, but it's convenient sometimes to do
+; that anyhow.)  The community book in question was
+; books/projects/legacy-defrstobj/typed-record-tests.lisp, and ACL2 was used,
+; not ACL2(h).  The event that caused the trouble was this one:
+
+;   (make-event
+;    `(def-typed-record char
+;       :elem-p        (characterp x)
+;       :elem-list-p   (character-listp x)
+;       :elem-fix      (character-fix x)
+;       :elem-default  ,(code-char 0)
+;       ;; avoid problems with common-lisp package
+;       :in-package-of foo))
+
+; In the expansion file, (code-char 0) was written by CCL as #\Null:
+; write-expansion-file calls print-object$ (and print-objects, which calls
+; print-object$), and print-object$ calls prin1, which prints "readably".  Now
+; our ACL2 readtable can't handle #\Null, but we call compile-certified-file on
+; the expansion file, and that calls acl2-compile-file, and that binds
+; *readtable* to *reckless-acl2-readtable*.  But the latter binds #\ to the old
+; character reader, which can handle #\Null in CCL, but not in GCL.
+
   #+acl2-loop-only
   (declare (ignore new-fns-exec expansion-alist-pkg-names known-package-alist))
   (with-output-object-channel-sharing

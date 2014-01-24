@@ -1691,7 +1691,7 @@
 ; pat, respectively.  The next equiv is undefined unless, at a minimum: fn is
 ; equal to the :fn field of pat, first-rev has the same length as the :pre-rev
 ; field of pat, and rest has the same length as the :post field of pat.  So
-; assume that these condiitons hold.  Let s0 be the :unify-subst field of p,
+; assume that these conditions hold.  Let s0 be the :unify-subst field of p,
 ; and let s be the minimal extension of s0 such that pre-rev/s = first-rev and
 ; post/s = rest, if such s exists; otherwise the next equiv does not exist.  If
 ; p is a deep pequiv, then the next equiv is the result of replacing the
@@ -1706,8 +1706,8 @@
 ; The correctness of our implementation relies on the theorems below, whose
 ; proofs we leave to the reader.  The first theorem justifies the addition of a
 ; pequiv to the list of equivalence relations being maintained by the rewriter,
-; while the others justify how a pequiv is used when rewriting an argument of a
-; function call.
+; while the second justifies how a pequiv is used when rewriting an argument of
+; a function call.
 
 ; Patterned Congruence Theorem 1.  Let E be the pequiv corresponding to a
 ; provable patterned congruence rule with outer equivalence e2.  Then for terms
@@ -1906,8 +1906,8 @@
 ; rewrite-if or from the right-hand side of an applied rewrite rule.
 
 ; We conclude this essay by emphasizing that our support for patterned
-; congruence rules is limited, in particular, mainly for the rewriter.  Thus,
-; pequivs fail to be used heuristically in some places that ordinary
+; congruence rules is limited; in particular, it is mainly for the rewriter.
+; Thus, pequivs fail to be used heuristically in some places that ordinary
 ; congruences are used: for example, as in test-3 in community book
 ; books/demos/patterned-congruences.lisp, remove-trivial-equivalences and
 ; fertilize-clause doesn't use patterned congruence rules.  If we decide to add
@@ -2270,7 +2270,7 @@
                       (reduce-geneqv-for-equiv equiv wrld geneqv)
                       (declare (ignore changedp))
                       (cons congruence-rule geneqv)))))))))))))))
-               
+
 (defun geneqv-and-pequiv-info-for-rewrite (fn bkptr rewritten-args-rev args
                                               alist parent-geneqv child-geneqv
                                               deep-pequiv-lst
