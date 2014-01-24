@@ -96,9 +96,9 @@ include the whitespace in case such support is ever added.</p>
 
 <p>I have not found anything in the spec which explicitly prohibits the empty
 escaped identifier, i.e., @('\\<whitespace>'), from being used.  Nevertheless,
-I exclude it on the grounds that is suspicious and Cadence does not permit it
-either.  Allowing it would make end-of-define even more complicated to properly
-support in the @(see preprocessor).</p>
+I exclude it on the grounds that it is suspicious and Cadence does not permit
+it either.  Allowing it would make end-of-define even more complicated to
+properly support in the @(see preprocessor).</p>
 
 
 <h3>Notes about Honsing Identifiers</h3>

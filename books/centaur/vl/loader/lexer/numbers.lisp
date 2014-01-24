@@ -28,7 +28,7 @@
   :parents (lexer)
   :short "Handling of integer numbers, real numbers, and time literals."
 
-  :long "<p>Verilog has an very rich (and correspondingly complicated) syntax
+  :long "<p>Verilog has a very rich (and correspondingly complicated) syntax
 for numbers.  Fortunately, this part of the language tends to be well defined
 and there are few differences here between Verilog-2005 and
 SystemVerilog-2012.</p>")
