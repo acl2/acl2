@@ -166,7 +166,7 @@
    (program)
 
    (defmacro test-delay3 (&key input rise fall high (successp 't))
-     `(assert! (let ((tokens (vl-make-test-tstream ,input)))
+     `(assert! (let ((tokens (make-test-tokens ,input)))
                  (mv-let (erp val tokens warnings)
                    (vl-parse-delay3 tokens 'blah-warnings)
                    (declare (ignore tokens))

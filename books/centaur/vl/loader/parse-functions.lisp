@@ -476,7 +476,7 @@
      `(with-output
         :off summary
         (assert! (b* (((mv erp val tokens warnings)
-                       (vl-parse-taskport-list (vl-make-test-tstream ,input)
+                       (vl-parse-taskport-list (make-test-tokens ,input)
                                                'blah-warnings))
 
                       ((unless ,successp)

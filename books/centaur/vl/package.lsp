@@ -50,6 +50,8 @@
       simpler-take
       repeat
       replicate
+      first-n
+      rest-n
       list-fix
       list-equiv
       same-lengthp

@@ -21,7 +21,7 @@
 (in-package "VL")
 (include-book "../../util/defs")
 
-(defsection keywords
+(defsection lex-keywords
   :parents (lexer)
   :short "Handling of keywords in the lexer."
 
@@ -33,7 +33,7 @@ the particular @(see vl-edition-p) we are implementing.</p>
 same: when we encounter a keyword such as @('inout'), we will produce a @(see
 vl-plaintoken-p) whose type is, e.g., @(':vl-kwd-inout').</p>")
 
-(local (xdoc::set-default-parents keywords))
+(local (xdoc::set-default-parents lex-keywords))
 
 (defval *vl-2005-keywords*
   :short "IEEE STD 1364-2005, Annex B, List of Keywords."

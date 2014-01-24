@@ -1050,6 +1050,12 @@ within @('tokens').</p>"
            (:vl-realtoken
             (vl-echarlist-equiv-p (vl-realtoken->etext x)
                                   (vl-realtoken->etext y)))
+           (:vl-timetoken
+            (vl-echarlist-equiv-p (vl-timetoken->etext x)
+                                  (vl-timetoken->etext y)))
+           (:vl-extinttoken
+            (eq (vl-extinttoken->value x)
+                (vl-extinttoken->value y)))
            (otherwise
             ;; Plain tokens.  The tags being the same means that the
             ;; types are the same.

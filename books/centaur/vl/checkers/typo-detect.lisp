@@ -182,14 +182,17 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
 ")
 
 (defchar typo-lowercase
-  (or (and (<= 97 (char-code x)) (<= (char-code x) 122))  ;; a-z in ascii.
-      (and (<= 48 (char-code x)) (<= (char-code x) 57)))) ;; 0-9 in ascii
+  (or (and (<= 97 (char-code x)) (<= (char-code x) 122)) ;; a-z in ascii.
+      (and (<= 48 (char-code x)) (<= (char-code x) 57))) ;; 0-9 in ascii
+  :parents (typo-detection))
 
 (defchar typo-uppercase
-  (and (<= 65 (char-code x)) (<= (char-code x) 90))) ;; A-Z in ascii
+  (and (<= 65 (char-code x)) (<= (char-code x) 90)) ;; A-Z in ascii
+  :parents (typo-detection))
 
 (defchar typo-number
-  (and (<= 48 (char-code x)) (<= (char-code x) 57))) ;; 0-9 in ascii
+  (and (<= 48 (char-code x)) (<= (char-code x) 57)) ;; 0-9 in ascii
+  :parents (typo-detection))
 
 
 

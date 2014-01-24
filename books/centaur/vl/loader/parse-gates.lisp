@@ -421,13 +421,13 @@
 
 #||
 
-(vl-parse-0+-lvalues-separated-by-commas (vl-make-test-tstream "foo, bar, baz)") nil)
+(vl-parse-0+-lvalues-separated-by-commas (make-test-tokens "foo, bar, baz)") nil)
 ;; OK: returns FOO, BAR, BAZ as expected and left the ) in the input stream.
 
-(vl-parse-0+-lvalues-separated-by-commas (vl-make-test-tstream "foo, bar, baz & bar)") nil)
+(vl-parse-0+-lvalues-separated-by-commas (make-test-tokens "foo, bar, baz & bar)") nil)
 ;; WRONG: returns FOO, BAR, and BAZ, leaving the &bar in the input stream.  terrible.
 
-(vl-parse-0+-lvalues-separated-by-commas (vl-make-test-tstream "foo, bar, ~baz)") nil)
+(vl-parse-0+-lvalues-separated-by-commas (make-test-tokens "foo, bar, ~baz)") nil)
 ;; SORT OF OK: eats the comma, leaves ~baz in the input stream.
 ;; But previously vl-parse-n-output-gate-instance was expecting the comma to be
 ;; left there.  It has been updated appropriately.
@@ -503,10 +503,10 @@
                (vl-parse-error "Expected at least two arguments.")
              (mv nil (list name range args) tokens warnings))))))
 
-;(vl-parse-n-output-gate-instance (vl-make-test-tstream "my_buf (foo, bar)") nil)
-;(vl-parse-n-output-gate-instance (vl-make-test-tstream "my_buf (foo, bar, baz)") nil)
-;(vl-parse-n-output-gate-instance (vl-make-test-tstream "my_buf (foo, bar & baz)") nil)
-;(vl-parse-n-output-gate-instance (vl-make-test-tstream "my_buf (foo, ~bar)") nil)
+;(vl-parse-n-output-gate-instance (make-test-tokens "my_buf (foo, bar)") nil)
+;(vl-parse-n-output-gate-instance (make-test-tokens "my_buf (foo, bar, baz)") nil)
+;(vl-parse-n-output-gate-instance (make-test-tokens "my_buf (foo, bar & baz)") nil)
+;(vl-parse-n-output-gate-instance (make-test-tokens "my_buf (foo, ~bar)") nil)
 
 
 (defparser vl-parse-n-output-gate-instances-list (tokens warnings)

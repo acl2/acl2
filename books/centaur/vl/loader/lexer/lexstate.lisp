@@ -88,7 +88,11 @@ particular standard we're implementing.</p>"
    (xorops   vl-plaintoken-alistp "Operators starting with @('^').")
    (barops   vl-plaintoken-alistp "Operators starting with @('|').")
 
-   (assignpatp booleanp "Is '{ supported?")))
+   (assignpatp booleanp "Enable SystmeVerilog 2012 '{ tokens?")
+   (strextsp   booleanp "Enable SystemVerilog 2012 string literal extensions?")
+   (timelitsp  booleanp "Enable SystemVerilog 2012 time literals?")
+   (extintsp   booleanp "Enable SystemVerilog 2012 '0/'1/'x/'z integers?")
+   ))
 
 
 (define vl-lexstate->plainalist
@@ -145,6 +149,9 @@ particular standard we're implementing.</p>"
    :barops   '(("||"   . :vl-logor)
                ("|"    . :vl-bitor))
    :assignpatp nil
+   :strextsp  nil
+   :timelitsp nil
+   :extintsp  nil
    )
   ///
   (assert!
@@ -229,7 +236,10 @@ particular standard we're implementing.</p>"
                ("|="   . :vl-oreq)
                ("||"   . :vl-logor)
                ("|"    . :vl-bitor))
-   :assignpatp t)
+   :assignpatp t
+   :strextsp   t
+   :timelitsp  t
+   :extintsp   t)
   ///
   (assert!
    ;; Basic sanity check, everything should be unique and valid.

@@ -162,7 +162,7 @@
   (local (include-book "lexer/lexer"))
 
   (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (vl-make-test-tstream "@(foo or bar or baz)")
+                 (vl-parse-delay-or-event-control (make-test-tokens "@(foo or bar or baz)")
                                                   'blah-warnings)))
                (and (not err)
                     (not tokens)
@@ -178,7 +178,7 @@
                                                       :expr (make-vl-atom :guts (vl-id "baz")))))))))
 
   (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (vl-make-test-tstream "@(posedge foo)")
+                 (vl-parse-delay-or-event-control (make-test-tokens "@(posedge foo)")
                                                   'blah-warnings)))
                (and (not err)
                     (not tokens)
@@ -189,7 +189,7 @@
                                                              :expr (make-vl-atom :guts (vl-id "foo")))))))))
 
   (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (vl-make-test-tstream "@(negedge foo)")
+                 (vl-parse-delay-or-event-control (make-test-tokens "@(negedge foo)")
                                                   'blah-warnings)))
                (and (not err)
                     (not tokens)
@@ -200,7 +200,7 @@
                                                              :expr (make-vl-atom :guts (vl-id "foo")))))))))
 
   (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (vl-make-test-tstream "@*")
+                 (vl-parse-delay-or-event-control (make-test-tokens "@*")
                                                   'blah-warnings)))
                (and (not err)
                     (not tokens)
@@ -211,7 +211,7 @@
 
 
   (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (vl-make-test-tstream "@(*)")
+                 (vl-parse-delay-or-event-control (make-test-tokens "@(*)")
                                                   'blah-warnings)))
                (and (not err)
                     (not tokens)
@@ -221,7 +221,7 @@
                                 :atoms nil)))))
 
   (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (vl-make-test-tstream "@( *)")
+                 (vl-parse-delay-or-event-control (make-test-tokens "@( *)")
                                                   'blah-warnings)))
                (and (not err)
                     (not tokens)
@@ -231,7 +231,7 @@
                                 :atoms nil)))))
 
   (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (vl-make-test-tstream "@(* )")
+                 (vl-parse-delay-or-event-control (make-test-tokens "@(* )")
                                                   'blah-warnings)))
                (and (not err)
                     (not tokens)
@@ -241,7 +241,7 @@
                                 :atoms nil)))))
 
   (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (vl-make-test-tstream "@( * )")
+                 (vl-parse-delay-or-event-control (make-test-tokens "@( * )")
                                                   'blah-warnings)))
                (and (not err)
                     (not tokens)

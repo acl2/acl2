@@ -35,7 +35,10 @@ and functions to read them.</p>
 @({
     (defchar basename criteria
       [:prefix prefix]
-      [:pkg pkg])
+      [:pkg pkg]
+      [:parents parents]
+      [:short short]
+      [:long long])
 })
 
 <h5>Example</h5>

@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../../util/echars")
+(include-book "tokens")
 (local (include-book "../../util/arithmetic"))
 
 (defun revappend-of-take (n x y)
@@ -201,13 +201,10 @@ call @(see explode) or build the list of characters.</p>"
                     (equal string "")))
     :enable acl2-count))
 
-
-
 (define vl-read-literal
   :short "Match an exact literal string."
   ((string "The string we're looking for." :type string)
-   (echars "The characters we're lexing." (and (vl-echarlist-p echars)
-                                               (true-listp echars))))
+   (echars "The characters we're lexing." vl-echarlist-p))
   :guard (not (equal string ""))
   :returns (mv (prefix "@('nil') on failure, or the matching prefix of
                         @('echars') on success.")
@@ -215,22 +212,21 @@ call @(see explode) or build the list of characters.</p>"
   :inline t
   (if (vl-matches-string-p string echars)
       (let ((strlen (length (string-fix string))))
-        (mv (take strlen echars) (nthcdr strlen echars)))
+        (mv (first-n strlen echars)
+            (rest-n strlen echars)))
     (mv nil echars))
   ///
   (local (in-theory (enable vl-matches-string-p)))
 
   (defrule vl-echarlist->chars-of-prefix-of-vl-read-literal
     (b* (((mv prefix ?remainder) (vl-read-literal string echars)))
-      (implies (and prefix
-                    (force (vl-echarlist-p echars)))
+      (implies prefix
                (equal (vl-echarlist->chars prefix)
                       (explode string)))))
 
   (defrule vl-echarlist->string-of-prefix-of-vl-read-literal
     (b* (((mv prefix ?remainder) (vl-read-literal string echars)))
-      (implies (and prefix
-                    (force (vl-echarlist-p echars)))
+      (implies prefix
                (equal (vl-echarlist->string prefix)
                       (string-fix string))))))
 
@@ -241,8 +237,7 @@ call @(see explode) or build the list of characters.</p>"
   :short "Match one of many exact literal strings."
 
   ((strings "The strings to search for, in priority order." string-listp)
-   (echars  "The characters we're lexing." (and (vl-echarlist-p echars)
-                                                (true-listp echars))))
+   (echars  "The characters we're lexing." vl-echarlist-p))
   :guard (not (member-equal "" strings))
   :returns (mv (prefix "@('nil') on failure, or the matching prefix of
                         @('echars') on success.")
@@ -338,9 +333,9 @@ call @(see explode) or build the list of characters.</p>"
   :short "Match any characters until and through some literal."
 
   ((string :type string)
-   (echars (and (vl-echarlist-p echars)
-                (true-listp echars))))
+   (echars (vl-echarlist-p echars)))
   :guard (not (equal string ""))
+  :guard-debug t
   :returns (mv (successp "Whether we ever found @('string').")
                (prefix "On success, all characters from @('echars') leading up
                         to <i>and including</i> the first occurrence of
@@ -364,7 +359,7 @@ call @(see explode) or build the list of characters.</p>"
                     (strlen (length string)))
                  (mv t
                      (reverse (revappend-of-take strlen remainder prefix))
-                     (nthcdr strlen remainder))))
+                     (rest-n strlen remainder))))
 
   ///
   (defrule prefix-of-vl-read-through-literal-under-iff
@@ -398,3 +393,68 @@ digits with @(see vl-echarlist-unsigned-value).</p>"
         (t
          (cons (car x) (vl-echarlist-kill-underscores (cdr x))))))
 
+
+(defmacro def-token/remainder-thms (fn &key
+                                       (formals '(echars))
+                                       (extra-tokenhyp 't)
+                                       (extra-appendhyp 't)
+                                       (extra-strongcounthyp 't)
+                                       (token-n '0)
+                                       (remainder-n '1))
+  (let ((mksym-package-symbol (pkg-witness "VL")))
+    `(defsection ,(mksym fn '-token/remainder-thms)
+       :parents (,fn)
+       :short "Basic token/remainder theorems automatically added with
+               @(see vl::def-token/remainder-thms)."
+
+       (local (in-theory (enable ,fn)))
+
+       (defthm ,(mksym 'vl-token-p-of- fn)
+         (implies (and (force (vl-echarlist-p echars))
+                       ,extra-tokenhyp)
+                  (equal (vl-token-p (mv-nth ,token-n (,fn . ,formals)))
+                         (if (mv-nth ,token-n (,fn . ,formals))
+                             t
+                           nil))))
+
+       (defthm ,(mksym 'true-listp-of- fn)
+         (equal (true-listp (mv-nth ,remainder-n (,fn . ,formals)))
+                (true-listp echars))
+         :rule-classes ((:rewrite)
+                        (:type-prescription
+                         :corollary
+                         (implies (true-listp echars)
+                                  (true-listp (mv-nth ,remainder-n (,fn . ,formals))))))
+         :hints(("Goal" :in-theory (disable (force)))))
+
+       (defthm ,(mksym 'vl-echarlist-p-of- fn)
+         (implies (force (vl-echarlist-p echars))
+                  (equal (vl-echarlist-p (mv-nth ,remainder-n (,fn . ,formals)))
+                         t)))
+
+       (defthm ,(mksym 'append-of- fn)
+         (implies (and (mv-nth ,token-n (,fn . ,formals))
+                       (force (vl-echarlist-p echars))
+                       ,extra-appendhyp)
+                  (equal (append (vl-token->etext (mv-nth ,token-n (,fn . ,formals)))
+                                 (mv-nth ,remainder-n (,fn . ,formals)))
+                         echars)))
+
+       (defthm ,(mksym 'no-change-loser-of- fn)
+         (implies (not (mv-nth ,token-n (,fn . ,formals)))
+                  (equal (mv-nth ,remainder-n (,fn . ,formals))
+                         echars)))
+
+       (defthm ,(mksym 'acl2-count-of- fn '-weak)
+         (<= (acl2-count (mv-nth ,remainder-n (,fn . ,formals)))
+             (acl2-count echars))
+         :rule-classes ((:rewrite) (:linear))
+         :hints(("Goal" :in-theory (disable (force)))))
+
+       (defthm ,(mksym 'acl2-count-of- fn '-strong)
+         (implies (and (mv-nth ,token-n (,fn . ,formals))
+                       ,extra-strongcounthyp)
+                  (< (acl2-count (mv-nth ,remainder-n (,fn . ,formals)))
+                     (acl2-count echars)))
+         :rule-classes ((:rewrite) (:linear))
+         :hints(("Goal" :in-theory (disable (force))))))))

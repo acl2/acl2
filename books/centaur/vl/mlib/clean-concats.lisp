@@ -861,7 +861,7 @@ Testing the constant consolidation....
 
 (defun cleaned-version (str)
   (b* (((mv erp val tokens ?warnings)
-        (vl-parse-expression (vl-make-test-tstream str) nil))
+        (vl-parse-expression (make-test-tokens str) nil))
        ((when erp) "parse error")
        ((when tokens) "extra tokens")
        (empty-mod (make-vl-module :name "fake"

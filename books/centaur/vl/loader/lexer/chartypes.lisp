@@ -68,7 +68,7 @@ return (ASCII character 13) and vertical tab characters (ASCII character
 bitset."
   :long "<p>This is probably silly and not worth the effort.</p>"
 
-  (defun-inline vertical-tab-char () (code-char 11))
+  (defmacro vertical-tab-char () (code-char 11))
   (defmacro carriage-return-char () (code-char 13))
 
   (defmacro whitespace-mask ()

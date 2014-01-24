@@ -569,7 +569,7 @@
                         str rise fall high atts))))
 
   (defmacro test-assign (&key input lvalues exprs str rise fall high atts (successp 't))
-    `(assert! (let ((tokens (vl-make-test-tstream ,input)))
+    `(assert! (let ((tokens (make-test-tokens ,input)))
                 (mv-let (erp val tokens warnings)
                         (vl-parse-continuous-assign ',atts tokens nil)
                         (declare (ignorable tokens warnings))
@@ -679,7 +679,7 @@
                                ;; stuff for decl parts
                                ids type range arrdims vectoredp scalaredp signedp decl-rise decl-fall decl-high cstrength
                                (successp 't))
-    `(assert! (let ((tokens (vl-make-test-tstream ,input)))
+    `(assert! (let ((tokens (make-test-tokens ,input)))
                 (mv-let (erp val tokens warnings)
                         (vl-parse-net-declaration ',atts tokens nil)
                         (declare (ignorable tokens warnings))

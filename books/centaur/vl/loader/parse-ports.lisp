@@ -507,7 +507,7 @@
      `(with-output
         :off summary
         (assert! (mv-let (erp val tokens warnings)
-                   (vl-parse-nonnull-port (vl-make-test-tstream ,input) 'blah-warnings)
+                   (vl-parse-nonnull-port (make-test-tokens ,input) 'blah-warnings)
                    (if ,successp
                        (and (prog2$ (cw "Erp: ~x0.~%" erp)
                                     (not erp))
@@ -596,7 +596,7 @@
      `(with-output
         :off summary
         (assert! (mv-let (erp val tokens warnings)
-                   (vl-parse-list-of-ports (vl-make-test-tstream ,input) 'blah-warnings)
+                   (vl-parse-list-of-ports (make-test-tokens ,input) 'blah-warnings)
                    (if ,successp
                        (and (prog2$ (cw "Erp: ~x0.~%" erp)
                                     (not erp))

@@ -499,7 +499,7 @@
       :off summary
       (assert! (mv-let (erp val tokens warnings)
                        (vl-parse-udp-or-module-instantiation nil
-                                                             (vl-make-test-tstream ,input)
+                                                             (make-test-tokens ,input)
                                                              'warnings)
                        (if ,successp
                            (and (prog2$ (cw "Erp: ~x0.~%" erp)

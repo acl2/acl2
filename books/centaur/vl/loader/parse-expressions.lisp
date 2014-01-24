@@ -107,7 +107,7 @@
      `(with-output
         :off summary
         (assert! (mv-let (erp val tokens warnings)
-                   (vl-parse-expression (vl-make-test-tstream ,input) nil)
+                   (vl-parse-expression (make-test-tokens ,input) nil)
                    (if ,successp
                        (and (prog2$ (cw "Erp: ~x0.~%" erp)
                                     (not erp))

@@ -441,19 +441,58 @@ bits.</p>"
     :use ((:instance vl-inttoken-constraint-p-of-vl-inttoken-parts))))
 
 
+(defaggregate vl-extinttoken
+  :short "Tokens for unsized, unbased SystemVerilog integers, e.g., @(''0'),
+@(''1'), @(''x'), and @(''z')."
+  :tag :vl-extinttoken
+  :legiblep nil
+
+  ((etext (and (vl-echarlist-p etext)
+               (consp etext)
+               (true-listp etext))
+          "The characters that gave rise to this token.")
+
+   (value vl-bit-p
+          "The kind of extended integer this is.")))
+
+
+(defaggregate vl-timetoken
+  :short "Tokens for time literals, like @('3ns') or @('45.617us')."
+  :tag :vl-timetoken
+  :legiblep nil
+
+  ((etext (and (vl-echarlist-p etext)
+               (consp etext)
+               (true-listp etext))
+          "The characters that gave rise to this token.")
+
+   (quantity stringp
+             :rule-classes :type-prescription
+             "An ACL2 string with the amount.  In practice, the amount should
+              match either @('unsigned_number') or @('fixed_point_number'),
+              e.g., @('\"3\"') or @('\"45.617\"').  We don't try to process
+              this further because (1) we don't expect it to matter for much,
+              and (2) ACL2 doesn't really support fixed point numbers.")
+
+   (units  vl-timeunit-p
+           "The kind of time unit this is, e.g., seconds, milliseconds,
+            microseconds, ...")))
+
 
 (define vl-token-p (x)
   :short "Token structure produced by our lexer."
   :long "<p>@('vl-token-p') is a sum-of-products style recognizer.  Every token
-is either a</p>
+is one of the following:</p>
 
 <ul>
-  <li>@(see vl-plaintoken-p),</li>
-  <li>@(see vl-inttoken-p),</li>
-  <li>@(see vl-idtoken-p),</li>
-  <li>@(see vl-sysidtoken-p),</li>
-  <li>@(see vl-stringtoken-p), or</li>
-  <li>@(see vl-realtoken-p).</li>
+  <li>@(see vl-plaintoken-p)</li>
+  <li>@(see vl-inttoken-p)</li>
+  <li>@(see vl-idtoken-p)</li>
+  <li>@(see vl-sysidtoken-p)</li>
+  <li>@(see vl-stringtoken-p)</li>
+  <li>@(see vl-realtoken-p)</li>
+  <li>@(see vl-timetoken-p)</li>
+  <li>@(see vl-extinttoken-p)</li>
 </ul>
 
 <p>Our lexer produces a token list for our parser to consume.  Any token can be
@@ -472,6 +511,8 @@ inspected with the following operations:</p>
            (vl-sysidtoken-p x)
            (vl-stringtoken-p x)
            (vl-realtoken-p x)
+           (vl-timetoken-p x)
+           (vl-extinttoken-p x)
            (vl-plaintoken-p x))
        :exec
        (case (tag x)
@@ -480,6 +521,8 @@ inspected with the following operations:</p>
          (:vl-sysidtoken  (vl-sysidtoken-p x))
          (:vl-stringtoken (vl-stringtoken-p x))
          (:vl-realtoken   (vl-realtoken-p x))
+         (:vl-timetoken   (vl-timetoken-p x))
+         (:vl-extinttoken (vl-extinttoken-p x))
          (otherwise       (vl-plaintoken-p x))))
   ///
   (defrule vl-token-p-when-vl-plaintoken-p
@@ -504,6 +547,14 @@ inspected with the following operations:</p>
 
   (defrule vl-token-p-when-vl-realtoken-p
     (implies (vl-realtoken-p x)
+             (vl-token-p x)))
+
+  (defrule vl-token-p-when-vl-timetoken-p
+    (implies (vl-timetoken-p x)
+             (vl-token-p x)))
+
+  (defrule vl-token-p-when-vl-extinttoken-p
+    (implies (vl-extinttoken-p x)
              (vl-token-p x))))
 
 
@@ -546,7 +597,9 @@ efficient implementation is beneficial.  We specially arrange our definition of
                                    :vl-stringtoken
                                    :vl-idtoken
                                    :vl-sysidtoken
-                                   :vl-realtoken)
+                                   :vl-realtoken
+                                   :vl-timetoken
+                                   :vl-extinttoken)
                              *vl-plaintoken-types*)))
     :rule-classes nil
     :enable (vl-token-p vl-plaintokentype-p)
@@ -572,6 +625,20 @@ efficient implementation is beneficial.  We specially arrange our definition of
     (implies (and (equal (vl-token->type x) :vl-realtoken)
                   (force (vl-token-p x)))
              (equal (vl-realtoken-p x)
+                    t))
+    :enable (vl-token-p vl-plaintoken->type vl-plaintoken-p))
+
+  (defrule vl-timetoken-p-when-token-of-type-timetoken
+    (implies (and (equal (vl-token->type x) :vl-timetoken)
+                  (force (vl-token-p x)))
+             (equal (vl-timetoken-p x)
+                    t))
+    :enable (vl-token-p vl-plaintoken->type vl-plaintoken-p))
+
+  (defrule vl-extinttoken-p-when-token-of-type-extinttoken
+    (implies (and (equal (vl-token->type x) :vl-extinttoken)
+                  (force (vl-token-p x)))
+             (equal (vl-extinttoken-p x)
                     t))
     :enable (vl-token-p vl-plaintoken->type vl-plaintoken-p))
 
@@ -612,6 +679,8 @@ token.</p>"
              ((vl-sysidtoken-p x)   (vl-sysidtoken->etext x))
              ((vl-stringtoken-p x)  (vl-stringtoken->etext x))
              ((vl-realtoken-p x)    (vl-realtoken->etext x))
+             ((vl-timetoken-p x)    (vl-timetoken->etext x))
+             ((vl-extinttoken-p x)  (vl-extinttoken->etext x))
              ((vl-plaintoken-p x)   (vl-plaintoken->etext x)))
 
        :exec
@@ -622,7 +691,7 @@ token.</p>"
        (case (tag x)
          (:vl-inttoken
           (caadr x))
-         ((:vl-idtoken :vl-sysidtoken :vl-stringtoken)
+         ((:vl-idtoken :vl-sysidtoken :vl-stringtoken :vl-timetoken :vl-extinttoken)
           (cadr x))
          (otherwise ;; plain, real
           (cdr x))))
@@ -635,12 +704,16 @@ token.</p>"
                   (equal (vl-inttoken->etext x) (caadr x))
                   (equal (vl-stringtoken->etext x) (cadr x))
                   (equal (vl-realtoken->etext x) (cdr x))
+                  (equal (vl-timetoken->etext x) (cadr x))
+                  (equal (vl-extinttoken->etext x) (cadr x))
                   (equal (vl-plaintoken->etext x) (cdr x)))
              :enable (vl-idtoken->etext
                       vl-sysidtoken->etext
                       vl-inttoken->etext
                       vl-stringtoken->etext
                       vl-realtoken->etext
+                      vl-timetoken->etext
+                      vl-extinttoken->etext
                       vl-plaintoken->etext)))
 
     (verify-guards vl-token->etext$inline
@@ -651,6 +724,8 @@ token.</p>"
                                        vl-idtoken-p
                                        vl-stringtoken-p
                                        vl-realtoken-p
+                                       vl-timetoken-p
+                                       vl-extinttoken-p
                                        vl-sysidtoken-p
                                        vl-plaintoken-p
                                        tag))))))
@@ -670,6 +745,8 @@ token.</p>"
                       (and (not (vl-idtoken-p token))
                            (not (vl-sysidtoken-p token))
                            (not (vl-realtoken-p token))
+                           (not (vl-timetoken-p token))
+                           (not (vl-extinttoken-p token))
                            (not (vl-stringtoken-p token))
                            (not (vl-inttoken-p token)))))
            :enable (tag
@@ -677,6 +754,8 @@ token.</p>"
                     vl-idtoken-p
                     vl-sysidtoken-p
                     vl-realtoken-p
+                    vl-timetoken-p
+                    vl-extinttoken-p
                     vl-stringtoken-p
                     vl-inttoken-p)))
 
@@ -739,6 +818,26 @@ token.</p>"
                   (force (consp etext))
                   (force (true-listp etext)))
              (equal (vl-token->etext (make-vl-realtoken :etext etext))
+                    etext)))
+
+  (defrule vl-token->etext-of-vl-timetoken
+    (implies (and (force (vl-echarlist-p etext))
+                  (force (consp etext))
+                  (force (true-listp etext))
+                  (force (stringp quantity))
+                  (force (vl-timeunit-p units)))
+             (equal (vl-token->etext (make-vl-timetoken :etext etext
+                                                        :quantity quantity
+                                                        :units units))
+                    etext)))
+
+  (defrule vl-token->etext-of-vl-extinttoken
+    (implies (and (force (vl-echarlist-p etext))
+                  (force (consp etext))
+                  (force (true-listp etext))
+                  (force (vl-bit-p value)))
+             (equal (vl-token->etext (make-vl-extinttoken :etext etext
+                                                          :value value))
                     etext))))
 
 
@@ -774,7 +873,7 @@ character.</p>"
               (vl-echarlist-p (vl-tokenlist->etext x))))))
 
 (define vl-token->string
-  :parents (lexer)
+  :parents (tokens)
   :short "Get the original text that gave rise to any token, as a string."
   ((x vl-token-p))
   :returns (str stringp :rule-classes :type-prescription)

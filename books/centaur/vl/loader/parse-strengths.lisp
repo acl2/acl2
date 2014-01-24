@@ -169,7 +169,7 @@
   (program)
 
   (defmacro test-drive/charge-strength (&key input expect (successp 't))
-    `(assert! (let ((tokens (vl-make-test-tstream ,input))
+    `(assert! (let ((tokens (make-test-tokens ,input))
                     (warnings nil))
                 (mv-let (erp val tokens warnings)
                         (vl-parse-drive-strength-or-charge-strength)

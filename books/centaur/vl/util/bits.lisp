@@ -21,13 +21,14 @@
 (in-package "VL")
 (include-book "defs")
 
-(defenum vl-bit-p (:vl-0val :vl-1val :vl-xval :vl-zval)
+(defenum vl-bit-p
+  (:vl-0val :vl-1val :vl-xval :vl-zval)
   :parents (vl-weirdint-p)
   :short "Representation of a single Verilog bit (0, 1, X, or Z)."
 
   :long "<p>Verilog has four register-transfer level values, @('0'), @('1'),
-@('X'), and @('Z').  In @(see vl-weirdint-p) objects, We represent these values
-using the keyword symbols accepted by @('vl-bit-p'):</p>
+@('X'), and @('Z').  We represent these values using the keyword symbols
+accepted by @('vl-bit-p'):</p>
 
 <ul>
  <li>@(':vl-0val') means 0,</li>
@@ -42,14 +43,12 @@ using the keyword symbols accepted by @('vl-bit-p'):</p>
   :elementp-of-nil nil
   :parents (vl-weirdint-p))
 
-
 (define vl-bit->char ((x vl-bit-p))
-  :parents (vl-weirdint-p)
+  :parents (vl-bit-p)
   :short "Get the character for a @(see vl-bit-p)."
-
+  :returns (char characterp :rule-classes :type-prescription)
   :long "<p>@(call vl-bit->char) produces the ASCII character for a @(see vl-bit-p).
 That is, it returns one of the characters: 0, 1, X, or Z.</p>"
-
   (case x
     (:vl-0val #\0)
     (:vl-1val #\1)
@@ -57,35 +56,44 @@ That is, it returns one of the characters: 0, 1, X, or Z.</p>"
     (:vl-zval #\Z)
     (otherwise
      ;; hack for unconditional type prescription
-     (prog2$ (er hard 'vl-bit-char "Impossible")
-             #\0)))
-
-  :guard-hints (("Goal" :in-theory (enable vl-bit-p)))
-
-  ///
-
-  (defthm characterp-of-vl-bit->char
-    (characterp (vl-bit->char x))
-    :rule-classes :type-prescription))
-
+     (progn$ (impossible)
+             #\0))))
 
 (defprojection vl-bitlist->charlist (x)
-  (vl-bit->char x)
+  :parents (vl-weirdint-p)
+  :short "Get a character list for a @(see vl-bitlist-p)."
   :guard (vl-bitlist-p x)
   :result-type character-listp
   :nil-preservingp nil
-  :parents (vl-weirdint-p)
-  :short "Get a character list for a @(see vl-bitlist-p).")
-
+  (vl-bit->char x))
 
 (define vl-bitlist->string ((x vl-bitlist-p))
   :parents (vl-weirdint-p)
   :short "Get the string corresponding to a @(see vl-bitlist-p)."
+  :returns (str stringp :rule-classes :type-prescription)
+  (implode (vl-bitlist->charlist x)))
 
-  (implode (vl-bitlist->charlist x))
+(defenum vl-timeunit-p
+  (:vl-s
+   :vl-ms
+   :vl-us
+   :vl-ns
+   :vl-ps
+   :vl-fs)
+  :parents (modules)
+  :short "Representation for SystemVerilog time units (s, ms, ps, ...)")
 
-  ///
+(define vl-timeunit->string ((x vl-timeunit-p))
+  :parents (vl-timeunit-p)
+  :short "Get the string corresponding to a @(see vl-timeunit-p)."
+  :returns (str stringp :rule-classes :type-prescription)
+  (case x
+    (:vl-s "s")
+    (:vl-ms "ms")
+    (:vl-us "us")
+    (:vl-ns "ns")
+    (:vl-ps "ps")
+    (:vl-fs "fs")
+    (otherwise (progn$ (impossible)
+                       "s"))))
 
-  (defthm stringp-of-vl-bitlist->string
-    (stringp (vl-bitlist->string x))
-    :rule-classes :type-prescription))

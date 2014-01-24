@@ -104,7 +104,7 @@
   (local (include-book "lexer/lexer"))
 
   (defmacro test-range (&key input range (successp 't))
-    `(assert! (let ((tokens (vl-make-test-tstream ,input)))
+    `(assert! (let ((tokens (make-test-tokens ,input)))
                 (mv-let (erp val tokens warnings)
                         (vl-parse-range tokens nil)
                         (declare (ignore tokens))

@@ -533,7 +533,7 @@
                        (test-vardecls-fn (cdr vars) type atts (cdr names) (cdr arrdims) (cdr initvals)))))
 
    (defmacro test-parse-integer-declaration (&key input atts names arrdims initvals (successp 't))
-     `(assert! (let ((tokens (vl-make-test-tstream ,input)))
+     `(assert! (let ((tokens (make-test-tokens ,input)))
                  (mv-let (erp val tokens warnings)
                    (vl-parse-integer-declaration ',atts tokens 'blah-warnings)
                    (declare (ignore tokens))
@@ -548,7 +548,7 @@
                                                     ',names ',arrdims ',initvals))))))))
 
    (defmacro test-parse-real-declaration (&key input atts names arrdims initvals (successp 't))
-     `(assert! (let ((tokens (vl-make-test-tstream ,input)))
+     `(assert! (let ((tokens (make-test-tokens ,input)))
                  (mv-let (erp val tokens warnings)
                    (vl-parse-real-declaration ',atts tokens 'blah-warnings)
                    (declare (ignore tokens))
@@ -563,7 +563,7 @@
                                                     ',names ',arrdims ',initvals))))))))
 
    (defmacro test-parse-time-declaration (&key input atts names arrdims initvals (successp 't))
-     `(assert! (let ((tokens (vl-make-test-tstream ,input)))
+     `(assert! (let ((tokens (make-test-tokens ,input)))
                  (mv-let (erp val tokens warnings)
                    (vl-parse-time-declaration ',atts tokens 'blah-warnings)
                    (declare (ignore tokens))
@@ -578,7 +578,7 @@
                                                     ',names ',arrdims ',initvals))))))))
 
    (defmacro test-parse-realtime-declaration (&key input atts names arrdims initvals (successp 't))
-     `(assert! (let ((tokens (vl-make-test-tstream ,input)))
+     `(assert! (let ((tokens (make-test-tokens ,input)))
                  (mv-let (erp val tokens warnings)
                    (vl-parse-realtime-declaration ',atts tokens 'blah-warnings)
                    (declare (ignore tokens))
@@ -822,7 +822,7 @@
                        (test-regdecls-fn (cdr regs) atts signedp range (cdr names) (cdr arrdims) (cdr initvals)))))
 
    (defmacro test-parse-reg-declaration (&key input atts signedp range names arrdims initvals (successp 't))
-     `(assert! (let ((tokens (vl-make-test-tstream ,input)))
+     `(assert! (let ((tokens (make-test-tokens ,input)))
                  (mv-let (erp val tokens warnings)
                    (vl-parse-reg-declaration ',atts tokens 'blah-warnings)
                    (declare (ignore tokens))
@@ -937,7 +937,7 @@
                        (test-eventdecls-fn (cdr events) atts (cdr names) (cdr arrdims)))))
 
    (defmacro test-parse-event-declaration (&key input atts names arrdims (successp 't))
-     `(assert! (let ((tokens (vl-make-test-tstream ,input)))
+     `(assert! (let ((tokens (make-test-tokens ,input)))
                  (mv-let (erp val tokens warnings)
                    (vl-parse-event-declaration ',atts tokens 'blah-warnings)
                    (declare (ignore tokens))
@@ -1003,7 +1003,7 @@
         (test-paramdecls-fn (cdr params) type localp range atts (cdr names) (cdr exprs)))))
 
    (defmacro test-parse-param-declaration (&key input type localp range atts names exprs (successp 't))
-     `(assert! (let ((tokens (vl-make-test-tstream ,input)))
+     `(assert! (let ((tokens (make-test-tokens ,input)))
                  (mv-let (erp val tokens warnings)
                    (vl-parse-param-or-localparam-declaration ',atts
                                                              '(:vl-kwd-parameter

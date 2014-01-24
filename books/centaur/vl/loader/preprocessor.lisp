@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -177,7 +177,7 @@ make-implicit-wires) transform to consider the @('default_nettype') for the
 module, and probably use a separate transform to handle @('unconnected_drive')
 stuff.</p>")
 
-
+(local (xdoc::set-default-parents preprocessor))
 
 (defenum vl-is-compiler-directive-p
 
@@ -206,7 +206,6 @@ stuff.</p>")
    "centaur_define"
    )
 
-  :parents (preprocessor)
   :short "List of Verilog-2005 compiler directives."
   :long "<p>This list is taken directly from Section 19.  We do not support some of
 these, but we need to recognize all of them so that we can complain when we
@@ -216,9 +215,7 @@ run into ones we don't support, etc.</p>
 exactly as @('define').</p>")
 
 
-
 (defxdoc preprocessor-ifdef-minutia
-  :parents (preprocessor)
   :short "Subtle notes about or @('`define') and @('`ifdef') handling."
 
   :long "<p>There are many subtleties related to @('`define') and @('`ifdef')
@@ -451,17 +448,14 @@ The goal is for everything we support will be interpreted in the same way by
 Verilog-XL and other tools.</p>")
 
 
-
 (defaggregate vl-iframe
-  (initially-activep
-   some-thing-satisfiedp
-   already-saw-elsep)
-  :tag :vl-iframe
-  :require ((booleanp-of-vl-iframe->initially-activep (booleanp initially-activep))
-            (booleanp-of-vl-iframe->some-thing-satisfiedp (booleanp some-thing-satisfiedp))
-            (booleanp-of-vl-iframe->already-saw-elsep (booleanp already-saw-elsep)))
   :parents (preprocessor)
   :short "@('`ifdef') stack frame objects."
+  :tag :vl-iframe
+
+  ((initially-activep     booleanp :rule-classes :type-prescription)
+   (some-thing-satisfiedp booleanp :rule-classes :type-prescription)
+   (already-saw-elsep     booleanp :rule-classes :type-prescription))
 
   :long "<p>Iframes (\"ifdef frames\") are essential in our approach to
 handling @('`ifdef') directives.  Our main preprocessing function, @(see
@@ -576,104 +570,81 @@ tree.</li>
 
 
 
-(defsection vl-process-ifdef
-  :parents (preprocessor)
+(define vl-process-ifdef
   :short "Handler for @('ifdef'), @('ifndef'), and @('elsif') directives."
+  ((loc       vl-location-p)
+   (directive (member-equal directive '("ifdef" "ifndef" "elsif")))
+   (echars    vl-echarlist-p)
+   (defines   vl-defines-p)
+   (istack    vl-istack-p)
+   (activep   booleanp))
+  :returns
+  (mv (successp)
+      (new-istack vl-istack-p :hyp (and (force (vl-istack-p istack))
+                                        (force (booleanp activep))))
+      (new-activep booleanp :hyp (and (force (booleanp activep))
+                                      (force (vl-istack-p istack))))
+      (remainder vl-echarlist-p :hyp (force (vl-echarlist-p echars))))
 
-  :long "<p><b>Signature:</b> @(call vl-process-ifdef) returns @('(mv successp
-new-istack new-activep remainder)')</p>
-
-<p>See the discussion in @(see vl-iframe-p) for details.</p>
-
-<p>Here, @('directive') is either @('ifdef'), @('ifndef'), or @('elsif'); we
-assume that we have just read @('`directive') from @('echars').  We need to
-read the identifier that should follow this directive, look it up in the
-defines table, and make the appropriate changes to the @('istack') and
+  :long "<p>We assume that we have just read @('`directive') from @('echars').
+We need to read the identifier that should follow this directive, look it up in
+the defines table, and make the appropriate changes to the @('istack') and
 @('activep').</p>"
 
-  (defund vl-process-ifdef (loc directive echars defines istack activep)
-    "Returns (MV SUCCESSP NEW-ISTACK NEW-ACTIVEP REMAINDER)"
-    (declare (xargs :guard (and (vl-location-p loc)
-                                (member-equal directive '("ifdef" "ifndef" "elsif"))
-                                (vl-echarlist-p echars)
-                                (true-listp echars)
-                                (vl-defines-p defines)
-                                (vl-istack-p istack)
-                                (booleanp activep))))
+  (b* (((mv & remainder)      (vl-read-while-whitespace echars))
+       ((mv name & remainder) (vl-read-identifier remainder))
 
-    (b* (((mv & remainder)      (vl-read-while-whitespace echars))
-         ((mv name & remainder) (vl-read-identifier remainder)))
-        (cond ((not name)
-               (mv (cw "Preprocessor error (~s0): found an `~s1 without an identifier.~%"
-                       (vl-location-string loc) directive)
-                   istack activep echars))
+       ((unless name)
+        (mv (cw "Preprocessor error (~s0): found an `~s1 without an identifier.~%"
+                (vl-location-string loc) directive)
+            istack activep echars))
 
-              ((vl-is-compiler-directive-p name)
-               ;; Special prohibition of compiler directive names in ifdefs,
-               ;; ifndefs, etc.  See :xdoc preprocessor-ifdef-minutia for why.
-               (mv (cw "Preprocessor error (~s0): cowardly refusing to permit `s1 ~s2.~%"
-                       (vl-location-string loc) directive name)
-                   istack activep echars))
+       ((when (vl-is-compiler-directive-p name))
+        ;; Special prohibition of compiler directive names in ifdefs, ifndefs,
+        ;; etc.  See :xdoc preprocessor-ifdef-minutia for why.
+        (mv (cw "Preprocessor error (~s0): cowardly refusing to permit `s1 ~s2.~%"
+                (vl-location-string loc) directive name)
+            istack activep echars))
 
-              ((equal directive "ifdef")
-               (let* ((this-satisfiedp (consp (vl-lookup-in-defines name defines)))
-                      (new-iframe      (vl-iframe activep this-satisfiedp nil))
-                      (new-istack      (cons new-iframe istack))
-                      (new-activep     (and activep this-satisfiedp)))
-                 (mv t new-istack new-activep remainder)))
+       ((when (equal directive "ifdef"))
+        (let* ((this-satisfiedp (consp (vl-lookup-in-defines name defines)))
+               (new-iframe      (vl-iframe activep this-satisfiedp nil))
+               (new-istack      (cons new-iframe istack))
+               (new-activep     (and activep this-satisfiedp)))
+          (mv t new-istack new-activep remainder)))
 
-              ((equal directive "ifndef")
-               (let* ((this-satisfiedp (not (vl-lookup-in-defines name defines)))
-                      (new-iframe      (vl-iframe activep this-satisfiedp nil))
-                      (new-istack      (cons new-iframe istack))
-                      (new-activep     (and activep this-satisfiedp)))
-                 (mv t new-istack new-activep remainder)))
+       ((when (equal directive "ifndef"))
+        (let* ((this-satisfiedp (not (vl-lookup-in-defines name defines)))
+               (new-iframe      (vl-iframe activep this-satisfiedp nil))
+               (new-istack      (cons new-iframe istack))
+               (new-activep     (and activep this-satisfiedp)))
+          (mv t new-istack new-activep remainder)))
 
-              ((not (consp istack))
-               (mv (cw "Preprocessor error (~s0): found an `elsif, but no ~
-                        ifdef or ifndef is open.~%"
-                       (vl-location-string loc))
-                   istack activep echars))
+       ((when (atom istack))
+        (mv (cw "Preprocessor error (~s0): found an `elsif, but no ifdef or ~
+                 ifndef is open.~%"
+                (vl-location-string loc))
+            istack activep echars))
 
-              ((vl-iframe->already-saw-elsep (car istack))
-               (mv (cw "Preprocessor error (~s0): found an `elsif, but we ~
-                        have already seen `else.~%"
-                       (vl-location-string loc))
-                   istack activep echars))
+       ((when (vl-iframe->already-saw-elsep (car istack)))
+        (mv (cw "Preprocessor error (~s0): found an `elsif, but we have ~
+                 already seen `else.~%"
+                (vl-location-string loc))
+            istack activep echars))
 
-              (t
-               (let* ((this-satisfiedp   (consp (vl-lookup-in-defines name defines)))
-                      (iframe            (car istack))
-                      (prev-satisfiedp   (vl-iframe->some-thing-satisfiedp iframe))
-                      (initially-activep (vl-iframe->initially-activep iframe))
-                      (new-activep       (and this-satisfiedp
-                                              (not prev-satisfiedp)
-                                              initially-activep))
-                      (new-iframe        (vl-iframe initially-activep
-                                                    (or this-satisfiedp prev-satisfiedp)
-                                                    nil))
-                      (new-istack        (cons new-iframe (cdr istack))))
-                 (mv t new-istack new-activep remainder))))))
-
-  (local (in-theory (enable vl-process-ifdef)))
-
-  (defthm vl-istack-p-of-vl-process-ifdef
-    (implies (and (force (vl-istack-p istack))
-                  (force (booleanp activep)))
-             (vl-istack-p (mv-nth 1 (vl-process-ifdef loc directive echars
-                                                      defines istack activep)))))
-
-  (defthm booleanp-of-vl-process-ifdef
-    (implies (and (force (booleanp activep))
-                  (force (vl-istack-p istack)))
-             (booleanp (mv-nth 2 (vl-process-ifdef loc directive echars
-                                                   defines istack activep)))))
-
-  (defthm vl-echarlist-p-of-vl-process-ifdef
-    (implies (force (vl-echarlist-p echars))
-             (vl-echarlist-p (mv-nth 3 (vl-process-ifdef loc directive echars
-                                                         defines istack activep)))))
-
+       (this-satisfiedp   (consp (vl-lookup-in-defines name defines)))
+       (iframe            (car istack))
+       (prev-satisfiedp   (vl-iframe->some-thing-satisfiedp iframe))
+       (initially-activep (vl-iframe->initially-activep iframe))
+       (new-activep       (and this-satisfiedp
+                               (not prev-satisfiedp)
+                               initially-activep))
+       (new-iframe        (vl-iframe initially-activep
+                                     (or this-satisfiedp prev-satisfiedp)
+                                     nil))
+       (new-istack        (cons new-iframe (cdr istack))))
+    (mv t new-istack new-activep remainder))
+  ///
   (defthm true-listp-of-vl-process-ifdef
     (equal (true-listp (mv-nth 3 (vl-process-ifdef loc directive echars
                                                    defines istack activep)))
@@ -844,14 +815,17 @@ overview of some of the problems we face.</p>"
         (#\"
          ;; Skip over string literals so we aren't confused by graves, etc.
          (mv-let (string prefix remainder)
-                 (vl-read-string echars)
-                 (if (not string)
-                     (mv nil nil echars)
-                   (mv-let (successp text remainder)
-                           (vl-read-until-end-of-define remainder)
-                           (if (not successp)
-                               (mv nil nil echars)
-                             (mv t (append prefix text) remainder))))))
+           (vl-read-string echars
+                           ;; HUGE BOZO
+                           (vl-lexstate-init *vl-default-lexconfig*)
+                           )
+           (if (not string)
+               (mv nil nil echars)
+             (mv-let (successp text remainder)
+               (vl-read-until-end-of-define remainder)
+               (if (not successp)
+                   (mv nil nil echars)
+                 (mv t (append prefix text) remainder))))))
 
         (#\\
          (cond ((vl-matches-string-p "//" (cdr echars))
@@ -1351,7 +1325,10 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
          ((mv filename prefix remainder)
           (if (and (consp remainder)
                    (equal (vl-echar->char (car remainder)) #\"))
-              (vl-read-string remainder)
+              (vl-read-string remainder
+                              ;; HUGE BOZO
+                              (vl-lexstate-init *vl-default-lexconfig*)
+                              )
             (mv nil nil remainder)))
 
          ((unless filename)
@@ -1414,7 +1391,11 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
 
          ((when (eql char1 #\"))
           ;; Start of a string literal
-          (b* (((mv string prefix remainder) (vl-read-string echars)))
+          (b* (((mv string prefix remainder)
+                (vl-read-string echars
+                                ;; HUGE BOZO
+                                (vl-lexstate-init *vl-default-lexconfig*)
+                                )))
             (if (not string)
                 ;; it already printed a warning, so we don't use cw.
                 (mv nil defines acc echars state)

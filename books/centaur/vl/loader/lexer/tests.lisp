@@ -224,360 +224,564 @@
 
 
 
-(defmacro vl-lex-string-testcase (&key input
-                                       successp
-                                       (remainder '"")
-                                       expansion
-                                       (nwarnings '0)
-                                       (config '*vl-default-lexconfig*))
-  `(assert!
-    (b* ((echars    (vl-echarlist-from-str ,input))
-         (?st        (vl-lexstate-init ,config))
-         ((mv tok remainder)
-          (vl-lex-string echars))
-         (- (cw "Echars: ~x0~%Tok: ~x1~%Remainder: ~x2~%~%"
-                echars tok remainder)))
-        (debuggable-and ,@(if successp
-                              `((vl-stringtoken-p tok)
-                                (equal (vl-stringtoken->expansion tok) ,expansion)
-                                (equal (append (vl-token->etext tok)
-                                               remainder)
-                                       echars)
-                                (equal (vl-echarlist->string remainder) ,remainder)
-                                (mv-let (lextok lexrem warnings)
-                                        (vl-lex-token echars st nil)
-                                        (debuggable-and (equal tok lextok)
-                                                        (equal remainder lexrem)
-                                                        (equal (len warnings) ,nwarnings)
-                                                        )))
-                            `((not tok)
-                              (equal remainder echars)))))))
+(defaggregate strtest
+  ((input     stringp)
+   (successp  booleanp :default t)
+   (expansion maybe-stringp)
+   (remainder stringp :default "")
+   (nwarnings natp    :default 0)))
 
-;; Should succeed string tests
+(deflist strtest-list-p (x)
+  (strtest-p x))
 
-(vl-lex-string-testcase :input "\"Hello\""
-                        :successp t
-                        :expansion "Hello")
+(define strtest-okp ((test strtest-p)
+                     (config vl-lexconfig-p))
+  (b* (((strtest test) test)
+       (echars    (vl-echarlist-from-str test.input))
+       (st        (vl-lexstate-init config))
+       ((mv tok remainder) (vl-lex-string echars st))
+       (- (cw "Echars: ~x0~%"      (vl-echarlist->string echars)))
+       (- (cw "Result: ~x0~%"      (and (vl-stringtoken-p tok)
+                                        (vl-stringtoken->expansion tok))))
+       (- (cw "Remainder: ~x0~%~%" (vl-echarlist->string remainder)))
 
-(vl-lex-string-testcase :input "\"Hello\" world"
-                        :successp t
-                        :remainder " world"
-                        :expansion "Hello")
+       ;; Also check vl-lex-token instead of just vl-lex-string...
+       ((mv lextok lexrem warnings) (vl-lex-token echars st nil))
 
-(vl-lex-string-testcase :input "\"\\103allista\""
-                        :successp t
-                        :expansion "Callista")
+       ((unless test.successp)
+        (debuggable-and (not tok)
+                        (equal remainder echars)
+                        (not (cw "lex-string failed, as required.~%"))
+                        ;; full lexer ok?
+                        (equal tok lextok)
+                        (equal remainder lexrem)
+                        (equal (len warnings) test.nwarnings)
+                        (not (cw "lex-token failed, as required.~%")))))
+    (debuggable-and
+     ;; Success and got the right thing?
+     (vl-stringtoken-p tok)
+     (equal (vl-stringtoken->expansion tok) test.expansion)
+     (equal (vl-echarlist->string remainder) test.remainder)
+     ;; Preserved all characters?
+     (equal (append (vl-token->etext tok) remainder) echars)
+     (not (cw "lex-string result seems ok.~%"))
+     ;; Now try vl-lex (instead of vl-lex-string).
+     ;; Does it get the same answer?
+     (equal tok lextok)
+     (equal remainder lexrem)
+     (equal (len warnings) test.nwarnings)
+     (not (cw "lex-token result seems ok.~%")))))
 
-(vl-lex-string-testcase :input "\"my \\44.02\""
-                        :successp t
-                        :expansion "my $.02")
+(define run-strtest ((test strtest-p)
+                     (config vl-lexconfig-p))
+  (or (strtest-okp test config)
+      (raise "test failed: ~x0.~%" test)))
 
-(vl-lex-string-testcase :input "\"crazy \\7\""
-                        :successp t
-                        :expansion (cat "crazy "
-                                        (implode (list (code-char 7)))))
-
-(vl-lex-string-testcase :input "\"\\\\ another \\n basic \\t escape \\\" test\""
-                        :successp t
-                        :expansion (cat "\\ another "
-                                        (implode (list #\Newline))
-                                        " basic "
-                                        (implode (list #\Tab))
-                                        " escape \" test"))
-
-;; Should fail string tests
-
-(vl-lex-string-testcase :input "\"not terminated"
-                        :successp nil)
-
-(vl-lex-string-testcase :input "\"invalid escape sequence \\f is no good\""
-                        :successp nil)
-
-(vl-lex-string-testcase :input "\"out of range \\400 octal sequence\""
-                        :successp nil)
-
-(vl-lex-string-testcase :input "\"not closed before
-                                 newline\""
-                        :successp nil)
+(deflist run-strtests (x config)
+  :guard (and (strtest-list-p x)
+              (vl-lexconfig-p config))
+  (run-strtest x config))
 
 
 
+; Should succeed string tests
+
+(defconst *strtests1*
+  (list
+   (make-strtest :input "\"Hello\""
+                 :expansion "Hello")
+
+   (make-strtest :input "\"Hello\" world"
+                 :remainder " world"
+                 :expansion "Hello")
+
+   (make-strtest :input "\"\\103allista\""
+                 :expansion "Callista")
+
+   (make-strtest :input "\"my \\44.02\""
+                 :expansion "my $.02")
+
+   (make-strtest :input "\"crazy \\7\""
+                 :expansion (cat "crazy "
+                                 (implode (list (code-char 7)))))
+
+   (make-strtest :input "\"\\\\ another \\n basic \\t escape \\\" test\""
+                 :expansion (cat "\\ another "
+                                 (implode (list #\Newline))
+                                 " basic "
+                                 (implode (list #\Tab))
+                                 " escape \" test"))
+
+   (make-strtest :input "\"not terminated"
+                 :successp nil)
+
+   (make-strtest :input "\"out of range \\400 octal sequence\""
+                 :successp nil)
+
+   (make-strtest :input "\"not closed before
+                           newline\""
+                 :successp nil)
+
+   (make-strtest :input "\"octal with x digit \\01x not ok\"" :successp nil)
+   (make-strtest :input "\"octal with X digit \\01X not ok\"" :successp nil)
+   (make-strtest :input "\"octal with z digit \\01z not ok\"" :successp nil)
+   (make-strtest :input "\"octal with z digit \\01? not ok\"" :successp nil)
+   (make-strtest :input "\"octal with z digit \\01Z not ok\"" :successp nil)
+
+   (make-strtest :input "\"octal with x digit \\01x\"" :successp nil)
+   (make-strtest :input "\"octal with z digit \\01z\"" :successp nil)
+   (make-strtest :input "\"octal with z digit \\01?\"" :successp nil)
+   (make-strtest :input "\"octal with z digit \\01X\"" :successp nil)
+   (make-strtest :input "\"octal with z digit \\01Z\"" :successp nil)))
+
+(progn
+  (assert!
+   (run-strtests *strtests1*
+                 (make-vl-lexconfig :edition :verilog-2005
+                                    :strictp nil)))
+  (assert!
+   (run-strtests *strtests1*
+                 (make-vl-lexconfig :edition :verilog-2005
+                                    :strictp t)))
+
+  (assert!
+   (run-strtests *strtests1*
+                 (make-vl-lexconfig :edition :system-verilog-2012
+                                    :strictp nil)))
+  (assert!
+   (run-strtests *strtests1*
+                 (make-vl-lexconfig :edition :system-verilog-2012
+                                    :strictp t))))
+
+
+(defconst *strtests2*
+  ;; Tests for SystemVerilog that must fail in ordinary Verilog.
+  (list
+   (make-strtest :input "\"system verilog \\f escape\""
+                 :expansion (cat "system verilog "
+                                 (implode (list (code-char 12)))
+                                 " escape"))
+
+   (make-strtest :input "\"system verilog escape \\f\""
+                 :expansion (cat "system verilog escape "
+                                 (implode (list (code-char 12)))))
+
+   (make-strtest :input "\"system verilog \\a escape\""
+                 :expansion (cat "system verilog "
+                                 (implode (list (code-char 7)))
+                                 " escape"))
+
+   (make-strtest :input "\"system verilog escape \\a\""
+                 :expansion (cat "system verilog escape "
+                                 (implode (list (code-char 7)))))
+
+   (make-strtest :input "\"system verilog \\v escape\""
+                 :expansion (cat "system verilog "
+                                 (implode (list (code-char 11)))
+                                 " escape"))
+
+   (make-strtest :input "\"system verilog escape \\v\""
+                 :expansion (cat "system verilog escape "
+                                 (implode (list (code-char 11)))))
+
+
+   (make-strtest :input "\"new \\
+line\""
+                 :expansion "new line")
+
+
+   ;; SystemVerilog hex handling
+
+   (make-strtest :input "\"sudden eof \\x" :successp nil)
+   (make-strtest :input "\"sudden eof \\x1" :successp nil)
+   (make-strtest :input "\"sudden eof \\x12" :successp nil)
+
+   (make-strtest :input "\"ends without hex digit \\x\"" :successp nil)
+   (make-strtest :input "\"hex but no digits \\xg\"" :successp nil)
+
+   (make-strtest :input "\"hex test \\x0\""
+                 :expansion (cat "hex test "
+                                 (implode (list (code-char 0)))))
+
+   (make-strtest :input "\"hex test \\x00\""
+                 :expansion (cat "hex test "
+                                 (implode (list (code-char 0)))))
+
+   (make-strtest :input "\"hex test \\x10\""
+                 :expansion (cat "hex test "
+                                 (implode (list (code-char #x10)))))
+
+   (make-strtest :input "\"hex test \\x12\""
+                 :expansion (cat "hex test "
+                                 (implode (list (code-char #x12)))))
+
+   (make-strtest :input "\"hex test \\xFF\""
+                 :expansion (cat "hex test "
+                                 (implode (list (code-char #xFF)))))
+
+   (make-strtest :input "\"subsequent stuff \\xFFF\""
+                 :expansion (cat "subsequent stuff "
+                                 (implode (list (code-char #xFF)))
+                                 "F"))
+
+   (make-strtest :input "\"invalid x digits \\xx\"" :successp nil)
+   (make-strtest :input "\"invalid x digits \\xX\"" :successp nil)
+   (make-strtest :input "\"invalid x digits \\xZ\"" :successp nil)
+   (make-strtest :input "\"invalid x digits \\xz\"" :successp nil)
+   (make-strtest :input "\"invalid x digits \\x?\"" :successp nil)
+
+   (make-strtest :input "\"invalid x digits \\x0x\"" :successp nil)
+   (make-strtest :input "\"invalid x digits \\x1X\"" :successp nil)
+   (make-strtest :input "\"invalid x digits \\x2Z\"" :successp nil)
+   (make-strtest :input "\"invalid x digits \\x3z\"" :successp nil)
+   (make-strtest :input "\"invalid x digits \\x4?\"" :successp nil)
+
+   (make-strtest :input "\"subsequent x \\x65x\""
+                 :expansion (cat "subsequent x "
+                                 (implode (list (code-char #x65)))
+                                 "x"))
+
+   (make-strtest :input "\"subsequent z \\x65z\""
+                 :expansion (cat "subsequent z "
+                                 (implode (list (code-char #x65)))
+                                 "z"))
+
+   (make-strtest :input "\"subsequent ? \\x65?\""
+                 :expansion (cat "subsequent ? "
+                                 (implode (list (code-char #x65)))
+                                 "?"))
+
+   (make-strtest :input "\"invalid x digits \\x0x\"" :successp nil)))
+
+(define make-strtests-fail ((x strtest-list-p))
+  (if (atom x)
+      nil
+    (cons (change-strtest (car x) :successp nil)
+          (make-strtests-fail (cdr x)))))
+
+(progn
+  (assert!
+   (run-strtests *strtests2*
+                 (make-vl-lexconfig :edition :system-verilog-2012
+                                    :strictp nil)))
+  (assert!
+   (run-strtests *strtests2*
+                 (make-vl-lexconfig :edition :system-verilog-2012
+                                    :strictp t)))
+  (assert!
+   (run-strtests (make-strtests-fail *strtests2*)
+                 (make-vl-lexconfig :edition :verilog-2005
+                                    :strictp nil)))
+  (assert!
+   (run-strtests (make-strtests-fail *strtests2*)
+                 (make-vl-lexconfig :edition :verilog-2005
+                                    :strictp t))))
 
 
 
-(defmacro vl-lex-integer-testcase (&key input
-                                        successp
-                                        (remainder '"")
-                                        width
-                                        signedp
-                                        value
-                                        bits
-                                        wasunsized
-                                        (nwarnings '0)
-                                        (config '*vl-default-lexconfig*))
-  `(assert!
-    (b* ((echars (vl-echarlist-from-str ,input))
-         (?st (vl-lexstate-init ,config))
-         ((mv tok remainder warnings)
-          (vl-lex-integer echars nil))
-         (- (cw "lex-integer: tok is ~x0~%rem is ~x1~%warnings is ~x2~%"
-                tok remainder warnings)))
-        (debuggable-and ,@(if successp
-                              `((vl-inttoken-p tok)
-                                (equal (vl-inttoken->width tok) ,width)
-                                (equal (vl-inttoken->signedp tok) ,signedp)
-                                (equal (vl-inttoken->value tok) ,value)
-                                (equal (vl-inttoken->wasunsized tok) ,wasunsized)
-                                (equal (vl-bitlist->string (vl-inttoken->bits tok))
-                                       ,bits)
-                                (equal (append (vl-token->etext tok)
-                                               remainder)
-                                       echars)
-                                (equal (vl-echarlist->string remainder) ,remainder)
-                                (equal (len warnings) ,nwarnings)
-                                (mv-let (lextok lexrem lexwrn)
-                                        (vl-lex-token echars st nil)
-                                        (debuggable-and
-                                         (equal lextok tok)
-                                         (equal lexrem remainder)
-                                         (equal (len lexwrn) ,nwarnings))))
-                            `((not tok)
-                              (equal remainder echars)
-                              (equal (len warnings) ,nwarnings)
-                              ))))))
+(defaggregate itest
+  :tag :itest
+  ((input      stringp)
+   (successp   booleanp :default t)
+   (remainder  stringp :default "")
+   (width      maybe-posp :default nil)
+   (signedp    booleanp :default nil)
+   (value      maybe-natp :default nil)
+   (bits       stringp :default "") ;; msb bits like "1101XXZ"
+   (wasunsized booleanp :default nil)
+   (nwarnings  natp :default 0)))
 
-(vl-lex-integer-testcase :input "0"
-                         :successp t
-                         :width 32
-                         :signedp t
-                         :value 0
-                         :wasunsized t
-                         :bits "")
+(deflist itest-list-p (x)
+  (itest-p x))
 
-(vl-lex-integer-testcase :input "123_456 foo"
-                         :successp t
-                         :remainder " foo"
-                         :width 32
-                         :signedp t
-                         :value 123456
-                         :wasunsized t
-                         :bits "")
+(define itest-okp ((test itest-p)
+                   (config vl-lexconfig-p))
+  (b* (((itest test) test)
+       (echars (vl-echarlist-from-str test.input))
+       (?st    (vl-lexstate-init config))
+       ((mv tok remainder warnings) (vl-lex-integer echars nil))
+       (- (cw "input: ~x0~%" test.input))
+       (- (cw "tok: ~x0~%" (and tok
+                                (vl-inttoken-p tok)
+                                (vl-echarlist->string (vl-inttoken->etext tok)))))
+       (- (cw "rem: ~x0~%" remainder))
+       (- (cw "warnings: ~x0.~%" warnings))
+       ((mv lextok lexrem lexwrn) (vl-lex-token echars st nil))
+       ((unless test.successp)
+        (debuggable-and (not tok)
+                        (equal remainder echars)
+                        (equal (len warnings) test.nwarnings)
+                        (not (cw "lex-integer failed as required~%"))
+                        (equal tok lextok)
+                        (equal lexrem remainder)
+                        (equal lexwrn warnings)
+                        (not (cw "lex-token failed as required~%")))))
+    (debuggable-and
+     (vl-inttoken-p tok)
+     (equal (vl-inttoken->width tok) test.width)
+     (equal (vl-inttoken->signedp tok) test.signedp)
+     (equal (vl-inttoken->value tok) test.value)
+     (equal (vl-inttoken->wasunsized tok) test.wasunsized)
+     (equal (vl-bitlist->string (vl-inttoken->bits tok)) test.bits)
+     (equal (append (vl-token->etext tok) remainder) echars)
+     (equal (vl-echarlist->string remainder) test.remainder)
+     (equal (len warnings) test.nwarnings)
+     (not (cw "lex-integer seems correct~%"))
+     (equal lextok tok)
+     (equal lexrem remainder)
+     (equal lexwrn warnings)
+     (not (cw "lex-token seems correct~%")))))
 
-(vl-lex-integer-testcase :input "123 'sh BEEF"
-                         :successp t
-                         :width 123
-                         :signedp t
-                         :value #xBEEF
-                         :wasunsized nil
-                         :bits "")
+(define run-itest ((test itest-p)
+                     (config vl-lexconfig-p))
+  (or (itest-okp test config)
+      (raise "test failed: ~x0.~%" test)))
 
-(vl-lex-integer-testcase :input "'sh BEEF"
-                         :successp t
-                         :width 32
-                         :signedp t
-                         :value #xBEEF
-                         :wasunsized t
-                         :bits "")
+(deflist run-itests (x config)
+  :guard (and (itest-list-p x)
+              (vl-lexconfig-p config))
+  (run-itest x config))
 
-(vl-lex-integer-testcase :input "16'hBE_EF"
-                         :successp t
-                         :width 16
-                         :signedp nil
-                         :value #xBEEF
-                         :wasunsized nil
-                         :bits "")
+(defconst *itests*
+  (list
+   (make-itest :input "0"
+               :successp t
+               :width 32
+               :signedp t
+               :value 0
+               :wasunsized t
+               :bits "")
 
-(vl-lex-integer-testcase :input "15'hBEEF"   ;; too large
-                         :successp t
-                         :width 15
-                         :value (mod #xBEEF (expt 2 15))
-                         :signedp nil
-                         :bits ""
-                         :wasunsized nil
-                         :nwarnings 1)
+   (make-itest :input "123_456 foo"
+               :successp t
+               :remainder " foo"
+               :width 32
+               :signedp t
+               :value 123456
+               :wasunsized t
+               :bits "")
 
-(vl-lex-integer-testcase :input "0'h0"  ;; size 0 illegal
-                         :successp nil
-                         )
+   (make-itest :input "123 'sh BEEF"
+               :successp t
+               :width 123
+               :signedp t
+               :value #xBEEF
+               :wasunsized nil
+               :bits "")
 
-(vl-lex-integer-testcase :input "1'h"  ;; no value is illegal
-                         :successp nil
-                         )
+   (make-itest :input "'sh BEEF"
+               :successp t
+               :width 32
+               :signedp t
+               :value #xBEEF
+               :wasunsized t
+               :bits "")
 
-(vl-lex-integer-testcase :input "1'op"  ;; no value is illegal
-                         :successp nil
-                         )
+   (make-itest :input "16'hBE_EF"
+               :successp t
+               :width 16
+               :signedp nil
+               :value #xBEEF
+               :wasunsized nil
+               :bits "")
 
-(vl-lex-integer-testcase :input "1'o___"  ;; no value is illegal
-                         :successp nil
-                         )
+   (make-itest :input "15'hBEEF" ;; too large
+               :successp t
+               :width 15
+               :value (mod #xBEEF (expt 2 15))
+               :signedp nil
+               :bits ""
+               :wasunsized nil
+               :nwarnings 1)
 
-(vl-lex-integer-testcase :input "2_147_483_647" ;; biggest plain number allowed without a warning
-                         :successp t
-                         :width 32
-                         :signedp t
-                         :value 2147483647
-                         :wasunsized t
-                         :bits "")
+   (make-itest :input "0'h0" ;; size 0 illegal
+               :successp nil)
 
-(vl-lex-integer-testcase :input "2_147_483_648" ;; smallest plain number that causes a warning
-                         :successp t
-                         :width 32
-                         :signedp t
-                         :value 2147483648
-                         :wasunsized t
-                         :bits ""
-                         :nwarnings 1
-                         )
+   (make-itest :input "1'h" ;; no value is illegal
+               :successp nil)
 
-(vl-lex-integer-testcase :input "'sh 8000_0000"  ;; too large warning
-                         :successp t
-                         :width 32
-                         :signedp t
-                         :value #x80000000
-                         :wasunsized t
-                         :bits ""
-                         :nwarnings 1)
+   (make-itest :input "1'op" ;; no value is illegal
+               :successp nil)
 
-(vl-lex-integer-testcase :input "'sh 8000_8000_0000"  ;; much too large warning
-                         :successp t
-                         :width 32
-                         :signedp t
-                         :value #x80000000 ;; gets truncated
-                         :wasunsized t
-                         :bits ""
-                         :nwarnings 1)
+   (make-itest :input "1'o___" ;; no value is illegal
+               :successp nil)
 
-(vl-lex-integer-testcase :input "0 1 2 3"
-                         :successp t
-                         :remainder " 1 2 3"
-                         :width 32
-                         :wasunsized t
-                         :signedp t
-                         :value 0
-                         :bits "")
+   (make-itest :input "2_147_483_647"
+               ;; biggest plain number allowed without a warning
+               :successp t
+               :width 32
+               :signedp t
+               :value 2147483647
+               :wasunsized t
+               :bits "")
 
-(vl-lex-integer-testcase :input "9 'o 1____3____7___"
-                         :successp t
-                         :remainder ""
-                         :width 9
-                         :signedp nil
-                         :value #o137
-                         :wasunsized nil
-                         :bits "")
+   (make-itest :input "2_147_483_648"
+               ;; smallest plain number that causes a warning
+               :successp t
+               :width 32
+               :signedp t
+               :value 2147483648
+               :wasunsized t
+               :bits ""
+               :nwarnings 1)
 
-(vl-lex-integer-testcase :input "4'bx"
-                         :successp t
-                         :remainder ""
-                         :width 4
-                         :signedp nil
-                         :value nil
-                         :wasunsized nil
-                         :bits "XXXX")
+   (make-itest :input "'sh 8000_0000"
+               ;; too large warning
+               :successp t
+               :width 32
+               :signedp t
+               :value #x80000000
+               :wasunsized t
+               :bits ""
+               :nwarnings 1)
 
-(vl-lex-integer-testcase :input "4'bz"
-                         :successp t
-                         :remainder ""
-                         :width 4
-                         :signedp nil
-                         :value nil
-                         :wasunsized nil
-                         :bits "ZZZZ")
+   (make-itest :input "'sh 8000_8000_0000"
+               ;; much too large warning
+               :successp t
+               :width 32
+               :signedp t
+               :value #x80000000 ;; gets truncated
+               :wasunsized t
+               :bits ""
+               :nwarnings 1)
 
-(vl-lex-integer-testcase :input "4'dz"
-                         :successp t
-                         :remainder ""
-                         :width 4
-                         :signedp nil
-                         :value nil
-                         :wasunsized nil
-                         :bits "ZZZZ")
+   (make-itest :input "0 1 2 3"
+               :successp t
+               :remainder " 1 2 3"
+               :width 32
+               :wasunsized t
+               :signedp t
+               :value 0
+               :bits "")
 
-(vl-lex-integer-testcase :input "4'b1x"
-                         :successp t
-                         :remainder ""
-                         :width 4
-                         :signedp nil
-                         :value nil
-                         :wasunsized nil
-                         :bits "001X")
+   (make-itest :input "9 'o 1____3____7___"
+               :successp t
+               :remainder ""
+               :width 9
+               :signedp nil
+               :value #o137
+               :wasunsized nil
+               :bits "")
 
-(vl-lex-integer-testcase :input "4'bx1"
-                         :successp t
-                         :remainder ""
-                         :width 4
-                         :signedp nil
-                         :value nil
-                         :wasunsized nil
-                         :bits "XXX1")
+   (make-itest :input "4'bx"
+               :successp t
+               :remainder ""
+               :width 4
+               :signedp nil
+               :value nil
+               :wasunsized nil
+               :bits "XXXX")
 
+   (make-itest :input "4'bz"
+               :successp t
+               :remainder ""
+               :width 4
+               :signedp nil
+               :value nil
+               :wasunsized nil
+               :bits "ZZZZ")
 
-(vl-lex-integer-testcase :input "'bx"
-                         :successp t
-                         :remainder ""
-                         :width 32
-                         :signedp nil
-                         :value nil
-                         :wasunsized t
-                         :bits (implode (replicate 32 #\X))
-                         :nwarnings 1)
+   (make-itest :input "4'dz"
+               :successp t
+               :remainder ""
+               :width 4
+               :signedp nil
+               :value nil
+               :wasunsized nil
+               :bits "ZZZZ")
 
-(vl-lex-integer-testcase :input "'hxxx"
-                         :successp t
-                         :remainder ""
-                         :width 32
-                         :signedp nil
-                         :value nil
-                         :wasunsized t
-                         :bits (implode (replicate 32 #\X))
-                         :nwarnings 1)
+   (make-itest :input "4'b1x"
+               :successp t
+               :remainder ""
+               :width 4
+               :signedp nil
+               :value nil
+               :wasunsized nil
+               :bits "001X")
 
-(vl-lex-integer-testcase :input "'bz"
-                         :successp t
-                         :remainder ""
-                         :width 32
-                         :signedp nil
-                         :value nil
-                         :wasunsized t
-                         :bits (implode (replicate 32 #\Z))
-                         :nwarnings 1)
-
-(vl-lex-integer-testcase :input "'o zzz"
-                         :successp t
-                         :remainder ""
-                         :width 32
-                         :signedp nil
-                         :value nil
-                         :wasunsized t
-                         :bits (implode (replicate 32 #\Z))
-                         :nwarnings 1)
-
-(vl-lex-integer-testcase :input "'bx1"
-                         :successp t
-                         :remainder ""
-                         :width 32
-                         :signedp nil
-                         :value nil
-                         :wasunsized t
-                         :bits (implode (append (replicate 31 #\X) (list #\1)))
-                         :nwarnings 1)
+   (make-itest :input "4'bx1"
+               :successp t
+               :remainder ""
+               :width 4
+               :signedp nil
+               :value nil
+               :wasunsized nil
+               :bits "XXX1")
 
 
+   (make-itest :input "'bx"
+               :successp t
+               :remainder ""
+               :width 32
+               :signedp nil
+               :value nil
+               :wasunsized t
+               :bits (implode (replicate 32 #\X))
+               :nwarnings 1)
 
-;; This seems sort of reasonable, but probably isn't ideal.  Maybe we should
-;; try to read a hex-value always, and then see if it's range for this radix?
-;; I guess these are probably always prohibited, with numbers always being
-;; separated by some other token.
+   (make-itest :input "'hxxx"
+               :successp t
+               :remainder ""
+               :width 32
+               :signedp nil
+               :value nil
+               :wasunsized t
+               :bits (implode (replicate 32 #\X))
+               :nwarnings 1)
 
-(vl-lex-integer-testcase :input "9 'o 138"
-                         :successp t
-                         :remainder "8"
-                         :width 9
-                         :signedp nil
-                         :value #o13
-                         :wasunsized nil
-                         :bits "")
+   (make-itest :input "'bz"
+               :successp t
+               :remainder ""
+               :width 32
+               :signedp nil
+               :value nil
+               :wasunsized t
+               :bits (implode (replicate 32 #\Z))
+               :nwarnings 1)
 
+   (make-itest :input "'o zzz"
+               :successp t
+               :remainder ""
+               :width 32
+               :signedp nil
+               :value nil
+               :wasunsized t
+               :bits (implode (replicate 32 #\Z))
+               :nwarnings 1)
+
+   (make-itest :input "'bx1"
+               :successp t
+               :remainder ""
+               :width 32
+               :signedp nil
+               :value nil
+               :wasunsized t
+               :bits (implode (append (replicate 31 #\X) (list #\1)))
+               :nwarnings 1)
+
+   ;; This seems sort of reasonable, but probably isn't ideal.  Maybe we should
+   ;; try to read a hex-value always, and then see if it's range for this radix?
+   ;; I guess these are probably always prohibited, with numbers always being
+   ;; separated by some other token.
+
+   (make-itest :input "9 'o 138"
+               :successp t
+               :remainder "8"
+               :width 9
+               :signedp nil
+               :value #o13
+               :wasunsized nil
+               :bits "")))
+
+(assert!
+ (and (run-itests *itests* (make-vl-lexconfig :edition :verilog-2005
+                                              :strictp nil))
+      (run-itests *itests* (make-vl-lexconfig :edition :verilog-2005
+                                              :strictp t))
+      (run-itests *itests* (make-vl-lexconfig :edition :system-verilog-2012
+                                              :strictp nil))
+      (run-itests *itests* (make-vl-lexconfig :edition :system-verilog-2012
+                                              :strictp t))))
 
 
 
