@@ -32,3 +32,8 @@ Random "gotchas" that Rager has discovered while using ACL2 at an intermediate l
 
   (set-fmt-soft-right-margin 190 state)
   (set-fmt-hard-right-margin 205 state)
+
+  * When making theory changes in books that you expect to prevent your later books from completing, the following can be helpful.  
+
+  # Make a copy of all *.cert.out files for reference
+  # When a theorem fails in the later book, examine the appropriate *.cert.out file to see why it passed under the original theory.
