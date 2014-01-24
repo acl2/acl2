@@ -9,6 +9,14 @@ Some FAQ's from using VL (see :xdoc topic "Vl").  General "authored" by people n
 
 Questions
 
+  * Coverage proof fails.
+
+  At some point GL was configured to use the wrong definition for unsigned-byte-p.  Add the following:
+
+{{{
+(table acl2::structural-decomp-defs 'unsigned-byte-p 'unsigned-byte-p)
+}}}
+
   * What's a "single identifier" in an always block, as in the following fatal warning?
 
      {{{Expected all left-hand sides to be single identifiers, but found q[6:0] <= d[6:0];}}}
