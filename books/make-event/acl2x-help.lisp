@@ -23,7 +23,7 @@
 ;; shenanigans going on, and we may want different behavior there than in pass
 ;; 2, or in non-acl2x certification, or in the top-level loop.
 
-(include-book "misc/hons-help" :dir :system)
+; (include-book "misc/hons-help" :dir :system)
 
 
 
@@ -109,6 +109,13 @@
                 "Unexpected with-guard1 failure, ~x0"
                 ',guard))))
 
+(local (defthm true-listp-of-revappend
+         (implies (true-listp x)
+                  (true-listp (revappend y x)))))
+(local (defthm true-listp-of-first-n-ac
+         (implies (true-listp x)
+                  (true-listp (first-n-ac i l x)))))
+
 (mutual-recursion
 
 (defun acl2x-expansion-alist-replacement2 (form state)
@@ -148,19 +155,19 @@
             (hons sigs
                   (acl2x-expansion-alist-replacement2-lst x state)))))
     (('local x)
-     (hons-list 'local
-                (acl2x-expansion-alist-replacement2 x state)))
+     (hons-copy (list 'local
+                      (acl2x-expansion-alist-replacement2 x state))))
     (('skip-proofs x)
-     (hons-list 'skip-proofs
-                (acl2x-expansion-alist-replacement2 x state)))
+     (hons-copy (list 'skip-proofs
+                      (acl2x-expansion-alist-replacement2 x state))))
     (('with-output . x)
      (with-guard1
       (true-listp x)
       (hons 'with-output
-            (hons-append (butlast x 1)
-                         (hons-list
-                          (acl2x-expansion-alist-replacement2
-                           (car (last x)) state))))))
+            (append (butlast x 1)
+                    (list
+                     (acl2x-expansion-alist-replacement2
+                      (car (last x)) state))))))
     (& form)))
 
 (defun acl2x-expansion-alist-replacement2-lst (x state)

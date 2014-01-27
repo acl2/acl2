@@ -304,7 +304,7 @@ sub cert_get_param {
 
 sub cert_is_two_pass {
     my ($certfile, $deps) = @_;
-    return cert_get_param($certfile, $deps, "two_pass");
+    return cert_get_param($certfile, $deps, "acl2x");
 }
 
 sub cert_sequential_dep {
