@@ -60,3 +60,5 @@ Questions
   * Why won't my rewrite rule fire?
 
   It may be the case that you haven't disabled the executable counterparts of your stvs.  One way to figure out that you haven't done so is that your checkpoints have massive terms that look like the expansion of the stv.  If you use Rager's untranslate mechanism for stv-run, that can further obscure the issue.
+
+  It may also be the case that your arguments to stv-run are in a different order in your lemma than in your checkpoint.  We could fix this by having a version of std::defrule that canonicalized the order of inputs to stv-run, but that's work and makes std::defrule messy.
