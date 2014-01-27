@@ -27,6 +27,7 @@
 (include-book "clause-processors/witness-cp" :dir :system)
 (include-book "clause-processors/just-expand" :dir :system)
 (include-book "centaur/misc/universal-equiv" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (in-theory (disable equal-by-eval-bdds
                     aig-q-compose-correct))
 

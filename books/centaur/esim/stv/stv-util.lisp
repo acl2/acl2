@@ -25,6 +25,7 @@
 (include-book "../esim-sexpr-support")
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "std/strings/cat" :dir :system)
 
 (std::defaggregate stvdata
   :parents (symbolic-test-vectors)

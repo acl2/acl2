@@ -22,6 +22,7 @@
 (local (include-book "ihsext-basics"))
 (local (include-book "arithmetic/top" :dir :system))
 (include-book "std/util/define" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "ihs/logops-definitions" :dir :system)
 (local (include-book "signed-byte-p"))

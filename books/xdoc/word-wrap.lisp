@@ -20,7 +20,7 @@
 
 (in-package "XDOC")
 (include-book "tools/bstar" :dir :system)
-(include-book "std/strings/defs" :dir :system)
+(include-book "std/strings/defs-program" :dir :system)
 (program)
 
 

@@ -25,7 +25,7 @@
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
 (include-book "tools/bstar" :dir :system)
-(include-book "std/strings/cat" :dir :system)
+(include-book "std/strings/defs-program" :dir :system)
 (include-book "std/osets/top" :dir :system)
 (include-book "defsort/duplicated-members" :dir :system)
 (include-book "std/lists/sets" :dir :system)

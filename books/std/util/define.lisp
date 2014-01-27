@@ -25,7 +25,7 @@
 (include-book "returnspecs")
 (include-book "xdoc/fmt-to-str" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
-(include-book "std/strings/cat" :dir :system)
+;; (include-book "std/strings/cat" :dir :system)
 (set-state-ok t)
 (program)
 
@@ -353,28 +353,28 @@ some kind of separator!</p>
        ((mv ret-str state)  (xdoc::fmt-to-str ret-sexpr base-pkg state))
        (call-len (length call-str)) ;; sensible since not yet encoded
        (ret-len  (length ret-str))  ;; sensible since not yet encoded
-       (acc (str::revappend-chars "<dt>Signature</dt><dt>" acc))
+       (acc (revappend (coerce  "<dt>Signature</dt><dt>" 'list) acc))
        (acc (if (< (+ call-len ret-len) 60)
                 ;; Short signature, so put it all on the same line.  I'm still
                 ;; going to use <code> instead of <tt>, for consistency.
-                (b* ((acc (str::revappend-chars "<code>" acc))
+                (b* ((acc (revappend (coerce "<code>" 'list) acc))
                      (acc (xdoc::simple-html-encode-str call-str 0 call-len acc))
-                     (acc (str::revappend-chars " &rarr; " acc))
+                     (acc (revappend (coerce " &rarr; " 'list) acc))
                      (acc (xdoc::simple-html-encode-str ret-str 0 ret-len acc))
-                     (acc (str::revappend-chars "</code>" acc)))
+                     (acc (revappend (coerce "</code>" 'list) acc)))
                   acc)
               ;; Long signature, so split it across lines.  Using <code> here
               ;; means it's basically okay if there are line breaks in call-str
               ;; or ret-str.
-              (b* ((acc (str::revappend-chars "<code>" acc))
+              (b* ((acc (revappend (coerce "<code>" 'list) acc))
                    (acc (xdoc::simple-html-encode-str call-str 0 call-len acc))
                    (acc (cons #\Newline acc))
-                   (acc (str::revappend-chars "  &rarr;" acc))
+                   (acc (revappend (coerce "  &rarr;" 'list) acc))
                    (acc (cons #\Newline acc))
                    (acc (xdoc::simple-html-encode-str ret-str 0 ret-len acc))
-                   (acc (str::revappend-chars "</code>" acc)))
+                   (acc (revappend (coerce "</code>" 'list) acc)))
                 acc)))
-       (acc (str::revappend-chars "</dt>" acc)))
+       (acc (revappend (coerce "</dt>" 'list) acc)))
     (mv acc state)))
 
 
@@ -398,38 +398,38 @@ some kind of separator!</p>
        ((unless (formal-can-generate-doc-p x))
         (mv acc state))
 
-       (acc (str::revappend-chars "<dd>" acc))
+       (acc (revappend (coerce "<dd>" 'list) acc))
        ((mv name-str state) (xdoc::fmt-to-str x.name base-pkg state))
-       (acc (str::revappend-chars "<tt>" acc))
+       (acc (revappend (coerce "<tt>" 'list) acc))
        (acc (xdoc::simple-html-encode-str name-str 0 (length name-str) acc))
-       (acc (str::revappend-chars "</tt>" acc))
-       (acc (str::revappend-chars " &mdash; " acc))
+       (acc (revappend (coerce "</tt>" 'list) acc))
+       (acc (revappend (coerce " &mdash; " 'list) acc))
 
        (acc (if (equal x.doc "")
                 acc
-              (b* ((acc (str::revappend-chars x.doc acc))
+              (b* ((acc (revappend (coerce x.doc 'list) acc))
                    (acc (if (ends-with-period-p x.doc)
                             acc
                           (cons #\. acc))))
                 acc)))
 
        ((when (eq x.guard t))
-        (b* ((acc (str::revappend-chars "</dd>" acc))
+        (b* ((acc (revappend (coerce "</dd>" 'list) acc))
              (acc (cons #\Newline acc)))
           (mv acc state)))
 
        (acc (if (equal x.doc "")
                 acc
-              (str::revappend-chars "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" acc)))
-       (acc (str::revappend-chars "<color rgb='#606060'>" acc))
+              (revappend (coerce "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" 'list) acc)))
+       (acc (revappend (coerce "<color rgb='#606060'>" 'list) acc))
        ((mv guard-str state) (xdoc::fmt-to-str x.guard base-pkg state))
        ;; Using @('...') here isn't necessarily correct.  If the sexpr has
        ;; something in it that can lead to '), we are hosed.  BOZO eventually
        ;; check for this and make sure we use <code> tags instead, if it
        ;; happens.
-       (acc (str::revappend-chars "Guard @('" acc))
-       (acc (str::revappend-chars guard-str acc))
-       (acc (str::revappend-chars "').</color></dd>" acc))
+       (acc (revappend (coerce "Guard @('" 'list) acc))
+       (acc (revappend (coerce guard-str 'list) acc))
+       (acc (revappend (coerce "').</color></dd>" 'list) acc))
        (acc (cons #\Newline acc)))
     (mv acc state)))
 
@@ -445,7 +445,7 @@ some kind of separator!</p>
   (declare (xargs :guard (formallist-p x)))
   (b* (((unless (formals-can-generate-doc-p x))
         (mv acc state))
-       (acc (str::revappend-chars "<dt>Arguments</dt>" acc))
+       (acc (revappend (coerce "<dt>Arguments</dt>" 'list) acc))
        ((mv acc state) (doc-from-formals-aux x acc base-pkg state)))
     (mv acc state)))
 
@@ -470,54 +470,54 @@ some kind of separator!</p>
        ((unless (returnspec-can-generate-doc-p x))
         (mv acc state))
 
-       (acc (str::revappend-chars "<dd>" acc))
+       (acc (revappend (coerce "<dd>" 'list) acc))
        ((mv name-str state) (xdoc::fmt-to-str x.name base-pkg state))
-       (acc (str::revappend-chars "<tt>" acc))
+       (acc (revappend (coerce "<tt>" 'list) acc))
        (acc (xdoc::simple-html-encode-str name-str 0 (length name-str) acc))
-       (acc (str::revappend-chars "</tt>" acc))
-       (acc (str::revappend-chars " &mdash; " acc))
+       (acc (revappend (coerce "</tt>" 'list) acc))
+       (acc (revappend (coerce " &mdash; " 'list) acc))
 
        (acc (if (equal x.doc "")
                 acc
-              (b* ((acc (str::revappend-chars x.doc acc))
+              (b* ((acc (revappend (coerce x.doc 'list) acc))
                    (acc (if (ends-with-period-p x.doc)
                             acc
                           (cons #\. acc))))
                 acc)))
 
        ((when (eq x.return-type t))
-        (b* ((acc (str::revappend-chars "</dd>" acc))
+        (b* ((acc (revappend (coerce "</dd>" 'list) acc))
              (acc (cons #\Newline acc)))
           (mv acc state)))
 
        (acc (if (equal x.doc "")
                 acc
-              (str::revappend-chars "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" acc)))
-       (acc (str::revappend-chars "<color rgb='#606060'>" acc))
+              (revappend (coerce "<br/>&nbsp;&nbsp;&nbsp;&nbsp;" 'list) acc)))
+       (acc (revappend (coerce "<color rgb='#606060'>" 'list) acc))
        ((mv type-str state) (xdoc::fmt-to-str x.return-type base-pkg state))
        ;; Using @('...') here isn't necessarily correct.  If the sexpr has
        ;; something in it that can lead to '), we are hosed.  BOZO eventually
        ;; check for this and make sure we use <code> tags instead, if it
        ;; happens.
-       (acc (str::revappend-chars "Type @('" acc))
-       (acc (str::revappend-chars type-str acc))
-       (acc (str::revappend-chars "')" acc))
+       (acc (revappend (coerce "Type @('" 'list) acc))
+       (acc (revappend (coerce type-str 'list) acc))
+       (acc (revappend (coerce "')" 'list) acc))
        ((mv acc state)
         (cond ((eq x.hyp t)
                (mv (cons #\. acc) state))
               ((or (eq x.hyp :guard)
                    (eq x.hyp :fguard))
-               (mv (str::revappend-chars ", given the @(see guard)." acc)
+               (mv (revappend (coerce ", given the @(see guard)." 'list) acc)
                    state))
               (t
-               (b* ((acc (str::revappend-chars ", given @('" acc))
+               (b* ((acc (revappend (coerce ", given @('" 'list) acc))
                     ((mv hyp-str state)
                      (xdoc::fmt-to-str x.hyp base-pkg state))
-                    (acc (str::revappend-chars hyp-str acc))
-                    (acc (str::revappend-chars "')." acc)))
+                    (acc (revappend (coerce hyp-str 'list) acc))
+                    (acc (revappend (coerce "')." 'list) acc)))
                  (mv acc state)))))
-       (acc (str::revappend-chars "</color>" acc))
-       (acc (str::revappend-chars "</dd>" acc))
+       (acc (revappend (coerce "</color>" 'list) acc))
+       (acc (revappend (coerce "</dd>" 'list) acc))
        (acc (cons #\Newline acc)))
 
     (mv acc state)))
@@ -534,7 +534,7 @@ some kind of separator!</p>
   (declare (xargs :guard (returnspeclist-p x)))
   (b* (((unless (returnspecs-can-generate-doc-p x))
         (mv acc state))
-       (acc (str::revappend-chars "<dt>Returns</dt>" acc))
+       (acc (revappend (coerce "<dt>Returns</dt>" 'list) acc))
        ((mv acc state) (doc-from-returnspecs-aux x acc base-pkg state)))
     (mv acc state)))
 
@@ -542,15 +542,15 @@ some kind of separator!</p>
   "Returns (mv str state)"
   (b* ((world (w state))
        (acc nil)
-       (acc (str::revappend-chars "<box><dl>" acc))
+       (acc (revappend (coerce "<box><dl>" 'list) acc))
        (acc (cons #\Newline acc))
        (return-value-names (return-value-names fnname returnspecs world))
        ((mv acc state) (make-xdoc-signature wrapper return-value-names base-pkg acc state))
        ((mv acc state) (doc-from-formals formals acc base-pkg state))
        ((mv acc state) (doc-from-returnspecs returnspecs acc base-pkg state))
-       (acc (str::revappend-chars "</dl></box>" acc))
+       (acc (revappend (coerce "</dl></box>" 'list) acc))
        (acc (cons #\Newline acc))
-       (str (str::rchars-to-string acc)))
+       (str (reverse (coerce acc 'string))))
     (mv str state)))
 
 

@@ -355,3 +355,5 @@
     __function__))
 
 (assign acl2::verbose-theory-warning nil)
+
+(ld "tools/flag-package.lsp" :dir :system)

@@ -22,6 +22,7 @@
 ; cert_param: (non-acl2r)
 
 (include-book "std/util/define" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (include-book "tools/flag" :dir :system)
 (include-book "std/misc/two-nats-measure" :dir :system)
 (include-book "misc/hons-help" :dir :system) ;; for alist-keys/vals

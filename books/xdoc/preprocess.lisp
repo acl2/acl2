@@ -23,7 +23,7 @@
 
 (in-package "XDOC")
 (include-book "autolink")
-(include-book "std/strings/defs" :dir :system)
+(include-book "std/strings/defs-program" :dir :system)
 (include-book "std/io/read-string" :dir :system)
 (include-book "unsound-eval")
 (include-book "verbosep")

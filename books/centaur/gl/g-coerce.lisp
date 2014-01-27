@@ -29,14 +29,6 @@
 
 (local (in-theory (disable acl2::revappend-removal)))
 
-;; [Jared] I suspect we could get this easily working with implode/explode, but
-;; it seems easiest to just say, "this book is low level and wants to deal with
-;; coerce on its own."
-(local (in-theory (e/d (str::implode
-                        str::explode)
-                       (str::coerce-to-string-removal
-                        str::coerce-to-list-removal))))
-
 ;; ;; This brings if-then-elses up from atoms to the top level of a cons tree.
 ;; (defun propagate-ites-above-conses (x )
 ;;   (declare (xargs :guard (gobjectp x)))

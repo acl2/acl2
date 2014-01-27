@@ -21,6 +21,7 @@
 
 (in-package "OSLIB")
 (include-book "std/util/define" :dir :system)
+(include-book "std/strings/cat" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 
 (define catpath ((basedir stringp

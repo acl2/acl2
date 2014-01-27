@@ -21,6 +21,7 @@
 (in-package "BED")
 (include-book "mk1")
 (include-book "centaur/aig/aig-base" :dir :system)
+(include-book "std/strings/defs-program" :dir :system)
 (local (include-book "centaur/misc/arith-equivs" :dir :system))
 (local (in-theory (enable* arith-equiv-forwarding)))
 

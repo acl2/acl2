@@ -73,6 +73,7 @@
 (local (bfr-reasoning-mode t))
 
 (defun mk-xes (n i)
+  (declare (xargs :mode :program))
   (if (zp n)
       nil
     (cons (intern$ (str::cat "X" (str::natstr i)) "ACL2")
@@ -80,6 +81,7 @@
 
 (mutual-recursion
  (defun dumb-gify-body (x)
+   (declare (xargs :mode :program))
    (cond ((atom x) `(mv ,x hyp))
          ((eq (car x) 'quote) `(mv ,x hyp))
          ((eq (car x) 'if)

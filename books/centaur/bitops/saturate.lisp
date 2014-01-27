@@ -21,6 +21,7 @@
 
 (in-package "ACL2")
 (include-book "std/util/define" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (local (include-book "ihsext-basics"))
