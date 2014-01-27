@@ -1057,7 +1057,7 @@ tools: $(filter tools/%, $(OK_CERTS))
 unicode: $(filter unicode/%, $(OK_CERTS))
 
 .PHONY: xdoc
-xdoc: $(filter xdoc/%, $(OK_CERTS))
+xdoc: $(filter-out xdoc/tests/%, $(filter xdoc/%, $(OK_CERTS)))
 
 
 .PHONY: workshops \

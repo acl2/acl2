@@ -1,5 +1,5 @@
-; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2013 Centaur Technology
+; Standard Utilities Library
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -16,9 +16,9 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
-; Original author: Jared Davis <jared@centtech.com>
+; Original authors: Jared Davis <jared@centtech.com>
+;                   Sol Swords <sswords@centtech.com>
 
-(in-package "ACL2")
-(include-book "centaur/vl/portcullis" :dir :system)
+(include-book "../portcullis")
+(ld "tools/flag-package.lsp" :dir :system)
 ; cert-flags: ? t :ttags :all
-

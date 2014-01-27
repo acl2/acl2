@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "XDOC")
-(include-book "top")
+(include-book "../top")
 
 (defxdoc test :short "Test of defsection")
 

@@ -243,59 +243,37 @@ some kind of separator!</p>
 ; -------------- Main Stuff Parsing -------------------------------------------
 
 (defun get-xargs-from-kwd-alist (kwd-alist)
-  "Returns (mv xarg-stuff rest-of-kwd-alist)"
+  ;; Munges the xargs stuff together into a form suitable for a declare.
   (declare (xargs :guard (alistp kwd-alist)))
   (b* (((when (atom kwd-alist))
-        (mv nil nil))
+        nil)
        ((cons (cons key1 val1) rest) kwd-alist)
-       ((mv xarg-stuff kwd-alist)
-        (get-xargs-from-kwd-alist rest))
        ((when (member key1 acl2::*xargs-keywords*))
-        (mv (list* key1 val1 xarg-stuff) kwd-alist)))
-    (mv xarg-stuff (acons key1 val1 kwd-alist))))
+        (list* key1 val1
+               (get-xargs-from-kwd-alist rest))))
+    (get-xargs-from-kwd-alist rest)))
 
-(defun get-before-events-from-kwd-alist (kwd-alist)
-  "Returns (mv events rest-of-kwd-alist)"
-  (declare (xargs :guard (alistp kwd-alist)))
-  (b* (((when (atom kwd-alist))
-        (mv nil nil))
-       ((cons (cons key1 val1) rest) kwd-alist)
-       ((mv events kwd-alist)
-        (get-before-events-from-kwd-alist rest))
-       ((when (eq key1 :ignore-ok))
-        (mv (cons `(set-ignore-ok ,val1) events) kwd-alist))
-       ((when (eq key1 :irrelevant-formals-ok))
-        (mv (cons `(set-irrelevant-formals-ok ,val1) events) kwd-alist)))
-    (mv events (acons key1 val1 kwd-alist))))
+#||
+ (get-xargs-from-kwd-alist '((:long . "foo")
+                             (:guard-debug . t)
+                             (:guard-hints . nil)))
+ -->
+ (:guard-debug t :guard-hints nil)
+||#
 
-(defun get-xdoc-stuff (kwd-alist)
-  "Returns (mv parents short long rest-of-kwd-alist)"
-  (declare (xargs :guard (alistp kwd-alist)))
-  (b* ((parents (cdr (assoc :parents kwd-alist)))
-       (short   (cdr (assoc :short kwd-alist)))
-       (long    (cdr (assoc :long kwd-alist)))
-       (kwd-alist (delete-assoc :parents kwd-alist))
-       (kwd-alist (delete-assoc :short kwd-alist))
-       (kwd-alist (delete-assoc :long kwd-alist)))
-    (mv parents short long kwd-alist)))
 
-(defun get-defun-params (kwd-alist)
-  "Returns (mv enabled-p inline-p prepwork rest-of-kwd-alist)"
+(defun get-set-ignores-from-kwd-alist (kwd-alist)
   (declare (xargs :guard (alistp kwd-alist)))
-  (b* ((enabled-p (cdr (assoc :enabled kwd-alist)))
-       (inline-p  (cdr (assoc :inline kwd-alist)))
-       (prepwork  (cdr (assoc :prepwork kwd-alist)))
-       (kwd-alist (delete-assoc :enabled kwd-alist))
-       (kwd-alist (delete-assoc :inline kwd-alist))
-       (kwd-alist (delete-assoc :prepwork kwd-alist)))
-    (mv enabled-p inline-p prepwork kwd-alist)))
-
-(defun get-returns (kwd-alist)
-  "Returns (mv returns rest-of-kwd-alist)"
-  (declare (xargs :guard (alistp kwd-alist)))
-  (b* ((returns   (cdr (assoc :returns kwd-alist)))
-       (kwd-alist (delete-assoc :returns kwd-alist)))
-    (mv returns kwd-alist)))
+  (b* ((ignore-ok (getarg :ignore-ok nil kwd-alist))
+       (irrel-ok  (getarg :irrelevant-formals-ok nil kwd-alist))
+       (events    nil)
+       (events    (if ignore-ok
+                      (cons `(set-ignore-ok ,ignore-ok) events)
+                    events))
+       (events    (if irrel-ok
+                      (cons `(set-irrelevant-formals-ok ,irrel-ok) events)
+                    events)))
+    events))
 
 
 (defconst *define-keywords*
@@ -308,6 +286,7 @@ some kind of separator!</p>
             :enabled
             :returns
             :prepwork
+            :flag
             )
           acl2::*xargs-keywords*))
 
@@ -591,103 +570,101 @@ some kind of separator!</p>
     (cons this-decl
           (formallist->types (cdr x)))))
 
+
+
+(def-primitive-aggregate defguts
+  (name        ;; user-level name (could be the function, or its wrapper macro)
+   name-fn     ;; name of the actual function (might be fn, or fn$inline, or fn-fn)
+   kwd-alist   ;; keyword options passed to define
+   returnspecs ;; returns specifiers, already parsed
+
+   main-def    ;; the full defun[d] event for the function
+   macro       ;; macro wrapper (if necessary), nil or a defmacro event
+   raw-formals ;; not parsed, includes any &optional, &key parts
+   formals     ;; already parsed, macro parts removed
+
+   rest-events ;; events in the /// part
+   ))
+
 (table define)
+(table define 'guts-alist) ;; An alist binding NAME -> DEFGUTS structures
 
-(table define 'defines
-       ;; An alist binding NAME -> DEFINE-INFO alists, see EXTEND-DEFINE-TABLE
-       )
-
-(defun get-defines (world)
+(defun get-define-guts-alist (world)
   "Look up information about the current defines in the world."
-  (cdr (assoc 'defines (table-alist 'define world))))
+  (cdr (assoc 'guts-alist (table-alist 'define world))))
 
-(defmacro extend-define-table (name &key fn formals raw-formals returns)
-  `(table define 'defines
-          (cons (cons ',name (list (cons :fn ,fn)
-                                   (cons :formals ,formals)
-                                   (cons :returns ,returns)
-                                   (cons :raw-formals ,raw-formals)))
-                (get-defines world))))
+(defun extend-define-guts-alist (guts)
+  `(table define 'guts-alist
+          (cons (cons ',(defguts->name guts) ',guts)
+                (get-define-guts-alist world))))
 
-(defun define-fn (fnname args world)
+
+(defun parse-define (name args world)
+  ;; Returns GUTS
   (declare (xargs :guard (plist-worldp world)))
-  (b* (((unless (symbolp fnname))
-        (er hard? 'define-fn
-            "Expected function names to be symbols, but found ~x0."
-            fnname))
+  (b* ((__function__ 'define)
+       ((unless (symbolp name))
+        (raise "Expected function names to be symbols, but found ~x0." name))
 
-       ((mv main-stuff rest-events) (split-/// fnname args))
+       ((mv main-stuff rest-events) (split-/// name args))
        ((mv kwd-alist normal-defun-stuff)
-        (extract-keywords fnname *define-keywords* main-stuff nil))
-       (formals                (car normal-defun-stuff))
+        (extract-keywords name *define-keywords* main-stuff nil))
+       (raw-formals            (car normal-defun-stuff))
        (traditional-decls/docs (butlast (cdr normal-defun-stuff) 1))
        (body                   (car (last normal-defun-stuff)))
-       (extended-body `(let ((__function__ ',fnname))
-                         ;; CCL's compiler seems to be smart enough to not
-                         ;; generate code for this binding when it's not
-                         ;; needed.
-                         (declare (ignorable __function__))
-                         ,body))
 
-       (non-exec                          (cdr (assoc :non-executable kwd-alist)))
-       ((mv xargs kwd-alist)              (get-xargs-from-kwd-alist kwd-alist))
-       ((mv returns kwd-alist)            (get-returns kwd-alist))
-       ((mv before-events kwd-alist)      (get-before-events-from-kwd-alist kwd-alist))
-       (parents-p                         (assoc :parents kwd-alist))
-       ((mv parents short long kwd-alist) (get-xdoc-stuff kwd-alist))
-       (parents
-        (if parents-p
-            parents
-          (xdoc::get-default-parents world)))
-       ((mv enabled-p inline-p prepwork kwd-alist)
-        (get-defun-params kwd-alist))
+       (non-exec   (getarg :non-executable nil kwd-alist))
+       (returns    (getarg :returns        nil kwd-alist))
+       (enabled-p  (getarg :enabled        nil kwd-alist))
+       (inline-p   (getarg :inline         nil kwd-alist))
+       (prepwork   (getarg :prepwork       nil kwd-alist))
 
        ((unless (true-listp prepwork))
-        (er hard? 'define-fn
-            "Error in ~x0: expected :prepwork to be a true-listp, but found ~x1."
-            fnname prepwork))
+        (raise "Error in ~x0: expected :prepwork to be a true-listp, but found ~x1."
+               name prepwork))
 
-       ((when kwd-alist)
-        (er hard? 'define-fn
-            "Error in ~x0: expected all keywords to be accounted for, but ~
-             still have ~x1 after extracting everything we know about."
-            fnname (strip-cars kwd-alist)))
-
-       (need-macrop   (or inline-p (has-macro-args formals)))
-       (fnname-fn     (cond (inline-p
-                             (intern-in-package-of-symbol
-                              (concatenate 'string (symbol-name fnname) "$INLINE")
-                              fnname))
-                            (need-macrop
-                             (intern-in-package-of-symbol
-                              (concatenate 'string (symbol-name fnname) "-FN")
-                              fnname))
-                            (t
-                             fnname)))
+       (need-macrop (or inline-p (has-macro-args raw-formals)))
+       (name-fn     (cond (inline-p
+                           (intern-in-package-of-symbol
+                            (concatenate 'string (symbol-name name) "$INLINE")
+                            name))
+                          (need-macrop
+                           (intern-in-package-of-symbol
+                            (concatenate 'string (symbol-name name) "-FN")
+                            name))
+                          (t
+                           name)))
 
        (macro         (and need-macrop
-                           (make-wrapper-macro fnname fnname-fn formals)))
-       (raw-formals   formals)
-       (formals       (remove-macro-args fnname formals nil))
-       (formals       (parse-formals fnname formals '(:type) world))
+                           (make-wrapper-macro name name-fn raw-formals)))
+       (formals       (remove-macro-args name raw-formals nil))
+       (formals       (parse-formals name formals '(:type) world))
+
        (formal-names  (formallist->names formals))
        (formal-guards (remove t (formallist->guards formals)))
        (formal-types  (formallist->types formals))
        (stobj-names   (formallist->names (formallist-collect-stobjs formals world)))
 
-       ;; support the :non-executable xarg by wrapping the body in the required
-       ;; throw form
-       (final-body (if non-exec
-                       `(prog2$ (acl2::throw-nonexec-error
-                                 ',fnname (list . ,formal-names))
-                                ,extended-body)
-                     extended-body))
+       (extended-body `(let ((__function__ ',name))
+                         ;; CCL's compiler seems to be smart enough to not
+                         ;; generate code for this binding when it's not
+                         ;; needed.
+                         (declare (ignorable __function__))
+                         ,body))
+       (final-body    (if non-exec
+                          ;; support the :non-executable xarg by wrapping the
+                          ;; body in the required throw form
+                          `(prog2$ (acl2::throw-nonexec-error
+                                    ',name (list . ,formal-names))
+                                   ,extended-body)
+                        extended-body))
 
-       (returnspecs   (parse-returnspecs fnname returns world))
+       (xargs         (get-xargs-from-kwd-alist kwd-alist))
+
+       (returnspecs   (parse-returnspecs name returns world))
        (defun-sym     (if enabled-p 'defun 'defund))
-
        (main-def
-        `(,defun-sym ,fnname-fn ,formal-names
+        `(,defun-sym ,name-fn ,formal-names
 
 ; Subtle: this order isn't what we always used, but Sol ran into some problems
 ; where, e.g., traditional type declarations weren't coming before the guards
@@ -743,62 +720,96 @@ some kind of separator!</p>
            ,final-body
            )))
 
+    (make-defguts :name        name
+                  :name-fn     name-fn
+                  :kwd-alist   kwd-alist
+                  :returnspecs returnspecs
+                  :main-def    main-def
+                  :macro       macro
+                  :raw-formals raw-formals
+                  :formals     formals
+                  :rest-events rest-events)))
+
+(defun add-signature-from-guts (guts)
+  (b* (((defguts guts) guts))
+    ;; Now that the section has been submitted, we can compute its signature
+    ;; block and prepend it to the topic (if any docs were generated)
+    `(make-event
+      (b* ((current-pkg (acl2::f-get-global 'acl2::current-package state))
+           (base-pkg    (pkg-witness current-pkg))
+           (name        ',guts.name)
+           (all-topics  (xdoc::get-xdoc-table (w state)))
+           (old-topic   (xdoc::find-topic name all-topics))
+           ((unless old-topic)
+            ;; Fine, it isn't documented.
+            (value '(value-triple :invisible)))
+           ((mv str state)
+            (make-xdoc-top name ',guts.name-fn ',guts.formals
+                           ',guts.returnspecs base-pkg state))
+           (event (list 'xdoc::xdoc-prepend name str)))
+        (value event)))))
+
+(defun add-macro-aliases-from-guts (guts)
+  (b* (((defguts guts) guts))
+    (and guts.macro
+         `((add-macro-alias ,guts.name ,guts.name-fn)
+           (table define-macro-fns ',guts.name-fn ',guts.name)))))
+
+(defun define-fn (name args world)
+  (declare (xargs :guard (plist-worldp world)))
+  (b* ((guts (parse-define name args world))
+       ((defguts guts) guts)
+
+       (prepwork   (getarg :prepwork       nil guts.kwd-alist))
+       (short      (getarg :short          nil guts.kwd-alist))
+       (long       (getarg :long           nil guts.kwd-alist))
+       (parents    (getarg :parents        nil guts.kwd-alist))
+       (parents    (if (assoc :parents guts.kwd-alist)
+                       parents
+                     (xdoc::get-default-parents world)))
+
+       (set-ignores (get-set-ignores-from-kwd-alist guts.kwd-alist)))
+
     `(progn
-       (defsection ,fnname
+       (defsection ,guts.name
          ,@(and parents `(:parents ,parents))
          ,@(and short   `(:short ,short))
          ,@(and long    `(:long ,long))
 
-         ;; Define the macro first, so that it can be used in recursive calls,
-         ;; e.g., to take advantage of nicer optional/keyword args.
-         ,@(and need-macrop `(,macro))
-
          ,@prepwork
 
-         ,@(if before-events
-               `((encapsulate ()
-                   ,@before-events
-                   ,main-def))
-             `(,main-def))
+         ;; Define the macro first, so that it can be used in recursive calls,
+         ;; e.g., to take advantage of nicer optional/keyword args.
+         ,@(and guts.macro `(,guts.macro))
 
-         ,@(and need-macrop `((add-macro-alias ,fnname ,fnname-fn)
-                              (table define-macro-fns ',fnname-fn ',fnname)))
+         ,@(if set-ignores
+               `((encapsulate ()
+                   ,@set-ignores
+                   ,guts.main-def))
+             `(,guts.main-def))
+
+         ,@(add-macro-aliases-from-guts guts)
 
          ;; Extend the define table right away, in case anything during
          ;; the rest-events needs to make use of it.
-         (extend-define-table ,fnname
-                              :fn ',fnname-fn
-                              :returns ',returnspecs
-                              :formals ',formals
-                              :raw-formals ',raw-formals)
+         ,(extend-define-guts-alist guts)
 
          (local
           (make-event
-           (if (logic-mode-p ',fnname-fn (w state))
-               '(in-theory (enable ,fnname))
+           (if (logic-mode-p ',guts.name-fn (w state))
+               '(in-theory (enable ,guts.name))
              '(value-triple :invisible))))
 
          (make-event
           (let* ((world (w state))
-                 (events (returnspec-thms ',fnname-fn ',returnspecs world)))
+                 (events (returnspec-thms ',guts.name-fn ',guts.returnspecs world)))
             (value `(progn . ,events))))
 
-         . ,rest-events)
+         . ,guts.rest-events)
 
        ;; Now that the section has been submitted, its xdoc exists, so we can
        ;; do the doc generation and prepend it to the xdoc.
-       ,(if (not (or parents long short))
-            '(value-triple :invisible)
-          `(make-event
-            (b* ((current-pkg (acl2::f-get-global 'acl2::current-package state))
-                 (base-pkg    (pkg-witness current-pkg))
-                 (fnname      ',fnname)
-                 ((mv str state)
-                  (make-xdoc-top fnname ',fnname-fn
-                                 ',formals ',returnspecs
-                                 base-pkg state))
-                 (event (list 'xdoc::xdoc-prepend fnname str)))
-              (value event))))
+       ,(add-signature-from-guts guts)
 
        )))
 

@@ -36,6 +36,9 @@
   :returns (ans integerp)
   44)
 
+(assert! (equal (defguts->name (cdr (assoc 'foo4 (get-define-guts-alist (w state)))))
+                'foo4))
+
 (define foo5 ((x oddp :type integer))
   :returns (ans integerp :hyp :guard)
   (- x 1))

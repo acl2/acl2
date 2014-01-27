@@ -28,6 +28,7 @@
 (include-book "defmvtypes")
 (include-book "defprojection")
 (include-book "define")
+(include-book "defines")
 (include-book "defrule")
 (include-book "defredundant")
 (include-book "defval")
@@ -56,6 +57,7 @@ functions, mapping over lists, and many other boilerplate tasks."
 </ul></li>
 
 <li>Defining functions with documentation and related theorems (@(see define))</li>
+<li>Writing mutually-recursive functions with induction schemes (@(see defines))</li>
 
 <li>Automating other tedious tasks
 <ul>

@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "XDOC")
-(include-book "preprocess")
+(include-book "../preprocess")
 
 (defmacro test (str expect)
   `(make-event

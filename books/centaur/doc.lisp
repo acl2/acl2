@@ -173,6 +173,11 @@
 ;; these books.
 
 (include-book "xdoc/all" :dir :system)
+
+(include-book "xdoc/tests/preprocessor-tests" :dir :system)
+(include-book "xdoc/tests/unsound-eval-tests" :dir :system)
+(include-book "xdoc/tests/defsection-tests" :dir :system)
+
 (include-book "defrstobj/basic-tests")
 (include-book "std/util/deflist-tests" :dir :system)
 (include-book "std/util/defalist-tests" :dir :system)

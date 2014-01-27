@@ -43,10 +43,4 @@
 (include-book "topics")
 (include-book "write-acl2-xdoc")
 
-#||
-;; Fool dependency scanner into doing the tests
-(include-book "preprocessor-tests")
-(include-book "unsound-eval-tests")
-(include-book "defsection-tests")
-||#
 

@@ -164,10 +164,10 @@ example-lexer) for some examples of using it.</p>"
          ;; Try to pick good return-value names.  This works if the user
          ;; introduced their function with DEFINE and named their return
          ;; values.  Otherwise, just generate crappy names.
-         (info (cdr (assoc name (std::get-defines world))))
+         (info (cdr (assoc name (std::get-define-guts-alist world))))
          (return-names
           (if info
-              (std::returnspeclist->names (cdr (assoc :returns info)))
+              (std::returnspeclist->names (std::defguts->returnspecs info))
             (generate-awful-names-for-return-values returns 0)))
          (return-names
           ;; Rename the output SIN to NEW-SIN, so we can target it.

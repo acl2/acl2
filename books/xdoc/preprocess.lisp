@@ -151,7 +151,26 @@
           rest))
     decls))
 
-(defun clean-up-event (event)
+(defun find-event-in-mutual-recursion (name defuns)
+  (cond ((atom defuns)
+         nil)
+        ((eq name (second (car defuns)))
+         (car defuns))
+        (t
+         (find-event-in-mutual-recursion name (cdr defuns)))))
+
+(defun clean-up-defun (event)
+  (let ((name    (second event))
+        (formals (third event))
+        (decls   (clean-up-function-decls (butlast (cdddr event) 1)))
+        (body    (car (last event))))
+    (if decls
+        (append (list 'defun name formals)
+                decls
+                (list body))
+      (list 'defun name formals body))))
+
+(defun clean-up-event (name event)
   (if (atom event)
       event
     (case (car event)
@@ -159,15 +178,7 @@
         ;; I'll leave in the rule-classes, since they're probably important.
         (eat-things-from-event '(:hints :instructions :doc :otf-flg) event))
       (defun
-        (let ((name    (second event))
-              (formals (third event))
-              (decls   (clean-up-function-decls (butlast (cdddr event) 1)))
-              (body    (car (last event))))
-          (if decls
-              (append (list 'defun name formals)
-                      decls
-                      (list body))
-            (list 'defun name formals body))))
+        (clean-up-defun event))
       (defmacro
         (let ((name    (second event))
               (formals (third event))
@@ -176,6 +187,14 @@
           (if decls
               (append (list 'defmacro name formals) decls (list body))
             (list 'defmacro name formals body))))
+      (mutual-recursion
+       ;; horrible
+       (let ((defun (find-event-in-mutual-recursion name (cdr event))))
+         (if defun
+             (clean-up-defun defun)
+           (er hard? 'clean-up-event
+               "Expected to find ~x0 in mutual-recursion, but failed: ~x1"
+               name event))))
       (otherwise
        event))))
 
@@ -200,7 +219,6 @@
            (xdoc::get-event* name (cdr wrld1)))
           (t ev))))
 
-
 (defun get-event-aux (name world)
   ;; A general purpose event lookup as in :pe
   (b* ((props (acl2::getprops name 'current-acl2-world world))
@@ -215,7 +233,7 @@
               (symbol-name name))))
 
 (defun get-event (name world)
-  (clean-up-event (get-event-aux name world)))
+  (clean-up-event name (get-event-aux name world)))
 
 (defun start-event (event acc)
   (b* ((acc (str::revappend-chars "<b>" acc))
