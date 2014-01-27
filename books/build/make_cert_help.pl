@@ -453,11 +453,12 @@ my $instrs = "";
 
 # I think this strange :q/lp dance is needed for lispworks or something?
 $instrs .= "(acl2::value :q)\n";
-$instrs .= "(in-package \"ACL2\")\n";
+$instrs .= "(acl2::in-package \"ACL2\")\n";
 $instrs .= "#+acl2-hons (profile-fn 'prove)\n";
 $instrs .= "#+acl2-hons (profile-fn 'certify-book-fn)\n";
-$instrs .= "(acl2::lp)\n\n";
+$instrs .= "(acl2::lp)\n";
 #    $instrs .= "(set-debugger-enable :bt)\n";
+$instrs .= "(acl2::in-package \"ACL2\")\n\n";
 $instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");
 $instrs .= "(set-write-acl2x '(t) state)\n" if ($STEP eq "acl2xskip");
 $instrs .= "$INHIBIT\n" if ($INHIBIT);
