@@ -85,15 +85,12 @@ have.  The example above shows only the very simplest syntax, but fields can
 also have well-formedness requirements, documentation, etc.; see below.</p>
 
 <p>The @('Option')s control various settings on the structure, and many options
-are described below.</p>
+are described below.  Options can actually come before or after the fields (or
+both).</p>
 
 <p>The @('other-events') is just a place for arbitrary other events to be put,
 as in @(see define).  This is mainly intended as a book structuring device, to
 allow you to keep related theorems near your aggregate.</p>
-
-<p>Note that the general form is not really quite expressive enough.  We
-actually allow the options and fields to come in any order.  That is, you can
-put the :tag and other options before the fields, etc.</p>
 
 
 <h3>Structure Tags</h3>
@@ -165,17 +162,22 @@ predicate that the field must satisfy.  Here is an example:</p>
 
 @({
  (defaggregate employee
+
    ((name   \"Should be in Lastname, Firstname format\"
             stringp :rule-classes :type-prescription)
+
     (salary \"Annual salary in dollars, nil for hourly employees\"
             (or (not salary) (natp salary))
             :rule-classes :type-prescription)
+
     (rank \"Employee rank.  Can be empty.\"
           (implies rank (and (characterp rank)
                              (alpha-char-p rank))))
+
     (position (and (position-p position)
                    (salary-in-range-for-position-p salary position))
               :default :peon))
+
    :tag :employee)
 })
 
@@ -275,15 +277,87 @@ its fields.  The very advanced user can then inspect these fields after
 submitting the aggregate, and perhaps use them to generate additional
 events.</dd>
 
-<dt>:require</dt>
-
-<dd>This option is deprecated.  Please use the new fields syntax, instead.</dd>
-
 <dt>:rest</dt>
 
 <dd>This option is deprecated.  Please use the new @('///') syntax, instead.</dd>
 
 </dl>
+
+
+<h3>Dependent Requirements</h3>
+
+<p>The embedded \"guard\" in each extended formal allows you to naturally
+express simple requirements, e.g., @('arity') should be a natural and @('args')
+should be an @('true-listp').  But what if you need something more like <a
+href='https://en.wikipedia.org/wiki/Dependent_type'>dependent types</a>, e.g.,
+say that @('arity') is supposed to always match the length of args?</p>
+
+<p>It's valid to refer to other fields within the guards of an embedded formal,
+so one way we could write this would be, e.g.,:</p>
+
+@({
+    (defaggregate mytype
+       ((arity natp :rule-classes :type-prescription)
+        (args  (and (true-listp args)
+                    (equal (len args) arity)))))
+})
+
+<p>This is perfectly valid, but you may sometimes prefer not to embed these
+dependent requirements directly in the fields.  For instance, in the example
+above, the result-type theorem about @('args') becomes two @(see rewrite)
+rules.  It would probably be better for the @('true-listp') part to be a @(see
+type-prescription) rule.  But the @('len') requirement doesn't make sense as a
+@(':type-prescription').</p>
+
+<p>To work around this, you could use an explicit, compound @(':rule-classes')
+form with separate @(':corollary') theorems.  This gets very ugly, because you
+have to write out each corollary in full, e.g.,:</p>
+
+@({
+    (defaggregate mytype
+      ((arity natp :rule-classes :type-prescription)
+       (args  (and (true-listp args)
+                   (equal (len args) arity))
+              :rule-classes
+              ((:type-prescription :corollary
+                                   (implies (force (mytype-p x))
+                                            (true-listp (mytype->args x))))
+               (:rewrite :corollary
+                         (implies (force (mytype-p x))
+                                  (equal (len (mytype->args x))
+                                         (mytype->arity x))))))))
+})
+
+<p>So you may instead prefer to use the alternate @(':require') syntax.
+In this case, we would have:</p>
+
+@({
+     (defaggregate mytype
+       ((arity natp :rule-classes :type-prescription)
+        (args  true-listp :rule-classes :type-prescription))
+       :require
+       ((len-of-mytype->args (equal (len args) arity))))
+})
+
+<p>This would result in an ordinary @(see type-prescription) return-type
+theorems for both @('arity') and @('args'), and a separate rewrite rule to deal
+with the length dependency:</p>
+
+@({
+     (defthm len-of-mytype->args
+       (implies (force (mytype-p x))
+                (equal (len (mytype->args x))
+                       (mytype->arity x))))
+})
+
+<p>The general form of each @(':require') form is:</p>
+
+@({   (theorem-name conclusion [:rule-classes ...])  })
+
+<p>Where @('conclusion') may mention any of the fields of the aggregate.  Each
+requirement becomes a guard for the constructor, a well-formedness requirement
+in the recognizer, and a theorem about the accessors of your structure, exactly
+like the simple requirements on each field.</p>
 
 
 <h3>Make and Change Macros</h3>
@@ -321,7 +395,7 @@ fields</li>
 <li>The person reading the code can see what values are being given to which
 fields.</li>
 
-<li>Fields whose value should be @('nil') (or some other @(':default') may be
+<li>Fields whose value should be @('nil') (or some other @(':default')) may be
 omitted from the <i>make</i> macro.</li>
 
 <li>Fields whose value should be left alone can be omitted from the
