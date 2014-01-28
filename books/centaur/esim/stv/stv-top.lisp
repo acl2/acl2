@@ -634,6 +634,15 @@ acl2::defstv).</p>"
                    (declare (xargs :guard t))
                    ,stvconst)
 
+                 (defthm ,(intern-in-package-of-symbol
+                           (str::cat "PROCESSED-STV-P-OF-" (symbol-name name))
+                           name)
+                   (processed-stv-p (,name)))
+
+                 ;; We now also disable the executable-counterpart, as
+                 ;; suggested by David Rager (acl2-books Issue 114).
+                 (in-theory (disable (:executable-counterpart ,name)))
+
                  (defund ,name-mod ()
                    (declare (xargs :guard t))
                    ,modconst)
