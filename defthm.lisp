@@ -9816,6 +9816,8 @@
                                           :lemma
                                           :type-alist
                                           :ancestors
+                                          :initial-ttree
+                                          :final-ttree
                                           :gstack))))
   (case sym
         (:target '(get-brr-local 'target state))
@@ -9826,6 +9828,8 @@
         (:lemma '(get-brr-local 'lemma state))
         (:type-alist '(get-brr-local 'type-alist state))
         (:ancestors '(get-brr-local 'ancestors state))
+        (:initial-ttree '(get-brr-local 'initial-ttree state))
+        (:final-ttree '(get-brr-local 'final-ttree state))
         (otherwise '(get-brr-global 'brr-gstack state))))
 
 (defmacro monitor (rune expr)

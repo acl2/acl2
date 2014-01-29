@@ -7977,14 +7977,6 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
        #+(and clisp unicode)
        (setq custom:*default-file-encoding* charset:iso-8859-1)
-       #+gcl
-
-; In GCL, at least through Version 2.6.7, there are only 1024 indices n
-; available for the #n= reader macro.  That is such a small number that for
-; GCL, we turn off the use of this reader macro when printing out files such as
-; .cert files.
-
-       (f-put-global 'print-circle-files nil state)
        (let ((customization-full-file-name
               (initial-customization-filename)))
          (cond
