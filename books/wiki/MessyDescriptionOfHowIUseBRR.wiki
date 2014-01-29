@@ -1,0 +1,39 @@
+#summary One way that Rager uses BRR
+
+= Introduction =
+
+I've spent a fair amount of time chasing down reasons that hypotheses aren't being relieved, and I think this is a decent place to share what I've found.  Perhaps these findings will help others, result in an improvement to ACL2, etc.  This is a mess, so I don't really expect anyone to read it unless they're stuck on debugging the use of a rewrite rule, but here it is anyway.
+
+Feedback very welcome, of course, as maybe this is a horrible approach.
+
+= How do I go about seeing why a rewrite rule won't fire? =
+
+(1) Let's assume I can get the rule to "match".  If I can't then the rhs of my rule doesn't match.  I used :pr of the rule I wanted and manually performed substitution.  Various things like untranslation have gotten in my way, but at this point, I can get rules to match reliably.
+
+(2) That is, unless it's not a rewrite rule.  So, if I'm trying to debug a :type-prescription rule, I make it a :rewrite rule (for the time being), so I can monitor it.  :Linear rules are probably harder to debug, but if you know the exact inequality you're looking for, you can make that a rewrite rule.
+
+(3) At this point it's possible to monitor the rule I expect to fire, and so I do that, and I put something like ''(:hyps ) in the "what to do when monitor fires clause"
+
+(4) I then look at the hyp that's not being relieved (perhaps after calling :eval).  Suppose ACL2 can't prove that <hyp 2> is a natp.  I then ":go t" until I'm back at the top loop.
+
+(5) I then submit (thm (natp <hyp 2>)) to the top-level.  At this point, hopefully it's clear, but maybe this proof depends on another lemma, who's hypotheses I can't relieve.  In this case, I repeat 1-4 for this "other lemma".
+
+For the sake of brevity I skip the discussion of steps 1-2 and focus on redoing (4) and (5).
+
+[ (6) ] I look at the hyp that's not being relieved.  Suppose ACL2 can't prove that <hyp 3> is a natp.  I issue ":go t" until I'm at the top-level.
+
+[ (7) ] I then submit (thm (natp <hyp 3>)) to the top-level.
+
+(8) In the proof I'm attempting, I now get a summary that looks like a traditional ACL2 proof summary, where I can see what rules are being used (and what's not).  Here's the summary.  Note that these things also show up in the :initial-ttree of steps (4) and (6), but I don't know whether the ttree associated with the break from (4) contains the rules that were used in both (4) and (6) (someone might be able to clarify that for me, but this is a complicated example, and I don't expect it).
+
+{{{
+Rules: ((:DEFINITION NOT)
+        (:REWRITE ASH-<-0)
+        (:REWRITE IFIX-NEGATIVE-TO-NEGP)
+        (:REWRITE NATP-WHEN-INTEGERP)
+        (:TYPE-PRESCRIPTION ASH))
+}}}
+
+(9) I don't think IFIX-NEGATIVE-TO-NEGP should be necessary, and NATP-WHEN-INTEGERP also looks suspicious.  I disable those and reattempt (7).
+
+(10) I'm still stuck, but by going through the :pr routine, I am able to realize that another lemma that I'm expecting to fire while proving (7) is really about (natp `<unshifted-hyp-3>`), not (natp (ash `<unshifted-hyp-3>`)).  Thus, I have learned that in this example, I need to prove a lemma that involves (natp (ash ...)).
