@@ -1,5 +1,6 @@
 #summary How to certify all the books, for testing or use.
 
-For instructions on certifying the books, please see the XDOC topic BOOKS-CERTIFICATION.
+For instructions on certifying the books, please see
+[http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/?topic=ACL2____BOOKS-CERTIFICATION BOOKS-CERTIFICATION].
 
 (The instructions that used to be here have been removed in an effort to consolidate the build instructions; see Issue 125 for details.)
