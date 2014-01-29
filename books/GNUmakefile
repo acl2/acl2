@@ -44,7 +44,7 @@
 #
 #   all           Certifies most books that are not horribly slow, including,
 #                 for instance, most of workshops, projects, the centaur
-#                 books, y86 and jvm models, etc.  Usually, committers to
+#                 books, the jvm models, etc.  Usually, committers to
 #                 acl2-books should run "make all" first.
 #
 #   everything    A very full build, including very slow books.  Most users
@@ -236,7 +236,7 @@ $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|centaur/quicklisp|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|models/y86/$(EGREP_EXTRA_EXCLUDE_STRING))' \
+    | egrep -v '^(\./)?(interface|centaur/quicklisp|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
   > $(BUILD_DIR)/Makefile-books; \
   ls -l $(BUILD_DIR)/Makefile-books)
@@ -442,27 +442,36 @@ endif
 
 SLOW_BOOKS := $(ADDED_BOOKS)
 
-# Note that models/y86/ is already excluded in the setting of
-# REBUILD_MAKEFILE_BOOKS above, but these books are built if
-# models/y86-target.cert is included.  File models/y86-target.lisp is
-# already labeled as hons-only, but even with ACL2(h) we want to
-# exclude some host Lisps.  Certainly CCL can handle these books,
-# since it has significant optimizations for ACL2(h).  But in one ANSI
-# GCL ACL2(h) regression, certification runs were still proceeding
-# after more than 10 hours for each of four books under models/y86/
+# The models/y86 books are a special case.  We prefer to include them
+# only with the "everything" target, not the "all" target, since they
+# have large memory requirements -- and then, only for certain host
+# Lisps.  Originally we handled them in a custom way, using old-style
+# Makefiles based on Makefile-generic rather than cert.pl, but then we
+# did not get the benefit of the cert.pl dependency analysis; for
+# example, if arithmetic-5/top.cert was out of date then "make" would
+# not rebuild the models/y86/ books as it should.  So we no longer
+# exclude them in the "egrep -v" command above, instead allowing
+# cert.pl to do its thing.
+
+ifneq ($(ACL2_HAS_HONS), )
+ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
+
+# When the Lisp is not one of those mentioned on the line above, we
+# skip the models/y86/ books, even for the "everything" target.  In
+# particular, we exclude GCL: in one ANSI GCL ACL2(h) regression,
+# certification runs were still proceeding after more than 10 hours
+# for each of four books under models/y86/
 # (y86-basic/common/x86-state, y86-two-level/common/x86-state,
 # y86-two-level-abs/common/x86-state-concrete, and
 # y86-basic/py86/popcount), probably because of the demands of
 # def-gl-thm.  Moreover, LispWorks has too small a value for
 # array-dimension-limit to support these certifications.
 
-ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
-# When the Lisp is not one of those mentioned on the line above, we
-# skip the models/y86/ books.
-  SLOW_BOOKS += models/y86-target.cert
-endif
+  ADDED_BOOKS += $(filter models/y86/%, $(OK_CERTS))
+endif # ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
+endif # ifneq ($(ACL2_HAS_HONS), )
 
-OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
+OK_CERTS := $(filter-out $(SLOW_BOOKS) models/y86/%, $(OK_CERTS))
 
 ##############################
 ### Section: Cleaning
@@ -495,13 +504,11 @@ clean_books:
 
 # We test that directory centaur/quicklisp exists because it probably
 # doesn't for nonstd/, and we include this makefile from that
-# directory.  Also, we clean models/y86 explicitly, since
-# models/Makefile (from custom target models/y86-target.cert) doesn't
-# exist.
+# directory.
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
 	rm -rf $(CLEAN_FILES_EXPLICIT)
-	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) models/y86 ; \
+	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) ; \
 	do \
 	if [ -f $$dir/Makefile ] ; then \
 	(cd $$dir ; $(MAKE) clean) ; \
@@ -581,9 +588,8 @@ ifeq ($(ACL2_HAS_REALS), )
 # cert_pl_exclude file or else be explicitly excluded in the egrep
 # command that is used to define REBUILD_MAKEFILE_BOOKS, above.
 # Otherwise we might make the same file twice, would could cause
-# conflicts if -j is other than 1.  Also: Do not include any targets,
-# such as models/y86-target.cert, that we don't always want built with
-# "all".
+# conflicts if -j is other than 1.  Also: Do not include any targets
+# that we don't always want built with "all".
 
 ACL2_CUSTOM_TARGETS := \
   clause-processors/SULFA/target.cert \
@@ -619,14 +625,6 @@ clause-processors/SULFA/target.cert: \
 # The following has no dependencies, so doesn't need a "deps" file.
 fix-cert/fix-cert.cert:
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
-
-# The following need not be made a custom target, since it's not in an
-# excluded directory.  Note that we use -j 1 because of the
-# potentially large memory requirements.
-ifneq ($(ACL2_HAS_HONS), )
-models/y86-target.cert:
-	cd $(@D)/y86 ; $(STARTJOB) -c "$(MAKE) -j 1 &> make.log"
-endif
 
 projects/translators/l3-to-acl2/target.cert: \
   projects/translators/l3-to-acl2-deps.cert
@@ -710,8 +708,10 @@ ifdef ACL2_COMP
 # another Lisp.  We also skip multi-lisp compilation for books that
 # depend on centaur/ books when we see a multi-lisp compilation
 # failure for books in their directories.  (Thus, even though
-# projects/security/des/ depends on GL and hence centaur/, we don't exclude
-# its books.)
+# projects/security/des/ depends on GL and hence centaur/, we don't
+# exclude its books.)  We might not need to skip the y86 books, but
+# since some Lisps have trouble certifying those, we play it safe and
+# skip them.
 $(info For building compiled (.$(ACL2_COMP_EXT)) files, excluding centaur books)
 OK_CERTS := $(filter-out centaur/%, \
               $(filter-out models/y86%, \

@@ -74,7 +74,16 @@ in ACL2 6.4, so we've deleted them.</p>
 <p>(File interface/emacs/inf-acl2.el) One now gets a clear error, suggesting a
 solution, when Emacs command @('meta-x run-acl2') cannot find an ACL2
 executable.  Thanks to Scott Staley for helpful correspondence leading to this
-fix.</p>")
+fix.</p>
+
+<p>Certification of books under @('models/y86') has a much cleaner
+implementation in @('GNUmakefile'), with the result that are no longer
+certified by the @('make') target, @('all').  For ACL2(h) and host Lisps that
+can handle this task, they are certified by using the target @('everything').
+Also, the value of the @('-j') option of the @('make') command is no longer
+ignored.</p>
+
+")
 
 
 (defxdoc note-6-4-books
