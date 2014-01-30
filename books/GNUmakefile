@@ -152,6 +152,11 @@ endif # ifndef ACL2
 # Keep this before any other target so that basic will be the default target
 basic:
 
+# Set environment variable HTTP_PROXY_WITH_PORT if your curl needs to
+# use a proxy.
+ifneq ($(HTTP_PROXY_WITH_PORT), )
+  HTTP_PROXY_FLAG=-x $(HTTP_PROXY_WITH_PORT)
+endif # HTTP_PROXY_WITH_PORT
 
 QUICKLISP_DIR=centaur/quicklisp
 
@@ -159,7 +164,7 @@ ifneq ($(USE_QUICKLISP), )
 
 $(QUICKLISP_DIR)/quicklisp.lisp:
 	@echo "Downloading Quicklisp"
-	@cd $(QUICKLISP_DIR); curl -O http://beta.quicklisp.org/quicklisp.lisp
+	@cd $(QUICKLISP_DIR); curl -O http://beta.quicklisp.org/quicklisp.lisp $(HTTP_PROXY_FLAG)
 	@ls -l $(QUICKLISP_DIR)/quicklisp.lisp
 
 $(QUICKLISP_DIR)/inst/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lisp \
@@ -189,7 +194,9 @@ endif # USE_QUICKLISP
 quicklisp_clean:
 	@if [ -d $(QUICKLISP_DIR) ] ; then \
 	  echo "Removing downloaded quicklisp files (if any)" ; \
-	  cd $(QUICKLISP_DIR); rm -rf inst install.out Makefile-tmp ; \
+	  cd $(QUICKLISP_DIR); rm -rf quicklisp.lisp  inst/asdf.lisp inst/cache \
+	    inst/client-info.sexp inst/dists inst/local-projects \
+	    inst/quicklisp inst/setup.lisp inst/tmp install.out Makefile-tmp ; \
 	fi
 
 clean: quicklisp_clean
