@@ -195,7 +195,7 @@ sense.</dd>
 options are @(see local) to the definitions; they do not affect the
 @('other-events') or any later events.</dd>
 
-
+</dl>
 
 
 

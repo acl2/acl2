@@ -13,7 +13,7 @@ body { width: 55em; color: #000000; background-color: #a7bcd1; margin: 0;}
 h1 { margin-top: 0px; margin-bottom: 0px;}
 h1,h2,h3,h4,h5,dt { font-family: sans-serif; font-weight: bold; color: #677c91; }
 h3 { margin-top: 2em; }
-b { color: #374c51; }
+b { color: #000000; }
 h1 { text-align: center; }
 h3 { margin-left: 1em; }
 h4,h5 { margin-left: 3em; }
@@ -45,9 +45,7 @@ dd pre { margin-left: 2em; }
 <p>The <i>Centaur Books</i> are
 a <a href="http://www.gnu.org/philosophy/free-sw.html">free</a> set of
 <a href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2</a>
-libraries for formal hardware verification.</p>
-
-<p>They include:</p>
+libraries for formal hardware verification including:</p>
 
 <ul>
 
@@ -75,12 +73,12 @@ Technologies</a>.  We have used these books to prove correctness properties of
 several execution units, and to develop other tools such as an equivalence
 checker, a linter, etc.</p>
 
+<p><b style="color: #ff0000;">Warning:</b> you are welcome to use these books,
+but you should expect them to be much less stable than ordinary ACL2 books; we
+are actively using them and often need to extend them.</p>
+
 
 <h3>Prerequisites</h3>
-
-<p><b style="color: #ff0000;">Warning:</b> We expect these books to be much
-less stable than ordinary ACL2 books because we are actively using them and
-often need to extend them.</p>
 
 <dl>
 
@@ -120,34 +118,33 @@ use <a href="ccl-config.lsp">ccl-config.lsp</a> to do some extra configuration
 that increases the stack sizes and tunes the garbage collector for better
 performance.</dd>
 
-<dd>We configure our <tt>PATH</tt> so that we can launch CCL by
+<dd>We configure our <tt>PATH</tt> so that we can run CCL by
 typing <tt>ccl</tt>.</dd>
 
 
 <dt>ACL2(h) Configuration</dt>
 
-<dd>You will need to
-build <a href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2</a> with Hons
-enabled.  The recommended way to build is,  with:</dd>
+<dd>Some of our books require an ACL2 with Hons enabled.  We build ACL2(h) like
+this:</dd>
 
 <dd><pre>
-$ # rebuild ccl using ccl-config.lsp
+$ # rebuild ccl using ccl-config.lsp (see above)
 $ cd [...]/acl2/
 $ make LISP=ccl ACL2_HONS=h ACL2_SIZE=3000000
 </pre></dd>
 
-<dd>Using a large <tt>ACL2_SIZE</tt> can help avoid performance problems due to
-filling up the ACL2 package with too many symbols.</dd>
-
-<dd>We configure our <tt>PATH</tt> so that we can launch ACL2(h) by
+<dd>We configure our <tt>PATH</tt> so that we can run ACL2(h) by
 typing <tt>acl2</tt>.</dd>
 
 
 <dt>cert.pl Configuration</dt>
 
-<dd>We generally use <tt>cert.pl</tt> to certify books.  This script is located
-in the <tt>acl2/books</tt> directory.  We recommend that you configure
-your <tt>PATH</tt> so you can invoke it by just typing <tt>cert.pl</tt>.</dd>
+<dd>We generally
+use <a href='http://fv.centtech.com/acl2/latest/doc/?topic=ACL2____CERT.PL'>cert.pl</a>
+to certify books.  This script is located in the <tt>acl2/books</tt> directory.</dd>
+
+<dd>We configure our <tt>PATH</tt> so that we can run cert.pl by typing
+<tt>cert.pl</tt>.</dd>
 
 <dt>(Optional) GTKWave Configuration</dt>
 
@@ -160,22 +157,11 @@ debugging waveforms.  Other VCD file viewers may also work.</dd>
 typing <tt>gtkwave</tt>.</dd>
 
 
-<dt>(Optional) Glucose Configuration</dt>
+<dt>(Optional) Sat Solver Configuration</dt>
 
-<dd>We often use the <a href="http://www.lri.fr/~simon/?page=glucose">Glucose</a>
-Sat Solver.</dd>
-
-<dd>We configure out <tt>PATH</tt> so that we can run Glucose (sometimes called
-<tt>glucose.sh</tt>) by typing <tt>glucose</tt>.</dd>
-
-
-<dt>(Optional) Lingeling Configuration</dt>
-
-<dd>We sometimes use the <a href="http://fmv.jku.at/lingeling/">Lingeling</a>
-Sat Solver.</dd>
-
-<dd>We configure our path so that we can run the Lingeling executable by
-typing <tt>lingeling</tt>.</dd>
+<dd>We often use various SAT solvers in conjunction with GL.  See
+<a href='http://fv.centtech.com/acl2/latest/doc/?topic=SATLINK____SAT-SOLVER-OPTIONS'>SAT-SOLVER-OPTIONS</a>
+for details about installing a suitable SAT solvers.</dd>
 
 </dl>
 
@@ -183,18 +169,17 @@ typing <tt>lingeling</tt>.</dd>
 <h3>Building the Books</h3>
 
 <p>Once you have the above prerequisites, you will be ready to certify the ACL2
-books.  The preferred command to do this is:</p>
+books.  We prefer to do this via:</p>
 
 <pre>
-$ # get ccl, reconfigure it, build acl2, set up your path as explained above.
+$ # install prerequisites as explained above
 $ cd [...]/acl2/books/
-$ make USE_QUICKLISP=1 -j 4    # -j 4 for a quad-core processor
+$ make USE_QUICKLISP=1 -j 4 centaur   # -j 4 for a quad-core processor
 </pre>
 
 <p>The USE_QUICKLISP=1 instructs <tt>make</tt> to download and install
-<a href="http://www.quicklisp.org">Quicklisp</a>, which is sort of a Common
-Lisp equivalent to CPAN for Perl, RubyGems for Ruby, etc.  This is necessary
-for certain books.</p>
+<a href='http://fv.centtech.com/acl2/latest/doc/?topic=ACL2____QUICKLISP'>Quicklisp</a>,
+which is necessary for certain books.</p>
 
 <p>Depending on your hardware this may take ten minutes up to hours.  For
 reference, it takes about an hour on an 8-core AMD-FX8350 with 32 GB of memory
@@ -203,17 +188,17 @@ running FreeBSD, using -j 8.</p>
 
 <h3>Next Steps</h3>
 
-<p>After building the books with the <tt>make</tt> command above, you should
-obtain an <b>XDOC Manual</b> with documentation for the Centaur books, and also
-has the regular documentation for ACL2 and other Community Books like str,
-osets, ihs, etc.</p>
+<p>The <tt>make</tt> command above should produce an XDOC manual that covers
+the Centaur books, and also has the regular documentation for ACL2 and other
+Community Books like arithmetic, std, etc.</p>
 
 <p>To view the manual, point your web browser
 at <a href="manual/index.html">manual/index.html</a>&mdash;this link will be
-broken until you generate the manual.  (We also keep
-a <a href="http://fv.centtech.com/acl2/latest/doc/">public copy</a> of the
-manual on our web site, but we only update it at each ACL2 release, so it's
-generally best to use a local copy that matches your specific version of the
+broken until you generate the manual.</p>
+
+<p>(We keep a <a href="http://fv.centtech.com/acl2/latest/doc/">public copy</a>
+of the manual on our web site, but we only update it at each ACL2 release, so
+we recommend using a local copy that matches your specific version of the
 books.)</p>
 
 <p>If you are specifically interested in hardware verification, there is also a
@@ -226,17 +211,25 @@ books/centaur/tutorial/intro.lisp
 
 <h3>Contact Information</h3>
 
-<p>If you have questions, comments, or bug reports about these books, please
-email Jared Davis and Sol Swords, <tt>{jared,sswords}@centtech.com</tt>.</p>
-
 <p>Unfortunately we can't offer any serious technical support.  We may be able
 to answer some questions on an informal, "low bandwidth" basis, in our spare
 time.</p>
 
+<p>We ask that you send any technical questions, comments, or bug reports about
+these books to
+the <a href='https://utlists.utexas.edu/sympa/info/acl2-help'>acl2-help</a>
+or <a href='https://groups.google.com/forum/#!forum/acl2-books'>acl2-books</a>
+lists.</p>
+
+<p>If for some reason that is not appropriate, you can send email directly to
+Jared Davis and Sol Swords, <tt>{jared,sswords}@centtech.com</tt>.</p>
+
+
 
 <h3>License Information</h3>
 
-<p>Copyright &copy; 2008-2013 Centaur Technology and others
+<p>Centaur Books<br/>
+Copyright &copy; 2008-2014 Centaur Technology and others
 (see <b style="color: #009000">**</b>)</p>
 
 <dl>

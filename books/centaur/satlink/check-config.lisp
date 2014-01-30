@@ -257,7 +257,7 @@ is producing the expected results.</p>"
 #||
 
 ; I no longer do this here, because
-;   (1) it lets us keep the documentation for this file in centaur/doc.lisp
+;   (1) it lets us keep the documentation for this file in doc/top.lisp
 ;       without requiring glucose, and
 ;   (2) we now have the whole solvers/ directory, with scripts for many
 ;       SAT solvers, and we probably want to check all of them.

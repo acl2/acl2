@@ -25,5 +25,5 @@
 (ld "data-structures/define-u-package.lsp" :dir :system)
 (ld "tools/flag-package.lsp" :dir :system)
 (ld "std/package.lsp" :dir :system)
-(ld "cowles/packages.lsp" :dir :system)
+(ld "cowles/package.lsp" :dir :system)
 (ld "centaur/getopt/package.lsp" :dir :system)

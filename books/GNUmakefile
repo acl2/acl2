@@ -59,8 +59,8 @@
 #   <file-name>   You can ask to certify particular files, for instance,
 #                 "make arithmetic-5/top.cert"
 #
-#   manual        Builds centaur/doc.cert, which produces the combined ACL2
-#                 books+system manual in centaur/manual/index.html.  Note:
+#   manual        Builds doc/top.cert, which produces the combined ACL2
+#                 books+system manual in doc/manual/index.html.  Note:
 #                 this target requires ACL2(h) and USE_QUICKLISP=1.
 #
 #   special       Includes all the books, allowing arbitrary code before and
@@ -162,13 +162,14 @@ $(QUICKLISP_DIR)/quicklisp.lisp:
 	@cd $(QUICKLISP_DIR); curl -O http://beta.quicklisp.org/quicklisp.lisp
 	@ls -l $(QUICKLISP_DIR)/quicklisp.lisp
 
-$(QUICKLISP_DIR)/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lisp \
-                             $(QUICKLISP_DIR)/install.lsp
+$(QUICKLISP_DIR)/inst/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lisp \
+                                  $(QUICKLISP_DIR)/install.lsp
 	@echo "Setting up Quicklisp"
-	@cd $(QUICKLISP_DIR); $(STARTJOB) -c "$(ACL2) < install.lsp &> install.out"
-	@ls -l $(QUICKLISP_DIR)/setup.lisp
+	@cd $(QUICKLISP_DIR); $(STARTJOB) -c \
+           "ACL2_CUSTOMIZATION=NONE $(ACL2) < install.lsp &> install.out"
+	@ls -l $(QUICKLISP_DIR)/inst/setup.lisp
 
-$(QUICKLISP_DIR)/top.cert: $(QUICKLISP_DIR)/setup.lisp \
+$(QUICKLISP_DIR)/top.cert: $(QUICKLISP_DIR)/inst/setup.lisp \
                            $(QUICKLISP_DIR)/cert.acl2 \
                            tools/include-raw.cert
 
@@ -188,8 +189,7 @@ endif # USE_QUICKLISP
 quicklisp_clean:
 	@if [ -d $(QUICKLISP_DIR) ] ; then \
 	  echo "Removing downloaded quicklisp files (if any)" ; \
-	  cd $(QUICKLISP_DIR); rm -rf setup.lisp quicklisp.lisp asdf.lisp \
-          cache dists local-projects tmp install.out quicklisp Makefile-tmp ; \
+	  cd $(QUICKLISP_DIR); rm -rf inst install.out Makefile-tmp ; \
 	fi
 
 clean: quicklisp_clean
@@ -493,7 +493,7 @@ CLEAN_FILES_EXPLICIT := \
    nonstd/workshops/1999/calculus/book/tree.lisp
 
 MORECLEAN_FILES_EXPLICIT := \
-   centaur/manual \
+   doc/manual \
    system/doc/manual
 
 .PHONY: clean_books clean
@@ -790,7 +790,7 @@ BOOKS_SKIP_COMP += workshops/2006/kaufmann-moore/support/rhs1-iff.$(ACL2_COMP_EX
 # There seems to be a problem with files that use include-raw.  We
 # skip those.
 # Has (include-raw "timer.lsp"):
-BOOKS_SKIP_COMP += memoize/top.$(ACL2_COMP_EXT)
+BOOKS_SKIP_COMP += centaur/memoize/top.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += $(patsubst %-raw.lsp, %.$(ACL2_COMP_EXT), $(shell find . -name '*-raw.lsp' -print))
 
 # Has readtime conditionals #+ccl and #-ccl ("not supported for this
@@ -915,11 +915,11 @@ all: $(OK_CERTS)
 # on a first pass through the Makefile without USE_QUICKLISP being
 # set.
 .PHONY: everything
-# Note: We add centaur/doc.cert explicitly, even though that might not
-# be necessary, because at one point centaur/doc.cert was not
+# Note: We add doc/top.cert explicitly, even though that might not
+# be necessary, because at one point doc/top.cert was not
 # otherwise made (something related to glucose).
 everything:
-	$(MAKE) all USE_QUICKLISP=1 $(ADDED_BOOKS) centaur/doc.cert
+	$(MAKE) all USE_QUICKLISP=1 $(ADDED_BOOKS) doc/top.cert
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
@@ -993,9 +993,6 @@ ihs: $(filter ihs/%, $(OK_CERTS))
 
 .PHONY: make-event
 make-event: $(filter make-event/%, $(OK_CERTS))
-
-.PHONY: memoize
-memoize: $(filter memoize/%, $(OK_CERTS))
 
 .PHONY: meta
 meta: $(filter meta/%, $(OK_CERTS))
@@ -1229,8 +1226,8 @@ special: $(BOOKS_SPECIAL_OUT)
 
 # See :DOC xdoc for more information.
 
-# The xdoc combined manual is built in directory centaur/manual/, top
-# page index.html, as a byproduct of building centaur/doc.cert with
+# The xdoc combined manual is built in directory doc/manual/, top
+# page index.html, as a byproduct of building doc/top.cert with
 # ACL2(h).  The following target builds the combined manual, but you
 # may wish to issue the command below directly, so that the -j option
 # is passed to the call of make.  Don't forget to include ACL2=acl2h,
@@ -1239,29 +1236,29 @@ special: $(BOOKS_SPECIAL_OUT)
 # This has been tested using CCL on Linux, but may work for other
 # OS/Lisp combinations.  Note that ACL2(h) is required for that build
 # of the xdoc manual, because it is required for some of the books
-# included in centaur/doc.lisp.
+# included in doc/top.lisp.
 
 # BUT NOTE: Here's a simple command for building both the combined
 # manual and the ACL2-only manual.  Replace "my-acl2h" with your own
 # ACL2(h) executable, and replace -j as appropriate.
 
-# make -j 8 USE_QUICKLISP=1 ACL2=my-acl2h centaur/doc.cert system/doc/acl2-manual.cert
+# make -j 8 USE_QUICKLISP=1 ACL2=my-acl2h doc/top.cert system/doc/acl2-manual.cert
 
 # WARNING: Do not make this target with other targets if using a value
 # for -j that is greater than 1.  Otherwise, overlapping parallel
 # processes might attempt to make the same target.
 manual:
-	$(MAKE) USE_QUICKLISP=1 centaur/doc.cert
+	$(MAKE) USE_QUICKLISP=1 doc/top.cert
 
 # In order to read the acl2+books combined manual in the Emacs-based
 # ACL2-Doc browser (see :DOC acl2-doc), the file
 # system/doc/rendered-doc-combined.lsp is required.  That requires (or
-# causes) centaur/doc.cert to be built, as above, which can be
+# causes) doc/top.cert to be built, as above, which can be
 # time-consuming.  We do not currently include
 # system/doc/rendered-doc-combined.lsp with releases, though we do
 # make occasional updates for "bleeding-edge" (svn) users at
 # http://www.cs.utexas.edu/users/moore/acl2/manuals/.  To build this
-# text-based file after building centaur/doc.cert as above, issue the
+# text-based file after building doc/top.cert as above, issue the
 # following command in this directory, where acl2h is an ACL2(h)
 # executable.
 

@@ -20,7 +20,7 @@
 
 (in-package "ACL2")
 (include-book "tools/include-raw" :dir :system)
-; (depends-on "setup.lisp")
+; (depends-on "inst/setup.lisp")
 
 (defsection quicklisp
   :parents (acl2::interfacing-tools)
@@ -148,6 +148,6 @@ don't know, but it never *!@$! works if you try to compile it.</p>
 ***********************************************************************~%~
 ~%"))
 
-(include-raw "setup.lisp"
+(include-raw "inst/setup.lisp"
              :do-not-compile t
              :host-readtable t)

@@ -542,9 +542,11 @@
         state))
     state))
 
-(defun save-fancy (all-topics dir state)
+(defun save-fancy (all-topics dir zip-p state)
   (b* ((state (prepare-fancy-dir dir state))
        (state (save-json-files all-topics dir state))
-       (state (run-fancy-zip dir state)))
+       (state (if zip-p
+                  (run-fancy-zip dir state)
+                state)))
     state))
 

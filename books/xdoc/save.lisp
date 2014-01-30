@@ -69,6 +69,7 @@
                     (type      ':fancy)
                     (import    't)
                     (redef-okp 'nil)
+                    (zip-p     't)
                     ;; Classic options (ignored for type :fancy)
                     (index-pkg 'acl2::foo)
                     (expand-level '1))
@@ -97,7 +98,7 @@
            ((mv & & state) (assign acl2::writes-okp t))
            (state
             ,(if (eq type :fancy)
-                 `(save-fancy all-xdoc-topics ,dir state)
+                 `(save-fancy all-xdoc-topics ,dir ',zip-p state)
                `(save-topics all-xdoc-topics ,dir ',index-pkg ',expand-level state))))
         (value '(value-triple :invisible))))))
 

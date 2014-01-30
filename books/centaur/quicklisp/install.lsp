@@ -1,5 +1,5 @@
 ; Centaur Books -- Quicklisp installer
-; Copyright (C) 2008-2012 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,8 +21,13 @@
 ; This just does the initial quicklisp install.  It should get run when the
 ; Makefile tries to build setup.lisp
 
+(make-event
+ (let ((cbd (cbd)))
+   `(defconst *cbd* ',cbd)))
+
 :q
 (in-package "CL-USER")
 (load "quicklisp.lisp")
-(quicklisp-quickstart:install :path ".")
+(quicklisp-quickstart:install :path (concatenate 'string acl2::*cbd*
+                                                 "inst"))
 (quit)

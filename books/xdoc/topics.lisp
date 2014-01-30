@@ -64,16 +64,16 @@ See @(see acl2::acl2-doc) for details.</li>
 <p>You can also build your own copy of the manual as follows.
 (This has been tested using CCL on Linux and Mac OS X, but may work for other
 OS/Lisp combinations.)  To do this, you first need to build ACL2(h), then
-certify the @('centaur/doc') book, e.g., as follows:</p>
+certify the @('doc/top') book, e.g., as follows:</p>
 
 @({
   cd acl2-sources/books
-  make USE_QUICKLISP=1 ACL2=my-acl2h centaur/doc.cert
+  make USE_QUICKLISP=1 ACL2=my-acl2h doc/top.cert
 })
 
 <p>After this is built, the web-based manual should be available at:</p>
 
-@({acl2-sources/books/centaur/manual/index.html})
+@({acl2-sources/books/doc/manual/index.html})
 
 <p>See also @(see acl2::acl2-doc) for details about how to build your own
 Emacs-based manual.</p>
@@ -701,7 +701,7 @@ sites, then you may wish to read on.</p>
 
 <p>The basic reason that the default manuals are slow is that they work by
 simply loading the data for <b>every</b> topic, at startup.  As of October
-2013, this comes to around 25 MB of data for the basic @('centaur/doc.lisp')
+2013, this comes to around 25 MB of data for the basic @('doc/top.lisp')
 manual.  It's no big deal to load 25 MB from a local hard drive or a fast
 intranet connection, but it can be quite slow over the internet.</p>
 

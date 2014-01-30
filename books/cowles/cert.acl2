@@ -1,4 +1,5 @@
 ; Written by John Cowles
 ; Copyright/License: See the LICENSE file in this directory.
 
-(ld "packages.lsp")
+(in-package "ACL2")
+(include-book "portcullis")

@@ -28,9 +28,9 @@
 
 (in-package "ACL2")
 
-; [Jared] switching this to LD the packages from cowles instead of
+; [Jared] switching this to get the packages from cowles instead of
 ; redefining them, to make them easier to update.
-(ld "cowles/packages.lsp" :dir :system)
+(include-book "cowles/portcullis" :dir :system)
 
 ; cert-flags: ? nil
 (certify-book "aof" ? nil)

@@ -1,7 +1,7 @@
 (ubt! 1) ; optional
 (set-ld-skip-proofsp t state)
 
-(ld "centaur/doc.acl2" :dir :system)
+(ld "doc/top.acl2" :dir :system)
 (ld "centaur/vl/portcullis.lisp" :dir :system) ; for defining vl::case
 (ld "centaur/aignet/portcullis.acl2" :dir :system) ; needed for "SATLINK" pkg
 (ld "projects/milawa/doc.acl2" :dir :system) ; for "MILAWA" package
