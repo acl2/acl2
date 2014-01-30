@@ -1,0 +1,9 @@
+#summary A Standard Methodology
+
+= Introduction =
+
+DISCLAIMER: THIS IS A WORK IN PROGRESS AND IS NOT TO BE USED AS A REFERENCE.
+
+I'm envisioning that we might come up with a supplemental methodology to "the method", which we might call "the standard method" (or "the standard methodology" to avoid ambiguity).  That would include following "the method", using std libraries, using GL for easy proofs about finite objects, using defrule instead of defthm, avoiding :use hints, following a more strict use of certain heuristics, etc.  Obviously "the standard methodology" wouldn't be used by every ACL2 user.  Also, I'm quite certain that many of these ideas have been discussed in previous ACL2 literature -- so I'm not claiming originality, but I am claiming that we should assemble these things into something modern (i.e., not the NQThm manual), succinct, and editable.
+
+Maybe starting with a workshop paper is a good idea.  Feel free to edit this topic as you like.  I'm sure I'll talk offline about it with some of you.
