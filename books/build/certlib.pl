@@ -774,6 +774,7 @@ sub certlib_set_base_path {
 my $add_dir_event = 'add-include-book-dir';
 my $include_book_event = 'include-book';
 my $depends_on_event = 'depends-on';
+my $depends_rec_event = 'depends-rec';
 my $loads_event = 'loads';
 my $cert_param_event = 'cert_param';
 my $ld_event = 'ld';
@@ -844,6 +845,19 @@ sub get_depends_on {
     if (@res) {
 	debug_print_event($base, "depends_on", \@res);
 	push(@$events, [$depends_on_event, $res[0], $res[1]]);
+	return 1;
+    }
+    return 0;
+}
+
+sub get_depends_rec {
+    my ($base,$the_line,$events) = @_;
+
+    my $regexp = "\\(depends-rec[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
+    my @res = $the_line =~ m/$regexp/i;
+    if (@res) {
+	debug_print_event($base, "depends_rec", \@res);
+	push(@$events, [$depends_rec_event, $res[0], $res[1]]);
 	return 1;
     }
     return 0;
@@ -998,6 +1012,7 @@ sub scan_src {
 	    $done = get_include_book($fname, $the_line, \@events);
 	    $done = $done || get_ld($fname, $the_line, \@events);
 	    $done = $done || get_depends_on($fname, $the_line, \@events);
+	    $done = $done || get_depends_rec($fname, $the_line, \@events);
 	    $done = $done || get_loads($fname, $the_line, \@events);
 	    $done = $done || get_add_dir($fname, $the_line, \@events);
 	    $done = $done || get_cert_param($fname, $the_line, \@events);
@@ -1120,6 +1135,7 @@ sub src_deps {
 	$local_dirs,        # :dir name table
 	$certdeps,          # certificate dependency list (accumulator)
 	$srcdeps,           # source file dependency list (accumulator)
+	$recdeps,           # recursive include dependency list (accumulator)
 	$otherdeps,         # other file dependency list (accumulator)
 	$certparams,        # cert param hash (accumulator)
 	$tscache,           # timestamp cache
@@ -1189,8 +1205,17 @@ sub src_deps {
                       . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
 	    }
 	    $fullname && push(@$otherdeps, $fullname);
-	} elsif ($type eq $depends_on_event) {
-	    # skip it
+	} elsif ($type eq $depends_rec_event) {
+	    my $depname = $event->[1];
+	    my $dir = $event->[2];
+	    my $fullname = expand_dirname_cmd($depname, $fname, $dir,
+					      $local_dirs,
+					      "depends-rec", ".cert");
+	    if (! $fullname) {
+		print "Bad path in (depends-rec \"$depname\""
+                      . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
+	    }
+	    $fullname && push(@$recdeps, $fullname);
 	} elsif ($type eq $loads_event) {
 	    my $srcname = $event->[1];
 	    my $dir = $event->[2];
@@ -1201,6 +1226,7 @@ sub src_deps {
 			 $local_dirs,
 			 $certdeps,
 			 $srcdeps,
+			 $recdeps,
 			 $otherdeps,
 			 $certparams,
 			 $tscache,
@@ -1225,6 +1251,7 @@ sub src_deps {
 			     $local_dirs,
 			     $certdeps,
 			     $srcdeps,
+			     $recdeps,
 			     $otherdeps,
 			     $certparams,
 			     $tscache,
@@ -1282,6 +1309,7 @@ sub find_deps {
     my $bookdeps = [];
     my $portdeps = [];
     my $srcdeps = [];
+    my $recdeps = [];
     my $otherdeps = [];
     my $local_dirs = {};
 
@@ -1312,6 +1340,7 @@ sub find_deps {
 		     $local_dirs, 
 		     $portdeps,
 		     $srcdeps,
+		     $recdeps,
 		     $otherdeps,
 		     $certparams,
 		     $tscache,
@@ -1322,7 +1351,7 @@ sub find_deps {
 
     # Scan the lisp file for include-books.
     src_deps($lispfile, $cache, $local_dirs,
-	     $bookdeps, $srcdeps, $otherdeps, $certparams,
+	     $bookdeps, $srcdeps, $recdeps, $otherdeps, $certparams,
 	     $tscache, !$certifiable, {}, $parent);
 
     if ($debugging) {
@@ -1332,6 +1361,8 @@ sub find_deps {
 	print_lst($portdeps);
 	print "sources:\n";
 	print_lst($srcdeps);
+	print "rec:\n";
+	print_lst($recdeps);
 	print "others:\n";
 	print_lst($otherdeps);
     }
@@ -1369,7 +1400,7 @@ sub find_deps {
 	}
     }
 
-    return ($bookdeps, $portdeps, $srcdeps, $otherdeps, $image, $certparams);
+    return ($bookdeps, $portdeps, $srcdeps, $recdeps, $otherdeps, $image, $certparams);
 
 }
 
@@ -1409,6 +1440,7 @@ sub deps_dfs {
     foreach my $dep (@$certdeps) {
 	deps_dfs($dep, $depmap, $visited, $sources, $certs, $others);
     }
+
 }
 
 # Depth-first search through the dependency map in order to propagate requirements (e.g. hons-only)
@@ -1521,7 +1553,7 @@ sub add_deps {
 	return;
     }
 
-    my ($bookdeps, $portdeps, $srcdeps, $otherdeps, $image, $certparams)
+    my ($bookdeps, $portdeps, $srcdeps, $recdeps, $otherdeps, $image, $certparams)
 	= find_deps($lispfile, $cache, $tscache, $parent);
 
 
@@ -1568,10 +1600,23 @@ sub add_deps {
 
 
     # Run the recursive add_deps on each dependency.
-    foreach my $dep  (@$bookdeps, @$portdeps) {
+    foreach my $dep  (@$bookdeps, @$portdeps, @$recdeps) {
 	add_deps($dep, $cache, $depmap, $sources, $others, $tscache, $target);
     }
 
+    # Collect the recursive dependencies of @$recdeps and add them to srcdeps.
+    if (@$recdeps) {
+	my $recsrcs = [];
+	my $reccerts = [];
+	my $recothers = [];
+	my $visited = {};
+	foreach my $dep (@$recdeps) {
+	    deps_dfs($dep, $depmap, $visited, $recsrcs, $reccerts, $recothers);
+	}
+
+	push(@{$depmap->{$target}->[2]}, @$recsrcs);
+    }
+	
 }
 
 sub read_targets {

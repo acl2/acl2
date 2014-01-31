@@ -29,6 +29,7 @@
 ; cert_param (acl2x)
 ; cert_param (acl2xskip)
 
+; (depends-rec "top")
 (acl2::acl2x-replace (include-book
                       "top")
                      (value-triple :invisible)
