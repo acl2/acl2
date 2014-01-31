@@ -6948,38 +6948,57 @@
 ;     the wormhole.  If the test-form returns (value nil), the wormhole
 ;     entry/exit are entirely silent.
 
-  `(wormhole 'brr
-             ,entry-lambda
-             ,input-alist
-             `(pprogn (restore-brr-globals state)
-                      (er-progn
-                       (set-ld-keyword-aliases! ,,aliases)
-                       (set-ld-prompt 'brr-prompt state)
+  (let ((aliases `(append ,aliases
+                          '((:exit
+                             0 (lambda nil
+                                 (prog2$ (cw "The keyword command :EXIT is ~
+                                              disabled inside BRR.  Exit BRR ~
+                                              with :ok or use :p! to pop or ~
+                                              :a! to abort; or exit ACL2 ~
+                                              entirely with ~x0.~%"
+                                             '(exit))
+                                         (value :invisible))))
+                            (:quit
+                             0 (lambda nil
+                                 (prog2$ (cw "The keyword command :QUIT is ~
+                                              disabled inside BRR.  Quit BRR ~
+                                              with :ok or use :p! to pop or ~
+                                              :a! to abort; or quit ACL2 ~
+                                              entirely with ~x0.~%"
+                                             '(quit))
+                                         (value :invisible))))))))
+    `(wormhole 'brr
+               ,entry-lambda
+               ,input-alist
+               `(pprogn (restore-brr-globals state)
+                        (er-progn
+                         (set-ld-keyword-aliases! ,,aliases)
+                         (set-ld-prompt 'brr-prompt state)
 
 ; The above reference to the function symbol brr-prompt is a little startling
 ; because we haven't defined it yet.  But we will define it before we use this
 ; macro.
 
 
-                       (mv-let (erp val state)
-                               ,,test-form
-                               (cond
-                                (erp (exit-brr-wormhole state))
-                                (val
-                                 (er-progn (set-ld-error-action :continue state)
+                         (mv-let (erp val state)
+                                 ,,test-form
+                                 (cond
+                                  (erp (exit-brr-wormhole state))
+                                  (val
+                                   (er-progn (set-ld-error-action :continue state)
 ; The aliases had better ensure that every exit  is via exit-brr-wormhole.
-                                           (value :invisible)))
-                                (t (exit-brr-wormhole state))))))
-             :ld-prompt  nil
-             :ld-missing-input-ok nil
-             :ld-pre-eval-filter :all
-             :ld-pre-eval-print  nil
-             :ld-post-eval-print :command-conventions
-             :ld-evisc-tuple nil
-             :ld-error-triples  t
-             :ld-error-action :error
-             :ld-query-control-alist nil
-             :ld-verbose nil))
+                                             (value :invisible)))
+                                  (t (exit-brr-wormhole state))))))
+               :ld-prompt  nil
+               :ld-missing-input-ok nil
+               :ld-pre-eval-filter :all
+               :ld-pre-eval-print  nil
+               :ld-post-eval-print :command-conventions
+               :ld-evisc-tuple nil
+               :ld-error-triples  t
+               :ld-error-action :error
+               :ld-query-control-alist nil
+               :ld-verbose nil)))
 
 (defun initialize-brr-stack (state)
 

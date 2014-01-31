@@ -7143,12 +7143,30 @@
                                   known-stobjs st creator flet-alist ctx wrld
                                   state-vars))
              (t
-              (trans-er ctx
-                        "Illegal with-local-stobj form, ~x0.  The first ~
-                         argument must be the name of a stobj and the third, ~
-                         if supplied, must be its creator function.  See :DOC ~
-                         with-local-stobj."
-                        x)))))
+              (let ((actual-creator (get-stobj-creator st wrld)))
+                (cond
+                 (actual-creator ; then st is a stobj
+                  (trans-er ctx
+                            "Illegal with-local-stobj form, ~x0.  The creator ~
+                             function for stobj ~x1 is ~x2, but ~@3.  See ~
+                             :DOC with-local-stobj."
+                            x st actual-creator
+                            (cond ((cdddr x) ; wrong creator was supplied
+                                   (msg "the function ~x0 was supplied instead"
+                                        creator))
+                                  (t
+                                   (msg "the creator was computed to be ~x0, ~
+                                         so you will need to supply the ~
+                                         creator explicitly for your call of ~
+                                         ~x1"
+                                        creator
+                                        'with-local-stobj)))))
+                 (t ; st is not a stobj
+                  (trans-er ctx
+                            "Illegal with-local-stobj form, ~x0.  The first ~
+                             argument must be the name of a stobj, but ~x1 is ~
+                             not.  See :DOC with-local-stobj."
+                            x st))))))))
    ((and (assoc-eq (car x) *ttag-fns-and-macros*)
          (not (ttag wrld))
          (not (global-val 'boot-strap-flg wrld)))
