@@ -142,7 +142,7 @@ STARTJOB ?= $(SHELL)
 # an empty $(ACL2) the same as an undefined ACL2.
 ifeq ($(ACL2),)
 ACL2 := acl2
-endif # ifndef ACL2
+endif # ifeq ($(ACL2),)
 
 .SUFFIXES:
 .SUFFIXES: .cert .lisp
@@ -199,8 +199,13 @@ quicklisp_clean:
 	    inst/quicklisp inst/setup.lisp inst/tmp install.out Makefile-tmp ; \
 	fi
 
+# The following hack was useful briefly in late January, 2014, when
+# there were issues with quicklisp that caused us not to want to clean
+# quicklisp files.  It's probably fine now to delete these three
+# lines.
+ifndef ACL2_SAVE_QUICKLISP
 clean: quicklisp_clean
-
+endif # ifndef ACL2_SAVE_QUICKLISP
 
 # Ensure that the following variable is simply expanded.
 ACL2_CUSTOM_TARGETS :=
