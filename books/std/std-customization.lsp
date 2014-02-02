@@ -1,4 +1,4 @@
-; Jared's ACL2 Customization File
+; ACL2 Customization File for The Standard Approach to Using ACL2
 ; Copyright (C) 2009-2013 Centaur Technology
 ;
 ; Contact:
@@ -17,54 +17,28 @@
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: David Rager <ragerdl@deftm.com>
 
 
 
-; These are Jared's preferred settings for using ACL2.  He has put them into
-; into this centaur/jared-customization.lsp file, instead of leaving them in
-; his home directory, to make it easy to keep his settings shared across any
-; machines that he wants to use (e.g., at work and at home).
+; The easiest way to use this file is to just add an acl2-customization.lsp
+; file to your home directory that says:
 ;
-; As a user that doesn't equal Jared, you probably want to use
-; books/std/std-customization.lsp.  See that file more more instrutions.
-;
-; If you decide you still want to use this, the easiest option is to just add
-; an acl2-customization.lsp file to your home directory that says:
-;
-;   (ld "centaur/jared-customization.lsp" :dir :system)
+;   (ld "std/std-customization.lsp" :dir :system)
 ;
 ; You can, of course, put whatever additional customization you want in your
 ; own customization file, then.
-
 
 
 ; There's no in-package here, because it could screw up packages loaded by
 ; custom acl2-customization.lsp files.  Instead we use the #!ACL2 syntax to try
 ; to make sure this file can be read from any package.
 
-; Rager is leaving it to Jared to decide whether Jared wants to uncomment the
-; follownig ld and remove the redundant events, but he hopes that Jared will
-; give him the approval to do so.  This would help avoid forking.
-
-; (ld "std/std-customization.lsp" :dir :system)
-
 #!ACL2
-(set-gag-mode :goals)
-
-#!ACL2
-(set-splitter-output t)
+(set-deferred-ttag-notes t state)
 
 #!ACL2
 (set-inhibit-output-lst '(proof-tree))
-
-#!ACL2
-(assign checkpoint-processors
-        ;; Some users may not like this setting.  I usually like destructor
-        ;; elimination pretty well, so adjust checkpoint printing so that
-        ;; checkpoints are shown AFTER destructor elimination, instead of
-        ;; before it.
-        (remove 'eliminate-destructors-clause
-                (@ checkpoint-processors)))
 
 
 #!ACL2
@@ -95,6 +69,29 @@
         (brr t)
         (monitor '(:rewrite ,rule) ''(:eval :go t))))
 
+    (defun explain-fn (state)
+      (declare (xargs :stobjs (state)
+                      :mode :program))
+      (mv-let (clause ttree)
+        (clausify-type-alist (get-brr-local 'type-alist state)
+                             (list (cddr (get-brr-local 'failure-reason state)))
+                             (ens state) (w state) nil nil)
+        (declare (ignore ttree))
+        (prettyify-clause clause
+                          nil
+                          (w state))))
+
+    (defmacro explain ()
+      `(prog2$ (cw "Printing target with hyps derived from type-alist~%")
+               (explain-fn state)))
+
+    (defmacro why-explain (rule)
+      `(er-progn
+        (brr t)
+        (monitor '(:rewrite ,rule) ''(:eval
+                                      :ok-if (brr@ :wonp)
+                                      (explain)))))
+
     (defmacro with-redef (&rest forms)
       ;; A handy macro you can use to temporarily enable redefinition, but then
       ;; keep it disabled for the rest of the session
@@ -104,90 +101,6 @@
           (set-ld-redefinition-action '(:doit . :overwrite) state)
           (progn . ,forms)
           (set-ld-redefinition-action nil state))))))
-
-
-
-; Untranslate support to convert cadaddrpillars into more readable nests of
-; FIRST, SECOND, THIRD, FOURTH, etc.
-
-#!ACL2
-(with-output
-  :off (summary event)
-  (progn
-    (include-book "misc/untranslate-patterns" :dir :system)
-    (add-untranslate-pattern (car ?x)
-                             (first ?x))
-
-    (add-untranslate-pattern (cdr ?x)
-                             (rest ?x))
-
-    (add-untranslate-pattern (car (car ?x))
-                             (first (first ?x)))
-
-    (add-untranslate-pattern (car (cdr ?x))
-                             (second ?x))
-
-    (add-untranslate-pattern (car (car (cdr ?x)))
-                             (first (second ?x)))
-
-    (add-untranslate-pattern (car (cdr (car (cdr ?x))))
-                             (second (second ?x)))
-
-    (add-untranslate-pattern (car (cdr (car ?x)))
-                             (second (first ?x)))
-
-    (add-untranslate-pattern (car (cdr (cdr ?x)))
-                             (third ?x))
-
-    (add-untranslate-pattern (car (car (cdr (cdr ?x))))
-                             (first (third ?x)))
-
-    (add-untranslate-pattern (car (cdr (car (cdr (cdr ?x)))))
-                             (second (third ?x)))
-
-    (add-untranslate-pattern (car (cdr (cdr (car (cdr (cdr ?x))))))
-                             (second (third ?x)))
-
-    (add-untranslate-pattern (car (cdr (cdr (car (cdr ?x)))))
-                             (third (second ?x)))
-
-    (add-untranslate-pattern (car (cdr (cdr (car ?x))))
-                             (third (first ?x)))
-
-    (add-untranslate-pattern (car (cdr (cdr (cdr ?x))))
-                             (fourth ?x))
-
-    (add-untranslate-pattern (car (car (cdr (cdr (cdr ?x)))))
-                             (first (fourth ?x)))
-
-    (add-untranslate-pattern (car (cdr (car (cdr (cdr (cdr ?x))))))
-                             (second (fourth ?x)))
-
-    (add-untranslate-pattern (car (cdr (cdr (car (cdr (cdr (cdr ?x)))))))
-                             (third (fourth ?x)))
-
-    (add-untranslate-pattern (car (cdr (cdr (cdr (car (cdr (cdr (cdr ?x))))))))
-                             (fourth (fourth ?x)))
-
-    (add-untranslate-pattern (car (cdr (cdr (cdr (car (cdr (cdr ?x)))))))
-                             (fourth (third ?x)))
-
-    (add-untranslate-pattern (car (cdr (cdr (cdr (car (cdr ?x))))))
-                             (fourth (second ?x)))
-
-    (add-untranslate-pattern (car (cdr (cdr (cdr (car ?x)))))
-                             (fourth (first ?x)))
-
-    (add-untranslate-pattern (first (cdr ?x))
-                             (second ?x))
-
-    (add-untranslate-pattern (first (cdr (cdr ?x)))
-                             (third ?x))
-
-    (add-untranslate-pattern (first (cdr (cdr (cdr ?x))))
-                             (fourth ?x))
-
-    (optimize-untranslate-patterns)))
 
 
 
@@ -217,7 +130,7 @@
 ;
 ;   (assign :suppress-preload-xdoc t)
 ;
-; Before loading jared-customization.lsp.
+; Before loading std-customization.lsp.
 
 #!ACL2
 (with-output
