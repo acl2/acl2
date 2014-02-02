@@ -20,7 +20,6 @@
 
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
-(include-book "misc/definline" :dir :system)
 (include-book "tools/bstar" :dir :system)
 
 (defxdoc support

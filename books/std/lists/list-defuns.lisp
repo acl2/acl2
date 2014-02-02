@@ -105,6 +105,10 @@
                                            (cons (car x) y))
                 y)))
 
+(defund rcons (a x)
+  (declare (xargs :guard t))
+  (append-without-guard x (list a)))
+
 (defund rev (x)
   (declare (xargs :guard t))
   (mbe :logic (if (consp x)

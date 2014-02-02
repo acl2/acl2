@@ -25,6 +25,8 @@
 (local (include-book "arithmetic"))
 (local (include-book "std/lists/revappend" :dir :system))
 
+(include-book "misc/definline" :dir :system)  ;; bozo
+
 (defsection strtok-aux
   :parents (strtok)
   :short "Fast implementation of @(see strtok)."
@@ -79,7 +81,7 @@
 
 
 (defsection strtok
-  :parents (str)
+  :parents (std/strings)
   :short "Tokenize a string with character delimiters."
 
   :long "<p>@(call strtok) splits the string @('x') into a list of substrings,

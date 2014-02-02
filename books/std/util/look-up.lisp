@@ -20,7 +20,6 @@
 
 (in-package "STD")
 (include-book "support")
-(include-book "tools/bstar" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 
 (defsection var-is-stobj-p

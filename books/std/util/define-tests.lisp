@@ -19,8 +19,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STD")
-
 (include-book "define")
+(include-book "misc/assert" :dir :system)
 
 (define foo ()
   :returns (ans integerp)

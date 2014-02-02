@@ -170,6 +170,7 @@ $(QUICKLISP_DIR)/quicklisp.lisp:
 $(QUICKLISP_DIR)/inst/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lisp \
                                   $(QUICKLISP_DIR)/install.lsp
 	@echo "Setting up Quicklisp"
+	@rm -rf $(QUICKLISP_DIR)/inst/*
 	@cd $(QUICKLISP_DIR); $(STARTJOB) -c \
            "ACL2_CUSTOMIZATION=NONE $(ACL2) < install.lsp &> install.out"
 	@ls -l $(QUICKLISP_DIR)/inst/setup.lisp

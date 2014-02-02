@@ -6,6 +6,7 @@
 (include-book "litp")
 (include-book "std/util/defmvtypes" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "misc/definline" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))

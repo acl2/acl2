@@ -27,22 +27,20 @@
 (local (include-book "std/lists/equiv" :dir :system))
 
 (defsection cat
-  :parents (concatenation)
-  :short "Concatenate strings."
+  :parents (concatenation concatenate)
+  :short "Alternative to @(see concatenate) that has a shorter name and may in
+some cases be more efficient."
 
-  :long "<p>@('(str::cat x y z ...)') is like @('(concatenate 'string x y z
-...)'), but is less to type.</p>
+  :long "<p>Concatenating strings is a fundamentally slow operation in Common
+Lisp; see @(see concatenation).</p>
 
-<p>  If that's your goal, you might instead consider using the approach
-outlined in @(see revappend-chars).</p>
+<p>In some Lisps, using @('(concatenate 'string ...)') can be even worse than
+the necessary cost of creating and initializing a new array.  This is because
+the @(see concatenate) function is quite flexible and can handle many types of
+input (e.g., lists and vectors).  This flexibility can cause some overhead if
+the Lisp does not optimize for the @(''string') case.</p>
 
-<p>In some Lisps, using @('(concatenate 'string ...)') to join strings can be
-even worse than just the cost of creating and initializing a new array.  The
-@(see concatenate) function is quite flexible and can handle many types of
-input, and this flexibility can cause some overhead if the Lisp does not
-optimize for the @(''string') case.</p>
-
-<p>So, if you are willing to accept a trust tag, then you may <b>optionally</b>
+<p>If you are willing to accept a trust tag, then you may <b>optionally</b>
 load the book:</p>
 
 @({
@@ -92,7 +90,7 @@ result may be faster.</p>"
     `(fast-concatenate 'string . ,args)))
 
 
-(defsection append-chars
+(define append-chars ((x :type string) y)
   :parents (concatenation)
   :short "Append a string's characters onto a list."
 
@@ -105,26 +103,34 @@ and appends them onto @('y').</p>
 the overhead of @(see coerce)-ing it into a character list before performing
 the @(see append).  This reduces the overhead from @('2n') conses to @('n')
 conses, where @('n') is the length of @('x').</p>"
+  :inline t
+  (mbe :logic (append (explode x) y)
+       :exec (b* (((the (integer 0 *) xl) (length x))
+                  ((when (eql xl 0))
+                   y)
+                  ((the (integer 0 *) n) (- xl 1)))
+               (append-chars-aux x n y)))
 
-  (defund append-chars-aux (x n y)
-    "Appends the characters from x[0:n] onto y"
-    (declare (type string x)
-             (type (integer 0 *) n)
-             (xargs :guard (< n (length x))))
-    (if (zp n)
-        (cons (char x 0) y)
-      (append-chars-aux x
-                        (the (integer 0 *) (- n 1))
-                        (cons (char x n) y))))
+  :prepwork
+  ((defund append-chars-aux (x n y)
+     "Appends the characters from x[0:n] onto y"
+     (declare (type string x)
+              (type (integer 0 *) n)
+              (xargs :guard (< n (length x))))
+     (if (zp n)
+         (cons (char x 0) y)
+       (append-chars-aux x
+                         (the (integer 0 *) (- n 1))
+                         (cons (char x n) y))))
 
-  (local (defthm lemma
-           (implies (and (not (zp n))
-                         (<= n (len x)))
-                    (equal (append (take (- n 1) x) (cons (nth (- n 1) x) y))
-                           (append (take n x) y)))
-           :hints(("goal"
-                   :in-theory (enable acl2::take-redefinition)
-                   :induct (take n x)))))
+   (local (defthm lemma
+            (implies (and (not (zp n))
+                          (<= n (len x)))
+                     (equal (append (take (- n 1) x) (cons (nth (- n 1) x) y))
+                            (append (take n x) y)))
+            :hints(("goal"
+                    :in-theory (enable acl2::take-redefinition)
+                    :induct (take n x)))))
 
   (defthm append-chars-aux-correct
     (implies (and (stringp x)
@@ -134,29 +140,8 @@ conses, where @('n') is the length of @('x').</p>"
                     (append (take (+ 1 n) (explode x)) y)))
     :hints(("Goal"
             :in-theory (enable append-chars-aux)
-            :induct (append-chars-aux x n y))))
-
-  (local (in-theory (disable append-chars-aux-correct)))
-
-  (local (defthm append-chars-aux-correct-better
-           (implies (and (stringp x)
-                         (natp n)
-                         (< n (length x)))
-                    (equal (append-chars-aux x n y)
-                           (append (take (+ 1 n) (explode x)) y)))
-           :hints(("Goal" :use ((:instance append-chars-aux-correct))))))
-
-  (definlined append-chars (x y)
-    (declare (type string x))
-    (mbe :logic (append (explode x) y)
-         :exec (b* (((the (integer 0 *) xl) (length x))
-                    ((when (eql xl 0))
-                     y)
-                    ((the (integer 0 *) n) (- xl 1)))
-                 (append-chars-aux x n y))))
-
-  (local (in-theory (enable append-chars)))
-
+            :induct (append-chars-aux x n y)))))
+  ///
   (defthm character-listp-of-append-chars
     (equal (character-listp (append-chars x y))
            (character-listp y)))
@@ -169,8 +154,7 @@ conses, where @('n') is the length of @('x').</p>"
 
 
 
-
-(defsection revappend-chars
+(define revappend-chars ((x :type string) y)
   :parents (concatenation)
   :short "Append a string's characters onto a list, in reverse order."
 
@@ -210,43 +194,41 @@ instance, a sequence such as:</p>
 the intermediate strings.  See the performance discussion in @(see str::cat)
 for more details.  Also see @(see rchars-to-string), which is a potentially
 more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
+  :inline t
 
-  (defund revappend-chars-aux (x n xl y)
-    (declare (type string x)
-             (type (integer 0 *) n xl)
-             (xargs :guard (and (<= n xl)
-                                (equal xl (length x)))
-                    :measure (nfix (- (nfix xl) (nfix n)))))
-    (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (eql n xl))
-        y
-      (revappend-chars-aux x
-                           (the (integer 0 *)
-                             (+ 1 (the (integer 0 *) (lnfix n))))
-                           xl
-                           (cons (char x n) y))))
+  (mbe :logic (revappend (explode x) y)
+       :exec (revappend-chars-aux x 0 (length x) y))
 
-  (defthm revappend-chars-aux-correct
-    (implies (and (stringp x)
-                  (natp n)
-                  (natp xl)
-                  (<= n xl)
-                  (equal xl (length x)))
-             (equal (revappend-chars-aux x n xl y)
-                    (revappend (nthcdr n (explode x)) y)))
-    :hints(("Goal"
-            :in-theory (e/d (revappend-chars-aux)
-                            (acl2::revappend-removal))
-            :induct (revappend-chars-aux x n xl y))))
+  :prepwork
+  ((defund revappend-chars-aux (x n xl y)
+     (declare (type string x)
+              (type (integer 0 *) n xl)
+              (xargs :guard (and (<= n xl)
+                                 (equal xl (length x)))
+                     :measure (nfix (- (nfix xl) (nfix n)))))
+     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
+              :exec (eql n xl))
+         y
+       (revappend-chars-aux x
+                            (the (integer 0 *)
+                              (+ 1 (the (integer 0 *) (lnfix n))))
+                            xl
+                            (cons (char x n) y))))
 
-  (definlined revappend-chars (x y)
-    (declare (xargs :guard (stringp x))
-             (type string x))
-    (mbe :logic (revappend (explode x) y)
-         :exec (revappend-chars-aux x 0 (length x) y)))
+   (defthm revappend-chars-aux-correct
+     (implies (and (stringp x)
+                   (natp n)
+                   (natp xl)
+                   (<= n xl)
+                   (equal xl (length x)))
+              (equal (revappend-chars-aux x n xl y)
+                     (revappend (nthcdr n (explode x)) y)))
+     :hints(("Goal"
+             :in-theory (e/d (revappend-chars-aux)
+                             (acl2::revappend-removal))
+             :induct (revappend-chars-aux x n xl y)))))
 
-  (local (in-theory (enable revappend-chars)))
-
+  ///
   (defthm character-listp-of-revappend-chars
     (equal (character-listp (revappend-chars x y))
            (character-listp y)))
@@ -256,7 +238,6 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
   (defcong list-equiv list-equiv (revappend-chars x y) 2)
   (defcong charlisteqv charlisteqv (revappend-chars x y) 2)
   (defcong icharlisteqv icharlisteqv (revappend-chars x y) 2))
-
 
 
 #||
@@ -300,23 +281,18 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
 ||#
 
 
-(defsection prefix-strings
+(define prefix-strings ((prefix stringp)
+                        (x      string-listp))
   :parents (concatenation)
   :short "Concatenates a prefix onto every string in a list of strings."
 
   :long "<p>@(call prefix-strings) produces a new string list by concatenating
 @('prefix') onto every member of @('x').</p>"
-
-  (defund prefix-strings (prefix x)
-    (declare (type string prefix)
-             (xargs :guard (string-listp x)))
-    (if (atom x)
-        nil
-      (cons (cat prefix (car x))
-            (prefix-strings prefix (cdr x)))))
-
-  (local (in-theory (enable prefix-strings)))
-
+  (if (atom x)
+      nil
+    (cons (cat prefix (car x))
+          (prefix-strings prefix (cdr x))))
+  ///
   (defthm prefix-strings-when-atom
     (implies (atom x)
              (equal (prefix-strings prefix x)
@@ -346,7 +322,8 @@ more efficient way to do the final @(see reverse)/@(see coerce) steps.</p>"
                   (:instance l0 (x acl2::x-equiv)))))))
 
 
-(defsection rchars-to-string
+(define rchars-to-string ((rchars character-listp))
+  :returns (str stringp :rule-classes :type-prescription)
   :parents (concatenation)
   :short "Possibly optimized way to reverse a character list and coerce it to a
 string."
@@ -354,7 +331,7 @@ string."
   :long "<p>@(call rchars-to-string) is logically equal to</p>
 
 @({
-   (reverse (coerce rchars 'string))
+   (reverse (implode rchars))
 })
 
 <p>We leave it enabled and would not expect to ever reason about it.  This
@@ -378,19 +355,19 @@ load the book:</p>
 @(see reverse) call with a call of @('nreverse').  We can \"obviously\" see
 that this is safe since the string produced by the @('coerce') is not visible
 to any other part of the program.</p>"
+  :enabled t
 
-  (defun rchars-to-string (rchars)
-    "May be redefined under-the-hood in str/fast-cat.lisp"
-    ;; We don't inline this because you might want to develop books without
-    ;; fast-cat (for fewer ttags), but then include fast-cat later for more
-    ;; performance.
-    (declare (xargs :guard (character-listp rchars)))
-    (the string
-      (reverse
-       (the string (coerce (the list rchars) 'string))))))
+  ;; We don't inline this because you might want to develop books without
+  ;; fast-cat (for fewer ttags), but then include fast-cat later for more
+  ;; performance.
+  (the string
+    (reverse
+     (the string (implode rchars)))))
 
 
-(defsection join
+(define join ((x string-listp)
+              (separator :type string))
+  :returns (joined stringp :rule-classes :type-prescription)
   :parents (concatenation)
   :short "Concatenate a list of strings with some separator between."
 
@@ -411,35 +388,32 @@ efficient: it creates a single character list for the result (in reverse order)
 without any use of @(see coerce), then uses @(see rchars-to-string) to build
 and reverse the result string.</p>"
 
-  (defund join-aux (x separator acc)
-    (declare (xargs :guard (string-listp x))
-             (type string separator))
-    (cond ((atom x)
-           acc)
-          ((atom (cdr x))
-           (revappend-chars (car x) acc))
-          (t
-           (let* ((acc (revappend-chars (car x) acc))
-                  (acc (revappend-chars separator acc)))
-             (join-aux (cdr x) separator acc)))))
+  :prepwork
+  ((defund join-aux (x separator acc)
+     (declare (xargs :guard (string-listp x))
+              (type string separator))
+     (cond ((atom x)
+            acc)
+           ((atom (cdr x))
+            (revappend-chars (car x) acc))
+           (t
+            (let* ((acc (revappend-chars (car x) acc))
+                   (acc (revappend-chars separator acc)))
+              (join-aux (cdr x) separator acc))))))
 
-  (defund join (x separator)
-    (declare (type string separator))
-    (declare (xargs :guard (string-listp x)
-                    :verify-guards nil))
-    (mbe :logic
-         (cond ((atom x)
-                "")
-               ((atom (cdr x))
-                (if (stringp (car x))
-                    (car x)
-                  ""))
-               (t
-                (cat (car x) separator (join (cdr x) separator))))
-         :exec
-         (rchars-to-string (join-aux x separator nil))))
-
-  (local (in-theory (enable join join-aux)))
+  :inline t
+  :verify-guards nil
+  (mbe :logic
+       (cond ((atom x)
+              "")
+             ((atom (cdr x))
+              (str-fix (car x)))
+             (t
+              (cat (car x) separator (join (cdr x) separator))))
+       :exec
+       (rchars-to-string (join-aux x separator nil)))
+  ///
+  (local (in-theory (enable join-aux)))
 
   (defthm join-aux-removal
     (implies (and (string-listp x)
@@ -451,11 +425,8 @@ and reverse the result string.</p>"
             :induct (join-aux x separator acc)
             :in-theory (enable revappend-chars))))
 
-  (verify-guards join)
-
-  (defthm stringp-of-join
-    (stringp (join x separator))
-    :rule-classes :type-prescription)
+  (verify-guards join$inline
+    :hints(("Goal" :in-theory (enable join join-aux))))
 
   (local (defthmd l0
            (equal (join (list-fix x) separator)

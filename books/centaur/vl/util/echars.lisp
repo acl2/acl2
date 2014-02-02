@@ -19,9 +19,26 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "defs")
-(include-book "misc/assert" :dir :system)
-(local (include-book "arithmetic"))
+
+;; This showed up in the critical path, so we try to reduce our dependencies
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
+(include-book "std/util/deflist" :dir :system)
+(include-book "std/strings/cat" :dir :system)
+(include-book "std/strings/natstr" :dir :system)
+(include-book "centaur/nrev/pure" :dir :system)
+(local (include-book "arithmetic/top" :dir :system))
+(local (include-book "std/lists/top" :dir :system))
+(local (include-book "misc/assert" :dir :system))
+
+(local (defthm integerp-when-natp
+         (implies (natp x)
+                  (integerp x))))
+
+(local (defthm negative-when-natp
+  (implies (natp x)
+           (equal (< x 0)
+                  nil))))
 
 
 (defxdoc extended-characters
@@ -511,41 +528,28 @@ handling more sensible.</p>"
             (vl-change-echarlist-locations (cdr x) loc))
     nil))
 
-
 (define vl-echarlist-from-chars-aux ((x character-listp)
                                      (filename stringp)
-                                     (line posp)
-                                     (col natp)
-                                     (acc vl-echarlist-p))
+                                     (line posp :type (integer 0 *))
+                                     (col natp :type (integer 0 *))
+                                     nrev)
+  :split-types t
   :parents (vl-echarlist-from-chars)
-
-  :long "<p>At one point I considered a fixnum-optimized version of this
-function, to avoid the arbitrary-precision calls of +.  In CCL, there was
-virtually no performance difference between the two versions, and, furthermore,
-if you have to call @('(length x)') in the wrapper to determine if it's safe to
-use the fixnum version, it ends up being slower on a medium-size example.  So,
-now I am not bothering to do any kind of fixnum nonsense.</p>"
-
-  (if (consp x)
-      (vl-echarlist-from-chars-aux
-       (cdr x)
-       filename
-       (if (eql (car x) #\Newline) (+ 1 line) line)
-       (if (eql (car x) #\Newline) 0 (+ 1 col))
-       (cons (make-vl-echar-fast :char (car x)
-                                 :filename filename
-                                 :line line
-                                 :col col)
-             acc))
-    acc)
-
-  ///
-
-  (defthm true-listp-of-vl-echarlist-from-chars-aux
-    (equal (true-listp (vl-echarlist-from-chars-aux x filename line col acc))
-           (true-listp acc))))
-
-
+  (b* (((when (atom x))
+        (nrev-fix nrev))
+       (echar (make-vl-echar-fast :char (car x)
+                                  :filename filename
+                                  :line line
+                                  :col col))
+       (nrev  (nrev-push echar nrev))
+       ((the character c) (car x))
+       (line  (if (eql c #\Newline)
+                  (the (integer 0 *) (+ 1 line))
+                line))
+       (col   (if (eql c #\Newline)
+                  0
+                (the (integer 0 *) (+ 1 col)))))
+    (vl-echarlist-from-chars-aux (cdr x) filename line col nrev)))
 
 (define vl-echarlist-from-chars
   ((x character-listp "The characters to convert")
@@ -557,34 +561,22 @@ now I am not bothering to do any kind of fixnum nonsense.</p>"
   :returns (ans vl-echarlist-p :hyp :fguard)
   :parents (extended-characters)
   :short "Transform an ordinary character list into a @(see vl-echarlist-p)."
-  :long "<p>This properly handles the incrementing of line and column numbers.
-Note that we optimize this function using @('nreverse') for better
-performance.</p>"
-
-  (mbe :logic (if (atom x)
-                  nil
-                (cons (make-vl-echar-fast :char (car x)
-                                          :filename filename
-                                          :line line
-                                          :col col)
-                      (vl-echarlist-from-chars-fn
-                       (cdr x) filename
-                       (if (eql (car x) #\Newline) (+ 1 line) line)
-                       (if (eql (car x) #\Newline) 0 (+ 1 col)))))
-       :exec (reverse (vl-echarlist-from-chars-aux x filename line col nil)))
-
+  (mbe :logic
+       (b* (((when (atom x))
+             nil)
+            (echar (make-vl-echar-fast :char (car x)
+                                       :filename filename
+                                       :line line
+                                       :col col))
+            (line (if (eql (car x) #\Newline) (+ 1 line) line))
+            (col  (if (eql (car x) #\Newline) 0 (+ 1 col))))
+         (cons echar
+               (vl-echarlist-from-chars-fn (cdr x) filename line col)))
+       :exec (with-local-nrev
+              (vl-echarlist-from-chars-aux x filename line col nrev)))
   :verify-guards nil
-
   ///
-
   (never-memoize vl-echarlist-from-chars-aux)
-
-  (defttag vl-optimize)
-  (progn!
-   (set-raw-mode t)
-   (defun vl-echarlist-from-chars-fn (x filename line col)
-     (ACL2::nreverse (vl-echarlist-from-chars-aux x filename line col nil))))
-  (defttag nil)
 
   (defthm true-listp-of-vl-echarlist-from-chars-fn
     (true-listp (vl-echarlist-from-chars-fn x filename line col))
@@ -601,146 +593,121 @@ performance.</p>"
   (local (in-theory (enable vl-echarlist-from-chars-aux)))
 
   (defthm vl-echarlist-from-chars-aux-removal
-    (implies (force (true-listp acc))
-             (equal (vl-echarlist-from-chars-aux x filename line col acc)
-                    (revappend (vl-echarlist-from-chars-fn x filename line col)
-                               acc))))
+    (equal (vl-echarlist-from-chars-aux x filename line col acc)
+           (append acc (vl-echarlist-from-chars-fn x filename line col))))
 
   (verify-guards vl-echarlist-from-chars-fn))
 
 
 
-(defsection vl-echarlist-from-str
+(define vl-echarlist-from-str-aux
+  :parents (vl-echarlist-from-str)
+  ((x        stringp)
+   (n        natp)
+   (xl       (equal xl (length x)))
+   (filename stringp)
+   (line     posp)
+   (col      natp)
+   nrev)
+  :guard (<= n xl)
+  :measure (nfix (- (nfix xl) (nfix n)))
+  :split-types t
+  (declare (type string x filename)
+           (type (integer 0 *) n xl line col))
+  (b* (((when (mbe :logic (zp (- (nfix xl) (nfix n)))
+                   :exec (eql n xl)))
+        (nrev-fix nrev))
+       ((the character char) (char x n))
+       (echar (make-vl-echar-fast :char char
+                                  :filename filename
+                                  :line line
+                                  :col col))
+       (nrev (nrev-push echar nrev))
+       (line (if (eql char #\Newline)
+                 (the (integer 0 *) (+ 1 line))
+               line))
+       (col  (if (eql char #\Newline)
+                 0
+               (the (integer 0 *) (+ 1 col)))))
+    (vl-echarlist-from-str-aux (the string x)
+                               (the (integer 0 *) (+ 1 (lnfix n)))
+                               xl filename line col nrev)))
+
+(define vl-echarlist-from-str-nice
+  :parents (vl-echarlist-from-str)
+  ((x        stringp)
+   (n        natp)
+   (xl       (equal xl (length x)))
+   (filename stringp)
+   (line     posp)
+   (col      natp))
+  :guard (<= n xl)
+  :split-types t
+  :measure (nfix (- (nfix xl) (nfix n)))
+  :verify-guards nil
+  (declare (type string x filename)
+           (type integer n xl line col))
+  (mbe :logic (if (zp (- (nfix xl) (nfix n)))
+                  nil
+                (let ((char (char x n)))
+                  (cons (make-vl-echar-fast :char char
+                                            :filename filename
+                                            :line line
+                                            :col col)
+                        (vl-echarlist-from-str-nice
+                         x (+ 1 (nfix n)) xl filename
+                         (if (eql char #\Newline) (+ 1 line) line)
+                         (if (eql char #\Newline) 0 (+ 1 col))))))
+       :exec (with-local-nrev
+              (vl-echarlist-from-str-aux x n xl filename line col nrev)))
+  ///
+  (defthm vl-echarlist-from-str-aux-correct
+    (equal (vl-echarlist-from-str-aux x n xl filename line col acc)
+           (append acc (vl-echarlist-from-str-nice x n xl filename line col)))
+    :hints(("Goal"
+            :in-theory (enable vl-echarlist-from-str-aux)
+            :induct (vl-echarlist-from-str-aux x n xl filename line col acc))))
+
+  (verify-guards vl-echarlist-from-str-nice)
+
+  (defthm vl-echarlist-from-str-nice-correct
+    (equal (vl-echarlist-from-str-nice x n (len (explode x)) filename line col)
+           (vl-echarlist-from-chars-fn (nthcdr n (explode x)) filename line col))
+    :hints(("Goal" :in-theory (enable nthcdr
+                                      vl-echarlist-from-str-nice
+                                      vl-echarlist-from-chars-fn)))))
+
+
+(define vl-echarlist-from-str
   :parents (extended-characters)
   :short "Transform an ordinary @('stringp') into a @(see vl-echarlist-p)."
+  ((x        stringp)
+   &key
+   ((filename stringp) '"[internal string]")
+   ((line     posp)    '1)
+   ((col      natp)    '0))
+  :returns echarlist
 
-  :long "<p>@('vl-echarlist-from-str') is like @(see vl-echarlist-from-chars),
-but operates on an ACL2 string instead of a character list.</p>
-
-@(call vl-echarlist-from-str)
+  :long "<p>This is like @(see vl-echarlist-from-chars), but we process an ACL2
+string instead of a character list.</p>
 
 <p>We go to some lengths to be able to more efficiently construct an echarlist
 from a string.  The simplest approach to this would be:</p>
 
 <ol>
  <li>coerce the string into a list</li>
- <li>call vl-echarlist-from-chars on the resulting list</li>
+ <li>call @(see vl-echarlist-from-chars) on the resulting list</li>
 </ol>
 
-<p>The above is our logical definition, and hence we leave this function enabled
-and reason about @(see vl-echarlist-from-chars) instead.</p>
+<p>The above is our logical definition, and hence we leave this function
+enabled and reason about @(see vl-echarlist-from-chars) instead.  But for
+better efficiency, we avoid the coerce and process the string directly.</p>"
 
-<p>For better efficiency, we avoid the coerce and process the string directly.
-Also note that we actually use @('nreverse') here.</p>"
-
-  (defund vl-echarlist-from-str-aux (x n xl filename line col acc)
-    (declare (xargs :guard (and (stringp x)
-                                (natp n)
-                                (equal xl (length x))
-                                (<= n xl)
-                                (stringp filename)
-                                (posp line)
-                                (natp col)
-                                (vl-echarlist-p acc))
-                    :measure (nfix (- (nfix xl) (nfix n))))
-             (type string x filename)
-             (type integer n xl line col))
-    (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (= n xl))
-        acc
-      (let ((char (char (the string x) n)))
-        (vl-echarlist-from-str-aux (the string x)
-                                   (+ 1 (lnfix n))
-                                   xl
-                                   filename
-                                   (if (eql char #\Newline) (+ 1 line) line)
-                                   (if (eql char #\Newline) 0 (+ 1 col))
-                                   (cons (make-vl-echar-fast :char char
-                                                             :filename filename
-                                                             :line line
-                                                             :col col)
-                                         acc)))))
-
-  (defthm true-listp-of-vl-echarlist-from-str-aux
-    (equal (true-listp (vl-echarlist-from-str-aux x n xl filename line col acc))
-           (true-listp acc))
-    :hints(("Goal" :in-theory (enable vl-echarlist-from-str-aux))))
-
-  (defund vl-echarlist-from-str-nice (x n xl filename line col)
-    (declare (xargs :guard (and (stringp x)
-                                (natp n)
-                                (equal xl (length x))
-                                (<= n xl)
-                                (stringp filename)
-                                (posp line)
-                                (natp col))
-                    :measure (nfix (- (nfix xl) (nfix n)))
-                    :verify-guards nil)
-             (type string x filename)
-             (type integer n xl line col))
-    (mbe :logic (if (zp (- (nfix xl) (nfix n)))
-                    nil
-                  (let ((char (char x n)))
-                    (cons (make-vl-echar-fast :char char
-                                              :filename filename
-                                              :line line
-                                              :col col)
-                          (vl-echarlist-from-str-nice
-                           x (+ 1 (nfix n)) xl filename
-                           (if (eql char #\Newline) (+ 1 line) line)
-                           (if (eql char #\Newline) 0 (+ 1 col))))))
-         :exec (reverse (vl-echarlist-from-str-aux x n xl filename line col nil))))
-
-  (never-memoize vl-echarlist-from-str-aux)
-
-  (defttag vl-optimize)
-  (progn!
-   (set-raw-mode t)
-   (defun vl-echarlist-from-str-nice (x n xl filename line col)
-     (ACL2::nreverse (vl-echarlist-from-str-aux x n xl filename line col nil))))
-  (defttag nil)
-
-  (defthm vl-echarlist-from-str-aux-correct
-    (implies (true-listp acc)
-             (equal (vl-echarlist-from-str-aux x n xl filename line col acc)
-                    (revappend (vl-echarlist-from-str-nice x n xl filename line col)
-                               acc)))
-    :hints(("Goal"
-            :in-theory (enable vl-echarlist-from-str-aux
-                               vl-echarlist-from-str-nice)
-            :induct (vl-echarlist-from-str-aux x n xl filename line col acc))))
-
-  (verify-guards vl-echarlist-from-str-nice
-    :hints(("Goal" :in-theory (enable vl-echarlist-from-str-nice))))
-
-  (defthm vl-echarlist-from-str-nice-correct
-    (implies (force (stringp x))
-             (equal (vl-echarlist-from-str-nice x n (len (explode x))
-                                                filename line col)
-                    (vl-echarlist-from-chars-fn (nthcdr n (explode x))
-                                                filename line col)))
-    :hints(("Goal" :in-theory (enable vl-echarlist-from-str-nice
-                                      vl-echarlist-from-chars-fn))))
-
-  (defun vl-echarlist-from-str-fn (x filename line col)
-    (declare (xargs :guard (and (stringp x)
-                                (stringp filename)
-                                (posp line)
-                                (natp col)))
-             (type string x filename)
-             (type integer line col))
-    (mbe :logic (vl-echarlist-from-chars-fn (explode x) filename line col)
-         :exec (vl-echarlist-from-str-nice x 0
-                                           (length (the string x))
-                                           filename line col)))
-
-  (defmacro vl-echarlist-from-str (x &key
-                                     (filename '"[internal string]")
-                                     (line '1)
-                                     (col '0))
-    `(vl-echarlist-from-str-fn ,x ,filename ,line ,col)))
-
-
+  :enabled t
+  (mbe :logic (vl-echarlist-from-chars-fn (explode x) filename line col)
+       :exec (vl-echarlist-from-str-nice x 0
+                                         (length (the string x))
+                                         filename line col)))
 
 
 (define vl-echar-digit-value ((x vl-echar-p)

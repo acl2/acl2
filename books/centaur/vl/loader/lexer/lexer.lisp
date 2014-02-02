@@ -33,7 +33,7 @@
 Verilog-2005 and SystemVerilog-2012.  There are some significant differences
 between these languages, e.g., Verilog has only a subset of SystemVerilog's
 keywords and operators.  You can configure which edition of the standard is
-being used; see @(see vl-lexconfig-p).</p>
+being used; see @(see vl-loadconfig-p).</p>
 
 <p>Note: our support for SystemVerilog is preliminary and may be buggy.  Our
 parser does not yet support much of SystemVerilog, and some lexer details may
@@ -412,31 +412,32 @@ order, you can search for long prefixes first, e.g., @('>>>') before
 (define vl-lex-main-exec
   :parents (vl-lex)
   :short "Tail recursive implementation."
-  ((echars vl-echarlist-p)
-   (acc    (and (vl-tokenlist-p acc)
-                (true-listp acc)))
+  ((echars   vl-echarlist-p)
+   (nrev     (vl-tokenlist-p (nrev-copy nrev)))
    (st       vl-lexstate-p)
    (warnings vl-warninglist-p))
   :returns (mv successp
-               token-list
+               nrev
                (warnings vl-warninglist-p))
-  (b* (((when (atom echars))
-        (mv t acc (ok)))
+  (b* ((nrev (nrev-fix nrev))
+       ((when (atom echars))
+        (mv t nrev (ok)))
        ((mv tok remainder warnings)
         (vl-lex-token echars st warnings))
        ((when tok)
-        (vl-lex-main-exec remainder (cons tok acc) st warnings)))
-    (cw "About to cause an error.~%")
+        (let ((nrev (nrev-push tok nrev)))
+          (vl-lex-main-exec remainder nrev st warnings)))
+       (- (cw "About to cause an error.~%"))
+       (prev-chars (nrev-copy nrev))
+       (prev-chop  (nthcdr (nfix (- (length prev-chars) 30)) prev-chars))
+       (prev-str   (vl-echarlist->string (vl-tokenlist->etext prev-chop))))
     (mv (cw "Lexer error (~s0): unable to identify a valid token.~%~
              [[ Previous  ]]: ~s1~%~
              [[ Remaining ]]: ~s2~%"
             (vl-location-string (vl-echar->loc (car echars)))
-            (let* ((rprev (reverse acc))
-                   (chop  (nthcdr (nfix (- (length rprev) 30)) rprev))
-                   (chars (vl-tokenlist->etext chop)))
-              (vl-echarlist->string chars))
+            prev-str
             (vl-echarlist->string (first-n (min 30 (len echars)) echars)))
-        acc
+        nrev
         warnings)))
 
 (define vl-lex-main ((echars   vl-echarlist-p)
@@ -458,9 +459,14 @@ order, you can search for long prefixes first, e.g., @('>>>') before
              (vl-lex-main echars st warnings)))
          (mv successp (cons first rest) warnings))
        :exec
-       (b* (((mv successp tokens warnings)
-             (vl-lex-main-exec echars nil st warnings)))
-         (mv successp (reverse tokens) warnings)))
+       (with-local-stobj nrev
+         (mv-let (successp tokens warnings nrev)
+           (b* (((mv successp nrev warnings)
+                 (vl-lex-main-exec echars nrev st warnings))
+                ((mv tokens nrev)
+                 (nrev-finish nrev)))
+             (mv successp tokens warnings nrev))
+           (mv successp tokens warnings))))
   ///
   (local (in-theory (enable vl-lex-main-exec)))
 
@@ -470,7 +476,7 @@ order, you can search for long prefixes first, e.g., @('>>>') before
 
   (local (defthm vl-lex-main-exec-tokens-removal
            (equal (mv-nth 1 (vl-lex-main-exec echars acc st warnings))
-                  (revappend (mv-nth 1 (vl-lex-main echars st warnings)) acc))))
+                  (append acc (mv-nth 1 (vl-lex-main echars st warnings))))))
 
   (local (defthm vl-lex-main-exec-warnings-removal
            (equal (mv-nth 2 (vl-lex-main-exec echars acc st warnings))
@@ -480,7 +486,7 @@ order, you can search for long prefixes first, e.g., @('>>>') before
     (equal (vl-lex-main-exec echars acc st warnings)
            (mv-let (successp tokens warnings)
                    (vl-lex-main echars st warnings)
-                   (mv successp (revappend tokens acc) warnings))))
+                   (mv successp (append acc tokens) warnings))))
 
   (defthm type-of-vl-lex-main-successp
     (booleanp (mv-nth 0 (vl-lex-main echars st warnings)))
@@ -507,16 +513,7 @@ order, you can search for long prefixes first, e.g., @('>>>') before
                     (force (true-listp echars))
                     (force (vl-lexstate-p st)))
                (equal (vl-tokenlist->etext tokens)
-                      echars))))
-
-  (defttag vl-optimize)
-  (never-memoize vl-lex-main-exec)
-  (progn! (set-raw-mode t)
-          (defun vl-lex-main (echars st warnings)
-            (mv-let (successp tokens warnings)
-              (vl-lex-main-exec echars nil st warnings)
-              (mv successp (nreverse tokens) warnings))))
-  (defttag nil))
+                      echars)))))
 
 
 (define vl-lex
@@ -531,7 +528,7 @@ order, you can search for long prefixes first, e.g., @('>>>') before
               vl-warninglist-p)
    (config   "Options about which keywords and operators to accept, i.e., for
               implementing different Verilog editions."
-             vl-lexconfig-p))
+             vl-loadconfig-p))
   :returns (mv (successp "Did we successfully tokenize the input?  Note that
                           even on success there may be some warnings."
                          booleanp
@@ -559,31 +556,32 @@ order, you can search for long prefixes first, e.g., @('>>>') before
                (equal (vl-tokenlist->etext tokens)
                       echars)))))
 
-
 (define vl-kill-whitespace-and-comments-core
-  ((tokens     vl-tokenlist-p "Tokens to process, in order.")
-   (tokens-acc "Tokens to keep; we're building this, in reverse order.")
-   (cmap-acc   "Comment map; we're building this, in reverse order."))
-  :returns (mv tokens-acc cmap-acc)
   :parents (vl-kill-whitespace-and-comments)
-  :short "Tail recursive implementation."
-  (b* (((when (atom tokens))
-        (mv tokens-acc cmap-acc))
+  ((tokens vl-tokenlist-p)
+   (nrev   "tokens accumulator")
+   (nrev2  "comments accumulator"))
+  :returns (mv nrev nrev2)
+  (b* ((nrev  (nrev-fix nrev))
+       (nrev2 (nrev-fix nrev2))
+       ((when (atom tokens))
+        (mv nrev nrev2))
        (type (vl-token->type (car tokens)))
-       (tokens-acc
+       (nrev
         (if (or (eq type :vl-ws)
                 (eq type :vl-comment))
-            tokens-acc
-          (cons (car tokens) tokens-acc)))
-       (cmap-acc
+            nrev
+          (nrev-push (car tokens) nrev)))
+       (nrev2
         (if (eq type :vl-comment)
-            ;; See note on comment shifting in vl-commentmap-p to
-            ;; understand why we change the column number to zero.
-            (cons (cons (change-vl-location (vl-token->loc (car tokens)) :col 0)
-                        (vl-token->string (car tokens)))
-                  cmap-acc)
-          cmap-acc)))
-    (vl-kill-whitespace-and-comments-core (cdr tokens) tokens-acc cmap-acc)))
+            (nrev-push
+             ;; See note on comment shifting in vl-commentmap-p to understand
+             ;; why we change the column number to zero.
+             (cons (change-vl-location (vl-token->loc (car tokens)) :col 0)
+                   (vl-token->string (car tokens)))
+             nrev2)
+          nrev2)))
+    (vl-kill-whitespace-and-comments-core (cdr tokens) nrev nrev2)))
 
 (define vl-kill-whitespace-and-comments
   :parents (tokens vl-commentmap-p)
@@ -612,51 +610,34 @@ tokens, and construct a comment map from any comment tokens."
                        cmap-rest)
                cmap-rest)))
          (mv new-tokens new-cmap))
-       :exec
-       (b* (((mv tokens-acc cmap-acc)
-             (vl-kill-whitespace-and-comments-core tokens nil nil)))
-         (mv (reverse tokens-acc)
-             (reverse cmap-acc))))
+       :exec ;; Fuck!
+       (with-local-stobj
+         nrev
+         (mv-let
+           (tokens cmap nrev)
+           (with-local-stobj
+             nrev2
+             (mv-let
+               (tokens cmap nrev nrev2)
+               (b* (((mv nrev nrev2)
+                     (vl-kill-whitespace-and-comments-core tokens nrev nrev2))
+                    ((mv tokens nrev) (nrev-finish nrev))
+                    ((mv cmap nrev2)  (nrev-finish nrev2)))
+                 (mv tokens cmap nrev nrev2))
+               (mv tokens cmap nrev)))
+           (mv tokens cmap))))
   ///
-  (defttag vl-optimize)
-  (never-memoize vl-kill-whitespace-and-comments-core)
-  (progn! (set-raw-mode t)
-          (defun vl-kill-whitespace-and-comments (tokens)
-            (b* (((mv tokens-acc cmap-acc)
-                  (vl-kill-whitespace-and-comments-core tokens nil nil)))
-              (mv (nreverse tokens-acc)
-                  (nreverse cmap-acc)))))
-  (defttag nil)
-
   (local (in-theory (enable vl-kill-whitespace-and-comments-core)))
 
-  (local (defthm lemma
-           (implies (true-listp tacc)
-                    (true-listp (mv-nth 0 (vl-kill-whitespace-and-comments-core
-                                           tokens tacc cacc))))))
-
-  (local (defthm lemma2
-           (implies (true-listp cacc)
-                    (true-listp (mv-nth 1 (vl-kill-whitespace-and-comments-core
-                                           tokens tacc cacc))))))
-
   (local (defthm lemma3
-           (implies (true-listp tacc)
-                    (equal (mv-nth 0 (vl-kill-whitespace-and-comments-core
-                                      tokens tacc cacc))
-                           (revappend
-                            (mv-nth 0 (vl-kill-whitespace-and-comments tokens))
-                            tacc)))
+           (equal (mv-nth 0 (vl-kill-whitespace-and-comments-core tokens tacc cacc))
+                  (append tacc (mv-nth 0 (vl-kill-whitespace-and-comments tokens))))
            :hints(("Goal" :induct (vl-kill-whitespace-and-comments-core
                                    tokens tacc cacc)))))
 
   (local (defthm lemma4
-           (implies (true-listp cacc)
-                    (equal (mv-nth 1 (vl-kill-whitespace-and-comments-core
-                                      tokens tacc cacc))
-                           (revappend
-                            (mv-nth 1 (vl-kill-whitespace-and-comments tokens))
-                            cacc)))
+           (equal (mv-nth 1 (vl-kill-whitespace-and-comments-core tokens tacc cacc))
+                  (append cacc (mv-nth 1 (vl-kill-whitespace-and-comments tokens))))
            :hints(("Goal" :induct (vl-kill-whitespace-and-comments-core
                                    tokens tacc cacc)))))
 
@@ -678,7 +659,7 @@ tokens, and construct a comment map from any comment tokens."
   :short "A simple way to lex an ACL2 string."
   ((string stringp "Should be free of preprocessor symbols.")
    &key
-   ((config vl-lexconfig-p) '*vl-default-lexconfig*))
+   ((config vl-loadconfig-p) '*vl-default-loadconfig*))
   :returns (tokens vl-tokenlist-p)
   :long "<p>This is mainly intended for testing parser routines.  We don't
 bother to preprocess the input and just ignore any warning.</p>"

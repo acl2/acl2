@@ -23,6 +23,7 @@
 (include-book "../date")
 (include-book "std/util/defconsts" :dir :system)
 (include-book "std/strings/defs" :dir :system)
+(include-book "misc/assert" :dir :system)
 
 (defconsts (*date* state)
   (oslib::date))

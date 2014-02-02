@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -23,8 +23,8 @@
 (include-book "read-file")
 (include-book "find-file")
 (include-book "lexer/lexer")
-(include-book "preprocessor")
-(include-book "parser")
+(include-book "preprocessor/preprocessor")
+(include-book "parser/parser")
 (include-book "filemap")
 (include-book "inject-comments")
 (include-book "overrides")
@@ -302,19 +302,20 @@ our internal representation of Verilog.</li>
 </ul>"
 
   (b* (((vl-loadstate st) st)
-       ((vl-loadconfig config) st.config)
+       (config st.config)
+       ((vl-loadconfig config) config)
 
        (warnings st.warnings)
 
        ;; BOZO we should switch this to use some more subtle b* structure that
        ;; lets contents become unreachable.
 
-       ((mv contents state)
-        (time$ (vl-read-file (string-fix filename) state)
+       ((mv okp contents state)
+        (time$ (vl-read-file (string-fix filename))
                :msg "; ~s0: read: ~st sec, ~sa bytes~%"
                :args (list filename)
                :mintime config.mintime))
-       ((when (stringp contents))
+       ((unless okp)
         (b* ((warnings (warn :type :vl-read-failed
                              :msg  "Error reading file ~s0."
                              :args (list filename)))
@@ -343,7 +344,9 @@ our internal representation of Verilog.</li>
 ; parse didn't affect us.  If it had defines we wanted, that's too bad.
 
        ((mv successp defines preprocessed state)
-        (time$ (vl-preprocess contents st.defines config.include-dirs state)
+        (time$ (vl-preprocess contents
+                              :defines st.defines
+                              :config config)
                :msg "; ~s0: preprocess: ~st sec, ~sa bytes~%"
                :args (list filename)
                :mintime config.mintime))
@@ -354,11 +357,9 @@ our internal representation of Verilog.</li>
              (st       (change-vl-loadstate st :warnings warnings)))
           (mv st state)))
 
-       (lexconfig (make-vl-lexconfig :edition config.edition
-                                     :strictp config.strictp))
        ((mv successp lexed warnings)
         (time$ (vl-lex preprocessed
-                       :config lexconfig
+                       :config config
                        :warnings warnings)
                :msg "; ~s0: lex: ~st sec, ~sa bytes~%"
                :args (list filename)

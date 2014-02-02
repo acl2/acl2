@@ -129,7 +129,7 @@
 
 
 (defsection strline
-  :parents (str)
+  :parents (std/strings)
   :short "Extract a line from a string by its line number."
 
   :long "<p>@(call strline) extracts the @('n')th line from the string @('x')
@@ -182,7 +182,7 @@ baz")))))
 
 
 (defsection strlines
-  :parents (str)
+  :parents (std/strings)
   :short "Extract a group of lines from a string by their line numbers."
 
   :long "<p>@(call strlines) extracts the lines between line number @('a') and

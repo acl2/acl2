@@ -24,7 +24,9 @@
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "arithmetic"))
 
-(defsection ichareqv
+(define ichareqv ((x :type character)
+                  (y :type character))
+  :returns (bool)
   :parents (equivalences cases)
   :short "Case-insensitive character equivalence test."
   :long "<p>@(call ichareqv) determines if @('x') and @('y') are equivalent
@@ -35,15 +37,10 @@ upper-case C is equivalent to lower-case c under this relation.</p>
 irritating to use because it has @(see standard-char-p) guards.  In contrast,
 @('ichareqv') works on arbitrary characters, with some loss of efficiency.</p>"
 
-  (definlined ichareqv (x y)
-    (declare (type character x)
-             (type character y))
-    (equal (downcase-char x) (downcase-char y)))
-
-  (local (in-theory (enable ichareqv)))
-
+  :inline t
+  (eql (downcase-char x) (downcase-char y))
+  ///
   (defequiv ichareqv)
-
   (defrefinement chareqv ichareqv)
 
   (encapsulate
@@ -81,7 +78,9 @@ irritating to use because it has @(see standard-char-p) guards.  In contrast,
 
 
 
-(defsection icharlisteqv
+(define icharlisteqv ((x character-listp)
+                      (y character-listp))
+  :returns (bool)
   :parents (equivalences cases)
   :short "Case-insensitive character-list equivalence test."
 
@@ -92,18 +91,12 @@ another.</p>
 
 <p>See also @(see charlisteqv) for a case-sensitive alternative.</p>"
 
-  (defund icharlisteqv (x y)
-    (declare (xargs :guard (and (character-listp x)
-                                (character-listp y))))
-
-    (if (consp x)
-        (and (consp y)
-             (ichareqv (car x) (car y))
-             (icharlisteqv (cdr x) (cdr y)))
-      (atom y)))
-
-  (local (in-theory (enable icharlisteqv)))
-
+  (if (consp x)
+      (and (consp y)
+           (ichareqv (car x) (car y))
+           (icharlisteqv (cdr x) (cdr y)))
+    (atom y))
+  ///
   (defequiv icharlisteqv)
 
   (defrefinement charlisteqv icharlisteqv
@@ -124,8 +117,6 @@ another.</p>
   (defcong icharlisteqv icharlisteqv (revappend x y) 2)
   (defcong icharlisteqv icharlisteqv (revappend x y) 1)
   (defcong icharlisteqv icharlisteqv (make-character-list x) 1)
-
-
 
   (defthm icharlisteqv-when-not-consp-left
     (implies (not (consp x))
@@ -154,8 +145,9 @@ another.</p>
              (not (icharlisteqv x y)))))
 
 
-
-(defsection istreqv
+(define istreqv ((x :type string)
+                 (y :type string))
+  :returns bool
   :parents (equivalences cases)
   :short "Case-insensitive string equivalence test."
 
@@ -174,73 +166,71 @@ strings into lists.</p>
 
 <p>NOTE: for reasoning, we leave this function enabled and prefer to work with
 @(see icharlisteqv) of the coerces as our normal form.</p>"
+  :inline t
+  :enabled t
 
-  (defund istreqv-aux (x y n l)
-    (declare (type string x)
-             (type string y)
-             (type (integer 0 *) n)
-             (type (integer 0 *) l)
-             (xargs :guard (and (natp n)
-                                (natp l)
-                                (equal (length x) l)
-                                (equal (length y) l)
-                                (<= n l))
-                    :measure (nfix (- (nfix l) (nfix n)))
-                    :guard-hints (("Goal" :in-theory (enable ichareqv)))))
-    (mbe :logic
-         (if (zp (- (nfix l) (nfix n)))
-             t
-           (and (ichareqv (char x n) (char y n))
-                (istreqv-aux x y (+ (nfix n) 1) l)))
-         :exec
-         (if (eql n l)
-             t
-           (and (ichareqv (the character (char x n))
-                          (the character (char y n)))
-                (istreqv-aux x y
-                             (the (integer 0 *) (+ 1 n))
-                             l)))))
+  (mbe :logic
+       (icharlisteqv (explode x) (explode y))
+       :exec
+       (b* (((the (integer 0 *) xl) (length x))
+            ((the (integer 0 *) yl) (length y)))
+         (and (eql xl yl)
+              (istreqv-aux x y 0 xl))))
 
-  (definline istreqv (x y)
-    (declare (type string x)
-             (type string y)
-             (xargs :verify-guards nil))
-    (mbe :logic
-         (icharlisteqv (explode x) (explode y))
-         :exec
-         (b* (((the (integer 0 *) xl) (length x))
-              ((the (integer 0 *) yl) (length y)))
-           (and (eql xl yl)
-                (istreqv-aux x y 0 xl)))))
+  :prepwork
+  ((defund istreqv-aux (x y n l)
+     (declare (type string x)
+              (type string y)
+              (type (integer 0 *) n)
+              (type (integer 0 *) l)
+              (xargs :guard (and (natp n)
+                                 (natp l)
+                                 (equal (length x) l)
+                                 (equal (length y) l)
+                                 (<= n l))
+                     :measure (nfix (- (nfix l) (nfix n)))
+                     :guard-hints (("Goal" :in-theory (enable ichareqv)))))
+     (mbe :logic
+          (if (zp (- (nfix l) (nfix n)))
+              t
+            (and (ichareqv (char x n) (char y n))
+                 (istreqv-aux x y (+ (nfix n) 1) l)))
+          :exec
+          (if (eql n l)
+              t
+            (and (ichareqv (the character (char x n))
+                           (the character (char y n)))
+                 (istreqv-aux x y
+                              (the (integer 0 *) (+ 1 n))
+                              l)))))
 
-  (local (defthm lemma
-           (implies (and (< n (len x))
-                         (not (ichareqv (nth n x) (nth n y))))
-                    (not (icharlisteqv (nthcdr n x) (nthcdr n y))))))
+   (local (defthm lemma
+            (implies (and (< n (len x))
+                          (not (ichareqv (nth n x) (nth n y))))
+                     (not (icharlisteqv (nthcdr n x) (nthcdr n y))))))
 
-  (local (defthm lemma2
-           (implies (and (< n (len x))
-                         (equal (len x) (len y))
-                         (ichareqv (nth n x) (nth n y)))
-                    (equal (icharlisteqv (nthcdr n x) (nthcdr n y))
-                           (icharlisteqv (cdr (nthcdr n x)) (cdr (nthcdr n y)))))))
+   (local (defthm lemma2
+            (implies (and (< n (len x))
+                          (equal (len x) (len y))
+                          (ichareqv (nth n x) (nth n y)))
+                     (equal (icharlisteqv (nthcdr n x) (nthcdr n y))
+                            (icharlisteqv (cdr (nthcdr n x)) (cdr (nthcdr n y)))))))
 
-  (defthm istreqv-aux-removal
-    (implies (and (stringp x)
-                  (stringp y)
-                  (natp n)
-                  (<= n l)
-                  (= l (length x))
-                  (= l (length y)))
-             (equal (istreqv-aux x y n l)
-                    (icharlisteqv (nthcdr n (explode x))
-                                  (nthcdr n (explode y)))))
-    :hints(("Goal"
-            :in-theory (enable istreqv-aux)
-            :induct (istreqv-aux x y n l))))
+   (defthm istreqv-aux-removal
+     (implies (and (stringp x)
+                   (stringp y)
+                   (natp n)
+                   (<= n l)
+                   (= l (length x))
+                   (= l (length y)))
+              (equal (istreqv-aux x y n l)
+                     (icharlisteqv (nthcdr n (explode x))
+                                   (nthcdr n (explode y)))))
+     :hints(("Goal"
+             :in-theory (enable istreqv-aux)
+             :induct (istreqv-aux x y n l)))))
 
-  (verify-guards istreqv$inline)
-
+  ///
   (defequiv istreqv)
   (defrefinement streqv istreqv)
 

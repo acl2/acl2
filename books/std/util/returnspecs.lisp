@@ -21,7 +21,7 @@
 (in-package "STD")
 (include-book "da-base")
 (include-book "look-up")
-(include-book "misc/assert" :dir :system)
+(local (include-book "misc/assert" :dir :system))
 (program)
 
 (defxdoc returns-specifiers

@@ -24,7 +24,6 @@
 
 (in-package "STR")
 (include-book "eqv")
-(include-book "tools/bstar" :dir :system)
 (local (include-book "arithmetic"))
 
 (defmacro little-a ()   (char-code #\a))
@@ -35,25 +34,20 @@
 
 
 
-(defsection up-alpha-p
+(define up-alpha-p ((x :type character))
+  :returns bool
   :parents (cases acl2::upper-case-p)
   :short "Determine if a character is an upper-case letter (A-Z)."
 
-  :long "<p>@(call up-alpha-p) determines if @('x') is an upper-case alphabetic
-character.</p>
-
-<p>ACL2 has a built-in alternative to this function, @(see acl2::upper-case-p),
-but it is irritating to use because it has @(see standard-char-p) guards.  In
-contrast, @('up-alpha-p') works on arbitrary characters.</p>"
-
-  (definlined up-alpha-p (x)
-    (declare (type character x))
-    (b* (((the (unsigned-byte 8) code) (char-code x)))
-      (and (<= (big-a) code)
-           (<= code (big-z)))))
-
-  (local (in-theory (enable up-alpha-p)))
-
+  :long "<p>ACL2 has a built-in alternative to this function, @(see
+acl2::upper-case-p), but it is irritating to use because it has @(see
+standard-char-p) guards.  In contrast, @('up-alpha-p') works on arbitrary
+characters.</p>"
+  :inline t
+  (b* (((the (unsigned-byte 8) code) (char-code x)))
+    (and (<= (big-a) code)
+         (<= code (big-z))))
+  ///
   (defcong chareqv equal (up-alpha-p x) 1)
 
   ;; Rewrite ACL2's upper-case-p to up-alpha-p.  It seems simplest to just do
@@ -118,25 +112,21 @@ contrast, @('up-alpha-p') works on arbitrary characters.</p>"
 
 
 
-(defsection down-alpha-p
+(define down-alpha-p ((x :type character))
+  :returns bool
   :parents (cases acl2::lower-case-p)
   :short "Determine if a character is a lower-case letter (a-z)."
 
-  :long "<p>@(call down-alpha-p) determines if @('x') is an lower-case
-alphabetic character.</p>
+  :long "<p>ACL2 has a built-in alternative to this function, @(see
+acl2::lower-case-p), but it is irritating to use because it has @(see
+standard-char-p) guards.  In contrast, @('down-alpha-p') works on arbitrary
+characters.</p>"
 
-<p>ACL2 has a built-in alternative to this function, @(see acl2::lower-case-p),
-but it is irritating to use because it has @(see standard-char-p) guards.  In
-contrast, @('down-alpha-p') works on arbitrary characters.</p>"
-
-  (definlined down-alpha-p (x)
-    (declare (type character x))
-    (b* (((the (unsigned-byte 8) code) (char-code x)))
-      (and (<= (little-a) code)
-           (<= code (little-z)))))
-
-  (local (in-theory (enable down-alpha-p)))
-
+  :inline t
+  (b* (((the (unsigned-byte 8) code) (char-code x)))
+    (and (<= (little-a) code)
+         (<= code (little-z))))
+  ///
   (defcong chareqv equal (down-alpha-p x) 1)
 
   ;; Rewrite ACL2's lower-case-p to down-alpha-p.  It seems simplest to just do
@@ -206,8 +196,8 @@ contrast, @('down-alpha-p') works on arbitrary characters.</p>"
                                       down-alpha-p)))))
 
 
-
-(defsection upcase-char
+(define upcase-char ((x :type character))
+  :returns (char characterp :rule-classes :type-prescription)
   :parents (cases acl2::char-upcase)
   :short "Convert a character to upper-case."
 
@@ -217,17 +207,13 @@ upper-case equivalents, and returns other characters unchanged.</p>
 <p>ACL2 has a built-in alternative to this function, @(see acl2::char-upcase),
 but it is irritating to use because it has @(see standard-char-p) guards.  In
 contrast, @('upcase-char') works on arbitrary characters.</p>"
-
-  (definlined upcase-char (x)
-    (declare (type character x))
-    (b* (((the (unsigned-byte 8) code) (char-code x)))
-      (if (and (<= (little-a) code)
-               (<= code (little-z)))
-          (code-char (the (unsigned-byte 8) (- code (case-delta))))
-        (mbe :logic (char-fix x) :exec x))))
-
-  (local (in-theory (enable upcase-char)))
-
+  :inline t
+  (b* (((the (unsigned-byte 8) code) (char-code x)))
+    (if (and (<= (little-a) code)
+             (<= code (little-z)))
+        (code-char (the (unsigned-byte 8) (- code (case-delta))))
+      (mbe :logic (char-fix x) :exec x)))
+  ///
   (defcong chareqv equal (upcase-char x) 1)
 
   (defthm upcase-char-does-nothing-unless-down-alpha-p
@@ -308,9 +294,8 @@ contrast, @('upcase-char') works on arbitrary characters.</p>"
            (upcase-char (double-rewrite x)))))
 
 
-
-
-(defsection downcase-char
+(define downcase-char ((x :type character))
+  :returns (char characterp :rule-classes :type-prescription)
   :parents (cases acl2::char-downcase)
   :short "Convert a character to lower-case."
 
@@ -321,17 +306,13 @@ lower-case equivalents, and returns other characters unchanged.</p>
 acl2::char-downcase), but it is irritating to use because it has @(see
 standard-char-p) guards.  In contrast, @('downcase-char') works on arbitrary
 characters.</p>"
-
-  (definlined downcase-char (x)
-    (declare (type character x))
-    (b* (((the (unsigned-byte 8) code) (char-code x)))
-      (if (and (<= (big-a) code)
-               (<= code (big-z)))
-          (code-char (the (unsigned-byte 8) (+ code (case-delta))))
-        (mbe :logic (char-fix x) :exec x))))
-
-  (local (in-theory (enable downcase-char)))
-
+  :inline t
+  (b* (((the (unsigned-byte 8) code) (char-code x)))
+    (if (and (<= (big-a) code)
+             (<= code (big-z)))
+        (code-char (the (unsigned-byte 8) (+ code (case-delta))))
+      (mbe :logic (char-fix x) :exec x)))
+  ///
   (defcong chareqv equal (downcase-char x) 1)
 
   (defthm downcase-char-does-nothing-unless-up-alpha-p
@@ -425,7 +406,8 @@ characters.</p>"
 
 
 
-(defsection upcase-char-str
+(define upcase-char-str ((c characterp))
+  :returns (str stringp :rule-classes :type-prescription)
   :parents (cases)
   :short "Convert a character into an upper-case one-element string."
   :long "<p>@(call upcase-char-str) is logically equal to:</p>
@@ -437,57 +419,60 @@ characters.</p>"
 <p>But we store these strings in a table so that they don't have to be
 recomputed.  This is mainly useful to reduce the creation of temporary strings
 during @(see upcase-first).</p>"
+  :enabled t
+  :inline t
 
-  (defun make-upcase-first-strtbl (n)
-    (declare (xargs :guard (and (natp n)
-                                (<= n 255))
-                    :ruler-extenders :all))
-    (cons (cons n (implode (list (upcase-char (code-char n)))))
-          (if (zp n)
-              nil
-            (make-upcase-first-strtbl (- n 1)))))
+  (mbe :logic (implode (list (upcase-char c)))
+       :exec (aref1 '*upcase-first-strtbl* *upcase-first-strtbl*
+                    (char-code c)))
 
-  (defconst *upcase-first-strtbl*
-    (compress1 '*upcase-first-strtbl*
-               (cons '(:header :dimensions (256)
-                               :maximum-length 257)
-                     (make-upcase-first-strtbl 255))))
+  :prepwork
+  ((defun make-upcase-first-strtbl (n)
+     (declare (xargs :guard (and (natp n)
+                                 (<= n 255))
+                     :ruler-extenders :all))
+     (cons (cons n (implode (list (upcase-char (code-char n)))))
+           (if (zp n)
+               nil
+             (make-upcase-first-strtbl (- n 1)))))
 
-  (local (in-theory (disable aref1)))
+   (defconst *upcase-first-strtbl*
+     (compress1 '*upcase-first-strtbl*
+                (cons '(:header :dimensions (256)
+                                :maximum-length 257)
+                      (make-upcase-first-strtbl 255))))
 
-  (local (defun test (n)
-           (declare (xargs :ruler-extenders :all))
-           (and (equal (aref1 '*upcase-first-strtbl* *upcase-first-strtbl* n)
-                       (implode (list (upcase-char (code-char n)))))
-                (if (zp n)
-                    t
-                  (test (- n 1))))))
+   (local (in-theory (disable aref1)))
 
-  (local (defthm l0
-           (implies (and (natp i)
-                         (natp n)
-                         (<= i n)
-                         (<= n 255)
-                         (test n))
-                    (equal (aref1 '*upcase-first-strtbl* *upcase-first-strtbl* i)
-                           (implode (list (upcase-char (code-char i))))))
-           :hints(("Goal" :induct (test n)))))
+   (local (defun test (n)
+            (declare (xargs :ruler-extenders :all))
+            (and (equal (aref1 '*upcase-first-strtbl* *upcase-first-strtbl* n)
+                        (implode (list (upcase-char (code-char n)))))
+                 (if (zp n)
+                     t
+                   (test (- n 1))))))
 
-  (local (defthm l1
-           (implies (and (natp i)
-                         (<= i 255))
-                    (equal (aref1 '*upcase-first-strtbl* *upcase-first-strtbl* i)
-                           (implode (list (upcase-char (code-char i))))))
-           :hints(("Goal" :use ((:instance l0 (n 255)))))))
+   (local (defthm l0
+            (implies (and (natp i)
+                          (natp n)
+                          (<= i n)
+                          (<= n 255)
+                          (test n))
+                     (equal (aref1 '*upcase-first-strtbl* *upcase-first-strtbl* i)
+                            (implode (list (upcase-char (code-char i))))))
+            :hints(("Goal" :induct (test n)))))
 
-  (definline upcase-char-str (c)
-    (declare (type character c))
-    (mbe :logic (implode (list (upcase-char c)))
-         :exec (aref1 '*upcase-first-strtbl* *upcase-first-strtbl* (char-code c)))))
+   (local (defthm l1
+            (implies (and (natp i)
+                          (<= i 255))
+                     (equal (aref1 '*upcase-first-strtbl* *upcase-first-strtbl* i)
+                            (implode (list (upcase-char (code-char i))))))
+            :hints(("Goal" :use ((:instance l0 (n 255)))))))))
 
 
 
-(defsection downcase-char-str
+(define downcase-char-str ((c :type character))
+  :returns (str stringp :rule-classes :type-prescription)
   :parents (cases)
   :short "Convert a character into a lower-case one-element string."
   :long "<p>@(call downcase-char-str) is logically equal to:</p>
@@ -499,51 +484,53 @@ during @(see upcase-first).</p>"
 <p>But we store these strings in a table so that they don't have to be
 recomputed.  This is mainly useful to reduce the creation of temporary strings
 during @(see downcase-first).</p>"
+  :enabled t
+  :inline t
 
-  (defun make-downcase-first-strtbl (n)
+  (mbe :logic (implode (list (downcase-char c)))
+       :exec (aref1 '*downcase-first-strtbl* *downcase-first-strtbl*
+                    (char-code c)))
+
+  :prepwork
+  ((defun make-downcase-first-strtbl (n)
      (declare (xargs :guard (and (natp n)
                                  (<= n 255))
                      :ruler-extenders :all))
-    (cons (cons n (implode (list (downcase-char (code-char n)))))
-          (if (zp n)
-              nil
-            (make-downcase-first-strtbl (- n 1)))))
+     (cons (cons n (implode (list (downcase-char (code-char n)))))
+           (if (zp n)
+               nil
+             (make-downcase-first-strtbl (- n 1)))))
 
-  (defconst *downcase-first-strtbl*
-    (compress1 '*downcase-first-strtbl*
-               (cons '(:header :dimensions (256)
-                               :maximum-length 257)
-                     (make-downcase-first-strtbl 255))))
+   (defconst *downcase-first-strtbl*
+     (compress1 '*downcase-first-strtbl*
+                (cons '(:header :dimensions (256)
+                                :maximum-length 257)
+                      (make-downcase-first-strtbl 255))))
 
-  (local (in-theory (disable aref1)))
+   (local (in-theory (disable aref1)))
 
-  (local (defun test (n)
-           (declare (xargs :ruler-extenders :all))
-           (and (equal (aref1 '*downcase-first-strtbl* *downcase-first-strtbl* n)
-                       (implode (list (downcase-char (code-char n)))))
-                (if (zp n)
-                    t
-                  (test (- n 1))))))
+   (local (defun test (n)
+            (declare (xargs :ruler-extenders :all))
+            (and (equal (aref1 '*downcase-first-strtbl* *downcase-first-strtbl* n)
+                        (implode (list (downcase-char (code-char n)))))
+                 (if (zp n)
+                     t
+                   (test (- n 1))))))
 
-  (local (defthm l0
-           (implies (and (natp i)
-                         (natp n)
-                         (<= i n)
-                         (<= n 255)
-                         (test n))
-                    (equal (aref1 '*downcase-first-strtbl* *downcase-first-strtbl* i)
-                           (implode (list (downcase-char (code-char i))))))
-           :hints(("Goal" :induct (test n)))))
+   (local (defthm l0
+            (implies (and (natp i)
+                          (natp n)
+                          (<= i n)
+                          (<= n 255)
+                          (test n))
+                     (equal (aref1 '*downcase-first-strtbl* *downcase-first-strtbl* i)
+                            (implode (list (downcase-char (code-char i))))))
+            :hints(("Goal" :induct (test n)))))
 
-  (local (defthm l1
-           (implies (and (natp i)
-                         (<= i 255))
-                    (equal (aref1 '*downcase-first-strtbl* *downcase-first-strtbl* i)
-                           (implode (list (downcase-char (code-char i))))))
-           :hints(("Goal" :use ((:instance l0 (n 255)))))))
-
-  (definline downcase-char-str (c)
-    (declare (type character c))
-    (mbe :logic (implode (list (downcase-char c)))
-         :exec (aref1 '*downcase-first-strtbl* *downcase-first-strtbl* (char-code c)))))
+   (local (defthm l1
+            (implies (and (natp i)
+                          (<= i 255))
+                     (equal (aref1 '*downcase-first-strtbl* *downcase-first-strtbl* i)
+                            (implode (list (downcase-char (code-char i))))))
+            :hints(("Goal" :use ((:instance l0 (n 255)))))))))
 

@@ -24,7 +24,6 @@
 
 (in-package "STD")
 (include-book "support")
-(include-book "tools/bstar" :dir :system)
 
 (defsection tag
   :parents (defaggregate)
@@ -39,7 +38,7 @@ the tag from these kinds of objects.  We introduce this alias and keep it
 disabled so that reasoning about the tags of objects does not slow down
 reasoning about @('car') in general.</p>"
 
-  (definlined tag (x)
+  (defund-inline tag (x)
     (declare (xargs :guard t))
     (mbe :logic (car x)
          :exec (if (consp x)

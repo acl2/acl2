@@ -27,6 +27,7 @@
 (local (progn
 
 (include-book "aig-sat")
+(include-book "misc/assert" :dir :system)
 
 (defun my-glucose-config ()
   (declare (xargs :guard t))

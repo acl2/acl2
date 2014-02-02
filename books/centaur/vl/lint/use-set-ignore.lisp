@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../loader/parse-lvalues")
+(include-book "../loader/parser/parse-lvalues")
 (include-book "../loader/lexer/lexer")
 (include-book "../mlib/fmt")
 (include-book "../checkers/oddexpr") ;; bozo for *fake-modelement*
@@ -227,7 +227,7 @@ warning in the list @('x') to @('new-type')."
          ;; Lexing...
          ((mv okp tokens lwarnings) (vl-lex echars
                                             ;; bozo?
-                                            :config *vl-default-lexconfig*
+                                            :config *vl-default-loadconfig*
                                             :warnings nil))
          ((unless okp)
           (b* ((lwarnings (vl-warninglist-change-types :use-set-syntax-error lwarnings))

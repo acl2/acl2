@@ -69,11 +69,11 @@
 
 #||
 
-; Fool the dependency scanner into certifying lexer-tests and
-; preprocessor-tests as part of building top.cert
+; Fool the dependency scanner into certifying testing books as part
+; of building top.cert
 
 (include-book "loader/lexer/tests")
-(include-book "loader/preprocessor-tests")
+(include-book "loader/preprocessor/tests")
 
 ||#
 

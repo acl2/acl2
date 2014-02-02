@@ -23,9 +23,10 @@
 (include-book "tools/bstar" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
+(include-book "misc/definline" :dir :system)  ;; bozo
 
 (defsection html-encoding
-  :parents (str)
+  :parents (std/strings)
   :short "Routines to encode HTML entities, e.g., @('<') becomes @('&lt;')."
 
   :long "<p>In principle, our conversion routines may not be entirely

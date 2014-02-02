@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "config")
+(include-book "../config")
 (include-book "tokens")
 
 (defsection lexstate
@@ -29,7 +29,7 @@ switch between supported Verilog editions."
 
   :long "<p>You should typically never create a lexstate directly.  Instead,
 see @(see vl-lexstate-init), which creates an appropriate lexstate for a
-particular, high-level @(see vl-lexconfig-p).</p>")
+particular, high-level @(see vl-loadconfig-p).</p>")
 
 (define vl-plaintoken-alistp (x)
   :parents (lexstate)
@@ -270,9 +270,9 @@ particular standard we're implementing.</p>"
 (define vl-lexstate-init
   :parents (lexstate)
   :short "User-level constructor for internal lexer states."
-  ((config vl-lexconfig-p))
+  ((config vl-loadconfig-p))
   :returns (st vl-lexstate-p)
-  (b* (((vl-lexconfig config) config))
+  (b* (((vl-loadconfig config) config))
     (case config.edition
       (:verilog-2005 (if config.strictp
                          *vl-2005-strict-lexstate*

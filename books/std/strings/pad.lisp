@@ -27,7 +27,7 @@
 (local (include-book "arithmetic"))
 
 (defsection pad-trim
-  :parents (str)
+  :parents (std/strings)
   :short "Functions for trimming whitespace and padding with spaces.")
 
 (defsection rpadchars

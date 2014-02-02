@@ -37,7 +37,7 @@
         successp          ;; Expected success/failure
         (remainder '"")   ;; Expected remainder
         type              ;; Expected resulting token type
-        (config '*vl-default-lexconfig*) ;; Configuration to use
+        (config '*vl-default-loadconfig*) ;; Configuration to use
         (nwarnings '0))
   `(assert!
     (b* ((echars (vl-echarlist-from-str ,input))
@@ -169,25 +169,25 @@
  `(progn
     (value-triple (cw "Checking operator handling for Verilog-2005.~%"))
     ,@(make-punctuation-tests *verilog-2005-punctuation-alist*
-                              (make-vl-lexconfig :edition :verilog-2005
-                                                 :strictp nil))
+                              (make-vl-loadconfig :edition :verilog-2005
+                                                  :strictp nil))
     ,@(make-punctuation-tests *verilog-2005-punctuation-alist*
-                              (make-vl-lexconfig :edition :verilog-2005
-                                                 :strictp t))
+                              (make-vl-loadconfig :edition :verilog-2005
+                                                  :strictp t))
     (value-triple (cw "Checking old operator handling for SystemVerilog-2012.~%"))
     ,@(make-punctuation-tests *verilog-2005-punctuation-alist*
-                              (make-vl-lexconfig :edition :system-verilog-2012
-                                                 :strictp nil))
+                              (make-vl-loadconfig :edition :system-verilog-2012
+                                                  :strictp nil))
     ,@(make-punctuation-tests *verilog-2005-punctuation-alist*
-                              (make-vl-lexconfig :edition :system-verilog-2012
-                                                 :strictp t))
+                              (make-vl-loadconfig :edition :system-verilog-2012
+                                                  :strictp t))
     (value-triple (cw "Checking new operator handling for SystemVerilog-2012.~%"))
     ,@(make-punctuation-tests *verilog-2012-punctuation-alist*
-                              (make-vl-lexconfig :edition :system-verilog-2012
-                                                 :strictp nil))
+                              (make-vl-loadconfig :edition :system-verilog-2012
+                                                  :strictp nil))
     ,@(make-punctuation-tests *verilog-2012-punctuation-alist*
-                              (make-vl-lexconfig :edition :system-verilog-2012
-                                                 :strictp t))
+                              (make-vl-loadconfig :edition :system-verilog-2012
+                                                  :strictp t))
     ))
 
 
@@ -209,17 +209,17 @@
 ;; BOZO generalize to other keywords, etc.
 (make-event
  `(progn ,@(make-keyword-tests *vl-2005-keyword-table-strict*
-                               (make-vl-lexconfig :edition :verilog-2005
-                                                  :strictp t))
+                               (make-vl-loadconfig :edition :verilog-2005
+                                                   :strictp t))
          ,@(make-keyword-tests *vl-2005-keyword-table*
-                               (make-vl-lexconfig :edition :verilog-2005
-                                                  :strictp nil))
+                               (make-vl-loadconfig :edition :verilog-2005
+                                                   :strictp nil))
          ,@(make-keyword-tests *vl-2012-keyword-table-strict*
-                               (make-vl-lexconfig :edition :system-verilog-2012
-                                                  :strictp t))
+                               (make-vl-loadconfig :edition :system-verilog-2012
+                                                   :strictp t))
          ,@(make-keyword-tests *vl-2012-keyword-table*
-                               (make-vl-lexconfig :edition :system-verilog-2012
-                                                  :strictp nil))
+                               (make-vl-loadconfig :edition :system-verilog-2012
+                                                   :strictp nil))
          ))
 
 
@@ -235,7 +235,7 @@
   (strtest-p x))
 
 (define strtest-okp ((test strtest-p)
-                     (config vl-lexconfig-p))
+                     (config vl-loadconfig-p))
   (b* (((strtest test) test)
        (echars    (vl-echarlist-from-str test.input))
        (st        (vl-lexstate-init config))
@@ -273,13 +273,13 @@
      (not (cw "lex-token result seems ok.~%")))))
 
 (define run-strtest ((test strtest-p)
-                     (config vl-lexconfig-p))
+                     (config vl-loadconfig-p))
   (or (strtest-okp test config)
       (raise "test failed: ~x0.~%" test)))
 
 (deflist run-strtests (x config)
   :guard (and (strtest-list-p x)
-              (vl-lexconfig-p config))
+              (vl-loadconfig-p config))
   (run-strtest x config))
 
 
@@ -337,21 +337,21 @@
 (progn
   (assert!
    (run-strtests *strtests1*
-                 (make-vl-lexconfig :edition :verilog-2005
-                                    :strictp nil)))
+                 (make-vl-loadconfig :edition :verilog-2005
+                                     :strictp nil)))
   (assert!
    (run-strtests *strtests1*
-                 (make-vl-lexconfig :edition :verilog-2005
-                                    :strictp t)))
+                 (make-vl-loadconfig :edition :verilog-2005
+                                     :strictp t)))
 
   (assert!
    (run-strtests *strtests1*
-                 (make-vl-lexconfig :edition :system-verilog-2012
-                                    :strictp nil)))
+                 (make-vl-loadconfig :edition :system-verilog-2012
+                                     :strictp nil)))
   (assert!
    (run-strtests *strtests1*
-                 (make-vl-lexconfig :edition :system-verilog-2012
-                                    :strictp t))))
+                 (make-vl-loadconfig :edition :system-verilog-2012
+                                     :strictp t))))
 
 
 (defconst *strtests2*
@@ -462,20 +462,20 @@ line\""
 (progn
   (assert!
    (run-strtests *strtests2*
-                 (make-vl-lexconfig :edition :system-verilog-2012
-                                    :strictp nil)))
+                 (make-vl-loadconfig :edition :system-verilog-2012
+                                     :strictp nil)))
   (assert!
    (run-strtests *strtests2*
-                 (make-vl-lexconfig :edition :system-verilog-2012
-                                    :strictp t)))
+                 (make-vl-loadconfig :edition :system-verilog-2012
+                                     :strictp t)))
   (assert!
    (run-strtests (make-strtests-fail *strtests2*)
-                 (make-vl-lexconfig :edition :verilog-2005
-                                    :strictp nil)))
+                 (make-vl-loadconfig :edition :verilog-2005
+                                     :strictp nil)))
   (assert!
    (run-strtests (make-strtests-fail *strtests2*)
-                 (make-vl-lexconfig :edition :verilog-2005
-                                    :strictp t))))
+                 (make-vl-loadconfig :edition :verilog-2005
+                                     :strictp t))))
 
 
 
@@ -495,7 +495,7 @@ line\""
   (itest-p x))
 
 (define itest-okp ((test itest-p)
-                   (config vl-lexconfig-p))
+                   (config vl-loadconfig-p))
   (b* (((itest test) test)
        (echars (vl-echarlist-from-str test.input))
        (?st    (vl-lexstate-init config))
@@ -533,13 +533,13 @@ line\""
      (not (cw "lex-token seems correct~%")))))
 
 (define run-itest ((test itest-p)
-                     (config vl-lexconfig-p))
+                     (config vl-loadconfig-p))
   (or (itest-okp test config)
       (raise "test failed: ~x0.~%" test)))
 
 (deflist run-itests (x config)
   :guard (and (itest-list-p x)
-              (vl-lexconfig-p config))
+              (vl-loadconfig-p config))
   (run-itest x config))
 
 (defconst *itests*
@@ -774,14 +774,14 @@ line\""
                :bits "")))
 
 (assert!
- (and (run-itests *itests* (make-vl-lexconfig :edition :verilog-2005
-                                              :strictp nil))
-      (run-itests *itests* (make-vl-lexconfig :edition :verilog-2005
-                                              :strictp t))
-      (run-itests *itests* (make-vl-lexconfig :edition :system-verilog-2012
-                                              :strictp nil))
-      (run-itests *itests* (make-vl-lexconfig :edition :system-verilog-2012
-                                              :strictp t))))
+ (and (run-itests *itests* (make-vl-loadconfig :edition :verilog-2005
+                                               :strictp nil))
+      (run-itests *itests* (make-vl-loadconfig :edition :verilog-2005
+                                               :strictp t))
+      (run-itests *itests* (make-vl-loadconfig :edition :system-verilog-2012
+                                               :strictp nil))
+      (run-itests *itests* (make-vl-loadconfig :edition :system-verilog-2012
+                                               :strictp t))))
 
 
 
@@ -790,7 +790,7 @@ line\""
                                      value
                                      (remainder '"")
                                      (nwarnings '0)
-                                     (config '*vl-default-lexconfig*))
+                                     (config '*vl-default-loadconfig*))
   `(assert!
     (b* ((echars             (vl-echarlist-from-str ,input))
          (?st                (vl-lexstate-init ,config))

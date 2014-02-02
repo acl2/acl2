@@ -132,7 +132,8 @@ rewrite it away into @(see explode) or @(see implode).</p>"
 
 
 
-(defsection explode
+(define explode ((x :type string))
+  :returns (chars character-listp)
   :parents (coercion coerce)
   :short "Convert a string to a character list."
 
@@ -153,20 +154,15 @@ whereas this is no problem for @('(explode x)').</p>
 implode).</p>
 
 <p><b>BOZO</b> consider using misc/fast-coerce here.</p>"
-
-  (definlined explode (x)
-    (declare (type string x))
-    (coerce x 'list))
-
+  :inline t
+  (coerce x 'list)
+  ///
   (in-theory (disable (:t explode)))
   (local (in-theory (enable explode)))
 
   (defthm true-listp-of-explode
     (true-listp (explode x))
     :rule-classes :type-prescription)
-
-  (defthm character-listp-of-explode
-    (character-listp (explode x)))
 
   (defthm explode-when-not-stringp
     (implies (not (stringp x))
@@ -206,7 +202,8 @@ implode).</p>
 
 
 
-(defsection implode
+(define implode ((x character-listp))
+  :returns (str stringp :rule-classes :type-prescription)
   :parents (coercion coerce)
   :short "Convert a character list into a string."
 
@@ -225,17 +222,11 @@ argument means we can't write, e.g., congruence relations about @('(coerce x
 
 <p>We do the same thing for @('(coerce x 'list)') &mdash; see @(see
 explode).</p>"
-
-  (definlined implode (x)
-    (declare (xargs :guard (character-listp x)))
-    (coerce x 'string))
-
+  :inline t
+  (coerce x 'string)
+  ///
   (in-theory (disable (:t implode)))
   (local (in-theory (enable implode)))
-
-  (defthm stringp-of-implode
-    (stringp (implode x))
-    :rule-classes :type-prescription)
 
   (defthm equal-of-implodes
     (implies (and (character-listp x)

@@ -36,7 +36,7 @@
     implode
     ;; Including this type-prescription rule improves the type-prescriptions of
     ;; some subsequent functions such as upcase-string.
-    stringp-of-implode
+    acl2::return-type-of-implode$inline
 
     ;; char-fix.lisp
     char-fix$inline
@@ -69,6 +69,7 @@
     rchars-to-string
     join-aux
     join
+    join$inline
 
     ;; char-case.lisp
     little-a

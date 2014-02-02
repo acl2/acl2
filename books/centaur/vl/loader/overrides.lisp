@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,9 +21,9 @@
 (in-package "VL")
 (include-book "read-file")
 (include-book "lexer/lexer")
-(include-book "preprocessor")
-(include-book "parse-utils")
-(include-book "parse-error")
+(include-book "preprocessor/preprocessor")
+(include-book "parser/parse-utils")
+(include-book "parser/parse-error")
 (include-book "filemap")
 (include-book "../util/cwtime")
 (include-book "../mlib/warnings")
@@ -585,9 +585,9 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
 
          (filemap nil)
 
-         ((mv contents state)
-          (cwtime (vl-read-file filename state) :mintime 1/2))
-         ((when (stringp contents))
+         ((mv okp contents state)
+          (cwtime (vl-read-file filename) :mintime 1/2))
+         ((unless okp)
           (b* ((w (make-vl-warning :type :vl-read-failed
                                    :msg "Error reading override file ~s0."
                                    :args (list filename)
@@ -599,9 +599,11 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
                        (list (cons filename (vl-echarlist->string contents)))))
 
          ((mv successp defines preprocessed state)
-          ;; BOZO for now overrides don't have any include-dirs.  Not sure what
-          ;; the right way to handle this is.
-          (cwtime (vl-preprocess contents defines nil state) :mintime 1/2))
+          (cwtime (vl-preprocess contents
+                                 :defines defines
+                                 ;; BOZO we should probably take a config.
+                                 :config *vl-default-loadconfig*)
+                  :mintime 1/2))
          ((unless successp)
           (b* ((w (make-vl-warning :type :vl-preprocess-failed
                                    :msg "Preprocessing failed for override file ~s0."
@@ -613,7 +615,7 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
          ((mv successp lexed warnings)
           (cwtime (vl-lex preprocessed
                           ;; BOZO, this should be configurable...
-                          :config *vl-default-lexconfig*
+                          :config *vl-default-loadconfig*
                           :warnings nil)
                   :mintime 1/2))
          (walist (if warnings
@@ -910,91 +912,65 @@ useful.</p>"
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection vl-match-through-endmodule
+(define vl-match-through-endmodule-aux ((tokens vl-tokenlist-p)
+                                        nrev)
+  :returns (mv successp nrev rest)
+  (b* ((nrev (nrev-fix nrev))
+       ((when (atom tokens))
+        (mv nil nrev tokens))
+       ((cons first rest) tokens)
+       (nrev (nrev-push first nrev))
+       ((when (eq (vl-token->type first) :vl-kwd-endmodule))
+        (mv t nrev rest)))
+    (vl-match-through-endmodule-aux rest nrev)))
+
+(define vl-match-through-endmodule
   :parents (overrides)
   :short "Collect tokens through @('endmodule')."
-  :long "<p><b>Signature:</b> @(call vl-match-through-endmodule) returns
-@('(mv successp prefix rest)').</p>
+  ((tokens vl-tokenlist-p "Tokens to split up into prefix and rest."))
+  :returns (mv (successp "True exactly when there is an occurrence of @('endmodule')
+                          somewhere in tokens.")
+               (prefix "Everything through the first occurrence of @('endmodule')"
+                       vl-tokenlist-p :hyp :guard)
+               (rest   "Everything after that."
+                       vl-tokenlist-p :hyp :guard))
+  :verify-guards nil
+  (mbe :logic
+       (b* (((when (atom tokens))
+             (mv nil nil tokens))
+            ((cons car cdr) tokens)
+            ((when (eq (vl-token->type car) :vl-kwd-endmodule))
+             (mv t (list car) cdr))
+            ((mv okp prefix rest)
+             (vl-match-through-endmodule cdr)))
+         (mv okp (cons car prefix) rest))
+       :exec
+       (with-local-stobj nrev
+         (mv-let (okp prefix rest nrev)
+           (b* (((mv okp nrev rest)
+                 (vl-match-through-endmodule-aux tokens nrev))
+                ((mv prefix nrev)
+                 (nrev-finish nrev)))
+             (mv okp prefix rest nrev))
+           (mv okp prefix rest))))
+  ///
+  (local (in-theory (enable vl-match-through-endmodule-aux)))
 
-<p>We attept to split the @(see vl-tokenlist-p) @('tokens') into @('prefix')
-and @('rest'), where @('prefix') contains everything up through the first
-occurrence of the @('endmodule') keyword, and @('rest') contains whatever
-follows.</p>
+  (defthm vl-match-through-endmodule-aux-correct
+    (equal (vl-match-through-endmodule-aux tokens nrev)
+           (b* (((mv okp prefix rest)
+                 (vl-match-through-endmodule tokens)))
+             (mv okp (append nrev prefix) rest)))
+    :hints(("Goal" :in-theory (enable acl2::rcons))))
 
-<p>@('successp') is true exactly when there is any occurrence of @('endmodule')
-within @('tokens').</p>"
+  (defmvtypes vl-match-through-endmodule
+    (booleanp true-listp nil))
 
-  (defund vl-match-through-endmodule-aux (tokens prefix-rev)
-    "Returns (MV SUCCESSP PREFIX-REV REST)"
-    (declare (xargs :guard (vl-tokenlist-p tokens)))
-    (cond ((atom tokens)
-           (mv nil prefix-rev tokens))
-          ((eq (vl-token->type (car tokens)) :vl-kwd-endmodule)
-           (mv t (cons (car tokens) prefix-rev) (cdr tokens)))
-          (t
-           (vl-match-through-endmodule-aux (cdr tokens) (cons (car tokens) prefix-rev)))))
-
-  (defund vl-match-through-endmodule (tokens)
-    "Returns (MV SUCCESSP PREFIX REST)"
-    (declare (xargs :guard (vl-tokenlist-p tokens)
-                    :verify-guards nil))
-    (b* (((mv successp prefix-rev rest)
-          (vl-match-through-endmodule-aux tokens nil)))
-      (mv successp (reverse prefix-rev) rest)))
-
-  (defttag vl-optimize)
-  (never-memoize vl-match-through-endmodule-aux)
-  (progn!
-   (set-raw-mode t)
-   (defun vl-match-through-endmodule (tokens)
-     (b* (((mv successp prefix-rev rest)
-           (vl-match-through-endmodule-aux tokens nil)))
-       (mv successp (nreverse prefix-rev) rest))))
-  (defttag nil)
-
-  (local (in-theory (enable vl-match-through-endmodule-aux vl-match-through-endmodule)))
-
-  (local
-   (defthm lemma
-     (and
-      (implies (true-listp prefix-rev)
-               (true-listp (mv-nth 1 (vl-match-through-endmodule-aux tokens prefix-rev))))
-      (implies (true-listp tokens)
-               (true-listp (mv-nth 2 (vl-match-through-endmodule-aux tokens prefix-rev))))
-      (implies (and (vl-tokenlist-p tokens)
-                    (vl-tokenlist-p prefix-rev))
-               (vl-tokenlist-p (mv-nth 1 (vl-match-through-endmodule-aux tokens prefix-rev))))
-      (implies (and (vl-tokenlist-p tokens)
-                    (vl-tokenlist-p prefix-rev))
-               (vl-tokenlist-p (mv-nth 2 (vl-match-through-endmodule-aux tokens prefix-rev)))))))
+  (defthm true-listp-of-vl-match-through-endmodule.rest
+    (equal (true-listp (mv-nth 2 (vl-match-through-endmodule tokens)))
+           (true-listp tokens)))
 
   (verify-guards vl-match-through-endmodule)
-
-  (defthm true-listp-of-vl-match-through-endmodule-1
-    (true-listp (mv-nth 1 (vl-match-through-endmodule tokens)))
-    :rule-classes :type-prescription)
-
-  (defthm true-listp-of-vl-match-through-endmodule-2
-    (implies (true-listp tokens)
-             (true-listp (mv-nth 2 (vl-match-through-endmodule tokens))))
-    :rule-classes ((:rewrite) (:type-prescription)))
-
-  (defthm vl-tokenlist-of-vl-match-through-endmodule-1
-    (implies (vl-tokenlist-p tokens)
-             (vl-tokenlist-p (mv-nth 1 (vl-match-through-endmodule tokens)))))
-
-  (defthm vl-tokenlist-of-vl-match-through-endmodule-2
-    (implies (vl-tokenlist-p tokens)
-             (vl-tokenlist-p (mv-nth 2 (vl-match-through-endmodule tokens)))))
-
-  (local
-   (defthm lemma2
-     (and
-      (implies (mv-nth 0 (vl-match-through-endmodule-aux tokens prefix-rev))
-               (< (acl2-count (mv-nth 2 (vl-match-through-endmodule-aux tokens prefix-rev)))
-                  (acl2-count tokens)))
-      (<= (acl2-count (mv-nth 2 (vl-match-through-endmodule-aux tokens prefix-rev)))
-          (acl2-count tokens)))))
 
   (defthm acl2-count-of-vl-match-through-endmodule-weak
     (<= (acl2-count (mv-nth 2 (vl-match-through-endmodule tokens)))
@@ -1279,6 +1255,10 @@ eventually to check the \"requirements\" for each override.</li>
 
       (vl-apply-overrides-aux rest db walist acc used modtokens)))
 
+  (never-memoize revappend)
+  (never-memoize revappend-without-guard)
+  (never-memoize vl-apply-overrides-aux)
+
   (local (in-theory (enable vl-apply-overrides-aux)))
 
   (defthm true-listp-of-vl-apply-overrides-aux-1
@@ -1306,7 +1286,6 @@ eventually to check the \"requirements\" for each override.</li>
                     (vl-overridelist-p (mv-nth 2 result))
                     (vl-modtokensalist-p (mv-nth 3 result))))))
 
-
   (defund vl-apply-overrides (x db walist)
     "Returns (MV WALIST-PRIME X-PRIME USED MODTOKENS)"
     (declare (xargs :guard (and (vl-tokenlist-p x)
@@ -1320,18 +1299,6 @@ eventually to check the \"requirements\" for each override.</li>
           (vl-apply-overrides-aux x db walist nil nil nil))
          (x-prime (reverse x-prime-rev)))
       (mv walist x-prime used modtokens)))
-
-  (defttag vl-optimize)
-  (never-memoize vl-apply-overrides-aux)
-  (progn! (set-raw-mode t)
-          (defun vl-apply-overrides (x db walist)
-            (b* (((when (atom db))
-                  (mv walist x nil nil))
-                 ((mv walist x-prime-rev used modtokens)
-                  (vl-apply-overrides-aux x db walist nil nil nil))
-                 (x-prime (nreverse x-prime-rev)))
-              (mv walist x-prime used modtokens))))
-  (defttag nil)
 
   (local (in-theory (enable vl-apply-overrides)))
 

@@ -26,7 +26,7 @@
 (local (in-theory (disable acl2::take-redefinition)))
 
 (defsection firstn-chars
-  :parents (str)
+  :parents (std/strings)
   :short "Efficient way to take leading characters from a string."
 
   :long "<p>@(call firstn-chars) is logically equal to:</p>

@@ -33,13 +33,6 @@
    (cons "ACTIVE_HIGH" (vl-echarlist-from-str "(* VL_ACTIVE_HIGH *)"))
    (cons "ACTIVE_LOW"  (vl-echarlist-from-str "(* VL_ACTIVE_LOW *)"))))
 
-(defthm vl-defines-p-of-append
-  ;; BOZO bad place
-  (implies (and (vl-defines-p x)
-                (vl-defines-p y))
-           (vl-defines-p (append x y)))
-  :hints(("Goal" :in-theory (enable vl-defines-p))))
-
 (defund vl-use-set-analysis-fn (override-dirs
                                 start-files
                                 search-path

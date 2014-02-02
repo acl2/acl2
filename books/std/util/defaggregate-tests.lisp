@@ -25,6 +25,7 @@
 
 (include-book "defaggregate")
 (include-book "deflist")
+(include-book "misc/assert" :dir :system)
 
 (encapsulate
  ()

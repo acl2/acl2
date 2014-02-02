@@ -19,23 +19,26 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "defines")
-(include-book "lexer/config")
+(include-book "preprocessor/defines")
 
 (defaggregate vl-loadconfig
   :parents (loader)
   :short "Options for how to load Verilog modules."
   :tag :vl-loadconfig
-
+  :legiblep :ordered
   ((edition        vl-edition-p
-                   "Which kind of Verilog platform should we try to implement?"
-                   :default :system-verilog-2012)
+                   :default :system-verilog-2012
+                   "Which standard are we implementing, e.g., IEEE Std
+                    1364-2005 (Verilog) or IEEE Std
+                    1800-2012 (SystemVerilog).")
 
    (strictp        booleanp
-                   "By default VL implements certain extensions of the Verilog
-                    standard.  You can optionally disable these extensions to
-                    have VL try to implement the standard more strictly."
-                   :default nil)
+                   :rule-classes :type-prescription
+                   :default nil
+                   "VL normally implements certain extensions of the Verilog
+                    standard like overrides and @('//+VL') comments.  Turning
+                    on strict mode will disable these extensions and instruct
+                    VL to implement the standard more strictly.")
 
    (start-files    string-listp
                    "A list of file names (not module names) that you want to
@@ -87,9 +90,16 @@
                    "Directories to scan for any @(see overrides).")
 
    (flush-tries    posp
+                   :rule-classes :type-prescription
                    :default 10000
                    "How many rounds of @(see vl-flush-out-modules) are
                     allowed.")
 
-   (mintime        :default 1
+   (mintime        (or (not mintime)
+                       (rationalp mintime))
+                   :rule-classes :type-prescription
+                   :default 1
                    "Minimum time threshold for performance messages.")))
+
+(defconst *vl-default-loadconfig*
+  (make-vl-loadconfig))

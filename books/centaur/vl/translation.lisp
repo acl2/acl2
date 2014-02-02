@@ -21,7 +21,7 @@
 (in-package "VL")
 (include-book "parsetree")
 (include-book "loader/filemap")
-(include-book "loader/defines")
+(include-book "loader/preprocessor/defines")
 (include-book "checkers/use-set-report")
 (local (include-book "util/arithmetic"))
 (local (include-book "util/osets"))

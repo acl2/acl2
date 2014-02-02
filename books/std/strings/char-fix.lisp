@@ -1,5 +1,5 @@
 ; ACL2 String Library
-; Copyright (C) 2009-2013 Centaur Technology
+; Copyright (C) 2009-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,8 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "xdoc/top" :dir :system)
-(include-book "misc/definline" :dir :system)
+(include-book "std/util/define" :dir :system)
 
 (defsection code-char-lemmas
   :parents (code-char)
@@ -80,7 +79,8 @@
     :hints(("goal" :use ((:instance completion-of-code-char))))))
 
 
-(defsection char-fix
+(define char-fix (x)
+  :returns (char characterp :rule-classes :type-prescription)
   :parents (equivalences)
   :short "Coerce to a character."
 
@@ -90,15 +90,11 @@ non-character.</p>
 
 <p>This is similar to other fixing functions like @(see fix) and @(see nfix).
 See also @(see chareqv).</p>"
-
-  (definlined char-fix (x)
-    (declare (xargs :guard t))
-    (if (characterp x)
-        x
-      (code-char 0)))
-
-  (local (in-theory (enable char-fix)))
-
+  :inline t
+  (if (characterp x)
+      x
+    (code-char 0))
+  ///
   (defthm char-fix-default
     (implies (not (characterp x))
              (equal (char-fix x)

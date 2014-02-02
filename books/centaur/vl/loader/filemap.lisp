@@ -19,6 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "../util/defs")
 (include-book "../util/echars")
 (local (include-book "../util/arithmetic"))
 

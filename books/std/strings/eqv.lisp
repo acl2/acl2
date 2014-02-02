@@ -26,7 +26,8 @@
 
 (in-theory (disable char<))
 
-(defsection chareqv
+(define chareqv (x y)
+  :returns equivp
   :parents (equivalences)
   :short "Case-sensitive character equivalence test."
 
@@ -36,12 +37,10 @@ NUL character (via @(see char-fix)), then we see if these coerced arguments are
 equal.</p>
 
 <p>See also @(see ichareqv) for a case-insensitive alternative.</p>"
-
-  (definlined chareqv (x y)
-    (declare (xargs :guard t))
-    (eql (char-fix x) (char-fix y)))
-
-  (local (in-theory (enable chareqv char-fix char<)))
+  :inline t
+  (eql (char-fix x) (char-fix y))
+  ///
+  (local (in-theory (enable char-fix char<)))
 
   (defequiv chareqv)
 
@@ -87,7 +86,9 @@ equal.</p>
     :rule-classes ((:rewrite :loop-stopper ((x y))))))
 
 
-(defsection charlisteqv
+(define charlisteqv ((x character-listp)
+                     (y character-listp))
+  :returns equivp
   :parents (equivalences)
   :short "Case-sensitive character-list equivalence test."
 
@@ -97,17 +98,12 @@ same length and their elements must be @(see chareqv) to one another.</p>
 
 <p>See also @(see icharlisteqv) for a case-insensitive alternative.</p>"
 
-  (defund charlisteqv (x y)
-    (declare (xargs :guard (and (character-listp x)
-                                (character-listp y))))
-    (if (consp x)
-        (and (consp y)
-             (chareqv (car x) (car y))
-             (charlisteqv (cdr x) (cdr y)))
-      (atom y)))
-
-  (local (in-theory (enable charlisteqv)))
-
+  (if (consp x)
+      (and (consp y)
+           (chareqv (car x) (car y))
+           (charlisteqv (cdr x) (cdr y)))
+    (atom y))
+  ///
   (defequiv charlisteqv)
   (defrefinement list-equiv charlisteqv
     :hints(("Goal" :in-theory (enable list-equiv))))
@@ -187,8 +183,8 @@ same length and their elements must be @(see chareqv) to one another.</p>
              (not (charlisteqv x y)))))
 
 
-
-(defsection str-fix
+(define str-fix (x)
+  :returns (str stringp :rule-classes :type-prescription)
   :parents (equivalences)
   :short "Coerce to a string."
   :long "<p>@(call str-fix) is the identity on @(see acl2::stringp)s, or
@@ -196,15 +192,11 @@ returns the empty string, @('\"\"'), for any non-string.</p>
 
 <p>This is similar to other fixing functions like @(see fix) and @(see nfix).
 See also @(see streqv).</p>"
-
-  (definlined str-fix (x)
-    (declare (xargs :guard t))
-    (if (stringp x)
-        x
-      ""))
-
-  (local (in-theory (enable str-fix)))
-
+  :inline t
+  (if (stringp x)
+      x
+    "")
+  ///
   (defthm str-fix-default
     (implies (not (stringp x))
              (equal (str-fix x)
@@ -216,8 +208,8 @@ See also @(see streqv).</p>"
                     x))))
 
 
-
-(defsection streqv
+(define streqv (x y)
+  :returns (equivp)
   :parents (equivalences)
   :short "Case-sensitive string equivalence test."
 
@@ -227,12 +219,10 @@ string (via @(see str-fix)), then we see if these coerced arguments are
 equal.</p>
 
 <p>See also @(see istreqv) for a case-insensitive alternative.</p>"
-
-  (definlined streqv (x y)
-    (declare (xargs :guard t))
-    (equal (str-fix x) (str-fix y)))
-
-  (local (in-theory (enable streqv str-fix)))
+  :inline t
+  (equal (str-fix x) (str-fix y))
+  ///
+  (local (in-theory (enable str-fix)))
 
   (defequiv streqv)
 

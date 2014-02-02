@@ -24,6 +24,7 @@
 (include-book "oslib/portcullis" :dir :system)
 (include-book "centaur/bridge/portcullis" :dir :system)
 (include-book "centaur/getopt/portcullis" :dir :system)
+(include-book "centaur/nrev/portcullis" :dir :system)
 
 (defmacro multi-union-eq (x y &rest rst)
   (xxxjoin 'union-eq (list* x y rst)))
@@ -35,6 +36,7 @@
     std::*std-exports*
     getopt::*getopt-exports*
     sets::*sets-exports*
+    nrev::*nrev-exports*
     acl2::*acl2-exports*
     acl2::*common-lisp-symbols-from-main-lisp-package*
     ;; Things we want to "export"

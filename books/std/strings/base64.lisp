@@ -26,9 +26,10 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "arithmetic"))
+(local (include-book "misc/assert" :dir :system))
 
 (defsection base64
-  :parents (str)
+  :parents (std/strings)
   :short "Routines for Base 64 string encoding/decoding."
 
   :long "<p>We implement ACL2 functions for Base 64 encoding and decoding as

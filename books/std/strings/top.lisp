@@ -50,23 +50,25 @@
 (include-book "suffixp")
 (include-book "symbols")
 
-(defxdoc str
-  :short "ACL2 String Library"
-  :long "<p>This is a rudimentary string library for ACL2.</p>
+(defxdoc std/strings
+  :short "A library with many useful functions for working with strings, and
+for reasoning about ACL2's built-in string operations and these new
+operations."
 
-<p>The functions here are all in logic mode, with verified guards.  In many
+  :long "<p>The @('std/strings') library is a rudimentary string library for
+ACL2.  The functions here are all in logic mode, with verified guards.  In many
 cases, some effort has been spent to make them both efficient and relatively
 straightforward to reason about.</p>
 
 <h3>Loading the library</h3>
 
 <p>Ordinarily, to use the library one should run</p>
+
 @({
- (include-book \"str/top\" :dir :system)
+ (include-book \"std/strings/top\" :dir :system)
 })
 
-<p>The documentation is then available by typing @(':xdoc str').  All of the
-library's functions are found in the @('STR') package.</p>
+<p>All of the library's functions are found in the @('STR') package.</p>
 
 <p>If you are willing to accept a trust tag, you may also include the
 @('fast-cat') book for faster string-concatenation; see @(see cat) for
@@ -103,7 +105,7 @@ Street, Suite 500, Boston, MA 02110-1335, USA.</p>")
 ;; Function groups...
 
 (defsection equivalences
-  :parents (str)
+  :parents (std/strings)
   :short "Basic equivalence relations."
 
   :long "<p>The string library provides the various @(see acl2::equivalence)
@@ -122,7 +124,7 @@ following @(see acl2::refinement) hierarchy:</p>
 })")
 
 (defsection concatenation
-  :parents (str)
+  :parents (std/strings)
   :short "Functions for joining strings together."
 
   :long "<p><b><color rgb='#ff0000'>Efficiency Warning</color></b>.
@@ -139,39 +141,39 @@ See for instance the functions @(see revappend-chars) and @(see
 rchars-to-string), which make this rather easy to do.</p>")
 
 (defsection coercion
-  :parents (str)
+  :parents (std/strings)
   :short "Functions for converting between strings, symbols, character lists,
 and so on.")
 
 (defsection ordering
-  :parents (str)
+  :parents (std/strings)
   :short "Functions for comparing and ordering strings in various ways.")
 
 (defsection substrings
-  :parents (str)
+  :parents (std/strings)
   :short "Functions for detecting substrings, prefixes, and suffixes.")
 
 (defsection numbers
-  :parents (str)
+  :parents (std/strings)
   :short "Functions for working with numbers in strings."
   :long "<p>See also @(see ordering) for some functions that can sort strings
 in alphanumeric ways.</p>")
 
 (defsection cases
-  :parents (str)
+  :parents (std/strings)
   :short "Functions for recognizing and translating between upper- and
 lower-case.")
 
 (defsection symbols
-  :parents (str)
+  :parents (std/strings)
   :short "Functions for working with symbols.")
 
 (defsection substitution
-  :parents (str)
+  :parents (std/strings)
   :short "Functions for doing string replacement.")
 
 (defsection lines
-  :parents (str)
+  :parents (std/strings)
   :short "Functions for operating on the lines of a string."
 
   :long "<p>Note that these functions generally work with Unix-style newline

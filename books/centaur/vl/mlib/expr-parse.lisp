@@ -21,8 +21,8 @@
 (in-package "VL")
 (include-book "print-warnings")
 (include-book "../loader/lexer/lexer")
-(include-book "../loader/parse-expressions")
-(include-book "../loader/parse-error")
+(include-book "../loader/parser/parse-expressions")
+(include-book "../loader/parser/parse-error")
 (local (include-book "../util/arithmetic"))
 
 (defsection vl-parse-expr-from-str
@@ -56,7 +56,7 @@ won't be sized, may refer to invalid wires, etc.</p>"
     (b* ((echars (vl-echarlist-from-str str))
 
          ((mv successp tokens warnings) (vl-lex echars
-                                                :config *vl-default-lexconfig*
+                                                :config *vl-default-loadconfig*
                                                 :warnings nil))
          ((unless successp)
           (cw "; vl-parse-expr-from-str: Lexing failed for ~s0.~%" str))

@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,6 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "../util/defs")
 (include-book "../util/echars")
 (include-book "std/io/base" :dir :system)
 (local (include-book "../util/arithmetic"))
@@ -26,229 +27,214 @@
 
 (local (in-theory (disable acl2::file-measure-of-read-byte$-rw)))
 
-(defsection vl-read-file-aux
+(define vl-read-file-loop-aux
   :parents (vl-read-file)
-  :short "Main loop for reading characters from a file."
+  :short "Tail-recursive, executable loop for @(see vl-read-file)."
+  ((channel  (and (symbolp channel)
+                  (open-input-channel-p channel :byte state)))
+   (filename stringp :type string        "Current file name")
+   (line     posp    :type (integer 1 *) "Current line number")
+   (col      natp    :type (integer 0 *) "Current column number")
+   (nrev)
+   &key
+   (state 'state))
+  :split-types t
+  :returns
+  (mv (nrev "Characters from the file in reverse order.") state)
+  :long "<p>You should never need to reason about this function directly,
+because it is typically rewritten into @(see vl-read-file-loop) using the
+following rule:</p> @(def vl-read-file-loop-aux-redef)"
+  :measure (file-measure channel state)
+  (b* ((nrev (nrev-fix nrev))
+       ((unless (mbt (state-p state)))
+        (mv nrev state))
+       ((mv byte state)
+        (read-byte$ channel state))
+       ((unless byte) ;; EOF
+        (mv nrev state))
+       ((the character char) (code-char (the (unsigned-byte 8) byte)))
+       (echar     (make-vl-echar-fast :char char
+                                      :filename filename
+                                      :line line
+                                      :col col))
+       (newlinep  (eql char #\Newline))
+       (next-line (if newlinep (the (integer 0 *) (+ 1 line)) line))
+       (next-col  (if newlinep 0 (the (integer 0 *) (+ 1 col))))
+       (nrev      (nrev-push echar nrev)))
+    (vl-read-file-loop-aux channel filename next-line next-col nrev)))
 
-  :long "<p><b>Signature:</b> @(call vl-read-file-aux) returns @('(mv data
-state)').</p>
-
-<p>We read bytes from the channel until EOF is encountered, turning them into
-characters via ACL2's @('code-char') function.  We remembers the name of the
-file, and keeps track of a line and column number, in order to generate the
-proper @(see vl-location-p) for each extended character we produced.</p>
-
-<p>This function is tail recursive and accumulates the resulting extended
-characters into @('acc').  See @(see vl-read-file-spec) for a non
-tail-recursive alternative, which is more useful for reasoning.</p>"
-
-  (defund vl-read-file-aux (channel state filename line col acc)
-    (declare (xargs :guard (and (state-p state)
-                                (symbolp channel)
-                                (open-input-channel-p channel :byte state)
-                                (stringp filename)
-                                (posp line)
-                                (natp col)
-                                (true-listp acc))
-                    :measure (file-measure channel state)))
-    (b* (((unless (mbt (state-p state)))
-          (mv nil state))
-         ((mv byte state)
-          (read-byte$ channel state))
-         ((when (eq byte nil)) ;; EOF
-          (mv acc state))
-         (char      (code-char (the (unsigned-byte 8) byte)))
-         (echar     (make-vl-echar-fast :char char
-                                        :filename filename
-                                        :line line
-                                        :col col))
-         (newlinep  (eql char #\Newline))
-         (next-line (if newlinep (+ 1 line) line))
-         (next-col  (if newlinep 0 (+ 1 col))))
-      (vl-read-file-aux channel state filename next-line next-col
-                        (cons echar acc)))))
-
-
-
-(defsection vl-read-file-spec
+(define vl-read-file-loop
   :parents (vl-read-file)
-  :short "Logically nice description of reading characters from a file."
+  :short "Logically nice loop for @(see vl-read-file)."
+  ((channel  symbolp  "Channel we're reading from.")
+   (filename stringp  "Current file name.")
+   (line     posp     "Current line number.")
+   (col      natp     "Current column number.")
+   &key
+   (state 'state))
+  :guard (open-input-channel-p channel :byte state)
+  :returns
+  (mv (data "Characters from the file." vl-echarlist-p :hyp :fguard)
+      (state state-p1 :hyp :fguard))
+  :measure (file-measure channel state)
+  :verify-guards nil
+  (mbe :logic
+       (b* (((unless (state-p state))
+             (mv nil state))
+            ((mv byte state)
+             (read-byte$ channel state))
+            ((unless byte)
+             (mv nil state))
+            (char      (code-char (the (unsigned-byte 8) byte)))
+            (echar     (make-vl-echar-fast :char char
+                                           :filename filename
+                                           :line line
+                                           :col col))
+            (newlinep  (eql char #\Newline))
+            (next-line (if newlinep (+ 1 line) line))
+            (next-col  (if newlinep 0 (+ 1 col)))
+            ((mv rest state)
+             (vl-read-file-loop channel filename next-line next-col)))
+         (mv (cons echar rest) state))
+       :exec
+       (with-local-stobj nrev
+         (mv-let (echars nrev state)
+           (b* (((mv nrev state)
+                 (vl-read-file-loop-aux channel filename line col nrev))
+                ((mv echars nrev)
+                 (nrev-finish nrev)))
+             (mv echars nrev state))
+           (mv echars state))))
+  ///
+  (local (in-theory (enable vl-read-file-loop-aux)))
 
-  :long "<p>@(call vl-read-file-spec) is a logically nicer description of the
-loop performed by @(see vl-read-file-aux).</p>
-
-<p>Note that although the @(':exec') definition is close to what we really use,
-we actually optimize this function even more, using @('nreverse').</p>"
-
-  (defund vl-read-file-spec (channel state filename line col)
-    (declare (xargs :guard (and (state-p state)
-                                (symbolp channel)
-                                (open-input-channel-p channel :byte state)
-                                (stringp filename)
-                                (posp line)
-                                (natp col))
-                    :measure (file-measure channel state)
-                    :verify-guards nil))
-    (mbe :logic
-         (b* (((unless (state-p state))
-               (mv nil state))
-              ((mv byte state)
-               (read-byte$ channel state))
-              ((when (eq byte nil)) ;; EOF
-               (mv nil state))
-              (char      (code-char (the (unsigned-byte 8) byte)))
-              (echar     (make-vl-echar-fast :char char
-                                             :filename filename
-                                             :line line
-                                             :col col))
-              (newlinep  (eql char #\Newline))
-              (next-line (if newlinep (+ 1 line) line))
-              (next-col  (if newlinep 0 (+ 1 col)))
-              ((mv rest state)
-               (vl-read-file-spec channel state filename next-line next-col)))
-           (mv (cons echar rest) state))
-         :exec
-         (mv-let (acc state)
-                 (vl-read-file-aux channel state filename line col nil)
-                 (mv (reverse acc) state))))
-
-  (defttag vl-optimize)
-  (never-memoize vl-read-file-aux)
-  (progn! (set-raw-mode t)
-          (defun vl-read-file-spec (channel state filename line col)
-            (mv-let (acc state)
-              (vl-read-file-aux channel state filename line col nil)
-              (mv (nreverse acc) state))))
-  (defttag nil)
-
-  (local (in-theory (enable vl-read-file-spec
-                            vl-read-file-aux)))
-
-  (defthm true-listp-of-vl-read-file-spec
-    (true-listp (mv-nth 0 (vl-read-file-spec channel state filename line col)))
+  (defthm true-listp-of-vl-read-file-loop
+    (true-listp (mv-nth 0 (vl-read-file-loop channel filename line col)))
     :rule-classes :type-prescription)
 
-  (local (defthm lemma-decompose-aux
-           (equal (vl-read-file-aux channel state filename line col acc)
-                  (list (mv-nth 0 (vl-read-file-aux channel state filename line col acc))
-                        (mv-nth 1 (vl-read-file-aux channel state filename line col acc))))
-           :rule-classes nil))
+  (defthm vl-read-file-loop-aux-redef
+    (equal (vl-read-file-loop-aux channel filename line col acc)
+           (b* (((mv data state)
+                 (vl-read-file-loop channel filename line col)))
+             (mv (append acc data) state))))
 
-  (local (defthm lemma-decompose-spec
-           (equal (vl-read-file-spec channel state filename line col)
-                  (list (mv-nth 0 (vl-read-file-spec channel state filename line col))
-                        (mv-nth 1 (vl-read-file-spec channel state filename line col))))
-           :rule-classes nil))
+  (verify-guards vl-read-file-loop-fn)
 
-  (local (defthm lemma-data-equiv
-           (implies (and (state-p1 state)
-                         (symbolp channel)
-                         (open-input-channel-p1 channel :byte state)
-                         (true-listp acc))
-                    (equal (mv-nth 0 (vl-read-file-aux channel state filename line col acc))
-                           (revappend (mv-nth 0 (vl-read-file-spec channel state filename line col))
-                                      acc)))))
-
-  (local (defthm lemma-state-equiv
-           (equal (mv-nth 1 (vl-read-file-aux channel state filename line col acc))
-                  (mv-nth 1 (vl-read-file-spec channel state filename line col)))))
-
-  (local (defthm lemma-equiv
-           (implies (and (state-p1 state)
-                         (symbolp channel)
-                         (open-input-channel-p1 channel :byte state))
-                    (equal (vl-read-file-aux channel state filename line col nil)
-                           (list
-                            (reverse (mv-nth 0 (vl-read-file-spec channel state filename line col)))
-                            (mv-nth 1 (vl-read-file-spec channel state filename line col)))))
-           :hints(("Goal"
-                   :in-theory (disable vl-read-file-aux vl-read-file-spec)
-                   :use ((:instance lemma-decompose-aux (acc nil))
-                         (:instance lemma-decompose-spec)
-                         (:instance lemma-data-equiv (acc nil)))))))
-
-
-  (verify-guards vl-read-file-spec)
-
-  (defthm vl-read-file-spec-preserves-state
+  (defthm vl-read-file-loop-preserves-open-input-channel-p1
     (implies (and (force (state-p1 state))
                   (force (symbolp channel))
                   (force (open-input-channel-p1 channel :byte state)))
-             (state-p1 (mv-nth 1 (vl-read-file-spec channel state filename line col)))))
+             (b* (((mv ?data state)
+                   (vl-read-file-loop channel filename line col)))
+               (open-input-channel-p1 channel :byte state)))))
 
-  (defthm vl-read-file-spec-preserves-open-input-channel-p1
-    (implies (and (force (state-p1 state))
-                  (force (symbolp channel))
-                  (force (open-input-channel-p1 channel :byte state)))
-             (open-input-channel-p1 channel :byte
-                                    (mv-nth 1 (vl-read-file-spec channel state filename line col)))))
-
-  (defthm vl-echarlist-p-of-vl-read-file-spec
-    (implies (and (force (state-p1 state))
-                  (force (symbolp channel))
-                  (force (open-input-channel-p1 channel :byte state))
-                  (force (stringp filename))
-                  (force (posp line))
-                  (force (natp col)))
-             (vl-echarlist-p (mv-nth 0 (vl-read-file-spec channel state filename line col))))))
-
-
-
-
-
-(defsection vl-read-file
+(define vl-read-file
   :parents (loader)
-  :short "Read the entire contents of a file into a list of extended
-characters."
+  :short "Read an entire file into a list of extended characters."
+  ((filename stringp "The file to read.")
+   &key (state 'state))
+  :returns
+  (mv (okp    booleanp :rule-classes :type-prescription)
+      (result "On success, the entire contents of @('filename') as a list of
+               @(see extended-characters)."
+              vl-echarlist-p :hyp :fguard)
+      (state  state-p1 :hyp (force (state-p1 state))))
+  :long "<p>We read the file with @(see read-byte$) instead of @(see
+read-char$), because this seems perhaps to be more reliable.  In particular,
+even if the Lisp system wants to use Unicode or some other encoding for
+character streams, @('read-byte$') should always safely return octets.</p>"
+  (b* ((filename            (string-fix filename))
+       ((mv channel state)  (open-input-channel filename :byte state))
+       ((unless channel)    (mv nil nil state))
+       ((mv data state)     (vl-read-file-loop channel filename 1 0))
+       (state               (close-input-channel channel state)))
+    (mv t data state))
+  ///
+  (defthm true-listp-of-vl-read-file
+    (true-listp (mv-nth 1 (vl-read-file filename)))
+    :rule-classes :type-prescription)
 
-  :long "<p><b>Signature:</b> @(call vl-read-file) returns @('(mv result
-state)').</p>
+  (defthm vl-read-file-when-error
+    (b* (((mv okp result ?state) (vl-read-file filename)))
+      (implies (not okp)
+               (not result)))))
 
-<p>This is a low-level function for reading files.  It attempts to read the
-file specified by the string @('filename'), and return its contents as a list
-of @(see extended-characters).  In the process, each character is annotated
-with its location (see @(see vl-location-p)).</p>
+(define vl-read-file-rchars
+  :parents (vl-read-file)
+  :short "Optimized alternative to @(see vl-read-file) that reads the entire
+file into @(see nrev)."
+  ((filename stringp "The file to read.") nrev &key (state 'state))
+  :returns (mv okp nrev state)
+  :long "<p>We implement this mainly for @(see vl-read-files).</p>"
+  :enabled t
+  (mbe :logic
+       (non-exec
+        (b* (((mv okp data state)
+              (vl-read-file filename)))
+          (mv okp (append nrev data) state)))
+       :exec
+       (b* (((mv channel state)  (open-input-channel filename :byte state))
+            ((unless channel)    (mv nil nrev state))
+            ((mv nrev state)     (vl-read-file-loop-aux channel filename 1 0 nrev))
+            (state               (close-input-channel channel state)))
+         (mv t nrev state)))
+  :guard-hints(("Goal" :in-theory (enable vl-read-file))))
 
-<p>If there is an error opening the file, @('result') will be an ACL2 string
-indicating that an error has occurred.  <b>BOZO</b> this is a poor way to
-handle errors.  We should probably add a @('successp') return value
-instead.</p>
+(define vl-read-files-aux
+  :parents (vl-read-files)
+  :short "Tail recursive loop for @(see vl-read-files)."
+  ((filenames string-listp "The files to read.") nrev &key (state 'state))
+  :returns (mv errmsg? nrev state)
+  :long "<p>You should never need to reason about this directly, because of
+the following rule:</p> @(def vl-read-files-aux-redef)"
+  (b* (((when (atom filenames))
+        (let ((nrev (nrev-fix nrev)))
+          (mv nil nrev state)))
+       ((mv okp nrev state)
+        (vl-read-file-rchars (car filenames) nrev))
+       ((unless okp)
+        (mv (msg "Error reading file ~s0." (car filenames))
+            nrev state)))
+    (vl-read-files-aux (cdr filenames) nrev)))
 
-<p>We originally styled this function after @('read-file-characters') from the
-Unicode library (which, despite being part of the \"Unicode\" library, actually
-only reads normal ACL2 characters.)  We later decided to switch to a
-@('read-byte$') based approach, because it simply seems more reliable than
-@('read-char$').  In particular, the Lisp implementation might be trying to use
-Unicode, and we don't want ACL2 to get confused if it sees some odd
-character.</p>"
+(define vl-read-files
+  :parents (loader)
+  :short "Read an entire list of files into a list of extended characters."
+  ((filenames string-listp "The files to read.") &key (state 'state))
+  :returns
+  (mv (errmsg? "NIL on success, or an error @(see msg) that says which
+                file we were unable to read, otherwise.")
+      (data    "On success, extended characters from all files, in order."
+               vl-echarlist-p :hyp :fguard)
+      (state   state-p1 :hyp (force (state-p1 state))))
+  :verify-guards nil
+  (mbe :logic
+       (b* (((when (atom filenames))
+             (mv nil nil state))
+            ((mv okp first state) (vl-read-file (car filenames)))
+            ((unless okp)
+             (mv (msg "Error reading file ~s0." (car filenames)) nil state))
+            ((mv okp rest state) (vl-read-files (cdr filenames))))
+         (mv okp (append first rest) state))
+       :exec
+       (with-local-stobj nrev
+         (mv-let (errmsg echars nrev state)
+           (b* (((mv errmsg nrev state) (vl-read-files-aux filenames nrev))
+                ((mv echars nrev)       (nrev-finish nrev)))
+             (mv errmsg echars nrev state))
+           (mv errmsg echars state))))
+  ///
+  (local (in-theory (enable vl-read-files-aux)))
 
-  (defund vl-read-file (filename state)
-    (declare (xargs :guard (and (state-p state)
-                                (stringp filename))))
-    (b* (((mv channel state)
-          (open-input-channel filename :byte state))
-         ((unless channel)
-          (mv "Error opening file." state))
-         ((mv data state)
-          (vl-read-file-spec channel state filename 1 0))
-         (state
-          (close-input-channel channel state)))
-        (mv data state)))
+  (defthm true-listp-of-vl-read-files
+    (true-listp (mv-nth 1 (vl-read-files filenames)))
+    :rule-classes :type-prescription)
 
-  (local (in-theory (enable vl-read-file)))
+  (defthm vl-read-files-aux-redef
+    (equal (vl-read-files-aux filenames acc)
+           (b* (((mv errmsg data state)
+                 (vl-read-files filenames)))
+             (mv errmsg (append acc data) state)))
+    :hints(("Goal" :induct (vl-read-files-aux-fn filenames acc state))))
 
-  (defthm vl-read-file-preserves-state
-    (implies (and (force (state-p1 state))
-                  (force (stringp filename)))
-             (state-p1 (mv-nth 1 (vl-read-file filename state)))))
-
-  (defthm vl-echarlist-p-of-vl-read-file-on-success
-    (implies (and (not (stringp (mv-nth 0 (vl-read-file filename state))))
-                  (force (state-p1 state))
-                  (force (stringp filename)))
-             (vl-echarlist-p (mv-nth 0 (vl-read-file filename state)))))
-
-  (defthm true-listp-of-vl-read-file-on-success
-    (equal (stringp (mv-nth 0 (vl-read-file filename state)))
-           (not (true-listp (mv-nth 0 (vl-read-file filename state)))))))
-
+  (verify-guards vl-read-files-fn))

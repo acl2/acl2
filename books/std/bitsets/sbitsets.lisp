@@ -27,6 +27,7 @@
 (local (include-book "std/lists/rev" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+(local (include-book "misc/assert" :dir :system))
 ;(local (include-book "arithmetic-3/bind-free/top" :dir :system))
 ;(local (in-theory (disable acl2::cancel-mod-+)))
 
@@ -875,7 +876,7 @@ is not performed for other block sizes.</p>"
      `(encapsulate
         ()
         ,exec-def
-        (acl2::definlined sbitset-members-aux (x)
+        (acl2::defund-inline sbitset-members-aux (x)
           (declare (xargs :guard (sbitsetp x)
                           :verify-guards nil))
           ,real-body)
@@ -1226,7 +1227,7 @@ only member is @('a')."
           (t
            (xxxjoin 'sbitset-binary-union args))))
 
-  (assert! (sbitsetp (sbitset-union)))
+  (local (assert! (sbitsetp (sbitset-union))))
 
   (add-macro-alias sbitset-union sbitset-binary-union$inline)
   (add-macro-fn    sbitset-union sbitset-binary-union$inline t)
@@ -1387,7 +1388,7 @@ only member is @('a')."
   (add-macro-alias sbitset-intersect sbitset-binary-intersect$inline)
   (add-macro-fn    sbitset-intersect sbitset-binary-intersect$inline t)
 
-  (assert! (sbitsetp (sbitset-intersect)))
+  (local (assert! (sbitsetp (sbitset-intersect))))
 
   (local (in-theory (enable sbitset-intersect-exec
                             sbitset-intersect)))

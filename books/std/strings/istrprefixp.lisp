@@ -24,6 +24,7 @@
 (include-book "std/basic/defs" :dir :system)
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "arithmetic"))
+(include-book "misc/definline" :dir :system)  ;; bozo
 
 (local (defthm iprefixp-lemma-1
          (implies (and (natp xn)

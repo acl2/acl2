@@ -23,11 +23,13 @@
 (include-book "std/lists/list-fix" :dir :system)
 (local (include-book "std/lists/rev" :dir :system))
 (local (include-book "arithmetic"))
+(include-book "misc/definline" :dir :system)  ;; bozo
 
-(defsection digitp
+(define digitp
   :parents (numbers)
   :short "Recognizer for numeric characters (0-9)."
-
+  ((x :type character))
+  :returns bool
   :long "<p>ACL2 provides @(see digit-char-p) which is more flexible and can
 recognize numeric characters in other bases.  @(call digitp) only recognizes
 base-10 digits, but is roughly twice as fast as @('digit-char-p'), at least on
@@ -46,22 +48,18 @@ on the machine Lisp2.</p>
   (time (loop for i fixnum from 1 to 10000000 do
               (loop for c in *chars* do (digitp c))))
 })"
-
-  (definlined digitp (x)
-    (declare (type character x))
-    (mbe :logic (let ((code (char-code (char-fix x))))
-                  (and (<= (char-code #\0) code)
-                       (<= code (char-code #\9))))
-         :exec (let ((code (the (unsigned-byte 8)
-                             (char-code (the character x)))))
-                 (declare (type (unsigned-byte 8) code))
-                 (and (<= (the (unsigned-byte 8) 48)
-                          (the (unsigned-byte 8) code))
-                      (<= (the (unsigned-byte 8) code)
-                          (the (unsigned-byte 8) 57))))))
-
-  (local (in-theory (enable digitp)))
-
+  :inline t
+  (mbe :logic (let ((code (char-code (char-fix x))))
+                (and (<= (char-code #\0) code)
+                     (<= code (char-code #\9))))
+       :exec (let ((code (the (unsigned-byte 8)
+                           (char-code (the character x)))))
+               (declare (type (unsigned-byte 8) code))
+               (and (<= (the (unsigned-byte 8) 48)
+                        (the (unsigned-byte 8) code))
+                    (<= (the (unsigned-byte 8) code)
+                        (the (unsigned-byte 8) 57)))))
+  ///
   (defcong ichareqv equal (digitp x) 1
     :hints(("Goal" :in-theory (enable ichareqv
                                       downcase-char
@@ -73,26 +71,23 @@ on the machine Lisp2.</p>
     :rule-classes :compound-recognizer))
 
 
-
-(defsection nonzero-digitp
+(define nonzero-digitp
   :parents (numbers)
   :short "Recognizer for non-zero numeric characters (1-9)."
-
-  (definlined nonzero-digitp (x)
-    (declare (type character x))
-    (mbe :logic (let ((code (char-code (char-fix x))))
-                  (and (<= (char-code #\1) code)
-                       (<= code (char-code #\9))))
-         :exec (let ((code (the (unsigned-byte 8)
-                             (char-code (the character x)))))
-                 (declare (type (unsigned-byte 8) code))
-                 (and (<= (the (unsigned-byte 8) 49)
-                          (the (unsigned-byte 8) code))
-                      (<= (the (unsigned-byte 8) code)
-                          (the (unsigned-byte 8) 57))))))
-
-  (local (in-theory (enable nonzero-digitp)))
-
+  ((x :type character))
+  :returns bool
+  :inline t
+  (mbe :logic (let ((code (char-code (char-fix x))))
+                (and (<= (char-code #\1) code)
+                     (<= code (char-code #\9))))
+       :exec (let ((code (the (unsigned-byte 8)
+                           (char-code (the character x)))))
+               (declare (type (unsigned-byte 8) code))
+               (and (<= (the (unsigned-byte 8) 49)
+                        (the (unsigned-byte 8) code))
+                    (<= (the (unsigned-byte 8) code)
+                        (the (unsigned-byte 8) 57)))))
+  ///
   (defcong ichareqv equal (nonzero-digitp x) 1
     :hints(("Goal" :in-theory (enable ichareqv
                                       downcase-char
@@ -104,39 +99,28 @@ on the machine Lisp2.</p>
     :hints(("Goal" :in-theory (enable digitp)))))
 
 
-
-(defsection digit-val
+(define digit-val
   :parents (numbers)
   :short "Coerces a @(see digitp) character into an integer."
-
+  ((x digitp :type character))
+  :returns (val natp :rule-classes :type-prescription)
   :long "<p>For instance, @('(digit-val #\\3)') is 3.  For any non-@('digitp'),
 0 is returned.</p>"
-
-  (definlined digit-val (x)
-    (declare (type character x)
-             (xargs :guard (digitp x)
-                    :guard-hints (("Goal" :in-theory (enable digitp)))))
-    (mbe :logic
-         (if (digitp x)
-             (- (char-code (char-fix x))
-                (char-code #\0))
-           0)
-         :exec
-         (the (unsigned-byte 8)
-           (- (the (unsigned-byte 8) (char-code (the character x)))
-              (the (unsigned-byte 8) 48)))))
-
-  (local (in-theory (enable digitp digit-val char-fix)))
-
+  :inline t
+  (mbe :logic
+       (if (digitp x)
+           (- (char-code (char-fix x))
+              (char-code #\0))
+         0)
+       :exec
+       (the (unsigned-byte 8)
+         (- (the (unsigned-byte 8) (char-code (the character x)))
+            (the (unsigned-byte 8) 48))))
+  :prepwork
+  ((local (in-theory (enable digitp char-fix))))
+  ///
   (defcong ichareqv equal (digit-val x) 1
-    :hints(("Goal" :in-theory (enable ichareqv
-                                      downcase-char
-                                      char-fix))))
-
-  (defthm natp-of-digit-val
-    (and (integerp (digit-val x))
-         (<= 0 (digit-val x)))
-    :rule-classes :type-prescription)
+    :hints(("Goal" :in-theory (enable ichareqv downcase-char))))
 
   (defthm digit-val-upper-bound
     (< (digit-val x) 10)
@@ -156,22 +140,16 @@ on the machine Lisp2.</p>
                     n))))
 
 
-
-(defsection digit-listp
+(define digit-listp
   :parents (numbers)
   :short "Recognizes lists of @(see digitp) characters."
-
-; BOZO consider using std::deflist
-
-  (defund digit-listp (x)
-    (declare (xargs :guard (character-listp x)))
-    (if (consp x)
-        (and (digitp (car x))
-             (digit-listp (cdr x)))
-      t))
-
-  (local (in-theory (enable digit-listp)))
-
+  ((x character-listp))
+  (if (consp x)
+      (and (digitp (car x))
+           (digit-listp (cdr x)))
+    t)
+  ///
+  ;; BOZO consider using std::deflist instead
   (defthm digit-listp-when-not-consp
     (implies (not (consp x))
              (digit-listp x)))
@@ -207,51 +185,49 @@ on the machine Lisp2.</p>
              (digit-listp (nthcdr n x)))))
 
 
+(define digit-list-value1
+  :parents (digit-list-value)
+  ((x   (and (character-listp x)
+             (digit-listp x)))
+   (val :type (integer 0 *)))
+  :guard-hints (("Goal" :in-theory (enable digit-val digitp)))
+  (mbe :logic (if (consp x)
+                  (digit-list-value1 (cdr x)
+                                     (+ (digit-val (car x))
+                                        (* 10 (nfix val))))
+                (nfix val))
+       :exec (if (consp x)
+                 (digit-list-value1
+                  (cdr x)
+                  (the (integer 0 *)
+                    (+ (the (unsigned-byte 8)
+                         (- (the (unsigned-byte 8)
+                              (char-code (the character (car x))))
+                            (the (unsigned-byte 8) 48)))
+                       (* (the (integer 0 *) 10)
+                          (the (integer 0 *) val)))))
+               (the (integer 0 *) val))))
 
-(defsection digit-list-value
+(define digit-list-value
   :parents (numbers)
   :short "Coerces a @(see digit-listp) into a natural number."
-
+  ((x (and (character-listp x)
+           (digit-listp x))))
+  :returns (value natp :rule-classes :type-prescription)
   :long "<p>For instance, @('(digit-list-value '(#\1 #\0 #\3))') is 103.</p>
 
 <p>See also @(see parse-nat-from-charlist) for a more flexible function that
 can tolerate non-numeric characters after the number.</p>"
+  :inline t
 
-  (defund digit-list-value1 (x val)
-    (declare (type (integer 0 *) val)
-             (xargs :guard (and (character-listp x)
-                                (digit-listp x))
-                    :guard-hints (("Goal" :in-theory (enable digit-val digitp)))))
-    (mbe :logic (if (consp x)
-                    (digit-list-value1 (cdr x)
-                                       (+ (digit-val (car x))
-                                          (* 10 (nfix val))))
-                  (nfix val))
-         :exec (if (consp x)
-                   (digit-list-value1
-                    (cdr x)
-                    (the (integer 0 *)
-                      (+ (the (unsigned-byte 8)
-                           (- (the (unsigned-byte 8)
-                                (char-code (the character (car x))))
-                              (the (unsigned-byte 8) 48)))
-                         (* (the (integer 0 *) 10)
-                            (the (integer 0 *) val)))))
-                 (the (integer 0 *) val))))
-
-  (definlined digit-list-value (x)
-    (declare (xargs :guard (and (character-listp x)
-                                (digit-listp x))
-                    :verify-guards nil))
-    (mbe :logic (if (consp x)
-                    (+ (* (expt 10 (1- (len x)))
-                          (digit-val (car x)))
-                       (digit-list-value (cdr x)))
-                  0)
-         :exec (digit-list-value1 x 0)))
-
-  (local (in-theory (enable digit-list-value)))
-
+  :verify-guards nil
+  (mbe :logic (if (consp x)
+                  (+ (* (expt 10 (1- (len x)))
+                        (digit-val (car x)))
+                     (digit-list-value (cdr x)))
+                0)
+       :exec (digit-list-value1 x 0))
+  ///
   (defcong icharlisteqv equal (digit-list-value x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
 
@@ -286,19 +262,15 @@ can tolerate non-numeric characters after the number.</p>"
               (digit-val a)))))
 
 
-
-(defsection skip-leading-digits
-
-  (defund skip-leading-digits (x)
-    (declare (xargs :guard (character-listp x)))
-    (if (consp x)
-        (if (digitp (car x))
-            (skip-leading-digits (cdr x))
-          x)
-      nil))
-
-  (local (in-theory (enable skip-leading-digits)))
-
+(define skip-leading-digits ((x character-listp))
+  :returns (tail character-listp :hyp :guard)
+  (cond ((atom x)
+         nil)
+        ((digitp (car x))
+         (skip-leading-digits (cdr x)))
+        (t
+         x))
+  ///
   (defcong charlisteqv charlisteqv (skip-leading-digits x) 1
     :hints(("Goal" :in-theory (enable charlisteqv))))
 
@@ -308,26 +280,18 @@ can tolerate non-numeric characters after the number.</p>"
   (defthm len-of-skip-leading-digits
     (implies (digitp (car x))
              (< (len (skip-leading-digits x))
-                (len x))))
-
-  (defthm character-listp-of-skip-leading-digits
-    (implies (character-listp x)
-             (character-listp (skip-leading-digits x)))))
+                (len x)))))
 
 
-
-(defsection take-leading-digits
-
-  (defund take-leading-digits (x)
-    (declare (xargs :guard (character-listp x)))
-    (if (consp x)
-        (if (digitp (car x))
-            (cons (car x) (take-leading-digits (cdr x)))
-          nil)
-      nil))
-
-  (local (in-theory (enable take-leading-digits)))
-
+(define take-leading-digits ((x character-listp))
+  :returns (head character-listp)
+  (cond ((atom x)
+         nil)
+        ((digitp (car x))
+         (cons (car x) (take-leading-digits (cdr x))))
+        (t
+         nil))
+  ///
   (defcong icharlisteqv equal (take-leading-digits x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv
                                       ;; Gross, but gets us equal.
@@ -335,10 +299,6 @@ can tolerate non-numeric characters after the number.</p>"
                                       downcase-char
                                       digitp
                                       char-fix))))
-
-  (defthm character-listp-of-take-leading-digits
-    (character-listp (take-leading-digits x))
-    :hints(("Goal" :in-theory (enable digitp))))
 
   (defthm digit-listp-of-take-leading-digits
     (digit-listp (take-leading-digits x)))
@@ -354,36 +314,35 @@ can tolerate non-numeric characters after the number.</p>"
 
 
 
-(defsection digit-string-p
-
-  (defund digit-string-p-aux (x n xl)
-    (declare (type string x)
-             (type (integer 0 *) n)
-             (type (integer 0 *) xl)
-             (xargs :guard (and (<= n xl)
-                                (= xl (length x)))
-                    :measure (nfix (- (nfix xl) (nfix n)))))
-    (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (eql n xl))
-        t
-      (and (digitp (char x n))
-           (digit-string-p-aux x
-                               (mbe :logic (+ 1 (nfix n))
-                                    :exec
-                                    (the (integer 0 *) (+ 1 n)))
-                               xl))))
-
+(define digit-string-p-aux
+  :parents (digit-string-p)
+  ((x  stringp             :type string)
+   (n  natp                :type (integer 0 *))
+   (xl (eql xl (length x)) :type (integer 0 *)))
+  :guard (<= n xl)
+  :measure (nfix (- (nfix xl) (nfix n)))
+  :split-types t
+  (if (mbe :logic (zp (- (nfix xl) (nfix n)))
+           :exec (eql n xl))
+      t
+    (and (digitp (char x n))
+         (digit-string-p-aux x
+                             (mbe :logic (+ 1 (nfix n))
+                                  :exec
+                                  (the (integer 0 *) (+ 1 n)))
+                             xl)))
+  ///
   (defthm digit-string-p-aux-removal
     (implies (and (stringp x)
                   (natp n)
                   (equal xl (length x)))
              (equal (digit-string-p-aux x n xl)
                     (digit-listp (nthcdr n (explode x)))))
-    :hints(("Goal" :in-theory (enable digit-string-p-aux
-                                      digit-listp))))
+    :hints(("Goal" :in-theory (enable digit-listp)))))
 
-  (definline digit-string-p (x)
-    (declare (type string x))
+(define digit-string-p
+  ((x :type string))
+  :returns bool
 
 ; 0.5485 seconds, no garbage
 ;
@@ -397,8 +356,11 @@ can tolerate non-numeric characters after the number.</p>"
 ;   (time$ (loop for i fixnum from 1 to 10000000 do
 ;                (str::digit-listp (coerce x 'list)))))
 
-    (mbe :logic (digit-listp (explode x))
-         :exec (digit-string-p-aux x 0 (length x))))
+  :inline t
+  :enabled t
 
+  (mbe :logic (digit-listp (explode x))
+       :exec (digit-string-p-aux x 0 (length x)))
+  ///
   (defcong istreqv equal (digit-string-p x) 1))
 
