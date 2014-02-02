@@ -89,6 +89,29 @@
         (brr t)
         (monitor '(:rewrite ,rule) ''(:eval :go t))))
 
+    (defun explain-fn (state)
+      (declare (xargs :stobjs (state)
+                      :mode :program))
+      (mv-let (clause ttree)
+        (clausify-type-alist (get-brr-local 'type-alist state)
+                             (list (cddr (get-brr-local 'failure-reason state)))
+                             (ens state) (w state) nil nil)
+        (declare (ignore ttree))
+        (prettyify-clause clause
+                          nil
+                          (w state))))
+
+    (defmacro explain ()
+      `(prog2$ (cw "Printing target with hyps derived from type-alist~%")
+               (explain-fn state)))
+
+    (defmacro why-explain (rule)
+      `(er-progn
+        (brr t)
+        (monitor '(:rewrite ,rule) ''(:eval
+                                      :ok-if (brr@ :wonp)
+                                      (explain)))))
+
     (defmacro with-redef (&rest forms)
       ;; A handy macro you can use to temporarily enable redefinition, but then
       ;; keep it disabled for the rest of the session
