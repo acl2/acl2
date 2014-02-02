@@ -396,6 +396,24 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
   (b* ((hyp-list (untranslate-and x)))
     (cons 'and hyp-list)))
 
+
+
+(defun returnspec-thm-body (fnname binds x world)
+  (declare (xargs :guard (and (symbolp fnname)
+                              (returnspec-p x)
+                              (plist-worldp world))))
+  (b* (((returnspec x) x)
+       ((when (equal x.return-type t)) t)
+       (hyp (cond
+             ((eq x.hyp :guard) (fancy-hyp (look-up-guard fnname world)))
+             ((eq x.hyp :fguard) (fancy-force-hyp (look-up-guard fnname world)))
+             (t x.hyp)))
+       (concl `(b* (,binds)
+                 ,x.return-type)))
+    (if (eq hyp t)
+        concl
+      `(implies ,hyp ,concl))))
+
 (defun returnspec-single-thm (fnname x world)
   "Returns EVENTS"
   ;; Only valid to call AFTER the function has been submitted, because we look
@@ -404,21 +422,11 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
                               (returnspec-p x)
                               (plist-worldp world))))
   (b* (((returnspec x) x)
-       ((when (equal x.return-type t))
-        nil)
        (formals (look-up-formals fnname world))
-       (hyp     (cond ((eq x.hyp :guard)
-                       (fancy-hyp (look-up-guard fnname world)))
-                      ((eq x.hyp :fguard)
-                       (fancy-force-hyp (look-up-guard fnname world)))
-                      (t
-                       x.hyp)))
-       (hints x.hints)
-       (concl   `(let ((,x.name (,fnname . ,formals)))
-                   ,x.return-type))
-       (formula (if (eq hyp t)
-                    concl
-                  `(implies ,hyp ,concl))))
+       (binds `(,x.name (,fnname . ,formals)))
+       (formula (returnspec-thm-body fnname binds x world))
+       ((when (eq formula t)) nil)
+       (hints x.hints))
     `((defthm ,(intern-in-package-of-symbol
                 (concatenate 'string "RETURN-TYPE-OF-" (symbol-name fnname))
                 fnname)
@@ -426,25 +434,17 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
         :hints ,hints
         :rule-classes ,x.rule-classes))))
 
+
 (defun returnspec-multi-thm (fnname binds x world)
   "Returns EVENTS"
   (declare (xargs :guard (and (symbolp fnname)
                               (returnspec-p x)
                               (plist-worldp world))))
   (b* (((returnspec x) x)
-       ((when (equal x.return-type t))
-        nil)
-       (hyp (cond
-             ((eq x.hyp :guard) (fancy-hyp (look-up-guard fnname world)))
-             ((eq x.hyp :fguard) (fancy-force-hyp (look-up-guard fnname world)))
-             (t x.hyp)))
+       (formula (returnspec-thm-body fnname binds x world))
+       ((when (equal formula t)) nil)
 
-       (hints x.hints)
-       (concl `(b* (,binds)
-                 ,x.return-type))
-       (formula (if (eq hyp t)
-                    concl
-                  `(implies ,hyp ,concl))))
+       (hints x.hints))
     `((defthm ,(intern-in-package-of-symbol
                 (concatenate 'string "RETURN-TYPE-OF-" (symbol-name fnname)
                              "." (symbol-name x.name))
@@ -494,3 +494,6 @@ other @(see acl2::rule-classes), then you will want to override this default.</d
        (formals (look-up-formals fnname world))
        (binds   `((mv . ,ignorable-names) (,fnname . ,formals))))
     (returnspec-multi-thms fnname binds specs world)))
+
+
+

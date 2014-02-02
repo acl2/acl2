@@ -209,19 +209,18 @@ options are @(see local) to the definitions; they do not affect the
                      flag variable
      :flag-defthm-macro name - override name of the flag macro
      :flag-hints hints - hints for make-flag
+     :returns-no-induct - prove return type theorems without induction
+     :returns-hints - hints for inductive return type theorems
 })
 
-<p>Each define can also have a :flag-name option, which governs the name for
+<p>Each define can also have a :flag option, which governs the name for
 its flag in the flag-function.</p>
 
 
 
 ")
 
-(defmacro defines (name &rest args)
-  `(make-event (b* ((world (w state))
-                    (event (defines-fn ',name ',args world)))
-                 (value event))))
+
 
 
 (defconst *defines-xargs-keywords*
@@ -262,6 +261,11 @@ its flag in the flag-function.</p>
      :flag-var
      :flag-defthm-macro
      :flag-hints
+
+     :returns-no-induct
+     :returns-hints
+
+     :verbosep
      )
    *defines-xargs-keywords*))
 
@@ -380,7 +384,7 @@ its flag in the flag-function.</p>
 
 
 
-(defun make-fn-defsection (guts cliquename)
+(defun make-fn-defsection (guts cliquename process-returns)
   (b* (((defguts guts) guts)
        (short      (getarg :short          nil guts.kwd-alist))
        (long       (getarg :long           nil guts.kwd-alist))
@@ -393,30 +397,155 @@ its flag in the flag-function.</p>
         ,@(and parents `(:parents ,parents))
         ,@(and short   `(:short ,short))
         ,@(and long    `(:long ,long))
-        (make-event
-         (let* ((world (w state))
-                (events (returnspec-thms ',guts.name-fn
-                                         ',guts.returnspecs
-                                         world)))
-           `(progn . ,events)))
-        . ,guts.rest-events)
-      ,(add-signature-from-guts guts))))
+        ,@(and process-returns
+               `((make-event
+                  (let* ((world (w state))
+                         (events (returnspec-thms ',guts.name-fn
+                                                  ',guts.returnspecs
+                                                  world)))
+                    `(with-output :stack :pop (progn . ,events))))))
+        (with-output :stack :pop (progn . ,guts.rest-events))
+      (with-output :on (error) ,(add-signature-from-guts guts))))))
 
 
-(defun collect-fn-defsections (gutslist cliquename)
+(defun collect-fn-defsections (gutslist cliquename process-returns)
   (if (atom gutslist)
       nil
-    (append (make-fn-defsection (car gutslist) cliquename)
-            (collect-fn-defsections (cdr gutslist) cliquename))))
+    (append (make-fn-defsection (car gutslist) cliquename process-returns)
+            (collect-fn-defsections (cdr gutslist) cliquename process-returns))))
 
+(defun guts->flag (guts)
+  (or (cdr (assoc :flag (defguts->kwd-alist guts)))
+      (defguts->name guts)))
 
 (defun collect-flag-mapping (gutslist)
   (if (atom gutslist)
       nil
     (cons (cons (defguts->name-fn (car gutslist))
-                (or (cdr (assoc :flag (defguts->kwd-alist (car gutslist))))
-                    (defguts->name-fn (car gutslist))))
+                (guts->flag (car gutslist)))
           (collect-flag-mapping (cdr gutslist)))))
+
+
+(defun returnspec-thm-bodies (fnname binds retspecs world)
+  (b* (((when (atom retspecs)) nil)
+       (body (returnspec-thm-body fnname binds (car retspecs) world))
+       (rest (returnspec-thm-bodies fnname binds (cdr retspecs) world)))
+    (if (eq body t)
+        rest
+      (cons body rest))))
+
+
+(defun returnspec-thm-ruleclasses-add-corollary (classes body)
+  (b* (((when (atom classes)) nil)
+       (class (car classes))
+       (rest (returnspec-thm-ruleclasses-add-corollary (cdr classes) body))
+       ((when (atom class))
+        (cons `(,class :corollary ,body) rest))
+       ((when (assoc-keyword :corollary (cdr class)))
+        (cons class rest)))
+    (cons `(,(car class)
+            :corollary ,body
+            . ,(cdr class))
+          rest)))
+       
+
+(defun returnspec-thm-ruleclasses (fnname binds retspecs world)
+  (b* (((when (atom retspecs)) nil)
+       (body (returnspec-thm-body fnname binds (car retspecs) world))
+       (rest (returnspec-thm-ruleclasses fnname binds (cdr retspecs) world))
+       (classes (returnspec->rule-classes (car retspecs)))
+       ;; :rule-classes :rewrite --> (:rewrite)
+       ;; :rule-classes (:rewrite :type-prescription) --> (:rewrite :type-prescription)
+       (classes (if (and (atom classes) classes) (list classes) classes))
+       (classes-with-corollaries (returnspec-thm-ruleclasses-add-corollary
+                                  classes body)))
+    (append classes-with-corollaries rest)))
+
+(defun returnspec-thm-hints (retspecs)
+  (if (atom retspecs)
+      nil
+    (append (returnspec->hints (car retspecs))
+            (returnspec-thm-hints (cdr retspecs)))))
+
+(defun find-first-string-hint (retspec-hints)
+  (if (atom retspec-hints)
+      nil
+    (if (and (consp (car retspec-hints))
+             (stringp (caar retspec-hints)))
+        (caar retspec-hints)
+      (find-first-string-hint (cdr retspec-hints)))))
+
+(defun returnspecs-flag-entries (retspecs flag fnname binds world)
+  (b* (((when (atom retspecs)) nil)
+       (formula (returnspec-thm-body fnname binds (car retspecs) world))
+       ((when (eq formula t))
+        (returnspecs-flag-entries (cdr retspecs) flag fnname binds world))
+       ((returnspec x) (car retspecs))
+       (subgoal (find-first-string-hint x.hints))
+       (- (and subgoal
+               (er hard? 'defines
+                   "Error in returnspec theorems: unless using ~x0,~
+                    subgoal hints should be given using the global ~x1 ~
+                    option.  Computed hints may be given on individual ~
+                    :returns entries.  Found hint for ~x2."
+                   :returns-no-induct :returns-hints subgoal))))
+    (cons `(defthm ,(intern-in-package-of-symbol
+                     (concatenate 'string "RETURN-TYPE-OF-" (symbol-name fnname)
+                                  "." (symbol-name x.name))
+                     fnname)
+             ,formula
+             :hints ,x.hints
+             :rule-classes ,x.rule-classes
+             :flag ,flag)
+          (returnspecs-flag-entries (cdr retspecs) flag fnname binds world))))
+
+(defun fn-returnspec-flag-entries (guts world)
+  (b* (((defguts guts) guts)
+       (flag (guts->flag guts))
+       (formals (look-up-formals guts.name-fn world))
+       (fncall `(,guts.name-fn . ,formals))
+       (binds (b* ((names (returnspeclist->names guts.returnspecs))
+                   (ignorable-names (make-symbols-ignorable names)))
+                (if (consp (cdr ignorable-names))
+                    `((mv . ,ignorable-names) ,fncall)
+                  `(,(car ignorable-names) ,fncall)))))
+    (returnspecs-flag-entries guts.returnspecs flag guts.name-fn binds world)))
+
+(defun collect-returnspec-flag-thms (gutslist world)
+  (if (atom gutslist)
+      nil
+    (append (fn-returnspec-flag-entries (car gutslist) world)
+            (collect-returnspec-flag-thms (cdr gutslist) world))))
+
+(defun returnspec-flag-thm (defthm-macro gutslist returns-hints world)
+  (let ((thms (collect-returnspec-flag-thms gutslist world)))
+    (if thms
+        `(,defthm-macro
+           ,@thms
+           :skip-others t
+           :hints ,returns-hints)
+      `(value-triple :skipped))))
+
+
+                     
+
+(def-primitive-aggregate defines-guts
+  (name             ;; name of the defines section
+   gutslist         ;; define guts of functions
+   kwd-alist        ;; arguments to defines
+   flag-mapping     ;; function names->flag names
+   flag-defthm-macro
+   ;; other stuff?
+   ))
+
+(defun get-defines-alist (world)
+  "Look up information about the current defines in the world."
+  (cdr (assoc 'defines-alist (table-alist 'define world))))
+
+(defun extend-defines-alist (guts)
+  `(table define 'defines-alist
+          (cons (cons ',(defines-guts->name guts) ',guts)
+                (get-defines-alist world))))
 
 
 (defun defines-fn (name args world)
@@ -463,8 +592,6 @@ its flag in the flag-function.</p>
        (guts-table-exts (collect-guts-alist-exts gutslist))
 
        (fnnames (collect-names-from-guts gutslist))
-       (fn-sections (collect-fn-defsections gutslist
-                                            (and want-xdoc-p name)))
 
        (flag-name (if (assoc :flag kwd-alist)
                       (cdr (assoc :flag kwd-alist))
@@ -474,22 +601,48 @@ its flag in the flag-function.</p>
        (flag-var          (getarg :flag-var nil kwd-alist))
        (flag-defthm-macro (getarg :flag-defthm-macro nil kwd-alist))
        (flag-hints        (getarg :flag-hints nil kwd-alist))
-       (flag-mapping      (collect-flag-mapping gutslist)))
+       (flag-mapping      (collect-flag-mapping gutslist))
+
+       (returns-induct    (and flag-name
+                               (not (getarg :returns-no-induct nil kwd-alist))))
+       (returns-hints     (getarg :returns-hints nil kwd-alist))
+
+       ((when (and (not returns-induct) returns-hints))
+        (raise "Error in ~x0: returns-hints only is useful without ~
+                :returns-no-induct."
+               name))
+
+       (thm-macro      (and flag-name
+                            (or flag-defthm-macro (flag::thm-macro-name flag-name))))
+       
+       (fn-sections (collect-fn-defsections gutslist
+                                            (and want-xdoc-p name)
+                                            (not returns-induct)))
+
+       (defines-guts
+         (make-defines-guts
+          :name name
+          :gutslist gutslist
+          :kwd-alist kwd-alist
+          :flag-mapping flag-mapping
+          :flag-defthm-macro thm-macro)))
 
     `(encapsulate nil
-       ,@prepwork
+       (with-output :stack :pop (progn . ,prepwork))
        (defsection ,name
          ,@(and parents `(:parents ,parents))
          ,@(and short   `(:short ,short))
          ,@(and long    `(:long ,long))
-         ,@macros
+         (with-output :on (error) (progn . ,macros))
          ,@(if set-ignores
                `((encapsulate ()
                    ,@set-ignores
-                   ,mutual-rec))
-             `(,mutual-rec))
-         ,@aliases
-         ,@guts-table-exts)
+                   (with-output :stack :pop ,mutual-rec)))
+             `((with-output :stack :pop ,mutual-rec)))
+         (with-output :on (error) (progn . ,aliases))
+         (with-output :on (error) (progn . ,guts-table-exts))
+         (with-output :on (error)
+           ,(extend-defines-alist defines-guts)))
 
        ,@(and flag-name
               `((flag::make-flag ,flag-name ,(defguts->name-fn (car gutslist))
@@ -507,8 +660,21 @@ its flag in the flag-function.</p>
 
        (defsection rest-events
          ,@(and want-xdoc-p `(:extension ,name))
+         ,@(and returns-induct
+                `((make-event
+                   (let ((event (returnspec-flag-thm
+                                 ',thm-macro ',gutslist ',returns-hints (w state))))
+                     `(with-output :stack :pop ,event)))))
+                   
          ,@fn-sections
-         . ,rest-events))))
+         (with-output :stack :pop (progn . ,rest-events))))))
 
 
-
+(defmacro defines (name &rest args)
+  (let* ((verbose-tail (member :verbosep args))
+         (verbosep (and verbose-tail (cadr verbose-tail))))
+    `(with-output
+       :stack :push
+       ,@(and (not verbosep)
+              '(:off :all))
+       (make-event (defines-fn ',name ',args (w state))))))

@@ -58,7 +58,25 @@ equivalence such as:</p>
 })
 
 <p>When called with @(':defquant t'), we use @(see defquant) instead of @(see
-defun-sk).  This requires that the WITNESS-CP book be included.</p>")
+defun-sk).  This requires that the WITNESS-CP book be included.</p>
+
+<p>Note that @(':qvars') may be omitted, in which case there is no
+quantifier (@(see defun-sk)) introduced.  This can be used as a shortcut to
+prove that a fixing function induces an equivalence relation, e.g.,</p>
+
+@({
+  (def-universal-equiv gfix-equiv
+    :equiv-terms ((equal (gfix x))))
+ })
+<p>produces</p>
+@({
+ (defun gfix-equiv (x y)
+  (equal (gfix x) (gfix y)))
+
+ (defequiv gfix-equiv)
+ })
+
+<p>(with appropriate hints to ensure that the @('defequiv') succeeds).</p>")
 
 (defun universal-equiv-equivterms (var1 var2 equivs)
   (if (atom equivs)

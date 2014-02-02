@@ -137,7 +137,7 @@
       :already-definedp t)))
 
 (defines my-flatten-term
-
+  :returns-no-induct t
   (define my-flatten-term ((x my-termp))
     :flag term
     :returns (numbers true-listp :rule-classes :type-prescription)
@@ -162,4 +162,25 @@
       (implies (my-term-listp x)
                (nat-listp (my-flatten-term-list x)))
       :flag list)))
+
+(defines my-flatten-term2
+  :returns-hints (("goal" :in-theory (disable nat-listp)))
+  (define my-flatten-term2 ((x my-termp))
+    :flag term
+    :returns (numbers nat-listp :hyp :guard
+                      :hints ((and stable-under-simplificationp
+                                   '(:in-theory (enable nat-listp)))))
+    (if (atom x)
+        (list x)
+      (my-flatten-term2-list (cdr x))))
+
+  (define my-flatten-term2-list ((x my-term-listp))
+    :flag list
+    :returns (numbers nat-listp :hyp :guard
+                      :hints ((and stable-under-simplificationp
+                                   '(:in-theory (enable nat-listp)))))
+    (if (atom x)
+        nil
+      (append (my-flatten-term2 (car x))
+              (my-flatten-term2-list (cdr x))))))
 

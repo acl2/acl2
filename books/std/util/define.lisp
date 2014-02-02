@@ -284,6 +284,7 @@ some kind of separator!</p>
             :returns
             :prepwork
             :flag
+            :verbosep
             )
           acl2::*xargs-keywords*))
 
@@ -773,17 +774,19 @@ some kind of separator!</p>
          ,@(and short   `(:short ,short))
          ,@(and long    `(:long ,long))
 
-         ,@prepwork
+         ,@(and prepwork
+                `((with-output :stack :pop
+                    (progn . ,prepwork))))
 
          ;; Define the macro first, so that it can be used in recursive calls,
          ;; e.g., to take advantage of nicer optional/keyword args.
-         ,@(and guts.macro `(,guts.macro))
+         ,@(and guts.macro `((with-output :stack :pop ,guts.macro)))
 
          ,@(if set-ignores
                `((encapsulate ()
                    ,@set-ignores
-                   ,guts.main-def))
-             `(,guts.main-def))
+                   (with-output :stack :pop ,guts.main-def)))
+             `((with-output :stack :pop ,guts.main-def)))
 
          ,@(add-macro-aliases-from-guts guts)
 
@@ -800,20 +803,29 @@ some kind of separator!</p>
          (make-event
           (let* ((world (w state))
                  (events (returnspec-thms ',guts.name-fn ',guts.returnspecs world)))
-            (value `(progn . ,events))))
+            (value (if events
+                       `(with-output :stack :pop (progn . ,events))
+                     '(value-triple :invisible)))))
 
-         . ,guts.rest-events)
+         ,@(and guts.rest-events
+                `((with-output :stack :pop
+                    (progn
+                      . ,guts.rest-events)))))
 
        ;; Now that the section has been submitted, its xdoc exists, so we can
        ;; do the doc generation and prepend it to the xdoc.
-       ,(add-signature-from-guts guts)
+       (with-output :on (error) ,(add-signature-from-guts guts))
 
        )))
 
 (defmacro define (name &rest args)
-  `(make-event (b* ((world (w state))
-                    (event (define-fn ',name ',args world)))
-                 (value event))))
+  (let* ((verbose-tail (member :verbosep args))
+         (verbosep (and verbose-tail (cadr verbose-tail))))
+    `(with-output
+       :stack :push
+       ,@(and (not verbosep)
+              '(:off :all))
+       (make-event (define-fn ',name ',args (w state))))))
 
 #!ACL2
 (progn

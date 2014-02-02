@@ -234,6 +234,10 @@ macro and simply leave out the trivial parts:</p>
    :skip-others t)
 })
 
+<p>You may also have more than one defthm form for a given flag.  For the main
+inductive proof, these are all simply conjoined together (and their hints are
+simply appended together), but they are exported as separate theorems and may
+have different rule-classes.</p>
 
 <p>There is an older, alternate syntax for @('make-flag') that is still
 available.  To encourage transitioning to the new syntax, the old syntax is not
@@ -277,7 +281,12 @@ effect.  We simply translate subgoal hints to computed hints:</p>
    --->
  (and (equal id (parse-clause-id \"Subgoal *1/5.2\"))
       '(:in-theory (theory 'foo)))
-})")
+})
+
+<p>As mentioned above, if there is more than one defthm form for a given flag,
+the hints for all such forms are simply appended together; the hints given to
+one such form may affect what you might think of as the proof of another.</p>
+")
 
 ; Examples
 #|
@@ -602,16 +611,37 @@ effect.  We simply translate subgoal hints to computed hints:</p>
       (extract-keyword-from-args :flag thmpart)
     (car thmpart)))
 
-(defun assoc-flag-in-thmparts (flag thmparts)
+(defun body-from-thmpart (thmpart)
+  (cond ((not thmpart) t)
+        ((eq (car thmpart) 'defthm)
+         ;; (defthm name body ...)
+         (caddr thmpart))
+        (t ;; (flag body ...)
+         (cadr thmpart))))
+
+
+
+(defun collect-thmparts-for-flag (flag thmparts)
   (if (atom thmparts)
       nil
     (if (eq (flag-from-thmpart (car thmparts)) flag)
-        (car thmparts)
-      (assoc-flag-in-thmparts flag (cdr thmparts)))))
+        (cons (car thmparts)
+              (collect-thmparts-for-flag flag (cdr thmparts)))
+      (collect-thmparts-for-flag flag (cdr thmparts)))))
 
 
 
+(defun thmparts-collect-bodies (thmparts)
+  (if (atom thmparts)
+      nil
+    (cons (body-from-thmpart (car thmparts))
+          (thmparts-collect-bodies (cdr thmparts)))))
 
+(defun thmparts-collect-hints (thmparts)
+  (if (atom thmparts)
+      nil
+    (append (extract-keyword-from-args :hints (car thmparts))
+            (thmparts-collect-hints (cdr thmparts)))))
 
 
 
@@ -623,16 +653,14 @@ effect.  We simply translate subgoal hints to computed hints:</p>
 
   (if (consp alist)
       (let* ((flag   (cdar alist))
-             (lookup (assoc-flag-in-thmparts flag thmparts)))
-        (if (and (not lookup) (not skip-ok))
+             (flag-thmparts (collect-thmparts-for-flag flag thmparts)))
+        (if (and (not flag-thmparts) (not skip-ok))
             (er hard 'pair-up-cases-with-thmparts
                 "Expected there to be a case for the flag ~s0.~%" flag)
-          (let ((body (cond ((not lookup) t)
-                            ((eq (car lookup) 'defthm)
-                             ;; (defthm name body ...)
-                             (caddr lookup))
-                            (t ;; (flag body ...)
-                             (cadr lookup)))))
+          (let* ((bodies (thmparts-collect-bodies flag-thmparts))
+                 (body (if (eql (len bodies) 1)
+                           (car bodies)
+                         `(and . ,bodies))))
             (if (consp (cdr alist))
                 (cons `((equal ,flag-var ',flag) ,body)
                       (pair-up-cases-with-thmparts flag-var (cdr alist) thmparts skip-ok))
@@ -649,14 +677,14 @@ effect.  We simply translate subgoal hints to computed hints:</p>
 
   (if (consp alist)
       (let* ((flag   (cdar alist))
-             (lookup (assoc-flag-in-thmparts flag thmparts)))
-        (if (not lookup)
+             (flag-thmparts (collect-thmparts-for-flag flag thmparts)))
+        (if (not flag-thmparts)
             (if skip-ok
                 (cons (cons flag nil)
                       (pair-up-cases-with-hints (cdr alist) thmparts skip-ok))
               (er hard 'pair-up-cases-with-hints
                   "Expected there to be a case for the flag ~s0.~%" flag))
-          (let ((hints (extract-keyword-from-args :hints lookup)))
+          (let ((hints (thmparts-collect-hints flag-thmparts)))
             (cons (cons flag hints)
                   (pair-up-cases-with-hints (cdr alist) thmparts skip-ok)))))
     nil))
@@ -678,35 +706,30 @@ Expected an explicit name for each theorem, since no general name was
 given.  The following theorem does not have a name: ~x0~%" entry)))))
 
 
-(defun make-defthm-macro-fn-aux (lemma-name explicit-name flag-var alist thmparts)
-  ;; We have just proven the lemma and it's time to instantiate it to
-  ;; give us each thm.
-  (if (consp alist)
-      (let* ((flag (cdar alist))
-             (lookup (assoc-flag-in-thmparts flag thmparts)))
-        (if (or (not lookup)
-                (extract-keyword-from-args :skip (cddr lookup)))
-            (make-defthm-macro-fn-aux
-             lemma-name explicit-name flag-var (cdr alist) thmparts)
-          ;; Not checking for lookup, already did it when we did cases.
-          (let ((this-name
-                 (flag-thm-entry-thmname explicit-name flag lookup))
-                (body (if (eq (car lookup) 'defthm)
-                          (caddr lookup)
-                        (cadr lookup)))
-                (rule-classes (let ((mem (member :rule-classes (cddr lookup))))
-                                (if mem (cadr mem) :rewrite)))
-                (doc          (extract-keyword-from-args :doc (cddr lookup))))
-            (cons `(defthm ,this-name
-                     ,body
-                     :rule-classes ,rule-classes
-                     :doc ,doc
-                     :hints(("Goal"
-                             :in-theory (theory 'minimal-theory)
-                             :use ((:instance ,lemma-name (,flag-var ',flag))))))
-                  (make-defthm-macro-fn-aux
-                   lemma-name explicit-name flag-var (cdr alist) thmparts)))))
-    nil))
+(defun flag-defthm-corollaries (lemma-name explicit-name flag-var thmparts)
+  (if (atom thmparts)
+      nil
+    (if (extract-keyword-from-args :skip (car thmparts))
+        (flag-defthm-corollaries lemma-name explicit-name flag-var (cdr thmparts))
+      (let* ((thmpart (car thmparts))
+             (flag    (flag-from-thmpart thmpart))
+             ;; note: this can sometimes cause name conflicts when names are
+             ;; generated from the flags
+             (thmname (flag-thm-entry-thmname explicit-name flag thmpart))
+             (body (body-from-thmpart thmpart))
+             (rule-classes-look (member :rule-classes thmpart))
+             (doc (extract-keyword-from-args :doc thmpart)))
+        (cons `(with-output :stack :pop
+                 (defthm ,thmname
+                   ,body
+                   ,@(and rule-classes-look
+                          `(:rule-classes ,(cadr rule-classes-look)))
+                   :doc ,doc
+                   :hints(("Goal"
+                           :in-theory (theory 'minimal-theory)
+                           :use ((:instance ,lemma-name (,flag-var ',flag)))))))
+              (flag-defthm-corollaries lemma-name explicit-name flag-var (cdr thmparts)))))))
+              
 
 (defun find-first-thm-name (thmparts)
   (if (atom thmparts)
@@ -720,7 +743,7 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
 
 
 
-(defun make-defthm-macro-fn (args alist flag-var flag-fncall)
+(defun flag-defthm-fn (args alist flag-var flag-fncall)
   (let* ((explicit-name (and (symbolp (car args)) (car args)))
          (args (if explicit-name (cdr args) args))
          (thmparts (throw-away-keyword-parts args))
@@ -762,24 +785,27 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
                          ,flag-var
                          . ,(pair-up-cases-with-hints alist thmparts skip-ok)))))))
 
-    `(progn
-       (encapsulate
-        ()
-        (local (defthm ,name
-                 (cond . ,(pair-up-cases-with-thmparts
-                           flag-var alist thmparts skip-ok))
-                 :rule-classes nil
-                 :hints ,hints
-                 :instructions ,instructions
-                 :otf-flg ,(extract-keyword-from-args :otf-flg args)))
+    `(with-output :off :all :on (error) :stack :push
+       (progn
+         (encapsulate
+           ()
+           (local
+            (with-output :stack :pop
+              (defthm ,name
+                (cond . ,(pair-up-cases-with-thmparts
+                          flag-var alist thmparts skip-ok))
+                :rule-classes nil
+                :hints ,hints
+                :instructions ,instructions
+                :otf-flg ,(extract-keyword-from-args :otf-flg args))))
 
-        . ,(make-defthm-macro-fn-aux name explicit-name flag-var alist thmparts))
-       (value-triple ',name))))
+           . ,(flag-defthm-corollaries name explicit-name flag-var thmparts))
+         (with-output :stack :pop (value-triple ',name))))))
 
 
 (defun make-defthm-macro (real-macro-name alist flag-var flag-fncall)
   `(defmacro ,real-macro-name (&rest args) ;; was (name &rest args)
-     (make-defthm-macro-fn args ',alist ',flag-var ',flag-fncall)))
+     (flag-defthm-fn args ',alist ',flag-var ',flag-fncall)))
 
 (defun make-cases-for-equiv (alist world)
   (if (consp alist)
@@ -870,7 +896,11 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
       (if look
           (cons (cdr look) (apply-formals-subst (cdr formals) subst))
         (cons (car formals) (apply-formals-subst (cdr formals) subst))))))
-  
+
+(defun thm-macro-name (flag-fn-name)
+  (intern-in-package-of-symbol
+   (concatenate 'string "DEFTHM-" (symbol-name flag-fn-name))
+   flag-fn-name))
 
 (defun make-flag-fn (flag-fn-name clique-member-name flag-var flag-mapping hints
                                   defthm-macro-name
@@ -882,9 +912,7 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
                     (pairlis$ (get-clique-members clique-member-name world)
                               (get-clique-members clique-member-name world))))
          (defthm-macro-name (or defthm-macro-name
-                                (intern-in-package-of-symbol
-                                 (concatenate 'string "DEFTHM-" (symbol-name flag-fn-name))
-                                 flag-fn-name)))
+                                (thm-macro-name flag-fn-name)))
          (equiv-thm-name (intern-in-package-of-symbol
                           (concatenate 'string (symbol-name flag-fn-name) "-EQUIVALENCES")
                           flag-fn-name))
@@ -1010,6 +1038,7 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
   ;; A few syntactic variations on defining the same theorems:
   (encapsulate
    nil
+   (value-triple 1)
    (local (defthm-pseudo-termp type-of-pseudo-termp
             (term (booleanp (pseudo-termp x))
                   :rule-classes :rewrite
@@ -1018,6 +1047,7 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
 
   (encapsulate
    nil
+   (value-triple 2)
    (local (defthm-pseudo-termp type-of-pseudo-termp2
             (defthm booleanp-of-pseudo-termp
               (booleanp (pseudo-termp x))
@@ -1029,6 +1059,7 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
 
   (encapsulate
    nil
+   (value-triple 3)
    (local (in-theory (disable pseudo-termp pseudo-term-listp)))
    (local (defthm-pseudo-termp type-of-pseudo-termp
             (term (booleanp (pseudo-termp x))
@@ -1040,6 +1071,7 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
 
   (encapsulate
    nil
+   (value-triple 4)
    (local (defthm-pseudo-termp
             (term (booleanp (pseudo-termp x))
                   :rule-classes :rewrite
@@ -1050,6 +1082,7 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
 
   (encapsulate
    nil
+   (value-triple 5)
    (local (defthm-pseudo-termp
             (defthm type-of-pseudo-termp
               (booleanp (pseudo-termp x))
@@ -1063,9 +1096,16 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
 
   (encapsulate
    nil
+   (value-triple 6)
    (local (defthm-pseudo-termp
             (defthm type-of-pseudo-termp
               (booleanp (pseudo-termp x))
+              :rule-classes :type-prescription
+              :doc nil
+              :flag term)
+            (defthm pseudo-termp-equal-t
+              (equal (equal (pseudo-termp x) t)
+                     (pseudo-termp x))
               :rule-classes :rewrite
               :doc nil
               :flag term)
