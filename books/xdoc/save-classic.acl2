@@ -1,5 +1,5 @@
-; ACL2 String Library
-; Copyright (C) 2009-2013 Centaur Technology
+; XDOC Documentation System for ACL2
+; Copyright (C) 2009-2011 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,6 +19,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (include-book "std/portcullis" :dir :system)
-(include-book "cowles/portcullis" :dir :system)
-(include-book "data-structures/portcullis" :dir :system)
+(include-book "oslib/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all
+

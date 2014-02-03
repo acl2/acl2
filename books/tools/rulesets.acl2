@@ -1,5 +1,5 @@
-; ACL2 String Library
-; Copyright (C) 2009-2013 Centaur Technology
+; Rulesets -- Extensible alternative to theories
+; Copyright (C) 2008-2012 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -16,9 +16,6 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
-; Original author: Jared Davis <jared@centtech.com>
-
+; Original authors: Sol Swords and Jared Davis
+;                   {sswords,jared}@centtech.com
 (include-book "std/portcullis" :dir :system)
-(include-book "cowles/portcullis" :dir :system)
-(include-book "data-structures/portcullis" :dir :system)
-; cert-flags: ? t :ttags :all

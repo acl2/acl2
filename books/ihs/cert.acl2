@@ -21,7 +21,8 @@
 ; it was in ...<acl2 stuff>.../books/data-structures.
 
 (in-package "ACL2")
+(include-book "std/portcullis" :dir :system)
+(include-book "cowles/portcullis" :dir :system)
 (include-book "data-structures/portcullis" :dir :system)
-(certify-book "ihs-init" ? t)
 
 

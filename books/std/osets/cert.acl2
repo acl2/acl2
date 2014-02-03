@@ -14,5 +14,6 @@
 #!ACL2
 (in-package "ACL2")
 (include-book "std/portcullis" :dir :system)
+(include-book "cowles/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all
 

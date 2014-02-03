@@ -21,3 +21,5 @@
 (defpkg "ACL2-CRG" *cowles-package-symbols*)
 (defpkg "ACL2-AGP" *cowles-package-symbols*)
 (defpkg "ACL2-ASG" *cowles-package-symbols*)
+
+(include-book "std/portcullis" :dir :system)

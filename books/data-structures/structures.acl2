@@ -1,4 +1,3 @@
 (in-package "ACL2")
-(ld "define-u-package.lsp")
-(ld "define-structures-package.lsp")
+(include-book "portcullis")
 (certify-book "structures" ? t)
