@@ -231,16 +231,6 @@ command, along the following lines:</p>
               (find-roots (cdr x)))
       (find-roots (cdr x)))))
 
-(defun gather-topic-names (x)
-  (if (atom x)
-      nil
-    (cons (cdr (assoc :name (car x)))
-          (gather-topic-names (cdr x)))))
-
-(defun topics-fal (x)
-  (make-fast-alist (pairlis$ (gather-topic-names x) x)))
-
-
 (defun find-orphaned-topics-1 (child parents topics-fal acc)
   ;; Returns an alist of (CHILD . MISSING-PARENT)
   (cond ((atom parents)

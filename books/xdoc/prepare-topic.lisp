@@ -1,5 +1,5 @@
 ; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2011 Centaur Technology
+; Copyright (C) 2009-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -31,12 +31,12 @@
 ; Gather names of all xdoc topics in x which have parent par.  I.e., this finds
 ; the immediate children.
 
-  (if (atom x)
-      nil
-    (if (member-equal par (cdr (assoc :parents (car x))))
+  (b* (((when (atom x))
+        nil)
+       ((when (member par (cdr (assoc :parents (car x)))))
         (cons (cdr (assoc :name (car x)))
-              (find-children-aux par (cdr x)))
-      (find-children-aux par (cdr x)))))
+              (find-children-aux par (cdr x)))))
+    (find-children-aux par (cdr x))))
 
 (defun find-children (par x)
 
@@ -53,13 +53,22 @@
 ]>
 ")
 
+(defun gather-topic-names (x)
+  (if (atom x)
+      nil
+    (cons (cdr (assoc :name (car x)))
+          (gather-topic-names (cdr x)))))
+
+(defun topics-fal (x)
+  (make-fast-alist (pairlis$ (gather-topic-names x) x)))
+
 
 ; ------------------ Making Flat Indexes ------------------------
 
 (defun index-add-topic (x dir topics-fal index-pkg state acc)
 
 ; X is a single topic entry in the xdoc table.  Index-pkg says the base package
-; for symbols seen frmo the index.
+; for symbols seen from the index.
 
   (b* ((name     (cdr (assoc :name x)))
        (short    (cdr (assoc :short x)))
@@ -87,10 +96,11 @@
 
 ; X is a list of topics.  Index-pkg says the base package for these symbols.
 
-  (if (atom x)
-      (mv acc state)
-    (b* (((mv acc state) (index-add-topic (car x) dir topics-fal index-pkg state acc)))
-        (index-add-topics (cdr x) dir topics-fal index-pkg state acc))))
+  (b* (((when (atom x))
+        (mv acc state))
+       ((mv acc state)
+        (index-add-topic (car x) dir topics-fal index-pkg state acc)))
+    (index-add-topics (cdr x) dir topics-fal index-pkg state acc)))
 
 (defun index-topics (x title dir topics-fal index-pkg state acc)
 
@@ -106,52 +116,70 @@
        (acc (cons #\Newline acc)))
       (mv acc state)))
 
-
-
 (defun add-parents (parents base-pkg acc)
-  (if (atom parents)
-      acc
-    (let* ((acc (str::revappend-chars "<parent topic=\"" acc))
-           (acc (file-name-mangle (car parents) acc))
-           (acc (str::revappend-chars "\">" acc))
-           (acc (sym-mangle-cap (car parents) base-pkg acc))
-           (acc (str::revappend-chars "</parent>" acc))
-           (acc (cons #\Newline acc)))
-      (add-parents (cdr parents) base-pkg acc))))
+  (b* (((when (atom parents))
+        acc)
+       (acc (str::revappend-chars "<parent topic=\"" acc))
+       (acc (file-name-mangle (car parents) acc))
+       (acc (str::revappend-chars "\">" acc))
+       (acc (sym-mangle-cap (car parents) base-pkg acc))
+       (acc (str::revappend-chars "</parent>" acc))
+       (acc (cons #\Newline acc)))
+    (add-parents (cdr parents) base-pkg acc)))
 
-(defun gather-topics (names all-topics)
+(defun gather-topics (names topics-fal)
 
-; Given a list of topic names, get their entries from the list of all topics.
+; Given a list of topic names, get their entries.  Requires that all topics
+; exist!
 
-  (cond ((atom all-topics)
-         nil)
-        ((member (cdr (assoc :name (car all-topics))) names)
-         (cons (car all-topics)
-               (gather-topics names (cdr all-topics))))
-        (t
-         (gather-topics names (cdr all-topics)))))
+  (b* (((when (atom names))
+        nil)
+       (look (hons-get (car names) topics-fal))
+       ((unless look)
+        (er hard? 'gather-topics "Failed to find topic ~x0." (car names))))
+    (cons (cdr look)
+          (gather-topics (cdr names) topics-fal))))
 
-(defun preprocess-topic (x all-topics dir topics-fal state)
+(defun check-topic-syntax (x)
   (b* ((name     (cdr (assoc :name x)))
        (base-pkg (cdr (assoc :base-pkg x)))
        (short    (or (cdr (assoc :short x)) ""))
        (long     (or (cdr (assoc :long x)) ""))
        (parents  (cdr (assoc :parents x)))
+       (suborder (cdr (assoc :suborder x)))
        ((unless (symbolp name))
-        (mv (er hard? 'preprocess-topic "Name is not a string: ~x0.~%" x)
-            state))
+        (er hard? 'check-topic-wellformed "Name is not a symbol: ~x0" x))
        ((unless (symbolp base-pkg))
-        (mv (er hard? 'preprocess-topic "Base-pkg is not a symbol: ~x0.~%" base-pkg)
-            state))
+        (er hard? 'check-topic-wellformed "Base-pkg is not a symbol: ~x0" x))
        ((unless (symbol-listp parents))
-        (mv (er hard? 'preprocess-topic "Parents are not a symbol-listp: ~x0.~%" x)
-            state))
+        (er hard? 'check-topic-wellformed "Parents are not a symbol-listp: ~x0" x))
        ((unless (stringp short))
-        (mv (er hard? 'preprocess-topic "Short is not a string: ~x0.~%" x)
-            state))
+        (er hard? 'check-topic-wellformed "Short is not a string or nil: ~x0" x))
        ((unless (stringp long))
-        (mv (er hard? 'preprocess-topic "Long is not a string: ~x0.~%" x)
-            state))
+        (er hard? 'check-topic-wellformed "Long is not a string or nil: ~x0" x))
+       ((unless (symbol-listp suborder))
+        (er hard? 'check-topic-wellformed "Suborder is not a symbol-listp: ~x0" x)))
+    t))
+
+(defun apply-suborder (suborder children-names)
+  ;; should return some permutation of children-names
+  (cond ((atom suborder)
+         children-names)
+        ((member (car suborder) children-names)
+         (cons (car suborder)
+               (apply-suborder (cdr suborder)
+                               (remove (car suborder) children-names))))
+        (t
+         (apply-suborder (cdr suborder) children-names))))
+
+(defun preprocess-topic (x all-topics dir topics-fal state)
+  (b* ((- (check-topic-syntax x))
+       (name     (cdr (assoc :name x)))
+       (base-pkg (cdr (assoc :base-pkg x)))
+       (short    (or (cdr (assoc :short x)) ""))
+       (long     (or (cdr (assoc :long x)) ""))
+       (parents  (cdr (assoc :parents x)))
+       (suborder (cdr (assoc :suborder x)))
 
        (acc    nil)
        (acc    (str::revappend-chars "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" acc))
@@ -176,7 +204,7 @@
        (state
         (if (and err (xdoc-verbose-p))
             (pprogn
-               (fms "~|~%WARNING: problem with :short in topic ~x0:~%" 
+               (fms "~|~%WARNING: problem with :short in topic ~x0:~%"
                     (list (cons #\0 name))
                     *standard-co* state nil)
                (princ$ err *standard-co* state)
@@ -218,12 +246,27 @@
        (acc    (str::revappend-chars "</long>" acc))
        (acc    (cons #\Newline acc))
 
-       (children (find-children name all-topics))
-       (topics   (gather-topics children all-topics))
-
-       ((mv acc state) (if (not topics)
-                           (mv acc state)
-                         (index-topics (reverse topics) "Subtopics" dir topics-fal base-pkg state acc)))
+       (children-names
+        ;; note: all children-names are known to be existing topics, since
+        ;; otherwise we wouldn't have found them.  topics mentioned in
+        ;; suborder, however, may not exist
+        (find-children name all-topics))
+       (- (and (xdoc-verbose-p)
+               (not (subsetp suborder children-names))
+               (cw "~|~%WARNING: in topic ~x0, subtopic order mentions topics that ~
+                    are not children: ~&1.~%"
+                   name (set-difference$ suborder children-names))))
+       (children-names
+        ;; this returns a permutation of the original children-names, so they
+        ;; must all exist
+        (apply-suborder suborder children-names))
+       (children-topics
+        ;; safe to call gather-topics because we know all children-names exist.
+        (gather-topics children-names topics-fal))
+       ((mv acc state)
+        (if (not children-topics)
+            (mv acc state)
+          (index-topics children-topics "Subtopics" dir topics-fal base-pkg state acc)))
 
        (acc    (str::revappend-chars "</topic>" acc))
        (acc    (cons #\Newline acc))

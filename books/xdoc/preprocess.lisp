@@ -373,15 +373,6 @@
   (declare (type string x))
   (read-through-some-char-aux x n xl chars nil))
 
-(defun skip-past-ws (x n xl) ;; ==> N-PRIME
-  (declare (type string x))
-  (cond ((eql xl n)
-         n)
-        ((member (char x n) '(#\Space #\Tab #\Newline #\Page))
-         (skip-past-ws x (+ 1 n) xl))
-        (t
-         n)))
-
 
 ; Basic preprocessor directives:
 

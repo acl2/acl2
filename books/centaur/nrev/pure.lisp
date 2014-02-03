@@ -320,7 +320,7 @@ nrev)."
          elems))))
 
 (defsection nrev2
-  :parents (nrev2)
+  :parents (nrev)
   :short "An extra @(see nrev) created with @(see defstobj-clone)."
   :long "<p>This may be useful if you need two @(see nrev) stobjs at once.</p>
 @(def nrev2)"

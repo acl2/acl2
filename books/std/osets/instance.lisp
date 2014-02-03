@@ -565,7 +565,7 @@
 		 (eq (car event) 'defthmd))
 	     (let* ((name (second event))
 		    (new-name (intern-in-package-of-symbol
-			       (string-upcase
+			       (acl2::string-upcase
 				(concatenate 'string
 					     (symbol-name name)
 					     (symbol-name suffix)))
@@ -609,8 +609,8 @@
 
 (defmacro instance (theory)
   (let ((macro-name (intern-in-package-of-symbol
-		     (string-upcase (concatenate 'string
-						 "instance-" (string theory)))
+		     (acl2::string-upcase (concatenate 'string
+                                                       "instance-" (string theory)))
 		     theory)))
     `(defmacro ,macro-name (&key subs suffix generics extra-defs)
        (list* 'encapsulate

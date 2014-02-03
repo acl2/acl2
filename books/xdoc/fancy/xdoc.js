@@ -142,6 +142,24 @@ function key_title(key)
        : ("XDOC &mdash; " + key);
 }
 
+
+
+function apply_suborder(subkeys, keys) {
+    var ret = [];
+    for(var i in subkeys) {
+	ret.push(subkeys[i]);
+    }
+    for(var i in keys) {
+        var k = keys[i];
+	var idx = ret.indexOf(k);
+	if (idx == -1) { // new key, add it
+	    ret.push(k);
+	}
+	// else already have it.
+    }
+    return ret;
+}
+
 function key_sorted_children(key) { // Returns a nicely sorted array of child_keys
     var children = topic_child_keys(key);
 
@@ -157,6 +175,12 @@ function key_sorted_children(key) { // Returns a nicely sorted array of child_ke
     for(var i in tmp) {
         ret.push(tmp[i].key);
     }
+
+    var suborder = topic_suborder(key);
+    if (suborder.length > 0) {
+	return apply_suborder(suborder, ret);
+    }
+
     return ret;
 }
 

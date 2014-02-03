@@ -42,6 +42,7 @@
 //    topic_short       : KEY -> xml encoded short topic description
 //    topic_parent_keys : KEY -> [array of KEYS of parents]
 //    topic_child_keys  : KEY -> [array of KEYS of children]
+//    topic_suborder    : KEY -> [array of KEYS of children]
 //
 //
 // Implementation details:
@@ -64,13 +65,14 @@
 //
 // Format of each entry (xdoc/save-fancy.lisp:json-encode-index-entry)
 //
-//      0     1      2         3         4
-//    [key, name, rawname, parentkeys, short]
+//        0     1      2         3         4
+//      [key, name, rawname, parent-uids, short]
+//  OR  [key, name, rawname, parent-uids, short, suborder-uids]
 //
 // We translate the xindex into an "xhash" of the form:
 //
-//             0    1      2         3          4           5       6
-//    KEY -> [uid, name, rawname, parentuids, parentkeys, short, childkeys].
+//             0    1      2         3          4           5       6          7             8
+//    KEY -> [uid, name, rawname, parentuids, parentkeys, short, childkeys, suborder-uids, suborder-keys].
 
 var xindex_loaded = false;
 var xhash = {};
@@ -102,6 +104,9 @@ function topic_short(key)
 function topic_child_keys(key)
 { return key in xhash ? xhash[key][6] : []; }
 
+function topic_suborder(key)
+{ return key in xhash ? xhash[key][8] : []; }
+
 function xindex_init()
 {
     // Fill in most of the xhash directly from the xindex
@@ -112,7 +117,8 @@ function xindex_init()
 	var rawname = entry[2];
 	var parentuids = entry[3];
 	var shortstr = entry[4];
-	xhash[key] = [uid,name,rawname,parentuids,[],shortstr,[]];
+	var suborder = entry[5];
+	xhash[key] = [uid,name,rawname,parentuids,[],shortstr,[],suborder,[]];
     }
 
     // Fill in the parent_keys by resolving all parent uids
@@ -125,6 +131,19 @@ function xindex_init()
 	                      ? xindex[uid][0]
 	                      : "XDOC____ERROR-BROKEN-PARENT";
 	    xhash[key][4].push(parentkey);
+	}
+    }
+
+    // Fill in suborder_keys by resolving all suborder uids
+    var xl = xindex.length;
+    for(var key in xhash) {
+	var subuids = xhash[key][7];
+	for(var i in subuids) {
+	    var uid = subuids[i];
+	    if (0 <= uid && uid < xl) {
+		var subkey = xindex[uid][0];
+		xhash[key][8].push(subkey);
+	    }
 	}
     }
 

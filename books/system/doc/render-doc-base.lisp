@@ -61,7 +61,7 @@
 
 (defun rendered-symbol (sym)
   (intern-in-package-of-symbol
-   (string-upcase (rendered-name (symbol-name sym)))
+   (str::upcase-string (rendered-name (symbol-name sym)))
    sym))
 
 (defun rendered-symbol-lst (symlist)
@@ -69,14 +69,14 @@
         (t (cons (rendered-symbol (car symlist))
                  (rendered-symbol-lst (cdr symlist))))))
 
-(defun render-topic (x all-topics state)
+(defun render-topic (x all-topics topics-fal state)
   ;; Adapted from display-topic
   (b* ((name (cdr (assoc :name x)))
        (parents (cdr (assoc :parents x)))
        (from (cdr (assoc :from x)))
        ((mv text state) (preprocess-topic
                          (acons :parents nil x) ;; horrible hack
-                         all-topics nil nil state))
+                         all-topics nil topics-fal state))
        ((mv err tokens) (parse-xml text))
 
        ((when err)
@@ -108,12 +108,18 @@
                  (list from)))
         state)))
 
-(defun render-topics (x all-topics state)
+(defun render-topics1 (x all-topics topics-fal state)
   (b* (((when (atom x))
         (mv nil state))
-       ((mv first state) (render-topic (car x) all-topics state))
-       ((mv rest state) (render-topics (cdr x) all-topics state)))
+       ((mv first state) (render-topic (car x) all-topics topics-fal state))
+       ((mv rest state) (render-topics1 (cdr x) all-topics topics-fal state)))
     (mv (cons first rest) state)))
+
+(defun render-topics (x all-topics state)
+  (b* ((topics-fal (topics-fal all-topics))
+       ((mv ans state) (render-topics1 x all-topics topics-fal state)))
+    (fast-alist-free topics-fal)
+    (mv ans state)))
 
 (defun set-current-package-state (pkg state)
   (mv-let (erp val state)

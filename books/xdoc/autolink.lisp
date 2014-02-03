@@ -48,6 +48,14 @@
        (max (min (+ n 20) xl)))
     (subseq x min max)))
 
+(defun skip-past-ws (x n xl) ;; ==> N-PRIME
+  (declare (type string x))
+  (cond ((eql xl n)
+         n)
+        ((member (char x n) '(#\Space #\Tab #\Newline #\Page))
+         (skip-past-ws x (+ 1 n) xl))
+        (t
+         n)))
 
 
 ; What a pain.  We have to implement a symbol parser.
@@ -114,7 +122,7 @@
        ((when (or (and (char<= #\a char) (char<= char #\z))))
         ;; lowercase letters outside of bar escape get capitalized
         (parse-symbol-name-part x n+1 xl nil nil t nice-error-msg-p
-                                (cons (char-upcase char) acc))))
+                                (cons (acl2::char-upcase char) acc))))
 
     ;; Otherwise add the char verbatim
     (parse-symbol-name-part x n+1 xl nil nil t nice-error-msg-p (cons char acc))))

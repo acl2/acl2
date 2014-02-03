@@ -21,79 +21,85 @@
 
 (in-package "ACL2")
 
-(defpkg "STR"
-  (set-difference-eq
-   (union-eq *acl2-exports*
-             *common-lisp-symbols-from-main-lisp-package*
-             '(quit exit simpler-take list-fix list-equiv rev
-                    prefixp str b* assert! repeat replicate
-                    listpos sublistp implode explode
-                    a b c d e f g h i j k l m n o p q r s t u v w x y z
-                    top)
-             '(defxdoc defsection lnfix definlined definline
-                define defaggregate unsigned-byte-p signed-byte-p
-                raise))
-
-   ;; Remove some "bad" acl2 string functions to try to prevent users from
-   ;; accidentally using them.
-   '(upper-case-p
+(defconst *standard-acl2-imports*
+  (set-difference-eq-exec
+   (union-eq-exec *acl2-exports*
+                  *common-lisp-symbols-from-main-lisp-package*)
+   '(
+     ;; Various string functions have nasty standard-char-p guards.  We remove
+     ;; them from our packages because we don't want to accidentally try to use
+     ;; them.  We especially want to keep these out of the STR package.
+     upper-case-p
      lower-case-p
      char-upcase
      char-downcase
      string-upcase1
      string-downcase1
      string-upcase
-     string-downcase)))
+     string-downcase
 
+     ;; Various nice names have problematic definitions in Common Lisp and so
+     ;; they are not ACL2 functions.  But that's no reason to import them into
+     ;; our own packages.
+     union
+     delete
+     find
+     map
+     )))
+
+(defpkg "STR"
+  (union-eq-exec
+   '(simpler-take list-fix list-equiv rev
+          prefixp str b* assert! repeat replicate
+          listpos sublistp implode explode
+          a b c d e f g h i j k l m n o p q r s t u v w x y z
+          top
+          defxdoc defsection lnfix definlined definline
+          define defaggregate unsigned-byte-p signed-byte-p
+          raise)
+   *standard-acl2-imports*))
 
 ; Packages for the ordered sets library.  We should probably consolidate this
 ; stuff into the sets package, eventually.
 
-(defpkg "INSTANCE"
-  (union-eq *acl2-exports*
-            *common-lisp-symbols-from-main-lisp-package*))
+(defpkg "INSTANCE" *standard-acl2-imports*)
 
 (defpkg "COMPUTED-HINTS"
-  (union-eq '(mfc-ancestors
-	      mfc-clause
-	      string-for-tilde-@-clause-id-phrase
-	      INSTANCE::instance-rewrite)
-            *acl2-exports*
-            *common-lisp-symbols-from-main-lisp-package*))
+  (union-eq-exec '(mfc-ancestors
+                   mfc-clause
+                   string-for-tilde-@-clause-id-phrase
+                   INSTANCE::instance-rewrite)
+                 *standard-acl2-imports*))
 
 (defpkg "SETS"
-  (set-difference-equal
-   (union-eq '(defsection
-               defxdoc
-               definline
-               definlined
-               lexorder
-               lnfix
-               <<
-               <<-irreflexive
-               <<-transitive
-               <<-asymmetric
-               <<-trichotomy
-               <<-implies-lexorder
-               fast-<<
-               fast-lexorder
-               COMPUTED-HINTS::rewriting-goal-lit
-               COMPUTED-HINTS::rewriting-conc-lit
-               def-ruleset
-               def-ruleset!
-               add-to-ruleset
-               ;; To make Sets::Osets print as just Osets in the XDOC index
-               osets
-               ;; For similar nice-documentation reasons
-               std)
-             *acl2-exports*
-             *common-lisp-symbols-from-main-lisp-package*)
-
-; [Changed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2
-;  (intersectp was added to *acl2-exports*).]
-
-   '(union delete find map intersectp
-           enable disable e/d)))
+  (union-eq-exec '(defsection
+                    defxdoc
+                    definline
+                    definlined
+                    lexorder
+                    lnfix
+                    <<
+                    <<-irreflexive
+                    <<-transitive
+                    <<-asymmetric
+                    <<-trichotomy
+                    <<-implies-lexorder
+                    fast-<<
+                    fast-lexorder
+                    COMPUTED-HINTS::rewriting-goal-lit
+                    COMPUTED-HINTS::rewriting-conc-lit
+                    def-ruleset
+                    def-ruleset!
+                    add-to-ruleset
+                    ;; To make Sets::Osets print as just Osets in the XDOC index
+                    osets
+                    ;; For similar nice-documentation reasons
+                    std)
+                 (set-difference-eq-exec
+                  *standard-acl2-imports*
+                  ;; [Changed by Matt K. to handle changes to member, assoc,
+                  ;;  etc. after ACL2 4.2 (intersectp was added to *acl2-exports*).]
+                  '(intersectp enable disable e/d))))
 
 #!SETS
 (defconst *sets-exports*
@@ -121,22 +127,16 @@
     pick-a-point-subset-strategy
     ))
 
-
 (defpkg "XDOC"
-  (set-difference-eq
-   (union-eq (union-eq *acl2-exports*
-                       *common-lisp-symbols-from-main-lisp-package*
-                       sets::*sets-exports*)
-             ;; Things to add:
-             '(b* quit exit value defxdoc defxdoc-raw macro-args
-                  xdoc-extend defsection defsection-progn lnfix
-                  set-default-parents
-                  getprop formals justification def-bodies current-acl2-world def-body
-                  access theorem untranslated-theorem guard xdoc xdoc! unquote
-                  undocumented assert! top explode implode))
-   ;; Things to remove:
-   '(delete union
-     )))
+  (union-eq-exec sets::*sets-exports*
+   (union-eq-exec
+    '(b* value defxdoc defxdoc-raw macro-args
+         xdoc-extend defsection defsection-progn lnfix
+         set-default-parents
+         getprop formals justification def-bodies current-acl2-world def-body
+         access theorem untranslated-theorem guard xdoc xdoc! unquote
+         undocumented assert! top explode implode)
+    *standard-acl2-imports*)))
 
 (defconst *bitset-exports*
   '(bitsets
@@ -172,70 +172,64 @@
     ))
 
 (defconst *bitsets-pkg-symbols*
-  (set-difference-eq
-   (union-eq sets::*sets-exports*
-             *bitset-exports*
-             *acl2-exports*
-             *common-lisp-symbols-from-main-lisp-package*
-             '(*bitset-exports*
-               std
-               std/util
-               std/bitsets
-               osets
-               __function__
-               raise
-               define
-               defrule
-               defsection
-               defxdoc
-               defwitness
-               definstantiate
-               defexample
-               include-raw
-               witness
-               xdoc
-               assert!
-               b*
-               progn$
+  (union-eq-exec
+   (union-eq-exec (union-eq-exec sets::*sets-exports*
+                                 *bitset-exports*)
+                  '(*bitset-exports*
+                    std
+                    std/util
+                    std/bitsets
+                    osets
+                    __function__
+                    raise
+                    define
+                    defrule
+                    defsection
+                    defxdoc
+                    defwitness
+                    definstantiate
+                    defexample
+                    include-raw
+                    witness
+                    xdoc
+                    assert!
+                    b*
+                    progn$
 
-               enable*
-               disable*
-               e/d*
-               sets::enable
-               sets::disable
-               sets::e/d
+                    enable*
+                    disable*
+                    e/d*
+                    sets::enable
+                    sets::disable
+                    sets::e/d
 
-               rev
+                    rev
 
-               arith-equiv-forwarding
-               lnfix
-               lifix
-               lbfix
-               nat-equiv
-               int-equiv
+                    arith-equiv-forwarding
+                    lnfix
+                    lifix
+                    lbfix
+                    nat-equiv
+                    int-equiv
 
-               logbitp-mismatch
-               equal-by-logbitp
-               logbitp-hyp
-               logbitp-lhs
-               logbitp-rhs
+                    logbitp-mismatch
+                    equal-by-logbitp
+                    logbitp-hyp
+                    logbitp-lhs
+                    logbitp-rhs
 
-               a b c d e f g h i j k l m n o p q r s t u v w x y z
-
-               ))
-
-   '(union delete find map intersectp
-           enable disable e/d)))
+                    a b c d e f g h i j k l m n o p q r s t u v w x y z
+                    ))
+   (set-difference-eq-exec
+    *standard-acl2-imports*
+    '(intersectp enable disable e/d))))
 
 (defpkg "BITSETS" *bitsets-pkg-symbols*)
 
 (defconst *std-pkg-symbols*
-  (set-difference-eq
-   (union-eq (union-eq sets::*sets-exports*
-                       (union-eq *acl2-exports*
-                                 *common-lisp-symbols-from-main-lisp-package*))
-             '(std ; Makes ":xdoc std" do the right thing.
-               std/util ;; likewise
+  (union-eq-exec
+   (union-eq-exec
+    sets::*sets-exports*
 
 ; Things I want to "export" to the ACL2 package.
 ;
@@ -249,19 +243,23 @@
 ; and convenient, but for consistency all of the data-type introduction macros
 ; will be kept in the std package.
 
-               __function__
-               raise
-               tag
-               tag-reasoning
-               defsection
-               defsection-progn
-               defmvtypes
-               defrule
-               defruled
-               define
-               defconsts
-               defval
-               xdoc
+    '(std ; Makes ":xdoc std" do the right thing.
+      std/util ;; likewise
+
+
+      __function__
+      raise
+      tag
+      tag-reasoning
+      defsection
+      defsection-progn
+      defmvtypes
+      defrule
+      defruled
+      define
+      defconsts
+      defval
+      xdoc
 ;               defaggregate
 ;               defenum
 ;               defprojection
@@ -269,66 +267,60 @@
 ;               defalist
 ;               deflist
 
-               ;; Things I want to "import" from ACL2 into the STD package.
-               assert!
-               b*
-               progn$
-               simpler-take
-               repeat
-               replicate
-               list-fix
-               rev
-               rcons
-               revappend-without-guard
-               value
-               two-nats-measure
-               make-fal
-               xdoc-extend
-               legal-variablep
-               set-equiv
-               list-equiv
-               never-memoize
+      ;; Things I want to "import" from ACL2 into the STD package.
+      assert!
+      b*
+      progn$
+      simpler-take
+      repeat
+      replicate
+      list-fix
+      rev
+      rcons
+      revappend-without-guard
+      value
+      two-nats-measure
+      make-fal
+      xdoc-extend
+      legal-variablep
+      set-equiv
+      list-equiv
+      never-memoize
 
-               ;; BOZO consider moving these to std?
-               defconsts
-               definline
-               definlined
+      ;; BOZO consider moving these to std?
+      defconsts
+      definline
+      definlined
 
-               ;; BOZO why aren't these imported?
-               strip-cadrs
-               defxdoc
+      ;; BOZO why aren't these imported?
+      strip-cadrs
+      defxdoc
 
-               uniquep
-               duplicated-members
+      uniquep
+      duplicated-members
 
-               alists-agree
-               alist-keys
-               alist-vals
-               alist-equiv
-               sub-alistp
-               hons-rassoc-equal
+      alists-agree
+      alist-keys
+      alist-vals
+      alist-equiv
+      sub-alistp
+      hons-rassoc-equal
 
-               def-ruleset
-               def-ruleset!
-               add-to-ruleset
-               add-to-ruleset!
-               get-ruleset
-               ruleset-theory
+      def-ruleset
+      def-ruleset!
+      add-to-ruleset
+      add-to-ruleset!
+      get-ruleset
+      ruleset-theory
 
-               ;; Stuff I moved into xdoc:
-               xdoc::extract-keyword-from-args
-               xdoc::throw-away-keyword-parts
-               xdoc::mksym
-               xdoc::mksym-package-symbol
-               undocumented
-               ))
-   ;; Things to remove:
-   '(string-trim
-     true-list-listp
-     substitute
-     union
-     delete
-     )))
+      ;; Stuff I moved into xdoc:
+      xdoc::extract-keyword-from-args
+      xdoc::throw-away-keyword-parts
+      xdoc::mksym
+      xdoc::mksym-package-symbol
+      undocumented
+      ))
+   *standard-acl2-imports*))
 
 (defpkg "STD" *std-pkg-symbols*)
 

@@ -19,10 +19,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "XDOC")
-(include-book "preprocess")
+(include-book "autolink")
 (set-state-ok t)
 (program)
-
 
 ; (PARSE-XML X) --> (MV ERR TOKENS)
 ;
@@ -57,6 +56,20 @@
 ;    (:ENTITY TYPE) represents entities like &amp;
 ;
 ;      - TYPE is :AMP, :LT, :GT, :APOS, :NBSP, :MDASH, or :RARR
+
+(defun opentok-p (x) (eq (first x) :OPEN))
+(defun opentok-name (x) (second x))
+(defun opentok-atts (x) (third x))
+(defun opentok-loc (x) (fourth x))
+
+(defun closetok-p (x) (eq (first x) :CLOSE))
+(defun closetok-name (x) (second x))
+
+(defun entitytok-p (x) (eq (first x) :ENTITY))
+(defun entitytok-type (x) (second x))
+
+(defun texttok-p (x) (eq (first x) :TEXT))
+(defun texttok-text (x) (second x))
 
 (defconst *nls* (coerce (list #\Newline) 'string))
 
@@ -293,19 +306,6 @@
 
 ; Basic tag balance checking with nice error reporting
 
-(defun opentok-p (x) (eq (first x) :OPEN))
-(defun opentok-name (x) (second x))
-(defun opentok-atts (x) (third x))
-(defun opentok-loc (x) (fourth x))
-
-(defun closetok-p (x) (eq (first x) :CLOSE))
-(defun closetok-name (x) (second x))
-
-(defun entitytok-p (x) (eq (first x) :ENTITY))
-(defun entitytok-type (x) (second x))
-
-(defun texttok-p (x) (eq (first x) :TEXT))
-(defun texttok-text (x) (second x))
 
 (defun entitytok-as-entity (x)
   (case (entitytok-type x)

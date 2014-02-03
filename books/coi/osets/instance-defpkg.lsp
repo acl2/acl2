@@ -7,7 +7,9 @@
 
 ;(ld "../lists/list-defpkg.lsp")
 
-(defpkg "INSTANCE"
-  (union-eq '()
-    (union-eq *acl2-exports*
-  	      *common-lisp-symbols-from-main-lisp-package*)))
+;(defpkg "INSTANCE"
+;  (union-eq '()
+;    (union-eq *acl2-exports*
+;  	      *common-lisp-symbols-from-main-lisp-package*)))
+
+(include-book "std/portcullis" :dir :system)

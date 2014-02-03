@@ -226,28 +226,15 @@
 
 
 (defun json-encode-index-entry (topic topics-fal uid-map state acc)
-  (b* ((name     (cdr (assoc :name topic)))
+  (b* ((- (check-topic-syntax topic))
+
+       (name     (cdr (assoc :name topic)))
        (base-pkg (cdr (assoc :base-pkg topic)))
-       (short    (or (cdr (assoc :short topic)) ""))
-       (long     (or (cdr (assoc :long topic)) ""))
        (parents  (cdr (assoc :parents topic)))
-       ((unless (symbolp name))
-        (mv (er hard? 'preprocess-topic "Name is not a string: ~x0.~%" topic)
-            state))
-       ((unless (symbolp base-pkg))
-        (mv (er hard? 'preprocess-topic "Base-pkg is not a symbol: ~x0.~%" topic)
-            state))
-       ((unless (symbol-listp parents))
-        (mv (er hard? 'preprocess-topic "Parents are not a symbol-listp: ~x0.~%" topic)
-            state))
-       ((unless (stringp short))
-        (mv (er hard? 'preprocess-topic "Short is not a string: ~x0.~%" topic)
-            state))
-       ((unless (stringp long))
-        (mv (er hard? 'preprocess-topic "Long is not a string: ~x0.~%" topic)
-            state))
+       (suborder (cdr (assoc :suborder topic)))
 
        (parent-uids (collect-uids parents uid-map))
+       (suborder    (and suborder (collect-uids suborder uid-map)))
 
        ((mv short-str state) (short-xml-for-topic topic topics-fal state))
 
@@ -277,6 +264,13 @@
        ; ,short: xml encoded short topic description
        (acc (cons #\, acc))
        (acc (json-encode-string short-str acc))
+
+       ;; most topics don't have a suborder, so only include this if they do have one.
+       (acc (b* (((unless suborder)
+                  acc)
+                 (acc (cons #\, acc))
+                 (acc (json-encode-uids suborder acc)))
+              acc))
 
        (acc (cons #\] acc)))
     (mv acc state)))
@@ -318,31 +312,11 @@
 
 
 (defun json-encode-data-entry (topic topics-fal state acc)
-  (b* ((__function__ 'json-encode-data-entry)
+  (b* ((- (check-topic-syntax topic))
        (name     (cdr (assoc :name topic)))
        (base-pkg (cdr (assoc :base-pkg topic)))
-       (short    (or (cdr (assoc :short topic)) ""))
-       (long     (or (cdr (assoc :long topic)) ""))
        (parents  (cdr (assoc :parents topic)))
        (from     (or (cdr (assoc :from topic)) "Unknown"))
-       ((unless (symbolp name))
-        (mv (er hard? __function__ "Name is not a string: ~x0.~%" topic)
-            state))
-       ((unless (symbolp base-pkg))
-        (mv (er hard? __function__ "Base-pkg is not a symbol: ~x0.~%" topic)
-            state))
-       ((unless (symbol-listp parents))
-        (mv (er hard? __function__ "Parents are not a symbol-listp: ~x0.~%" topic)
-            state))
-       ((unless (stringp short))
-        (mv (er hard? __function__ "Short is not a string: ~x0.~%" topic)
-            state))
-       ((unless (stringp long))
-        (mv (er hard? __function__ "Long is not a string: ~x0.~%" topic)
-            state))
-       ((unless (stringp from))
-        (mv (er hard? __function__ "From is not a string: ~x0.~%" topic)
-            state))
 
        ((mv long-str state) (long-xml-for-topic topic topics-fal state))
 

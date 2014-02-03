@@ -341,10 +341,12 @@
   (b* ((name (cdr (assoc :name x)))
 ;       (- (cw "Preprocessing...~%"))
        ;; Use NIL as the topics-fal as a simple way to suppress autolinks...
+       (topics-fal (topics-fal all-topics))
        ((mv text state)
         (preprocess-topic
          (acons :parents nil x) ;; horrible hack so we can control this better
-         all-topics nil nil state))
+         all-topics nil topics-fal state))
+       (- (fast-alist-free topics-fal))
 ;       (- (cw "Text is ~x0.~%" text))
 ;       (- (cw "Parsing xml...~%"))
        ((mv err tokens) (parse-xml text))

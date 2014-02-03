@@ -78,14 +78,14 @@ body {
     padding-left: 0;
     padding-right: 0;
     padding-top: 0;
-    padding-bottom: 2em;
+    padding-bottom: 1em;
 }
 
 #data {
     margin-left: 1em;
     margin-right: 1em;
     width: 45em;
-    height: 100%;
+/*    height: 100%; */
 }
 
 #still_loading {

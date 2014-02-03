@@ -461,7 +461,7 @@ documentation.  For instance:</p>
 </ul>
 
 <p>By default, the backtick syntax introduces @('<tt>') tags and automatically
-escaped any special XML characters like &lt;.  Sometimes this isn't what you
+escapes any special XML characters like @('<').  Sometimes this isn't what you
 want.  When the result of your evaluation is large, you can use a spcial
 @(':code') prefix to insert @('<code>') tags instead.  For instance:
 @('@(`(:code (make-list 100))`)') produces:</p>
@@ -1213,28 +1213,6 @@ not introduce a new local scope, but a @('defsection') does.</p>")
   :short "Placeholder for undocumented topics.")
 
 
-(defxdoc test-of-entities
-  :short "Placeholder topic for testing out HTML entity support in XDOC."
-  :long "<p>Here are the entities that XDOC allows:</p>
-
-<p>Normal XML entities:</p>
-<ul>
-<li>@('&amp;')   becomes &amp;</li>
-<li>@('&lt;')    becomes &lt;</li>
-<li>@('&gt;')    becomes &gt;</li>
-<li>@('&quot;')  becomes &quot;</li>
-<li>@('&apos;')  becomes &apos;</li>
-</ul>
-
-<p>Additional entities allowed by XDOC:</p>
-<ul>
-<li>@('&nbsp;')  becomes &nbsp; (this one can be hard to see)</li>
-<li>@('&mdash;') becomes &mdash;</li>
-<li>@('&rarr;')  becomes &rarr;</li>
-</ul>")
-
-
-
 (defxdoc set-default-parents
   :short "Set up default parents to use for @(see xdoc)."
 
@@ -1358,6 +1336,50 @@ the back.</p>
 
 <p>See @(see xdoc-extend) for related commentary.</p>")
 
+
+(defxdoc order-subtopics
+  :short "Control the ordering of subtopics in the XDOC display."
+
+  :long "<p>@(call order-subtopics) allows you to specify what order the
+subtopics of @('name') will be presented in.  For instance:</p>
+
+@({
+    (xdoc::order-subtopics mini-tutorial
+      (example syntax semantics gotchas references))
+})
+
+<p>By default, XDOC shows subtopics in an alphabetical order.  For most
+reference-manual material this is generally fine.  But, especially for tutorial
+guides, you sometimes intend your topics to be read in some particular order,
+and alphabetizing things gets in the way.</p>
+
+<p>The @('order-subtopics') command lets you specify the exact subtopic
+ordering that should be used for a particular topic.  The general form is:</p>
+
+@({
+    (xdoc::order-subtopics parent
+      (subtopic1 subtopic2 ...))
+})
+
+<p>You don't have to give a complete order.  Any subtopics that aren't
+mentioned will be listed last, in the usual alphabetical order.</p>
+
+<p>We require @('parent') to refer to some defined topic, but the subtopics
+don't need to be defined at @('order-subtopics') time.  This makes it easy to
+keep the subtopic ordering close to the defxdoc command, e.g., you can
+write:</p>
+
+@({
+     (defxdoc mini-tutorial ...))
+     (order-subtopics mini-tutorial (example syntax ...))
+
+     (defxdoc example ...)
+     (defxdoc syntax ...)
+})
+
+<p>We do at least warn about undefined topics when you @(see save) a
+manual.</p>")
+
 #||
 
 (in-package "ACL2")
@@ -1389,3 +1411,44 @@ the back.</p>
 ")
 
 ||#
+
+
+(defxdoc xdoc-tests
+  :short "Topics that exist only to test XDOC functionality.")
+
+(local (set-default-parents xdoc-tests))
+
+(defxdoc test-of-entities
+  :short "Placeholder topic for testing out HTML entity support in XDOC."
+  :long "<p>Here are the entities that XDOC allows:</p>
+
+<p>Normal XML entities:</p>
+<ul>
+<li>@('&amp;')   becomes &amp;</li>
+<li>@('&lt;')    becomes &lt;</li>
+<li>@('&gt;')    becomes &gt;</li>
+<li>@('&quot;')  becomes &quot;</li>
+<li>@('&apos;')  becomes &apos;</li>
+</ul>
+
+<p>Additional entities allowed by XDOC:</p>
+<ul>
+<li>@('&nbsp;')  becomes &nbsp; (this one can be hard to see)</li>
+<li>@('&mdash;') becomes &mdash;</li>
+<li>@('&rarr;')  becomes &rarr;</li>
+</ul>")
+
+(order-subtopics xdoc-tests
+  (order-test-w
+   order-test-o
+   order-test-r
+   order-test-z-intentionally-missing
+   order-test-k
+   order-test-s))
+
+(defxdoc order-test-s :short "S")
+(defxdoc order-test-w :short "W")
+(defxdoc order-test-r :short "R")
+(defxdoc order-test-o :short "O")
+(defxdoc order-test-k :short "K")
+
