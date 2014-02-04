@@ -603,6 +603,9 @@ its flag in the flag-function.</p>
        (flag-hints        (getarg :flag-hints nil kwd-alist))
        (flag-mapping      (collect-flag-mapping gutslist))
 
+       ((unless (no-duplicatesp-eq (strip-cdrs flag-mapping)))
+        (raise "Error: duplicated flag names!"))
+
        (returns-induct    (and flag-name
                                (not (getarg :returns-no-induct nil kwd-alist))))
        (returns-hints     (getarg :returns-hints nil kwd-alist))
@@ -645,12 +648,13 @@ its flag in the flag-function.</p>
            ,(extend-defines-alist defines-guts)))
 
        ,@(and flag-name
-              `((flag::make-flag ,flag-name ,(defguts->name-fn (car gutslist))
-                                 :flag-mapping ,flag-mapping
-                                 ,@(and flag-defthm-macro
-                                        `(:defthm-macro-name ,flag-defthm-macro))
-                                 ,@(and flag-var `(:flag-var ,flag-var))
-                                 :hints ,flag-hints)))
+              `((with-output :on (error)
+                  (flag::make-flag ,flag-name ,(defguts->name-fn (car gutslist))
+                                   :flag-mapping ,flag-mapping
+                                   ,@(and flag-defthm-macro
+                                          `(:defthm-macro-name ,flag-defthm-macro))
+                                   ,@(and flag-var `(:flag-var ,flag-var))
+                                   :hints ,flag-hints))))
 
        (local
         (make-event

@@ -332,8 +332,8 @@ syntax of these parameters is extended, as shown in the following examples:</p>
       `(with-output :off :all :stack :push
          (progn (make-event
                  (let ((thm '(defthm ,thmname
-                               (implies (,equiv x y)
-                                        (equal (equal (,fix x) (,fix y)) t))
+                               (equal (,equiv x y)
+                                      (equal (,fix x) (,fix y)))
                                :hints ,hints)))
                    `(:or
                      (with-output :stack :pop ,thm)
@@ -449,8 +449,7 @@ syntax of these parameters is extended, as shown in the following examples:</p>
                     (implies (,equiv ,arg ,argequiv)
                              (equal (,fn . ,formals)
                                     (,fn . ,(subst argequiv arg formals))))
-                    :hints (("Goal" :in-theory (e/d (,(fixtype->equiv-means-fixes-equal fixtype))
-                                                    (,fix-thmname))
+                    :hints (("Goal" :in-theory '(,(fixtype->equiv-means-fixes-equal fixtype))
                              :use ((:instance ,fix-thmname)
                                    (:instance ,fix-thmname (,arg ,argequiv)))))
                     :rule-classes :congruence)))
@@ -542,17 +541,17 @@ syntax of these parameters is extended, as shown in the following examples:</p>
                            (mv nil type/opts)
                          (mv (car type/opts) (cdr type/opts))))
        (type (or type
-                 (b* ((formal (find-formal-by-name arg formals))
+                 (b* ((formal (find-formal-by-name var formals))
                       ((unless formal)
                        (if formals
-                           (raise "~x0 is not a formal of function ~x1" arg fn)
+                           (raise "~x0 is not a formal of function ~x1" var fn)
                          (raise "Can't derive argument types from ~x0 because it ~
                         wasn't created with DEFINE." fn)))
                       ((formal fm) formal)
                       (type (fixequiv-type-from-guard fm.guard))
                       ((unless type)
                        (raise "Argument ~x0 of function ~x1 wasn't given a ~
-                               (unary) type in its DEFINE declaration" arg fn)))
+                               (unary) type in its DEFINE declaration" var fn)))
                    type)))
        (arg-hints (cadr (member :hints opts)))
        (opts-without-hints (remove-key :hints opts))
