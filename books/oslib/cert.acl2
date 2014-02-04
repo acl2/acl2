@@ -19,5 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (include-book "portcullis")
+(include-book "data-structures/portcullis" :dir :system)
+(include-book "cowles/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all
 ; cert_param: (ansi-only)

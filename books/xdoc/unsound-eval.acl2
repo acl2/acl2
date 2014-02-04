@@ -21,4 +21,6 @@
 (in-package "ACL2")
 (include-book "std/portcullis" :dir :system)
 (include-book "oslib/portcullis" :dir :system)
+(include-book "cowles/portcullis" :dir :system)
+(include-book "data-structures/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all
