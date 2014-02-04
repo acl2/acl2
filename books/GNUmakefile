@@ -202,8 +202,12 @@ quicklisp_clean:
 
 # The following hack was useful briefly in late January, 2014, when
 # there were issues with quicklisp that caused us not to want to clean
-# quicklisp files.  It's probably fine now to delete these three
-# lines.
+# quicklisp files.  Rager likes this hack (because his company-wide
+# ACL2 installation isn't writable by those that use it and he doesn't
+# always want to clean quicklisp since proxies have to be configured
+# and because it's good to preserve the
+# quicklisp/inst/cache/asdf-installs directory), and so he prefers
+# that the "hack" be preserved.
 ifndef ACL2_SAVE_QUICKLISP
 clean: quicklisp_clean
 endif # ifndef ACL2_SAVE_QUICKLISP
