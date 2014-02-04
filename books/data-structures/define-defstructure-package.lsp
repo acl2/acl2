@@ -2,7 +2,7 @@
 
 (in-package "ACL2")
 
-(defpkg "STRUCTURES"
+(defpkg "DEFSTRUCTURE"
   (union-eq
    '(DEFSTRUCTURE)			;The main macro exported by this book.
    (union-eq

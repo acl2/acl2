@@ -98,7 +98,7 @@
 ;;;  variable.
 ;;;
 
-(in-package "STRUCTURES")
+(in-package "DEFSTRUCTURE")
 (include-book "utilities")
 
 (program)
@@ -333,7 +333,7 @@ document,and the ACL2 documentations for RULE-CLASSES.
 slots-assertion -- DEFSTRUCTURE assertions are covered in the DEFSTRUCTURE
 document. 
 
-slots-template -- A cons tree whose flattened form (by STRUCTURES::FLATTEN) is
+slots-template -- A cons tree whose flattened form (by DEFSTRUCTURE::FLATTEN) is
 a permutation of the list of slot names of the structure.
 
 string-designator -- a character, string or symbol, it designates the string
@@ -2228,7 +2228,7 @@ certain types of proofs. ~/"
      ;;  If not a LAMBDA, make sure that it is at least a `vanilla' term.
 
      ((not (assertion-termp assertion))
-      (bomb "Assertions are required to satisfy STRUCTURES::ASSERTION-TERMP, ~
+      (bomb "Assertions are required to satisfy DEFSTRUCTURE::ASSERTION-TERMP, ~
              and ~p0 does not because ~@1."
 	    assertion (reason-for-not-assertion-termp assertion)))
 
@@ -2246,7 +2246,7 @@ certain types of proofs. ~/"
 	  (if err
 	      (bomb "The putative assertion ~p0 in the context ~p1 is not ~
                    a valid assertion because the free variable list of the ~
-                   assertion (as defined by STRUCTURES::FREE-VARS), ~p2, ~
+                   assertion (as defined by DEFSTRUCTURE::FREE-VARS), ~p2, ~
                    ~@3  If you feel that this message is incorrect, ~
                    then restate your assertion as a LAMBDA function ~
                    and try again." assertion context bound-slots err)
@@ -2424,7 +2424,7 @@ certain types of proofs. ~/"
                          or (:REPRESENTATION representation), where ~
                          representation is either one of ~v0, or a CONS ~
                          tree which when flattened according to ~
-                         STRUCTURES::FLATTEN yields a permutation of the ~
+                         DEFSTRUCTURE::FLATTEN yields a permutation of the ~
                          slot names ~p1, but ~p2 is not."
 			*keyword-representations* slot-names opt)))))
 	   (t default)))

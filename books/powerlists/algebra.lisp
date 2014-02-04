@@ -49,7 +49,7 @@ appropriate certify-book command.  Something like the following will work:
 ;;; We start out with the basic definitions of tie & zip.  We also need the
 ;;; inverse functions, so that we can define recursive functions of powerlists
 
-;(structures::defstructure powerlist car cdr (:options :guards))
+;(defstructure::defstructure powerlist car cdr (:options :guards))
 
 (encapsulate
  ((powerlist (car cdr) t)
@@ -58,7 +58,7 @@ appropriate certify-book command.  Something like the following will work:
   (powerlist-cdr (powerlist) t))
   
  (local
-  (in-theory (theory 'structures::minimal-theory-for-defstructure)))
+  (in-theory (theory 'defstructure::minimal-theory-for-defstructure)))
 
  (local
   (defun powerlist (car cdr)
