@@ -666,3 +666,4 @@ in other situations.")
                  :redef-okp t
                  :expand-level 2)
      (value `(value-triple :manual)))))
+
