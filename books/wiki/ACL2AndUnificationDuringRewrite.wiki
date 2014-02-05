@@ -2,7 +2,9 @@
 
 = Introduction =
 
-Often ACL2 will pick a substitution scheme for your rewrite rule that allows it to be used in your proof attempt.  ACL2 will also often times pick a substitution for your rewrite rule that prevents the rewrite rule from being used in your proof attempt.  Automatically picking the "right" substitution is difficult and a a long-studied research topic.  This topic describes the options available for guiding ACL2 to an effective substitution.
+Often ACL2 will pick a substitution scheme for your rewrite rule that allows it to be used in your proof attempt.  That being said, sometimes ACL2 will pick a substitution for your rewrite rule that prevents the rewrite rule from being used in your proof attempt, because the hypotheses of the rewrite rule can't be relieved under the chosen substitution (but they could be relieved under another substitution).  Automatically picking the "right" substitution is difficult and a a long-studied research topic.  
+
+This topic describes the options available for guiding ACL2 to an effective substitution.
 
 *Please edit this and make it better*
 
