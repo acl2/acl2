@@ -46,7 +46,7 @@
 ; rather than introduce a new data type to represent the lvalues, we just
 ; represent them as expressions.
 
-(vl-mutual-recursion
+(defparsers parse-lvalues
 
  (defparser vl-parse-lvalue (tokens warnings)
    (declare (xargs :measure (two-nats-measure (acl2-count tokens) 0)
@@ -71,77 +71,74 @@
 
 (encapsulate
   ()
-  (flag::make-flag vl-flag-parse-lvalue
-                   vl-parse-lvalue-fn)
-
   (local (in-theory (enable vl-parse-lvalue
                             vl-parse-1+-lvalues-separated-by-commas)))
 
-  (defthm-vl-flag-parse-lvalue token-list
-    (vl-parse-lvalue-fn
+  (defthm-parse-lvalues-flag token-list
+    (vl-parse-lvalue
      (implies (force (vl-tokenlist-p tokens))
               (vl-tokenlist-p (mv-nth 2 (vl-parse-lvalue)))))
-    (vl-parse-1+-lvalues-separated-by-commas-fn
+    (vl-parse-1+-lvalues-separated-by-commas
      (implies (force (vl-tokenlist-p tokens))
               (vl-tokenlist-p (mv-nth 2 (vl-parse-1+-lvalues-separated-by-commas)))))
-    :hints(("Goal" :induct (vl-flag-parse-lvalue flag tokens warnings))))
+    :hints(("Goal" :induct (parse-lvalues-flag flag tokens warnings))))
 
-  (defthm-vl-flag-parse-lvalue count-strong
-    (vl-parse-lvalue-fn
+  (defthm-parse-lvalues-flag count-strong
+    (vl-parse-lvalue
      (and (<= (acl2-count (mv-nth 2 (vl-parse-lvalue)))
               (acl2-count tokens))
           (implies (not (mv-nth 0 (vl-parse-lvalue)))
                    (< (acl2-count (mv-nth 2 (vl-parse-lvalue)))
                       (acl2-count tokens))))
      :rule-classes ((:rewrite) (:linear)))
-    (vl-parse-1+-lvalues-separated-by-commas-fn
+    (vl-parse-1+-lvalues-separated-by-commas
      (and (<= (acl2-count (mv-nth 2 (vl-parse-1+-lvalues-separated-by-commas)))
               (acl2-count tokens))
           (implies (not (mv-nth 0 (vl-parse-1+-lvalues-separated-by-commas)))
                    (< (acl2-count (mv-nth 2 (vl-parse-1+-lvalues-separated-by-commas)))
                       (acl2-count tokens))))
      :rule-classes ((:rewrite) (:linear)))
-    :hints(("Goal" :induct (vl-flag-parse-lvalue flag tokens warnings))))
+    :hints(("Goal" :induct (parse-lvalues-flag flag tokens warnings))))
 
-  (defthm-vl-flag-parse-lvalue fails-gracefully
-    (vl-parse-lvalue-fn
+  (defthm-parse-lvalues-flag fails-gracefully
+    (vl-parse-lvalue
      (implies (mv-nth 0 (vl-parse-lvalue))
               (not (mv-nth 1 (vl-parse-lvalue)))))
-    (vl-parse-1+-lvalues-separated-by-commas-fn
+    (vl-parse-1+-lvalues-separated-by-commas
      (implies (mv-nth 0 (vl-parse-1+-lvalues-separated-by-commas))
               (not (mv-nth 1 (vl-parse-1+-lvalues-separated-by-commas)))))
-    :hints(("Goal" :induct (vl-flag-parse-lvalue flag tokens warnings))))
+    :hints(("Goal" :induct (parse-lvalues-flag flag tokens warnings))))
 
-  (defthm-vl-flag-parse-lvalue result
-    (vl-parse-lvalue-fn
+  (defthm-parse-lvalues-flag result
+    (vl-parse-lvalue
      (implies (force (vl-tokenlist-p tokens))
               (equal (vl-expr-p (mv-nth 1 (vl-parse-lvalue)))
                      (not (mv-nth 0 (vl-parse-lvalue))))))
-    (vl-parse-1+-lvalues-separated-by-commas-fn
+    (vl-parse-1+-lvalues-separated-by-commas
      (implies (force (vl-tokenlist-p tokens))
               (equal (vl-exprlist-p (mv-nth 1 (vl-parse-1+-lvalues-separated-by-commas)))
                      t)))
-    :hints(("Goal" :induct (vl-flag-parse-lvalue flag tokens warnings))))
+    :hints(("Goal" :induct (parse-lvalues-flag flag tokens warnings))))
 
-  (defthm-vl-flag-parse-lvalue warnings
-    (vl-parse-lvalue-fn
+  (defthm-parse-lvalues-flag warnings
+    (vl-parse-lvalue
      (implies (force (vl-warninglist-p warnings))
               (vl-warninglist-p (mv-nth 3 (vl-parse-lvalue)))))
-    (vl-parse-1+-lvalues-separated-by-commas-fn
+    (vl-parse-1+-lvalues-separated-by-commas
      (implies (force (vl-warninglist-p warnings))
               (vl-warninglist-p (mv-nth 3 (vl-parse-1+-lvalues-separated-by-commas)))))
-    :hints(("Goal" :induct (vl-flag-parse-lvalue flag tokens warnings))))
+    :hints(("Goal" :induct (parse-lvalues-flag flag tokens warnings))))
 
-  (defthm-vl-flag-parse-lvalue true-listp
-    (vl-parse-lvalue-fn
+  (defthm-parse-lvalues-flag true-listp
+    (vl-parse-lvalue
      t
      :rule-classes nil)
-    (vl-parse-1+-lvalues-separated-by-commas-fn
+    (vl-parse-1+-lvalues-separated-by-commas
      (true-listp (mv-nth 1 (vl-parse-1+-lvalues-separated-by-commas)))
      :rule-classes :type-prescription)
-    :hints(("Goal" :induct (vl-flag-parse-lvalue flag tokens warnings))))
+    :hints(("Goal" :induct (parse-lvalues-flag flag tokens warnings))))
 
-  (verify-guards vl-parse-lvalue-fn))
+  (verify-guards+ vl-parse-lvalue))
 
 
 

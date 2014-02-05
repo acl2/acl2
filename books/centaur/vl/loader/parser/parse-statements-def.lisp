@@ -374,7 +374,7 @@
 
 
 
-(vl-mutual-recursion
+(defparsers parse-statements
 
 ; case_statement ::=
 ;    'case' '(' expression ')' case_item { case_item } 'endcase'
@@ -707,9 +707,3 @@
          (first :s= (vl-parse-statement))
          (rest := (vl-parse-statements-until-end))
          (return (cons first rest)))))
-
-(with-output
- :off (prove event)
- :gag-mode :goals
- (flag::make-flag vl-flag-parse-statement
-                  vl-parse-statement-fn))

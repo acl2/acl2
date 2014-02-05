@@ -29,6 +29,7 @@
 (include-book "centaur/misc/intern-debugging" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
 (include-book "centaur/misc/tshell" :dir :system)
+(include-book "centaur/nrev/fast" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 

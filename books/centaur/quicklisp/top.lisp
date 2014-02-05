@@ -1,5 +1,5 @@
 ; Quicklisp setup for Centaur books
-; Copyright (C) 2008-2013 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,8 +19,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "tools/include-raw" :dir :system)
-; (depends-on "inst/setup.lisp")
+(include-book "base")
+(include-book "iolib")
+(include-book "osicat")
 
 (defsection quicklisp
   :parents (acl2::interfacing-tools)
@@ -59,7 +60,7 @@ documentation for all of the libraries in Quicklisp.</li>
 course requires a <see topic='@(url defttag)'>trust tag</see>:</p>
 
 @({
-    (include-book \"centaur/quicklisp/top\" :dir :system)
+    (include-book \"centaur/quicklisp/base\" :dir :system)
 })
 
 <p><b>NOTE:</b> this book isn't automatically certified when you just run
@@ -68,11 +69,15 @@ that you want to use Quicklisp&mdash;e.g.,</p>
 
 @({
     cd [...]/acl2-sources/books
-    make USE_QUICKLISP=1
+    make USE_QUICKLISP=1 ...
 })
 
-<p>The Quicklisp book really is just a way to get Quicklisp itself loaded into
+<p>The @('base') book really is just a way to get Quicklisp itself loaded into
 an ACL2 session.  It doesn't load anything libraries.</p>
+
+<p>Other files in the Quicklisp directory are named after the Common Lisp
+libraries they load, and the @('top') book loads all of the libraries that we
+have been currently using.</p>
 
 
 <h3>Practical Howto</h3>
@@ -87,9 +92,8 @@ href='http://common-lisp.net/project/cl-json/'>CL-JSON</a> library.</p>
     ; ** my-book.lisp
     (in-package \"MY-PKG\")
 
-    ; ** Load Quicklisp, tell cert.pl this book needs Quicklisp support
-    (include-book \"centaur/quicklisp/top\" :dir :system)
-    ;; cert_param: (uses-quicklisp)
+    ; ** Load Quicklisp
+    (include-book \"centaur/quicklisp/base\" :dir :system)
 
     ; ** [OPTIONAL] develop a logical story so you can use the
     ; ** library from proper ACL2 functions...
@@ -113,8 +117,9 @@ href='http://common-lisp.net/project/cl-json/'>CL-JSON</a> library.</p>
 
 <p>You usually need to use the @(':host-readtable') option because real Common
 Lisp libraries will use things (packages, floats, etc.) that ACL2's reader will
-reject.  You usually need to use @(':do-not-compile') because BOZO why?  I
-don't know, but it never *!@$! works if you try to compile it.</p>
+reject.  You usually need to use @(':do-not-compile') because otherwise you
+tend to not have the right packages around at compile time.  You may be able to
+work around that using @('eval-when').</p>
 
 <p>The corresponding raw file, then would look something like this:</p>
 
@@ -130,24 +135,3 @@ don't know, but it never *!@$! works if you try to compile it.</p>
     (defun foo (x y z)
       ...)
 })")
-
-(defttag :quicklisp)
-
-(value-triple (cw "~%~%~
-***********************************************************************~%~
-*****                                                             *****~%~
-*****                  IF YOUR BUILD FAILS                        *****~%~
-*****                                                             *****~%~
-***** The include-raw form here can fail if you try to certify    *****~%~
-***** this book without first getting quicklisp installed.  You   *****~%~
-***** need to run 'make' first.                                   *****~%~
-*****                                                             *****~%~
-***** See books/centaur/README.html for detailed directions for   *****~%~
-***** properly building the Centaur books.                        *****~%~
-*****                                                             *****~%~
-***********************************************************************~%~
-~%"))
-
-(include-raw "inst/setup.lisp"
-             :do-not-compile t
-             :host-readtable t)

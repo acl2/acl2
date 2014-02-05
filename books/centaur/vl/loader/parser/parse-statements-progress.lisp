@@ -24,7 +24,6 @@
 (local (include-book "../../util/arithmetic"))
 
 
-
 (local (in-theory (disable
                    acl2-count-positive-when-consp
                    acl2::acl2-count-when-member
@@ -36,8 +35,8 @@
                    consp-when-member-equal-of-cons-listp
                    member-equal-when-member-equal-of-cdr-under-iff
                    default-<-1 default-<-2
-                   (:type-prescription vl-is-token?-fn)
-                   (:type-prescription vl-is-some-token?-fn)
+                   (:t vl-is-token?)
+                   (:t vl-is-some-token?)
                    acl2::cancel_plus-lessp-correct
                    acl2::cancel_times-equal-correct
                    acl2::cancel_plus-equal-correct
@@ -58,50 +57,49 @@
 (with-output
  :off prove :gag-mode :goals
  (make-event
-  `(defthm-vl-flag-parse-statement vl-parse-statement-progress
-     ,(vl-progress-claim vl-parse-case-item-fn)
-     ,(vl-progress-claim vl-parse-1+-case-items-fn)
-     ,(vl-progress-claim vl-parse-case-statement-fn
+  `(defthm-parse-statements-flag vl-parse-statement-progress
+     ,(vl-progress-claim vl-parse-case-item)
+     ,(vl-progress-claim vl-parse-1+-case-items)
+     ,(vl-progress-claim vl-parse-case-statement
                          :extra-args (atts))
-     ,(vl-progress-claim vl-parse-conditional-statement-fn
+     ,(vl-progress-claim vl-parse-conditional-statement
                          :extra-args (atts))
-     ,(vl-progress-claim vl-parse-loop-statement-fn
+     ,(vl-progress-claim vl-parse-loop-statement
                          :extra-args (atts))
-     ,(vl-progress-claim vl-parse-par-block-fn
+     ,(vl-progress-claim vl-parse-par-block
                          :extra-args (atts))
-     ,(vl-progress-claim vl-parse-seq-block-fn
+     ,(vl-progress-claim vl-parse-seq-block
                          :extra-args (atts))
-     ,(vl-progress-claim vl-parse-procedural-timing-control-statement-fn
+     ,(vl-progress-claim vl-parse-procedural-timing-control-statement
                          :extra-args (atts))
-     ,(vl-progress-claim vl-parse-wait-statement-fn
+     ,(vl-progress-claim vl-parse-wait-statement
                          :extra-args (atts))
-     ,(vl-progress-claim vl-parse-statement-aux-fn
+     ,(vl-progress-claim vl-parse-statement-aux
                          :extra-args (atts))
-     ,(vl-progress-claim vl-parse-statement-fn)
-     ,(vl-progress-claim vl-parse-statement-or-null-fn)
+     ,(vl-progress-claim vl-parse-statement)
+     ,(vl-progress-claim vl-parse-statement-or-null)
 
-     (vl-parse-statements-until-end-fn
-      (and (<= (acl2-count (mv-nth 2 (vl-parse-statements-until-end-fn tokens warnings)))
+     (vl-parse-statements-until-end
+      (and (<= (acl2-count (mv-nth 2 (vl-parse-statements-until-end tokens warnings)))
                (acl2-count tokens))
-           (implies (and (not (mv-nth 0 (vl-parse-statements-until-end-fn
+           (implies (and (not (mv-nth 0 (vl-parse-statements-until-end
                                          tokens warnings)))
-                         (mv-nth 1 (vl-parse-statements-until-end-fn tokens warnings)))
-                    (< (acl2-count (mv-nth 2 (vl-parse-statements-until-end-fn tokens warnings)))
+                         (mv-nth 1 (vl-parse-statements-until-end tokens warnings)))
+                    (< (acl2-count (mv-nth 2 (vl-parse-statements-until-end tokens warnings)))
                        (acl2-count tokens))))
       :rule-classes ((:rewrite) (:linear)))
 
-     (vl-parse-statements-until-join-fn
-      (and (<= (acl2-count (mv-nth 2 (vl-parse-statements-until-join-fn tokens warnings)))
+     (vl-parse-statements-until-join
+      (and (<= (acl2-count (mv-nth 2 (vl-parse-statements-until-join tokens warnings)))
                (acl2-count tokens))
-           (implies (and (not (mv-nth 0 (vl-parse-statements-until-join-fn
+           (implies (and (not (mv-nth 0 (vl-parse-statements-until-join
                                          tokens warnings)))
-                         (mv-nth 1 (vl-parse-statements-until-join-fn tokens warnings)))
-                    (< (acl2-count (mv-nth 2 (vl-parse-statements-until-join-fn tokens warnings)))
+                         (mv-nth 1 (vl-parse-statements-until-join tokens warnings)))
+                    (< (acl2-count (mv-nth 2 (vl-parse-statements-until-join tokens warnings)))
                        (acl2-count tokens))))
       :rule-classes ((:rewrite) (:linear)))
 
-     :hints(("Goal" :induct (vl-flag-parse-statement flag atts tokens warnings))
-            '(:do-not '(simplify))
+     :hints('(:do-not '(simplify))
             (flag::expand-calls-computed-hint
              acl2::clause
              ',(flag::get-clique-members 'vl-parse-statement-fn

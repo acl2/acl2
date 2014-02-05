@@ -20,7 +20,6 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "OSLIB")
-(ql:quickload "iolib.syscalls")
 
 (defun getpid-fn (state)
 

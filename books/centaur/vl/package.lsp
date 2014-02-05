@@ -45,6 +45,7 @@
     '(assert!
       b*
       fun
+      local-stobjs
       append-without-guard
       flatten
       strip-cadrs

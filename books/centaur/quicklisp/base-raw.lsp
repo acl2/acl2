@@ -1,5 +1,5 @@
-; OSLIB -- Operating System Utilities
-; Copyright (C) 2013 Centaur Technology
+; Quicklisp setup for Centaur books
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -16,15 +16,15 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
-; Original authors: Jared Davis <jared@centtech.com>
-;                   Sol Swords <sswords@centtech.com>
+; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "OSLIB")
-(include-book "logic-defs")
-(include-book "centaur/quicklisp/iolib" :dir :system)
-; (depends-on "getpid-raw.lsp")
+(in-package "ACL2")
 
-(defttag oslib)
-(include-raw "getpid-raw.lsp")
+; Preload all Quicklisp libraries that we're making available.  The goal here
+; is to defeat build parallelism and ensure that the packages are loaded in a
+; serial manner.  Otherwise, e.g., we can have two Quicklisp packages that are
+; both being built at separate times in separate threads, crashing into each
+; other's working space.
 
-
+(ql:quickload "iolib.syscalls")
+(ql:quickload "osicat")

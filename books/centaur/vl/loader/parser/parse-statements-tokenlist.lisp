@@ -27,11 +27,10 @@
 (local (in-theory (disable
                    vl-tokenlist-p-when-subsetp-equal
                    acl2-count-positive-when-consp
-                   vl-is-token?-fn-when-not-consp-of-tokens
                    acl2::consp-under-iff-when-true-listp
                    (:type-prescription vl-tokenlist-p)
-                   (:type-prescription vl-is-token?-fn)
-                   (:type-prescription vl-is-some-token?-fn)
+                   (:t vl-is-token?)
+                   (:t vl-is-some-token?)
                    (:type-prescription acl2-count)
                    double-containment
                    acl2::acl2-count-when-member
@@ -43,10 +42,10 @@
                    acl2::cancel_times-equal-correct
                    acl2::cancel_plus-lessp-correct
                    magically-resolve-vl-is-some-token?
-                   vl-is-some-token?-fn-when-not-consp-of-tokens
-                   vl-is-some-token?-fn-when-not-consp-of-types
+                   vl-is-some-token?-when-not-consp-of-tokens
+                   vl-is-some-token?-when-not-consp-of-types
                    magically-reduce-possible-types-from-vl-is-some-token?
-                   vl-parse-expression-eof-vl-parse-expression-fn
+                   vl-parse-expression-eof-vl-parse-expression
                    vl-exprlist-p-of-cons
                    first-under-iff-when-vl-exprlist-p
                    default-<-2 default-<-1
@@ -63,31 +62,30 @@
 (with-output
  :off prove :gag-mode :goals
  (make-event
-  `(defthm-vl-flag-parse-statement vl-parse-statement-tokenlist
-     ,(vl-tokenlist-claim vl-parse-case-item-fn)
-     ,(vl-tokenlist-claim vl-parse-1+-case-items-fn)
-     ,(vl-tokenlist-claim vl-parse-case-statement-fn
+  `(defthm-parse-statements-flag vl-parse-statement-tokenlist
+     ,(vl-tokenlist-claim vl-parse-case-item)
+     ,(vl-tokenlist-claim vl-parse-1+-case-items)
+     ,(vl-tokenlist-claim vl-parse-case-statement
                          :extra-args (atts))
-     ,(vl-tokenlist-claim vl-parse-conditional-statement-fn
+     ,(vl-tokenlist-claim vl-parse-conditional-statement
                          :extra-args (atts))
-     ,(vl-tokenlist-claim vl-parse-loop-statement-fn
+     ,(vl-tokenlist-claim vl-parse-loop-statement
                          :extra-args (atts))
-     ,(vl-tokenlist-claim vl-parse-par-block-fn
+     ,(vl-tokenlist-claim vl-parse-par-block
                          :extra-args (atts))
-     ,(vl-tokenlist-claim vl-parse-seq-block-fn
+     ,(vl-tokenlist-claim vl-parse-seq-block
                          :extra-args (atts))
-     ,(vl-tokenlist-claim vl-parse-procedural-timing-control-statement-fn
+     ,(vl-tokenlist-claim vl-parse-procedural-timing-control-statement
                          :extra-args (atts))
-     ,(vl-tokenlist-claim vl-parse-wait-statement-fn
+     ,(vl-tokenlist-claim vl-parse-wait-statement
                          :extra-args (atts))
-     ,(vl-tokenlist-claim vl-parse-statement-aux-fn
+     ,(vl-tokenlist-claim vl-parse-statement-aux
                          :extra-args (atts))
-     ,(vl-tokenlist-claim vl-parse-statement-fn)
-     ,(vl-tokenlist-claim vl-parse-statement-or-null-fn)
-     ,(vl-tokenlist-claim vl-parse-statements-until-end-fn)
-     ,(vl-tokenlist-claim vl-parse-statements-until-join-fn)
-     :hints(("Goal" :induct (vl-flag-parse-statement flag atts tokens warnings))
-            (and acl2::stable-under-simplificationp
+     ,(vl-tokenlist-claim vl-parse-statement)
+     ,(vl-tokenlist-claim vl-parse-statement-or-null)
+     ,(vl-tokenlist-claim vl-parse-statements-until-end)
+     ,(vl-tokenlist-claim vl-parse-statements-until-join)
+     :hints((and acl2::stable-under-simplificationp
                  (flag::expand-calls-computed-hint
                   acl2::clause
                   ',(flag::get-clique-members 'vl-parse-statement-fn (w state))))))))

@@ -25,7 +25,37 @@
 
 (defxdoc parser
   :parents (loader)
-  :short "Verilog Parser.")
+  :short "A parser for a subset of Verilog and SystemVerilog."
+
+  :long "<h3>Introduction</h3>
+
+<p>Our parser is responsible for processing a list of @(see tokens) into our
+internal representation of Verilog @(see syntax).  Typically these tokens are
+produced by the @(see lexer).  Note that before parsing begins, any whitespace
+or comment tokens should be removed from the token list; see for instance @(see
+vl-kill-whitespace-and-comments).</p>
+
+<p>We use essentially a manual recursive-descent style parser.  Having the
+entire token stream available gives us arbitrary lookahead, and we occasionally
+make use of backtracking.</p>
+
+<h3>Scope</h3>
+
+<p>Verilog and SystemVerilog are huge languages, and we can parse only a subset
+of these languages.</p>
+
+<p>We can currently support most of the constructs in the Verilog 1364-2005
+standard.  Notably, we do not yet support user-defined primitives, generate
+statements, specify blocks, specparams, and genvars.  In some cases, the parser
+will just skip over unrecognized constructs (adding a @(see warning) when it
+does so.)  Depending on what you are doing, this behavior may be actually
+appropriate, e.g., skipping specify blocks may be okay if you aren't trying to
+deal with low-level timing issues.</p>
+
+<p>We are beginning to work toward supporting SystemVerilog based on the
+1800-2012 standard.  But this is preliminary work and you should not yet expect
+VL to correctly handle any interesting fragment of SystemVerilog.</p>")
+
 
 (defund udp-p (x)
   (declare (ignore x))

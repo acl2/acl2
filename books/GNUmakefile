@@ -158,28 +158,33 @@ ifneq ($(HTTP_PROXY_WITH_PORT), )
   HTTP_PROXY_FLAG=-x $(HTTP_PROXY_WITH_PORT)
 endif # HTTP_PROXY_WITH_PORT
 
-QUICKLISP_DIR=centaur/quicklisp
+QUICKLISP_DIR := centaur/quicklisp
 
 ifneq ($(USE_QUICKLISP), )
 
-$(QUICKLISP_DIR)/quicklisp.lisp:
+$(QUICKLISP_DIR)/quicklisp.lsp:
 	@echo "Downloading Quicklisp"
-	@cd $(QUICKLISP_DIR); curl -O http://beta.quicklisp.org/quicklisp.lisp $(HTTP_PROXY_FLAG)
-	@ls -l $(QUICKLISP_DIR)/quicklisp.lisp
+	@cd $(QUICKLISP_DIR); \
+	   curl http://beta.quicklisp.org/quicklisp.lisp \
+             -o quicklisp.lsp $(HTTP_PROXY_FLAG)
+	@ls -l $(QUICKLISP_DIR)/quicklisp.lsp
 
-$(QUICKLISP_DIR)/inst/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lisp \
+$(QUICKLISP_DIR)/inst/setup.lisp: $(QUICKLISP_DIR)/quicklisp.lsp \
                                   $(QUICKLISP_DIR)/install.lsp
-	@echo "Setting up Quicklisp"
-	@rm -rf $(QUICKLISP_DIR)/inst/*
-	@cd $(QUICKLISP_DIR); $(STARTJOB) -c \
-           "ACL2_CUSTOMIZATION=NONE $(ACL2) < install.lsp &> install.out"
-	@ls -l $(QUICKLISP_DIR)/inst/setup.lisp
+	@echo "Setting up Quicklisp..."
+	@cd $(QUICKLISP_DIR); \
+           ($(STARTJOB) -c \
+              "ACL2_CUSTOMIZATION=NONE $(ACL2) < install.lsp &> install.out" ; \
+	    ls -l inst/setup.lisp) \
+	   || (tail -300 install.out | sed 's/^/   | /'; false)
 
-$(QUICKLISP_DIR)/top.cert: $(QUICKLISP_DIR)/inst/setup.lisp \
-                           $(QUICKLISP_DIR)/cert.acl2 \
-                           tools/include-raw.cert
+$(QUICKLISP_DIR)/base.cert: $(QUICKLISP_DIR)/inst/setup.lisp
 
-all: $(QUICKLISP_DIR)/top.cert
+.PHONY: quicklisp
+quicklisp: $(QUICKLISP_DIR)/top.cert
+
+# I don't think we need this now
+# all: $(QUICKLISP_DIR)/top.cert
 
 endif # USE_QUICKLISP
 
@@ -190,15 +195,12 @@ endif # USE_QUICKLISP
 
 .PHONY: quicklisp_clean
 
-# We check for QUICKLISP_DIR since this Makefile is included by
-# nonstd/Makefile, and there is no nonstd/$(QUICKLISP_DIR) directory.
 quicklisp_clean:
-	@if [ -d $(QUICKLISP_DIR) ] ; then \
-	  echo "Removing downloaded quicklisp files (if any)" ; \
-	  cd $(QUICKLISP_DIR); rm -rf quicklisp.lisp  inst/asdf.lisp inst/cache \
+	echo "Removing downloaded quicklisp files (if any)" ; \
+	cd $(QUICKLISP_DIR); rm -rf quicklisp.lsp  inst/asdf.lisp inst/cache \
 	    inst/client-info.sexp inst/dists inst/local-projects \
-	    inst/quicklisp inst/setup.lisp inst/tmp install.out Makefile-tmp ; \
-	fi
+	    inst/quicklisp inst/setup.lisp inst/tmp install.out Makefile-tmp
+	cd $(QUICKLISP_DIR); $(BUILD_DIR)/clean.pl
 
 # The following hack was useful briefly in late January, 2014, when
 # there were issues with quicklisp that caused us not to want to clean
@@ -241,11 +243,8 @@ space =  # just a space
 EGREP_EXTRA_EXCLUDE_STRING = |$(subst $(space) $(space),|,$(strip $(EXCLUDED_PREFIXES)))
 endif # ifneq ($(EXCLUDED_PREFIXES), )
 
-# We exclude centaur/quicklisp explicitly, instead of using a cert_pl_exclude
-# file, because when people actually install Quicklisp packages, it ends up
-# having subdirectories that we don't know about ahead of time.  We exclude
-# some other directories because there are subdirectories and it's just easiest
-# to stop at the root.
+# We exclude some directories because there are subdirectories and it's just
+# easiest to stop at the root.
 
 # We also exclude centaur/satlink/solvers because it depends on all kinds of
 # extra SAT solvers.
@@ -253,7 +252,7 @@ $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|centaur/quicklisp|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support$(EGREP_EXTRA_EXCLUDE_STRING))' \
+    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
   > $(BUILD_DIR)/Makefile-books; \
   ls -l $(BUILD_DIR)/Makefile-books)

@@ -22,9 +22,8 @@
 (include-book "read-acl2-oracle")
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defenum" :dir :system)
-(include-book "centaur/quicklisp/top" :dir :system)
+(include-book "centaur/quicklisp/osicat" :dir :system)
 ; (depends-on "file-types-raw.lsp")
-; cert_param: (uses-quicklisp)
 
 (defxdoc file-types
   :parents (oslib)
@@ -475,10 +474,5 @@ directory-p)'>directories</see>."
 
 
 (defttag :oslib)
-(include-raw "file-types-raw.lsp"
-             ;; BOZO is there any way to allow ACL2 to compile this
-             ;; successfully?  It complains about the OSICAT package
-             ;; not being defined, but, but... god dammit Lisp.
-             :do-not-compile t
-             :host-readtable t)
+(include-raw "file-types-raw.lsp")
 

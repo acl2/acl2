@@ -25,31 +25,30 @@
 (with-output
  :off prove :gag-mode :goals
  (make-event
-  `(defthm-vl-flag-parse-statement vl-parse-statement-warninglist
-     ,(vl-warninglist-claim vl-parse-case-item-fn)
-     ,(vl-warninglist-claim vl-parse-1+-case-items-fn)
-     ,(vl-warninglist-claim vl-parse-case-statement-fn
+  `(defthm-parse-statements-flag vl-parse-statement-warninglist
+     ,(vl-warninglist-claim vl-parse-case-item)
+     ,(vl-warninglist-claim vl-parse-1+-case-items)
+     ,(vl-warninglist-claim vl-parse-case-statement
                          :extra-args (atts))
-     ,(vl-warninglist-claim vl-parse-conditional-statement-fn
+     ,(vl-warninglist-claim vl-parse-conditional-statement
                          :extra-args (atts))
-     ,(vl-warninglist-claim vl-parse-loop-statement-fn
+     ,(vl-warninglist-claim vl-parse-loop-statement
                          :extra-args (atts))
-     ,(vl-warninglist-claim vl-parse-par-block-fn
+     ,(vl-warninglist-claim vl-parse-par-block
                          :extra-args (atts))
-     ,(vl-warninglist-claim vl-parse-seq-block-fn
+     ,(vl-warninglist-claim vl-parse-seq-block
                          :extra-args (atts))
-     ,(vl-warninglist-claim vl-parse-procedural-timing-control-statement-fn
+     ,(vl-warninglist-claim vl-parse-procedural-timing-control-statement
                          :extra-args (atts))
-     ,(vl-warninglist-claim vl-parse-wait-statement-fn
+     ,(vl-warninglist-claim vl-parse-wait-statement
                          :extra-args (atts))
-     ,(vl-warninglist-claim vl-parse-statement-aux-fn
+     ,(vl-warninglist-claim vl-parse-statement-aux
                          :extra-args (atts))
-     ,(vl-warninglist-claim vl-parse-statement-fn)
-     ,(vl-warninglist-claim vl-parse-statement-or-null-fn)
-     ,(vl-warninglist-claim vl-parse-statements-until-end-fn)
-     ,(vl-warninglist-claim vl-parse-statements-until-join-fn)
-     :hints(("Goal" :induct (vl-flag-parse-statement flag atts tokens warnings))
-            (and acl2::stable-under-simplificationp
+     ,(vl-warninglist-claim vl-parse-statement)
+     ,(vl-warninglist-claim vl-parse-statement-or-null)
+     ,(vl-warninglist-claim vl-parse-statements-until-end)
+     ,(vl-warninglist-claim vl-parse-statements-until-join)
+     :hints((and acl2::stable-under-simplificationp
                  (flag::expand-calls-computed-hint
                   acl2::clause
                   ',(flag::get-clique-members 'vl-parse-statement-fn (w state))))))))

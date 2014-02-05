@@ -610,22 +610,14 @@ tokens, and construct a comment map from any comment tokens."
                        cmap-rest)
                cmap-rest)))
          (mv new-tokens new-cmap))
-       :exec ;; Fuck!
-       (with-local-stobj
-         nrev
-         (mv-let
-           (tokens cmap nrev)
-           (with-local-stobj
-             nrev2
-             (mv-let
-               (tokens cmap nrev nrev2)
-               (b* (((mv nrev nrev2)
-                     (vl-kill-whitespace-and-comments-core tokens nrev nrev2))
-                    ((mv tokens nrev) (nrev-finish nrev))
-                    ((mv cmap nrev2)  (nrev-finish nrev2)))
-                 (mv tokens cmap nrev nrev2))
-               (mv tokens cmap nrev)))
-           (mv tokens cmap))))
+       :exec
+       (b* (((local-stobjs nrev nrev2)
+             (mv tokens cmap nrev nrev2))
+            ((mv nrev nrev2)
+             (vl-kill-whitespace-and-comments-core tokens nrev nrev2))
+            ((mv tokens nrev) (nrev-finish nrev))
+            ((mv cmap nrev2)  (nrev-finish nrev2)))
+         (mv tokens cmap nrev nrev2)))
   ///
   (local (in-theory (enable vl-kill-whitespace-and-comments-core)))
 

@@ -27,6 +27,12 @@
 (include-book "tools/rulesets" :dir :system)
 (local (include-book "../../util/arithmetic"))
 
+(defxdoc parse-utils
+  :parents (parser)
+  :short "Supporting functions for the parser.")
+
+(local (xdoc::set-default-parents parse-utils))
+
 ; Our Verilog parser makes extensive use of the defparser macro, which is now
 ; introduced.  The simplest form for this is:
 ;
@@ -136,12 +142,11 @@
   (fncall &key disable enable)
   `(expand-and-maybe-induct-hint-fn ,fncall world id ,disable ,enable))
 
-(ACL2::def-ruleset defparser-type-prescriptions
-                   ;; This is a ruleset for type-prescription rules for
-                   ;; each defparser we introduce.  Normally these rules
-                   ;; are not helpful, but they are needed for the guard
-                   ;; verification of mv-lets.
-                   nil)
+(def-ruleset defparser-type-prescriptions
+  ;; This is a ruleset for type-prescription rules for each defparser we
+  ;; introduce.  Normally these rules are not helpful, but they are needed for
+  ;; the guard verification of mv-lets.
+  nil)
 
 (defun defparser-fn (name formals args)
   (declare (xargs :guard (and (symbolp name)
@@ -149,265 +154,254 @@
                               (equal (nthcdr (- (len formals) 2) formals)
                                      '(tokens warnings)))
                   :mode :program))
-  (let* ((fn-name (intern-in-package-of-symbol (cat (symbol-name name) "-FN")
-                                               name))
-         (args-for-def   (throw-away-keyword-parts args))
-         (decls          (butlast args-for-def 1))
-         (body           (car (last args)))
-         (count          (cdr (extract-keyword-from-args :count args)))
-         (result         (cdr (extract-keyword-from-args :result args)))
-         (result-hints   (cdr (extract-keyword-from-args :result-hints args)))
-         (resultp-of-nil (extract-keyword-from-args :resultp-of-nil args))
-         (true-listp     (cdr (extract-keyword-from-args :true-listp args)))
-         (fails          (cdr (extract-keyword-from-args :fails args)))
-         (guard          (extract-keyword-from-args :guard args))
-         (hint-chicken-switch (cdr (extract-keyword-from-args
-                                    :hint-chicken-switch args)))
-         (verify-guards  (extract-keyword-from-args :verify-guards args))
-         (thm-hyps       (if guard
-                             `(and (force (vl-tokenlist-p tokens))
-                                   ,(adjust-guard-for-theorems (cdr guard)))
-                           `(force (vl-tokenlist-p tokens))))
-         )
-    `(progn
-       (defmacro ,name (,@(butlast formals 2) &optional (tokens 'tokens) (warnings 'warnings))
-         (list ',fn-name ,@formals))
-
-       (defund ,fn-name ,formals
-         (declare (xargs :guard ,(if guard
-                                     `(and (vl-tokenlist-p tokens)
-                                           (vl-warninglist-p warnings)
-                                           ,(cdr guard))
+  (b* ((fn-name (intern-in-package-of-symbol (cat (symbol-name name) "-FN")
+                                             name))
+       (args-for-def   (throw-away-keyword-parts args))
+       (decls          (butlast args-for-def 1))
+       (body           (car (last args)))
+       (count          (cdr (extract-keyword-from-args :count args)))
+       (result         (cdr (extract-keyword-from-args :result args)))
+       (result-hints   (cdr (extract-keyword-from-args :result-hints args)))
+       (resultp-of-nil (extract-keyword-from-args :resultp-of-nil args))
+       (true-listp     (cdr (extract-keyword-from-args :true-listp args)))
+       (fails          (cdr (extract-keyword-from-args :fails args)))
+       (guard          (extract-keyword-from-args :guard args))
+       (hint-chicken-switch (cdr (extract-keyword-from-args
+                                  :hint-chicken-switch args)))
+       (verify-guards  (extract-keyword-from-args :verify-guards args))
+       (thm-hyps       (if guard
+                           `(and (force (vl-tokenlist-p tokens))
+                                 ,(adjust-guard-for-theorems (cdr guard)))
+                         `(force (vl-tokenlist-p tokens)))))
+    `(define ,name (,@(butlast formals 2)
+                    &optional (tokens 'tokens) (warnings 'warnings))
+       (declare (xargs :guard ,(if guard
                                    `(and (vl-tokenlist-p tokens)
-                                         (vl-warninglist-p warnings)))
-                         ,@(if verify-guards
-                               `(:verify-guards ,(cdr verify-guards))
-                             nil)))
-         ,@decls
-         (let ((__function__ ',name))
-           (declare (ignorable __function__))
-           ,body))
+                                         (vl-warninglist-p warnings)
+                                         ,(cdr guard))
+                                 `(and (vl-tokenlist-p tokens)
+                                       (vl-warninglist-p warnings)))
+                       ,@(if verify-guards
+                             `(:verify-guards ,(cdr verify-guards))
+                           nil)))
+       ,@decls
+       ,body
+       ///
+       (ACL2::add-to-ruleset defparser-type-prescriptions '((:t ,name)))
 
-       (ACL2::add-to-ruleset defparser-type-prescriptions
-                             '((:type-prescription ,fn-name)))
+       ,@(if (not (or count result resultp-of-nil result-hints true-listp fails))
+             nil
+           `((defthm ,(intern-in-package-of-symbol
+                       (cat "VL-TOKENLIST-P-OF-" (symbol-name name))
+                       name)
+               (implies (force (vl-tokenlist-p tokens))
+                        (vl-tokenlist-p (mv-nth 2 (,name . ,formals))))
+               :hints (,@(if hint-chicken-switch
+                             nil
+                           `((expand-and-maybe-induct-hint
+                              '(,fn-name . ,formals)))))
+               :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-       (add-macro-alias ,name ,fn-name)
-       (add-untranslate-pattern (,fn-name ,@formals) (,name ,@(butlast formals 2)))
+             (defthm ,(intern-in-package-of-symbol
+                       (cat "VL-WARNINGLIST-P-OF-" (symbol-name name))
+                       name)
+               (implies (force (vl-warninglist-p warnings))
+                        (vl-warninglist-p (mv-nth 3 (,name . ,formals))))
+               :hints (,@(if hint-chicken-switch
+                             nil
+                           `((expand-and-maybe-induct-hint
+                              '(,fn-name . ,formals)))))
+               :rule-classes ((:rewrite :backchain-limit-lst 0)))))
 
-       (encapsulate
-        ()
-        (local (in-theory (enable ,name)))
+       ,@(cond ((not fails)
+                nil)
+               ((equal (symbol-name fails) "NEVER")
+                `((defthm ,(intern-in-package-of-symbol
+                            (cat (symbol-name name) "-NEVER-FAILS")
+                            name)
+                    (not (mv-nth 0 (,name . ,formals)))
+                    :hints(,@(if hint-chicken-switch
+                                 '(("Goal" :in-theory (disable (force))))
+                               `((expand-and-maybe-induct-hint
+                                  '(,fn-name . ,formals) :disable '((force)))))))))
+               ((equal (symbol-name fails) "GRACEFULLY")
+                `((defthm ,(intern-in-package-of-symbol
+                            (cat (symbol-name name) "-FAILS-GRACEFULLY")
+                            name)
+                    (implies (mv-nth 0 (,name . ,formals))
+                             (not (mv-nth 1 (,name . ,formals))))
+                    :hints(,@(if hint-chicken-switch
+                                 '(("Goal" :in-theory (disable (force))))
+                               `((expand-and-maybe-induct-hint
+                                  '(,fn-name . ,formals) :disable '((force)))))))))
+               (t
+                (er hard? 'defparser "Bad :fails: ~s0." fails)))
 
-        ,@(if (not (or count result resultp-of-nil result-hints true-listp fails))
-              nil
-            `((defthm ,(intern-in-package-of-symbol
-                        (cat "VL-TOKENLIST-P-OF-" (symbol-name name))
-                        name)
-                (implies (force (vl-tokenlist-p tokens))
-                         (vl-tokenlist-p (mv-nth 2 (,name . ,formals))))
-                :hints (,@(if hint-chicken-switch
-                              nil
-                            `((expand-and-maybe-induct-hint
-                               '(,fn-name . ,formals)))))
-                :rule-classes ((:rewrite :backchain-limit-lst 0)))
+       ,@(cond ((not result)
+                nil)
+               (t
+                `((defthm ,(intern-in-package-of-symbol
+                            (cat (symbol-name name) "-RESULT")
+                            name)
+                    ,(cond
+                      ((and resultp-of-nil
+                            (cdr resultp-of-nil)
+                            (equal (symbol-name fails) "GRACEFULLY"))
+                       ;; On failure val is nil, and resultp is true of
+                       ;; nil, so resultp is always true of val.
+                       `(implies ,thm-hyps
+                                 ,(ACL2::subst `(mv-nth 1 (,name . ,formals))
+                                               'val result)))
 
-              (defthm ,(intern-in-package-of-symbol
-                        (cat "VL-WARNINGLIST-P-OF-" (symbol-name name))
-                        name)
-                (implies (force (vl-warninglist-p warnings))
-                         (vl-warninglist-p (mv-nth 3 (,name . ,formals))))
-                :hints (,@(if hint-chicken-switch
-                              nil
-                            `((expand-and-maybe-induct-hint
-                               '(,fn-name . ,formals)))))
-                :rule-classes ((:rewrite :backchain-limit-lst 0)))))
+                      ((and resultp-of-nil
+                            (not (cdr resultp-of-nil))
+                            (equal (symbol-name fails) "GRACEFULLY"))
+                       ;; Resultp is not true of nil, and fails
+                       ;; gracefully, so result is true exactly when
+                       ;; it does not fail.
+                       `(implies ,thm-hyps
+                                 (equal ,(ACL2::subst
+                                          `(mv-nth 1 (,name . ,formals))
+                                          'val result)
+                                        (not (mv-nth 0 (,name . ,formals))))))
 
-        ,@(cond ((not fails)
-                 nil)
-                ((equal (symbol-name fails) "NEVER")
-                 `((defthm ,(intern-in-package-of-symbol
-                             (cat (symbol-name name) "-NEVER-FAILS")
-                             name)
-                     (not (mv-nth 0 (,name . ,formals)))
-                     :hints(,@(if hint-chicken-switch
-                                  '(("Goal" :in-theory (disable (force))))
+                      (t
+                       ;; We don't know enough to make the theorem
+                       ;; better, so just make it conditional.
+                       `(implies (and (not (mv-nth 0 (,name . ,formals)))
+                                      ,thm-hyps)
+                                 ,(ACL2::subst
+                                   `(mv-nth 1 (,name . ,formals))
+                                   'val result))))
+                    :hints (,@(if hint-chicken-switch
+                                  nil
                                 `((expand-and-maybe-induct-hint
-                                   '(,fn-name . ,formals) :disable '((force)))))))))
-                ((equal (symbol-name fails) "GRACEFULLY")
-                 `((defthm ,(intern-in-package-of-symbol
-                             (cat (symbol-name name) "-FAILS-GRACEFULLY")
-                             name)
-                     (implies (mv-nth 0 (,name . ,formals))
-                              (not (mv-nth 1 (,name . ,formals))))
-                     :hints(,@(if hint-chicken-switch
-                                  '(("Goal" :in-theory (disable (force))))
-                                `((expand-and-maybe-induct-hint
-                                   '(,fn-name . ,formals) :disable '((force)))))))))
-                (t
-                 (er hard? 'defparser "Bad :fails: ~s0." fails)))
+                                   '(,fn-name . ,formals))))
+                            . ,result-hints)))))
 
-        ,@(cond ((not result)
-                 nil)
-                (t
-                 `((defthm ,(intern-in-package-of-symbol
-                             (cat (symbol-name name) "-RESULT")
-                             name)
-                     ,(cond
-                       ((and resultp-of-nil
-                             (cdr resultp-of-nil)
-                             (equal (symbol-name fails) "GRACEFULLY"))
-                        ;; On failure val is nil, and resultp is true of
-                        ;; nil, so resultp is always true of val.
-                        `(implies ,thm-hyps
-                                  ,(ACL2::subst `(mv-nth 1 (,name . ,formals))
-                                                'val result)))
+       ,@(cond ((not true-listp)
+                nil)
+               (t
+                `((defthm ,(intern-in-package-of-symbol
+                            (cat (symbol-name name) "-TRUE-LISTP")
+                            name)
+                    (true-listp (mv-nth 1 (,name . ,formals)))
+                    :rule-classes :type-prescription
+                    :hints(,@(if hint-chicken-switch
+                                 '(("Goal" :in-theory (disable (force))))
+                               `((expand-and-maybe-induct-hint
+                                  '(,fn-name . ,formals)
+                                  :disable '((force))))))))))
 
-                       ((and resultp-of-nil
-                             (not (cdr resultp-of-nil))
-                             (equal (symbol-name fails) "GRACEFULLY"))
-                        ;; Resultp is not true of nil, and fails
-                        ;; gracefully, so result is true exactly when
-                        ;; it does not fail.
-                        `(implies ,thm-hyps
-                                  (equal ,(ACL2::subst
-                                           `(mv-nth 1 (,name . ,formals))
-                                           'val result)
-                                         (not (mv-nth 0 (,name . ,formals))))))
+       ,@(cond ((not count)
+                nil)
+               ((equal (symbol-name count) "WEAK")
+                `((defthm ,(intern-in-package-of-symbol
+                            (cat (symbol-name name) "-COUNT-WEAK")
+                            name)
+                    (<= (acl2-count (mv-nth 2 (,name . ,formals)))
+                        (acl2-count tokens))
+                    :rule-classes ((:rewrite) (:linear))
+                    :hints(,@(if hint-chicken-switch
+                                 '(("Goal" :in-theory (disable (force))))
+                               `((expand-and-maybe-induct-hint
+                                  '(,fn-name . ,formals)
+                                  :disable '((force)))))))))
 
-                       (t
-                        ;; We don't know enough to make the theorem
-                        ;; better, so just make it conditional.
-                        `(implies (and (not (mv-nth 0 (,name . ,formals)))
-                                       ,thm-hyps)
-                                  ,(ACL2::subst
-                                    `(mv-nth 1 (,name . ,formals))
-                                    'val result))))
-                     :hints (,@(if hint-chicken-switch
-                                   nil
-                                 `((expand-and-maybe-induct-hint
-                                    '(,fn-name . ,formals))))
-                             . ,result-hints)))))
+               ((equal (symbol-name count) "STRONG")
+                `((defthm ,(intern-in-package-of-symbol
+                            (cat (symbol-name name) "-COUNT-STRONG")
+                            name)
+                    (and (<= (acl2-count (mv-nth 2 (,name . ,formals)))
+                             (acl2-count tokens))
+                         (implies (not (mv-nth 0 (,name . ,formals)))
+                                  (< (acl2-count (mv-nth 2 (,name . ,formals)))
+                                     (acl2-count tokens))))
+                    :rule-classes ((:rewrite) (:linear))
+                    :hints(,@(if hint-chicken-switch
+                                 '(("Goal" :in-theory (disable (force))))
+                               `((expand-and-maybe-induct-hint
+                                  '(,fn-name . ,formals)
+                                  :disable '((force)))))))))
 
-        ,@(cond ((not true-listp)
-                 nil)
-                (t
-                 `((defthm ,(intern-in-package-of-symbol
-                             (cat (symbol-name name) "-TRUE-LISTP")
-                             name)
-                     (true-listp (mv-nth 1 (,name . ,formals)))
-                     :rule-classes :type-prescription
-                     :hints(,@(if hint-chicken-switch
-                                  '(("Goal" :in-theory (disable (force))))
-                                `((expand-and-maybe-induct-hint
-                                   '(,fn-name . ,formals)
-                                   :disable '((force))))))))))
+               ((equal (symbol-name count) "STRONG-ON-VALUE")
+                `((defthm ,(intern-in-package-of-symbol
+                            (cat (symbol-name name) "-COUNT-STRONG-ON-VALUE")
+                            name)
+                    (and (<= (acl2-count (mv-nth 2 (,name . ,formals)))
+                             (acl2-count tokens))
+                         (implies (mv-nth 1 (,name . ,formals))
+                                  (< (acl2-count (mv-nth 2 (,name . ,formals)))
+                                     (acl2-count tokens))))
+                    :rule-classes ((:rewrite) (:linear))
+                    :hints(,@(if hint-chicken-switch
+                                 '(("Goal" :in-theory (disable (force))))
+                               `((expand-and-maybe-induct-hint
+                                  '(,fn-name . ,formals)
+                                  :disable '((force)))))))))
 
-        ,@(cond ((not count)
-                 nil)
-                ((equal (symbol-name count) "WEAK")
-                 `((defthm ,(intern-in-package-of-symbol
-                             (cat (symbol-name name) "-COUNT-WEAK")
-                             name)
-                     (<= (acl2-count (mv-nth 2 (,name . ,formals)))
-                         (acl2-count tokens))
-                     :rule-classes ((:rewrite) (:linear))
-                     :hints(,@(if hint-chicken-switch
-                                  '(("Goal" :in-theory (disable (force))))
-                                `((expand-and-maybe-induct-hint
-                                   '(,fn-name . ,formals)
-                                   :disable '((force)))))))))
-
-                ((equal (symbol-name count) "STRONG")
-                 `((defthm ,(intern-in-package-of-symbol
-                             (cat (symbol-name name) "-COUNT-STRONG")
-                             name)
-                     (and (<= (acl2-count (mv-nth 2 (,name . ,formals)))
-                              (acl2-count tokens))
-                          (implies (not (mv-nth 0 (,name . ,formals)))
-                                   (< (acl2-count (mv-nth 2 (,name . ,formals)))
-                                      (acl2-count tokens))))
-                     :rule-classes ((:rewrite) (:linear))
-                     :hints(,@(if hint-chicken-switch
-                                  '(("Goal" :in-theory (disable (force))))
-                                `((expand-and-maybe-induct-hint
-                                   '(,fn-name . ,formals)
-                                   :disable '((force)))))))))
-
-                ((equal (symbol-name count) "STRONG-ON-VALUE")
-                 `((defthm ,(intern-in-package-of-symbol
-                             (cat (symbol-name name) "-COUNT-STRONG-ON-VALUE")
-                             name)
-                     (and (<= (acl2-count (mv-nth 2 (,name . ,formals)))
-                              (acl2-count tokens))
-                          (implies (mv-nth 1 (,name . ,formals))
-                                   (< (acl2-count (mv-nth 2 (,name . ,formals)))
-                                      (acl2-count tokens))))
-                     :rule-classes ((:rewrite) (:linear))
-                     :hints(,@(if hint-chicken-switch
-                                  '(("Goal" :in-theory (disable (force))))
-                                `((expand-and-maybe-induct-hint
-                                   '(,fn-name . ,formals)
-                                   :disable '((force)))))))))
-
-                (t
-                 (er hard? 'defparser "Bad :count: ~s0." count)))
-
-        ))))
+               (t
+                (er hard? 'defparser "Bad :count: ~s0." count))))))
 
 (defmacro defparser (name formals &rest args)
   (defparser-fn name formals args))
 
+(define expand-defparsers (forms)
+  ;; For mutually recursive parsers.  FORMS should be a list of defparser
+  ;; invocations, e.g.,: ((DEFPARSER FOO ...) ... (DEFPARSER BAR ...))
+  :mode :program
+  (b* (((when (atom forms))
+        nil)
+       (form1 (car forms))
+       ((unless (and (< 3 (len form1))
+                     (equal (first form1) 'defparser)))
+        (raise "Expected defparser forms, but found ~x0." form1))
+       (name1    (second form1))
+       (formals1 (third form1))
+       (args1    (rest-n 3 form1)))
+    (cons (defparser-fn name1 formals1 args1)
+          (expand-defparsers (cdr forms)))))
+
+(defmacro defparsers (name &rest defparser-forms)
+  ;; (defparsers expr (defparser parse-expr ...) (defparser parse-exprlist ...))
+  `(defines ,name . ,(expand-defparsers defparser-forms)))
 
 
-(defund vl-is-token?-fn (type tokens)
-  (declare (xargs :guard (vl-tokenlist-p tokens)))
+(define vl-is-token?
+  :short "Are we currently at some particular type of token?"
+  ((type "Type of token to match.") &optional ((tokens vl-tokenlist-p) 'tokens))
+  :inline t
   (and (consp tokens)
-       (eq (vl-token->type (car tokens)) type)))
+       (eq (vl-token->type (car tokens)) type))
+  ///
+  (add-untranslate-pattern (vl-is-token?-fn ?type tokens) (vl-is-token? ?type))
 
-(defmacro vl-is-token? (type &optional (tokens 'tokens))
-  ;; We used to implement this inline, but now we call a function so we can
-  ;; disable it and reduce the number of ifs in our proofs.
-  `(vl-is-token?-fn ,type ,tokens))
-
-(add-macro-alias vl-is-token? vl-is-token?-fn)
-(add-untranslate-pattern (vl-is-token?-fn ?type tokens) (vl-is-token? ?type))
-
-(defthm vl-is-token?-fn-when-not-consp-of-tokens
-  (implies (not (consp tokens))
-           (equal (vl-is-token?-fn type tokens)
-                  nil))
-  :hints(("Goal" :in-theory (enable vl-is-token?-fn))))
+  (defthm vl-is-token?-fn-when-not-consp-of-tokens
+    (implies (not (consp tokens))
+             (equal (vl-is-token? type tokens)
+                    nil))))
 
 
-
-(defund vl-is-some-token?-fn (types tokens)
-  (declare (xargs :guard (and (true-listp types)
-                              (vl-tokenlist-p tokens))))
+(define vl-is-some-token? ((types true-listp)
+                           &optional
+                           ((tokens vl-tokenlist-p) 'tokens))
+  :inline t
   (and (consp tokens)
        (member-eq (vl-token->type (car tokens)) types)
-       t))
+       t)
+  ///
+  (add-untranslate-pattern (vl-is-some-token?$inline ?types tokens)
+                           (vl-is-some-token? ?types))
 
-(defmacro vl-is-some-token? (types &optional (tokens 'tokens))
-  ;; We used to implement this inline, but now we call a function so we can
-  ;; disable it and reduce the number of ifs in our proofs.
-  `(vl-is-some-token?-fn ,types ,tokens))
+  (defthm vl-is-some-token?-when-not-consp-of-tokens
+    (implies (not (consp tokens))
+             (equal (vl-is-some-token? type tokens)
+                    nil)))
 
-(add-macro-alias vl-is-some-token? vl-is-some-token?-fn)
-(add-untranslate-pattern (vl-is-some-token?-fn ?types tokens) (vl-is-some-token? ?types))
-
-(defthm vl-is-some-token?-fn-when-not-consp-of-tokens
-  (implies (not (consp tokens))
-           (equal (vl-is-some-token?-fn type tokens)
-                  nil))
-  :hints(("Goal" :in-theory (enable vl-is-some-token?-fn))))
-
-(defthm vl-is-some-token?-fn-when-not-consp-of-types
-  (implies (not (consp types))
-           (equal (vl-is-some-token?-fn types tokens)
-                  nil))
-  :hints(("Goal" :in-theory (enable vl-is-some-token?-fn))))
-
-
+  (defthm vl-is-some-token?-when-not-consp-of-types
+    (implies (not (consp types))
+             (equal (vl-is-some-token? types tokens)
+                    nil))))
 
 
 (defund vl-parse-error-fn (function description tokens warnings)
@@ -540,31 +534,31 @@
 (add-untranslate-pattern (vl-match-token-fn ?function ?type tokens warnings)
                          (vl-match-token ?function ?type))
 
-(defthm vl-match-token-fn-succeeds-when-vl-is-token?-fn
+(defthm vl-match-token-fn-succeeds-when-vl-is-token?
   (iff (mv-nth 0 (vl-match-token-fn function type tokens warnings))
-       (not (vl-is-token?-fn type tokens)))
-  :hints(("Goal" :in-theory (enable vl-is-token?-fn vl-match-token-fn))))
+       (not (vl-is-token? type tokens)))
+  :hints(("Goal" :in-theory (enable vl-is-token? vl-match-token-fn))))
 
 (defthm vl-match-token-fn-fails-gracefully
-  (implies (not (vl-is-token?-fn type tokens))
+  (implies (not (vl-is-token? type tokens))
            (not (mv-nth 1 (vl-match-token-fn function type tokens warnings))))
   :hints(("Goal" :in-theory (enable vl-match-token-fn
-                                    vl-is-token?-fn))))
+                                    vl-is-token?))))
 
 (defthm vl-token-p-of-vl-match-token-fn
-  (implies (and (vl-is-token?-fn type tokens)
+  (implies (and (vl-is-token? type tokens)
                 (force (vl-tokenlist-p tokens)))
            (equal (vl-token-p (mv-nth 1 (vl-match-token-fn function type tokens warnings)))
                   t))
   :hints(("Goal" :in-theory (enable vl-match-token-fn
-                                    vl-is-token?-fn))))
+                                    vl-is-token?))))
 
 (defthm vl-token->type-of-vl-match-token-fn
-  (implies (vl-is-token?-fn type tokens)
+  (implies (vl-is-token? type tokens)
            (equal (vl-token->type (mv-nth 1 (vl-match-token-fn function type tokens warnings)))
                   type))
   :hints(("Goal" :in-theory (enable vl-match-token-fn
-                                    vl-is-token?-fn))))
+                                    vl-is-token?))))
 
 (defthm vl-tokenlist-p-of-vl-match-token-fn
   (implies (force (vl-tokenlist-p tokens))
@@ -623,33 +617,33 @@
 (add-untranslate-pattern (vl-match-some-token-fn ?function ?types tokens warnings)
                          (vl-match-some-token ?function ?types))
 
-(defthm vl-match-some-token-fn-succeeds-when-vl-is-some-token?-fn
+(defthm vl-match-some-token-fn-succeeds-when-vl-is-some-token?
   (iff (mv-nth 0 (vl-match-some-token-fn function types tokens warnings))
-       (not (vl-is-some-token?-fn types tokens)))
-  :hints(("Goal" :in-theory (enable vl-is-some-token?-fn
+       (not (vl-is-some-token? types tokens)))
+  :hints(("Goal" :in-theory (enable vl-is-some-token?
                                     vl-match-some-token-fn))))
 
 (defthm vl-match-some-token-fn-fails-gracefully
-  (implies (not (vl-is-some-token?-fn types tokens))
+  (implies (not (vl-is-some-token? types tokens))
            (equal (mv-nth 1 (vl-match-some-token-fn function types tokens warnings))
                   nil))
   :hints(("Goal" :in-theory (enable vl-match-some-token-fn
-                                    vl-is-some-token?-fn))))
+                                    vl-is-some-token?))))
 
 (defthm vl-token-p-of-vl-match-some-token-fn
-  (implies (and (vl-is-some-token?-fn types tokens)
+  (implies (and (vl-is-some-token? types tokens)
                 (force (vl-tokenlist-p tokens)))
            (equal (vl-token-p (mv-nth 1 (vl-match-some-token-fn function types tokens warnings)))
                   t))
   :hints(("Goal" :in-theory (enable vl-match-some-token-fn
-                                    vl-is-some-token?-fn))))
+                                    vl-is-some-token?))))
 
 (defthm vl-tokenlist-p-of-vl-match-some-token-fn
   (implies (force (vl-tokenlist-p tokens))
            (equal (vl-tokenlist-p (mv-nth 2 (vl-match-some-token-fn function types tokens warnings)))
                   t))
   :hints(("Goal" :in-theory (enable vl-match-some-token-fn
-                                    vl-is-some-token?-fn))))
+                                    vl-is-some-token?))))
 
 (defthm vl-warninglist-p-vl-match-some-token-fn
   (implies (force (vl-warninglist-p warnings))
@@ -915,29 +909,29 @@
 (add-untranslate-pattern (vl-match-any-except-fn ?function ?types tokens warnings)
                          (vl-match-any-except ?function ?types))
 
-(defthm vl-match-any-except-fn-succeeds-when-vl-is-some-token?-fn
+(defthm vl-match-any-except-fn-succeeds-when-vl-is-some-token?
   (iff (mv-nth 0 (vl-match-any-except-fn function types tokens warnings))
        (or (atom tokens)
-           (vl-is-some-token?-fn types tokens)))
-  :hints(("Goal" :in-theory (enable vl-is-some-token?-fn
+           (vl-is-some-token? types tokens)))
+  :hints(("Goal" :in-theory (enable vl-is-some-token?
                                     vl-match-any-except-fn))))
 
 (defthm vl-match-any-except-fn-fails-gracefully
   (implies (or (atom tokens)
-               (vl-is-some-token?-fn types tokens))
+               (vl-is-some-token? types tokens))
            (equal (mv-nth 1 (vl-match-any-except-fn function types tokens warnings))
                   nil))
   :hints(("Goal" :in-theory (enable vl-match-any-except-fn
-                                    vl-is-some-token?-fn))))
+                                    vl-is-some-token?))))
 
 (defthm vl-token-p-of-vl-match-any-except-fn
-  (implies (and (not (vl-is-some-token?-fn types tokens))
+  (implies (and (not (vl-is-some-token? types tokens))
                 (consp tokens)
                 (force (vl-tokenlist-p tokens)))
            (equal (vl-token-p (mv-nth 1 (vl-match-any-except-fn function types tokens warnings)))
                   t))
   :hints(("Goal" :in-theory (enable vl-match-any-except-fn
-                                    vl-is-some-token?-fn))))
+                                    vl-is-some-token?))))
 
 (defthm vl-tokenlist-p-of-vl-match-any-except-fn
   (implies (force (vl-tokenlist-p tokens))
@@ -973,78 +967,80 @@
 
 
 
-;                           VL-MUTUAL-RECURSION
-;
-; This is an extension of mutual-recursion which performs single-step
-; macroexpansion on its arguments until they are resolved into defuns,
-; defmacros, add-macro-alias, or add-untranslate-patterns.  We move the defuns
-; to before the regular call of mutual-recursion, and the macro aliases and
-; untranslate patterns to afterwards.  This isn't particularly general, but it
-; works with defparser, at least.
+;; ;                           VL-MUTUAL-RECURSION
+;; ;
+;; ; This is an extension of mutual-recursion which performs single-step
+;; ; macroexpansion on its arguments until they are resolved into defuns,
+;; ; defmacros, add-macro-alias, or add-untranslate-patterns.  We move the defuns
+;; ; to before the regular call of mutual-recursion, and the macro aliases and
+;; ; untranslate patterns to afterwards.  This isn't particularly general, but it
+;; ; works with defparser, at least.
 
-(mutual-recursion
+;; (mutual-recursion
 
- (defun vl-macroexpand-until-recognized-type (form types state)
-   (declare (xargs :stobjs state :mode :program))
-   (cond ((and (consp form)
-               (member-eq (car form) types))
-          (mv nil (list form) state))
-         ((and (consp form)
-               (eq (car form) 'progn))
-          (vl-macroexpand-all-until-recognized-type (cdr form) types state))
-         (t
-          (mv-let (erp val state)
-                  (acl2::macroexpand1 form 'vl-macroexpand-until-recognized-type state)
-                  (if erp
-                      (mv erp val state)
-                    (vl-macroexpand-until-recognized-type val types state))))))
+;;  (defun vl-macroexpand-until-recognized-type (form types state)
+;;    (declare (xargs :stobjs state :mode :program))
+;;    (b* (((when (and (consp form)
+;;                     (member-eq (car form) types)))
+;;          (mv nil (list form) state))
+;;         ((when (and (consp form)
+;;                     (eq (car form) 'progn)))
+;;          (vl-macroexpand-all-until-recognized-type (cdr form) types state))
+;;         (- (cw "Macroexpanding ~x0.~%" form))
+;;         ((mv erp val state)
+;;          (acl2::macroexpand1 form 'vl-macroexpand-until-recognized-type state))
+;;         ((when erp)
+;;          (mv erp val state)))
+;;      (vl-macroexpand-until-recognized-type val types state)))
 
- (defun vl-macroexpand-all-until-recognized-type (forms types state)
-   (declare (xargs :stobjs state :mode :program))
-   (if (atom forms)
-       (mv nil nil state)
-     (mv-let (erp first state)
-             (vl-macroexpand-until-recognized-type (car forms) types state)
-             (if erp
-                 (mv erp first state)
-               (mv-let (erp rest state)
-                       (vl-macroexpand-all-until-recognized-type (cdr forms) types state)
-                       (if erp
-                           (mv erp rest state)
-                         (mv erp (append first rest) state))))))))
+;;  (defun vl-macroexpand-all-until-recognized-type (forms types state)
+;;    (declare (xargs :stobjs state :mode :program))
+;;    (b* (((when (atom forms))
+;;          (mv nil nil state))
+;;         ((mv erp first state)
+;;          (vl-macroexpand-until-recognized-type (car forms) types state))
+;;         ((when erp)
+;;          (mv erp first state))
+;;         ((mv erp rest state)
+;;          (vl-macroexpand-all-until-recognized-type (cdr forms) types state))
+;;         ((when erp)
+;;          (mv erp rest state)))
+;;      (mv erp (append first rest) state))))
 
-(defun vl-gather-forms-of-type (forms types)
-  (declare (xargs :guard (symbol-listp types)))
-  (cond ((atom forms)
-         nil)
-        ((and (consp (car forms))
-              (member-eq (caar forms) types))
-         (cons (car forms)
-               (vl-gather-forms-of-type (cdr forms) types)))
-        (t
-         (vl-gather-forms-of-type (cdr forms) types))))
+;; (defun vl-gather-forms-of-type (forms types)
+;;   (declare (xargs :guard (symbol-listp types)))
+;;   (cond ((atom forms)
+;;          nil)
+;;         ((and (consp (car forms))
+;;               (member-eq (caar forms) types))
+;;          (cons (car forms)
+;;                (vl-gather-forms-of-type (cdr forms) types)))
+;;         (t
+;;          (vl-gather-forms-of-type (cdr forms) types))))
 
-(defun vl-mutual-recursion-fn (forms state)
-  (declare (xargs :stobjs state :mode :program))
-  (let* ((main-types '(defun defund))
-         (pre-types  '(defmacro))
-         (post-types '(add-untranslate-pattern add-macro-alias encapsulate acl2::add-to-ruleset
-                                               in-theory))
-         (all-types  (append main-types pre-types post-types)))
-    (mv-let (erp val state)
-            (vl-macroexpand-all-until-recognized-type forms all-types state)
-            (if erp
-                (mv erp val state)
-              (let ((pre-forms  (vl-gather-forms-of-type val pre-types))
-                    (main-forms (vl-gather-forms-of-type val main-types))
-                    (post-forms (vl-gather-forms-of-type val post-types)))
-                (mv nil `(encapsulate
-                          ()
-                          ,@pre-forms
-                          (mutual-recursion ,@main-forms)
-                          ,@post-forms)
-                    state))))))
+;; (defun vl-mutual-recursion-fn (forms state)
+;;   (declare (xargs :stobjs state :mode :program))
+;;   (b* ((main-types '(defun defund))
+;;        (pre-types  '(defmacro))
+;;        (post-types '(add-untranslate-pattern
+;;                      add-macro-alias
+;;                      encapsulate
+;;                      acl2::add-to-ruleset
+;;                      in-theory))
+;;        (all-types  (append main-types pre-types post-types))
+;;        ((mv erp val state)
+;;         (vl-macroexpand-all-until-recognized-type forms all-types state))
+;;        ((when erp)
+;;         (mv erp val state))
+;;        (pre-forms  (vl-gather-forms-of-type val pre-types))
+;;        (main-forms (vl-gather-forms-of-type val main-types))
+;;        (post-forms (vl-gather-forms-of-type val post-types))
+;;        (event `(encapsulate ()
+;;                  ,@pre-forms
+;;                  (mutual-recursion ,@main-forms)
+;;                  ,@post-forms)))
+;;     (mv nil event state)))
 
-(defmacro vl-mutual-recursion (&rest forms)
-  `(make-event (vl-mutual-recursion-fn ',forms state)))
+;; (defmacro vl-mutual-recursion (&rest forms)
+;;   `(make-event (vl-mutual-recursion-fn ',forms state)))
 

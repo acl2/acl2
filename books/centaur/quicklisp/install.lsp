@@ -27,7 +27,7 @@
 
 :q
 (in-package "CL-USER")
-(load "quicklisp.lisp")
+(load "quicklisp.lsp")
 (quicklisp-quickstart:install :path (concatenate 'string acl2::*cbd*
                                                  "inst"))
 (quit)

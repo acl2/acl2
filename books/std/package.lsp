@@ -257,6 +257,7 @@
       defrule
       defruled
       define
+      defines
       defconsts
       defval
       xdoc
@@ -339,6 +340,7 @@
     defsection
     defsection-progn
     define
+    defines
     defrule
     defruled
     defval

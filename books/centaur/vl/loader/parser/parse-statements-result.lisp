@@ -58,9 +58,9 @@
                            acl2::acl2-count-when-member
                            consp-when-member-equal-of-cons-listp
                            consp-when-member-equal-of-cons-listp
-                           (:type-prescription vl-is-token?-fn)
-                           (:type-prescription acl2-count)
-                           (:type-prescription vl-tokenlist-p)
+                           (:t vl-is-token?)
+                           (:t acl2-count)
+                           (:t vl-tokenlist-p)
                            vl-stmt-p-when-member-equal-of-vl-stmtlist-p
                            rationalp-implies-acl2-numberp
                            rationalp-when-integerp
@@ -78,58 +78,57 @@
 (with-output
  :off prove :gag-mode :goals
  (make-event
-  `(defthm-vl-flag-parse-statement vl-parse-statement-type
+  `(defthm-parse-statements-flag vl-parse-statement-type
 
-     ,(vl-stmt-claim vl-parse-case-item-fn
+     ,(vl-stmt-claim vl-parse-case-item
                      (vl-parsed-caseitemlist-p val)
                      :true-listp t)
-     ,(vl-stmt-claim vl-parse-1+-case-items-fn
+     ,(vl-stmt-claim vl-parse-1+-case-items
                      (vl-parsed-caseitemlist-p val)
                      :true-listp t)
-     ,(vl-stmt-claim vl-parse-case-statement-fn
+     ,(vl-stmt-claim vl-parse-case-statement
                      (vl-stmt-p val)
                      :extra-args (atts)
                      :extra-hyps ((force (vl-atts-p atts))))
-     ,(vl-stmt-claim vl-parse-conditional-statement-fn
+     ,(vl-stmt-claim vl-parse-conditional-statement
                      (vl-stmt-p val)
                      :extra-args (atts)
                      :extra-hyps ((force (vl-atts-p atts))))
-     ,(vl-stmt-claim vl-parse-loop-statement-fn
+     ,(vl-stmt-claim vl-parse-loop-statement
                      (vl-stmt-p val)
                      :extra-args (atts)
                      :extra-hyps ((force (vl-atts-p atts))))
-     ,(vl-stmt-claim vl-parse-par-block-fn
+     ,(vl-stmt-claim vl-parse-par-block
                      (vl-stmt-p val)
                      :extra-args (atts)
                      :extra-hyps ((force (vl-atts-p atts))))
-     ,(vl-stmt-claim vl-parse-seq-block-fn
+     ,(vl-stmt-claim vl-parse-seq-block
                      (vl-stmt-p val)
                      :extra-args (atts)
                      :extra-hyps ((force (vl-atts-p atts))))
-     ,(vl-stmt-claim vl-parse-procedural-timing-control-statement-fn
+     ,(vl-stmt-claim vl-parse-procedural-timing-control-statement
                      (vl-stmt-p val)
                      :extra-args (atts)
                      :extra-hyps ((force (vl-atts-p atts))))
-     ,(vl-stmt-claim vl-parse-wait-statement-fn
+     ,(vl-stmt-claim vl-parse-wait-statement
                      (vl-stmt-p val)
                      :extra-args (atts)
                      :extra-hyps ((force (vl-atts-p atts))))
-     ,(vl-stmt-claim vl-parse-statement-aux-fn
+     ,(vl-stmt-claim vl-parse-statement-aux
                      (vl-stmt-p val)
                      :extra-args (atts)
                      :extra-hyps ((force (vl-atts-p atts))))
-     ,(vl-stmt-claim vl-parse-statement-fn
+     ,(vl-stmt-claim vl-parse-statement
                      (vl-stmt-p val))
-     ,(vl-stmt-claim vl-parse-statement-or-null-fn
+     ,(vl-stmt-claim vl-parse-statement-or-null
                      (vl-stmt-p val))
-     ,(vl-stmt-claim vl-parse-statements-until-end-fn
+     ,(vl-stmt-claim vl-parse-statements-until-end
                      (vl-stmtlist-p val)
                      :true-listp t)
-     ,(vl-stmt-claim vl-parse-statements-until-join-fn
+     ,(vl-stmt-claim vl-parse-statements-until-join
                      (vl-stmtlist-p val)
                      :true-listp t)
-     :hints(("Goal" :induct (vl-flag-parse-statement flag atts tokens warnings))
-            (and acl2::stable-under-simplificationp
+     :hints((and acl2::stable-under-simplificationp
                  (flag::expand-calls-computed-hint
                   acl2::clause
                   ',(flag::get-clique-members 'vl-parse-statement-fn (w state))))))))

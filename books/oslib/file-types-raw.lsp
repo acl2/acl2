@@ -19,7 +19,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "OSLIB")
-(ql:quickload "osicat")
 
 (defun file-kind-fn (path follow-symlinks state)
   (unless (live-state-p state)

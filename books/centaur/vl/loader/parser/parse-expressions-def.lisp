@@ -303,7 +303,7 @@
 ;    2. I do not support the notion of "constant expressions" -- I just use
 ;       plain expressions instead.
 
-(vl-mutual-recursion
+(defparsers parse-expressions
 
 ; attr_spec ::= identifier [ '=' expression ]
 ;
@@ -1122,11 +1122,3 @@
          (return (make-vl-nonatom :op :vl-qmark
                                   :atts atts
                                   :args (list first second third))))))
-
-
-
-
-(with-output
- :off prove :gag-mode :goals
- (FLAG::make-flag vl-flag-parse-expression
-                  vl-parse-expression-fn))
