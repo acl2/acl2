@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2013 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,6 +28,7 @@
 (include-book "centaur/esim/stv/stv2c/top" :dir :system)
 (include-book "centaur/misc/intern-debugging" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
+(include-book "centaur/misc/tshell" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
@@ -168,7 +169,8 @@ toolkit with their own commands.</p>
   :parents (kit)
   :short "The top-level @('vl') meta-command."
 
-  (b* (((mv argv state) (oslib::argv))
+  (b* ((- (acl2::tshell-ensure))
+       ((mv argv state) (oslib::argv))
 
        ((unless (consp argv))
         (b* ((state (vl-help '("help"))))
