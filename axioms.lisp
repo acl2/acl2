@@ -19280,9 +19280,35 @@
     ev-fncall-rec ev-rec ev-rec-lst ev-rec-acl2-unwind-protect
     ev-w ev-w-lst
 
-    install-event
-
     set-w set-w! cloaked-set-w!
+
+; The next group of functions includes those that call set-w or set-w!, except
+; that not included are those that we know are safe, for example because they
+; are event functions (like encapsulate-fn).  We also include at the functions
+; that call any in this group of function, etc.  Note that even though ld-fn
+; isn't an event function, we exclude it because sometimes there is a reason
+; for a user to call ld.  Is that safe?  We hope so!  Also note that even
+; though table-fn1 isn't an event function but calls install-event, it is
+; invoked by calling the macro, theory-invariant; but table-fn1 seems safe for
+; users to call, since it is the essence of table-fn.
+
+    install-event
+    defuns-fn1
+    process-embedded-events
+    encapsulate-pass-2
+    include-book-fn1
+;   defabsstobj-fn1 ; called by defabsstobj-missing-events; seems safe
+    maybe-add-command-landmark
+    ubt-ubu-fn1
+    install-event-defuns ; calls install-event
+    defthm-fn1 ; calls install-event
+    defuns-fn0 ; calls defuns-fn1
+    ld-read-eval-print ; calls maybe-add-command-landmark
+    ld-loop ; calls ld-read-eval-print
+    ld-fn-body ; calls ld-loop
+    ld-fn0 ld-fn1 ; both call ld-fn-body
+
+; End of functions leading to calls of set-w
 
 ;   read-idate - used by write-acl2-html, so can't be untouchable?
 
