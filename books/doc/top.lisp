@@ -385,7 +385,9 @@ of proofs.")
 (xdoc::change-parents ltree-sort (leftist-trees))
 (xdoc::change-parents how-many-lt (leftist-trees))
 
-
+(xdoc::change-parents consideration (hints))
+(xdoc::change-parents do-not-hint (hints))
+(xdoc::change-parents untranslate-patterns (macros user-defined-functions-table))
 
 #!XDOC
 (defun fix-redundant-acl2-parents (all-topics)
@@ -403,22 +405,6 @@ of proofs.")
                 topic)))
     (cons topic
           (fix-redundant-acl2-parents (cdr all-topics)))))
-
-
-(defsection books-reference
-  :parents (books)
-  :short "Reference guide for ACL2 functionality related to books, e.g.,
-@(see include-book), @(see certify-book), @(see cbd), etc.")
-
-(defxdoc books-tour
-  :parents (books)
-  :short "The <i>guided tour</i> of concepts related to ACL2 @(see books)."
-  :long "<p>The tour begins with @(see book-example).</p>")
-
-(defsection prover-output
-  :parents (acl2)
-  :short "Methods for controlling the output produced by ACL2 during proofs and
-in other situations.")
 
 (defmacro xdoc::fix-the-hierarchy ()
   ;; Semi-bozo.
@@ -439,170 +425,14 @@ in other situations.")
      (table xdoc 'doc (fix-redundant-acl2-parents
                        (get-xdoc-table acl2::world)))
 
-     (xdoc::change-parents release-notes (about-acl2))
-     (xdoc::change-parents consideration (hints))
-     (xdoc::change-parents do-not-hint (hints))
-     (xdoc::change-parents untranslate-patterns
-                           (macros user-defined-functions-table))
-
-     (xdoc::change-parents legacy-documentation (documentation))
+     ;; These run afoul of the acl2-parents issue
      (xdoc::change-parents documentation (top))
      (xdoc::change-parents bdd (boolean-reasoning proof-automation))
-
-     (xdoc::change-parents xdoc (documentation))
-
-     ;; bozo where should this go...
-     (xdoc::change-parents unsound-eval (miscellaneous))
-
-     ;; new books documentation stuff
      (xdoc::change-parents books (top))
-     (xdoc::change-parents cbd (books-reference))
-     (xdoc::change-parents set-cbd (books-reference))
-     (xdoc::change-parents book-compiled-file (books-reference))
-     (xdoc::change-parents full-book-name (books-reference))
-     (xdoc::change-parents pathname (books-reference))
 
-     ;; bury this down within books-certification to help people avoid it
-     (xdoc::change-parents books-certification (community-books))
-     (xdoc::change-parents books-certification-classic (books-certification))
-     (xdoc::change-parents provisional-certification (books-certification))
-
-     ;; Topics associated with the "guided tour" of books
-     (xdoc::change-parents book-example (books-tour))
-     (xdoc::change-parents book-name (books-tour))
-     (xdoc::change-parents book-contents (books-tour))
-     (xdoc::change-parents certificate (books-tour))
-     (xdoc::change-parents portcullis (books-tour))
-     (xdoc::change-parents keep (books-tour))
-     (xdoc::change-parents include-book (books-reference books-tour events))
-     (xdoc::change-parents certify-book (books-reference books-tour))
-
-; Fixes for Switches, Parameters, and Modes
-
-     (xdoc::change-parents add-binop (macros))
-     (xdoc::change-parents untrans-table (macros))
-     (xdoc::change-parents user-defined-functions-table (macros))
-     (xdoc::change-parents add-macro-alias (macros))
-     (xdoc::change-parents add-macro-fn (macros))
-     (xdoc::change-parents macro-aliases-table (macros))
-     (xdoc::change-parents remove-binop (macros))
-     (xdoc::change-parents remove-macro-alias (macros))
-     (xdoc::change-parents remove-macro-fn (macros))
-
-     (xdoc::change-parents add-default-hints (default-hints))
-     (xdoc::change-parents add-default-hints! (default-hints))
-     (xdoc::change-parents default-hints-table (default-hints))
-     (xdoc::change-parents remove-default-hints (default-hints))
-     (xdoc::change-parents remove-default-hints! (default-hints))
-     (xdoc::change-parents set-default-hints (default-hints))
-     (xdoc::change-parents set-default-hints! (default-hints))
-
-     (xdoc::change-parents add-override-hints (override-hints))
-     (xdoc::change-parents add-override-hints! (override-hints))
-     (xdoc::change-parents remove-override-hints (override-hints))
-     (xdoc::change-parents remove-override-hints! (override-hints))
-     (xdoc::change-parents set-override-hints (override-hints))
-     (xdoc::change-parents set-override-hints! (override-hints))
-
-     (xdoc::change-parents add-include-book-dir (books-reference))
-     (xdoc::change-parents add-include-book-dir! (books-reference))
-     (xdoc::change-parents delete-include-book-dir (books-reference))
-     (xdoc::change-parents delete-include-book-dir! (books-reference))
-     (xdoc::change-parents set-write-acl2x (books-reference))
-
-     (xdoc::change-parents add-invisible-fns (loop-stopper))
-     (xdoc::change-parents invisible-fns-table (loop-stopper))
-     (xdoc::change-parents set-invisible-fns-table (loop-stopper))
-     (xdoc::change-parents remove-invisible-fns (loop-stopper))
-
-     (xdoc::change-parents add-match-free-override (free-variables))
-     (xdoc::change-parents set-match-free-default (free-variables))
-     (xdoc::change-parents set-match-free-error (free-variables))
-
-     (xdoc::change-parents set-total-parallelism-work-limit (parallelism))
-     (xdoc::change-parents set-total-parallelism-work-limit-error (parallelism))
-     (xdoc::change-parents set-waterfall-parallelism (parallelism))
-     (xdoc::change-parents set-waterfall-parallelism-hacks-enabled (parallelism))
-     (xdoc::change-parents set-waterfall-parallelism-hacks-enabled! (parallelism))
-     (xdoc::change-parents set-waterfall-printing (parallelism))
-     (xdoc::change-parents set-parallel-execution (parallelism))
-
-     (xdoc::change-parents disable-forcing (force))
-     (xdoc::change-parents disable-immediate-force-modep (force))
-     (xdoc::change-parents enable-forcing (force))
-     (xdoc::change-parents enable-immediate-force-modep (force))
-     (xdoc::change-parents immediate-force-modep (force))
-
-     (xdoc::change-parents set-guard-checking (guard))
-     (xdoc::change-parents set-verify-guards-eagerness (guard))
-     (xdoc::change-parents with-guard-checking (guard))
-
-     (xdoc::change-parents set-tau-auto-mode (introduction-to-the-tau-system))
-     (xdoc::change-parents tau-status (introduction-to-the-tau-system))
-
-     (xdoc::change-parents dive-into-macros-table (proof-checker acl2-pc::dv))
-     (xdoc::change-parents add-dive-into-macro (dive-into-macros-table))
-     (xdoc::change-parents remove-dive-into-macro (dive-into-macros-table))
-
-     (xdoc::change-parents ruler-extenders (defun))
-     (xdoc::change-parents set-well-founded-relation (defun))
-     (xdoc::change-parents set-measure-function (defun))
-     (xdoc::change-parents set-irrelevant-formals-ok (defun))
-     (xdoc::change-parents set-bogus-defun-hints-ok (defun)) ;; BOZO :short is wrong
-     (xdoc::change-parents set-ignore-ok (declare defun))
-     (xdoc::change-parents defun-mode (defun))
-     (xdoc::change-parents logic (defun-mode))
-     (xdoc::change-parents program (defun-mode))
-
-     (xdoc::change-parents set-raw-mode (defttag))
-     (xdoc::change-parents set-raw-mode-on! (defttag))
-     (xdoc::change-parents push-untouchable (defttag))
-     (xdoc::change-parents remove-untouchable (defttag))
-
-     (xdoc::change-parents nth-aliases-table (stobj nth update-nth))
-     (xdoc::change-parents add-nth-alias (nth-aliases-table))
-     (xdoc::change-parents remove-nth-alias (nth-aliases-table))
-
-     (xdoc::change-parents set-non-linearp (non-linear-arithmetic))
-     (xdoc::change-parents set-nu-rewriter-mode (nu-rewriter))
-     (xdoc::change-parents set-rewrite-stack-limit (rewrite-stack-limit))
-     (xdoc::change-parents set-rw-cache-state (rewrite))
-     (xdoc::change-parents set-rw-cache-state! (rewrite))
-     (xdoc::change-parents set-splitter-output (splitter))
-     (xdoc::change-parents set-state-ok (state))
-     (xdoc::change-parents reset-prehistory (history))
-     (xdoc::change-parents return-last-table (return-last))
-     (xdoc::change-parents set-absstobj-debug (defabsstobj))
-     (xdoc::change-parents set-bogus-mutual-recursion-ok (mutual-recursion))
-     (xdoc::change-parents set-compile-fns (compilation))
-     (xdoc::change-parents set-debugger-enable (debugging))
-     (xdoc::change-parents set-deferred-ttag-notes (defttag))
-     (xdoc::change-parents set-enforce-redundancy (redundant-events))
-     (xdoc::change-parents set-backchain-limit (backchain-limit))
-     (xdoc::change-parents set-default-backchain-limit (backchain-limit))
-     (xdoc::change-parents set-ignore-doc-string-error (legacy-documentation))
-     (xdoc::change-parents ld-keyword-aliases (ld))
-     (xdoc::change-parents term-table (meta))
-
-     (xdoc::change-parents set-gag-mode (prover-output))
-     (xdoc::change-parents set-checkpoint-summary-limit (set-gag-mode))
-     (xdoc::change-parents set-print-clause-ids (set-gag-mode))
-     (xdoc::change-parents set-saved-output (set-gag-mode))
-     (xdoc::change-parents set-raw-proof-format (prover-output))
-     (xdoc::change-parents set-let*-abstractionp (prover-output))
-     (xdoc::change-parents with-output (prover-output))
-     (xdoc::change-parents set-inhibit-output-lst (prover-output))
-     (xdoc::change-parents set-inhibit-warnings (prover-output))
-     (xdoc::change-parents set-inhibit-warnings! (prover-output))
-     (xdoc::change-parents set-inhibited-summary-types (prover-output))
-
-     (xdoc::change-parents finalize-event-user (prover-output))
-     (xdoc::change-parents initialize-event-user (prover-output))
-
-     ;; BOZO where to put these?
-     (xdoc::change-parents set-prover-step-limit (miscellaneous))
-     (xdoc::change-parents set-case-split-limitations (miscellaneous))
-     (xdoc::change-parents acl2-customization (miscellaneous))
+     ;; bozo where should this go... Matt suggests maybe interfacing-tools?
+     ;; But by the same token, maybe programming, maybe lots of places...
+     (xdoc::change-parents unsound-eval (miscellaneous))
 
      ))
 

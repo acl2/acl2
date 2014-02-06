@@ -1,5 +1,5 @@
 ; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2011 Centaur Technology
+; Copyright (C) 2009-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,6 +29,7 @@
 (include-book "import-acl2doc")  ;; For base acl2 documentation
 
 (defxdoc xdoc
+  :parents (documentation)
   :short "<i>XDOC</i> is a tool for documenting ACL2 books.  You can use it to
 access documentation about ACL2 and its books, to document your own books, and
 to create custom web-based manuals.  It is intended as a replacement for ACL2
