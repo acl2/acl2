@@ -19,15 +19,15 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "parse-blockitems")
-(include-book "parse-ports")
-(include-book "parse-statements")
+(include-book "blockitems")
+(include-book "ports")
+(include-book "statements")
 (local (include-book "../../util/arithmetic"))
 
 
 ; function_range_or_type ::= ['signed'] range | 'integer' | 'real' | 'realtime' | 'time'
 
-(defparser vl-parse-optional-function-range-or-type (tokens warnings)
+(defparser vl-parse-optional-function-range-or-type ()
   :result (and (consp val)
                (vl-taskporttype-p (car val))
                (vl-maybe-range-p (cdr val)))
@@ -96,7 +96,7 @@
                   (force (vl-idtoken-list-p names)))
              (vl-taskportlist-p (vl-build-taskports atts dir type range names)))))
 
-(defparser vl-parse-taskport-declaration (atts tokens warnings)
+(defparser vl-parse-taskport-declaration (atts)
   ;; Matches tf_input_declaration, tf_output_declaration, or tf_inout_declaration.
   :guard (vl-atts-p atts)
   :result (vl-taskportlist-p val)
@@ -158,7 +158,7 @@
 ; Our approach: just write a parser for task_port_list, then separately check
 ; (when we construct the function declaration) that all the ports are inputs.
 
-(defparser vl-parse-taskport-list (tokens warnings)
+(defparser vl-parse-taskport-list ()
   :result (vl-taskportlist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -237,7 +237,7 @@
     :hints(("Goal" :in-theory (enable vl-filter-taskport-or-blockitem-list)))))
 
 
-(defparser vl-parse-task-item-declaration-noatts (atts tokens warnings)
+(defparser vl-parse-task-item-declaration-noatts (atts)
   :guard (vl-atts-p atts)
   :result (vl-taskport-or-blockitem-list-p val)
   :true-listp t
@@ -246,13 +246,13 @@
   :count strong
   (seqw tokens warnings
         (when (vl-is-some-token? '(:vl-kwd-input :vl-kwd-output :vl-kwd-inout))
-          (decls := (vl-parse-taskport-declaration atts tokens warnings))
+          (decls := (vl-parse-taskport-declaration atts))
           (:= (vl-match-token :vl-semi))
           (return decls))
-        (decls := (vl-parse-block-item-declaration-noatts atts tokens warnings))
+        (decls := (vl-parse-block-item-declaration-noatts atts))
         (return decls)))
 
-(defparser vl-parse-task-item-declaration (tokens warnings)
+(defparser vl-parse-task-item-declaration ()
   :result (vl-taskport-or-blockitem-list-p val)
   :resultp-of-nil t
   :true-listp t
@@ -263,7 +263,7 @@
         (decls := (vl-parse-task-item-declaration-noatts atts))
         (return decls)))
 
-(defparser vl-parse-0+-task-item-declarations (tokens warnings)
+(defparser vl-parse-0+-task-item-declarations ()
   ;; Tries to eat as many task items as it can find.
   ;; We use backtracking to know when to stop, because these declarations can be
   ;; followed by arbitrary statements, hence it's not clear whether (* ... *) is
@@ -279,7 +279,8 @@
            (mv nil nil tokens warnings))
           (t
            (mv-let (erp rest tokens warnings)
-             (vl-parse-0+-task-item-declarations explore new-warnings)
+             (vl-parse-0+-task-item-declarations :tokens explore
+                                                 :warnings new-warnings)
              (declare (ignore erp))
              (mv nil (append first rest) tokens warnings))))))
 
@@ -320,7 +321,7 @@
                       nil)))))
 
 
-(defparser vl-parse-function-declaration (atts tokens warnings)
+(defparser vl-parse-function-declaration (atts)
   ;; Returns a (singleton) list of function decls instead of a just a function
   ;; declaration, to fit nicely into vl-parse-module-or-generate-item.
   :guard (vl-atts-p atts)
@@ -407,7 +408,7 @@
 ;       statement_or_null
 ;    'endtask'
 
-(defparser vl-parse-task-declaration (atts tokens warnings)
+(defparser vl-parse-task-declaration (atts)
   ;; Returns a (singleton) list of task decls instead of a just a task
   ;; declaration, to fit nicely into vl-parse-module-or-generate-item.
   :guard (vl-atts-p atts)
@@ -456,183 +457,3 @@
                                         :atts       atts
                                         :loc        (vl-token->loc task))))))
 
-
-(local
- (encapsulate
-   ()
-
-   (local (include-book "../lexer/lexer")) ;; for making test inputs from strings
-
-   (defund taskport-summary (x)
-     (declare (xargs :guard (vl-taskport-p x)))
-     (b* (((vl-taskport x) x))
-       (list x.name x.dir x.type (vl-pretty-maybe-range x.range))))
-
-   (defprojection taskportlist-summary (x)
-     (taskport-summary x)
-     :guard (vl-taskportlist-p x))
-
-   (defmacro test-parse-taskports (&key input (successp 't) summary)
-     `(with-output
-        :off summary
-        (assert! (b* (((mv erp val tokens warnings)
-                       (vl-parse-taskport-list (make-test-tokens ,input)
-                                               'blah-warnings))
-
-                      ((unless ,successp)
-                       (cw "Expected failure.~%")
-                       (cw "Actual erp: ~x0.~%" erp)
-                       erp)
-
-                      ((when erp)
-                       (cw "Expected success, but ERP is ~x0~%" erp))
-
-                      (spec-summary ',summary)
-                      (impl-summary (taskportlist-summary val)))
-                   (and (progn$
-                         (cw "Spec-Summary: ~x0~%" spec-summary)
-                         (cw "Impl-Summary: ~x0~%" impl-summary)
-                         (equal spec-summary impl-summary))
-                        (progn$
-                         (cw "Tokens: ~x0~%" tokens)
-                         (not tokens))
-                        (progn$
-                         (cw "Warnings: ~x0~%" warnings)
-                         (equal warnings 'blah-warnings)))))))
-
-
-   (test-parse-taskports :input ""
-                         :successp nil)
-
-   (test-parse-taskports :input "foo"
-                         :successp nil)
-
-   (test-parse-taskports :input "input a"
-                         :summary (("a" :vl-input :vl-unsigned (no-range))))
-
-   (test-parse-taskports :input "input a, b"
-                         :summary (("a" :vl-input :vl-unsigned (no-range))
-                                   ("b" :vl-input :vl-unsigned (no-range))))
-
-   (test-parse-taskports :input "input a, b, c, d"
-                         :summary (("a" :vl-input :vl-unsigned (no-range))
-                                   ("b" :vl-input :vl-unsigned (no-range))
-                                   ("c" :vl-input :vl-unsigned (no-range))
-                                   ("d" :vl-input :vl-unsigned (no-range))))
-
-;; bozo we're currently ignoring reg.  does it mean anything?
-   (test-parse-taskports :input "input reg a"
-                         :summary (("a" :vl-input :vl-unsigned (no-range))))
-
-   (test-parse-taskports :input "input reg a, b"
-                         :summary (("a" :vl-input :vl-unsigned (no-range))
-                                   ("b" :vl-input :vl-unsigned (no-range))))
-
-   (test-parse-taskports :input "input signed a"
-                         :summary (("a" :vl-input :vl-signed (no-range))))
-
-   (test-parse-taskports :input "input signed a, b"
-                         :summary (("a" :vl-input :vl-signed (no-range))
-                                   ("b" :vl-input :vl-signed (no-range))))
-
-
-   (test-parse-taskports :input "input [3:0] a"
-                         :summary (("a" :vl-input :vl-unsigned (range 3 0))))
-
-   (test-parse-taskports :input "input [3:0] a, b"
-                         :summary (("a" :vl-input :vl-unsigned (range 3 0))
-                                   ("b" :vl-input :vl-unsigned (range 3 0))))
-
-   (test-parse-taskports :input "input [3:0] a, b, \c , d"
-                         :summary (("a" :vl-input :vl-unsigned (range 3 0))
-                                   ("b" :vl-input :vl-unsigned (range 3 0))
-                                   ("c" :vl-input :vl-unsigned (range 3 0))
-                                   ("d" :vl-input :vl-unsigned (range 3 0))
-                                   ))
-
-   (test-parse-taskports :input "input signed [3:0] a"
-                         :summary (("a" :vl-input :vl-signed (range 3 0))))
-
-   (test-parse-taskports :input "input signed [3:0] a, b"
-                         :summary (("a" :vl-input :vl-signed (range 3 0))
-                                   ("b" :vl-input :vl-signed (range 3 0))))
-
-   (test-parse-taskports :input "input reg [3:0] a"
-                         :summary (("a" :vl-input :vl-unsigned (range 3 0))))
-
-   (test-parse-taskports :input "input reg signed [3:0] a"
-                         :summary (("a" :vl-input :vl-signed (range 3 0))))
-
-   (test-parse-taskports :input "input integer a"
-                         :summary (("a" :vl-input :vl-integer (no-range))))
-
-   (test-parse-taskports :input "input real a"
-                         :summary (("a" :vl-input :vl-real (no-range))))
-
-   (test-parse-taskports :input "input time a"
-                         :summary (("a" :vl-input :vl-time (no-range))))
-
-   (test-parse-taskports :input "input realtime a"
-                         :summary (("a" :vl-input :vl-realtime (no-range))))
-
-
-;; reg must come before signed
-   (test-parse-taskports :input "input signed reg a"
-                         :successp nil)
-
-;; signed not okay with int/real/time/realtime
-   (test-parse-taskports :input "input integer signed a" :successp nil)
-   (test-parse-taskports :input "input signed integer a" :successp nil)
-   (test-parse-taskports :input "input real signed a" :successp nil)
-   (test-parse-taskports :input "input signed real a" :successp nil)
-   (test-parse-taskports :input "input integer signed a" :successp nil)
-   (test-parse-taskports :input "input signed integer a" :successp nil)
-   (test-parse-taskports :input "input integer signed a" :successp nil)
-   (test-parse-taskports :input "input signed integer a" :successp nil)
-   (test-parse-taskports :input "input time signed a" :successp nil)
-   (test-parse-taskports :input "input signed time a" :successp nil)
-   (test-parse-taskports :input "input time signed a" :successp nil)
-   (test-parse-taskports :input "input signed time a" :successp nil)
-   (test-parse-taskports :input "input realtime signed a" :successp nil)
-   (test-parse-taskports :input "input signed realtime a" :successp nil)
-   (test-parse-taskports :input "input realtime signed a" :successp nil)
-   (test-parse-taskports :input "input signed realtime a" :successp nil)
-
-;; reg not okay with int/real/time/realtime
-   (test-parse-taskports :input "input integer reg a" :successp nil)
-   (test-parse-taskports :input "input reg integer a" :successp nil)
-   (test-parse-taskports :input "input real reg a" :successp nil)
-   (test-parse-taskports :input "input reg real a" :successp nil)
-   (test-parse-taskports :input "input integer reg a" :successp nil)
-   (test-parse-taskports :input "input reg integer a" :successp nil)
-   (test-parse-taskports :input "input integer reg a" :successp nil)
-   (test-parse-taskports :input "input reg integer a" :successp nil)
-   (test-parse-taskports :input "input time reg a" :successp nil)
-   (test-parse-taskports :input "input reg time a" :successp nil)
-   (test-parse-taskports :input "input time reg a" :successp nil)
-   (test-parse-taskports :input "input reg time a" :successp nil)
-   (test-parse-taskports :input "input realtime reg a" :successp nil)
-   (test-parse-taskports :input "input reg realtime a" :successp nil)
-   (test-parse-taskports :input "input realtime reg a" :successp nil)
-   (test-parse-taskports :input "input reg realtime a" :successp nil)
-
-;; range not okay with int/real/time/realtime
-   (test-parse-taskports :input "input integer [3:0] a" :successp nil)
-   (test-parse-taskports :input "input [3:0] integer a" :successp nil)
-   (test-parse-taskports :input "input real [3:0] a" :successp nil)
-   (test-parse-taskports :input "input [3:0] real a" :successp nil)
-   (test-parse-taskports :input "input integer [3:0] a" :successp nil)
-   (test-parse-taskports :input "input [3:0] integer a" :successp nil)
-   (test-parse-taskports :input "input integer [3:0] a" :successp nil)
-   (test-parse-taskports :input "input [3:0] integer a" :successp nil)
-   (test-parse-taskports :input "input time [3:0] a" :successp nil)
-   (test-parse-taskports :input "input [3:0] time a" :successp nil)
-   (test-parse-taskports :input "input time [3:0] a" :successp nil)
-   (test-parse-taskports :input "input [3:0] time a" :successp nil)
-   (test-parse-taskports :input "input realtime [3:0] a" :successp nil)
-   (test-parse-taskports :input "input [3:0] realtime a" :successp nil)
-   (test-parse-taskports :input "input realtime [3:0] a" :successp nil)
-   (test-parse-taskports :input "input [3:0] realtime a" :successp nil)
-
-
-   ))

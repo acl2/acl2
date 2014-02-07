@@ -19,7 +19,8 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "parse-expressions")
+(include-book "expressions")
+(include-book "../../parsetree")
 (local (include-book "../../util/arithmetic"))
 
 
@@ -36,7 +37,7 @@
 ; any distinction between dimensions and ranges.  That is, in either case, we
 ; call vl-parse-range and produce vl-range-p objects.
 
-(defparser vl-parse-range (tokens warnings)
+(defparser vl-parse-range ()
   :result (vl-range-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -50,7 +51,7 @@
         (return (make-vl-range :msb msb
                                :lsb lsb))))
 
-(defparser vl-parse-0+-ranges (tokens warnings)
+(defparser vl-parse-0+-ranges ()
   ;; Note: assumes brackets denote subsequent ranges to be matched, and as a
   ;; result it may indeed cause an error.
   :result (vl-rangelist-p val)
@@ -65,72 +66,3 @@
         (rest := (vl-parse-0+-ranges))
         (return (cons first rest))))
 
-
-
-
-(defun vl-pretty-range (x)
-  (declare (xargs :guard (vl-range-p x)))
-  (list 'range
-        (vl-pretty-expr (vl-range->msb x))
-        (vl-pretty-expr (vl-range->lsb x))))
-
-(defun vl-pretty-maybe-range (x)
-  (declare (xargs :guard (vl-maybe-range-p x)
-                  :guard-hints (("Goal" :in-theory (enable vl-maybe-range-p)))))
-  (if (not x)
-      '(no-range)
-    (vl-pretty-range x)))
-
-(defun vl-pretty-range-list (x)
-  (declare (xargs :guard (vl-rangelist-p x)))
-  (if (consp x)
-      (cons (vl-pretty-range (car x))
-            (vl-pretty-range-list (cdr x)))
-    nil))
-
-(defun vl-pretty-maybe-range-list (x)
-  (declare (xargs :guard (vl-maybe-range-list-p x)))
-  (if (consp x)
-      (cons (vl-pretty-maybe-range (car x))
-            (vl-pretty-maybe-range-list (cdr x)))
-    nil))
-
-
-
-
-(local
- (encapsulate
-  ()
-  (local (include-book "../lexer/lexer"))
-
-  (defmacro test-range (&key input range (successp 't))
-    `(assert! (let ((tokens (make-test-tokens ,input)))
-                (mv-let (erp val tokens warnings)
-                        (vl-parse-range tokens nil)
-                        (declare (ignore tokens))
-                        (if erp
-                            (prog2$ (cw "ERP is ~x0.~%" erp)
-                                    (not ,successp))
-                          (prog2$ (cw "VAL is ~x0.~%" val)
-                                  (and ,successp
-                                       (vl-range-p val)
-                                       (not warnings)
-                                       (equal ',range (vl-pretty-range val)))))))))
-
-  (test-range :input "[7:0]"
-              :range (range 7 0))
-
-  (test-range :input "[3:6]"
-              :range (range 3 6))
-
-  (test-range :input "[7 : 0]"
-              :range (range 7 0))
-
-  (test-range :input "[foo : bar]"
-              :range (range (id "foo") (id "bar")))
-
-  (test-range :input "[foo : ]"
-              :successp nil)
-
-  (test-range :input "[foo]"
-              :successp nil)))

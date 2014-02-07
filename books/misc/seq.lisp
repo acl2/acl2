@@ -435,8 +435,8 @@
                       (cond (!!!error
                              (mv !!!error !!!val ,stream))
                             ((not (mbt (,(case (car x) (:s= '<) (:w= '<=))
-                                        (acl2-count ,stream)
-                                        (acl2-count !!!stream))))
+                                        (len ,stream)
+                                        (len !!!stream))))
                              (prog2$ (er hard? "SEQ count failed for (~x0 ~x1.)~%"
                                          ',(car x) ',action)
                                      (mv "SEQ count failure." nil !!!stream)))
@@ -467,8 +467,8 @@
                              (cond (!!!error
                                     (mv !!!error ,nametree ,stream))
                                    ((not (mbt (,(case type (:s= '<) (:w= '<=))
-                                               (acl2-count ,stream)
-                                               (acl2-count !!!stream))))
+                                               (len ,stream)
+                                               (len !!!stream))))
                                     (prog2$ (er hard? "SEQ count failed for (~x0 ~x1 ~x2.)~%"
                                                 ',nametree ',type ',action)
                                             (mv "SEQ count failure." nil !!!stream)))
@@ -493,8 +493,8 @@
                            (cond (!!!error
                                   (mv !!!error !!!val ,stream))
                                  ((not (mbt (,(case type (:s= '<) (:w= '<=))
-                                             (acl2-count ,stream)
-                                             (acl2-count !!!stream))))
+                                             (len ,stream)
+                                             (len !!!stream))))
                                   (prog2$ (er hard?  "SEQ count failed for (~x0 ~x1 ~x2.)~%"
                                               ',nametree ',type ',action)
                                           (mv "SEQ count failure." nil !!!stream)))

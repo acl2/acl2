@@ -22,8 +22,8 @@
 (include-book "read-file")
 (include-book "lexer/lexer")
 (include-book "preprocessor/preprocessor")
-(include-book "parser/parse-utils")
-(include-book "parser/parse-error")
+(include-book "parser/utils")
+(include-book "parser/error")
 (include-book "filemap")
 (include-book "../util/cwtime")
 (include-book "../mlib/warnings")
@@ -372,13 +372,14 @@ corresponding to a particular module.</p>"
 ; require ::= 'VL_REQUIRE' 'module' id { non_endmodule } 'endmodule'
 ;           | 'VL_REQUIRE' 'macromodule' id { non_endmodule } 'endmodule'
 
-(defparser vl-parse-through-endmodule (tokens warnings)
+(defparser vl-parse-through-endmodule ()
   ;; Matches { non_endmodule } 'endmodule'
   :result (vl-tokenlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
+  :hint-chicken-switch t   ;; BOZO causing loops...
   (seqw tokens warnings
         (when (vl-is-token? :vl-kwd-endmodule)
           (tok := (vl-match-token :vl-kwd-endmodule))
@@ -391,7 +392,7 @@ corresponding to a particular module.</p>"
         (rest := (vl-parse-through-endmodule))
         (return (cons first rest))))
 
-(defparser vl-parse-require (tokens warnings)
+(defparser vl-parse-require ()
   :result (vl-tokenlist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -404,7 +405,7 @@ corresponding to a particular module.</p>"
         (rest := (vl-parse-through-endmodule))
         (return (list* mod name rest))))
 
-(defparser vl-parse-require-list (tokens warnings)
+(defparser vl-parse-require-list ()
   ;; Matches require { require }
   :result (vl-tokenlistlist-p val)
   :resultp-of-nil t
@@ -424,7 +425,7 @@ corresponding to a particular module.</p>"
 ;
 ; original_list ::= original { original }
 
-(defparser vl-parse-original (filename tokens warnings)
+(defparser vl-parse-original (filename)
   :guard (stringp filename)
   :result (vl-tokenlist-p val)
   :resultp-of-nil t
@@ -443,7 +444,7 @@ corresponding to a particular module.</p>"
         (rest := (vl-parse-through-endmodule))
         (return (list* mod name rest))))
 
-(defparser vl-parse-original-list (filename tokens warnings)
+(defparser vl-parse-original-list (filename)
   ;; Matches original { original }
   :guard (stringp filename)
   :result (vl-tokenlistlist-p val)
@@ -461,13 +462,14 @@ corresponding to a particular module.</p>"
 
 ; replacement ::= 'VL_REPLACEMENT' { std_token }
 
-(defparser vl-parse-replacement-misc (tokens warnings)
+(defparser vl-parse-replacement-misc ()
   ;; Matches { std_token }, stopping at VL_ENDOVERRIDE
   :result (vl-tokenlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong-on-value
+  :hint-chicken-switch t
   (seqw tokens warnings
         (when (vl-is-token? :vl-kwd-vl_endoverride)
           (return nil))
@@ -479,7 +481,7 @@ corresponding to a particular module.</p>"
         (rest := (vl-parse-replacement-misc))
         (return (cons first rest))))
 
-(defparser vl-parse-replacement (tokens warnings)
+(defparser vl-parse-replacement ()
   :result (vl-tokenlist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -495,7 +497,7 @@ corresponding to a particular module.</p>"
 ;
 ; override_file ::= { override }
 
-(defparser vl-parse-override (filename tokens warnings)
+(defparser vl-parse-override (filename)
   :guard (stringp filename)
   :result (vl-override-p val)
   :resultp-of-nil nil
@@ -513,7 +515,7 @@ corresponding to a particular module.</p>"
                                   :originals originals
                                   :replacement replacement))))
 
-(defparser vl-parse-override-list (filename tokens warnings)
+(defparser vl-parse-override-list (filename)
   :guard (stringp filename)
   :result (vl-overridelist-p val)
   :resultp-of-nil t
@@ -529,133 +531,118 @@ corresponding to a particular module.</p>"
 
 
 
-(defsection vl-parse-override-file
-
-  (defund vl-parse-override-file (filename tokens warnings)
-    "Returns (MV SUCCESSP OVERRIDELIST WARNINGS)"
-    (declare (xargs :guard (and (stringp filename)
-                                (vl-tokenlist-p tokens)
-                                (vl-warninglist-p warnings))))
-    (b* (((mv err val tokens warnings)
-          (vl-parse-override-list filename tokens warnings))
-         ((when err)
-          (vl-report-parse-error err tokens)
-          (mv nil nil warnings)))
-      (mv t val warnings)))
-
-  (local (in-theory (enable vl-parse-override-file)))
-
+(define vl-parse-override-file
+  ((filename stringp)
+   (tokens   vl-tokenlist-p)
+   (warnings vl-warninglist-p))
+  :returns (mv (successp)
+               (overrides vl-overridelist-p :hyp :fguard)
+               (warnings  vl-warninglist-p))
+  (b* ((warnings (vl-warninglist-fix warnings))
+       (config   *vl-default-loadconfig*) ;; BOZO
+       ((mv err val tokens warnings)
+        (vl-parse-override-list filename))
+       ((when err)
+        (vl-report-parse-error err tokens)
+        (mv nil nil warnings)))
+    (mv t val warnings))
+  ///
   (defthm true-listp-of-vl-parse-override-file-1
     (true-listp (mv-nth 1 (vl-parse-override-file filename tokens warnings)))
-    :rule-classes :type-prescription)
-
-  (defthm vl-overridelist-p-of-vl-parse-override-file
-    (implies (and (force (stringp filename))
-                  (force (vl-tokenlist-p tokens))
-                  (force (vl-warninglist-p warnings)))
-             (vl-overridelist-p
-              (mv-nth 1 (vl-parse-override-file filename tokens warnings)))))
-
-  (defthm vl-warninglist-p-of-vl-parse-override-file
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 2 (vl-parse-override-file filename tokens warnings))))))
+    :rule-classes :type-prescription))
 
 
-
-(defsection vl-read-override-file
+(define vl-read-override-file
   :parents (overrides)
   :short "Load an override file into a @(see vl-overridelist-p)."
 
   :long "<p>Signature: @(call vl-read-override-file) returns @('(mv successp
 overridelist filemap defines' comment-map' walist' state)').</p>"
 
-  (defund vl-read-override-file (path modname defines comment-map walist filemapp state)
-    "Returns (MV SUCCESSP OVERRIDE-LIST FILEMAP DEFINES' COMMENT-MAP' WALIST' STATE)"
-    (declare (xargs :guard (and (stringp path)
-                                (stringp modname)
-                                (vl-defines-p defines)
-                                (vl-commentmap-p comment-map)
-                                (vl-modwarningalist-p walist)
-                                (booleanp filemapp))
-                    :stobjs state))
+  ((path        stringp)
+   (modname     stringp)
+   (defines     vl-defines-p)
+   (comment-map vl-commentmap-p)
+   (walist      vl-modwarningalist-p)
+   (filemapp    booleanp)
+   state)
+  :returns (mv (successp)
+               (overrides)
+               (filemap)
+               (defines)
+               (comment-map)
+               (walist)
+               (state     state-p1 :hyp (force (state-p1 state))))
 
-    (b* ((filename (cat path "/" modname ".ov"))
-         (- (cw "Reading override file ~s0.~%" filename))
+  (b* ((filename (cat path "/" modname ".ov"))
+       (- (cw "Reading override file ~s0.~%" filename))
 
-         (filemap nil)
+       (filemap nil)
 
-         ((mv okp contents state)
-          (cwtime (vl-read-file filename) :mintime 1/2))
-         ((unless okp)
-          (b* ((w (make-vl-warning :type :vl-read-failed
-                                   :msg "Error reading override file ~s0."
-                                   :args (list filename)
-                                   :fn 'vl-read-override-file))
-               (walist (vl-extend-modwarningalist modname w walist)))
-            (mv nil nil filemap defines comment-map walist state)))
+       ((mv okp contents state)
+        (cwtime (vl-read-file filename) :mintime 1/2))
+       ((unless okp)
+        (b* ((w (make-vl-warning :type :vl-read-failed
+                                 :msg "Error reading override file ~s0."
+                                 :args (list filename)
+                                 :fn 'vl-read-override-file))
+             (walist (vl-extend-modwarningalist modname w walist)))
+          (mv nil nil filemap defines comment-map walist state)))
 
-         (filemap (and filemapp
-                       (list (cons filename (vl-echarlist->string contents)))))
+       (filemap (and filemapp
+                     (list (cons filename (vl-echarlist->string contents)))))
 
-         ((mv successp defines preprocessed state)
-          (cwtime (vl-preprocess contents
-                                 :defines defines
-                                 ;; BOZO we should probably take a config.
-                                 :config *vl-default-loadconfig*)
-                  :mintime 1/2))
-         ((unless successp)
-          (b* ((w (make-vl-warning :type :vl-preprocess-failed
-                                   :msg "Preprocessing failed for override file ~s0."
-                                   :args (list filename)
-                                   :fn 'vl-read-override-file))
-               (walist (vl-extend-modwarningalist modname w walist)))
-            (mv nil nil filemap defines comment-map walist state)))
+       ((mv successp defines preprocessed state)
+        (cwtime (vl-preprocess contents
+                               :defines defines
+                               ;; BOZO we should probably take a config.
+                               :config *vl-default-loadconfig*)
+                :mintime 1/2))
+       ((unless successp)
+        (b* ((w (make-vl-warning :type :vl-preprocess-failed
+                                 :msg "Preprocessing failed for override file ~s0."
+                                 :args (list filename)
+                                 :fn 'vl-read-override-file))
+             (walist (vl-extend-modwarningalist modname w walist)))
+          (mv nil nil filemap defines comment-map walist state)))
 
-         ((mv successp lexed warnings)
-          (cwtime (vl-lex preprocessed
-                          ;; BOZO, this should be configurable...
-                          :config *vl-default-loadconfig*
-                          :warnings nil)
-                  :mintime 1/2))
-         (walist (if warnings
-                     (vl-extend-modwarningalist-list modname warnings walist)
-                   walist))
-         ((unless successp)
-          (b* ((w (make-vl-warning :type :vl-lex-failed
-                                   :msg "Lexing failed for override file ~s0."
-                                   :args (list filename)
-                                   :fn 'vl-read-override-file))
-               (walist (vl-extend-modwarningalist modname w walist)))
-            (mv nil nil filemap defines comment-map walist state)))
+       ((mv successp lexed warnings)
+        (cwtime (vl-lex preprocessed
+                        ;; BOZO, this should be configurable...
+                        :config *vl-default-loadconfig*
+                        :warnings nil)
+                :mintime 1/2))
+       (walist (if warnings
+                   (vl-extend-modwarningalist-list modname warnings walist)
+                 walist))
+       ((unless successp)
+        (b* ((w (make-vl-warning :type :vl-lex-failed
+                                 :msg "Lexing failed for override file ~s0."
+                                 :args (list filename)
+                                 :fn 'vl-read-override-file))
+             (walist (vl-extend-modwarningalist modname w walist)))
+          (mv nil nil filemap defines comment-map walist state)))
 
-         ((mv cleaned new-comments)
-          (cwtime (vl-kill-whitespace-and-comments lexed) :mintime 1/2))
-         (comment-map (append new-comments comment-map))
+       ((mv cleaned new-comments)
+        (cwtime (vl-kill-whitespace-and-comments lexed) :mintime 1/2))
+       (comment-map (append new-comments comment-map))
 
-         ((mv successp override-list warnings)
-          (cwtime (vl-parse-override-file modname cleaned nil) :mintime 1/2))
-         (walist (if warnings
-                     (vl-extend-modwarningalist-list modname warnings walist)
-                   walist))
-         ((unless successp)
-          (b* ((w (make-vl-warning :type :vl-parse-failed
-                                   :msg "Parsing failed for ~s0."
-                                   :args (list filename)
-                                   :fn 'vl-read-override-file))
-               (walist (vl-extend-modwarningalist modname w walist)))
-            (mv nil nil filemap defines comment-map walist state))))
+       ((mv successp override-list warnings)
+        (cwtime (vl-parse-override-file modname cleaned nil) :mintime 1/2))
+       (walist (if warnings
+                   (vl-extend-modwarningalist-list modname warnings walist)
+                 walist))
+       ((unless successp)
+        (b* ((w (make-vl-warning :type :vl-parse-failed
+                                 :msg "Parsing failed for ~s0."
+                                 :args (list filename)
+                                 :fn 'vl-read-override-file))
+             (walist (vl-extend-modwarningalist modname w walist)))
+          (mv nil nil filemap defines comment-map walist state))))
 
-      (mv t override-list filemap defines comment-map walist state)))
+    (mv t override-list filemap defines comment-map walist state))
 
-  (local (in-theory (enable vl-read-override-file)))
-
-  (defthm state-p1-of-vl-read-override-file
-    (implies (force (state-p1 state))
-             (state-p1
-              (mv-nth 6 (vl-read-override-file path modname defines comment-map
-                                               walist filemapp state)))))
-
+  ///
   (defthm true-listp-of-vl-read-file-2
     (true-listp (mv-nth 2 (vl-read-override-file path modname defines comment-map
                                                  walist filemapp state)))
@@ -679,61 +666,44 @@ overridelist filemap defines' comment-map' walist' state)').</p>"
 
 
 
-
-(defsection vl-read-override-files
+(define vl-read-override-files
   :parents (overrides)
   :short "Load a list of override files into a @(see vl-override-db-p)."
+  ((path        stringp)
+   (modnames    string-listp)
+   (defines     vl-defines-p)
+   (comment-map vl-commentmap-p)
+   (walist      vl-modwarningalist-p)
+   (filemapp    booleanp)
+   state)
+  :returns (mv (successp "Whether all the files were loaded with no problems.
+                          Even when @('successp') is nil, there may be at least
+                          a partial overrides database loaded.")
+               (override-db)
+               (filemap)
+               (defines)
+               (comment-map)
+               (walist)
+               (state state-p1 :hyp (force (state-p1 state))))
+  (b* (((when (atom modnames))
+        (mv t nil nil defines comment-map walist state))
 
-  :long "<p>Signature: @(call vl-read-override-files) returns @('(mv successp
-override-db filemap defines' comment-map' walist' state)').</p>
+       ((mv successp1 alist1 filemap1 defines comment-map walist state)
+        (vl-read-override-file path (car modnames)
+                               defines comment-map walist filemapp state))
 
-<p>@('successp') indicates whether all of the files were loaded with no
-problems, and even when @('successp') is nil there may be at least a partial
-overrides database loaded.</p>"
+       ((mv successp2 rest-db filemap2 defines comment-map walist state)
+        (vl-read-override-files path (cdr modnames)
+                                defines comment-map walist filemapp state))
 
-  (defund vl-read-override-files (path modnames defines comment-map walist filemapp state)
-    "Returns (MV SUCCESSP OVERRIDE-DB FILEMAP DEFINES' COMMENT-MAP' WALIST' STATE)"
-    (declare (xargs :guard (and (stringp path)
-                                (string-listp modnames)
-                                (vl-defines-p defines)
-                                (vl-commentmap-p comment-map)
-                                (vl-modwarningalist-p walist)
-                                (booleanp filemapp))
-                    :stobjs state))
-    (b* (((when (atom modnames))
-          (mv t nil nil defines comment-map walist state))
+       (successp    (and successp1 successp2))
+       (override-db (cons (cons (car modnames) alist1) rest-db))
+       (filemap     (append filemap1 filemap2)))
 
-         ((mv successp1 alist1 filemap1 defines comment-map walist state)
-          (vl-read-override-file path (car modnames)
-                                 defines comment-map walist filemapp state))
-
-         ((mv successp2 rest-db filemap2 defines comment-map walist state)
-          (vl-read-override-files path (cdr modnames)
-                                  defines comment-map walist filemapp state))
-
-         (successp    (and successp1 successp2))
-         (override-db (cons (cons (car modnames) alist1) rest-db))
-         (filemap     (append filemap1 filemap2)))
-
-      (mv successp override-db filemap defines comment-map walist state)))
-
-  (local (in-theory (enable vl-read-override-files)))
-
-  (defthm true-listp-of-vl-read-override-files-1
-    (true-listp (mv-nth 1 (vl-read-override-files path modnames defines comment-map
-                                                  walist filemapp state)))
-    :rule-classes :type-prescription)
-
-  (defthm true-listp-of-vl-read-override-files-2
-    (true-listp (mv-nth 2 (vl-read-override-files path modnames defines comment-map
-                                                  walist filemapp state)))
-    :rule-classes :type-prescription)
-
-  (defthm state-p1-of-vl-read-override-files
-    (implies (force (state-p1 state))
-             (state-p1
-              (mv-nth 6 (vl-read-override-files path modnames defines comment-map
-                                                walist filemapp state)))))
+    (mv successp override-db filemap defines comment-map walist state))
+  ///
+  (defmvtypes vl-read-override-files
+    (nil true-listp true-listp))
 
   (defthm vl-read-override-files-basics
     (implies
@@ -752,84 +722,59 @@ overrides database loaded.</p>"
             (vl-modwarningalist-p (mv-nth 5 result)))))))
 
 
-
-(defsection vl-collect-override-modnames
-
-  (defund vl-collect-override-modnames (filenames)
-    (declare (xargs :guard (string-listp filenames)))
-    (b* (((when (atom filenames))
-          nil)
-         (parts (str::strtok (car filenames) (list #\.)))
-         ((when (and (equal (len parts) 2)
-                     (equal (second parts) "ov")))
-          (cons (car parts)
-                (vl-collect-override-modnames (cdr filenames)))))
-      (vl-collect-override-modnames (cdr filenames))))
-
-  (local (in-theory (enable vl-collect-override-modnames)))
-
-  (local (defthm stringp-of-car-when-string-listp
-           (implies (string-listp x)
-                    (equal (stringp (car x))
-                           (consp x)))))
-
-  (defthm string-listp-of-vl-collect-override-modnames
-    (implies (string-listp x)
-             (string-listp (vl-collect-override-modnames x)))))
+(define vl-collect-override-modnames ((filenames string-listp))
+  :returns (modnames string-listp)
+  (b* (((when (atom filenames))
+        nil)
+       (parts (str::strtok (car filenames) (list #\.)))
+       ((when (and (equal (len parts) 2)
+                   (equal (second parts) "ov")))
+        (cons (car parts)
+              (vl-collect-override-modnames (cdr filenames)))))
+    (vl-collect-override-modnames (cdr filenames))))
 
 
+(define vl-read-overrides-aux
 
-(defsection vl-read-overrides-aux
+  ((dirs        string-listp)
+   (defines     vl-defines-p)
+   (comment-map vl-commentmap-p)
+   (walist      vl-modwarningalist-p)
+   (filemapp    booleanp)
+   state)
+  :returns (mv (successp)
+               (override-db)
+               (filemap)
+               (defines)
+               (comment-map)
+               (walist)
+               (state state-p1 :hyp (force (state-p1 state))))
+  (b* (((when (atom dirs))
+        (mv t nil nil defines comment-map walist state))
 
-  (defund vl-read-overrides-aux (dirs defines comment-map walist filemapp state)
-    "Returns (MV SUCCESSP OVERRIDE-DB FILEMAP DEFINES' COMMENT-MAP' WALIST' STATE)"
-    (declare (xargs :guard (and (string-listp dirs)
-                                (vl-defines-p defines)
-                                (vl-commentmap-p comment-map)
-                                (vl-modwarningalist-p walist)
-                                (booleanp filemapp))
-                    :stobjs state))
-    (b* (((when (atom dirs))
-          (mv t nil nil defines comment-map walist state))
+       (path1 (car dirs))
+       ((mv err filenames state) (oslib::ls-files path1))
+       (filenames (if err
+                      (er hard? 'vl-read-overrides-aux "Error listing ~x0.~%" (car dirs))
+                    filenames))
 
-         (path1 (car dirs))
-         ((mv err filenames state) (oslib::ls-files path1))
-         (filenames (if err
-                        (er hard? 'vl-read-overrides-aux "Error listing ~x0.~%" (car dirs))
-                      filenames))
+       (modnames1 (vl-collect-override-modnames filenames))
+       ((mv successp1 override-db1 filemap1 defines comment-map walist state)
+        (vl-read-override-files path1 modnames1 defines comment-map
+                                walist filemapp state))
 
-         (modnames1 (vl-collect-override-modnames filenames))
-         ((mv successp1 override-db1 filemap1 defines comment-map walist state)
-          (vl-read-override-files path1 modnames1 defines comment-map
-                                  walist filemapp state))
+       ((mv successp2 override-db2 filemap2 defines comment-map walist state)
+        (vl-read-overrides-aux (cdr dirs) defines comment-map
+                               walist filemapp state))
 
-         ((mv successp2 override-db2 filemap2 defines comment-map walist state)
-          (vl-read-overrides-aux (cdr dirs) defines comment-map
-                                 walist filemapp state))
+       (successp    (and successp1 successp2))
+       (override-db (append override-db1 override-db2))
+       (filemap     (append filemap1 filemap2)))
 
-         (successp    (and successp1 successp2))
-         (override-db (append override-db1 override-db2))
-         (filemap     (append filemap1 filemap2)))
-
-      (mv successp override-db filemap defines comment-map walist state)))
-
-  (local (in-theory (enable vl-read-overrides-aux)))
-
-  (defthm true-listp-of-vl-read-overrides-aux-1
-    (true-listp (mv-nth 1 (vl-read-overrides-aux dirs defines comment-map
-                                                 walist filemapp state)))
-    :rule-classes :type-prescription)
-
-  (defthm true-listp-of-vl-read-overrides-aux-2
-    (true-listp (mv-nth 2 (vl-read-overrides-aux dirs defines comment-map
-                                                 walist filemapp state)))
-    :rule-classes :type-prescription)
-
-  (defthm state-p1-of-vl-read-overrides-aux
-    (implies (force (state-p1 state))
-             (state-p1
-              (mv-nth 6 (vl-read-overrides-aux dirs defines comment-map
-                                               walist filemapp state)))))
+    (mv successp override-db filemap defines comment-map walist state))
+  ///
+  (defmvtypes vl-read-overrides-aux
+    (nil true-listp true-listp))
 
   (defthm vl-read-overrides-aux-basics
     (implies

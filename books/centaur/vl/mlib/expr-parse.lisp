@@ -21,8 +21,8 @@
 (in-package "VL")
 (include-book "print-warnings")
 (include-book "../loader/lexer/lexer")
-(include-book "../loader/parser/parse-expressions")
-(include-book "../loader/parser/parse-error")
+(include-book "../loader/parser/expressions")
+(include-book "../loader/parser/error")
 (local (include-book "../util/arithmetic"))
 
 (defsection vl-parse-expr-from-str
@@ -67,7 +67,10 @@ won't be sized, may refer to invalid wires, etc.</p>"
           (cw "; vl-parse-expr-from-str: Lexer warnings for ~s0.~%" str))
 
          ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
-         ((mv err val tokens warnings) (vl-parse-expression tokens nil))
+         ((mv err val tokens warnings)
+          (vl-parse-expression :tokens tokens
+                               :warnings nil
+                               :config *vl-default-loadconfig*))
          ((when err)
           (vl-report-parse-error err tokens)
           (cw "; vl-parse-expr-from-str: Parsing failed for ~s0.~%" str))

@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "parse-nets")
+(include-book "nets")
 (local (include-book "../../util/arithmetic"))
 
 
@@ -39,7 +39,7 @@
 ;    constant_expression
 ;  | msb_constant_expression : lsb_constant_expression
 
-(defparser vl-parse-port-reference (tokens warnings)
+(defparser vl-parse-port-reference ()
   ;; Note: Assumes that if a bracket follows the identifier, it belongs to this
   ;; port reference.  This is safe in port-expressions since only a comma or
   ;; end curly-brace will follow them, and they never occur in other parts of
@@ -65,7 +65,7 @@
                   :guts (make-vl-id :name (vl-idtoken->name id)) )
                  range))))
 
-(defparser vl-parse-1+-port-references-separated-by-commas (tokens warnings)
+(defparser vl-parse-1+-port-references-separated-by-commas ()
   ;; Matches port_reference { ',' port_reference }
   :result (vl-exprlist-p val)
   :resultp-of-nil t
@@ -79,7 +79,7 @@
           (rest := (vl-parse-1+-port-references-separated-by-commas)))
         (return (cons first rest))))
 
-(defparser vl-parse-port-expression (tokens warnings)
+(defparser vl-parse-port-expression ()
   :result (vl-expr-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -117,14 +117,14 @@
 ; allow an empty list of ports, and treat () as producing the empty list of
 ; ports instead.
 
-(defparser vl-parse-nonnull-port (tokens warnings)
+(defparser vl-parse-nonnull-port ()
   ;; Matches ports except for the empty port
   :result (vl-port-p val)
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (seqw tokens warnings
-        (loc := (vl-current-loc tokens))
+        (loc := (vl-current-loc))
         (unless (vl-is-token? :vl-dot)
           (pexpr := (vl-parse-port-expression))
           (return (cond ((and (vl-atom-p pexpr)
@@ -149,7 +149,7 @@
                               :expr pexpr
                               :loc loc))))
 
-(defparser vl-parse-1+-ports-separated-by-commas (tokens warnings)
+(defparser vl-parse-1+-ports-separated-by-commas ()
   ;; Matches port { ',' port }, possibly producing blank ports!
   :result (vl-portlist-p val)
   :resultp-of-nil t
@@ -159,11 +159,11 @@
   (seqw tokens warnings
         (when (vl-is-token? :vl-rparen)
           ;; Blank port at the end.
-          (loc := (vl-current-loc tokens))
+          (loc := (vl-current-loc))
           (return (list (make-vl-port :name nil :expr nil :loc loc))))
 
         (when (vl-is-token? :vl-comma)
-          (loc := (vl-current-loc tokens))
+          (loc := (vl-current-loc))
           (first := (mv nil (make-vl-port :name nil :expr nil :loc loc)
                         tokens warnings))
           (:= (vl-match-token :vl-comma))
@@ -176,7 +176,7 @@
           (rest := (vl-parse-1+-ports-separated-by-commas)))
         (return (cons first rest))))
 
-(defparser vl-parse-list-of-ports (tokens warnings)
+(defparser vl-parse-list-of-ports ()
   :result (vl-portlist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -227,7 +227,7 @@
 ;    '(' port_declaration { ',' port_declaration } ')'
 ;  | '(' ')'
 
-(defparser vl-parse-1+-identifiers-separated-by-commas (tokens warnings)
+(defparser vl-parse-1+-identifiers-separated-by-commas ()
   ;; Matches identifier { ',' identifier }
   :result (vl-idtoken-list-p val)
   :resultp-of-nil t
@@ -244,7 +244,8 @@
 ; followed by another identifier"   We have to look for the identifier, too.
 
         (when (and (vl-is-token? :vl-comma)
-                   (vl-is-token? :vl-idtoken (cdr tokens)))
+                   (vl-is-token? :vl-idtoken
+                                 :tokens (cdr tokens)))
           (:= (vl-match-token :vl-comma))
           (rest := (vl-parse-1+-identifiers-separated-by-commas)))
         (return (cons first rest))))
@@ -331,7 +332,7 @@
 (with-output
  :off prove :gag-mode :goals
 
- (defparser vl-parse-port-declaration-noatts (atts tokens warnings)
+ (defparser vl-parse-port-declaration-noatts (atts)
 
 ; We may need to change what this returns if we add support for the "output"
 ; types, because those can have assignments.
@@ -374,25 +375,24 @@
             (cons portdecls netdecls))))))
 
 (defthm true-listp-of-vl-parse-port-declaration-noatts-1
-  (true-listp (car (mv-nth 1 (vl-parse-port-declaration-noatts atts tokens warnings))))
+  (true-listp (car (mv-nth 1 (vl-parse-port-declaration-noatts atts))))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable vl-parse-port-declaration-noatts))))
 
 (defthm true-listp-of-vl-parse-port-declaration-noatts-2
-  (true-listp (cdr (mv-nth 1 (vl-parse-port-declaration-noatts atts tokens warnings))))
+  (true-listp (cdr (mv-nth 1 (vl-parse-port-declaration-noatts atts))))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable vl-parse-port-declaration-noatts))))
 
 (defthm vl-parse-port-declaration-noatts-basics
-  (implies (and (force (vl-tokenlist-p tokens))
-                (force (vl-atts-p atts)))
-           (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-port-declaration-noatts atts tokens warnings))))
-                (vl-netdecllist-p (cdr (mv-nth 1 (vl-parse-port-declaration-noatts atts tokens warnings))))))
+  (implies (force (vl-atts-p atts))
+           (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-port-declaration-noatts atts))))
+                (vl-netdecllist-p (cdr (mv-nth 1 (vl-parse-port-declaration-noatts atts))))))
   :hints(("Goal" :in-theory (enable vl-parse-port-declaration-noatts))))
 
 
 
-(defparser vl-parse-port-declaration-atts (tokens warnings)
+(defparser vl-parse-port-declaration-atts ()
   ;; BOZO this appears to be unused??  Ah, it's in support of the alternate form of module definition
   ;; that is currently unsupported.
   ;; Returns (portdecls . netdecls)
@@ -407,24 +407,23 @@
         (return result)))
 
 (defthm true-listp-of-vl-parse-port-declaration-atts-1
-  (true-listp (car (mv-nth 1 (vl-parse-port-declaration-atts tokens warnings))))
+  (true-listp (car (mv-nth 1 (vl-parse-port-declaration-atts))))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable vl-parse-port-declaration-atts))))
 
 (defthm true-listp-of-vl-parse-port-declaration-atts-2
-  (true-listp (cdr (mv-nth 1 (vl-parse-port-declaration-atts tokens warnings))))
+  (true-listp (cdr (mv-nth 1 (vl-parse-port-declaration-atts))))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable vl-parse-port-declaration-atts))))
 
 (defthm vl-parse-port-declaration-atts-basics
-  (implies (force (vl-tokenlist-p tokens))
-           (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-port-declaration-atts tokens warnings))))
-                (vl-netdecllist-p (cdr (mv-nth 1 (vl-parse-port-declaration-atts tokens warnings))))))
+  (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-port-declaration-atts))))
+       (vl-netdecllist-p (cdr (mv-nth 1 (vl-parse-port-declaration-atts)))))
   :hints(("Goal" :in-theory (enable vl-parse-port-declaration-atts))))
 
 
 
-(defparser vl-parse-1+-port-declarations-separated-by-commas (tokens warnings)
+(defparser vl-parse-1+-port-declarations-separated-by-commas ()
   ;; BOZO this appears to be unused??  Ah, it's in support of the alternate form of module definition
   ;; that is currently unsupported.
   ;; Returns (portdecls . netdecls)
@@ -443,26 +442,25 @@
                       (append netdecls1 netdecls2)))))
 
 (defthm true-listp-of-vl-parse-1+-port-declarations-separated-by-commas-1
-  (true-listp (car (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas tokens warnings))))
+  (true-listp (car (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas))))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable vl-parse-1+-port-declarations-separated-by-commas))))
 
 (defthm true-listp-of-vl-parse-1+-port-declarations-separated-by-commas-2
-  (true-listp (cdr (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas tokens warnings))))
+  (true-listp (cdr (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas))))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable vl-parse-1+-port-declarations-separated-by-commas))))
 
 (defthm vl-parse-1+-port-declarations-separated-by-commas-basics
-  (implies (force (vl-tokenlist-p tokens))
-           (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas tokens warnings))))
-                (vl-netdecllist-p (cdr (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas tokens warnings))))))
+  (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas))))
+       (vl-netdecllist-p (cdr (mv-nth 1 (vl-parse-1+-port-declarations-separated-by-commas)))))
   :hints(("Goal" :in-theory (enable vl-parse-1+-port-declarations-separated-by-commas))))
 
 (verify-guards vl-parse-1+-port-declarations-separated-by-commas-fn)
 
 
 
-(defparser vl-parse-list-of-port-declarations (tokens warnings)
+(defparser vl-parse-list-of-port-declarations ()
   ;; BOZO this appears to be unused??  Ah, it's in support of the alternate form of module definition
   ;; that is currently unsupported.
   ;; Returns (portdecls . netdecls)
@@ -478,186 +476,16 @@
         (return decls)))
 
 (defthm true-listp-of-vl-parse-list-of-port-declarations-1
-  (true-listp (car (mv-nth 1 (vl-parse-list-of-port-declarations tokens warnings))))
+  (true-listp (car (mv-nth 1 (vl-parse-list-of-port-declarations))))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable vl-parse-list-of-port-declarations))))
 
 (defthm true-listp-of-vl-parse-list-of-port-declarations-2
-  (true-listp (cdr (mv-nth 1 (vl-parse-list-of-port-declarations tokens warnings))))
+  (true-listp (cdr (mv-nth 1 (vl-parse-list-of-port-declarations))))
   :rule-classes :type-prescription
   :hints(("Goal" :in-theory (enable vl-parse-list-of-port-declarations))))
 
 (defthm vl-parse-list-of-port-declarations-basics
-  (implies (force (vl-tokenlist-p tokens))
-           (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-list-of-port-declarations tokens warnings))))
-                (vl-netdecllist-p (cdr (mv-nth 1 (vl-parse-list-of-port-declarations tokens warnings))))))
+  (and (vl-portdecllist-p (car (mv-nth 1 (vl-parse-list-of-port-declarations))))
+       (vl-netdecllist-p (cdr (mv-nth 1 (vl-parse-list-of-port-declarations)))))
   :hints(("Goal" :in-theory (enable vl-parse-list-of-port-declarations))))
-
-
-
-
-;; BOZO more unit tests!
-
-(local
- (encapsulate
-   ()
-   (local (include-book "../lexer/lexer")) ;; for making test inputs from strings
-
-   (defmacro test-parse-port (&key input (successp 't) name expr)
-     `(with-output
-        :off summary
-        (assert! (mv-let (erp val tokens warnings)
-                   (vl-parse-nonnull-port (make-test-tokens ,input) 'blah-warnings)
-                   (if ,successp
-                       (and (prog2$ (cw "Erp: ~x0.~%" erp)
-                                    (not erp))
-                            (prog2$ (cw "Val: ~x0.~%" val)
-                                    (vl-port-p val))
-                            (prog2$ (cw "Name: ~x0.~%" (vl-port->name val))
-                                    (equal (vl-port->name val) ',name))
-                            (prog2$ (cw "Expr: ~x0.~%"
-                                        (vl-pretty-expr (vl-port->expr val)))
-                                    (equal (vl-pretty-expr (vl-port->expr val))
-                                           ',expr))
-                            (prog2$ (cw "Tokens: ~x0.~%" tokens)
-                                    (not tokens))
-                            (prog2$ (cw "Warnings: ~x0.~%" warnings)
-                                    (equal warnings 'blah-warnings)))
-                     ;; Otherwise, we expect it to fail.
-                     (prog2$ (cw "Erp: ~x0.~%" erp)
-                             erp))))))
-
-   (test-parse-port :input "a"
-                    :name "a"
-                    :expr (id "a"))
-
-   (test-parse-port :input "a[3:0]"
-                    :name nil
-                    :expr (:vl-partselect-colon nil (id "a") 3 0))
-
-   (test-parse-port :input "a[3]"
-                    :name nil
-                    :expr (:vl-bitselect nil (id "a") 3))
-
-   (test-parse-port :input "{a, b, c}"
-                    :name nil
-                    :expr (:vl-concat nil
-                                      (id "a")
-                                      (id "b")
-                                      (id "c")))
-
-   (test-parse-port :input ".foo(bar)"
-                    :name "foo"
-                    :expr (id "bar"))
-
-   (test-parse-port :input ".foo(a[3:0])"
-                    :name "foo"
-                    :expr (:vl-partselect-colon nil (id "a") 3 0))
-
-   (test-parse-port :input ".foo(a[3])"
-                    :name "foo"
-                    :expr (:vl-bitselect nil (id "a") 3))
-
-   (test-parse-port :input ".foo({a, b, c})"
-                    :name "foo"
-                    :expr (:vl-concat nil
-                                      (id "a")
-                                      (id "b")
-                                      (id "c")))
-
-   (test-parse-port :input ".(a[3:0])"
-                    :successp nil)
-
-   (test-parse-port :input ".(a[3])"
-                    :successp nil)
-
-   (test-parse-port :input ".foo(a[3 +: 0])"
-                    :successp nil)
-
-   (test-parse-port :input ".foo(a[3 -: 0])"
-                    :successp nil)
-
-
-
-
-   (defun vl-pretty-maybe-exprlist (x)
-     (if (atom x)
-         nil
-       (cons (if (car x)
-                 (vl-pretty-expr (car x))
-               nil)
-             (vl-pretty-maybe-exprlist (cdr x)))))
-
-
-
-
-
-   (defmacro test-parse-portlist (&key input (successp 't) names exprs)
-     `(with-output
-        :off summary
-        (assert! (mv-let (erp val tokens warnings)
-                   (vl-parse-list-of-ports (make-test-tokens ,input) 'blah-warnings)
-                   (if ,successp
-                       (and (prog2$ (cw "Erp: ~x0.~%" erp)
-                                    (not erp))
-                            (prog2$ (cw "Val: ~x0.~%" val)
-                                    (vl-portlist-p val))
-                            (prog2$ (cw "Names: ~x0.~%" (vl-portlist->names val))
-                                    (equal (vl-portlist->names val) ',names))
-                            (prog2$ (cw "Exprs: ~x0.~%"
-                                        (vl-pretty-maybe-exprlist (vl-portlist->exprs val)))
-                                    (equal (vl-pretty-maybe-exprlist (vl-portlist->exprs val))
-                                           ',exprs))
-                            (prog2$ (cw "Tokens: ~x0.~%" tokens)
-                                    (not tokens))
-                            (prog2$ (cw "Warnings: ~x0.~%" warnings)
-                                    (equal warnings 'blah-warnings)))
-                     ;; Otherwise, we expect it to fail.
-                     (prog2$ (cw "Erp: ~x0.~%" erp)
-                             erp))))))
-
-   (test-parse-portlist :input "()"
-                        :names nil
-                        :exprs nil)
-
-   (test-parse-portlist :input "(a)"
-                        :names ("a")
-                        :exprs ((id "a")))
-
-   (test-parse-portlist :input "(a,b)"
-                        :names ("a"      "b")
-                        :exprs ((id "a") (id "b")))
-
-   (test-parse-portlist :input "(a,,b)"
-                        :names ("a"      nil "b")
-                        :exprs ((id "a") nil (id "b")))
-
-   (test-parse-portlist :input "(,)"
-                        :names (nil nil)
-                        :exprs (nil nil))
-
-   (test-parse-portlist :input "(,,,,,)"
-                        :names (nil nil nil nil nil nil)
-                        :exprs (nil nil nil nil nil nil))
-
-   (test-parse-portlist :input "(a,,,b)"
-                        :names ("a" nil nil "b")
-                        :exprs ((id "a") nil nil (id "b")))
-
-
-   (test-parse-portlist :input "(,a)"
-                        :names (nil "a")
-                        :exprs (nil (id "a")))
-
-   (test-parse-portlist :input "(a,)"
-                        :names ("a" nil)
-                        :exprs ((id "a") nil))
-
-
-   (test-parse-portlist :input "(.a(), b[3:0])"
-                        :names ("a" nil)
-                        :exprs (nil (:vl-partselect-colon nil (id "b") 3 0)))
-
-   ))
-
-

@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "parse-expressions")
+(include-book "expressions")
 (local (include-book "../../util/arithmetic"))
 
 ;                                 LVALUES
@@ -48,9 +48,9 @@
 
 (defparsers parse-lvalues
 
- (defparser vl-parse-lvalue (tokens warnings)
-   (declare (xargs :measure (two-nats-measure (acl2-count tokens) 0)
-                   :verify-guards nil))
+ (defparser vl-parse-lvalue ()
+   :measure (two-nats-measure (len tokens) 0)
+   :verify-guards nil
    (if (not (vl-is-token? :vl-lcurly))
        (vl-parse-indexed-id)
      (seqw tokens warnings
@@ -60,13 +60,13 @@
            (return (make-vl-nonatom :op :vl-concat
                                     :args args)))))
 
- (defparser vl-parse-1+-lvalues-separated-by-commas (tokens warnings)
-   (declare (xargs :measure (two-nats-measure (acl2-count tokens) 1)))
+ (defparser vl-parse-1+-lvalues-separated-by-commas ()
+   :measure (two-nats-measure (len tokens) 1)
    (seqw tokens warnings
          (first :s= (vl-parse-lvalue))
          (when (vl-is-token? :vl-comma)
            (:= (vl-match-token :vl-comma))
-           (rest := (vl-parse-1+-lvalues-separated-by-commas tokens)))
+           (rest := (vl-parse-1+-lvalues-separated-by-commas)))
          (return (cons first rest)))))
 
 (encapsulate
@@ -76,29 +76,35 @@
 
   (defthm-parse-lvalues-flag token-list
     (vl-parse-lvalue
-     (implies (force (vl-tokenlist-p tokens))
-              (vl-tokenlist-p (mv-nth 2 (vl-parse-lvalue)))))
+     (vl-tokenlist-p (mv-nth 2 (vl-parse-lvalue))))
     (vl-parse-1+-lvalues-separated-by-commas
-     (implies (force (vl-tokenlist-p tokens))
-              (vl-tokenlist-p (mv-nth 2 (vl-parse-1+-lvalues-separated-by-commas)))))
-    :hints(("Goal" :induct (parse-lvalues-flag flag tokens warnings))))
+     (vl-tokenlist-p (mv-nth 2 (vl-parse-1+-lvalues-separated-by-commas))))
+    :hints(("Goal" :do-not '(generalize fertilize))
+           (and acl2::stable-under-simplificationp
+                (flag::expand-calls-computed-hint
+                 acl2::clause
+                 (flag::get-clique-members 'vl-parse-lvalue-fn (w state))))))
 
   (defthm-parse-lvalues-flag count-strong
     (vl-parse-lvalue
-     (and (<= (acl2-count (mv-nth 2 (vl-parse-lvalue)))
-              (acl2-count tokens))
+     (and (<= (len (mv-nth 2 (vl-parse-lvalue)))
+              (len tokens))
           (implies (not (mv-nth 0 (vl-parse-lvalue)))
-                   (< (acl2-count (mv-nth 2 (vl-parse-lvalue)))
-                      (acl2-count tokens))))
+                   (< (len (mv-nth 2 (vl-parse-lvalue)))
+                      (len tokens))))
      :rule-classes ((:rewrite) (:linear)))
     (vl-parse-1+-lvalues-separated-by-commas
-     (and (<= (acl2-count (mv-nth 2 (vl-parse-1+-lvalues-separated-by-commas)))
-              (acl2-count tokens))
+     (and (<= (len (mv-nth 2 (vl-parse-1+-lvalues-separated-by-commas)))
+              (len tokens))
           (implies (not (mv-nth 0 (vl-parse-1+-lvalues-separated-by-commas)))
-                   (< (acl2-count (mv-nth 2 (vl-parse-1+-lvalues-separated-by-commas)))
-                      (acl2-count tokens))))
+                   (< (len (mv-nth 2 (vl-parse-1+-lvalues-separated-by-commas)))
+                      (len tokens))))
      :rule-classes ((:rewrite) (:linear)))
-    :hints(("Goal" :induct (parse-lvalues-flag flag tokens warnings))))
+    :hints(("Goal" :do-not '(generalize fertilize))
+           (and acl2::stable-under-simplificationp
+                (flag::expand-calls-computed-hint
+                 acl2::clause
+                 (flag::get-clique-members 'vl-parse-lvalue-fn (w state))))))
 
   (defthm-parse-lvalues-flag fails-gracefully
     (vl-parse-lvalue
@@ -107,27 +113,34 @@
     (vl-parse-1+-lvalues-separated-by-commas
      (implies (mv-nth 0 (vl-parse-1+-lvalues-separated-by-commas))
               (not (mv-nth 1 (vl-parse-1+-lvalues-separated-by-commas)))))
-    :hints(("Goal" :induct (parse-lvalues-flag flag tokens warnings))))
+    :hints(("Goal" :do-not '(generalize fertilize))
+           (and acl2::stable-under-simplificationp
+                (flag::expand-calls-computed-hint
+                 acl2::clause
+                 (flag::get-clique-members 'vl-parse-lvalue-fn (w state))))))
 
   (defthm-parse-lvalues-flag result
     (vl-parse-lvalue
-     (implies (force (vl-tokenlist-p tokens))
-              (equal (vl-expr-p (mv-nth 1 (vl-parse-lvalue)))
-                     (not (mv-nth 0 (vl-parse-lvalue))))))
+     (equal (vl-expr-p (mv-nth 1 (vl-parse-lvalue)))
+            (not (mv-nth 0 (vl-parse-lvalue)))))
     (vl-parse-1+-lvalues-separated-by-commas
-     (implies (force (vl-tokenlist-p tokens))
-              (equal (vl-exprlist-p (mv-nth 1 (vl-parse-1+-lvalues-separated-by-commas)))
-                     t)))
-    :hints(("Goal" :induct (parse-lvalues-flag flag tokens warnings))))
+     (vl-exprlist-p (mv-nth 1 (vl-parse-1+-lvalues-separated-by-commas))))
+    :hints(("Goal" :do-not '(generalize fertilize))
+           (and acl2::stable-under-simplificationp
+                (flag::expand-calls-computed-hint
+                 acl2::clause
+                 (flag::get-clique-members 'vl-parse-lvalue-fn (w state))))))
 
   (defthm-parse-lvalues-flag warnings
     (vl-parse-lvalue
-     (implies (force (vl-warninglist-p warnings))
-              (vl-warninglist-p (mv-nth 3 (vl-parse-lvalue)))))
+     (vl-warninglist-p (mv-nth 3 (vl-parse-lvalue))))
     (vl-parse-1+-lvalues-separated-by-commas
-     (implies (force (vl-warninglist-p warnings))
-              (vl-warninglist-p (mv-nth 3 (vl-parse-1+-lvalues-separated-by-commas)))))
-    :hints(("Goal" :induct (parse-lvalues-flag flag tokens warnings))))
+     (vl-warninglist-p (mv-nth 3 (vl-parse-1+-lvalues-separated-by-commas))))
+    :hints(("Goal" :do-not '(generalize fertilize))
+           (and acl2::stable-under-simplificationp
+                (flag::expand-calls-computed-hint
+                 acl2::clause
+                 (flag::get-clique-members 'vl-parse-lvalue-fn (w state))))))
 
   (defthm-parse-lvalues-flag true-listp
     (vl-parse-lvalue
@@ -136,7 +149,11 @@
     (vl-parse-1+-lvalues-separated-by-commas
      (true-listp (mv-nth 1 (vl-parse-1+-lvalues-separated-by-commas)))
      :rule-classes :type-prescription)
-    :hints(("Goal" :induct (parse-lvalues-flag flag tokens warnings))))
+    :hints(("Goal" :do-not '(generalize fertilize))
+           (and acl2::stable-under-simplificationp
+                (flag::expand-calls-computed-hint
+                 acl2::clause
+                 (flag::get-clique-members 'vl-parse-lvalue-fn (w state))))))
 
   (verify-guards+ vl-parse-lvalue))
 
@@ -155,7 +172,7 @@
 ; net_assignment ::=
 ;    lvalue '=' expression
 
-(defparser vl-parse-assignment (tokens warnings)
+(defparser vl-parse-assignment ()
   ;; Returns a (lvalue . expr) pair
   :result (and (consp val)
                (vl-expr-p (car val))

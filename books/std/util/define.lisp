@@ -283,7 +283,6 @@ some kind of separator!</p>
             :enabled
             :returns
             :prepwork
-            :flag
             :verbosep
             )
           acl2::*xargs-keywords*))
@@ -597,7 +596,12 @@ some kind of separator!</p>
                 (get-define-guts-alist world))))
 
 
-(defun parse-define (name args world)
+(defun parse-define
+  (name            ; User-level name, e.g., FOO
+   args            ; Everything that comes after the name
+   extra-keywords  ; Any additional keywords to allow (useful for
+                   ; building tools atop define).
+   world)
   ;; Returns GUTS
   (declare (xargs :guard (plist-worldp world)))
   (b* ((__function__ 'define)
@@ -606,7 +610,8 @@ some kind of separator!</p>
 
        ((mv main-stuff rest-events) (split-/// name args))
        ((mv kwd-alist normal-defun-stuff)
-        (extract-keywords name *define-keywords* main-stuff nil))
+        (extract-keywords name (append extra-keywords *define-keywords*)
+                          main-stuff nil))
        (raw-formals            (car normal-defun-stuff))
        (traditional-decls/docs (butlast (cdr normal-defun-stuff) 1))
        (body                   (car (last normal-defun-stuff)))
@@ -753,10 +758,8 @@ some kind of separator!</p>
          `((add-macro-alias ,guts.name ,guts.name-fn)
            (table define-macro-fns ',guts.name-fn ',guts.name)))))
 
-(defun define-fn (name args world)
-  (declare (xargs :guard (plist-worldp world)))
-  (b* ((guts (parse-define name args world))
-       ((defguts guts) guts)
+(defun events-from-guts (guts world)
+  (b* (((defguts guts) guts)
 
        (prepwork   (getarg :prepwork       nil guts.kwd-alist))
        (short      (getarg :short          nil guts.kwd-alist))
@@ -818,6 +821,11 @@ some kind of separator!</p>
 
        )))
 
+(defun define-fn (name args world)
+  (declare (xargs :guard (plist-worldp world)))
+  (b* ((guts (parse-define name args nil world)))
+    (events-from-guts guts world)))
+
 (defmacro define (name &rest args)
   (let* ((verbose-tail (member :verbosep args))
          (verbosep (and verbose-tail (cadr verbose-tail))))
@@ -825,7 +833,8 @@ some kind of separator!</p>
        :stack :push
        ,@(and (not verbosep)
               '(:off :all))
-       (make-event (define-fn ',name ',args (w state))))))
+       (make-event
+        (define-fn ',name ',args (w state))))))
 
 #!ACL2
 (progn

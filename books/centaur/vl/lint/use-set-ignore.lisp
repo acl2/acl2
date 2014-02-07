@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../loader/parser/parse-lvalues")
+(include-book "../loader/parser/lvalues")
 (include-book "../loader/lexer/lexer")
 (include-book "../mlib/fmt")
 (include-book "../checkers/oddexpr") ;; bozo for *fake-modelement*
@@ -175,7 +175,7 @@ warning in the list @('x') to @('new-type')."
 ; of nice.
 
 
-(defparser us-parse-comment (tokens warnings)
+(defparser us-parse-comment ()
   :result (vl-exprlist-p val)
   :true-listp t
   :resultp-of-nil t
@@ -238,7 +238,10 @@ warning in the list @('x') to @('new-type')."
 
          ;; Parsing...
          ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
-         ((mv err exprs tokens ?pwarnings) (us-parse-comment tokens nil))
+         ((mv err exprs tokens ?pwarnings)
+          (us-parse-comment :tokens tokens
+                            :warnings nil
+                            :config *vl-default-loadconfig*))
          ((when err)
           (b* ((details (with-local-ps (if (and (consp err)
                                                 (stringp (car err)))

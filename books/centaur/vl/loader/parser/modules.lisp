@@ -19,13 +19,13 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "parse-statements")
-(include-book "parse-ports")      ;; vl-portdecllist-p, vl-portlist-p
-(include-book "parse-nets")       ;; vl-assignlist-p, vl-netdecllist-p
-(include-book "parse-blockitems") ;; vl-vardecllist-p, vl-regdecllist-p, vl-eventdecllist-p, vl-paramdecllist-p
-(include-book "parse-insts")      ;; vl-modinstlist-p
-(include-book "parse-gates")      ;; vl-gateinstlist-p
-(include-book "parse-functions")  ;; vl-fundecllist-p
+(include-book "statements")
+(include-book "ports")      ;; vl-portdecllist-p, vl-portlist-p
+(include-book "nets")       ;; vl-assignlist-p, vl-netdecllist-p
+(include-book "blockitems") ;; vl-vardecllist-p, vl-regdecllist-p, vl-eventdecllist-p, vl-paramdecllist-p
+(include-book "insts")      ;; vl-modinstlist-p
+(include-book "gates")      ;; vl-gateinstlist-p
+(include-book "functions")  ;; vl-fundecllist-p
 (include-book "../make-implicit-wires")
 (include-book "../../mlib/context")  ;; vl-modelement-p, sorting modelements
 (include-book "../../mlib/port-tools")  ;; vl-ports-from-portdecls
@@ -97,7 +97,7 @@
 
 
 
-(defparser vl-parse-initial-construct (atts tokens warnings)
+(defparser vl-parse-initial-construct (atts)
   :guard (vl-atts-p atts)
   :result (vl-initiallist-p val)
   :resultp-of-nil t
@@ -111,7 +111,7 @@
                                        :stmt stmt
                                        :atts atts)))))
 
-(defparser vl-parse-always-construct (atts tokens warnings)
+(defparser vl-parse-always-construct (atts)
   :guard (vl-atts-p atts)
   :result (vl-alwayslist-p val)
   :resultp-of-nil t
@@ -141,7 +141,7 @@
 ; a warning.
 ;
 
-(defparser vl-parse-specify-block-aux (tokens warnings)
+(defparser vl-parse-specify-block-aux ()
   ;; BOZO this is really not implemented.  We just read until endspecify,
   ;; throwing away any tokens we encounter until it.
   :result (vl-modelementlist-p val)
@@ -157,7 +157,7 @@
         (:= (vl-parse-specify-block-aux))
         (return nil)))
 
-(defparser vl-parse-specify-block (tokens warnings)
+(defparser vl-parse-specify-block ()
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -174,7 +174,7 @@
           (return ret))))
 
 
-(defparser vl-parse-generate-region-aux (tokens warnings)
+(defparser vl-parse-generate-region-aux ()
   ;; BOZO this is really not implemented.  We just read until endgenerate,
   ;; throwing away any tokens we encounter until it.
   :result (vl-modelementlist-p val)
@@ -190,7 +190,7 @@
         (:= (vl-parse-generate-region-aux))
         (return nil)))
 
-(defparser vl-parse-generate-region (tokens warnings)
+(defparser vl-parse-generate-region ()
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -206,7 +206,7 @@
           (ret := (vl-parse-generate-region-aux))
           (return ret))))
 
-(defparser vl-parse-specparam-declaration (atts tokens warnings)
+(defparser vl-parse-specparam-declaration (atts)
   :guard (vl-atts-p atts)
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
@@ -216,7 +216,7 @@
   (declare (ignore atts))
   (vl-unimplemented))
 
-(defparser vl-parse-genvar-declaration (atts tokens warnings)
+(defparser vl-parse-genvar-declaration (atts)
   :guard (vl-atts-p atts)
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
@@ -232,7 +232,7 @@
         (:= (vl-match-token :vl-semi))
         (return nil)))
 
-(defparser vl-parse-parameter-override (atts tokens warnings)
+(defparser vl-parse-parameter-override (atts)
   :guard (vl-atts-p atts)
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
@@ -242,7 +242,7 @@
   (declare (ignore atts))
   (vl-unimplemented))
 
-(defparser vl-parse-loop-generate-construct (atts tokens warnings)
+(defparser vl-parse-loop-generate-construct (atts)
   :guard (vl-atts-p atts)
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
@@ -252,7 +252,7 @@
   (declare (ignore atts))
   (vl-unimplemented))
 
-(defparser vl-parse-conditional-generate-construct (atts tokens warnings)
+(defparser vl-parse-conditional-generate-construct (atts)
   :guard (vl-atts-p atts)
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
@@ -315,7 +315,7 @@
 (defconst *vl-netdecltypes-kwds*
   (strip-cars *vl-netdecltypes-kwd-alist*))
 
-(defparser vl-parse-module-or-generate-item (atts tokens warnings)
+(defparser vl-parse-module-or-generate-item (atts)
   :guard (vl-atts-p atts)
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
@@ -331,7 +331,7 @@
                ;; or we'll try to infer implicit nets from the assigns.
                (return (append decls assigns))))
         ((member-eq (vl-token->type (car tokens)) *vl-gate-type-keywords*)
-         (vl-parse-gate-instantiation atts tokens))
+         (vl-parse-gate-instantiation atts))
         (t
          (case (vl-token->type (car tokens))
            (:vl-kwd-reg        (vl-parse-reg-declaration atts))
@@ -359,7 +359,7 @@
            (t
             (vl-parse-error "Invalid module or generate item."))))))
 
-(defparser vl-parse-non-port-module-item (atts tokens warnings)
+(defparser vl-parse-non-port-module-item (atts)
   :guard (vl-atts-p atts)
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
@@ -386,7 +386,7 @@
         (t
          (vl-parse-module-or-generate-item atts))))
 
-(defparser vl-parse-module-item (tokens warnings)
+(defparser vl-parse-module-item ()
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -407,7 +407,7 @@
 
 ; module_parameter_port_list ::= '#' '(' parameter_declaration { ',' parameter_declaration } ')'
 
-(defparser vl-parse-module-parameter-port-list-aux (tokens warnings)
+(defparser vl-parse-module-parameter-port-list-aux ()
   ;; parameter_declaration { ',' parameter_declaration }
   :result (vl-paramdecllist-p val)
   :resultp-of-nil t
@@ -422,7 +422,7 @@
           (rest := (vl-parse-module-parameter-port-list-aux)))
         (return (append first rest))))
 
-(defparser vl-parse-module-parameter-port-list (tokens warnings)
+(defparser vl-parse-module-parameter-port-list ()
   :result (vl-paramdecllist-p val)
   :resultp-of-nil t
   :true-listp t
@@ -457,7 +457,7 @@
 ; module_keyword ::= 'module' | 'macromodule'
 ;
 
-(defparser vl-parse-module-items-until-endmodule (tokens warnings)
+(defparser vl-parse-module-items-until-endmodule ()
   ;; Look for module items until :vl-kwd-endmodule is encountered.
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
@@ -471,7 +471,7 @@
         (rest := (vl-parse-module-items-until-endmodule))
         (return (append first rest))))
 
-(defparser vl-parse-non-port-module-items-until-endmodule (tokens warnings)
+(defparser vl-parse-non-port-module-items-until-endmodule ()
   ;; Look for non-port module items until :vl-kwd-endmodule is encountered.
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
@@ -487,12 +487,10 @@
         (return (append first rest))))
 
 
-(defparser vl-parse-module-declaration-variant-1 (atts module_keyword id tokens warnings)
+(defparser vl-parse-module-declaration-variant-1 (atts module_keyword id)
   :guard (and (vl-atts-p atts)
               (vl-token-p module_keyword)
-              (vl-idtoken-p id)
-              ;; Ugly, adds warninglist-p hyps to our theorems
-              (vl-warninglist-p warnings))
+              (vl-idtoken-p id))
   :result (vl-module-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -528,11 +526,10 @@
 
 
 
-(defparser vl-parse-module-declaration-variant-2 (atts module_keyword id tokens warnings)
+(defparser vl-parse-module-declaration-variant-2 (atts module_keyword id)
   :guard (and (vl-atts-p atts)
               (vl-token-p module_keyword)
-              (vl-idtoken-p id)
-              (vl-warninglist-p warnings))
+              (vl-idtoken-p id))
   :result (vl-module-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -563,7 +560,7 @@
 
 
 
-(defparser vl-skip-through-endmodule (tokens warnings)
+(defparser vl-skip-through-endmodule ()
   :result (vl-token-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -624,20 +621,17 @@
 (defthm vl-module-p-of-vl-make-module-with-parse-error
   (implies (and (force (stringp name))
                 (force (vl-location-p minloc))
-                (force (vl-location-p maxloc))
-                (force (vl-tokenlist-p tokens)))
-           (vl-module-p (vl-make-module-with-parse-error name minloc maxloc err tokens)))
+                (force (vl-location-p maxloc)))
+           (vl-module-p
+            (vl-make-module-with-parse-error name minloc maxloc err tokens)))
   :hints(("Goal" :in-theory (enable vl-make-module-with-parse-error))))
 
 
 
 
 
-(defparser vl-parse-module-declaration (atts tokens warnings)
-  :guard (and (vl-atts-p atts)
-              ;; BOZO ugly.  This looks redundant, but it adds the warninglistp thing
-              ;; to our theorems.
-              (vl-warninglist-p warnings))
+(defparser vl-parse-module-declaration (atts)
+  :guard (vl-atts-p atts)
   :result (vl-module-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -652,7 +646,9 @@
                ;; as it is created, and NOT return them in the global list of
                ;; warnings.  Because of this, we use a fresh warnings
                ;; accumulator here.
-               (vl-parse-module-declaration-variant-1 atts kwd id tokens nil))
+               (vl-parse-module-declaration-variant-1 atts kwd id
+                                                      :tokens tokens
+                                                      :warnings nil))
 
               ((unless err1)
                ;; Successfully parsed the module using variant 1.  We return
@@ -662,7 +658,9 @@
                (mv err1 mod v1-tokens warnings))
 
               ((mv err2 mod v2-tokens &)
-               (vl-parse-module-declaration-variant-2 atts kwd id tokens nil))
+               (vl-parse-module-declaration-variant-2 atts kwd id
+                                                      :tokens tokens
+                                                      :warnings nil))
               ((unless err2)
                (mv err2 mod v2-tokens warnings)))
 
@@ -692,7 +690,7 @@
 ; the module parser so that it doesn't use backtracking so aggressively.
 
            (seqw tokens warnings
-                 (endkwd := (vl-skip-through-endmodule tokens))
+                 (endkwd := (vl-skip-through-endmodule))
                  (return
                   (b* (((mv err tokens)
                         (if (<= (len v1-tokens) (len v2-tokens))

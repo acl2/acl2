@@ -19,51 +19,12 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "parse-statements-def")
-(include-book "parse-statements-error")
-(include-book "parse-statements-progress")
-(include-book "parse-statements-tokenlist")
-(include-book "parse-statements-warninglist")
-(include-book "parse-statements-result")
-(local (include-book "../../util/arithmetic"))
+(include-book "base")
+(include-book "../statements")
 
+;; BOZO no tests at all... :(
 
-(local (defthm vl-parse-event-control-value-under-iff
-         ;; BOZO not sure why I suddenly need this
-         (implies (and (not (mv-nth 0 (vl-parse-event-control)))
-                       (force (vl-tokenlist-p tokens)))
-                  (mv-nth 1 (vl-parse-event-control)))
-         :hints(("Goal"
-                 :in-theory (disable vl-parse-event-control-result)
-                 :use ((:instance vl-parse-event-control-result))))))
-
-(local (defthm vl-parse-delay-control-value-under-iff
-         ;; BOZO not sure why I suddenly need this
-         (implies (and (not (mv-nth 0 (vl-parse-delay-control)))
-                       (force (vl-tokenlist-p tokens)))
-                  (mv-nth 1 (vl-parse-delay-control)))
-         :hints(("Goal"
-                 :in-theory (disable vl-parse-delay-control-result)
-                 :use ((:instance vl-parse-delay-control-result))))))
-
-(with-output
- :off prove
- :gag-mode :goals
- (verify-guards vl-parse-statement-fn))
-
-
-
-#|
-(logic)
-
-(local
- (encapsulate
-  ()
-
-(program)
-
-(include-book "../lexer/lexer")
-
+#||
 
 (let ((tokens (make-test-tokens "foo = bar ;")))
   (mv-let (erp val tokens)
@@ -141,4 +102,6 @@
                                   (and ,successp
                                        (test-vardecls-fn val :vl-integer ',atts
                                                          ',names ',arrdims ',initvals))))))))
-|#
+
+||#
+

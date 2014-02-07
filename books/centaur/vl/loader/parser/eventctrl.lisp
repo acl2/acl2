@@ -19,16 +19,15 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "parse-delays")
+(include-book "delays")
 (local (include-book "../../util/arithmetic"))
-
 
 
 ; delay_control ::=
 ;    '#' delay_value
 ;  | '#' '(' mintypmax_expression ')'
 
-(defparser vl-parse-delay-control (tokens warnings)
+(defparser vl-parse-delay-control ()
   :result (vl-delaycontrol-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -44,8 +43,6 @@
         (return (vl-delaycontrol ret))))
 
 
-
-
 ; event_expression ::=
 ;    expression
 ;  | 'posedge' expression
@@ -53,7 +50,7 @@
 ;  | event_expression 'or' event_expression
 ;  | event_expression ',' event_expression
 
-(defparser vl-parse-event-expression (tokens warnings)
+(defparser vl-parse-event-expression ()
   ;; Matches "1 or more evatoms"
   :result (vl-evatomlist-p val)
   :resultp-of-nil t
@@ -78,14 +75,13 @@
                  rest)))))
 
 
-
 ; event_control ::=
 ;    '@' hierarchial_identifier
 ;  | '@' '(' event_expression ')'
 ;  | '@' '*'
 ;  | '@' '(' '*' ')'
 
-(defparser vl-parse-event-control (tokens warnings)
+(defparser vl-parse-event-control ()
   :result (vl-eventcontrol-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -106,7 +102,7 @@
           (return (vl-eventcontrol t nil)))
 
         (unless (vl-is-token? :vl-lparen)
-          (hid := (vl-parse-hierarchial-identifier nil tokens))
+          (hid := (vl-parse-hierarchial-identifier nil))
           (return (vl-eventcontrol nil (list (vl-evatom :vl-noedge hid)))))
 
         (:= (vl-match-token :vl-lparen))
@@ -136,7 +132,7 @@
 (encapsulate
  ()
  (local (in-theory (disable vl-delayoreventcontrol-p-when-vl-maybe-delayoreventcontrol-p)))
- (defparser vl-parse-delay-or-event-control (tokens warnings)
+ (defparser vl-parse-delay-or-event-control ()
    :result (vl-delayoreventcontrol-p val)
    :resultp-of-nil nil
    :fails gracefully
@@ -154,103 +150,3 @@
          (:= (vl-match-token :vl-rparen))
          (ctrl := (vl-parse-event-control))
          (return (vl-repeateventcontrol expr ctrl)))))
-
-
-(local
- (encapsulate
-  ()
-  (local (include-book "../lexer/lexer"))
-
-  (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (make-test-tokens "@(foo or bar or baz)")
-                                                  'blah-warnings)))
-               (and (not err)
-                    (not tokens)
-                    (equal warnings 'blah-warnings)
-                    (equal val (make-vl-eventcontrol
-                                :starp nil
-                                :atoms
-                                (list (make-vl-evatom :type :vl-noedge
-                                                      :expr (make-vl-atom :guts (vl-id "foo")))
-                                      (make-vl-evatom :type :vl-noedge
-                                                      :expr (make-vl-atom :guts (vl-id "bar")))
-                                      (make-vl-evatom :type :vl-noedge
-                                                      :expr (make-vl-atom :guts (vl-id "baz")))))))))
-
-  (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (make-test-tokens "@(posedge foo)")
-                                                  'blah-warnings)))
-               (and (not err)
-                    (not tokens)
-                    (equal warnings 'blah-warnings)
-                    (equal val (make-vl-eventcontrol
-                                :starp nil
-                                :atoms (list (make-vl-evatom :type :vl-posedge
-                                                             :expr (make-vl-atom :guts (vl-id "foo")))))))))
-
-  (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (make-test-tokens "@(negedge foo)")
-                                                  'blah-warnings)))
-               (and (not err)
-                    (not tokens)
-                    (equal warnings 'blah-warnings)
-                    (equal val (make-vl-eventcontrol
-                                :starp nil
-                                :atoms (list (make-vl-evatom :type :vl-negedge
-                                                             :expr (make-vl-atom :guts (vl-id "foo")))))))))
-
-  (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (make-test-tokens "@*")
-                                                  'blah-warnings)))
-               (and (not err)
-                    (not tokens)
-                    (equal warnings 'blah-warnings)
-                    (equal val (make-vl-eventcontrol
-                                :starp t
-                                :atoms nil)))))
-
-
-  (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (make-test-tokens "@(*)")
-                                                  'blah-warnings)))
-               (and (not err)
-                    (not tokens)
-                    (equal warnings 'blah-warnings)
-                    (equal val (make-vl-eventcontrol
-                                :starp t
-                                :atoms nil)))))
-
-  (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (make-test-tokens "@( *)")
-                                                  'blah-warnings)))
-               (and (not err)
-                    (not tokens)
-                    (equal warnings 'blah-warnings)
-                    (equal val (make-vl-eventcontrol
-                                :starp t
-                                :atoms nil)))))
-
-  (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (make-test-tokens "@(* )")
-                                                  'blah-warnings)))
-               (and (not err)
-                    (not tokens)
-                    (equal warnings 'blah-warnings)
-                    (equal val (make-vl-eventcontrol
-                                :starp t
-                                :atoms nil)))))
-
-  (assert! (b* (((mv err val tokens warnings)
-                 (vl-parse-delay-or-event-control (make-test-tokens "@( * )")
-                                                  'blah-warnings)))
-               (and (not err)
-                    (not tokens)
-                    (equal warnings 'blah-warnings)
-                    (equal val (make-vl-eventcontrol
-                                :starp t
-                                :atoms nil)))))))
-
-
-
-
-

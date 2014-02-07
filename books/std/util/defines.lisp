@@ -269,7 +269,7 @@ its flag in the flag-function.</p>
      )
    *defines-xargs-keywords*))
 
-(defun parse-defines (ctx forms world)
+(defun parse-defines (ctx forms extra-keywords world)
   ;; Returns guts list
   (b* (((when (atom forms))
         nil)
@@ -280,8 +280,8 @@ its flag in the flag-function.</p>
         (er hard? ctx "Expected a list of ~s0 forms, but found ~x1."
             'define (car forms)))
        ((cons name args) (cdr form1))
-       (guts1 (parse-define name args world)))
-    (cons guts1 (parse-defines ctx (cdr forms) world))))
+       (guts1 (parse-define name args extra-keywords world)))
+    (cons guts1 (parse-defines ctx (cdr forms) extra-keywords world))))
 
 (defun collect-prepworks (gutslist)
   (if (atom gutslist)
@@ -557,7 +557,7 @@ its flag in the flag-function.</p>
        ((mv main-stuff rest-events) (split-/// name args))
        ((mv kwd-alist defs)
         (extract-keywords name *defines-keywords* main-stuff nil))
-       (gutslist (parse-defines name defs world))
+       (gutslist (parse-defines name defs '(:flag) world))
 
        ((unless (consp (cdr gutslist)))
         (raise "Error in ~x0: expected more than one function." name))

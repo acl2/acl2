@@ -74,6 +74,7 @@
 
 (include-book "loader/lexer/tests")
 (include-book "loader/preprocessor/tests")
+(include-book "loader/parser/tests/top")
 
 ||#
 

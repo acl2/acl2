@@ -383,7 +383,7 @@ our internal representation of Verilog.</li>
                :mintime config.mintime))
 
        ((mv successp mods warnings)
-        (time$ (vl-parse cleaned warnings)
+        (time$ (vl-parse cleaned warnings config)
                :msg "; ~s0: parse: ~st sec, ~sa bytes~%"
                :args (list filename)
                :mintime config.mintime))

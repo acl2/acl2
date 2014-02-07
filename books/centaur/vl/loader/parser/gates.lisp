@@ -19,10 +19,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "parse-strengths")
-(include-book "parse-delays")
-(include-book "parse-ranges")
-(include-book "parse-lvalues")
+(include-book "strengths")
+(include-book "delays")
+(include-book "ranges")
+(include-book "lvalues")
 (include-book "../../mlib/expr-tools")
 (local (include-book "../../util/arithmetic"))
 
@@ -166,7 +166,7 @@
 
 ; name_of_gate_instance ::= identifier [ range ]
 
-(defparser vl-parse-optional-name-of-gate-instance (tokens warnings)
+(defparser vl-parse-optional-name-of-gate-instance ()
   :result (and (consp val)
                (maybe-stringp (car val)) ;; the name
                (vl-maybe-range-p (cdr val))) ;; the range
@@ -195,7 +195,7 @@
 ; cmos_switch_instance ::=
 ;    [name_of_gate_instance] '(' lvalue ',' expression ',' expression ',' expression ')'
 
-(defparser vl-parse-cmos-switch-instance (tokens warnings)
+(defparser vl-parse-cmos-switch-instance ()
   :result (vl-gatebldr-tuple-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -213,7 +213,7 @@
         (rparen := (vl-match-token :vl-rparen))
         (return (list name range (list arg1 arg2 arg3 arg4)))))
 
-(defparser vl-parse-cmos-switch-instances-list (tokens warnings)
+(defparser vl-parse-cmos-switch-instances-list ()
   ;; Matches cmos_switch_instance { ',' cmos_switch_instance }
   :result (vl-gatebldr-tuple-list-p val)
   :resultp-of-nil t
@@ -230,7 +230,7 @@
 (defconst *vl-cmos-switchtype-type-kwds*
   (strip-cars *vl-cmos-switchtype-alist*))
 
-(defparser vl-parse-cmos-gate-instantiation (atts tokens warnings)
+(defparser vl-parse-cmos-gate-instantiation (atts)
   :guard (vl-atts-p atts)
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
@@ -266,7 +266,7 @@
 ;
 ; Since these instances are the same, we handle them together.
 
-(defparser vl-parse-enable-or-mos-instance (tokens warnings)
+(defparser vl-parse-enable-or-mos-instance ()
   :result (vl-gatebldr-tuple-p val)
   :resultp-of-nil nil
   :true-listp t
@@ -283,7 +283,7 @@
         (rparen := (vl-match-token :vl-rparen))
         (return (list name range (list arg1 arg2 arg3)))))
 
-(defparser vl-parse-enable-or-mos-instances-list (tokens warnings)
+(defparser vl-parse-enable-or-mos-instances-list ()
   ;; Matches enable_gate_instance { ',' enable_gate_instance }
   :result (vl-gatebldr-tuple-list-p val)
   :resultp-of-nil t
@@ -299,7 +299,7 @@
 
 (defconst *vl-enable-gatetype-type-kwds* (strip-cars *vl-enable-gatetype-alist*))
 
-(defparser vl-parse-enable-gate-instantiation (atts tokens warnings)
+(defparser vl-parse-enable-gate-instantiation (atts)
   :guard (vl-atts-p atts)
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
@@ -320,7 +320,7 @@
 
 (defconst *vl-mos-switchtype-type-kwds* (strip-cars *vl-mos-switchtype-alist*))
 
-(defparser vl-parse-mos-gate-instantiation (atts tokens warnings)
+(defparser vl-parse-mos-gate-instantiation (atts)
   :guard (vl-atts-p atts)
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
@@ -350,7 +350,7 @@
 ; n_input_gate_instance ::=
 ;    [name_of_gate_instance] '(' lvalue ',' expression { ',' expression } ')'
 
-(defparser vl-parse-n-input-gate-instance (tokens warnings)
+(defparser vl-parse-n-input-gate-instance ()
   :result (vl-gatebldr-tuple-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -364,7 +364,7 @@
         (rparen := (vl-match-token :vl-rparen))
         (return (list name range (cons arg1 others)))))
 
-(defparser vl-parse-n-input-gate-instances-list (tokens warnings)
+(defparser vl-parse-n-input-gate-instances-list ()
   ;; Matches n_input_gate_instance { ',' n_input_gate_instance }
   :result (vl-gatebldr-tuple-list-p val)
   :resultp-of-nil t
@@ -380,7 +380,7 @@
 
 (defconst *vl-n-input-gatetype-type-kwds* (strip-cars *vl-n-input-gatetype-alist*))
 
-(defparser vl-parse-n-input-gate-instantiation (atts tokens warnings)
+(defparser vl-parse-n-input-gate-instantiation (atts)
   :guard (vl-atts-p atts)
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
@@ -437,7 +437,7 @@
 ; Now we are sure to check that we always arrive at a comma or rparen after
 ; eating an lvalue, and always eat the comma.
 
-(defparser vl-parse-0+-lvalues-separated-by-commas (tokens warnings)
+(defparser vl-parse-0+-lvalues-separated-by-commas ()
   ;; Uses backtracking to stop; eats as many lvalues, separated by commas, as
   ;; it can find, and returns them as a list.
   :result (vl-exprlist-p val)
@@ -452,12 +452,14 @@
         ;; you tried.
         (mv nil nil tokens warnings))
 
-       ((unless (mbt (< (acl2-count explore) (acl2-count tokens))))
+       ((unless (mbt (< (len explore) (len tokens))))
         (er hard? 'vl-parse-0+-lvalues-separated-by-commas "termination failure")
         (vl-parse-error "termination failure"))
 
-       ((unless (or (vl-is-token? :vl-comma explore)
-                    (vl-is-token? :vl-rparen explore)))
+       ((unless (or (vl-is-token? :vl-comma
+                                  :tokens explore)
+                    (vl-is-token? :vl-rparen
+                                  :tokens explore)))
         ;; Very subtle.  We just ate an lvalue, but something is wrong because
         ;; we should have gotten to a comma or a right-paren.  Probably what has
         ;; happened is we have just eaten part of an expression that looks like
@@ -478,7 +480,7 @@
           (rest := (vl-parse-0+-lvalues-separated-by-commas))
           (return (cons first rest)))))
 
-(defparser vl-parse-n-output-gate-instance (tokens warnings)
+(defparser vl-parse-n-output-gate-instance ()
   :result (vl-gatebldr-tuple-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -509,7 +511,7 @@
 ;(vl-parse-n-output-gate-instance (make-test-tokens "my_buf (foo, ~bar)") nil)
 
 
-(defparser vl-parse-n-output-gate-instances-list (tokens warnings)
+(defparser vl-parse-n-output-gate-instances-list ()
   ;; Matches n_output_gate_instance { ',' n_output_gate_instance }
   :result (vl-gatebldr-tuple-list-p val)
   :resultp-of-nil t
@@ -525,7 +527,7 @@
 
 (defconst *vl-n-output-gatetype-type-kwds* (strip-cars *vl-n-output-gatetype-alist*))
 
-(defparser vl-parse-n-output-gate-instantiation (atts tokens warnings)
+(defparser vl-parse-n-output-gate-instantiation (atts)
   :guard (vl-atts-p atts)
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
@@ -556,7 +558,7 @@
 ; pass_enable_switch_instance ::=
 ;    [name_of_gate_instance] '(' lvalue ',' lvalue ',' expression ')'
 
-(defparser vl-parse-pass-enable-switch-instance (tokens warnings)
+(defparser vl-parse-pass-enable-switch-instance ()
   :result (vl-gatebldr-tuple-p val)
   :resultp-of-nil nil
   :true-listp t
@@ -573,7 +575,7 @@
         (rparen := (vl-match-token :vl-rparen))
         (return (list name range (list arg1 arg2 arg3)))))
 
-(defparser vl-parse-pass-enable-switch-instances-list (tokens warnings)
+(defparser vl-parse-pass-enable-switch-instances-list ()
   ;; Matches pass_switch_instnace { ',' pass_switch_instance }
   :result (vl-gatebldr-tuple-list-p val)
   :resultp-of-nil t
@@ -589,7 +591,7 @@
 
 (defconst *vl-pass-en-switchtype-type-kwds* (strip-cars *vl-pass-en-switchtype-alist*))
 
-(defparser vl-parse-pass-en-gate-instantiation (atts tokens warnings)
+(defparser vl-parse-pass-en-gate-instantiation (atts)
   :guard (vl-atts-p atts)
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
@@ -621,7 +623,7 @@
 ; pass_switch_instance ::=
 ;    [name_of_gate_instance] '(' lvalue ',' lvalue ')'
 
-(defparser vl-parse-pass-switch-instance (tokens warnings)
+(defparser vl-parse-pass-switch-instance ()
   :result (vl-gatebldr-tuple-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -635,7 +637,7 @@
         (rparen := (vl-match-token :vl-rparen))
         (return (list name range (list arg1 arg2)))))
 
-(defparser vl-parse-pass-switch-instances-list (tokens warnings)
+(defparser vl-parse-pass-switch-instances-list ()
   ;; Matches pass_switch_instance { ',' pass_switch_instance }
   :result (vl-gatebldr-tuple-list-p val)
   :resultp-of-nil t
@@ -651,7 +653,7 @@
 
 (defconst *vl-pass-switchtype-type-kwds* (strip-cars *vl-pass-switchtype-alist*))
 
-(defparser vl-parse-pass-gate-instantiation (atts tokens warnings)
+(defparser vl-parse-pass-gate-instantiation (atts)
   :guard (vl-atts-p atts)
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
@@ -714,13 +716,13 @@
   ;; Used in certain older-style proofs, such as vl-parse-pull-strength
   (implies (not (member-eq nil types))
            (iff (member-eq (vl-type-of-matched-token types tokens) types)
-                (vl-is-some-token? types tokens)))
+                (vl-is-some-token? types :tokens tokens)))
   :hints(("Goal" :in-theory (enable vl-type-of-matched-token
                                     vl-is-some-token?))))
 
 (with-output
   :gag-mode :goals
-  (defparser vl-parse-pull-strength (downp tokens warnings)
+  (defparser vl-parse-pull-strength (downp)
     :guard (booleanp downp)
     :result (vl-gatestrength-p val)
     :resultp-of-nil nil
@@ -732,9 +734,11 @@
             (:= (vl-match-token :vl-lparen))
 
             ;; (strength0, strength1)
-            (when (and (vl-is-some-token? strength0s tokens)
-                       (vl-is-token? :vl-comma (cdr tokens))
-                       (vl-is-some-token? strength1s (cddr tokens)))
+            (when (and (vl-is-some-token? strength0s)
+                       (vl-is-token? :vl-comma
+                                     :tokens (cdr tokens))
+                       (vl-is-some-token? strength1s
+                                          :tokens (cddr tokens)))
               (strength0 := (vl-match-some-token strength0s))
               (:= (vl-match-token :vl-comma))
               (strength1 := (vl-match-some-token strength1s))
@@ -744,9 +748,11 @@
                        :one (vl-strength1-lookup (vl-token->type strength1)))))
 
             ;; (strength1, strength0)
-            (when (and (vl-is-some-token? strength1s tokens)
-                       (vl-is-token? :vl-comma (cdr tokens))
-                       (vl-is-some-token? strength0s (cddr tokens)))
+            (when (and (vl-is-some-token? strength1s)
+                       (vl-is-token? :vl-comma
+                                     :tokens (cdr tokens))
+                       (vl-is-some-token? strength0s
+                                          :tokens (cddr tokens)))
               (strength1 := (vl-match-some-token strength1s))
               (:= (vl-match-token :vl-comma))
               (strength0 := (vl-match-some-token strength0s))
@@ -769,19 +775,19 @@
                        :zero :vl-strong
                        :one (vl-strength1-lookup (vl-token->type str)))))))))
 
-(defparser vl-parse-optional-pull-strength (downp tokens warnings)
+(defparser vl-parse-optional-pull-strength (downp)
   :guard (booleanp downp)
   :result (vl-maybe-gatestrength-p val)
   :resultp-of-nil t
   :fails never
   :count strong-on-value
   (mv-let (erp val explore new-warnings)
-          (vl-parse-pull-strength downp tokens warnings)
+          (vl-parse-pull-strength downp)
           (if erp
               (mv nil nil tokens warnings)
             (mv nil val explore new-warnings))))
 
-(defparser vl-parse-pull-gate-instance (tokens warnings)
+(defparser vl-parse-pull-gate-instance ()
   :result (vl-gatebldr-tuple-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -793,7 +799,7 @@
        (rparen := (vl-match-token :vl-rparen))
        (return (list name range (list arg1)))))
 
-(defparser vl-parse-pull-gate-instances-list (tokens warnings)
+(defparser vl-parse-pull-gate-instances-list ()
   ;; Matches pass_switch_instance { ',' pass_switch_instance }
   :result (vl-gatebldr-tuple-list-p val)
   :resultp-of-nil t
@@ -809,7 +815,7 @@
 
 (defconst *vl-pull-gate-type-kwds* (strip-cars *vl-pull-gate-alist*))
 
-(defparser vl-parse-pull-gate-instantiation (atts tokens warnings)
+(defparser vl-parse-pull-gate-instantiation (atts)
   :guard (vl-atts-p atts)
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
@@ -827,7 +833,7 @@
                   (vl-build-gate-instances (vl-token->loc typekwd)
                                            tuples type strength nil atts)))))
 
-(defparser vl-parse-gate-instantiation (atts tokens warnings)
+(defparser vl-parse-gate-instantiation (atts)
   :guard (vl-atts-p atts)
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t

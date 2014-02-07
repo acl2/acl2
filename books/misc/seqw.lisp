@@ -81,8 +81,8 @@
                       (cond (!!!error
                              (mv !!!error !!!val ,stream ,warnings))
                             ((not (mbt (,(case (car x) (:s= '<) (:w= '<=))
-                                        (acl2-count ,stream)
-                                        (acl2-count !!!stream))))
+                                        (len ,stream)
+                                        (len !!!stream))))
                              (prog2$ (er hard? "SEQW count failed for (~x0 ~x1.)~%"
                                          ',(car x) ',action)
                                      (mv "SEQW count failure." nil !!!stream ,warnings)))
@@ -114,8 +114,8 @@
                              (cond (!!!error
                                     (mv !!!error ,nametree ,stream ,warnings))
                                    ((not (mbt (,(case type (:s= '<) (:w= '<=))
-                                               (acl2-count ,stream)
-                                               (acl2-count !!!stream))))
+                                               (len ,stream)
+                                               (len !!!stream))))
                                     (prog2$ (er hard? "SEQW count failed for (~x0 ~x1 ~x2.)~%"
                                                 ',nametree ',type ',action)
                                             (mv "SEQW count failure." nil !!!stream ,warnings)))
@@ -141,8 +141,8 @@
                            (cond (!!!error
                                   (mv !!!error !!!val ,stream ,warnings))
                                  ((not (mbt (,(case type (:s= '<) (:w= '<=))
-                                             (acl2-count ,stream)
-                                             (acl2-count !!!stream))))
+                                             (len ,stream)
+                                             (len !!!stream))))
                                   (prog2$ (er hard?  "SEQW count failed for (~x0 ~x1 ~x2.)~%"
                                               ',nametree ',type ',action)
                                           (mv "SEQW count failure." nil !!!stream ,warnings)))
