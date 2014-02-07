@@ -268,44 +268,73 @@ sub parse_max_mem_arg
     return $ret;
 }
 
-sub scan_for_set_max_mem
+sub scan_source_file
 {
     my $filename = shift;
-
+    my $max_mem = 0;
+    my $max_time = 0;
+    my @includes = ();
     open(my $fd, "<", $filename) or die("Can't open $filename: $!\n");
     while(<$fd>) {
 	my $line = $_;
 	chomp($line);
-	if ($line =~ m/^[^;]*\((acl2::)?set-max-mem (.*)\)/)
+	if ($line =~ m/^[^;]*\((?:acl2::)?set-max-mem (.*)\)/)
 	{
-	    my $gb = parse_max_mem_arg($2);
-	    close $fd;
-	    return $gb;
+	    $max_mem = parse_max_mem_arg($1);
+	}
+	elsif ($line =~ m/^[^;]*\((?:acl2::)?set-max-time ([0-9]*)\)/)
+	{
+	    $max_time = $1;
+	}
+	elsif ($line =~ m/^[^;]*\((?:acl2::)?include-book[\s]*"([^"]*)"(?:.*:dir[\s]*:([^\s)]*))?/i)
+	{
+	    push (@includes, [$1, $2]);
 	}
     }
-    close $fd;
+    close($fd);
 
-    return 0;
+     return ( $max_mem, $max_time, \@includes );
 }
 
-sub scan_for_set_max_time
-{
-    my $filename = shift;
 
-    open(my $fd, "<", $filename) or die("Can't open $filename: $!\n");
-    while(<$fd>) {
-	my $line = $_;
-	chomp($line);
-	if ($line =~ m/^[^;]*\((acl2::)?set-max-time ([0-9]*)\)/)
-	{
-	    my $minutes = $2;
-	    close $fd;
-	    return $minutes;
-	}
-    }
-    close $fd;
-    return 0;
-}
+# sub scan_for_set_max_mem
+# {
+#     my $filename = shift;
+
+#     open(my $fd, "<", $filename) or die("Can't open $filename: $!\n");
+#     while(<$fd>) {
+# 	my $line = $_;
+# 	chomp($line);
+# 	if ($line =~ m/^[^;]*\((acl2::)?set-max-mem (.*)\)/)
+# 	{
+# 	    my $gb = parse_max_mem_arg($2);
+# 	    close $fd;
+# 	    return $gb;
+# 	}
+#     }
+#     close $fd;
+
+#     return 0;
+# }
+
+# sub scan_for_set_max_time
+# {
+#     my $filename = shift;
+
+#     open(my $fd, "<", $filename) or die("Can't open $filename: $!\n");
+#     while(<$fd>) {
+# 	my $line = $_;
+# 	chomp($line);
+# 	if ($line =~ m/^[^;]*\((acl2::)?set-max-time ([0-9]*)\)/)
+# 	{
+# 	    my $minutes = $2;
+# 	    close $fd;
+# 	    return $minutes;
+# 	}
+#     }
+#     close $fd;
+#     return 0;
+# }
 
 sub parse_certify_flags
 {
@@ -464,6 +493,10 @@ $instrs .= "(set-write-acl2x '(t) state)\n" if ($STEP eq "acl2xskip");
 $instrs .= "$INHIBIT\n" if ($INHIBIT);
 $instrs .= "\n";
 
+# --- Scan the source file for includes (to collect the portculli) and resource limits ----
+my ($max_mem, $max_time, $includes) = scan_source_file("$file.lisp");
+$max_mem = $max_mem ? ($max_mem + 3) : 4;
+$max_time = $max_time || 240;
 
 # Get the certification instructions from foo.acl2 or cert.acl2, if either
 # exists, or make a generic certify-book command.
@@ -477,10 +510,20 @@ my $usercmds = $acl2file ? read_file_except_certify($acl2file) : "";
 $instrs .= "(acl2::assign acl2::get-internal-time-as-realtime acl2::t)\n";
 
 $instrs .= "; instructions from .acl2 file $acl2file:\n";
-$instrs .= "$usercmds\n";
+$instrs .= "$usercmds\n\n";
+
+$instrs .= "; portculli for included books:\n";
+foreach my $pair (@$includes) {
+    my ($incname, $incdir) = @$pair;
+    if ($incdir) {
+	$instrs .= "(acl2::ld \"$incname.port\" :dir :$incdir :ld-missing-input-ok t)\n"; 
+    } else {
+	$instrs .= "(acl2::ld \"$incname.port\" :ld-missing-input-ok t)\n"; 
+    }
+}
 
 my $cert_flags = parse_certify_flags($acl2file, $usercmds);
-$instrs .= "; certify-book command flags: $cert_flags\n";
+$instrs .= "\n; certify-book command flags: $cert_flags\n";
 
 my $cert_cmd = "#!ACL2 (er-progn (time\$ (certify-book \"$file\" $cert_flags $PCERT $ACL2X))
                                  (value (prog2\$ #+acl2-hons (memsum)
@@ -507,12 +550,9 @@ write_whole_file($lisptmp, $instrs);
 
 # If we find a set-max-mem line, add 3 gigs of padding for the stacks and to
 # allow the lisp to have some room to go over.  Default to 4 gigs.
-    my $max_mem = scan_for_set_max_mem("$file.lisp");
-    $max_mem = $max_mem ? ($max_mem + 3) : 4;
 
 # If we find a set-max-time line, honor it directly; otherwise default to
 # 240 minutes.
-    my $max_time = scan_for_set_max_time("$file.lisp") || 240;
 
     print "-- Resource limits: $max_mem gigabytes, $max_time minutes.\n\n" if $DEBUG;
 
@@ -541,6 +581,7 @@ write_whole_file($lisptmp, $instrs);
 
     $shinsts .= "echo ACL2_SYSTEM_BOOKS: \${ACL2_SYSTEM_BOOKS} >> $outfile\n";
 
+    $shinsts .= "export ACL2_WRITE_PORT=t\n";
     if ($TIME_CERT) {
 	$shinsts .= "(time (($acl2 < $lisptmp 2>&1) >> $outfile)) 2> $timefile\n";
     }
