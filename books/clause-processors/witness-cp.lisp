@@ -1976,7 +1976,8 @@ additional keywords:
                                                   world)))
         (example-templates1 (remove-dups-assoc example-templates1))
         ((mv instance-rules1 &)
-         (look-up-wcp-witness-rules (instance-rules-for-examples example-templates1)
+         (look-up-wcp-witness-rules (instance-rules-for-examples
+                                     (strip-cdrs example-templates1))
                                 (table-alist 'witness-cp-instance-rules
                                              world)))
         ((mv instance-rules2 &)
