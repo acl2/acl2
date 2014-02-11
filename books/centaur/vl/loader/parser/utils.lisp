@@ -224,6 +224,11 @@ frequently.</p>")
        (true-listp     (cdr (extract-keyword-from-args :true-listp args)))
        (fails          (cdr (extract-keyword-from-args :fails args)))
        (guard          (extract-keyword-from-args :guard args))
+
+       (parents        (extract-keyword-from-args :parents args))
+       (short          (extract-keyword-from-args :short args))
+       (long           (extract-keyword-from-args :long args))
+
        (measure        (or (cdr (extract-keyword-from-args :measure args))
                            '(len tokens)))
        (hint-chicken-switch (cdr (extract-keyword-from-args
@@ -245,6 +250,9 @@ frequently.</p>")
                     (value)
                     (tokens)
                     (warnings))
+       ,@(and parents       `(:parents ,(cdr parents)))
+       ,@(and short         `(:short ,(cdr short)))
+       ,@(and long          `(:long ,(cdr long)))
        ,@(and guard         `(:guard ,(cdr guard)))
        ,@(and verify-guards `(:verify-guards ,(cdr verify-guards)))
        :measure ,measure
@@ -440,6 +448,15 @@ frequently.</p>")
   (b* (((when (atom forms))
         nil)
        (form1 (car forms))
+       ((when (eq form1 '///))
+        ;; Pass any /// part transparently through to DEFINES
+        forms)
+       ((when (and (keywordp form1)
+                   (consp (cdr forms))))
+        ;; Pass any :key val pairs transparently through to DEFINES
+        (list* form1
+               (second forms)
+               (expand-defparsers (rest-n 2 forms))))
        ((unless (and (< 3 (len form1))
                      (equal (first form1) 'defparser)))
         (raise "Expected defparser forms, but found ~x0." form1))

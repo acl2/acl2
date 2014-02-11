@@ -70,6 +70,7 @@ traditional functions with no such requirement, e.g.,:</p>
          valp-of-nil       ; :unknown by default
          true-listp        ; nil by default
          mode              ; current defun-mode by default
+         already-definedp  ; nil by default
          parents           ; nil by default
          short             ; nil by default
          long              ; nil by default
@@ -121,6 +122,11 @@ used when @('(key-recognizer nil ...)') (similarly @('(val-recognzier nil
 ...)')) is always known to be @('t') or @('nil').  When it is provided,
 @('defalist') can generate slightly better theorems.</p>
 
+<p>The optional @(':already-definedp') keyword can be set if you have already
+defined the function.  This can be used to generate all of the ordinary
+@('defalist') theorems without generating a @('defund') event, and is useful
+when you are dealing with mutually recursive recognizers.</p>
+
 <p>The optional @(':mode') keyword can be set to @(':program') to introduce the
 recognizer in program mode.  In this case, no theorems are introduced.</p>
 
@@ -134,6 +140,7 @@ to override it.</p>")
 (defun defalist-fn (name formals key val
                          guard verify-guards
                          keyp-of-nil valp-of-nil
+                         already-definedp
                          mode parents short long true-listp)
   (declare (xargs :mode :program))
   (b* (((unless (symbolp name))
@@ -198,6 +205,11 @@ to override it.</p>")
         (er hard 'defalist
             ":mode must be one of :logic or :program, but is ~x0." mode))
 
+       ((unless (or (eq mode :logic)
+                    (not already-definedp)))
+        (er hard 'defalist
+            ":mode :program and already-definedp cannot be used together."))
+
        (short (or short
                   (and parents
                        (str::cat "@(call " (symbol-package-name
@@ -216,30 +228,32 @@ valp) ")."))))
                 `((defxdoc ,name :parents ,parents :short ,short :long ,long))
               nil))
 
-       (def `(defund ,name (,@formals)
-               (declare (xargs :guard ,guard
-                               :verify-guards ,verify-guards
-                               :mode ,mode
-                               ;; We tell ACL2 not to normalize because
-                               ;; otherwise type reasoning can rewrite the
-                               ;; definition, and ruin some of our theorems
-                               ;; below, e.g., when KEYP is known to always be
-                               ;; true.
-                               :normalize nil
-                               ))
-               (if (consp ,x)
-                   (and (consp (car ,x))
-                        (,keyp ,@(subst `(caar ,x) x key-formals))
-                        (,valp ,@(subst `(cdar ,x) x val-formals))
-                        (,name ,@(subst `(cdr ,x) x formals)))
-                 ,(if true-listp
+       (def (if already-definedp
+                nil
+              `((defund ,name (,@formals)
+                  (declare (xargs :guard ,guard
+                                  :verify-guards ,verify-guards
+                                  :mode ,mode
+                                  ;; We tell ACL2 not to normalize because
+                                  ;; otherwise type reasoning can rewrite the
+                                  ;; definition, and ruin some of our theorems
+                                  ;; below, e.g., when KEYP is known to always be
+                                  ;; true.
+                                  :normalize nil
+                                  ))
+                  (if (consp ,x)
+                      (and (consp (car ,x))
+                           (,keyp ,@(subst `(caar ,x) x key-formals))
+                           (,valp ,@(subst `(cdar ,x) x val-formals))
+                           (,name ,@(subst `(cdr ,x) x formals)))
+                    ,(if true-listp
                          `(null ,x)
-                       t))))
+                       t))))))
 
        ((when (eq mode :program))
         `(progn
            ,@doc
-           ,def)))
+           ,@def)))
 
     `(encapsulate
        ()
@@ -320,7 +334,7 @@ valp) ")."))))
                                                name '-val-lemma))))))
           ))
 
-       ,def
+       ,@def
 
        (local (in-theory (theory 'minimal-theory)))
        (local (in-theory (disable (:executable-counterpart tau-system))))
@@ -457,7 +471,9 @@ valp) ")."))))
          :hints(("Goal"
                  :induct (len ,x)
                  :in-theory (enable subsetp-equal)
-                 :expand ((,name ,@formals)
+                 :expand (;; No, don't expand name directly, it doesn't work if we're
+                          ;; doing an already-definedp defalist that has a different
+                          ;; definition. (,name ,@formals)
                           (true-listp ,x)))))
 
        ,@(and (not true-listp)
@@ -522,7 +538,9 @@ valp) ")."))))
                                 (t ;; keyp-of-nil is :unknown
                                  `(or (consp ,x)
                                       (,valp ,@(subst nil x val-formals)))))))
-         :hints(("Goal" :expand (,name ,@formals))))
+         ;; No, don't expand, it doesn't work in the already-definedp case.
+         ;; :hints(("Goal" :expand (,name ,@formals)))
+         )
 
        (defthm ,(mksym name '-of-cdr-when- name)
          (implies (,name ,@formals)
@@ -725,6 +743,7 @@ valp) ")."))))
                          (verify-guards 't)
                          (keyp-of-nil ':unknown)
                          (valp-of-nil ':unknown)
+                         already-definedp
                          mode
                          (parents 'nil parents-p)
                          (short 'nil)
@@ -738,6 +757,7 @@ valp) ")."))))
                  (defalist-fn ',name ',formals ',key ',val
                    ',guard ',verify-guards
                    ',keyp-of-nil ',valp-of-nil
+                   ',already-definedp
                    mode
                    parents ',short ',long ',true-listp))))
 

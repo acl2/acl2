@@ -310,65 +310,100 @@ would we do?</p>"
     (change-vl-nonatom x :atts atts)))
 
 
+(defines has-any-atts-p
+  :flag nil
+  :parents (vl-parse-attr-spec)
 
-; We are now ready to introduce our parsing functions.
-;
-; Everything about expressions is mutually recursive, so this is complicated.
-; I have put the grammar rules in front of the functions that parse them, but
-; note that the productions found below are not exactly the same as those in
-; the Verilog-2005 standard:
-;
-;    1. I have removed any "bare aliases" which only served to complicate
-;       the grammar, such as "base_expression ::= expression" and
-;       "attr_name ::= identifier".
-;
-;    2. I do not support the notion of "constant expressions" -- I just use
-;       plain expressions instead.
+  (define vl-expr-has-any-atts-p ((x vl-expr-p))
+    :returns (bool booleanp :rule-classes :type-prescription)
+    :measure (vl-expr-count x)
+    (b* (((when (vl-fast-atom-p x))
+          nil)
+         ((vl-nonatom x) x))
+      (or (consp x.atts)
+          (vl-exprlist-has-any-atts-p x.args))))
+
+  (define vl-exprlist-has-any-atts-p ((x vl-exprlist-p))
+    :returns (bool booleanp :rule-classes :type-prescription)
+    :measure (vl-exprlist-count x)
+    (if (atom x)
+        nil
+      (or (vl-expr-has-any-atts-p (car x))
+          (vl-exprlist-has-any-atts-p (cdr x))))))
+
 
 (defparsers parse-expressions
+   :parents (parser)
+   :short "Parser for Verilog and SystemVerilog expressions."
 
-; attr_spec ::= identifier [ '=' expression ]
-;
-; attribute_instance ::= '(*' attr_spec { ',' attr_spec } '*)'
-;
-; We parse attributes_instance into a vl-atts-p, which is just an alist that
-; map names to expressions (or nil).  It's common for other grammar rules that
-; use attributes to write "{ attribute_instance }" --- that is, any number of
-; attribute_instances.  In this case, we merge the alists using append, so
-; that for instance
-;
-;    (* foo *) (* bar *)
-;
-; Is treated in just the same way as
-;
-;    (* foo bar *).
-;
-; Shadowed pairs are allowed to remain in the alist, so you can detect whether
-; an attribute has occurred multiple times, etc.
+  :long "<p>This is very complicated because everything about expressions is
+mutually recursive.  Most of the functions here correspond to particular
+productions in the grammars of the Verilog-2005 or SystemVerilog-2012.  A
+few high-level notes:</p>
+
+<ul>
+
+<li>The documentation for each function generally describes the grammar
+productions that are being implemented.</li>
+
+<li>We generally simplify the grammar rules by removing any bare \"aliases\"
+such as @('base_expression ::= expression') and @('attr_name ::=
+identifier').</li>
+
+<li>We do not try to implement any separation between \"ordinary\" expressions
+and \"constant\" expressions.  I think the whole treatment of constant
+expressions as a syntactic construct is somewhat misguided.  It is difficult to
+imagine truly handling constant expressions at parse time.  For instance, in a
+parameterized module with, say, a @('width') parameter, you really want to
+resolve expressions like @('width-1') into constants and treat them as constant
+indexes.  But you can't do this until you know the values for these parameters,
+which you don't know until you've read all the instances of the module,
+etc.</li>
+
+</ul>"
 
   (defparser vl-parse-attr-spec ()
+    :parents (vl-parse-0+-attribute-instances)
+    :short "Match a single @('attr_spec'), return a singleton @(see vl-atts-p)."
+    :long "<p>Verilog-2005 and SystemVerilog-2012 agree exactly about the
+definition of @('attr_spec'):</p>
+
+@({
+attr_spec ::= attr_name [ '=' constant_expression ]
+attr_name ::= identifier
+})"
     :measure (two-nats-measure (len tokens) 0)
     :verify-guards nil
-    (declare (xargs :hints(("Goal"
-                            :do-not '(generalize fertilize)
-                            :do-not-induct t))))
     (seqw tokens warnings
           (id := (vl-match-token :vl-idtoken))
           (when (vl-is-token? :vl-equalsign)
             (:= (vl-match-token :vl-equalsign))
             (expr := (vl-parse-expression)))
-          (return (cons (vl-idtoken->name id) expr))))
+          (when (and expr (vl-expr-has-any-atts-p expr))
+            (return-raw
+             (vl-parse-error "Nested attributes are illegal.")))
+          (return (list (cons (vl-idtoken->name id) expr)))))
 
   (defparser vl-parse-attribute-instance-aux ()
+    :parents (vl-parse-0+-attribute-instances)
+    :short "Match @(' attr_spec { ',' attr_spec' } '), return a @(see vl-atts-p)."
     :measure (two-nats-measure (len tokens) 1)
     (seqw tokens warnings
           (first :s= (vl-parse-attr-spec))
           (when (vl-is-token? :vl-comma)
             (:= (vl-match-token :vl-comma))
             (rest := (vl-parse-attribute-instance-aux)))
-          (return (cons first rest))))
+          (return (append first rest))))
 
   (defparser vl-parse-attribute-instance ()
+    :parents (vl-parse-0+-attribute-instances)
+    :short "Match (* ... *), return a @(see vl-atts-p)."
+    :long "<p>Verilog-2005 and SystemVerilog-2012 agree exactly about the
+definition of @('attribute_instance'):</p>
+
+@({
+    attribute_instance ::= '(*' attr_spec { ',' attr_spec } '*)'
+})"
     :measure (two-nats-measure (len tokens) 0)
     (seqw tokens warnings
           (:= (vl-match-token :vl-beginattr))
@@ -376,14 +411,80 @@ would we do?</p>"
           (:= (vl-match-token :vl-endattr))
           (return data)))
 
-  (defparser vl-parse-0+-attribute-instances ()
+  (defparser vl-parse-0+-attribute-instances-aux ()
+    :parents (vl-parse-0+-attribute-instances)
+    :short "Match @('{ attribute_instance }'), collecting all attributes in
+the order they were seen, without proper duplicity checking."
+    :long "<p>We convert each individual @('attribute_instance') into an
+@('vl-atts-p') alist, and then merge these together using @(see append), so
+that for instance:</p>
+
+@({
+    (* foo *) (* bar *)
+})
+
+<p>Is treated in just the same way as:</p>
+
+@({
+     (* foo, bar *)
+})"
     :measure (two-nats-measure (len tokens) 1)
     (seqw tokens warnings
           (when (not (vl-is-token? :vl-beginattr))
             (return nil))
           (first :s= (vl-parse-attribute-instance))
-          (rest := (vl-parse-0+-attribute-instances))
+          (rest := (vl-parse-0+-attribute-instances-aux))
           (return (append first rest))))
+
+  (defparser vl-parse-0+-attribute-instances ()
+    :short "Top level parser for @('{ attribute_instance }') with proper
+duplicity checking and warnings.  Returns a @(see vl-atts-p)."
+
+    :long "<p>This is a wrapper.  Almost all of the work is done by the aux
+function, @(see vl-parse-0+-attribute-instances-aux).  The aux function gathers
+up an @(see vl-atts-p) that has all the attributes in the order they were seen
+in.  For instance, it would produce:</p>
+
+@({
+       (* foo = 1 *)  (* bar = 2, foo = 2 *)
+          --->
+       (( \"foo\" . <1> )     ; Where <1> means, a proper vl-expr-p with
+        ( \"bar\" . <2> )     ; the number 1.
+        ( \"foo\" . <2> ))
+})
+
+<p>This isn't quite right.  We want any later attributes to shadow the previous
+attributes, and we want to warn about any attributes like \"foo\" that occur
+multiple times.  So, in this wrapper, we check for duplicates and issue
+warnings, and we fix up the alists to get unique keys bound to the right
+values.</p>"
+    :measure (two-nats-measure (len tokens) 2)
+    (seqw tokens warnings
+          (when (not (vl-is-token? :vl-beginattr))
+            ;; Stupid hack for performance.  Usually there are no attributes,
+            ;; so we don't need to do anything more.
+            (return nil))
+          (loc := (vl-current-loc))
+          (original-atts := (vl-parse-0+-attribute-instances-aux))
+          (return-raw
+           (b* ((atts
+                 ;; The original-atts are in the order seen.
+                 ;;  - Reversing them puts the later occurrences first, which
+                 ;;    is good because these are the occurrences we want to keep
+                 ;;  - Shrinking gets rid of any earlier occurrences, and also
+                 ;;    re-reverses the list so we get them in the right order.
+                 (fast-alist-free (hons-shrink-alist (rev original-atts) nil)))
+                (warnings
+                 (if (same-lengthp atts original-atts)
+                     ;; No dupes, nothing to warn about
+                     warnings
+                   (warn :type :vl-warn-shadowed-atts
+                         :msg "~l0: Found multiple occurrences of ~&1 in ~
+                               attributes.  Later occurrences take precedence."
+                         :args (list loc
+                                     (duplicated-members
+                                      (alist-keys original-atts)))))))
+             (mv nil atts tokens warnings)))))
 
 
 ; system_function_call ::=
@@ -1168,6 +1269,7 @@ would we do?</p>"
       ,(vl-val-when-error-claim vl-parse-attr-spec)
       ,(vl-val-when-error-claim vl-parse-attribute-instance-aux)
       ,(vl-val-when-error-claim vl-parse-attribute-instance)
+      ,(vl-val-when-error-claim vl-parse-0+-attribute-instances-aux)
       ,(vl-val-when-error-claim vl-parse-0+-attribute-instances)
       ,(vl-val-when-error-claim vl-parse-1+-expressions-separated-by-commas)
       ,(vl-val-when-error-claim vl-parse-system-function-call)
@@ -1223,6 +1325,7 @@ would we do?</p>"
      ,(vl-tokenlist-claim vl-parse-attr-spec)
      ,(vl-tokenlist-claim vl-parse-attribute-instance-aux)
      ,(vl-tokenlist-claim vl-parse-attribute-instance)
+     ,(vl-tokenlist-claim vl-parse-0+-attribute-instances-aux)
      ,(vl-tokenlist-claim vl-parse-0+-attribute-instances)
      ,(vl-tokenlist-claim vl-parse-1+-expressions-separated-by-commas)
      ,(vl-tokenlist-claim vl-parse-system-function-call)
@@ -1278,6 +1381,7 @@ would we do?</p>"
       ,(vl-warninglist-claim vl-parse-attr-spec)
       ,(vl-warninglist-claim vl-parse-attribute-instance-aux)
       ,(vl-warninglist-claim vl-parse-attribute-instance)
+      ,(vl-warninglist-claim vl-parse-0+-attribute-instances-aux)
       ,(vl-warninglist-claim vl-parse-0+-attribute-instances)
       ,(vl-warninglist-claim vl-parse-1+-expressions-separated-by-commas)
       ,(vl-warninglist-claim vl-parse-system-function-call)
@@ -1345,6 +1449,7 @@ would we do?</p>"
       ,(vl-progress-claim vl-parse-attr-spec)
       ,(vl-progress-claim vl-parse-attribute-instance-aux)
       ,(vl-progress-claim vl-parse-attribute-instance)
+      ,(vl-progress-claim vl-parse-0+-attribute-instances-aux :strongp nil)
       ,(vl-progress-claim vl-parse-0+-attribute-instances :strongp nil)
       ,(vl-progress-claim vl-parse-1+-expressions-separated-by-commas)
       ,(vl-progress-claim vl-parse-system-function-call)
@@ -1411,6 +1516,7 @@ would we do?</p>"
         ,(vl-eof-claim vl-parse-attr-spec :error)
         ,(vl-eof-claim vl-parse-attribute-instance-aux :error)
         ,(vl-eof-claim vl-parse-attribute-instance :error)
+        ,(vl-eof-claim vl-parse-0+-attribute-instances-aux nil)
         ,(vl-eof-claim vl-parse-0+-attribute-instances nil)
         ,(vl-eof-claim vl-parse-1+-expressions-separated-by-commas :error)
         ,(vl-eof-claim vl-parse-system-function-call :error)
@@ -1485,16 +1591,12 @@ would we do?</p>"
  (encapsulate
   ()
   (local (in-theory (enable vl-maybe-expr-p)))
-  ;(local (in-theory (disable stringp-when-maybe-stringp)))
   (make-event
    `(defthm-parse-expressions-flag vl-parse-expression-value
-      (vl-parse-attr-spec
-       (implies (force (not (mv-nth 0 (vl-parse-attr-spec))))
-                (and (consp (mv-nth 1 (vl-parse-attr-spec)))
-                     (stringp (car (mv-nth 1 (vl-parse-attr-spec))))
-                     (vl-maybe-expr-p (cdr (mv-nth 1 (vl-parse-attr-spec)))))))
+      ,(vl-expression-claim vl-parse-attr-spec :atts)
       ,(vl-expression-claim vl-parse-attribute-instance-aux :atts)
       ,(vl-expression-claim vl-parse-attribute-instance :atts)
+      ,(vl-expression-claim vl-parse-0+-attribute-instances-aux :atts)
       ,(vl-expression-claim vl-parse-0+-attribute-instances :atts)
       ,(vl-expression-claim vl-parse-1+-expressions-separated-by-commas :exprlist)
       ,(vl-expression-claim vl-parse-system-function-call :expr)
@@ -1538,6 +1640,10 @@ would we do?</p>"
                    acl2::clause
                    ',(flag::get-clique-members 'vl-parse-expression-fn (w state)))))))))
 
+
+(local (defthm true-listp-when-alistp
+         (implies (alistp x)
+                  (true-listp x))))
 
 (with-output
  :off prove :gag-mode :goals

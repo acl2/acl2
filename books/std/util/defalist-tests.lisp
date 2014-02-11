@@ -246,3 +246,51 @@
 
 
 ))
+
+
+
+; test of already-definedp
+
+; this is pretty subtle.  we make the actual definition slightly different than
+; the defalist definition.  originally, this didn't work because we were expanding
+; the definition in one lemma instead of using the -of-cons rule.
+
+(local (progn
+
+(in-theory (theory 'ground-zero))
+
+(defun maybe-natp (x)
+  (or (not x)
+      (natp x)))
+
+(defun my-alistp (x)
+  (if (atom x)
+      (not x)
+    (and (let ((elem (car x)))
+           (and (consp elem)
+                (stringp (car elem))
+                (or (not (cdr elem))
+                    (natp (cdr elem)))))
+         (my-alistp (cdr x)))))
+
+(defthm my-alistp-when-not-consp
+  (implies (not (consp x))
+           (equal (my-alistp x)
+                  (not x))))
+
+(defthm my-alistp-of-cons
+  (equal (my-alistp (cons a x))
+         (and (consp a)
+              (stringp (car a))
+              (maybe-natp (cdr a))
+              (my-alistp x))))
+
+(defalist my-alistp (x)
+  :key (stringp x)
+  :val (maybe-natp x)
+  :keyp-of-nil nil
+  :valp-of-nil t
+  :already-definedp t
+  :true-listp t)
+
+))

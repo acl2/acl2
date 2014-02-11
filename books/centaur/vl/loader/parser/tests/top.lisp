@@ -28,7 +28,7 @@
 (include-book "blockitems")
 (include-book "delays")
 (include-book "eventctrl")
-(include-book "exprs")
+(include-book "expressions")
 (include-book "functions")
 (include-book "insts")
 (include-book "nets")

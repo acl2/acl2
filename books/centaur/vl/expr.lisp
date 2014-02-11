@@ -1036,112 +1036,137 @@ is a @(see vl-maybe-exprtype-p).</p>"
            finaltype)))
 
 
+(define vl-maybe-expr-p (x)
+  :parents (syntax vl-expr-p)
+  :short "Representation for a @(see vl-expr-p) or @('nil')."
+  :long "<p>This is a basic option type for expressions.</p>"
+  :inline t
+  (or (not x)
+      (vl-expr-p x))
+  ///
+  (defthm vl-maybe-expr-p-when-vl-expr-p
+    (implies (vl-expr-p x)
+             (vl-maybe-expr-p x)))
+
+  (defthm vl-expr-p-when-vl-maybe-expr-p
+    (implies (vl-maybe-expr-p x)
+             (equal (vl-expr-p x)
+                    (if x t nil))))
+
+  (defthm type-when-vl-maybe-expr-p
+    (implies (vl-maybe-expr-p x)
+             (or (consp x)
+                 (not x)))
+    :rule-classes :compound-recognizer))
+
+
 (defsection vl-atts-p
-  :short "Representation of @('(* foo = 3, baz *)') style attributes."
+  :short "Representation of @('(* foo = 3, bar *)') style attributes."
 
-  :long "<p>Verilog 2005 allows many constructs, (e.g., module instances, wire
-declarations, assignments, subexpressions, and so on) to be annotated with
-<i>attributes</i>.  Each individual attribute can either be a single key with
-no value (e.g., @('baz') above), or can have the form @('key = value').  The
-keys are always identifiers, and the values (if provided) are expressions.</p>
+  :long "<p>Verilog-2005 and SystemVerilog-2012 allow many constructs, (e.g.,
+module instances, wire declarations, assignments, subexpressions, and so on) to
+be annotated with <b>attributes</b>.</p>
 
-<p>We represent attributes as alists mapping keys to their values.  We use
-ordinary ACL2 strings to represent the keys.  Each value is represented by a
-@(see vl-expr-p) object, and keys with no values are bound to @('nil')
+<p>Each individual attribute can either be a single key with no value (e.g.,
+@('baz') above), or can have the form @('key = value').  The keys are always
+identifiers, and the values (if provided) are expressions.  Both Verilog-2005
+and SystemVerilog-2012 agree that an attribute with no explicit value is to be
+treated as having value @('1').</p>
+
+
+<h3>Representation</h3>
+
+<p>We represent attributes as alists mapping names to their values.  We use
+ordinary ACL2 strings to represent the keys.  These strings are typically
+honsed to improve memory sharing.  Each explicit value is represented by an
+ordinary @(see vl-expr-p), and keys with no values are bound to @('nil')
 instead.</p>
 
-<h3>Attributes Used by VL</h3>
-
-<p><b>BOZO</b> this list may not be complete.  Try to keep it up to date.</p>
-
-<dl>
-
-<dt>Modules</dt>
-
-<dd>@('VL_HANDS_OFF') indicates that the module is special and should be left
-alone by transformations.  It is generally intended to be used for built-in VL
-modules like @('VL_1_BIT_FLOP') and @('VL_1_BIT_LATCH').</dd>
+@(def vl-atts-p)
 
 
-<dt>Expressions</dt>
+<h3>Size/Types of Attribute Values</h3>
 
-<dd>@('VL_ORIG_EXPR'), with some value, is added to many expressions in the
-@(see origexprs) transformation.  It allows us to remember the \"original
-version\" of the expression before simplification has taken place.</dd>
+<p>Verilog-2005 doesn't say anything about the types of attribute
+expressions.</p>
 
-<dd>@('VL_ZERO_EXTENSION') is added when we create certain zero-extension
-expressions, mainly to pad operands during @(see expression-sizing).</dd>
+<p>SystemVerilog-2012 says (Section 5.12) that the type of an attribute with no
+value is @('bit'), and that otherwise its type is the (presumably
+self-determined) type of the expression.</p>
 
+<p>This is not really an adequate spec.  Consider for instance an attribute
+like:</p>
 
-<dt>Net Declarations</dt>
+@({
+    (* foo = a + b *)
+})
 
-<dd>@('VL_IMPLICIT'), with no value, is given to implicitly declared wires by
-@(see make-implicit-wires).  This attribute also plays a role in @(see
-typo-detection).</dd>
+<p>Attributes live in their own namespace and are generally not very
+well-specified.  It isn't clear what @('a') and @('b') refer to here.  For
+instance, are they wires in this module, or perhaps global values that are
+known by the Verilog tool.  It doesn't seem at all clear what the type or size
+of such an expression is supposed to be.</p>
 
-<dd>@('VL_PORT_IMPLICIT'), with no value, is given to wires that are declared
-to be ports (i.e., @('input a;')) but which are not also declared to be
-wires (i.e., @('wire a;')) by @(see make-implicit-wires)</dd>
-
-<dd>@('VL_UNUSED') and @('VL_MAYBE_UNUSED') may be added by @(see use-set) when
-a wire appears to be unused.</dd>
-
-<dd>@('VL_UNSET') and @('VL_MAYBE_UNSET') may be added by @(see use-set) when a
-wire appears to be unset.</dd>
-
-<dd>@('VL_ACTIVE_HIGH') and @('VL_ACTIVE_LOW') may be declared by the user or
-inferred in the cross-active transformation.</dd>
-
-<dd>@('VL_CONVERTED_REG') may be attached during latch/flop inference, when a
-@('reg') is turned into a @('wire').</dd>
+<p>Well, no matter.  Attributes are not used for much and if their sizes and
+types aren't well specified, that's not necessarily any kind of problem.  For
+VL's part, our sizing code simply ignores attributes and does not try to
+determine their sizes and types at all.</p>
 
 
-<dt>Port Declarations</dt>
+<h3>Nesting Attributes</h3>
 
-<dd>@('VL_ACTIVE_HIGH') and @('VL_ACTIVE_LOW') may be declared by the user or
-inferred in the cross-active transformation.</dd>
+<p>Note that both Verilog-2005 and SystemVerilog-2012 prohibit the nesting of
+attributes.  That is, expressions like the following are not allowed:</p>
 
+@({
+     (* foo = a + (* bar *) b *)
+})
 
-<dt>Assignments</dt>
+<p>VL's parser enforces this restriction and will not allow expressions to have
+nested attributes; see @(see vl-parse-0+-attribute-instances).</p>
 
-<dd>@('TRUNC_<i>WIDTH</i>') attributes are given to assignment statements which
-are involve implicit truncations, by @(see trunc).  <b>BOZO</b> probably change
-to @('VL_TRUNC = width') format.</dd>
-
-
-<dt>Gate Instances</dt>
-
-<dd>@('VL_FROM_GATE_ARRAY'), with no value, is given to gate instances that are
-the result of splitting an array such as @('buf foo [13:0] (o, i);') by @(see
-replicate).  This property is also given to module instances as described
-below.</dd>
-
-<dd>@('VL_GATESPLIT') is added when certain gates are simplified, e.g., when we
-split @('not(o1,o2,...,on, i);') into @('not(o1,i);'), @('not(o2,i)'), ...,
-@('not(on, i);') in @(see gatesplit).  <b>BOZO</b> make this annotation more
-consistent.</dd>
+<p>Internally we make <b>no such restriction</b>.  Our @(see vl-expr-p)
+structures can have attributes nested to any arbitrary depth.</p>
 
 
-<dt>Module Instances</dt>
+<h3>Redundant and Conflicting Attributes</h3>
 
-<dd>@('VL_FROM_GATE_ARRAY'), with no value, is given to module instances that
-are the result of splitting an array such as @('mymod foo [13:0] (o, i);') by
-@(see replicate).  This property is also given to gate instances as described
-above.  <b>BOZO</b> probably switch this to VL_FROM_MOD_ARRAY.</dd>
+<p>When the same attribute name is given repeatedly, both Verilog-2005 and
+SystemVerilog-2012 agree that the last occurrences of the attribute should be
+used.  That is, the value of @('foo') below should be 5:</p>
 
-<dd>@('VL_GATE_REDUX'), with no value, is given to module instances that are
-the result of converting gates such as @('bufif0'), @('notif1'), @('pmos'),
-etc., into module instances.  It is also given to certain gate instances as
-described above.</dd>
+@({
+     (* foo = 1, foo = 5 *)
+     assign w = a + b;
+})
+
+<p>VL's parser properly handles this case.  It issues warnings when duplicate
+attributes are used, and always produces @('vl-atts-p') structures that are
+free from duplicate keys, and where the entry for each attribute corresponds to
+the last occurrence of it; see @(see vl-parse-0+-attribute-instances).</p>
+
+<p>Internally we make <b>no such restriction</b>.  We treat @('vl-atts-p')
+structures as ordinary alists.</p>
 
 
-<dt>Plain Arguments</dt>
+<h3>Internal Use of Attributes by VL</h3>
 
-<dd>@('VL_ACTIVE_HIGH') or @('VL_ACTIVE_LOW') may be added during @(see
-argresolve), and indicate whether the corresponding formal is considered active
-high or low.</dd>
+<p>VL transformations occasionally add attributes throughout modules.  As a
+couple of examples:</p>
 
-</dl>"
+<ul>
+
+<li>The @('VL_HANDS_OFF') attribute is used to say that a module is somehow
+special and should not be modified by transformations.</li>
+
+<li>VL may add @('VL_ORIG_EXPR') annotations to remember the \"original\"
+versions of expressions, before any rewriting or other simplification has taken
+place; these annotations can be useful in error messages.</li>
+
+</ul>
+
+<p>As a general rule, attributes added by VL <i>should</i> be prefixed with
+@('VL_').  In practice, we may sometimes forget to follow this rule.</p>"
 
   (local (in-theory (enable vl-atts-p)))
 
@@ -1150,30 +1175,26 @@ high or low.</dd>
              (equal (vl-atts-p x)
                     (not x))))
 
-  (defthm vl-atts-of-cons
+  (defthm vl-atts-p-of-cons
     (equal (vl-atts-p (cons a x))
            (and (consp a)
                 (stringp (car a))
-                (or (not (cdr a))
-                    (vl-expr-p (cdr a)))
+                (vl-maybe-expr-p (cdr a))
                 (vl-atts-p x))))
 
-  (defthm vl-atts-p-of-append
-    (implies (and (vl-atts-p x)
-                  (vl-atts-p y))
-             (vl-atts-p (append x y)))
-    :hints(("Goal" :induct (len x))))
+  (defalist vl-atts-p (x)
+    :key (stringp x)
+    :val (vl-maybe-expr-p x)
+    :keyp-of-nil nil
+    :valp-of-nil t
+    :already-definedp t
+    :true-listp t)
 
-  (defthm true-listp-when-vl-atts-p
+  (defthm alistp-when-vl-atts-p-rewrite
+    ;; This is potentially expensive, but without it we sometimes fail to
+    ;; relieve guards for things like assoc-equal into (vl-whatever->atts x).
     (implies (vl-atts-p x)
-             (true-listp x))
-    :hints(("Goal" :induct (len x)))
-    :rule-classes ((:rewrite) (:compound-recognizer)))
-
-  (defthm alistp-when-vl-atts-p
-    (implies (vl-atts-p x)
-             (alistp x))
-    :hints(("Goal" :induct (len x))))
+             (alistp x)))
 
   (defthm vl-expr-p-of-cdr-of-hons-assoc-equal-when-vl-atts-p
     (implies (vl-atts-p atts)
@@ -1247,28 +1268,7 @@ high or low.</dd>
      :hints(("Goal" :in-theory (enable pairlis$))))))
 
 
-(define vl-maybe-expr-p (x)
-  :parents (syntax vl-expr-p)
-  :short "Representation for a @(see vl-expr-p) or @('nil')."
-  :long "<p>This is a basic option type for expressions.</p>"
-  :inline t
-  (or (not x)
-      (vl-expr-p x))
-  ///
-  (defthm vl-maybe-expr-p-when-vl-expr-p
-    (implies (vl-expr-p x)
-             (vl-maybe-expr-p x)))
 
-  (defthm vl-expr-p-when-vl-maybe-expr-p
-    (implies (vl-maybe-expr-p x)
-             (equal (vl-expr-p x)
-                    (if x t nil))))
-
-  (defthm type-when-vl-maybe-expr-p
-    (implies (vl-maybe-expr-p x)
-             (or (consp x)
-                 (not x)))
-    :rule-classes :compound-recognizer))
 
 
 (define vl-expr-induct (flag x)
@@ -1405,3 +1405,99 @@ fairly easily solve the HIDEXPR problem.</p>"
                   (:instance iff-when-vl-expr-p (x (cadr (vl-nonatom->args x))))
                   (:instance iff-when-vl-expr-p (x (caddr (vl-nonatom->args x)))))))))
 
+
+(defines expr-count
+  :parents (vl-expr-p expr-tools)
+  :short "Count the number of atoms and operators in an expression.  This is
+useful for showing the termination of functions that recur over expressions."
+
+  :long "<p>Note that we don't take into account the attributes here.  Normally
+attributes aren't nested anyway (this is prohibited by Verilog-2005 and
+SystemVerilog-2012; see @(see vl-atts-p)), so this shouldn't be a problem
+unless your function is also recursively processing attributes for some
+reason.</p>"
+
+  (define vl-expr-count ((x vl-expr-p))
+    :measure (two-nats-measure (acl2-count x) 1)
+    :returns (count posp :rule-classes :type-prescription)
+    (cond ((vl-fast-atom-p x)
+           1)
+          (t
+           (+ 1 (vl-exprlist-count (vl-nonatom->args x))))))
+
+  (define vl-exprlist-count ((x vl-exprlist-p))
+    :measure (two-nats-measure (acl2-count x) 0)
+    :returns (count posp :rule-classes :type-prescription)
+    (if (consp x)
+        (+ (vl-expr-count (car x))
+           (vl-exprlist-count (cdr x)))
+      1))
+  ///
+  (defthm vl-exprlist-count-when-atom
+    (implies (atom x)
+             (equal (vl-exprlist-count x)
+                    1)))
+
+  (defthm vl-exprlist-count-of-cons
+    (equal (vl-exprlist-count (cons a x))
+           (+ (vl-expr-count a)
+              (vl-exprlist-count x))))
+
+  (defthm vl-exprlist-count-of-append
+    (equal (vl-exprlist-count (append x y))
+           (+ -1
+              (vl-exprlist-count x)
+              (vl-exprlist-count y)))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-exprlist-count-of-revappend
+    (equal (vl-exprlist-count (revappend x y))
+           (+ -1
+              (vl-exprlist-count x)
+              (vl-exprlist-count y)))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-exprlist-count-of-rev
+    (equal (vl-exprlist-count (rev x))
+           (vl-exprlist-count x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-exprlist-count-of-list-fix
+    (equal (vl-exprlist-count (list-fix x))
+           (vl-exprlist-count x))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm vl-expr-count-of-vl-nonatom
+    (equal (vl-expr-count (vl-nonatom op atts args finalwidth finaltype))
+           (+ 1 (vl-exprlist-count args))))
+
+  (defthm vl-expr-count-of-vl-nonatom->args-strong
+    (implies (not (vl-atom-p x))
+             (< (vl-exprlist-count (vl-nonatom->args x))
+                (vl-expr-count x)))
+    :rule-classes ((:linear) (:rewrite)))
+
+  (defthm vl-expr-count-of-vl-nonatom->args-weak
+    (<= (vl-exprlist-count (vl-nonatom->args x))
+        (vl-expr-count x))
+    :rule-classes ((:linear) (:rewrite))
+    :hints(("Goal" :in-theory (enable vl-nonatom->args
+                                      vl-atom-p))))
+
+  (defthm vl-expr-count-of-car-strong
+    (implies (consp x)
+             (< (vl-expr-count (car x))
+                (vl-exprlist-count x)))
+    :rule-classes ((:linear) (:rewrite))
+    :hints(("Goal" :cases ((consp x)))))
+
+  (defthm vl-exprlist-count-of-cdr-weak
+    (<= (vl-exprlist-count (cdr x))
+        (vl-exprlist-count x))
+    :rule-classes ((:linear) (:rewrite)))
+
+  (defthm vl-exprlist-count-of-cdr-strong
+    (implies (consp x)
+             (< (vl-exprlist-count (cdr x))
+                (vl-exprlist-count x)))
+    :rule-classes ((:linear) (:rewrite))))

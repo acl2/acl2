@@ -26,8 +26,7 @@
 ; which makes it a bit easier to see if an expression is what you expect for
 ; writing unit tests.
 
-(defun vl-pretty-atom (x)
-  (declare (xargs :guard (vl-atom-p x)))
+(define vl-pretty-atom ((x vl-atom-p))
   (let ((guts (vl-atom->guts x)))
     (cond ((vl-constint-p guts)    (vl-constint->value guts))
           ((vl-weirdint-p guts)    (list 'weird (vl-bitlist->string (vl-weirdint->bits guts))))
@@ -38,89 +37,80 @@
           ((vl-funname-p guts)     (list 'fun  (vl-funname->name guts)))
           ((vl-sysfunname-p guts)  (list 'sys  (vl-sysfunname->name guts))))))
 
-(mutual-recursion
+(defines vl-pretty-exprs
+  :flag nil
 
- (defun vl-pretty-expr (x)
-   (declare (xargs :guard (vl-expr-p x)
-                   :measure (two-nats-measure (acl2-count x) 1)))
-   (if (vl-fast-atom-p x)
-       (vl-pretty-atom x)
-     (list* (vl-nonatom->op x)
-            (vl-pretty-atts (vl-nonatom->atts x))
-            (vl-pretty-exprlist (vl-nonatom->args x)))))
+  (define vl-pretty-expr ((x vl-expr-p))
+    :measure (two-nats-measure (acl2-count x) 1)
+    (if (vl-fast-atom-p x)
+        (vl-pretty-atom x)
+      (list* (vl-nonatom->op x)
+             (vl-pretty-atts (vl-nonatom->atts x))
+             (vl-pretty-exprlist (vl-nonatom->args x)))))
 
- (defun vl-pretty-atts (x)
-   (declare (xargs :guard (vl-atts-p x)
-                   :measure (two-nats-measure (acl2-count x) 0)))
-   (if (atom x)
-       nil
-     (cons
-      (if (cdar x)
-          (list (caar x) '<- (vl-pretty-expr (cdar x)))
-        (caar x))
-      (vl-pretty-atts (cdr x)))))
+  (define vl-pretty-atts ((x vl-atts-p))
+    :measure (two-nats-measure (acl2-count x) 0)
+    (if (atom x)
+        nil
+      (cons
+       (if (cdar x)
+           (list (caar x) '<- (vl-pretty-expr (cdar x)))
+         (caar x))
+       (vl-pretty-atts (cdr x)))))
 
- (defun vl-pretty-exprlist (x)
-   (declare (xargs :guard (vl-exprlist-p x)
-                   :measure (two-nats-measure (acl2-count x) 0)))
-   (if (atom x)
-       nil
-     (cons (vl-pretty-expr (car x))
-           (vl-pretty-exprlist (cdr x))))))
+  (define vl-pretty-exprlist ((x vl-exprlist-p))
+    :measure (two-nats-measure (acl2-count x) 0)
+    (if (atom x)
+        nil
+      (cons (vl-pretty-expr (car x))
+            (vl-pretty-exprlist (cdr x))))))
 
-
-(defun vl-pretty-range (x)
-  (declare (xargs :guard (vl-range-p x)))
+(define vl-pretty-range ((x vl-range-p))
   (list 'range
         (vl-pretty-expr (vl-range->msb x))
         (vl-pretty-expr (vl-range->lsb x))))
 
-(defun vl-pretty-maybe-range (x)
-  (declare (xargs :guard (vl-maybe-range-p x)
-                  :guard-hints (("Goal" :in-theory (enable vl-maybe-range-p)))))
+(define vl-pretty-maybe-range ((x vl-maybe-range-p))
   (if (not x)
       '(no-range)
     (vl-pretty-range x)))
 
-(defun vl-pretty-range-list (x)
-  (declare (xargs :guard (vl-rangelist-p x)))
-  (if (consp x)
-      (cons (vl-pretty-range (car x))
-            (vl-pretty-range-list (cdr x)))
-    nil))
+(define vl-pretty-range-list ((x vl-rangelist-p))
+  (if (atom x)
+      nil
+    (cons (vl-pretty-range (car x))
+          (vl-pretty-range-list (cdr x)))))
 
-(defun vl-pretty-maybe-range-list (x)
-  (declare (xargs :guard (vl-maybe-range-list-p x)))
-  (if (consp x)
-      (cons (vl-pretty-maybe-range (car x))
-            (vl-pretty-maybe-range-list (cdr x)))
-    nil))
+(define vl-pretty-maybe-range-list ((x vl-maybe-range-list-p))
+  (if (atom x)
+      nil
+    (cons (vl-pretty-maybe-range (car x))
+          (vl-pretty-maybe-range-list (cdr x)))))
 
-
-
-(defund vl-pretty-plainarg (x)
-  (declare (xargs :guard (vl-plainarg-p x)))
+(define vl-pretty-plainarg ((x vl-plainarg-p))
   (let ((expr (vl-plainarg->expr x)))
     (if (not expr)
         :blank
       (vl-pretty-expr expr))))
 
-(defprojection vl-pretty-plainarg-list (x)
-  (vl-pretty-plainarg x)
-  :guard (vl-plainarglist-p x))
+(define vl-pretty-plainarg-list ((x vl-plainarglist-p))
+  (if (atom x)
+      nil
+    (cons (vl-pretty-plainarg (car x))
+          (vl-pretty-plainarg-list (cdr x)))))
 
-(defund vl-pretty-namedarg (x)
-  (declare (xargs :guard (vl-namedarg-p x)))
+(define vl-pretty-namedarg ((x vl-namedarg-p))
   (let ((name (vl-namedarg->name x))
         (expr (vl-namedarg->expr x)))
     (list name '<-- (if expr (vl-pretty-expr expr) :blank))))
 
-(defprojection vl-pretty-namedarg-list (x)
-  (vl-pretty-namedarg x)
-  :guard (vl-namedarglist-p x))
+(define vl-pretty-namedarg-list ((x vl-namedarglist-p))
+  (if (atom x)
+      nil
+    (cons (vl-pretty-namedarg (car x))
+          (vl-pretty-namedarg-list (cdr x)))))
 
-(defund vl-pretty-arguments (x)
-  (declare (xargs :guard (vl-arguments-p x)))
+(define vl-pretty-arguments ((x vl-arguments-p))
   (if (vl-arguments->namedp x)
       (list :namedargs
             (vl-pretty-namedarg-list (vl-arguments->args x)))
