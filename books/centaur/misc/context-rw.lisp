@@ -190,6 +190,13 @@ when it becomes available.
            (symbol-listp (strip-cars x)))
   :hints(("Goal" :in-theory (enable symbol-alistp))))
 
+
+(local (defthm pseudo-term-val-alistp-of-append
+         (implies (and (pseudo-term-val-alistp a)
+                       (pseudo-term-val-alistp b))
+                  (pseudo-term-val-alistp (append a b)))
+         :hints(("Goal" :in-theory (enable pseudo-term-val-alistp)))))
+
 (defsection mx-relieve-hyp
   (local (defthm symbol-alistp-impl-true-listp
            (implies (symbol-alistp x)

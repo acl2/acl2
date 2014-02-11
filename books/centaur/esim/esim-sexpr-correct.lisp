@@ -678,16 +678,6 @@
 
 
 
-(defwitness alist-equiv-witnessing
-  :predicate (not (alist-equiv al1 al2))
-  :expr (not (let ((bg (alist-equiv-bad-guy al1 al2)))
-               (equal (hons-assoc-equal bg al1)
-                      (hons-assoc-equal bg al2))))
-  :hints ('(:use alist-equiv-when-agree-on-bad-guy
-                 :in-theory nil))
-  :generalize (((alist-equiv-bad-guy al1 al2) . aeqkey)))
-
-
 
 (defthm hons-assoc-equal-esim-sexpr-occ-out-when-output
   (implies (good-esim-occp occ)
@@ -2269,8 +2259,7 @@
 (defthm 4v-sexpr-eval-fixpoint-lemma3
   (implies
    (and (good-esim-modulep mod) (not (gpl :x mod))
-        (esim-sexpr-correct-occsp (gpl :occs mod))
-        (hide (not (esim-sexpr-correct-modp mod))))
+        (esim-sexpr-correct-occsp (gpl :occs mod)))
    (key-and-env-equiv
     (4v-alist-extract
      (pat-flatten1 (gpl :o mod))

@@ -825,31 +825,7 @@
                   t))
   :hints(("Goal" :in-theory (enable alists-compatible-hons-assoc-equal))))
 
-(defwitness alists-compatible-witnessing
-  :predicate (not (alists-compatible a b))
-  :expr (let ((key (alists-incompatible-on-keys-witness
-                           (alist-keys a) a b)))
-          (and (hons-assoc-equal key a)
-               (hons-assoc-equal key b)
-               (not (equal (cdr (hons-assoc-equal key a))
-                           (cdr (hons-assoc-equal key b))))))
-  :generalize (((alists-incompatible-on-keys-witness
-                           (alist-keys a) a b) . key))
-  :hints ('(:in-theory nil :use alists-compatible-when-witness-fails)))
 
-(definstantiate alists-compatible-instancing
-  :predicate (alists-compatible a b)
-  :vars (key)
-  :expr (not (and (hons-assoc-equal key a)
-                       (hons-assoc-equal key b)
-                       (not (equal (cdr (hons-assoc-equal key a))
-                                   (cdr (hons-assoc-equal key b))))))
-  :hints ('(:in-theory '(alists-compatible-necc))))
-
-(defexample alists-compatible-hons-assoc-equal-ex
-  :pattern (hons-assoc-equal key a)
-  :templates (key)
-  :instance-rulename alists-compatible-instancing)
 
 (defthm alist-keys-append
   (equal (alist-keys (append a b))
@@ -864,7 +840,7 @@
            :in-theory (e/d (alist-keys-append)
                            (alists-compatible no-duplicatesp-equal
                                               alist-keys append)))
-          (witness :ruleset (alists-compatible-hons-assoc-equal-ex
+          (witness :ruleset (alists-compatible-hons-assoc-equal-example
                              alists-compatible-witnessing))
           (and stable-under-simplificationp
                '(:in-theory (e/d (hons-assoc-equal-iff-member-alist-keys)
@@ -890,7 +866,7 @@
            :in-theory (e/d (alist-keys-append)
                            (alists-compatible no-duplicatesp-equal
                                               alist-keys append)))
-          (witness :ruleset (alists-compatible-hons-assoc-equal-ex
+          (witness :ruleset (alists-compatible-hons-assoc-equal-example
                              alists-compatible-witnessing))
           (and stable-under-simplificationp
                '(:in-theory (e/d (hons-assoc-equal-iff-member-alist-keys)
@@ -924,7 +900,7 @@
                                    (cons (cons k v) rest2))))
   :hints (("goal" :do-not-induct t)
           (witness :ruleset (alists-compatible-witnessing
-                             alists-compatible-hons-assoc-equal-ex))))
+                             alists-compatible-hons-assoc-equal-example))))
 
 (defthm not-alists-compatible-pairlis$-diff
   (implies (and (not (equal v1 v2))

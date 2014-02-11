@@ -122,6 +122,23 @@
 
 (flag::make-flag simple-term-vars-flag simple-term-vars)
 
+(local (defthm true-listp-union-equal
+         (equal (true-listp (union-equal a b))
+                (true-listp b))
+         :hints(("Goal" :in-theory (enable true-listp)))))
+
+(defthm true-listp-simple-term-vars-lst
+  (true-listp (simple-term-vars-lst x))
+  :hints (("goal" :induct (len x)
+           :expand ((simple-term-vars-lst x)))))
+
+(defthm true-listp-simple-term-vars
+  (true-listp (simple-term-vars x))
+  :hints (("goal" :expand (simple-term-vars x))))
+
+(verify-guards simple-term-vars)
+
+
 (defthm-simple-term-vars-flag
   (defthm unify-ev-of-acons-when-all-vars-bound
     (implies (and (all-keys-bound (simple-term-vars x) a)

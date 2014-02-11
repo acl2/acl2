@@ -37,15 +37,6 @@
 (set-default-hints '('(:do-not-induct t)))
 
 
-(defwitness alist-equiv-witnessing
-  :predicate (not (alist-equiv al1 al2))
-  :expr (not (let ((bg (alist-equiv-bad-guy al1 al2)))
-               (equal (hons-assoc-equal bg al1)
-                      (hons-assoc-equal bg al2))))
-  :hints('(:use alist-equiv-when-agree-on-bad-guy
-                 :in-theory nil))
-  :generalize (((alist-equiv-bad-guy al1 al2) . aeqkey)))
-
 
 
 (defexample aig-equiv-example

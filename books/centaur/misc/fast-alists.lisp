@@ -233,30 +233,6 @@
            (witness))))
 
 
-(defsection sub-alistp-witness
-
-  (defwitness sub-alistp-witnessing
-    :predicate (not (sub-alistp a b))
-    :expr (let ((x (not-sub-alistp-witness a b)))
-            (not (implies (hons-assoc-equal x a)
-                          (equal (hons-assoc-equal x a)
-                                 (hons-assoc-equal x b)))))
-    :hints ('(:use sub-alistp-when-witness
-                   :in-theory nil))
-    :generalize (((not-sub-alistp-witness a b) . key)))
-
-  (definstantiate sub-alistp-instancing
-    :predicate (sub-alistp a b)
-    :expr (implies (hons-assoc-equal key a)
-                   (equal (hons-assoc-equal key a)
-                          (hons-assoc-equal key b)))
-    :vars (key)
-    :hints ('(:in-theory '(sub-alistp-hons-assoc-equal))))
-
-  (defexample sub-alistp-hons-assoc-equal-ex
-    :pattern (hons-assoc-equal k a)
-    :templates (k)
-    :instance-rulename sub-alistp-instancing))
 
 
 

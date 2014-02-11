@@ -511,7 +511,10 @@
 (finish-with-outer-local)
                     
 
-       
+(local (defthm pseudo-term-val-alistp-of-append
+         (implies (and (pseudo-term-val-alistp a)
+                       (pseudo-term-val-alistp b))
+                  (pseudo-term-val-alistp (append a b)))))
   
 
 (local

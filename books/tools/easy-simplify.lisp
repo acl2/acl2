@@ -118,7 +118,8 @@ Usage:
 
 
 
-(defmacro defopen (name term &key (hyp 't) hint)
+(defmacro defopen (name term &key (hyp 't) hint
+                        (rule-classes ':rewrite))
   ;; This is a simple event generator that creates a theorem by finding out
   ;; what a term simplifies to under some hyp and with some hint.  In contrast
   ;; to misc/defopener, because this only does simplification (no clausify),
@@ -135,4 +136,5 @@ Usage:
                 ,(if (not (eq ',hyp t))
                      `(implies ,',hyp (equal ,',term ,new-term))
                    `(equal ,',term ,new-term))
-                :hints (("goal" . ,',hint)))))))
+                :hints (("goal" . ,',hint))
+                :rule-classes ,',rule-classes)))))

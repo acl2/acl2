@@ -768,25 +768,22 @@ etc.</p>"
       unequal-by-logbitp-witnessing))
 
   (defmacro logbitp-reasoning ()
-    '(let ((witness-hint
-            (witness :ruleset equal-by-logbitp-rules)))
+    '(b* ((witness-hint
+           (witness :ruleset equal-by-logbitp-rules)))
        (and witness-hint
-            (let* ((hint-body (cddr witness-hint))
-                   (chr-forms (cadr witness-hint)))
-              `(:computed-hint-replacement
-                ,(append chr-forms
-                         '((and stable-under-simplificationp
-                                '(:in-theory (e/d* (acl2::logbitp-of-const-split))))
-                           (and stable-under-simplificationp
-                                '(:in-theory (e/d* (logbitp-case-splits
-                                                    logbitp-when-bit
-                                                    acl2::logbitp-of-const-split))))
-                           (and stable-under-simplificationp
-                                '(:in-theory (e/d* (logbitp-case-splits
-                                                    logbitp-when-bit
-                                                    acl2::logbitp-of-const-split
-                                                    b-xor b-ior b-and))))))
-                . ,hint-body))))))
+            `(:computed-hint-replacement
+              ((and stable-under-simplificationp
+                    '(:in-theory (e/d* (acl2::logbitp-of-const-split))))
+               (and stable-under-simplificationp
+                    '(:in-theory (e/d* (logbitp-case-splits
+                                        logbitp-when-bit
+                                        acl2::logbitp-of-const-split))))
+               (and stable-under-simplificationp
+                    '(:in-theory (e/d* (logbitp-case-splits
+                                        logbitp-when-bit
+                                        acl2::logbitp-of-const-split
+                                        b-xor b-ior b-and)))))
+              . ,witness-hint)))))
 
 
 
