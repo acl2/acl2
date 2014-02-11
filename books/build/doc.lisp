@@ -561,6 +561,11 @@ far greater detail.</p>
 <p>For @('cert.pl') to certify books with packages, it needs to be able to find
 these extra @('defpkg') commands that can't go directly into the book.</p>
 
+<p>If you are using only packages from existing libraries, these should be
+dealt with automatically by the build system, which loads the portculli of all
+included books before certifying a book.  However, if you are defining a new
+package, you need to know how to put it in your book's portcullis.</p>
+
 <p>The most basic way to tell @('cert.pl') how to certify a file like
 @('mybook.lisp') is to put the @('defpkg') form into a corresponding file,
 named @('mybook.acl2'):</p>
@@ -600,6 +605,14 @@ that these instructions that were picked up from the @('.acl2') file:</p>
     ...
 })
 
+<p>Furthermore, if you inspect @('mybook.cert'), you'll see that defpkg form
+replicated in the portcullis section of the certificate.  In fact, all the
+books that includes your book (transitively) or that also load the same package
+will also replicate this form in their portculli.  This can be a problem
+because including multiple books depending on this package requires checking
+many times that this defpkg form is redundant, which can actually add up to a
+significant performance problem.  We suggest using the discipline described in
+@(see working-with-packages) instead.</p>
 
 <h3>Directory-Wide @('cert.acl2') Files</h3>
 
