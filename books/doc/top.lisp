@@ -176,6 +176,11 @@
 (include-book "arithmetic-5/top" :dir :system)
 (include-book "arithmetic/top" :dir :system)
 
+(include-book "rtl/rel9/lib/top" :dir :system)
+(include-book "rtl/rel9/lib/logn" :dir :system)
+(include-book "rtl/rel9/lib/add" :dir :system)
+(include-book "rtl/rel9/lib/mult" :dir :system)
+
 #||
 
 ;; This is a nice place to put include-book scanner hacks that trick cert.pl

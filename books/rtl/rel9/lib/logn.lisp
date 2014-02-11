@@ -38,6 +38,8 @@
 ;;;                     LNOT
 ;;;**********************************************************************
 
+(defsection-rtl |Deprecated:Complementation| |Deprecated:Logical Operations|
+
 (defund lnot (x n)
   (declare (xargs :guard (and (natp x)
                               (integerp n)
@@ -122,13 +124,16 @@
 	   (equal (lnot (cat x m y n) l)
 		  (cat (lnot x m) m (lnot y n) n))))
 
+)
 
 ;;;**********************************************************************
 ;;;                LAND, LIOR, and LXOR
 ;;;**********************************************************************
 
+(defsection-rtl |Deprecated:Binary Operations| |Deprecated:Logical Operations|
+
 (defund binary-land (x y n)
-  (declare (xargs :guard (and (natp x) 
+  (declare (xargs :guard (and (natp x)
                               (natp y)
                               (integerp n)
                               (< 0 n))
@@ -748,10 +753,13 @@
                       (- (expt 2 n) (expt 2 (1+ k)))
                     (- (expt 2 n) (expt 2 k))))))
 
+)
 
 ;;;**********************************************************************
 ;;;                Algebraic Properties
 ;;;**********************************************************************
+
+(defsection-rtl |Deprecated:Algebraic Properties| |Deprecated:Logical Operations|
 
 (defthm lnot-lnot
   (implies (and (case-split (natp n))
@@ -852,3 +860,4 @@
 (defthmd lnot-lxor
   (equal (lnot (lxor x y n) n)
 	 (lxor (lnot x n) y n)))
+)

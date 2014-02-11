@@ -37,10 +37,11 @@
   (declare (xargs :guard (real/rationalp x)))
   (floor x 1))
 
-
 ;;;**********************************************************************
 ;;;				BVECP
 ;;;**********************************************************************
+
+(defsection-rtl |Recognizing Bit Vectors| |Bit Vectors|
 
 (defund bvecp (x k)
   (declare (xargs :guard (integerp k)))
@@ -98,11 +99,13 @@
 		(not (equal x 0)))
 	   (equal x 1))
   :rule-classes :forward-chaining)
-
+)
 
 ;;;**********************************************************************
 ;;;			    BITS
 ;;;**********************************************************************
+
+(defsection-rtl |Bit Slices| |Bit Vectors|
 
 (defund bits (x i j)
   (declare (xargs :guard (and (integerp x)
@@ -399,11 +402,13 @@
 
 (defun bitvec (x n)
   (if (bvecp x n) x 0))
-
+)
 
 ;;;**********************************************************************
 ;;;				BITN
 ;;;**********************************************************************
+
+(defsection-rtl |Bit Extraction| |Bit Vectors|
 
 (defund bitn (x n)
   (declare (xargs :guard (and (integerp x)
@@ -643,11 +648,13 @@
 		  (equal (mod c (expt 2 (1+ n))) 0))
 	     (equal (bitn (+ c x) n)
 		    (bitn x n))))
-
+)
 
 ;;;**********************************************************************
 ;;;			     CAT
 ;;;**********************************************************************
+
+(defsection-rtl |Concatenation| |Bit Vectors|
 
 (defund binary-cat (x m y n)
   (declare (xargs :guard (and (integerp x)
@@ -939,10 +946,13 @@
 		(case-split (integerp n)))
 	   (equal (bitn (mulcat 1 n x) m)
 		  x)))
+)
 
 ;;;**********************************************************************
 ;;;		      Signed Integer Encodings
 ;;;**********************************************************************
+
+; This section is not documented in Russinoff's online manual.
 
 (defun intval (w x)
   (if (= (bitn x (1- w)) 1)

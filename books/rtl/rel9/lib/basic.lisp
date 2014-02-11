@@ -35,6 +35,8 @@
 ;;;                       FLOOR and CEILING
 ;;;**********************************************************************
 
+(defsection-rtl |Floor and Ceiling| |Basic Arithmetic Functions|
+
 (defund fl (x)
   (declare (xargs :guard (real/rationalp x)))
   (floor x 1))
@@ -189,11 +191,13 @@
                       (fl x)
                     (1+ (fl x)))))
   :rule-classes ())
-
+)
 
 ;;;**********************************************************************
 ;;;                         MOD
 ;;;**********************************************************************
+
+(defsection-rtl |Remainder| |Basic Arithmetic Functions|
 
 (in-theory (disable mod))
 
@@ -443,3 +447,4 @@
 		  (= (mod a n) (mod b n)))
 	     (= (mod (+ a c) n) (mod (+ b c) n)))
   :rule-classes ())
+)

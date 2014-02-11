@@ -1,5 +1,5 @@
-; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic 
-; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc. 
+; RTL - A Formal Theory of Register-Transfer Logic and Computer Arithmetic
+; Copyright (C) 1995-2013 Advanced Mirco Devices, Inc.
 ;
 ; Contact:
 ;   David Russinoff
@@ -114,6 +114,8 @@
 ;;;**********************************************************************
 ;;;                         Truncation
 ;;;**********************************************************************
+
+(defsection-rtl |Truncation| |Rounding|
 
 (defund trunc (x n)
   (declare (xargs :guard (integerp n)))
@@ -349,10 +351,13 @@
                   (+ (trunc x k)
                      (* (expt 2 (- n m))
                         (bits x (1- (- n k)) (- n m)))))))
+)
 
 ;;;**********************************************************************
 ;;;                    Rounding Away from Zero
 ;;;**********************************************************************
+
+(defsection-rtl |Rounding Away from Zero| |Rounding|
 
 (defund away (x n)
   (* (sgn x) 
@@ -613,10 +618,13 @@
 			  (- (expt 2 (- (1+ (expo x)) m))))
 		       n)))
   :rule-classes ())
+)
 
 ;;;**********************************************************************
 ;;;                    Unbiased Rounding
 ;;;**********************************************************************
+
+(defsection-rtl |Unbiased Rounding| |Rounding|
 
 (defun re (x)
   (- x (fl x)))
@@ -1074,10 +1082,13 @@
 	     (= (near+ (trunc x n) m)
 		(near+ x m)))
   :rule-classes ())
+)
 
 ;;;**********************************************************************
 ;;;                          Sticky Rounding
 ;;;**********************************************************************
+
+(defsection-rtl |Sticky Rounding| |Rounding|
 
 (defund sticky (x n)
   (cond ((exactp x (1- n)) x)
@@ -1218,11 +1229,13 @@
 	     (= (+ x (sticky y k))
 		(sticky (+ x y) k2)))
   :rule-classes ())
-
+)
 
 ;;;**********************************************************************
 ;;;                    IEEE Rounding
 ;;;**********************************************************************
+
+(defsection-rtl |IEEE Rounding| |Rounding|
 
 (defun inf (x n)
   (if (>= x 0)
@@ -1490,11 +1503,13 @@
                     (fp+ (trunc x n) n)
                   (trunc x n))))
   :rule-classes ())
-  
+)
 
 ;;;**********************************************************************
 ;;;                         Denormal Rounding 
 ;;;**********************************************************************
+
+(defsection-rtl |Denormal Rounding| |Rounding|
 
 (defund drnd (x mode p q)
   (rnd x mode (+ p (expo x) (- (expo (spn q))))))
@@ -1664,3 +1679,4 @@
              (equal (drnd x mode p q)
                     (drnd y mode p q)))
     :rule-classes nil)
+)
