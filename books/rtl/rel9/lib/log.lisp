@@ -65,12 +65,21 @@
   (mbe :logic (bits x n n)
        :exec  (if (evenp (ash x (- n))) 0 1)))
 
+; Using defsection-rtl-log to deal with "deprecated" issue (see doc.lisp):
 (defsection-rtl-log |Logical Operations|)
+
+; Fix for "deprecated" issue:
+(rtl-order-subtopics |Logical Operations|
+                     (|Binary Operations|
+                      |Complementation|
+                      |Algebraic Properties|))
+
 
 ;;;**********************************************************************
 ;;;                       LOGAND, LOGIOR, and LOGXOR
 ;;;**********************************************************************
 
+; Using defsection-rtl-log to deal with "deprecated" issue (see doc.lisp):
 (defsection-rtl-log |Binary Operations|
 
 (in-theory (disable logand logior logxor))
@@ -354,6 +363,7 @@
 ;;;                               LOGNOT
 ;;;**********************************************************************
 
+; Using defsection-rtl-log to deal with "deprecated" issue (see doc.lisp):
 (defsection-rtl-log |Complementation|
 
 (in-theory (disable lognot))
@@ -439,6 +449,7 @@
 ;;;                         Algebraic Properties
 ;;;**********************************************************************
 
+; Using defsection-rtl-log to deal with "deprecated" issue (see doc.lisp):
 (defsection-rtl-log |Algebraic Properties|
 
 (defthm lognot-lognot

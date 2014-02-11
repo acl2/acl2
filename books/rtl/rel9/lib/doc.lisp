@@ -9,9 +9,10 @@
 
 ; As of this writing (February, 2014), log.lisp is out of sync with the online
 ; rtl manual; logn.lisp corresponds to it instead.  Accommodation for that
-; issue may be found by searching for "deprecated" below.  That accommodation
-; is rather ugly in places, but it suffices, and we plan to clean that up after
-; David Russinoff updates his manual to match log.lisp in place of logn.lisp.
+; issue may be found by searching for "deprecated" below and log.lisp.  That
+; accommodation is rather ugly in places, but it suffices, and we plan to clean
+; that up after David Russinoff updates his manual to match log.lisp in place
+; of logn.lisp.
 
 (in-package "ACL2")
 
@@ -20,6 +21,9 @@
 ; Nodes from mousing over topics at http://russinoff.com/libman/top.html, with
 ; spaces replaced by underscores and commas deleted.  These are organized to
 ; match the hierarchy on that page.
+
+; We use "@" rather than ":" as a separator so that ACL2-Doc can include the
+; node, since ACL2-Doc ignores names that ACL2 prints using vertical bars.
 
   '((|Register-Transfer Logic| ; basic.lisp
      (|Basic Arithmetic Functions|
@@ -30,15 +34,15 @@
       |Bit Slices|
       |Bit Extraction|
       |Concatenation|)
-     (|Deprecated:Logical Operations| ; logn.lisp (log.lisp handled separately)
-      |Deprecated:Complementation|
-      |Deprecated:Binary Operations|
-      |Deprecated:Algebraic Properties|))
+     (|Deprecated@Logical Operations| ; logn.lisp (log.lisp handled separately)
+      |Deprecated@Complementation|
+      |Deprecated@Binary Operations|
+      |Deprecated@Algebraic Properties|))
     (|Floating-Point Arithmetic|
      (|Floating-Point Representation| ; float.lisp
       |Sign Exponent and Significand|
       |Exactness|
-      |Floating-Point Formats|)
+      |Floating-Point Formats|) ; reps.lisp
      (|Rounding| ; round.lisp
       |Truncation|
       |Rounding Away from Zero|
@@ -58,19 +62,23 @@
       |Radix-8 Booth Encoding|))
     |Bibliography|))
 
+; For handling "deprecated" issue, we separate out this function rather than
+; inlining it in rtl-node-alist1.  We use "@" rather than ":" as a separator so
+; that ACL2-Doc can include the node, since ACL2-Doc ignores names that ACL2
+; prints using vertical bars.
+(defun rtl-node-name-basic (sym)
+  (intern$ (concatenate 'string "RTL@" (symbol-name sym))
+           "ACL2"))
+
 (defun rtl-node-alist1 (sym global-index)
-  (flet ((local-rtl-node-name
-          (sym)
-          (intern$ (concatenate 'string "RTL:" (symbol-name sym))
-                   "ACL2")))
-    (list sym
-          (local-rtl-node-name sym)
-          (concatenate 'string
-                       "http://russinoff.com/libman/text/node"
-                       (coerce (explode-nonnegative-integer
-                                global-index 10 nil)
-                               'string)
-                       ".html"))))
+  (list sym
+        (rtl-node-name-basic sym)
+        (concatenate 'string
+                     "http://russinoff.com/libman/text/node"
+                     (coerce (explode-nonnegative-integer
+                              global-index 10 nil)
+                             'string)
+                     ".html")))
 
 (defun rtl-node-alist (flg tree global-index)
 
@@ -159,11 +167,10 @@
 
 ; Hack for "deprecated" issue, used in log.lisp:
 (defmacro defsection-rtl-log (name &rest events)
-  (let ((section-name (intern$ (concatenate 'string "RTL:" (symbol-name name))
-                               "ACL2"))
-        (parent (if (eq name '|Logical Operations|)
-                    '|RTL:Register-Transfer Logic|
-                  '|RTL:Logical Operations|)))
+  (let ((section-name (rtl-node-name-basic name))
+        (parent (rtl-node-name-basic (if (eq name '|Logical Operations|)
+                                         '|Register-Transfer Logic|
+                                       '|Logical Operations|))))
     `(defsection ,section-name
        :parents (,parent)
        :short ,(symbol-name name)
@@ -172,8 +179,8 @@
          'string
          "<p>Unlike other sections of the rtl documentation, this section
  does not yet correspond to David Russinoff's online manual, which instead
- documents corresponding functions that are decremented; @(see
- |RTL:Deprecated:Binary Operations|).</p>"
+ documents corresponding functions that are decremented; see @(see
+ |RTL@Deprecated@Logical Operations|).</p>"
          (defsection-rtl-defs events))
        (deflabel ,(intern-in-package-of-symbol
                    (concatenate 'string (symbol-name name) "$SECTION")
@@ -182,8 +189,12 @@
 
 (defun rtl-node-name (name)
   (cond ((eq name 'rtl) name)
-        ((eq name '|Logical Operations|) ; for "deprecated" issue
-         '|RTL:Logical Operations|)
+        ((member-eq name ; for "deprecated" issue
+                    '(|Logical Operations|
+                      |Complementation|
+                      |Binary Operations|
+                      |Algebraic Properties|))
+         (rtl-node-name-basic name))
         ((consp name)
          (rtl-node-name (car name)))
         (t (cadr (rtl-node-entry name)))))
@@ -232,12 +243,12 @@
 
 (defsection-rtl-list)
 
-; Fix for "deprecated" issue.
+; Fix for "deprecated" issue:
 (rtl-order-subtopics |Register-Transfer Logic|
                      (|Basic Arithmetic Functions|
                       |Bit Vectors|
                       |Logical Operations|
-                      |Deprecated:Logical Operations|))
+                      |Deprecated@Logical Operations|))
 
 ; Handle top-level leaf:
 (defsection-rtl |Bibliography| rtl)
