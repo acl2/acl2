@@ -83,9 +83,7 @@ also occasionally useful as a witness in other theorems.</p>"
   (defthm integerp-of-logbitp-mismatch
     ;; BOZO why do I have to have this stupid rule when the type prescription
     ;; for logbitp-mismatch says it's either a nonnegative integer or nil?
-    (equal (integerp (logbitp-mismatch a b))
-           (if (logbitp-mismatch a b)
-               t
-             nil))
+    (iff (integerp (logbitp-mismatch a b))
+         (logbitp-mismatch a b))
     :hints(("Goal" :in-theory (enable logbitp-mismatch)))))
 

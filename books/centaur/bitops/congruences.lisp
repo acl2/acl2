@@ -187,7 +187,10 @@
   :fnname loghead$inline)
 
 (local (set-default-hints
-        '((logbitp-reasoning))))
+        '((logbitp-reasoning)
+          (and stable-under-simplificationp
+               '(:in-theory (enable b-ior b-and b-not b-xor
+                                    nfix))))))
 
 (defthm logand-remove-logsquash-1
   (implies (<= (nfix m) (nfix n))

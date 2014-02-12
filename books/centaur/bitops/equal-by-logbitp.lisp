@@ -27,9 +27,11 @@
 (include-book "logbitp-mismatch")
 (include-book "clause-processors/witness-cp" :dir :system)
 (include-book "std/util/wizard" :dir :system)
+(include-book "centaur/misc/arith-equiv-defs" :dir :system)
 (local (include-book "ihsext-basics"))
 (local (include-book "integer-length"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (in-theory (enable* arith-equiv-forwarding)))
 
 ; BOZOs:
 ;   - Document rulesets
@@ -737,53 +739,594 @@ etc.</p>"
             :no-thanks t))))
 
 
-(defsection equal-by-logbitp-witnessing
+
+
+(define logbitp-mismatch? ((x integerp)
+                           (y integerp))
+  (nfix (logbitp-mismatch x y))
+  ///
+  (local (in-theory (e/d (logbitp-mismatch)
+                         (int-equiv))))
+  (defcong int-equiv equal (logbitp-mismatch? x y) 1)
+  (defcong int-equiv equal (logbitp-mismatch? x y) 2)
+  (defthm logbitp-mismatch?-correct
+    (implies (and (integerp x) (integerp y)
+                  (not (equal x y)))
+             (let ((i (logbitp-mismatch? x y)))
+               (not (equal (logbitp i x) (logbitp i y)))))))
+
+
+(defsection equal-by-logbitp-witnessing-rules
   (definstantiate equal-by-logbitp-instancing
     :predicate (equal x y)
     :vars (bit)
     :expr (equal (logbitp bit x) (logbitp bit y))
     :hints ('(:in-theory nil)))
 
-  (defexample equal-by-logbitp-example
-    :pattern (logbitp bit x)
-    :templates (bit)
-    :instance-rules (equal-by-logbitp-instancing))
+  ;; (defexample equal-by-logbitp-example
+  ;;   :pattern (logbitp bit x)
+  ;;   :templates (bit)
+  ;;   :instance-rules (equal-by-logbitp-instancing))
 
   (defwitness unequal-by-logbitp-witnessing
     :predicate (not (equal x y))
     :expr (or (not (integerp x))
               (not (integerp y))
-              (let ((bit (logbitp-mismatch x y)))
-                (not (equal (logbitp bit x)
-                            (logbitp bit y)))))
-    :generalize (((logbitp-mismatch x y) . wbit))
-    :hints ('(:in-theory '(logbitp-mismatch-correct
-                           logbitp-mismatch-under-iff
-                           ifix-when-integerp))))
+              (let ((bit (hide (logbitp-mismatch x y))))
+                (and (natp bit)
+                     (not (equal (logbitp bit x)
+                                 (logbitp bit y))))))
+    :generalize (((hide (logbitp-mismatch x y)) . wbit))
+    :hints ('(:in-theory (enable logbitp-mismatch-correct
+                                 logbitp-mismatch-under-iff
+                                 ifix-when-integerp)
+              :expand ((:free (x) (hide x)))))))
 
 
-  (def-witness-ruleset equal-by-logbitp-rules
-    '(equal-by-logbitp-instancing
-      equal-by-logbitp-example
-      unequal-by-logbitp-witnessing))
+(defines eqbylbp-collect-terms
+  :verify-guards nil
+  :prepwork ((local (defthm pseudo-term-listp-of-union
+                      (implies (and (pseudo-term-listp a)
+                                    (pseudo-term-listp b))
+                               (pseudo-term-listp (union-equal a b))))))
+  (define eqbylbp-collect-terms ((x pseudo-termp))
+    :returns (terms pseudo-term-list-listp :hyp :guard)
+    (b* (((when (or (atom x) (eq (car x) 'quote))) nil)
+         (rest (eqbylbp-collect-terms-list (cdr x))))
+      (if (eq (car x) 'logbitp)
+          (cons (cdr x) rest)
+        rest)))
+  (define eqbylbp-collect-terms-list ((x pseudo-term-listp))
+    :returns (terms pseudo-term-list-listp :hyp :guard)
+    (if (atom x)
+        nil
+      (union-equal (eqbylbp-collect-terms (car x))
+                   (eqbylbp-collect-terms-list (cdr x)))))
+  ///
+  (local (defthm pseudo-term-listp-implies-true-listp
+           (implies (pseudo-term-list-listp x)
+                    (true-listp x))))
+  (verify-guards eqbylbp-collect-terms))
 
-  (defmacro logbitp-reasoning ()
-    '(b* ((witness-hint
-           (witness :ruleset equal-by-logbitp-rules)))
-       (and witness-hint
-            `(:computed-hint-replacement
-              ((and stable-under-simplificationp
-                    '(:in-theory (e/d* (acl2::logbitp-of-const-split))))
-               (and stable-under-simplificationp
-                    '(:in-theory (e/d* (logbitp-case-splits
-                                        logbitp-when-bit
-                                        acl2::logbitp-of-const-split))))
-               (and stable-under-simplificationp
-                    '(:in-theory (e/d* (logbitp-case-splits
-                                        logbitp-when-bit
-                                        acl2::logbitp-of-const-split
-                                        b-xor b-ior b-and)))))
-              . ,witness-hint)))))
+(define eqbylbp-check-witnesses ((x pseudo-term-listp)
+                                   (rule wcp-witness-rule-p)
+                                   (restriction-term pseudo-termp)
+                                   state)
+  :returns (mv (apply-witness-list boolean-listp)
+               (new-terms pseudo-term-listp))
+  (b* (((when (atom x)) (mv nil nil))
+       ((wcp-witness-rule rule) rule)
+       ((mv rest-apply rest-terms)
+        (eqbylbp-check-witnesses (cdr x) rule restriction-term state))
+       ((unless (mbt (and (pseudo-termp (car x))
+                          (wcp-witness-rule-p rule))))
+        (mv (cons nil rest-apply)
+            rest-terms))
+       ((mv unify-ok alist)
+        (simple-one-way-unify rule.term (car x) nil))
+       ((unless unify-ok)
+        (mv (cons nil rest-apply)
+            rest-terms))
+       ((mv er val)
+        (if (equal restriction-term ''t)
+            (mv nil t)
+          (witness-eval-restriction restriction-term alist state)))
+       (- (and er
+               (raise "Restriction term evaluation failed! ~x0" er)))
+       ((when (or er (not val)))
+        (mv (cons nil rest-apply)
+            rest-terms))
+       (new-term (substitute-into-term rule.expr alist)))
+    (mv (cons t rest-apply) (cons new-term rest-terms)))
+  ///
+  (defthm eqbylbp-check-witnesses-len-of-apply-list
+    (equal (len (mv-nth 0 (eqbylbp-check-witnesses x rule restriction state)))
+           (len x))))
+
+(define eqbylbp-simplify-each ((x pseudo-term-listp)
+                               hint
+                               state)
+  :mode :program
+  (b* (((when (atom x)) (value nil))
+       ((er first) (easy-simplify-term1-fn
+                    (car x) nil hint 'iff t t 1000 1000 state))
+       ((er rest) (eqbylbp-simplify-each (cdr x) hint state)))
+    (value (cons first rest))))
+
+(define eqbylbp-is-var ((x pseudo-termp)
+                        (var symbolp))
+  (or (eq x var)
+      (and (consp x)
+           (eq (car x) 'nfix)
+           (eq (cadr x) var))))
+
+(define eqbylbp-solve-for-var ((x pseudo-termp)
+                               (var symbolp)
+                               (target pseudo-termp))
+  :returns (mv ok
+               (res pseudo-termp :hyp (and (pseudo-termp x)
+                                           (pseudo-termp target))))
+  (b* (((when (eqbylbp-is-var x var)) (mv t target))
+       ((when (atom x)) (mv nil nil))
+       ((when (eq (car x) 'unary--))
+        (eqbylbp-solve-for-var (cadr x) var `(unary-- ,target)))
+       ((unless (eq (car x) 'binary-+)) (mv nil nil))
+       ((when (eqbylbp-is-var (cadr x) var))
+        (mv t `(binary-+ ,target (unary-- ,(caddr x))))))
+    (eqbylbp-solve-for-var
+     (caddr x) var
+     `(binary-+ ,target (unary-- ,(cadr x))))))
+
+(define eqbylbp-collect-examples-for-target ((avail-logbitp-args pseudo-term-list-listp)
+                                             (var symbolp)
+                                             (target-logbitp-args pseudo-term-listp)
+                                             (examples pseudo-term-listp))
+  :verify-guards nil
+  :returns (new-examples pseudo-term-listp
+                         :hyp (and (pseudo-term-listp examples)
+                                   (pseudo-term-list-listp avail-logbitp-args)
+                                   (pseudo-term-listp target-logbitp-args)))
+  (b* (((when (atom avail-logbitp-args)) examples)
+       ((unless (equal (cadr (car avail-logbitp-args))
+                       (cadr target-logbitp-args)))
+        (eqbylbp-collect-examples-for-target
+         (cdr avail-logbitp-args) var target-logbitp-args examples))
+       ((mv ok res) (eqbylbp-solve-for-var (car (car avail-logbitp-args))
+                                           var
+                                           `(nfix ,(car target-logbitp-args))))
+       ((unless ok)
+        (eqbylbp-collect-examples-for-target
+         (cdr avail-logbitp-args) var target-logbitp-args examples))
+       (rest (eqbylbp-collect-examples-for-target
+              (cdr avail-logbitp-args) var target-logbitp-args examples)))
+    (if (member-equal res rest) rest (cons res rest)))
+  ///
+  (local (defthm true-listp-when-pseudo-term-listp
+           (implies (pseudo-term-listp x)
+                    (true-listp x))))
+  (verify-guards eqbylbp-collect-examples-for-target))
+
+(define eqbylbp-collect-examples-targets ((avail-logbitp-args pseudo-term-list-listp)
+                                          (var symbolp)
+                                          (target-logbitp-args pseudo-term-list-listp)
+                                          (examples pseudo-term-listp))
+  ;; Avail-logbitp-args are the (n x) from calls (logbitp n x) available by
+  ;; instantiating an equality with logbitp by var.  We look for ways to
+  ;; instantiate var such that these match similar pairs from
+  ;; target-logbitp-args.  Returns the list of such terms (that we can
+  ;; substitute for var to make some available term match a target term).
+  :returns (new-examples pseudo-term-listp
+                         :hyp (and (pseudo-term-listp examples)
+                                   (pseudo-term-list-listp avail-logbitp-args)
+                                   (pseudo-term-list-listp target-logbitp-args)))
+  (if (atom target-logbitp-args)
+      examples
+    (eqbylbp-collect-examples-targets
+     avail-logbitp-args var (cdr target-logbitp-args)
+     (eqbylbp-collect-examples-for-target
+      avail-logbitp-args var (car target-logbitp-args) examples))))
+
+
+(define eqbylbp-eval-example ((rule wcp-instance-rule-p)
+                              (alist pseudo-term-val-alistp)
+                              (example pseudo-termp)
+                              hint state)
+  :mode :program
+  :guard (eql (len (wcp-instance-rule->vars rule)) 1)
+  ;; Tries instantiating rule using alist + binding of rule.vars (singleton) to example.
+  ;; Returns the list of logbitp args present in the simplification of the result.
+  (b* (((wcp-instance-rule rule) rule)
+       (alist1 (append (pairlis$ rule.vars (list example))
+                       alist))
+       (newterm (wcp-beta-reduce-term (substitute-into-term rule.expr alist1)))
+       ; (- (cw "Term: ~x0~%" newterm))
+       ((mv erp newterm-rw state)
+        (easy-simplify-term1-fn
+         newterm nil hint 'iff t t 1000 1000 state))
+       ; (- (cw "Rewritten: ~x0~%" newterm-rw))
+       ((when erp)
+        (raise "Error simplifying: ~x0" erp)
+        (mv nil nil state))
+       (includep (equal newterm-rw ''t)
+        ;; nil
+        )
+       )
+    (mv includep (eqbylbp-collect-terms newterm-rw) state)))
+  
+
+(define eqbylbp-try-example ((rule wcp-instance-rule-p)
+                             (alist pseudo-term-val-alistp)
+                             (example pseudo-termp)
+                             (target-logbitp-args pseudo-term-list-listp)
+                             hint state)
+  :mode :program
+  :guard (eql (len (wcp-instance-rule->vars rule)) 1)
+  ;; :returns (mv (example? wcp-example-appsp)
+  ;;              (new-logbitp-args pseudo-term-list-listp
+  ;;                                :hyp (and (wcp-instance-rule-p rule)
+  ;;                                          (pseudo-term-val-alistp alist)
+  ;;                                          (pseudo-termp example)
+  ;;                                          (pseudo-term-list-listp target-logbitp-args)))
+  ;;              state1)
+  (b* (((mv includep new-logbitp-args state)
+        (eqbylbp-eval-example rule alist example hint state))
+       ; (- (cw "Logbitp args for ~x0: ~x1~%" example new-logbitp-args))
+       (intersection (intersection-equal new-logbitp-args target-logbitp-args))
+       ((unless (or includep intersection))
+        ; (cw "Rejected: ~x0 (produced: ~x1)~%" example new-logbitp-args)
+        (mv nil target-logbitp-args state))
+       (new-targets (set-difference-equal new-logbitp-args intersection)))
+    (mv (list (make-wcp-example-app :instrule rule
+                                    :bindings (list example)))
+        (append new-targets target-logbitp-args)
+        state)))
+
+(define eqbylbp-try-examples ((rule wcp-instance-rule-p)
+                              (alist pseudo-term-val-alistp)
+                              (examples pseudo-term-listp)
+                              (target-logbitp-args pseudo-term-list-listp)
+                              hint state)
+  ;; Examples are terms that we think might cause an instantiation of rule
+  ;; (using substition alist) to match some target-logbitp-args.  We check each
+  ;; such example and return:
+  ;;  - a list of wcp-example-appsp derived from the examples that did
+  ;;  - a new target-logbitp-args that includes any additional logbitp
+  ;;  instances we accidentally introduced.
+  :mode :program
+  ;; :returns (mv (examples wcp-example-appsp)
+  ;;              (new-logbitp-args pseudo-term-list-listp))
+  (b* (((when (atom examples))
+        (mv nil target-logbitp-args state))
+       ((mv first-examples target-logbitp-args state)
+        (eqbylbp-try-example rule alist (car examples) target-logbitp-args hint state))
+       ((mv rest-examples target-logbitp-args state)
+        (eqbylbp-try-examples rule alist (cdr examples) target-logbitp-args hint state)))
+    (mv (append first-examples rest-examples) target-logbitp-args state)))
+        
+                             
+
+
+(define eqbylbp-decide-examples-lit ((lit pseudo-termp)
+                                      (var symbolp)
+                                      (target-logbitp-args pseudo-term-list-listp)
+                                      (rule wcp-instance-rule-p)
+                                      (restriction-term pseudo-termp)
+                                      hint
+                                      state)
+  :guard (eql (len (wcp-instance-rule->vars rule)) 1)
+  :mode :program
+  (b* (((unless (mbt (and (pseudo-termp lit)
+                          (wcp-instance-rule-p rule)
+                          (eql (len (wcp-instance-rule->vars rule)) 1))))
+        (mv nil target-logbitp-args state))
+       ((wcp-instance-rule rule) rule)
+       ((mv unify-ok alist)
+        (simple-one-way-unify rule.pred lit nil))
+       ((unless unify-ok) (mv nil target-logbitp-args state))
+       ((mv er res)
+        (if (equal restriction-term ''t)
+            (mv nil t)
+          (witness-eval-restriction restriction-term alist state)))
+       (- (and er
+               (raise "Restriction term evaluation failed! ~x0" er)))
+       ((unless (and (not er) res))
+        (mv nil target-logbitp-args state))
+       ((mv & avail-logbitp-args state)
+        (eqbylbp-eval-example rule alist var hint state))
+       ; (- (cw "Available: ~x0~%" avail-logbitp-args))
+       (example-terms
+        (eqbylbp-collect-examples-targets avail-logbitp-args
+                                          var
+                                          target-logbitp-args
+                                          nil))
+       ; (- (cw "Examples: ~x0~%" example-terms))
+       ((mv examples target-logbitp-args state)
+        (eqbylbp-try-examples rule alist example-terms target-logbitp-args hint state))
+       ; (- (cw "Pruned examples: ~x0~%" examples))
+       ((when examples)
+        (mv examples target-logbitp-args state)))
+    ;; Include the example consisting of just var itself, 
+    (mv (list (make-wcp-example-app :instrule rule
+                                    :bindings (list var)))
+        (union-equal avail-logbitp-args target-logbitp-args)
+        state)))
+
+(define eqbylbp-decide-examples ((clause pseudo-term-listp)
+                                 (var symbolp)
+                                 (target-logbitp-args pseudo-term-list-listp)
+                                 (rule wcp-instance-rule-p)
+                                 (restriction-term pseudo-termp)
+                                 hint state)
+  :mode :program
+  (b* (((when (atom clause)) (mv nil target-logbitp-args state))
+       ((mv examples1 target-logbitp-args state)
+        (eqbylbp-decide-examples-lit
+         (car clause) var target-logbitp-args rule restriction-term hint state))
+       ((mv rest-examples target-logbitp-args state)
+        (eqbylbp-decide-examples
+         (cdr clause) var target-logbitp-args rule restriction-term hint state)))
+    (mv (cons examples1 rest-examples) target-logbitp-args state)))
+
+(define eqbylbp-decide-examples-passes ((count posp)
+                                        (clause pseudo-term-listp)
+                                        (var symbolp)
+                                        (target-logbitp-args pseudo-term-list-listp)
+                                        (rule wcp-instance-rule-p)
+                                        (restriction-term pseudo-termp)
+                                        hint state)
+  :mode :program
+  (b* (((mv examples target-logbitp-args state)
+        (eqbylbp-decide-examples
+         clause var target-logbitp-args rule restriction-term hint state))
+       (count (1- count))
+       ((when (zp count))
+        (mv examples target-logbitp-args state)))
+    (eqbylbp-decide-examples-passes
+     count clause var target-logbitp-args rule restriction-term hint state)))
+
+(define wcp-example-apps-listp (x)
+  (if (atom x)
+      (eq x nil)
+    (and (wcp-example-appsp (car x))
+         (wcp-example-apps-listp (cdr x))))
+  ///
+  (defopen wcp-example-apps-listp-when-consp
+    (wcp-example-apps-listp x)
+    :hyp (consp x)
+    :hint (:expand ((wcp-example-apps-listp x)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+(define eqbylbp-pair-hints ((witness-apps boolean-listp)
+                            (examples wcp-example-apps-listp)
+                            (rule wcp-witness-rule-p))
+  :guard (eql (len witness-apps) (len examples))
+  :returns (actions wcp-lit-actions-listp)
+  (if (atom witness-apps)
+      nil
+    (cons (make-wcp-lit-actions :witnesses (and (car witness-apps)
+                                                (mbt (wcp-witness-rule-p rule))
+                                                (list rule))
+                                :examples (and (mbt (wcp-example-appsp (car examples)))
+                                               (car examples)))
+          (eqbylbp-pair-hints (cdr witness-apps) (cdr examples) rule))))
+  
+
+(define eqbylbp-witness-hints ((clause pseudo-term-listp)
+                               restrict
+                               (passes posp)
+                               simp-hint
+                               state)
+  :mode :program
+  (b* ((witness-rule
+        (cdr (assoc 'unequal-by-logbitp-witnessing
+                    (table-alist 'witness-cp-witness-rules (w state)))))
+       (instance-rule
+        (cdr (assoc 'equal-by-logbitp-instancing
+                    (table-alist 'witness-cp-instance-rules (w state)))))
+       ((mv er restrict-term state)
+        (translate restrict t nil t 'logbitp-reasoning (w state) state))
+       ((when er)
+        (raise "Translate failed: ~x0" er)
+        (mv nil state))
+       ((mv apply-witnesses new-lits)
+        (eqbylbp-check-witnesses clause witness-rule restrict-term state))
+       ; (- (cw "Apply-witnesses: ~x0~%New-lits: ~x1~%" apply-witnesses new-lits))
+       ((mv er new-lits-simp state)
+        (eqbylbp-simplify-each
+         (wcp-beta-reduce-list new-lits) simp-hint state))
+       ((when er)
+        (raise "Simplify failed: ~x0" er)
+        (mv nil state))
+       (targets (eqbylbp-collect-terms-list (append new-lits-simp clause)))
+       ; (- (cw "Targets: ~x0~%" targets))
+       ((mv examples ?targets state)
+        (eqbylbp-decide-examples-passes
+         passes clause 'eqbylbp-index targets instance-rule restrict-term simp-hint state)))
+    (mv (eqbylbp-pair-hints apply-witnesses examples witness-rule)
+        state)))
+
+(define logbitp-reasoning-fn (clause
+                              restrict
+                              passes
+                              simp-hint
+                              add-hints
+                              stablep
+                              state)
+  
+  :mode :program
+  (b* (((unless stablep) (value nil))
+       ((mv cp-hint state)
+        (eqbylbp-witness-hints clause restrict passes simp-hint state)))
+    (value `(:clause-processor (witness-cp clause ',cp-hint state)
+             . ,add-hints))))
+
+(defxdoc logbitp-reasoning
+  :parents (bitops)
+  :short "A computed hint for proving bit-twiddling theorems by smartly sampling bits"
+  :long "<p>@('Logbitp-reasoning') is a computed hint for proving theorems
+about bitvector operations.  Example usage:</p>
+@({
+ (defthm pass-context-of-ash
+   (implies (equal (logand (ash mask (- (ifix n))) a1)
+                   (logand (ash mask (- (ifix n))) a2))
+            (equal (logand mask (ash a1 n))
+                   (logand mask (ash a2 n))))
+   :hints ((logbitp-reasoning)))
+ })
+
+<p>It works by:</p>
+<ul>
+<li>Creating <i>witnesses</i> for inequality hyps/equality conclusions, replacing
+ @('(not (equal a b))') with:
+@({
+ (implies (and (integerp x) (integerp y))
+          (and (natp bit)
+               (not (equal (logbitp bit x)
+                           (logbitp bit y)))))
+ })
+where @('bit') is a fresh variable,</li>
+<li><i>Instantiating</i> equality hyps/inequality conclusions, replacing
+@('(equal a b)') with @('(equal (logbitp bit a) (logbitp bit b))'), for one or
+more several values of @('bit').</li>
+</ul>
+
+<p>The main work done by this computed hint is to decide how to instantiate
+@('bit') for each of the equality hyps/inequality conclusions. To do this
+we:</p>
+<ol>
+<li>Keep track of a list of logbitp term \"targets\", which we think of as
+already appearing in our goal either due to witnessing or instantiation.</li>
+<li>Try to instantiate equality hyps so as to create more occurrences of
+existing targets.</li>
+</ol>
+
+<p>We take @('pass-context-of-ash') above as an example.</p>
+<ol>
+
+<li>First we find the literals of the clause that we'll create witnesses for --
+in this case, the conclusion.  We'll introduce some new variable @('wbit') and
+our new conclusion will be (omitting some type info that isn't directly
+relevant)
+@({
+ (equal (logbitp wbit (logand mask (ash a1 n)))
+        (logbitp wbit (logand mask (ash a2 n))))
+ })
+</li>
+
+<li>Next we simplify this new conclusion and extract the logbitp terms that the
+simplified term contains:
+@({
+ (logbitp wbit mask)
+ (logbitp (+ (- (ifix n)) wbit) a1)
+ (logbitp (+ (- (ifix n)) wbit) a2)
+ })
+These are now our target terms.</li>
+
+<li>Next we look for instantiations of our hypothesis that, when simplified,
+will contain one or more of these target terms.  To do this, we first
+instantiate it with a variable @('ibit'), obtaining:
+@({
+ (equal (logbitp ibit (logand (ash mask (- (ifix n))) a1))
+        (logbitp ibit (logand (ash mask (- (ifix n))) a1)))
+ })
+</li>
+<li>Then we simplify the result and extract the resulting logbitp terms:
+@({
+  (logbitp ibit a1)
+  (logbitp ibit a2)
+  (logbitp (+ (ifix n) (nfix ibit)) mask)
+ })
+</li>
+
+<li>Now we try to find values of @('ibit') that will make one or more of these
+results match one or more of the target terms.  We immediately find that by
+setting @('ibit') to @('(+ (- (nfix n)) wbit)') we create some matches.  So we
+decide to instantiate the hyp using this term as our bit index.</li>
+
+<li>All of the above was done just to compute a hint.  The actual hint we
+provide is a call to @(see witness-cp), a clause processor that supports this
+sort of witness creation and instantiation, with instructions to do the
+witnessing and instantiation steps that we've settled on.  Once this clause
+processor runs, the resulting proof splits into 8 subgoals that are all quickly
+proved.</li>
+
+</ol>
+
+<p>@('Logbitp-reasoning') is a macro that can take a few optional arguments,
+but reasonable defaults (in the invocation below) are provided:</p>
+@({
+ :hints ((logbitp-reasoning
+          :restrict t
+          :passes 1
+          :simp-hint (:in-theory
+                       (enable* logbitp-case-splits
+                                logbitp-when-bit
+                                logbitp-of-const-split))
+          :add-hints (:in-theory
+                      (enable* logbitp-case-splits
+                               logbitp-when-bit
+                               logbitp-of-const-split))))
+ })
+
+<p>The meanings of these:</p>
+
+<ul> <li>@(':restrict') is a term in the
+variables @('x') and @('y') that restricts the equality literals to which we
+will apply witnessing/instantiation.  For example,
+ @({
+   :restrict (or (and (consp x) (eq (car x) 'binary-logand))
+                 (and (consp y) (eq (car y) 'binary-logand)))
+  })
+will cause the hint to ignore any equality literals that don't have an argument
+that is a call of logand.</li>
+<li>@(':passes') determines the number of passes through the clause we use to
+collect instantiations and target terms.  Instantiations can add new targets,
+and the more targets there are, the more instantiations may be found.</li>
+<li>@(':simp-hint') is the hint given to the simplifier while deciding on the
+instantiations.</li>
+<li>@(':add-hints') are hints given at the same time as the clause processor hint.</li>
+</ul>
+")
+
+(defmacro logbitp-reasoning (&key 
+                             (restrict 't)
+                             (passes '1)
+                             (simp-hint '(:in-theory
+                                          (enable* logbitp-case-splits
+                                                   logbitp-when-bit
+                                                   acl2::logbitp-of-const-split)))
+                             (add-hints '(:in-theory
+                                          (e/d* (logbitp-case-splits
+                                                 logbitp-when-bit
+                                                 acl2::logbitp-of-const-split)))))
+  `(logbitp-reasoning-fn
+    clause ',restrict ',passes ',simp-hint ',add-hints
+    stable-under-simplificationp state))
+
+
+
+;; Demo
+(local
+ (defthm pass-context-of-logapp
+   (implies (and (equal (logand (ash mask (- (nfix n))) b1)
+                        (logand (ash mask (- (nfix n))) b2))
+                 (equal (logand (loghead n mask) a1)
+                        (logand (loghead n mask) a2)))
+            (equal (logand mask (logapp n a1 b1))
+                   (logand mask (logapp n a2 b2))))
+   :hints ((logbitp-reasoning))))
+
+(local
+ (defthm pass-context-of-ash
+   (implies (equal (logand (ash mask (- (ifix n))) a1)
+                   (logand (ash mask (- (ifix n))) a2))
+            (equal (logand mask (ash a1 n))
+                   (logand mask (ash a2 n))))
+   :hints ((logbitp-reasoning))))
+       
+                               
+
+
 
 
 
