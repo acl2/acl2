@@ -38,7 +38,7 @@
 ;;;                     LNOT
 ;;;**********************************************************************
 
-(defsection-rtl |Deprecated@Complementation| |Deprecated@Logical Operations|
+(defsection-rtl |Deprecated/Complementation| |Deprecated/Logical Operations|
 
 (defund lnot (x n)
   (declare (xargs :guard (and (natp x)
@@ -130,7 +130,7 @@
 ;;;                LAND, LIOR, and LXOR
 ;;;**********************************************************************
 
-(defsection-rtl |Deprecated@Binary Operations| |Deprecated@Logical Operations|
+(defsection-rtl |Deprecated/Binary Operations| |Deprecated/Logical Operations|
 
 (defund binary-land (x y n)
   (declare (xargs :guard (and (natp x)
@@ -759,7 +759,7 @@
 ;;;                Algebraic Properties
 ;;;**********************************************************************
 
-(defsection-rtl |Deprecated@Algebraic Properties| |Deprecated@Logical Operations|
+(defsection-rtl |Deprecated/Algebraic Properties| |Deprecated/Logical Operations|
 
 (defthm lnot-lnot
   (implies (and (case-split (natp n))

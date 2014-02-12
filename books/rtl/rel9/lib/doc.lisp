@@ -5,14 +5,14 @@
 ; Description:
 
 ; This file connects xdoc with David Russinoff's online rtl manual,
-; http://russinoff.com/libman/top.html.
+; http://russinoff.com/libman/index.html.
 
 ; As of this writing (February, 2014), log.lisp is out of sync with the online
 ; rtl manual; logn.lisp corresponds to it instead.  Accommodation for that
-; issue may be found by searching for "deprecated" below and log.lisp.  That
-; accommodation is rather ugly in places, but it suffices, and we plan to clean
-; that up after David Russinoff updates his manual to match log.lisp in place
-; of logn.lisp.
+; issue may be found by searching for "deprecated" below and in logn.lisp and
+; log.lisp.  That accommodation is rather ugly in places, but it suffices, and
+; we plan to clean that up after David Russinoff updates his manual to match
+; log.lisp in place of logn.lisp.
 
 (in-package "ACL2")
 
@@ -22,8 +22,10 @@
 ; spaces replaced by underscores and commas deleted.  These are organized to
 ; match the hierarchy on that page.
 
-; We use "@" rather than ":" as a separator so that ACL2-Doc can include the
+; We use "/" rather than ":" as a separator so that ACL2-Doc can include the
 ; node, since ACL2-Doc ignores names that ACL2 prints using vertical bars.
+; Also, Jared Davis points out that the std libraries use "/" as a separator,
+; so we follow that convention.
 
   '((|Register-Transfer Logic| ; basic.lisp
      (|Basic Arithmetic Functions|
@@ -34,10 +36,10 @@
       |Bit Slices|
       |Bit Extraction|
       |Concatenation|)
-     (|Deprecated@Logical Operations| ; logn.lisp (log.lisp handled separately)
-      |Deprecated@Complementation|
-      |Deprecated@Binary Operations|
-      |Deprecated@Algebraic Properties|))
+     (|Deprecated/Logical Operations| ; logn.lisp (log.lisp handled separately)
+      |Deprecated/Complementation|
+      |Deprecated/Binary Operations|
+      |Deprecated/Algebraic Properties|))
     (|Floating-Point Arithmetic|
      (|Floating-Point Representation| ; float.lisp
       |Sign Exponent and Significand|
@@ -63,11 +65,12 @@
     |Bibliography|))
 
 ; For handling "deprecated" issue, we separate out this function rather than
-; inlining it in rtl-node-alist1.  We use "@" rather than ":" as a separator so
+; inlining it in rtl-node-alist1.  We use "/" rather than ":" as a separator so
 ; that ACL2-Doc can include the node, since ACL2-Doc ignores names that ACL2
-; prints using vertical bars.
+; prints using vertical bars.  Also, Jared Davis points out that the std
+; libraries use "/" as a separator, so we follow that convention.
 (defun rtl-node-name-basic (sym)
-  (intern$ (concatenate 'string "RTL@" (symbol-name sym))
+  (intern$ (concatenate 'string "RTL/" (symbol-name sym))
            "ACL2"))
 
 (defun rtl-node-alist1 (sym global-index)
@@ -158,7 +161,8 @@
        :short ,(symbol-name name)
        :long ,(concatenate 'string
                            "<p>See also <a href='" url "'>"
-                           "David Russinoff's online rtl manual</a>.</p>"
+                           "the corresponding section in David Russinoff's "
+                           "online rtl manual</a>.</p>"
                            (defsection-rtl-defs events))
        (deflabel ,(intern-in-package-of-symbol
                    (concatenate 'string (symbol-name name) "$SECTION")
@@ -180,7 +184,7 @@
          "<p>Unlike other sections of the rtl documentation, this section
  does not yet correspond to David Russinoff's online manual, which instead
  documents corresponding functions that are decremented; see @(see
- |RTL@Deprecated@Logical Operations|).</p>"
+ |RTL/Deprecated/Logical Operations|).</p>"
          (defsection-rtl-defs events))
        (deflabel ,(intern-in-package-of-symbol
                    (concatenate 'string (symbol-name name) "$SECTION")
@@ -209,12 +213,24 @@
                           ,(rtl-node-name-lst children)))
 
 (defxdoc rtl
-  :parents (top)
+  :parents (arithmetic hardware-verification)
   :short "A library of register-transfer logic and computer arithmetic"
   :long "<p>This @(see documentation) for @(see community-books) residing under
   @('rtl/rel9') contains links to David Russinoff's online rtl manual, <i><a
-  href='http://russinoff.com/libman/top.html'>A Formal Theory of
-  Register-Transfer Logic and Computer Arithmetic</a></i>.</p>")
+  href='http://russinoff.com/libman/index.html'>A Formal Theory of
+  Register-Transfer Logic and Computer Arithmetic</a></i>.  The organization of
+  that manual is essentially isomorphic to the organization of the tree of
+  documentation topics under this RTL topic.  Each leaf topic of that tree
+  corresponds to a section of a book in the directory @('rtl/rel9/lib/').  The
+  (leaf) topic for a section has two parts: (1) a link near the top of the page
+  points to the corresponding page in the online rtl manual, which contains
+  discussion and proofs written in mathematical English; and (2) the rest of
+  the page displays definitions and theorems from that section.  Note that the
+  books in @('rtl/rel9/lib/') contain additional definitions and theorems not
+  documented here or in the rtl online manual.</p>
+
+  <p>See file @('rtl/rel9/README') for additional information about this
+  library.</p>")
 
 (rtl-order-subtopics rtl (|Register-Transfer Logic|
                           |Floating-Point Arithmetic|
@@ -248,7 +264,7 @@
                      (|Basic Arithmetic Functions|
                       |Bit Vectors|
                       |Logical Operations|
-                      |Deprecated@Logical Operations|))
+                      |Deprecated/Logical Operations|))
 
 ; Handle top-level leaf:
 (defsection-rtl |Bibliography| rtl)

@@ -30,7 +30,8 @@ See the comments in lib/top.lisp for information on what each book in lib/
 contains. 
 
 The library files contain virtually no documentation.  A detailed companion
-document is available online.
+document is available online as follows, and can also be accessed through
+the documentation topic, RTL, in the acl2+books combined manual.
 
     D.M. Russinoff, A formal theory of register-transfer logic and computer
     arithmetic, 2006.  
