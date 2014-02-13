@@ -28,6 +28,11 @@
 :q
 (in-package "CL-USER")
 (load "quicklisp.lsp")
-(quicklisp-quickstart:install :path (concatenate 'string acl2::*cbd*
-                                                 "inst"))
+
+(quicklisp-quickstart:install :path (concatenate 'string acl2::*cbd* "inst"))
+(setq ql-util::*do-not-prompt* t)
+(ql-dist:install-dist
+ "http://beta.quicklisp.org/dist/quicklisp/2014-01-13/distinfo.txt"
+ :replace t)
+
 (quit)
