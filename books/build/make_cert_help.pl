@@ -242,6 +242,7 @@ sub write_whole_file
 sub parse_max_mem_arg
 {
     # Try to parse the "..." part of (set-max-mem ...), return #GB needed
+    my $filename = shift;
     my $arg = shift;
     my $ret = 0;
 
@@ -259,7 +260,7 @@ sub parse_max_mem_arg
 	$ret      = 2 ** $rexpt;                      # 64 (e.g., 2^6)
     }
     else {
-	print "Warning: skipping unsupported set-max-mem line: $arg\n";
+	print "Warning in $filename: skipping unsupported set-max-mem line: $arg\n";
 	print "Currently supported forms:\n";
 	print "  - (set-max-mem (expt 2 k))\n";
 	print "  - (set-max-mem (* n (expt 2 30)))\n";
@@ -280,7 +281,7 @@ sub scan_source_file
 	chomp($line);
 	if ($line =~ m/^[^;]*\((?:acl2::)?set-max-mem (.*)\)/)
 	{
-	    $max_mem = parse_max_mem_arg($1);
+	    $max_mem = parse_max_mem_arg($filename, $1);
 	}
 	elsif ($line =~ m/^[^;]*\((?:acl2::)?set-max-time ([0-9]*)\)/)
 	{
@@ -307,7 +308,7 @@ sub scan_source_file
 # 	chomp($line);
 # 	if ($line =~ m/^[^;]*\((acl2::)?set-max-mem (.*)\)/)
 # 	{
-# 	    my $gb = parse_max_mem_arg($2);
+# 	    my $gb = parse_max_mem_arg($filename, $2);
 # 	    close $fd;
 # 	    return $gb;
 # 	}
