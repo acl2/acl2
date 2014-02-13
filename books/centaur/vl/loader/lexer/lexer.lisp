@@ -245,9 +245,11 @@ order, you can search for long prefixes first, e.g., @('>>>') before
            (vl-lex-plain-alist echars (vl-lexstate->poundops st) warnings))
 
           (#\$ ;; 36
-           (mv-let (tok rem)
-             (vl-lex-system-identifier echars)
-             (mv tok rem (ok))))
+           (b* (((mv tok rem) (vl-lex-system-identifier echars))
+                ((when tok) (mv tok rem (ok)))
+                ((unless (vl-lexstate->dollarp st)) ;; No plain $ tokens
+                 (mv nil echars (ok))))
+             (vl-lex-plain echars "$" :vl-dollar warnings)))
 
           (#\% ;; 37
            (vl-lex-plain-alist echars (vl-lexstate->remops st) warnings))

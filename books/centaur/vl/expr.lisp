@@ -43,15 +43,27 @@ atomic expression includes some <b>guts</b>, which refer to either an:</p>
 
 <ul>
 
+<li>@(see vl-id-p): a simple, non-hierarchical identifier,</li>
+
 <li>@(see vl-constint-p): an integer literal with no X or Z bits,</li>
 
 <li>@(see vl-weirdint-p): an integer literal with some X or Z bits,</li>
+
+<li>@(see vl-extint-p): an unbased, unsized integer literal like @(''0') or
+@(''x'),</li>
 
 <li>@(see vl-real-p): a \"real literal\", i.e., a floating point number,</li>
 
 <li>@(see vl-string-p): a string literal,</li>
 
-<li>@(see vl-id-p): a simple, non-hierarchical identifier,</li>
+<li>@(see vl-time-p): time literals like @('3ns'),</li>
+
+<li>@(see vl-nullexpr-p): the SystemVerilog @('null') expression,</li>
+
+<li>@(see vl-thisexpr-p): the SystemVerilog @('this') expression,</li>
+
+<li>@(see vl-unbounded-p): the SystemVerilog @('$') expression, for unbounded
+ranges,</li>
 
 <li>@(see vl-hidpiece-p): one piece of a hierarchical identifier,</li>
 
@@ -62,9 +74,9 @@ atomic expression includes some <b>guts</b>, which refer to either an:</p>
 
 </ul>
 
-<p>The last three of these are probably not things you would ordinarily think
-of as atomic expressions.  However, by accepting them as atomic expressions, we
-are able to achieve the straightforward recursive structure we desire.</p>
+<p>Some of these are probably not things you would ordinarily think of as
+atomic expressions.  However, accepting them as atomic expressions lets us
+achieve the straightforward recursive structure we desire for expressions.</p>
 
 <p>In addition to their guts, each @(see vl-atom-p) includes a</p>
 
@@ -491,6 +503,15 @@ hons).  This may not be worthwhile since there are probably usually not too
 many weirdints, but by the same reasoning it shouldn't be too harmful.</p>")
 
 
+(defaggregate vl-extint
+  :short "Representation for unbased, unsized integer literals, viz. @(''0'),
+@(''1'), @(''x'), and @(''z')."
+  :tag :vl-extint
+  :hons t
+  :legiblep nil
+  ((value vl-bit-p "The kind of extended integer this is.")))
+
+
 (defaggregate vl-string
   :short "Representation for string literals."
   :tag :vl-string
@@ -514,10 +535,30 @@ many weirdints, but by the same reasoning it shouldn't be too harmful.</p>")
              a string such as @('\"3.41e+12\"')."))
 
   :long "<p>We have almost no support for working with real numbers.  You
-should probably not rely on our current representation, since q we will almost
+should probably not rely on our current representation, since we will almost
 certainly want to change it as soon as we want to do anything with real
 numbers.</p>")
 
+(defaggregate vl-time
+  :short "Representation of time amounts."
+  :tag :vl-time
+  :hons t
+  :legiblep nil
+
+  ((quantity stringp
+             :rule-classes :type-prescription
+             "An ACL2 string with the amount.  In practice, the amount should
+              match either @('unsigned_number') or @('fixed_point_number'),
+              e.g., @('\"3\"') or @('\"45.617\"').  We don't try to process
+              this further because (1) we don't expect it to matter for much,
+              and (2) ACL2 doesn't really support fixed point numbers.")
+   (units     vl-timeunit-p
+              "The kind of time unit this is, e.g., seconds, milliseconds,
+               microseconds, ..."))
+
+  :long "<p>We barely support this.  You should probably not rely on our
+current representation, since we will almost certainly want to change it as
+soon as we do anything with time units.</p>")
 
 (defaggregate vl-id
   :short "Representation for simple identifiers."
@@ -545,7 +586,6 @@ more information.</p>
 <p>Like @(see vl-constint-p)s, we automatically create these structures with
 @(see hons).  This seems quite nice, since the same names may be used many
 times throughout all the expressions in a design.</p>")
-
 
 (defaggregate vl-hidpiece
   :short "Represents one piece of a hierarchical identifier."
@@ -586,7 +626,6 @@ parse tree, you can freely assume that any @('vl-id-p') you come across really
 refers to some module item, and not to some part of a hierarchical
 identifier.</p>")
 
-
 (defaggregate vl-sysfunname
   :short "Represents a system function name."
   :tag :vl-sysfunname
@@ -596,7 +635,6 @@ identifier.</p>")
 
   :long "<p>We use a custom representation for the names of system functions,
 so that we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
-
 
 (defaggregate vl-funname
   :short "Represents a (non-system) function name."
@@ -608,110 +646,53 @@ so that we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
   :long "<p>We use a custom representation for the names of functions, so that
 we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
 
+(defaggregate vl-nullexpr
+  :short "Representation for the SystemVerilog @('null') expression."
+  :tag :vl-nullexpr
+  :legiblep nil
 
-(define vl-atomguts-p (x)
+  ((bogus (not bogus)
+          :rule-classes :type-prescription
+          "A useless field only because @(see defaggregate)s can't be empty.")))
+
+(defaggregate vl-thisexpr
+  :short "Representation for the SystemVerilog @('this') expression."
+  :tag :vl-thisexpr
+  :legiblep nil
+
+  ((bogus (not bogus)
+          :rule-classes :type-prescription
+          "A useless field only because @(see defaggregate)s can't be empty.")))
+
+(defaggregate vl-unbounded
+  :short "Representation for the SystemVerilog @('$') expression, for unbounded
+ranges."
+  :tag :vl-unbounded
+  :legiblep nil
+
+  ((bogus (not bogus)
+          :rule-classes :type-prescription
+          "A useless field only because @(see defaggregate)s can't be empty.")))
+
+
+(defsum vl-atomguts
   :short "The main contents of a @(see vl-atom-p)."
   :long "<p>The guts of an atom are its main contents.  See @(see vl-expr-p)
 for a discussion of the valid types.</p>"
-
-  ;; BOZO some kind of defsum macro could eliminate a lot of this boilerplate
-
-  (mbe :logic (or (vl-constint-p x)
-                  (vl-weirdint-p x)
-                  (vl-string-p x)
-                  (vl-real-p x)
-                  (vl-id-p x)
-                  (vl-hidpiece-p x)
-                  (vl-funname-p x)
-                  (vl-sysfunname-p x))
-       :exec (case (tag x)
-               (:vl-id       (vl-id-p x))
-               (:vl-constint (vl-constint-p x))
-               (:vl-weirdint (vl-weirdint-p x))
-               (:vl-string   (vl-string-p x))
-               (:vl-real     (vl-real-p x))
-               (:vl-hidpiece (vl-hidpiece-p x))
-               (:vl-funname  (vl-funname-p x))
-               (otherwise    (vl-sysfunname-p x))))
-
-  ///
-
-  (defthm consp-when-vl-atomguts-p
-    (implies (vl-atomguts-p x)
-             (consp x))
-    :rule-classes :compound-recognizer)
-
-  (defthm vl-atomguts-p-when-vl-constint-p
-    (implies (vl-constint-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-atomguts-p-when-vl-weirdint-p
-    (implies (vl-weirdint-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-atomguts-p-when-vl-real-p
-    (implies (vl-real-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-atomguts-p-when-vl-string-p
-    (implies (vl-string-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-atomguts-p-when-vl-id-p
-    (implies (vl-id-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-atomguts-p-when-vl-hidpiece-p
-    (implies (vl-hidpiece-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-atomguts-p-when-vl-sysfunname-p
-    (implies (vl-sysfunname-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-atomguts-p-when-vl-funname-p
-    (implies (vl-funname-p x)
-             (vl-atomguts-p x)))
-
-  (defthm vl-constint-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-constint)
-                  (vl-atomguts-p x))
-             (vl-constint-p x)))
-
-  (defthm vl-weirdint-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-weirdint)
-                  (vl-atomguts-p x))
-             (vl-weirdint-p x)))
-
-  (defthm vl-string-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-string)
-                  (vl-atomguts-p x))
-             (vl-string-p x)))
-
-  (defthm vl-real-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-real)
-                  (vl-atomguts-p x))
-             (vl-real-p x)))
-
-  (defthm vl-id-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-id)
-                  (vl-atomguts-p x))
-             (vl-id-p x)))
-
-  (defthm vl-hidpiece-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-hidpiece)
-                  (vl-atomguts-p x))
-             (vl-hidpiece-p x)))
-
-  (defthm vl-funname-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-funname)
-                  (vl-atomguts-p x))
-             (vl-funname-p x)))
-
-  (defthm vl-sysfunname-p-by-tag-when-vl-atomguts-p
-    (implies (and (equal (tag x) :vl-sysfunname)
-                  (vl-atomguts-p x))
-             (vl-sysfunname-p x))))
+  (vl-constint
+   vl-weirdint
+   vl-extint
+   vl-string
+   vl-real
+   vl-id
+   vl-hidpiece
+   vl-funname
+   vl-sysfunname
+   vl-nullexpr
+   vl-thisexpr
+   vl-unbounded
+   vl-time
+   ))
 
 
 (define vl-fast-id-p ((x vl-atomguts-p))

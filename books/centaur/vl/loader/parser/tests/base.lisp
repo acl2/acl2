@@ -29,13 +29,28 @@
 (define vl-pretty-atom ((x vl-atom-p))
   (let ((guts (vl-atom->guts x)))
     (cond ((vl-constint-p guts)    (vl-constint->value guts))
-          ((vl-weirdint-p guts)    (list 'weird (vl-bitlist->string (vl-weirdint->bits guts))))
+          ((vl-weirdint-p guts)
+           (list 'weird
+                 (vl-bitlist->string (vl-weirdint->bits guts))))
           ((vl-string-p guts)      (list 'str  (vl-string->value guts)))
           ((vl-real-p guts)        (list 'real (vl-real->value guts)))
           ((vl-id-p guts)          (list 'id   (vl-id->name guts)))
           ((vl-hidpiece-p guts)    (list 'hid  (vl-hidpiece->name guts)))
           ((vl-funname-p guts)     (list 'fun  (vl-funname->name guts)))
-          ((vl-sysfunname-p guts)  (list 'sys  (vl-sysfunname->name guts))))))
+          ((vl-sysfunname-p guts)  (list 'sys  (vl-sysfunname->name guts)))
+          ((vl-nullexpr-p guts)    :null)
+          ((vl-thisexpr-p guts)    :this)
+          ((vl-unbounded-p guts)   :$)
+          ((vl-time-p guts)
+           (list 'time
+                 (concatenate 'string
+                              (vl-time->quantity guts)
+                              (vl-timeunit->string
+                               (vl-time->units guts)))))
+          ((vl-extint-p guts)
+           (list 'ext (vl-extint->value guts)))
+          (t
+           (raise "Unsupported kind of atom: ~x0." x)))))
 
 (defines vl-pretty-exprs
   :flag nil

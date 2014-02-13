@@ -138,30 +138,38 @@
             (">>="  . :vl-shreq)
             ("<<<=" . :vl-ashleq)
             (">>>=" . :vl-ashreq)
-            ("'{"   . :vl-assignpat))))
+            ("'{"   . :vl-assignpat)
+            ("$"    . :vl-dollar))))
 
 (defun make-punctuation-tests (alist config)
-  (if (consp alist)
-      (list*
-       ;; Does it work for OP itself?
-       `(vl-lex-op-testcase :input ,(caar alist)
-                            :config ',config
-                            :successp t
-                            :type ,(cdar alist))
-       ;; How about for "OP foo"?
-       `(vl-lex-op-testcase :input ,(cat (caar alist) " foo")
-                            :config ',config
-                            :successp t
-                            :remainder " foo"
-                            :type ,(cdar alist))
-       ;; How about for "OP1"?
-       `(vl-lex-op-testcase :input ,(cat (caar alist) "1")
-                            :config ',config
-                            :successp t
-                            :remainder "1"
-                            :type ,(cdar alist))
-       (make-punctuation-tests (cdr alist) config))
-    nil))
+  (b* (((when (atom alist))
+        nil)
+       (ans (make-punctuation-tests (cdr alist) config))
+       (ans (list*
+             ;; Does it work for OP itself?
+             `(vl-lex-op-testcase :input ,(caar alist)
+                                  :config ',config
+                                  :successp t
+                                  :type ,(cdar alist))
+             ;; How about for "OP foo"?
+             `(vl-lex-op-testcase :input ,(cat (caar alist) " foo")
+                                  :config ',config
+                                  :successp t
+                                  :remainder " foo"
+                                  :type ,(cdar alist))
+             ans))
+       (ans
+        ;; How about for "OP1"?  This doesn't work for $1, because that's a
+        ;; valid system identifier.  So, gross hack to avoid that.
+        (if (equal (caar alist) "$")
+            ans
+          (cons `(vl-lex-op-testcase :input ,(cat (caar alist) "1")
+                                     :config ',config
+                                     :successp t
+                                     :remainder "1"
+                                     :type ,(cdar alist))
+                ans))))
+    ans))
 
 
 

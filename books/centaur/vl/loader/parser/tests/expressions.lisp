@@ -41,14 +41,35 @@
   (exprtest-p x)
   :guard t)
 
+(define make-exprtest-fail ((x exprtest-p))
+  (change-exprtest x :successp nil))
+
+(defprojection make-exprtests-fail (x)
+  (make-exprtest-fail x)
+  :guard (exprtestlist-p x))
+
 (define run-exprtest ((test exprtest-p)
                       &key
                       ((config vl-loadconfig-p) '*vl-default-loadconfig*))
   (b* (((exprtest test) test)
-       (- (cw "Running test ~x0.~%" test))
-       (tokens   (make-test-tokens test.input :config config))
-       (warnings nil)
-       ((mv errmsg? val tokens warnings) (vl-parse-expression))
+       (- (cw "Running test ~x0; editing ~s1, strict ~x2~%" test
+              (vl-loadconfig->edition config)
+              (vl-loadconfig->strictp config)))
+
+       (echars (vl-echarlist-from-str test.input))
+       ((mv successp tokens warnings)
+        (vl-lex echars
+                :config config
+                :warnings nil))
+       ((unless successp)
+        (or (not test.successp)
+            (raise "FAILURE: didn't even lex the input successfully.")))
+
+       ((mv tokens ?cmap) (vl-kill-whitespace-and-comments tokens))
+       ((mv errmsg? val tokens warnings)
+        (vl-parse-expression :tokens tokens
+                             :warnings warnings
+                             :config config))
        (remainder (vl-tokenlist->string-with-spaces tokens))
        (pretty (and val (vl-pretty-expr val)))
 
@@ -246,14 +267,6 @@
 
    ))
 
-(make-event
- (progn$
-  (run-exprtests *basic-ad-hoc-tests* :config *vl-default-loadconfig*)
-  '(value-triple :success)))
-
-
-
-
 (defconst *basic-precedence-tests*
   (list
 
@@ -379,12 +392,6 @@
 
    ))
 
-(make-event
- (progn$
-  (run-exprtests *basic-precedence-tests* :config *vl-default-loadconfig*)
-  '(value-triple :success)))
-
-
 (defconst *basic-atts-tests*
   (list
 
@@ -446,7 +453,163 @@
 
    ))
 
+
+(defconst *all-basic-tests*
+  ; Tests that should work on every configuration, Verilog-2005 and
+  ; SystemVerilog-2005.
+  (append *basic-ad-hoc-tests*
+          *basic-precedence-tests*
+          *basic-atts-tests*))
+
 (make-event
  (progn$
-  (run-exprtests *basic-atts-tests* :config *vl-default-loadconfig*)
+  (run-exprtests *all-basic-tests*
+                 :config (make-vl-loadconfig :edition :verilog-2005
+                                             :strictp nil))
+  (run-exprtests *all-basic-tests*
+                 :config (make-vl-loadconfig :edition :verilog-2005
+                                             :strictp t))
+  (run-exprtests *all-basic-tests*
+                 :config (make-vl-loadconfig :edition :system-verilog-2012
+                                             :strictp nil))
+  (run-exprtests *all-basic-tests*
+                 :config (make-vl-loadconfig :edition :system-verilog-2012
+                                             :strictp t))
+  '(value-triple :success)))
+
+
+
+; DIFF TESTS.
+;
+; These are special test cases which may be validly parsed in different ways on
+; SystemVerilog-2012 versus Verilog-2005.
+
+(defconst *sysv-diff-tests*  ;; The expected results for SystemVerilog-2012.
+  (list
+
+   (make-exprtest :input "3ns"
+                  :expect '(time "3ns"))
+
+   (make-exprtest :input "3.0s"
+                  :expect '(time "3.0s"))
+
+   (make-exprtest :input "3.0123ps"
+                  :expect '(time "3.0123ps"))
+
+   (make-exprtest :input "123.45us"
+                  :expect '(time "123.45us"))
+
+   (make-exprtest :input "123.0ms"
+                  :expect '(time "123.0ms"))
+
+   (make-exprtest :input "0fs"
+                  :expect '(time "0fs"))
+
+   (make-exprtest
+    :input "null"
+    :expect :null)
+
+   (make-exprtest
+    :input "this"
+    :expect :this)))
+
+
+(defconst *verilog-diff-tests* ;; The expected results for Verilog-2005.
+  (list
+   (make-exprtest :input "3ns"
+                  :expect 3
+                  :remainder "ns")
+
+   (make-exprtest :input "3.0s"
+                  :expect '(real "3.0")
+                  :remainder "s")
+
+   (make-exprtest :input "3.0123ps"
+                  :expect '(real "3.0123")
+                  :remainder "ps")
+
+   (make-exprtest :input "123.45us"
+                  :expect '(real "123.45")
+                  :remainder "us")
+
+   (make-exprtest :input "123.0ms"
+                  :expect '(real "123.0")
+                  :remainder "ms")
+
+   (make-exprtest :input "0fs"
+                  :expect 0
+                  :remainder "fs")
+
+   (make-exprtest
+    :input "null"
+    :expect '(id "null"))
+
+   (make-exprtest
+    :input "this"
+    :expect '(id "this"))))
+
+
+
+(make-event
+ (progn$
+
+  (run-exprtests *sysv-diff-tests*
+                 :config (make-vl-loadconfig :edition :system-verilog-2012
+                                             :strictp nil))
+  (run-exprtests *sysv-diff-tests*
+                 :config (make-vl-loadconfig :edition :system-verilog-2012
+                                             :strictp t))
+  (run-exprtests *verilog-diff-tests*
+                 :config (make-vl-loadconfig :edition :verilog-2005
+                                             :strictp nil))
+  (run-exprtests *verilog-diff-tests*
+                 :config (make-vl-loadconfig :edition :verilog-2005
+                                             :strictp t))
+  '(value-triple :success)))
+
+
+
+(defconst *sysv-only-tests*
+  ;; These are tests that work with SystemVerilog, but that are just malformed
+  ;; for Verilog-2005.
+  (list
+
+   ;; extended literals
+   (make-exprtest :input "'0"
+                  :expect '(ext :vl-0val))
+
+   (make-exprtest :input "'1"
+                  :expect '(ext :vl-1val))
+
+   (make-exprtest :input "'x"
+                  :expect '(ext :vl-xval))
+
+   (make-exprtest :input "'z"
+                  :expect '(ext :vl-zval))
+
+   (make-exprtest :input "'02"             ;; BOZO can this be right?
+                  :expect '(ext :vl-0val)
+                  :remainder "2")
+
+   ;; lone $ signs
+   (make-exprtest :input "$"
+                  :expect :$)
+
+   ))
+
+
+(make-event
+ (progn$
+  (run-exprtests *sysv-only-tests*
+                 :config (make-vl-loadconfig :edition :system-verilog-2012
+                                             :strictp nil))
+  (run-exprtests *sysv-only-tests*
+                 :config (make-vl-loadconfig :edition :system-verilog-2012
+                                             :strictp t))
+  (run-exprtests (make-exprtests-fail *sysv-only-tests*)
+                 :config (make-vl-loadconfig :edition :verilog-2005
+                                             :strictp nil))
+  (run-exprtests (make-exprtests-fail *sysv-only-tests*)
+                 :config (make-vl-loadconfig :edition :verilog-2005
+                                             :strictp t))
   '(value-triple :success)))

@@ -138,6 +138,102 @@ restrictions).</p>")
 ||#
 
 
+(defun ds-member-implies-sum-thm (name agginfo)
+
+  ;; This produces theorems like this:
+  ;; (defthm vl-atomguts-p-when-vl-constint-p
+  ;;   (implies (vl-constint-p x)
+  ;;            (vl-atomguts-p x)))
+
+  (b* ((xvar     (ds-x name))
+       (sum-name (ds-recognizer-name name))
+       ((agginfo agginfo) agginfo)
+       (mem-name (da-recognizer-name agginfo.name))
+       (thm-name (intern-in-package-of-symbol
+                  (concatenate 'string (symbol-name sum-name) "-WHEN-"
+                               (symbol-name mem-name))
+                  name)))
+    `(defthm ,thm-name
+       (implies (,mem-name ,xvar)
+                (,sum-name ,xvar)))))
+
+(defun ds-member-implies-sum-thms (name agginfos)
+  (if (atom agginfos)
+      nil
+    (cons (ds-member-implies-sum-thm name (car agginfos))
+          (ds-member-implies-sum-thms name (cdr agginfos)))))
+
+#||
+(ds-member-implies-sum-thms 'mysum *agginfos*)
+||#
+
+(defun ds-by-tag-thm (name agginfo)
+
+  ;; This produces theorems like this:
+  ;; (defthm vl-constint-p-by-tag-when-vl-atomguts-p
+  ;;   (implies (and (equal (tag x) :vl-constint)
+  ;;                 (vl-atomguts-p x))
+  ;;            (vl-constint-p x)))
+
+  (b* ((xvar     (ds-x name))
+       (sum-name (ds-recognizer-name name))
+       ((agginfo agginfo) agginfo)
+       (mem-name (da-recognizer-name agginfo.name))
+       (thm-name (intern-in-package-of-symbol
+                  (concatenate 'string (symbol-name mem-name)
+                               "-BY-TAG-WHEN-"
+                               (symbol-name sum-name))
+                  name)))
+    `(defthm ,thm-name
+       (implies (and (equal (tag ,xvar) ,agginfo.tag)
+                     (,sum-name ,xvar))
+                (,mem-name ,xvar)))))
+
+(defun ds-by-tag-thms (name agginfos)
+  (if (atom agginfos)
+      nil
+    (cons (ds-by-tag-thm name (car agginfos))
+          (ds-by-tag-thms name (cdr agginfos)))))
+
+#||
+(ds-by-tag-thms 'mysum *agginfos*)
+||#
+
+
+(defun ds-when-invalid-tag-hyps (name agginfos)
+  (b* (((when (atom agginfos))
+        nil)
+       (xvar (ds-x name))
+       ((agginfo agginfo) (car agginfos)))
+    (cons `(not (equal (tag ,xvar) ,agginfo.tag))
+          (ds-when-invalid-tag-hyps name (cdr agginfos)))))
+
+(defun ds-when-invalid-tag-thm (name agginfos)
+  ;; Generates a theorem like:
+  ;; (defthm vl-atomicstmt-p-when-invalid-tag
+  ;;   (implies (and (not (equal (tag x) :vl-nullstmt))
+  ;;                 (not (equal (tag x) :vl-assignstmt))
+  ;;                 (not (equal (tag x) :vl-deassignstmt))
+  ;;                 (not (equal (tag x) :vl-enablestmt))
+  ;;                 (not (equal (tag x) :vl-disablestmt))
+  ;;                 (not (equal (tag x) :vl-eventtriggerstmt)))
+  ;;          (not (vl-atomicstmt-p x)))
+  ;;   :rule-classes ((:rewrite :backchain-limit-lst 0)))
+  (b* ((xvar     (ds-x name))
+       (sum-name (ds-recognizer-name name))
+       (thm-name (intern-in-package-of-symbol
+                  (concatenate 'string (symbol-name sum-name)
+                               "-WHEN-INVALID-TAG")
+                  name)))
+    `(defthm ,thm-name
+       (implies (and . ,(ds-when-invalid-tag-hyps name agginfos))
+                (not (,sum-name ,xvar)))
+       :rule-classes ((:rewrite :backchain-limit-lst 0)))))
+
+#||
+(ds-when-invalid-tag-thm 'mysum *agginfos*)
+||#
+
 (defun defsum-fn (name other-args kwd-alist other-events state)
   (b* ((__function__ 'deflist)
        (?mksym-package-symbol name)
@@ -195,34 +291,12 @@ restrictions).</p>")
                      (consp ,x))
             :rule-classes :compound-recognizer)
 
-          ;; BOZO theorems like this:
-          ;; (defthm vl-atomguts-p-when-vl-constint-p
-          ;;   (implies (vl-constint-p x)
-          ;;            (vl-atomguts-p x)))
-
-          ;; BOZO theorems like this:
-          ;; (defthm vl-constint-p-by-tag-when-vl-atomguts-p
-          ;;   (implies (and (equal (tag x) :vl-constint)
-          ;;                 (vl-atomguts-p x))
-          ;;            (vl-constint-p x)))
+          ,@(ds-member-implies-sum-thms name agginfos)
+          ,@(ds-by-tag-thms name agginfos)
+          ,(ds-when-invalid-tag-thm name agginfos)
 
           ;; BOZO maybe generate fast functions?
-
-          ;; BOZO something like this:
-          ;; (defthm vl-atomicstmt-p-when-invalid-tag
-          ;;   ;; This is useful for safe-case, to show that all of the cases have been
-          ;;   ;; covered.  Hopefully the backchain limit keeps it from being too expensive.
-          ;;   (implies (and (not (equal (tag x) :vl-nullstmt))
-          ;;                 (not (equal (tag x) :vl-assignstmt))
-          ;;                 (not (equal (tag x) :vl-deassignstmt))
-          ;;                 (not (equal (tag x) :vl-enablestmt))
-          ;;                 (not (equal (tag x) :vl-disablestmt))
-          ;;                 (not (equal (tag x) :vl-eventtriggerstmt)))
-          ;;            (equal (vl-atomicstmt-p x)
-          ;;                   nil))
-          ;;   :rule-classes ((:rewrite :backchain-limit-lst 0)))
-
-
+          ;; BOZO some kind of pattern-match macros?
           )))
 
     `(defsection ,name
@@ -250,9 +324,4 @@ restrictions).</p>")
   :mode :logic
   (foo bar baz))
 ||#
-
-
-
-
-
 

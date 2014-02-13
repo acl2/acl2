@@ -88,10 +88,11 @@ particular standard we're implementing.</p>"
    (xorops   vl-plaintoken-alistp "Operators starting with @('^').")
    (barops   vl-plaintoken-alistp "Operators starting with @('|').")
 
-   (assignpatp booleanp "Enable SystmeVerilog 2012 '{ tokens?")
+   (assignpatp booleanp "Enable SystemVerilog 2012 '{ tokens?")
    (strextsp   booleanp "Enable SystemVerilog 2012 string literal extensions?")
    (timelitsp  booleanp "Enable SystemVerilog 2012 time literals?")
    (extintsp   booleanp "Enable SystemVerilog 2012 '0/'1/'x/'z integers?")
+   (dollarp    booleanp "Enable SystemVerilog 2012 $ tokens?")
    ))
 
 
@@ -149,9 +150,10 @@ particular standard we're implementing.</p>"
    :barops   '(("||"   . :vl-logor)
                ("|"    . :vl-bitor))
    :assignpatp nil
-   :strextsp  nil
-   :timelitsp nil
-   :extintsp  nil
+   :strextsp   nil
+   :timelitsp  nil
+   :extintsp   nil
+   :dollarp    nil
    )
   ///
   (assert!
@@ -239,7 +241,8 @@ particular standard we're implementing.</p>"
    :assignpatp t
    :strextsp   t
    :timelitsp  t
-   :extintsp   t)
+   :extintsp   t
+   :dollarp    t)
   ///
   (assert!
    ;; Basic sanity check, everything should be unique and valid.
@@ -259,7 +262,10 @@ particular standard we're implementing.</p>"
            (set-difference-equal *vl-2012-plain-nonkeywords*
                                  *vl-2005-plain-nonkeywords*)))
      (equal (mergesort new-used)
-            (delete :vl-assignpat (mergesort new-spec))))))
+            (difference (mergesort new-spec)
+                        ;; These are special because they're not just
+                        ;; handled as simple plaintoken-alists.
+                        '(:vl-assignpat :vl-dollar))))))
 
 (defval *vl-2012-lexstate*
   :parents (lexstate)

@@ -95,6 +95,8 @@ defaggregate) structures.</p>"
     (vl-print-str "false")))
 
 (add-json-encoder booleanp jp-bool)
+(add-json-encoder not jp-bool)
+
 
 
 
@@ -560,12 +562,26 @@ of bits, but the JSON standard doesn't really ever say how big of numbers
 must be supported and JSON implementations often use machine integers
 which could not hold such large values.</p>")
 
+(define jp-bit ((x vl-bit-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :short "Encode a @(see vl-bit-p) as a JSON string."
+  (jp-str (implode (list (vl-bit->char x)))))
+
+(add-json-encoder vl-bit-p jp-bit)
+
 (define jp-bitlist ((x vl-bitlist-p) &key (ps 'ps))
   :parents (json-encoders)
   :short "Encode a @(see vl-bitlist-p) as a JSON string."
   (jp-str (vl-bitlist->string x)))
 
 (add-json-encoder vl-bitlist-p jp-bitlist)
+
+(define jp-timeunit ((x vl-timeunit-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :short "Encode a @(see vl-timeunit-p) as a JSON string."
+  (jp-str (vl-timeunit->string x)))
+
+(add-json-encoder vl-timeunit-p jp-timeunit)
 
 (def-vl-jp-aggregate weirdint)
 (def-vl-jp-aggregate string)
@@ -574,6 +590,11 @@ which could not hold such large values.</p>")
 (def-vl-jp-aggregate hidpiece)
 (def-vl-jp-aggregate sysfunname)
 (def-vl-jp-aggregate funname)
+(def-vl-jp-aggregate nullexpr)
+(def-vl-jp-aggregate thisexpr)
+(def-vl-jp-aggregate unbounded)
+(def-vl-jp-aggregate extint)
+(def-vl-jp-aggregate time)
 
 (define vl-jp-atomguts ((x vl-atomguts-p) &key (ps 'ps))
   :parents (vl-jp-expr vl-atomguts-p)
@@ -586,6 +607,11 @@ which could not hold such large values.</p>")
     (:vl-real       (vl-jp-real x))
     (:vl-hidpiece   (vl-jp-hidpiece x))
     (:vl-funname    (vl-jp-funname x))
+    (:vl-nullexpr   (vl-jp-nullexpr x))
+    (:vl-thisexpr   (vl-jp-thisexpr x))
+    (:vl-unbounded  (vl-jp-unbounded x))
+    (:vl-extint     (vl-jp-extint x))
+    (:vl-time       (vl-jp-time x))
     (otherwise      (vl-jp-sysfunname x))))
 
 (add-json-encoder vl-atomguts-p vl-jp-atomguts)

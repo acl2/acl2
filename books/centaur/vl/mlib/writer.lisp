@@ -333,6 +333,35 @@ displays.  The module browser's web pages are responsible for defining the
   (vl-ps-span "vl_id"
               (vl-print-str (vl-maybe-escape-identifier (vl-funname->name x)))))
 
+(define vl-pp-nullexpr ((x vl-nullexpr-p) &key (ps 'ps))
+  (declare (ignore x))
+  (vl-ps-span "vl_key"
+              (vl-print-str "null")))
+
+(define vl-pp-thisexpr ((x vl-thisexpr-p) &key (ps 'ps))
+  (declare (ignore x))
+  (vl-ps-span "vl_key"
+              (vl-print-str "this")))
+
+(define vl-pp-unbounded ((x vl-unbounded-p) &key (ps 'ps))
+  (declare (ignore x))
+  (vl-print-str "$"))
+
+(define vl-pp-extint ((x vl-extint-p) &key (ps 'ps))
+  (b* (((vl-extint x) x))
+    (vl-print-str
+     (case x.value
+       (:vl-0val "'0")
+       (:vl-1val "'1")
+       (:vl-xval "'x")
+       (:vl-zval "'z")))))
+
+(define vl-pp-time ((x vl-time-p) &key (ps 'ps))
+  (b* (((vl-time x) x))
+    (vl-ps-seq
+     (vl-print-str x.quantity)
+     (vl-print (vl-timeunit->string x.units)))))
+
 (define vl-pp-atomguts ((x vl-atomguts-p) &key (ps 'ps))
   :guard-hints (("Goal" :in-theory (enable vl-atomguts-p)))
   (case (tag x)
@@ -343,6 +372,11 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-real       (vl-pp-real x))
     (:vl-hidpiece   (vl-pp-hidpiece x))
     (:vl-funname    (vl-pp-funname x))
+    (:vl-extint     (vl-pp-extint x))
+    (:vl-time       (vl-pp-time x))
+    (:vl-nullexpr   (vl-pp-nullexpr x))
+    (:vl-thisexpr   (vl-pp-thisexpr x))
+    (:vl-unbounded  (vl-pp-unbounded x))
     (otherwise      (vl-pp-sysfunname x))))
 
 (define vl-pp-atom ((x vl-atom-p) &key (ps 'ps))

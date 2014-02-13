@@ -310,11 +310,11 @@ would we do?</p>"
     (change-vl-nonatom x :atts atts)))
 
 
-(defines has-any-atts-p
+(defines vl-expr-has-any-atts-p
   :flag nil
-  :parents (vl-parse-attr-spec)
 
   (define vl-expr-has-any-atts-p ((x vl-expr-p))
+    :parents nil
     :returns (bool booleanp :rule-classes :type-prescription)
     :measure (vl-expr-count x)
     (b* (((when (vl-fast-atom-p x))
@@ -324,12 +324,123 @@ would we do?</p>"
           (vl-exprlist-has-any-atts-p x.args))))
 
   (define vl-exprlist-has-any-atts-p ((x vl-exprlist-p))
+    :parents nil
     :returns (bool booleanp :rule-classes :type-prescription)
     :measure (vl-exprlist-count x)
     (if (atom x)
         nil
       (or (vl-expr-has-any-atts-p (car x))
           (vl-exprlist-has-any-atts-p (cdr x))))))
+
+
+(defparser vl-maybe-parse-base-primary ()
+  :parents (vl-parse-primary)
+  :short "Match basic, atomic kinds of @('primary') expressions, such as
+@('primary_literal'), @('this'), @('$'), and @('null'), returns a @(see
+vl-expr-p)."
+
+  :long "<p>In SystemVerilog-2012, we have:</p>
+
+@({
+     primary ::= primary_literal
+               | 'this'
+               | '$'
+               | 'null'
+               | ... other, more complex things ...
+
+     primary_literal ::= number
+                       | time_literal
+                       | unbased_unsized_literal
+                       | string_literal
+
+     number ::= integral_number
+              | real_number
+
+     integral_number ::= decimal_number
+                       | octal_number
+                       | binary_number
+                       | hex_number
+})
+
+<p>This is very similar to the @('primary') production in Verilog-2005:</p>
+
+@({
+     primary ::= number
+               | string
+               | ... other, more complex things ...
+
+     number ::= decimal_number
+              | octal_number
+              | binary_number
+              | hex_number
+              | real_number
+})
+
+<p>We ignore the \"other, more complex things\" here, and just focus on the
+simple primaries.  Aside from some minor lexical differences at the tips which
+are handled by the @(see lexer) (see for instance @(see lex-strings) and @(see
+lex-numbers)) the main difference here is that SystemVerilog adds time
+literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
+
+  :result (vl-maybe-expr-p val)
+  :resultp-of-nil t
+  :fails never
+  :count strong-on-value
+  (seqw tokens warnings
+        (when (vl-is-token? :vl-inttoken)
+          (int := (vl-match-token :vl-inttoken))
+          (return (make-vl-atom :guts (vl-make-guts-from-inttoken int))))
+
+        (when (vl-is-token? :vl-realtoken)
+          (real := (vl-match-token :vl-realtoken))
+          (return
+           (b* ((value (vl-echarlist->string (vl-realtoken->etext real))))
+             (make-vl-atom :guts (make-vl-real :value value)))))
+
+        (when (vl-is-token? :vl-stringtoken)
+          (str := (vl-match-token :vl-stringtoken))
+          (return
+           (b* ((value (vl-stringtoken->expansion str)))
+             (make-vl-atom :guts (make-vl-string :value value)))))
+
+        (when (eq (vl-loadconfig->edition config) :verilog-2005)
+          ;; That's it for regular Verilog.
+          (return nil))
+
+        ;; New things for SystemVerilog-2012:
+        (when (vl-is-token? :vl-extinttoken)
+          (ext := (vl-match-token :vl-extinttoken))
+          (return
+           (b* ((value (vl-extinttoken->value ext)))
+             (make-vl-atom :guts (make-vl-extint :value value)))))
+
+        (when (vl-is-token? :vl-timetoken)
+          (time := (vl-match-token :vl-timetoken))
+          (return
+           (b* (((vl-timetoken time) time))
+             (make-vl-atom :guts (make-vl-time :quantity time.quantity
+                                               :units time.units)))))
+
+        (when (vl-is-token? :vl-kwd-null)
+          (:= (vl-match-token :vl-kwd-null))
+          (return (make-honsed-vl-atom :guts (make-honsed-vl-nullexpr))))
+
+        (when (vl-is-token? :vl-kwd-this)
+          (:= (vl-match-token :vl-kwd-this))
+          (return (make-honsed-vl-atom :guts (make-honsed-vl-thisexpr))))
+
+        (when (vl-is-token? :vl-dollar)
+          (:= (vl-match-token :vl-dollar))
+          (return (make-honsed-vl-atom :guts (make-honsed-vl-unbounded))))
+
+        (return nil)))
+
+(defthm tokens-nonempty-when-vl-maybe-parse-base-primary
+  (b* (((mv ?errmsg val ?new-tokens ?new-warnings)
+        (vl-maybe-parse-base-primary)))
+    (implies val
+             (consp tokens)))
+  :hints(("Goal" :in-theory (enable vl-maybe-parse-base-primary))))
 
 
 (defparsers parse-expressions
@@ -750,64 +861,44 @@ values.</p>"
 
   (defparser vl-parse-primary ()
     :measure (two-nats-measure (len tokens) 2)
-    (if (not (consp tokens))
-        (vl-parse-error "Unexpected EOF.")
-      (let ((type (vl-token->type (car tokens))))
-        (case type
-          ((:vl-inttoken)
-           (mv nil
-               (make-vl-atom
-                :guts (vl-make-guts-from-inttoken (car tokens)))
-               (cdr tokens)
-               warnings))
+    (b* (((mv errmsg? expr new-tokens new-warnings)
+          (vl-maybe-parse-base-primary))
+         ((when (or errmsg? expr))
+          (mv errmsg? expr new-tokens new-warnings))
 
-          ((:vl-realtoken)
-           (mv nil
-               (make-vl-atom
-                :guts (make-vl-real
-                       :value (vl-echarlist->string
-                               (vl-realtoken->etext (car tokens)))))
-               (cdr tokens)
-               warnings))
+         ;; BOZO this isn't really finished at all, yet.
 
-          ((:vl-stringtoken)
-           (mv nil
-               (make-vl-atom
-                :guts (make-vl-string
-                       :value (vl-stringtoken->expansion (car tokens))))
-               (cdr tokens)
-               warnings))
+         ((when (atom tokens))
+          (vl-parse-error "Unexpected EOF."))
+         (type (vl-token->type (car tokens)))
 
-          (:vl-lcurly
-           ;; It's either a concatenation or a multiconcatenation
-           (vl-parse-concatenation-or-multiple-concatenation))
+         ((when (eq type :vl-lcurly))
+          ;; It's either a concatenation or a multiconcatenation
+          (vl-parse-concatenation-or-multiple-concatenation))
 
-          (:vl-idtoken
-           ;; Its either an hindex or a function call.  We need to check for
-           ;; function call first, since, e.g.,our hindex would accept just the
-           ;; hierarchial identifier, "foo", if given "foo(x, y, z)."
-           (mv-let (err funcall explore new-warnings)
-             (vl-parse-function-call)
-             (if err
-                 (vl-parse-indexed-id)
-               (mv err funcall explore new-warnings))))
+         ((when (eq type :vl-idtoken))
+          ;; Its either an hindex or a function call.  We need to check for
+          ;; function call first, since, e.g.,our hindex would accept just the
+          ;; hierarchial identifier, "foo", if given "foo(x, y, z)."
+          (mv-let (err funcall explore new-warnings)
+            (vl-parse-function-call)
+            (if err
+                (vl-parse-indexed-id)
+              (mv err funcall explore new-warnings))))
 
-          (:vl-sysidtoken
+          ((when (eq type :vl-sysidtoken))
            ;; It can only be a system function call.
            (vl-parse-system-function-call))
 
-          (:vl-lparen ;; '(' mintypmax_expression ')'
+          ((when (eq type :vl-lparen))
+           ;; '(' mintypmax_expression ')'
            (seqw tokens warnings
                  (:= (vl-match-token :vl-lparen))
                  (expr := (vl-parse-mintypmax-expression))
                  (:= (vl-match-token :vl-rparen))
-                 (return (vl-mark-as-explicit-parens expr))))
+                 (return (vl-mark-as-explicit-parens expr)))))
 
-          (t
-           (vl-parse-error (cat "Expected a primary, but found a "
-                                (symbol-name type)
-                                " token with text "
-                                (vl-echarlist->string (vl-token->etext (car tokens))))))))))
+      (vl-parse-error "Failed to match a primary expression.")))
 
 
 ; expression ::=

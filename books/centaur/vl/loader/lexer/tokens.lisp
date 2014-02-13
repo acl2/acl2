@@ -130,6 +130,7 @@ SystemVerilog 2012 source code."
             :vl-ashleq     ;;; <<<=
             :vl-ashreq     ;;; >>>=
             :vl-assignpat  ;;; '{
+            :vl-dollar     ;;; $
             ))
   ///
   (assert! (subsetp *vl-2005-plain-nonkeywords*
@@ -590,6 +591,11 @@ efficient implementation is beneficial.  We specially arrange our definition of
        :exec
        (tag x))
   ///
+  (local (defthm l0
+           (implies (syntaxp (quotep alist))
+                    (iff (hons-assoc-equal a alist)
+                         (member a (alist-keys alist))))))
+
   (defrule vl-token->type-possibilities
     (implies (vl-token-p x)
              (member (vl-token->type x)
@@ -604,7 +610,9 @@ efficient implementation is beneficial.  We specially arrange our definition of
     :rule-classes nil
     :enable (vl-token-p vl-plaintokentype-p)
     :disable (return-type-of-vl-plaintoken->type
-              member acl2::member-of-cons)
+              member acl2::member-of-cons
+              hons-assoc-equal
+              acl2::hons-assoc-equal-of-cons)
     :use ((:instance return-type-of-vl-plaintoken->type)))
 
   (defrule vl-inttoken-p-when-token-of-type-inttoken

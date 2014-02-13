@@ -339,6 +339,7 @@
     defmvtypes
     defsection
     defsection-progn
+    defsum
     define
     defines
     defrule

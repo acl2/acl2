@@ -31,6 +31,7 @@
 (include-book "defines")
 (include-book "defrule")
 (include-book "defredundant")
+(include-book "defsum")
 (include-book "defval")
 
 (defxdoc std/util
@@ -46,6 +47,7 @@ functions, mapping over lists, and many other boilerplate tasks."
 <ul>
  <li>simple enumerations (@(see defenum)),</li>
  <li>record types like @('struct')s in C (@(see defaggregate)),</li>
+ <li>(beta) tagged union / variant / sum types (@(see defsum)),</li>
  <li>typed lists (@(see deflist)), and</li>
  <li>typed alists (@(see defalist))</li>
 </ul></li>
