@@ -105,8 +105,8 @@ won't be sized, may refer to invalid wires, etc.</p>"
                ((unless (and expr
                              (vl-expr-p expr)
                              (vl-nonatom-p expr)
-                             (equal (vl-nonatom->op expr) :vl-bitselect)))
-                (er hard? '|foo[3]| "Expected bitselect"))
+                             (equal (vl-nonatom->op expr) :vl-index)))
+                (er hard? '|foo[3]| "Expected index into foo"))
                ((list from idx) (vl-nonatom->args expr)))
             (and (vl-idexpr-p from)
                  (equal (vl-idexpr->name from) "foo")

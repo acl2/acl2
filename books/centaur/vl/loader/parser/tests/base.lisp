@@ -38,9 +38,7 @@
           ((vl-hidpiece-p guts)    (list 'hid  (vl-hidpiece->name guts)))
           ((vl-funname-p guts)     (list 'fun  (vl-funname->name guts)))
           ((vl-sysfunname-p guts)  (list 'sys  (vl-sysfunname->name guts)))
-          ((vl-nullexpr-p guts)    :null)
-          ((vl-thisexpr-p guts)    :this)
-          ((vl-unbounded-p guts)   :$)
+          ((vl-keyguts-p guts)     (list 'key  (vl-keyguts->type guts)))
           ((vl-time-p guts)
            (list 'time
                  (concatenate 'string

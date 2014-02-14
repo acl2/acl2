@@ -165,27 +165,28 @@ the plan is first to build a mixed list which looks like</p>
 ; which might also be called array or memory indexing.  The idea is that for
 ; "foo[1][2][3]", we want to build an expression of the form:
 ;
-;     (bitselect (bitselect (bitselect foo 1)
-;                           2)
-;                3)
+;     (vl-unresolved-index
+;       (vl-unresolved-index (vl-unresolved-index foo 1)
+;                            2))
+;       3)
 ;
 ; This is easier because we are only dealing with one operation and no
 ; attributes, so we can just read the list of selects and then left-associate
 ; them.  We also add some support for dealing with part selects from ranges.
 
-(define vl-build-bitselect-nest ((expr vl-expr-p)
-                                 (bitselects vl-exprlist-p))
+(define vl-build-indexing-nest ((expr vl-expr-p)
+                                (indices vl-exprlist-p))
   :returns (expr vl-expr-p :hyp :fguard)
-  (if (atom bitselects)
+  (if (atom indices)
       expr
-    (vl-build-bitselect-nest
-     (make-vl-nonatom :op :vl-bitselect
-                      :args (list expr (car bitselects)))
-     (cdr bitselects))))
+    (vl-build-indexing-nest
+     (make-vl-nonatom :op :vl-index
+                      :args (list expr (car indices)))
+     (cdr indices))))
 
 
 (defenum vl-erangetype-p
-  (:vl-bitselect
+  (:vl-index ;; for bit selects or array indexes
    :vl-colon
    :vl-pluscolon
    :vl-minuscolon)
@@ -220,8 +221,8 @@ the plan is first to build a mixed list which looks like</p>
         (left  (vl-erange->left range))
         (right (vl-erange->right range)))
     (case type
-      (:vl-bitselect
-       (make-vl-nonatom :op :vl-bitselect
+      (:vl-index
+       (make-vl-nonatom :op :vl-index
                         :args (list expr left)))
       (:vl-colon
        (make-vl-nonatom :op :vl-partselect-colon
@@ -235,7 +236,7 @@ the plan is first to build a mixed list which looks like</p>
   ///
   (local (defthm lemma
            (implies (and (vl-erange-p range)
-                         (not (equal (vl-erange->type range) :vl-bitselect))
+                         (not (equal (vl-erange->type range) :vl-index))
                          (not (equal (vl-erange->type range) :vl-colon))
                          (not (equal (vl-erange->type range) :vl-pluscolon)))
                     (equal (vl-erange->type range)
@@ -423,15 +424,18 @@ literals, unbased unsized literals, @('this'), @('$'), and @('null').</p>"
 
         (when (vl-is-token? :vl-kwd-null)
           (:= (vl-match-token :vl-kwd-null))
-          (return (make-honsed-vl-atom :guts (make-honsed-vl-nullexpr))))
+          (return (make-honsed-vl-atom
+                   :guts (make-vl-keyguts :type :vl-null))))
 
         (when (vl-is-token? :vl-kwd-this)
           (:= (vl-match-token :vl-kwd-this))
-          (return (make-honsed-vl-atom :guts (make-honsed-vl-thisexpr))))
+          (return (make-honsed-vl-atom
+                   :guts (make-vl-keyguts :type :vl-this))))
 
         (when (vl-is-token? :vl-dollar)
           (:= (vl-match-token :vl-dollar))
-          (return (make-honsed-vl-atom :guts (make-honsed-vl-unbounded))))
+          (return (make-honsed-vl-atom
+                   :guts (make-vl-keyguts :type :vl-$))))
 
         (return nil)))
 
@@ -657,7 +661,7 @@ values.</p>"
       (seqw tokens warnings
             (e1 :s= (vl-parse-expression))
             (unless (vl-is-some-token? range-separators)
-              (return (vl-erange :vl-bitselect e1 e1)))
+              (return (vl-erange :vl-index e1 e1)))
             (sep := (vl-match-some-token range-separators))
             (e2 := (vl-parse-expression))
             (return (vl-erange (vl-token->type sep) e1 e2)))))
@@ -711,7 +715,8 @@ values.</p>"
 
 
 ; hierarchial_identifier ::=
-;   { identifier [ '[' expression ']' ] '.' } identifier
+;   { identifier [ { '[' expression ']' ] '.' } identifier
+
 
   (defparser vl-parse-hierarchial-identifier (recursivep)
     :measure (two-nats-measure (len tokens) 0)
@@ -761,17 +766,23 @@ values.</p>"
           (when expr
             (tail := (vl-parse-hierarchial-identifier t)))
 
-          (return (cond (tail
-                         (let ((part1 (make-vl-hidpiece :name (vl-idtoken->name id))))
-                           (make-vl-nonatom :op :vl-hid-arraydot
-                                            :args (list (make-vl-atom :guts part1)
-                                                        expr tail))))
-                        (recursivep
-                         (make-vl-atom
-                          :guts (make-vl-hidpiece :name (vl-idtoken->name id))))
-                        (t
-                         (make-vl-atom
-                          :guts (make-vl-id :name (vl-idtoken->name id))))))))
+          (return
+           ;; Dumb hack for now, previously we were producing an arraydot
+           ;; here.
+           (cond (tail
+                  (b* ((from-guts (make-vl-hidpiece :name (vl-idtoken->name id)))
+                       (from-expr (make-vl-atom :guts from-guts))
+                       (sel-expr  (make-vl-nonatom :op :vl-index
+                                                   :args (list from-expr expr)))
+                       (top-expr  (make-vl-nonatom :op :vl-hid-dot
+                                                   :args (list sel-expr tail))))
+                    top-expr))
+                 (recursivep
+                  (make-vl-atom
+                   :guts (make-vl-hidpiece :name (vl-idtoken->name id))))
+                 (t
+                  (make-vl-atom
+                   :guts (make-vl-id :name (vl-idtoken->name id))))))))
 
 
 ; function_call ::=
@@ -816,7 +827,7 @@ values.</p>"
 ;  | string
 
   (defparser vl-parse-0+-bracketed-expressions ()
-    ;; This is for { '[' expression ']' }.  We just return them as a list.
+    :short "Match @('{ '[' expression ']') }'), return an expression list."
     :measure (two-nats-measure (len tokens) 1)
     (if (not (vl-is-token? :vl-lbrack)) ;; For termination, this needs to be a ruler.
         (mv nil nil tokens warnings)
@@ -830,7 +841,7 @@ values.</p>"
                ;; No initial expression; okay.
                (mv nil nil tokens warnings))
               ((not (mbt (< (len explore) (len tokens))))
-               (prog2$ (er hard? 'vl-parse-0+-bracketed-expressions "termination failure")
+               (prog2$ (raise "termination failure")
                        (vl-parse-error "termination failure")))
               (t
                (mv-let (erp rest tokens warnings)
@@ -854,7 +865,7 @@ values.</p>"
             (:= (vl-match-token :vl-lbrack))
             (range := (vl-parse-range-expression))
             (:= (vl-match-token :vl-rbrack)))
-          (return (let ((main (vl-build-bitselect-nest hid bexprs)))
+          (return (let ((main (vl-build-indexing-nest hid bexprs)))
                     (if range
                         (vl-build-range-select main range)
                       main)))))

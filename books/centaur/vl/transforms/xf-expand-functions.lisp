@@ -2251,7 +2251,7 @@ function calls on success.</p>"
              ((:vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon)
               ;; to avoid foo[f(3):0] --> foo[f_return_wire:0]
               (vl-check-bad-funcalls ctx args "part-selects" warnings))
-             ((:vl-hid-dot :vl-hid-arraydot)
+             ((:vl-hid-dot :vl-index)
               ;; this would just be to weird
               (vl-check-bad-funcalls ctx args "hierarchical identifiers" warnings))
              (:vl-mintypmax

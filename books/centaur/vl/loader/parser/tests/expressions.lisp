@@ -152,7 +152,7 @@
                   :expect '(id "foo"))
 
    (make-exprtest :input "foo[3]"
-                  :expect '(:vl-bitselect nil (id "foo") 3))
+                  :expect '(:vl-index nil (id "foo") 3))
 
    (make-exprtest :input "foo[1:7]"
                   :expect '(:vl-partselect-colon nil (id "foo") 1 7))
@@ -161,36 +161,59 @@
     :input "foo[3][4][5][1 +: 2]"
     :expect '(:vl-partselect-pluscolon
               nil
-              (:vl-bitselect nil
-                             (:vl-bitselect nil
-                                            (:vl-bitselect nil (id "foo") 3)
-                                            4)
-                             5)
+              (:vl-index nil
+                         (:vl-index nil
+                                    (:vl-index nil (id "foo") 3)
+                                    4)
+                         5)
               1 2))
 
    (make-exprtest
     :input "foo[3][1 -: 2]"
     :expect '(:vl-partselect-minuscolon nil
-                                        (:vl-bitselect nil (id "foo") 3)
+                                        (:vl-index nil (id "foo") 3)
                                         1 2))
+
+
+
+   ;; HID tests
 
    (make-exprtest :input "foo.bar"
                   :expect '(:vl-hid-dot nil (hid "foo") (hid "bar")))
 
    (make-exprtest :input "foo.bar.baz"
                   :expect '(:vl-hid-dot nil (hid "foo")
-                                        (:vl-hid-dot nil (hid "bar") (hid "baz"))))
+                                        (:vl-hid-dot nil (hid "bar")
+                                                     (hid "baz"))))
 
    (make-exprtest
     :input "foo[1].bar.baz"
-    :expect '(:vl-hid-arraydot nil (hid "foo") 1
-                               (:vl-hid-dot nil (hid "bar") (hid "baz"))))
+    :expect '(:vl-hid-dot nil
+                          (:vl-index nil (hid "foo") 1)
+                          (:vl-hid-dot nil (hid "bar") (hid "baz"))))
 
    (make-exprtest
     :input "foo[1].bar[2].baz"
-    :expect '(:vl-hid-arraydot nil (hid "foo") 1
-                               (:vl-hid-arraydot nil (hid "bar") 2 (hid "baz"))))
+    :expect '(:vl-hid-dot
+              nil
+              (:vl-index nil (hid "foo") 1)
+              (:vl-hid-dot nil
+                           (:vl-index nil (hid "bar") 2)
+                           (hid "baz"))))
 
+;; BOZO this should eventually work in SystemVerilog, but it's not (I think)
+;; valid in Verilog-2005:
+
+   ;; (make-exprtest
+   ;;  :input "foo[1][2].bar[3].baz"
+   ;;  :expect '(:vl-hid-dot
+   ;;            nil
+   ;;            (:vl-index nil
+   ;;              (:vl-index nil (hid "foo") 1)
+   ;;              2)
+   ;;            (:vl-hid-dot nil
+   ;;                         (:vl-index nil (hid "bar") 3)
+   ;;                         (hid "baz"))))
 
    (make-exprtest :input "{}"
                   :successp nil)
@@ -248,11 +271,13 @@
 
    (make-exprtest
     :input "foo[1].bar[2].baz(3)"
-    :expect '(:vl-funcall
-              nil
-              (:vl-hid-arraydot nil (hid "foo") 1
-                                (:vl-hid-arraydot nil (hid "bar") 2 (hid "baz")))
-              3))
+    :expect '(:vl-funcall nil
+                          (:vl-hid-dot nil
+                                       (:vl-index nil (hid "foo") 1)
+                                       (:vl-hid-dot nil
+                                                    (:vl-index nil (hid "bar") 2)
+                                                    (hid "baz")))
+                          3))
 
    (make-exprtest
     :input "$foo"
@@ -507,11 +532,11 @@
 
    (make-exprtest
     :input "null"
-    :expect :null)
+    :expect '(key :vl-null))
 
    (make-exprtest
     :input "this"
-    :expect :this)))
+    :expect '(key :vl-this))))
 
 
 (defconst *verilog-diff-tests* ;; The expected results for Verilog-2005.
@@ -593,7 +618,7 @@
 
    ;; lone $ signs
    (make-exprtest :input "$"
-                  :expect :$)
+                  :expect '(key :vl-$))
 
    ))
 

@@ -46,7 +46,6 @@
 
 (include-book "../transforms/cn-hooks")
 (include-book "../transforms/xf-argresolve")
-(include-book "../transforms/xf-array-indexing")
 (include-book "../transforms/xf-assign-trunc")
 (include-book "../transforms/xf-blankargs")
 (include-book "../transforms/xf-clean-params")
@@ -58,6 +57,7 @@
 (include-book "../transforms/xf-orig")
 (include-book "../transforms/xf-oprewrite")
 (include-book "../transforms/xf-portdecl-sign")
+(include-book "../transforms/xf-resolve-indexing")
 (include-book "../transforms/xf-resolve-ranges")
 (include-book "../transforms/xf-replicate-insts")
 (include-book "../transforms/xf-sizing")
@@ -361,7 +361,6 @@ shown.</p>"
                    SUBSETP-EQUAL-OF-VL-MODINSTLIST->MODNAMESS-WHEN-SUBSETP-EQUAL
                    CDR-OF-VL-MODULELIST-DUPERHS-CHECK
                    CDR-OF-VL-MODULELIST-ORIGEXPRS
-                   CDR-OF-VL-MODULELIST-MAKE-ARRAY-INDEXING
                    vl-modulelist-p-of-append
                    NO-DUPLICATESP-EQUAL-OF-APPEND
                    acl2::no-duplicatesp-equal-append-iff
@@ -399,8 +398,8 @@ shown.</p>"
        (mods (cwtime (vl-modulelist-drop-missing-submodules mods)))
        ;; BOZO reinstate this??
        ;; (mods (cwtime (vl-modulelist-add-undefined-names mods)))
+       (mods (cwtime (vl-modulelist-resolve-indexing mods)))
        (mods (cwtime (vl-modulelist-portdecl-sign mods)))
-       (mods (cwtime (vl-modulelist-make-array-indexing mods)))
        (mods (cwtime (vl-modulelist-origexprs mods)))
        (mods (cwtime (vl-modulelist-check-namespace mods)))
 

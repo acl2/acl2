@@ -36,7 +36,7 @@ modules for sizing for the linter.</p>")
 
 (defsection vl-atom-toohard
   :parents (remove-toohard)
-  
+
   (defund vl-atom-toohard (x)
     ;; Returns NIL if the atom is okay, or X otherwise.
     (declare (xargs :guard (vl-atom-p x)))
@@ -82,7 +82,8 @@ modules for sizing for the linter.</p>")
           :VL-FUNCALL
           :VL-SYSCALL
           :VL-HID-DOT
-          :VL-HID-ARRAYDOT))
+          :vl-index
+          :vl-scope))
 
   (assert! (equal (mergesort (append *toohard-ops* *not-toohard-ops*))
                   (mergesort (strip-cars *vl-ops-table*))))
@@ -399,7 +400,7 @@ modules for sizing for the linter.</p>")
   (vl-maybe-expr-p x)
   :guard t)
 
-(defconst *toohard-x* 
+(defconst *toohard-x*
   (make-vl-atom :guts (make-vl-weirdint :width 1
                                         :signedp nil
                                         :bits (list :vl-xval))))
@@ -441,7 +442,7 @@ modules for sizing for the linter.</p>")
               a)
              (t (er hard 'vl-op-eliminate-toohard "Impossible")))))
 
-    ((:vl-funcall :vl-syscall :vl-mintypmax :vl-hid-dot :vl-hid-arraydot
+    ((:vl-funcall :vl-syscall :vl-mintypmax :vl-hid-dot :vl-index
                   :vl-partselect-pluscolon :vl-partselect-minuscolon)
      ;; Automatically hard always hard.
      nil)
@@ -492,27 +493,27 @@ modules for sizing for the linter.</p>")
 
     ((:vl-multiconcat)
      (
-          
+
 
 
 
 (defun vl-expr-eliminate-toohard (x)
   ;; Returns a VL-MAYBE-EXPR-P.
-  (if 
+  (if
 
 
 ; expressions are "too hard" to have their widths decided.  We basically want
-; to 
+; to
 ; These removal functions should be called AFTER the hid elimination has
 ; flattened any HIDs that were properly resolved.  They throw away any module
 ; elements that still have HIDs.
 
 (defsection vl-expr-toohard-p
 
-; 
+;
 
 (defun vl-expr-toohard-p (x)
-  
+
 
 ||#
 

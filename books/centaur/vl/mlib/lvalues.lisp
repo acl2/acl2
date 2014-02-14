@@ -85,7 +85,7 @@ statements.</p>"
                  ;; { foo, bar, baz, ... } is valid if all the components are
                  ;; lvalues.
                  (vl-exprlist-lvaluesp args))
-                ((:vl-hid-dot :vl-hid-arraydot)
+                ((:vl-hid-dot)
                  ;; hierarchical identifiers are okay for lvalues
                  (vl-hidexpr-p x))
                 (otherwise

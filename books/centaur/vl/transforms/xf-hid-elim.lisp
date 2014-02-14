@@ -303,7 +303,7 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
          (res-right  (cdr (assoc-equal "VL_HID_RESOLVED_RANGE_RIGHT" atts)))
 
 
-         ((unless (vl-hid-indicies-resolved-p x))
+         ((unless (vl-hidexpr-resolved-p x))
           (mv (cons (make-vl-warning
                      :type :vl-bad-hid
                      :msg "Not all hid indicies are resolved in ~a0."

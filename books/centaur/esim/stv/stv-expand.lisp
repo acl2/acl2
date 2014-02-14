@@ -54,7 +54,7 @@
                   x nil nil)))
           (mv nil from (vl::vl-resolved->val msb) (vl::vl-resolved->val lsb))))
 
-       ((when (eq op :vl-bitselect))
+       ((when (eq op :vl-index))
         (b* ((from (first args))
              (bit  (second args))
              ((unless (vl::vl-expr-resolved-p bit))
@@ -268,7 +268,7 @@ make sure that the name refers to valid input or output bits.</p>"
   :returns (mv (instnames true-listp :rule-classes :type-prescription)
                (wirename stringp :rule-classes :type-prescription))
 
-  (b* (((unless (vl::vl-hid-indicies-resolved-p hid))
+  (b* (((unless (vl::vl-hidexpr-resolved-p hid))
         (raise "HID has unresolved indices: ~s0~%" (vl::vl-pps-expr hid))
         (mv nil ""))
        (parts (vl::vl-explode-hid hid))

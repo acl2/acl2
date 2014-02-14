@@ -134,8 +134,7 @@ that the width of @('foo') itself is non-zero.</p>"
           ((when (not (mbt (consp x))))
            (er hard 'vl-expr-welltyped-p "Termination hack."))
           ((vl-nonatom x) x)
-          ((when (or (eq x.op :vl-hid-dot)
-                     (eq x.op :vl-hid-arraydot)))
+          ((when (vl-hidexpr-p x))
            ;; These are special because we don't require the args to be sized.
            ;; Signedness of hierarchical identifiers is very tricky; we require
            ;; that they be unsigned to avoid a lot of potential problems.
@@ -299,7 +298,7 @@ that the width of @('foo') itself is non-zero.</p>"
                   (eql x.finalwidth (vl-resolved->val c))
                   (eq x.finaltype :vl-unsigned))))
 
-          ((:vl-array-index)
+          ((:vl-array-index :vl-index)
            ;; BOZO eventually require there to be a type and positive width.
            t)
 

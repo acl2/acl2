@@ -81,118 +81,175 @@
                      (equal (cdr x) b)))))
 
 
-
-
 (defxdoc hid-tools
   :parents (mlib)
-  :short "Functions for working with hierarchical identifiers.")
+  :short "Functions for working with hierarchical identifiers."
 
-
-(defsection vl-hidexpr-p
-  :parents (hid-tools)
-  :short "@(call vl-hidexpr-p) recognizes well-formed hierarchical identifier
-expressions."
-
-  :long "<p>We represent hierarchical identifiers like @('foo.bar[3].baz') as
-ordinary @(see vl-expr-p) objects.  But @('vl-expr-p') is really too weak, and
-it permits nonsensical expressions like @('foo.5.bar.(1+2)').  The function
-@('vl-hidexpr-p') provides a stronger check to ensure that an expression is a
-well-formed hierarchical identifier.</p>
-
-<p>In particular, @('vl-hidexpr-p') requires three things:</p>
-
-<p>1. Except for indicies like @('3') in @('foo.bar[3].baz'), all atoms
-throughout the expression must be @(see vl-hidpiece-p) atoms.  This prohibits
-ill-formed expressions like @('foo.5.bar').</p>
-
-<p>2. Except for indicies, the only operators that are permitted are
-@(':vl-hid-dot') and @(':vl-hid-arraydot'), which represent expressions like
-@('foo.bar') and @('foo[3].bar'), respectively.</p>
-
-<p>3. We require that the HID is always \"right-associated.\"  A picture helps
-to make this more clear:</p>
+  :long "<p>Here are some examples of hierarchical identifiers:</p>
 
 @({
-             .          |           .
-            / \\         |          / \\
-         foo   .        |         .   baz
-              / \\       |        / \\
-           bar   baz    |     foo   bar
-                        |
-          Good          |         Bad
+    foo.bar[3].baz          // Verilog-2005 or SystemVerilog-2012
+    foo.bar[3][4].baz       // SystemVerilog-2012
 })
 
-<p>More formally, we require that the first argument to each @(':vl-hid-dot')
-and @(':vl-hid-arraydot') operation is a single @(see vl-hidpiece-p) atom, and
-not some more complex expression.  This essentially allows us to traverse any
-well-formed HID in a purely linear fashion.</p>
+<p>VL internally represents hierarchical identifiers as compound @(see
+vl-expr-p) objects.  We expect to represent the above expressions as
+follows:</p>
 
-<p>Note that @('vl-hidexpr-p') does <b>not</b> restrict in any way the
+@({
+            .                     .
+           / \\                   / \\
+       foo    .               foo   .
+             / \\                   / \\
+           []   baz               []  baz
+          /  \\                   /  \\
+       bar    3                 []   4
+                               /  \\
+                             bar   3
+})
+
+<p>Where each @('.') represents a @(':vl-hid-dot') operator, each @('[]')
+represents a @(':vl-index') operator, and the names are represented as @(see
+vl-hidpiece-p) atoms.</p>
+
+<p>The generic @(see vl-expr-p) representation is really too weak, and by
+itself it would permit nonsensical expressions like @('foo.5.bar.(1+2)'), which
+should never be produced by our parser or by well-behaving internal VL code.
+Instead, the function @(see vl-hidexpr-p) provides a stronger check to ensure
+that an expression is a well-formed hierarchical identifier that meets our
+usual expectations.</p>
+
+<p>Note that @(see vl-hidexpr-p) does <b>not</b> restrict in any way the
 expressions may occur in the index positions.  For instance, there is a valid
-@('vl-hidexpr-p') that represents @('foo.bar[3+a*b].baz').</p>
+@('vl-hidexpr-p') that represents @('foo.bar[3+a*b].baz').  In practice,
+complex indexing expressions might occasionally arise due to parameterized
+modules.  Once everything settles down, you can check whether all of the
+indexes in a hidexpr have been resolved to constants using @(see
+vl-hidexpr-resolved-p).</p>
 
-<p>Note also that @('vl-hidexpr-p') does not have any length requirement, and
-regards even lone @('vl-hidpiece-p') atoms as valid.</p>"
+<p>The raw expression format can be cumbersome to work with.  Once you have
+gotten down to resolved @(see vl-hidexpr-p)s, you can translate them into plain
+list of names (strings) and indices (naturals) using @(see
+vl-explode-hid).</p>")
 
-  (defund vl-hidexpr-p (x)
-    (declare (xargs :guard (vl-expr-p x)))
-    (if (vl-fast-atom-p x)
-        (vl-fast-hidpiece-p (vl-atom->guts x))
-      (let ((op   (vl-nonatom->op x))
-            (args (vl-nonatom->args x)))
-        (case op
-          (:vl-hid-dot
-           ;; foo.bar
-           (and (vl-fast-atom-p (first args))
-                (vl-fast-hidpiece-p (vl-atom->guts (first args)))
-                (vl-hidexpr-p (second args))))
-          (:vl-hid-arraydot
-           ;; foo[x].bar
-           (and (vl-fast-atom-p (first args))
-                (vl-fast-hidpiece-p (vl-atom->guts (first args)))
-                (vl-hidexpr-p (third args))))
-          (otherwise nil)))))
+(local (xdoc::set-default-parents hid-tools))
 
-  (local (in-theory (enable vl-hidexpr-p)))
+(define vl-hidindex-p ((x vl-expr-p))
+  :returns (bool)
+  :short "Recognizes well-formed index expressions into hierarchical
+identifiers, e.g., the @('bar[3][4][5]') part of @('foo.bar[3][4][5].baz')."
 
-  (defthm vl-hidexpr-p-of-vl-atom->guts-when-vl-hidexpr-p
+  :long "<p>We match left-associated trees of indices that ultimately end with
+a @(see vl-hidpiece-p).  We don't restrict the actual index expressions, e.g.,
+an expression such as @('bar[width-1]') is acceptable.</p>"
+
+  (if (vl-fast-atom-p x)
+      (vl-fast-hidpiece-p (vl-atom->guts x))
+    (b* (((vl-nonatom x) x))
+      (and (eq x.op :vl-index)
+           (vl-hidindex-p (first x.args)))))
+  ///
+  (defthm consp-when-vl-hidindex-p
+    ;; Gross but useful
+    (implies (vl-hidindex-p x)
+             (consp x))
+    :rule-classes :compound-recognizer
+    :hints(("Goal" :in-theory (enable vl-nonatom->op))))
+
+  (defthm vl-hidpiece-p-of-vl-atom->guts-when-vl-hidindex-p
+    (implies (and (vl-hidindex-p x)
+                  (force (vl-atom-p x)))
+             (vl-hidpiece-p (vl-atom->guts x))))
+
+  (defthm vl-nonatom->op-when-vl-hidindex-p
+    (implies (and (vl-hidindex-p x)
+                  (force (vl-nonatom-p x)))
+             (equal (vl-nonatom->op x) :vl-index))
+    :rule-classes ((:rewrite) (:forward-chaining)))
+
+  (defthm arity-when-vl-hidindex-p
+    (implies (and (vl-hidindex-p x)
+                  (force (vl-nonatom-p x)))
+             (equal (vl-op-arity (vl-nonatom->op x)) 2)))
+
+  (defthm len-of-vl-nonatom->args-when-vl-hidindex-p
+    (implies (and (vl-hidindex-p x)
+                  (force (vl-nonatom-p x))
+                  (force (vl-expr-p x)))
+             (and ;; blah, so gross....
+              (equal (len (vl-nonatom->args x)) 2)
+              (consp (vl-nonatom->args x))
+              (consp (cdr (vl-nonatom->args x))))))
+
+  (defthm vl-hidindex-p-of-make-vl-atom
+    (implies (and (force (vl-atomguts-p guts))
+                  (force (maybe-posp finalwidth))
+                  (force (vl-maybe-exprtype-p finaltype)))
+             (equal (vl-hidindex-p (make-vl-atom :guts guts
+                                                 :finalwidth finalwidth
+                                                 :finaltype finaltype))
+                    (vl-hidpiece-p guts))))
+
+  (defthm vl-hidindex-p-of-make-vl-nonatom
+    (implies (and (equal op :vl-index)
+                  (force (vl-hidindex-p (first args))))
+             (vl-hidindex-p (make-vl-nonatom :op op
+                                             :args args
+                                             :atts atts
+                                             :finalwidth finalwidth
+                                             :finaltype finaltype))))
+
+  (defthm not-vl-hidindex-p-by-op
+    (implies (and (not (eq (vl-nonatom->op x) :vl-index))
+                  (force (not (vl-atom-p x))))
+             (not (vl-hidindex-p x)))
+    :hints(("Goal" :in-theory (disable (force)))))
+
+  (defthm vl-hidindex-p-of-first-of-vl-nonatom->args-when-vl-hidindex-p
+    (implies (and (vl-hidindex-p x)
+                  (force (not (vl-atom-p x))))
+             (vl-hidindex-p (first (vl-nonatom->args x))))))
+
+
+
+(define vl-hidexpr-p ((x vl-expr-p))
+  :returns (bool)
+  :short "Recognizes well-formed hierarchical identifier expressions."
+  (b* (((when (vl-fast-atom-p x))
+        (vl-hidindex-p x))
+       ((vl-nonatom x) x)
+       ((when (eq x.op :vl-hid-dot))
+        (and (vl-hidindex-p (first x.args))
+             (vl-hidexpr-p (second x.args)))))
+    (vl-hidindex-p x))
+  ///
+  (defthm consp-when-vl-hidexpr-p
+    (implies (vl-hidexpr-p x)
+             (consp x))
+    :rule-classes :compound-recognizer
+    :hints(("Goal" :in-theory (enable vl-nonatom->op))))
+
+  (defthm vl-hidexpr-p-when-vl-hidindex-p
+    (implies (vl-hidindex-p x)
+             (vl-hidexpr-p x))
+    :hints(("Goal" :in-theory (disable (force)))))
+
+  (defthm vl-hidpiece-p-of-vl-atom->guts-when-vl-hidexpr-p
     (implies (and (vl-hidexpr-p x)
                   (force (vl-atom-p x)))
              (vl-hidpiece-p (vl-atom->guts x))))
 
-  (defthm vl-hidexpr-p-of-first-of-vl-nonatom->args-when-vl-hidexpr-p
+  (defthm vl-nonatom->op-when-vl-hidexpr-p-forward
     (implies (and (vl-hidexpr-p x)
-                  (force (not (vl-atom-p x)))
+                  (not (vl-atom-p x))
                   (force (vl-expr-p x)))
-             (vl-hidexpr-p (first (vl-nonatom->args x)))))
-
-  (defthm vl-atom-p-of-first-of-vl-nonatom->args-when-vl-hidexpr-p
-    (implies (and (vl-hidexpr-p x)
-                  (force (not (vl-atom-p x))))
-             (vl-atom-p (first (vl-nonatom->args x)))))
-
-  (defthm vl-hidpiece-p-of-vl-atom->guts-of-first-of-vl-nonatom->args-when-vl-hidexpr-p
-    (implies (and (vl-hidexpr-p x)
-                  (force (not (vl-atom-p x))))
-             (vl-hidpiece-p (vl-atom->guts (first (vl-nonatom->args x))))))
-
-; We canonicalize to whether the operator is hid-dot.
-
-  (defthm vl-hidexpr-p-of-second-of-vl-nonatom->args-when-vl-hidexpr-p
-    (implies (and (equal (vl-nonatom->op x) :vl-hid-dot)
-                  (vl-hidexpr-p x)
-                  (force (not (vl-atom-p x))))
-             (vl-hidexpr-p (second (vl-nonatom->args x)))))
-
-  (defthm vl-hidexpr-p-of-third-of-vl-nonatom->args-when-vl-hidexpr-p
-    (implies (and (not (equal (vl-nonatom->op x) :vl-hid-dot))
-                  (vl-hidexpr-p x)
-                  (force (not (vl-atom-p x))))
-             (vl-hidexpr-p (third (vl-nonatom->args x)))))
+             (or (equal (vl-nonatom->op x) :vl-index)
+                 (equal (vl-nonatom->op x) :vl-hid-dot)))
+    :rule-classes :forward-chaining)
 
   (defthm not-vl-hidexpr-p-by-op
     (implies (and (not (eq (vl-nonatom->op x) :vl-hid-dot))
-                  (not (eq (vl-nonatom->op x) :vl-hid-arraydot))
+                  (not (eq (vl-nonatom->op x) :vl-index))
                   (force (not (vl-atom-p x))))
              (not (vl-hidexpr-p x))))
 
@@ -200,17 +257,30 @@ regards even lone @('vl-hidpiece-p') atoms as valid.</p>"
     (implies (and (vl-hidexpr-p x)
                   (force (not (vl-atom-p x))))
              (equal (vl-op-arity (vl-nonatom->op x))
-                    (if (eq (vl-nonatom->op x) :vl-hid-dot)
-                        2
-                      3))))
+                    2))
+    :hints(("Goal"
+            :cases ((equal (vl-nonatom->op x) :vl-hid-dot)
+                    (equal (vl-nonatom->op x) :vl-index)))))
 
-  (defthm vl-nonatom->op-when-vl-hidexpr-p-forward
+  (defthm len-of-vl-nonatom->args-when-vl-hidexpr-p
     (implies (and (vl-hidexpr-p x)
-                  (not (vl-atom-p x))
+                  (force (vl-nonatom-p x))
                   (force (vl-expr-p x)))
-             (or (equal (vl-nonatom->op x) :vl-hid-arraydot)
-                 (equal (vl-nonatom->op x) :vl-hid-dot)))
-    :rule-classes :forward-chaining)
+             (and ;; blah, so gross....
+              (equal (len (vl-nonatom->args x)) 2)
+              (consp (vl-nonatom->args x))
+              (consp (cdr (vl-nonatom->args x))))))
+
+  (defthm vl-hidindex-p-of-first-of-vl-nonatom->args-when-vl-hidexpr-p
+    (implies (and (vl-hidexpr-p x)
+                  (force (not (vl-atom-p x))))
+             (vl-hidindex-p (first (vl-nonatom->args x)))))
+
+  (defthm vl-hidexpr-p-of-second-of-vl-nonatom->args-when-vl-hidexpr-p
+    (implies (and (equal (vl-nonatom->op x) :vl-hid-dot)
+                  (vl-hidexpr-p x)
+                  (force (not (vl-atom-p x))))
+             (vl-hidexpr-p (second (vl-nonatom->args x)))))
 
   (defthm vl-hidexpr-p-of-vl-atom
     (implies (and (force (vl-atomguts-p guts))
@@ -222,622 +292,281 @@ regards even lone @('vl-hidpiece-p') atoms as valid.</p>"
                     (vl-hidpiece-p guts)))
     :hints(("goal" :in-theory (enable vl-hidexpr-p))))
 
-  (defthm vl-hidexpr-p-of-vl-nonatom
+  (defthm vl-hidexpr-p-of-vl-nonatom-dot
     (implies (and (equal op :vl-hid-dot)
-                  (force (vl-atom-p (first args)))
-                  (force (vl-hidpiece-p (vl-atom->guts (first args))))
-                  (force (vl-hidexpr-p (second args)))
-                  (force (vl-maybe-exprtype-p finaltype)))
+                  (force (vl-hidindex-p (first args)))
+                  (force (vl-hidexpr-p (second args))))
              (vl-hidexpr-p (make-vl-nonatom :op op
                                             :args args
                                             :atts atts
                                             :finalwidth finalwidth
                                             :finaltype finaltype))))
 
-  (defthm vl-hidexpr-p-of-vl-nonatom-arraydot
-    (implies (and (equal op :vl-hid-arraydot)
-                  (force (vl-atom-p (first args)))
-                  (force (vl-hidpiece-p (vl-atom->guts (first args))))
-                  (force (vl-hidexpr-p (third args))))
+  (defthm vl-hidexpr-p-of-vl-nonatom-index
+    (implies (and (equal op :vl-index)
+                  (force (vl-hidindex-p (first args))))
              (vl-hidexpr-p (make-vl-nonatom :op op
                                             :args args
                                             :atts atts
                                             :finalwidth finalwidth
-                                            :finaltype finaltype)))))
+                                            :finaltype finaltype))))
+
+  (defthm vl-hidindex-p-when-vl-hidexpr-p
+    (implies (vl-hidexpr-p x)
+             (equal (vl-hidindex-p x)
+                    (or (vl-atom-p x)
+                        (not (eq (vl-nonatom->op x) :vl-hid-dot)))))))
 
 
-
-(defsection vl-hid-indicies-resolved-p
-  :parents (hid-tools)
-  :short "@(call vl-hid-indicies-resolved-p) determines if every indexed
-portion of a hierarchical identifier is a resolved expression."
-
-  (defund vl-hid-indicies-resolved-p (x)
-    (declare (xargs :guard (and (vl-expr-p x)
-                                (vl-hidexpr-p x))))
-    (if (vl-fast-atom-p x)
-        t
-      (let ((op   (vl-nonatom->op x))
-            (args (vl-nonatom->args x)))
-        (case op
-          (:vl-hid-dot ;; foo.bar
-           (vl-hid-indicies-resolved-p (second args)))
-          (:vl-hid-arraydot ;; foo[3].bar
-           (and (vl-expr-resolved-p (second args))
-                (natp (vl-resolved->val (second args)))
-                (vl-hid-indicies-resolved-p (third args))))))))
-
-  (local (in-theory (enable vl-hid-indicies-resolved-p)))
-
-  (defthm vl-hid-indicies-resolved-p-when-atom
+(define vl-hidindex-resolved-p ((x (and (vl-expr-p x)
+                                        (vl-hidindex-p x))))
+  :returns (bool)
+  :short "Determines if every index in a @(see vl-hidindex-p) is resolved."
+  (b* (((when (vl-fast-atom-p x))
+        t)
+       ((vl-nonatom x) x))
+    (and (mbt (eq x.op :vl-index))
+         (vl-hidindex-resolved-p (first x.args))
+         (vl-expr-resolved-p (second x.args))))
+  ///
+  (defthm vl-hidindex-resolved-p-when-atom
     (implies (vl-atom-p x)
-             (vl-hid-indicies-resolved-p x)))
+             (vl-hidindex-resolved-p x)))
 
-  (defthm vl-hid-indicies-resolved-p-of-vl-nonatom-dot
-    (implies (and (equal op :vl-hid-dot)
-                  (force (vl-exprlist-p args))
-                  (force (equal (len args) 2))
-                  (force (vl-atom-p (first args)))
-                  (force (vl-hidpiece-p (vl-atom->guts (first args))))
-                  (force (vl-hidexpr-p (second args)))
-                  (force (vl-hid-indicies-resolved-p (second args)))
-                  (force (vl-atts-p atts))
-                  (force (maybe-posp finalwidth))
-                  (force (vl-maybe-exprtype-p finaltype)))
-             (vl-hid-indicies-resolved-p (make-vl-nonatom :op op
-                                                          :args args
-                                                          :atts atts
-                                                          :finalwidth finalwidth
-                                                          :finaltype finaltype))))
+  (defthm vl-hidindex-resolved-p-of-make-vl-nonatom
+    (implies (and (equal op :vl-index)
+                  (force (vl-hidindex-resolved-p (first args)))
+                  (force (vl-expr-resolved-p (second args))))
+             (vl-hidindex-resolved-p (make-vl-nonatom :op op
+                                                      :args args
+                                                      :atts atts
+                                                      :finalwidth finalwidth
+                                                      :finaltype finaltype)))
+    :hints(("Goal" :in-theory (disable (force)))))
 
-  (defthm vl-hid-indicies-resolved-p-of-vl-nonatom-arraydot
-    (implies (and (equal op :vl-hid-arraydot)
-                  (force (vl-exprlist-p args))
-                  (force (equal (len args) 3))
-                  (force (vl-atom-p (first args)))
-                  (force (vl-hidpiece-p (vl-atom->guts (first args))))
-                  (force (vl-expr-resolved-p (second args)))
-                  (force (natp (vl-resolved->val (second args))))
-                  (force (vl-hidexpr-p (third args)))
-                  (force (vl-hid-indicies-resolved-p (third args)))
-                  (force (vl-atts-p atts))
-                  (force (maybe-posp finalwidth))
-                  (force (vl-maybe-exprtype-p finaltype)))
-             (vl-hid-indicies-resolved-p (make-vl-nonatom :op op
-                                                          :args args
-                                                          :atts atts
-                                                          :finalwidth finalwidth
-                                                          :finaltype finaltype))))
-
-  (defthm vl-expr-resolved-p-when-vl-hid-indicies-resolved-p
-    (implies (and (vl-hid-indicies-resolved-p x)
-                  (equal (vl-nonatom->op x) :vl-hid-arraydot)
+  (defthm vl-nonatom->op-when-hidindex-resolved-p
+    (implies (and (vl-hidindex-resolved-p x)
                   (force (not (vl-atom-p x))))
-             (vl-expr-resolved-p (second (vl-nonatom->args x)))))
+             (equal (vl-nonatom->op x) :vl-index)))
 
-  (defthm vl-hid-indicies-resolved-p-of-dot-2
-    (implies (and (vl-hid-indicies-resolved-p x)
-                  (equal (vl-nonatom->op x) :vl-hid-dot)
+  (defthm vl-hidindex-resolved-p-of-arg1-when-vl-hidindex-resolved-p
+    (implies (and (vl-hidindex-resolved-p x)
                   (force (not (vl-atom-p x))))
-             (vl-hid-indicies-resolved-p (second (vl-nonatom->args x)))))
+             (vl-hidindex-resolved-p (first (vl-nonatom->args x)))))
 
-  (defthm vl-hid-indicies-resolved-p-of-arraydot-3
-    (implies (and (vl-hid-indicies-resolved-p x)
-                  (equal (vl-nonatom->op x) :vl-hid-arraydot)
+  (defthm vl-expr-resolved-p-of-arg2-when-vl-hidindex-resolved-p
+    (implies (and (vl-hidindex-resolved-p x)
                   (force (not (vl-atom-p x))))
-             (vl-hid-indicies-resolved-p (third (vl-nonatom->args x))))))
+             (vl-expr-resolved-p (second (vl-nonatom->args x))))))
 
 
 
+(define vl-hidexpr-resolved-p ((x (and (vl-expr-p x)
+                                       (vl-hidexpr-p x))))
+  :returns (bool)
+  :short "Determines if every index throughout a @(see vl-hidexpr-p) is resolved."
+  :guard-debug t
+  (b* (((when (vl-fast-atom-p x))
+        (vl-hidindex-resolved-p x))
+       ((vl-nonatom x) x)
+       ((when (eq x.op :vl-hid-dot))
+        (and (vl-hidindex-resolved-p (first x.args))
+             (vl-hidexpr-resolved-p (second x.args)))))
+    (vl-hidindex-resolved-p x))
+  ///
+  (defthm vl-hidexpr-resolved-p-when-atom
+    (implies (vl-atom-p x)
+             (vl-hidexpr-resolved-p x)))
 
-(defsection vl-hid-fix
-  :parents (hid-tools)
-  :short "@(call vl-hid-fix) throws away attributes, widths, and signs from a
-hierarchical identifier and normalizes all of its indicies into a common
-format."
-
-  (defund vl-hid-fix (x)
-    (declare (xargs :guard (and (vl-expr-p x)
-                                (vl-hidexpr-p x)
-                                (vl-hid-indicies-resolved-p x))))
-    (b* (((when (mbe :logic (or (not (vl-expr-p x))
-                                (not (vl-hidexpr-p x))
-                                (not (vl-hid-indicies-resolved-p x)))
-                     :exec nil))
-          ;; Funky case to fix any malformed arguments to nil
-          nil)
-         ((when (vl-fast-atom-p x))
-          (let ((name (vl-hidpiece->name (vl-atom->guts x))))
-            (make-vl-atom :guts (make-vl-hidpiece :name name))))
-         (op   (vl-nonatom->op x))
-         (args (vl-nonatom->args x)))
-        (case op
-          (:vl-hid-dot
-           (b* ((name1 (vl-hidpiece->name (vl-atom->guts (first args))))
-                (part1 (make-vl-atom :guts (make-vl-hidpiece :name name1)))
-                (rest  (vl-hid-fix (second args))))
-               (make-vl-nonatom :op :vl-hid-dot
-                                :args (list part1 rest))))
-          (:vl-hid-arraydot
-           (b* ((name1 (vl-hidpiece->name (vl-atom->guts (first args))))
-                (part1 (make-vl-atom :guts (make-vl-hidpiece :name name1)))
-                (idx   (vl-make-index (vl-resolved->val (second args))))
-                (rest  (vl-hid-fix (third args))))
-               (make-vl-nonatom :op :vl-hid-arraydot
-                                :args (list part1 idx rest)))))))
-
-  (local (in-theory (enable vl-hid-fix)))
-
-  (defthm vl-hid-fix-type
-    (implies (and (force (vl-expr-p x))
-                  (force (vl-hidexpr-p x))
-                  (force (vl-hid-indicies-resolved-p x)))
-             (and (vl-expr-p (vl-hid-fix x))
-                  (vl-hidexpr-p (vl-hid-fix x))
-                  (vl-hid-indicies-resolved-p (vl-hid-fix x)))))
-
-  (local (defthm lemma
-           (implies (< i 0)
-                    (equal (vl-make-index i)
-                           (vl-make-index 0)))
-           :hints(("Goal" :in-theory (enable vl-make-index)))))
-
-  (defthm vl-hid-fix-idempotent
-    (equal (vl-hid-fix (vl-hid-fix x))
-           (vl-hid-fix x))))
-
-
-
-(defsection vl-hid-fixed-p
-  :parents (hid-tools)
-  :short "@(call vl-hid-fixed-p) determines if @('x') is canonical in the sense
-of @(see vl-hid-fix)."
-
-  (defund vl-hid-fixed-p (x)
-    (declare (xargs :guard (and (vl-expr-p x)
-                                (vl-hidexpr-p x)
-                                (vl-hid-indicies-resolved-p x))))
-    (equal x (vl-hid-fix x)))
-
-  (local (in-theory (enable vl-hid-fixed-p)))
-
-  (defthm vl-hid-fixed-p-of-vl-hid-fix
-    (vl-hid-fixed-p (vl-hid-fix x)))
-
-  (defthm vl-hid-fix-when-vl-hid-fixed-p
-    (implies (vl-hid-fixed-p x)
-             (equal (vl-hid-fix x)
-                    x)))
-
-  (local (in-theory (enable vl-hid-fix)))
-
-  (defthm vl-hid-fixed-p-when-vl-atom-p
-    (implies (and (vl-hidexpr-p x)
-                  (vl-atom-p x))
-             (equal (vl-hid-fixed-p x)
-                    (and (not (vl-atom->finalwidth x))
-                         (not (vl-atom->finaltype x))))))
-
-  (defthm vl-hid-fixed-p-of-second-of-vl-nonatom->args-when-vl-hidexpr-p
+  (defthm vl-hidindex-resolved-p-of-arg1-when-vl-hidexpr-resolved-p
     (implies (and (equal (vl-nonatom->op x) :vl-hid-dot)
-                  (vl-hid-fixed-p x)
+                  (vl-hidexpr-resolved-p x)
                   (force (not (vl-atom-p x))))
-             (vl-hid-fixed-p (second (vl-nonatom->args x)))))
+             (vl-hidindex-resolved-p (first (vl-nonatom->args x)))))
 
-  (defthm vl-hid-fixed-p-of-third-of-vl-nonatom->args-when-vl-hidexpr-p
-    (implies (and (equal (vl-nonatom->op x) :vl-hid-arraydot)
-                  (vl-hid-fixed-p x)
+  (defthm vl-hidexpr-resolved-p-of-arg2-when-vl-hidexpr-resolved-p
+    (implies (and (equal (vl-nonatom->op x) :vl-hid-dot)
+                  (vl-hidexpr-resolved-p x)
                   (force (not (vl-atom-p x))))
-             (vl-hid-fixed-p (third (vl-nonatom->args x)))))
+             (vl-hidexpr-resolved-p (second (vl-nonatom->args x)))))
 
-  (defthm vl-hid-fixed-p-of-vl-atom
-    (implies (and (force (vl-atomguts-p guts))
-                  (force (maybe-posp finalwidth))
-                  (force (vl-maybe-exprtype-p finaltype)))
-             (equal (vl-hid-fixed-p (make-vl-atom :guts guts
-                                                  :finalwidth finalwidth
-                                                  :finaltype finaltype))
-                    (and (vl-hidpiece-p guts)
-                         (not finalwidth)
-                         (not finaltype)))))
+  (defthm vl-hidexpr-resolved-p-of-make-vl-nonatom-for-index
+    (implies (and (equal op :vl-index)
+                  (force (vl-hidindex-resolved-p (first args)))
+                  (force (vl-expr-resolved-p (second args))))
+             (vl-hidexpr-resolved-p (make-vl-nonatom :op op
+                                                     :args args
+                                                     :atts atts
+                                                     :finalwidth finalwidth
+                                                     :finaltype finaltype)))
+    :hints(("Goal" :in-theory (disable (force)))))
 
-  (defthm vl-hid-fixed-p-of-vl-nonatom-dot
+  (defthm vl-hidexpr-resolved-p-of-make-vl-nonatom-for-dot
     (implies (and (equal op :vl-hid-dot)
-                  (force (vl-exprlist-p args))
-                  (force (equal (len args) 2))
-                  (force (true-listp args))
-                  (force (not atts))
-                  (force (not finalwidth))
-                  (force (not finaltype))
-
-                  (force (vl-atom-p (first args)))
-                  (force (vl-hidpiece-p (vl-atom->guts (first args))))
-                  (force (not (vl-atom->finalwidth (first args))))
-                  (force (not (vl-atom->finaltype (first args))))
-
-                  (force (vl-hidexpr-p (second args)))
-                  (force (vl-hid-indicies-resolved-p (second args)))
-                  (force (vl-hid-fixed-p (second args))))
-             (vl-hid-fixed-p (make-vl-nonatom :op op
-                                              :args args
-                                              :atts atts
-                                              :finalwidth finalwidth
-                                              :finaltype finaltype))))
-
-  (defthm vl-hid-fixed-p-of-vl-nonatom-arraydot
-    (implies (and (equal op :vl-hid-arraydot)
-                  (force (vl-exprlist-p args))
-                  (force (equal (len args) 3))
-                  (force (true-listp args))
-                  (force (not atts))
-                  (force (not finalwidth))
-                  (force (not finaltype))
-
-                  (force (vl-atom-p (first args)))
-                  (force (vl-hidpiece-p (vl-atom->guts (first args))))
-                  (force (not (vl-atom->finalwidth (first args))))
-                  (force (not (vl-atom->finaltype (first args))))
-
-                  (force (vl-expr-resolved-p (second args)))
-                  (force (equal (second args)
-                                (vl-make-index (vl-resolved->val (second args)))))
-
-                  (force (vl-hidexpr-p (third args)))
-                  (force (vl-hid-indicies-resolved-p (third args)))
-                  (force (vl-hid-fixed-p (third args))))
-
-             (vl-hid-fixed-p (make-vl-nonatom :op op
-                                              :args args
-                                              :atts atts
-                                              :finalwidth finalwidth
-                                              :finaltype finaltype)))))
-
-
-(defsection vl-hid-final-name
-  :parents (hid-tools)
-  :short "@(call vl-hid-final-name) returns the final name component of the
-hierarchical identifier @('x') as a string.  For example, given
-@('top.foo.bar.w'), it returns the string @('\"w\"')."
-
-  :long "<p>This function can be used on any @(see vl-hidexpr-p).</p>"
-
-  (defund vl-hid-final-name (x)
-    (declare (xargs :guard (and (vl-expr-p x)
-                                (vl-hidexpr-p x))))
-    (if (vl-fast-atom-p x)
-        ;; Nonsense for unconditional stringp type-prescription
-        (mbe :logic (string-fix (vl-hidpiece->name (vl-atom->guts x)))
-             :exec (vl-hidpiece->name (vl-atom->guts x)))
-      (let ((op   (vl-nonatom->op x))
-            (args (vl-nonatom->args x)))
-        (case op
-          (:vl-hid-dot ;; foo.bar
-           (vl-hid-final-name (second args)))
-          (:vl-hid-arraydot ;; foo[3].bar
-           (vl-hid-final-name (third args)))
-          (otherwise
-           ;; Nonsense for unconditional stringp type-prescription
-           (progn$ (er hard 'vl-hid-final-name "Impossible")
-                   ""))))))
-
-  (local (in-theory (enable vl-hid-final-name)))
-
-  (defthm stringp-of-vl-hid-final-name
-    (stringp (vl-hid-final-name x))
-    :rule-classes :type-prescription))
-
-
-
-(defsection vl-flatten-hidexpr
-  :parents (hid-tools)
-  :short "@(call vl-flatten-hidexpr) converts a hierarchical identifier
-expression into a string like @('foo.bar[3].baz')."
-
-  :long "<p>Note that @('x') must satisfy @(see vl-hidexpr-p) and @(see
-vl-hid-indicies-resolved-p).</p>"
-
-  (defund vl-flatten-hidexpr (x)
-    (declare (xargs :guard (and (vl-expr-p x)
-                                (vl-hidexpr-p x)
-                                (vl-hid-indicies-resolved-p x))))
-    (if (vl-fast-atom-p x)
-        ;; Nonsense for unconditional stringp type-prescription
-        (mbe :logic (string-fix (vl-hidpiece->name (vl-atom->guts x)))
-             :exec (vl-hidpiece->name (vl-atom->guts x)))
-      (let ((op   (vl-nonatom->op x))
-            (args (vl-nonatom->args x)))
-        (case op
-          (:vl-hid-dot
-           (cat (vl-hidpiece->name (vl-atom->guts (first args)))
-                "."
-                (vl-flatten-hidexpr (second args))))
-
-          (:vl-hid-arraydot
-           ;; BOZO eventually switch to natstr, but for now we don't know it's a
-           ;; natural number.
-           (cat (vl-hidpiece->name (vl-atom->guts (first args)))
-                "["
-                (implode (explode-atom (vl-resolved->val (second args)) 10))
-                "]"
-                (vl-flatten-hidexpr (third args))))
-
-          (otherwise
-           ;; Nonsense for unconditional stringp type-prescription
-           (progn$ (er hard 'vl-flatten-hidexpr "Impossible")
-                   ""))))))
-
-
-  (local (in-theory (enable vl-flatten-hidexpr)))
-
-  (defthm stringp-of-vl-flatten-hidexpr
-    (stringp (vl-flatten-hidexpr x))
-    :rule-classes :type-prescription))
-
-
-
-
-
-(defsection vl-expr-tophids
-  :parents (hid-tools)
-  :short "Collect top-level hierarchical identifiers from an expression (or
-expression list)."
-
-  :long "<p><b>Signatures:</b></p>
-<ul>
- <li>@(call vl-expr-tophids) returns an expression list.</li>
- <li>@(call vl-exprlist-tophids) returns an expression list.</li>
-</ul>
-
-<p>These functions are essentially similar to @(see vl-expr-names), but instead
-of returning the names of simple identifiers, we return sub-expressions.</p>
-
-<p>We only return the \"top\" HID expressions we find.  All this means is that
-if your expression contains an HID like @('foo.bar.baz'), then the result from
-@('tophids') will only include @('foo.bar.baz'), and won't contain @('bar.baz')
-or @('baz').</p>
-
-<p>The resulting list is guaranteed to be a list of expressions, but there's no
-guarantee that these expressions will satisfy @(see vl-hidexpr-p).</p>
-
-<p>We use a tail-recursive implementation for efficiency, and also optimize
-with @('nreverse') under the hood.</p>"
-
-  (local (in-theory (disable (force))))
-
-  (mutual-recursion
-
-   (defund vl-expr-tophids-exec (x acc)
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (if (vl-fast-atom-p x)
-         (if (vl-fast-hidpiece-p (vl-atom->guts x))
-             (cons x acc)
-           acc)
-       (case (vl-nonatom->op x)
-         ((:vl-hid-dot :vl-hid-arraydot)
-          (cons x acc))
-         (otherwise
-          (vl-exprlist-tophids-exec (vl-nonatom->args x) acc)))))
-
-   (defund vl-exprlist-tophids-exec (x acc)
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (consp x)
-         (vl-exprlist-tophids-exec (cdr x)
-                                   (vl-expr-tophids-exec (car x) acc))
-       acc)))
-
-  (mutual-recursion
-
-   (defund vl-expr-tophids (x)
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)
-                     :verify-guards nil))
-     (mbe :logic (if (vl-atom-p x)
-                     (if (vl-hidpiece-p (vl-atom->guts x))
-                         (list x)
-                       nil)
-                   (case (vl-nonatom->op x)
-                     ((:vl-hid-dot :vl-hid-arraydot)
-                      (list x))
-                     (otherwise
-                      (vl-exprlist-tophids (vl-nonatom->args x)))))
-          :exec (reverse (vl-expr-tophids-exec x nil))))
-
-   (defund vl-exprlist-tophids (x)
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (mbe :logic (if (consp x)
-                     (append (vl-expr-tophids (car x))
-                             (vl-exprlist-tophids (cdr x)))
-                   nil)
-          :exec (reverse (vl-exprlist-tophids-exec x nil)))))
-
-  (defthm true-listp-of-vl-expr-tophids
-    (true-listp (vl-expr-tophids x))
-    :rule-classes :type-prescription)
-
-  (defthm true-listp-of-vl-exprlist-tophids
-    (true-listp (vl-exprlist-tophids x))
-    :rule-classes :type-prescription)
-
-  (local (in-theory (enable (force))))
-
-  (FLAG::make-flag vl-fast-flag-expr-tophids
-                   vl-expr-tophids-exec
-                   :flag-mapping ((vl-expr-tophids-exec . expr)
-                                  (vl-exprlist-tophids-exec . list)))
-
-  (defthm-vl-fast-flag-expr-tophids lemma
-    (expr (equal (vl-expr-tophids-exec x acc)
-                 (revappend (vl-expr-tophids x) acc))
-          :name vl-expr-tophids-exec-removal)
-    (list (equal (vl-exprlist-tophids-exec x acc)
-                 (revappend (vl-exprlist-tophids x) acc))
-          :name vl-exprlist-tophids-exec-removal)
-    :hints(("Goal"
-            :induct (vl-fast-flag-expr-tophids flag x acc)
-            :expand ((vl-expr-tophids-exec x acc)
-                     (vl-exprlist-tophids-exec x acc)
-                     (vl-expr-tophids x)
-                     (vl-exprlist-tophids x)))))
-
-  (verify-guards vl-expr-tophids
-    :hints(("Goal" :in-theory (enable vl-expr-tophids
-                                      vl-expr-tophids-exec
-                                      vl-exprlist-tophids
-                                      vl-exprlist-tophids-exec))))
-
-  (defttag vl-optimize)
-  (never-memoize vl-expr-tophids-exec)
-  (never-memoize vl-exprlist-tophids-exec)
-  (progn!
-   (set-raw-mode t)
-   (defun vl-expr-tophids (x)
-     (nreverse (vl-expr-tophids-exec x nil)))
-   (defun vl-exprlist-tophids (x)
-     (nreverse (vl-exprlist-tophids-exec x nil))))
-  (defttag nil)
-
-  (local (defthm lemma
-           (case flag
-             (expr (implies (vl-expr-p x)
-                            (vl-exprlist-p (vl-expr-tophids x))))
-             (atts t)
-             (t (implies (vl-exprlist-p x)
-                         (vl-exprlist-p (vl-exprlist-tophids x)))))
-           :rule-classes nil
-           :hints(("Goal"
-                   :induct (vl-expr-induct flag x)
-                   :expand ((vl-expr-tophids x)
-                            (vl-exprlist-tophids x))))))
-
-  (defthm vl-exprlist-p-of-vl-expr-tophids
-    (implies (force (vl-expr-p x))
-             (vl-exprlist-p (vl-expr-tophids x)))
-    :hints(("Goal" :use ((:instance lemma (flag 'expr))))))
-
-  (defthm vl-exprlist-p-of-vl-exprlist-tophids
-    (implies (force (vl-exprlist-p x))
-             (vl-exprlist-p (vl-exprlist-tophids x)))
-    :hints(("Goal" :use ((:instance lemma (flag 'list)))))))
-
-
-
-
-(defsection vl-explode-hid
-  :parents (hid-tools)
-  :short "Break a hierarchical identifier into a list of strings and numbers."
-
-  :long "<p>@(call vl-explode-hid) is given @('hid'), a @(see vl-hidexpr-p),
-and returns a list of strings and numbes corresponding to the components of
-@('hid').  For example, the explosion of @('foo.bar.baz') is @('(\"foo\"
-\"bar\" \"baz\")').</p>
-
-<p>The elements of the exploded list are typically strings, but may also be
-natural numbers.  For instance, the explosion of @('foo.bar[3].baz') is
-@('(\"foo\" \"bar\" 3 \"baz\")').</p>"
-
-  (local (in-theory (enable vl-hidexpr-p)))
-
-  (defund vl-explode-hid (hid)
-    (declare (xargs :guard (and (vl-expr-p hid)
-                                (vl-hidexpr-p hid)
-                                (vl-hid-indicies-resolved-p hid))))
-    (b* (((when (vl-fast-atom-p hid))
-          (list (vl-hidpiece->name (vl-atom->guts hid))))
-         (op    (vl-nonatom->op hid))
-         (args  (vl-nonatom->args hid))
-         (name1 (vl-hidpiece->name (vl-atom->guts (first args)))))
-      (case op
-        (:vl-hid-dot
-         (cons name1
-               (vl-explode-hid (second args))))
-        (:vl-hid-arraydot
-         (list* name1
-                (vl-resolved->val (second args))
-                (vl-explode-hid (third args)))))))
-
-  (local (in-theory (enable vl-explode-hid)))
-
-  (defthm true-listp-of-vl-explode-hid
-    (true-listp (vl-explode-hid hid))
-    :rule-classes :type-prescription))
-
-
-
-(defsection vl-hid-prefixp
-  :parents (hid-tools)
-  :short "Recognizes hierarchical identifiers that begin with a certain
-prefix."
-
-  :long "<p>@(call vl-hid-prefixp) is a more efficient version of @('(prefixp
-pieces (@(see vl-explode-hid) hid))') which avoids the construction of the
-intermediate list.</p>"
-
-  (local (in-theory (enable vl-hidexpr-p vl-explode-hid)))
-
-  (defun vl-hid-prefixp (pieces hid)
-    (declare (xargs :guard (and (vl-expr-p hid)
-                                (vl-hidexpr-p hid)
-                                (vl-hid-indicies-resolved-p hid))))
-    (mbe :logic
-         (prefixp pieces (vl-explode-hid hid))
-         :exec
-         (b* (((when (atom pieces))
-               t)
-              ((when (vl-fast-atom-p hid))
-               (and (equal (first pieces) (vl-hidpiece->name (vl-atom->guts hid)))
-                    (atom (cdr pieces))))
-              (op   (vl-nonatom->op hid))
-              (args (vl-nonatom->args hid))
-              (name1 (vl-hidpiece->name (vl-atom->guts (first args)))))
-             (and (equal (first pieces) name1)
-                  (case op
-                    (:vl-hid-dot
-                     (vl-hid-prefixp (cdr pieces) (second args)))
-                    (:vl-hid-arraydot
-                     (or (atom (cdr pieces))
-                         (and (equal (second pieces) (vl-resolved->val (second args)))
-                              (vl-hid-prefixp (cddr pieces) (third args)))))))))))
-
-
-
-(define vl-hid-range ((x (and (vl-expr-p x)
-                              (vl-nonatom-p x))))
-  :returns (mv successp
-               (range vl-maybe-range-p :hyp :fguard))
+                  (force (vl-hidindex-resolved-p (first args)))
+                  (force (vl-hidexpr-resolved-p (second args))))
+             (vl-hidexpr-resolved-p (make-vl-nonatom :op op
+                                                     :args args
+                                                     :atts atts
+                                                     :finalwidth finalwidth
+                                                     :finaltype finaltype)))
+    :hints(("Goal" :in-theory (disable (force)))))
+
+  (defthm vl-hidindex-resolved-p-when-vl-hidexpr-resolved-p
+    (implies (vl-hidexpr-resolved-p x)
+             (equal (vl-hidindex-resolved-p x)
+                    (or (vl-atom-p x)
+                        (not (equal (vl-nonatom->op x) :vl-hid-dot)))))))
+
+
+
+(define vl-hidindex-final-name ((x (and (vl-expr-p x)
+                                        (vl-hidindex-p x))))
+  :returns (name stringp :rule-classes :type-prescription)
+  (b* (((when (vl-fast-atom-p x))
+        (string-fix (vl-hidpiece->name (vl-atom->guts x))))
+       ((unless (mbt (consp x))) "")
+       ((vl-nonatom x) x))
+    (vl-hidindex-final-name (first x.args))))
+
+
+(define vl-hid-final-name ((x (and (vl-expr-p x)
+                                   (vl-hidexpr-p x))))
+  :returns (name stringp :rule-classes :type-prescription)
+  (b* (((when (vl-fast-atom-p x))
+        (vl-hidindex-final-name x))
+       ((vl-nonatom x) x)
+       ((when (eq x.op :vl-hid-dot))
+        (vl-hid-final-name (second x.args))))
+    (vl-hidindex-final-name x)))
+
+
+(define vl-flatten-hidindex ((x (and (vl-expr-p x)
+                                     (vl-hidindex-p x)
+                                     (vl-hidindex-resolved-p x))))
+  :returns (flat-string stringp :rule-classes :type-prescription)
+  :short "Converts a @(see vl-hidindex-p) into a string like
+@('\"bar[3][4][5]\"')."
+  (b* (((when (vl-fast-atom-p x))
+        (string-fix (vl-hidpiece->name (vl-atom->guts x))))
+       ((unless (mbt (consp x))) "")
+       ((vl-nonatom x) x))
+    (cat (vl-flatten-hidindex (first x.args))
+         "["
+         (str::natstr (vl-resolved->val (second x.args)))
+         "]")))
+
+
+(define vl-flatten-hidexpr ((x (and (vl-expr-p x)
+                                    (vl-hidexpr-p x)
+                                    (vl-hidexpr-resolved-p x))))
+  :returns (flat-string stringp :rule-classes :type-prescription)
+  :short "Converts a hierarchical identifier expression into a string like
+@('foo.bar[3][4][5].baz')."
+  (b* (((when (vl-fast-atom-p x))
+        (string-fix (vl-hidpiece->name (vl-atom->guts x))))
+       ((vl-nonatom x) x)
+       ((when (eq x.op :vl-hid-dot))
+        (cat (vl-flatten-hidindex (first x.args))
+             "."
+             (vl-flatten-hidexpr (second x.args)))))
+    (vl-flatten-hidindex x)))
+
+
+(define vl-explode-hidindex
+  :short "Explode a (resolved) @(see vl-hidindex-p) into a flat list of
+          its components."
+
+  ((x "The hidindex to explode, e.g., @('foo[3][4][5]')"
+      (and (vl-expr-p x)
+           (vl-hidindex-p x)
+           (vl-hidindex-resolved-p x))))
+  :returns
+  (pieces "A flat, mixed list of strings and numbers, e.g.,
+           @('(\"foo\" 3 4 5)')."
+          true-listp :rule-classes :type-prescription)
+
+  (b* (((when (vl-fast-atom-p x))
+        (list (vl-hidpiece->name (vl-atom->guts x))))
+       ((unless (mbt (consp x)))
+        nil)
+       ((vl-nonatom x) x)
+       (from (vl-explode-hidindex (first x.args)))
+       (idx  (vl-resolved->val (second x.args))))
+    (append from (list idx))))
+
+
+(define vl-explode-hid
+  :short "Explode a (resolved) @(see vl-hidexpr-p) into a flat list of its
+          components."
+  ((x "The hidexpr to explode, e.g., foo.bar[2][3].baz."
+      (and (vl-expr-p x)
+           (vl-hidexpr-p x)
+           (vl-hidexpr-resolved-p x))))
+  :returns
+  (pieces "A flat, mixed list of strings and numbers, e.g.,
+           @('(\"foo\" \"bar\" 2 3 \"baz\")')."
+          true-listp :rule-classes :type-prescription)
+
+  (b* (((when (vl-fast-atom-p x))
+        (vl-explode-hidindex x))
+       ((vl-nonatom x) x)
+       ((when (eq x.op :vl-hid-dot))
+        (append (vl-explode-hidindex (first x.args))
+                (vl-explode-hid (second x.args)))))
+    (vl-explode-hidindex x)))
+
+
+(define vl-hid-range
+  :short "Try to look up a range for a HID, which may have been installed by
+@(see vl-expr-follow-hids)."
+ ((x (and (vl-expr-p x)
+          (vl-nonatom-p x))
+     "This should generally be the top-level HID expression."))
+ :returns (mv (successp booleanp :rule-classes :type-prescription)
+              (range vl-maybe-range-p
+                     :hints(("Goal" :in-theory (disable (force))))))
   (b* ((atts (vl-nonatom->atts x))
        ((unless (assoc-equal "VL_HID_RESOLVED_RANGE_P" atts))
         (mv nil nil))
-       (left (cdr (assoc-equal "VL_HID_RESOLVED_RANGE_LEFT" atts)))
+       (left  (cdr (assoc-equal "VL_HID_RESOLVED_RANGE_LEFT" atts)))
        (right (cdr (assoc-equal "VL_HID_RESOLVED_RANGE_RIGHT" atts)))
-       ((unless (or (and (not left) (not right))
-                    (and left right)))
-        (mv nil nil)))
-    (if left
-        (mv t (make-vl-range :msb left :lsb right))
-      (mv t nil)))
+       ((when (and (not left) (not right)))
+        ;; It's resolved, there's just no range.
+        (mv t nil))
+       ((unless (and left right))
+        ;; Maybe this should be a programming error?
+        (mv nil nil))
+       ;; Dumb hackery for unconditional return theorem
+       (left (mbe :logic (if (vl-expr-p left)
+                             left
+                           (vl-make-index 0))
+                  :exec left))
+       (right (mbe :logic (if (vl-expr-p right)
+                              right
+                            (vl-make-index 0))
+                   :exec right))
+       (range (make-vl-range :msb left :lsb right)))
+    (mv t range))
   ///
   (defthm vl-hid-range-of-copy-atts
     (equal (vl-hid-range (vl-nonatom op (vl-nonatom->atts x) args fw ft))
            (vl-hid-range x))))
 
-(define vl-hid-rangeatts ((range (and (vl-maybe-range-p range)
-                                      (vl-maybe-range-resolved-p range)))
-                          (atts vl-atts-p
-                                "the rest of the atts"))
+
+(define vl-hid-rangeatts
+  :short "Extend the attributes for a HID with range information."
+  ;; BOZO we should probably be using this in vl-expr-follow-hids.
+  ((range (and (vl-maybe-range-p range)
+               (vl-maybe-range-resolved-p range)))
+   (atts vl-atts-p "the rest of the atts"))
   :returns (new-atts vl-atts-p :hyp :guard)
   (b* ((atts (if range
-                 (list* (cons "VL_HID_RESOLVED_RANGE_LEFT"
-                              (vl-range->msb range))
-                        (cons "VL_HID_RESOLVED_RANGE_RIGHT"
-                              (vl-range->lsb range))
+                 (list* (cons "VL_HID_RESOLVED_RANGE_LEFT" (vl-range->msb range))
+                        (cons "VL_HID_RESOLVED_RANGE_RIGHT" (vl-range->lsb range))
                         atts)
-               (list* (cons "VL_HID_RESOLVED_RANGE_LEFT"
-                            nil)
-                      (cons "VL_HID_RESOLVED_RANGE_RIGHT"
-                            nil)
+               (list* (cons "VL_HID_RESOLVED_RANGE_LEFT" nil)
+                      (cons "VL_HID_RESOLVED_RANGE_RIGHT" nil)
                       atts))))
     (cons (list "VL_HID_RESOLVED_RANGE_P") atts))
   ///
@@ -859,8 +588,12 @@ intermediate list.</p>"
                                     assoc-equal)
                                    ((force)))))))
 
-(define vl-hid-width ((x (and (vl-expr-p x)
-                              (vl-nonatom-p x))))
+
+(define vl-hid-width
+  :short "Try to return the width of a HID, using range attribute information
+that may have been installed by @(see vl-expr-follow-hids)."
+  ((x (and (vl-expr-p x)
+           (vl-nonatom-p x))))
   :enabled t
   :guard-hints (("goal" :in-theory (enable vl-hid-range
                                            vl-maybe-range-resolved-p

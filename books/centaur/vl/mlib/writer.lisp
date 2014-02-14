@@ -333,19 +333,22 @@ displays.  The module browser's web pages are responsible for defining the
   (vl-ps-span "vl_id"
               (vl-print-str (vl-maybe-escape-identifier (vl-funname->name x)))))
 
-(define vl-pp-nullexpr ((x vl-nullexpr-p) &key (ps 'ps))
-  (declare (ignore x))
-  (vl-ps-span "vl_key"
-              (vl-print-str "null")))
+(define vl-keygutstype->string ((x vl-keygutstype-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  (case x
+    (:vl-null  "null")
+    (:vl-this  "this")
+    (:vl-super "super")
+    (:vl-local "local")
+    (:vl-$     "$")
+    (:vl-$root "$root")
+    (:vl-$unit "$unit")
+    (otherwise (progn$ (impossible) "null"))))
 
-(define vl-pp-thisexpr ((x vl-thisexpr-p) &key (ps 'ps))
-  (declare (ignore x))
+(define vl-pp-keyguts ((x vl-keyguts-p) &key (ps 'ps))
   (vl-ps-span "vl_key"
-              (vl-print-str "this")))
-
-(define vl-pp-unbounded ((x vl-unbounded-p) &key (ps 'ps))
-  (declare (ignore x))
-  (vl-print-str "$"))
+              (vl-print-str (vl-keygutstype->string
+                             (vl-keyguts->type x)))))
 
 (define vl-pp-extint ((x vl-extint-p) &key (ps 'ps))
   (b* (((vl-extint x) x))
@@ -374,9 +377,7 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-funname    (vl-pp-funname x))
     (:vl-extint     (vl-pp-extint x))
     (:vl-time       (vl-pp-time x))
-    (:vl-nullexpr   (vl-pp-nullexpr x))
-    (:vl-thisexpr   (vl-pp-thisexpr x))
-    (:vl-unbounded  (vl-pp-unbounded x))
+    (:vl-keyguts    (vl-pp-keyguts x))
     (otherwise      (vl-pp-sysfunname x))))
 
 (define vl-pp-atom ((x vl-atom-p) &key (ps 'ps))
@@ -427,21 +428,25 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-partselect-pluscolon "+:")
     (:vl-partselect-minuscolon "-:")
 
+    (:vl-scope "::")
+
     (t
      (or (raise "Bad operator: ~x0.~%" x) ""))))
 
 (defmacro vl-ops-precedence-table ()
-  ''( ;; These aren't real operators as far as the precedence rules are
+  ''(;; These aren't real operators as far as the precedence rules are
      ;; concerned, but they need to bind even more tightly than +, -, etc.
      (:VL-BITSELECT             . 20)
-     (:VL-ARRAY-INDEX           . 20)
+     (:VL-ARRAY-INDEX          . 20)
+     (:VL-INDEX      . 20)
      (:VL-PARTSELECT-COLON      . 20)
      (:VL-PARTSELECT-PLUSCOLON  . 20)
      (:VL-PARTSELECT-MINUSCOLON . 20)
      (:VL-FUNCALL               . 20)
      (:VL-SYSCALL               . 20)
      (:VL-HID-DOT               . 20)
-     (:VL-HID-ARRAYDOT          . 20)
+     ;(:VL-HID-ARRAYDOT          . 20)
+     (:VL-SCOPE                 . 20)
 
      ;; In Table 5-4, concats are said to have minimal precedence.  But that
      ;; doesn't really make sense.  For instance, in: a + {b + c} the {b + c}
@@ -675,7 +680,7 @@ ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>")
                        (vl-pp-expr (third args))
                        (vl-println? ")"))))
 
-         ((:vl-bitselect :vl-array-index)
+         ((:vl-bitselect :vl-array-index :vl-index)
           ;; These don't need parens because they have maximal precedence
           (cond ((not (consp args))
                  (prog2$ (impossible) ps))
@@ -705,15 +710,13 @@ ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>")
                        (vl-print ".")
                        (vl-pp-expr (second args)))))
 
-         ((:vl-hid-arraydot)
+         ((:vl-scope)
           ;; These don't need parens because they have maximal precedence
           (if (not (consp args))
               (prog2$ (impossible) ps)
             (vl-ps-seq (vl-pp-expr (first args))
-                       (vl-print "[")
-                       (vl-pp-expr (second args))
-                       (vl-print "].")
-                       (vl-pp-expr (third args)))))
+                       (vl-print "::")
+                       (vl-pp-expr (second args)))))
 
          ((:vl-multiconcat)
           ;; These don't need parens because they have maximal precedence

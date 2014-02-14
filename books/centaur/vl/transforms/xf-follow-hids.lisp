@@ -32,7 +32,6 @@
 ;; BOZO hid-elim stuff is sort of deprecated and has been split off into another
 ;; file, need to clean this up, and clean up its documentation
 
-
 (local (defthm crock3
          (implies (and (force (stringp name))
                        (force (vl-module-p x)))
@@ -40,7 +39,6 @@
          :hints(("Goal"
                  :in-theory (disable vl-find-moduleitem-type-when-nothing-else)
                  :use ((:instance vl-find-moduleitem-type-when-nothing-else))))))
-
 
 
 (defconst *vl-unresolved-hid-msg*
@@ -68,286 +66,229 @@
    where we were unable to resolve ~s3.  (~s4)")
 
 
-(defsection vl-find-hid-module-aux
+(define vl-find-hid-module-aux
   :parents (hid-elim)
-
   :short "Main function for following hierarchical identifiers."
 
-  :long "<p><b>Signature:</b> @(call vl-find-hid-module-aux) returns @('(mv
-warnings x-prime modname range-resolvedp range)').</p>
+  ((x "Some hierarchical identifier expression that we want to resolve; we're
+       recurring down @('x').  Our goal is to follow this HID and see where it
+       leads."
+      (and (vl-expr-p x)
+           (vl-hidexpr-p x)))
 
-<p>This is our main function for following hierarchical identifiers and
-annotating them with @('VL_HID_RESOLVED_MODULE_NAME'),
+   (curr "A module.  We assume that @('X') is relative to module
+          @('CURR'). That is, @('CURR') typically begins as @('top') for global
+          hierarchical identifiers, or is set to the current module when
+          resolving local hierarchical names."
+         vl-module-p)
+
+   (mods "All modules (so we can look up other modules."
+         vl-modulelist-p)
+
+   (modalist "For fast lookups."
+             (equal modalist (vl-modalist mods)))
+
+   (warnings "An ordinary @(see warnings) accumulator."
+             vl-warninglist-p)
+
+   (ctx-hid "For better error messages.  The full, original hierarchical
+             identifier we were trying to resolve."
+            vl-expr-p)
+
+   (ctx-modname "For better error messages.   The name of the module wherein
+                 @('CTX-HID') was found."))
+
+  :returns
+  (mv (warnings vl-warninglist-p
+                "May be extended with fatal warnings if we can't follow
+                @('x')."
+                :hints(("Goal" :in-theory (disable (force)))))
+
+      (x-prime vl-expr-p
+               :hyp (and (force (vl-expr-p x))
+                         (force (vl-hidexpr-p x))
+                         (force (vl-module-p curr))
+                         (force (vl-modulelist-p mods))
+                         (force (equal modalist (vl-modalist mods))))
+               "A changed version of @('x'), where every HID expression within
+                @('X') has been annotated with @('VL_HID_CURRENT_MOD')
+                attributes that say, e.g., for @('foo.bar'), what module is
+                \"foo\" in?")
+
+      (modname maybe-stringp :rule-classes :type-prescription
+               "@('nil') if we can't follow @('x').  Otherwise, the name of
+                the ultimate target module."
+               :hints(("Goal" :in-theory (disable (force)))))
+
+      (range-resolvedp booleanp :rule-classes :type-prescription
+                       "On success, says whether the ultimate target wire
+                        had a resolved range like @('[3:0]') instead of an
+                        unresolved range like @('[width-1:0]')."
+                       :hints(("Goal" :in-theory (disable (force)))))
+
+      (range (vl-maybe-range-p range)
+             "On success, the actual range of the target wire.  We only produce
+              a range and say it is resolved if (1) the wire is unsigned,
+              and (2) there are no arrdims.  These are important for soundness;
+              see @(see vl-hidexpr-hid-elim).  It would probably not be too
+              hard to relax the unsigned restriction, but arrdims might be more
+              difficult."
+             :hyp (and (force (vl-expr-p x))
+                       (force (vl-hidexpr-p x))
+                       (force (vl-module-p curr))
+                       (force (vl-modulelist-p mods))
+                       (force (equal modalist (vl-modalist mods))))))
+
+  :long "<p>This is our main function for following hierarchical identifiers
+and annotating them with @('VL_HID_RESOLVED_MODULE_NAME'),
 @('VL_HID_RESOLVED_RANGE_P'), etc., as described in @(see hid-elim).</p>
-
-<h5>Inputs</h5>
-
-<ul>
-
-<li>@('X') is some hierarchical identifier expression that we want to resolve.
-We recur down @('X').</li>
-
-<li>@('CURR') is a module, and we assume that @('X') is relative to module
-@('CURR').  That is, @('CURR') typically begins as @('top') for global
-hierarchical identifiers, or is set to the current module when resolving local
-hierarchical names.</li>
-
-<li>@('MODS') are the full module list, and @('MODALIST') is the associated
-@(see vl-modalist) for fast lookups.</li>
-
-<li>@('WARNINGS') is an ordinary @(see warnings) accumulator.</li>
-
-<li>@('CTX-HID') and @('CTX-MODNAME') are only used to provide context to error
-messages.  @('CTX-HID') is the full, original hierarchical identifier we were
-trying to resolve, and @('CTX-MODNAME') is the name of the module wherein
-@('CTX-HID') was found.</li>
-
-</ul>
 
 <p>Our goal is to follow X and see what module it leads to.  That is, given an
 identifier like @('foo.bar.baz.wire'), we try to find out what kind of module
 @('baz') is.  Furthermore, if we can tell how wide @('wire') is, we would like
-to report this information as well.</p>
+to report this information as well.</p>"
 
-<h5>Outputs</h5>
+  :verify-guards nil
 
-<ul>
+  (b* (((when (vl-fast-atom-p x))
+        (b* ((name (vl-hidpiece->name (vl-atom->guts x)))
+             (item (vl-find-moduleitem name curr))
 
-<li>@('WARNINGS') is the updated warnings accumulator, which may include new
-fatal warnings if we are unable to follow @('X'),</li>
+             ((unless item)
+              (mv (fatal :type :vl-unresolved-hid
+                         :msg *vl-unresolved-hid-msg*
+                         :args (list ctx-hid
+                                     ctx-modname
+                                     (vl-module->name curr)
+                                     name
+                                     (cat name " not found")))
+                  x nil nil nil))
 
-<li>@('X-PRIME') is a changed version of @('X') where every HID expression
-within @('X') has been annotated with @('VL_HID_CURRENT_MOD') attributes that
-say, e.g., for @('foo.bar'), what module is \"foo\" in?</li>
+             ((unless (or (eq (tag item) :vl-netdecl)
+                          (eq (tag item) :vl-regdecl)))
+              (mv (fatal :type :vl-unresolved-hid
+                         :msg *vl-unresolved-hid-msg*
+                         :args (list ctx-hid
+                                     ctx-modname
+                                     (vl-module->name curr)
+                                     name
+                                     (cat "Expected " name " to be a net or reg, but found "
+                                          (symbol-name (tag item)))))
+                  x nil nil nil))
 
-<li>@('MODNAME') is @('NIL') on failure, or the name of the ultimate target
-module on success,</li>
+             ((mv range signedp arrdims)
+              (if (eq (tag item) :vl-netdecl)
+                  (mv (vl-netdecl->range item)
+                      (vl-netdecl->signedp item)
+                      (vl-netdecl->arrdims item))
+                (mv (vl-regdecl->range item)
+                    (vl-regdecl->signedp item)
+                    (vl-regdecl->arrdims item))))
 
-<li>@('RANGE-RESOLVEDP') says whether the ultimate target wire's range was
-resolved, and</li>
+             (range
+              ;; Try to simplify the range.  We didn't originally do this, but
+              ;; I later found that we weren't fully resolving some HIDs
+              ;; because their declared ranges were things like [`foo-1:0].  So
+              ;; we can do a bit better by trying to resolve the ranges.
+              (b* (((when (vl-maybe-range-resolved-p range))
+                          range)
+                         ((mv ?warnings new-range)
+                          (vl-rangeresolve range nil)))
+                      new-range))
 
-<li>@('RANGE') is the actual range on the ultimate target wire.</li>
+             (range-resolvedp
+              ;; See vl-hid-expr-elim, don't say it's resolved unless it's also
+              ;; unsigned and has no arrdims.
+              (and (not signedp)
+                   (not arrdims)
+                   (vl-maybe-range-resolved-p range)))
 
-</ul>
+             (modname (string-fix (vl-module->name curr))))
 
-<p>Note that we only produce a range and say it is resolved if (1) the wire is
-unsigned, and (2) there are no arrdims.  These are important for soundness; see
-@(see vl-hidexpr-hid-elim).  It would probably not be too hard to relax the
-unsigned restriction, but arrdims might be more difficult.</p>"
+          (mv (ok) x modname range-resolvedp range)))
 
-  (defund vl-find-hid-module-aux (x curr mods modalist warnings
-                                    ctx-hid ctx-modname)
-    "Returns (WARNINGS X-PRIME MODNAME RANGE-RESOLVEDP RANGE)"
-    (declare (xargs :guard (and (vl-expr-p x)
-                                (vl-hidexpr-p x)
-                                (vl-module-p curr)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods))
-                                (vl-warninglist-p warnings)
-                                (vl-expr-p ctx-hid)
-                                (stringp ctx-modname))))
+       ((unless (mbt (consp x)))
+        (impossible)
+        (mv (ok) x nil nil nil))
 
+       ((vl-nonatom x) x)
 
-    (cond ((vl-fast-atom-p x)
-           (b* ((name (vl-hidpiece->name (vl-atom->guts x)))
-                (item (vl-find-moduleitem name curr))
-                ((unless item)
-                 (mv (cons (make-vl-warning
-                            :type :vl-unresolved-hid
-                            :msg *vl-unresolved-hid-msg*
-                            :args (list ctx-hid
-                                        ctx-modname
-                                        (vl-module->name curr)
-                                        name
-                                        (cat name " not found"))
-                            :fatalp t
-                            :fn 'vl-find-hid-module-aux)
-                           warnings)
-                     x nil nil nil))
-                ((unless (or (eq (tag item) :vl-netdecl)
-                             (eq (tag item) :vl-regdecl)))
-                 (mv (cons (make-vl-warning
-                            :type :vl-unresolved-hid
-                            :msg *vl-unresolved-hid-msg*
-                            :args (list ctx-hid
-                                        ctx-modname
-                                        (vl-module->name curr)
-                                        name
-                                        (cat "Expected " name " to be a net or reg, but found "
-                                             (symbol-name (tag item))))
-                            :fatalp t
-                            :fn 'vl-find-hid-module-aux)
-                           warnings)
-                     x nil nil nil))
-                ((mv range signedp arrdims)
-                 (if (eq (tag item) :vl-netdecl)
-                     (mv (vl-netdecl->range item)
-                         (vl-netdecl->signedp item)
-                         (vl-netdecl->arrdims item))
-                   (mv (vl-regdecl->range item)
-                       (vl-regdecl->signedp item)
-                       (vl-regdecl->arrdims item))))
+       ((unless (and (eq x.op :vl-hid-dot)
+                     (vl-fast-atom-p (first x.args))))
+        (mv (fatal :type :vl-unresolved-hid
+                   :msg *vl-unresolved-hid-msg*
+                   :args (list ctx-hid
+                               ctx-modname
+                               (vl-module->name curr)
+                               "the hid, due to array indexing"
+                               "Hids with indexes are not yet supported."))
+            x nil nil nil))
 
-                ;; Historically we did not try to simplify the range.  Later, I
-                ;; found that we weren't fully resolving some HIDs because
-                ;; their declared ranges were things like [`foo-1:0], and so we
-                ;; can do a little better by trying to resolve the ranges.
+       ;; As above, find out what module item the first part of the ID is
+       ;; talking about.
+       (name1 (vl-hidpiece->name (vl-atom->guts (first x.args))))
+       (item  (vl-find-moduleitem name1 curr))
+       ((unless item)
+        (mv (fatal :type :vl-unresolved-hid
+                   :msg *vl-unresolved-hid-msg*
+                   :args (list ctx-hid
+                               ctx-modname
+                               (vl-module->name curr)
+                               name1
+                               (cat name1 " not found")))
+            x nil nil nil))
 
-                (range (if (vl-maybe-range-resolved-p range)
-                           range
-                         (mv-let (warnings new-range)
-                           (vl-rangeresolve range nil)
-                           (declare (ignore warnings))
-                           new-range)))
+       ((unless (mbe :logic (vl-modinst-p item)
+                     :exec (eq (tag item) :vl-modinst)))
+        (mv (fatal :type :vl-unresolved-hid
+                   :msg *vl-unresolved-hid-msg*
+                   :args (list ctx-hid
+                               ctx-modname
+                               (vl-module->name curr)
+                               name1
+                               (cat "Expected " name1
+                                    " to be a module instance, but found "
+                                    (symbol-name (tag item)))))
+            x nil nil nil))
 
-                (range-resolvedp
-                 ;; See vl-hid-expr-elim, don't say it's resolved unless it's also
-                 ;; unsigned and has no arrdims.
-                 (and (not signedp)
-                      (not arrdims)
-                      (vl-maybe-range-resolved-p range))))
-             (mv warnings
-                 x
-                 (vl-module->name curr)
-                 range-resolvedp
-                 range)))
+       (submod-name (vl-modinst->modname item))
+       (submod      (vl-fast-find-module submod-name mods modalist))
+       ((unless submod)
+        (mv (fatal :type :vl-unresolved-hid
+                   :msg *vl-unresolved-hid-msg*
+                   :args (list ctx-hid
+                               ctx-modname
+                               (vl-module->name curr)
+                               name1
+                               (cat name1 " is an instance of " submod-name
+                                    ", which is not a defined module.")))
+            x nil nil nil))
 
-          ((mbe :logic (not (consp x))
-                :exec nil)
-           ;; BOZO is this really necessary?
-           (prog2$ (er hard? 'vl-find-hid-module-aux "Impossible case for termination.")
-                   (mv warnings x nil nil nil)))
+       ;; Historically, I once caused a warning if we ran into a parameterized
+       ;; module.  Now I don't worry about this during the following stage; it
+       ;; only matters in the elimination stage.
+       ;; At this point everything is working out.  Ready to recur.
+       ((mv warnings tail-prime ?modname range-resolvedp range)
+        (vl-find-hid-module-aux (second x.args)
+                                submod mods modalist warnings
+                                ctx-hid ctx-modname))
 
-          (t
-           (b* ((op   (vl-nonatom->op x))
-                (args (vl-nonatom->args x))
-                (atts (vl-nonatom->atts x))
-                (atts (acons "VL_HID_CURRENT_MOD"
-                             (make-vl-atom :guts
-                                           (vl-string (vl-module->name curr)))
-                             atts))
+       (atts (acons "VL_HID_CURRENT_MOD"
+                    (make-vl-atom :guts (vl-string (vl-module->name curr)))
+                    x.atts))
 
-                ;; As above, find out what module item the first part of the ID is
-                ;; talking about.
-                (name1 (vl-hidpiece->name (vl-atom->guts (car args))))
-                (item  (vl-find-moduleitem name1 curr))
+       (args-prime (list (first x.args) tail-prime))
 
-                ((unless item)
-                 (mv (cons (make-vl-warning
-                            :type :vl-unresolved-hid
-                            :msg *vl-unresolved-hid-msg*
-                            :args (list ctx-hid
-                                        ctx-modname
-                                        (vl-module->name curr)
-                                        name1
-                                        (cat name1 " not found"))
-                            :fatalp t
-                            :fn 'vl-find-hid-module-aux)
-                           warnings)
-                     (change-vl-nonatom x :atts atts)
-                     nil nil nil))
+       (x-prime (change-vl-nonatom x
+                                   :args args-prime
+                                   :atts atts)))
 
-                ((unless (mbe :logic (vl-modinst-p item)
-                              :exec (eq (tag item) :vl-modinst)))
-                 (mv (cons (make-vl-warning
-                            :type :vl-unresolved-hid
-                            :msg *vl-unresolved-hid-msg*
-                            :args (list ctx-hid
-                                        ctx-modname
-                                        (vl-module->name curr)
-                                        name1
-                                        (cat "Expected " name1
-                                             " to be a module instance, but found "
-                                             (symbol-name (tag item))))
-                            :fatalp t
-                            :fn 'vl-find-hid-module-aux)
-                           warnings)
-                     (change-vl-nonatom x :atts atts)
-                     nil nil nil))
+    (mv (ok) x-prime
+        (string-fix (vl-module->name curr))
+        range-resolvedp range))
+  ///
 
-                ((when (and (eq op :vl-hid-arraydot)
-                            (not (vl-modinst->range item))))
-                 ;; We thought about adding a check to make sure that the index
-                 ;; is in range for this instance, but it's hard to imagine doing
-                 ;; that.  The range of this instance might not yet be resolved
-                 ;; when we run this function!
-                 (mv (cons (make-vl-warning
-                            :type :vl-unresolved-hid
-                            :msg *vl-unresolved-hid-msg*
-                            :args (list ctx-hid
-                                        ctx-modname
-                                        (vl-module->name curr)
-                                        name1
-                                        (cat "Expected " name1
-                                             " to be a module instance array, "
-                                             "but found a plain module instance."))
-                            :fatalp t
-                            :fn 'vl-find-hid-module-aux)
-                           warnings)
-                     (change-vl-nonatom x :atts atts)
-                     nil nil nil))
-
-                (modname (vl-modinst->modname item))
-                (mod     (vl-fast-find-module modname mods modalist))
-                ((unless mod)
-                 (mv (cons (make-vl-warning
-                            :type :vl-unresolved-hid
-                            :msg *vl-unresolved-hid-msg*
-                            :args (list ctx-hid
-                                        ctx-modname
-                                        (vl-module->name curr)
-                                        name1
-                                        (cat name1 " is an instance of " modname
-                                             ", which is not a defined module."))
-                            :fatalp t
-                            :fn 'vl-find-hid-module-aux)
-                           warnings)
-                     (change-vl-nonatom x :atts atts)
-                     nil nil nil))
-
-                ;; Historically, I once caused a warning if we ran into a
-                ;; parameterized module.  Now I don't worry about this during
-                ;; the following stage; it only matters in the elimination
-                ;; stage.
-
-                (tail (if (eq op :vl-hid-dot)
-                          (second args)
-                        (third args)))
-
-                ;; At this point everything is working out.  Ready to recur.
-                ((mv warnings tail-prime modname range-resolvedp range)
-                 (vl-find-hid-module-aux tail
-                                         mod mods modalist warnings
-                                         ctx-hid ctx-modname))
-
-                (args-prime (if (eq op :vl-hid-dot)
-                                (list (first args) tail-prime)
-                              (list (first args) (second args) tail-prime)))
-
-                (x-prime (change-vl-nonatom x
-                                            :args args-prime
-                                            :atts atts)))
-
-             (mv warnings x-prime modname range-resolvedp range)))))
-
-  (local (in-theory (enable vl-find-hid-module-aux)))
-
-  (defthm vl-warninglist-p-of-vl-find-hid-module-aux
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-find-hid-module-aux x curr mods modalist warnings
-                                                ctx-hid ctx-modname))))
-    :hints(("Goal" :in-theory (disable (force)))))
-
-  (defthm vl-expr-p-of-vl-find-hid-module-aux
-    (implies (and (force (vl-expr-p x))
-                  (force (vl-hidexpr-p x))
-                  (force (vl-module-p curr))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods))))
-             (vl-expr-p
-              (mv-nth 1 (vl-find-hid-module-aux x curr mods modalist warnings
-                                                ctx-hid ctx-modname)))))
+  (verify-guards vl-find-hid-module-aux)
 
   (defthm vl-atom-p-of-vl-find-hid-module-aux
     (implies (and (force (vl-expr-p x))
@@ -383,24 +324,6 @@ unsigned restriction, but arrdims might be more difficult.</p>"
                                                             ctx-hid ctx-modname))))
                     (len (vl-nonatom->args x)))))
 
-  (defthm stringp-of-vl-find-hid-module-aux
-    (implies (and (force (vl-expr-p x))
-                  (force (vl-hidexpr-p x))
-                  (force (vl-module-p curr))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods))))
-             (equal (stringp (mv-nth 2 (vl-find-hid-module-aux x curr mods modalist warnings
-                                                               ctx-hid ctx-modname)))
-                    (if (mv-nth 2 (vl-find-hid-module-aux x curr mods modalist warnings
-                                                          ctx-hid ctx-modname))
-                        t
-                      nil))))
-
-  (defthm booleanp-of-vl-find-hid-module-aux
-    (booleanp (mv-nth 3 (vl-find-hid-module-aux x curr mods modalist warnings
-                                                ctx-hid ctx-modname)))
-    :hints(("Goal" :in-theory (disable (force)))))
-
   (defthm vl-range-p-of-vl-find-hid-module-aux
     (implies (and (force (vl-expr-p x))
                   (force (vl-hidexpr-p x))
@@ -430,36 +353,31 @@ unsigned restriction, but arrdims might be more difficult.</p>"
   )
 
 
-
-(defsection vl-find-hid-module
+(define vl-find-hid-module
   :parents (hid-elim)
   :short "Top-level function for following hierarchical identifiers."
 
-  :long "<p><b>Signature:</b> @(call vl-find-hid-module) returns @('(mv
-warnings x-prime modname range-resolvedp range localp)')</p>
+  ((x        (and (vl-expr-p x)
+                  (vl-hidexpr-p x))
+             "A hierarchical identifier that occurs somewhere in @('mod').")
+   (mod      vl-module-p)
+   (mods     vl-modulelist-p
+             "List of all modules, so we can look up submodules.")
+   (modalist (equal modalist (vl-modalist mods))
+             "For fast lookups.")
+   (toplev   (equal toplev (vl-modulelist-toplevel mods))
+             "Names of all top level modules, so we can tell which HIDs are
+              local versus global.")
+   (warnings vl-warninglist-p
+             "Typically the warnings accumulator for @('mod')."))
 
-<p>Hierarchical identifiers can be either local (i.e., beginning with the name
-of a submodule), or global (i.e., beginning with the name of some top-level
-module).  The main task of this function is to determine whether @('X') is
-local or global, then call upon @(see vl-find-hid-module-aux) to do the real
-work of following @('X').</p>
+  :returns (mv warnings x-prime modname range-resolvedp range localp)
 
-<h5>Inputs</h5>
-
-<ul>
-
-<li>@('X') is a hierarchical identifier that occurs somewhere within
-@('MOD').</li>
-
-<li>@('MODS') is the list of all modules, and @('MODALIST') is the @(see
-vl-modalist) for @('MODS') for fast lookups.</li>
-
-<li>@('TOPLEV') are the names of all top-level modules in @('MODS'); see @(see
-vl-modulelist-toplevel).</li>
-
-<li>@('WARNINGS') is the @(see warnings) accumulator for @('MOD').</li>
-
-</ul>
+  :long "<p>Hierarchical identifiers can be either local (i.e., beginning with
+the name of a submodule), or global (i.e., beginning with the name of some
+top-level module).  The main task of this function is to determine whether
+@('X') is local or global, then call upon @(see vl-find-hid-module-aux) to do
+the real work of following @('X').</p>
 
 <p>Our goal is to follow X and see what module it leads to.  That is, given an
 identifier like @('foo.bar.baz.wire'), we try to find out what kind of module
@@ -470,94 +388,76 @@ to report this information as well.</p>
 On success, @('LOCALP') says whether this is a local hierarchical
 identifier.</p>"
 
-  (defund vl-find-hid-module (x mod mods modalist toplev warnings)
-    "Returns (WARNINGS X-PRIME MODNAME RANGE-RESOLVEDP RANGE LOCALP)"
-    (declare (xargs :guard (and (vl-expr-p x)
-                                (vl-hidexpr-p x)
-                                (vl-module-p mod)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods))
-                                (equal toplev (vl-modulelist-toplevel mods))
-                                (vl-warninglist-p warnings))))
-
-    (b* (((when (vl-atom-p x))
-          (mv (cons (make-vl-warning
-                     :type :vl-bad-hid
-                     :msg "Trying to follow the hierarchical identifier ~a0, but ~
+  (b* (((when (vl-atom-p x))
+        (mv (fatal :type :vl-bad-hid
+                   :msg "Trying to follow the hierarchical identifier ~a0, but ~
                            it's only got one component?  What the heck??"
-                     :args (list x)
-                     :fatalp t
-                     :fn 'vl-find-hid-module)
-                    warnings)
-              x nil nil nil nil))
+                   :args (list x))
+            x nil nil nil nil))
 
-         (op   (vl-nonatom->op x))
-         (args (vl-nonatom->args x))
+       ((vl-nonatom x) x)
 
-         ;; Now, the only question is whether or not this is a local or global
-         ;; hid.  If it's local, it should correspond to the name of some
-         ;; submodule.
+       ((unless (and (eq x.op :vl-hid-dot)
+                     (vl-fast-atom-p (first x.args))))
+        (mv (fatal :type :vl-bad-hid
+                   :msg "~a0: hids with indexes aren't supported yet."
+                   :args (list x))
+            x nil nil nil nil))
 
-         (name1 (vl-hidpiece->name (vl-atom->guts (car args))))
-         (item  (vl-find-moduleitem name1 mod))
+       ;; Now, the only question is whether or not this is a local or global
+       ;; hid.  If it's local, it should correspond to the name of some
+       ;; submodule.
 
-         ((when item)
-          ;; Okay, this seems like a local hierarchical identifier.  Lets try
-          ;; to get it using our aux function.  Note that we just pass in X
-          ;; itself, so we'll redundantly look at it and do our extra checks to
-          ;; make sure it's a valid module instance, etc.
-          (b* (((mv warnings x-prime modname range-resolvedp range)
-                (vl-find-hid-module-aux x mod mods modalist warnings x (vl-module->name mod))))
-              (mv warnings x-prime modname range-resolvedp range t)))
+       (name1 (vl-hidpiece->name (vl-atom->guts (first x.args))))
+       (item  (vl-find-moduleitem name1 mod))
 
-         ;; Otherwise, maybe this is a global hierarchical identifier.  Lets
-         ;; see if the first name matches the name of any module.
-         (ref-mod (vl-fast-find-module name1 mods modalist))
+       ((when item)
+        ;; Okay, this seems like a local hierarchical identifier.  Lets try
+        ;; to get it using our aux function.  Note that we just pass in X
+        ;; itself, so we'll redundantly look at it and do our extra checks to
+        ;; make sure it's a valid module instance, etc.
+        (b* (((mv warnings x-prime modname range-resolvedp range)
+              (vl-find-hid-module-aux x mod mods modalist warnings x
+                                      (vl-module->name mod))))
+          (mv warnings x-prime modname range-resolvedp range t)))
 
-         ((unless (and ref-mod
-                       (member-equal name1 toplev)))
-          (mv (cons (make-vl-warning
-                     :type :vl-bad-hid
-                     :msg "Trying to follow the hierarchical identifier ~a0, but ~s1 ~
-                           is not a locally defined name and is not among the top-level ~
-                           module names, ~&2.~%"
-                     :args (list x name1 toplev)
-                     :fatalp t
-                     :fn 'vl-find-hid-module)
-                    warnings)
-              x nil nil nil nil))
+       ;; Otherwise, maybe this is a global hierarchical identifier.  Lets
+       ;; see if the first name matches the name of any module.
+       (ref-mod (vl-fast-find-module name1 mods modalist))
 
-         ;; Historically I caused a fatal warning if ref-mod had paramdecls, but now
-         ;; we don't care about that until the elimination stage.
+       ((unless (and ref-mod
+                     (member-equal name1 toplev)))
+        (mv (fatal :type :vl-bad-hid
+                   :msg "Trying to follow the hierarchical identifier ~a0, ~
+                         but ~s1 is not a locally defined name and is not ~
+                         among the top-level module names, ~&2.~%"
+                   :args (list x name1 toplev))
+            x nil nil nil nil))
 
-         ;; In this case we have to add the VL_HID_CURRENT_MOD attribute ourselves,
-         ;; since we're only giving the tail to the aux function.
-         (atts (vl-nonatom->atts x))
-         (atts (acons "VL_HID_CURRENT_MOD"
-                      (make-vl-atom :guts
-                                    (vl-string (vl-module->name ref-mod)))
-                      atts))
+       ;; Historically I caused a fatal warning if ref-mod had paramdecls, but now
+       ;; we don't care about that until the elimination stage.
 
-         (tail (if (eq op :vl-hid-dot)
-                   (second args)
-                 (third args)))
+       ;; In this case we have to add the VL_HID_CURRENT_MOD attribute ourselves,
+       ;; since we're only giving the tail to the aux function.
+       (atts (vl-nonatom->atts x))
+       (atts (acons "VL_HID_CURRENT_MOD"
+                    (make-vl-atom :guts
+                                  (vl-string (vl-module->name ref-mod)))
+                    atts))
 
-         ;; Okay, this seems like a global hierarchical identifier.  Try to get
-         ;; it using our aux function.  In this case, we only chase the tail
-         ;; because the head just got us to ref-mod.
-         ((mv warnings tail-prime modname range-resolvedp range)
-          (vl-find-hid-module-aux tail ref-mod mods modalist warnings x
-                                  (vl-module->name mod)))
+       ;; Okay, this seems like a global hierarchical identifier.  Try to get
+       ;; it using our aux function.  In this case, we only chase the tail
+       ;; because the head just got us to ref-mod.
+       ((mv warnings tail-prime modname range-resolvedp range)
+        (vl-find-hid-module-aux (second x.args) ref-mod mods modalist warnings x
+                                (vl-module->name mod)))
 
-         (args-prime (if (eq op :vl-hid-dot)
-                         (list (first args) tail-prime)
-                       (list (first args) (second args) tail-prime)))
+       (args-prime (list (first x.args) tail-prime))
+       (x-prime (change-vl-nonatom x :args args-prime :atts atts)))
 
-         (x-prime (change-vl-nonatom x :args args-prime :atts atts)))
+    (mv warnings x-prime modname range-resolvedp range nil))
 
-        (mv warnings x-prime modname range-resolvedp range nil)))
-
-  (local (in-theory (enable vl-find-hid-module)))
+    ///
 
   (defthm vl-warninglist-p-of-vl-find-hid-module
     (implies (force (vl-warninglist-p warnings))

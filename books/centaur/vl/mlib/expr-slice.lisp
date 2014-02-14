@@ -760,10 +760,10 @@ already correct and that no extensions are necessary.</p>"
                             vl-maybe-range-size
                             vl-hidexpr-welltyped-p)))
 
-  (define vl-msb-bitslice-hid ((x        (and (vl-expr-p x)
-                                              (vl-nonatom-p x)
-                                              (vl-hidexpr-p x)
-                                              (vl-expr-welltyped-p x)))
+  (define vl-msb-bitslice-hid ((x (and (vl-expr-p x)
+                                       (vl-nonatom-p x)
+                                       (vl-hidexpr-p x)
+                                       (vl-expr-welltyped-p x)))
                                (warnings vl-warninglist-p))
     (b* (((mv ok range) (vl-hid-range x))
          ((unless (and ok (vl-maybe-range-resolved-p range)))
@@ -898,6 +898,7 @@ already correct and that no extensions are necessary.</p>"
                                     (a 1)
                                     (x (vl-exprlist->finalwidths
                                         (vl-make-list-of-bitselects expr low high)))))))))
+
 
   (local (defthm main
            (implies (and (vl-expr-p x)
@@ -1481,12 +1482,10 @@ a flat list of MSB-ordered, single-bit expressions."
            (er hard 'vl-msb-bitslice-expr "Impossible.")
            (mv nil warnings nil))
 
-          (op   (vl-nonatom->op x))
-
-          ((when (or (eq op :vl-hid-dot)
-                     (eq op :vl-hid-arraydot)))
+          ((when (vl-hidexpr-p x))
            (vl-msb-bitslice-hid x warnings))
 
+          (op   (vl-nonatom->op x))
           (args (vl-nonatom->args x))
 
           ((when (eq op :vl-bitselect))

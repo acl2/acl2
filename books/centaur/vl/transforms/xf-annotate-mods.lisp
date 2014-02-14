@@ -29,6 +29,7 @@
 (include-book "xf-orig" )
 (include-book "cn-hooks" )
 (include-book "xf-follow-hids" )
+(include-book "xf-resolve-indexing")
 
 
 (define vl-annotate-mods ((mods vl-modulelist-p))
@@ -47,6 +48,9 @@
 
        (mods (xf-cwtime (vl-modulelist-portdecl-sign mods)
                         :name xf-crosscheck-port-signedness))
+
+       (mods (xf-cwtime (vl-modulelist-resolve-indexing mods)
+                        :name xf-resolve-indexing))
 
        (mods (xf-cwtime (vl-modulelist-argresolve mods)
                         :name xf-argresolve))

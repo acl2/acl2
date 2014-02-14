@@ -55,7 +55,7 @@
                    :guts (make-vl-id :name (vl-idtoken->name id)))))
         (:= (vl-match-token :vl-lbrack))
         (range := (vl-parse-range-expression))
-        (unless (or (eq (vl-erange->type range) :vl-bitselect)
+        (unless (or (eq (vl-erange->type range) :vl-index)
                     (eq (vl-erange->type range) :vl-colon))
           (return-raw
            (vl-parse-error "The +: or -: operators are not allowed in port expressions.")))

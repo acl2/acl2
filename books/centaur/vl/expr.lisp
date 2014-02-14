@@ -58,12 +58,8 @@ atomic expression includes some <b>guts</b>, which refer to either an:</p>
 
 <li>@(see vl-time-p): time literals like @('3ns'),</li>
 
-<li>@(see vl-nullexpr-p): the SystemVerilog @('null') expression,</li>
-
-<li>@(see vl-thisexpr-p): the SystemVerilog @('this') expression,</li>
-
-<li>@(see vl-unbounded-p): the SystemVerilog @('$') expression, for unbounded
-ranges,</li>
+<li>@(see vl-keyguts-p): special keywords like @('null'), @('this'),
+@('super'), @('$'), @('local'), etc.</li>
 
 <li>@(see vl-hidpiece-p): one piece of a hierarchical identifier,</li>
 
@@ -205,14 +201,17 @@ arities (e.g., concatenation, function calls, ...), we map the operator to
 <h5>Selection Operators</h5>
 
 <ul>
-<li>@('foo[1]')      becomes @(':vl-bitselect') or @(':vl-array-index') (arity 2)</li>
+
+<li>@('foo[1]') initially becomes @(':vl-index').  Later these should be
+changed to @(':vl-bitselect') or @(':vl-array-index'), as appropriate.</li>
 <li>@('foo[3 : 1]')  becomes @(':vl-partselect-colon') (arity 3)</li>
 <li>@('foo[3 +: 1]') becomes @(':vl-partselect-pluscolon') (arity 3)</li>
 <li>@('foo[3 -: 1]') becomes @(':vl-partselect-minuscolon') (arity 3)</li>
 </ul>
 
-<p>Note that upon parsing, there are no @(':vl-array-index') operators; these
-must be introduced by the @(see array-indexing) transform.</p>
+<p>Note that upon parsing, there are no @(':vl-bitselect') or
+@(':vl-array-index') operators; these must be introduced by the @(see
+resolve-indexing) transform.</p>
 
 <h5>Concatenation and Replication Operators</h5>
 
@@ -235,7 +234,8 @@ hierarchical identifiers.</p>
 
 <ul>
 <li>@('foo.bar') becomes @(':vl-hid-dot') (arity 2)</li>
-<li>@('foo[3].bar') becomes @(':vl-hid-arraydot') (arity 3)</li>
+<li>@('foo[3][4].bar') becomes a @(':vl-hid-dot') whose @('from') argument
+is a tree of @(':vl-index') operators.</li>
 </ul>"
 
   (defconst *vl-ops-table*
@@ -283,8 +283,9 @@ hierarchical identifiers.</p>
      (cons :vl-mintypmax             3) ;;; e.g., (1 : 2 : 3)
 
      ;; Selection Operators
-     (cons :vl-bitselect             2) ;;; e.g., foo[1]
-     (cons :vl-array-index           2) ;;; e.g., foo[1]
+     (cons :vl-index                 2) ;;; e.g., foo[1] before determining array/wire
+     (cons :vl-bitselect             2) ;;; e.g., foo[1] for wire bit selections
+     (cons :vl-array-index           2) ;;; e.g., foo[1] for array indexing
      (cons :vl-partselect-colon      3) ;;; e.g., foo[3:1]
      (cons :vl-partselect-pluscolon  3) ;;; e.g., foo[3 +: 1]
      (cons :vl-partselect-minuscolon 3) ;;; e.g., foo[3 -: 1]
@@ -297,9 +298,9 @@ hierarchical identifiers.</p>
      (cons :vl-funcall               nil) ;;; e.g., foo(1,2,3)
      (cons :vl-syscall               nil) ;;; e.g., $foo(1,2,3)
 
-     ;; Hierarchical Identifiers
+     ;; Hierarchical Identifiers and Scoping
      (cons :vl-hid-dot               2) ;;; e.g., foo.bar
-     (cons :vl-hid-arraydot          3) ;;; e.g., foo[3].bar
+     (cons :vl-scope                 2) ;;; e.g., foo::bar
      )))
 
 
@@ -595,26 +596,31 @@ times throughout all the expressions in a design.</p>")
   ((name stringp :rule-classes :type-prescription))
 
   :long "<p>We represent hierarchical identifiers like
-@('top.processor[2].reset') as non-atomic expressions.  To represent this
+@('top.processor[2][3].reset') as non-atomic expressions.  To represent this
 particular expression, we build a @(see vl-expr-p) that is something like
 this:</p>
 
 @({
- (:vl-hid-dot top (:vl-hid-arraydot processor 2 reset))
+ (:vl-hid-dot top
+              (vl-hid-dot
+                  (:vl-index (:vl-index processor 2)
+                             3)
+                  reset))
 })
 
 <p>In other words, the @(':vl-hid-dot') operator is used to join pieces of a
-hierarchical identifier, and @(':vl-hid-arraydot') is used when instance arrays
-are accessed.</p>
+hierarchical identifier, and @(':vl-index') operators are used when
+arrays or instance arrays are being accessed.</p>
 
 <p>To add slightly more precision, our representation is really more like the
 following:</p>
 
 @({
  (:vl-hid-dot (hidpiece \"top\")
-              (:vl-hid-arraydot (hidpiece \"processor\")
-                                (constint 2)
-                                (hidpiece \"reset\")))
+              (vl-hid-dot
+                 (:vl-index (:vl-index (hidpiece \"processor\") (constint 2))
+                            (constint 3))
+                 (hidpiece \"reset\")))
 })
 
 <p>In other words, the individual identifiers used throughout a hierarchical
@@ -646,33 +652,28 @@ so that we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
   :long "<p>We use a custom representation for the names of functions, so that
 we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
 
-(defaggregate vl-nullexpr
-  :short "Representation for the SystemVerilog @('null') expression."
-  :tag :vl-nullexpr
+
+(defenum vl-keygutstype-p
+  (:vl-null
+   :vl-this
+   :vl-super
+   :vl-local
+   :vl-$
+   :vl-$root
+   :vl-$unit)
+  :parents (vl-keyguts-p)
+  :short "Special kinds of atomic keyword expressions.")
+
+(defaggregate vl-keyguts
+  :short "Representation of special, atomic SystemVerilog expressions,
+distinguished by keywords such as @('null'), @('this'), @('super'), @('$'),
+@('local'), etc."
+  :tag :vl-keyguts
+  :hons t ;; because there are just a few of them
   :legiblep nil
 
-  ((bogus (not bogus)
-          :rule-classes :type-prescription
-          "A useless field only because @(see defaggregate)s can't be empty.")))
-
-(defaggregate vl-thisexpr
-  :short "Representation for the SystemVerilog @('this') expression."
-  :tag :vl-thisexpr
-  :legiblep nil
-
-  ((bogus (not bogus)
-          :rule-classes :type-prescription
-          "A useless field only because @(see defaggregate)s can't be empty.")))
-
-(defaggregate vl-unbounded
-  :short "Representation for the SystemVerilog @('$') expression, for unbounded
-ranges."
-  :tag :vl-unbounded
-  :legiblep nil
-
-  ((bogus (not bogus)
-          :rule-classes :type-prescription
-          "A useless field only because @(see defaggregate)s can't be empty.")))
+  ((type vl-keygutstype-p
+         "Which kind of expression this is.")))
 
 
 (defsum vl-atomguts
@@ -688,9 +689,7 @@ for a discussion of the valid types.</p>"
    vl-hidpiece
    vl-funname
    vl-sysfunname
-   vl-nullexpr
-   vl-thisexpr
-   vl-unbounded
+   vl-keyguts
    vl-time
    ))
 

@@ -170,7 +170,8 @@
         (hid := (vl-parse-hierarchial-identifier nil))
         (bexprs := (vl-parse-0+-bracketed-expressions))
         (:= (vl-match-token :vl-semi))
-        (return (vl-eventtriggerstmt (vl-build-bitselect-nest hid bexprs) atts))))
+        (return (vl-eventtriggerstmt
+                 (vl-build-indexing-nest hid bexprs) atts))))
 
 
 

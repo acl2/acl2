@@ -97,7 +97,7 @@
              :high nil)
 
 (test-assign :input "assign #36 a[0] = 1 ; "
-             :lvalues ((:vl-bitselect nil (id "a") 0))
+             :lvalues ((:vl-index nil (id "a") 0))
              :exprs   (1)
              :atts (("some") ("atts"))
              :str nil

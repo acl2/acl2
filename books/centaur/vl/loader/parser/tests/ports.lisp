@@ -61,7 +61,7 @@
 
 (test-parse-port :input "a[3]"
                  :name nil
-                 :expr (:vl-bitselect nil (id "a") 3))
+                 :expr (:vl-index nil (id "a") 3))
 
 (test-parse-port :input "{a, b, c}"
                  :name nil
@@ -80,7 +80,7 @@
 
 (test-parse-port :input ".foo(a[3])"
                  :name "foo"
-                 :expr (:vl-bitselect nil (id "a") 3))
+                 :expr (:vl-index nil (id "a") 3))
 
 (test-parse-port :input ".foo({a, b, c})"
                  :name "foo"
