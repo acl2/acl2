@@ -345,7 +345,9 @@
        ((mv text state)
         (preprocess-topic
          (acons :parents nil x) ;; horrible hack so we can control this better
-         all-topics nil topics-fal state))
+         all-topics nil topics-fal
+         t ;; disable-autolinking to avoid auto links in text-mode code
+         state))
        (- (fast-alist-free topics-fal))
 ;       (- (cw "Text is ~x0.~%" text))
 ;       (- (cw "Parsing xml...~%"))

@@ -172,7 +172,7 @@
         (t
          (apply-suborder (cdr suborder) children-names))))
 
-(defun preprocess-topic (x all-topics dir topics-fal state)
+(defun preprocess-topic (x all-topics dir topics-fal disable-autolinking-p state)
   (b* ((- (check-topic-syntax x))
        (name     (cdr (assoc :name x)))
        (base-pkg (cdr (assoc :base-pkg x)))
@@ -197,7 +197,10 @@
        (acc    (str::revappend-chars "<short>" acc))
 
        ((mv short-acc state)
-        (preprocess-main short dir topics-fal base-pkg state nil))
+        (preprocess-main short dir (if disable-autolinking-p
+                                       nil
+                                     topics-fal)
+                         base-pkg state nil))
        (short-str  (str::rchars-to-string short-acc))
 
        ((mv err &) (parse-xml short-str))
@@ -222,7 +225,11 @@
        (acc    (cons #\Newline acc))
        (acc    (str::revappend-chars "<long>" acc))
 
-       ((mv long-acc state) (preprocess-main long dir topics-fal base-pkg state nil))
+       ((mv long-acc state)
+        (preprocess-main long dir (if disable-autolinking-p
+                                      nil
+                                    topics-fal)
+                         base-pkg state nil))
        (long-str (str::rchars-to-string long-acc))
        ((mv err &) (parse-xml long-str))
 

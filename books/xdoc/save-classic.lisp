@@ -399,7 +399,9 @@ command, along the following lines:</p>
 (defun save-topic (x all-topics dir topics-fal state)
   (b* ((name               (cdr (assoc :name x)))
        (-                  (cw "Saving ~s0::~s1.~%" (symbol-package-name name) (symbol-name name)))
-       ((mv text state)    (preprocess-topic x all-topics dir topics-fal state))
+       ((mv text state)    (preprocess-topic x all-topics dir topics-fal
+                                             nil ;; leave autolinking enabled
+                                             state))
        (filename           (str::cat (str::rchars-to-string
                                       (file-name-mangle name nil))
                                      ".xml"))
