@@ -6668,8 +6668,8 @@
   (declare (ignore logical-name))
   `(er hard 'pe!
        "Pe! has been deprecated.  Please use :pe, which now has the ~
-        functionality formerly provided by :pe!; or consider :pcb or :pcb!.  ~
-        See :DOC history."))
+        functionality formerly provided by :pe!; or consider :pcb, :pcb!, or ~
+        :pr!.  See :DOC history."))
 
 (defun command-block-names1 (wrld ans symbol-classes)
 
