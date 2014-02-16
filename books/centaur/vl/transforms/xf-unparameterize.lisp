@@ -733,7 +733,7 @@ unparameterization code that no conflicts are introduced.</p>"
   ;;                          (stringp (car a))
   ;;                          (vl-expr-p (cdr a)))
   ;;                     (vl-sigma-p (insert a x)))
-  ;;            :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules))))))
+  ;;            :hints(("Goal" :in-theory (enable (:ruleset set::primitive-rules))))))
 
   ;;   (local (defthm vl-sigma-p-of-mergesort
   ;;            (implies (vl-sigma-p x)
@@ -743,12 +743,12 @@ unparameterization code that no conflicts are introduced.</p>"
            (implies (and (vl-exprlist-resolved-p (alist-vals x))
                          (vl-expr-resolved-p (cdr a)))
                     (vl-exprlist-resolved-p (alist-vals (insert a x))))
-           :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules))))))
+           :hints(("Goal" :in-theory (enable (:ruleset set::primitive-rules))))))
 
   (local (defthm vl-exprlist-resolved-p-of-alist-vals-of-mergesort
            (implies (vl-exprlist-resolved-p (alist-vals x))
                     (vl-exprlist-resolved-p (alist-vals (mergesort x))))
-           :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules))))))
+           :hints(("Goal" :in-theory (enable (:ruleset set::primitive-rules))))))
 
   (defund vl-unparam-newname (origname sigma)
     (declare (xargs :guard (and (stringp origname)

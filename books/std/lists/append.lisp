@@ -16,6 +16,7 @@
 
 (in-package "ACL2")
 (include-book "list-fix")
+(local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 
 
@@ -76,20 +77,13 @@ library."
            :hints(("Goal" :use ((:instance len (x (append x y)))
                                 (:instance len (x y)))))))
 
-  (local (defun cdr-cdr-induction (a b)
-           (declare (xargs :guard t))
-           (if (and (consp a)
-                    (consp b))
-               (cdr-cdr-induction (cdr a) (cdr b))
-             nil)))
-
   (defthm equal-of-appends-when-true-listps
     (implies (and (true-listp x1)
                   (true-listp x2))
              (equal (equal (append x1 y)
                            (append x2 y))
                     (equal x1 x2)))
-    :hints(("Goal" :induct (cdr-cdr-induction x1 x2))))
+    :hints(("Goal" :induct (cdr-cdr-induct x1 x2))))
 
   (defthm append-of-nil
     (equal (append x nil)
@@ -97,6 +91,10 @@ library."
 
   ;; Disable this built-in ACL2 rule since append-of-nil is stronger.
   (in-theory (disable append-to-nil))
+
+  (defthm list-fix-of-append
+    (equal (list-fix (append x y))
+           (append x (list-fix y))))
 
   (defthm car-of-append
     (equal (car (append x y))

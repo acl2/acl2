@@ -731,9 +731,9 @@ of which have not yet been verified.  See :DOC verify-guards.
 ;GOOD EXAMPLE 
 (test? ;remove-once-perm
   (implies (and (consp X)
-                (sets::in a Y))
-           (equal (defdata::permutation (sets::delete a X)
-                        (sets::delete a Y))
+                (set::in a Y))
+           (equal (defdata::permutation (set::delete a X)
+                        (set::delete a Y))
                   (defdata::permutation X Y))))
 
 (defun perm (x y)

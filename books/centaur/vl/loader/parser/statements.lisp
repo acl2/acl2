@@ -402,7 +402,7 @@
                    not
                    rationalp-implies-acl2-numberp
                    rationalp-when-integerp
-                   sets::sets-are-true-lists
+                   set::sets-are-true-lists
                    vl-assignstmt-p-by-tag-when-vl-atomicstmt-p
                    vl-atomicstmt-p-by-tag-when-vl-stmt-p
                    vl-atomicstmt-p-when-vl-deassignstmt-p

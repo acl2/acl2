@@ -133,7 +133,7 @@ to try.</p>")
   ((x   "A single AIG")
    (map "Mapping of AIG nodes to labels."))
   :returns (label-set "Ordered set of labels for all AND nodes in X."
-                      sets::setp)
+                      set::setp)
   (b* (((when (atom x))
         nil)
        ((unless (cdr x))
@@ -141,7 +141,7 @@ to try.</p>")
        (x-label    (cdr (hons-get x map)))
        (car-labels (aig-collect-andnode-labels (car x) map))
        (cdr-labels (aig-collect-andnode-labels (cdr x) map)))
-    (sets::insert x-label (sets::union car-labels cdr-labels)))
+    (set::insert x-label (set::union car-labels cdr-labels)))
   ///
   (memoize 'aig-collect-andnode-labels :condition '(and (consp x) (cdr x))))
 
@@ -150,7 +150,7 @@ to try.</p>")
   ((x   "A single AIG.")
    (map "Mapping of AIG nodes to labels."))
   :returns (count natp :rule-classes :type-prescription)
-  (sets::cardinality (aig-collect-andnode-labels x map)))
+  (set::cardinality (aig-collect-andnode-labels x map)))
 
 
 (define aig-collect-labels
@@ -159,14 +159,14 @@ to try.</p>")
   ((x   "A single AIG")
    (map "Mapping of AIG nodes to labels."))
   :returns (label-set "Ordered set of labels for all nodes in X."
-                      sets::setp)
+                      set::setp)
   (b* (((when (atom x))
         nil)
        (x-label    (cdr (hons-get x map)))
        (car-labels (aig-collect-labels (car x) map))
        (cdr-labels (aig-collect-labels (cdr x) map)))
-    (sets::insert x-label
-                  (sets::union car-labels cdr-labels)))
+    (set::insert x-label
+                  (set::union car-labels cdr-labels)))
   ///
   (memoize 'aig-collect-labels :condition '(and (consp x) (cdr x))))
 
@@ -175,7 +175,7 @@ to try.</p>")
   ((x   "A single AIG.")
    (map "Mapping of AIG nodes to labels."))
   :returns (count natp :rule-classes :type-prescription)
-  (sets::cardinality (aig-collect-labels x map)))
+  (set::cardinality (aig-collect-labels x map)))
 
 
 

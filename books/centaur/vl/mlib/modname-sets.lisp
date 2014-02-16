@@ -59,7 +59,7 @@
    :hints(("Goal"
            :induct (len x)
            :do-not '(generalize fertilize)
-           :in-theory (enable no-duplicatesp-equal (:ruleset sets::primitive-rules)))))
+           :in-theory (enable no-duplicatesp-equal (:ruleset set::primitive-rules)))))
 
 (local (defthm vl-modulelist->names-of-insert
          (implies (and (not (in (vl-module->name a) (vl-modulelist->names x)))
@@ -74,7 +74,7 @@
                  :induct (insert a x)
                  :do-not-induct t
                  :do-not '(generalize fertilize)
-                 :in-theory (e/d ((:ruleset sets::primitive-rules)) ((force)))))))
+                 :in-theory (e/d ((:ruleset set::primitive-rules)) ((force)))))))
 
 (defthm vl-modulelist->names-of-mergesort
   (implies (and (case-split (no-duplicatesp-equal (vl-modulelist->names x)))

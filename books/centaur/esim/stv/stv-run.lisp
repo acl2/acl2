@@ -198,10 +198,10 @@ output is X.</p>"
          (b* (
               ;; As a sanity check, complain if there are any bits
               ;; that are being skipped that don't actually exist.
-              (skip     (sets::mergesort skip))
-              (outnames (sets::mergesort (alist-keys out-usersyms)))
-              ((unless (sets::subset skip outnames))
-               (b* ((bad  (sets::difference skip outnames))
+              (skip     (set::mergesort skip))
+              (outnames (set::mergesort (alist-keys out-usersyms)))
+              ((unless (set::subset skip outnames))
+               (b* ((bad  (set::difference skip outnames))
                     ;; Don't use - or implicit progn$ on these, we want to make sure
                     ;; these get evaluated during GL runs.
                     (?msg (cw "Invalid skip!  Not outputs: ~&0." bad))
@@ -209,7 +209,7 @@ output is X.</p>"
                  (mv sigs out-usersyms)))
 
               ;; Filter the out-usersyms down to just those that we want.
-              (keep         (sets::difference outnames skip))
+              (keep         (set::difference outnames skip))
               (out-usersyms (b* ((tmp (make-fal out-usersyms nil))
                                  (ret (fal-extract keep tmp)))
                               (fast-alist-free tmp)

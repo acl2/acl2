@@ -322,7 +322,7 @@ are returned in a nonsensical order.</p>"
 
        (wires1 (mergesort (cdar walist)))
 
-       ((when (not (sets::intersectp wires1 disconnected)))
+       ((when (not (set::intersectp wires1 disconnected)))
         ;; None of these wires are disconnected; not interesting.
         (vl-gather-interestingly-disconnected (cdr walist) disconnected))
 

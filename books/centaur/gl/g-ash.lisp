@@ -174,7 +174,7 @@
                               bfr-list->u
                               hons-assoc-equal
                               ;; eval-g-base-alt-def
-                              sets::double-containment
+                              set::double-containment
                               (:rules-of-class :type-prescription :here))
                              ((:type-prescription bfr-eval)))
      :do-not-induct t)

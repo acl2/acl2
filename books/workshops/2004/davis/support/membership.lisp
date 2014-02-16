@@ -49,7 +49,7 @@
 
 |#
 
-(in-package "SETS")
+(in-package "SET")
 (include-book "primitives")
 (include-book "computed-hints")
 (set-verify-guards-eagerness 2)

@@ -81,8 +81,8 @@
   (subsetp-equal x y))
 
 (defthm pick-a-point-subsetp-equal-strategy
-  (implies (and (syntaxp (sets::rewriting-goal-lit mfc state))
-		(syntaxp (sets::rewriting-conc-lit `(subsetp-equal ,x ,y) mfc state)))
+  (implies (and (syntaxp (set::rewriting-goal-lit mfc state))
+		(syntaxp (set::rewriting-conc-lit `(subsetp-equal ,x ,y) mfc state)))
 	   (equal (subsetp-equal x y)
 		  (subsetp-equal-trigger x y)))
   :hints(("Goal" :in-theory (enable subsetp-equal-trigger))))

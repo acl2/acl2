@@ -58,8 +58,8 @@
 
 
 ;; We can define an arbitrary sort using <<.  This is almost the same as
-;; SETS::mergesort in the ordered sets library, except that defsorts are
-;; always duplicate-preserving while SETS::mergesort throws away identical
+;; SET::mergesort in the ordered sets library, except that defsorts are
+;; always duplicate-preserving while SET::mergesort throws away identical
 ;; elements.
 
 (defsort :compare< <<
@@ -183,7 +183,7 @@
 (progn (ccl::gc)
        (time (loop for i fixnum from 1 to 1000
                    do
-                   (let ((result (SETS::mergesort (cons i *integers*))))
+                   (let ((result (SET::mergesort (cons i *integers*))))
                      (declare (ignore result))
                      nil))))
 
@@ -218,7 +218,7 @@
 (progn (ccl::gc)
        (time (loop for i fixnum from 1 to 1000
                    do
-                   (let ((result (SETS::mergesort (cons "foo" *strings*))))
+                   (let ((result (SET::mergesort (cons "foo" *strings*))))
                      (declare (ignore result))
                      nil))))
 

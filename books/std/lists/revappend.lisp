@@ -15,9 +15,7 @@
 ; This file was originally part of the Unicode library.
 
 (in-package "ACL2")
-(set-verify-guards-eagerness 2)
-(include-book "xdoc/top" :dir :system)
-
+(include-book "list-fix")
 (local (include-book "arithmetic/top" :dir :system))
 
 (local (defthm len-when-consp
@@ -63,6 +61,9 @@ these lemmas may be useful.</p>"
                   (revappend x y2))
            (equal y1 y2)))
 
+  (defthm list-fix-of-revappend
+    (equal (list-fix (revappend x y))
+           (revappend x (list-fix y))))
 
   (local (defthm revappend-last-is-car
            (implies (consp x)

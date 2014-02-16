@@ -66,7 +66,7 @@
                                     bfr-list->u
                                     eval-g-base-alt-def
                                     equal-of-booleans-rewrite
-                                    default-car sets::double-containment))
+                                    default-car set::double-containment))
             :induct (,gfn x . ,params)
             :expand ((,gfn x . ,params)))))
 

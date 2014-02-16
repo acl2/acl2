@@ -24,7 +24,7 @@
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "sexpr-vars-1pass")
 (include-book "std/misc/two-nats-measure" :dir :system)
-(local (in-theory (disable sets::double-containment)))
+(local (in-theory (disable set::double-containment)))
 
 (make-event
 
@@ -1076,7 +1076,7 @@ input."
     (4v-sexpr-rewrite-alistp *sexpr-rewrites*)
     :hints(("Goal" :in-theory (disable* (4v-sexpr-rewrite-alistp)
                                         (4v-sexpr-fn-rewritesp)
-                                        sets::double-containment
+                                        set::double-containment
                                         4v-sexpr-eval-list
                                         4v-sexpr-equiv
                                         hons-assoc-equal

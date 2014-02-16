@@ -26,7 +26,7 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (in-theory (disable nth update-nth
                            acl2::nth-with-large-index
-                           sets::double-containment)))
+                           set::double-containment)))
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (include-book "ihs/logops-definitions" :dir :system)

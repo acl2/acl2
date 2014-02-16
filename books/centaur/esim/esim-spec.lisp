@@ -30,8 +30,8 @@
 (include-book "centaur/misc/patterns" :dir :system)
 (local (include-book "esim-sexpr-support-thms"))
 (local (include-book "centaur/4v-sexpr/sexpr-advanced" :dir :system))
-(local (in-theory (disable* sets::double-containment
-                            sets::sets-are-true-lists)))
+(local (in-theory (disable* set::double-containment
+                            set::sets-are-true-lists)))
 
 (set-well-founded-relation nat-list-<)
 

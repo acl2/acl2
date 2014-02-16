@@ -397,7 +397,7 @@ versa.  We extend @('X') with a fatal warning if this doesn't hold.</p>"
      (local (defthm insert-under-iff
               (iff (insert a x)
                    t)
-              :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules))))))
+              :hints(("Goal" :in-theory (enable (:ruleset set::primitive-rules))))))
 
      (local (defthm demote-in-to-member-equal
               (implies (setp x)
@@ -405,22 +405,22 @@ versa.  We extend @('X') with a fatal warning if this doesn't hold.</p>"
                               (if (member-equal a x)
                                   t
                                 nil)))
-              :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules))))))
+              :hints(("Goal" :in-theory (enable (:ruleset set::primitive-rules))))))
 
      (defthm empty-intersect-to-intersectp-equal
        (implies (and (setp x)
                      (setp y))
-                (equal (empty (sets::intersect x y))
+                (equal (empty (set::intersect x y))
                        (not (intersectp-equal x y))))
        :hints(("Goal"
-               :induct (sets::intersect x y)
-               :in-theory (e/d ((:ruleset sets::primitive-rules))
+               :induct (set::intersect x y)
+               :in-theory (e/d ((:ruleset set::primitive-rules))
                                ;; speed hint
                                (promote-member-equal-to-membership
-                                sets::insert-identity
-                                sets::intersect-symmetric
-                                sets::double-containment
-                                sets::setp)))))))
+                                set::insert-identity
+                                set::intersect-symmetric
+                                set::double-containment
+                                set::setp)))))))
 
   ;; Speed hint
   (local (in-theory (disable no-duplicatesp-equal
@@ -432,7 +432,7 @@ versa.  We extend @('X') with a fatal warning if this doesn't hold.</p>"
                              hons-assoc-equal
                              acl2::consp-under-iff-when-true-listp
                              subsetp-equal-when-first-two-same-yada-yada
-                             sets::double-containment)))
+                             set::double-containment)))
 
   (defund vl-module-check-port-bits (x)
     (declare (xargs :guard (vl-module-p x)))
@@ -473,7 +473,7 @@ versa.  We extend @('X') with a fatal warning if this doesn't hold.</p>"
                               (mbe :logic (uniquep flat-outs)
                                    :exec  (same-lengthp flat-outs-s flat-outs))
                               (mbe :logic (not (intersectp-equal flat-ins flat-outs))
-                                   :exec  (not (sets::intersectp flat-ins-s flat-outs-s)))))
+                                   :exec  (not (set::intersectp flat-ins-s flat-outs-s)))))
               warnings
             ;; Else, there are duplicated port names!
             (b* ((dupe-names (duplicated-members (vl-portdecllist->names x.portdecls)))

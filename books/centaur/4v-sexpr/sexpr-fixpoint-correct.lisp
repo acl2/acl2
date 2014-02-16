@@ -23,7 +23,7 @@
 (include-book "sexpr-fixpoint-spec")
 (local (include-book "centaur/misc/hons-sets" :dir :system))
 
-(local (in-theory (disable sets::double-containment)))
+(local (in-theory (disable set::double-containment)))
 
 ;; 
 
@@ -1791,7 +1791,7 @@
   (implies (sexpr-var-val-alistp al)
            (equal (4v-sexpr-vars (cdr (hons-assoc-equal x al)))
                   (and (hons-assoc-equal x al)
-                       (sets::insert (cdr (hons-assoc-equal x al)) nil)))))
+                       (set::insert (cdr (hons-assoc-equal x al)) nil)))))
 
 
 (defthm-4v-sexpr-flag

@@ -273,8 +273,8 @@ Boolean variables to terms).  </p>"
          rule existing-lits var substs tuples))
        ((when found)
         (hons-acons fnsym tuples ccat))
-       (lit-vars (sets::mergesort (acl2::simple-term-vars lit)))
-       (common-vars (sets::intersect existing-vars lit-vars))
+       (lit-vars (set::mergesort (acl2::simple-term-vars lit)))
+       (common-vars (set::intersect existing-vars lit-vars))
        (sigtable (gbc-sort-substs-into-sigtable substs common-vars nil))
        (new-tuple (constraint-tuple rule existing-lits var common-vars
                                     existing-vars sigtable)))
@@ -299,7 +299,7 @@ Boolean variables to terms).  </p>"
        ((unless rest-litvars)
         (b* ((substs (gbc-substs-check-syntaxp new-substs r.thmname r.syntaxp state)))
           (mv substs ccat)))
-       (new-existing-vars (sets::union (sets::mergesort (strip-cars lit-subst))
+       (new-existing-vars (set::union (set::mergesort (strip-cars lit-subst))
                                        x.existing-vars))
        ;; unbound lits remaining -- add to ccat
        (ccat (gbc-unbound-lits-add-tuples 
@@ -308,7 +308,7 @@ Boolean variables to terms).  </p>"
               ;; need to keep these canonical
               ;; so that we can find an existing
               ;; tuple if it exists
-              (sets::insert x.matching-lit x.existing-lits)
+              (set::insert x.matching-lit x.existing-lits)
               new-existing-vars
               new-substs
               ccat)))

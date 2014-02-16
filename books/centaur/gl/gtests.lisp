@@ -279,7 +279,7 @@
 
    (local (in-theory (disable gtests
                               generic-geval
-                              sets::double-containment
+                              set::double-containment
                               tag-when-atom
                               generic-geval-non-cons)))
 
@@ -294,7 +294,7 @@
                               (:t bfr-hyp-fix)
                               bfr-hyp-fix-when-hyp$ap
                               (:t bfr-hyp-eval)
-                              sets::sets-are-true-lists
+                              set::sets-are-true-lists
                               )))
 
    (defthm gtests-correct

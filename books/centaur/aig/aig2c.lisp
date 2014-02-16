@@ -541,14 +541,14 @@ each AIG node, for a single AIG."
                  (duplicated-members input-vars))
             ""))
 
-       ((unless (sets::subset all-aig-vars (sets::mergesort input-vars)))
+       ((unless (set::subset all-aig-vars (set::mergesort input-vars)))
         (mv (msg "Some AIG variables do not have C input names: ~x0"
-                 (sets::difference all-aig-vars (sets::mergesort input-vars)))
+                 (set::difference all-aig-vars (set::mergesort input-vars)))
             ""))
 
-       (- (or (sets::subset (sets::mergesort input-vars) all-aig-vars)
+       (- (or (set::subset (set::mergesort input-vars) all-aig-vars)
               (cw "Note: Some inputs are never used: ~x0.~%"
-                  (sets::difference (sets::mergesort input-vars) all-aig-vars))))
+                  (set::difference (set::mergesort input-vars) all-aig-vars))))
 
        ;; I originally thought I might check for unique input-c-names and
        ;; unique output-c-names.  This would be important if we were going to

@@ -627,7 +627,7 @@
 
 (defun mksym (name sym)
   (declare (xargs :mode :program))
-  (intern-in-package-of-symbol (string-upcase name) sym))
+  (intern-in-package-of-symbol (acl2::string-upcase name) sym))
 
 (defun app (x y)
   (declare (xargs :mode :program))

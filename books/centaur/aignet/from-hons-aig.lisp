@@ -36,8 +36,8 @@
                            acl2::nthcdr-of-cdr
                            acl2::resize-list-when-empty
                            acl2::make-list-ac-redef
-                           sets::double-containment
-                           sets::sets-are-true-lists
+                           set::double-containment
+                           set::sets-are-true-lists
                            make-list-ac)))
 
 (set-waterfall-parallelism nil) ; currently unknown why we need to disable
@@ -425,7 +425,7 @@
 
   (local (in-theory (disable id-eval
                              acl2::nth-with-large-index
-                             sets::double-containment)))
+                             set::double-containment)))
 
   ;; just puts the gates in and adds inputs/regs as needed, doesn't set up
   ;; outputs or reg inputs
@@ -1405,7 +1405,7 @@
   ;;                                  set-regs-logic
   ;;                                  set-outs-logic
   ;;                                  update-lit-list
-  ;;                                  sets::double-containment
+  ;;                                  set::double-containment
   ;;                                  resize-list))
   ;;         :do-not-induct t)))
 
@@ -1426,6 +1426,6 @@
                                    pairlis$
                                    hons-assoc-equal
                                    acl2::make-fal
-                                   sets::double-containment
+                                   set::double-containment
                                    resize-list))
           :do-not-induct t))))

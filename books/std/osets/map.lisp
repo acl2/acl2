@@ -33,17 +33,17 @@
 ; Here are some simple examples.  These transformation functions have only a
 ; single argument, and are guarded to operate on any inputs.
 ;
-;     (SETS::map-function (integerp x))
-;       - (SETS::map<integerp> '(1 2 3)) = (t)
-;       - (SETS::map-list<integerp> '(1 a 2 b)) = (t nil t nil)
+;     (SET::map-function (integerp x))
+;       - (SET::map<integerp> '(1 2 3)) = (t)
+;       - (SET::map-list<integerp> '(1 a 2 b)) = (t nil t nil)
 ;
 ;     (defun square (x)
 ;       (declare (xargs :guard t))
 ;       (* (rfix x) (rfix x)))
 ;
-;     (SETS::map-function (square x))
-;       - (SETS::map<square> '(1 2 3)) = (1 4 9)
-;       - (SETS::map<square> '(a b c)) = (0)
+;     (SET::map-function (square x))
+;       - (SET::map<square> '(1 2 3)) = (1 4 9)
+;       - (SET::map<square> '(a b c)) = (0)
 ;
 ; Note that you can't use macros, e.g., real/rationalp cannot be used since it
 ; is not a function.
@@ -56,7 +56,7 @@
 ; :in-package-of argument to map-function.  For example, since defthm is in the
 ; ACL2 package, we can run:
 ;
-;     (SETS::map-function (square x)
+;     (SET::map-function (square x)
 ;       :in-package-of defthm)
 ;
 ; And map<square> will be created in the ACL2 package instead of the sets
@@ -74,7 +74,7 @@
 ;       (+ (* (rfix input) (rfix input))
 ;          (rfix offset)))
 ;
-;     (SETS::map-function (square-then-add input offset)
+;     (SET::map-function (square-then-add input offset)
 ;        :in-package-of defthm)
 ;
 ;     (map<square-then-add> '(1 2 3) 5) => (6 9 14)
@@ -101,7 +101,7 @@
 ;
 ; These examples can be found and run in map-tests.lisp.
 
-(in-package "SETS")
+(in-package "SET")
 (include-book "quantify")
 (set-verify-guards-eagerness 2)
 

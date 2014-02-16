@@ -69,7 +69,7 @@ sexpr-rewrite) should be duplicated here.</p>")
 (local (in-theory (disable* 4vp
                             (:ruleset 4v-op-defs)
                             4v-lookup
-                            sets::double-containment)))
+                            set::double-containment)))
 
 (local (in-theory (enable 3v-syntax-sexprp)))
 

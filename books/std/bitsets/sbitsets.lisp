@@ -258,10 +258,10 @@ optimized version of @(see sbitset-pair-members).</p>"
                          (consp x)))))
 
 (local (defthmd member-equal-is-in
-         (implies (sets::setp x)
+         (implies (set::setp x)
                   (iff (member-equal a x)
-                       (sets::in a x)))
-         :hints(("Goal" :in-theory (enable sets::in-to-member)))))
+                       (set::in a x)))
+         :hints(("Goal" :in-theory (enable set::in-to-member)))))
 
 (local
  (make-event
@@ -310,16 +310,16 @@ optimized version of @(see sbitset-pair-members).</p>"
    (local (defthm l1
             (implies (and (integerp a)
                           (integerp b))
-                     (equal (sets::<< a b)
+                     (equal (set::<< a b)
                             (< a b)))
-            :hints(("Goal" :in-theory (enable sets::<< lexorder alphorder)))))
+            :hints(("Goal" :in-theory (enable set::<< lexorder alphorder)))))
 
    (defthm setp-of-add-to-each
      (implies (and (integerp offset)
                    (integer-listp x)
-                   (sets::setp x))
-              (sets::setp (add-to-each offset x)))
-     :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)
+                   (set::setp x))
+              (set::setp (add-to-each offset x)))
+     :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules)
                                         add-to-each))))))
 
 
@@ -329,17 +329,17 @@ optimized version of @(see sbitset-pair-members).</p>"
 
    (local (defthm l0
             (implies (and (member-equal a x)
-                          (sets::<< a (car x)))
-                     (not (sets::setp x)))
+                          (set::<< a (car x)))
+                     (not (set::setp x)))
             :hints(("Goal"
                     :induct (len x)
-                    :in-theory (enable* (:ruleset sets::primitive-rules)
-                                        (:ruleset sets::order-rules))))))
+                    :in-theory (enable* (:ruleset set::primitive-rules)
+                                        (:ruleset set::order-rules))))))
 
    (defthm no-duplicatesp-equal-when-setp
-     (implies (sets::setp x)
+     (implies (set::setp x)
               (no-duplicatesp-equal x))
-     :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))))
+     :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules)))))))
 
 
 (local
@@ -366,18 +366,18 @@ optimized version of @(see sbitset-pair-members).</p>"
    (local (defthm l1
             (implies (and (case-split (integerp a))
                           (case-split (integerp b)))
-                     (equal (sets::<< a b)
+                     (equal (set::<< a b)
                             (< a b)))
-            :hints(("Goal" :in-theory (enable sets::<< lexorder alphorder)))))
+            :hints(("Goal" :in-theory (enable set::<< lexorder alphorder)))))
 
    (local (defthm l2
             (implies (and (integer-listp x)
-                          (sets::setp x))
+                          (set::setp x))
                      (equal (min-int x)
                             (if (consp x)
                                 (car x)
                               nil)))
-            :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules))))))
+            :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules))))))
 
    (defthmd setp-of-append
      (implies (and (force (or (< (max-int x) (min-int y))
@@ -385,10 +385,10 @@ optimized version of @(see sbitset-pair-members).</p>"
                               (atom y)))
                    (force (integer-listp x))
                    (force (integer-listp y))
-                   (force (sets::setp x))
-                   (force (sets::setp y)))
-              (sets::setp (append x y)))
-     :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))
+                   (force (set::setp x))
+                   (force (set::setp y)))
+              (set::setp (append x y)))
+     :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules)))))
 
    (local (in-theory (enable setp-of-append)))
 
@@ -398,11 +398,11 @@ optimized version of @(see sbitset-pair-members).</p>"
                                      (atom y)))
                           (force (integer-listp x))
                           (force (integer-listp y))
-                          (force (sets::setp x))
-                          (force (sets::setp y)))
-                     (equal (sets::in a (append x y))
-                            (or (sets::in a x)
-                                (sets::in a y))))
+                          (force (set::setp x))
+                          (force (set::setp y)))
+                     (equal (set::in a (append x y))
+                            (or (set::in a x)
+                                (set::in a y))))
             :hints(("goal"
                     :use ((:instance member-equal-is-in (x (append x y)))
                           (:instance member-equal-is-in (x x))
@@ -414,10 +414,10 @@ optimized version of @(see sbitset-pair-members).</p>"
                               (atom y)))
                    (force (integer-listp x))
                    (force (integer-listp y))
-                   (force (sets::setp x))
-                   (force (sets::setp y)))
+                   (force (set::setp x))
+                   (force (set::setp y)))
               (equal (append x y)
-                     (sets::union x y))))))
+                     (set::union x y))))))
 
 
 
@@ -657,11 +657,11 @@ block size.</p>"
 
   (defthm setp-of-sbitset-pair-members
     (implies (force (sbitset-pairp a))
-             (sets::setp (sbitset-pair-members a))))
+             (set::setp (sbitset-pair-members a))))
 
   (defthm in-of-sbitset-pair-members
     (implies (force (sbitset-pairp x))
-             (equal (sets::in a (sbitset-pair-members x))
+             (equal (set::in a (sbitset-pair-members x))
                     (and (natp a)
                          (equal (floor a *sbitset-block-size*)
                                 (sbitset-pair-offset x))
@@ -672,8 +672,8 @@ block size.</p>"
 
   (defthm empty-of-sbitset-pair-members
     (implies (force (sbitset-pairp x))
-             (not (sets::empty (sbitset-pair-members x))))
-    :hints(("Goal" :in-theory (e/d* ((:ruleset sets::primitive-rules))
+             (not (set::empty (sbitset-pair-members x))))
+    :hints(("Goal" :in-theory (e/d* ((:ruleset set::primitive-rules))
                                     (sbitset-pair-members))))))
 
 
@@ -890,7 +890,7 @@ is not performed for other block sizes.</p>"
     (mbe :logic (if (or (not (sbitsetp x))
                         (atom x))
                     nil
-                  (sets::union (sbitset-pair-members (car x))
+                  (set::union (sbitset-pair-members (car x))
                                (sbitset-members (cdr x))))
          :exec (sbitset-members-exec x nil)))
 
@@ -907,10 +907,10 @@ is not performed for other block sizes.</p>"
                          (consp x)))))
 
     (local (defthm l2
-             (implies (sets::setp (append x y))
-                      (and (sets::setp (acl2::list-fix x))
-                           (sets::setp y)))
-             :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules))))))
+             (implies (set::setp (append x y))
+                      (and (set::setp (acl2::list-fix x))
+                           (set::setp y)))
+             :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules))))))
 
     (local (defthm l3
              (equal (min-int (append x y))
@@ -924,7 +924,7 @@ is not performed for other block sizes.</p>"
              :hints(("Goal" :in-theory (enable min-int append)))))
 
     (local (defthm l4
-             (sets::setp (sbitset-members-aux x))
+             (set::setp (sbitset-members-aux x))
              :hints(("Goal" :in-theory (enable setp-of-append)))))
 
     (local (defthm l5
@@ -932,11 +932,11 @@ is not performed for other block sizes.</p>"
                     (if (or (atom x)
                             (not (sbitsetp x)))
                         nil
-                      (sets::union (sbitset-pair-members (car x))
+                      (set::union (sbitset-pair-members (car x))
                                    (sbitset-members-aux (cdr x)))))
              :rule-classes :definition
              :hints(("Goal" :in-theory (e/d (append-is-union)
-                                            (sets::double-containment))))))
+                                            (set::double-containment))))))
 
     (defthm sbitset-members-aux-removal
       (equal (sbitset-members-aux x)
@@ -957,20 +957,20 @@ is not performed for other block sizes.</p>"
 
   (local (defthm l0
            (implies (atom x)
-                    (equal (sets::setp x)
+                    (equal (set::setp x)
                            (not x)))
-           :hints(("Goal" :in-theory (enable sets::setp)))))
+           :hints(("Goal" :in-theory (enable set::setp)))))
 
   (local (defthm union-under-iff
-           (iff (sets::union x y)
-                (or (not (sets::empty x))
-                    (not (sets::empty y))))
-           :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules))))))
+           (iff (set::union x y)
+                (or (not (set::empty x))
+                    (not (set::empty y))))
+           :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules))))))
 
   (defthm sbitset-members-of-cons
     (implies (force (sbitsetp (cons a x)))
              (equal (sbitset-members (cons a x))
-                    (sets::union (sbitset-pair-members a)
+                    (set::union (sbitset-pair-members a)
                                  (sbitset-members x)))))
 
   (defthm sbitset-members-of-sbitset-fix
@@ -983,7 +983,7 @@ is not performed for other block sizes.</p>"
     :rule-classes :type-prescription)
 
   (defthm setp-of-sbitset-members
-    (sets::setp (sbitset-members x)))
+    (set::setp (sbitset-members x)))
 
   (defthm no-duplicatesp-equal-of-sbitset-members
     (no-duplicatesp-equal (sbitset-members x))))
@@ -1052,7 +1052,7 @@ we have to go to the proper pair.</p>"
 
   (local (defthm l0
            (implies (and (sbitsetp x)
-                         (sets::in a (sbitset-members x)))
+                         (set::in a (sbitset-members x)))
                     (sbitset-find (floor a *sbitset-block-size*) x))
            :hints(("Goal"
                    :in-theory (disable mod-blocksize-nonsense)
@@ -1067,16 +1067,16 @@ we have to go to the proper pair.</p>"
 
   (local (defthm l2
            (implies (and (sbitset-pairp x)
-                         (sets::in a (sbitset-pair-members x)))
+                         (set::in a (sbitset-pair-members x)))
                     (equal (sbitset-pair-offset x)
                            (floor a *sbitset-block-size*)))))
 
   (local (defthm l3
            (implies (sbitsetp x)
-                    (equal (sets::in a (sbitset-members x))
+                    (equal (set::in a (sbitset-members x))
                            (let ((pair (sbitset-find (floor a *sbitset-block-size*) x)))
                              (and pair
-                                  (sets::in a (sbitset-pair-members pair))))))
+                                  (set::in a (sbitset-pair-members pair))))))
            :hints(("Goal"
                    :induct (len x)
                    :expand ((sbitset-members x)
@@ -1085,11 +1085,11 @@ we have to go to the proper pair.</p>"
                    :do-not '(generalize fertilize)))))
 
   (defthmd in-of-sbitset-members
-    (equal (sets::in a (sbitset-members x))
+    (equal (set::in a (sbitset-members x))
            (and (sbitsetp x)
                 (let ((pair (sbitset-find (floor a *sbitset-block-size*) x)))
                   (and pair
-                       (sets::in a (sbitset-pair-members pair))))))
+                       (set::in a (sbitset-pair-members pair))))))
     :hints(("Goal" :use ((:instance l3))))))
 
 
@@ -1141,7 +1141,7 @@ only member is @('a')."
   (local (include-book "arithmetic-3/bind-free/top" :dir :system))
 
   (local (defthm l0
-           (equal (sets::in a (sbitset-members (sbitset-singleton b)))
+           (equal (set::in a (sbitset-members (sbitset-singleton b)))
                   (equal a (nfix b)))
            :hints (("goal" :use ((:instance niq-lemma
                                   (c (nfix b)) (a 60) (b a)))
@@ -1149,7 +1149,7 @@ only member is @('a')."
 
   (defthm sbitset-members-of-sbitset-singleton
     (equal (sbitset-members (sbitset-singleton a))
-           (sets::insert (nfix a) nil))
+           (set::insert (nfix a) nil))
     :hints(("Goal" :in-theory (disable sbitset-singleton)))))
 
 
@@ -1301,16 +1301,16 @@ only member is @('a')."
   (local (defthm m1
            (implies (and (sbitsetp x)
                          (sbitsetp y))
-                    (equal (sets::in a (sbitset-members (sbitset-union-exec x y)))
-                           (or (sets::in a (sbitset-members x))
-                               (sets::in a (sbitset-members y)))))))
+                    (equal (set::in a (sbitset-members (sbitset-union-exec x y)))
+                           (or (set::in a (sbitset-members x))
+                               (set::in a (sbitset-members y)))))))
 
   (local (defthm sbitset-members-of-sbitset-union-exec
            ;; Just by double-containment.
            (implies (and (sbitsetp x)
                          (sbitsetp y))
                     (equal (sbitset-members (sbitset-union-exec x y))
-                           (sets::union (sbitset-members x)
+                           (set::union (sbitset-members x)
                                         (sbitset-members y))))))
 
   ;; And now we just get rid of the hyps, with the fixing function.
@@ -1322,7 +1322,7 @@ only member is @('a')."
 
   (defthm sbitset-members-of-sbitset-union
     (equal (sbitset-members (sbitset-union x y))
-           (sets::union (sbitset-members x)
+           (set::union (sbitset-members x)
                         (sbitset-members y)))))
 
 
@@ -1459,16 +1459,16 @@ only member is @('a')."
   (local (defthm m1
            (implies (and (sbitsetp x)
                          (sbitsetp y))
-                    (equal (sets::in a (sbitset-members (sbitset-intersect-exec x y)))
-                           (and (sets::in a (sbitset-members x))
-                                (sets::in a (sbitset-members y)))))))
+                    (equal (set::in a (sbitset-members (sbitset-intersect-exec x y)))
+                           (and (set::in a (sbitset-members x))
+                                (set::in a (sbitset-members y)))))))
 
   (local (defthm sbitset-members-of-sbitset-intersect-exec
            ;; Just by double-containment.
            (implies (and (sbitsetp x)
                          (sbitsetp y))
                     (equal (sbitset-members (sbitset-intersect-exec x y))
-                           (sets::intersect (sbitset-members x)
+                           (set::intersect (sbitset-members x)
                                             (sbitset-members y))))
            :hints(("Goal" :in-theory (disable (force))))))
 
@@ -1481,7 +1481,7 @@ only member is @('a')."
 
   (defthm sbitset-members-of-sbitset-intersect
     (equal (sbitset-members (sbitset-intersect x y))
-           (sets::intersect (sbitset-members x)
+           (set::intersect (sbitset-members x)
                             (sbitset-members y)))))
 
 
@@ -1605,16 +1605,16 @@ only member is @('a')."
   (local (defthm m1
            (implies (and (sbitsetp x)
                          (sbitsetp y))
-                    (equal (sets::in a (sbitset-members (sbitset-difference-exec x y)))
-                           (and (sets::in a (sbitset-members x))
-                                (not (sets::in a (sbitset-members y))))))))
+                    (equal (set::in a (sbitset-members (sbitset-difference-exec x y)))
+                           (and (set::in a (sbitset-members x))
+                                (not (set::in a (sbitset-members y))))))))
 
   (local (defthm sbitset-members-of-sbitset-difference-exec
            ;; Just by double-containment.
            (implies (and (sbitsetp x)
                          (sbitsetp y))
                     (equal (sbitset-members (sbitset-difference-exec x y))
-                           (sets::difference (sbitset-members x)
+                           (set::difference (sbitset-members x)
                                              (sbitset-members y))))
            :hints(("Goal" :in-theory (disable (force))))))
 
@@ -1627,7 +1627,7 @@ only member is @('a')."
 
   (defthm sbitset-members-of-sbitset-difference
     (equal (sbitset-members (sbitset-difference x y))
-           (sets::difference (sbitset-members x)
+           (set::difference (sbitset-members x)
                              (sbitset-members y)))))
 
 
@@ -2088,7 +2088,7 @@ Subgoal *1/5.1.2.2
                   (equal (sbitset-members x)
                          (sbitset-members y))))
   :hints(("Goal"
-          :in-theory (disable sets::double-containment))))
+          :in-theory (disable set::double-containment))))
           :use ((:instance sbitset-badguy-correct
                            (x x) (y y)))
                  equal-by-logbitp

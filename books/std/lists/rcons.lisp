@@ -22,6 +22,8 @@
 (in-package "ACL2")
 (include-book "equiv")
 (include-book "rev")
+(include-book "append")
+(local (include-book "std/basic/inductions" :dir :system))
 
 (defun binary-append-without-guard (x y)
   (declare (xargs :guard t))
@@ -62,6 +64,18 @@ inefficient: we have to copy the whole list just to add one element!</p>"
            (rcons a x)))
 
   (defcong list-equiv equal (rcons a x) 2)
+
+  (local (defthm l0
+           (equal (list-equiv (cons a x) y)
+                  (and (consp y)
+                       (equal (car y) a)
+                       (list-equiv x (cdr y))))))
+
+  (defthm list-equiv-of-rcons-and-rcons
+    (equal (list-equiv (rcons a x) (rcons a y))
+           (list-equiv x y))
+    :hints(("Goal"
+            :induct (acl2::cdr-cdr-induct x y))))
 
   (defthm len-of-rcons
     (equal (len (rcons a x))

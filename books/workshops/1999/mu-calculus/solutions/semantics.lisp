@@ -163,8 +163,8 @@
                 (modelp m))
            (and (true-listp (mu-semantics m f val))
                 (true-listp (compute-fix-point m f val y n))))
-  :hints (("Goal" :in-theory (disable SET::=<-LEN-REM-DUPS
-				      SET::|X == Y  =>  X =< Y / Y =< X|))))  ;; RBK:
+  :hints (("Goal" :in-theory (disable SETS::=<-LEN-REM-DUPS
+				      SETS::|X == Y  =>  X =< Y / Y =< X|))))  ;; RBK:
 
 (verify-guards mu-semantics)
 
@@ -266,19 +266,19 @@ true at all of the states in s."
      (("goal"
        :use (:functional-instance
              ,fn-inst
-             (set::S (lambda nil (states (good-model))))
-             (set::f
+             (sets::S (lambda nil (states (good-model))))
+             (sets::f
               (lambda (y)
                 (mu-semantics (good-model)
 			      (sem-mon-f)
 			      (put-assoc-equal (good-var) y (good-val)))))
-             (set::applyf
+             (sets::applyf
               (lambda (y n)
                 (compute-fix-point (good-model)
                                    (sem-mon-f)
                                    (put-assoc-equal (good-var) y (good-val))
                                    (good-var) n)))
-             (set::cardinality cardinality)))
+             (sets::cardinality cardinality)))
       ,@args)))
 
 (defthm mu-symbol-not-+-or-&
@@ -297,7 +297,7 @@ true at all of the states in s."
              (mu-semantics (good-model)
 			   (list 'mu (good-var) (sem-mon-f))
 			   (good-val)))
-  set::lfix-is-a-fixpoint
+  sets::lfix-is-a-fixpoint
   ("subgoal 3"
    :use (:instance good-val-range-ok)))
 
@@ -306,14 +306,14 @@ true at all of the states in s."
   (implies (post-fixpointp (good-model) (sem-mon-f) (good-val) (good-var) x)
            (=< (mu-semantics (good-model) (list 'mu (good-var) (sem-mon-f))
 			     (good-val)) x))
-  set::lfix-is-below-all-post-fixpoints)
+  sets::lfix-is-below-all-post-fixpoints)
 
 ; Exercise 22, part 3
 (defmu semnu-is-a-fixpoint
   (fixpointp (good-model) (sem-mon-f) (good-val) (good-var)
              (mu-semantics (good-model) (list 'nu (good-var) (sem-mon-f))
 			   (good-val)))
-  set::gfix-is-a-fixpoint)
+  sets::gfix-is-a-fixpoint)
 
 ; Exercise 22, part 4
 (defmu semnu-is-above-all-pre-fixpoints
@@ -321,4 +321,4 @@ true at all of the states in s."
                 (pre-fixpointp (good-model) (sem-mon-f) (good-val) (good-var) x))
            (=< x (mu-semantics (good-model) (list 'nu (good-var) (sem-mon-f))
 			       (good-val))))
-  set::gfix-is-above-all-pre-fixpoints)
+  sets::gfix-is-above-all-pre-fixpoints)

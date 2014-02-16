@@ -41,7 +41,7 @@
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "clause-processors/find-matching" :dir :system))
 (local (include-book "clause-processors/just-expand" :dir :system))
-(local (in-theory (disable* sets::double-containment w)))
+(local (in-theory (disable* set::double-containment w)))
 
 
 (defun shape-spec-to-gobj-param (spec p)

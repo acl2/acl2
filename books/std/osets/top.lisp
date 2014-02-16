@@ -34,7 +34,7 @@
 ;  - it makes clear that these theorems are public, and entirely prevents the
 ;    use of "internal" lemmas and theorems.
 
-(in-package "SETS")
+(in-package "SET")
 (set-verify-guards-eagerness 2)
 
 ; We now directly use the total order from misc/total-order.

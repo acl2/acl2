@@ -525,7 +525,7 @@
 
    (in-theory (e/d* ()
                     (4v-sexpr-eval-alist
-                     sets::double-containment
+                     set::double-containment
                      4v-fix 4vp
                      4v-alist-to-params
                      4v-bitspec-vars

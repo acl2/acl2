@@ -145,7 +145,7 @@
                                        bfr-list->s
                                        bfr-list->u
                                        equal-of-booleans-rewrite
-                                       sets::double-containment
+                                       set::double-containment
                                        components-to-number-alt-def
                                        hons-assoc-equal
                                        default-car default-cdr

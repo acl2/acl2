@@ -312,12 +312,12 @@
   (defrule alistp-of-insert
     (implies (and (alistp x)
                   (consp a))
-             (alistp (sets::insert a x)))
-    :enable sets::primitive-rules)
+             (alistp (set::insert a x)))
+    :enable set::primitive-rules)
 
   (defrule alistp-of-mergesort
     (implies (alistp x)
-             (alistp (sets::mergesort x)))))
+             (alistp (set::mergesort x)))))
 
 
 

@@ -35,7 +35,7 @@
 
 |#
 
-(in-package "SETS")
+(in-package "SET")
 (include-book "fast")
 (set-verify-guards-eagerness 2)
 

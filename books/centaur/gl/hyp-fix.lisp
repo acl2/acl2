@@ -74,7 +74,7 @@
 
 (local (in-theory (disable equal-of-booleans-rewrite
                            acl2::consp-of-car-when-alistp
-                           sets::double-containment
+                           set::double-containment
                            acl2::aig-eval
                            acl2::consp-under-iff-when-true-listp
                            default-car default-cdr)))
@@ -468,9 +468,9 @@
                                    (eval-constraint-alist-in-terms-of-witness)))))
 
   (defthm sets-in-aig-vars-of-aig-iff
-    (implies (and (not (sets::in v (acl2::aig-vars a)))
-                  (not (sets::in v (acl2::aig-vars b))))
-             (not (sets::in v (acl2::aig-vars (acl2::aig-iff a b)))))
+    (implies (and (not (set::in v (acl2::aig-vars a)))
+                  (not (set::in v (acl2::aig-vars b))))
+             (not (set::in v (acl2::aig-vars (acl2::aig-iff a b)))))
     :hints(("Goal" :in-theory (enable acl2::aig-iff
                                       acl2::aig-or))))
 
@@ -491,7 +491,7 @@
 ;;             (hons-get (caar x) seen))
 ;;         (constr-alist-depends-on-aux v (cdr x) seen)
 ;;       (if (cdar x)
-;;           (or (sets::in (nfix v) (acl2::aig-vars (caar x)))
+;;           (or (set::in (nfix v) (acl2::aig-vars (caar x)))
 ;;               (constr-alist-depends-on-aux v (cdr x) (hons-acons (caar x) t seen)))
 ;;         (constr-alist-depends-on-aux v (cdr x) (hons-acons (caar x) t seen)))))
 ;;   ///
@@ -524,7 +524,7 @@
       nil
     (if (consp (car x))
         (if (cdar x)
-            (or (sets::in (nfix v) (acl2::aig-vars (caar x)))
+            (or (set::in (nfix v) (acl2::aig-vars (caar x)))
                 (constr-alist-depends-on
                  v (calist-remassocs (cdr x) 
                                      (list (caar x)))))
@@ -557,7 +557,7 @@
             :expand ((:free (a b) (constr-alist-depends-on v (cons a b)))))))
 
   (local (defthm aig-eval-of-acons-when-var-not-present
-           (implies (not (sets::in v (acl2::aig-vars x)))
+           (implies (not (set::in v (acl2::aig-vars x)))
                     (equal (acl2::aig-eval x (cons (cons v y) env))
                            (acl2::aig-eval x env)))
            :hints(("Goal" :in-theory (enable acl2::aig-eval
@@ -571,16 +571,16 @@
     :hints(("Goal" :in-theory (enable eval-constraint-alist))))
 
   (local (defthm in-aig-vars-of-aig-iff
-           (implies (and (not (sets::in v (acl2::aig-vars a)))
-                         (not (sets::in v (acl2::aig-vars b))))
-                    (not (sets::in v (acl2::aig-vars (acl2::aig-iff a b)))))
+           (implies (and (not (set::in v (acl2::aig-vars a)))
+                         (not (set::in v (acl2::aig-vars b))))
+                    (not (set::in v (acl2::aig-vars (acl2::aig-iff a b)))))
            :hints(("Goal" :in-theory (enable acl2::aig-iff
                                              acl2::aig-or)))))
 
   (defthm dependencies-of-constraint-alist->aig
     (implies (and (not (constr-alist-depends-on (double-rewrite v) x))
                   (natp v))
-             (not (sets::in v
+             (not (set::in v
                             (acl2::aig-vars
                              (constraint-alist->aig x)))))
     :hints(("Goal" :in-theory (enable constraint-alist->aig))))
@@ -884,14 +884,14 @@
   (defthm dependencies-of-constraint-alist-assume-aig
     (b* (((mv ?contradictionp ?new-calist ?keys-out)
           (constraint-alist-assume-aig x calist keys-in)))
-      (implies (and (not (sets::in (nfix k) (acl2::aig-vars x)))
+      (implies (and (not (set::in (nfix k) (acl2::aig-vars x)))
                     (not (constr-alist-depends-on k calist)))
                (not (constr-alist-depends-on k new-calist))))
     :hints(("Goal" :in-theory (e/d ()
                                    ((:d constraint-alist-assume-aig)
                                     acl2::subsetp-car-member
                                     acl2::aig-vars
-                                    sets::in sets::subset sets::union))
+                                    set::in set::subset set::union))
             :induct (constraint-alist-assume-aig x calist keys-in)
             :expand ((:free (a b)
                       (constr-alist-depends-on k (cons a b)))

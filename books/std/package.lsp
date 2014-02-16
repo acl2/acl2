@@ -71,7 +71,7 @@
                    INSTANCE::instance-rewrite)
                  *standard-acl2-imports*))
 
-(defpkg "SETS"
+(defpkg "SET"
   (union-eq-exec '(defsection
                     defxdoc
                     definline
@@ -91,7 +91,9 @@
                     def-ruleset
                     def-ruleset!
                     add-to-ruleset
-                    ;; To make Sets::Osets print as just Osets in the XDOC index
+                    ;; makes :instance hints more convenient
+                    a b c d e f g h i j k l m n o p q r s t u v w x y z
+                    ;; To make SET::Osets print as just Osets in the XDOC index
                     osets
                     ;; For similar nice-documentation reasons
                     std)
@@ -101,7 +103,7 @@
                   ;;  etc. after ACL2 4.2 (intersectp was added to *acl2-exports*).]
                   '(intersectp enable disable e/d))))
 
-#!SETS
+#!SET
 (defconst *sets-exports*
   ;; This just contains the user-level set functions, and a couple of theroems
   ;; that frequently need to be enabled/disabled.
@@ -128,7 +130,7 @@
     ))
 
 (defpkg "XDOC"
-  (union-eq-exec sets::*sets-exports*
+  (union-eq-exec set::*sets-exports*
    (union-eq-exec
     '(b* value defxdoc defxdoc-raw macro-args
          xdoc-extend defsection defsection-progn lnfix
@@ -173,7 +175,7 @@
 
 (defconst *bitsets-pkg-symbols*
   (union-eq-exec
-   (union-eq-exec (union-eq-exec sets::*sets-exports*
+   (union-eq-exec (union-eq-exec set::*sets-exports*
                                  *bitset-exports*)
                   '(*bitset-exports*
                     std
@@ -199,9 +201,9 @@
                     enable*
                     disable*
                     e/d*
-                    sets::enable
-                    sets::disable
-                    sets::e/d
+                    set::enable
+                    set::disable
+                    set::e/d
 
                     rev
 
@@ -229,7 +231,7 @@
 (defconst *std-pkg-symbols*
   (union-eq-exec
    (union-eq-exec
-    sets::*sets-exports*
+    set::*sets-exports*
 
 ; Things I want to "export" to the ACL2 package.
 ;

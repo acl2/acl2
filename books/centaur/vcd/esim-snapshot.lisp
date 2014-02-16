@@ -334,4 +334,4 @@
 ; For some snapshots in the XIB module, this improved the "vcd snapshot
 ; preparation" step from 17 seconds to 8 seconds, which seems pretty good.
 
-      (reverse (sets::mergesort snap)))))
+      (reverse (set::mergesort snap)))))

@@ -433,14 +433,14 @@
                   (consp t3)
                   (not (member-eq (car t3) 
                            '(acl2::mget acl2::g g
-                                        acl2::nth acl2::car SETS::head
-                                        acl2::cdr SETS::head))))
+                                        acl2::nth acl2::car SET::head
+                                        acl2::cdr SET::head))))
              (and (is-a-variablep t3) 
                   (consp t3);copy paste bug
                   (not (member-eq (car t3) 
                            '(acl2::mget acl2::g g
-                                        acl2::nth acl2::car SETS::head
-                                        acl2::cdr SETS::head))))))))
+                                        acl2::nth acl2::car SET::head
+                                        acl2::cdr SET::head))))))))
               
 (defun undirected-2-rel? (hyp)
  ; (declare (xargs :guard t))

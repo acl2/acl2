@@ -33,7 +33,7 @@
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-(local (in-theory (disable sets::double-containment)))
+(local (in-theory (disable set::double-containment)))
 
 
 ;; BOZO library stuff -----------------------------------------------

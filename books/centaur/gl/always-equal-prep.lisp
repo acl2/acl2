@@ -265,7 +265,7 @@
 
 
 (local (in-theory (disable ctrex-for-always-equal-under-hyp
-                           sets::double-containment)))
+                           set::double-containment)))
 
 (defthm ctrex-for-always-equal-under-hyp-flag-correct
   (implies (and (acl2::ubddp x) (acl2::ubddp y) (acl2::ubddp hyp))

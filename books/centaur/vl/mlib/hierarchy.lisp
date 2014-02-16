@@ -798,12 +798,12 @@ right-hand side, but not in the left-hand side.</p>
 
 <p><i>Q.E.D.</i></p>"
 
-  (local (sets::use-osets-reasoning))
+  (local (set::use-osets-reasoning))
 
   (local (in-theory (disable cardinality
                              subset-of-union
-                             sets::expand-cardinality-of-union
-                             sets::expand-cardinality-of-difference
+                             set::expand-cardinality-of-union
+                             set::expand-cardinality-of-difference
                              vl-modulelist-complete-p)))
 
   (local (defthm cardinalty-<-by-proper-subset
@@ -854,13 +854,13 @@ right-hand side, but not in the left-hand side.</p>
                                   curr+prev mods depalist)))))
 
 
-  (local (in-theory (disable sets::difference-in
-                             sets::subset-in
-                             sets::intersect-over-union
-                             sets::intersect-in
-                             sets::subset-difference
-                             sets::in-tail
-                             sets::insert-identity)))
+  (local (in-theory (disable set::difference-in
+                             set::subset-in
+                             set::intersect-over-union
+                             set::intersect-in
+                             set::subset-difference
+                             set::in-tail
+                             set::insert-identity)))
 
   (local (in-theory (enable vl-dependent-modules-aux)))
 
@@ -1126,7 +1126,7 @@ a @(see vl-modalist) for faster lookups.</p>
 
   (local
    (encapsulate nil
-     (local (sets::use-osets-reasoning))
+     (local (set::use-osets-reasoning))
      (defthm stringp-when-in-vl-modulelist->names
            (implies (and (in a (vl-modulelist->names x))
                          (force (vl-modulelist-p x)))
@@ -1248,12 +1248,12 @@ and we can stop.</p>
 modules for (curr U prev), so we can recursively begin looking for these
 modules.</p>"
 
-  (local (sets::use-osets-reasoning))
+  (local (set::use-osets-reasoning))
 
   (local (in-theory (disable cardinality
                              subset-of-union
-                             sets::expand-cardinality-of-union
-                             sets::expand-cardinality-of-difference
+                             set::expand-cardinality-of-union
+                             set::expand-cardinality-of-difference
                              vl-modulelist-complete-p)))
 
   (local (defthm cardinalty-<-by-proper-subset

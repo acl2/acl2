@@ -342,7 +342,7 @@
                            loghead logtail sspec-geval
                            acl2::member-equal-of-strip-cars-when-member-equal-of-hons-duplicated-members-aux
                            acl2::consp-of-car-when-alistp
-                           sets::double-containment)))
+                           set::double-containment)))
 
 (defun expands-with-hint (def expands)
   (if (atom expands)
@@ -853,7 +853,7 @@
 
 (local
  (encapsulate nil
-   (local (in-theory (disable sets::double-containment
+   (local (in-theory (disable set::double-containment
                               acl2::no-duplicatesp-equal-non-cons
                               acl2::no-duplicatesp-equal-when-atom
                               acl2::subsetp-car-member
@@ -1113,7 +1113,7 @@
                     ;; gobjectp-ite-case
                     ;; sspec-geval-non-gobjectp
                     break-g-number
-                    sets::double-containment))))
+                    set::double-containment))))
 
    (local (defthm g-keyword-symbolp-of-shape-spec-to-gobj
             (equal (g-keyword-symbolp (shape-spec-to-gobj x))

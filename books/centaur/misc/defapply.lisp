@@ -861,7 +861,7 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
                                   ;;  subsetp-car-member
                                   ;;  member-equal
                                   ;;  _name_-ev-concrete
-                                  ;;  sets::double-containment
+                                  ;;  set::double-containment
                                   ;;  default-cdr
                                   ;;  (_name_-apply)
                                   ;;  (:rules-of-class :definition :here))

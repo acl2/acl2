@@ -18,7 +18,7 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-(in-package "SETS")
+(in-package "SET")
 
 ;; This book uses the "witness-cp" book to set up a clause processor for set
 ;; reasoning based on the osets library.  We use a similar strategy to the one
@@ -34,11 +34,11 @@
 ;; You may use this hint manually like this:
 ;; (defthm foo
 ;;    ...
-;;   :hints ((sets::osets-reasoning)))
+;;   :hints ((set::osets-reasoning)))
 
 ;; or you may (locally) set up a default hint and a suitable theory for the
 ;; hint by doing:
-;;  (sets::use-osets-reasoning)
+;;  (set::use-osets-reasoning)
 
 ;; What does this strategy do?  We think of the set predicates subset,
 ;; intersectp, empty, and equal as involving quantifiers.  For example,
@@ -111,7 +111,7 @@
 ;;                            (intersect (union z w) y)))))
 
 ;; If submit this form after loading this book and doing
-;; (sets::use-osets-reasoning),  ACL2 does the following:
+;; (set::use-osets-reasoning),  ACL2 does the following:
 
 ;; First, negative occurrences.
 ;; The only negative occurrence is (not (subset x (union z w))).  This is

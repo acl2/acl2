@@ -306,7 +306,7 @@
                                           ((pbfr-list-depends-on)))))))
 
   (local (in-theory (disable gobj-depends-on
-                             sets::double-containment
+                             set::double-containment
                              default-<-1
                              default-<-2)))
 

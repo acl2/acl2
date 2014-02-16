@@ -6,14 +6,14 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
-(local (in-theory (disable sets::double-containment)))
+(local (in-theory (disable set::double-containment)))
 (local (in-theory (disable nth update-nth
                            acl2::nfix-when-not-natp
                            resize-list
                            acl2::resize-list-when-empty
                            acl2::make-list-ac-redef
-                           sets::double-containment
-                           sets::sets-are-true-lists
+                           set::double-containment
+                           set::sets-are-true-lists
                            make-list-ac)))
 (local (include-book "std/lists/nth" :dir :system))
 
@@ -23,7 +23,7 @@
 (local (include-book "centaur/aignet/bit-lemmas" :dir :system))
 (local (in-theory (disable id-eval
                            true-listp
-                           sets::double-containment
+                           set::double-containment
                            acl2::nfix-when-not-natp
                            acl2::nth-with-large-index
                            acl2::natp-when-integerp)))

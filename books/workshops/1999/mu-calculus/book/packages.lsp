@@ -23,12 +23,12 @@
 (defconst *sets-symbols*
   (union-eq *export-symbols* *symbols-kept-as-ACL2-symbols*))
 
-(defpkg "SET" *sets-symbols*)
+(defpkg "SETS" *sets-symbols*)
 
 (defconst *FAST-SETS-symbols*
   (union-eq 
    *sets-symbols*
-   '(set::=< set::== set::depth set::no-dups)))
+   '(sets::=< sets::== sets::depth sets::no-dups)))
 
 (defpkg "FAST-SETS" *fast-sets-symbols*)
 
@@ -36,7 +36,7 @@
 (defconst *relations-symbols*
   (union-eq 
    *export-symbols*
-   '(set::in set::=< set::== set::depth  fast-sets::intersect
+   '(sets::in sets::=< sets::== sets::depth  fast-sets::intersect
      fast-sets::add fast-sets::set-union fast-sets::minus)))
 
 (defpkg "RELATIONS"
@@ -47,7 +47,7 @@
   (union-eq 
    *export-symbols*
    (append '(acl2::perm acl2::remove-el)
-	   '(set::in set::=< set::== set::s< set::=<-perm set::no-dups)
+	   '(sets::in sets::=< sets::== sets::s< sets::=<-perm sets::no-dups)
 	   '(fast-sets::intersect fast-sets::add fast-sets::set-union 
 	     fast-sets::set-complement fast-sets::minus fast-sets::cardinality
 	     fast-sets::make-list-set fast-sets::remove-dups)

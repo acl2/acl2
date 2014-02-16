@@ -148,7 +148,7 @@
                               eval-g-base-alt-def
                               logcons
                               default-car default-cdr
-                              sets::double-containment
+                              set::double-containment
                               hons-assoc-equal
                               equal-of-booleans-rewrite
                               rationalp-implies-acl2-numberp

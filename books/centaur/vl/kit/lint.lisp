@@ -812,8 +812,8 @@ shown.</p>"
 
    ))
 
-(local (in-theory (disable sets::in sets::in-tail
-                           sets::difference sets::mergesort)))
+(local (in-theory (disable set::in set::in-tail
+                           set::difference set::mergesort)))
 
 (defun vl-lint-report (lintresult state)
   (declare (xargs :guard (vl-lintresult-p lintresult)

@@ -46,7 +46,7 @@
                (value '(value-triple nil)))
    (value '(value-triple nil))))
 
-(local (in-theory (disable* sets::double-containment)))
+(local (in-theory (disable* set::double-containment)))
 
 (set-well-founded-relation nat-list-<)
 

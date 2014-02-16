@@ -33,14 +33,14 @@
 (local (include-book "clause-processors/find-subterms" :dir :system))
 (local (include-book "clause-processors/generalize" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
-(local (in-theory (disable sets::double-containment)))
+(local (in-theory (disable set::double-containment)))
 (local (in-theory (disable nth update-nth
                            acl2::nfix-when-not-natp
                            resize-list
                            acl2::resize-list-when-empty
                            acl2::make-list-ac-redef
-                           sets::double-containment
-                           sets::sets-are-true-lists
+                           set::double-containment
+                           set::sets-are-true-lists
                            make-list-ac)))
 
 (local (in-theory (disable true-listp-update-nth

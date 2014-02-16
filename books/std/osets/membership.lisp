@@ -22,7 +22,7 @@
 ; the order of elements, providing an entirely membership-based reasoning
 ; environment for the outer level.
 
-(in-package "SETS")
+(in-package "SET")
 (include-book "primitives")
 (include-book "computed-hints")
 (set-verify-guards-eagerness 2)
@@ -44,7 +44,7 @@ loop:</p>
  ;; 4.703 sec logic, 1.811 sec exec
  (let ((big-set (loop for i from 1 to 100000 collect i)))
    (gc$)
-   (time (loop for i fixnum from 1 to 30000 do (sets::in i big-set))))
+   (time (loop for i fixnum from 1 to 30000 do (set::in i big-set))))
 })
 
 <p>There are other ways we could optimize @('in').  Since the set is ordered,
@@ -297,7 +297,7 @@ of fast-subset on the following loop:</p>
  ;; 3.83 sec logic, 1.24 seconds exec
  (let ((x (loop for i from 1 to 1000 collect i)))
    (gc$)
-   (time$ (loop for i fixnum from 1 to 100000 do (sets::subset x x))))
+   (time$ (loop for i fixnum from 1 to 100000 do (set::subset x x))))
 })
 
 <p>In the future we may investigate developing a faster subset check based on

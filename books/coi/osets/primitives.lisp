@@ -86,6 +86,7 @@
 ;;; Replaced by Matt K. after Jared D.'s modification
 ;;; in svn 1015 of that book, since there is now a conflict:
 (include-book "misc/total-order" :dir :system)
+(include-book "tools/rulesets" :dir :system)
 #||
 (defun << (x y)
   (declare (xargs :guard t))

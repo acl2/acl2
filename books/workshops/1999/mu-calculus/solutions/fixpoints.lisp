@@ -1,4 +1,4 @@
-(in-package "SET")
+(in-package "SETS")
 
 (include-book "sets")
 

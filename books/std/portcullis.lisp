@@ -25,9 +25,9 @@
 ; include-book command.  This simply improves the efficiency of our build
 ; process.
 
-#!SETS
+#!SET
 (progn
-  ;; These allow SETS:: versions of enable, disable, and e/d to use rulesets
+  ;; These allow SET:: versions of enable, disable, and e/d to use rulesets
   ;; natively.
 
   (defmacro enable (&rest args)

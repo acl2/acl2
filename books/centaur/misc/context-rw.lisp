@@ -30,7 +30,7 @@
 
 (local (in-theory (disable append-of-nil)))
 (local (in-theory (disable all-boundp
-                           sets::double-containment
+                           set::double-containment
                            all-keys-bound)))
 
 (defxdoc contextual-rewriting
@@ -1314,7 +1314,7 @@ when it becomes available.
            :in-theory (e/d ((:induction unify-const))
                            (pseudo-termp
                             unify-const-redef
-                            sets::double-containment
+                            set::double-containment
                             default-car default-cdr
                             append len hons-assoc-equal
                             alists-compatible-when-sub-alistp

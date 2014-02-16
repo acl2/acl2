@@ -909,10 +909,10 @@
 
 (defund bfr-depends-on (k x)
   (bfr-case :bdd (bfr-semantic-depends-on k x)
-            :aig (sets::in (nfix k) (acl2::aig-vars x))))
+            :aig (set::in (nfix k) (acl2::aig-vars x))))
 
 (local (defthm aig-eval-under-env-with-non-aig-var-member
-         (implies (not (sets::in k (acl2::aig-vars x)))
+         (implies (not (set::in k (acl2::aig-vars x)))
                   (equal (acl2::aig-eval x (cons (cons k v) env))
                          (acl2::aig-eval x env)))
          :hints(("Goal" :in-theory (enable acl2::aig-eval acl2::aig-vars)))))
@@ -1070,32 +1070,32 @@
                   (x (bfr-from-param-space p x)))))))
 
 (local (defthm non-var-implies-not-member-extract-assigns
-         (implies (not (sets::in v (acl2::aig-vars x)))
+         (implies (not (set::in v (acl2::aig-vars x)))
                   (and (not (member v (mv-nth 0 (acl2::aig-extract-assigns x))))
                        (not (member v (mv-nth 1 (acl2::aig-extract-assigns x))))))))
 
 (local (defthm non-var-implies-not-in-aig-extract-assigns-alist
-         (implies (not (sets::in v (acl2::aig-vars x)))
+         (implies (not (set::in v (acl2::aig-vars x)))
                   (not (hons-assoc-equal v (acl2::aig-extract-assigns-alist x))))
          :hints(("Goal" :in-theory (enable acl2::aig-extract-assigns-alist)))))
 
 (local (defthm non-var-implies-non-var-in-restrict-with-assigns-alist
-         (implies (not (sets::in v (acl2::aig-vars x)))
-                  (not (sets::in v (acl2::aig-vars
+         (implies (not (set::in v (acl2::aig-vars x)))
+                  (not (set::in v (acl2::aig-vars
                                     (acl2::aig-restrict
                                      x (acl2::aig-extract-assigns-alist y))))))
          :hints(("Goal" :in-theory (enable acl2::aig-restrict
                                            acl2::aig-extract-assigns-alist-lookup-boolean)))))
 
 (local (defthm non-var-implies-not-in-aig-extract-iterated-assigns-alist
-         (implies (not (sets::in v (acl2::aig-vars x)))
+         (implies (not (set::in v (acl2::aig-vars x)))
                   (not (hons-assoc-equal v (acl2::aig-extract-iterated-assigns-alist x clk))))
          :hints(("Goal" :in-theory (enable
                                     acl2::aig-extract-iterated-assigns-alist)))))
 
 (defthm non-var-implies-non-var-in-restrict-with-iterated-assigns-alist
-  (implies (not (sets::in v (acl2::aig-vars x)))
-           (not (sets::in v (acl2::aig-vars
+  (implies (not (set::in v (acl2::aig-vars x)))
+           (not (set::in v (acl2::aig-vars
                              (acl2::aig-restrict
                               x
                               (acl2::aig-extract-iterated-assigns-alist

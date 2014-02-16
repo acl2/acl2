@@ -93,10 +93,10 @@ This stupid twist makes the proof ridiculously harder!</p>"
            (fast-alist-free seen)
            ;; [Jared]: This originally used an alphorder-merge based on
            ;; defsort.  When I did the correctness proof, he switched it to
-           ;; sets::mergesort so that I wouldn't need to argue that there
+           ;; set::mergesort so that I wouldn't need to argue that there
            ;; aren't any duplicates.  The two should be very similar in speed,
-           ;; and eventually sets::mergesort may get additional optimizations.
-           (sets::mergesort vars)))))
+           ;; and eventually set::mergesort may get additional optimizations.
+           (set::mergesort vars)))))
 
 (local (flag::make-flag flag-4v-sexpr-vars-1pass-exec
                         4v-sexpr-vars-1pass-exec
@@ -199,10 +199,10 @@ This stupid twist makes the proof ridiculously harder!</p>"
            :flag list)))
 
 (local (defthm promote-member-equal-to-in
-         (implies (sets::setp x)
+         (implies (set::setp x)
                   (iff (member-equal a x)
-                       (sets::in a x)))
-         :hints(("Goal" :in-theory (enable sets::in-to-member)))))
+                       (set::in a x)))
+         :hints(("Goal" :in-theory (enable set::in-to-member)))))
 
 (local (defthm main-corollary
            (set-equiv (mv-nth 1 (4v-sexpr-vars-1pass-exec x nil nil))
@@ -213,11 +213,11 @@ This stupid twist makes the proof ridiculously harder!</p>"
   :extension 4v-sexpr-vars-1pass
 
   (defthm 4v-sexpr-vars-1pass-exec-correct
-    (equal (sets::mergesort (mv-nth 1 (4v-sexpr-vars-1pass-exec x nil nil)))
+    (equal (set::mergesort (mv-nth 1 (4v-sexpr-vars-1pass-exec x nil nil)))
            (4v-sexpr-vars x)))
 
   (defthm 4v-sexpr-vars-1pass-list-exec-correct
-    (equal (sets::mergesort (mv-nth 1 (4v-sexpr-vars-1pass-list-exec x nil nil)))
+    (equal (set::mergesort (mv-nth 1 (4v-sexpr-vars-1pass-list-exec x nil nil)))
            (4v-sexpr-vars-list x)))
 
   (verify-guards 4v-sexpr-vars-1pass))
@@ -237,7 +237,7 @@ variables from a list of sexprs.</p>"
          (b* (((mv seen vars)
                (4v-sexpr-vars-1pass-list-exec x nil nil)))
            (fast-alist-free seen)
-           (sets::mergesort vars)))))
+           (set::mergesort vars)))))
 
 
 (defsection 4v-sexpr-vars-1pass-list-list
@@ -264,7 +264,7 @@ list of sexpr lists.</p>"
                                           (4v-sexpr-vars-list-list x)))))))
 
   (defthm 4v-sexpr-vars-1pass-list-list-exec-correct
-    (equal (sets::mergesort (mv-nth 1 (4v-sexpr-vars-1pass-list-list-exec x nil nil)))
+    (equal (set::mergesort (mv-nth 1 (4v-sexpr-vars-1pass-list-list-exec x nil nil)))
            (4v-sexpr-vars-list-list x)))
 
   (defun 4v-sexpr-vars-1pass-list-list (x)
@@ -274,6 +274,6 @@ list of sexpr lists.</p>"
          (b* (((mv seen vars)
                (4v-sexpr-vars-1pass-list-list-exec x nil nil)))
            (fast-alist-free seen)
-           (sets::mergesort vars)))))
+           (set::mergesort vars)))))
 
 

@@ -26,7 +26,7 @@
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*
              std::*std-exports*
-             sets::*sets-exports*
+             set::*sets-exports*
              '(str::cat
                str::natstr
                include-raw

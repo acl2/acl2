@@ -43,18 +43,18 @@
 ; Here are some of the most simple examples.  All of these predicates have only
 ; a single argument, and their guard is "t".
 ;
-;     (SETS::quantify-predicate (integerp x))
-;     (SETS::quantify-predicate (symbolp x))
-;     (SETS::quantify-predicate (rationalp x))
-;     (SETS::quantify-predicate (natp x))
+;     (SET::quantify-predicate (integerp x))
+;     (SET::quantify-predicate (symbolp x))
+;     (SET::quantify-predicate (rationalp x))
+;     (SET::quantify-predicate (natp x))
 ;
 ; Notice that you cannot use macros here.  For example, the following is an
 ; error: (quantify-predicate (real/rationalp x)).  Once you have done the
 ; above, you can now run these functions, e.g.,
 ;
-;     (SETS::all<integerp> '(1 2 3)) = t
-;     (SETS::all<not-integerp> '(a b c)) = t
-;     (SETS::find<symbolp> '(1 2 3 a b c)) = a
+;     (SET::all<integerp> '(1 2 3)) = t
+;     (SET::all<not-integerp> '(a b c)) = t
+;     (SET::find<symbolp> '(1 2 3 a b c)) = a
 ;
 ;
 ; Controlling Packages.
@@ -64,7 +64,7 @@
 ; specify the :in-package-of argument and provide a symbol from some other
 ; package.  For example, since defthm is in the ACL2 package, we might write:
 ;
-;     (SETS::quantify-predicate (eqlablep x)
+;     (SET::quantify-predicate (eqlablep x)
 ;       :in-package-of defthm)
 ;
 ; And then the functions all<integerp>, all<not-integerp>, and so forth will be
@@ -114,10 +114,10 @@
 ;
 ;     (in-package "ACL2")
 ;
-;     (SETS::quantify-predicate (rationalp x)
+;     (SET::quantify-predicate (rationalp x)
 ;       :in-package-of defthm)
 ;
-;     (SETS::quantify-predicate (fast-lessp x max)
+;     (SET::quantify-predicate (fast-lessp x max)
 ;       :set-guard  ((all<rationalp> ?set))
 ;       :list-guard ((all-list<rationalp> ?list))
 ;       :arg-guard  ((rationalp max))
@@ -136,7 +136,7 @@
 ;
 ; And so forth.
 
-(in-package "SETS")
+(in-package "SET")
 (include-book "top")
 (set-verify-guards-eagerness 2)
 

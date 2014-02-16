@@ -17,7 +17,7 @@
 ; Theorems relating the more complicated set operations (union, intersect,
 ; etc.)  to one another.
 
-(in-package "SETS")
+(in-package "SET")
 (include-book "delete")
 (include-book "union")
 (include-book "intersect")

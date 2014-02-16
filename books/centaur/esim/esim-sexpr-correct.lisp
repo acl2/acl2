@@ -27,7 +27,7 @@
 (include-book "esim-spec")
 (local (include-book "esim-sexpr-support-thms"))
 (local (include-book "centaur/4v-sexpr/sexpr-advanced" :dir :system))
-(local (in-theory (disable sets::double-containment)))
+(local (in-theory (disable set::double-containment)))
 (local (in-theory (disable occmap)))
 
 (make-event

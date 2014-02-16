@@ -50,7 +50,7 @@
 
 |#
 
-(in-package "SETS")
+(in-package "SET")
 (include-book "outer")
 (set-verify-guards-eagerness 2)
 

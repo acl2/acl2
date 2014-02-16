@@ -705,7 +705,7 @@
                 (4v-alists-agree keys a c)))
   :hints(("Goal" :in-theory (e/d* (4v-alists-agree)
                                   ((:rules-of-class :type-prescription :here)
-                                   sets::double-containment
+                                   set::double-containment
                                    4v-alists-agree-to-4v-env-equiv
                                    append 4v-fix)))))
 
@@ -718,7 +718,7 @@
                                    subsetp-equal)
                                   ((:rules-of-class :type-prescription :here)
                                    4v-alists-agree-to-4v-env-equiv
-                                   sets::double-containment
+                                   set::double-containment
                                    append 4v-fix)))))
 
 

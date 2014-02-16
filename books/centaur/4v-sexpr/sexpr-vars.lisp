@@ -96,7 +96,7 @@ a single set containing all the variables in these sexprs.</p>")
      (declare (xargs :guard t :verify-guards nil))
      (if (atom x)
          (and x
-              (mbe :logic (sets::insert x nil)
+              (mbe :logic (set::insert x nil)
                    :exec (hons x nil)))
        (4v-sexpr-vars-list (cdr x))))
 
@@ -104,7 +104,7 @@ a single set containing all the variables in these sexprs.</p>")
      (declare (xargs :guard t))
      (if (atom x)
          nil
-       (mbe :logic (sets::union (4v-sexpr-vars (car x))
+       (mbe :logic (set::union (4v-sexpr-vars (car x))
                                 (4v-sexpr-vars-list (cdr x)))
             :exec (hons-alphorder-merge (4v-sexpr-vars (car x))
                                         (4v-sexpr-vars-list (cdr x)))))))
@@ -130,15 +130,15 @@ a single set containing all the variables in these sexprs.</p>")
 
   (defthm-4v-sexpr-flag
     (defthm setp-4v-sexpr-vars
-      (sets::setp (4v-sexpr-vars x))
+      (set::setp (4v-sexpr-vars x))
       :flag sexpr)
     (defthm setp-4v-sexpr-vars-list
-      (sets::setp (4v-sexpr-vars-list x))
+      (set::setp (4v-sexpr-vars-list x))
       :flag sexpr-list))
 
   (verify-guards 4v-sexpr-vars
     ;; For the hons instead of insert
-    :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))
+    :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules)))))
 
   (memoize '4v-sexpr-vars
            :condition '(and (consp x) (consp (cdr x))))
@@ -196,7 +196,7 @@ set.</p>"
     (declare (xargs :guard t :verify-guards nil))
     (if (atom x)
         nil
-      (mbe :logic (sets::union (4v-sexpr-vars-list (car x))
+      (mbe :logic (set::union (4v-sexpr-vars-list (car x))
                                (4v-sexpr-vars-list-list (cdr x)))
            :exec (hons-alphorder-merge (4v-sexpr-vars-list (car x))
                                        (4v-sexpr-vars-list-list (cdr x))))))
@@ -205,7 +205,7 @@ set.</p>"
     (atom-listp (4v-sexpr-vars-list-list x)))
 
   (defthm setp-of-4v-sexpr-vars-list-list
-    (sets::setp (4v-sexpr-vars-list-list x)))
+    (set::setp (4v-sexpr-vars-list-list x)))
 
   (verify-guards 4v-sexpr-vars-list-list))
 
@@ -218,7 +218,7 @@ set.</p>"
     (declare (xargs :guard t :verify-guards nil))
     (if (atom x)
         nil
-      (mbe :logic (sets::union (4v-sexpr-vars-alist (car x))
+      (mbe :logic (set::union (4v-sexpr-vars-alist (car x))
                                (4v-sexpr-vars-alists (cdr x)))
            :exec (hons-alphorder-merge (4v-sexpr-vars-alist (car x))
                                        (4v-sexpr-vars-alists (cdr x))))))
@@ -227,6 +227,6 @@ set.</p>"
     (atom-listp (4v-sexpr-vars-alists x)))
 
   (defthm setp-of-4v-sexpr-vars-alists
-    (sets::setp (4v-sexpr-vars-alists x)))
+    (set::setp (4v-sexpr-vars-alists x)))
 
   (verify-guards 4v-sexpr-vars-alists))

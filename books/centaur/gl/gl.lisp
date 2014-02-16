@@ -196,7 +196,7 @@
                   :hints `(("Goal" :in-theory
                             (disable* ,gfn
                                       mv-nth-cons-meta
-                                      sets::double-containment
+                                      set::double-containment
                                       equal-of-booleans-rewrite
                                       bfr-assume-correct
                                       (:rules-of-class :forward-chaining :here)

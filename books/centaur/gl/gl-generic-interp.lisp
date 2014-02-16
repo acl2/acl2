@@ -33,7 +33,7 @@
 (local (include-book "clause-processors/find-matching" :dir :system))
 (local (include-book "clause-processors/just-expand" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
-(local (in-theory (disable* sets::double-containment w)))
+(local (in-theory (disable* set::double-containment w)))
 (include-book "constraint-db-deps")
 (include-book "clause-processors/find-subterms" :dir :system)
 (include-book "glcp-unify-thms")
@@ -187,9 +187,9 @@
 
 
 (local (in-theory (disable* general-concretep-def acl2-count
-;                            sets::double-containment
+;                            set::double-containment
                             integer-abs
-;                            sets::nonempty-means-set
+;                            set::nonempty-means-set
                             equal-of-booleans-rewrite
                             put-global
                             acl2::true-list-listp-forward-to-true-listp-assoc-equal)))
@@ -855,7 +855,7 @@
 
 (encapsulate nil
   (local (in-theory (disable
-                     sets::sets-are-true-lists
+                     set::sets-are-true-lists
                      pseudo-term-listp
                      (:t hyp-fix)
                      (:t acl2::interp-defs-alistp)
@@ -1162,7 +1162,7 @@
                               rewrite-rule-term-alt-def)
                              (equal-of-booleans-rewrite
                               default-car default-cdr
-                              sets::double-containment
+                              set::double-containment
                               len kwote-lst
                               w))))))
 

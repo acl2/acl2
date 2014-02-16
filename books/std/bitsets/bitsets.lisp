@@ -213,7 +213,7 @@ details.</p>"
     (no-duplicatesp-equal (bitset-members x)))
 
   (defthm setp-of-bitset-members
-    (sets::setp (bitset-members x)))
+    (set::setp (bitset-members x)))
 
   (defthmd in-of-bitset-members
     ;; CAREFUL!  This theorem should typically be left disabled because it
@@ -221,7 +221,7 @@ details.</p>"
     ;; it's the main theorem that we use when introducing new "primitive
     ;; functions" for building bitsets (i.e., which build bitsets by exploiting
     ;; the underlying representation).
-    (equal (sets::in a (bitset-members x))
+    (equal (set::in a (bitset-members x))
            (and (natp a)
                 (logbitp a (nfix x)))))
 
@@ -490,7 +490,7 @@ bignum in a particularly efficient way on 64-bit CCL.</li>
   :long "<p>This is reasonably efficient: it executes as @(see logbitp) and
 does not need to use @(see bitset-members).</p>
 
-<p>We prefer to reason about @('(sets::in a (bitset-members X))').  We could
+<p>We prefer to reason about @('(set::in a (bitset-members X))').  We could
 have used this as the @(':logic') definition, but the @(see logbitp)-based
 definition should be better for symbolic simulation with @(see gl::gl).</p>"
   :inline t
@@ -499,7 +499,7 @@ definition should be better for symbolic simulation with @(see gl::gl).</p>"
   ///
   (defthm bitset-memberp-removal
     (equal (bitset-memberp a x)
-           (sets::in (nfix a) (bitset-members x)))
+           (set::in (nfix a) (bitset-members x)))
     :hints(("Goal" :in-theory (enable bitset-memberp in-of-bitset-members)))))
 
 
@@ -525,7 +525,7 @@ definition should be better for symbolic simulation with @(see gl::gl).</p>"
   (encapsulate
     ()
     (local (defthm l0
-             (equal (sets::in a (bitset-members (bitset-singleton b)))
+             (equal (set::in a (bitset-members (bitset-singleton b)))
                     (equal a (nfix b)))
              ;; Ugh, really bad expt matching...
              :hints(("Goal" :in-theory (e/d (in-of-bitset-members)
@@ -536,7 +536,7 @@ definition should be better for symbolic simulation with @(see gl::gl).</p>"
 
     (defthm bitset-members-of-bitset-singleton
       (equal (bitset-members (bitset-singleton a))
-             (sets::insert (nfix a) nil))
+             (set::insert (nfix a) nil))
       :hints(("Goal" :in-theory (disable bitset-singleton))))))
 
 
@@ -578,18 +578,18 @@ like @(see bitset-union).</p>"
   (encapsulate
     ()
     (local (defthm l0
-             (equal (sets::in a (bitset-members (bitset-insert b x)))
+             (equal (set::in a (bitset-members (bitset-insert b x)))
                     (or (equal a (nfix b))
-                        (sets::in a (bitset-members x))))
+                        (set::in a (bitset-members x))))
              :hints(("Goal"
                      :in-theory (e/d (in-of-bitset-members)
                                      ;; Ugh, lousy expt matching
                                      (acl2::|(expt x 0)|
                                             acl2::|(expt x (if a b c))|))))))
 
-    (defthmd sets::bitset-members-of-bitset-insert
+    (defthmd set::bitset-members-of-bitset-insert
       (equal (bitset-members (bitset-insert a x))
-             (sets::insert (nfix a) (bitset-members x)))
+             (set::insert (nfix a) (bitset-members x)))
       :hints(("Goal" :in-theory (disable bitset-insert))))))
 
 
@@ -630,8 +630,8 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
   (encapsulate
     ()
     (local (defthm l0
-             (equal (sets::in a (bitset-members (bitset-delete b x)))
-                    (and (sets::in a (bitset-members x))
+             (equal (set::in a (bitset-members (bitset-delete b x)))
+                    (and (set::in a (bitset-members x))
                          (not (equal a (nfix b)))))
              :hints(("Goal" :in-theory (e/d (in-of-bitset-members)
                                             (acl2::|(expt x 0)|
@@ -640,7 +640,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
 
     (defthm bitset-members-of-bitset-delete
       (equal (bitset-members (bitset-delete a x))
-             (sets::delete (nfix a) (bitset-members x)))
+             (set::delete (nfix a) (bitset-members x)))
       :hints(("Goal" :in-theory (disable bitset-delete))))))
 
 
@@ -698,14 +698,14 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
   (encapsulate
     ()
     (local (defthm l0
-             (equal (sets::in a (bitset-members (bitset-union x y)))
-                    (or (sets::in a (bitset-members x))
-                        (sets::in a (bitset-members y))))
+             (equal (set::in a (bitset-members (bitset-union x y)))
+                    (or (set::in a (bitset-members x))
+                        (set::in a (bitset-members y))))
              :hints(("Goal" :in-theory (enable in-of-bitset-members)))))
 
     (defthm bitset-members-of-bitset-union
       (equal (bitset-members (bitset-union x y))
-             (sets::union (bitset-members x)
+             (set::union (bitset-members x)
                           (bitset-members y)))
       :hints(("Goal" :in-theory (disable bitset-union))))))
 
@@ -769,14 +769,14 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
   (encapsulate
     ()
     (local (defthm l0
-             (equal (sets::in a (bitset-members (bitset-intersect x y)))
-                    (and (sets::in a (bitset-members x))
-                         (sets::in a (bitset-members y))))
+             (equal (set::in a (bitset-members (bitset-intersect x y)))
+                    (and (set::in a (bitset-members x))
+                         (set::in a (bitset-members y))))
              :hints(("Goal" :in-theory (enable in-of-bitset-members)))))
 
     (defthm bitset-members-of-bitset-intersect
       (equal (bitset-members (bitset-intersect x y))
-             (sets::intersect (bitset-members x)
+             (set::intersect (bitset-members x)
                               (bitset-members y)))
       :hints(("Goal" :in-theory (disable bitset-intersect))))))
 
@@ -814,14 +814,14 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
   (encapsulate
     ()
     (local (defthm l0
-             (iff (sets::in a (bitset-members (bitset-difference x y)))
-                  (and (sets::in a (bitset-members x))
-                       (not (sets::in a (bitset-members y)))))
+             (iff (set::in a (bitset-members (bitset-difference x y)))
+                  (and (set::in a (bitset-members x))
+                       (not (set::in a (bitset-members y)))))
              :hints(("Goal" :in-theory (enable in-of-bitset-members)))))
 
     (defthm bitset-members-of-bitset-difference
       (equal (bitset-members (bitset-difference x y))
-             (sets::difference (bitset-members x)
+             (set::difference (bitset-members x)
                                (bitset-members y)))
       :hints(("Goal" :in-theory (disable bitset-difference))))))
 
@@ -858,7 +858,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
                     (equal (bitset-members x)
                            (bitset-members y))))
     :hints(("Goal"
-            :in-theory (disable sets::double-containment)
+            :in-theory (disable set::double-containment)
             :use ((:functional-instance
                    equal-by-logbitp
                    (logbitp-hyp (lambda ()
@@ -893,8 +893,8 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
      (implies (not (equal a b))
               (let ((k (logbitp-mismatch (nfix a) (nfix b))))
                 (implies (and (natp a) (natp b))
-                         (not (iff (sets::in k (bitset-members a))
-                                   (sets::in k (bitset-members b)))))))
+                         (not (iff (set::in k (bitset-members a))
+                                   (set::in k (bitset-members b)))))))
      :hints (("goal" :use ((:instance equal-bitsets-by-membership
                                       (x (nfix a))
                                       (y (nfix b)))
@@ -902,7 +902,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
                                       (a (nfix a))
                                       (b (nfix b))))
               :in-theory (e/d (in-of-bitset-members natp)
-                              (sets::double-containment
+                              (set::double-containment
                                acl2::logbitp-mismatch-correct))))
      :rule-classes nil)
 
@@ -910,8 +910,8 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
      :predicate (not (equal a b))
      :expr (let ((k (logbitp-mismatch (nfix a) (nfix b))))
              (implies (and (natp a) (natp b))
-                      (not (iff (sets::in k (bitset-members a))
-                                (sets::in k (bitset-members b))))))
+                      (not (iff (set::in k (bitset-members a))
+                                (set::in k (bitset-members b))))))
      :restriction 
      (let ((bitset-fns (table-alist 'bitset-fns world)))
                     (or (and (consp a)
@@ -923,8 +923,8 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
 
    (definstantiate bitset-equal-instancing
      :predicate (equal a b)
-     :expr (iff (sets::in k (bitset-members a))
-                (sets::in k (bitset-members b)))
+     :expr (iff (set::in k (bitset-members a))
+                (set::in k (bitset-members b)))
      :vars (k)
      :restriction 
      (let ((bitset-fns (table-alist 'bitset-fns world)))
@@ -935,7 +935,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
      :hints ('(:in-theory nil)))
 
    (defexample bitset-equal-example
-     :pattern (sets::in k (bitset-members x))
+     :pattern (set::in k (bitset-members x))
      :templates (k)
      :instance-rulename bitset-equal-instancing)
 
@@ -1003,25 +1003,25 @@ of @('Y')."
 ;    (local (allow-real-oracle-eval))
     (local (defthm l0
              (implies (and (bitset-subsetp x y)
-                           (sets::in a (bitset-members x)))
-                      (sets::in a (bitset-members y)))
+                           (set::in a (bitset-members x)))
+                      (set::in a (bitset-members y)))
              :hints((bitset-witnessing))))
 
     (local (defthm l1
              (implies (bitset-subsetp x y)
-                      (sets::subset (bitset-members x)
+                      (set::subset (bitset-members x)
                                     (bitset-members y)))
              :hints(("Goal" :in-theory (disable bitset-subsetp)))))
 
     (local (defthm l2
-             (implies (sets::subset (bitset-members x)
+             (implies (set::subset (bitset-members x)
                                     (bitset-members y))
                       (bitset-subsetp x y))
              :hints((bitset-witnessing))))
 
     (defthm bitset-subsetp-removal
       (equal (bitset-subsetp x y)
-             (sets::subset (bitset-members x)
+             (set::subset (bitset-members x)
                            (bitset-members y)))
       :hints(("Goal"
               :in-theory (disable bitset-subsetp)
@@ -1071,12 +1071,12 @@ actually construct the intersection.</p>"
 
     (defthm bitset-intersectp-removal
       (implies (bitset-intersectp x y)
-               (sets::intersect (bitset-members x)
+               (set::intersect (bitset-members x)
                                 (bitset-members y)))
       :hints(("Goal"
               :in-theory (disable bitset-intersectp
                                   bitset-members-of-bitset-intersect
-                                  sets::double-containment)
+                                  set::double-containment)
               :use ((:instance bitset-members-of-bitset-intersect)
                     (:instance l0)))))))
 
@@ -1086,7 +1086,7 @@ actually construct the intersection.</p>"
   :parents (bitsets)
   :short "@(call bitset-cardinality) determines the cardinality of the set
 @('X')."
-  :long "<p>We prefer to reason about @('(sets::cardinality (bitset-members
+  :long "<p>We prefer to reason about @('(set::cardinality (bitset-members
 X))').  We could have used this as the @(':logic') definition, but the @(see
 logcount)-based definition should be better for symbolic simulation with @(see
 gl::gl).</p>"
@@ -1158,9 +1158,9 @@ gl::gl).</p>"
   (local (defthm l0
            (implies (and (force (natp a))
                          (force (natp b)))
-                    (equal (sets::<< a b)
+                    (equal (set::<< a b)
                            (< a b)))
-           :hints(("Goal" :in-theory (enable sets::<< lexorder alphorder)))))
+           :hints(("Goal" :in-theory (enable set::<< lexorder alphorder)))))
 
   (local (defthm l1
            (equal (natp (car (lsb-bits n x)))
@@ -1176,22 +1176,22 @@ gl::gl).</p>"
            :hints(("Goal" :in-theory (enable lsb-bits)))))
 
   (local (defthm setp-of-lsb-bits
-           (sets::setp (lsb-bits n x))
+           (set::setp (lsb-bits n x))
            :hints(("Goal" :in-theory (enable* lsb-bits
-                                              (:ruleset sets::primitive-rules))))))
+                                              (:ruleset set::primitive-rules))))))
 
   (local (in-theory (disable l0 l1 l2)))
 
   (local (defthmd sets-membership-hack
-           (implies (and (sets::setp x)
+           (implies (and (set::setp x)
                          (syntaxp (not (quotep x))))
                     (iff (member-equal a x)
-                         (sets::in a x)))
+                         (set::in a x)))
            :hints(("Goal"
-                   :in-theory (enable* (:ruleset sets::primitive-rules))))))
+                   :in-theory (enable* (:ruleset set::primitive-rules))))))
 
   (local (defthm in-lsb-bits
-           (equal (sets::in a (lsb-bits n x))
+           (equal (set::in a (lsb-bits n x))
                   (and (natp a)
                        (<= (nfix n) a)
                        (logbitp (- a (nfix n)) (nfix x))))
@@ -1215,19 +1215,19 @@ gl::gl).</p>"
                    :use ((:instance logcount-is-len-lsb-bits (n 0)))))))
 
   (local (defthm cardinality-is-len
-           (implies (sets::setp x)
-                    (equal (sets::cardinality x)
+           (implies (set::setp x)
+                    (equal (set::cardinality x)
                            (len x)))
-           :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules))))))
+           :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules))))))
 
   (local (defthm logcount-is-cardinality-of-bitset-members
            (implies (natp x)
                     (equal (logcount x)
-                           (sets::cardinality (bitset-members x))))))
+                           (set::cardinality (bitset-members x))))))
 
   (defthm bitset-cardinality-removal
     (equal (bitset-cardinality x)
-           (sets::cardinality (bitset-members x)))
+           (set::cardinality (bitset-members x)))
     :hints(("Goal" :in-theory (enable bitset-cardinality)))))
 
 

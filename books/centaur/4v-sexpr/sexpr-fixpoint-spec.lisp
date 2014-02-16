@@ -26,8 +26,8 @@
 (include-book "sexpr-advanced")
 (include-book "misc/bash" :dir :system)
 
-(local (in-theory (disable sets::double-containment
-                           sets::nonempty-means-set)))
+(local (in-theory (disable set::double-containment
+                           set::nonempty-means-set)))
 
 (set-default-hints '('(:do-not-induct t)))
 

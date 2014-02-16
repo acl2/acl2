@@ -51,13 +51,13 @@
                            :proper t)
 
 ;;jared's oset implementation
-(defun sets::non-empty-setp (x)
+(defun set::non-empty-setp (x)
   (declare (xargs :guard t))
-  (and (sets::setp x)
-       (not (sets::empty x))))
+  (and (set::setp x)
+       (not (set::empty x))))
 
-(register-data-constructor (SETS::non-empty-setp SETS::insert)
-                           ((allp SETS::head) (sets::setp SETS::tail))
+(register-data-constructor (SET::non-empty-setp SET::insert)
+                           ((allp SET::head) (set::setp SET::tail))
                            :proper nil)
 
 

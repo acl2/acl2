@@ -342,7 +342,7 @@
             (e/d* (g-if-fn)
                   (not code-char-s
                    equal-of-booleans-rewrite
-                   sets::double-containment
+                   set::double-containment
                    g-code-char-of-number
                    mv-nth-cons-meta
                    bfr-assume-correct

@@ -53,6 +53,10 @@ strengthening rewrite rules by removing hypotheses.</p>"
     (equal (equal (final-cdr x) nil)
            (true-listp x)))
 
+  (defthm equal-of-final-cdr-and-self
+    (equal (equal x (final-cdr x))
+           (atom x)))
+
   (defthm final-cdr-of-append
     (equal (final-cdr (append x y))
            (final-cdr y)))

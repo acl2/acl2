@@ -60,7 +60,7 @@
 ;; lets us split the list in two (1) without doing any arithmetic, which can be
 ;; expensive since we can't use fixnum declarations, and (2) while consing only
 ;; (1/2)n times, where n is the length of the list.  This splitting function
-;; performs well, handily beating SETS::split-list from the ordered sets books
+;; performs well, handily beating SET::split-list from the ordered sets books
 ;; on a large list of symbols we used to test it.
 
 (defund halve-list-aux (mid x acc)
@@ -316,7 +316,7 @@
 
 
 ;; Our mergesort seems to be perform pretty well.  It is faster than ACL2's
-;; SETS::mergesort in an experiment involving a long list of symbols; taking
+;; SET::mergesort in an experiment involving a long list of symbols; taking
 ;; only 2.26 seconds and 308 MB of memory instead of 3.60 seconds and 584 MB.
 ;; It also slightly beat ACL2::<<-sort (from books/defsort/uniquep) on time,
 ;; 2.26 seconds versus 2.8 seconds, but ACL2::<<-sort seemed to use only about

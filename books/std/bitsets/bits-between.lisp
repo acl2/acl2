@@ -217,9 +217,9 @@ bitset-members).</p>"
     (local (defthm l0
              (implies (and (natp a)
                            (natp b))
-                      (equal (sets::<< a b)
+                      (equal (set::<< a b)
                              (< a b)))
-             :hints(("Goal" :in-theory (enable sets::<< lexorder alphorder)))))
+             :hints(("Goal" :in-theory (enable set::<< lexorder alphorder)))))
 
     (local (defthm l1
              (equal (natp (car (bits-between n m x)))
@@ -233,20 +233,20 @@ bitset-members).</p>"
              :rule-classes ((:linear))))
 
     (defthm setp-of-bits-between
-      (sets::setp (bits-between n m x))
-      :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules))))))
+      (set::setp (bits-between n m x))
+      :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules))))))
 
   (encapsulate
     ()
     (local (defthmd sets-membership-hack
-             (implies (and (sets::setp x)
+             (implies (and (set::setp x)
                            (syntaxp (not (quotep x))))
                       (iff (member-equal a x)
-                           (sets::in a x)))
-             :hints(("Goal" :in-theory (enable sets::in-to-member)))))
+                           (set::in a x)))
+             :hints(("Goal" :in-theory (enable set::in-to-member)))))
 
     (defthm in-of-bits-between
-      (equal (sets::in a (bits-between n m x))
+      (equal (set::in a (bits-between n m x))
              (and (natp a)
                   (<= (nfix n) a)
                   (< a (nfix m))
@@ -279,7 +279,7 @@ bitset-members).</p>"
            ; integerp-minus-x
            append
            not
-           sets::double-containment
+           set::double-containment
            ; normalize-terms-such-as-a/a+b-+-b/a+b
            ; normalize-addends
            acl2::default-+-1

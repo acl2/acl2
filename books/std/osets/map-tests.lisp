@@ -24,11 +24,11 @@
 
 
 
-(SETS::map-function (integerp x))
+(SET::map-function (integerp x))
 
-(assert! (equal (SETS::map<integerp> '(1 2 3)) '(t)))
+(assert! (equal (SET::map<integerp> '(1 2 3)) '(t)))
 
-(assert! (equal (SETS::map-list<integerp> '(1 a 2 b))
+(assert! (equal (SET::map-list<integerp> '(1 a 2 b))
                 '(t nil t nil)))
 
 
@@ -36,15 +36,15 @@
   (declare (xargs :guard t))
   (* (rfix x) (rfix x)))
 
-(SETS::map-function (square x))
+(SET::map-function (square x))
 
-(assert! (equal (SETS::map<square> '(1 2 3)) '(1 4 9)))
-(assert! (equal (SETS::map<square> '(a b c)) '(0)))
+(assert! (equal (SET::map<square> '(1 2 3)) '(1 4 9)))
+(assert! (equal (SET::map<square> '(a b c)) '(0)))
 
 
 ; Make sure packages in-package works
 
-(SETS::map-function (square x)
+(SET::map-function (square x)
                     :in-package-of instance::foo)
 
 
@@ -56,7 +56,7 @@
      (rfix offset)))
 
 
-(SETS::map-function (square-then-add input offset)
+(SET::map-function (square-then-add input offset)
                     :in-package-of computed-hints::foo)
 
 (assert! (equal (COMPUTED-HINTS::map<square-then-add> '(1 2 3) 5)
@@ -69,10 +69,10 @@
   (declare (xargs :guard (and (integerp x) (rationalp y))))
   (+ x y))
 
-(sets::quantify-predicate (integerp x)
+(set::quantify-predicate (integerp x)
                           :in-package-of defthm)
 
-(sets::map-function (plus arg1 arg2)
+(set::map-function (plus arg1 arg2)
                     :in-package-of defthm
                     :set-guard ((all<integerp> ?set))        ; set's name must be ?set
                     :list-guard ((all-list<integerp> ?list)) ; list's name must be ?list

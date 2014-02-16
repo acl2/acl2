@@ -54,7 +54,7 @@
 
 (in-package "SET")
 (include-book "primitives")
-(include-book "computed-hints")
+(include-book "std/osets/computed-hints" :dir :system)
 (set-verify-guards-eagerness 2)
 
 

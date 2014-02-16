@@ -149,7 +149,7 @@ either the orignames or names of the modules to their related warnings.</p>"
                   (vl-warninglist-p (cdr a))
                   (vl-modwarningalist-p x))
              (vl-modwarningalist-p (insert a x)))
-    :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)))))
+    :hints(("Goal" :in-theory (enable (:ruleset set::primitive-rules)))))
 
   (defthm vl-modwarningalist-p-of-mergesort
     (implies (force (vl-modwarningalist-p x))

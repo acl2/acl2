@@ -89,10 +89,10 @@
 
 ;This might be needed for termination arguments for SETS
 (defthm non-nil-=>-not-empty
-  (implies (and (sets::setp v)
+  (implies (and (set::setp v)
                 (not (equal v nil)))
-           (not (sets::empty v)))
-  :hints (("Goal" :in-theory (enable sets::empty)))
+           (not (set::empty v)))
+  :hints (("Goal" :in-theory (enable set::empty)))
   :rule-classes :forward-chaining)
 
 ;; (defthm good-map-implies-not-ifmp

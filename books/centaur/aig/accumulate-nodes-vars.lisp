@@ -23,7 +23,7 @@
 (include-book "aig-vars-ext")
 (include-book "centaur/misc/alist-equiv" :dir :system)
 
-(local (in-theory (disable sets::double-containment)))
+(local (in-theory (disable set::double-containment)))
 
 ;; In this file, we prove that three ways of computing the set of non-negated
 ;; nodes in an AIG are equivalent.  We will ultimately use this to prove that

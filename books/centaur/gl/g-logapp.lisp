@@ -354,7 +354,7 @@
                                      eval-g-base-alt-def
                                      components-to-number-alt-def
                                      hons-assoc-equal
-                                     sets::double-containment
+                                     set::double-containment
                                      equal-of-booleans-rewrite
                                      bfr-eval-list
                                      acl2::cancel_times-equal-correct

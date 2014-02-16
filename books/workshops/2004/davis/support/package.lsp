@@ -42,7 +42,7 @@
   	      *common-lisp-symbols-from-main-lisp-package*)))
 
 
-(defpkg "SETS"
+(defpkg "SET"
   (set-difference-equal (union-eq '(lexorder
 				    COMPUTED-HINTS::rewriting-goal-lit
 				    COMPUTED-HINTS::rewriting-conc-lit)

@@ -291,7 +291,7 @@ straightforward, right-associative manner.</p>"
            ;; atoms.  The 4v-sexpr-vars function could get confused if NIL was
            ;; permitted, for instance.
            (implies (vl-emodwirelist-p args)
-                    (equal (sets::in a (acl2::4v-sexpr-vars (vl-make-res-sexpr args)))
+                    (equal (set::in a (acl2::4v-sexpr-vars (vl-make-res-sexpr args)))
                            (if (member-equal a args)
                                t
                              nil)))
@@ -303,7 +303,7 @@ straightforward, right-associative manner.</p>"
   (defthm 4v-sexpr-vars-of-vl-make-res-sexpr
     (implies (force (vl-emodwirelist-p args))
              (equal (acl2::4v-sexpr-vars (vl-make-res-sexpr args))
-                    (sets::mergesort args)))
+                    (set::mergesort args)))
     :hints((set-reasoning))))
 
 

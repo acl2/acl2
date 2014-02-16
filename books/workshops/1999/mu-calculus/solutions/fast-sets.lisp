@@ -26,17 +26,17 @@
 
 (defthm append-==-set-union
   (== (append X Y)
-      (set::set-union X Y)))
+      (sets::set-union X Y)))
 
 (local 
  (defthm intersect-aux-set-intersect
    (== (intersect-aux X Y Z)
-       (append (set::intersect X Y) Z))))
+       (append (sets::intersect X Y) Z))))
 
 ; Exercise 9
 (defthm fast-intersect-is-set-intersect
   (== (intersect X Y)
-      (set::intersect X Y)))
+      (sets::intersect X Y)))
 
 (defung minus-t (X Y Z)
   (declare (xargs :guard (and (true-listp X) (true-listp Y) (true-listp Z))))
@@ -54,12 +54,12 @@
 
 (local (defthm minus-t-minus
          (== (minus-t X Y Z)
-             (append (set::minus X Y) Z))))
+             (append (sets::minus X Y) Z))))
 
 ; Exercise 10, part 2
 (defthm fast-minus-is-minus
   (== (minus X Y)
-      (set::minus X Y)))
+      (sets::minus X Y)))
 
 (defun set-complement (X U)
   "complement set X (ie. U\X)"
@@ -100,12 +100,12 @@
  (defthm set-union-sets-set-union
    (implies (in a Y)
             (== (cons a (set-union X Y))
-                (set::set-union X Y)))))
+                (sets::set-union X Y)))))
 
 ; Exercise 8
 (defthm fast-set-union-is-set-union
   (== (set-union X Y)
-      (set::set-union X Y)))
+      (sets::set-union X Y)))
 
 (defun remove-dups (X)
 ; removes duplicates in x.
@@ -119,7 +119,7 @@
 (local 
  (defthm remove-dups-is-remove-dups
    (== (remove-dups X)
-       (set::remove-dups X))))
+       (sets::remove-dups X))))
 
 (defthm no-dups-set-union
   (implies (no-dups X)
@@ -127,15 +127,15 @@
 
 (defthm remove-dups-is-remove-dups2
   (perm (remove-dups X)
-        (set::rem-dups X))
+        (sets::rem-dups X))
   :hints (("Goal" 
-           :use ((:instance set::no-dups-perm 
+           :use ((:instance sets::no-dups-perm 
                             (x (remove-dups x) )
-                            (y (set::rem-dups x)))))))
+                            (y (sets::rem-dups x)))))))
 
 ; Exercise 11
 (defthm fast-cardinality-is-cardinality
   (equal (cardinality X)
-         (set::cardinality X)))
+         (sets::cardinality X)))
 
 (in-theory (disable intersect minus set-union cardinality remove-dups))

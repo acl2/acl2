@@ -386,7 +386,7 @@
 ;;   ;;                            (:t acl2::logcons-type)
 ;;   ;;                            iff xor not
 ;;   ;;                            equal-of-booleans-rewrite
-;;   ;;                            sets::double-containment
+;;   ;;                            set::double-containment
 ;;   ;;                            boolean-list-bfr-eval-list-const)))
 
 ;;   ;; (local (defthm open-+-ss-rec

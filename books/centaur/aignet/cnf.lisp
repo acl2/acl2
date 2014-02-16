@@ -116,7 +116,7 @@ correctness criterion we've described.</p>
 
 (local (in-theory (disable acl2::nth-with-large-index
                            nth update-nth
-                           sets::double-containment)))
+                           set::double-containment)))
 
 (local (defthmd equal-1-by-bitp
          (implies (acl2::bitp x)

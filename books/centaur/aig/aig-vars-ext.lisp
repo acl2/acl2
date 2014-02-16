@@ -1108,7 +1108,7 @@ NIL
 (defun map-mergesort (x)
   (if (Atom x)
       nil
-    (cons (sets::mergesort (car x))
+    (cons (set::mergesort (car x))
           (map-mergesort (cdr x)))))
 
 (defun equal-mergesorts (x y)
@@ -1124,7 +1124,7 @@ NIL
 
 
 
-(sets::mergesort
+(set::mergesort
  (n-counts (map-len (map-aig-vars-smarter7 (alist-vals (@m
                                                         :reduced-prop-aigtab))))
            nil))
@@ -1135,9 +1135,9 @@ NIL
 (len *var-sets*)
 
 (defconst *sorted-var-set-set*
-  (sets::mergesort (map-mergesort *var-sets*)))
+  (set::mergesort (map-mergesort *var-sets*)))
 
-(sets::mergesort (n-counts (map-len *sorted-var-set-set*) nil))
+(set::mergesort (n-counts (map-len *sorted-var-set-set*) nil))
 
 
 

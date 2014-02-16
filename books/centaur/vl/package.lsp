@@ -35,7 +35,7 @@
    (multi-union-eq
     std::*std-exports*
     getopt::*getopt-exports*
-    sets::*sets-exports*
+    set::*sets-exports*
     nrev::*nrev-exports*
     acl2::*acl2-exports*
     acl2::*common-lisp-symbols-from-main-lisp-package*

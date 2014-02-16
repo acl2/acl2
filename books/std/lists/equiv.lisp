@@ -21,8 +21,12 @@
 
 (in-package "ACL2")
 (include-book "list-fix")
+(include-book "rev")
+(local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "take"))
 (local (include-book "arithmetic/top" :dir :system))
+(local (include-book "append"))
+
 
 ; [Jared]: I split these out of centaur/misc/lists.lisp.  I tried to mainly
 ; keep the rules about list-equiv and how it relates to built-in functions.
@@ -112,48 +116,62 @@ functions."
   (defcong list-equiv list-equiv (nthcdr n x) 2)
   (defcong list-equiv list-equiv (update-nth n v x) 3)
 
-  (local (defun cdr-cdr-ind (x y)
-           (declare (xargs :measure (+ (len x) (len y))))
-           (if (and (atom x) (atom y))
-               nil
-             (cdr-cdr-ind (cdr x) (cdr y)))))
-
-  (defcong list-equiv equal      (consp x)     1 :hints (("Goal" :induct (cdr-cdr-ind x x-equiv))))
-  (defcong list-equiv equal      (len x)       1 :hints (("Goal" :induct (cdr-cdr-ind x x-equiv))))
-  (defcong list-equiv equal      (append x y)  1 :hints (("Goal" :induct (cdr-cdr-ind x x-equiv))))
+  (defcong list-equiv equal      (consp x)     1 :hints (("Goal" :induct (cdr-cdr-induct x x-equiv))))
+  (defcong list-equiv equal      (len x)       1 :hints (("Goal" :induct (cdr-cdr-induct x x-equiv))))
+  (defcong list-equiv equal      (append x y)  1 :hints (("Goal" :induct (cdr-cdr-induct x x-equiv))))
   (defcong list-equiv list-equiv (append x y)  2)
-  (defcong list-equiv list-equiv (member k x)  2 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
-  (defcong list-equiv iff        (member k x)  2 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
-  (defcong list-equiv equal      (subsetp x y) 1 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
-  (defcong list-equiv equal      (subsetp x y) 2 :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
-  (defcong list-equiv equal      (remove a x)  2 :hints (("Goal" :induct (cdr-cdr-ind x x-equiv))))
+  (defcong list-equiv list-equiv (member k x)  2 :hints(("Goal" :induct (cdr-cdr-induct x x-equiv))))
+  (defcong list-equiv iff        (member k x)  2 :hints(("Goal" :induct (cdr-cdr-induct x x-equiv))))
+  (defcong list-equiv equal      (subsetp x y) 1 :hints(("Goal" :induct (cdr-cdr-induct x x-equiv))))
+  (defcong list-equiv equal      (subsetp x y) 2 :hints(("Goal" :induct (cdr-cdr-induct x x-equiv))))
+  (defcong list-equiv equal      (remove a x)  2 :hints (("Goal" :induct (cdr-cdr-induct x x-equiv))))
   (defcong list-equiv equal      (resize-list lst n default) 1)
 
   (defcong list-equiv equal (revappend x y) 1
-    :hints (("Goal" :induct (and (cdr-cdr-ind x x-equiv)
+    :hints (("Goal" :induct (and (cdr-cdr-induct x x-equiv)
                                  (revappend x y)))))
 
   (defcong list-equiv list-equiv (revappend x y) 2)
 
   (defcong list-equiv equal (butlast lst n) 1
-    :hints(("Goal" :induct (cdr-cdr-ind lst lst-equiv))))
+    :hints(("Goal" :induct (cdr-cdr-induct lst lst-equiv))))
 
   (defcong list-equiv list-equiv (last x) 1
-    :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
+    :hints(("Goal" :induct (cdr-cdr-induct x x-equiv))))
 
   (defcong list-equiv list-equiv (make-list-ac n val ac) 3)
 
   (defcong list-equiv equal (take n x) 2
     :hints(("Goal"
             :induct (and (take n x)
-                         (cdr-cdr-ind x x-equiv)))))
+                         (cdr-cdr-induct x x-equiv)))))
 
   (defcong list-equiv equal (take n x) 2)
 
   (defcong list-equiv equal (no-duplicatesp-equal x) 1
-    :hints(("Goal" :induct (cdr-cdr-ind x x-equiv))))
+    :hints(("Goal" :induct (cdr-cdr-induct x x-equiv))))
 
   (defcong list-equiv equal (string-append-lst x) 1
-    :hints(("Goal" :induct (cdr-cdr-ind x x-equiv)))))
+    :hints(("Goal" :induct (cdr-cdr-induct x x-equiv)))))
 
+
+(defsection list-equiv-reductions
+  :parents (list-equiv)
+  :short "Lemmas for reducing @(see list-equiv) terms involving basic functions."
+
+   (defthm list-equiv-of-cons-and-cons
+     (equal (list-equiv (cons a x) (cons a y))
+            (list-equiv x y)))
+
+   (defthm list-equiv-of-append-and-append
+     (equal (list-equiv (append a x) (append a y))
+            (list-equiv x y)))
+
+   (defthm list-equiv-of-revappend-and-revappend
+     (equal (list-equiv (revappend a x) (revappend a y))
+            (list-equiv x y)))
+
+   (defthm list-equiv-of-rev-and-rev
+     (equal (list-equiv (rev x) (rev y))
+            (list-equiv x y))))
 

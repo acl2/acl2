@@ -1,4 +1,4 @@
-(in-package "SETS")
+(in-package "SET")
 
 ;;;;;;;;;;;;;;;; Tests for ACL2 parallelization paper ;;;;;;;;;;;;;
 
@@ -31,44 +31,44 @@
 
 #|
 (skip-proofs
- (defun SETS::mergesort-exec (x)
+ (defun SET::mergesort-exec (x)
    (declare (xargs :guard t))
    (cond ((endp x) nil)
-         ((endp (cdr x)) (SETS::insert (car x) nil))
+         ((endp (cdr x)) (SET::insert (car x) nil))
          (t (mv-let (part1 part2)
-                    (SETS::halve-list x)
-                    (SETS::union (SETS::mergesort-exec part1) 
-                                 (SETS::mergesort-exec part2)))))))
+                    (SET::halve-list x)
+                    (SET::union (SET::mergesort-exec part1) 
+                                 (SET::mergesort-exec part2)))))))
 |#
 
 ;; (princ$ "Non parallel version is in effect" *standard-co* state)
 
-;; (time$ (prog2$ (SETS::mergesort-exec *my-ints*) t))
-;; (time$ (prog2$ (SETS::mergesort-exec *my-ints*) t))
-;; (time$ (prog2$ (SETS::mergesort-exec *my-ints*) t))
+;; (time$ (prog2$ (SET::mergesort-exec *my-ints*) t))
+;; (time$ (prog2$ (SET::mergesort-exec *my-ints*) t))
+;; (time$ (prog2$ (SET::mergesort-exec *my-ints*) t))
 
 (skip-proofs
- (defun SETS::mergesort-exec-par (x depth)
+ (defun SET::mergesort-exec-par (x depth)
    (declare (xargs :guard 
 
 ; This guard is insufficient, so the above skip-proofs is clearly unsound.
 
                    t))
    (cond ((endp x) nil)
-         ((endp (cdr x)) (SETS::insert (car x) nil))
+         ((endp (cdr x)) (SET::insert (car x) nil))
          (t (mv-let (part1 part2)
-                    (SETS::halve-list x)
+                    (SET::halve-list x)
                     (ACL2::pargs ; was pcall in the paper 
                      (declare (granularity (< depth 2)))
-                     (SETS::union (SETS::mergesort-exec-par part1
+                     (SET::union (SET::mergesort-exec-par part1
                                                         (1+ depth))
-                                  (SETS::mergesort-exec-par part2
+                                  (SET::mergesort-exec-par part2
                                                         (1+ depth)))))))))
 
 ;; (princ$ "Parallel version with depth granularity is in effect" *standard-co* state)
-;; (time$ (prog2$ (SETS::mergesort-exec-par *my-ints* 0) t))
-;; (time$ (prog2$ (SETS::mergesort-exec-par *my-ints* 0) t))
-;; (time$ (prog2$ (SETS::mergesort-exec-par *my-ints* 0) t))
+;; (time$ (prog2$ (SET::mergesort-exec-par *my-ints* 0) t))
+;; (time$ (prog2$ (SET::mergesort-exec-par *my-ints* 0) t))
+;; (time$ (prog2$ (SET::mergesort-exec-par *my-ints* 0) t))
 
 #|
 
@@ -77,9 +77,9 @@
 ACL2 !>
 (princ$ "Non parallel version is in effect" *standard-co* state)
 
-(time$ (prog2$ (SETS::mergesort-exec *my-ints*) t))
-(time$ (prog2$ (SETS::mergesort-exec *my-ints*) t))
-(time$ (prog2$ (SETS::mergesort-exec *my-ints*) t))
+(time$ (prog2$ (SET::mergesort-exec *my-ints*) t))
+(time$ (prog2$ (SET::mergesort-exec *my-ints*) t))
+(time$ (prog2$ (SET::mergesort-exec *my-ints*) t))
 Non parallel version is in effect<state>
 ACL2 !>
 (EV-REC (FARGN FORM 1) ALIST W (DECREMENT-BIG-N BIG-N) SAFE-MODE GC-OFF LATCHES HARD-ERROR-RETURNS-NILP) took 24,771 milliseconds (24.771 seconds) to run.
@@ -109,9 +109,9 @@ T
 ; snip: pasted the parallel version
 
 ACL2 !>(princ$ "Parallel version with depth granularity is in effect" *standard-co* state)
-(time$ (prog2$ (SETS::mergesort-exec-par *my-ints* 0) t))
-(time$ (prog2$ (SETS::mergesort-exec-par *my-ints* 0) t))
-(time$ (prog2$ (SETS::mergesort-exec-par *my-ints* 0) t))
+(time$ (prog2$ (SET::mergesort-exec-par *my-ints* 0) t))
+(time$ (prog2$ (SET::mergesort-exec-par *my-ints* 0) t))
+(time$ (prog2$ (SET::mergesort-exec-par *my-ints* 0) t))
 
 Parallel version with depth granularity is in effect<state>
 ACL2 !>

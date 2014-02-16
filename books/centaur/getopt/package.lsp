@@ -28,7 +28,7 @@
              (union-eq *acl2-exports*
                        *common-lisp-symbols-from-main-lisp-package*)
              '(union delete))
-            sets::*sets-exports*
+            set::*sets-exports*
             std::*std-exports*
             '(;; Things we want to "export", for nicer use from other
               ;; packages.

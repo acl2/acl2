@@ -35,7 +35,8 @@
 ; We need some program-mode definitions which are used in order to
 ; automate the pick-a-point strategies.
 
-(include-book "computed-hints")
+(include-book "tools/rulesets" :dir :system)
+(include-book "std/osets/computed-hints" :dir :system)
 
 ; The definitions in this file are redundant from the local include
 ; books.  This approach has several advantages.

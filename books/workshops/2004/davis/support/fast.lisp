@@ -48,7 +48,7 @@
 
 |#
 
-(in-package "SETS")
+(in-package "SET")
 (include-book "membership")
 (set-verify-guards-eagerness 2)
 

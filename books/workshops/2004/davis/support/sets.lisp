@@ -27,7 +27,7 @@
 
 |#
 
-(in-package "SETS")
+(in-package "SET")
 (set-verify-guards-eagerness 2)
 
 

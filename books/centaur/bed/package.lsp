@@ -23,12 +23,12 @@
 (defpkg "BED"
   (set-difference-eq
    (union-eq std::*std-exports*
-             sets::*sets-exports*
+             set::*sets-exports*
              acl2::*acl2-exports*
              acl2::*common-lisp-symbols-from-main-lisp-package*
-             '(sets::enable
-               sets::disable
-               sets::e/d
+             '(set::enable
+               set::disable
+               set::e/d
                str::cat
                str::natstr
                str::implode

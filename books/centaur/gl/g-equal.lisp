@@ -190,7 +190,7 @@
            (t (gret (g-apply 'equal (gl-list a b))))))
   :hyp-hints `(("goal" :induct ,gcall
                 :in-theory (disable (:d ,gfn)
-                                    sets::double-containment
+                                    set::double-containment
                                     eval-g-base-alt-def
                                     equal-of-booleans-rewrite)
                 :expand ((:free (hyp) ,gcall)
@@ -391,7 +391,7 @@
                      (general-concretep)
                      (kwote-lst)
                      logcons
-                     sets::double-containment
+                     set::double-containment
                      bfr-list->s
                      bfr-list->u
                      eval-g-base-alt-def))))

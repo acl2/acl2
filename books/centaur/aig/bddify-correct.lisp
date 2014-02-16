@@ -1744,7 +1744,7 @@
 
 (defun assign-for-bdd-al (bdd-al vars n)
   (assign-for-bdd-al-rec bdd-al (lengthen-to-n vars n)))
-  
+
 (local
  (progn
    (defthm len-assign-for-bdd-al-rec
@@ -1767,7 +1767,8 @@
                    (<= (len vars) (nfix n)))
               (equal (eval-bdd x (assign-for-bdd-al bdd-al vars n))
                      (eval-bdd x vars)))
-     :rule-classes ((:rewrite :backchain-limit-lst 2)))
+     :rule-classes ((:rewrite :backchain-limit-lst 2))
+     :hints(("Goal" :in-theory (disable append-of-nil))))
 
    (in-theory (disable assign-for-bdd-al cons-make-list))
 
@@ -2504,7 +2505,7 @@
                          aig-q-compose-of-var
                          aig-q-compose-of-not-under-bdd-equiv
                          aig-q-compose-of-and-under-bdd-equiv
-                         sets::double-containment
+                         set::double-containment
                          bdd-impl-transitive-2
                          bdd-impl-transitive-1
                          qv ;;qv-+1
@@ -2692,7 +2693,7 @@
                              ;and-bddify-var-weakening-suffixp-rw
                              suffixp
                              aig-bddify-var-weakening
-                             sets::double-containment
+                             set::double-containment
                              aig-bddify-var-weakening-cache-insert
                              abs-fmemo-okp abs-memo-okp
                              ;; aig-bddify-var-weakening-cache-lookup

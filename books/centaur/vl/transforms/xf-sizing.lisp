@@ -1769,7 +1769,7 @@ produce unsigned values.</li>
 
   (local (in-theory (enable member-equal-when-member-equal-of-cdr-under-iff
                             vl-warninglist-p-when-subsetp-equal
-                            sets::double-containment)))
+                            set::double-containment)))
 
   (defthm vl-exprlist-typedecide-aux-when-atom
     (implies (atom x)
@@ -4108,7 +4108,7 @@ context-determined expressions."
 
 
 (local (acl2::def-ruleset! extra-disables
-                           '(sets::double-containment
+                           '(set::double-containment
                             (:type-prescription member-equal)
                             acl2::member-of-cons
                             member-equal-when-member-equal-of-cdr-under-iff
@@ -4234,7 +4234,7 @@ context-determined expressions."
                              (:ruleset tag-reasoning)
                              (:rules-of-class :linear :here)
                              (:rules-of-class :type-prescription :here)
-                             sets::double-containment
+                             set::double-containment
                              default-car
                              default-cdr
                              natp-when-member-equal-of-nat-listp
@@ -4314,7 +4314,7 @@ context-determined expressions."
 
   (local (in-theory (disable
                      MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
-                     sets::double-containment
+                     set::double-containment
                      ACL2::TRUE-LISTP-MEMBER-EQUAL
                      (:ruleset tag-reasoning)
                      (:ruleset basic-arithmetic-rules)
@@ -4408,7 +4408,7 @@ context-determined expressions."
   ;; Speed hint
   (local (in-theory (disable
                      (:rules-of-class :type-prescription :here)
-                     sets::double-containment
+                     set::double-containment
                      default-car
                      default-cdr
                      vl-module-p-when-wrong-tag

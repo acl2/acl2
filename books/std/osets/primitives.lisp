@@ -14,7 +14,7 @@
 
 ; primitives.lisp - setp, sfix, head, tail, etc.
 
-(in-package "SETS")
+(in-package "SET")
 (include-book "misc/total-order" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/top" :dir :system)
@@ -311,7 +311,7 @@ following loop:</p>
  (let ((acc nil))
   (gc$)
   (time$ (loop for i fixnum from 1 to 10000 do
-               (setq acc (sets::insert i acc)))))
+               (setq acc (set::insert i acc)))))
 })"
 
   (local (in-theory (disable nonempty-means-set

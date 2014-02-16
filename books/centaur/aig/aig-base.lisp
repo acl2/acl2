@@ -282,10 +282,10 @@ aig-vars-1pass) are often much more practical.</p>"
   (aig-cases x
     :true  nil
     :false nil
-    :var   (mbe :logic (sets::insert x nil)
+    :var   (mbe :logic (set::insert x nil)
                 :exec (hons x nil))
     :inv   (aig-vars (car x))
-    :and   (mbe :logic (sets::union (aig-vars (car x))
+    :and   (mbe :logic (set::union (aig-vars (car x))
                                     (aig-vars (cdr x)))
                 :exec (hons-alphorder-merge (aig-vars (car x))
                                             (aig-vars (cdr x)))))
@@ -298,11 +298,11 @@ aig-vars-1pass) are often much more practical.</p>"
     :rule-classes :type-prescription)
 
   (defthm setp-aig-vars
-    (sets::setp (aig-vars x))
-    :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))
+    (set::setp (aig-vars x))
+    :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules)))))
 
   (verify-guards aig-vars
-    :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))
+    :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules)))))
 
   (memoize 'aig-vars :condition '(and (consp x) (cdr x))))
 

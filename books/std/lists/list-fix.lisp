@@ -102,4 +102,8 @@ common @(see equivalence) relation.</p>"
 
   (defthm last-of-list-fix
     (equal (last (list-fix x))
-           (list-fix (last x)))))
+           (list-fix (last x))))
+
+  (defthm equal-of-list-fix-and-self
+    (equal (equal x (list-fix x))
+           (true-listp x))))

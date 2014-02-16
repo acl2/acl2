@@ -396,9 +396,9 @@ of which recognizers require true-listp and which don't.</p>")
                     (member a x))
            :hints(("Goal"
                    :do-not-induct t
-                   :use ((:instance sets::in-to-member
-                                    (sets::a a)
-                                    (sets::x (sfix x))))))))
+                   :use ((:instance set::in-to-member
+                                    (set::a a)
+                                    (set::x (sfix x))))))))
 
   (defthmd deflist-lemma-subsetp-of-intersect
     (and (subsetp-equal (intersect x y) x)
@@ -463,16 +463,16 @@ of which recognizers require true-listp and which don't.</p>")
     acl2::list-fix-when-not-consp
     acl2::list-fix-when-true-listp
     acl2::list-fix-of-cons
-    sets::sets-are-true-lists
-    sets::mergesort-set
-    sets::union-set
-    sets::intersect-set
-    sets::difference-set
+    set::sets-are-true-lists
+    set::mergesort-set
+    set::union-set
+    set::intersect-set
+    set::difference-set
     acl2::set-equiv-implies-equal-subsetp-1
     acl2::set-equiv-implies-equal-subsetp-2
     acl2::subsetp-refl
     acl2::list-fix-under-list-equiv
-    sets::mergesort-under-set-equiv
+    set::mergesort-under-set-equiv
     acl2::binary-append-without-guard))
 
 
@@ -1028,7 +1028,7 @@ of which recognizers require true-listp and which don't.</p>")
             :hints(("Goal" :do-not-induct t)))
 
           (defthm ,(mksym name '-of-sfix)
-            ;; This rule is important for sets::under-set-equiv rules to work
+            ;; This rule is important for set::under-set-equiv rules to work
             ;; right in the context of a foo-listp.
             (implies (,name ,@(subst `(double-rewrite ,x) x formals))
                      (equal (,name ,@(subst `(sfix ,x) x formals))
@@ -1094,7 +1094,7 @@ of which recognizers require true-listp and which don't.</p>")
                                (,name ,@(subst `(union ,x ,y) x formals)))
                       :hints(("Goal"
                               :do-not-induct t
-                              :in-theory (disable sets::union-under-set-equiv
+                              :in-theory (disable set::union-under-set-equiv
                                                   deflist-lemma-subsetp-of-union)
                               :use ((:instance deflist-lemma-subsetp-of-union
                                                (x ,x)

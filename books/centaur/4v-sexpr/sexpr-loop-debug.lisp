@@ -187,7 +187,7 @@
 (defund verilog-loop-from-translated-loop (x)
   (declare (xargs :guard t))
   (if (vl::vl-emodwirelist-p x)
-      (sets::mergesort (vl::vl-emodwirelist->basenames x))
+      (set::mergesort (vl::vl-emodwirelist->basenames x))
     (cw "Oops, loop contains mal-formed signals, not trying to convert
          it into Verilog.  ~x0.~%" x)))
 
@@ -208,7 +208,7 @@
 
 (defun verilog-loops-from-translated-loops (x)
   (declare (xargs :guard t))
-  (sets::mergesort (remove-equal nil (verilog-loops-from-translated-loops-aux x))))
+  (set::mergesort (remove-equal nil (verilog-loops-from-translated-loops-aux x))))
 
 (defthm string-list-listp-of-verilog-loops-from-translated-loops
   (vl::string-list-listp (verilog-loops-from-translated-loops x))

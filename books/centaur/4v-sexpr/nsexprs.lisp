@@ -33,21 +33,21 @@
 
 
 (defthm nat-listp-of-insert-strong
-  (implies (sets::setp x)
-           (equal (nat-listp (sets::insert a x))
+  (implies (set::setp x)
+           (equal (nat-listp (set::insert a x))
                   (and (natp a)
                        (nat-listp x))))
-  :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))
+  :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules)))))
 
 (defthm nat-listp-of-union-strong
-  (implies (and (sets::setp x)
-                (sets::setp y))
-           (equal (nat-listp (sets::union x y))
+  (implies (and (set::setp x)
+                (set::setp y))
+           (equal (nat-listp (set::union x y))
                   (and (nat-listp x)
                        (nat-listp y))))
   :hints(("Goal"
-          :in-theory (enable* (:ruleset sets::primitive-rules))
-          :induct (sets::union x y))))
+          :in-theory (enable* (:ruleset set::primitive-rules))
+          :induct (set::union x y))))
 
 
 (defsection 4v-nsexpr-p

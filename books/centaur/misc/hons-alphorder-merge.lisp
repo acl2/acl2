@@ -29,30 +29,30 @@
 
 (defthm atom-of-head
   (implies (atom-listp x)
-           (atom (sets::head x)))
-  :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))
+           (atom (set::head x)))
+  :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules)))))
 
 (defthm atom-listp-of-tail
   (implies (atom-listp x)
-           (atom-listp (sets::tail x)))
-  :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))
+           (atom-listp (set::tail x)))
+  :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules)))))
 
 (defthm atom-listp-of-sfix
   (implies (atom-listp (double-rewrite x))
-           (equal (atom-listp (sets::sfix x))
+           (equal (atom-listp (set::sfix x))
                   t))
-  :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))
+  :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules)))))
 
 (defthm atom-listp-of-insert
   (implies (and (atom a)
                 (atom-listp x))
-           (atom-listp (sets::insert a x)))
-  :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules) sets::insert))))
+           (atom-listp (set::insert a x)))
+  :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules) set::insert))))
 
 (defthm atom-listp-of-union
-  (equal (atom-listp (sets::union x y))
-         (and (atom-listp (sets::sfix x))
-              (atom-listp (sets::sfix y)))))
+  (equal (atom-listp (set::union x y))
+         (and (atom-listp (set::sfix x))
+              (atom-listp (set::sfix y)))))
 
 
 
@@ -72,7 +72,7 @@
 <p>This is used in @(see aig-vars) and @(see 4v-sexpr-vars).</p>
 
 <p>When the inputs happen to be ordered sets, the result is also an ordered set
-and @('hons-alphorder-merge') is nothing more than @(see sets::union).</p>"
+and @('hons-alphorder-merge') is nothing more than @(see set::union).</p>"
 
   (defun hons-alphorder-merge (a b)
     (declare (xargs :guard (and (atom-listp a)
@@ -107,8 +107,8 @@ and @('hons-alphorder-merge') is nothing more than @(see sets::union).</p>"
                 (append a b))
     :hints ((set-reasoning)))
 
-  (local (in-theory (disable sets::insert-under-set-equiv
-                             sets::double-containment
+  (local (in-theory (disable set::insert-under-set-equiv
+                             set::double-containment
                              default-car
                              default-cdr)))
 
@@ -129,77 +129,77 @@ and @('hons-alphorder-merge') is nothing more than @(see sets::union).</p>"
                     (atom-listp (cdr x)))))
 
   (local (defthm l3
-           (implies (and (sets::setp x)
-                         (sets::setp y)
+           (implies (and (set::setp x)
+                         (set::setp y)
                          (atom-listp x)
                          (atom-listp y))
                     (equal (car (hons-alphorder-merge x y))
                            (cond ((atom x) (car y))
                                  ((atom y) (car x))
-                                 ((sets::<< (car y) (car x))
+                                 ((set::<< (car y) (car x))
                                   (car y))
                                  (t
                                   (car x)))))
            :hints(("Goal"
                    :induct (hons-alphorder-merge x y)
                    :in-theory (e/d* (hons-alphorder-merge
-                                     (:ruleset sets::primitive-rules))
+                                     (:ruleset set::primitive-rules))
                                     ;; just speed hints
-                                    (sets::nonempty-means-set
-                                     sets::setp-of-cons
+                                    (set::nonempty-means-set
+                                     set::setp-of-cons
                                      <<-trichotomy
                                      <<-asymmetric
                                      <<-transitive))))))
 
 
   (defthm setp-of-hons-alphorder-merge
-    (implies (and (sets::setp x)
-                  (sets::setp y)
+    (implies (and (set::setp x)
+                  (set::setp y)
                   (atom-listp x)
                   (atom-listp y))
-             (sets::setp (hons-alphorder-merge x y)))
+             (set::setp (hons-alphorder-merge x y)))
     :hints(("Goal"
             :induct (hons-alphorder-merge x y)
             :in-theory (e/d* (hons-alphorder-merge
-                              (:ruleset sets::low-level-rules))
+                              (:ruleset set::low-level-rules))
                              ;; just speed hints
-                             (sets::nonempty-means-set
-                              sets::setp-of-cons
+                             (set::nonempty-means-set
+                              set::setp-of-cons
                               <<-asymmetric
                               <<-transitive
                               )))))
 
   (defthm in-of-hons-alphorder-merge
-    (implies (and (sets::setp x)
-                  (sets::setp y)
+    (implies (and (set::setp x)
+                  (set::setp y)
                   (atom-listp x)
                   (atom-listp y))
-             (equal (sets::in a (hons-alphorder-merge x y))
-                    (or (sets::in a x)
-                        (sets::in a y))))
+             (equal (set::in a (hons-alphorder-merge x y))
+                    (or (set::in a x)
+                        (set::in a y))))
     :hints(("Goal"
             :induct (hons-alphorder-merge x y)
             :in-theory (e/d* (hons-alphorder-merge
-                              (:ruleset sets::low-level-rules))
+                              (:ruleset set::low-level-rules))
                              ;; just speed hints
-                             (sets::subset-in
-                              sets::subsetp
-                              sets::setp-of-cons
-                              sets::nonempty-means-set
-                              sets::in-tail
-                              sets::head-minimal
-                              sets::in-set
+                             (set::subset-in
+                              set::subsetp
+                              set::setp-of-cons
+                              set::nonempty-means-set
+                              set::in-tail
+                              set::head-minimal
+                              set::in-set
                               <<-transitive
                               <<-asymmetric)))))
 
   (defthm hons-alphorder-merge-is-union-for-sets-of-atoms
-    (implies (and (sets::setp x)
-                  (sets::setp y)
+    (implies (and (set::setp x)
+                  (set::setp y)
                   (atom-listp x)
                   (atom-listp y))
              (equal (hons-alphorder-merge x y)
-                    (sets::union x y)))
-    :hints(("Goal" :in-theory (enable sets::double-containment)))))
+                    (set::union x y)))
+    :hints(("Goal" :in-theory (enable set::double-containment)))))
 
 
 
@@ -212,7 +212,7 @@ and @('hons-alphorder-merge') is nothing more than @(see sets::union).</p>"
 ;;   :short "@(call strict-alphorder-sortedp) recognizes @(see atom-listp)s whose
 ;; members are in strict @(see alphorder)."
 
-;;   :long "<p>BOZO this is just sets::setp for atom-lists...</p>"
+;;   :long "<p>BOZO this is just set::setp for atom-lists...</p>"
 
 ;;   (defun strict-alphorder-sortedp (x)
 ;;     (declare (xargs :guard (atom-listp x)))

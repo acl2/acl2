@@ -31,7 +31,7 @@
 
 
 (local (in-theory (disable vl::consp-of-car-when-cons-listp
-                           sets::double-containment
+                           set::double-containment
                            vl::cons-listp-of-cdr-when-cons-listp
                            4v-sexpr-eval)))
 
@@ -268,8 +268,8 @@
                               4v-sexpr-eval
                               4v-sexpr-eval-list
                               4v-unfloat
-                              sets::union
-                              sets::subset
+                              set::union
+                              set::subset
                               consp-under-iff-when-true-listp
                               subsetp-trans2
                               subsetp-when-atom-right

@@ -14,7 +14,7 @@
 
 ; sort.lisp -- a mergesort for constructing sets
 
-(in-package "SETS")
+(in-package "SET")
 (include-book "union")
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "std/lists/rev" :dir :system))

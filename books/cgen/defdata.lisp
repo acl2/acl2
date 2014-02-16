@@ -3472,7 +3472,7 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
     :set
     (cons `(defthm ,(modify-symbol "" tpred "-SETP")
              (implies (,tpred x)
-                      (SETS::setp x))
+                      (SET::setp x))
              :rule-classes ((:forward-chaining)
                             (:rewrite :backchain-limit-lst 1)
                             ))
@@ -3583,7 +3583,7 @@ but ~x0 if not.~%" texp)
        (trans-constituent-type (cadr texp) typid tnames ctx ds$))
       ;;skipped error check.
       (ds$ (add-set-type-support-lemmas-to-ds$ typid ds$)))
-   (mv `(oneof nil (SETS::insert ,ctype1 ,typid)) ds$)))
+   (mv `(oneof nil (SET::insert ,ctype1 ,typid)) ds$)))
  
 ;gives back pre-processed data-type-exp or error
 ;Sig: Any * Sym * Sym-List * Sym * State -> (mv erp trans-dtexp ds$) 

@@ -609,7 +609,7 @@ valp) ")."))))
          :hints(("Goal" :do-not-induct t)))
 
        (defthm ,(mksym name '-of-sfix)
-         ;; This rule is important for sets::under-set-equiv rules to work
+         ;; This rule is important for set::under-set-equiv rules to work
          ;; right in the context of a foo-listp.
          (implies (,name ,@(subst `(double-rewrite ,x) x formals))
                   (equal (,name ,@(subst `(sfix ,x) x formals))
@@ -673,7 +673,7 @@ valp) ")."))))
                             (,name ,@(subst `(union ,x ,y) x formals)))
                    :hints(("Goal"
                            :do-not-induct t
-                           :in-theory (disable sets::union-under-set-equiv
+                           :in-theory (disable set::union-under-set-equiv
                                                deflist-lemma-subsetp-of-union)
                            :use ((:instance deflist-lemma-subsetp-of-union
                                             (x ,x)

@@ -665,7 +665,7 @@
     :hints(("Goal" :in-theory (e/d (mk-g-number-fn)
                                    (i2v n2v
                                         equal-of-booleans-rewrite
-                                        sets::double-containment)))))
+                                        set::double-containment)))))
 
   (defthm-gobj-flag
     (defthm gobj-vars-bounded-of-gobj-to-param-space
