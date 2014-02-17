@@ -51,6 +51,7 @@
 (include-book "symbols")
 
 (defxdoc std/strings
+  :parents (std)
   :short "A library with many useful functions for working with strings, and
 for reasoning about ACL2's built-in string operations and these new
 operations."
