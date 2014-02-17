@@ -12463,7 +12463,7 @@
     ubt-prehistory-fn
     get-declaim-list
     pathname-unix-to-os
-    hcomp-build-from-portcullis
+    hcomp-build-from-state
     defconst-val
     push-warning-frame
     pop-warning-frame
