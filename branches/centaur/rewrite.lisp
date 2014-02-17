@@ -1691,7 +1691,7 @@
 ; pat, respectively.  The next equiv is undefined unless, at a minimum: fn is
 ; equal to the :fn field of pat, first-rev has the same length as the :pre-rev
 ; field of pat, and rest has the same length as the :post field of pat.  So
-; assume that these condiitons hold.  Let s0 be the :unify-subst field of p,
+; assume that these conditions hold.  Let s0 be the :unify-subst field of p,
 ; and let s be the minimal extension of s0 such that pre-rev/s = first-rev and
 ; post/s = rest, if such s exists; otherwise the next equiv does not exist.  If
 ; p is a deep pequiv, then the next equiv is the result of replacing the
@@ -1706,8 +1706,8 @@
 ; The correctness of our implementation relies on the theorems below, whose
 ; proofs we leave to the reader.  The first theorem justifies the addition of a
 ; pequiv to the list of equivalence relations being maintained by the rewriter,
-; while the others justify how a pequiv is used when rewriting an argument of a
-; function call.
+; while the second justifies how a pequiv is used when rewriting an argument of
+; a function call.
 
 ; Patterned Congruence Theorem 1.  Let E be the pequiv corresponding to a
 ; provable patterned congruence rule with outer equivalence e2.  Then for terms
@@ -1906,8 +1906,8 @@
 ; rewrite-if or from the right-hand side of an applied rewrite rule.
 
 ; We conclude this essay by emphasizing that our support for patterned
-; congruence rules is limited, in particular, mainly for the rewriter.  Thus,
-; pequivs fail to be used heuristically in some places that ordinary
+; congruence rules is limited; in particular, it is mainly for the rewriter.
+; Thus, pequivs fail to be used heuristically in some places that ordinary
 ; congruences are used: for example, as in test-3 in community book
 ; books/demos/patterned-congruences.lisp, remove-trivial-equivalences and
 ; fertilize-clause doesn't use patterned congruence rules.  If we decide to add
@@ -2270,7 +2270,7 @@
                       (reduce-geneqv-for-equiv equiv wrld geneqv)
                       (declare (ignore changedp))
                       (cons congruence-rule geneqv)))))))))))))))
-               
+
 (defun geneqv-and-pequiv-info-for-rewrite (fn bkptr rewritten-args-rev args
                                               alist parent-geneqv child-geneqv
                                               deep-pequiv-lst
@@ -6948,38 +6948,57 @@
 ;     the wormhole.  If the test-form returns (value nil), the wormhole
 ;     entry/exit are entirely silent.
 
-  `(wormhole 'brr
-             ,entry-lambda
-             ,input-alist
-             `(pprogn (restore-brr-globals state)
-                      (er-progn
-                       (set-ld-keyword-aliases! ,,aliases)
-                       (set-ld-prompt 'brr-prompt state)
+  (let ((aliases `(append ,aliases
+                          '((:exit
+                             0 (lambda nil
+                                 (prog2$ (cw "The keyword command :EXIT is ~
+                                              disabled inside BRR.  Exit BRR ~
+                                              with :ok or use :p! to pop or ~
+                                              :a! to abort; or exit ACL2 ~
+                                              entirely with ~x0.~%"
+                                             '(exit))
+                                         (value :invisible))))
+                            (:quit
+                             0 (lambda nil
+                                 (prog2$ (cw "The keyword command :QUIT is ~
+                                              disabled inside BRR.  Quit BRR ~
+                                              with :ok or use :p! to pop or ~
+                                              :a! to abort; or quit ACL2 ~
+                                              entirely with ~x0.~%"
+                                             '(quit))
+                                         (value :invisible))))))))
+    `(wormhole 'brr
+               ,entry-lambda
+               ,input-alist
+               `(pprogn (restore-brr-globals state)
+                        (er-progn
+                         (set-ld-keyword-aliases! ,,aliases)
+                         (set-ld-prompt 'brr-prompt state)
 
 ; The above reference to the function symbol brr-prompt is a little startling
 ; because we haven't defined it yet.  But we will define it before we use this
 ; macro.
 
 
-                       (mv-let (erp val state)
-                               ,,test-form
-                               (cond
-                                (erp (exit-brr-wormhole state))
-                                (val
-                                 (er-progn (set-ld-error-action :continue state)
+                         (mv-let (erp val state)
+                                 ,,test-form
+                                 (cond
+                                  (erp (exit-brr-wormhole state))
+                                  (val
+                                   (er-progn (set-ld-error-action :continue state)
 ; The aliases had better ensure that every exit  is via exit-brr-wormhole.
-                                           (value :invisible)))
-                                (t (exit-brr-wormhole state))))))
-             :ld-prompt  nil
-             :ld-missing-input-ok nil
-             :ld-pre-eval-filter :all
-             :ld-pre-eval-print  nil
-             :ld-post-eval-print :command-conventions
-             :ld-evisc-tuple nil
-             :ld-error-triples  t
-             :ld-error-action :error
-             :ld-query-control-alist nil
-             :ld-verbose nil))
+                                             (value :invisible)))
+                                  (t (exit-brr-wormhole state))))))
+               :ld-prompt  nil
+               :ld-missing-input-ok nil
+               :ld-pre-eval-filter :all
+               :ld-pre-eval-print  nil
+               :ld-post-eval-print :command-conventions
+               :ld-evisc-tuple nil
+               :ld-error-triples  t
+               :ld-error-action :error
+               :ld-query-control-alist nil
+               :ld-verbose nil)))
 
 (defun initialize-brr-stack (state)
 
@@ -8145,6 +8164,19 @@
                     (get-brr-local 'unify-subst state)
                     (term-evisc-tuple t state)
                     (free-vars-display-limit state))))
+             (value :invisible))))
+       (:wonp
+        0 (lambda nil
+            (prog2$
+             (if (get-brr-local 'wonp state)
+                 (cw "? ~F0 succeeded.~%"
+                     (access rewrite-rule
+                             (get-brr-local 'lemma state)
+                             :rune))
+               (cw "? ~F0 failed.~%"
+                     (access rewrite-rule
+                             (get-brr-local 'lemma state)
+                             :rune)))
              (value :invisible))))
        (:path
         0 (lambda nil

@@ -394,33 +394,18 @@ ACL2 books for the problem domains in question.
 <H2><A NAME=\"search\">Searching documentation and books</A></H2>
 
 The links below may help you to search the ACL2 documentation and the ACL2
-community books, respectively.  Our approach is low-tech, but intended to be
-reliable and easy to use on any platform.  You might want to add a bookmark for
-each of these.
+community books, respectively.
 
 <ul>
 
-<li>The <a href=\"#User's-Manual\">documentation</a> for ACL2 (and optionally,
-books) comes with a search capability, whether viewed in the <A
-HREF=\"~so\">ACL2-Doc Emacs browser</A> or (where this link includes book
-documentation) <A HREF=\"~s2\">on the web</A>.  Alternatively, you may wish to
-follow the link displayed below to get to a search box on a Google page,
-pre-filled as follows.
-<pre>
-search_term site:http://www.cs.utexas.edu/users/moore/acl2/v6-4
-</pre>
-Now simply replace the word `search_term' with your topic.  For example, replace
-`<code>search_term</code>' by `<code>tail recursion</code>' to get
-documentation about tail recursion.
-<pre>
-tail recursion site:http://www.cs.utexas.edu/users/moore/acl2/v6-4
-</pre>
-Now you are ready to follow the link.
-<p>
-<a href=\"http://www.google.com/search?q=search_term
-                 site:http://www.cs.utexas.edu/users/moore/acl2/v6-4\">SEARCH
-                 THE DOCUMENTATION</a>
-</li>
+<li>
+
+The web views of <a href=\"#User's-Manual\">The ACL2 User's Manual</a> and <A
+HREF=\"http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/\">acl2+books
+combined manual</a> allow you to search the short strings of the
+documentation (which are typically summaries of a line or so).  To search the
+full content for a string or regular expression, you may use the Emacs-based <A
+HREF=\"manual/index.html?topic=ACL2____ACL2-DOC\">ACL2-Doc browser</A>.
 
 <p>
 
@@ -443,6 +428,8 @@ accompanying <i>``File Path''</i> shown at the end of each book's text.
 </li>
 
 </ul>
+
+<br>
 
 </BODY>
 </HTML>

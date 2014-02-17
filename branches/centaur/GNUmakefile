@@ -567,7 +567,12 @@ doc.lisp: books/system/doc/acl2-doc.lisp \
 
 books/system/doc/render-doc.cert:
 	rm -f books/system/doc/rendered-doc.lsp
-	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert
+ifndef ACL2
+	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2_WD)/saved_acl2
+else
+	cd books ; make USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2)
+endif
+
 
 .PHONY: STATS
 
@@ -680,12 +685,10 @@ else
 	cd books ; $(MAKE) $(ACL2_IGNORE) certify-books ACL2=$(ACL2)
 endif
 
-# Certify books that are not up-to-date, even those less likely to be included
-# in other books.  This does *not* certify the nonstd/ books.  It would be
-# awkward to arrange for that here, because the ACL2 images are different;
-# they might not even have the same prefix.  See target regression-nonstd.
-# Success can generally be determined by checking for the absence of ** in the
-# log, or by looking at the Unix exit status.
+# Certify books that are not up-to-date, even those less likely to be
+# included in other books.  Success can generally be determined by
+# checking for the absence of ** in the log, or by looking at the Unix
+# exit status.
 .PHONY: regression
 regression:
 	uname -a
@@ -704,21 +707,14 @@ else
 	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2)
 endif
 
-.PHONY: regression-nonstd
-regression-nonstd:
-	uname -a
-ifndef ACL2
-	cd books/nonstd ; \
-	$(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2_WD)/saved_acl2r
-else
-	cd books/nonstd ; \
-	$(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2)
-endif
-
 # Certify main books from scratch.
 .PHONY: certify-books-fresh
 certify-books-fresh: clean-books
-	$(MAKE) $(ACL2_IGNORE) certify-books
+ifndef ACL2
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2 certify-books
+else
+	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) certify-books
+endif
 
 # Do regression tests from scratch.
 # Success can generally be determined by checking for the absence of ** in the
@@ -737,17 +733,6 @@ ifndef ACL2
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2 regression-everything
 else
 	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-everything
-endif
-
-.PHONY: regression-nonstd-fresh
-# Occasionally the target regression-nonstd-fresh breaks on the first
-# try because of deletion of the link build/clean.pl.  Some day
-# someone will fix this....
-regression-nonstd-fresh: clean-books-nonstd
-ifndef ACL2
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2r regression-nonstd
-else
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) regression-nonstd
 endif
 
 # The following allows for a relatively short test, in response to a request
@@ -808,20 +793,10 @@ else
 	cd books ; $(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) moreclean
 endif
 
-.PHONY: clean-books-nonstd
-clean-books-nonstd:
-ifndef ACL2
-	cd books/nonstd ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2_WD)/saved_acl2 clean clean-links
-else
-	cd books/nonstd ; \
-	$(MAKE) $(ACL2_IGNORE) ACL2=$(ACL2) clean clean-links
-endif
-
 # This following should be executed inside the acl2-sources directory.
 # You probably need to be the owner of all files in order for the chmod
 # commands to work, but perhaps not.
-# Keep tar in sync with tar-workshops and tar-nonstd.
+# Keep tar in sync with tar-workshops.
 .PHONY: tar
 tar:
 	rm -f acl2.tar.Z acl2.tar.gz acl2.tar
@@ -838,7 +813,7 @@ tar:
 	gzip acl2.tar
 	md5sum acl2.tar.gz > acl2-tar-gz-md5sum
 
-# Keep tar-workshops in sync with tar and tar-nonstd.
+# Keep tar-workshops in sync with tar.
 # This target should be executed in the acl2-sources directory.
 .PHONY: tar-workshops
 tar-workshops:
@@ -847,16 +822,6 @@ tar-workshops:
 	mv /tmp/workshops.tar books/
 	cd books ; gzip workshops.tar
 	cd books ; (md5sum workshops.tar.gz > workshops-tar-gz-md5sum)
-
-# Keep tar-nonstd in sync with tar and tar-workshops.
-# This target should be executed in the acl2-sources directory.
-.PHONY: tar-nonstd
-tar-nonstd:
-	cd books ; rm -f nonstd.tar.Z nonstd.tar.gz nonstd.tar nonstd-tar-gz-md5sum
-	cd books ; chmod -R g+r nonstd ; chmod -R o+r nonstd ; tar cvf /tmp/nonstd.tar nonstd ; chmod -R o-w nonstd
-	mv /tmp/nonstd.tar books/
-	cd books ; gzip nonstd.tar
-	cd books ; (md5sum nonstd.tar.gz > nonstd-tar-gz-md5sum)
 
 .PHONY: mini-proveall
 mini-proveall:

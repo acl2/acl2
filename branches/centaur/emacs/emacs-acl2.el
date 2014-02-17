@@ -118,7 +118,9 @@
   ;      (used with "pp" instead of "p")
 ; Load other tools
   ; Support for Dynamic Monitoring of Rewrites (dmr)
+  ;   "control-t 1" to start dmr, "control-t 2" to stop dmr
   ; Support for ACL2-Doc browser
+  ;   "control-t g" to start the ACL2-Doc browser
   ; Support for xdoc-link-mode, used by acl2+books XDOC manual
 ; Miscellaneous
   ; "meta-x acl2-info" brings up ACL2 documentation in pleasant emacs-info

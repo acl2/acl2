@@ -9891,7 +9891,7 @@
            (getprop (car form) 'macro-body nil 'current-acl2-world (w state)))
       (macroexpand1 form 'top-level state)
     (er soft 'top-level
-        "TRANS1 may only be applied to a non-atom form that begins with a ~
+        "TRANS1 may only be applied to a form (m t1 ... tk) where m is a ~
          symbol with a 'macro-body property.")))
 
 (defmacro trans1 (form)
