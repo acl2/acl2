@@ -965,6 +965,16 @@
       (pseudo-formp val)))
 
 ; -----------------------------------------------------------------
+; CERT-REPLAY [GLOBAL-VALUE]
+
+(defun cert-replayp (val)
+  (or (null val)
+      (eq val t)
+      (and (consp val)
+           (true-listp (cdr val)) ; actually, a world
+           (posp (car val)))))
+
+; -----------------------------------------------------------------
 ; PROOF-SUPPORTERS-ALIST [GLOBAL-VALUE]
 
 (defun proof-supporters-alistp (val)
@@ -1701,6 +1711,7 @@
     (BOOT-STRAP-PASS-2 (boot-strap-pass-2p val))
     (SKIP-PROOFS-SEEN (skip-proofs-seenp val))
     (REDEF-SEEN (redef-seenp val))
+    (CERT-REPLAY (cert-replayp val))
     (PROOF-SUPPORTERS-ALIST (proof-supporters-alistp val))
     (FREE-VAR-RUNES-ALL (pseudo-free-var-runes-allp val))
     (FREE-VAR-RUNES-ONCE (pseudo-free-var-runes-oncep val))
