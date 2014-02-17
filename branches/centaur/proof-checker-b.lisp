@@ -4167,12 +4167,6 @@
 (define-pc-macro cl-proc (&rest cl-proc-hints)
   (value `(:clause-processor ,@cl-proc-hints)))
 
-(defun fromto (i j)
-  (declare (xargs :guard (and (rationalp i) (rationalp j))))
-  (if (< j i)
-      nil
-    (cons i (fromto (1+ i) j))))
-
 (define-pc-atomic-macro retain (arg1 &rest rest-args)
   (declare (ignore arg1 rest-args))
   (when-goals-trip

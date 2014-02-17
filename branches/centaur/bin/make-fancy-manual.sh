@@ -5,7 +5,7 @@
 # ACL2-Doc Emacs browser.
 
 # The normal usage of this program, at UT CS, is first to ensure that
-# /projects/acl2/devel/books/centaur/manual/ exists and is up to date,
+# /projects/acl2/devel/books/doc/manual/ exists and is up to date,
 # say, after running (in /projects/acl2/devel/):
 #   make -j 8 regression-everything USE_QUICKLISP=1 ACL2=/projects/acl2/devel/ccl-saved_acl2h
 # and to ensure that
@@ -45,8 +45,8 @@ fi
 echo "mkdir $destdir"
 mkdir $destdir
 
-if [ ! -d $books/centaur/manual ] ; then
-    echo "ERROR: Directory $books/centaur/manual/ does not exist."
+if [ ! -d $books/doc/manual ] ; then
+    echo "ERROR: Directory $books/doc/manual/ does not exist."
     exit 1
 fi
 
@@ -56,8 +56,8 @@ if [ ! -f $books/system/doc/rendered-doc-combined.lsp ] ; then
 fi
 
 # Copy from source to destination and move to destination/manual/.
-echo "cp -pr $books/centaur/manual $destdir/manual"
-cp -pr $books/centaur/manual $destdir/manual
+echo "cp -pr $books/doc/manual $destdir/manual"
+cp -pr $books/doc/manual $destdir/manual
 echo "cd $destdir/manual"
 cd $destdir/manual
 

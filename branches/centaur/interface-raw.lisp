@@ -4109,7 +4109,7 @@
 ; the appropriate hash table for each symbol that is assigned a relevant value
 ; (because of a 'cltl-command property) by add-trip.  (In the case of the
 ; portcullis commands, we do not actually run add-trip, but rather we mirror
-; its necessary effects in function hcomp-build-from-portcullis.)  When we
+; its necessary effects in function hcomp-build-from-state.)  When we
 ; encounter a symbol that is not already a key of that hash table, then we
 ; associate it with its relevant value.  Otherwise, if the symbol is a *1*
 ; symbol that already has a value that is not a reclassifying value, and it is
@@ -5158,7 +5158,7 @@
          (loop for def in defs
                do (eval def)))))
 
-(defun hcomp-build-from-portcullis-raw (cltl-cmds state)
+(defun hcomp-build-from-state-raw (cltl-cmds state)
 
 ; Warning: If you change this function, consider making corresponding changes
 ; to add-trip.  We wrote the present function primarily by eliminating extra
@@ -5294,7 +5294,7 @@
 (defun-one-output add-trip (world-name world-key trip)
 
 ; Warning: If you change this function, consider making corresponding changes
-; to hcomp-build-from-portcullis-raw.
+; to hcomp-build-from-state-raw.
 
 ; Add-trip is the function that moves a triple, (symb key .  val) from
 ; a property list world into the von Neumann space of Common Lisp.

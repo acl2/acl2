@@ -3043,6 +3043,7 @@
                        ((defpkg-items
                           (defpkg-items
                             (global-val 'known-package-alist cmd-wrld)
+                            (global-val 'known-package-alist pred-wrld)
                             ctx pred-wrld state)))
                      (er-progn
                       (state-global-let*

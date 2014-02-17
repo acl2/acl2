@@ -1494,6 +1494,7 @@
                     (boot-strap-pass-2 nil)
                     (skip-proofs-seen nil)
                     (redef-seen nil)
+                    (cert-replay nil)
                     (free-var-runes-all nil)
                     (free-var-runes-once nil)
                     (chk-new-name-lst
@@ -4521,6 +4522,7 @@
                              (next-absolute-event-number wrld))
                        (list 'skip-proofs-seen nil)
                        (list 'redef-seen nil)
+                       (list 'cert-replay nil)
                        (list 'proof-supporters-alist nil)
                        (list 'documentation-alist (documentation-alist-stub)))
                  (putprop 'acl2-defaults-table
@@ -6349,9 +6351,54 @@
     (&
      (list 'record-expansion event expansion))))
 
+(defun maybe-add-event-landmark (state)
+
+; If (and only if) the installed world doesn't end with an event landmark, we
+; add one.  We do this with an otherwise-meaningless table event; specifically,
+; the table-fn call below is the macroexpansion of the following.
+
+; (table acl2-system-table 'empty-event-key
+;        (not (cdr (assoc-eq 'empty-event-key
+;                            (table-alist 'acl2-system-table world)))))
+
+; We can check that by executing :trans1 on the above form or by evaluating:
+
+;   (macroexpand1 '(table acl2-system-table 'empty-event-key
+;                         (not (cdr (assoc-eq 'empty-event-key
+;                                             (table-alist 'acl2-system-table
+;                                                          world)))))
+;                 'top-level state)
+
+  (cond ((let ((wrld (w state)))
+           (not (and (eq (caar wrld)
+                         'event-landmark)
+                     (eq (cadar wrld)
+                         'global-value))))
+         (state-global-let*
+          ((inhibit-output-lst
+            (add-to-set-eq
+             'summary
+             (f-get-global 'inhibit-output-lst
+                           state))))
+          (TABLE-FN
+           'ACL2-SYSTEM-TABLE
+           '('EMPTY-EVENT-KEY
+             (NOT (CDR (ASSOC-EQ 'EMPTY-EVENT-KEY
+                                 (TABLE-ALIST
+                                  'ACL2-SYSTEM-TABLE
+                                  WORLD)))))
+           STATE
+           '(TABLE ACL2-SYSTEM-TABLE 'EMPTY-EVENT-KEY
+                   (NOT (CDR (ASSOC-EQ
+                              'EMPTY-EVENT-KEY
+                              (TABLE-ALIST
+                               'ACL2-SYSTEM-TABLE
+                               WORLD))))))))
+        (t (value nil))))
+
 (defun eval-event-lst (index expansion-alist ev-lst quietp environment
                              in-local-flg last-val other-control kpa
-                             ctx channel state)
+                             caller ctx channel state)
 
 ; This function takes a true list of forms, ev-lst, and successively evals each
 ; one, cascading state through successive elements.  However, it insists that
@@ -6389,6 +6436,11 @@
 ; ultimately returned.  Ultimately certify-book will cdr away that many
 ; expansion-alist entries before calling expansion-alist-pkg-names.
 
+; Caller is as in process-embedded-events.  We introduced this argument on the
+; advent of setting world global 'cert-replay.  (It wasn't sufficient for to
+; query the environment argument for this purpose, because we don't want to set
+; 'cert-replay here when processing events under a progn.)
+
 ; Channel is generally (proofs-co state), but doesn't have to be.
 
 ; A non-nil value of quietp suppresses printing of the event and the result.
@@ -6397,7 +6449,9 @@
    ((null ev-lst)
     (pprogn (f-put-global 'last-make-event-expansion nil state)
             (mv nil last-val (reverse expansion-alist) kpa state)))
-   (t (pprogn
+   (t
+    (let ((old-wrld (w state)))
+      (pprogn
        (cond
         (quietp state)
         (t
@@ -6439,7 +6493,7 @@
          ((null form)
           (eval-event-lst (1+ index) expansion-alist (cdr ev-lst) quietp
                           environment in-local-flg nil other-control kpa
-                          ctx channel state))
+                          caller ctx channel state))
          (t
           (mv-let
            (erp trans-ans state)
@@ -6455,7 +6509,8 @@
            (let* ((tuple
                    (cond ((eq other-control :non-event-ok)
                           (let* ((stobjs-out (car trans-ans))
-                                 (result (replace-stobjs stobjs-out (cdr trans-ans))))
+                                 (result (replace-stobjs stobjs-out
+                                                         (cdr trans-ans))))
                             (if (null (cdr stobjs-out)) ; single value
                                 (list nil result)
                               result)))
@@ -6512,36 +6567,54 @@
                                              state)
                                (mv 'make-event-problem index nil nil state)))
                   (t
-                   (eval-event-lst
-                    (1+ index)
+                   (mv-let
+                    (erp ignored-val state)
                     (cond
-                     (expansion0
-                      (acons index
-                             (make-record-expansion
-                              (car ev-lst)
-                              (elide-locals
-                               (mv-let (wrappers base-form)
-                                       (destructure-expansion form)
-                                       (declare (ignore base-form))
-                                       (rebuild-expansion wrappers
-                                                          expansion0))
-                               environment
+                     ((and (eq caller 'certify-book)
+                           (eq (global-val 'cert-replay (w state)) t))
+                      (pprogn
+                       (set-w 'extension
+                              (global-set 'cert-replay
+                                          (cons index old-wrld)
+                                          (w state))
+                              state)
+                       (maybe-add-event-landmark state)))
+                     (t (value nil)))
+                    (declare (ignore ignored-val))
+                    (cond
+                     (erp ; very surprising
+                      (mv 'make-event-problem index nil nil state))
+                     (t
+                      (eval-event-lst
+                       (1+ index)
+                       (cond
+                        (expansion0
+                         (acons index
+                                (make-record-expansion
+                                 (car ev-lst)
+                                 (elide-locals
+                                  (mv-let (wrappers base-form)
+                                          (destructure-expansion form)
+                                          (declare (ignore base-form))
+                                          (rebuild-expansion wrappers
+                                                             expansion0))
+                                  environment
 
 ; We use strongp = nil here because sub-encapsulates are already taking care of
 ; eliding their own locals.
 
-                               nil))
-                             expansion-alist))
-                     (t expansion-alist))
-                    (cdr ev-lst) quietp
-                    environment in-local-flg val-prime
-                    other-control
-                    (cond ((or (null kpa)
-                               (integerp kpa)
-                               (equal kpa (known-package-alist state)))
-                           kpa)
-                          (t index))
-                    ctx channel state))))))))))))))))
+                                  nil))
+                                expansion-alist))
+                        (t expansion-alist))
+                       (cdr ev-lst) quietp
+                       environment in-local-flg val-prime
+                       other-control
+                       (cond ((or (null kpa)
+                                  (integerp kpa)
+                                  (equal kpa (known-package-alist state)))
+                              kpa)
+                             (t index))
+                       caller ctx channel state))))))))))))))))))))
 
 ; After we have evaluated the event list and obtained wrld2, we
 ; will scrutinize the signatures and exports to make sure they are
@@ -7364,7 +7437,7 @@
                                    nil make-event-chk
                                    (cond ((eq caller 'certify-book) kpa)
                                          (t nil))
-                                   ctx (proofs-co state) state))
+                                   caller ctx (proofs-co state) state))
                   (cond (erp (pprogn
                               (cond ((or (eq caller 'encapsulate-pass-1)
                                          (eq caller 'certify-book))
@@ -9633,7 +9706,7 @@
 
            nil)
          nil
-         ctx (proofs-co state) state))
+         'progn-fn1 ctx (proofs-co state) state))
        (declare (ignore ignore-kpa))
        (pprogn
         (if erp
@@ -9699,11 +9772,12 @@
 (defun protected-eval (form on-behalf-of ctx state aok)
 
 ; We assume that this is executed under a revert-world-on-error, so that we do
-; not have to protect the world here.  Form should evaluate either to an
-; ordinary value, val, or to (mv nil val state stobj1 ... stobjk), where k may
-; be 0.  If so, we return (value (cons val new-kpa)), where new-kpa is the
-; known-package-alist immediately after form is evaluated; and if not, we
-; return a soft error.
+; not have to protect the world here in case of error, though we do set the
+; world back to the starting world when returning a non-erroneous error triple.
+; Form should evaluate either to an ordinary value, val, or to (mv nil val
+; state stobj1 ... stobjk), where k may be 0.  If so, we return (value (cons
+; val new-kpa)), where new-kpa is the known-package-alist immediately after
+; form is evaluated; and if not, we return a soft error.
 
   (let ((original-wrld (w state)))
     (protect-system-state-globals
@@ -10021,16 +10095,27 @@
                 (expansion0 (value (car expansion0/new-kpa/new-ttags-seen)))
                 (new-kpa (value (cadr expansion0/new-kpa/new-ttags-seen)))
                 (new-ttags-seen (value (cddr expansion0/new-kpa/new-ttags-seen)))
-                (new-ttags-p
+                (need-event-landmark-p
                  (pprogn
                   (make-event-debug-post debug-depth expansion0 state)
-                  (cond ((equal new-ttags-seen
-                                (global-val 'ttags-seen wrld))
-                         (value nil))
-                        (t (pprogn
-                            (set-w! (global-set 'ttags-seen new-ttags-seen wrld)
-                                    state)
-                            (value t))))))
+                  (mv-let
+                   (flg1 w)
+                   (cond ((equal new-ttags-seen
+                                 (global-val 'ttags-seen wrld))
+                          (mv nil wrld))
+                         (t (mv t (global-set 'ttags-seen new-ttags-seen
+                                              wrld))))
+                   (mv-let
+                    (flg2 w)
+                    (cond ((and check-expansion
+                                (f-get-global 'certify-book-info state)
+                                (not (global-val 'cert-replay wrld)))
+                           (mv t (global-set 'cert-replay t w)))
+                          (t (mv nil w)))
+                    (cond ((or flg1 flg2)
+                           (pprogn (set-w! w state)
+                                   (value t)))
+                          (t (value nil)))))))
                 (wrld0 (value (w state)))
                 (expansion1/stobjs-out/result
                  (make-event-fn1
@@ -10176,48 +10261,17 @@
                                    nil))
                              (t state))
                             (er-progn
-                             (cond ((and new-ttags-p ; optimization
-                                         (let ((wrld1 (w state)))
-                                           (not (and (eq (caar wrld1)
-                                                         'event-landmark)
-                                                     (eq (cadar wrld1)
-                                                         'global-value)))))
+                             (cond (need-event-landmark-p ; optimization
 
-; We lay down an event landmark.  Before we did so, an error was reported by
-; print-redefinition-warning in the following example, because we weren't
-; looking at an event landmark.
+; We lay down an event landmark if we aren't already looking at one.  Before we
+; did so, an error was reported by print-redefinition-warning in the following
+; example, because we weren't looking at an event landmark.
 
 ; (redef!)
 ; (make-event (er-progn (defttag t)
 ;                       (value '(value-triple nil))))
 
-; A cheap way to get an event landmark is with a table event, so that's what we
-; do.  The table-fn call below is the macroexpansion of:
-
-; (table acl2-system-table 'empty-event-key
-;        (not (cdr (assoc-eq 'empty-event-key
-;                            (table-alist 'acl2-system-table world)))))
-
-                                    (state-global-let*
-                                     ((inhibit-output-lst
-                                       (add-to-set-eq
-                                        'summary
-                                        (f-get-global 'inhibit-output-lst
-                                                      state))))
-                                     (TABLE-FN
-                                      'ACL2-SYSTEM-TABLE
-                                      '('EMPTY-EVENT-KEY
-                                        (NOT (CDR (ASSOC-EQ 'EMPTY-EVENT-KEY
-                                                            (TABLE-ALIST
-                                                             'ACL2-SYSTEM-TABLE
-                                                             WORLD)))))
-                                      STATE
-                                      '(TABLE ACL2-SYSTEM-TABLE 'EMPTY-EVENT-KEY
-                                              (NOT (CDR (ASSOC-EQ
-                                                         'EMPTY-EVENT-KEY
-                                                         (TABLE-ALIST
-                                                          'ACL2-SYSTEM-TABLE
-                                                          WORLD))))))))
+                                    (maybe-add-event-landmark state))
                                    (t (value nil)))
                              (value result))))))))))))))))))
 
@@ -11227,18 +11281,36 @@
                             book-path)
                       acc))))))))))
 
-(defun defpkg-items (new-kpa ctx w state)
+(defun new-defpkg-p (new-kpa old-kpa)
+  (cond ((endp new-kpa) nil)
+        (t (or (not (find-package-entry (package-entry-name (car new-kpa))
+                                        old-kpa))
+               (new-defpkg-p (cdr new-kpa) old-kpa)))))
+
+(defun defpkg-items (new-kpa old-kpa ctx w state)
 
 ; This is just a wrapper for defpkg-items-rec, with error output turned off
 ; (because of calls of translate).  See the comment for defpkg-items-rec.
 
-  (state-global-let*
-   ((inhibit-output-lst (cons 'error
-                              (f-get-global 'inhibit-output-lst state))))
-   (defpkg-items-rec new-kpa (global-val 'known-package-alist w)
-     (f-get-global 'system-books-dir state)
-     (f-get-global 'connected-book-directory state)
-     ctx w state nil)))
+  (cond
+   ((new-defpkg-p new-kpa old-kpa)
+    (state-global-let*
+     ((inhibit-output-lst (cons 'error
+                                (f-get-global 'inhibit-output-lst state))))
+     (let ((saved-w (w state)))
+       (pprogn
+        (set-w! w state)
+        (mv-let
+         (erp val state)
+         (defpkg-items-rec new-kpa old-kpa
+           (f-get-global 'system-books-dir state)
+           (f-get-global 'connected-book-directory state)
+           ctx w state nil)
+         (assert$
+          (null erp)
+          (pprogn (set-w! saved-w state)
+                  (value val))))))))
+   (t (value nil))))
 
 (defun new-defpkg-list2 (imports all-defpkg-items acc seen)
 
@@ -11341,9 +11413,12 @@
 ; need for the "second reason" above, but for simplicity we call this same
 ; function.
 
-  (reverse
-   (remove-duplicates-equal
-    (new-defpkg-list1 defpkg-items defpkg-items base-kpa earlier-kpa nil))))
+  (cond
+   ((null defpkg-items) ; optimization
+    nil)
+   (t (reverse (remove-duplicates-equal
+                (new-defpkg-list1 defpkg-items defpkg-items base-kpa
+                                  earlier-kpa nil))))))
 
 (mutual-recursion
 
@@ -15619,14 +15694,18 @@
   (merge-sort-lexorder ; sort this small list, to agree with hons result above
    (expansion-alist-pkg-names0 x base-kpa nil)))
 
-(defun delete-names-from-kpa (names kpa)
+(defun delete-names-from-kpa-rec (names kpa)
   (cond ((endp kpa)
          nil)
         ((member-equal (package-entry-name (car kpa)) names)
-         (delete-names-from-kpa names (cdr kpa)))
+         (delete-names-from-kpa-rec names (cdr kpa)))
         (t
          (cons (car kpa)
-               (delete-names-from-kpa names (cdr kpa))))))
+               (delete-names-from-kpa-rec names (cdr kpa))))))
+
+(defun delete-names-from-kpa (names kpa)
+  (cond ((null names) kpa) ; optimization for common case
+        (t (delete-names-from-kpa-rec names kpa))))
 
 (defun print-certify-book-step-2 (ev-lst expansion-alist pcert0-file acl2x-file
                                          state)
@@ -15658,15 +15737,30 @@
                               (t ""))))
             (proofs-co state) state nil)))
 
-(defun print-certify-book-step-3 (state)
+(defun print-certify-book-step-3 (index state)
   (io? event nil state
-       nil
-       (fms "* Step 3:  That completes the admissibility check.  Each form ~
-             read was an embedded event form and was admissible. We now ~
-             retract back to the initial world and try to include the book.  ~
-             This may expose local incompatibilities.~%"
-            nil
-            (proofs-co state) state nil)))
+       (index)
+       (cond
+        ((null index)
+         (fms "* Step 3:  That completes the admissibility check.  Each form ~
+               read was an embedded event form and was admissible.  No LOCAL ~
+               or MAKE-EVENT forms make it necessary to check for local ~
+               incompatibilities, so we skip that check.~%"
+              nil (proofs-co state) state nil))
+        (t
+         (assert$
+          (posp index)
+          (fms "* Step 3:  That completes the admissibility check.  Each form ~
+                read was an embedded event form and was admissible.  We now ~
+                retract back to the ~#0~[initial world~/world created by ~
+                admitting the first event~/world created by the first ~n1 ~
+                events~]~#2~[~/ after the initial IN-PACKAGE form~] and try to ~
+                include~#2~[~/ the remainder of~] the book.  This may expose ~
+                local incompatibilities.~%"
+               (list (cons #\0 (zero-one-or-more (1- index)))
+                     (cons #\1 (1- index))
+                     (cons #\2 (if (int= 1 index) 0 1)))
+               (proofs-co state) state nil))))))
 
 (defun print-certify-book-guards-warning
   (full-book-name new-bad-fns all-bad-fns k ctx state)
@@ -15783,13 +15877,15 @@
             (list (cons #\0 full-book-name))
             (proofs-co state) state nil)))
 
-(defun hcomp-build-from-portcullis (trips state)
-  #+acl2-loop-only
-  (declare (ignore trips))
+(defun hcomp-build-from-state (state)
   #+acl2-loop-only
   (read-acl2-oracle state)
   #-acl2-loop-only
-  (hcomp-build-from-portcullis-raw trips state))
+  (hcomp-build-from-state-raw
+   (reverse (global-val
+             'top-level-cltl-command-stack
+             (w state)))
+   state))
 
 ; Essay on .acl2x Files (Double Certification)
 
@@ -16845,6 +16941,39 @@
                                       state)
                    (close-output-channel channel state)))))))))
 
+(defun fromto (i j)
+  (declare (xargs :guard (and (rationalp i) (rationalp j))))
+  (if (< j i)
+      nil
+    (cons i (fromto (1+ i) j))))
+
+(defun remove-smaller-keys-from-sorted-alist (index alist)
+
+; Alist is an alist whose keys are rational numbers.  Return the tail of alist,
+; if any, starting with a key that is at least as large as index.  Thus, if
+; alist is sorted, then we return its tail of entries at least as large as
+; index.
+
+  (cond ((endp alist) nil)
+        ((< (caar alist) index)
+         (remove-smaller-keys-from-sorted-alist index (cdr alist)))
+        (t alist)))
+
+(defun cert-include-expansion-alist (index expansion-alist)
+
+; We are ready to call include-book-fn after the initial processing of all
+; events in a book by certify-book.  But we have already retracted the world to
+; the world, w, just before position index, where index=1 corresponds the first
+; event after the book's in-package event, hence to the certification world.
+; We want to fool include-book-fn into skipping all events that were already
+; processed in creating w.  So we replace expansion-alist by one that
+; associates every index in the half-open interval [1,index) with a no-op.
+
+  (append (pairlis$ (fromto 1 (1- index))
+                    (make-list (1- index)
+                               :initial-element '(value-triple nil)))
+          (remove-smaller-keys-from-sorted-alist index expansion-alist)))
+
 (defun certify-book-fn (user-book-name k compile-flg defaxioms-okp
                                        skip-proofs-okp ttags ttagsx ttagsxp
                                        acl2x write-port pcert state)
@@ -16926,9 +17055,9 @@
                        (cert-op (cond ((and write-acl2x pcert)
                                        (er soft ctx
                                            "It is illegal to specify the ~
-                                           writing  of a .acl2x file when a ~
-                                           non-nil value for :pcert (here, ~
-                                           ~x1) is specified~@0."
+                                            writing  of a .acl2x file when a ~
+                                            non-nil value for :pcert (here, ~
+                                            ~x1) is specified~@0."
                                            pcert
                                            (cond (pcert-env
                                                   " (even when the :pcert ~
@@ -16984,14 +17113,13 @@
                                (global-val 'ttags-seen wrld0)
                                nil ; correct active-book-name, but irrelevant
                                ttags
-                               nil ; irrelevant value for ttags-seen
-                               :quiet ; ttags in certif. world were already reported
+                               nil    ; irrelevant value for ttags-seen
+                               :quiet ; ttags in cert. world: already reported
                                ctx state)))
                (state-global-let*
-                ((certify-book-info
-                  (make certify-book-info
-                        :full-book-name full-book-name
-                        :cert-op cert-op))
+                ((certify-book-info (make certify-book-info
+                                          :full-book-name full-book-name
+                                          :cert-op cert-op))
                  (match-free-error nil)
                  (defaxioms-okp-cert defaxioms-okp)
                  (skip-proofs-okp-cert skip-proofs-okp)
@@ -17394,11 +17522,24 @@
                                     (access cert-obj cert-obj :post-alist)
                                     full-book-name ctx state)))
                                 (t
-                                 (pprogn
-; Start include-book.
-                                  (print-certify-book-step-3 state)
-                                  (set-w 'retraction wrld1 state)
-                                  #+(and gcl (not acl2-loop-only))
+                                 (let ((index/old-wrld
+                                        (global-val 'cert-replay (w state))))
+
+; Step 3: include the book if necessary.
+
+                                   (pprogn
+                                    (assert$
+                                     (listp index/old-wrld)
+                                     (print-certify-book-step-3
+                                      (car index/old-wrld)
+                                      state))
+                                    (cond
+                                     (index/old-wrld
+                                      (set-w 'retraction
+                                             (cdr index/old-wrld)
+                                             state))
+                                     (t state))
+                                    #+(and gcl (not acl2-loop-only))
 
 ; In GCL, object code (from .o files) may be stored in read-only memory, which
 ; is not collected by sgc.  In particular, such code just loaded from
@@ -17414,17 +17555,17 @@
 ; about 1/4 second per book certification for the ACL2 regression suite (as of
 ; 5/07).
 
-                                  (progn
-                                    (cond
-                                     ((and (fboundp 'si::sgc-on)
-                                           (funcall 'si::sgc-on))
-                                      (funcall 'si::sgc-on nil)
-                                      (si::gbc t)
-                                      (funcall 'si::sgc-on t))
-                                     (t (si::gbc t)))
-                                    state)
-                                  (with-hcomp-bindings
-                                   compile-flg
+                                    (progn
+                                      (cond
+                                       ((and (fboundp 'si::sgc-on)
+                                             (funcall 'si::sgc-on))
+                                        (funcall 'si::sgc-on nil)
+                                        (si::gbc t)
+                                        (funcall 'si::sgc-on t))
+                                       (t (si::gbc t)))
+                                      state)
+                                    (with-hcomp-bindings
+                                     compile-flg
 
 ; It may seem strange to call with-hcomp-bindings here -- after all, we call
 ; include-book-fn below, and we may think that include-book-fn will ultimately
@@ -17436,77 +17577,81 @@
 ; events on behalf of the call below of include-book-fn, where
 ; *inside-include-book-fn* is 'hcomp-build.
 
-                                   (mv-let
-                                    (expansion-alist pcert-info)
-                                    (cond
-                                     ((eq cert-op :create-pcert)
-                                      (elide-locals-and-split-expansion-alist
-                                       expansion-alist acl2x-expansion-alist
-                                       nil nil))
-                                     (t (mv expansion-alist
-                                            (if (eq cert-op
-                                                    :create+convert-pcert)
-                                                :proved
-                                              nil))))
-                                    (er-let* ((defpkg-items
-                                                (defpkg-items
-                                                  pass1-known-package-alist
-                                                  ctx wrld1
-                                                  state))
-                                              (declaim-list
-                                               (state-global-let*
-                                                ((ld-redefinition-action
-                                                  nil))
+                                     (mv-let
+                                      (expansion-alist pcert-info)
+                                      (cond
+                                       ((eq cert-op :create-pcert)
+                                        (elide-locals-and-split-expansion-alist
+                                         expansion-alist acl2x-expansion-alist
+                                         nil nil))
+                                       (t (mv expansion-alist
+                                              (if (eq cert-op
+                                                      :create+convert-pcert)
+                                                  :proved
+                                                nil))))
+                                      (er-let* ((defpkg-items
+                                                  (defpkg-items
+                                                    pass1-known-package-alist
+                                                    wrld1-known-package-alist
+                                                    ctx wrld1
+                                                    state))
+                                                (declaim-list
+                                                 (state-global-let*
+                                                  ((ld-redefinition-action
+                                                    nil))
 
 ; Note that we do not bind connected-book-directory before calling
 ; include-book-fn, because it will bind it for us.  We leave the directory set
 ; as it was when we parsed user-book-name to get full-book-name, so that
 ; include-book-fn will parse user-book-name the same way again.
 
-                                                (er-progn
-                                                 (hcomp-build-from-portcullis
-                                                  (reverse
-                                                   (global-val
-                                                    'top-level-cltl-command-stack
-                                                    wrld1))
-                                                  state)
-                                                 (include-book-fn
-                                                  user-book-name
-                                                  state
-                                                  nil
-                                                  expansion-alist
-                                                  uncertified-okp
-                                                  defaxioms-okp
-                                                  skip-proofs-okp
-                                                  ttags-seen
-                                                  nil nil
-                                                  nil)))))
-                                      (let* ((wrld2 (w state))
-                                             (new-defpkg-list
-                                              (new-defpkg-list
-                                               defpkg-items
-                                               (delete-names-from-kpa
-                                                expansion-alist-pkg-names
-                                                (global-val
-                                                 'known-package-alist
-                                                 wrld2))
-                                               wrld1-known-package-alist))
-                                             (new-fns
-                                              (and (or (not (warning-disabled-p
-                                                             "Guards"))
-                                                       compile-flg)
+                                                  (er-progn
+                                                   (hcomp-build-from-state
+                                                    state)
+                                                   (cond
+                                                    (index/old-wrld
+                                                     (include-book-fn
+                                                      user-book-name
+                                                      state
+                                                      nil
+                                                      (cert-include-expansion-alist
+                                                       (car index/old-wrld)
+                                                       expansion-alist)
+                                                      uncertified-okp
+                                                      defaxioms-okp
+                                                      skip-proofs-okp
+                                                      ttags-seen
+                                                      nil nil
+                                                      nil))
+                                                    (t
+                                                     (get-declaim-list
+                                                       state)))))))
+                                        (let* ((wrld2 (w state))
+                                               (new-defpkg-list
+                                                (new-defpkg-list
+                                                 defpkg-items
+                                                 (delete-names-from-kpa
+                                                  expansion-alist-pkg-names
+                                                  (global-val
+                                                   'known-package-alist
+                                                   wrld2))
+                                                 wrld1-known-package-alist))
+                                               (new-fns
+                                                (and (or (not (warning-disabled-p
+                                                               "Guards"))
+                                                         compile-flg)
 
 ; The test above is an optimization; we only need new-fns if the test holds.
 
-                                                   (newly-defined-top-level-fns
-                                                    wrld1 wrld2 full-book-name)))
-                                             (os-expansion-filename
-                                              (and compile-flg
-                                                   (expansion-filename
-                                                    full-book-name t state)))
-                                             (post-alist2
-                                              (cdr (global-val 'include-book-alist
-                                                               wrld2))))
+                                                     (newly-defined-top-level-fns
+                                                      wrld1 wrld2 full-book-name)))
+                                               (os-expansion-filename
+                                                (and compile-flg
+                                                     (expansion-filename
+                                                      full-book-name t state)))
+                                               (post-alist2
+                                                (cdr (global-val 'include-book-alist
+                                                                 wrld2))))
 
 ; The cdr above removes the certification tuple stored by the include-book-fn
 ; itself.  That pair is guaranteed to be the car because it is the most
@@ -17518,63 +17663,63 @@
 ; included (and hence recognize as redundant) until after we've completed the
 ; processing.
 
-                                        (pprogn
-                                         (maybe-write-bookdata
-                                          full-book-name wrld2 ctx state)
-                                         (mv-let
-                                          (new-bad-fns all-bad-fns)
-                                          (cond
-                                           ((not (warning-disabled-p "Guards"))
-                                            (mv (collect-ideals new-fns wrld2
-                                                                nil)
-                                                (collect-ideal-user-defuns
-                                                 wrld2)))
-                                           (t (mv nil nil)))
-                                          (cond
-                                           ((or new-bad-fns all-bad-fns)
-                                            (print-certify-book-guards-warning
-                                             full-book-name new-bad-fns
-                                             all-bad-fns k ctx state))
-                                           (t state)))
-                                         (er-progn
-                                          (chk-certify-book-step-3
-                                           post-alist2 post-alist1 ctx state)
-                                          (state-global-let*
-                                           ((connected-book-directory
+                                          (pprogn
+                                           (maybe-write-bookdata
+                                            full-book-name wrld2 ctx state)
+                                           (mv-let
+                                            (new-bad-fns all-bad-fns)
+                                            (cond
+                                             ((not (warning-disabled-p "Guards"))
+                                              (mv (collect-ideals new-fns wrld2
+                                                                  nil)
+                                                  (collect-ideal-user-defuns
+                                                   wrld2)))
+                                             (t (mv nil nil)))
+                                            (cond
+                                             ((or new-bad-fns all-bad-fns)
+                                              (print-certify-book-guards-warning
+                                               full-book-name new-bad-fns
+                                               all-bad-fns k ctx state))
+                                             (t state)))
+                                           (er-progn
+                                            (chk-certify-book-step-3
+                                             post-alist2 post-alist1 ctx state)
+                                            (state-global-let*
+                                             ((connected-book-directory
 
 ; This binding is for the call of compile-certified-file below, though perhaps
 ; there will be other uses.
 
-                                             directory-name))
-                                           (pprogn
+                                               directory-name))
+                                             (pprogn
 ; Write certificate.
-                                            (print-certify-book-step-4
-                                             full-book-name
-                                             os-expansion-filename
-                                             cert-op
-                                             state)
-                                            (let* ((portcullis-cmds
-                                                    (append? portcullis-cmds0
-                                                             new-defpkg-list))
-                                                   (chk-sum
-                                                    (check-sum-cert portcullis-cmds
-                                                                    expansion-alist
-                                                                    ev-lst))
-                                                   (extra-entry
-                                                    (list* full-book-name
-                                                           user-book-name
-                                                           familiar-name
-                                                           cert-annotations
-                                                           chk-sum)))
-                                              (cond
-                                               ((not (integerp chk-sum))
+                                              (print-certify-book-step-4
+                                               full-book-name
+                                               os-expansion-filename
+                                               cert-op
+                                               state)
+                                              (let* ((portcullis-cmds
+                                                      (append? portcullis-cmds0
+                                                               new-defpkg-list))
+                                                     (chk-sum
+                                                      (check-sum-cert portcullis-cmds
+                                                                      expansion-alist
+                                                                      ev-lst))
+                                                     (extra-entry
+                                                      (list* full-book-name
+                                                             user-book-name
+                                                             familiar-name
+                                                             cert-annotations
+                                                             chk-sum)))
+                                                (cond
+                                                 ((not (integerp chk-sum))
 
 ; This really shouldn't happen!  After all, we already called read-object-file
 ; above, which calls read-object, which calls chk-bad-lisp-object.
 
-                                                (er soft ctx bad-chksum-str
-                                                    full-book-name chk-sum))
-                                               (t
+                                                  (er soft ctx bad-chksum-str
+                                                      full-book-name chk-sum))
+                                                 (t
 
 ; It is important to write the compiled file before installing the certificate
 ; file, since "make" dependencies look for the .cert file, whose existence
@@ -17584,89 +17729,89 @@
 ; first, but with a temporary name, and then move it to its final name after
 ; compilation (if any) has completed.
 
-                                                (er-let*
-                                                    ((temp-alist
-                                                      (make-certificate-files
-                                                       full-book-name
-                                                       (cons portcullis-cmds
-                                                             (access cert-obj
-                                                                     cert-obj
-                                                                     :pre-alist))
-                                                       (cons extra-entry post-alist1)
-                                                       (cons extra-entry post-alist2)
-                                                       expansion-alist
-                                                       pcert-info
-                                                       cert-op
-                                                       ctx
-                                                       state)))
-                                                  (er-progn
-                                                   (cond
-                                                    (compile-flg
-                                                     (pprogn
-                                                      (print-certify-book-step-5
-                                                       full-book-name state)
-                                                      (er-progn
-                                                       (write-expansion-file
-                                                        portcullis-cmds
-                                                        declaim-list
-                                                        new-fns
-                                                        (expansion-filename
-                                                         full-book-name nil state)
-                                                        expansion-alist
-                                                        expansion-alist-pkg-names
-                                                        ev-lst
-                                                        pass1-known-package-alist
-                                                        ctx state)
+                                                  (er-let*
+                                                      ((temp-alist
+                                                        (make-certificate-files
+                                                         full-book-name
+                                                         (cons portcullis-cmds
+                                                               (access cert-obj
+                                                                       cert-obj
+                                                                       :pre-alist))
+                                                         (cons extra-entry post-alist1)
+                                                         (cons extra-entry post-alist2)
+                                                         expansion-alist
+                                                         pcert-info
+                                                         cert-op
+                                                         ctx
+                                                         state)))
+                                                    (er-progn
+                                                     (cond
+                                                      (compile-flg
+                                                       (pprogn
+                                                        (print-certify-book-step-5
+                                                         full-book-name state)
+                                                        (er-progn
+                                                         (write-expansion-file
+                                                          portcullis-cmds
+                                                          declaim-list
+                                                          new-fns
+                                                          (expansion-filename
+                                                           full-book-name nil state)
+                                                          expansion-alist
+                                                          expansion-alist-pkg-names
+                                                          ev-lst
+                                                          pass1-known-package-alist
+                                                          ctx state)
+                                                         #-acl2-loop-only
+                                                         (progn
+                                                           (compile-certified-file
+                                                            os-expansion-filename
+                                                            full-book-name
+                                                            state)
+                                                           (when (not (f-get-global
+                                                                       'save-expansion-file
+                                                                       state))
+                                                             (delete-expansion-file
+                                                              os-expansion-filename state))
+                                                           (value nil))
+                                                         (value nil))))
+                                                      (t
                                                        #-acl2-loop-only
-                                                       (progn
-                                                         (compile-certified-file
-                                                          os-expansion-filename
-                                                          full-book-name
-                                                          state)
-                                                         (when (not (f-get-global
-                                                                     'save-expansion-file
-                                                                     state))
-                                                           (delete-expansion-file
-                                                            os-expansion-filename state))
-                                                         (value nil))
-                                                       (value nil))))
-                                                    (t
+                                                       (delete-auxiliary-book-files
+                                                        full-book-name)
+                                                       (value nil)))
                                                      #-acl2-loop-only
-                                                     (delete-auxiliary-book-files
-                                                      full-book-name)
-                                                     (value nil)))
-                                                   #-acl2-loop-only
-                                                   (progn
+                                                     (progn
 ; Install temporary certificate file(s).
-                                                     (delete-cert-files
-                                                      full-book-name)
-                                                     (loop for pair in
-                                                           temp-alist
-                                                           do
-                                                           (rename-file
-                                                            (pathname-unix-to-os
-                                                             (car pair)
-                                                             state)
-                                                            (pathname-unix-to-os
-                                                             (cdr pair)
-                                                             state)))
-                                                     (value nil))
-                                                   (pprogn
-                                                    (cond
-                                                     (expansion-alist0
+                                                       (delete-cert-files
+                                                        full-book-name)
+                                                       (loop for pair in
+                                                             temp-alist
+                                                             do
+                                                             (rename-file
+                                                              (pathname-unix-to-os
+                                                               (car pair)
+                                                               state)
+                                                              (pathname-unix-to-os
+                                                               (cdr pair)
+                                                               state)))
+                                                       (value nil))
+                                                     (pprogn
+                                                      (cond
+                                                       (expansion-alist0
 
 ; Note that we are not in the Convert procedure.  So we know that
 ; expansion-alist0 came from a .acl2x file, not a .pcert0 file.
 
-                                                      (observation
-                                                       ctx
-                                                       "Used expansion-alist ~
+                                                        (observation
+                                                         ctx
+                                                         "Used expansion-alist ~
                                                         obtained from file ~
                                                         ~x0."
-                                                       acl2x-file))
-                                                     (t state))
-                                                    (value
-                                                     full-book-name))))))))))))))))))))))))))))))))))))))))
+                                                         acl2x-file))
+                                                       (t state))
+                                                      (value
+                                                       full-book-name)))))))))))))))))))))))))))))))))))))))))
 
 #+acl2-loop-only
 (defmacro certify-book (user-book-name

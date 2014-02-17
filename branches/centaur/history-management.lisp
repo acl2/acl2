@@ -4983,14 +4983,21 @@
                            (and (atom namex) (not (symbolp namex))))
                        wrld
                      (install-proof-supporters namex ttree wrld)))
+            (wrld1a (if (and (f-get-global 'in-local-flg state)
+                             (f-get-global 'certify-book-info state)
+                             (not ; not inside include-book
+                              (global-val 'include-book-path wrld))
+                             (not (global-val 'cert-replay wrld)))
+                        (global-set 'cert-replay t wrld0)
+                      wrld0))
             (wrld1 (if new-proved-fnl-insts
                        (global-set
                         'proved-functional-instances-alist
                         (append new-proved-fnl-insts
                                 (global-val 'proved-functional-instances-alist
-                                            wrld0))
-                        wrld0)
-                       wrld0))
+                                            wrld1a))
+                        wrld1a)
+                     wrld1a))
 
 ; We set world global 'skip-proofs-seen or 'redef-seen if ld-skip-proofsp or
 ; ld-redefinition-action (respectively) is non-nil and the world global is not
@@ -6668,8 +6675,8 @@
   (declare (ignore logical-name))
   `(er hard 'pe!
        "Pe! has been deprecated.  Please use :pe, which now has the ~
-        functionality formerly provided by :pe!; or consider :pcb or :pcb!.  ~
-        See :DOC history."))
+        functionality formerly provided by :pe!; or consider :pcb, :pcb!, or ~
+        :pr!.  See :DOC history."))
 
 (defun command-block-names1 (wrld ans symbol-classes)
 
