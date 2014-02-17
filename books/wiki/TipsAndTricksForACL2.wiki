@@ -18,6 +18,10 @@ Random "gotchas" that Rager has discovered while using ACL2 at an intermediate l
   # Make a *copy of all .cert.out* files for reference
   # When a theorem fails in the later book, examine the appropriate .cert.out file to see why it passed under the original theory.
 
+  * Here's some discussion of induction in ACL2
+
+  https://utlists.utexas.edu/sympa/arc/acl2-help/2014-01/msg00033.html
+
 = Gotchas =
 
   * :use hints only add the instance of the theorem being used to the hypotheses of the subgoal you're trying to prove.  They do not tell the prover to actually use to substitute the LHS of the instantiation for the RHS (provided its an equals relation).  The hypothesis will only help rewrite the conclusion of the subgoal if the RHS of the instantiated theorem (what becomes the additional hypothesis) is "less complex" (determined via some implementation-specific heuristics) than the LHS.
