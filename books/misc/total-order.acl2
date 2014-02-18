@@ -1,1 +1,2 @@
 (include-book "std/portcullis" :dir :system)
+(certify-book "total-order" ?)
