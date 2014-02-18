@@ -16196,7 +16196,7 @@
            (value ':invisible)))
 
 (defrec certify-book-info
-  (full-book-name . cert-op)
+  (full-book-name cert-op . include-book-phase)
   nil) ; could replace with t sometime
 
 (defun active-book-name (wrld state)
