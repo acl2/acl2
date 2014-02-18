@@ -10056,7 +10056,13 @@
         (state-global-let*
          ((make-event-debug-depth (1+ (f-get-global 'make-event-debug-depth
                                                     state))))
-         (let ((wrld (w state)))
+         (let ((wrld (w state))
+               (skip-check-expansion
+                (and (consp check-expansion)
+                     (let ((info (f-get-global 'certify-book-info state)))
+                       (and info
+                            (access certify-book-info info
+                                    :include-book-phase))))))
            (er-let*
                ((debug-depth (make-event-debug-pre form on-behalf-of state))
                 (expansion0/new-kpa/new-ttags-seen
@@ -10075,6 +10081,8 @@
                                       (eq check-expansion t))
                                  (not (eq check-expansion t))))
                    (value (list* expansion? nil nil)))
+                  (skip-check-expansion
+                   (value (list* check-expansion nil nil)))
                   (t
                    (do-proofs?
                     (or check-expansion
@@ -10098,24 +10106,15 @@
                 (need-event-landmark-p
                  (pprogn
                   (make-event-debug-post debug-depth expansion0 state)
-                  (mv-let
-                   (flg1 w)
-                   (cond ((equal new-ttags-seen
-                                 (global-val 'ttags-seen wrld))
-                          (mv nil wrld))
-                         (t (mv t (global-set 'ttags-seen new-ttags-seen
-                                              wrld))))
-                   (mv-let
-                    (flg2 w)
-                    (cond ((and check-expansion
-                                (f-get-global 'certify-book-info state)
-                                (not (global-val 'cert-replay wrld)))
-                           (mv t (global-set 'cert-replay t w)))
-                          (t (mv nil w)))
-                    (cond ((or flg1 flg2)
-                           (pprogn (set-w! w state)
-                                   (value t)))
-                          (t (value nil)))))))
+                  (cond ((equal new-ttags-seen
+                                (global-val 'ttags-seen wrld))
+                         (value nil))
+                        (t (pprogn
+                            (set-w 'extension
+                                   (global-set 'ttags-seen new-ttags-seen
+                                               wrld)
+                                   state)
+                            (value t))))))
                 (wrld0 (value (w state)))
                 (expansion1/stobjs-out/result
                  (make-event-fn1
@@ -17119,7 +17118,8 @@
                (state-global-let*
                 ((certify-book-info (make certify-book-info
                                           :full-book-name full-book-name
-                                          :cert-op cert-op))
+                                          :cert-op cert-op
+                                          :include-book-phase nil))
                  (match-free-error nil)
                  (defaxioms-okp-cert defaxioms-okp)
                  (skip-proofs-okp-cert skip-proofs-okp)
@@ -17598,7 +17598,14 @@
                                                 (declaim-list
                                                  (state-global-let*
                                                   ((ld-redefinition-action
-                                                    nil))
+                                                    nil)
+                                                   (certify-book-info
+                                                    (change certify-book-info
+                                                            (f-get-global
+                                                             'certify-book-info
+                                                             state)
+                                                            :include-book-phase
+                                                            t)))
 
 ; Note that we do not bind connected-book-directory before calling
 ; include-book-fn, because it will bind it for us.  We leave the directory set
