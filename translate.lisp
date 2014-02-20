@@ -5253,10 +5253,14 @@
                        ,live-var)))
                  (the-maybe-live-var-bindings (cdr stobj-names))))))
 
+#-acl2-loop-only
 (defun stobj-let-fn-raw (x)
 
 ; Warning: Keep this in sync with stobj-let-fn and with the
 ; handling of stobj-let in translate11.
+
+; This function could be admitted into the logic were it not for the call of
+; congruent-stobj-rep-raw below.
 
 ; See the Essay on Nested Stobjs.
 
@@ -5264,7 +5268,7 @@
    (msg bound-vars actuals stobj producer-vars producer updaters
         corresp-accessor-fns consumer)
    (parse-stobj-let x)
-   (declare (ignore stobj updaters corresp-accessor-fns))
+   (declare (ignore updaters corresp-accessor-fns))
    (cond (msg (er hard 'stobj-let "~@0" msg))
          (t
 
@@ -5325,19 +5329,27 @@
           `(let* (,@(pairlis$ bound-vars (pairlis$ actuals nil))
                   ,@(the-live-var-bindings bound-vars))
              (declare (ignorable ,@bound-vars))
-             ,(cond
-               ((cdr producer-vars)
-                `(mv-let ,producer-vars
-                         ,producer
-                         ,@(let ((ignore-vars (intersection-eq producer-vars
-                                                               bound-vars)))
-                             (and ignore-vars
-                                  `((declare (ignore ,@ignore-vars)))))
-                         ,consumer))
-               (t `(let ((,(car producer-vars) ,producer))
-                     ,@(and (member-eq (car producer-vars) bound-vars)
-                            `((declare (ignore ,(car producer-vars)))))
-                     ,consumer))))))))
+             ,(let* ((modified-bound-vars (intersection-eq producer-vars
+                                                           bound-vars))
+                     (flush-form
+                      #-hons nil
+                      #+hons
+                      (and modified-bound-vars
+                           `(memoize-flush ,(congruent-stobj-rep-raw stobj)))))
+                (cond
+                 ((cdr producer-vars)
+                  `(mv-let ,producer-vars
+                           ,producer
+                           ,@(and modified-bound-vars
+                                  `((declare (ignore ,@modified-bound-vars))))
+                           ,(if flush-form
+                                `(progn ,flush-form ,consumer)
+                              consumer)))
+                 (t `(let ((,(car producer-vars) ,producer))
+                       ,@(and modified-bound-vars
+                              `((declare (ignore ,@modified-bound-vars))))
+                       ,@(and flush-form (list flush-form))
+                       ,consumer)))))))))
 
 (defun stobj-field-accessor-p (fn stobj wrld)
   (and
