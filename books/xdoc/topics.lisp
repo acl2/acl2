@@ -197,8 +197,8 @@ use @(see defxdoc-raw) instead.</p>")
 language that is the basis of XDOC documentation strings."
 
   :long "<p>XDOC uses an XML markup language that is similar to a subset of <a
-href='http://en.wikipedia.org/wiki/HTML'>HTML</a>.  Note that in XML, beginning
-and ending tags really need to be balanced.</p>
+href='http://en.wikipedia.org/wiki/HTML'>HTML</a>.  Note that unlike HTML,
+beginning and ending tags are case-sensitive and must match exactly.</p>
 
 <h3>Formatting Text</h3>
 
