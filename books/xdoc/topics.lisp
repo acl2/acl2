@@ -179,7 +179,7 @@ markup) language, and may also use @(see preprocessor) commands to insert
 function definitions, theorems, topic links, and so on.</p>
 
 <p>Many examples of using XDOC can be found throughout the ACL2 books.  See for
-instance the @(see acl2::std), @(see acl2::str) or @(see acl2::osets)
+instance the @(see acl2::std), @(see acl2::str) or @(see acl2::std/osets)
 libraries.</p>
 
 <h3>Note for Advanced Users</h3>

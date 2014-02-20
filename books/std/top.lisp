@@ -44,7 +44,7 @@ but please be aware that things may change out from under you.</p>
 
 <p>So far, @('std') itself includes libraries about
    <see topic='@(url std/lists)'>lists</see>,
-   <see topic='@(url osets)'>sets</see>,
+   <see topic='@(url std/osets)'>sets</see>,
    <see topic='@(url std/alists)'>alists</see>,
    <see topic='@(url std/typed-lists)'>typed-lists</see>, and
    <see topic='@(url std/io)'>input/output</see>.

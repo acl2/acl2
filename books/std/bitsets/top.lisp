@@ -25,7 +25,7 @@
 (defxdoc std/bitsets
   :parents (std)
   :short "Optimized libraries for representing finite sets of natural numbers
-using bit masks, featuring a strong connection to the @(see osets) library."
+using bit masks, featuring a strong connection to the @(see std/osets) library."
 
   :long "<h3>Introduction</h3>
 

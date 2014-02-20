@@ -24,6 +24,7 @@
 (include-book "catpath")
 (include-book "date")
 (include-book "getpid")
+(include-book "lisptype")
 (include-book "ls")
 (include-book "mkdir")
 (include-book "file-types")

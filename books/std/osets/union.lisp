@@ -114,7 +114,7 @@
 
 
 (defsection union
-  :parents (osets)
+  :parents (std/osets)
   :short "@(call union) constructs the union of @('X') and @('Y')."
 
   :long "<p>The logical definition is very simple, and the essential

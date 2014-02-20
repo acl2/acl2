@@ -16,11 +16,20 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
-; Original authors: Jared Davis <jared@centtech.com>
-;                   Sol Swords <sswords@centtech.com>
+; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "date")
-(include-book "getpid")
-(include-book "file-types")
-(include-book "lisptype")
+(include-book "../lisptype")
+(include-book "std/util/defconsts" :dir :system)
+(include-book "misc/assert" :dir :system)
+
+(defconsts (*type* state)
+  (oslib::lisp-type))
+
+(defconsts (*version* state)
+  (oslib::lisp-version))
+
+(assert! (stringp *type*))
+(assert! (stringp *version*))
+
+

@@ -268,7 +268,7 @@ properties.</p>
 list functions like @(see append), @(see reverse), @(see set-difference$),
 @(see union$), etc.  This is often sufficient for lightweight set reasoning.  A
 heavier-weight (but not necessarily recommended) alternative is to use the
-@(see osets) library.</p>"
+@(see std/osets) library.</p>"
 
   (defun set-equiv (x y)
     (declare (xargs :guard (and (true-listp x)

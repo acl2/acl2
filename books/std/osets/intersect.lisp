@@ -180,7 +180,7 @@
 
 
 (defsection intersect
-  :parents (osets)
+  :parents (std/osets)
   :short "@(call intersect) constructs the intersection of @('X') and @('Y')."
 
   :long "<p>The logical definition is very simple, and the essential
@@ -294,7 +294,7 @@ consing.</p>"
 
 
 (defsection intersectp
-  :parents (osets)
+  :parents (std/osets)
   :short "@(call intersectp) checks whether @('X') and @('Y') have any common
 members."
 

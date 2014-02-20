@@ -17,7 +17,7 @@
 
 
 (defsection delete
-  :parents (osets)
+  :parents (std/osets)
   :short "@(call delete) removes the element @('a') from the set @('X')."
 
   :long "<p>If @('a') is not a member of @('X'), then the result is just @('X')

@@ -16,7 +16,7 @@
 (set-verify-guards-eagerness 2)
 
 (defsection cardinality
-  :parents (osets)
+  :parents (std/osets)
   :short "@(call cardinality) computes the number of elements in @('X')."
 
   :long "<p>This is like @(see length), but respects the non-set convention and

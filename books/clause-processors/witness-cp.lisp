@@ -793,7 +793,6 @@
     :rule-classes :clause-processor))
 
 (defxdoc witness-cp
-  
   :parents (proof-automation)
   :short "Clause processor for quantifier-based reasoning"
   :long "<p>You should not call witness-cp directly, but rather using the
@@ -916,7 +915,7 @@ provided hints:</p>
  })
 
 <p> Then when we want to use this reasoning strategy, we can provide a computed
- hint:</p.
+ hint:</p>
 @({
  :hints ((witness :ruleset subsetp-witnessing-rules))
  })

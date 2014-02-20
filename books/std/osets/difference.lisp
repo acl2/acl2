@@ -138,7 +138,7 @@
 
 
 (defsection difference
-  :parents (osets)
+  :parents (std/osets)
   :short "@(call difference) removes all members of @('Y') from @('X')."
 
   :long "<p>The logical definition is very simple, and the essential

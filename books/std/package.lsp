@@ -93,9 +93,8 @@
                     add-to-ruleset
                     ;; makes :instance hints more convenient
                     a b c d e f g h i j k l m n o p q r s t u v w x y z
-                    ;; To make SET::Osets print as just Osets in the XDOC index
-                    osets
-                    ;; For similar nice-documentation reasons
+                    ;; for nicer (package-free) documentation links
+                    std/osets
                     std)
                  (set-difference-eq-exec
                   *standard-acl2-imports*
@@ -181,7 +180,7 @@
                     std
                     std/util
                     std/bitsets
-                    osets
+                    std/osets
                     __function__
                     raise
                     define

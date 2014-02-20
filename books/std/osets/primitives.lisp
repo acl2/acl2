@@ -22,7 +22,7 @@
 
 
 (defxdoc primitives
-  :parents (osets)
+  :parents (std/osets)
   :short "Replacements for @('car'), @('cdr'), etc., that respect the
 <i>non-set convention</i>."
 

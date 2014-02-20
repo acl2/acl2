@@ -268,8 +268,8 @@ collecting variables, we always relate them back to @('aig-vars').</p>
 
 <p>The variable collection strategy used by @('aig-vars') is to memoize the
 whole computation; this implicitly records, for every AND node, the exact set
-of variables that are found under that node.  We use ordinary @(see osets) as
-our variable set representation so that merging these sets is linear at each
+of variables that are found under that node.  We use ordinary @(see std/osets)
+as our variable set representation so that merging these sets is linear at each
 node.  The overall complexity is then @('O(n^2)') in the size of the AIG.</p>
 
 <p>This approach records the full variable information for every AND node

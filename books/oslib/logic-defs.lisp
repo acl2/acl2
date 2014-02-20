@@ -24,11 +24,11 @@
 (include-book "tools/include-raw" :dir :system)
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
+(local (xdoc::set-default-parents oslib))
 
 (define argv (&optional (state 'state))
   :returns (mv (arguments string-listp)
                (state state-p1 :hyp (force (state-p1 state))))
-  :parents (oslib)
   :short "Get the \"application level\" command line arguments passed to ACL2."
 
   :long "<p>Typically, @('(argv)') is useful for writing command-line programs
@@ -119,7 +119,6 @@ any better, so that's just how it is.</p>"
 (define date (&optional (state 'state))
   :returns (mv (datestamp stringp :rule-classes :type-prescription)
                (state state-p1 :hyp (force (state-p1 state))))
-  :parents (oslib)
   :short "Get the current datestamp, like \"November 17, 2010 10:25:33\"."
 
   :long "<p>In the logic this function reads from the ACL2 oracle.  In the
@@ -142,7 +141,6 @@ Common Lisp system.</p>"
                         (not pid))
                     :rule-classes :type-prescription)
                (state state-p1 :hyp (force (state-p1 state))))
-  :parents (oslib)
   :short "Get the current process identification (PID) number."
 
   :long "<p>This will just fail if called on an unsupported Lisp.</p>"
@@ -179,7 +177,6 @@ Common Lisp system.</p>"
                            (equal (string-listp val) (not error))))
                (state state-p1
                       :hyp (force (state-p1 state))))
-  :parents (oslib)
   :short "Get a subdirectory listing."
 
   :long "<p>In the logic this function reads from the ACL2 oracle.  In the
@@ -214,7 +211,6 @@ not full paths like @('\"/home/users/jared/foo\"').</p>"
                          (equal (string-listp val) (not error))))
                (state state-p1
                       :hyp (force (state-p1 state))))
-  :parents (oslib)
   :short "Get a file listing."
 
   :long "<p>In the logic this function reads from the ACL2 oracle.  In the
@@ -245,7 +241,6 @@ subdirectories) of the given @('path').</p>
                           permissions, illegal file names, etc.")
                (state state-p1
                       :hyp (force (state-p1 state))))
-  :parents (oslib)
   :short "Make new directories if they don't already exist, like @('mkdir -p'),
 and return a success indicator so you can recover from errors."
 
@@ -268,7 +263,6 @@ errors.</p>"
                &optional
                (state 'state))
   :returns (state state-p1 :hyp (force (state-p1 state)))
-  :parents (oslib)
   :short "Make new directories if they don't already exist, like @('mkdir -p'),
 or cause a hard error if there is any problem."
 
@@ -293,7 +287,6 @@ failure.</p>"
                           permissions, illegal file names, etc.")
                (state state-p1
                       :hyp (force (state-p1 state))))
-  :parents (oslib)
   :short "Recursively delete files, like the shell command @('rm -rf'), and
 return a success indicator so you can recover from errors."
 
@@ -309,3 +302,68 @@ detect errors.</p>"
                  val)))
     (mv okp state)))
 
+
+(define lisp-type (&optional (state 'state))
+  :returns (mv (description stringp :rule-classes :type-prescription
+                            "E.g., @('\"Clozure Common Lisp\").")
+               (state state-p1 :hyp (force (state-p1 state))))
+  :short "Get a host-Lisp specific string describing what kind of Common Lisp
+implementation this is."
+  :long "<p>In the logic this function reads from the ACL2 oracle.  In the
+execution, we call the Common Lisp function @('lisp-implementation-type').
+When this produces a string, we return it.</p>
+
+<p>Note that the Common Lisp @('lisp-implementation-type') function is
+technically allowed to return @('nil'); in this case we return the empty
+string.</p>"
+
+  (b* (((mv err val state) (read-acl2-oracle state))
+       (description (if (and (not err)
+                             (stringp val))
+                        val
+                      "")))
+    (mv description state)))
+
+(define lisp-type (&optional (state 'state))
+  :returns (mv (description stringp :rule-classes :type-prescription
+                            "E.g., @('\"Clozure Common Lisp\").")
+               (state state-p1 :hyp (force (state-p1 state))))
+  :short "Get a host-Lisp specific string describing what kind of Common Lisp
+implementation this is."
+
+  :long "<p>In the logic this function reads from the ACL2 oracle.  In the
+execution, we call the Common Lisp function @('lisp-implementation-type'), and
+return whatever string it produces.</p>
+
+<p>Note that the Common Lisp @('lisp-implementation-type') function is
+technically allowed to return @('nil'); in this case we return the empty
+string.</p>"
+
+  (b* (((mv err val state) (read-acl2-oracle state))
+       (description (if (and (not err)
+                             (stringp val))
+                        val
+                      "")))
+    (mv description state)))
+
+(define lisp-version (&optional (state 'state))
+  :returns (mv (description stringp :rule-classes :type-prescription
+                            "E.g., @('\"Version 1.9-r15996  (LinuxX8664)\").")
+               (state state-p1 :hyp (force (state-p1 state))))
+  :short "Get a host-Lisp specific string describing the version number for
+this Common Lisp implementation."
+
+  :long "<p>In the logic this function reads from the ACL2 oracle.  In the
+execution, we call the Common Lisp function @('lisp-implementation-version'),
+and return the string it produces.</p>
+
+<p>Note that the Common Lisp @('lisp-implementation-type') function is
+technically allowed to return @('nil'); in this case we return the empty
+string.</p>"
+
+  (b* (((mv err val state) (read-acl2-oracle state))
+       (description (if (and (not err)
+                             (stringp val))
+                        val
+                      "")))
+    (mv description state)))

@@ -29,7 +29,7 @@
 
 
 (defsection in
-  :parents (osets)
+  :parents (std/osets)
   :short "@(call in) determines if @('a') is a member of the set @('X')."
 
   :long "<p>The logical definition of @('in') makes no mention of the set
@@ -283,7 +283,7 @@ automatically be used instead.</p>"
 
 
 (defsection subset
-  :parents (osets)
+  :parents (std/osets)
   :short "@(call subset) determines if @('X') is a subset of @('Y')."
 
   :long "<p>We use a logically simple definition, but using MBE we exploit the
@@ -383,7 +383,7 @@ galloping.</p>"
 
 
 (defsection all-by-membership
-  :parents (osets)
+  :parents (std/osets)
   :short "A way to quantify over sets."
 
   :long "<p>@('all-by-membership') is a generic theorem that can be used to
@@ -561,7 +561,7 @@ instantiated to reduce a proof of @('(all X)') to a proof of</p>
 
 
 (defsection pick-a-point-subset-strategy
-  :parents (osets)
+  :parents (std/osets)
   :short "Automatic pick-a-point proofs of @(see subset)."
 
   :long "<p>The rewrite rule @('pick-a-point-subset-strategy') tries to
@@ -701,7 +701,7 @@ if you do not want to use the pick-a-point method to solve your goal.</p>"
 
 
 (defsection double-containment
-  :parents (osets)
+  :parents (std/osets)
   :short "A strategy for proving sets are equal because they are subsets
 of one another."
 

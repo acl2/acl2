@@ -244,7 +244,7 @@ really we could avoid that by just being a bit smarter, like in defsort.</p>"
 
 
 (defsection mergesort
-  :parents (osets)
+  :parents (std/osets)
   :short "@(call mergesort) converts the list @('X') into an ordered set."
 
   :long "<p>Logically, @('(mergesort x)') is exactly the same as repeated

@@ -63,7 +63,7 @@
    (acl2::value `(table xdoc::xdoc 'xdoc::doc
                         (append ',slurped-docs (xdoc::get-xdoc-table acl2::world))))))
 
-(defxdoc osets
+(defxdoc std/osets
   :parents (std)
   :short "A finite set theory implementation for ACL2 based on fully ordered
 lists.  Some major features of this approach are that set equality is just
