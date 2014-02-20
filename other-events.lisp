@@ -13964,21 +13964,26 @@
 (defun newly-defined-top-level-fns-rec (trips collect-p full-book-name acc)
 
 ; Trips is a world segment in reverse order, i.e., with oldest events first.
-; Initially trips corresponds to the part of the world added by an include-book
-; event for full-book-name.  We accumulate into acc (which is eventually
-; returned) the list of function symbols defined in trips whose definition
-; comes from the top level of the book with path full-book-name, rather than
-; some sub-book; or, if full-book-name is nil, then we accumulate events not
-; inside any book.  Collect-p is true only when we are to collect up such
-; function symbols.
+; Initially trips corresponds to an extension of the certification world by
+; either by processing all the events in the book during the proof pass of
+; certify-book on full-book-name (none of the events being local, in that
+; case), or else by processing an initial subsequence of those events followed
+; by including that book (but replacing each of the already-processed events by
+; a no-op; see cert-include-expansion-alist).  We accumulate into acc (which is
+; eventually returned) the list of function symbols defined in trips whose
+; definition comes from the top level of the book with path full-book-name,
+; rather than some sub-book; or, if full-book-name is nil, then we accumulate
+; events not inside any book.  Collect-p is true only when we are to collect up
+; such function symbols.
 
   (cond ((endp trips)
          acc)
         ((and (eq (caar trips) 'include-book-path)
               (eq (cadar trips) 'global-value))
          (newly-defined-top-level-fns-rec (cdr trips)
-                                          (equal (car (cddar trips))
-                                                 full-book-name)
+                                          (or (null (cddar trips))
+                                              (equal (car (cddar trips))
+                                                     full-book-name))
                                           full-book-name
                                           acc))
         ((not collect-p)
