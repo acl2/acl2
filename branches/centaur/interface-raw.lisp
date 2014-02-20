@@ -5581,12 +5581,19 @@
             (setf (get the-live-name 'redundant-raw-lisp-discriminator)
                   (cond (absp template-or-event)
                         (t (list* 'defstobj
-                                  (car template-or-event)
-                                  (cadr template-or-event)
-                                  (caddr template-or-event)
-                                  (if (sixth template-or-event)
+                                  (access defstobj-template template-or-event
+                                          :recognizer)
+                                  (access defstobj-template template-or-event
+                                          :creator)
+                                  (access defstobj-template template-or-event
+                                          :field-templates)
+                                  (if (access defstobj-template
+                                              template-or-event
+                                              :congruent-to)
                                       (congruent-stobj-rep-raw
-                                       (sixth template-or-event))
+                                       (access defstobj-template
+                                               template-or-event
+                                               :congruent-to))
                                     name)))))
 
 ; At one point we executed the following form.  But now we see that this is not
