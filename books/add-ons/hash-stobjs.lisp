@@ -407,28 +407,26 @@
 
 
 
-(defun defstobj-fields-template (field-descriptors renaming wrld)
+(defun defstobj-field-templates (field-descriptors renaming wrld)
 
 ; Note: Wrld may be a world or nil.  See fix-stobj-array-type.
 
   (cond
    ((endp field-descriptors) nil)
    (t
-    (let* ((field (if (atom (car field-descriptors))
-                      (car field-descriptors)
-                    (car (car field-descriptors))))
-           (type (if (consp (car field-descriptors))
-                     (or (cadr (assoc-keyword :type
-                                              (cdr (car field-descriptors))))
+    (let* ((field-desc (car field-descriptors))
+           (field (if (atom field-desc)
+                      field-desc
+                    (car field-desc)))
+           (type (if (consp field-desc)
+                     (or (cadr (assoc-keyword :type (cdr field-desc)))
                          t)
                    t))
-           (init (if (consp (car field-descriptors))
-                     (cadr (assoc-keyword :initially
-                                          (cdr (car field-descriptors))))
+           (init (if (consp field-desc)
+                     (cadr (assoc-keyword :initially (cdr field-desc)))
                    nil))
-           (resizable (if (consp (car field-descriptors))
-                          (cadr (assoc-keyword :resizable
-                                               (cdr (car field-descriptors))))
+           (resizable (if (consp field-desc)
+                          (cadr (assoc-keyword :resizable (cdr field-desc)))
                         nil))
 ;---<
            (key2 (if (consp type)
@@ -452,37 +450,39 @@
 ;   >---
            (resize-name (defstobj-fnname field :resize key2 renaming))
            (length-name (defstobj-fnname field :length key2 renaming)))
-      (cons (list fieldp-name
-                  (cond ((and (consp type)
-                              (eq (car type) 'array))
-                         (fix-stobj-array-type type wrld))
-                        (t type))
-                  init
-                  accessor-name
-                  updater-name
-                  length-name
-                  resize-name
-                  resizable
+      (cons (make defstobj-field-template
+                  :fieldp-name fieldp-name
+                  :type (cond ((and (consp type)
+                                    (eq (car type) 'array))
+                               (fix-stobj-array-type type wrld))
+                              (t type))
+                  :init init
+                  :accessor-name accessor-name
+                  :updater-name updater-name
+                  :length-name length-name
+                  :resize-name resize-name
+                  :resizable resizable
 ;---<
-                  boundp-name
-                  accessor?-name
-                  remove-name
-                  count-name
-                  clear-name
-                  init-name
+                  :other
+                  (list boundp-name
+                        accessor?-name
+                        remove-name
+                        count-name
+                        clear-name
+                        init-name)
 ;   >---
                   )
-            (defstobj-fields-template
+            (defstobj-field-templates
               (cdr field-descriptors) renaming wrld))))))
 
-(defun defstobj-raw-init-fields (ftemps)
+(defun defstobj-raw-init-fields (field-templates)
 
 ; Keep this in sync with defstobj-axiomatic-init-fields.
 
   (cond
-   ((endp ftemps) nil)
-   (t (let* ((field-template (car ftemps))
-             (type (nth 1 field-template))
+   ((endp field-templates) nil)
+   (t (let* ((field-template (car field-templates))
+             (type (access defstobj-field-template field-template :type))
              (arrayp (and (consp type) (eq (car type) 'array)))
 ;---<
              (hashp (and (consp type) (eq (car type) 'hash-table)))
@@ -491,11 +491,18 @@
                                             (caddr type)
                                           20)))
 ;   >---
-             (array-etype (and arrayp (cadr type)))
+             (array-etype0 (and arrayp (cadr type)))
              (array-size (and arrayp (car (caddr type))))
-             (stobj-creator (get-stobj-creator (if arrayp array-etype type)
+             (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
                                                nil))
-             (init (nth 2 field-template)))
+             (array-etype (and arrayp
+
+; See comment for this binding in defstobj-field-fns-raw-defs.
+
+                               (if stobj-creator
+                                   t
+                                 array-etype0)))
+             (init (access defstobj-field-template field-template :init)))
         (cond
          (arrayp
           (cons (cond (stobj-creator
@@ -522,7 +529,7 @@
                       (t `(make-array$ ,array-size
                                        :element-type ',array-etype
                                        :initial-element ',init)))
-                (defstobj-raw-init-fields (cdr ftemps))))
+                (defstobj-raw-init-fields (cdr field-templates))))
 ;---<
          (hashp
           (cons `(make-hash-table
@@ -535,18 +542,21 @@
                      (t (er hard hash-test
                             "The hash test should be either EQL or EQUAL.~%")))
                   :size ,hash-init-size)
-                (defstobj-raw-init-fields (cdr ftemps))))
+                (defstobj-raw-init-fields (cdr field-templates))))
 ;   >---
          ((eq type t)
-          (cons (kwote init) (defstobj-raw-init-fields (cdr ftemps))))
+          (cons (kwote init)
+                (defstobj-raw-init-fields (cdr field-templates))))
          (stobj-creator
-          (cons `(,stobj-creator) (defstobj-raw-init-fields (cdr ftemps))))
+          (cons `(,stobj-creator)
+                (defstobj-raw-init-fields (cdr field-templates))))
          (t (cons `(make-array$ 1
                                 :element-type ',type
                                 :initial-element ',init)
-                  (defstobj-raw-init-fields (cdr ftemps)))))))))
+                  (defstobj-raw-init-fields (cdr field-templates)))))))))
 
-(defun defstobj-component-recognizer-axiomatic-defs (name template ftemps wrld)
+(defun defstobj-component-recognizer-axiomatic-defs (name template
+                                                          field-templates wrld)
 
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
 
@@ -561,9 +571,10 @@
 ; in an order suitable for processing (components first, then top-level).
 
   (cond
-   ((endp ftemps)
-    (let* ((recog-name (car template))
-           (field-templates (caddr template))
+   ((endp field-templates)
+    (let* ((recog-name (access defstobj-template template :recognizer))
+           (field-templates (access defstobj-template template
+                                    :field-templates))
            (n (length field-templates)))
 
 ; Rockwell Addition: See comment below.
@@ -586,8 +597,12 @@
                                    field-templates 0 name nil)
                                t)))))
    (t
-    (let ((recog-name (nth 0 (car ftemps)))
-          (type (nth 1 (car ftemps))))
+    (let ((recog-name (access defstobj-field-template
+                              (car field-templates)
+                              :fieldp-name))
+          (type (access defstobj-field-template
+                        (car field-templates)
+                        :type)))
 
 ; Below we simply append the def or defs for this field to those for
 ; the rest.  We get two defs for each array field and one def for each
@@ -602,9 +617,9 @@
                                               :verify-guards t))
                               (if (atom x)
                                   (equal x nil)
-                                  (and ,(translate-stobj-type-to-guard
-                                         etype '(car x) wrld)
-                                       (,recog-name (cdr x)))))))
+                                (and ,(translate-stobj-type-to-guard
+                                       etype '(car x) wrld)
+                                     (,recog-name (cdr x)))))))
 ;---<
              ((and (consp type)
                    (eq (car type) 'hash-table))
@@ -616,18 +631,18 @@
 ;   >---
              (t (let ((type-term (translate-stobj-type-to-guard
                                   type 'x wrld)))
-                  
-; We may not use x in the type-term and so have to declare it ignorable.
+
+; We might not use x in the type-term and so have to declare it ignorable.
 
                   `(,recog-name (x)
                                 (declare (xargs :guard t
                                                 :verify-guards t)
                                          (ignorable x))
                                 ,type-term))))
-            (defstobj-component-recognizer-axiomatic-defs 
-              name template (cdr ftemps) wrld))))))
+            (defstobj-component-recognizer-axiomatic-defs
+              name template (cdr field-templates) wrld))))))
 
-(defun defstobj-field-fns-axiomatic-defs (top-recog var n ftemps wrld)
+(defun defstobj-field-fns-axiomatic-defs (top-recog var n field-templates wrld)
 
 ; Wrld is normally a logical world, but it can be nil when calling this
 ; function from raw Lisp.
@@ -650,11 +665,15 @@
 ; that property immediately after the corresponding accessor definition.
 
   (cond
-   ((endp ftemps)
+   ((endp field-templates)
     nil)
-   (t (let* ((field-template (car ftemps))
-             (type (nth 1 field-template))
-             (init (nth 2 field-template))
+   (t (let* ((field-template (car field-templates))
+             (type (access defstobj-field-template
+                           field-template
+                           :type))
+             (init (access defstobj-field-template
+                           field-template
+                           :init))
              (arrayp (and (consp type) (eq (car type) 'array)))
 ;---<
              (hashp (and (consp type) (eq (car type) 'hash-table)))
@@ -675,18 +694,31 @@
                        t
                      (translate-stobj-type-to-guard array-etype 'v wrld))))
              (array-length (and arrayp (car (caddr type))))
-             (accessor-name (nth 3 field-template))
-             (updater-name (nth 4 field-template))
-             (length-name (nth 5 field-template))
-             (resize-name (nth 6 field-template))
-             (resizable (nth 7 field-template))
+             (accessor-name (access defstobj-field-template
+                                    field-template
+                                    :accessor-name))
+             (updater-name (access defstobj-field-template
+                                   field-template
+                                   :updater-name))
+             (length-name (access defstobj-field-template
+                                  field-template
+                                  :length-name))
+             (resize-name (access defstobj-field-template
+                                  field-template
+                                  :resize-name))
+             (resizable (access defstobj-field-template
+                                field-template
+                                :resizable))
 ;---<
-             (boundp-name (nth 8 field-template))
-             (accessor?-name (nth 9 field-template))
-             (remove-name (nth 10 field-template))
-             (count-name (nth 11 field-template))
-             (clear-name (nth 12 field-template))
-             (init-name (nth 13 field-template))
+             (other (access defstobj-field-template
+                            field-template
+                            :other))
+             (boundp-name (nth 0 other))
+             (accessor?-name (nth 1 other))
+             (remove-name (nth 2 other))
+             (count-name (nth 3 other))
+             (clear-name (nth 4 other))
+             (init-name (nth 5 other))
 ;   >---
              )
         (cond
@@ -739,7 +771,7 @@
                                              :verify-guards t))
                              (update-nth-array ,n i v ,var)))
            (defstobj-field-fns-axiomatic-defs
-             top-recog var (+ n 1) (cdr ftemps) wrld)))
+             top-recog var (+ n 1) (cdr field-templates) wrld)))
 ;---<
          (hashp
           (append
@@ -808,10 +840,10 @@
                        (ignorable size rehash-size rehash-threshold))
               (update-nth ,n nil ,var)))
            (defstobj-field-fns-axiomatic-defs
-             top-recog var (+ n 1) (cdr ftemps) wrld)))
+             top-recog var (+ n 1) (cdr field-templates) wrld)))
 ;   >---
          (t
-          (append 
+          (append
            `((,accessor-name (,var)
                              (declare (xargs :guard (,top-recog ,var)
                                              :verify-guards t))
@@ -825,22 +857,26 @@
                                             :verify-guards t))
                             (update-nth ,n v ,var)))
            (defstobj-field-fns-axiomatic-defs
-             top-recog var (+ n 1) (cdr ftemps) wrld))))))))
+             top-recog var (+ n 1) (cdr field-templates) wrld))))))))
 
-(defun defstobj-axiomatic-init-fields (ftemps wrld)
+(defun defstobj-axiomatic-init-fields (field-templates wrld)
 
 ; Keep this in sync with defstobj-raw-init-fields.
 
   (cond
-   ((endp ftemps) nil)
-   (t (let* ((field-template (car ftemps))
-             (type (nth 1 field-template))
+   ((endp field-templates) nil)
+   (t (let* ((field-template (car field-templates))
+             (type (access defstobj-field-template
+                           field-template
+                           :type))
              (arrayp (and (consp type) (eq (car type) 'array)))
              (array-size (and arrayp (car (caddr type))))
 ;---<
              (hashp (and (consp type) (eq (car type) 'hash-table)))
 ;   >---
-             (init0 (nth 2 field-template))
+             (init0 (access defstobj-field-template
+                            field-template
+                            :init))
              (creator (get-stobj-creator (if arrayp (cadr type) type)
                                          wrld))
              (init (if creator
@@ -849,17 +885,18 @@
         (cond
          (arrayp
           (cons `(make-list ,array-size :initial-element ,init)
-                (defstobj-axiomatic-init-fields (cdr ftemps) wrld)))
+                (defstobj-axiomatic-init-fields (cdr field-templates) wrld)))
 ;---<
          (hashp
           (cons nil
-                (defstobj-axiomatic-init-fields (cdr ftemps) wrld)))
+                (defstobj-axiomatic-init-fields (cdr field-templates) wrld)))
 ;   >---
          (t ; whether the type is given or not is irrelevant
           (cons init
-                (defstobj-axiomatic-init-fields (cdr ftemps) wrld))))))))
+                (defstobj-axiomatic-init-fields
+                  (cdr field-templates) wrld))))))))
 
-(defun defstobj-field-fns-raw-defs (var flush-var inline n ftemps)
+(defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
 ; Warning: Keep the formals in the definitions below in sync with corresponding
 ; formals defstobj-field-fns-raw-defs.  Otherwise trace$ may not work
@@ -869,12 +906,12 @@
 
   #-hons (declare (ignorable flush-var)) ; irrelevant var without hons
   (cond
-   ((endp ftemps) nil)
+   ((endp field-templates) nil)
    (t
     (append
-     (let* ((field-template (car ftemps))
-            (type (nth 1 field-template))
-            (init (nth 2 field-template))
+     (let* ((field-template (car field-templates))
+            (type (access defstobj-field-template field-template :type))
+            (init (access defstobj-field-template field-template :init))
             (arrayp (and (consp type) (eq (car type) 'array)))
             (array-etype0 (and arrayp (cadr type)))
             (stobj-creator (get-stobj-creator (if arrayp array-etype0 type)
@@ -903,20 +940,33 @@
                            (if (array-etype-is-fixnum-type array-etype)
                                'fix-aref
                              vref)))
-            (accessor-name (nth 3 field-template))
-            (updater-name (nth 4 field-template))
-            (length-name (nth 5 field-template))
-            (resize-name (nth 6 field-template))
-            (resizable (nth 7 field-template))
+            (accessor-name (access defstobj-field-template
+                                   field-template
+                                   :accessor-name))
+            (updater-name (access defstobj-field-template
+                                  field-template
+                                  :updater-name))
+            (length-name (access defstobj-field-template
+                                 field-template
+                                 :length-name))
+            (resize-name (access defstobj-field-template
+                                 field-template
+                                 :resize-name))
+            (resizable (access defstobj-field-template
+                               field-template
+                               :resizable))
 ;---<
             (hashp (and (consp type) (eq (car type) 'hash-table)))
             (hash-test (and hashp (cadr type)))
-            (boundp-name (nth 8 field-template))
-            (accessor?-name (nth 9 field-template))
-            (remove-name (nth 10 field-template))
-            (count-name (nth 11 field-template))
-            (clear-name (nth 12 field-template))
-            (init-name (nth 13 field-template))
+            (other (access defstobj-field-template
+                           field-template
+                           :other))
+            (boundp-name (nth 0 other))
+            (accessor?-name (nth 1 other))
+            (remove-name (nth 2 other))
+            (count-name (nth 3 other))
+            (clear-name (nth 4 other))
+            (init-name (nth 5 other))
 ;   >---
             )
        (cond
@@ -995,8 +1045,8 @@
                                (eql 'eql)
                                (equal 'equal)
                                (t (er hard hash-test
-                                      "The hash test should be either ~
-EQL or EQUAL.~%")))
+                                      "The hash test should be either EQL or ~
+                                       EQUAL.~%")))
                      :size (or size 60)
                      :rehash-size (if rehash-size
                                       (float rehash-size)
@@ -1081,8 +1131,12 @@ EQL or EQUAL.~%")))
             (declare (type (and fixnum (integer 0 *)) i)
                      (type ,array-etype v))
             ,@(and inline (list *stobj-inline-declare*))
-            (progn 
+            (progn
               #+hons (memoize-flush ,flush-var)
+
+; See the long comment below for the updater in the scalar case, about
+; supporting *1* functions.
+
               (setf (,vref (the ,simple-type (svref ,var ,n))
                            (the (and fixnum (integer 0 *)) i))
                     (the ,array-etype v))
@@ -1099,12 +1153,16 @@ EQL or EQUAL.~%")))
 ; For the case of a stobj field, we considered causing an error here since the
 ; raw Lisp code for stobj-let avoids calling updaters because there is no need:
 ; updates for fields that are stobjs have already updated destructively.
-; However, updaters can be called when evaluating forms at the top level, so we
-; have decided not to cause such an error here.
+; However, a raw Lisp updater can be called by a *1* function, say *1*f,
+; applied to live stobjs, when guard checking does not pass control to the raw
+; Lisp function, f.  Perhaps we could optimize to avoid this, but there is no
+; need; this setf is fast and is only called on behalf of executing *1*
+; function calls.  See the comment referencing "defstobj-field-fns-raw-defs" in
+; community book misc/nested-stobj-tests.lisp.  To see this point in action,
+; evaluate the forms under that comment after modifying this definition by
+; uncommenting the following line of code.
 
-                            ;; !! Think about the comment above -- can we avoid this update.  I mean, we'd
-                            ;; better be dealing only with live stobjs here, right?  Otherwise don't we
-                            ;; have all sorts of problems using setf?
+;                           ,@(when stobj-creator '((break$))) ; see just above
 
                             (setf (svref ,var ,n) v)
                             ,var))))
@@ -1127,7 +1185,8 @@ EQL or EQUAL.~%")))
                                          0)
                                    (the ,scalar-type v))
                              ,var)))))))
-     (defstobj-field-fns-raw-defs var flush-var inline (1+ n) (cdr ftemps))))))
+     (defstobj-field-fns-raw-defs
+       var flush-var inline (1+ n) (cdr field-templates))))))
 
 
 (defun chk-stobj-field-descriptor (name field-descriptor ctx wrld state)
@@ -1192,7 +1251,11 @@ EQL or EQUAL.~%")))
                     (etype-term ; used only when (not stobjp)
                      (and (not stobjp) ; optimization
                           (translate-declaration-to-guard etype 'x wrld)))
-                    (n (car (caddr type0))))
+                    (n (car (caddr type0)))
+                    (etype-error-string
+                     "The element type specified for the ~x0 field of ~x1, ~
+                      namely ~x2, is not recognized by ACL2 as a type-spec ~
+                      (see :DOC type-spec) or as a user-defined stobj name."))
                (cond
                 ((not (natp n))
                  (er soft ctx
@@ -1202,7 +1265,11 @@ EQL or EQUAL.~%")))
                       illegal."
                      type0 field name))
                 (stobjp ; Defstobj-raw-init-fields depends on this check.
-                 (cond ((null initp) (value nil))
+                 (cond ((eq etype 'state)
+                        (er soft ctx
+                            etype-error-string
+                            field name etype))
+                       ((null initp) (value nil))
                        (t (er soft ctx
                               "The :initially keyword must be omitted for a ~
                                :type specified as an array of stobjs.  But ~
@@ -1211,10 +1278,8 @@ EQL or EQUAL.~%")))
                               type init field name))))
                 ((null etype-term)
                  (er soft ctx
-                     "The element type specified for the ~x0 field of ~
-                      ~x1, namely ~x2, is not recognized by ACL2 as a ~
-                      type-spec or a stobj name.  See :DOC type-spec."
-                     field name type))
+                     etype-error-string
+                     field name etype))
                 (t
                  (er-let*
                      ((pair (simple-translate-and-eval etype-term
@@ -1261,21 +1326,30 @@ EQL or EQUAL.~%")))
                                     EQUAL
                                     #+(and hons (not acl2-loop-only))
                                     HONS-EQUAL))))
-                 (er soft ctx "A hash-table type must be specified as ~
-                              (HASH-TABLE TEST), where test is EQL, ~
-                              EQUAL, or (when built with the HONS ~
-                              extension) HONS-EQUAL.  The test given was ~
-                              ~x0.~%" (and (consp (cdr type))
-                                           (cadr type))))
+                 (er soft ctx
+                     "A hash-table type must be specified as (HASH-TABLE ~
+                      TEST), where test is EQL, EQUAL, or (when built with ~
+                      the HONS extension) HONS-EQUAL.  The test given was ~
+                      ~x0.~%"
+                     (and (consp (cdr type))
+                          (cadr type))))
                 (t (value nil))))
 ;   >---
         (t (let* ((stobjp (stobjp type t wrld))
                   (type-term ; used only when (not stobjp)
                    (and (not stobjp) ; optimization
-                        (translate-declaration-to-guard type 'x wrld))))
+                        (translate-declaration-to-guard type 'x wrld)))
+                  (type-error-string
+                   "The :type specified for the ~x0 field of ~x1, namely ~x2, ~
+                    is not recognized by ACL2 as a type-spec (see :DOC ~
+                    type-spec) or as a user-defined stobj name."))
              (cond
               (stobjp ; Defstobj-raw-init-fields depends on this check.
-               (cond ((null initp) (value nil))
+               (cond ((eq type 'state)
+                      (er soft ctx
+                          type-error-string
+                          field name type))
+                     ((null initp) (value nil))
                      (t (er soft ctx
                             "The :initially keyword must be omitted for a ~
                              :type specified as a stobj.  But for :type ~x0, ~
@@ -1284,9 +1358,7 @@ EQL or EQUAL.~%")))
                             type init field name))))
               ((null type-term)
                (er soft ctx
-                   "The :type specified for the ~x0 field of ~x1, namely ~x2, ~
-                    is not recognized by ACL2 as a type-spec or a stobj name. ~
-                    ~ See :DOC type-spec."
+                   type-error-string
                    field name type))
               (t
                (er-let* ((pair (simple-translate-and-eval type-term
@@ -1446,29 +1518,38 @@ EQL or EQUAL.~%")))
                                         const-names))))))))
 
 
-(defun put-stobjs-in-and-outs1 (name ftemps wrld)
+(defun put-stobjs-in-and-outs1 (name field-templates wrld)
 
 ; See put-stobjs-in-and-outs for a table that explains what we're doing.
 
   (cond
-   ((endp ftemps) wrld)
-   (t (let ((type (nth 1 (car ftemps)))
-            (acc-fn (nth 3 (car ftemps)))
-            (upd-fn (nth 4 (car ftemps)))
-            (length-fn (nth 5 (car ftemps)))
-            (resize-fn (nth 6 (car ftemps)))
-;;---<
-            (boundp-fn (nth 8 (car ftemps)))
-            (accessor?-fn (nth 9 (car ftemps)))
-            (remove-fn (nth 10 (car ftemps)))
-            (count-fn (nth 11 (car ftemps)))
-            (clear-fn (nth 12 (car ftemps)))
-            (init-fn (nth 13 (car ftemps)))
-;;   >---
-            )
+   ((endp field-templates) wrld)
+   (t (let* ((field-template (car field-templates))
+             (type (access defstobj-field-template field-template
+                           :type))
+             (acc-fn (access defstobj-field-template field-template
+                             :accessor-name))
+             (upd-fn (access defstobj-field-template field-template
+                             :updater-name))
+             (length-fn (access defstobj-field-template field-template
+                                :length-name))
+             (resize-fn (access defstobj-field-template field-template
+                                :resize-name))
+             ;;---<
+             (other (access defstobj-field-template
+                            field-template
+                            :other))
+             (boundp-fn (nth 0 other))
+             (accessor?-fn (nth 1 other))
+             (remove-fn (nth 2 other))
+             (count-fn (nth 3 other))
+             (clear-fn (nth 4 other))
+             (init-fn (nth 5 other))
+             ;;   >---
+             )
         (put-stobjs-in-and-outs1
          name
-         (cdr ftemps)
+         (cdr field-templates)
          (cond
           ((and (consp type)
                 (eq (car type) 'array))
@@ -1476,7 +1557,7 @@ EQL or EQUAL.~%")))
                   (stobj-flg (and (stobjp etype t wrld)
                                   etype)))
              (putprop
-              length-fn 'stobjs-in (list name) 
+              length-fn 'stobjs-in (list name)
               (putprop
                resize-fn 'stobjs-in (list nil name)
                (putprop

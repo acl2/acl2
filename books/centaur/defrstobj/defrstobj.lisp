@@ -216,12 +216,30 @@ records book.  See @(see def-typed-record).</p>")
 ;   (2) we extend it with the :typed-record field, etc.
 
 
+(defmacro access-defstobj-field-template (x field)
+  `(acl2::access acl2::defstobj-field-template ,x ,field))
+
+(defun destructure-defstobj-field-template (x)
+
+  ;; BOZO this has to be kept in sync with defstobj-field-template.
+
+  (let ((fieldp-name (access-defstobj-field-template x :fieldp-name))
+        (type (access-defstobj-field-template x :type))
+        (init (access-defstobj-field-template x :init))
+        (accessor-name (access-defstobj-field-template x :accessor-name))
+        (updater-name (access-defstobj-field-template x :updater-name))
+        (length-name (access-defstobj-field-template x :length-name))
+        (resize-name (access-defstobj-field-template x :resize-name))
+        (resizable (access-defstobj-field-template x :resizable)))
+    (list fieldp-name type init accessor-name updater-name length-name
+          resize-name resizable)))
+
 (defun make-fta (field-name typed-rec fix defstobj-fld-template mksym-pkg tr-table)
   (declare (xargs :mode :program))
   (b* (((list recog-name type init accessor-name updater-name length-name
               resize-name resizable)
         ;; BOZO this has to be kept in sync with defstobj-template
-        defstobj-fld-template)
+        (destructure-defstobj-field-template defstobj-fld-template))
 
 
        ;; We could just override the init settting with the typed-record init
@@ -631,7 +649,25 @@ records book.  See @(see def-typed-record).</p>")
 
 
 
+(defmacro access-defstobj-template (x field)
+  `(acl2::access acl2::defstobj-template ,x ,field))
 
+(defun destructure-defstobj-template (x)
+
+  ;; BOZO this has to be kept in sync with defstobj-template.
+
+  (let ((recognizer (access-defstobj-template x :recognizer))
+        (creator (access-defstobj-template x :creator))
+        (field-templates (access-defstobj-template x :field-templates))
+        (doc (access-defstobj-template x :doc))
+        (inline (access-defstobj-template x :inline))
+        (congruent-to (access-defstobj-template x :congruent-to)))
+    (list recognizer
+          creator
+          field-templates
+          doc
+          inline
+          congruent-to)))
 
 (defun defrstobj-fn (name args wrld)
   (declare (ignorable wrld)
@@ -652,9 +688,9 @@ records book.  See @(see def-typed-record).</p>")
        (name$c        (mksym name '$c))
        (st-fields$c   (make-$c-fields st-fields mksym-pkg))
        (st-template   (defstobj-template name$c (append st-fields$c st-kw-part) wrld))
-       ((list recog$c create$c st$c-fld-templates ?doc ?inline)
+       ((list recog$c create$c st$c-fld-templates ?doc ?inline ?congruent-to)
         ;; BOZO this has to be kept in sync with defstobj-template.
-        st-template)
+        (destructure-defstobj-template st-template))
 
        (tr-table      (table-alist 'typed-records wrld))
 

@@ -124,12 +124,30 @@
 ;
 ;   (2) we extend it with the :typed-record field, etc.
 
+(defmacro access-defstobj-field-template (x field)
+  `(acl2::access acl2::defstobj-field-template ,x ,field))
+
+(defun destructure-defstobj-field-template (x)
+
+  ;; BOZO this has to be kept in sync with defstobj-field-template.
+
+  (let ((fieldp-name (access-defstobj-field-template x :fieldp-name))
+        (type (access-defstobj-field-template x :type))
+        (init (access-defstobj-field-template x :init))
+        (accessor-name (access-defstobj-field-template x :accessor-name))
+        (updater-name (access-defstobj-field-template x :updater-name))
+        (length-name (access-defstobj-field-template x :length-name))
+        (resize-name (access-defstobj-field-template x :resize-name))
+        (resizable (access-defstobj-field-template x :resizable)))
+    (list fieldp-name type init accessor-name updater-name length-name
+          resize-name resizable)))
+
 (defun make-fta (field-name defstobj-fld-template tr-alist mksym-pkg)
 
   (b* (((list recog-name type init accessor-name updater-name length-name
               resize-name resizable)
         ;; BOZO this has to be kept in sync with defstobj-template
-        defstobj-fld-template)
+        (destructure-defstobj-field-template defstobj-fld-template))
 
 ; For array fields, we'll add an :arr-rec-name field that gives the name of the
 ; additional record part of the array+record pair we'll use to implement this
@@ -813,6 +831,25 @@
        (equal-when-weak-stp-rhs (cdr ftas))))))
 
 
+(defmacro access-defstobj-template (x field)
+  `(acl2::access acl2::defstobj-template ,x ,field))
+
+(defun destructure-defstobj-template (x)
+
+  ;; BOZO this has to be kept in sync with defstobj-template.
+
+  (let ((recognizer (access-defstobj-template x :recognizer))
+        (creator (access-defstobj-template x :creator))
+        (field-templates (access-defstobj-template x :field-templates))
+        (doc (access-defstobj-template x :doc))
+        (inline (access-defstobj-template x :inline))
+        (congruent-to (access-defstobj-template x :congruent-to)))
+    (list recognizer
+          creator
+          field-templates
+          doc
+          inline
+          congruent-to)))
 
 (defun defrstobj-fn (name args wrld)
   (declare (ignorable wrld)
@@ -830,9 +867,9 @@
        (st-fields     (eat-typed-records rsfs))
        (st-kw-part    (alist-to-keyword-alist st-kw-alist nil))
        (st-template   (defstobj-template name (append st-fields st-kw-part) wrld))
-       ((list namep create-name st-fld-templates ?doc ?inline)
+       ((list namep create-name st-fld-templates ?doc ?inline ?congruent-to)
         ;; BOZO this has to be kept in sync with defstobj-template.
-        st-template)
+        (destructure-defstobj-template st-template))
 
        (ftas (make-ftas (strip-cars tr-alist) st-fld-templates tr-alist mksym-pkg))
 
@@ -866,7 +903,8 @@
        ;; Regenerate the templates that the extended form will use, so that
        ;; we'll have FTAs for the array records and the other extra fields.
        (ext-st-template (defstobj-template name args wrld))
-       ((list & & ext-st-fld-templates & &) ext-st-template)
+       ((list & & ext-st-fld-templates & &)
+        (destructure-defstobj-template ext-st-template))
        (ext-ftas (make-ftas (strip-cars st-fields+) ext-st-fld-templates tr-alist mksym-pkg))
 
        (misc-fta           (find-fta misc-name ext-ftas))
