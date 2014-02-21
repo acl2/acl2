@@ -5268,7 +5268,8 @@
    (msg bound-vars actuals stobj producer-vars producer updaters
         corresp-accessor-fns consumer)
    (parse-stobj-let x)
-   (declare (ignore updaters corresp-accessor-fns))
+   (declare (ignore updaters corresp-accessor-fns
+                    #-hons stobj))
    (cond (msg (er hard 'stobj-let "~@0" msg))
          (t
 
