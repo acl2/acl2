@@ -772,11 +772,11 @@ etc.</p>"
     :predicate (not (equal x y))
     :expr (or (not (integerp x))
               (not (integerp y))
-              (let ((bit (hide (logbitp-mismatch x y))))
+              (let ((bit (logbitp-mismatch? x y)))
                 (and (natp bit)
                      (not (equal (logbitp bit x)
                                  (logbitp bit y))))))
-    :generalize (((hide (logbitp-mismatch x y)) . wbit))
+    :generalize (((logbitp-mismatch? x y) . wbit))
     :hints ('(:in-theory (enable logbitp-mismatch-correct
                                  logbitp-mismatch-under-iff
                                  ifix-when-integerp)
@@ -808,16 +808,31 @@ etc.</p>"
                     (true-listp x))))
   (verify-guards eqbylbp-collect-terms))
 
+(std::defaggregate eqbylbp-config
+  ((restriction pseudo-termp)
+   (witness-rule wcp-witness-rule-p)
+   (instance-rule (and (wcp-instance-rule-p instance-rule)
+                       (equal (len (wcp-instance-rule->vars instance-rule)) 1)))
+   (prune-examples)
+   (passes posp)
+   (simp-hint)
+   (add-hints)
+   (verbosep)))
+
+(local (in-theory (disable (force))))
+
 (define eqbylbp-check-witnesses ((x pseudo-term-listp)
-                                   (rule wcp-witness-rule-p)
-                                   (restriction-term pseudo-termp)
-                                   state)
+                                 (config eqbylbp-config-p)
+                                 state)
   :returns (mv (apply-witness-list boolean-listp)
                (new-terms pseudo-term-listp))
   (b* (((when (atom x)) (mv nil nil))
+       ((eqbylbp-config config) config)
+       (rule config.witness-rule)
        ((wcp-witness-rule rule) rule)
+       (restriction-term config.restriction)
        ((mv rest-apply rest-terms)
-        (eqbylbp-check-witnesses (cdr x) rule restriction-term state))
+        (eqbylbp-check-witnesses (cdr x) config state))
        ((unless (mbt (and (pseudo-termp (car x))
                           (wcp-witness-rule-p rule))))
         (mv (cons nil rest-apply)
@@ -840,18 +855,32 @@ etc.</p>"
     (mv (cons t rest-apply) (cons new-term rest-terms)))
   ///
   (defthm eqbylbp-check-witnesses-len-of-apply-list
-    (equal (len (mv-nth 0 (eqbylbp-check-witnesses x rule restriction state)))
+    (equal (len (mv-nth 0 (eqbylbp-check-witnesses x config state)))
            (len x))))
 
+(define eqbylbp-simplify ((x pseudo-termp)
+                          (config eqbylbp-config-p)
+                          (equiv symbolp)
+                          state)
+  :mode :program
+  (b* (((eqbylbp-config config) config)
+       ((mv erp rw state)
+        (easy-simplify-term1-fn
+         x nil config.simp-hint equiv t t 1000 1000 state))
+       ((when erp)
+        (raise "Logbitp-reasoning: error simplifying ~x0: ~x1" x erp)
+        (mv x state)))
+    (mv rw state)))
+
 (define eqbylbp-simplify-each ((x pseudo-term-listp)
-                               hint
+                               (config eqbylbp-config-p)
+                               (equiv symbolp)
                                state)
   :mode :program
-  (b* (((when (atom x)) (value nil))
-       ((er first) (easy-simplify-term1-fn
-                    (car x) nil hint 'iff t t 1000 1000 state))
-       ((er rest) (eqbylbp-simplify-each (cdr x) hint state)))
-    (value (cons first rest))))
+  (b* (((when (atom x)) (mv nil state))
+       ((mv first state) (eqbylbp-simplify (car x) config equiv state))
+       ((mv rest state) (eqbylbp-simplify-each (cdr x) config equiv state)))
+    (mv (cons first rest) state)))
 
 (define eqbylbp-is-var ((x pseudo-termp)
                         (var symbolp))
@@ -880,73 +909,77 @@ etc.</p>"
 (define eqbylbp-collect-examples-for-target ((avail-logbitp-args pseudo-term-list-listp)
                                              (var symbolp)
                                              (target-logbitp-args pseudo-term-listp)
-                                             (examples pseudo-term-listp))
-  :verify-guards nil
-  :returns (new-examples pseudo-term-listp
-                         :hyp (and (pseudo-term-listp examples)
-                                   (pseudo-term-list-listp avail-logbitp-args)
-                                   (pseudo-term-listp target-logbitp-args)))
-  (b* (((when (atom avail-logbitp-args)) examples)
+                                             (examples pseudo-term-listp)
+                                             (config eqbylbp-config-p)
+                                             state)
+  :mode :program
+  ;; :returns (mv (new-examples pseudo-term-listp
+  ;;                            :hyp (and (pseudo-term-listp examples)
+  ;;                                      (pseudo-term-list-listp avail-logbitp-args)
+  ;;                                      (pseudo-term-listp target-logbitp-args)))
+  ;;              state)
+  (b* (((when (atom avail-logbitp-args)) (mv examples state))
        ((unless (equal (cadr (car avail-logbitp-args))
                        (cadr target-logbitp-args)))
         (eqbylbp-collect-examples-for-target
-         (cdr avail-logbitp-args) var target-logbitp-args examples))
+         (cdr avail-logbitp-args) var target-logbitp-args examples config state))
        ((mv ok res) (eqbylbp-solve-for-var (car (car avail-logbitp-args))
                                            var
-                                           `(nfix ,(car target-logbitp-args))))
+                                           (car target-logbitp-args)))
        ((unless ok)
         (eqbylbp-collect-examples-for-target
-         (cdr avail-logbitp-args) var target-logbitp-args examples))
-       (rest (eqbylbp-collect-examples-for-target
-              (cdr avail-logbitp-args) var target-logbitp-args examples)))
-    (if (member-equal res rest) rest (cons res rest)))
-  ///
-  (local (defthm true-listp-when-pseudo-term-listp
-           (implies (pseudo-term-listp x)
-                    (true-listp x))))
-  (verify-guards eqbylbp-collect-examples-for-target))
+         (cdr avail-logbitp-args) var target-logbitp-args examples config state))
+       ;; ((mv simp state) (eqbylbp-simplify res config 'equal state))
+       (simp res)
+       ((mv rest state)
+        (eqbylbp-collect-examples-for-target
+         (cdr avail-logbitp-args) var target-logbitp-args examples
+         config state)))
+    (mv (if (member-equal simp rest) rest (cons simp rest))
+        state)))
 
 (define eqbylbp-collect-examples-targets ((avail-logbitp-args pseudo-term-list-listp)
                                           (var symbolp)
                                           (target-logbitp-args pseudo-term-list-listp)
-                                          (examples pseudo-term-listp))
+                                          (examples pseudo-term-listp)
+                                          (config eqbylbp-config-p)
+                                          state)
   ;; Avail-logbitp-args are the (n x) from calls (logbitp n x) available by
   ;; instantiating an equality with logbitp by var.  We look for ways to
   ;; instantiate var such that these match similar pairs from
   ;; target-logbitp-args.  Returns the list of such terms (that we can
   ;; substitute for var to make some available term match a target term).
-  :returns (new-examples pseudo-term-listp
-                         :hyp (and (pseudo-term-listp examples)
-                                   (pseudo-term-list-listp avail-logbitp-args)
-                                   (pseudo-term-list-listp target-logbitp-args)))
-  (if (atom target-logbitp-args)
-      examples
+  :mode :program
+  ;; :returns (mv st
+  ;;              (new-examples pseudo-term-listp
+  ;;                            :hyp (and (pseudo-term-listp examples)
+  ;;                                      (pseudo-term-list-listp avail-logbitp-args)
+  ;;                                      (pseudo-term-list-listp target-logbitp-args))))
+  (b* (((when (atom target-logbitp-args)) (mv examples state))
+       ((mv examples state)
+        (eqbylbp-collect-examples-for-target
+      avail-logbitp-args var (car target-logbitp-args) examples config state)))
     (eqbylbp-collect-examples-targets
      avail-logbitp-args var (cdr target-logbitp-args)
-     (eqbylbp-collect-examples-for-target
-      avail-logbitp-args var (car target-logbitp-args) examples))))
+     examples config state)))
 
 
-(define eqbylbp-eval-example ((rule wcp-instance-rule-p)
-                              (alist pseudo-term-val-alistp)
+(define eqbylbp-eval-example ((alist pseudo-term-val-alistp)
                               (example pseudo-termp)
-                              hint state)
+                              (config eqbylbp-config-p)
+                              state)
   :mode :program
-  :guard (eql (len (wcp-instance-rule->vars rule)) 1)
   ;; Tries instantiating rule using alist + binding of rule.vars (singleton) to example.
   ;; Returns the list of logbitp args present in the simplification of the result.
-  (b* (((wcp-instance-rule rule) rule)
+  (b* (((eqbylbp-config config) config)
+       (rule config.instance-rule)
+       ((wcp-instance-rule rule) rule)
        (alist1 (append (pairlis$ rule.vars (list example))
                        alist))
        (newterm (wcp-beta-reduce-term (substitute-into-term rule.expr alist1)))
        ; (- (cw "Term: ~x0~%" newterm))
-       ((mv erp newterm-rw state)
-        (easy-simplify-term1-fn
-         newterm nil hint 'iff t t 1000 1000 state))
-       ; (- (cw "Rewritten: ~x0~%" newterm-rw))
-       ((when erp)
-        (raise "Error simplifying: ~x0" erp)
-        (mv nil nil state))
+       ((mv newterm-rw state)
+        (eqbylbp-simplify newterm config 'iff state))
        (includep (equal newterm-rw ''t)
         ;; nil
         )
@@ -954,13 +987,11 @@ etc.</p>"
     (mv includep (eqbylbp-collect-terms newterm-rw) state)))
   
 
-(define eqbylbp-try-example ((rule wcp-instance-rule-p)
-                             (alist pseudo-term-val-alistp)
+(define eqbylbp-try-example ((alist pseudo-term-val-alistp)
                              (example pseudo-termp)
                              (target-logbitp-args pseudo-term-list-listp)
-                             hint state)
+                             (config eqbylbp-config-p) state)
   :mode :program
-  :guard (eql (len (wcp-instance-rule->vars rule)) 1)
   ;; :returns (mv (example? wcp-example-appsp)
   ;;              (new-logbitp-args pseudo-term-list-listp
   ;;                                :hyp (and (wcp-instance-rule-p rule)
@@ -968,24 +999,26 @@ etc.</p>"
   ;;                                          (pseudo-termp example)
   ;;                                          (pseudo-term-list-listp target-logbitp-args)))
   ;;              state1)
-  (b* (((mv includep new-logbitp-args state)
-        (eqbylbp-eval-example rule alist example hint state))
+  (b* (((eqbylbp-config config) config)
+       ((mv includep new-logbitp-args state)
+        (eqbylbp-eval-example alist example config state))
        ; (- (cw "Logbitp args for ~x0: ~x1~%" example new-logbitp-args))
        (intersection (intersection-equal new-logbitp-args target-logbitp-args))
-       ((unless (or includep intersection))
-        ; (cw "Rejected: ~x0 (produced: ~x1)~%" example new-logbitp-args)
+       ((unless (or includep intersection (not config.prune-examples)))
+        (and config.verbosep
+             (cw "Rejected: ~x0 (produced: ~x1)~%" example new-logbitp-args))
         (mv nil target-logbitp-args state))
        (new-targets (set-difference-equal new-logbitp-args intersection)))
-    (mv (list (make-wcp-example-app :instrule rule
+    (mv (list (make-wcp-example-app :instrule config.instance-rule
                                     :bindings (list example)))
         (append new-targets target-logbitp-args)
         state)))
 
-(define eqbylbp-try-examples ((rule wcp-instance-rule-p)
-                              (alist pseudo-term-val-alistp)
+(define eqbylbp-try-examples ((alist pseudo-term-val-alistp)
                               (examples pseudo-term-listp)
                               (target-logbitp-args pseudo-term-list-listp)
-                              hint state)
+                              (config eqbylbp-config-p)
+                              state)
   ;; Examples are terms that we think might cause an instantiation of rule
   ;; (using substition alist) to match some target-logbitp-args.  We check each
   ;; such example and return:
@@ -998,31 +1031,30 @@ etc.</p>"
   (b* (((when (atom examples))
         (mv nil target-logbitp-args state))
        ((mv first-examples target-logbitp-args state)
-        (eqbylbp-try-example rule alist (car examples) target-logbitp-args hint state))
+        (eqbylbp-try-example alist (car examples) target-logbitp-args config state))
        ((mv rest-examples target-logbitp-args state)
-        (eqbylbp-try-examples rule alist (cdr examples) target-logbitp-args hint state)))
+        (eqbylbp-try-examples alist (cdr examples) target-logbitp-args config state)))
     (mv (append first-examples rest-examples) target-logbitp-args state)))
         
                              
 
 
 (define eqbylbp-decide-examples-lit ((lit pseudo-termp)
-                                      (var symbolp)
-                                      (target-logbitp-args pseudo-term-list-listp)
-                                      (rule wcp-instance-rule-p)
-                                      (restriction-term pseudo-termp)
-                                      hint
-                                      state)
-  :guard (eql (len (wcp-instance-rule->vars rule)) 1)
+                                     (var symbolp)
+                                     (target-logbitp-args pseudo-term-list-listp)
+                                     (config eqbylbp-config-p)
+                                     state)
   :mode :program
   (b* (((unless (mbt (and (pseudo-termp lit)
-                          (wcp-instance-rule-p rule)
-                          (eql (len (wcp-instance-rule->vars rule)) 1))))
+                          (eqbylbp-config-p config))))
         (mv nil target-logbitp-args state))
+       ((eqbylbp-config config) config)
+       (rule config.instance-rule)
        ((wcp-instance-rule rule) rule)
        ((mv unify-ok alist)
         (simple-one-way-unify rule.pred lit nil))
        ((unless unify-ok) (mv nil target-logbitp-args state))
+       (restriction-term config.restriction)
        ((mv er res)
         (if (equal restriction-term ''t)
             (mv nil t)
@@ -1032,16 +1064,16 @@ etc.</p>"
        ((unless (and (not er) res))
         (mv nil target-logbitp-args state))
        ((mv & avail-logbitp-args state)
-        (eqbylbp-eval-example rule alist var hint state))
+        (eqbylbp-eval-example alist var config state))
        ; (- (cw "Available: ~x0~%" avail-logbitp-args))
-       (example-terms
+       ((mv example-terms state)
         (eqbylbp-collect-examples-targets avail-logbitp-args
                                           var
                                           target-logbitp-args
-                                          nil))
+                                          nil config state))
        ; (- (cw "Examples: ~x0~%" example-terms))
        ((mv examples target-logbitp-args state)
-        (eqbylbp-try-examples rule alist example-terms target-logbitp-args hint state))
+        (eqbylbp-try-examples alist example-terms target-logbitp-args config state))
        ; (- (cw "Pruned examples: ~x0~%" examples))
        ((when examples)
         (mv examples target-logbitp-args state)))
@@ -1054,35 +1086,33 @@ etc.</p>"
 (define eqbylbp-decide-examples ((clause pseudo-term-listp)
                                  (var symbolp)
                                  (target-logbitp-args pseudo-term-list-listp)
-                                 (rule wcp-instance-rule-p)
-                                 (restriction-term pseudo-termp)
-                                 hint state)
+                                 (config eqbylbp-config-p)
+                                 state)
   :mode :program
   (b* (((when (atom clause)) (mv nil target-logbitp-args state))
        ((mv examples1 target-logbitp-args state)
         (eqbylbp-decide-examples-lit
-         (car clause) var target-logbitp-args rule restriction-term hint state))
+         (car clause) var target-logbitp-args config state))
        ((mv rest-examples target-logbitp-args state)
         (eqbylbp-decide-examples
-         (cdr clause) var target-logbitp-args rule restriction-term hint state)))
+         (cdr clause) var target-logbitp-args config state)))
     (mv (cons examples1 rest-examples) target-logbitp-args state)))
 
 (define eqbylbp-decide-examples-passes ((count posp)
                                         (clause pseudo-term-listp)
                                         (var symbolp)
                                         (target-logbitp-args pseudo-term-list-listp)
-                                        (rule wcp-instance-rule-p)
-                                        (restriction-term pseudo-termp)
-                                        hint state)
+                                        (config eqbylbp-config-p)
+                                        state)
   :mode :program
   (b* (((mv examples target-logbitp-args state)
         (eqbylbp-decide-examples
-         clause var target-logbitp-args rule restriction-term hint state))
+         clause var target-logbitp-args config state))
        (count (1- count))
        ((when (zp count))
         (mv examples target-logbitp-args state)))
     (eqbylbp-decide-examples-passes
-     count clause var target-logbitp-args rule restriction-term hint state)))
+     count clause var target-logbitp-args config state)))
 
 (define wcp-example-apps-listp (x)
   (if (atom x)
@@ -1098,65 +1128,70 @@ etc.</p>"
 
 (define eqbylbp-pair-hints ((witness-apps boolean-listp)
                             (examples wcp-example-apps-listp)
-                            (rule wcp-witness-rule-p))
+                            (config eqbylbp-config-p))
   :guard (eql (len witness-apps) (len examples))
   :returns (actions wcp-lit-actions-listp)
   (if (atom witness-apps)
       nil
     (cons (make-wcp-lit-actions :witnesses (and (car witness-apps)
-                                                (mbt (wcp-witness-rule-p rule))
-                                                (list rule))
+                                                (mbt (eqbylbp-config-p config))
+                                                (list (eqbylbp-config->witness-rule config)))
                                 :examples (and (mbt (wcp-example-appsp (car examples)))
                                                (car examples)))
-          (eqbylbp-pair-hints (cdr witness-apps) (cdr examples) rule))))
+          (eqbylbp-pair-hints (cdr witness-apps) (cdr examples) config))))
   
 
 (define eqbylbp-witness-hints ((clause pseudo-term-listp)
-                               restrict
-                               (passes posp)
-                               simp-hint
+                               (config eqbylbp-config-p)
                                state)
   :mode :program
-  (b* ((witness-rule
-        (cdr (assoc 'unequal-by-logbitp-witnessing
-                    (table-alist 'witness-cp-witness-rules (w state)))))
-       (instance-rule
-        (cdr (assoc 'equal-by-logbitp-instancing
-                    (table-alist 'witness-cp-instance-rules (w state)))))
-       ((mv er restrict-term state)
-        (translate restrict t nil t 'logbitp-reasoning (w state) state))
-       ((when er)
-        (raise "Translate failed: ~x0" er)
-        (mv nil state))
+  (b* (((eqbylbp-config config) config)
        ((mv apply-witnesses new-lits)
-        (eqbylbp-check-witnesses clause witness-rule restrict-term state))
+        (eqbylbp-check-witnesses clause config state))
        ; (- (cw "Apply-witnesses: ~x0~%New-lits: ~x1~%" apply-witnesses new-lits))
-       ((mv er new-lits-simp state)
+       ((mv new-lits-simp state)
         (eqbylbp-simplify-each
-         (wcp-beta-reduce-list new-lits) simp-hint state))
-       ((when er)
-        (raise "Simplify failed: ~x0" er)
-        (mv nil state))
+         (wcp-beta-reduce-list new-lits) config 'iff state))
        (targets (eqbylbp-collect-terms-list (append new-lits-simp clause)))
-       ; (- (cw "Targets: ~x0~%" targets))
+       (- (and config.verbosep
+               (cw "Targets: ~x0~%" targets)))
        ((mv examples ?targets state)
         (eqbylbp-decide-examples-passes
-         passes clause 'eqbylbp-index targets instance-rule restrict-term simp-hint state)))
-    (mv (eqbylbp-pair-hints apply-witnesses examples witness-rule)
+         config.passes clause 'eqbylbp-index targets config state)))
+    (mv (eqbylbp-pair-hints apply-witnesses examples config)
         state)))
 
 (define logbitp-reasoning-fn (clause
                               restrict
                               passes
+                              prune-examples
                               simp-hint
                               add-hints
+                              verbosep
                               stablep
                               state)
   
   :mode :program
   (b* (((unless stablep) (value nil))
+       ((er restrict-term)
+        (translate restrict t nil t 'logbitp-reasoning (w state) state))
+       (witness-rule
+        (cdr (assoc 'unequal-by-logbitp-witnessing
+                    (table-alist 'witness-cp-witness-rules (w state)))))
+       (instance-rule
+        (cdr (assoc 'equal-by-logbitp-instancing
+                    (table-alist 'witness-cp-instance-rules (w state)))))
+       (config (make-eqbylbp-config
+                :restriction restrict-term
+                :witness-rule witness-rule
+                :instance-rule instance-rule
+                :prune-examples prune-examples
+                :simp-hint simp-hint
+                :add-hints add-hints
+                :passes passes
+                :verbosep verbosep))
        ((mv cp-hint state)
-        (eqbylbp-witness-hints clause restrict passes simp-hint state)))
+        (eqbylbp-witness-hints clause config state)))
     (value `(:clause-processor (witness-cp clause ',cp-hint state)
              . ,add-hints))))
 
@@ -1258,6 +1293,7 @@ but reasonable defaults (in the invocation below) are provided:</p>
  :hints ((logbitp-reasoning
           :restrict t
           :passes 1
+          :verbosep nil
           :simp-hint (:in-theory
                        (enable* logbitp-case-splits
                                 logbitp-when-bit
@@ -1291,17 +1327,20 @@ instantiations.</li>
 (defmacro logbitp-reasoning (&key 
                              (restrict 't)
                              (passes '1)
+                             (verbosep 'nil)
+                             (prune-examples 't)
                              (simp-hint '(:in-theory
                                           (enable* logbitp-case-splits
                                                    logbitp-when-bit
-                                                   acl2::logbitp-of-const-split)))
+                                                   logbitp-of-const-split)))
                              (add-hints '(:in-theory
-                                          (e/d* (logbitp-case-splits
-                                                 logbitp-when-bit
-                                                 acl2::logbitp-of-const-split)))))
+                                          (enable* logbitp-case-splits
+                                                   logbitp-when-bit
+                                                   logbitp-of-const-split))))
   `(logbitp-reasoning-fn
-    clause ',restrict ',passes ',simp-hint ',add-hints
-    stable-under-simplificationp state))
+    clause ',restrict ',passes ',prune-examples ',simp-hint ',add-hints
+    ',verbosep stable-under-simplificationp state))
+
 
 
 
@@ -1325,9 +1364,4 @@ instantiations.</li>
    :hints ((logbitp-reasoning))))
        
                                
-
-
-
-
-
 

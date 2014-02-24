@@ -17,8 +17,8 @@
 
 (in-package "ACL2")
 
-(local (include-book "arithmetic/top-with-meta" :dir :system))
 (include-book "xdoc/top" :dir :system)
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (defsection two-nats-measure
   :parents (ordinals)

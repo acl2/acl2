@@ -538,7 +538,11 @@ optimization altogether.</p>")
                (and (= (len x) 4)
                     (equal (third x) :rule-classes)))
            (consp (second x))
-           (pseudo-termp (second x)))
+           ;; [Sol] Removed this.  It would be nice to check that this is a
+           ;; well-formed "term", but it won't be a pseudo-term if e.g. it
+           ;; contains something like an implicitly quoted constant, e.g., 1.
+           ;; (pseudo-termp (second x))
+           )
       (er hard? 'da-require-p "Ill-formed requirement: ~x0.~%" x)))
 
 (defun da-requirelist-p (x)

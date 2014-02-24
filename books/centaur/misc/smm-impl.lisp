@@ -5,12 +5,12 @@
 (include-book "u32-listp")
 (include-book "std/basic/defs" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
-(local (include-book "arithmetic/top-with-meta" :dir :system))
 (include-book "arith-equivs")
 (include-book "absstobjs")
 (include-book "tools/mv-nth" :dir :system)
 (include-book "lists")
 (include-book "misc/definline" :dir :system)
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 (in-theory (enable* arith-equiv-forwarding))
 
 (local (in-theory (disable nth update-nth)))

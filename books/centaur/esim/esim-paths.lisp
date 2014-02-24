@@ -24,9 +24,9 @@
 
 (in-package "ACL2")
 (include-book "esim-sexpr-support")
-(local (include-book "esim-sexpr-support-thms"))
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defmvtypes" :dir :system)
+(local (include-book "esim-sexpr-support-thms"))
 
 (make-event
 

@@ -21,9 +21,9 @@
 (in-package "STR")
 (include-book "ieqv")
 (include-book "std/lists/list-fix" :dir :system)
+(include-book "misc/definline" :dir :system)  ;; bozo
 (local (include-book "std/lists/rev" :dir :system))
 (local (include-book "arithmetic"))
-(include-book "misc/definline" :dir :system)  ;; bozo
 
 (define digitp
   :parents (numbers)

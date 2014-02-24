@@ -7,8 +7,8 @@
 (include-book "centaur/misc/arrays" :dir :system)
 (include-book "centaur/misc/bitarr" :dir :system)
 (include-book "aignet-absstobj")
-(local (include-book "data-structures/list-defthms" :dir :system))
 (include-book "std/lists/equiv" :dir :system)
+(local (include-book "data-structures/list-defthms" :dir :system))
 
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 

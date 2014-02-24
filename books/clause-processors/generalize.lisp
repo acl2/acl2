@@ -2,11 +2,9 @@
 (in-package "ACL2")
 
 (include-book "tools/flag" :dir :system)
-
+(include-book "join-thms")
 
 (local (include-book "data-structures/list-theory" :dir :system))
-
-(include-book "join-thms")
 
 
 ;; Collect up variables

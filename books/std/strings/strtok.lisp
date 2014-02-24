@@ -21,11 +21,10 @@
 (in-package "STR")
 (include-book "cat")
 (include-book "eqv")
+(include-book "misc/definline" :dir :system)  ;; bozo
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
 (local (include-book "std/lists/revappend" :dir :system))
-
-(include-book "misc/definline" :dir :system)  ;; bozo
 
 (defsection strtok-aux
   :parents (strtok)

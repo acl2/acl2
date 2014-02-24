@@ -21,10 +21,10 @@
 (in-package "GL")
 (include-book "bfr")
 (include-book "bfr-param")
-(local (include-book "centaur/aig/aig-vars" :dir :system))
 (include-book "centaur/misc/absstobjs" :dir :system)
 (include-book "tools/clone-stobj" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
+(local (include-book "centaur/aig/aig-vars" :dir :system))
 
 
 ;; A CONSTRAINTS structure is just another Boolean function representation.

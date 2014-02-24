@@ -21,13 +21,13 @@
 (in-package "AIGNET")
 
 (include-book "aignet-exec")
-(local (include-book "aignet-exec-thms"))
 
 (include-book "aignet-logic-interface")
 
 (include-book "centaur/misc/absstobjs" :dir :system)
 (include-book "tools/clone-stobj" :dir :system)
 
+(local (include-book "aignet-exec-thms"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "clause-processors/find-subterms" :dir :system))

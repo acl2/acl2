@@ -547,6 +547,12 @@ its flag in the flag-function.</p>
           (cons (cons ',(defines-guts->name guts) ',guts)
                 (get-defines-alist world))))
 
+(defun gutslist-find-hints (gutslist)
+  (if (atom gutslist)
+      nil
+    (or (getarg :hints nil (defguts->kwd-alist (car gutslist)))
+        (gutslist-find-hints (cdr gutslist)))))
+
 
 (defun defines-fn (name args world)
   (declare (xargs :guard (plist-worldp world)))
@@ -600,7 +606,9 @@ its flag in the flag-function.</p>
                      name)))
        (flag-var          (getarg :flag-var nil kwd-alist))
        (flag-defthm-macro (getarg :flag-defthm-macro nil kwd-alist))
-       (flag-hints        (getarg :flag-hints nil kwd-alist))
+       (flag-hints        (or (getarg :flag-hints nil kwd-alist)
+                              (getarg :hints nil kwd-alist)
+                              (gutslist-find-hints gutslist)))
        (flag-mapping      (collect-flag-mapping gutslist))
 
        ((unless (no-duplicatesp-eq (strip-cdrs flag-mapping)))

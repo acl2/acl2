@@ -84,8 +84,8 @@
 ;; If it takes fewer arguments, you must provide a lambda which wraps this
 ;; function, such as (LAMBDA (CL HINTS AL) (MY-ALIST-LIST-FN CL AL)). 
 
-(local (include-book "join-thms"))
 (include-book "misc/untranslate-patterns" :dir :system)
+(local (include-book "join-thms"))
 
 (defevaluator multi-env-ev multi-env-ev-lst ((if a b c)))
 

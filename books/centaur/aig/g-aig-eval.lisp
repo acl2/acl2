@@ -30,9 +30,9 @@
 (include-book "../gl/bvecs")
 (include-book "../gl/hyp-fix")
 ;; (include-book "../gl/gify-clause-proc")
+(include-book "misc/without-waterfall-parallelism" :dir :system)
 (local (include-book "../gl/general-object-thms"))
 (local (include-book "eval-restrict"))
-(include-book "misc/without-waterfall-parallelism" :dir :system)
 
 (local (in-theory (disable gl::generic-geval gl::generic-geval-alt-def)))
 

@@ -26,8 +26,8 @@
 
 (include-book "stv-run")
 (include-book "centaur/bitops/ihsext-basics" :dir :system)
-(local (include-book "arithmetic/top-with-meta" :dir :system))
 (include-book "centaur/misc/outer-local" :dir :system)
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 
 (local (in-theory (disable vl::consp-of-car-when-cons-listp

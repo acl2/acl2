@@ -23,11 +23,12 @@
 (include-book "g-primitives-help")
 (include-book "symbolic-arithmetic-fns")
 (include-book "eval-g-base")
+(include-book "centaur/misc/outer-local" :dir :system)
 (local (include-book "eval-g-base-help"))
 (local (include-book "symbolic-arithmetic"))
 (local (include-book "hyp-fix"))
 (local (include-book "var-bounds"))
-(include-book "centaur/misc/outer-local" :dir :system)
+
 (set-inhibit-warnings "theory")
 
 (local (defthm eval-g-base-apply-of-equal

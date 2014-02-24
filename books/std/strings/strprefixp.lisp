@@ -21,9 +21,9 @@
 (in-package "STR")
 (include-book "eqv")
 (include-book "std/lists/prefixp" :dir :system)
+(include-book "misc/definline" :dir :system)  ;; bozo
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "arithmetic"))
-(include-book "misc/definline" :dir :system)  ;; bozo
 
 (local (defthm prefixp-lemma-1
          (implies (and (natp xn)

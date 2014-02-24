@@ -20,9 +20,9 @@
 
 (in-package "STR")
 (include-book "ieqv")
+(include-book "misc/definline" :dir :system)  ;; bozo
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "arithmetic"))
-(include-book "misc/definline" :dir :system)  ;; bozo
 
 (defsection ichar<
   :parents (ordering)

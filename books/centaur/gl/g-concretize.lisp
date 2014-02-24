@@ -25,10 +25,11 @@
 (include-book "g-if")
 (include-book "eval-g-base")
 (include-book "ctrex-utils")
+(include-book "g-equal")
 (local (include-book "hyp-fix"))
 (local (include-book "eval-g-base-help"))
 
-(include-book "g-equal")
+
 
 (mutual-recursion
  (defun eval-g-base-or-err (x env)

@@ -1,12 +1,12 @@
 
 (in-package "ACL2")
 
-(local (include-book "smm-impl"))
 (include-book "tools/bstar" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "misc/definline" :dir :system)
 (include-book "arith-equivs")
 (include-book "u32-listp")
+(local (include-book "smm-impl"))
 (set-enforce-redundancy t)
 
 ;; this is a dumb "memory manager" which can allocate new blocks at will, but

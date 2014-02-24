@@ -67,14 +67,14 @@
 (include-book "../../misc/sneaky-load")
 
 (include-book "../mlib/json")
-(local (include-book "../mlib/modname-sets"))
-(local (include-book "../util/arithmetic"))
-(local (include-book "../util/osets"))
 
 (include-book "centaur/getopt/top" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "progutils")
 
+(local (include-book "../mlib/modname-sets"))
+(local (include-book "../util/arithmetic"))
+(local (include-book "../util/osets"))
 (local (non-parallel-book))
 
 (defsection lint

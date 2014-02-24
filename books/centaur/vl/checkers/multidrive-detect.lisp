@@ -23,11 +23,13 @@
 (include-book "../mlib/lvalues")
 (include-book "../toe/toe-wirealist")
 (include-book "../toe/toe-verilogify")
-(local (include-book "../util/arithmetic"))
-(include-book "../../misc/fal-graphs")
 
 ;; bozo build me in earlier
 (include-book "centaur/misc/hons-extra" :dir :system)
+
+(include-book "../../misc/fal-graphs")
+(local (include-book "../util/arithmetic"))
+
 
 (local (in-theory (disable mergesort difference))) ;; bozo why is this enabled?
 

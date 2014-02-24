@@ -89,6 +89,7 @@ table for later use by @(see deffixequiv) and @(see deffixequiv-mutual).</p>
               :equiv widget-equiv
               ;; optional:
               :executablep nil  ;; t by default
+              :define t  ;; nil by default: define the equivalence as equal of fix
               :equiv-means-fixes-equal widget-equiv-implies-equal-of-widget-fix)
 })
 
@@ -302,56 +303,78 @@ syntax of these parameters is extended, as shown in the following examples:</p>
 (defun get-fixtypes-alist (world)
   (cdr (assoc 'fixtype-alist (table-alist 'fixtypes world))))
 
-(defun deffixtype-fn (name predicate fix equiv execp equiv-means-fixes-equal hints)
-  (if equiv-means-fixes-equal
-      `(with-output :off :all :stack :push
+(defun deffixtype-fn (name predicate fix equiv execp definep equiv-means-fixes-equal verbosep hints)
+  (if definep
+      `(with-output ,@(and (not verbosep) '(:off :all :on (error))) :stack :push
          (encapsulate nil
-           (local
-            (make-event
-             (let ((thm '(defthm check-fixtype-lemma
-                           (implies (,equiv x y)
-                                    (equal (,fix x) (,fix y)))
-                           :hints (("goal" :in-theory '(,equiv-means-fixes-equal))))))
-               `(:or
-                 (with-output :stack :pop ,thm)
-                 (with-output :on (error)
-                   (value-triple (er hard? 'deffixtype
-                                     "The provided equiv-means-fixes-equal ~
+           (local (defthm tmp-deffixtype-idempotent
+                    (equal (,fix (,fix x)) (,fix x))))
+           (defund ,equiv (x y)
+             (declare (xargs :verify-guards nil))
+             (equal (,fix x) (,fix y)))
+           (local (in-theory '(,equiv tmp-deffixtype-idempotent
+                                      booleanp-compound-recognizer)))
+           (defequiv ,equiv)
+           (defcong ,equiv equal (,fix x) 1)
+           (defthm ,(intern-in-package-of-symbol
+                     (concatenate 'string
+                                  (symbol-name fix) "-UNDER-" (symbol-name equiv))
+                     equiv)
+             (,equiv (,fix x) x))
+           (table fixtypes 'fixtype-alist
+                  (cons (cons ',name ',(fixtype name predicate fix equiv execp equiv))
+                        (get-fixtypes-alist world)))))
+    (if equiv-means-fixes-equal
+        `(with-output :off :all :stack :push
+           (encapsulate nil
+             (local
+              (make-event
+               (let ((thm '(defthm check-fixtype-lemma
+                             (implies (,equiv x y)
+                                      (equal (,fix x) (,fix y)))
+                             :hints (("goal" :in-theory '(,equiv-means-fixes-equal))))))
+                 `(:or
+                   (with-output :stack :pop ,thm)
+                   (with-output :on (error)
+                     (value-triple (er hard? 'deffixtype
+                                       "The provided equiv-means-fixes-equal ~
                                     theorem, ~x0, did not suffice to prove ~
                                     that ~x1 implies equality of ~x2, as ~
                                     in:~%~x3"
-                                     ',',equiv-means-fixes-equal
-                                     ',',equiv ',',fix ',thm)))))))
-           (table fixtypes 'fixtype-alist
-                  (cons (cons ',name ',(fixtype name predicate fix equiv execp equiv-means-fixes-equal))
-                        (get-fixtypes-alist world)))))
-    (b* ((thmname (intern-in-package-of-symbol
-                   (concatenate
-                    'string (symbol-name equiv) "-IMPLIES-EQUAL-OF-" (symbol-name fix))
-                   equiv)))
-      `(with-output :off :all :stack :push
-         (progn (make-event
-                 (let ((thm '(defthm ,thmname
-                               (equal (,equiv x y)
-                                      (equal (,fix x) (,fix y)))
-                               :hints ,hints)))
-                   `(:or
-                     (with-output :stack :pop ,thm)
-                     (with-output :on (error)
-                       (value-triple (er hard? 'deffixtype
-                                         "Failed to prove that ~x0 implies equality of ~x1."
-                                         ',',equiv ',',fix))))))
-                (in-theory (disable ,thmname))
-                (table fixtypes 'fixtype-alist
-                       (cons (cons ',name ',(fixtype name predicate fix equiv execp thmname))
-                             (get-fixtypes-alist world))))))))
+                                       ',',equiv-means-fixes-equal
+                                       ',',equiv ',',fix ',thm)))))))
+             (table fixtypes 'fixtype-alist
+                    (cons (cons ',name ',(fixtype name predicate fix equiv execp equiv-means-fixes-equal))
+                          (get-fixtypes-alist world)))))
+      (b* ((thmname (intern-in-package-of-symbol
+                     (concatenate
+                      'string (symbol-name equiv) "-IMPLIES-EQUAL-OF-" (symbol-name fix))
+                     equiv)))
+        `(with-output :off :all :stack :push
+           (progn (make-event
+                   (let ((thm '(defthm ,thmname
+                                 (equal (,equiv x y)
+                                        (equal (,fix x) (,fix y)))
+                                 :hints ,hints)))
+                     `(:or
+                       (with-output :stack :pop ,thm)
+                       (with-output :on (error)
+                         (value-triple (er hard? 'deffixtype
+                                           "Failed to prove that ~x0 implies equality of ~x1."
+                                           ',',equiv ',',fix))))))
+                  (in-theory (disable ,thmname))
+                  (table fixtypes 'fixtype-alist
+                         (cons (cons ',name ',(fixtype name predicate fix equiv execp thmname))
+                               (get-fixtypes-alist world)))))))))
 
 
 (defmacro deffixtype (name &key pred fix equiv (execp 't)
                            ;; optional 
                            equiv-means-fixes-equal
+                           define
+                           verbosep
                            hints)
-  (deffixtype-fn name pred fix equiv execp equiv-means-fixes-equal hints))
+  (deffixtype-fn name pred fix equiv execp define equiv-means-fixes-equal verbosep hints))
 
 (defun find-fixtype-for-pred (pred alist)
   (if (atom alist)
