@@ -20197,6 +20197,7 @@
 ; WARNING: If you change the formals of these generated raw defs be
 ; sure to change the formals of the corresponding axiomatic defs.
 
+  #-hons (declare (ignore congruent-stobj-rep))
   (let* ((recog (access defstobj-template template :recognizer))
          (creator (access defstobj-template template :creator))
          (field-templates (access defstobj-template template :field-templates))
