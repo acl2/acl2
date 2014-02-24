@@ -5254,13 +5254,21 @@
                  (the-maybe-live-var-bindings (cdr stobj-names))))))
 
 #-acl2-loop-only
+(defun non-memoizable-stobj-raw (name)
+  (assert name)
+  (let* ((d (get (the-live-var name)
+                 'redundant-raw-lisp-discriminator))
+         (ans (cdr (cddddr d))))
+    ans))
+
+#-acl2-loop-only
 (defun stobj-let-fn-raw (x)
 
 ; Warning: Keep this in sync with stobj-let-fn and with the
 ; handling of stobj-let in translate11.
 
-; This function could be admitted into the logic were it not for the call of
-; congruent-stobj-rep-raw below.
+; This function could be admitted into the logic were it not for the calls of
+; congruent-stobj-rep-raw and non-memoizable-stobj-raw below.
 
 ; See the Essay on Nested Stobjs.
 
@@ -5336,6 +5344,7 @@
                       #-hons nil
                       #+hons
                       (and modified-bound-vars
+                           (not (non-memoizable-stobj-raw stobj))
                            `(memoize-flush ,(congruent-stobj-rep-raw stobj)))))
                 (cond
                  ((cdr producer-vars)
@@ -5349,6 +5358,67 @@
                  (t `(let ((,(car producer-vars) ,producer))
                        ,@(and modified-bound-vars
                               `((declare (ignore ,@modified-bound-vars))))
+
+; Here is a proof of nil in ACL2(h) 6.4 that exploits an unfortunate
+; "interaction of stobj-let and memoize", discussed in :doc note-6-5.  This
+; example let us to add the call of memoize-flush in flush-form, below.  A
+; comment in chk-stobj-field-descriptor explains how this flushing is important
+; for allowing memoization of functions that take a stobj argument even when
+; that stobj has a child stobj that is :non-memoizable.
+
+;   (in-package "ACL2")
+;   
+;   (defstobj kid1 fld1)
+;   
+;   (defstobj kid2 fld2)
+;   
+;   (defstobj mom
+;     (kid1-field :type kid1)
+;     (kid2-field :type kid2))
+;   
+;   (defun mom.update-fld1 (val mom)
+;     (declare (xargs :stobjs mom))
+;     (stobj-let
+;      ((kid1 (kid1-field mom)))
+;      (kid1)
+;      (update-fld1 val kid1)
+;      mom))
+;   
+;   (defun mom.fld1 (mom)
+;     (declare (xargs :stobjs mom))
+;     (stobj-let
+;      ((kid1 (kid1-field mom)))
+;      (val)
+;      (fld1 kid1)
+;      val))
+;   
+;   (defun test ()
+;     (with-local-stobj
+;      mom
+;      (mv-let (val mom)
+;              (let* ((mom (mom.update-fld1 3 mom))
+;                     (val1 (mom.fld1 mom))
+;                     (mom (mom.update-fld1 4 mom))
+;                     (val2 (mom.fld1 mom)))
+;                (mv (equal val1 val2) mom))
+;              val)))
+;   
+;   (defthm true-prop
+;     (not (test))
+;     :rule-classes nil)
+;   
+;   (memoize 'mom.fld1)
+;   
+;   (defthm false-prop
+;     (test)
+;     :rule-classes nil)
+;   
+;   (defthm contradiction
+;     nil
+;     :hints (("Goal" :in-theory nil
+;              :use (true-prop false-prop)))
+;     :rule-classes nil)
+
                        ,@(and flush-form (list flush-form))
                        ,consumer)))))))))
 

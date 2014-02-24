@@ -1288,12 +1288,10 @@ the calls took.")
 
 ; See memoize-flush1 for a relevant discussion.
 
-  (let ((s (st-lst st)))
-    `(when ,s ; optimization
-       (memoize-flush1 ,s))))
-
-
-
+  (and st
+       (let ((s (st-lst st)))
+         `(when ,s ; optimization
+            (memoize-flush1 ,s)))))
 
 (defparameter *memo-max-sizes*
   ;; Binds function names to memo-max-sizes-entry structures.

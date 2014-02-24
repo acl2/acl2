@@ -1572,7 +1572,7 @@
   (assert name)
   (let* ((d (get (the-live-var name)
                  'redundant-raw-lisp-discriminator))
-         (ans (cddddr d)))
+         (ans (car (cddddr d))))
     (assert ans)
     ans))
 

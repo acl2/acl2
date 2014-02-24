@@ -18478,10 +18478,31 @@
                    (list n)))
           (t type))))
 
-(defun chk-stobj-field-descriptor (name field-descriptor ctx wrld state)
+(defun chk-stobj-field-descriptor (name field-descriptor non-memoizable
+                                        ctx wrld state)
 
 ; See the comment just before chk-acceptable-defstobj1 for an explanation of
 ; our handling of Common Lisp compliance.
+
+; The argument, non-memoizable, is the value of the :non-memoizable keyword of
+; the defstobj event intrducing name.  Let us consider whether there is a need
+; to add a check about :non-memoizable for the case of a stobj with stobj
+; fields.
+
+; On the one hand, it is fine for the parent stobj to be memoizable regardless
+; of whether any child stobjs are non-memoizable.  Suppose that some child
+; stobj is non-memoizable but the (new) parent stobj is memoizable.  The
+; concern is the case that some memoized function reads the parent twice on the
+; same inputs when between those reads, some child stobj has changed without
+; any flushing of memoization tables (because the child stobj is
+; non-memoizable).  But the only way to change a child stobj is by way of
+; stobj-let, which flushes the memo table for each function that takes the
+; parent stobj as an argument (since the parent is memoizable).
+
+; On the other hand, suppose that some child stobj is memoizable but the (new)
+; parent stobj is non-memoizable.  In this case, stobj-let does not flush the
+; parent stobj's memo tables, and we return to the soundness bug illustrated in
+; a comment in stobj-let-fn-raw.
 
   (cond
    ((symbolp field-descriptor) (value nil))
@@ -18514,7 +18535,11 @@
             (resizable (if (assoc-keyword :resizable (cdr field-descriptor))
                            (cadr (assoc-keyword :resizable
                                                 (cdr field-descriptor)))
-                         nil)))
+                         nil))
+            (child-stobj-memoizable-error-string
+             "It is illegal to declare stobj ~x0 as :NON-MEMOIZABLE, because ~
+              it has a child stobj, ~x1, that was not thus declared.  See ~
+              :DOC defstobj."))
        (cond
         ((and resizable (not (eq resizable t)))
          (er soft ctx
@@ -18553,11 +18578,21 @@
                       ~ The :type ~x0 for the ~x1 field of ~x2 is thus ~
                       illegal."
                      type0 field name))
-                (stobjp ; Defstobj-raw-init-fields depends on this check.
+                (stobjp
+
+; Defstobj-raw-init-fields depends on this check.  Also see the comment above
+; explaining how stobj-let depends on this check.
+
                  (cond ((eq etype 'state)
                         (er soft ctx
                             etype-error-string
                             field name etype))
+                       ((and non-memoizable
+                             (not (getprop etype 'non-memoizable nil
+                                           'current-acl2-world wrld)))
+                        (er soft ctx
+                            child-stobj-memoizable-error-string
+                            name etype))
                        ((null initp) (value nil))
                        (t (er soft ctx
                               "The :initially keyword must be omitted for a ~
@@ -18615,11 +18650,21 @@
                     is not recognized by ACL2 as a type-spec (see :DOC ~
                     type-spec) or as a user-defined stobj name."))
              (cond
-              (stobjp ; Defstobj-raw-init-fields depends on this check.
+              (stobjp
+
+; Defstobj-raw-init-fields depends on this check.  Also see the comment above
+; explaining how stobj-let depends on this check.
+
                (cond ((eq type 'state)
                       (er soft ctx
                           type-error-string
                           field name type))
+                     ((and non-memoizable
+                           (not (getprop type 'non-memoizable nil
+                                         'current-acl2-world wrld)))
+                      (er soft ctx
+                          child-stobj-memoizable-error-string
+                          name type))
                      ((null initp) (value nil))
                      (t (er soft ctx
                             "The :initially keyword must be omitted for a ~
@@ -18797,8 +18842,9 @@
    (concatenate 'string "*" (symbol-name name) "*")
    name))
 
-(defun chk-acceptable-defstobj1
-  (name field-descriptors ftemps renaming ctx wrld state names const-names)
+(defun chk-acceptable-defstobj1 (name field-descriptors ftemps renaming
+                                      non-memoizable ctx wrld state names
+                                      const-names)
 
 ; We check whether it is legal to define name as a single-threaded
 ; object with the description given in field-descriptors.  We know
@@ -18849,7 +18895,8 @@
 ; :initially must be omitted.
 
     (er-progn
-     (chk-stobj-field-descriptor name (car ftemps) ctx wrld state)
+     (chk-stobj-field-descriptor name (car ftemps) non-memoizable ctx wrld
+                                 state)
      (let* ((field (if (atom (car ftemps))
                        (car ftemps)
                      (car (car ftemps))))
@@ -18878,7 +18925,7 @@
                       (chk-all-but-new-name resize-name ctx 'function wrld state))
           (value nil))
         (chk-acceptable-defstobj1 name field-descriptors (cdr ftemps)
-                                  renaming ctx wrld state
+                                  renaming non-memoizable ctx wrld state
                                   (list* fieldp-name
                                          accessor-name
                                          updater-name
@@ -18891,7 +18938,7 @@
                                         const-names))))))))
 
 (defconst *defstobj-keywords*
-  '(:renaming :doc :inline :congruent-to))
+  '(:renaming :doc :inline :congruent-to :non-memoizable))
 
 (defun defstobj-redundancy-bundle (args)
 
@@ -18911,6 +18958,7 @@
               'error
             field-descriptors)
           (cdr (assoc-eq :renaming key-alist))
+          (cdr (assoc-eq :non-memoizable key-alist))
 
 ; We include the :congruent-to field, for example to avoid errors like the
 ; following.
@@ -18936,7 +18984,7 @@
    (getprop name 'stobj nil 'current-acl2-world wrld)
    (let ((ev (get-event name wrld)))
      (and ev
-          (assert$ (and (member-eq (car ev) '(defstobj defabsstobj))
+          (assert$ (and (eq (car ev) 'defstobj)
                         (eq (cadr ev) name))
                    (defstobj-redundancy-bundle (cddr ev)))))))
 
@@ -19002,18 +19050,23 @@
             ill-formed."
            *defstobj-keywords*
            (list* 'defstobj name args)))
+      ((redundant-defstobjp name args wrld)
+       (value 'redundant))
       (t
        (let ((renaming (cdr (assoc-eq :renaming key-alist)))
              (doc (cdr (assoc-eq :doc key-alist)))
              (inline (cdr (assoc-eq :inline key-alist)))
-             (congruent-to (cdr (assoc-eq :congruent-to key-alist))))
+             (congruent-to (cdr (assoc-eq :congruent-to key-alist)))
+             (non-memoizable (cdr (assoc-eq :non-memoizable key-alist))))
          (cond
-          ((redundant-defstobjp name args wrld)
-           (value 'redundant))
           ((not (booleanp inline))
            (er soft ctx
                "DEFSTOBJ requires the :INLINE keyword argument to have a ~
                 Boolean value.  See :DOC defstobj."))
+          ((not (booleanp non-memoizable))
+           (er soft ctx
+               "DEFSTOBJ requires the :NON-MEMOIZABLE keyword argument to ~
+                have a Boolean value.  See :DOC defstobj."))
           ((and congruent-to
                 (not (stobjp congruent-to t wrld)))
            (er soft ctx
@@ -19041,6 +19094,20 @@
                 same shape as the existing stobj named ~x1.  See :DOC ~
                 defstobj."
                name congruent-to))
+          ((and congruent-to
+                (not (eq non-memoizable
+                         (getprop congruent-to 'non-memoizable nil
+                                  'current-acl2-world wrld))))
+           (er soft ctx
+               "Congruent stobjs must agree on whether or not they are ~
+                specified as :NON-MEMOIZABLE.  However, this fails for the ~
+                proposed stobj, ~x0, which is specified as :CONGRUENT-TO the ~
+                stobj ~x1, since ~x2 is specified with :NON-MEMOIZABLE T but ~
+                ~x3 is not.  See :DOC defstobj."
+               name
+               congruent-to
+               (if non-memoizable name congruent-to)
+               (if non-memoizable congruent-to name)))
           (t
            (er-progn
 
@@ -19052,9 +19119,10 @@
                        (eq name 'V))
                    (er soft ctx
                        "DEFSTOBJ does not allow single-threaded objects with ~
-                        the names I or V because those symbols are used as ~
-                        formals, along with the new stobj name itself, in ~
-                        ``primitive'' stobj functions that will be defined."))
+                        the names ~x0 or ~x1 because those symbols are used ~
+                        as formals, along with the new stobj name itself, in ~
+                        ``primitive'' stobj functions that will be defined."
+                       'i 'v))
                   (t (value nil)))
             (chk-legal-defstobj-name name state)
             (cond ((not (doublet-style-symbol-to-symbol-alistp renaming))
@@ -19075,8 +19143,8 @@
                  (wrld2 (chk-just-new-name (the-live-var name) 'stobj-live-var
                                            nil ctx wrld1 state)))
               (chk-acceptable-defstobj1 name field-descriptors field-descriptors
-                                        renaming ctx wrld2 state nil
-                                        nil))))))))))))
+                                        renaming non-memoizable
+                                        ctx wrld2 state nil nil))))))))))))
 
 ; Essay on Defstobj Definitions
 
@@ -19157,12 +19225,8 @@
 ; renaming.
 
 (defrec defstobj-field-template
-  (fieldp-name
-   type
-   init
-   accessor-name
-   updater-name
-   length-name
+  (((fieldp-name . type) . (init . length-name))
+   (accessor-name . updater-name)
    resize-name
    resizable
    . other ; e.g., for hacking in community book books/add-ons/hash-stobjs.lisp
@@ -19170,12 +19234,11 @@
   nil)
 
 (defrec defstobj-template
-  (recognizer
-   creator
+  ((congruent-to . non-memoizable)
+   (recognizer . creator)
    field-templates
-   doc
    inline
-   congruent-to)
+   doc)
   nil)
 
 ; With the above record definitions, we can give the raw Lisp definition of
@@ -19213,6 +19276,7 @@
          (congruent-stobj-rep (if congruent-to
                                   (congruent-stobj-rep-raw congruent-to)
                                 name))
+         (non-memoizable (access defstobj-template template :non-memoizable))
          (init (defstobj-raw-init template))
          (the-live-name (the-live-var name)))
     `(progn
@@ -19242,6 +19306,7 @@
            0)
        (let* ((template ',template)
               (congruent-stobj-rep ',congruent-stobj-rep)
+              (non-memoizable ',non-memoizable)
               (boundp (boundp ',the-live-name))
               (d (and boundp
                       (get ',the-live-name
@@ -19261,7 +19326,8 @@
                                                :creator))
                          (equal (cadddr d) (access defstobj-template template
                                                    :field-templates))
-                         (eq (cddddr d) congruent-stobj-rep)
+                         (eq (car (cddddr d)) congruent-stobj-rep)
+                         (eq (cdr (cddddr d)) non-memoizable)
 
 ; We also formerly required:
 
@@ -19301,7 +19367,9 @@
                                 :creator)
                         (access defstobj-template template
                                 :field-templates)
-                        congruent-stobj-rep))
+                        congruent-stobj-rep
+                        (access defstobj-template template
+                                :non-memoizable)))
            (let ((old (and boundp
 
 ; Since boundp, then by a test made above, we also know (raw-mode-p state).
@@ -19408,12 +19476,14 @@
      (let ((renaming (cdr (assoc-eq :renaming key-alist)))
            (doc (cdr (assoc-eq :doc key-alist)))
            (inline (cdr (assoc-eq :inline key-alist)))
-           (congruent-to (cdr (assoc-eq :congruent-to key-alist))))
+           (congruent-to (cdr (assoc-eq :congruent-to key-alist)))
+           (non-memoizable (cdr (assoc-eq :non-memoizable key-alist))))
        (make defstobj-template
              :recognizer (defstobj-fnname name :recognizer :top renaming)
              :creator (defstobj-fnname name :creator :top renaming)
              :field-templates (defstobj-field-templates
                                 field-descriptors renaming wrld)
+             :non-memoizable non-memoizable
              :doc doc
              :inline inline
              :congruent-to congruent-to))))))
@@ -20147,13 +20217,16 @@
                  ,(defstobj-raw-init template))
        ,@(defstobj-field-fns-raw-defs
            name
-           (if wrld
-               (let ((congruent-to (access defstobj-template template
-                                           :congruent-to)))
-                 (if congruent-to
-                     (congruent-stobj-rep congruent-to wrld)
-                   name))
-             congruent-stobj-rep)
+           #-hons nil
+           #+hons (cond
+                   ((access defstobj-template template :non-memoizable)
+                    nil)
+                   (wrld (let ((congruent-to (access defstobj-template template
+                                                     :congruent-to)))
+                           (if congruent-to
+                               (congruent-stobj-rep congruent-to wrld)
+                             name)))
+                   (t congruent-stobj-rep))
            inline 0 field-templates)))))
 
 (defun put-stobjs-in-and-outs1 (name field-templates wrld)
@@ -20339,7 +20412,9 @@
                  (the-live-var (the-live-var name))
                  (doc (access defstobj-template template :doc))
                  (congruent-to (access defstobj-template template
-                                       :congruent-to)))
+                                       :congruent-to))
+                 (non-memoizable (access defstobj-template template
+                                         :non-memoizable)))
             (er-progn
              (cond ((set-equalp-equal names
                                       (strip-cars raw-def-lst))
@@ -20429,47 +20504,49 @@
                             name 'congruent-stobj-rep
                             (and congruent-to
                                  (congruent-stobj-rep congruent-to wrld2))
-                            (putprop
+                            (putprop-unless
+                             name 'non-memoizable non-memoizable nil
+                             (putprop
 
 ; Here I declare that name is Common Lisp compliant.  Below I similarly declare
 ; the-live-var.  All elements of the namex list of an event must have the same
 ; symbol-class.
 
-                             name 'symbol-class :common-lisp-compliant
-                             (put-stobjs-in-and-outs
-                              name template
+                              name 'symbol-class :common-lisp-compliant
+                              (put-stobjs-in-and-outs
+                               name template
 
 ; Rockwell Addition: It is convenient for the recognizer to be in a
 ; fixed position in this list, so I can find out its name.
 
-                              (putprop
-                               name 'stobj
-                               (cons the-live-var
-                                     (list*
-                                      recog-name
-                                      creator-name
-                                      (append (remove1-eq
-                                               creator-name
-                                               (remove1-eq recog-name
+                               (putprop
+                                name 'stobj
+                                (cons the-live-var
+                                      (list*
+                                       recog-name
+                                       creator-name
+                                       (append (remove1-eq
+                                                creator-name
+                                                (remove1-eq recog-name
 
 ; See the comment in the binding of names above.
 
-                                                           names))
-                                              field-const-names)))
-                               (putprop-x-lst1
-                                names 'stobj-function name
+                                                            names))
+                                               field-const-names)))
                                 (putprop-x-lst1
-                                 field-const-names 'stobj-constant name
-                                 (putprop
-                                  the-live-var 'stobj-live-var name
+                                 names 'stobj-function name
+                                 (putprop-x-lst1
+                                  field-const-names 'stobj-constant name
                                   (putprop
-                                   the-live-var 'symbol-class
-                                   :common-lisp-compliant
+                                   the-live-var 'stobj-live-var name
                                    (putprop
-                                    name
-                                    'accessor-names
-                                    (accessor-array name field-names)
-                                    wrld2)))))))))))))
+                                    the-live-var 'symbol-class
+                                    :common-lisp-compliant
+                                    (putprop
+                                     name
+                                     'accessor-names
+                                     (accessor-array name field-names)
+                                     wrld2))))))))))))))
 
 ; The property 'stobj marks a single-threaded object name.  Its value is a
 ; non-nil list containing all the names associated with this object.  The car
@@ -22351,33 +22428,39 @@
                                  st-name 'congruent-stobj-rep
                                  (and congruent-to
                                       (congruent-stobj-rep congruent-to wrld2))
-                                 (putprop
-                                  st-name 'absstobj-info
-                                  (make absstobj-info
-                                        :st$c st$c
-                                        :logic-exec-pairs logic-exec-pairs)
+                                 (putprop-unless
+                                  st-name
+                                  'non-memoizable
+                                  (getprop st$c 'non-memoizable nil
+                                           'current-acl2-world wrld2)
+                                  nil
                                   (putprop
-                                   st-name 'symbol-class
-                                   :common-lisp-compliant
-                                   (put-absstobjs-in-and-outs
-                                    st-name methods
-                                    (putprop
-                                     st-name 'stobj
-                                     (cons the-live-var
+                                   st-name 'absstobj-info
+                                   (make absstobj-info
+                                         :st$c st$c
+                                         :logic-exec-pairs logic-exec-pairs)
+                                   (putprop
+                                    st-name 'symbol-class
+                                    :common-lisp-compliant
+                                    (put-absstobjs-in-and-outs
+                                     st-name methods
+                                     (putprop
+                                      st-name 'stobj
+                                      (cons the-live-var
 
 ; Names is in the right order; it does not need adjustment as is the case for
 ; corresponding code in defstobj-fn.  See the comment about
 ; chk-acceptable-defabsstobj1 in chk-acceptable-defabsstobj.
 
-                                           names)
-                                     (putprop-x-lst1
-                                      names 'stobj-function st-name
-                                      (putprop
-                                       the-live-var 'stobj-live-var st-name
+                                            names)
+                                      (putprop-x-lst1
+                                       names 'stobj-function st-name
                                        (putprop
-                                        the-live-var 'symbol-class
-                                        :common-lisp-compliant
-                                        wrld2))))))))))))
+                                        the-live-var 'stobj-live-var st-name
+                                        (putprop
+                                         the-live-var 'symbol-class
+                                         :common-lisp-compliant
+                                         wrld2)))))))))))))
                         (pprogn
                          (set-w 'extension wrld3 state)
                          (er-progn
@@ -26044,6 +26127,20 @@
                             form.  See :DOC memoize."
                            str commutative fn)))))))))
 
+(defun non-memoizable-stobjs (stobjs-in wrld)
+  (cond ((endp stobjs-in) nil)
+        ((getprop (car stobjs-in) 'non-memoizable nil 'current-acl2-world wrld)
+         (cons (car stobjs-in)
+               (non-memoizable-stobjs (cdr stobjs-in) wrld)))
+        (t (non-memoizable-stobjs (cdr stobjs-in) wrld))))
+
+(defun filter-absstobjs (lst wrld abs conc)
+  (cond ((endp lst) (mv (reverse abs) (reverse conc)))
+        ((getprop (car lst) 'absstobj-info nil 'current-acl2-world wrld)
+         (filter-absstobjs (cdr lst) wrld (cons (car lst) abs) conc))
+        (t
+         (filter-absstobjs (cdr lst) wrld abs (cons (car lst) conc)))))
+
 (defun memoize-table-chk (key val wrld)
 
 ; Although this function is generally only called with #+hons, nevertheless we
@@ -26082,6 +26179,33 @@
              (er hard ctx
                  "~@0~x1 takes ACL2's STATE as an argument."
                  str key))
+            ((and condition
+                  (non-memoizable-stobjs (stobjs-in key wrld) wrld))
+             (mv-let
+              (abs conc)
+              (filter-absstobjs (non-memoizable-stobjs (stobjs-in key wrld)
+                                                       wrld)
+                                wrld nil nil)
+              (cond
+               ((null abs)
+                (er hard ctx
+                    "~@0~x1 has input stobj~#2~[ ~&2~/s ~&2, each~] ~
+                     introduced with :NON-MEMOIZABLE T.  See :DOC defstobj."
+                    str key conc))
+               ((null conc)
+                (er hard ctx
+                    "~@0~x1 has input abstract stobj~#2~[ ~&2~/s ~&2, each ~
+                     of~] whose corresponding concrete stobj was introduced ~
+                     with :NON-MEMOIZABLE T.  See :DOC defstobj."
+                    str key abs))
+               (t
+                (er hard ctx
+                    "~@0~x1 has input concrete stobj~#2~[ ~&2~/s ~&2, each~] ~
+                     introduced with :NON-MEMOIZABLE T.  ~x1 also has input ~
+                     abstract stobj~#3~[ ~&2~/s ~&3, each of~] whose ~
+                     corresponding concrete stobj was introduced with ~
+                     :NON-MEMOIZABLE T.  See :DOC defstobj."
+                    str key conc abs)))))
             ((and condition
                   (not (all-nils (stobjs-out key wrld))))
              (let ((stobj (find-first-non-nil (stobjs-out key wrld))))

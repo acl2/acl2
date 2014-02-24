@@ -5594,7 +5594,9 @@
                                        (access defstobj-template
                                                template-or-event
                                                :congruent-to))
-                                    name)))))
+                                    name)
+                                  (access defstobj-template template-or-event
+                                          :non-memoizable)))))
 
 ; At one point we executed the following form.  But now we see that this is not
 ; necessary, since trans-eval binds stobj names anyhow using *user-stobj-alist*
