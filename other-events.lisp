@@ -15748,8 +15748,8 @@
         ((null index)
          (fms "* Step 3:  That completes the admissibility check.  Each form ~
                read was an embedded event form and was admissible.  No LOCAL ~
-               or MAKE-EVENT forms make it necessary to check for local ~
-               incompatibilities, so we skip that check.~%"
+               forms make it necessary to check for local incompatibilities, ~
+               so we skip that check.~%"
               nil (proofs-co state) state nil))
         (t
          (assert$
