@@ -2778,7 +2778,7 @@
           (NON-EXECUTABLEP (or (eq val *acl2-property-unbound*) ; upgrade proxy
                                (non-executablepp sym val)))
           (NTH-UPDATE-REWRITER-TARGETP (nth-update-rewriter-targetpp sym val))
-          (PEQUIVS (PEQUIVSP sym val))
+          (PEQUIVS (pequivsp sym val))
           (POS-IMPLICANTS (pseudo-pos-implicantsp sym val))
           (PREDEFINED (or (eq val *acl2-property-unbound*) ; upgrade defproxy
                           (predefinedp sym val)))

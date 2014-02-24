@@ -230,15 +230,16 @@ records book.  See @(see def-typed-record).</p>")
         (updater-name (access-defstobj-field-template x :updater-name))
         (length-name (access-defstobj-field-template x :length-name))
         (resize-name (access-defstobj-field-template x :resize-name))
-        (resizable (access-defstobj-field-template x :resizable)))
+        (resizable (access-defstobj-field-template x :resizable))
+        (other (access-defstobj-field-template x :other)))
     (list fieldp-name type init accessor-name updater-name length-name
-          resize-name resizable)))
+          resize-name resizable other)))
 
 (defun make-fta (field-name typed-rec fix defstobj-fld-template mksym-pkg tr-table)
   (declare (xargs :mode :program))
   (b* (((list recog-name type init accessor-name updater-name length-name
-              resize-name resizable)
-        ;; BOZO this has to be kept in sync with defstobj-template
+              resize-name resizable other)
+        ;; BOZO this has to be kept in sync with defstobj-field-template
         (destructure-defstobj-field-template defstobj-fld-template))
 
 
@@ -303,6 +304,7 @@ records book.  See @(see def-typed-record).</p>")
       (:length-name$c   . ,length-name)
       (:resize-name$c   . ,resize-name)
       (:resizable     . ,resizable)
+      (:other         . ,other)
       (:offset        . ,(acl2::defconst-name accessor-name))
       (:typed-record  . ,typed-rec)
       (:accessor-name . ,(mksym 'get- field-name))
@@ -661,13 +663,15 @@ records book.  See @(see def-typed-record).</p>")
         (field-templates (access-defstobj-template x :field-templates))
         (doc (access-defstobj-template x :doc))
         (inline (access-defstobj-template x :inline))
-        (congruent-to (access-defstobj-template x :congruent-to)))
+        (congruent-to (access-defstobj-template x :congruent-to))
+        (non-memoizable (access-defstobj-template x :non-memoizable)))
     (list recognizer
           creator
           field-templates
           doc
           inline
-          congruent-to)))
+          congruent-to
+          non-memoizable)))
 
 (defun defrstobj-fn (name args wrld)
   (declare (ignorable wrld)
@@ -688,7 +692,8 @@ records book.  See @(see def-typed-record).</p>")
        (name$c        (mksym name '$c))
        (st-fields$c   (make-$c-fields st-fields mksym-pkg))
        (st-template   (defstobj-template name$c (append st-fields$c st-kw-part) wrld))
-       ((list recog$c create$c st$c-fld-templates ?doc ?inline ?congruent-to)
+       ((list recog$c create$c st$c-fld-templates ?doc ?inline ?congruent-to
+              ?non-memoizable)
         ;; BOZO this has to be kept in sync with defstobj-template.
         (destructure-defstobj-template st-template))
 

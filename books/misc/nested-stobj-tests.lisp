@@ -1049,3 +1049,25 @@ ACL2 !>
 ; a field of a (concrete) stobj that is an abstract stobj".
 (defstobj parent
   (abs-child :type top1{abs}))
+
+; We do some tests involving the :non-memoizable argument of defstobj.
+
+(must-fail ; Fails because kid2a has :NON-MEMOIZABLE T, unlike kid2.
+ (defstobj kid2a fld2a
+   :congruent-to kid2
+   :non-memoizable t))
+
+(must-fail ; Fails because kid2a has :NON-MEMOIZABLE T, unlike kid2.
+ (defstobj new-mom
+   (new-kid1-field :type kid1)
+   (new-kid2-ar-field :type (array kid2 (5)))
+   new-last-op
+   :non-memoizable t))
+
+(defstobj kid2b fld2b
+   :non-memoizable t)
+
+(defstobj new-mom ; It's fine to be memoizable even when some child is not.
+   (new-kid1-field :type kid1)
+   (new-kid2-ar-field :type (array kid2b (5)))
+   new-last-op)

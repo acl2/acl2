@@ -1189,10 +1189,31 @@
        var flush-var inline (1+ n) (cdr field-templates))))))
 
 
-(defun chk-stobj-field-descriptor (name field-descriptor ctx wrld state)
+(defun chk-stobj-field-descriptor (name field-descriptor non-memoizable
+                                        ctx wrld state)
 
 ; See the comment just before chk-acceptable-defstobj1 for an explanation of
 ; our handling of Common Lisp compliance.
+
+; The argument, non-memoizable, is the value of the :non-memoizable keyword of
+; the defstobj event intrducing name.  Let us consider whether there is a need
+; to add a check about :non-memoizable for the case of a stobj with stobj
+; fields.
+
+; On the one hand, it is fine for the parent stobj to be memoizable regardless
+; of whether any child stobjs are non-memoizable.  Suppose that some child
+; stobj is non-memoizable but the (new) parent stobj is memoizable.  The
+; concern is the case that some memoized function reads the parent twice on the
+; same inputs when between those reads, some child stobj has changed without
+; any flushing of memoization tables (because the child stobj is
+; non-memoizable).  But the only way to change a child stobj is by way of
+; stobj-let, which flushes the memo table for each function that takes the
+; parent stobj as an argument (since the parent is memoizable).
+
+; On the other hand, suppose that some child stobj is memoizable but the (new)
+; parent stobj is non-memoizable.  In this case, stobj-let does not flush the
+; parent stobj's memo tables, and we return to the soundness bug illustrated in
+; a comment in stobj-let-fn-raw.
 
   (cond
    ((symbolp field-descriptor) (value nil))
@@ -1225,7 +1246,11 @@
             (resizable (if (assoc-keyword :resizable (cdr field-descriptor))
                            (cadr (assoc-keyword :resizable
                                                 (cdr field-descriptor)))
-                         nil)))
+                         nil))
+            (child-stobj-memoizable-error-string
+             "It is illegal to declare stobj ~x0 as :NON-MEMOIZABLE, because ~
+              it has a child stobj, ~x1, that was not thus declared.  See ~
+              :DOC defstobj."))
        (cond
         ((and resizable (not (eq resizable t)))
          (er soft ctx
@@ -1264,11 +1289,21 @@
                       ~ The :type ~x0 for the ~x1 field of ~x2 is thus ~
                       illegal."
                      type0 field name))
-                (stobjp ; Defstobj-raw-init-fields depends on this check.
+                (stobjp
+
+; Defstobj-raw-init-fields depends on this check.  Also see the comment above
+; explaining how stobj-let depends on this check.
+
                  (cond ((eq etype 'state)
                         (er soft ctx
                             etype-error-string
                             field name etype))
+                       ((and non-memoizable
+                             (not (getprop etype 'non-memoizable nil
+                                           'current-acl2-world wrld)))
+                        (er soft ctx
+                            child-stobj-memoizable-error-string
+                            name etype))
                        ((null initp) (value nil))
                        (t (er soft ctx
                               "The :initially keyword must be omitted for a ~
@@ -1318,22 +1353,21 @@
               illegal for the ~x0 field of ~x1."
              field name))
 ;---<
-         ((and (consp type)
-               (eq (car type) 'hash-table))
-          (cond ((or (atom (cdr type))
-                     (not (member (cadr type)
-                                  '(EQL 
-                                    EQUAL
-                                    #+(and hons (not acl2-loop-only))
-                                    HONS-EQUAL))))
-                 (er soft ctx
-                     "A hash-table type must be specified as (HASH-TABLE ~
-                      TEST), where test is EQL, EQUAL, or (when built with ~
-                      the HONS extension) HONS-EQUAL.  The test given was ~
-                      ~x0.~%"
-                     (and (consp (cdr type))
-                          (cadr type))))
-                (t (value nil))))
+        ((and (consp type)
+              (eq (car type) 'hash-table))
+         (cond ((or (atom (cdr type))
+                    (not (member (cadr type)
+                                 '(EQL 
+                                   EQUAL
+                                   #+(and hons (not acl2-loop-only))
+                                   HONS-EQUAL))))
+                (er soft ctx
+                    "A hash-table type must be specified as (HASH-TABLE ~
+                     TEST), where test is EQL, EQUAL, or (when built with the ~
+                     HONS extension) HONS-EQUAL.  The test given was ~x0.~%"
+                    (and (consp (cdr type))
+                         (cadr type))))
+               (t (value nil))))
 ;   >---
         (t (let* ((stobjp (stobjp type t wrld))
                   (type-term ; used only when (not stobjp)
@@ -1344,11 +1378,21 @@
                     is not recognized by ACL2 as a type-spec (see :DOC ~
                     type-spec) or as a user-defined stobj name."))
              (cond
-              (stobjp ; Defstobj-raw-init-fields depends on this check.
+              (stobjp
+
+; Defstobj-raw-init-fields depends on this check.  Also see the comment above
+; explaining how stobj-let depends on this check.
+
                (cond ((eq type 'state)
                       (er soft ctx
                           type-error-string
                           field name type))
+                     ((and non-memoizable
+                           (not (getprop type 'non-memoizable nil
+                                         'current-acl2-world wrld)))
+                      (er soft ctx
+                          child-stobj-memoizable-error-string
+                          name type))
                      ((null initp) (value nil))
                      (t (er soft ctx
                             "The :initially keyword must be omitted for a ~
@@ -1391,8 +1435,9 @@
                         init type field name))
                    (t (value nil)))))))))))))))
 
-(defun chk-acceptable-defstobj1
-  (name field-descriptors ftemps renaming ctx wrld state names const-names)
+(defun chk-acceptable-defstobj1 (name field-descriptors ftemps renaming
+                                      non-memoizable ctx wrld state names
+                                      const-names)
 
 ; We check whether it is legal to define name as a single-threaded
 ; object with the description given in field-descriptors.  We know
@@ -1443,7 +1488,8 @@
 ; :initially must be omitted.
 
     (er-progn
-     (chk-stobj-field-descriptor name (car ftemps) ctx wrld state)
+     (chk-stobj-field-descriptor name (car ftemps) non-memoizable ctx wrld
+                                 state)
      (let* ((field (if (atom (car ftemps))
                        (car ftemps)
                      (car (car ftemps))))
@@ -1494,7 +1540,7 @@
 ;   >---
             ))
         (chk-acceptable-defstobj1 name field-descriptors (cdr ftemps)
-                                  renaming ctx wrld state
+                                  renaming non-memoizable ctx wrld state
                                   (list* fieldp-name
                                          accessor-name
                                          updater-name

@@ -138,15 +138,16 @@
         (updater-name (access-defstobj-field-template x :updater-name))
         (length-name (access-defstobj-field-template x :length-name))
         (resize-name (access-defstobj-field-template x :resize-name))
-        (resizable (access-defstobj-field-template x :resizable)))
+        (resizable (access-defstobj-field-template x :resizable))
+        (other (access-defstobj-field-template x :other)))
     (list fieldp-name type init accessor-name updater-name length-name
-          resize-name resizable)))
+          resize-name resizable other)))
 
 (defun make-fta (field-name defstobj-fld-template tr-alist mksym-pkg)
 
   (b* (((list recog-name type init accessor-name updater-name length-name
-              resize-name resizable)
-        ;; BOZO this has to be kept in sync with defstobj-template
+              resize-name resizable other)
+        ;; BOZO this has to be kept in sync with defstobj-field-template
         (destructure-defstobj-field-template defstobj-fld-template))
 
 ; For array fields, we'll add an :arr-rec-name field that gives the name of the
@@ -176,6 +177,7 @@
       (:length-name   . ,length-name)
       (:resize-name   . ,resize-name)
       (:resizable     . ,resizable)
+      (:other         . ,other)
       (:offset        . ,(acl2::defconst-name accessor-name))
       (:arr-rec-name  . ,arr-rec-name)
       (:typed-record  . ,typed-record))))
@@ -843,13 +845,15 @@
         (field-templates (access-defstobj-template x :field-templates))
         (doc (access-defstobj-template x :doc))
         (inline (access-defstobj-template x :inline))
-        (congruent-to (access-defstobj-template x :congruent-to)))
+        (congruent-to (access-defstobj-template x :congruent-to))
+        (non-memoizable (access-defstobj-template x :non-memoizable)))
     (list recognizer
           creator
           field-templates
           doc
           inline
-          congruent-to)))
+          congruent-to
+          non-memoizable)))
 
 (defun defrstobj-fn (name args wrld)
   (declare (ignorable wrld)
@@ -867,7 +871,8 @@
        (st-fields     (eat-typed-records rsfs))
        (st-kw-part    (alist-to-keyword-alist st-kw-alist nil))
        (st-template   (defstobj-template name (append st-fields st-kw-part) wrld))
-       ((list namep create-name st-fld-templates ?doc ?inline ?congruent-to)
+       ((list namep create-name st-fld-templates ?doc ?inline ?congruent-to
+              ?non-memoizable)
         ;; BOZO this has to be kept in sync with defstobj-template.
         (destructure-defstobj-template st-template))
 
