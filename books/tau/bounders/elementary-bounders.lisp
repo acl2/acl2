@@ -190,9 +190,66 @@
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
+(local (deftheory jared-disables
+         '(;; Things I think are slow in arith-5
+           |(equal (if a b c) x)|
+           |(equal x (if a b c))|
+           |(+ x (if a b c))|
+
+           SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<
+           (:T EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
+           (:T EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A)
+           (:T EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT)
+           (:T EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT)
+           (:T EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT)
+           (:T EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT)
+           (:T EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B)
+           (:T EXPT-TYPE-PRESCRIPTION-RATIONALP-BASE)
+           (:T EXPT-TYPE-PRESCRIPTION-NON-0-BASE)
+           (:T NOT-INTEGERP-3B)
+           (:T NOT-INTEGERP-1B)
+           (:T NOT-INTEGERP-2B)
+           (:T NOT-INTEGERP-4E)
+           (:T NOT-INTEGERP-4B)
+           (:T NOT-INTEGERP-4B-EXPT)
+           (:T NOT-INTEGERP-3B-EXPT)
+           (:T NOT-INTEGERP-2B-EXPT)
+           (:T NOT-INTEGERP-1B-EXPT)
+           (:T RATIONALP-EXPT-TYPE-PRESCRIPTION)
+           RATIONALP-X
+           acl2-numberp-x
+
+           not-integerp-1a
+           not-integerp-2a
+           not-integerp-3a
+           not-integerp-4a
+           not-integerp-1d
+           not-integerp-2d
+           not-integerp-3d
+           not-integerp-4d
+           not-integerp-1f
+           not-integerp-2f
+           not-integerp-3f
+           not-integerp-4f
+
+           default-times-1
+           default-times-2
+           default-less-than-1
+           default-less-than-2
+           default-car
+           default-cdr
+
+           )))
+
+(local (in-theory (disable jared-disables)))
+
 (local (SET-DEFAULT-HINTS
         '((NONLINEARP-DEFAULT-HINT++ ID
-                                     STABLE-UNDER-SIMPLIFICATIONP HIST NIL))))
+                                     STABLE-UNDER-SIMPLIFICATIONP HIST NIL)
+          (and stable-under-simplificationp
+               (not (cw "Jared-hint: re-enabling slow rules.~%"))
+               '(:in-theory (enable jared-disables))))))
+
 
 ; Note:  I tried the simpler nonlinear hint:
 ; (set-default-hints '((nonlinearp-default-hint
@@ -274,12 +331,19 @@
              (implies (equal (tau-interval-dom int) 'integerp)
                       (and (equal (tau-interval-lo-rel int) nil)
                            (equal (tau-interval-hi-rel int) nil)
-                           (implies (tau-interval-lo int) (integerp (tau-interval-lo int)))
-                           (implies (tau-interval-hi int) (integerp (tau-interval-hi int)))))
+                           (equal (integerp (tau-interval-lo int))
+                                  (if (tau-interval-lo int) t nil))
+                           (equal (integerp (tau-interval-hi int))
+                                  (if (tau-interval-hi int) t nil))
+                           ))
              (booleanp (tau-interval-lo-rel int))
              (booleanp (tau-interval-hi-rel int))
-             (implies (tau-interval-lo int) (rationalp (tau-interval-lo int)))
-             (implies (tau-interval-hi int) (rationalp (tau-interval-hi int)))
+             ;;(implies (tau-interval-lo int) (rationalp (tau-interval-lo int)))
+             (equal (rationalp (tau-interval-lo int))
+                    (if (tau-interval-lo int) t nil))
+             ;; (implies (tau-interval-hi int) (rationalp (tau-interval-hi int)))
+             (equal (rationalp (tau-interval-hi int))
+                    (if (tau-interval-hi int) t nil))
              (implies (and (tau-interval-lo int)
                            (tau-interval-hi int))
                       (<= (tau-interval-lo int)
@@ -288,13 +352,20 @@
    ((:rewrite
      :corollary
      (implies (tau-intervalp int)
-              (and (implies (equal (tau-interval-dom int) 'integerp)
-                            (and (equal (tau-interval-lo-rel int) nil)
-                                 (equal (tau-interval-hi-rel int) nil)
-                                 (implies (tau-interval-lo int) (integerp (tau-interval-lo int)))
-                                 (implies (tau-interval-hi int) (integerp (tau-interval-hi int)))))
-                   (implies (tau-interval-lo int) (rationalp (tau-interval-lo int)))
-                   (implies (tau-interval-hi int) (rationalp (tau-interval-hi int))))))
+              (and (equal (rationalp (tau-interval-lo int))
+                          (if (tau-interval-lo int) t nil))
+                   (equal (rationalp (tau-interval-hi int))
+                          (if (tau-interval-hi int) t nil)))))
+    (:rewrite
+     :corollary
+     (implies (and (equal (tau-interval-dom int) 'integerp)
+                   (tau-intervalp int))
+              (and (equal (tau-interval-lo-rel int) nil)
+                   (equal (tau-interval-hi-rel int) nil)
+                   (equal (integerp (tau-interval-lo int))
+                          (if (tau-interval-lo int) t nil))
+                   (equal (integerp (tau-interval-hi int))
+                          (if (tau-interval-hi int) t nil)))))
     (:forward-chaining
      :corollary
      (implies (and (tau-intervalp int)
@@ -317,12 +388,15 @@
      (implies (and (tau-intervalp int)
                    (tau-interval-hi int))
               (rationalp (tau-interval-hi int))))
-    (:type-prescription
-     :corollary
-     (implies (tau-intervalp int) (booleanp (tau-interval-lo-rel int))))
-    (:type-prescription
-     :corollary
-     (implies (tau-intervalp int) (booleanp (tau-interval-hi-rel int))))
+
+    ;; Jared: removing these since they seem expensive and bad
+    ;; (:type-prescription
+    ;;  :corollary
+    ;;  (implies (tau-intervalp int) (booleanp (tau-interval-lo-rel int))))
+    ;; (:type-prescription
+    ;;  :corollary
+    ;;  (implies (tau-intervalp int) (booleanp (tau-interval-hi-rel int))))
+
     (:linear
      :corollary
      (implies (and (tau-intervalp int)
@@ -908,20 +982,104 @@
 ; and concluded only that if both int1 and int2 are either INTEGERP or
 ; RATIONALP then so is the product.
 
-(defthm tau-bounder-*-correct
-  (implies (and (tau-intervalp int1)
-                (tau-intervalp int2)
-                (or (equal (tau-interval-dom int1) 'integerp)
-                    (equal (tau-interval-dom int1) 'rationalp))
-                (or (equal (tau-interval-dom int2) 'integerp)
-                    (equal (tau-interval-dom int2) 'rationalp))
-                (in-tau-intervalp x int1)
-                (in-tau-intervalp y int2))
-           (and (tau-intervalp (tau-bounder-* int1 int2))
-                (in-tau-intervalp (* x y) (tau-bounder-* int1 int2))
+(encapsulate
+  ()
+  (local (in-theory (disable
+                     ;; Horrible godawful hack.
+                     the-floor-below
+                     the-floor-above
+                     REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<
+                     REDUCE-MULTIPLICATIVE-CONSTANT-<
+                     REDUCE-ADDITIVE-CONSTANT-<
+                     INTEGERP-<-CONSTANT
+                     CONSTANT-<-INTEGERP
+                     remove-strict-inequalities
+                     remove-weak-inequalities
+                     prefer-positive-addends-<
+                     |(< c (/ x)) positive c --- present in goal|
+                     |(< c (/ x)) positive c --- obj t or nil|
+                     |(< c (/ x)) negative c --- present in goal|
+                     |(< c (/ x)) negative c --- obj t or nil|
+                     |(< c (- x))|
+                     |(< (/ x) c) positive c --- present in goal|
+                     |(< (/ x) c) positive c --- obj t or nil|
+                     |(< (/ x) c) negative c --- present in goal|
+                     |(< (/ x) c) negative c --- obj t or nil|
+                     |(< (/ x) (/ y))|
+                     |(< (- x) c)|
+                     |(< (- x) (- y))|
+                     intervalp-rules
+                     REDUCE-RATIONALP-+
+                     REDUCE-RATIONALP-*
+                     RATIONALP-MINUS-X
+                     META-RATIONALP-CORRECT
+                     SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL
+                     REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL
+                     REDUCE-ADDITIVE-CONSTANT-EQUAL
+                     PREFER-POSITIVE-ADDENDS-EQUAL
+                     EQUAL-OF-PREDICATES-REWRITE
+                     |(equal c (/ x))|
+                     |(equal c (- x))|
+                     |(equal (/ x) c)|
+                     |(equal (/ x) (/ y))|
+                     |(equal (- x) c)|
+                     |(equal (- x) (- y))|
+                     |(< (/ x) 0)|
+                     |(< (* x y) 0)|
+                     (:TYPE-PRESCRIPTION IN-TAU-INTERVALP)
+                     (:TYPE-PRESCRIPTION TAU-INTERVALP)
+                     (:TYPE-PRESCRIPTION TAU-INTERVAL-DOMAINP)
+                     NORMALIZE-FACTORS-GATHER-EXPONENTS
+                     SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER
+                     SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON
+                     SIMPLIFY-SUMS-EQUAL
+                     |(< 0 (/ x))|
+                     |(< 0 (* x y))|
+                     INTEGERP-MINUS-X
+                     (:TYPE-PRESCRIPTION BOOLEANP)
+                     |(< 0 (* x y)) rationalp (* x y)|
+                     META-INTEGERP-CORRECT
+                     default-plus-1
+                     default-plus-2
+                     default-divide
+                     member
+                     )))
 
-                (implies (not (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'integerp))
-                         (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'rationalp))))
+  (local (SET-DEFAULT-HINTS
+          '((and stable-under-simplificationp
+                 '(:nonlinearp t))
+            (and stable-under-simplificationp
+                 (not (cw "Jared-hint: re-enabling slow rules.~%"))
+                 '(:in-theory (enable jared-disables)))
+            (and stable-under-simplificationp
+                 (not (cw "Jared-hint: splitting into cases.~%"))
+                 '(:cases ((and (< 0 x) (< 0 y))
+                           (and (< 0 x) (equal 0 y))
+                           (and (< 0 x) (< y 0))
+                           (and (equal 0 x) (< 0 y))
+                           (and (equal 0 x) (equal 0 y))
+                           (and (equal 0 x) (< y 0))
+                           (and (< x 0) (< 0 y))
+                           (and (< x 0) (equal 0 y))
+                           (and (< x 0) (< y 0)))))
+            (and stable-under-simplificationp
+                 (NONLINEARP-DEFAULT-HINT++
+                  ID STABLE-UNDER-SIMPLIFICATIONP HIST NIL)))))
+
+  (defthm tau-bounder-*-correct
+    (implies (and (tau-intervalp int1)
+                  (tau-intervalp int2)
+                  (or (equal (tau-interval-dom int1) 'integerp)
+                      (equal (tau-interval-dom int1) 'rationalp))
+                  (or (equal (tau-interval-dom int2) 'integerp)
+                      (equal (tau-interval-dom int2) 'rationalp))
+                  (in-tau-intervalp x int1)
+                  (in-tau-intervalp y int2))
+             (and (tau-intervalp (tau-bounder-* int1 int2))
+                  (in-tau-intervalp (* x y) (tau-bounder-* int1 int2))
+
+                  (implies (not (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'integerp))
+                           (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'rationalp))))
 
 ; Robert Krug first defined the function (akin to our tau-bounder-*) that
 ; computed the upper and lower bounds on a product given the bounds on the two
@@ -934,72 +1092,68 @@
 ; (set-waterfall-parallelism t)
 ; (set-waterfall-printing :limited)
 
-  :hints (("Goal" :cases ((and (< 0 x) (< 0 y))
-                          (and (< 0 x) (equal 0 y))
-                          (and (< 0 x) (< y 0))
-                          (and (equal 0 x) (< 0 y))
-                          (and (equal 0 x) (equal 0 y))
-                          (and (equal 0 x) (< y 0))
-                          (and (< x 0) (< 0 y))
-                          (and (< x 0) (equal 0 y))
-                          (and (< x 0) (< y 0)))))
-  :rule-classes
-  ((:rewrite)
-   (:forward-chaining
-    :corollary
-    (implies (and (tau-intervalp int1)
-                  (tau-intervalp int2)
-                  (equal (tau-interval-dom int1) 'integerp)
-                  (equal (tau-interval-dom int2) 'integerp)
-                  (in-tau-intervalp x int1)
-                  (in-tau-intervalp y int2))
-             (and (tau-intervalp (tau-bounder-* int1 int2))
-                  (implies (not (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'integerp))
-                           (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'rationalp))
-                  (in-tau-intervalp (* x y) (tau-bounder-* int1 int2))))
-    :trigger-terms ((tau-bounder-* int1 int2)))
-   (:forward-chaining
-    :corollary
-    (implies (and (tau-intervalp int1)
-                  (tau-intervalp int2)
-                  (equal (tau-interval-dom int1) 'integerp)
-                  (equal (tau-interval-dom int2) 'rationalp)
-                  (in-tau-intervalp x int1)
-                  (in-tau-intervalp y int2))
-             (and (tau-intervalp (tau-bounder-* int1 int2))
-                  (implies (not (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'integerp))
-                           (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'rationalp))
-                  (in-tau-intervalp (* x y) (tau-bounder-* int1 int2))))
-    :trigger-terms ((tau-bounder-* int1 int2)))
-   (:forward-chaining
-    :corollary
-    (implies (and (tau-intervalp int1)
-                  (tau-intervalp int2)
-                  (equal (tau-interval-dom int1) 'rationalp)
-                  (equal (tau-interval-dom int2) 'integerp)
-                  (in-tau-intervalp x int1)
-                  (in-tau-intervalp y int2))
-             (and (tau-intervalp (tau-bounder-* int1 int2))
-                  (implies (not (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'integerp))
-                           (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'rationalp))
-                  (in-tau-intervalp (* x y) (tau-bounder-* int1 int2))))
-    :trigger-terms ((tau-bounder-* int1 int2)))
-   (:forward-chaining
-    :corollary
-    (implies (and (tau-intervalp int1)
-                  (tau-intervalp int2)
-                  (equal (tau-interval-dom int1) 'rationalp)
-                  (equal (tau-interval-dom int2) 'rationalp)
-                  (in-tau-intervalp x int1)
-                  (in-tau-intervalp y int2))
-             (and (tau-intervalp (tau-bounder-* int1 int2))
-                  (implies (not (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'integerp))
-                           (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'rationalp))
-                  (in-tau-intervalp (* x y) (tau-bounder-* int1 int2))))
-    :trigger-terms ((tau-bounder-* int1 int2)))
-   ))
+    :rule-classes
+    ((:rewrite)
+     (:forward-chaining
+      :corollary
+      (implies (and (tau-intervalp int1)
+                    (tau-intervalp int2)
+                    (equal (tau-interval-dom int1) 'integerp)
+                    (equal (tau-interval-dom int2) 'integerp)
+                    (in-tau-intervalp x int1)
+                    (in-tau-intervalp y int2))
+               (and (tau-intervalp (tau-bounder-* int1 int2))
+                    (implies (not (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'integerp))
+                             (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'rationalp))
+                    (in-tau-intervalp (* x y) (tau-bounder-* int1 int2))))
+      :trigger-terms ((tau-bounder-* int1 int2)))
+     (:forward-chaining
+      :corollary
+      (implies (and (tau-intervalp int1)
+                    (tau-intervalp int2)
+                    (equal (tau-interval-dom int1) 'integerp)
+                    (equal (tau-interval-dom int2) 'rationalp)
+                    (in-tau-intervalp x int1)
+                    (in-tau-intervalp y int2))
+               (and (tau-intervalp (tau-bounder-* int1 int2))
+                    (implies (not (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'integerp))
+                             (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'rationalp))
+                    (in-tau-intervalp (* x y) (tau-bounder-* int1 int2))))
+      :trigger-terms ((tau-bounder-* int1 int2)))
+     (:forward-chaining
+      :corollary
+      (implies (and (tau-intervalp int1)
+                    (tau-intervalp int2)
+                    (equal (tau-interval-dom int1) 'rationalp)
+                    (equal (tau-interval-dom int2) 'integerp)
+                    (in-tau-intervalp x int1)
+                    (in-tau-intervalp y int2))
+               (and (tau-intervalp (tau-bounder-* int1 int2))
+                    (implies (not (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'integerp))
+                             (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'rationalp))
+                    (in-tau-intervalp (* x y) (tau-bounder-* int1 int2))))
+      :trigger-terms ((tau-bounder-* int1 int2)))
+     (:forward-chaining
+      :corollary
+      (implies (and (tau-intervalp int1)
+                    (tau-intervalp int2)
+                    (equal (tau-interval-dom int1) 'rationalp)
+                    (equal (tau-interval-dom int2) 'rationalp)
+                    (in-tau-intervalp x int1)
+                    (in-tau-intervalp y int2))
+               (and (tau-intervalp (tau-bounder-* int1 int2))
+                    (implies (not (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'integerp))
+                             (equal (tau-interval-dom (tau-bounder-* int1 int2)) 'rationalp))
+                    (in-tau-intervalp (* x y) (tau-bounder-* int1 int2))))
+      :trigger-terms ((tau-bounder-* int1 int2)))
+     )))
+
 
 ; The proof above takes 15 minutes and generates a lot of subgoals.
+
+; [Jared]: I got it down to 180 seconds with stupid AP hacking.  (I think this
+; could be significantly improved by not just brute forcing the proof,
+; eventually).
 
 ; Subgoals: 40,661
 ; Time:  920.78 seconds (prove: 917.26, print: 3.49, other: 0.02)
@@ -1506,80 +1660,143 @@
 ; bounds-of-mod is the same as that computed by domain-of-sum-or-product, as
 ; noted in our theorem below.
 
-(defthm tau-bounder-mod-correct
-  (implies (and (tau-intervalp int1)
-                (tau-intervalp int2)
-                (or (equal (tau-interval-dom int1) 'integerp)
-                    (equal (tau-interval-dom int1) 'rationalp))
-                (or (equal (tau-interval-dom int2) 'integerp)
-                    (equal (tau-interval-dom int2) 'rationalp))
-                (in-tau-intervalp x int1)
-                (in-tau-intervalp y int2))
-           (and (tau-intervalp (tau-bounder-mod int1 int2))
-                (in-tau-intervalp (mod x y) (tau-bounder-mod int1 int2))
+(encapsulate
+  ()
+  (local (in-theory (disable jared-disables)))
+  (local (in-theory (disable (:t not-integerp-4b)
+                             (:t not-integerp-3b)
+                             (:t not-integerp-2b)
+                             (:t not-integerp-1b)
+                             ;; integerp-mod-1
+                             ;; integerp-mod-2
+                             ;; rationalp-mod
+                             mod-nonnegative
+                             mod-nonpositive
+                             mod-zero
+                             mod-positive
+                             mod-negative
+                             MOD-X-Y-=-X
+                             MOD-X-Y-=-X+Y
+                             MOD-X-Y-=-X-Y
+                             ;; mod-bounds-1
+                             ;; mod-bounds-2
+                             the-floor-below
+                             the-floor-above
+                             default-times-1
+                             default-times-2
+                             default-plus-1
+                             default-plus-2
+                             REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<
+                             |(< c (/ x)) positive c --- present in goal|
+                             |(< c (/ x)) positive c --- obj t or nil|
+                             |(< c (/ x)) negative c --- present in goal|
+                             |(< c (/ x)) negative c --- obj t or nil|
+                             |(< c (- x))|
+                             |(< (/ x) c) positive c --- present in goal|
+                             |(< (/ x) c) positive c --- obj t or nil|
+                             |(< (/ x) c) negative c --- present in goal|
+                             |(< (/ x) c) negative c --- obj t or nil|
+                             |(< (/ x) (/ y))|
+                             |(< (- x) c)|
+                             |(< (- x) (- y))|
+                             rationalp-x
+                             PREFER-POSITIVE-EXPONENTS-SCATTER-EXPONENTS-<-2
+                             PREFER-POSITIVE-EXPONENTS-SCATTER-EXPONENTS-EQUAL
+                             default-car
+                             default-cdr
+                             cancel-mod-+
+                             meta-integerp-correct
+                             meta-rationalp-correct
+                             acl2-numberp-x
 
-                (implies (not (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'integerp))
-                         (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'rationalp))
-            ))
-  :rule-classes
-  ((:rewrite)
-   (:forward-chaining
-    :corollary
+                             in-tau-intervalp-rules
+                             intervalp-rules
+                             )))
+
+  (local (set-default-hints
+          '((and stable-under-simplificationp
+                 '(:nonlinearp t))
+            (and stable-under-simplificationp
+                 (NONLINEARP-DEFAULT-HINT++
+                  ID STABLE-UNDER-SIMPLIFICATIONP HIST NIL))
+            (and stable-under-simplificationp
+                 (not (cw "Jared-hint: re-enabling slower rules.~%"))
+                 '(:in-theory (enable jared-disables))))))
+
+  (defthm tau-bounder-mod-correct
     (implies (and (tau-intervalp int1)
                   (tau-intervalp int2)
-                  (equal (tau-interval-dom int1) 'integerp)
-                  (equal (tau-interval-dom int2) 'integerp)
+                  (or (equal (tau-interval-dom int1) 'integerp)
+                      (equal (tau-interval-dom int1) 'rationalp))
+                  (or (equal (tau-interval-dom int2) 'integerp)
+                      (equal (tau-interval-dom int2) 'rationalp))
                   (in-tau-intervalp x int1)
                   (in-tau-intervalp y int2))
              (and (tau-intervalp (tau-bounder-mod int1 int2))
+                  (in-tau-intervalp (mod x y) (tau-bounder-mod int1 int2))
+
                   (implies (not (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'integerp))
                            (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'rationalp))
-                  (in-tau-intervalp (mod x y) (tau-bounder-mod int1 int2))
                   ))
-    :trigger-terms ((tau-bounder-mod int1 int2)))
-   (:forward-chaining
-    :corollary
-    (implies (and (tau-intervalp int1)
-                  (tau-intervalp int2)
-                  (equal (tau-interval-dom int1) 'integerp)
-                  (equal (tau-interval-dom int2) 'rationalp)
-                  (in-tau-intervalp x int1)
-                  (in-tau-intervalp y int2))
-             (and (tau-intervalp (tau-bounder-mod int1 int2))
-                  (implies (not (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'integerp))
-                           (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'rationalp))
-                  (in-tau-intervalp (mod x y) (tau-bounder-mod int1 int2))
-                  ))
-    :trigger-terms ((tau-bounder-mod int1 int2)))
-   (:forward-chaining
-    :corollary
-    (implies (and (tau-intervalp int1)
-                  (tau-intervalp int2)
-                  (equal (tau-interval-dom int1) 'rational)
-                  (equal (tau-interval-dom int2) 'integerp)
-                  (in-tau-intervalp x int1)
-                  (in-tau-intervalp y int2))
-             (and (tau-intervalp (tau-bounder-mod int1 int2))
-                  (implies (not (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'integerp))
-                           (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'rationalp))
-                  (in-tau-intervalp (mod x y) (tau-bounder-mod int1 int2))
-                  ))
-    :trigger-terms ((tau-bounder-mod int1 int2)))
-   (:forward-chaining
-    :corollary
-    (implies (and (tau-intervalp int1)
-                  (tau-intervalp int2)
-                  (equal (tau-interval-dom int1) 'rationalp)
-                  (equal (tau-interval-dom int2) 'rationalp)
-                  (in-tau-intervalp x int1)
-                  (in-tau-intervalp y int2))
-             (and (tau-intervalp (tau-bounder-mod int1 int2))
-                  (implies (not (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'integerp))
-                           (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'rationalp))
-                  (in-tau-intervalp (mod x y) (tau-bounder-mod int1 int2))
-                  ))
-    :trigger-terms ((tau-bounder-mod int1 int2)))
-   ))
+    :rule-classes
+    ((:rewrite)
+     (:forward-chaining
+      :corollary
+      (implies (and (tau-intervalp int1)
+                    (tau-intervalp int2)
+                    (equal (tau-interval-dom int1) 'integerp)
+                    (equal (tau-interval-dom int2) 'integerp)
+                    (in-tau-intervalp x int1)
+                    (in-tau-intervalp y int2))
+               (and (tau-intervalp (tau-bounder-mod int1 int2))
+                    (implies (not (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'integerp))
+                             (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'rationalp))
+                    (in-tau-intervalp (mod x y) (tau-bounder-mod int1 int2))
+                    ))
+      :trigger-terms ((tau-bounder-mod int1 int2)))
+     (:forward-chaining
+      :corollary
+      (implies (and (tau-intervalp int1)
+                    (tau-intervalp int2)
+                    (equal (tau-interval-dom int1) 'integerp)
+                    (equal (tau-interval-dom int2) 'rationalp)
+                    (in-tau-intervalp x int1)
+                    (in-tau-intervalp y int2))
+               (and (tau-intervalp (tau-bounder-mod int1 int2))
+                    (implies (not (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'integerp))
+                             (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'rationalp))
+                    (in-tau-intervalp (mod x y) (tau-bounder-mod int1 int2))
+                    ))
+      :trigger-terms ((tau-bounder-mod int1 int2)))
+     (:forward-chaining
+      :corollary
+      (implies (and (tau-intervalp int1)
+                    (tau-intervalp int2)
+                    (equal (tau-interval-dom int1) 'rational)
+                    (equal (tau-interval-dom int2) 'integerp)
+                    (in-tau-intervalp x int1)
+                    (in-tau-intervalp y int2))
+               (and (tau-intervalp (tau-bounder-mod int1 int2))
+                    (implies (not (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'integerp))
+                             (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'rationalp))
+                    (in-tau-intervalp (mod x y) (tau-bounder-mod int1 int2))
+                    ))
+      :trigger-terms ((tau-bounder-mod int1 int2)))
+     (:forward-chaining
+      :corollary
+      (implies (and (tau-intervalp int1)
+                    (tau-intervalp int2)
+                    (equal (tau-interval-dom int1) 'rationalp)
+                    (equal (tau-interval-dom int2) 'rationalp)
+                    (in-tau-intervalp x int1)
+                    (in-tau-intervalp y int2))
+               (and (tau-intervalp (tau-bounder-mod int1 int2))
+                    (implies (not (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'integerp))
+                             (equal (tau-interval-dom (tau-bounder-mod int1 int2)) 'rationalp))
+                    (in-tau-intervalp (mod x y) (tau-bounder-mod int1 int2))
+                    ))
+      :trigger-terms ((tau-bounder-mod int1 int2)))
+     )))
 
 
 ; -----------------------------------------------------------------
