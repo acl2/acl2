@@ -26030,14 +26030,21 @@
           (msg "( RESET-PREHISTORY ~x0 ...)" permanent-p)))
    (cond ((and (not permanent-p)
                (or (f-get-global 'certify-book-info state)
-                   (eq (f-get-global 'ld-skip-proofsp state) 'include-book)))
+                   (eq (f-get-global 'ld-skip-proofsp state) 'include-book)
+                   (f-get-global 'skip-reset-prehistory state)))
           (pprogn (observation ctx
-                               "~x0 events with permanent-p=t are skipped ~
-                                when ~s1 books.  See :DOC reset-prehistory."
+                               "~x0 events with permanent-p=nil are skipped ~
+                                when ~@1.  See :DOC reset-prehistory."
                                'reset-prehistory
-                               (if (f-get-global 'certify-book-info state)
-                                   "certifying"
-                                 "including"))
+                               (cond
+                                ((f-get-global 'certify-book-info state)
+                                 "certifying books")
+                                ((eq (f-get-global 'ld-skip-proofsp state)
+                                     'include-book)
+                                 "including books or during the second pass ~
+                                  of an encapsulate")
+                                (t "state global 'skip-reset-prehistory has a ~
+                                    non-nil value")))
                   (value :skipped)))
          (t
           (let* ((wrld (w state))

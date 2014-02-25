@@ -12927,6 +12927,7 @@
     (skip-notify-on-defttag . nil)
     (skip-proofs-by-system . nil)
     (skip-proofs-okp-cert . t) ; t when not inside certify-book
+    (skip-reset-prehistory . nil) ; non-nil skips (reset-prehistory nil)
     (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
     (splitter-output . t)
     (standard-co . acl2-output-channel::standard-character-output-0)
