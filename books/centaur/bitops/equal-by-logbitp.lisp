@@ -750,8 +750,7 @@ etc.</p>"
   (defcong int-equiv equal (logbitp-mismatch? x y) 1)
   (defcong int-equiv equal (logbitp-mismatch? x y) 2)
   (defthm logbitp-mismatch?-correct
-    (implies (and (integerp x) (integerp y)
-                  (not (equal x y)))
+    (implies (not (equal (ifix x) (ifix y)))
              (let ((i (logbitp-mismatch? x y)))
                (not (equal (logbitp i x) (logbitp i y)))))))
 
@@ -770,16 +769,16 @@ etc.</p>"
 
   (defwitness unequal-by-logbitp-witnessing
     :predicate (not (equal x y))
-    :expr (or (not (integerp x))
-              (not (integerp y))
-              (let ((bit (logbitp-mismatch? x y)))
+    :expr (or (let ((bit (hide (logbitp-mismatch? x y))))
                 (and (natp bit)
                      (not (equal (logbitp bit x)
-                                 (logbitp bit y))))))
-    :generalize (((logbitp-mismatch? x y) . wbit))
-    :hints ('(:in-theory (enable logbitp-mismatch-correct
-                                 logbitp-mismatch-under-iff
-                                 ifix-when-integerp)
+                                 (logbitp bit y)))))
+              (and (zip x)
+                   (zip y)
+                   (not (and (integerp x) (integerp y)))))
+    :generalize (((hide (logbitp-mismatch? x y)) . wbit))
+    :hints ('(:use logbitp-mismatch?-correct
+              :in-theory (e/d (ifix) (logbitp-mismatch?-correct))
               :expand ((:free (x) (hide x)))))))
 
 

@@ -431,6 +431,7 @@ endif
 # of the default target, "all".
 
 ADDED_BOOKS := \
+  coi/defung/defung-stress-long.cert \
   coi/termination/assuming/complex.cert \
   models/jvm/m5/apprentice.cert \
   system/parallel/proofs/ideal-speedup.cert \
