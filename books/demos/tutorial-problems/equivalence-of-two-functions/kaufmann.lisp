@@ -1,5 +1,5 @@
 ; Copyright (C) 2014, Regents of the University of Texas
-; Written by J Strother Moore, February 25, 2014
+; Written by Matt Kaufmann, February 25, 2014
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; I posted essentially this solution to the acl2-help list on 2/10/2014, with
