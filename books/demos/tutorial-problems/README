@@ -12,3 +12,9 @@ introductory-challenge-problem-4.lisp
 introductory-challenge-problem-4-athena.lisp
 
 ==============================
+
+See equivalence-of-two-functions/README for a challenge problem to
+prove equivalence of two recursively-defined functions.  Solutions may
+be found in that directory.
+
+==============================
