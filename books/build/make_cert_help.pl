@@ -513,6 +513,12 @@ $instrs .= "(acl2::assign acl2::get-internal-time-as-realtime acl2::t)\n";
 $instrs .= "; instructions from .acl2 file $acl2file:\n";
 $instrs .= "$usercmds\n\n";
 
+$instrs .= "; Prevent reset-prehistory while loading .port files\n";
+# Since reset-prehistory is never redundant, this is important to
+# prevent exponential growth in the number of reset-prehistory
+# commands when building on a saved image that uses reset-prehistory.
+$instrs .= "(acl2::assign acl2::skip-reset-prehistory acl2::t)\n";
+
 $instrs .= "; portculli for included books:\n";
 foreach my $pair (@$includes) {
     my ($incname, $incdir) = @$pair;

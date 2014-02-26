@@ -97,6 +97,11 @@ table for later use by @(see deffixequiv) and @(see deffixequiv-mutual).</p>
 
 <ul>
 
+<li>@(':define') is NIL by default; if set to T, then the equivalence relation
+is assumed not to exist yet, and is defined as equality of fix, with
+appropriate rules to rewrite the fix away under the equivalence and to
+propagate the congruence into the fix.</li>
+
 <li>@(':executablep') should be set to NIL if either the fixing function or
 predicate are non-executable or especially expensive.  This mainly affects, in
 @('deffixequiv') and @('deffixequiv-mutual'), whether a theorem is introduced
@@ -104,14 +109,15 @@ that normalizes constants by applying the fixing function to them.</li>
 
 <li>@(':equiv-means-fixes-equal') should be the name of a
 theorem/axiom/definition that shows that the equivalence relation implies
-equality of the fixes of its arguments.  Often this is just the definition of
-the equivalence relation.  If this is not provided, a new theorem will be
-introduced to show this.</li>
+equality of the fixes of its arguments.  If @(':define') is T then this is not
+used because the definition of the equivalence relation suffices.  Often this
+is just the definition of the equivalence relation.  If this is not provided, a
+new theorem will be introduced to show this.</li>
 
 </ul>
 
 <p>We assume that the fixing function returns an object that satisfies the
-predicate, and if given an object satisfying the predicate, it returns an equal
+predicate, and if given an object satisfying the predicate, it returns the same
 object.  We also assume that equiv is an equivalence relation (see @(see
 defequiv)).</p>")
 
