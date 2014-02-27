@@ -72,7 +72,13 @@ modules for sizing for the linter.</p>")
           :VL-BINARY-BITOR :VL-BINARY-XOR :VL-BINARY-XNOR
           :VL-BINARY-SHR :VL-BINARY-SHL :VL-BINARY-ASHR
           :VL-BINARY-ASHL :VL-QMARK :VL-BITSELECT :VL-PARTSELECT-COLON
-          :VL-CONCAT :VL-MULTICONCAT))
+          :VL-CONCAT :VL-MULTICONCAT
+
+          ;; Even though these are SystemVerilog things, I don't think they
+          ;; will be too hard, since we basically know how to size them...
+          :vl-implies :vl-equiv
+          :vl-binary-wildeq :vl-binary-wildneq
+          ))
 
   (defconst *toohard-ops*
     (list :VL-MINTYPMAX

@@ -167,7 +167,9 @@ that the width of @('foo') itself is non-zero.</p>"
 
           (( ;; Table 5-22, Line 5.
             :vl-binary-ceq :vl-binary-cne :vl-binary-eq :vl-binary-neq
-            :vl-binary-gt :vl-binary-gte :vl-binary-lt :vl-binary-lte)
+            :vl-binary-gt :vl-binary-gte :vl-binary-lt :vl-binary-lte
+            ;; SystemVerilog extensions:
+            :vl-binary-wildeq :vl-binary-wildneq)
            (b* ((a (first x.args))
                 (b (second x.args)))
              (and ;; result must be unsigned (5.5.1) and one-bit (Table 5-22)
@@ -181,7 +183,10 @@ that the width of @('foo') itself is non-zero.</p>"
                   (eq (vl-expr->finaltype a) (vl-expr->finaltype b)))))
 
           (( ;; Table 5-22, Line 6.
-            :vl-binary-logand :vl-binary-logor)
+            :vl-binary-logand
+            :vl-binary-logor
+            ;; SystemVerilog Extensions
+            :vl-implies :vl-equiv)
            (b* ((a (first x.args))
                 (b (second x.args)))
              (and ;; result must be unsigned (see "minutia") and one-bit (Table 5-22)

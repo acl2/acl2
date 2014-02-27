@@ -660,6 +660,9 @@ the size of @('$random') as 32.</p>"
                          :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
                          :vl-stream-left :vl-stream-right
                          :vl-stream-left-sized :vl-stream-right-sized
+
+                         :vl-binary-wildeq :vl-binary-wildneq
+                         :vl-implies :vl-equiv
                          )
           ;; Don't gather anything from here.
           nil)
@@ -740,28 +743,21 @@ the size of @('$random') as 32.</p>"
 
 
 
-(defsection vl-collect-unsized-ints
-
-  (defund vl-collect-unsized-ints (x)
-    (declare (xargs :guard (vl-exprlist-p x)))
-    (cond ((atom x)
-           nil)
-          ((and (vl-fast-atom-p (car x))
-                (vl-fast-constint-p (vl-atom->guts (car x)))
-                (vl-constint->wasunsized (vl-atom->guts (car x))))
-           (cons (car x) (vl-collect-unsized-ints (cdr x))))
-          (t
-           (vl-collect-unsized-ints (cdr x)))))
-
-  (defthm vl-exprlist-p-of-vl-collect-unsized-ints
-    (implies (vl-exprlist-p x)
-             (vl-exprlist-p (vl-collect-unsized-ints x)))
-    :hints(("Goal" :in-theory (enable vl-collect-unsized-ints))))
-
+(define vl-collect-unsized-ints ((x vl-exprlist-p))
+  :returns (sub-x vl-exprlist-p :hyp :guard)
+  (cond ((atom x)
+         nil)
+        ((and (vl-fast-atom-p (car x))
+              (vl-fast-constint-p (vl-atom->guts (car x)))
+              (vl-constint->wasunsized (vl-atom->guts (car x))))
+         (cons (car x) (vl-collect-unsized-ints (cdr x))))
+        (t
+         (vl-collect-unsized-ints (cdr x))))
+  ///
   (defthm vl-exprlist-resolved-p-of-vl-collect-unsized-ints
     (implies (vl-exprlist-p x)
              (vl-exprlist-resolved-p (vl-collect-unsized-ints x)))
-    :hints(("Goal" :in-theory (enable vl-expr-resolved-p vl-collect-unsized-ints)))))
+    :hints(("Goal" :in-theory (enable vl-expr-resolved-p)))))
 
 
 (defund nats-below-p (max x)
@@ -813,6 +809,7 @@ the size of @('$random') as 32.</p>"
                               (< (vl-resolved->val b) (ash 1 asize))))
                      (member op '(:vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
                                   :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+                                  :vl-binary-wildeq :vl-binary-wildneq
                                   :vl-binary-xnor :vl-qmark))))
           ;; Always suppress warnings in the case where one argument or the
           ;; other is a constant and even though its size isn't quite right, it
@@ -867,14 +864,12 @@ the size of @('$random') as 32.</p>"
 
 
 
-(defsection vl-op-selfsize
+(define vl-op-selfsize (op args arg-sizes context elem warnings)
   :parents (vl-expr-selfsize)
   :short "Main function for computing self-determined expression sizes."
 
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
-
-<p><b>Signature:</b> @(call vl-op-selfsize) returns @('(mv warnings size)')</p>
 
 <p>We attempt to determine the size of the expression formed by applying some
 operator, @('op'), to some arguments, @('args').  We assume that each argument
@@ -886,241 +881,227 @@ messages; it is supposed to be the expression we are trying to size.  The
 @('elem') is similarly irrelevant, and gives the broader context for this
 expression.</p>
 
-<p>This function basically implements Table 5-22; see @(see
-expression-sizing).</p>"
+<p>This function basically implements Verilog-2005 Table 5-22, or
+SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
 
-  (local (in-theory (enable maybe-natp)))
+  :prepwork ((local (in-theory (enable maybe-natp))))
+  :returns (mv warnings size)
+  (declare (xargs :guard (and (vl-op-p op)
+                              (vl-exprlist-p args)
+                              (or (not (vl-op-arity op))
+                                  (equal (len args) (vl-op-arity op)))
+                              (nat-listp arg-sizes)
+                              (same-lengthp args arg-sizes)
+                              (vl-expr-p context)
+                              (vl-modelement-p elem)
+                              (vl-warninglist-p warnings))
+                  :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity)))))
 
-  (defund vl-op-selfsize (op args arg-sizes context elem warnings)
-    "Returns (MV WARNINGS SIZE)"
-    (declare (xargs :guard (and (vl-op-p op)
-                                (vl-exprlist-p args)
-                                (or (not (vl-op-arity op))
-                                    (equal (len args) (vl-op-arity op)))
-                                (nat-listp arg-sizes)
-                                (same-lengthp args arg-sizes)
-                                (vl-expr-p context)
-                                (vl-modelement-p elem)
-                                (vl-warninglist-p warnings))
-                    :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity)))))
+  (case op
 
-    (case op
+    (( ;; All of these operations have one-bit results, and we have no
+      ;; expectations that their argument sizes should agree or anything like
+      ;; that.
+      :vl-bitselect
+      :vl-unary-bitand :vl-unary-nand :vl-unary-bitor :vl-unary-nor
+      :vl-unary-xor :vl-unary-xnor :vl-unary-lognot
+      :vl-binary-logand :vl-binary-logor
 
-      ((:vl-bitselect
-        :vl-unary-bitand :vl-unary-nand :vl-unary-bitor :vl-unary-nor
-        :vl-unary-xor :vl-unary-xnor :vl-unary-lognot
-        :vl-binary-logand :vl-binary-logor)
-       ;; All of these operations have one-bit results, and we have no
-       ;; expectations that their argument sizes should agree or anything like
-       ;; that.
-       (mv warnings 1))
+      ;; SystemVerilog-2012 additions.  These also produce 1-bit results and
+      ;; we don't care if their arguments have equal sizes.
+      :vl-implies :vl-equiv)
+     (mv warnings 1))
 
-      ((:vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
-        :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte)
-       ;; These were previously part of the above case.  They all also return
-       ;; one-bit results.  However, we now add warnings if an implicit size
-       ;; extension will occur.
-       (b* ((type (and (/= (first arg-sizes) (second arg-sizes))
-                       (vl-tweak-fussy-warning-type :vl-fussy-size-warning-1
-                                                    (first args)
-                                                    (second args)
-                                                    (first arg-sizes)
-                                                    (second arg-sizes)
-                                                    op)))
-            (warnings (if (not type)
-                          warnings
-                        (cons (make-vl-warning
-                               :type type
-                               :msg "~a0: arguments to a comparison operator ~
-                                     have different \"self-sizes\" (~x1 ~
-                                     versus ~x2).  The smaller argument will ~
-                                     be implicitly widened to match the ~
-                                     larger argument.  The sub-expression in ~
-                                     question is: ~a3."
-                               :args (list elem (first arg-sizes) (second arg-sizes) context)
-                               :fatalp nil
-                               :fn 'vl-op-selfsize)
-                              warnings))))
-         (mv warnings 1)))
+    (( ;; These were originally part of the above case; they all return
+      ;; one-bit results.  However, we separate them out because,
+      ;; intuitively, their arguments "should" be the same size.  So as a
+      ;; Linting feature, we add warnings if any implicit size extension will
+      ;; occur.
+      :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
+      :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
 
-      ((:vl-binary-power
-        :vl-unary-plus :vl-unary-minus :vl-unary-bitnot
-        :vl-binary-shl :vl-binary-shr :vl-binary-ashl :vl-binary-ashr)
-       ;; All of these operations keep the size of their first operands.
-       (mv warnings (lnfix (first arg-sizes))))
+      ;; SystemVerilog-2012 additions.  Although Table 11-21 doesn't specify
+      ;; what the sizes are here, Section 11.4.6 says these produce a 1-bit
+      ;; self-sized result and explains how the arguments are to be widened
+      ;; similarly to ordinary equality comparisons.
+      :vl-binary-wildeq :vl-binary-wildneq)
+     (b* ((type (and (/= (first arg-sizes) (second arg-sizes))
+                     (vl-tweak-fussy-warning-type :vl-fussy-size-warning-1
+                                                  (first args)
+                                                  (second args)
+                                                  (first arg-sizes)
+                                                  (second arg-sizes)
+                                                  op)))
+          (warnings
+           (if (not type)
+               warnings
+             (warn :type type
+                   :msg "~a0: arguments to a comparison operator have ~
+                           different \"self-sizes\" (~x1 versus ~x2).  The ~
+                           smaller argument will be implicitly widened to ~
+                           match the larger argument.  The sub-expression in ~
+                           question is: ~a3."
+                   :args (list elem (first arg-sizes) (second arg-sizes)
+                               context)))))
+       (mv warnings 1)))
 
-      ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem)
-       ;; All of these operations take the max size of either operand.
-       ;; Practically speaking we will probably never see times, div, or rem
-       ;; operators.  However, plus and minus are common.  We probably do not
-       ;; want to issue any size warnings in the case of plus or minus, since
-       ;; one argument or the other often needs to be expanded.
-       (mv warnings (max (lnfix (first arg-sizes))
-                         (lnfix (second arg-sizes)))))
+    ((:vl-binary-power
+      :vl-unary-plus :vl-unary-minus :vl-unary-bitnot
+      :vl-binary-shl :vl-binary-shr :vl-binary-ashl :vl-binary-ashr)
+     ;; All of these operations keep the size of their first operands.
+     (mv warnings (lnfix (first arg-sizes))))
 
-      ((:vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor)
-       ;; All of these operations take the max size of either operand.  But
-       ;; this is a place where implicit widening could be bad.  I mean, you
-       ;; probably don't want to be doing A & B when A and B are different
-       ;; sizes, right?
-       (b* ((max (max (lnfix (first arg-sizes))
-                      (lnfix (second arg-sizes))))
-            (type (and (/= (first arg-sizes) (second arg-sizes))
-                       (vl-tweak-fussy-warning-type :vl-fussy-size-warning-2
-                                                    (first args)
-                                                    (second args)
-                                                    (first arg-sizes)
-                                                    (second arg-sizes)
-                                                    op)))
-            (warnings (if (not type)
-                          warnings
-                        (cons (make-vl-warning
-                               :type type
-                               :msg "~a0: arguments to a bitwise operator ~
-                                     have different self-sizes (~x1 versus ~
-                                     ~x2).  The smaller argument will be ~
-                                     implicitly widened to match the larger ~
-                                     argument.  The sub-expression in ~
-                                     question is: ~a3."
-                               :args (list elem (first arg-sizes) (second arg-sizes) context)
-                               :fatalp nil
-                               :fn 'vl-op-selfsize)
-                              warnings))))
-         (mv warnings max)))
+    ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem)
+     ;; All of these operations take the max size of either operand.
+     ;; Practically speaking we will probably never see times, div, or rem
+     ;; operators.  However, plus and minus are common.  We probably do not
+     ;; want to issue any size warnings in the case of plus or minus, since
+     ;; one argument or the other often needs to be expanded.
+     (mv warnings (max (lnfix (first arg-sizes))
+                       (lnfix (second arg-sizes)))))
 
-      ((:vl-qmark)
-       ;; The conditional takes the max size of its true and false branches.
-       ;; We now warn if the branches don't agree on their size and hence will
-       ;; be widened.
-       (b* ((max (max (lnfix (second arg-sizes))
-                      (lnfix (third arg-sizes))))
-            (type (and (/= (second arg-sizes) (third arg-sizes))
-                       (vl-tweak-fussy-warning-type :vl-fussy-size-warning-3
-                                                    (second args)
-                                                    (third args)
-                                                    (second arg-sizes)
-                                                    (third arg-sizes)
-                                                    op)))
-            (warnings (if (not type)
-                          warnings
-                        (cons (make-vl-warning
-                               :type type
-                               :msg "~a0: branches of a ?: operator have ~
-                                     different self-sizes (~x1 versus ~x2).  ~
-                                     The smaller branch will be implicitly ~
-                                     widened to match the larger argument.  ~
-                                     The sub-expression in question is: ~a3."
-                               :args (list elem (second arg-sizes) (third arg-sizes) context)
-                               :fatalp nil
-                               :fn 'vl-op-selfsize)
-                              warnings))))
-         (mv warnings max)))
+    ((:vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor)
+     ;; All of these operations take the max size of either operand.  But
+     ;; this is a place where implicit widening could be bad.  I mean, you
+     ;; probably don't want to be doing A & B when A and B are different
+     ;; sizes, right?
+     (b* ((max (max (lnfix (first arg-sizes))
+                    (lnfix (second arg-sizes))))
+          (type (and (/= (first arg-sizes) (second arg-sizes))
+                     (vl-tweak-fussy-warning-type :vl-fussy-size-warning-2
+                                                  (first args)
+                                                  (second args)
+                                                  (first arg-sizes)
+                                                  (second arg-sizes)
+                                                  op)))
+          (warnings
+           (if (not type)
+               warnings
+             (warn :type type
+                   :msg "~a0: arguments to a bitwise operator have ~
+                           different self-sizes (~x1 versus ~x2).  The ~
+                           smaller argument will be implicitly widened to ~
+                           match the larger argument.  The sub-expression in ~
+                           question is: ~a3."
+                   :args (list elem (first arg-sizes) (second arg-sizes)
+                               context)))))
+       (mv warnings max)))
 
-      ((:vl-concat)
-       ;; Concatenations have the sum of their arguments' widths
-       (mv warnings (sum-nats arg-sizes)))
+    ((:vl-qmark)
+     ;; The conditional takes the max size of its true and false branches.
+     ;; We now warn if the branches don't agree on their size and hence will
+     ;; be widened.
+     (b* ((max (max (lnfix (second arg-sizes))
+                    (lnfix (third arg-sizes))))
+          (type (and (/= (second arg-sizes) (third arg-sizes))
+                     (vl-tweak-fussy-warning-type :vl-fussy-size-warning-3
+                                                  (second args)
+                                                  (third args)
+                                                  (second arg-sizes)
+                                                  (third arg-sizes)
+                                                  op)))
+          (warnings
+           (if (not type)
+               warnings
+             (warn :type type
+                   :msg "~a0: branches of a ?: operator have different ~
+                           self-sizes (~x1 versus ~x2).  The smaller branch ~
+                           will be implicitly widened to match the larger ~
+                           argument.  The sub-expression in question is: ~a3."
+                   :args (list elem (second arg-sizes) (third arg-sizes)
+                               context)))))
+       (mv warnings max)))
 
-      ((:vl-syscall)
-       ;; We do all syscall sizing in a separate function.
-       (vl-syscall-selfsize args arg-sizes context elem warnings))
+    ((:vl-concat)
+     ;; Concatenations have the sum of their arguments' widths
+     (mv warnings (sum-nats arg-sizes)))
 
-      ((:vl-multiconcat)
-       ;; For multiple concatenations, the size is its multiplicity times the
-       ;; size of the concatenation-part.  The multiplicity can be zero.
-       (b* ((multiplicity (first args))
-            (concat-width (mbe :logic (nfix (second arg-sizes))
-                               :exec (second arg-sizes)))
-            ((unless (vl-expr-resolved-p multiplicity))
-             (b* ((w (make-vl-warning
-                      :type :vl-unresolved-multiplicity
-                      :msg "~a0: cannot size ~a1 because its multiplicity has ~
-                            not been resolved."
-                      :args (list elem context)
-                      :fatalp t
-                      :fn 'vl-op-selfsize)))
-               (mv (cons w warnings) nil)))
-            (size (* (vl-resolved->val multiplicity) concat-width)))
-         (mv warnings size)))
+    ((:vl-syscall)
+     ;; We do all syscall sizing in a separate function.
+     (vl-syscall-selfsize args arg-sizes context elem warnings))
 
-      ((:vl-partselect-colon)
-       ;; A part-select's width is one greater than the difference in its
-       ;; indices.  For instance, a[3:0] is 4 bits, while a[3:3] is one bit.
-       (b* ((left  (second args))
-            (right (third args))
-            ((unless (and (vl-expr-resolved-p left)
-                          (vl-expr-resolved-p right)))
-             (b* ((w (make-vl-warning
-                      :type :vl-unresolved-select
+    ((:vl-multiconcat)
+     ;; For multiple concatenations, the size is its multiplicity times the
+     ;; size of the concatenation-part.  The multiplicity can be zero.
+     (b* ((multiplicity (first args))
+          (concat-width (mbe :logic (nfix (second arg-sizes))
+                             :exec (second arg-sizes)))
+          ((unless (vl-expr-resolved-p multiplicity))
+           (mv (fatal :type :vl-unresolved-multiplicity
+                      :msg "~a0: cannot size ~a1 because its multiplicity ~
+                              has not been resolved."
+                      :args (list elem context))
+               nil))
+          (size (* (vl-resolved->val multiplicity) concat-width)))
+       (mv warnings size)))
+
+    ((:vl-partselect-colon)
+     ;; A part-select's width is one greater than the difference in its
+     ;; indices.  For instance, a[3:0] is 4 bits, while a[3:3] is one bit.
+     (b* ((left  (second args))
+          (right (third args))
+          ((unless (and (vl-expr-resolved-p left)
+                        (vl-expr-resolved-p right)))
+           (mv (fatal :type :vl-unresolved-select
                       :msg "~a0: cannot size ~a1 since it does not have ~
-                            resolved indices."
-                      :args (list elem context)
-                      :fatalp t
-                      :fn 'vl-op-selfsize)))
-               (mv (cons w warnings) nil)))
-            (left-val  (vl-resolved->val left))
-            (right-val (vl-resolved->val right))
-            (size      (+ 1 (abs (- left-val right-val)))))
-         (mv warnings size)))
+                              resolved indices."
+                      :args (list elem context))
+               nil))
+          (left-val  (vl-resolved->val left))
+          (right-val (vl-resolved->val right))
+          (size      (+ 1 (abs (- left-val right-val)))))
+       (mv warnings size)))
 
-      ((:vl-partselect-pluscolon :vl-partselect-minuscolon)
-       ;; foo[base_expr +: width_expr] has the width specified by width_expr,
-       ;; which must be a positive constant. (See Section 5.2.1)
-       (b* ((width-expr (second args))
-            ((unless (and (vl-expr-resolved-p width-expr)
-                          (> (vl-resolved->val width-expr) 0)))
-             (b* ((w (make-vl-warning
-                      :type :vl-unresolved-select
+    ((:vl-partselect-pluscolon :vl-partselect-minuscolon)
+     ;; foo[base_expr +: width_expr] has the width specified by width_expr,
+     ;; which must be a positive constant. (See Section 5.2.1)
+     (b* ((width-expr (second args))
+          ((unless (and (vl-expr-resolved-p width-expr)
+                        (> (vl-resolved->val width-expr) 0)))
+           (mv (fatal :type :vl-unresolved-select
                       :msg "~a0: cannot size ~a1 since its width expression ~
-                            is not a resolved, positive constant."
-                      :args (list elem context)
-                      :fatalp t
-                      :fn 'vl-op-selfsize)))
-               (mv (cons w warnings) nil)))
-            (size (vl-resolved->val width-expr)))
-         (mv warnings size)))
+                              is not a resolved, positive constant."
+                      :args (list elem context))
+               nil))
+          (size (vl-resolved->val width-expr)))
+       (mv warnings size)))
 
-      ((:vl-funcall)
-       ;; BOZO we don't currently try to support function calls.  Eventually it
-       ;; should be easy to support sizing these, since it looks like functions
-       ;; are returned with a syntax like "function [7:0] getbyte;" -- we'll
-       ;; just need to look up the function and return the size of its range.
-       (mv warnings nil))
+    ((:vl-funcall)
+     ;; BOZO we don't currently try to support function calls.  Eventually it
+     ;; should be easy to support sizing these, since it looks like functions
+     ;; are returned with a syntax like "function [7:0] getbyte;" -- we'll
+     ;; just need to look up the function and return the size of its range.
+     (mv warnings nil))
 
-      ((:vl-mintypmax)
-       ;; I do not think it makes any sense to think about the size of a
-       ;; mintypmax expression.  We just return nil and cause no warnings since
-       ;; the width is basically "inapplicable."
-       (mv warnings nil))
+    ((:vl-mintypmax)
+     ;; I do not think it makes any sense to think about the size of a
+     ;; mintypmax expression.  We just return nil and cause no warnings since
+     ;; the width is basically "inapplicable."
+     (mv warnings nil))
 
-      ((:vl-hid-dot :vl-array-index :vl-index :vl-scope
+    ((:vl-hid-dot :vl-array-index :vl-index :vl-scope
 
-                    ;; BOZO these might not belong here, but it seems like the
-                    ;; safest place to put them until they're implemented
-                    :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
-                    :vl-stream-left :vl-stream-right
-                    :vl-stream-left-sized :vl-stream-right-sized
-                    )
-       ;; We don't handle these here.  They should be handled in
-       ;; vl-expr-selfsize specially, because unlike all of the other
-       ;; operators, we can't assume that their subexpressions' sizes can be
-       ;; computed.  Instead, we need to only try to determine the size of
-       ;; "top-level" HIDs, and also specially handle array indexes.
-       (b* ((w (make-vl-warning
-                :type :vl-programming-error
+                  ;; BOZO these might not belong here, but it seems like the
+                  ;; safest place to put them until they're implemented
+                  :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
+                  :vl-stream-left :vl-stream-right
+                  :vl-stream-left-sized :vl-stream-right-sized
+                  )
+     ;; We don't handle these here.  They should be handled in
+     ;; vl-expr-selfsize specially, because unlike all of the other
+     ;; operators, we can't assume that their subexpressions' sizes can be
+     ;; computed.  Instead, we need to only try to determine the size of
+     ;; "top-level" HIDs, and also specially handle array indexes.
+     (mv (fatal :type :vl-programming-error
                 :msg "~a0: vl-op-selfsize should not encounter ~a1"
-                :args (list elem context)
-                :fatalp t
-                :fn 'vl-op-selfsize)))
-         (mv (cons w warnings) nil)))
+                :args (list elem context))
+         nil))
 
-      (otherwise
-       (mv warnings
-           (er hard 'vl-op-selfsize
-               "All operators must be accounted for.  This er forces us to prove ~
-                that this is the case, in the guard-verification proof.")))))
+    (otherwise
+     (progn$ (impossible)
+             (mv warnings nil))))
 
-  (local (in-theory (enable vl-op-selfsize)))
-
+  ///
   (defthm vl-warninglist-p-of-vl-op-selfsize
     (implies (force (vl-warninglist-p warnings))
              (vl-warninglist-p
@@ -1136,11 +1117,12 @@ expression-sizing).</p>"
       (implies (syntaxp (not (equal warnings ''nil)))
                (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
 
+
 (define vl-hidexpr-selfsize ((x (and (vl-expr-p x)
                                      (vl-hidexpr-p x)))
                              (warnings vl-warninglist-p))
   :returns
-  (mv (new-warnings vl-warninglist-p :hyp (vl-warninglist-p warnings))
+  (mv (new-warnings vl-warninglist-p)
       (size maybe-natp :hints(("Goal" :in-theory (enable maybe-natp)))))
   (b* (((when (vl-fast-atom-p x))
         (mv (fatal :type :vl-hid-size-failed
@@ -1153,7 +1135,7 @@ expression-sizing).</p>"
                    :msg "~a0: range of HID is not known."
                    :args (list x))
             nil)))
-    (mv warnings width))
+    (mv (ok) width))
   ///
   (defthm vl-hidexpr-selfsize-normalize-warnings
     (implies (syntaxp (not (equal warnings ''nil)))
@@ -1659,14 +1641,21 @@ produce unsigned values.</li>
 
        (case op
 
-         ((:vl-bitselect
+         ((;; From Verilog-2005 5.5.1, bit-selects, part-selects,
+           ;; concatenations, and comparisons always produce unsigned results,
+           ;; no matter the signedness of their operands.
+           :vl-bitselect
            :vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
            :vl-concat :vl-multiconcat
            :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
-           :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte)
-          ;; From 5.5.1, bit-selects, part-selects, concatenations, and
-          ;; comparisons always produce unsigned results, no matter the
-          ;; signedness of their operands.
+           :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+
+           ;; SystemVerilog-2012 extensions: I believe (although it's hard to
+           ;; find good evidence in the spec to support this) that these are
+           ;; also producing 1-bit unsigned answers.
+           :vl-binary-wildneq :vl-binary-wildeq
+           )
+
           (mv warnings :vl-unsigned))
 
          ((:vl-unary-plus :vl-unary-minus)
@@ -1687,7 +1676,7 @@ produce unsigned values.</li>
                  ;; treat this like a unary plus or minus.
                  (mv warnings (first arg-types)))))
 
-         ((:vl-binary-logand :vl-binary-logor)
+         ((:vl-binary-logand :vl-binary-logor :vl-implies :vl-equiv)
           (cond ((eq mode :probably-right)
                  ;; We believe the result is always unsigned; see "minutia".
                  (mv warnings :vl-unsigned))
@@ -3511,7 +3500,12 @@ context-determined expressions."
 
        ((;; Table 5-22, Line 5.
          :vl-binary-ceq :vl-binary-cne :vl-binary-eq :vl-binary-neq
-         :vl-binary-gt :vl-binary-gte :vl-binary-lt :vl-binary-lte)
+         :vl-binary-gt :vl-binary-gte :vl-binary-lt :vl-binary-lte
+
+         ;; SystemVerilog extensions: we think these operate identically with
+         ;; the expressions being extended.
+         :vl-binary-wildeq :vl-binary-wildneq
+         )
         ;; Trickiest case.  The two operands "shall affect each other as if
         ;; they were context-determined operands with a result type and size
         ;; (maximum of the two operand sizes) determined from them.  However,
@@ -3567,7 +3561,12 @@ context-determined expressions."
           (mv t warnings new-x)))
 
        ((;; Table 5-22, Line 6.
-         :vl-binary-logand :vl-binary-logor)
+         :vl-binary-logand
+         :vl-binary-logor
+
+         ;; SystemVerilog extensions: we think these work out the same way:
+         :vl-implies
+         :vl-equiv)
         ;; Both operands are self-determined.  We think the result is one-bit
         ;; unsigned; see "minutia"
         (b* (((unless (eq finaltype :vl-unsigned))

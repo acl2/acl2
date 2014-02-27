@@ -762,7 +762,7 @@ values.</p>"
 ; regular function calls are allowed to.
 
   (defparser vl-parse-1+-expressions-separated-by-commas ()
-    :measure (two-nats-measure (len tokens) 27)
+    :measure (two-nats-measure (len tokens) 28)
     (seqw tokens warnings
           (first :s= (vl-parse-expression))
           (when (vl-is-token? :vl-comma)
@@ -789,7 +789,7 @@ values.</p>"
 ;  | expression ':' expression ':' expression
 
   (defparser vl-parse-mintypmax-expression ()
-    :measure (two-nats-measure (len tokens) 27)
+    :measure (two-nats-measure (len tokens) 28)
     (seqw tokens warnings
           (min :s= (vl-parse-expression))
           (unless (vl-is-token? :vl-colon)
@@ -828,7 +828,7 @@ several additional productions.</p>
                     | expression '-:' expression
 })"
 
-    :measure (two-nats-measure (len tokens) 27)
+    :measure (two-nats-measure (len tokens) 28)
     (seqw tokens warnings
           (e1 :s= (vl-parse-expression))
           (unless (vl-is-some-token? '(:vl-colon :vl-pluscolon :vl-minuscolon))
@@ -862,7 +862,7 @@ syntax of a concatenation.</p>"
 <p>Where @('array_range_expression') is identical to
 @('range_expression').</p>"
 
-    :measure (two-nats-measure (len tokens) 27)
+    :measure (two-nats-measure (len tokens) 28)
     (seqw tokens warnings
           (expr :s= (vl-parse-expression))
           (unless (vl-is-token? :vl-kwd-with)
@@ -876,7 +876,7 @@ syntax of a concatenation.</p>"
   (defparser vl-parse-1+-stream-expressions-separated-by-commas ()
     :short "Match at least one (but perhaps more) stream expressions, return them
             as an expression list."
-    :measure (two-nats-measure (len tokens) 28)
+    :measure (two-nats-measure (len tokens) 29)
     (seqw tokens warnings
           (first :s= (vl-parse-stream-expression))
           (when (vl-is-token? :vl-comma)
@@ -987,7 +987,7 @@ which are used streaming concatenations.</p>
      slice_size ::= simple_type | expression
 })"
 
-    :measure (two-nats-measure (len tokens) 31)
+    :measure (two-nats-measure (len tokens) 28)
     (b* (((mv err expr new-tokens new-warnings)
           (vl-parse-simple-type))
          ((unless err)
@@ -1340,6 +1340,8 @@ identifier, so we convert it into a hidpiece.</p>"
       (vl-parse-error "Failed to match a primary expression.")))
 
 
+; Definitions from Verilog-2005:
+;
 ; expression ::=
 ;    primary
 ;  | unary_operator { attribute_instance } primary
@@ -1368,9 +1370,12 @@ identifier, so we convert it into a hidpiece.</p>"
 ;                           ?:                 (conditional operator)
 ;   Lowest Precedence       {} {{}}            (concatenations)
 ;
-; And note also the associativity rule from 5.1.2: all operators shall
+; And note also the associativity rule from 5.1.2. all operators shall
 ; associate left to right with the exception of the conditional operator, which
 ; shall associate right to left.
+;
+; SystemVerilog-2012 adds a few operators.  Note also that its new -> and <->
+; operators are right associative.
 ;
 ; Just to refresh our memory, this is how we might write a grammar where '*' is
 ; to have higher precedence than '-':
@@ -1406,6 +1411,8 @@ identifier, so we convert it into a hidpiece.</p>"
 ;    shift_expression { compare_op { attribute_instance } shift_expression }
 ;
 ; equality_op ::= '==' | '!=' | '===' | '!=='
+;               | '==?' | '!=?'                    (SystemVerilog additions)
+;
 ; equality_expression ::=
 ;    compare_expression { equality_op { attribute_instance } compare_expression }
 ;
@@ -1425,17 +1432,18 @@ identifier, so we convert it into a hidpiece.</p>"
 ; logor_expression ::=
 ;    logand_expression { '||' { attribute_instance } logand_expression }
 ;
-; expression ::=
-;    logor_expression { '?' { attribute_instance } expression ':' expression }
-
-
-
-
-
-
-; unary_expression ::=
-;    unary_operator { attribute_instance } primary
-;  | primary
+; qmark_expression ::=
+;    logor_expression { '?' { attribute_instance } expression ':' qmark_expression }
+;                                                  ^^ subtle!      ^^ subtle!
+; SystemVerilog addition:
+;
+; impl_op ::= '->' | '<->'   But note these are right associative!
+; impl_expression ::=
+;    qmark_expression { '->' { attribute_instance } impl_expression }
+;
+; BOZO add assignment ops
+;
+; expression ::= impl_expression
 
   (defparser vl-parse-unary-expression ()
     :measure (two-nats-measure (len tokens) 3)
@@ -1612,7 +1620,8 @@ identifier, so we convert it into a hidpiece.</p>"
     :measure (two-nats-measure (len tokens) 14)
     (seqw tokens warnings
           (first :s= (vl-parse-compare-expression))
-          (unless (vl-is-some-token? '(:vl-eq :vl-neq :vl-ceq :vl-cne))
+          (unless (vl-is-some-token? '(:vl-eq :vl-neq :vl-ceq :vl-cne
+                                              :vl-wildeq :vl-wildneq))
             (return (list first)))
           (op := (vl-match))
           (atts :w= (vl-parse-0+-attribute-instances))
@@ -1621,7 +1630,10 @@ identifier, so we convert it into a hidpiece.</p>"
                                  (:vl-eq  :vl-binary-eq)
                                  (:vl-neq :vl-binary-neq)
                                  (:vl-ceq :vl-binary-ceq)
-                                 (:vl-cne :vl-binary-cne))
+                                 (:vl-cne :vl-binary-cne)
+                                 (:vl-wildeq :vl-binary-wildeq)
+                                 (:vl-wildneq :vl-binary-wildneq)
+                                 )
                          atts tail))))
 
   (defparser vl-parse-equality-expression ()
@@ -1745,18 +1757,18 @@ identifier, so we convert it into a hidpiece.</p>"
           (return (vl-left-associate-mixed-binop-list mixed))))
 
 
-; expression ::=
-;    logor_expression { '?' { attribute_instance } expression ':' expression }
+; qmark_expression ::=
+;    logor_expression { '?' { attribute_instance } expression ':' qmark_expression }
+;                                                  ^^ subtle      ^^ subtle
 ;
 ; Note that the conditional operator associates to the right, so for
 ; example
 ;    1 ? 2 : 3 ? 4 : 5
 ;
 ; Should be interpreted as:  1 ? 2 : (3 ? 4 : 5)   =  2
-;
 ; Rather than as:            (1 ? 2 : 3) ? 4 : 5   =  4
 
-  (defparser vl-parse-expression ()
+  (defparser vl-parse-qmark-expression ()
     :measure (two-nats-measure (len tokens) 26)
     (seqw tokens warnings
           (first :s= (vl-parse-logor-expression))
@@ -1764,14 +1776,45 @@ identifier, so we convert it into a hidpiece.</p>"
             (return first))
           (:= (vl-match))
           (atts :w= (vl-parse-0+-attribute-instances))
+          ;; Subtle!.  The middle expression needs to not be just a
+          ;; qmark_expression, because that wouldn't match lower-precedence
+          ;; things, e.g., for 1 ? 2 -> 3 : 4 to work, we need the middle
+          ;; expression to be an arbitrary expression.
           (second :s= (vl-parse-expression))
           (:= (vl-match-token :vl-colon))
-          (third := (vl-parse-expression))
+          ;; Subtle!  The third expression needs to ONLY be a qmark expression.
+          ;; We don't want to match, e.g., the 3->4 part of 1 ? 2 : 3->4,
+          ;; because the -> has lower precedence than the ?:, so we need to
+          ;; treat that as (1?2:3) -> 4 instead.
+          (third := (vl-parse-qmark-expression))
           (return (make-vl-nonatom :op :vl-qmark
                                    :atts atts
-                                   :args (list first second third))))))
+                                   :args (list first second third)))))
 
+; SystemVerilog addition:
+;
+; impl_op ::= '->' | '<->'
+; impl_expression ::=
+;    qmark_expression { '->' { attribute_instance } impl_expression }
+;
+; Note: unlike other binary operators, these associate to the right, e.g., a ->
+; b -> c should be interpreted as a -> (b -> c) instead of (a -> b) -> c.
+; Hence we don't need to do any mixed-binop-list nonsense.
 
+  (defparser vl-parse-expression ()
+    :measure (two-nats-measure (len tokens) 27)
+    (seqw tokens warnings
+          (first :s= (vl-parse-qmark-expression))
+          (unless (and (vl-is-some-token? '(:vl-arrow :vl-equiv))
+                       (not (eq (vl-loadconfig->edition config) :verilog-2005)))
+            (return first))
+          (op := (vl-match))
+          (atts :w= (vl-parse-0+-attribute-instances))
+          (second :s= (vl-parse-expression))
+          (return (make-vl-nonatom :op (case (vl-token->type op)
+                                         (:vl-arrow :vl-implies)
+                                         (:vl-equiv :vl-equiv))
+                                   :args (list first second))))))
 
 (defun vl-val-when-error-claim-fn (name args)
   `'(,name (implies (mv-nth 0 (,name . ,args))
@@ -1832,6 +1875,7 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-val-when-error-claim vl-parse-logand-expression)
       ,(vl-val-when-error-claim vl-parse-logor-expression-aux)
       ,(vl-val-when-error-claim vl-parse-logor-expression)
+      ,(vl-val-when-error-claim vl-parse-qmark-expression)
       ,(vl-val-when-error-claim vl-parse-expression)
       :hints((and acl2::stable-under-simplificationp
                   (flag::expand-calls-computed-hint
@@ -1893,6 +1937,7 @@ identifier, so we convert it into a hidpiece.</p>"
      ,(vl-tokenlist-claim vl-parse-logand-expression)
      ,(vl-tokenlist-claim vl-parse-logor-expression-aux)
      ,(vl-tokenlist-claim vl-parse-logor-expression)
+     ,(vl-tokenlist-claim vl-parse-qmark-expression)
      ,(vl-tokenlist-claim vl-parse-expression)
      :hints((and acl2::stable-under-simplificationp
                  (flag::expand-calls-computed-hint
@@ -1954,6 +1999,7 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-warninglist-claim vl-parse-logand-expression)
       ,(vl-warninglist-claim vl-parse-logor-expression-aux)
       ,(vl-warninglist-claim vl-parse-logor-expression)
+      ,(vl-warninglist-claim vl-parse-qmark-expression)
       ,(vl-warninglist-claim vl-parse-expression)
       :hints(("Goal" :in-theory (disable (force)))
              (and acl2::stable-under-simplificationp
@@ -2027,6 +2073,7 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-progress-claim vl-parse-logand-expression)
       ,(vl-progress-claim vl-parse-logor-expression-aux)
       ,(vl-progress-claim vl-parse-logor-expression)
+      ,(vl-progress-claim vl-parse-qmark-expression)
       ,(vl-progress-claim vl-parse-expression)
       :hints((and acl2::stable-under-simplificationp
                   (flag::expand-calls-computed-hint
@@ -2100,6 +2147,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-eof-claim vl-parse-logand-expression :error)
         ,(vl-eof-claim vl-parse-logor-expression-aux :error)
         ,(vl-eof-claim vl-parse-logor-expression :error)
+        ,(vl-eof-claim vl-parse-qmark-expression :error)
         ,(vl-eof-claim vl-parse-expression :error)
         :hints((and acl2::stable-under-simplificationp
                     (flag::expand-calls-computed-hint
@@ -2184,6 +2232,7 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-expression-claim vl-parse-logand-expression :expr)
       ,(vl-expression-claim vl-parse-logor-expression-aux :mixed)
       ,(vl-expression-claim vl-parse-logor-expression :expr)
+      ,(vl-expression-claim vl-parse-qmark-expression :expr)
       ,(vl-expression-claim vl-parse-expression :expr)
       :hints(("Goal"
               :do-not '(generalize fertilize))

@@ -52,7 +52,7 @@
                       &key
                       ((config vl-loadconfig-p) '*vl-default-loadconfig*))
   (b* (((exprtest test) test)
-       (- (cw "Running test ~x0; editing ~s1, strict ~x2~%" test
+       (- (cw "Running test ~x0; edition ~s1, strict ~x2~%" test
               (vl-loadconfig->edition config)
               (vl-loadconfig->strictp config)))
 
@@ -132,6 +132,8 @@ A very useful tracing mechanism for debugging:
                         :val (second values)
                         :remainder (vl-tokenlist->string-with-spaces
                                     (third values))
+                        :next-token (and (consp (third values))
+                                         (vl-token->type (car (third values))))
                         :warnings (len (fourth values))))))
 
 (trace-parser vl-parse-stream-concatenation-fn)
@@ -142,6 +144,29 @@ A very useful tracing mechanism for debugging:
 (trace-parser vl-parse-primary-fn)
 (trace-parser vl-parse-simple-type-fn)
 (trace-parser vl-parse-pva-tail-fn)
+(trace-parser vl-parse-qmark-expression-fn)
+
+(run-exprtest
+ (make-exprtest
+  :input "1 ? 2 -> 3 : 4"
+  :expect '(:vl-qmark nil
+                      1
+                      (:vl-implies nil 2 3)
+                      4)))
+
+(run-exprtest
+ (make-exprtest
+  :input "1 -> 2 ? 3 -> 4 : 5 -> 6"
+  :expect '(:vl-implies nil 1
+                        (:vl-implies nil
+                                     (:vl-qmark nil 2 (:vl-implies nil 3 4) 5)
+                                     6))))
+
+
+
+(run-exprtest
+ (make-exprtest :input "1 + 2 -> 3"
+                :expect '(:vl-implies nil (:vl-binary-plus nil 1 2) 3)))
 
 (run-exprtest
  (make-exprtest :input "{<<{1 with [2]}}"
@@ -540,218 +565,318 @@ A very useful tracing mechanism for debugging:
 ; These are special test cases which may be validly parsed in different ways on
 ; SystemVerilog-2012 versus Verilog-2005.
 
-(defconst *sysv-diff-tests*  ;; The expected results for SystemVerilog-2012.
-  (list
+(progn
 
-   (make-exprtest :input "3ns"
-                  :expect '(time "3ns"))
+ (defconst *sysv-diff-tests* ;; The expected results for SystemVerilog-2012.
+   (list
 
-   (make-exprtest :input "3.0s"
-                  :expect '(time "3.0s"))
+    (make-exprtest :input "3ns"
+                   :expect '(time "3ns"))
 
-   (make-exprtest :input "3.0123ps"
-                  :expect '(time "3.0123ps"))
+    (make-exprtest :input "3.0s"
+                   :expect '(time "3.0s"))
 
-   (make-exprtest :input "123.45us"
-                  :expect '(time "123.45us"))
+    (make-exprtest :input "3.0123ps"
+                   :expect '(time "3.0123ps"))
 
-   (make-exprtest :input "123.0ms"
-                  :expect '(time "123.0ms"))
+    (make-exprtest :input "123.45us"
+                   :expect '(time "123.45us"))
 
-   (make-exprtest :input "0fs"
-                  :expect '(time "0fs"))
+    (make-exprtest :input "123.0ms"
+                   :expect '(time "123.0ms"))
 
-   (make-exprtest
-    :input "null"
-    :expect '(key :vl-null))
+    (make-exprtest :input "0fs"
+                   :expect '(time "0fs"))
 
-   (make-exprtest
-    :input "this"
-    :expect '(key :vl-this))
+    (make-exprtest
+     :input "null"
+     :expect '(key :vl-null))
 
-   (make-exprtest
-    :input "$root.foo"
-    :expect '(:vl-hid-dot nil
-                          (key :vl-$root)
-                          (hid "foo")))
+    (make-exprtest
+     :input "this"
+     :expect '(key :vl-this))
 
-   (make-exprtest
-    :input "$root[2]"
-    :successp nil)
+    (make-exprtest
+     :input "$root.foo"
+     :expect '(:vl-hid-dot nil
+                           (key :vl-$root)
+                           (hid "foo")))
 
-   (make-exprtest
-    :input "$root.foo.bar"
-    :expect '(:vl-hid-dot nil
-                          (key :vl-$root)
-                          (:vl-hid-dot nil
-                                       (hid "foo")
-                                       (hid "bar"))))
+    (make-exprtest
+     :input "$root[2]"
+     :successp nil)
 
-   (make-exprtest
-    :input "$root.foo[1].bar"
-    :expect '(:vl-hid-dot nil
-                          (key :vl-$root)
-                          (:vl-hid-dot nil
-                                       (:vl-index nil (hid "foo") 1)
-                                       (hid "bar"))))
+    (make-exprtest
+     :input "$root.foo.bar"
+     :expect '(:vl-hid-dot nil
+                           (key :vl-$root)
+                           (:vl-hid-dot nil
+                                        (hid "foo")
+                                        (hid "bar"))))
 
-   (make-exprtest
-    :input "$root.foo[1][2].bar"
-    :expect '(:vl-hid-dot nil
-                          (key :vl-$root)
-                          (:vl-hid-dot nil
-                                       (:vl-index nil
-                                                  (:vl-index nil (hid "foo") 1)
-                                                  2)
-                                       (hid "bar"))))
+    (make-exprtest
+     :input "$root.foo[1].bar"
+     :expect '(:vl-hid-dot nil
+                           (key :vl-$root)
+                           (:vl-hid-dot nil
+                                        (:vl-index nil (hid "foo") 1)
+                                        (hid "bar"))))
 
-   (make-exprtest
-    :input "$root.foo[1][2].bar[3]"
-    :expect
-    '(:vl-index nil
-                (:vl-hid-dot nil
-                             (key :vl-$root)
-                             (:vl-hid-dot nil
-                                          (:vl-index nil
-                                                     (:vl-index nil (hid "foo") 1)
-                                                     2)
-                                          (hid "bar")))
-                3))
+    (make-exprtest
+     :input "$root.foo[1][2].bar"
+     :expect '(:vl-hid-dot nil
+                           (key :vl-$root)
+                           (:vl-hid-dot nil
+                                        (:vl-index nil
+                                                   (:vl-index nil (hid "foo") 1)
+                                                   2)
+                                        (hid "bar"))))
 
-   (make-exprtest
-    :input "$root.foo[1][2].bar[3:4]"
-    :expect
-    '(:vl-partselect-colon
-      nil
-      (:vl-hid-dot nil
-                   (key :vl-$root)
-                   (:vl-hid-dot nil
-                                (:vl-index nil
-                                           (:vl-index nil (hid "foo") 1)
-                                           2)
-                                (hid "bar")))
-      3 4))
+    (make-exprtest
+     :input "$root.foo[1][2].bar[3]"
+     :expect
+     '(:vl-index nil
+                 (:vl-hid-dot nil
+                              (key :vl-$root)
+                              (:vl-hid-dot nil
+                                           (:vl-index nil
+                                                      (:vl-index nil (hid "foo") 1)
+                                                      2)
+                                           (hid "bar")))
+                 3))
 
-   (make-exprtest
-    :input "foo[1][2].bar[3:4]"
-    :expect
-    '(:vl-partselect-colon
-      nil
-      (:vl-hid-dot nil
-                   (:vl-index nil
-                              (:vl-index nil (hid "foo") 1)
-                              2)
-                   (hid "bar"))
-      3 4))
-
-   (make-exprtest
-    :input "baz.foo[1][2].bar[3:4]"
-    :expect
-    '(:vl-partselect-colon
-      nil
-      (:vl-hid-dot nil
-                   (hid "baz")
-                   (:vl-hid-dot nil
-                                (:vl-index nil
-                                           (:vl-index nil (hid "foo") 1)
-                                           2)
-                                (hid "bar")))
-      3 4))
-
-   ))
-
-
-(defconst *verilog-diff-tests* ;; The expected results for Verilog-2005.
-  (list
-   (make-exprtest :input "3ns"
-                  :expect 3
-                  :remainder "ns")
-
-   (make-exprtest :input "3.0s"
-                  :expect '(real "3.0")
-                  :remainder "s")
-
-   (make-exprtest :input "3.0123ps"
-                  :expect '(real "3.0123")
-                  :remainder "ps")
-
-   (make-exprtest :input "123.45us"
-                  :expect '(real "123.45")
-                  :remainder "us")
-
-   (make-exprtest :input "123.0ms"
-                  :expect '(real "123.0")
-                  :remainder "ms")
-
-   (make-exprtest :input "0fs"
-                  :expect 0
-                  :remainder "fs")
-
-   (make-exprtest
-    :input "null"
-    :expect '(id "null"))
-
-   (make-exprtest
-    :input "this"
-    :expect '(id "this"))
-
-   (make-exprtest
-    :input "$root.foo"
-    :expect '(:vl-syscall nil (sys "$root"))
-    :remainder ". foo")
-
-   (make-exprtest
-    :input "$root[2]"
-    :expect '(:vl-syscall nil (sys "$root"))
-    :remainder "[ 2 ]")
-
-   (make-exprtest
-    :input "$root.foo.bar"
-    :expect '(:vl-syscall nil (sys "$root"))
-    :remainder ". foo . bar")
-
-   (make-exprtest
-    :input "$root.foo[1].bar"
-    :expect '(:vl-syscall nil (sys "$root"))
-    :remainder ". foo [ 1 ] . bar")
-
-   (make-exprtest
-    :input "$root.foo[1][2].bar"
-    :expect '(:vl-syscall nil (sys "$root"))
-    :remainder ". foo [ 1 ] [ 2 ] . bar")
-
-
-   (make-exprtest
-    :input "foo[1].bar[2][3].bar"
-    :expect '(:vl-index nil (:vl-index nil (:vl-hid-dot
-                                            nil
+    (make-exprtest
+     :input "$root.foo[1][2].bar[3:4]"
+     :expect
+     '(:vl-partselect-colon
+       nil
+       (:vl-hid-dot nil
+                    (key :vl-$root)
+                    (:vl-hid-dot nil
+                                 (:vl-index nil
                                             (:vl-index nil (hid "foo") 1)
-                                            (hid "bar"))
-                                       2)
-                        3)
-    :remainder ". bar")
+                                            2)
+                                 (hid "bar")))
+       3 4))
 
-   ))
+    (make-exprtest
+     :input "foo[1][2].bar[3:4]"
+     :expect
+     '(:vl-partselect-colon
+       nil
+       (:vl-hid-dot nil
+                    (:vl-index nil
+                               (:vl-index nil (hid "foo") 1)
+                               2)
+                    (hid "bar"))
+       3 4))
 
-(make-event
- (progn$
-
-  (run-exprtests *sysv-diff-tests*
-                 :config (make-vl-loadconfig :edition :system-verilog-2012
-                                             :strictp nil))
-  (run-exprtests *sysv-diff-tests*
-                 :config (make-vl-loadconfig :edition :system-verilog-2012
-                                             :strictp t))
-  (run-exprtests *verilog-diff-tests*
-                 :config (make-vl-loadconfig :edition :verilog-2005
-                                             :strictp nil))
-  (run-exprtests *verilog-diff-tests*
-                 :config (make-vl-loadconfig :edition :verilog-2005
-                                             :strictp t))
-  '(value-triple :success)))
+    (make-exprtest
+     :input "baz.foo[1][2].bar[3:4]"
+     :expect
+     '(:vl-partselect-colon
+       nil
+       (:vl-hid-dot nil
+                    (hid "baz")
+                    (:vl-hid-dot nil
+                                 (:vl-index nil
+                                            (:vl-index nil (hid "foo") 1)
+                                            2)
+                                 (hid "bar")))
+       3 4))
 
 
-(defconst *sysv-only-tests*
+    ;; Basic precedence/associativity for arrows/equivs
+
+    (make-exprtest :input "1 + 2 -> 3"
+                   :expect '(:vl-implies nil (:vl-binary-plus nil 1 2) 3))
+
+    (make-exprtest :input "1 -> 2 -> 3"
+                   :expect '(:vl-implies nil 1 (:vl-implies nil 2 3)))
+
+    (make-exprtest :input "1 -> 2 -> 3 -> 4"
+                   :expect '(:vl-implies nil 1 (:vl-implies nil 2 (:vl-implies nil 3 4))))
+
+    (make-exprtest :input "1 -> 2 <-> 3 -> 4"
+                   :expect '(:vl-implies nil 1 (:vl-equiv nil 2 (:vl-implies nil 3 4))))
+
+    (make-exprtest :input "1 -> 2 <-> 3 <-> 4"
+                   :expect '(:vl-implies nil 1 (:vl-equiv nil 2 (:vl-equiv nil 3 4))))
+
+    (make-exprtest :input "1 <-> 2 <-> 3 <-> 4"
+                   :expect '(:vl-equiv nil 1 (:vl-equiv nil 2 (:vl-equiv nil 3 4))))
+
+    (make-exprtest :input "1 <-> 2 -> 3 <-> 4"
+                   :expect '(:vl-equiv nil 1 (:vl-implies nil 2 (:vl-equiv nil 3 4))))
+
+
+    ;; Arrows versus ?: is subtle
+
+    (make-exprtest :input "1 ? 2 : 3 -> 4"
+                   :expect '(:vl-implies nil (:vl-qmark nil 1 2 3) 4))
+
+    (make-exprtest :input "1 -> 2 ? 3 : 4"
+                   :expect '(:vl-implies nil 1 (:vl-qmark nil 2 3 4)))
+
+    (make-exprtest :input "1 ? 2->3 : 4"
+                   :expect '(:vl-qmark nil 1 (:vl-implies nil 2 3) 4))
+
+    (make-exprtest :input "1 -> 2 ? 3 : 4 -> 5"
+                   ;; The arrows have lowest priority, so (2 ? 3 : 4) should bind
+                   ;; most tightly.  The arrows are right associative, so we should
+                   ;; have 1 -> ( 2?3:4 -> 5 )
+                   :expect '(:vl-implies nil 1
+                                         (:vl-implies nil
+                                                      (:vl-qmark nil 2 3 4)
+                                                      5)))
+
+    (make-exprtest
+     :input "1 -> 2 ? 3 -> 4 : 5 -> 6"
+     :expect '(:vl-implies nil 1
+                           (:vl-implies nil
+                                        (:vl-qmark nil 2 (:vl-implies nil 3 4) 5)
+                                        6)))
+
+    (make-exprtest :input "1 ? 2 : 3 <-> 4"
+                   :expect '(:vl-equiv nil (:vl-qmark nil 1 2 3) 4))
+
+    (make-exprtest :input "1 <-> 2 ? 3 : 4"
+                   :expect '(:vl-equiv nil 1 (:vl-qmark nil 2 3 4)))
+
+    (make-exprtest :input "1 ? 2<->3 : 4"
+                   :expect '(:vl-qmark nil 1 (:vl-equiv nil 2 3) 4))
+
+
+
+
+    ))
+
+ (defconst *verilog-diff-tests* ;; The expected results for Verilog-2005.
+   (list
+    (make-exprtest :input "3ns"
+                   :expect 3
+                   :remainder "ns")
+
+    (make-exprtest :input "3.0s"
+                   :expect '(real "3.0")
+                   :remainder "s")
+
+    (make-exprtest :input "3.0123ps"
+                   :expect '(real "3.0123")
+                   :remainder "ps")
+
+    (make-exprtest :input "123.45us"
+                   :expect '(real "123.45")
+                   :remainder "us")
+
+    (make-exprtest :input "123.0ms"
+                   :expect '(real "123.0")
+                   :remainder "ms")
+
+    (make-exprtest :input "0fs"
+                   :expect 0
+                   :remainder "fs")
+
+    (make-exprtest
+     :input "null"
+     :expect '(id "null"))
+
+    (make-exprtest
+     :input "this"
+     :expect '(id "this"))
+
+    (make-exprtest
+     :input "$root.foo"
+     :expect '(:vl-syscall nil (sys "$root"))
+     :remainder ". foo")
+
+    (make-exprtest
+     :input "$root[2]"
+     :expect '(:vl-syscall nil (sys "$root"))
+     :remainder "[ 2 ]")
+
+    (make-exprtest
+     :input "$root.foo.bar"
+     :expect '(:vl-syscall nil (sys "$root"))
+     :remainder ". foo . bar")
+
+    (make-exprtest
+     :input "$root.foo[1].bar"
+     :expect '(:vl-syscall nil (sys "$root"))
+     :remainder ". foo [ 1 ] . bar")
+
+    (make-exprtest
+     :input "$root.foo[1][2].bar"
+     :expect '(:vl-syscall nil (sys "$root"))
+     :remainder ". foo [ 1 ] [ 2 ] . bar")
+
+
+    (make-exprtest
+     :input "foo[1].bar[2][3].bar"
+     :expect '(:vl-index nil (:vl-index nil (:vl-hid-dot
+                                             nil
+                                             (:vl-index nil (hid "foo") 1)
+                                             (hid "bar"))
+                                        2)
+                         3)
+     :remainder ". bar")
+
+    ;; No implies/equiv operators in Verilog-2005, so these will fail, but
+    ;; they'll at least consume the input until the arrow/equiv.
+
+    (make-exprtest :input "1 + 2 -> 3"
+                   :expect '(:vl-binary-plus nil 1 2)
+                   :remainder "-> 3")
+
+    (make-exprtest :input "1 ? 2 : 3 -> 4"
+                   :expect '(:vl-qmark nil 1 2 3)
+                   :remainder "-> 4")
+
+    (make-exprtest :input "1 + 2 -> 3"
+                   :expect '(:vl-binary-plus nil 1 2)
+                   :remainder "-> 3")
+
+    (make-exprtest :input "1 ? 2 : 3 -> 4"
+                   :expect '(:vl-qmark nil 1 2 3)
+                   :remainder "-> 4")
+
+    (make-exprtest :input "1 -> 2 -> 3"
+                   :expect '1
+                   :remainder "-> 2 -> 3")
+
+    (make-exprtest :input "1 <-> 2 <-> 3 <-> 4"
+                   ;; I originally expected this to return 1.  But that's not
+                   ;; right.  Verilog-2005 has no <-> operator so the input
+                   ;; above is really : 1 < -> 2 ...  And if we see a 1 <, it's
+                   ;; we are going to look for another expression, e.g., we're
+                   ;; expecting to see something like 1 < 2.  It seems
+                   ;; completely fine to fail in this way, since this isn't
+                   ;; good syntax.
+                   :successp nil)
+
+    ))
+
+ (make-event
+  (progn$
+
+   (run-exprtests *sysv-diff-tests*
+                  :config (make-vl-loadconfig :edition :system-verilog-2012
+                                              :strictp nil))
+   (run-exprtests *sysv-diff-tests*
+                  :config (make-vl-loadconfig :edition :system-verilog-2012
+                                              :strictp t))
+   (run-exprtests *verilog-diff-tests*
+                  :config (make-vl-loadconfig :edition :verilog-2005
+                                              :strictp nil))
+   (run-exprtests *verilog-diff-tests*
+                  :config (make-vl-loadconfig :edition :verilog-2005
+                                              :strictp t))
+   '(value-triple :success))))
+
+
+(progn
+
+ (defconst *sysv-only-tests*
   ;; These are tests that work with SystemVerilog, but that are just malformed
   ;; for Verilog-2005.
   (list
@@ -1046,10 +1171,34 @@ A very useful tracing mechanism for debugging:
                   :successp nil)
 
 
+   ;; Associativity tests for new operators
+
+   (make-exprtest :input "1 !=? 2 !=? 3" :expect '(:vl-binary-wildneq nil (:vl-binary-wildneq nil 1 2) 3))
+   (make-exprtest :input "1 ==? 2 ==? 3" :expect '(:vl-binary-wildeq  nil (:vl-binary-wildeq nil 1 2) 3))
+   (make-exprtest :input "1 !=? 2 == 3"  :expect '(:vl-binary-eq      nil (:vl-binary-wildneq nil 1 2) 3))
+   (make-exprtest :input "1 !=? 2 !== 3" :expect '(:vl-binary-cne     nil (:vl-binary-wildneq nil 1 2) 3))
+
+
+   ;; Basic precedence tests for the new operators.  In the tests below, 1 op 2
+   ;; should always bind more tightly.
+
+   (make-exprtest :input "1 + 2 ==? 3" :expect '(:vl-binary-wildeq nil (:vl-binary-plus nil 1 2) 3))
+   (make-exprtest :input "1 < 2 ==? 3" :expect '(:vl-binary-wildeq nil (:vl-binary-lt nil 1 2) 3))
+   (make-exprtest :input "1 ==? 2 & 3" :expect '(:vl-binary-bitand nil (:vl-binary-wildeq nil 1 2) 3))
+   (make-exprtest :input "1 ==? 2 | 3" :expect '(:vl-binary-bitor nil (:vl-binary-wildeq nil 1 2) 3))
+   (make-exprtest :input "1 * 2 !=? 3" :expect '(:vl-binary-wildneq nil (:vl-binary-times nil 1 2) 3))
+   (make-exprtest :input "1 > 2 !=? 3" :expect '(:vl-binary-wildneq nil (:vl-binary-gt nil 1 2) 3))
+   (make-exprtest :input "1 !=? 2 & 3" :expect '(:vl-binary-bitand nil (:vl-binary-wildneq nil 1 2) 3))
+   (make-exprtest :input "1 !=? 2 | 3" :expect '(:vl-binary-bitor nil (:vl-binary-wildneq nil 1 2) 3))
+
+
+
+
+
 
    ))
 
-(make-event
+ (make-event
  (progn$
   (run-exprtests *sysv-only-tests*
                  :config (make-vl-loadconfig :edition :system-verilog-2012
@@ -1066,5 +1215,5 @@ A very useful tracing mechanism for debugging:
   (run-exprtests (make-exprtests-fail *sysv-only-tests*)
                  :config (make-vl-loadconfig :edition :verilog-2005
                                              :strictp t))
-  '(value-triple :success)))
+  '(value-triple :success))))
 

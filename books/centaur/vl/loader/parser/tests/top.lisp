@@ -36,5 +36,6 @@
 (include-book "ranges")
 (include-book "statements")
 (include-book "strengths")
+(include-book "writer")
 
 ||#

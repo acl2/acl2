@@ -437,6 +437,8 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-binary-neq "!=")
     (:vl-binary-ceq "===")
     (:vl-binary-cne "!==")
+    (:vl-binary-wildeq "==?")
+    (:vl-binary-wildneq "!=?")
     (:vl-binary-logand "&&")
     (:vl-binary-logor "||")
     (:vl-binary-power "**")
@@ -451,6 +453,9 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-binary-ashr ">>>")
     (:vl-binary-ashl "<<<")
 
+    (:vl-implies "->")
+    (:vl-equiv "<->")
+
     (:vl-partselect-colon ":")
     (:vl-partselect-pluscolon "+:")
     (:vl-partselect-minuscolon "-:")
@@ -464,8 +469,8 @@ displays.  The module browser's web pages are responsible for defining the
   ''(;; These aren't real operators as far as the precedence rules are
      ;; concerned, but they need to bind even more tightly than +, -, etc.
      (:VL-BITSELECT             . 20)
-     (:VL-ARRAY-INDEX          . 20)
-     (:VL-INDEX      . 20)
+     (:VL-ARRAY-INDEX           . 20)
+     (:VL-INDEX                 . 20)
      (:VL-PARTSELECT-COLON      . 20)
      (:VL-PARTSELECT-PLUSCOLON  . 20)
      (:VL-PARTSELECT-MINUSCOLON . 20)
@@ -480,22 +485,23 @@ displays.  The module browser's web pages are responsible for defining the
      (:VL-WITH-MINUSCOLON       . 20)
 
 
-     ;; In Table 5-4, concats are said to have minimal precedence.  But that
-     ;; doesn't really make sense.  For instance, in: a + {b + c} the {b + c}
-     ;; term acts more like an operand than another operator.  So, here I say
-     ;; that concats and multiconcats also have precedence 20, so they will be
-     ;; treated just like operands.  That is, we want to write &{foo,bar} rather
-     ;; than &({foo,bar}).  For similar reasons, I put the mintypmax operand
-     ;; here with precedence 20.
-     (:VL-CONCAT        . 20)
-     (:VL-MULTICONCAT   . 20)
-     (:VL-MINTYPMAX     . 20)
-     (:VL-STREAM-LEFT   . 20)
-     (:VL-STREAM-RIGHT  . 20)
-     (:VL-STREAM-LEFT-SIZED   . 20)
-     (:VL-STREAM-RIGHT-SIZED  . 20)
+     ;; In Verilog-2005 Table 5-4, concats are said to have minimal precedence.
+     ;; But that doesn't really make sense.  For instance, in: a + {b + c} the
+     ;; {b + c} term acts more like an operand than another operator.  So, here
+     ;; I say that concats and multiconcats also have precedence 20, so they
+     ;; will be treated just like operands.  That is, we want to write
+     ;; &{foo,bar} rather than &({foo,bar}).  For similar reasons, I put the
+     ;; mintypmax operand here with precedence 20.
+     (:VL-CONCAT             . 20)
+     (:VL-MULTICONCAT        . 20)
+     (:VL-MINTYPMAX          . 20)
+     (:VL-STREAM-LEFT        . 20)
+     (:VL-STREAM-RIGHT       . 20)
+     (:VL-STREAM-LEFT-SIZED  . 20)
+     (:VL-STREAM-RIGHT-SIZED . 20)
 
-     ;; This part is from Table 5-4 verbatim:
+     ;; This part is based on Verilog-2005 Table 5-4, and SystemVerilog-2012
+     ;; Table 11-2.
      (:VL-UNARY-PLUS    . 14)
      (:VL-UNARY-MINUS   . 14)
      (:VL-UNARY-LOGNOT  . 14)
@@ -506,31 +512,48 @@ displays.  The module browser's web pages are responsible for defining the
      (:VL-UNARY-NOR     . 14)
      (:VL-UNARY-XOR     . 14)
      (:VL-UNARY-XNOR    . 14)
+
      (:VL-BINARY-POWER  . 13)
+
      (:VL-BINARY-TIMES  . 12)
      (:VL-BINARY-DIV    . 12)
      (:VL-BINARY-REM    . 12)
+
      (:VL-BINARY-PLUS   . 11)
      (:VL-BINARY-MINUS  . 11)
+
      (:VL-BINARY-SHR    . 10)
      (:VL-BINARY-SHL    . 10)
      (:VL-BINARY-ASHR   . 10)
      (:VL-BINARY-ASHL   . 10)
+
      (:VL-BINARY-LT     . 9)
      (:VL-BINARY-LTE    . 9)
      (:VL-BINARY-GT     . 9)
      (:VL-BINARY-GTE    . 9)
+
      (:VL-BINARY-EQ     . 8)
      (:VL-BINARY-NEQ    . 8)
      (:VL-BINARY-CEQ    . 8)
      (:VL-BINARY-CNE    . 8)
+     (:vl-binary-wildeq . 8)
+     (:vl-binary-wildneq . 8)
+
      (:VL-BINARY-BITAND . 7)
+
      (:VL-BINARY-XOR    . 6)
      (:VL-BINARY-XNOR   . 6)
+
      (:VL-BINARY-BITOR  . 5)
+
      (:VL-BINARY-LOGAND . 4)
+
      (:VL-BINARY-LOGOR  . 3)
+
      (:VL-QMARK         . 2)
+
+     (:vl-implies . 1)
+     (:vl-equiv   . 1)
      ))
 
 (define vl-op-precedence-< ((x vl-op-p) (y vl-op-p))
@@ -612,6 +635,7 @@ ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>")
          ((:vl-binary-plus
            :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem
            :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
+           :vl-binary-wildeq :vl-binary-wildneq
            :vl-binary-logand :vl-binary-logor
            :vl-binary-power
            :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
@@ -670,23 +694,30 @@ ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>")
           (b* (((unless (consp args))
                 (impossible)
                 ps)
-               (arg1 (first args))
-               (arg2 (second args))
-               (arg3 (third args))
+               ((list arg1 arg2 arg3) args)
                ;; these associate right to left, so "a ? b : (c ? d : e)" doesn't
-               ;; need parens, but "(a ? b : c) ? d : e" does need parens.  every
-               ;; other operator has precedence greater than ?:, so we never need
-               ;; parens around arg3, and only rarely need them around arg1/arg2.
-               ;; don't need parens around any of the components.
+               ;; need parens, but "(a ? b : c) ? d : e" does need parens.
+
+               ;; In Verilog-2005 every other operator has precedence greater
+               ;; than ?:, so we never needed parens around arg3, and only
+               ;; rarely needed them around arg1/arg2.
+
+               ;; In SystemVerilog there are some operators (assignment
+               ;; operators and things like <->) that are lower precedence, so
+               ;; we need to check.
                (want-parens-1p (if (vl-fast-atom-p arg1)
                                    nil
                                  (vl-op-precedence-<= (vl-nonatom->op arg1) op)))
                (want-parens-2p (if (vl-fast-atom-p arg2)
                                    nil
-                                 (vl-op-precedence-<= (vl-nonatom->op arg2) op))))
+                                 (vl-op-precedence-<= (vl-nonatom->op arg2) op)))
+               (want-parens-3p (if (vl-fast-atom-p arg3)
+                                   nil
+                                 (vl-op-precedence-< (vl-nonatom->op arg3) op))))
             (vl-ps-seq (if want-parens-1p (vl-print "(") ps)
                        (vl-pp-expr arg1)
                        (if want-parens-1p (vl-print ")") ps)
+
                        (vl-print-str " ? ")
                        (if atts
                            (vl-ps-seq (vl-pp-atts atts)
@@ -699,7 +730,38 @@ ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>")
                        (if want-parens-2p (vl-print ")") ps)
 
                        (vl-println? " : ")
+
+                       (if want-parens-3p (vl-print "(") ps)
                        (vl-pp-expr arg3)
+                       (if want-parens-3p (vl-print ")") ps)
+
+                       (vl-println? ""))))
+
+         ((:vl-implies :vl-equiv)
+          (b* (((unless (consp args))
+                (impossible)
+                ps)
+               ((list arg1 arg2) args)
+               ;; these associate right to left, so "a <-> (b <-> c)" does
+               ;; not need parens, but (a <-> b) <-> c does.
+               (want-parens-1p (if (vl-fast-atom-p arg1)
+                                   nil
+                                 (vl-op-precedence-<= (vl-nonatom->op arg1) op)))
+               (want-parens-2p (if (vl-fast-atom-p arg2)
+                                   nil
+                                 (vl-op-precedence-< (vl-nonatom->op arg2) op))))
+            (vl-ps-seq (if want-parens-1p (vl-print "(") ps)
+                       (vl-pp-expr arg1)
+                       (if want-parens-1p (vl-print ")") ps)
+                       (vl-print-str (vl-op-string op))
+                       (if atts
+                           (vl-ps-seq (vl-pp-atts atts)
+                                      (vl-print " "))
+                         ps)
+                       (vl-println? "")
+                       (if want-parens-2p (vl-print "(") ps)
+                       (vl-pp-expr arg2)
+                       (if want-parens-2p (vl-print ")") ps)
                        (vl-println? ""))))
 
          ((:vl-mintypmax)

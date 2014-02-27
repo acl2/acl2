@@ -286,6 +286,8 @@ is a tree of @(':vl-index') operators.</li>
      (cons :vl-binary-neq            2) ;;; !=
      (cons :vl-binary-ceq            2) ;;; ===
      (cons :vl-binary-cne            2) ;;; !==
+     (cons :vl-binary-wildeq         2) ;;; ==?
+     (cons :vl-binary-wildneq        2) ;;; !=?
      (cons :vl-binary-logand         2) ;;; &&
      (cons :vl-binary-logor          2) ;;; ||
      (cons :vl-binary-power          2) ;;; **
@@ -301,6 +303,10 @@ is a tree of @(':vl-index') operators.</li>
      (cons :vl-binary-shl            2) ;;; <<
      (cons :vl-binary-ashr           2) ;;; >>>
      (cons :vl-binary-ashl           2) ;;; <<<
+
+     ;; Special Binary Operators (these associate right to left)
+     (cons :vl-implies               2) ;;; ->
+     (cons :vl-equiv                 2) ;;; <->
 
      ;; Basic Ternary Operators
      (cons :vl-qmark                 3) ;;; e.g., 1 ? 2 : 3
