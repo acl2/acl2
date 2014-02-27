@@ -1,6 +1,6 @@
 all: top
 
-DIRS = modeling
+DIRS = modeling tutorial-problems
 
 include ../Makefile-subdirs
 include ../Makefile-generic
