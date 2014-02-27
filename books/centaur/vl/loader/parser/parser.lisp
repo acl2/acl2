@@ -70,7 +70,7 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
   :count strong
   (seqw tokens warnings
         (when (vl-is-token? :vl-kwd-endprimitive)
-          (:= (vl-match-token :vl-kwd-endprimitive))
+          (:= (vl-match))
           (return nil))
         (:s= (vl-match-any))
         (:= (vl-parse-udp-declaration-aux))

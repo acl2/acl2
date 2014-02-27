@@ -39,6 +39,8 @@
           ((vl-funname-p guts)     (list 'fun  (vl-funname->name guts)))
           ((vl-sysfunname-p guts)  (list 'sys  (vl-sysfunname->name guts)))
           ((vl-keyguts-p guts)     (list 'key  (vl-keyguts->type guts)))
+          ((vl-basictype-p guts)   (list 'basic  (vl-basictype->kind guts)))
+
           ((vl-time-p guts)
            (list 'time
                  (concatenate 'string

@@ -130,7 +130,9 @@ SystemVerilog 2012 source code."
             :vl-ashleq     ;;; <<<=
             :vl-ashreq     ;;; >>>=
             :vl-assignpat  ;;; '{
-            :vl-dollar     ;;; $
+            :vl-$          ;;; $
+            :vl-$root      ;;; $root
+            :vl-$unit      ;;; $unit
             ))
   ///
   (assert! (subsetp *vl-2005-plain-nonkeywords*

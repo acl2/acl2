@@ -53,7 +53,7 @@
         (unless (vl-is-token? :vl-lbrack)
           (return (make-vl-atom
                    :guts (make-vl-id :name (vl-idtoken->name id)))))
-        (:= (vl-match-token :vl-lbrack))
+        (:= (vl-match))
         (range := (vl-parse-range-expression))
         (unless (or (eq (vl-erange->type range) :vl-index)
                     (eq (vl-erange->type range) :vl-colon))
@@ -75,7 +75,7 @@
   (seqw tokens warnings
         (first := (vl-parse-port-reference))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-1+-port-references-separated-by-commas)))
         (return (cons first rest))))
 
@@ -87,7 +87,7 @@
   (seqw tokens warnings
         (when (vl-is-token? :vl-lcurly)
           ;; A concatenation.
-          (:= (vl-match-token :vl-lcurly))
+          (:= (vl-match))
           (args := (vl-parse-1+-port-references-separated-by-commas))
           (:= (vl-match-token :vl-rcurly))
           (return (make-vl-nonatom :op :vl-concat
@@ -139,11 +139,13 @@
                                        :expr pexpr
                                        :loc loc)))))
         ;; Otherwise, we have a name and possibly an expr.
-        (:= (vl-match-token :vl-dot))
+        (:= (vl-match))
         (id := (vl-match-token :vl-idtoken))
         (:= (vl-match-token :vl-lparen))
         (unless (vl-is-token? :vl-rparen)
           (pexpr := (vl-parse-port-expression)))
+
+        ;; BOZO why can't I just use (vl-match) here?
         (:= (vl-match-token :vl-rparen))
         (return (make-vl-port :name (vl-idtoken->name id)
                               :expr pexpr
@@ -164,15 +166,14 @@
 
         (when (vl-is-token? :vl-comma)
           (loc := (vl-current-loc))
-          (first := (mv nil (make-vl-port :name nil :expr nil :loc loc)
-                        tokens warnings))
-          (:= (vl-match-token :vl-comma))
-          (rest  := (vl-parse-1+-ports-separated-by-commas))
-          (return (cons first rest)))
+          (:= (vl-match))
+          (rest := (vl-parse-1+-ports-separated-by-commas))
+          (return (cons (make-vl-port :name nil :expr nil :loc loc)
+                        rest)))
 
         (first := (vl-parse-nonnull-port))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-1+-ports-separated-by-commas)))
         (return (cons first rest))))
 
@@ -188,6 +189,7 @@
         (:= (vl-match-token :vl-lparen))
         (unless (vl-is-token? :vl-rparen)
           (ports := (vl-parse-1+-ports-separated-by-commas)))
+        ;; BOZO why can't I use (vl-match) here?
         (:= (vl-match-token :vl-rparen))
         (return ports)))
 
@@ -244,9 +246,8 @@
 ; followed by another identifier"   We have to look for the identifier, too.
 
         (when (and (vl-is-token? :vl-comma)
-                   (vl-is-token? :vl-idtoken
-                                 :tokens (cdr tokens)))
-          (:= (vl-match-token :vl-comma))
+                   (vl-is-token? :vl-idtoken :tokens (cdr tokens)))
+          (:= (vl-match))
           (rest := (vl-parse-1+-identifiers-separated-by-commas)))
         (return (cons first rest))))
 
@@ -353,7 +354,7 @@
                                         are not supported.")))
          (type := (vl-parse-optional-nettype))
          (when (vl-is-token? :vl-kwd-signed)
-           (signed := (vl-match-token :vl-kwd-signed)))
+           (signed := (vl-match)))
          (when (vl-is-token? :vl-lbrack)
            (range := (vl-parse-range)))
          (ids := (vl-parse-1+-identifiers-separated-by-commas))
@@ -436,7 +437,7 @@
   (seqw tokens warnings
         ((portdecls1 . netdecls1) := (vl-parse-port-declaration-atts))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           ((portdecls2 . netdecls2) := (vl-parse-1+-port-declarations-separated-by-commas)))
         (return (cons (append portdecls1 portdecls2)
                       (append netdecls1 netdecls2)))))

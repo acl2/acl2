@@ -590,6 +590,14 @@ which could not hold such large values.</p>")
 
 (add-json-encoder vl-keygutstype-p jp-keygutstype)
 
+(define jp-basictypekind ((x vl-basictypekind-p) &key (ps 'ps))
+  :parents (json-encoders)
+  :short "Encode a @(see vl-basictypekind-p) as a JSON string."
+  (jp-str (vl-basictypekind->string x)))
+
+(add-json-encoder vl-basictypekind-p jp-basictypekind)
+
+
 (def-vl-jp-aggregate weirdint)
 (def-vl-jp-aggregate string)
 (def-vl-jp-aggregate real)
@@ -600,6 +608,8 @@ which could not hold such large values.</p>")
 (def-vl-jp-aggregate keyguts)
 (def-vl-jp-aggregate extint)
 (def-vl-jp-aggregate time)
+(def-vl-jp-aggregate basictype)
+
 
 (define vl-jp-atomguts ((x vl-atomguts-p) &key (ps 'ps))
   :parents (vl-jp-expr vl-atomguts-p)
@@ -615,6 +625,7 @@ which could not hold such large values.</p>")
     (:vl-keyguts    (vl-jp-keyguts x))
     (:vl-extint     (vl-jp-extint x))
     (:vl-time       (vl-jp-time x))
+    (:vl-basictype  (vl-jp-basictype x))
     (otherwise      (vl-jp-sysfunname x))))
 
 (add-json-encoder vl-atomguts-p vl-jp-atomguts)

@@ -65,7 +65,7 @@
    (seqw tokens warnings
          (first :s= (vl-parse-lvalue))
          (when (vl-is-token? :vl-comma)
-           (:= (vl-match-token :vl-comma))
+           (:= (vl-match))
            (rest := (vl-parse-1+-lvalues-separated-by-commas)))
          (return (cons first rest)))))
 

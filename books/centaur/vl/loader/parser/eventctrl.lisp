@@ -35,7 +35,7 @@
   (seqw tokens warnings
         (:= (vl-match-token :vl-pound))
         (when (vl-is-token? :vl-lparen)
-          (:= (vl-match-token :vl-lparen))
+          (:= (vl-match))
           (ret := (vl-parse-mintypmax-expression))
           (:= (vl-match-token :vl-rparen))
           (return (vl-delaycontrol ret)))
@@ -59,10 +59,10 @@
   :count strong
   (seqw tokens warnings
         (when (vl-is-some-token? '(:vl-kwd-posedge :vl-kwd-negedge))
-          (edge := (vl-match-some-token '(:vl-kwd-posedge :vl-kwd-negedge))))
+          (edge := (vl-match)))
         (expr := (vl-parse-expression))
         (when (vl-is-some-token? '(:vl-kwd-or :vl-comma))
-          (:= (vl-match-some-token '(:vl-kwd-or :vl-comma)))
+          (:= (vl-match))
           (rest := (vl-parse-event-expression)))
         (return
          (let ((edgetype (if (not edge)
@@ -90,19 +90,19 @@
         (:= (vl-match-token :vl-atsign))
 
         (when (vl-is-token? :vl-times)
-          (:= (vl-match-token :vl-times))
+          (:= (vl-match))
           (return (vl-eventcontrol t nil)))
 
         (when (vl-is-token? :vl-beginattr)
           ;; GROSS -- Special case to handle "@ (* )".  That is, the (* gets
           ;; interpreted by the lexer as a beginattr.  We don't have a good way
           ;; around this except to handle it explicitly.
-          (:= (vl-match-token :vl-beginattr))
+          (:= (vl-match))
           (:= (vl-match-token :vl-rparen))
           (return (vl-eventcontrol t nil)))
 
         (unless (vl-is-token? :vl-lparen)
-          (hid := (vl-parse-hierarchial-identifier nil))
+          (hid := (vl-parse-hierarchical-identifier nil))
           (return (vl-eventcontrol nil (list (vl-evatom :vl-noedge hid)))))
 
         (:= (vl-match-token :vl-lparen))
@@ -110,11 +110,11 @@
         (when (vl-is-token? :vl-endattr)
           ;; GROSS -- Special case to handle "@ ( *)".  That is, the *) gets
           ;; interpreted as an endattr.  We again have to handle it explicitly.
-          (:= (vl-match-token :vl-endattr))
+          (:= (vl-match))
           (return (vl-eventcontrol t nil)))
 
         (when (vl-is-token? :vl-times)
-          (:= (vl-match-token :vl-times))
+          (:= (vl-match))
           (:= (vl-match-token :vl-rparen))
           (return (vl-eventcontrol t nil)))
 

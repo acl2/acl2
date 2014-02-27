@@ -104,7 +104,7 @@
         (:= (vl-match-token :vl-lparen))
         (first := (vl-parse-mintypmax-expression))
         (when (vl-is-token? :vl-rparen)
-          (:= (vl-match-token :vl-rparen))
+          (:= (vl-match))
           (return (make-vl-gatedelay :rise first
                                      :fall first
                                      :high first)))
@@ -132,17 +132,17 @@
           (return (make-vl-gatedelay :rise delay
                                      :fall delay
                                      :high delay)))
-        (:= (vl-match-token :vl-lparen))
+        (:= (vl-match))
         (first := (vl-parse-mintypmax-expression))
         (when (vl-is-token? :vl-rparen)
-          (:= (vl-match-token :vl-rparen))
+          (:= (vl-match))
           (return (make-vl-gatedelay :rise first
                                      :fall first
                                      :high first)))
         (:= (vl-match-token :vl-comma))
         (second := (vl-parse-mintypmax-expression))
         (when (vl-is-token? :vl-rparen)
-          (:= (vl-match-token :vl-rparen))
+          (:= (vl-match))
           (return (make-vl-gatedelay :rise first
                                      :fall second
                                      :high nil)))

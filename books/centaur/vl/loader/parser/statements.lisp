@@ -83,7 +83,7 @@
   :count strong
   (seqw tokens warnings
         (when (vl-is-some-token? '(:vl-kwd-assign :vl-kwd-force))
-          (type := (vl-match-some-token '(:vl-kwd-assign :vl-kwd-force)))
+          (type := (vl-match))
           ((lvalue . expr) := (vl-parse-assignment))
           (return (vl-assignstmt (if (eq (vl-token->type type) :vl-kwd-assign)
                                      :vl-assign
@@ -99,7 +99,7 @@
 
 
 ; task_enable ::=
-;   hierarchial_task_identifier [ '(' expression { ',' expression } ')' ] ';'
+;   hierarchical_task_identifier [ '(' expression { ',' expression } ')' ] ';'
 
 (defparser vl-parse-task-enable (atts)
   :guard (vl-atts-p atts)
@@ -108,9 +108,9 @@
   :fails gracefully
   :count strong
   (seqw tokens warnings
-        (hid := (vl-parse-hierarchial-identifier nil))
+        (hid := (vl-parse-hierarchical-identifier nil))
         (when (vl-is-token? :vl-lparen)
-          (:= (vl-match-token :vl-lparen))
+          (:= (vl-match))
           (args := (vl-parse-1+-expressions-separated-by-commas))
           (:= (vl-match-token :vl-rparen)))
         (:= (vl-match-token :vl-semi))
@@ -129,7 +129,7 @@
   (seqw tokens warnings
         (id := (vl-match-token :vl-sysidtoken))
         (when (vl-is-token? :vl-lparen)
-          (:= (vl-match-token :vl-lparen))
+          (:= (vl-match))
           (args := (vl-parse-1+-expressions-separated-by-commas))
           (:= (vl-match-token :vl-rparen)))
         (:= (vl-match-token :vl-semi))
@@ -141,7 +141,7 @@
 
 
 ; disable_statement ::=
-;    'disable' hierarchial_identifier ';'
+;    'disable' hierarchical_identifier ';'
 
 (defparser vl-parse-disable-statement (atts)
   :guard (vl-atts-p atts)
@@ -151,7 +151,7 @@
   :count strong
   (seqw tokens warnings
         (:= (vl-match-token :vl-kwd-disable))
-        (id := (vl-parse-hierarchial-identifier nil))
+        (id := (vl-parse-hierarchical-identifier nil))
         (:= (vl-match-token :vl-semi))
         (return (vl-disablestmt id atts))))
 
@@ -167,7 +167,7 @@
   :count strong
   (seqw tokens warnings
         (:= (vl-match-token :vl-arrow))
-        (hid := (vl-parse-hierarchial-identifier nil))
+        (hid := (vl-parse-hierarchical-identifier nil))
         (bexprs := (vl-parse-0+-bracketed-expressions))
         (:= (vl-match-token :vl-semi))
         (return (vl-eventtriggerstmt
@@ -242,10 +242,9 @@
   ;; Intermediate form for an individual case item.
   ;;   - Expr is NIL if this is a default case.
   ;;   - Expr is an expression otherwise.
-  (expr stmt)
+  ((expr vl-maybe-expr-p)
+   (stmt vl-stmt-p))
   :tag :vl-parsed-caseitem
-  :require ((vl-maybe-expr-p-of-vl-parsed-caseitem->expr (vl-maybe-expr-p expr))
-            (vl-stmt-p-of-vl-parsed-caseitem->stmt       (vl-stmt-p stmt)))
   :parents (parser))
 
 (deflist vl-parsed-caseitemlist-p (x)
@@ -267,63 +266,38 @@
 
 
 
-(defund vl-make-parsed-caseitems (stmt x)
+(define vl-make-parsed-caseitems ((stmt vl-stmt-p)
+                                  (x vl-exprlist-p))
   ;; Given a stmt and a list of expressions, this builds the caseitemlist
   ;; corresponding to "expr1, expr2, ..., exprN : stmt".
-  (declare (xargs :guard (and (vl-stmt-p stmt)
-                              (vl-exprlist-p x))))
-  (if (consp x)
-      (cons (make-vl-parsed-caseitem :stmt stmt :expr (car x))
-            (vl-make-parsed-caseitems stmt (cdr x)))
-    nil))
-
-(defthm vl-parsed-caseitemlist-p-of-vl-make-parsed-caseitems
-  (implies (and (force (vl-stmt-p stmt))
-                (force (vl-exprlist-p x)))
-           (vl-parsed-caseitemlist-p (vl-make-parsed-caseitems stmt x)))
-  :hints(("Goal" :in-theory (enable vl-make-parsed-caseitems))))
+  :returns (caseitemlist vl-parsed-caseitemlist-p :hyp :fguard)
+  (if (atom x)
+      nil
+    (cons (make-vl-parsed-caseitem :stmt stmt :expr (car x))
+          (vl-make-parsed-caseitems stmt (cdr x)))))
 
 
-
-(defund vl-filter-parsed-caseitemlist (x)
-  "Returns (MV DEFAULTS NON-DEFAULTS)"
+(define vl-filter-parsed-caseitemlist ((x vl-parsed-caseitemlist-p))
   ;; Given a list of case items, we walk over the list and gather up any
   ;; items with NIL expressions (i.e., any "default" cases) into one list,
   ;; and any items with non-default expressions into the other list.
-  (declare (xargs :guard (vl-parsed-caseitemlist-p x)))
-  (if (atom x)
-      (mv nil nil)
-    (mv-let (defaults non-defaults)
-            (vl-filter-parsed-caseitemlist (cdr x))
-            (if (vl-parsed-caseitem->expr (car x))
-                (mv defaults (cons (car x) non-defaults))
-              (mv (cons (car x) defaults) non-defaults)))))
+  :returns (mv (defaults vl-parsed-caseitemlist-p :hyp :fguard)
+               (non-defaults vl-parsed-caseitemlist-p :hyp :fguard))
+  (b* (((when (atom x))
+        (mv nil nil))
+       ((mv defaults non-defaults)
+        (vl-filter-parsed-caseitemlist (cdr x)))
+       ((when (vl-parsed-caseitem->expr (car x)))
+        (mv defaults (cons (car x) non-defaults))))
+    (mv (cons (car x) defaults) non-defaults))
+  ///
+  (defmvtypes vl-filter-parsed-caseitemlist (true-listp true-listp))
 
-(defthm true-listp-of-vl-filter-parsed-caseitemlist-0
-  (true-listp (mv-nth 0 (vl-filter-parsed-caseitemlist items)))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-filter-parsed-caseitemlist))))
-
-(defthm true-listp-of-vl-filter-parsed-caseitemlist-1
-  (true-listp (mv-nth 1 (vl-filter-parsed-caseitemlist items)))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable vl-filter-parsed-caseitemlist))))
-
-(defthm vl-caseitemlist-p-of-vl-filter-parsed-caseitemlist-0
-  (implies (force (vl-parsed-caseitemlist-p x))
-           (vl-parsed-caseitemlist-p (mv-nth 0 (vl-filter-parsed-caseitemlist x))))
-  :hints(("Goal" :in-theory (enable vl-filter-parsed-caseitemlist))))
-
-(defthm vl-caseitemlist-p-of-vl-filter-parsed-caseitemlist-1
-  (implies (force (vl-parsed-caseitemlist-p x))
-           (vl-parsed-caseitemlist-p (mv-nth 1 (vl-filter-parsed-caseitemlist x))))
-  :hints(("Goal" :in-theory (enable vl-filter-parsed-caseitemlist))))
-
-(defthm vl-exprlist-p-of-vl-parsed-caseitemlist->exprs-of-vl-filter-parsed-caseitemlist-1
-  (implies (force (vl-parsed-caseitemlist-p x))
-           (vl-exprlist-p (vl-parsed-caseitemlist->exprs
-                           (mv-nth 1 (vl-filter-parsed-caseitemlist x)))))
-  :hints(("Goal" :in-theory (enable vl-filter-parsed-caseitemlist))))
+  (defthm vl-exprlist-p-of-vl-parsed-caseitemlist->exprs-of-vl-filter-parsed-caseitemlist-1
+    (implies (force (vl-parsed-caseitemlist-p x))
+             (vl-exprlist-p
+              (vl-parsed-caseitemlist->exprs
+               (mv-nth 1 (vl-filter-parsed-caseitemlist x)))))))
 
 
 
@@ -333,14 +307,16 @@
 ; take care of all the guard proofs, etc., without having to complicate the
 ; mutual recursion.
 
-(defund vl-make-case-statement (type expr items atts)
+(define vl-make-case-statement
+  ((type  (member type '(:vl-kwd-case :vl-kwd-casez :vl-kwd-casex)))
+   (expr  vl-expr-p)
+   (items vl-parsed-caseitemlist-p)
+   (atts  vl-atts-p))
   ;; This either returns a STMT or NIL for failure.  The only reason it can
   ;; fail is that more than one "default" statement was provided.
-  (declare (xargs :guard (and (member type '(:vl-kwd-case :vl-kwd-casez :vl-kwd-casex))
-                              (vl-parsed-caseitemlist-p items)
-                              (vl-expr-p expr)
-                              (vl-atts-p atts))
-                  :guard-debug t))
+  :returns (stmt? (equal (vl-stmt-p stmt?)
+                         (if stmt? t nil))
+                  :hyp :fguard)
   (b* (((mv defaults non-defaults)
         (vl-filter-parsed-caseitemlist items))
        ((when (> (len defaults) 1))
@@ -360,18 +336,6 @@
                         :exprs match-exprs
                         :bodies match-stmts
                         :atts atts)))
-
-(defthm vl-stmt-p-of-vl-make-case-statement
-  (implies (and (force (member type '(:vl-kwd-case :vl-kwd-casez :vl-kwd-casex)))
-                (force (vl-parsed-caseitemlist-p items))
-                (force (vl-expr-p expr))
-                (force (vl-atts-p atts)))
-           (equal (vl-stmt-p (vl-make-case-statement type expr items atts))
-                  (if (vl-make-case-statement type expr items atts)
-                      t
-                    nil)))
-  :hints(("Goal" :in-theory (enable vl-make-case-statement))))
-
 
 (local (in-theory (disable
 
@@ -410,7 +374,6 @@
                    vl-disablestmt-p-by-tag-when-vl-atomicstmt-p
                    vl-enablestmt-p-by-tag-when-vl-atomicstmt-p
                    vl-eventtriggerstmt-p-by-tag-when-vl-atomicstmt-p
-                   vl-is-token?-fn-when-atom-of-tokens
                    vl-nullstmt-p-by-tag-when-vl-atomicstmt-p
                    vl-stmt-p-when-member-equal-of-vl-stmtlist-p
                    vl-stmt-p-when-neither-atomic-nor-compound
@@ -430,6 +393,7 @@
                    member-equal-when-member-equal-of-cdr-under-iff
                    )))
 
+
 (defparsers parse-statements
 
 ; case_statement ::=
@@ -447,9 +411,9 @@
    :verify-guards nil
    (seqw tokens warnings
          (when (vl-is-token? :vl-kwd-default)
-           (:= (vl-match-token :vl-kwd-default))
+           (:= (vl-match))
            (when (vl-is-token? :vl-colon)
-             (:= (vl-match-token :vl-colon)))
+             (:= (vl-match)))
            (stmt := (vl-parse-statement-or-null))
            (return (list (make-vl-parsed-caseitem :expr nil
                                                   :stmt stmt))))
@@ -509,7 +473,7 @@
          (:= (vl-match-token :vl-rparen))
          (then :s= (vl-parse-statement-or-null))
          (when (vl-is-token? :vl-kwd-else)
-           (:= (vl-match-token :vl-kwd-else))
+           (:= (vl-match))
            (else := (vl-parse-statement-or-null)))
          (return (make-vl-ifstmt :condition expr
                                  :truebranch then
@@ -537,7 +501,7 @@
                                         :atts atts)))
 
          (when (vl-is-some-token? '(:vl-kwd-repeat :vl-kwd-while))
-           (type := (vl-match-some-token '(:vl-kwd-repeat :vl-kwd-while)))
+           (type := (vl-match))
            (:= (vl-match-token :vl-lparen))
            (expr :s= (vl-parse-expression))
            (:= (vl-match-token :vl-rparen))
@@ -579,7 +543,7 @@
    (seqw tokens warnings
          (:= (vl-match-token :vl-kwd-fork))
          (when (vl-is-token? :vl-colon)
-           (:= (vl-match-token :vl-colon))
+           (:= (vl-match))
            (id := (vl-match-token :vl-idtoken))
            (items :w= (vl-parse-0+-block-item-declarations)))
          (stmts := (vl-parse-statements-until-join))
@@ -602,7 +566,7 @@
    (seqw tokens warnings
          (:= (vl-match-token :vl-kwd-begin))
          (when (vl-is-token? :vl-colon)
-           (:= (vl-match-token :vl-colon))
+           (:= (vl-match))
            (id := (vl-match-token :vl-idtoken))
            (items :w= (vl-parse-0+-block-item-declarations)))
          (stmts := (vl-parse-statements-until-end))
@@ -665,7 +629,7 @@
 ;  | {attribute_instance} procedural_timing_control_statement        ;;; '#', '@'
 ;  | {attribute_instance} seq_block                                  ;;; 'begin'
 ;  | {attribute_instance} system_task_enable                         ;;; sysidtoken
-;  | {attribute_instance} task_enable                                ;;; hierarchial_identifier
+;  | {attribute_instance} task_enable                                ;;; hierarchical_identifier
 ;  | {attribute_instance} wait_statement                             ;;; 'wait'
 ;
 ; statement_or_null ::=

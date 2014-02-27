@@ -343,6 +343,7 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-$     "$")
     (:vl-$root "$root")
     (:vl-$unit "$unit")
+    (:vl-emptyqueue "{}")
     (otherwise (progn$ (impossible) "null"))))
 
 (define vl-pp-keyguts ((x vl-keyguts-p) &key (ps 'ps))
@@ -365,6 +366,31 @@ displays.  The module browser's web pages are responsible for defining the
      (vl-print-str x.quantity)
      (vl-print (vl-timeunit->string x.units)))))
 
+
+(define vl-basictypekind->string ((x vl-basictypekind-p))
+  :returns (str stringp :rule-classes :type-prescription)
+  :guard-hints(("Goal" :in-theory (enable vl-basictypekind-p)))
+  (case x
+    (:vl-byte      "byte")
+    (:vl-shortint  "shortint")
+    (:vl-int       "int")
+    (:vl-longint   "longint")
+    (:vl-integer   "integer")
+    (:vl-time      "time")
+    (:vl-bit       "bit")
+    (:vl-logic     "logic")
+    (:vl-reg       "reg")
+    (:vl-shortreal "shortreal")
+    (:vl-real      "real")
+    (:vl-realtime  "realtime")
+    (otherwise (progn$ (impossible) "reg"))))
+
+(define vl-pp-basictype ((x vl-basictype-p) &key (ps 'ps))
+  (vl-ps-span "vl_key"
+              (vl-print-str (vl-basictypekind->string
+                             (vl-basictype->kind x)))))
+
+
 (define vl-pp-atomguts ((x vl-atomguts-p) &key (ps 'ps))
   :guard-hints (("Goal" :in-theory (enable vl-atomguts-p)))
   (case (tag x)
@@ -378,6 +404,7 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-extint     (vl-pp-extint x))
     (:vl-time       (vl-pp-time x))
     (:vl-keyguts    (vl-pp-keyguts x))
+    (:vl-basictype  (vl-pp-basictype x))
     (otherwise      (vl-pp-sysfunname x))))
 
 (define vl-pp-atom ((x vl-atom-p) &key (ps 'ps))
@@ -447,6 +474,11 @@ displays.  The module browser's web pages are responsible for defining the
      (:VL-HID-DOT               . 20)
      ;(:VL-HID-ARRAYDOT          . 20)
      (:VL-SCOPE                 . 20)
+     (:VL-WITH-INDEX            . 20)
+     (:VL-WITH-COLON            . 20)
+     (:VL-WITH-PLUSCOLON        . 20)
+     (:VL-WITH-MINUSCOLON       . 20)
+
 
      ;; In Table 5-4, concats are said to have minimal precedence.  But that
      ;; doesn't really make sense.  For instance, in: a + {b + c} the {b + c}
@@ -458,6 +490,10 @@ displays.  The module browser's web pages are responsible for defining the
      (:VL-CONCAT        . 20)
      (:VL-MULTICONCAT   . 20)
      (:VL-MINTYPMAX     . 20)
+     (:VL-STREAM-LEFT   . 20)
+     (:VL-STREAM-RIGHT  . 20)
+     (:VL-STREAM-LEFT-SIZED   . 20)
+     (:VL-STREAM-RIGHT-SIZED  . 20)
 
      ;; This part is from Table 5-4 verbatim:
      (:VL-UNARY-PLUS    . 14)
@@ -704,7 +740,7 @@ ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>")
 
          ((:vl-hid-dot)
           ;; These don't need parens because they have maximal precedence
-          (if (not (consp args))
+          (if (atom args)
               (prog2$ (impossible) ps)
             (vl-ps-seq (vl-pp-expr (first args))
                        (vl-print ".")
@@ -712,7 +748,7 @@ ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>")
 
          ((:vl-scope)
           ;; These don't need parens because they have maximal precedence
-          (if (not (consp args))
+          (if (atom args)
               (prog2$ (impossible) ps)
             (vl-ps-seq (vl-pp-expr (first args))
                        (vl-print "::")
@@ -720,7 +756,7 @@ ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>")
 
          ((:vl-multiconcat)
           ;; These don't need parens because they have maximal precedence
-          (cond ((not (consp args))
+          (cond ((atom args)
                  (prog2$ (impossible) ps))
 
                 ((and (vl-nonatom-p (second args))
@@ -747,9 +783,48 @@ ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>")
                      (vl-pp-exprlist args)
                      (vl-print "}")))
 
+         ((:vl-stream-left :vl-stream-right)
+          (if (atom args)
+              (progn$ (er hard? 'vl-pp-expr "Bad streaming concatenation")
+                      ps)
+            (vl-ps-seq (vl-print "{")
+                       (vl-print (if (eq op :vl-stream-left) "<<" ">>"))
+                       (vl-print "{")
+                       (vl-pp-exprlist args)
+                       (vl-print "}}"))))
+
+         ((:vl-stream-left-sized :vl-stream-right-sized)
+          (if (atom args)
+              (progn$ (er hard? 'vl-pp-expr "Bad streaming concatenation")
+                      ps)
+            (vl-ps-seq (vl-print "{")
+                       (vl-print (if (eq op :vl-stream-left-sized) "<<" ">>"))
+                       (vl-pp-expr (first args))
+                       (vl-print " {")
+                       (vl-pp-exprlist (rest args))
+                       (vl-print "}}"))))
+
+         ((:vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon)
+          (if (atom args)
+              (progn$ (er hard? 'vl-pp-expr "Bad with expression")
+                      ps)
+            (vl-ps-seq (vl-pp-expr (first args))
+                       (vl-ps-span "vl_key" (vl-print " with "))
+                       (vl-print "[")
+                       (vl-pp-expr (second args))
+                       (case op
+                         (:vl-with-index     ps)
+                         (:vl-with-colon     (vl-ps-seq (vl-print ":")
+                                                        (vl-pp-expr (third args))))
+                         (:vl-with-pluscolon (vl-ps-seq (vl-print "+:")
+                                                        (vl-pp-expr (third args))))
+                         (otherwise          (vl-ps-seq (vl-print "-:")
+                                                        (vl-pp-expr (third args)))))
+                       (vl-print "]"))))
+
          ((:vl-funcall)
           ;; This doesn't need parens because it has maximal precedence
-          (if (not (consp args))
+          (if (atom args)
               (prog2$ (er hard? 'vl-pp-expr "Bad funcall")
                       ps)
             (vl-ps-seq (vl-pp-expr (first args))
@@ -759,7 +834,7 @@ ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>")
 
          ((:vl-syscall)
           ;; This doesn't need parens because it has maximal precedence
-          (if (not (consp args))
+          (if (atom args)
               (prog2$ (er hard? 'vl-pp-expr "Bad syscall.")
                       ps)
             (vl-ps-seq (vl-pp-expr (first args))
@@ -829,7 +904,9 @@ ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>")
                  :flag-mapping ((vl-pp-expr-fn . expr)
                                 (vl-pp-atts-fn . atts)
                                 (vl-pp-atts-aux-fn . atts-aux)
-                                (vl-pp-exprlist-fn . list)))
+                                (vl-pp-exprlist-fn . list))
+                 :hints(("Goal" :in-theory (disable (force))))
+                 )
 
 (encapsulate
   ()

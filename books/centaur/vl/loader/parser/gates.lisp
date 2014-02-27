@@ -177,14 +177,11 @@
   ;; be a range.
   (seqw tokens warnings
         (when (vl-is-token? :vl-idtoken)
-          (id := (vl-match-token :vl-idtoken))
+          (id := (vl-match))
           (when (vl-is-token? :vl-lbrack)
             (range := (vl-parse-range)))
           (return (cons (vl-idtoken->name id) range)))
         (return (cons nil nil))))
-
-
-
 
 
 ; CMOS Gates.
@@ -223,7 +220,7 @@
   (seqw tokens warnings
         (first := (vl-parse-cmos-switch-instance))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-cmos-switch-instances-list)))
         (return (cons first rest))))
 
@@ -231,14 +228,15 @@
   (strip-cars *vl-cmos-switchtype-alist*))
 
 (defparser vl-parse-cmos-gate-instantiation (atts)
-  :guard (vl-atts-p atts)
+  :guard (and (vl-atts-p atts)
+              (vl-is-some-token? *vl-cmos-switchtype-type-kwds*))
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
   (seqw tokens warnings
-        (typekwd := (vl-match-some-token *vl-cmos-switchtype-type-kwds*))
+        (typekwd := (vl-match))
         ;; No strength on cmos gates.
         (when (vl-is-token? :vl-pound)
           (delay := (vl-parse-delay3)))
@@ -300,14 +298,15 @@
 (defconst *vl-enable-gatetype-type-kwds* (strip-cars *vl-enable-gatetype-alist*))
 
 (defparser vl-parse-enable-gate-instantiation (atts)
-  :guard (vl-atts-p atts)
+  :guard (and (vl-atts-p atts)
+              (vl-is-some-token? *vl-enable-gatetype-type-kwds*))
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
   (seqw tokens warnings
-        (typekwd := (vl-match-some-token *vl-enable-gatetype-type-kwds*))
+        (typekwd := (vl-match))
         (strength := (vl-parse-optional-drive-strength))
         (when (vl-is-token? :vl-pound)
           (delay := (vl-parse-delay3)))
@@ -321,14 +320,15 @@
 (defconst *vl-mos-switchtype-type-kwds* (strip-cars *vl-mos-switchtype-alist*))
 
 (defparser vl-parse-mos-gate-instantiation (atts)
-  :guard (vl-atts-p atts)
+  :guard (and (vl-atts-p atts)
+              (vl-is-some-token? *vl-mos-switchtype-type-kwds*))
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
   (seqw tokens warnings
-       (typekwd := (vl-match-some-token *vl-mos-switchtype-type-kwds*))
+       (typekwd := (vl-match))
        ;; No strength on mos gates.
        (when (vl-is-token? :vl-pound)
          (delay := (vl-parse-delay3)))
@@ -381,14 +381,15 @@
 (defconst *vl-n-input-gatetype-type-kwds* (strip-cars *vl-n-input-gatetype-alist*))
 
 (defparser vl-parse-n-input-gate-instantiation (atts)
-  :guard (vl-atts-p atts)
+  :guard (and (vl-atts-p atts)
+              (vl-is-some-token? *vl-n-input-gatetype-type-kwds*))
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
   (seqw tokens warnings
-        (typekwd := (vl-match-some-token *vl-n-input-gatetype-type-kwds*))
+        (typekwd := (vl-match))
         (strength := (vl-parse-optional-drive-strength))
         (when (vl-is-token? :vl-pound)
           (delay := (vl-parse-delay2)))
@@ -453,13 +454,11 @@
         (mv nil nil tokens warnings))
 
        ((unless (mbt (< (len explore) (len tokens))))
-        (er hard? 'vl-parse-0+-lvalues-separated-by-commas "termination failure")
+        (impossible)
         (vl-parse-error "termination failure"))
 
-       ((unless (or (vl-is-token? :vl-comma
-                                  :tokens explore)
-                    (vl-is-token? :vl-rparen
-                                  :tokens explore)))
+       ((unless (or (vl-is-token? :vl-comma :tokens explore)
+                    (vl-is-token? :vl-rparen :tokens explore)))
         ;; Very subtle.  We just ate an lvalue, but something is wrong because
         ;; we should have gotten to a comma or a right-paren.  Probably what has
         ;; happened is we have just eaten part of an expression that looks like
@@ -521,21 +520,22 @@
   (seqw tokens warnings
         (first := (vl-parse-n-output-gate-instance))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-n-output-gate-instances-list)))
         (return (cons first rest))))
 
 (defconst *vl-n-output-gatetype-type-kwds* (strip-cars *vl-n-output-gatetype-alist*))
 
 (defparser vl-parse-n-output-gate-instantiation (atts)
-  :guard (vl-atts-p atts)
+  :guard (and (vl-atts-p atts)
+              (vl-is-some-token? *vl-n-output-gatetype-type-kwds*))
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
   (seqw tokens warnings
-        (typekwd := (vl-match-some-token *vl-n-output-gatetype-type-kwds*))
+        (typekwd := (vl-match))
         (strength := (vl-parse-optional-drive-strength))
         (when (vl-is-token? :vl-pound)
           (delay := (vl-parse-delay2)))
@@ -585,21 +585,22 @@
   (seqw tokens warnings
         (first := (vl-parse-pass-enable-switch-instance))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-pass-enable-switch-instances-list)))
         (return (cons first rest))))
 
 (defconst *vl-pass-en-switchtype-type-kwds* (strip-cars *vl-pass-en-switchtype-alist*))
 
 (defparser vl-parse-pass-en-gate-instantiation (atts)
-  :guard (vl-atts-p atts)
+  :guard (and (vl-atts-p atts)
+              (vl-is-some-token? *vl-pass-en-switchtype-type-kwds*))
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
   (seqw tokens warnings
-        (typekwd := (vl-match-some-token *vl-pass-en-switchtype-type-kwds*))
+        (typekwd := (vl-match))
         ;; No strength.
         (when (vl-is-token? :vl-pound)
           (delay := (vl-parse-delay2)))
@@ -647,21 +648,22 @@
   (seqw tokens warnings
         (first := (vl-parse-pass-switch-instance))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-pass-switch-instances-list)))
         (return (cons first rest))))
 
 (defconst *vl-pass-switchtype-type-kwds* (strip-cars *vl-pass-switchtype-alist*))
 
 (defparser vl-parse-pass-gate-instantiation (atts)
-  :guard (vl-atts-p atts)
+  :guard (and (vl-atts-p atts)
+              (vl-is-some-token? *vl-pass-switchtype-type-kwds*))
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
   (seqw tokens warnings
-        (typekwd := (vl-match-some-token *vl-pass-switchtype-type-kwds*))
+        (typekwd := (vl-match))
         ;; No strength.
         ;; No delay.
         (tuples := (vl-parse-pass-switch-instances-list))
@@ -809,21 +811,22 @@
   (seqw tokens warnings
         (first := (vl-parse-pull-gate-instance))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-pull-gate-instances-list)))
         (return (cons first rest))))
 
 (defconst *vl-pull-gate-type-kwds* (strip-cars *vl-pull-gate-alist*))
 
 (defparser vl-parse-pull-gate-instantiation (atts)
-  :guard (vl-atts-p atts)
+  :guard (and (vl-atts-p atts)
+              (vl-is-some-token? *vl-pull-gate-type-kwds*))
   :result (vl-gateinstlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
   (seqw tokens warnings
-        (typekwd := (vl-match-some-token *vl-pull-gate-type-kwds*))
+        (typekwd := (vl-match))
         (strength := (vl-parse-optional-pull-strength
                       (eq (vl-token->type typekwd) :vl-kwd-pulldown)))
         ;; No delay

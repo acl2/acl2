@@ -139,7 +139,7 @@
             ("<<<=" . :vl-ashleq)
             (">>>=" . :vl-ashreq)
             ("'{"   . :vl-assignpat)
-            ("$"    . :vl-dollar))))
+            ("$"    . :vl-$))))
 
 (defun make-punctuation-tests (alist config)
   (b* (((when (atom alist))

@@ -58,8 +58,13 @@ particular standard we're implementing.</p>"
   (defthm vl-plaintoken-alistp-of-append
     (equal (vl-plaintoken-alistp (append x y))
            (and (vl-plaintoken-alistp x)
-                (vl-plaintoken-alistp y)))))
-
+                (vl-plaintoken-alistp y))))
+  (defthm vl-plaintokentype-p-of-hons-assoc-equal-when-vl-plaintoken-alistp
+    (implies (vl-plaintoken-alistp x)
+             (equal (vl-plaintokentype-p (cdr (hons-assoc-equal key x)))
+                    (if (hons-assoc-equal key x)
+                        t
+                      nil)))))
 
 (defaggregate vl-lexstate
   :parents (lexstate)
@@ -72,27 +77,28 @@ particular standard we're implementing.</p>"
               could be, e.g., the Verilog 2005 keywords or the SystemVerilog
               2012 keywords, and might or might not include VL extensions.")
 
-   (bangops  vl-plaintoken-alistp "Operators starting with @('!').")
-   (poundops vl-plaintoken-alistp "Operators starting with @('#').")
-   (remops   vl-plaintoken-alistp "Operators starting with @('%').")
-   (andops   vl-plaintoken-alistp "Operators starting with @('&').")
-   (starops  vl-plaintoken-alistp "Operators starting with @('*').")
-   (plusops  vl-plaintoken-alistp "Operators starting with @('+').")
-   (dashops  vl-plaintoken-alistp "Operators starting with @('-').")
-   (dotops   vl-plaintoken-alistp "Operators starting with @('.').")
-   (divops   vl-plaintoken-alistp "Operators starting with @('/').")
-   (colonops vl-plaintoken-alistp "Operators starting with @(':').")
-   (lessops  vl-plaintoken-alistp "Operators starting with @('<').")
-   (gtops    vl-plaintoken-alistp "Operators starting with @('>').")
-   (eqops    vl-plaintoken-alistp "Operators starting with @('=').")
-   (xorops   vl-plaintoken-alistp "Operators starting with @('^').")
-   (barops   vl-plaintoken-alistp "Operators starting with @('|').")
+   (bangops   vl-plaintoken-alistp "Operators starting with @('!').")
+   (poundops  vl-plaintoken-alistp "Operators starting with @('#').")
+   (remops    vl-plaintoken-alistp "Operators starting with @('%').")
+   (andops    vl-plaintoken-alistp "Operators starting with @('&').")
+   (starops   vl-plaintoken-alistp "Operators starting with @('*').")
+   (plusops   vl-plaintoken-alistp "Operators starting with @('+').")
+   (dashops   vl-plaintoken-alistp "Operators starting with @('-').")
+   (dotops    vl-plaintoken-alistp "Operators starting with @('.').")
+   (divops    vl-plaintoken-alistp "Operators starting with @('/').")
+   (colonops  vl-plaintoken-alistp "Operators starting with @(':').")
+   (lessops   vl-plaintoken-alistp "Operators starting with @('<').")
+   (gtops     vl-plaintoken-alistp "Operators starting with @('>').")
+   (eqops     vl-plaintoken-alistp "Operators starting with @('=').")
+   (xorops    vl-plaintoken-alistp "Operators starting with @('^').")
+   (barops    vl-plaintoken-alistp "Operators starting with @('|').")
+
+   (dollarops vl-plaintoken-alistp "Special tokens starting with @('$').")
 
    (assignpatp booleanp "Enable SystemVerilog 2012 '{ tokens?")
    (strextsp   booleanp "Enable SystemVerilog 2012 string literal extensions?")
    (timelitsp  booleanp "Enable SystemVerilog 2012 time literals?")
    (extintsp   booleanp "Enable SystemVerilog 2012 '0/'1/'x/'z integers?")
-   (dollarp    booleanp "Enable SystemVerilog 2012 $ tokens?")
    ))
 
 
@@ -105,7 +111,8 @@ particular standard we're implementing.</p>"
     (append-without-guard
      x.bangops x.poundops x.remops x.andops x.starops
      x.plusops x.dashops x.dotops x.divops x.colonops
-     x.lessops x.gtops x.eqops x.xorops x.barops))
+     x.lessops x.gtops x.eqops x.xorops x.barops
+     x.dollarops))
   :prepwork ((local (in-theory (disable (:t acl2::true-listp-append)
                                         (:t binary-append))))))
 
@@ -149,11 +156,11 @@ particular standard we're implementing.</p>"
                ("^"  . :vl-xor))
    :barops   '(("||"   . :vl-logor)
                ("|"    . :vl-bitor))
+   :dollarops  nil
    :assignpatp nil
    :strextsp   nil
    :timelitsp  nil
    :extintsp   nil
-   :dollarp    nil
    )
   ///
   (assert!
@@ -238,11 +245,13 @@ particular standard we're implementing.</p>"
                ("|="   . :vl-oreq)
                ("||"   . :vl-logor)
                ("|"    . :vl-bitor))
+   :dollarops '(("$root" . :vl-$root)
+                ("$unit" . :vl-$unit)
+                ("$"     . :vl-$))
    :assignpatp t
    :strextsp   t
    :timelitsp  t
-   :extintsp   t
-   :dollarp    t)
+   :extintsp   t)
   ///
   (assert!
    ;; Basic sanity check, everything should be unique and valid.
@@ -252,20 +261,26 @@ particular standard we're implementing.</p>"
           (uniquep (alist-vals al)))))
   (assert!
    ;; Make sure all new SystemVerilog keywords are accounted for.
-   (let* ((al-2005  (vl-lexstate->plainalist *vl-2005-strict-lexstate*))
-          (al-2012  (vl-lexstate->plainalist *vl-2012-strict-lexstate*))
-          (kwds-2005 (alist-vals al-2005))
-          (kwds-2012 (alist-vals al-2012))
-          (new-used  (set-difference-equal kwds-2012 kwds-2005))
-          (new-spec
-           ;; SystemVerilog adds these keywords
-           (set-difference-equal *vl-2012-plain-nonkeywords*
-                                 *vl-2005-plain-nonkeywords*)))
+   (b* ((al-2005  (vl-lexstate->plainalist *vl-2005-strict-lexstate*))
+        (al-2012  (vl-lexstate->plainalist *vl-2012-strict-lexstate*))
+        (kwds-2005 (alist-vals al-2005))
+        (kwds-2012 (alist-vals al-2012))
+        (new-used  (set-difference-equal kwds-2012 kwds-2005))
+        (new-spec
+         ;; SystemVerilog adds these keywords
+         (set-difference-equal *vl-2012-plain-nonkeywords*
+                               *vl-2005-plain-nonkeywords*)))
+     (cw "New-used not in new-spec: ~x0.~%"
+         (difference (mergesort new-used)
+                     (mergesort new-spec)))
+     (cw "New-spec not in new-used: ~x0.~%"
+         (difference (mergesort new-spec)
+                     (mergesort new-used)))
      (equal (mergesort new-used)
             (difference (mergesort new-spec)
                         ;; These are special because they're not just
                         ;; handled as simple plaintoken-alists.
-                        '(:vl-assignpat :vl-dollar))))))
+                        '(:vl-assignpat))))))
 
 (defval *vl-2012-lexstate*
   :parents (lexstate)

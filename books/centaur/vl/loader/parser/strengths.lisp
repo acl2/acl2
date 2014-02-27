@@ -23,47 +23,67 @@
 (include-book "../../parsetree")
 (local (include-book "../../util/arithmetic"))
 
+(defsection parse-strengths
+  :parents (parser)
+  :short "Functions for parsing drive/charge strengths."
 
+  :long "<p>From Verilog-2005:</p>
 
+@({
+    drive_strength ::=
+       '(' strength0 ',' strength1 ')'
+     | '(' strength1 ',' strength0 ')'
+     | '(' strength0 ',' 'highz1' ')'
+     | '(' strength1 ',' 'highz0' ')'
+     | '(' 'highz0'  ',' strength1 ')'
+     | '(' 'highz1'  ',' strength0 ')'
 
-;                   PARSING DRIVE/CHARGE STRENGTHS
-;
-; drive_strength ::=
-;    '(' strength0 ',' strength1 ')'
-;  | '(' strength1 ',' strength0 ')'
-;  | '(' strength0 ',' 'highz1' ')'
-;  | '(' strength1 ',' 'highz0' ')'
-;  | '(' 'highz0'  ',' strength1 ')'
-;  | '(' 'highz1'  ',' strength0 ')'
-;
-; strength0 ::= 'supply0' | 'strong0' | 'pull0' | 'weak0'
-; strength1 ::= 'supply1' | 'strong1' | 'pull1' | 'weak1'
-;
-; charge_strength ::= '(' ['small'|'medium'|'large'] ')'
+    strength0 ::= 'supply0' | 'strong0' | 'pull0' | 'weak0'
+    strength1 ::= 'supply1' | 'strong1' | 'pull1' | 'weak1'
 
-(defconst *vl-strength0-alist*
+    charge_strength ::= '(' ['small'|'medium'|'large'] ')'
+})")
+
+(local (xdoc::set-default-parents parse-strengths))
+
+(defval *vl-strength0-alist*
+  :showval t
   '((:vl-kwd-supply0 . :vl-supply)
     (:vl-kwd-strong0 . :vl-strong)
     (:vl-kwd-pull0   . :vl-pull)
     (:vl-kwd-weak0   . :vl-weak)))
 
-(defconst *vl-strength1-alist*
+(defval *vl-strength1-alist*
+  :showval t
   '((:vl-kwd-supply1 . :vl-supply)
     (:vl-kwd-strong1 . :vl-strong)
     (:vl-kwd-pull1   . :vl-pull)
     (:vl-kwd-weak1   . :vl-weak)))
 
-(defconst *vl-ds0-alist*
+(defval *vl-ds0-alist*
+
+  :showval t
   (cons '(:vl-kwd-highz0 . :vl-highz) *vl-strength0-alist*))
 
-(defconst *vl-ds1-alist*
+(defval *vl-ds1-alist*
+  :showval t
   (cons '(:vl-kwd-highz1 . :vl-highz) *vl-strength1-alist*))
 
-(defconst *vl-ds0-keywords* (strip-cars *vl-ds0-alist*))
-(defconst *vl-ds1-keywords* (strip-cars *vl-ds1-alist*))
-(defconst *vl-ds0/1-keywords* (append *vl-ds0-keywords* *vl-ds1-keywords*))
+(defval *vl-ds0-keywords*
+  :showval t
+  (strip-cars *vl-ds0-alist*))
+
+(defval *vl-ds1-keywords*
+  :showval t
+  (strip-cars *vl-ds1-alist*))
+
+(defval *vl-ds0/1-keywords*
+  :showval t
+  (append *vl-ds0-keywords* *vl-ds1-keywords*))
+
 
 (defparser vl-parse-drive-strength ()
+  :short "Match @('drive_strength'), return a @(see vl-gatestrength-p)."
   :result (vl-gatestrength-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -96,27 +116,31 @@
            (vl-parse-error "Invalid drive strength.")))))
 
 (defparser vl-parse-optional-drive-strength ()
-  ;; This never fails.  If there's a valid drive strength, we return a
-  ;; vl-gatestrength-p object.  Otherwise, we don't do anything to the token
-  ;; list and just return nil.
+  :short "Never fails.  If there's a valid @('drive_strength'), we match it and
+return a @(see vl-gatestrength-p).  Otherwise, we don't do anything to the
+token list and just return nil."
   :result (vl-maybe-gatestrength-p val)
   :resultp-of-nil t
   :fails never
   :count strong-on-value
-  (b* (((mv erp val explore new-warnings) (vl-parse-drive-strength))
+  (b* (((mv erp val explore new-warnings)
+        (vl-parse-drive-strength))
        ((when erp)
         (mv nil nil tokens warnings)))
     (mv nil val explore new-warnings)))
 
-(defconst *vl-charge-strengths-alist*
+(defval *vl-charge-strengths-alist*
+  :showval t
   '((:vl-kwd-small  . :vl-small)
     (:vl-kwd-medium . :vl-medium)
     (:vl-kwd-large  . :vl-large)))
 
-(defconst *vl-charge-strengths-keywords*
+(defval *vl-charge-strengths-keywords*
+  :showval t
   (strip-cars *vl-charge-strengths-alist*))
 
 (defparser vl-parse-charge-strength ()
+  :short "Match @('charge_strength'), return a @(see vl-cstrength-p)."
   :result (vl-cstrength-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -129,23 +153,24 @@
                                *vl-charge-strengths-alist*)))))
 
 (defparser vl-parse-drive-strength-or-charge-strength ()
-  ;; Returns either a vl-gatestrength-p or a vl-cstrength-p.
+  :short "Match @('drive_strength') or @('charge_strength'), returning
+a @(see vl-gatestrength-p) or a @(see vl-cstrength-p)."
   :resultp-of-nil nil
   :fails gracefully
   :count strong
   (b* (((mv ?erp val tokens warnings) (vl-parse-optional-drive-strength))
        ((when val)
         (mv nil val tokens warnings)))
-    (vl-parse-charge-strength)))
-
-(defthm vl-parse-drive-strength-or-charge-strength-forward
-  (equal (or (vl-gatestrength-p
-              (mv-nth 1 (vl-parse-drive-strength-or-charge-strength)))
-             (vl-cstrength-p
-              (mv-nth 1 (vl-parse-drive-strength-or-charge-strength))))
-         (not (mv-nth 0 (vl-parse-drive-strength-or-charge-strength))))
-  :rule-classes ((:forward-chaining
-                  :trigger-terms
-                  ((vl-parse-drive-strength-or-charge-strength))))
-  :hints(("Goal"
-          :in-theory (enable vl-parse-drive-strength-or-charge-strength))))
+    (vl-parse-charge-strength))
+  ///
+  (defthm vl-parse-drive-strength-or-charge-strength-forward
+    (equal (or (vl-gatestrength-p
+                (mv-nth 1 (vl-parse-drive-strength-or-charge-strength)))
+               (vl-cstrength-p
+                (mv-nth 1 (vl-parse-drive-strength-or-charge-strength))))
+           (not (mv-nth 0 (vl-parse-drive-strength-or-charge-strength))))
+    :rule-classes ((:forward-chaining
+                    :trigger-terms
+                    ((vl-parse-drive-strength-or-charge-strength))))
+    :hints(("Goal"
+            :in-theory (enable vl-parse-drive-strength-or-charge-strength)))))

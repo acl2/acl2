@@ -45,6 +45,7 @@
 
 (define vl-tokenlist-fix ((x vl-tokenlist-p))
   :verify-guards nil
+  :inline t
   (mbe :logic
        (if (atom x)
            x
@@ -60,7 +61,7 @@
     (implies (vl-tokenlist-p x)
              (equal (vl-tokenlist-fix x)
                     x)))
-  (verify-guards vl-tokenlist-fix)
+  (verify-guards+ vl-tokenlist-fix)
   (defthm len-of-vl-tokenlist-fix
     (equal (len (vl-tokenlist-fix x))
            (len x)))
@@ -193,7 +194,7 @@ frequently.</p>")
   (fncall &key disable enable)
   `(expand-and-maybe-induct-hint-fn ,fncall world id ,disable ,enable))
 
-(def-ruleset defparser-type-prescriptions
+(def-ruleset! defparser-type-prescriptions
   ;; This is a ruleset for type-prescription rules for each defparser we
   ;; introduce.  Normally these rules are not helpful, but they are needed for
   ;; the guard verification of mv-lets.
@@ -213,6 +214,8 @@ frequently.</p>")
         (intern-in-package-of-symbol (cat (symbol-name name) "-FN") name))
        (fn-formals
         (append formals '(tokens warnings config)))
+
+       ((mv args rest-events) (std::split-/// name args))
 
        (args-for-def   (throw-away-keyword-parts args))
        (decls          (butlast args-for-def 1))
@@ -436,7 +439,8 @@ frequently.</p>")
 
                (t
                 (er hard? 'defparser "Bad :count: ~s0." count)))
-       )))
+
+       . ,rest-events)))
 
 (defmacro defparser (name formals &rest args)
   (defparser-fn name formals args))
@@ -477,20 +481,24 @@ frequently.</p>")
    &key ((tokens vl-tokenlist-p) 'tokens))
   :returns bool
   :inline t
-  (b* ((tokens (vl-tokenlist-fix tokens)))
-    (and (consp tokens)
-         (eq (vl-token->type (car tokens)) type)))
+  (mbe :logic
+       (b* ((tokens (vl-tokenlist-fix tokens)))
+         (and (consp tokens)
+              (eq (vl-token->type (car tokens)) type)))
+       :exec
+       (and (consp tokens)
+            (eq (vl-token->type (car tokens)) type)))
   ///
   (add-untranslate-pattern (vl-is-token?-fn ?type tokens) (vl-is-token? ?type))
+
+  (defthm vl-is-token?-of-vl-tokenlist-fix
+    (equal (vl-is-token? type :tokens (vl-tokenlist-fix tokens))
+           (vl-is-token? type)))
 
   (defthm vl-is-token?-fn-when-atom-of-tokens
     (implies (atom tokens)
              (equal (vl-is-token? type)
-                    nil)))
-
-  (defthm vl-is-token?-of-vl-tokenlist-fix
-    (equal (vl-is-token? type :tokens (vl-tokenlist-fix tokens))
-           (vl-is-token? type))))
+                    nil))))
 
 
 (define vl-is-some-token?
@@ -857,6 +865,61 @@ Or, if the token stream is empty, we just return @(see *vl-fakeloc*)</p>"
      (mv nil tokens tokens warnings)))
 
 
+(define vl-match (&key
+                  ((tokens vl-tokenlist-p) 'tokens)
+                  ((warnings vl-warninglist-p) 'warnings))
+  :guard (consp tokens)
+  :short "Compatible with @(see seqw).  Get the first token, no matter what
+kind of token it is.  Only usable when you know there is a token there (via the
+guard)."
+  :inline t
+  :returns (mv (errmsg?   (not errmsg?))
+               (token     (equal (vl-token-p token)
+                                 (consp (vl-tokenlist-fix tokens))))
+               (remainder vl-tokenlist-p)
+               (warnings  vl-warninglist-p))
+  (mbe :logic
+       (b* ((tokens (vl-tokenlist-fix tokens))
+            (warnings (vl-warninglist-fix warnings)))
+         (mv nil (car tokens) (cdr tokens) warnings))
+       :exec
+       (mv nil (car tokens) (cdr tokens) warnings))
+  ///
+  (defthm vl-match-of-vl-tokenlist-fix
+    (equal (vl-match :tokens (vl-tokenlist-fix tokens))
+           (vl-match)))
+
+  (defthm vl-match-of-vl-warninglist-fix
+    (equal (vl-match :warnings (vl-warninglist-fix warnings))
+           (vl-match)))
+
+  (defthm vl-match-count-strong-on-value
+    (and (<= (len (mv-nth 2 (vl-match)))
+             (len tokens))
+         (implies (mv-nth 1 (vl-match))
+                  (< (len (mv-nth 2 (vl-match)))
+                     (len tokens))))
+  :rule-classes ((:rewrite) (:linear)))
+
+  (defthm equal-of-vl-match-count
+    (equal (equal (len (mv-nth 2 (vl-match)))
+                  (len tokens))
+           (atom (vl-tokenlist-fix tokens))))
+
+  (defthm vl-token->type-of-vl-match-when-vl-is-token?
+    (implies (vl-is-token? type)
+             (equal (vl-token->type (mv-nth 1 (vl-match)))
+                    type))
+    :hints(("Goal" :in-theory (enable vl-is-token?))))
+
+  (defthm vl-token->type-of-vl-match-when-vl-is-some-token?
+    (implies (vl-is-some-token? types)
+             (equal (vl-token->type (mv-nth 1 (vl-match)))
+                    (vl-type-of-matched-token types tokens)))
+    :hints(("Goal" :in-theory (enable vl-type-of-matched-token
+                                      vl-is-some-token?)))))
+
+
 
 (define vl-match-any
   :short "Compatible with @(see seqw).  Get the first token, no matter what
@@ -865,6 +928,7 @@ kind of token it is.  Causes an error on EOF."
    ((function symbolp)          '__function__)
    ((tokens  vl-tokenlist-p)    'tokens)
    ((warnings vl-warninglist-p) 'warnings))
+  :inline t
   :returns
   (mv (errmsg?)
       (token)
@@ -876,8 +940,8 @@ kind of token it is.  Causes an error on EOF."
         (vl-parse-error "Unexpected EOF." :function function)))
     (mv nil (car tokens) (cdr tokens) warnings))
   ///
-  (add-macro-alias vl-match-any vl-match-any-fn)
-  (add-untranslate-pattern (vl-match-any-fn ?function tokens warnings)
+  (add-macro-alias vl-match-any vl-match-any$inline)
+  (add-untranslate-pattern (vl-match-any$inline ?function tokens warnings)
                            (vl-match-any :function ?function))
 
   (defthm vl-match-any-of-vl-tokenlist-fix

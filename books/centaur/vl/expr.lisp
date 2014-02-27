@@ -46,9 +46,7 @@ atomic expression includes some <b>guts</b>, which refer to either an:</p>
 <li>@(see vl-id-p): a simple, non-hierarchical identifier,</li>
 
 <li>@(see vl-constint-p): an integer literal with no X or Z bits,</li>
-
 <li>@(see vl-weirdint-p): an integer literal with some X or Z bits,</li>
-
 <li>@(see vl-extint-p): an unbased, unsized integer literal like @(''0') or
 @(''x'),</li>
 
@@ -58,7 +56,7 @@ atomic expression includes some <b>guts</b>, which refer to either an:</p>
 
 <li>@(see vl-time-p): time literals like @('3ns'),</li>
 
-<li>@(see vl-keyguts-p): special keywords like @('null'), @('this'),
+<li>@(see vl-keyguts-p): special atomic expressions like @('null'), @('this'),
 @('super'), @('$'), @('local'), etc.</li>
 
 <li>@(see vl-hidpiece-p): one piece of a hierarchical identifier,</li>
@@ -67,6 +65,9 @@ atomic expression includes some <b>guts</b>, which refer to either an:</p>
 
 <li>@(see vl-sysfunname-p): the name of a system function (e.g.,
 @('$display')).</li>
+
+<li>@(see vl-basictype-p): simple type names like @('byte'), @('shortint'),
+@('time'), @('logic'), etc.</li>
 
 </ul>
 
@@ -201,7 +202,6 @@ arities (e.g., concatenation, function calls, ...), we map the operator to
 <h5>Selection Operators</h5>
 
 <ul>
-
 <li>@('foo[1]') initially becomes @(':vl-index').  Later these should be
 changed to @(':vl-bitselect') or @(':vl-array-index'), as appropriate.</li>
 <li>@('foo[3 : 1]')  becomes @(':vl-partselect-colon') (arity 3)</li>
@@ -218,6 +218,30 @@ resolve-indexing) transform.</p>
 <ul>
 <li>@('{1, 2, 3, ...}') becomes @(':vl-concat') (arity @('nil'))</li>
 <li>@('{ 3 { 2, 1 } }') becomes @(':vl-multiconcat') (arity 2)</li>
+</ul>
+
+<h5>Streaming Concatenations</h5>
+
+<p>For SystemVerilog streaming concatenations we add new variable-arity
+operators:</p>
+
+@({
+     {<< [size] { arg1 arg2 ... }}
+       -->
+     (:vl-stream-left [size] arg1 arg2 ...)
+
+     {>> [size] { arg1 arg2 ... }}
+       -->
+     (:vl-stream-right [size] arg1 arg2 ...)
+})
+
+<p>For the special @('with') expressions, we add four new operators:</p>
+
+<ul>
+<li>@('foo with [1]') becomes @(':vl-with-index') (arity 2)</li>
+<li>@('foo with [3:1]') becomes @(':vl-with-colon') (arity 3)</li>
+<li>@('foo with [3+:1]') becomes @(':vl-with-pluscolon') (arity 3)</li>
+<li>@('foo with [3-:1]') becomes @(':vl-with-minuscolon') (arity 3)</li>
 </ul>
 
 <h5>Function Calls</h5>
@@ -286,13 +310,23 @@ is a tree of @(':vl-index') operators.</li>
      (cons :vl-index                 2) ;;; e.g., foo[1] before determining array/wire
      (cons :vl-bitselect             2) ;;; e.g., foo[1] for wire bit selections
      (cons :vl-array-index           2) ;;; e.g., foo[1] for array indexing
-     (cons :vl-partselect-colon      3) ;;; e.g., foo[3:1]
+     (cons :vl-partselect-colon      3) ;;; e.g., foo[3 : 1]
      (cons :vl-partselect-pluscolon  3) ;;; e.g., foo[3 +: 1]
      (cons :vl-partselect-minuscolon 3) ;;; e.g., foo[3 -: 1]
 
      ;; Concatenation and Replication Operators
      (cons :vl-concat                nil) ;;; e.g., { 1, 2, 3 }
      (cons :vl-multiconcat           2)   ;;; e.g., { 3 { 2, 1 } }
+
+     ;; Streaming Concatenations (SystemVerilog)
+     (cons :vl-stream-left           nil) ;;; {<<{...args...}}
+     (cons :vl-stream-right          nil) ;;; {>>{...args...}}
+     (cons :vl-stream-left-sized     nil) ;;; {<< size {...args...}}
+     (cons :vl-stream-right-sized    nil) ;;; {>> size {...args...}}
+     (cons :vl-with-index            2)   ;;; e.g., foo with [1]
+     (cons :vl-with-colon            3)   ;;; e.g., foo with [3 : 1]
+     (cons :vl-with-pluscolon        3)   ;;; e.g., foo with [3 +: 1]
+     (cons :vl-with-minuscolon       3)   ;;; e.g., foo with [3 -: 1]
 
      ;; Function Calls
      (cons :vl-funcall               nil) ;;; e.g., foo(1,2,3)
@@ -637,7 +671,9 @@ identifier.</p>")
   :tag :vl-sysfunname
   :legiblep nil
 
-  ((name stringp :rule-classes :type-prescription))
+  ((name stringp :rule-classes :type-prescription
+         "The name of this system function, e.g., @('$display').  Includes the
+          dollar sign."))
 
   :long "<p>We use a custom representation for the names of system functions,
 so that we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
@@ -660,9 +696,10 @@ we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
    :vl-local
    :vl-$
    :vl-$root
-   :vl-$unit)
+   :vl-$unit
+   :vl-emptyqueue)
   :parents (vl-keyguts-p)
-  :short "Special kinds of atomic keyword expressions.")
+  :short "Special kinds of atomic expressions.")
 
 (defaggregate vl-keyguts
   :short "Representation of special, atomic SystemVerilog expressions,
@@ -674,6 +711,33 @@ distinguished by keywords such as @('null'), @('this'), @('super'), @('$'),
 
   ((type vl-keygutstype-p
          "Which kind of expression this is.")))
+
+
+(defenum vl-basictypekind-p
+  (:vl-byte
+   :vl-shortint
+   :vl-int
+   :vl-longint
+   :vl-integer
+   :vl-time
+   :vl-bit
+   :vl-logic
+   :vl-reg
+   :vl-shortreal
+   :vl-real
+   :vl-realtime)
+  :parents (vl-basictype-p)
+  :short "The various kinds of basic, atomic, built-in SystemVerilog types.")
+
+(defaggregate vl-basictype
+  :short "Atomic SystemVerilog types, like @('byte'), @('int').  These can be
+used, e.g., in casting and streaming concatenation expressions."
+  :tag :vl-basictype
+  :hons t ;; because there are just a few of them
+  :legiblep nil
+
+  ((kind vl-basictypekind-p
+         "Which kind of type this is.")))
 
 
 (defsum vl-atomguts
@@ -691,6 +755,7 @@ for a discussion of the valid types.</p>"
    vl-sysfunname
    vl-keyguts
    vl-time
+   vl-basictype
    ))
 
 

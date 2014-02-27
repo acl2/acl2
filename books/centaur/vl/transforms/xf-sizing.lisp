@@ -655,7 +655,12 @@ the size of @('$random') as 32.</p>"
                          :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
                          :vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
                          :vl-syscall :vl-funcall :vl-mintypmax :vl-hid-dot
-                         :vl-array-index :vl-index :vl-scope)
+                         :vl-array-index :vl-index :vl-scope
+
+                         :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
+                         :vl-stream-left :vl-stream-right
+                         :vl-stream-left-sized :vl-stream-right-sized
+                         )
           ;; Don't gather anything from here.
           nil)
 
@@ -1087,7 +1092,14 @@ expression-sizing).</p>"
        ;; the width is basically "inapplicable."
        (mv warnings nil))
 
-      ((:vl-hid-dot :vl-array-index :vl-index :vl-scope)
+      ((:vl-hid-dot :vl-array-index :vl-index :vl-scope
+
+                    ;; BOZO these might not belong here, but it seems like the
+                    ;; safest place to put them until they're implemented
+                    :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
+                    :vl-stream-left :vl-stream-right
+                    :vl-stream-left-sized :vl-stream-right-sized
+                    )
        ;; We don't handle these here.  They should be handled in
        ;; vl-expr-selfsize specially, because unlike all of the other
        ;; operators, we can't assume that their subexpressions' sizes can be
@@ -1737,7 +1749,14 @@ produce unsigned values.</li>
           ;; BOZO eventually add support for function calls.
           (mv warnings nil))
 
-         ((:vl-index :vl-hid-dot :vl-scope)
+         ((:vl-index :vl-hid-dot :vl-scope
+
+                     ;; BOZO these might not belong here, but it seems like the
+                     ;; safest place to put them until they're implemented
+                     :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
+                     :vl-stream-left :vl-stream-right
+                     :vl-stream-left-sized :vl-stream-right-sized
+                     )
           ;; Should have handled these above.
           (mv warnings nil))
 
@@ -3993,7 +4012,14 @@ context-determined expressions."
           (mv t warnings new-x)))
 
        ((:vl-funcall :vl-syscall :vl-mintypmax :vl-array-index :vl-index
-                     :vl-scope :vl-hid-dot)
+                     :vl-scope :vl-hid-dot
+
+                    ;; BOZO these might not belong here, but it seems like the
+                    ;; safest place to put them until they're implemented
+                    :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
+                    :vl-stream-left :vl-stream-right
+                    :vl-stream-left-sized :vl-stream-right-sized
+                    )
         (b* ((w (make-vl-warning
                  :type :vl-unsupported
                  :msg "~a0: add sizing support for ~x1."

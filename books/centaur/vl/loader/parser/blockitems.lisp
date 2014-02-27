@@ -117,7 +117,7 @@
   (seqw tokens warnings
         (id := (vl-match-token :vl-idtoken))
         (when (vl-is-token? :vl-equalsign)
-          (:= (vl-match-token :vl-equalsign))
+          (:= (vl-match))
           (expr := (vl-parse-expression))
           (return (list (vl-idtoken->name id) nil expr)))
         (arrdims := (vl-parse-0+-ranges))
@@ -132,7 +132,7 @@
   (seqw tokens warnings
         (first := (vl-parse-variable-type))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-list-of-variable-identifiers)))
         (return (cons first rest))))
 
@@ -198,7 +198,7 @@
   (seqw tokens warnings
         (kwd := (vl-match-token :vl-kwd-reg))
         (when (vl-is-token? :vl-kwd-signed)
-          (:= (vl-match-token :vl-kwd-signed))
+          (:= (vl-match))
           (signedp := (mv nil t tokens warnings)))
         (when (vl-is-token? :vl-lbrack)
           (range := (vl-parse-range)))
@@ -228,7 +228,7 @@
         (id := (vl-match-token :vl-idtoken))
         (arrdims := (vl-parse-0+-ranges))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-list-of-event-identifiers atts)))
         (return (cons (make-vl-eventdecl :loc (vl-token->loc id)
                                          :name (vl-idtoken->name id)
@@ -332,7 +332,7 @@
   (seqw tokens warnings
         (first := (vl-parse-param-assignment))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-list-of-param-assignments)))
         (return (cons first rest))))
 
@@ -346,30 +346,30 @@
   :true-listp t
   :fails gracefully
   :count strong
-  (let ((parameter-types '(:vl-kwd-integer :vl-kwd-real :vl-kwd-realtime :vl-kwd-time)))
-    (seqw tokens warnings
-          (start := (vl-match-some-token types))
-          (when (vl-is-some-token? parameter-types)
-            (type := (vl-match-some-token parameter-types))
-            (tuples := (vl-parse-list-of-param-assignments))
-            (return
-             (let ((type    (case (vl-token->type type)
-                              (:vl-kwd-integer  :vl-integer)
-                              (:vl-kwd-real     :vl-real)
-                              (:vl-kwd-realtime :vl-realtime)
-                              (:vl-kwd-time     :vl-time)))
-                   (localp  (eq (vl-token->type start) :vl-kwd-localparam)))
-               (vl-build-paramdecls tuples type localp nil atts))))
-          (when (vl-is-token? :vl-kwd-signed)
-            (signed := (vl-match-token :vl-kwd-signed)))
-          (when (vl-is-token? :vl-lbrack)
-            (range := (vl-parse-range)))
+  (seqw tokens warnings
+        (start := (vl-match-some-token types))
+        (when (vl-is-some-token? '(:vl-kwd-integer :vl-kwd-real
+                                                   :vl-kwd-realtime :vl-kwd-time))
+          (type := (vl-match))
           (tuples := (vl-parse-list-of-param-assignments))
           (return
-           (let ((localp  (eq (vl-token->type start) :vl-kwd-localparam)))
-             (vl-build-paramdecls tuples
-                                  (if signed :vl-signed :vl-plain)
-                                  localp range atts))))))
+           (let ((type    (case (vl-token->type type)
+                            (:vl-kwd-integer  :vl-integer)
+                            (:vl-kwd-real     :vl-real)
+                            (:vl-kwd-realtime :vl-realtime)
+                            (:vl-kwd-time     :vl-time)))
+                 (localp  (eq (vl-token->type start) :vl-kwd-localparam)))
+             (vl-build-paramdecls tuples type localp nil atts))))
+        (when (vl-is-token? :vl-kwd-signed)
+          (signed := (vl-match)))
+        (when (vl-is-token? :vl-lbrack)
+          (range := (vl-parse-range)))
+        (tuples := (vl-parse-list-of-param-assignments))
+        (return
+         (let ((localp  (eq (vl-token->type start) :vl-kwd-localparam)))
+           (vl-build-paramdecls tuples
+                                (if signed :vl-signed :vl-plain)
+                                localp range atts)))))
 
 
 

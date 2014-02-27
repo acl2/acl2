@@ -117,6 +117,54 @@
     (prog2$ (run-exprtest (car x) :config config)
             (run-exprtests (cdr x) :config config))))
 
+
+
+#||
+
+A very useful tracing mechanism for debugging:
+
+(defmacro trace-parser (fn)
+  `(trace$ (,fn
+            :entry (list ',fn
+                         :tokens (vl-tokenlist->string-with-spaces tokens)
+                         :warnings (len warnings))
+            :exit (list :errmsg (first values)
+                        :val (second values)
+                        :remainder (vl-tokenlist->string-with-spaces
+                                    (third values))
+                        :warnings (len (fourth values))))))
+
+(trace-parser vl-parse-stream-concatenation-fn)
+(trace-parser vl-parse-stream-expression-fn)
+(trace-parser vl-parse-1+-stream-expressions-separated-by-commas-fn)
+(trace-parser vl-parse-range-expression-fn)
+(trace-parser vl-parse-expression-fn)
+(trace-parser vl-parse-primary-fn)
+(trace-parser vl-parse-simple-type-fn)
+(trace-parser vl-parse-pva-tail-fn)
+
+(run-exprtest
+ (make-exprtest :input "{<<{1 with [2]}}"
+                :expect '(:vl-stream-left nil
+                                          (:vl-with-index nil 1 2))))
+
+(run-exprtest
+ (make-exprtest :input "{<< foo::bar::baz {a,b}}"
+                :expect '(:vl-stream-left-sized
+                          nil
+                          (:vl-scope nil
+                                     (hid "foo")
+                                     (:vl-scope nil
+                                                (hid "bar")
+                                                (hid "baz")))
+                          (id "a")
+                          (id "b"))))
+
+||#
+
+
+
+
 (defconst *basic-ad-hoc-tests*
   (list
 
@@ -200,23 +248,6 @@
               (:vl-hid-dot nil
                            (:vl-index nil (hid "bar") 2)
                            (hid "baz"))))
-
-;; BOZO this should eventually work in SystemVerilog, but it's not (I think)
-;; valid in Verilog-2005:
-
-   ;; (make-exprtest
-   ;;  :input "foo[1][2].bar[3].baz"
-   ;;  :expect '(:vl-hid-dot
-   ;;            nil
-   ;;            (:vl-index nil
-   ;;              (:vl-index nil (hid "foo") 1)
-   ;;              2)
-   ;;            (:vl-hid-dot nil
-   ;;                         (:vl-index nil (hid "bar") 3)
-   ;;                         (hid "baz"))))
-
-   (make-exprtest :input "{}"
-                  :successp nil)
 
    (make-exprtest :input "{3}"
                   :expect '(:vl-concat nil 3))
@@ -536,7 +567,98 @@
 
    (make-exprtest
     :input "this"
-    :expect '(key :vl-this))))
+    :expect '(key :vl-this))
+
+   (make-exprtest
+    :input "$root.foo"
+    :expect '(:vl-hid-dot nil
+                          (key :vl-$root)
+                          (hid "foo")))
+
+   (make-exprtest
+    :input "$root[2]"
+    :successp nil)
+
+   (make-exprtest
+    :input "$root.foo.bar"
+    :expect '(:vl-hid-dot nil
+                          (key :vl-$root)
+                          (:vl-hid-dot nil
+                                       (hid "foo")
+                                       (hid "bar"))))
+
+   (make-exprtest
+    :input "$root.foo[1].bar"
+    :expect '(:vl-hid-dot nil
+                          (key :vl-$root)
+                          (:vl-hid-dot nil
+                                       (:vl-index nil (hid "foo") 1)
+                                       (hid "bar"))))
+
+   (make-exprtest
+    :input "$root.foo[1][2].bar"
+    :expect '(:vl-hid-dot nil
+                          (key :vl-$root)
+                          (:vl-hid-dot nil
+                                       (:vl-index nil
+                                                  (:vl-index nil (hid "foo") 1)
+                                                  2)
+                                       (hid "bar"))))
+
+   (make-exprtest
+    :input "$root.foo[1][2].bar[3]"
+    :expect
+    '(:vl-index nil
+                (:vl-hid-dot nil
+                             (key :vl-$root)
+                             (:vl-hid-dot nil
+                                          (:vl-index nil
+                                                     (:vl-index nil (hid "foo") 1)
+                                                     2)
+                                          (hid "bar")))
+                3))
+
+   (make-exprtest
+    :input "$root.foo[1][2].bar[3:4]"
+    :expect
+    '(:vl-partselect-colon
+      nil
+      (:vl-hid-dot nil
+                   (key :vl-$root)
+                   (:vl-hid-dot nil
+                                (:vl-index nil
+                                           (:vl-index nil (hid "foo") 1)
+                                           2)
+                                (hid "bar")))
+      3 4))
+
+   (make-exprtest
+    :input "foo[1][2].bar[3:4]"
+    :expect
+    '(:vl-partselect-colon
+      nil
+      (:vl-hid-dot nil
+                   (:vl-index nil
+                              (:vl-index nil (hid "foo") 1)
+                              2)
+                   (hid "bar"))
+      3 4))
+
+   (make-exprtest
+    :input "baz.foo[1][2].bar[3:4]"
+    :expect
+    '(:vl-partselect-colon
+      nil
+      (:vl-hid-dot nil
+                   (hid "baz")
+                   (:vl-hid-dot nil
+                                (:vl-index nil
+                                           (:vl-index nil (hid "foo") 1)
+                                           2)
+                                (hid "bar")))
+      3 4))
+
+   ))
 
 
 (defconst *verilog-diff-tests* ;; The expected results for Verilog-2005.
@@ -571,9 +693,45 @@
 
    (make-exprtest
     :input "this"
-    :expect '(id "this"))))
+    :expect '(id "this"))
+
+   (make-exprtest
+    :input "$root.foo"
+    :expect '(:vl-syscall nil (sys "$root"))
+    :remainder ". foo")
+
+   (make-exprtest
+    :input "$root[2]"
+    :expect '(:vl-syscall nil (sys "$root"))
+    :remainder "[ 2 ]")
+
+   (make-exprtest
+    :input "$root.foo.bar"
+    :expect '(:vl-syscall nil (sys "$root"))
+    :remainder ". foo . bar")
+
+   (make-exprtest
+    :input "$root.foo[1].bar"
+    :expect '(:vl-syscall nil (sys "$root"))
+    :remainder ". foo [ 1 ] . bar")
+
+   (make-exprtest
+    :input "$root.foo[1][2].bar"
+    :expect '(:vl-syscall nil (sys "$root"))
+    :remainder ". foo [ 1 ] [ 2 ] . bar")
 
 
+   (make-exprtest
+    :input "foo[1].bar[2][3].bar"
+    :expect '(:vl-index nil (:vl-index nil (:vl-hid-dot
+                                            nil
+                                            (:vl-index nil (hid "foo") 1)
+                                            (hid "bar"))
+                                       2)
+                        3)
+    :remainder ". bar")
+
+   ))
 
 (make-event
  (progn$
@@ -593,13 +751,12 @@
   '(value-triple :success)))
 
 
-
 (defconst *sysv-only-tests*
   ;; These are tests that work with SystemVerilog, but that are just malformed
   ;; for Verilog-2005.
   (list
 
-   ;; extended literals
+   ;; extended literals, invalid in verilog-2005
    (make-exprtest :input "'0"
                   :expect '(ext :vl-0val))
 
@@ -612,29 +769,302 @@
    (make-exprtest :input "'z"
                   :expect '(ext :vl-zval))
 
-   (make-exprtest :input "'02"             ;; BOZO can this be right?
+   (make-exprtest :input "'02" ;; BOZO can this be right?
                   :expect '(ext :vl-0val)
                   :remainder "2")
 
-   ;; lone $ signs
+   ;; lone $ signs, invalid in verilog-2005
    (make-exprtest :input "$"
                   :expect '(key :vl-$))
 
-   ))
+   ;; empty queue, invalid in verilog-2005
+   (make-exprtest :input "{}"
+                  :expect '(key :vl-emptyqueue))
 
+
+   ;; streaming concatenations, invalid in verilog-2005
+   (make-exprtest :input "{<<{}}"
+                  :successp nil)
+
+   (make-exprtest :input "{<<}"
+                  :successp nil)
+
+   (make-exprtest :input "{<<"
+                  :successp nil)
+
+   (make-exprtest :input "{<<{1}"
+                  :successp nil)
+
+   (make-exprtest :input "{<<{1}}"
+                  :expect '(:vl-stream-left nil 1))
+
+   (make-exprtest :input "{<<{1,2}}"
+                  :expect '(:vl-stream-left nil 1 2))
+
+   (make-exprtest :input "{<<{1,2,3+4}}"
+                  :expect '(:vl-stream-left nil 1 2 (:vl-binary-plus nil 3 4)))
+
+   (make-exprtest :input "{<<{1 with [2]}}"
+                  :expect '(:vl-stream-left nil
+                                            (:vl-with-index nil 1 2)))
+
+   (make-exprtest :input "{<<{1 with [(2)]}}"
+                  :expect '(:vl-stream-left nil
+                                            (:vl-with-index nil 1 2)))
+
+   (make-exprtest :input "{<<{1 with [2 + 3]}}"
+                  :expect '(:vl-stream-left
+                            nil
+                            (:vl-with-index nil 1
+                                            (:vl-binary-plus nil 2 3))))
+
+   (make-exprtest :input "{<<{1 with [2:3]}}"
+                  :expect '(:vl-stream-left nil
+                                            (:vl-with-colon nil 1 2 3)))
+
+   (make-exprtest :input "{<<{1 with [2+:3]}}"
+                  :expect '(:vl-stream-left nil
+                                            (:vl-with-pluscolon nil 1 2 3)))
+
+   (make-exprtest :input "{<<{1 with [2-:3]}}"
+                  :expect '(:vl-stream-left nil
+                                            (:vl-with-minuscolon nil 1 2 3)))
+
+   (make-exprtest :input "{<<{1 with [2}}"
+                  :successp nil)
+
+   (make-exprtest :input "{<<{1 with 2}}"
+                  :successp nil)
+
+   (make-exprtest :input "{<<{1 with [2-:}}"
+                  :successp nil)
+
+   (make-exprtest :input "{<<{1 with 2:3}}"
+                  :successp nil)
+
+   (make-exprtest :input "{<<{1with[2]}}"
+                  ;; BOZO can this be right?  Well, maybe
+                  :expect '(:vl-stream-left nil
+                                            (:vl-with-index nil 1 2)))
+
+
+   (make-exprtest :input "{>>{}}"
+                  :successp nil)
+
+   (make-exprtest :input "{>>}"
+                  :successp nil)
+
+   (make-exprtest :input "{>>"
+                  :successp nil)
+
+   (make-exprtest :input "{>>{1}"
+                  :successp nil)
+
+   (make-exprtest :input "{>>{1}}"
+                  :expect '(:vl-stream-right nil 1))
+
+   (make-exprtest :input "{>>{1,2}}"
+                  :expect '(:vl-stream-right nil 1 2))
+
+   (make-exprtest :input "{>>{1,2,3+4}}"
+                  :expect '(:vl-stream-right nil 1 2 (:vl-binary-plus nil 3 4)))
+
+   (make-exprtest :input "{>>{1 with [2]}}"
+                  :expect '(:vl-stream-right nil
+                                             (:vl-with-index nil 1 2)))
+
+   (make-exprtest :input "{>>{1 with [(2)]}}"
+                  :expect '(:vl-stream-right nil
+                                             (:vl-with-index nil 1 2)))
+
+   (make-exprtest :input "{>>{1 with [2 + 3]}}"
+                  :expect '(:vl-stream-right
+                            nil
+                            (:vl-with-index nil 1
+                                            (:vl-binary-plus nil 2 3))))
+
+   (make-exprtest :input "{>>{1 with [2:3]}}"
+                  :expect '(:vl-stream-right nil
+                                             (:vl-with-colon nil 1 2 3)))
+
+   (make-exprtest :input "{>>{1 with [2+:3]}}"
+                  :expect '(:vl-stream-right nil
+                                             (:vl-with-pluscolon nil 1 2 3)))
+
+   (make-exprtest :input "{>>{1 with [2-:3]}}"
+                  :expect '(:vl-stream-right nil
+                                             (:vl-with-minuscolon nil 1 2 3)))
+
+   (make-exprtest :input "{>>{1 with [2}}"
+                  :successp nil)
+
+   (make-exprtest :input "{>>{1 with 2}}"
+                  :successp nil)
+
+   (make-exprtest :input "{>>{1 with [2-:}}"
+                  :successp nil)
+
+   (make-exprtest :input "{>>{1 with 2:3}}"
+                  :successp nil)
+
+   (make-exprtest :input "{>>{1with[2]}}"
+                  ;; BOZO can this be right?  Well, maybe
+                  :expect '(:vl-stream-right nil
+                                             (:vl-with-index nil 1 2)))
+
+   ;; Sized streaming concatenations
+   (make-exprtest :input "{<<byte{a,b}}"
+                  :expect '(:vl-stream-left-sized nil
+                                                  (basic :vl-byte)
+                                                  (id "a")
+                                                  (id "b")))
+
+   (make-exprtest :input "{<<shortint{a,b}}"
+                  :expect '(:vl-stream-left-sized nil
+                                                  (basic :vl-shortint)
+                                                  (id "a")
+                                                  (id "b")))
+
+   (make-exprtest :input "{<< int {a,b}}"
+                  :expect '(:vl-stream-left-sized nil
+                                                  (basic :vl-int)
+                                                  (id "a")
+                                                  (id "b")))
+
+   (make-exprtest :input "{<< longint{a,b}}"
+                  :expect '(:vl-stream-left-sized nil
+                                                  (basic :vl-longint)
+                                                  (id "a")
+                                                  (id "b")))
+
+   (make-exprtest :input "{<<integer {a,b}}"
+                  :expect '(:vl-stream-left-sized nil
+                                                  (basic :vl-integer)
+                                                  (id "a")
+                                                  (id "b")))
+
+   (make-exprtest :input "{<<time {a,b}}"
+                  :expect '(:vl-stream-left-sized nil
+                                                  (basic :vl-time)
+                                                  (id "a")
+                                                  (id "b")))
+
+   (make-exprtest :input "{<<bit {a,b}}"
+                  :expect '(:vl-stream-left-sized nil
+                                                  (basic :vl-bit)
+                                                  (id "a")
+                                                  (id "b")))
+
+   (make-exprtest :input "{<< reg {a,b}}"
+                  :expect '(:vl-stream-left-sized nil
+                                                  (basic :vl-reg)
+                                                  (id "a")
+                                                  (id "b")))
+
+   (make-exprtest :input "{<< logic {a,b}}"
+                  :expect '(:vl-stream-left-sized nil
+                                                  (basic :vl-logic)
+                                                  (id "a")
+                                                  (id "b")))
+
+   (make-exprtest :input "{<< shortreal{a,b}}"
+                  :expect '(:vl-stream-left-sized nil
+                                                  (basic :vl-shortreal)
+                                                  (id "a")
+                                                  (id "b")))
+
+   (make-exprtest :input "{<< real {a,b}}"
+                  :expect '(:vl-stream-left-sized nil
+                                                  (basic :vl-real)
+                                                  (id "a")
+                                                  (id "b")))
+
+   (make-exprtest :input "{<<realtime {a,b}}"
+                  :expect '(:vl-stream-left-sized nil
+                                                  (basic :vl-realtime)
+                                                  (id "a")
+                                                  (id "b")))
+
+   (make-exprtest :input "{<< 8 {a,b}}"
+                  :expect '(:vl-stream-left-sized nil
+                                                  8
+                                                  (id "a")
+                                                  (id "b")))
+
+   (make-exprtest :input "{<< size {a,b}}"
+                  :expect '(:vl-stream-left-sized nil
+                                                  (id "size")
+                                                  (id "a")
+                                                  (id "b")))
+
+   (make-exprtest :input "{<< local::opcode {a,b}}"
+                  :expect '(:vl-stream-left-sized
+                            nil
+                            (:vl-scope nil
+                                       (key :vl-local)
+                                       (hid "opcode"))
+                            (id "a")
+                            (id "b")))
+
+   (make-exprtest :input "{<< foo::bar {a,b}}"
+                  :expect '(:vl-stream-left-sized
+                            nil
+                            (:vl-scope nil
+                                       (hid "foo")
+                                       (hid "bar"))
+                            (id "a")
+                            (id "b")))
+
+   (make-exprtest :input "{<< $unit::bar {a,b}}"
+                  :expect '(:vl-stream-left-sized
+                            nil
+                            (:vl-scope nil
+                                       (key :vl-$unit)
+                                       (hid "bar"))
+                            (id "a")
+                            (id "b")))
+
+   (make-exprtest :input "{<< foo::bar::baz {a,b}}"
+                  :expect '(:vl-stream-left-sized
+                            nil
+                            (:vl-scope nil
+                                       (hid "foo")
+                                       (:vl-scope nil
+                                                  (hid "bar")
+                                                  (hid "baz")))
+                            (id "a")
+                            (id "b")))
+
+   (make-exprtest :input "{<< foo::bar:: {a,b}}"
+                  :successp nil)
+
+   (make-exprtest :input "{<< foo #(.width(6))::bar::baz {a,b}}"
+                  ;; Eventually this should be allowed, but we don't have any
+                  ;; support for PVAs inside expressions right now.  This unit
+                  ;; test is to remind me, if we ever do add such support,
+                  ;; that we should have some unit tests for it.
+                  :successp nil)
+
+
+
+   ))
 
 (make-event
  (progn$
   (run-exprtests *sysv-only-tests*
                  :config (make-vl-loadconfig :edition :system-verilog-2012
                                              :strictp nil))
+
   (run-exprtests *sysv-only-tests*
                  :config (make-vl-loadconfig :edition :system-verilog-2012
                                              :strictp t))
+
   (run-exprtests (make-exprtests-fail *sysv-only-tests*)
                  :config (make-vl-loadconfig :edition :verilog-2005
                                              :strictp nil))
+
   (run-exprtests (make-exprtests-fail *sysv-only-tests*)
                  :config (make-vl-loadconfig :edition :verilog-2005
                                              :strictp t))
   '(value-triple :success)))
+

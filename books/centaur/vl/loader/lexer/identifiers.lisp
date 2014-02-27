@@ -71,6 +71,12 @@ system identifiers:</p>
     system_tf_identifier ::= $[ a-zA-Z0-9_$ ] { [ a-zA-Z0-9_$ ] }
 })
 
+<p>Well, that's arguably true.  SystemVerilog adds certain pieces of syntax
+such as @('$') and @('$root') that overlap with @('system_tf_identifier').  We
+generally turn these into special tokens; see @(see vl-lex-system-identifier).
+</p>
+
+
 <h5>Whitespace Minutia</h5>
 
 <p>Per Section 3.7.1 of Verilog-2005, the leading backslash character and the
@@ -142,7 +148,6 @@ on.</p>")
 
 
 (define vl-read-escaped-identifier
-  :parents (lex-identifiers)
   ((echars vl-echarlist-p))
   :returns (mv (name/nil "On success, a string with the interpreted name
                           (similar to prefix, but without the leading
@@ -181,7 +186,6 @@ on.</p>")
 
 
 (define vl-lex-escaped-identifier
-  :parents (lex-identifiers)
   ((echars vl-echarlist-p))
   :returns (mv token/nil remainder)
   :long "<p>Per 3.7.2, escaped identifiers cannot be keywords.  So we do not
@@ -227,20 +231,36 @@ on.</p>")
 
 
 
-(define vl-lex-system-identifier ((echars vl-echarlist-p))
+(define vl-lex-system-identifier
+  :short "Try to match a system identifier (or some other special token
+like @('$') or @('$root')."
+  ((echars    vl-echarlist-p       "The characters we're lexing.")
+   (dollarops vl-plaintoken-alistp "Any special @('$') tokens."))
   :returns (mv token/nil remainder)
-  :parents (lex-system-identifiers)
-  :short "Try to match a system identifier."
+
+  :long "<p>The order here is subtle.  We check for a hit in @('dollarops')
+first, before even checking if there are any characters at all in the tail,
+because @('$') is a valid token with special meaning in SystemVerilog, but is
+just invalid in Verilog-2005.</p>"
+
   (b* (((unless (and (consp echars)
                      (eql (vl-echar->char (car echars)) #\$)))
         (mv nil echars))
        ((mv tail remainder)
         (vl-read-while-simple-id-tail (cdr echars)))
-       ((unless tail)
-        (mv nil echars))
        (etext (cons (car echars) tail))
-       (name  (hons-copy (vl-echarlist->string etext)))
-       (token (make-vl-sysidtoken :etext etext :name name)))
-    (mv token remainder)))
+       (name (hons-copy (vl-echarlist->string etext))) ;; Includes $
+       (look (hons-assoc-equal name dollarops))
+       ((when look)
+        (mv (make-vl-plaintoken :type (cdr look) :etext etext)
+            remainder))
+       ((unless tail)
+        (mv nil echars)))
+    ;; Not some special token, so just a system function.
+    (mv (make-vl-sysidtoken :etext etext :name name)
+        remainder)))
 
-(def-token/remainder-thms vl-lex-system-identifier)
+(def-token/remainder-thms vl-lex-system-identifier
+  :formals (echars dollarops)
+  :extra-tokenhyp (vl-plaintoken-alistp dollarops)
+  :extra-appendhyp (vl-plaintoken-alistp dollarops))

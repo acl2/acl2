@@ -151,7 +151,7 @@
   :count strong
   (seqw tokens warnings
         (when (vl-is-token? :vl-kwd-endspecify)
-          (:= (vl-match-token :vl-kwd-endspecify))
+          (:= (vl-match))
           (return nil))
         (:s= (vl-match-any))
         (:= (vl-parse-specify-block-aux))
@@ -184,7 +184,7 @@
   :count strong
   (seqw tokens warnings
         (when (vl-is-token? :vl-kwd-endgenerate)
-          (:= (vl-match-token :vl-kwd-endgenerate))
+          (:= (vl-match))
           (return nil))
         (:s= (vl-match-any))
         (:= (vl-parse-generate-region-aux))
@@ -418,7 +418,7 @@
         ;; No attributes, no localparams allowed.
         (first := (vl-parse-param-or-localparam-declaration nil nil))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-module-parameter-port-list-aux)))
         (return (append first rest))))
 
@@ -572,7 +572,7 @@
 
   (seqw tokens warnings
         (when (vl-is-token? :vl-kwd-endmodule)
-          (end := (vl-match-token :vl-kwd-endmodule))
+          (end := (vl-match))
           (return end))
         (:s= (vl-match-any))
         (end := (vl-skip-through-endmodule))

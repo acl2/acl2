@@ -83,7 +83,16 @@ modules for sizing for the linter.</p>")
           :VL-SYSCALL
           :VL-HID-DOT
           :vl-index
-          :vl-scope))
+          :vl-scope
+          :vl-with-colon
+          :vl-with-index
+          :vl-with-minuscolon
+          :vl-with-pluscolon
+          :vl-stream-left
+          :vl-stream-left-sized
+          :vl-stream-right
+          :vl-stream-right-sized
+          ))
 
   (assert! (equal (mergesort (append *toohard-ops* *not-toohard-ops*))
                   (mergesort (strip-cars *vl-ops-table*))))

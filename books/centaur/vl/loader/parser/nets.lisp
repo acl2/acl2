@@ -59,7 +59,7 @@
   :count strong-on-value
   (seqw tokens warnings
         (when (vl-is-some-token? *vl-nettypes-kwds*)
-          (type := (vl-match-some-token *vl-nettypes-kwds*)))
+          (type := (vl-match)))
         (return (and type
                      (cdr (assoc-eq (vl-token->type type)
                                     *vl-nettypes-kwd-alist*))))))
@@ -127,38 +127,28 @@
   (seqw tokens warnings
         (first := (vl-parse-assignment))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-list-of-net-assignments)))
         (return (cons first rest))))
 
-(defund vl-build-assignments (loc pairs strength delay atts)
-  (declare (xargs :guard (and (vl-location-p loc)
-                              (alistp pairs)
-                              (vl-exprlist-p (strip-cars pairs))
-                              (vl-exprlist-p (strip-cdrs pairs))
-                              (vl-maybe-gatestrength-p strength)
-                              (vl-maybe-gatedelay-p delay)
-                              (vl-atts-p atts))))
-  (if (consp pairs)
-      (cons (make-vl-assign :loc loc
-                            :lvalue (caar pairs)
-                            :expr (cdar pairs)
-                            :strength strength
-                            :delay delay
-                            :atts atts)
-            (vl-build-assignments loc (cdr pairs) strength delay atts))
-    nil))
 
-(defthm vl-assignlist-p-of-vl-build-assignments
-  (implies (and (force (vl-location-p loc))
-                (force (alistp pairs))
-                (force (vl-exprlist-p (strip-cars pairs)))
-                (force (vl-exprlist-p (strip-cdrs pairs)))
-                (force (vl-maybe-gatestrength-p strength))
-                (force (vl-maybe-gatedelay-p delay))
-                (force (vl-atts-p atts)))
-           (vl-assignlist-p (vl-build-assignments loc pairs strength delay atts)))
-  :hints(("Goal" :in-theory (enable vl-build-assignments))))
+(define vl-build-assignments ((loc      vl-location-p)
+                              (pairs    (and (alistp pairs)
+                                             (vl-exprlist-p (strip-cars pairs))
+                                             (vl-exprlist-p (strip-cdrs pairs))))
+                              (strength vl-maybe-gatestrength-p)
+                              (delay    vl-maybe-gatedelay-p)
+                              (atts     vl-atts-p))
+  :returns (assigns vl-assignlist-p :hyp :fguard)
+  (if (atom pairs)
+      nil
+    (cons (make-vl-assign :loc loc
+                          :lvalue (caar pairs)
+                          :expr (cdar pairs)
+                          :strength strength
+                          :delay delay
+                          :atts atts)
+          (vl-build-assignments loc (cdr pairs) strength delay atts))))
 
 (encapsulate
  ()
@@ -224,7 +214,7 @@
         (:= (vl-match-token :vl-equalsign))
         (expr := (vl-parse-expression))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-list-of-net-decl-assignments)))
         (return (cons (cons id expr) rest))))
 
@@ -242,64 +232,41 @@
         (id := (vl-match-token :vl-idtoken))
         (ranges := (vl-parse-0+-ranges))
         (when (vl-is-token? :vl-comma)
-          (:= (vl-match-token :vl-comma))
+          (:= (vl-match))
           (rest := (vl-parse-list-of-net-identifiers)))
         (return (cons (cons id ranges) rest))))
 
 
 
-(defund vl-build-netdecls (loc pairs type range atts vectoredp scalaredp signedp delay cstrength)
-  (declare (xargs :guard (and (vl-location-p loc)
-                              (alistp pairs)
-                              (vl-idtoken-list-p (strip-cars pairs))
-                              (vl-rangelist-list-p (strip-cdrs pairs))
-                              (vl-netdecltype-p type)
-                              (vl-maybe-range-p range)
-                              (vl-atts-p atts)
-                              (booleanp vectoredp)
-                              (booleanp scalaredp)
-                              (booleanp signedp)
-                              (vl-maybe-gatedelay-p delay)
-                              (vl-maybe-cstrength-p cstrength))))
-  (if (consp pairs)
-      (cons (make-vl-netdecl :loc loc
-                             :name (vl-idtoken->name (caar pairs))
-                             :type type
-                             :range range
-                             :arrdims (cdar pairs)
-                             :atts atts
-                             :vectoredp vectoredp
-                             :scalaredp scalaredp
-                             :signedp signedp
-                             :delay delay
-                             :cstrength cstrength)
-            (vl-build-netdecls loc (cdr pairs) type range atts
-                               vectoredp scalaredp signedp delay cstrength))
-    nil))
-
-(defthm vl-netdecllist-p-of-vl-build-netdecls
-  (implies (and (force (vl-location-p loc))
-                (force (alistp pairs))
-                (force (vl-idtoken-list-p (strip-cars pairs)))
-                (force (vl-rangelist-list-p (strip-cdrs pairs)))
-                (force (vl-netdecltype-p type))
-                (force (vl-maybe-range-p range))
-                (force (vl-atts-p atts))
-                (force (booleanp vectoredp))
-                (force (booleanp scalaredp))
-                (force (booleanp signedp))
-                (force (vl-maybe-gatedelay-p delay))
-                (force (vl-maybe-cstrength-p cstrength)))
-           (vl-netdecllist-p (vl-build-netdecls loc pairs type range atts vectoredp
-                                                scalaredp signedp delay
-                                                cstrength)))
-  :hints(("Goal" :in-theory (enable vl-build-netdecls))))
-
-
-
-
-
-
+(define vl-build-netdecls
+  ((loc         vl-location-p)
+   (pairs       (and (alistp pairs)
+                     (vl-idtoken-list-p (strip-cars pairs))
+                     (vl-rangelist-list-p (strip-cdrs pairs))))
+   (type        vl-netdecltype-p)
+   (range       vl-maybe-range-p)
+   (atts        vl-atts-p)
+   (vectoredp   booleanp)
+   (scalaredp   booleanp)
+   (signedp     booleanp)
+   (delay       vl-maybe-gatedelay-p)
+   (cstrength   vl-maybe-cstrength-p))
+  :returns (nets vl-netdecllist-p :hyp :fguard)
+  (if (atom pairs)
+      nil
+    (cons (make-vl-netdecl :loc loc
+                           :name (vl-idtoken->name (caar pairs))
+                           :type type
+                           :range range
+                           :arrdims (cdar pairs)
+                           :atts atts
+                           :vectoredp vectoredp
+                           :scalaredp scalaredp
+                           :signedp signedp
+                           :delay delay
+                           :cstrength cstrength)
+          (vl-build-netdecls loc (cdr pairs) type range atts
+                             vectoredp scalaredp signedp delay cstrength))))
 
 
 
@@ -323,31 +290,26 @@
 ;;            (vl-atomlist-p (vl-atomlist-from-vl-idtoken-list x)))
 ;;   :hints(("Goal" :induct (len x))))
 
-(defund vl-atomify-assignpairs (x)
-  (declare (xargs :guard (and (alistp x)
-                              (vl-idtoken-list-p (strip-cars x))
-                              (vl-exprlist-p (strip-cdrs x)))))
-  (if (consp x)
-      (cons (cons (make-vl-atom
-                   :guts (make-vl-id :name (vl-idtoken->name (caar x))))
-                  (cdar x))
-            (vl-atomify-assignpairs (cdr x)))
-    nil))
+(define vl-atomify-assignpairs ((x (and (alistp x)
+                                        (vl-idtoken-list-p (strip-cars x))
+                                        (vl-exprlist-p (strip-cdrs x)))))
+  (if (atom x)
+      nil
+    (cons (cons (make-vl-atom
+                 :guts (make-vl-id :name (vl-idtoken->name (caar x))))
+                (cdar x))
+          (vl-atomify-assignpairs (cdr x))))
+  ///
+  (defthm alistp-of-vl-atomify-assignpairs
+    (alistp (vl-atomify-assignpairs x)))
 
-(defthm alistp-of-vl-atomify-assignpairs
-  (alistp (vl-atomify-assignpairs x))
-  :hints(("Goal" :in-theory (enable vl-atomify-assignpairs))))
+  (defthm vl-exprlist-p-of-strip-cars-of-vl-atomify-assignpairs
+    (implies (force (vl-idtoken-list-p (strip-cars x)))
+             (vl-exprlist-p (strip-cars (vl-atomify-assignpairs x)))))
 
-(defthm vl-exprlist-p-of-strip-cars-of-vl-atomify-assignpairs
-  (implies (force (vl-idtoken-list-p (strip-cars x)))
-           (vl-exprlist-p (strip-cars (vl-atomify-assignpairs x))))
-  :hints(("Goal" :in-theory (enable vl-atomify-assignpairs))))
-
-(defthm vl-exprlist-p-of-strip-cdrs-of-vl-atomify-assignpairs
-  (implies (force (vl-exprlist-p (strip-cdrs x)))
-           (vl-exprlist-p (strip-cdrs (vl-atomify-assignpairs x))))
-  :hints(("Goal" :in-theory (enable vl-atomify-assignpairs))))
-
+  (defthm vl-exprlist-p-of-strip-cdrs-of-vl-atomify-assignpairs
+    (implies (force (vl-exprlist-p (strip-cdrs x)))
+             (vl-exprlist-p (strip-cdrs (vl-atomify-assignpairs x))))))
 
 
 (defund vl-netdecls-error (type cstrength gstrength vectoredp scalaredp range assigns)
@@ -425,8 +387,6 @@
                            acl2::subsetp-when-atom-left)))
 
 
-
-
 (defund vl-is-token-of-type-p (x type)
   ;; Hides an if from vl-parse-net-declaration.
   (declare (xargs :guard t))
@@ -499,9 +459,9 @@
          (when (vl-is-token? :vl-lparen)
            (strength := (vl-parse-drive-strength-or-charge-strength)))
          (when (vl-is-some-token? '(:vl-kwd-vectored :vl-kwd-scalared))
-           (rtype := (vl-match-some-token '(:vl-kwd-vectored :vl-kwd-scalared))))
+           (rtype := (vl-match)))
          (when (vl-is-token? :vl-kwd-signed)
-           (signed := (vl-match-token :vl-kwd-signed)))
+           (signed := (vl-match)))
          (when (vl-is-token? :vl-lbrack)
            (range := (vl-parse-range)))
          (when (vl-is-token? :vl-pound)

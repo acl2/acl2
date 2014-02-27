@@ -103,3 +103,4 @@
 
 (defconst *vl-default-loadconfig*
   (make-vl-loadconfig))
+
