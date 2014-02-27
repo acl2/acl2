@@ -575,6 +575,16 @@
                   (equal a (faig-z)))))
   :hints(("Goal" :in-theory (enable faig-const->4v))))
 
+(gl::def-gl-rewrite faig-const->4v-equal-t-gl
+  (equal (equal (faig-const->4v a) 't)
+         (equal a (faig-t)))
+  :hints(("Goal" :in-theory (enable faig-const->4v))))
+
+(gl::def-gl-rewrite faig-const->4v-equal-f-gl
+  (equal (equal (faig-const->4v a) 'f)
+         (equal a (faig-f)))
+  :hints(("Goal" :in-theory (enable faig-const->4v))))
+
 (gl::def-gl-rewrite 4v->faig-const-of-faig-const->4v-gl
   (equal (4v->faig-const (faig-const->4v x))
          (if (and (consp x)

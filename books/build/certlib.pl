@@ -1171,16 +1171,25 @@ sub src_deps {
 	if ($type eq $add_dir_event) {
 	    my $name = $event->[1];
 	    my $dir = $event->[2];
-	    my $basedir = dirname($fname);
-	    # was:
-	    # my $newdir = canonical_path(rel_path($basedir, $dir));
-	    my $newdir = canonical_path(File::Spec->catfile($basedir, $dir));
+
+	    print "add_dir_event: name=$name, dir=$dir\n" if $debugging;
+	    my $newdir;
+	    if (File::Spec->file_name_is_absolute($dir)) {
+		$newdir = canonical_path($dir);
+	    }
+	    else {
+		# was:
+		# my $newdir = canonical_path(rel_path($basedir, $dir));
+		my $basedir = dirname($fname);
+		$newdir = canonical_path(File::Spec->catfile($basedir, $dir));
+	    }
+	    print "add_dir_event: newdir is $newdir\n" if $debugging;
+
 	    if (! $newdir) {
 		print "Bad path processing (add-include-book-dir :$name \"$dir\") in $fname\n";
 	    }
 	    $local_dirs->{$name} = $newdir;
-	    print "src_deps: add_dir $name $local_dirs->{$name}\n" if
-		$debugging;
+	    print "src_deps: add_dir $name $local_dirs->{$name}\n" if $debugging;
 	} elsif ($type eq $include_book_event) {
 	    my $bookname = $event->[1];
 	    my $dir = $event->[2];

@@ -52,11 +52,13 @@
        (rule (find-lemma-for-rune rune world))
        ((unless rule)
         (cw "Failed to find a lemma for rune ~x0~%" rune))
-       (fnsym (car (acl2::access acl2::rewrite-rule rule :lhs)))
-       (entries (cdr (assoc fnsym (table-alist 'gl-rewrite-rules world))))
-       ((when (member-equal rule entries))
-        '(value-triple nil)))
-    `(table gl-rewrite-rules ',fnsym '(,rune . ,entries))))
+       (fnsym (car (acl2::access acl2::rewrite-rule rule :lhs))))
+    `(table gl-rewrite-rules ',fnsym
+            (b* ((rules (cdr (assoc ',fnsym
+                              (table-alist 'gl-rewrite-rules world)))))
+              (if (member-equal ',rune rules)
+                  rules
+                (cons ',rune rules))))))
 
 (defmacro add-gl-rewrite (rune)
   `(make-event

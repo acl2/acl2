@@ -287,9 +287,18 @@ sub scan_source_file
 	{
 	    $max_time = $1;
 	}
-	elsif ($line =~ m/^[^;]*\((?:acl2::)?include-book[\s]*"([^"]*)"(?:.*:dir[\s]*:([^\s)]*))?/i)
+	elsif ($line =~ m/^[^;]*\((?:acl2::)?include-book[\s]*"([^"]*)"(?:.*:dir[\s]*:([^\s)]*))?(.*)/i)
 	{
-	    push (@includes, [$1, $2]);
+	    # We allow "no_port" in a comment after the include book to prevent
+	    # us from loading this book's .port file.  Note if we ever use this
+	    # collection of includes for anything other than determining what
+	    # port files to load, we should revisit this.
+	    my $book = $1;
+	    my $dir = $2;
+	    my $remainder = $3;
+	    if (! ($remainder =~ m/no[_-]port/i)) {
+		push (@includes, [$1, $2]);
+	    }
 	}
     }
     close($fd);

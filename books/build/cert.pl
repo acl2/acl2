@@ -644,6 +644,17 @@ my $mf_intro_string = '
 
 ';
 
+sub make_encode { # encode a filename for MAKE
+
+# This is a total hack and doesn't really work.  If a file name has spaces then
+# apparently Make just totally has no way to handle it.  We have received
+# requests to implement proper $ support, at least.
+
+    my $str = shift;
+    $str =~ s/\$/\$\$/g;
+    return $str;
+}
+
 unless ($no_makefile) {
     # Build the makefile and run make.
     open (my $mf, ">", $mf_name)
@@ -676,7 +687,7 @@ unless ($no_makefile) {
     print $mf $var_prefix . "_CERTS :=";
 
     foreach my $cert (@certs) {
-	print $mf " \\\n     $cert";
+	print $mf " \\\n     " . make_encode($cert);
 	# if (cert_get_param($cert, \%depmap, "acl2x")) {
 	#     my $acl2xfile = cert_to_acl2x($cert);
 	#     print $mf " \\\n     $acl2xfile";
@@ -702,7 +713,7 @@ unless ($no_makefile) {
     # declare $var_prefix_SOURCES to be the list of sources
     print $mf $var_prefix . "_SOURCES :=";
     foreach my $source (@sources) {
-	print $mf " \\\n     $source ";
+	print $mf " \\\n     " . make_encode($source);
     }
     print $mf "\n\n";
 
@@ -718,7 +729,7 @@ unless ($no_makefile) {
 	print $mf "${var_prefix}_${reqparams{$reqparam}} :=";
 	foreach my $cert (@certs) {
 	    if (cert_get_param($cert, \%depmap, $reqparam)) {
-		print $mf " \\\n     $cert ";
+		print $mf " \\\n     " . make_encode($cert) . " ";
 	    }
 	}
 	print $mf "\n\n";
@@ -738,7 +749,7 @@ unless ($no_makefile) {
 	@labelsources = sort(@labelsources);
 	print $mf "${label}_CERTS :=";
 	foreach my $cert (@labelcerts) {
-	    print $mf " \\\n     $cert";
+	    print $mf " \\\n     " . make_encode($cert);
 	    # if (cert_is_two_pass($cert, \%depmap)) {
 	    # 	my $acl2x = cert_to_acl2x($cert);
 	    # 	print $mf " \\\n     $acl2x";
@@ -757,7 +768,7 @@ unless ($no_makefile) {
 
 	print $mf "${label}_SOURCES :=";
 	foreach my $source (@labelsources) {
-	    print $mf " \\\n     $source";
+	    print $mf " \\\n     " . make_encode($source);
 	}
 	print $mf "\n\n";
     }
@@ -774,17 +785,18 @@ unless ($no_makefile) {
 	# BOZO acl2x implies no pcert
 	my $pcert_ok = ( ! $useacl2x && cert_get_param($cert, \%depmap, "pcert")) || 0;
 	my $acl2xskip = cert_get_param($cert, \%depmap, "acl2xskip") || 0;
-	print $mf "$cert : acl2x = $useacl2x\n";
-	print $mf "$cert : pcert = $pcert_ok\n";
+
+	print $mf make_encode($cert) . " : acl2x = $useacl2x\n";
+	print $mf make_encode($cert) . " : pcert = $pcert_ok\n";
 	# print $mf "#$cert params: ";
 	# my $params = cert_get_params($cert, \%depmap);
 	# while (my ($key, $val) = each %$params) {
 	#     print $mf "$key = $val ";
 	# }
 	print $mf "\n";
-	print $mf "$cert :";
+	print $mf make_encode($cert) . " :";
 	foreach my $dep (@$certdeps, @$srcdeps, @$otherdeps) {
-	    print $mf " \\\n     $dep";
+	    print $mf " \\\n     " . make_encode($dep);
 	}
 	if ($image && ($image ne "acl2")) {
 	    if ($bin_dir) {
@@ -806,19 +818,19 @@ unless ($no_makefile) {
 #	    print $mf "$cert : private TWO_PASS := 1\n";
 #     Instead, sadly, we'll individually set the TWO_PASS variable for
 #     each target instead.  (Note the ELSE case below.)
-	    print $mf "$cert : |";   # order-only prerequisite
-	    print $mf " \\\n     $acl2xfile";
+	    print $mf make_encode($cert) . " : |";   # order-only prerequisite
+	    print $mf " \\\n     " . make_encode($acl2xfile);
 	    print $mf "\n\n";
-	    print $mf "$acl2xfile : acl2xskip = $acl2xskip\n";
-	    print $mf "$acl2xfile :";
+	    print $mf make_encode($acl2xfile) . " : acl2xskip = $acl2xskip\n";
+	    print $mf make_encode($acl2xfile) . " :";
 	    foreach my $dep (@$certdeps, @$srcdeps, @$otherdeps) {
-		print $mf " \\\n     $dep";
+		print $mf " \\\n     " . make_encode($dep);
 	    }
 	    if ($image && ($image ne "acl2")) {
 		if ($bin_dir) {
 		    # was:
 		    # print $mf " \\\n     " . rel_path($bin_dir, $image);
-		    print $mf " \\\n     " . File::Spec->catfile($bin_dir, $image);
+		    print $mf " \\\n     " . make_encode(File::Spec->catfile($bin_dir, $image));
 		} elsif (! $warned_bindir) {
 		    print "Warning: no --bin set, so not adding image dependencies,\n";
 		    print " e.g.   $cert : $image\n";
@@ -846,22 +858,23 @@ unless ($no_makefile) {
 	(my $base = $cert) =~ s/\.cert$//;
 	# this is either the pcert0 or pcert1 depending on pcert_ok
 	my $pcert = cert_sequential_dep($cert, \%depmap);
-	print $mf "$pcert : pcert = $pcert_ok\n";
-	print $mf "$pcert : acl2x = $useacl2x\n";
-	print $mf "$pcert :";
+	my $encpcert = make_encode($pcert);
+	print $mf "$encpcert : pcert = $pcert_ok\n";
+	print $mf "$encpcert : acl2x = $useacl2x\n";
+	print $mf "$encpcert :";
 	foreach my $dep (@$bookdeps, @$portdeps) {
 	    # this is either the pcert0 or pcert1 depending whether the dependency
 	    # has pcert set
-	    print $mf " \\\n     " . cert_sequential_dep($dep, \%depmap);
+	    print $mf " \\\n     " . make_encode(cert_sequential_dep($dep, \%depmap));
 	}
 	foreach my $dep (@$srcdeps, @$otherdeps) {
-	    print $mf " \\\n     $dep";
+	    print $mf " \\\n     " . make_encode($dep);
 	}
 	if ($image && ($image ne "acl2")) {
 	    if ($bin_dir) {
 		# was:
 		# print $mf " \\\n     " . rel_path($bin_dir, $image);
-		print $mf " \\\n     " . File::Spec->catfile($bin_dir, $image);
+		print $mf " \\\n     " . make_encode(File::Spec->catfile($bin_dir, $image));
 	    } elsif (! $warned_bindir) {
 		print "Warning: no --bin set, so not adding image dependencies,\n";
 		print " e.g.   $cert : $image\n";
@@ -870,16 +883,17 @@ unless ($no_makefile) {
 	}
 	print $mf "\n";
 	# If we're doing prov cert, pcert1 depends on pcert0 and cert depends on pcert1
+	my $encbase = make_encode($base);
 	if ($pcert_ok) {
 	    # Pcert1 files depend only on the corresp. pcert0.
-	    print $mf "$base.pcert1 : acl2x = $useacl2x\n";
-	    print $mf "$base.pcert1 : pcert = $pcert_ok\n";
-	    print $mf "$base.pcert1 : $base.pcert0\n";
+	    print $mf "$encbase.pcert1 : acl2x = $useacl2x\n";
+	    print $mf "$encbase.pcert1 : pcert = $pcert_ok\n";
+	    print $mf "$encbase.pcert1 : $encbase.pcert0\n";
 	} elsif ($useacl2x) {
 	    # pcert1 depends on .acl2x
-	    print $mf "$base.pcert1 : $base.acl2x\n";
+	    print $mf "$encbase.pcert1 : $encbase.acl2x\n";
 	}
-	print $mf "$cert : $base.pcert1\n";
+	print $mf make_encode($cert) . " : $encbase.pcert1\n";
 	print $mf "\n";
     }
 
