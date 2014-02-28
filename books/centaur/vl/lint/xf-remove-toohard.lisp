@@ -98,6 +98,7 @@ modules for sizing for the linter.</p>")
           :vl-stream-left-sized
           :vl-stream-right
           :vl-stream-right-sized
+          :vl-tagged
           ))
 
   (assert! (equal (mergesort (append *toohard-ops* *not-toohard-ops*))

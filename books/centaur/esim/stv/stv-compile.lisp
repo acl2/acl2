@@ -1038,7 +1038,7 @@ collect and how we want to name them.</p>"
        ;;          variables (from :output and :internal lines).  Illegally ~
        ;;          reused variables: ~x0" illegally-reused-simvars))
 
-       (all-in-bits (vl::append-domains-exec in-usersyms gensyms))
+       (all-in-bits (vl::append-alist-vals-exec in-usersyms gensyms))
        ((unless (uniquep all-in-bits))
         ;; It's hard to imagine this happening, but if somehow the user gave an
         ;; input simulation variable name that clashed with a gensym, it'd be

@@ -333,6 +333,11 @@ displays.  The module browser's web pages are responsible for defining the
   (vl-ps-span "vl_id"
               (vl-print-str (vl-maybe-escape-identifier (vl-funname->name x)))))
 
+(define vl-pp-tagname ((x vl-tagname-p) &key (ps 'ps))
+  (vl-ps-span "vl_tagname"
+              (vl-print-str (vl-tagname->name x))))
+
+
 (define vl-keygutstype->string ((x vl-keygutstype-p))
   :returns (str stringp :rule-classes :type-prescription)
   (case x
@@ -391,6 +396,8 @@ displays.  The module browser's web pages are responsible for defining the
                              (vl-basictype->kind x)))))
 
 
+
+
 (define vl-pp-atomguts ((x vl-atomguts-p) &key (ps 'ps))
   :guard-hints (("Goal" :in-theory (enable vl-atomguts-p)))
   (case (tag x)
@@ -405,6 +412,7 @@ displays.  The module browser's web pages are responsible for defining the
     (:vl-time       (vl-pp-time x))
     (:vl-keyguts    (vl-pp-keyguts x))
     (:vl-basictype  (vl-pp-basictype x))
+    (:vl-tagname    (vl-pp-tagname x))
     (otherwise      (vl-pp-sysfunname x))))
 
 (define vl-pp-atom ((x vl-atom-p) &key (ps 'ps))
@@ -499,6 +507,7 @@ displays.  The module browser's web pages are responsible for defining the
      (:VL-STREAM-RIGHT       . 20)
      (:VL-STREAM-LEFT-SIZED  . 20)
      (:VL-STREAM-RIGHT-SIZED . 20)
+     (:VL-TAGGED             . 20)
 
      ;; This part is based on Verilog-2005 Table 5-4, and SystemVerilog-2012
      ;; Table 11-2.
@@ -883,6 +892,18 @@ ps). See also @(see vl-pps-expr) and @(see vl-pp-origexpr).</p>")
                          (otherwise          (vl-ps-seq (vl-print "-:")
                                                         (vl-pp-expr (third args)))))
                        (vl-print "]"))))
+
+         ((:vl-tagged)
+          (if (atom args)
+              (prog2$ (er hard? 'vl-pp-expr "Bad tagged expr")
+                      ps)
+            (vl-ps-seq (vl-ps-span "vl_key" (vl-print "tagged "))
+                       (vl-pp-expr (first args))
+                       (if (atom (cdr args))
+                           ps
+                         (vl-ps-seq (vl-print " ")
+                                    (vl-pp-expr (second args))))
+                       (vl-println? ""))))
 
          ((:vl-funcall)
           ;; This doesn't need parens because it has maximal precedence

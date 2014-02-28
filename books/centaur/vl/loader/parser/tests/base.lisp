@@ -40,6 +40,7 @@
           ((vl-sysfunname-p guts)  (list 'sys  (vl-sysfunname->name guts)))
           ((vl-keyguts-p guts)     (list 'key  (vl-keyguts->type guts)))
           ((vl-basictype-p guts)   (list 'basic  (vl-basictype->kind guts)))
+          ((vl-tagname-p guts)     (list 'tag  (vl-tagname->name guts)))
 
           ((vl-time-p guts)
            (list 'time

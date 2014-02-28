@@ -69,6 +69,8 @@ atomic expression includes some <b>guts</b>, which refer to either an:</p>
 <li>@(see vl-basictype-p): simple type names like @('byte'), @('shortint'),
 @('time'), @('logic'), etc.</li>
 
+<li>@(see vl-tagname-p): the name of a tagged union type member.</li>
+
 </ul>
 
 <p>Some of these are probably not things you would ordinarily think of as
@@ -341,6 +343,10 @@ is a tree of @(':vl-index') operators.</li>
      ;; Hierarchical Identifiers and Scoping
      (cons :vl-hid-dot               2) ;;; e.g., foo.bar
      (cons :vl-scope                 2) ;;; e.g., foo::bar
+
+     ;; Tagged Union Expressions, should have arity 1 or 2
+     (cons :vl-tagged nil) ;; e.g., "tagged Valid 13" or "tagged Invalid"
+
      )))
 
 
@@ -695,6 +701,20 @@ so that we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
 we do not confuse them with ordinary @(see vl-id-p) objects.</p>")
 
 
+(defaggregate vl-tagname
+  :short "Represents a tagged union member name."
+  :tag :vl-tagname
+  :legiblep nil
+
+  ((name stringp :rule-classes :type-prescription
+         "The name of this member.  E.g., for @('tagged foo 3'), this would
+          just be @('\"foo\"')."))
+
+  :long "<p>We use a custom representation for the names of tagged union member
+names so that we do not confuse them with ordinary @(see vl-id-p)
+objects.</p>")
+
+
 (defenum vl-keygutstype-p
   (:vl-null
    :vl-this
@@ -762,6 +782,7 @@ for a discussion of the valid types.</p>"
    vl-keyguts
    vl-time
    vl-basictype
+   vl-tagname
    ))
 
 

@@ -150,7 +150,7 @@
     (b* ((exotic-decls (vl-multidrive-collect-exotic-netdecls netdecls))
          (exotic-names (vl-netdecllist->names exotic-decls))
          (exotic-fal   (acl2::fal-extract exotic-names walist))
-         (exotic-bits  (append-domains exotic-fal)))
+         (exotic-bits  (append-alist-vals exotic-fal)))
       exotic-bits)))
 
 

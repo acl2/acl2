@@ -366,9 +366,10 @@ are returned in a nonsensical order.</p>"
                   :hyp :fguard)
 
   :prepwork
-  ((local (defthm vl-emodwirelist-p-of-append-domains
+  ((local (defthm vl-emodwirelist-p-of-append-alist-vals
             (implies (vl-wirealist-p x)
-                     (vl-emodwirelist-p (append-domains x))))))
+                     (vl-emodwirelist-p (append-alist-vals x)))
+            :hints(("Goal" :induct (len x))))))
 
   (b* (((vl-module x) x)
 
@@ -386,7 +387,7 @@ are returned in a nonsensical order.</p>"
         (cwtime (vl-exprlist-allwires all-exprs walist)
                 :mintime 1/2))
 
-       (all-wires          (mergesort (append-domains walist)))
+       (all-wires          (mergesort (append-alist-vals walist)))
        (connected-wires    (mergesort connected-wires))
        (disconnected-wires (difference all-wires connected-wires))
 

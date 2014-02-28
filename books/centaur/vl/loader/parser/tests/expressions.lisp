@@ -747,6 +747,38 @@ A very useful tracing mechanism for debugging:
                    :expect '(:vl-qmark nil 1 (:vl-equiv nil 2 3) 4))
 
 
+    ;; tagged union types
+
+    (make-exprtest :input "tagged"
+                   :successp nil)
+
+    (make-exprtest :input "tagged foo"
+                   :expect '(:vl-tagged nil (tag "foo")))
+
+    (make-exprtest :input "tagged foo 3"
+                   :expect '(:vl-tagged nil (tag "foo") 3))
+
+    (make-exprtest :input "tagged foo 3 + 4"
+                   ;; The precedence here seems to be ambiguous.  Until we
+                   ;; understand what it is supposed to be, this should just
+                   ;; fail.
+                   :successp nil)
+
+    (make-exprtest :input "tagged foo (3 + 4)"
+                   :expect '(:vl-tagged nil (tag "foo")
+                                        (:vl-binary-plus
+                                         ("VL_EXPLICIT_PARENS") 3 4)))
+
+    (make-exprtest :input "tagged foo {3,4}"
+                   ;; This is too bad.  It would be nice for this to work.
+                   ;; Maybe eventually extend vl-parse-expression with a notion
+                   ;; of unambiguous operators for tagged expressions.
+                   :successp nil)
+
+    (make-exprtest :input "tagged foo ({3,4})"
+                   :expect '(:vl-tagged nil (tag "foo")
+                                        (:vl-concat
+                                         ("VL_EXPLICIT_PARENS") 3 4)))
 
 
     ))
@@ -853,6 +885,30 @@ A very useful tracing mechanism for debugging:
                    ;; completely fine to fail in this way, since this isn't
                    ;; good syntax.
                    :successp nil)
+
+
+    ;; Tagged union types aren't in Verilog-2005, so these should all just
+    ;; basically think "tagged" is the first expression.
+
+    (make-exprtest :input "tagged"
+                   :expect '(id "tagged"))
+
+    (make-exprtest :input "tagged foo"
+                   :expect '(id "tagged")
+                   :remainder "foo")
+
+    (make-exprtest :input "tagged foo 3"
+                   :expect '(id "tagged")
+                   :remainder "foo 3")
+
+    (make-exprtest :input "tagged foo 3 + 4"
+                   :expect '(id "tagged")
+                   :remainder "foo 3 + 4")
+
+    (make-exprtest :input "tagged foo (3 + 4)"
+                   :expect '(id "tagged")
+                   :remainder "foo ( 3 + 4 )")
+
 
     ))
 

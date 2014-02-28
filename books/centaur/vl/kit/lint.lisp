@@ -638,7 +638,7 @@ shown.</p>"
                                 &key (ps 'ps))
   (b* ((walist (vl-keep-from-modwarningalist types walist))
        (walist (vl-clean-modwarningalist walist))
-       (count  (length (append-domains walist)))
+       (count  (length (append-alist-vals walist)))
        (-      (cond ((int= count 0)
                       (cw "~s0: No ~s1 Warnings.~%" filename label))
                      ((int= count 1)

@@ -861,7 +861,7 @@ for all of the wires that don't have problems.</p>
 completely unique bits to all of the wires.  This is proven as the following
 theorem:</p>
 
-@(thm no-duplicatesp-equal-of-append-domains-of-vl-module-wirealist)"
+@(thm no-duplicatesp-equal-of-append-alist-vals-of-vl-module-wirealist)"
 
   (defund vl-module-wirealist (x warnings)
     (declare (xargs :guard (and (vl-module-p x)
@@ -965,7 +965,7 @@ theorem:</p>
   (memoize 'vl-module-wirealist))
 
 
-(defsection no-duplicatesp-equal-of-append-domains-of-vl-module-wirealist
+(defsection no-duplicatesp-equal-of-append-alist-vals-of-vl-module-wirealist
 
   (defthm equal-of-cons-rewrite
     (equal (equal (cons a b) x)
@@ -973,9 +973,10 @@ theorem:</p>
                 (equal (car x) a)
                 (equal (cdr x) b))))
 
-  (local (defthm append-domains-removal
-           (equal (append-domains x)
-                  (flatten (strip-cdrs x)))))
+  (local (defthm append-alist-vals-removal
+           (equal (append-alist-vals x)
+                  (flatten (strip-cdrs x)))
+           :hints(("Goal" :induct (len x)))))
 
   (local
    (defsection regdecls
@@ -1175,10 +1176,10 @@ theorem:</p>
 
   (local (in-theory (enable vl-module-wirealist)))
 
-  (defthm no-duplicatesp-equal-of-append-domains-of-vl-module-wirealist
+  (defthm no-duplicatesp-equal-of-append-alist-vals-of-vl-module-wirealist
     (implies (vl-module-p x)
              (let ((walist (mv-nth 2 (vl-module-wirealist x warnings))))
-               (no-duplicatesp-equal (append-domains walist))))))
+               (no-duplicatesp-equal (append-alist-vals walist))))))
 
 
 

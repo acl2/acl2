@@ -216,7 +216,7 @@ output is X.</p>"
                               ret))
 
               ;; Also filter the sigs down to just the bits we need.
-              (keep-bits (vl::append-domains out-usersyms))
+              (keep-bits (vl::append-alist-vals out-usersyms))
               (sigs      (b* ((tmp (make-fal sigs nil))
                               (ret (fal-extract keep-bits tmp)))
                            (fast-alist-free tmp)

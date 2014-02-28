@@ -31,6 +31,8 @@
 (include-book "alistp")
 (include-book "alist-keys")
 (include-book "alist-vals")
+(include-book "append-alist-keys")
+(include-book "append-alist-vals")
 (include-book "alist-equiv")
 (include-book "alists-compatible")
 (include-book "fal-extract")

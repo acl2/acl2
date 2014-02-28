@@ -657,9 +657,12 @@ the size of @('$random') as 32.</p>"
                          :vl-syscall :vl-funcall :vl-mintypmax :vl-hid-dot
                          :vl-array-index :vl-index :vl-scope
 
+                         ;; Eventually many of these may be worth considering...
                          :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
                          :vl-stream-left :vl-stream-right
                          :vl-stream-left-sized :vl-stream-right-sized
+
+                         :vl-tagged
 
                          :vl-binary-wildeq :vl-binary-wildneq
                          :vl-implies :vl-equiv
@@ -1086,6 +1089,7 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                   :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
                   :vl-stream-left :vl-stream-right
                   :vl-stream-left-sized :vl-stream-right-sized
+                  :vl-tagged
                   )
      ;; We don't handle these here.  They should be handled in
      ;; vl-expr-selfsize specially, because unlike all of the other
@@ -1745,6 +1749,7 @@ produce unsigned values.</li>
                      :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
                      :vl-stream-left :vl-stream-right
                      :vl-stream-left-sized :vl-stream-right-sized
+                     :vl-tagged
                      )
           ;; Should have handled these above.
           (mv warnings nil))
@@ -4018,6 +4023,7 @@ context-determined expressions."
                     :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
                     :vl-stream-left :vl-stream-right
                     :vl-stream-left-sized :vl-stream-right-sized
+                    :vl-tagged
                     )
         (b* ((w (make-vl-warning
                  :type :vl-unsupported

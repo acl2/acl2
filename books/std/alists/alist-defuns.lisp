@@ -28,6 +28,8 @@
 (local (include-book "hons-rassoc-equal"))
 (local (include-book "fal-extract"))
 (local (include-book "fal-extract-vals"))
+(local (include-book "append-alist-keys"))
+(local (include-book "append-alist-vals"))
 (set-enforce-redundancy t)
 
 (defund alist-keys (x)
@@ -139,3 +141,53 @@
        :exec
        (with-fast-alist al
          (fal-extract-vals1 keys al))))
+
+(defund append-alist-vals-exec (x acc)
+  (declare (xargs :guard t))
+  (mbe :logic
+       (if (atom x)
+           acc
+         (append-alist-vals-exec (cdr x)
+                                 (revappend (cdar x) acc)))
+       :exec
+       (cond ((atom x)
+              acc)
+             ((atom (car x))
+              (append-alist-vals-exec (cdr x) acc))
+             (t
+              (append-alist-vals-exec (cdr x)
+                                      (revappend-without-guard (cdar x) acc))))))
+
+(defund append-alist-vals (x)
+  (declare (xargs :guard t))
+  (mbe :logic
+       (if (atom x)
+           nil
+         (append (cdar x) (append-alist-vals (cdr x))))
+       :exec
+       (reverse (append-alist-vals-exec x nil))))
+
+(defund append-alist-keys-exec (x acc)
+  (declare (xargs :guard t))
+  (mbe :logic
+       (if (atom x)
+           acc
+         (append-alist-keys-exec (cdr x)
+                                 (revappend (caar x) acc)))
+       :exec
+       (cond ((atom x)
+              acc)
+             ((atom (car x))
+              (append-alist-keys-exec (cdr x) acc))
+             (t
+              (append-alist-keys-exec (cdr x)
+                                      (revappend-without-guard (caar x) acc))))))
+
+(defund append-alist-keys (x)
+  (declare (xargs :guard t))
+  (mbe :logic
+       (if (atom x)
+           nil
+         (append (caar x) (append-alist-keys (cdr x))))
+       :exec
+       (reverse (append-alist-keys-exec x nil))))

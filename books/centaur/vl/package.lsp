@@ -138,6 +138,10 @@
       alist-equiv
       sub-alistp
       hons-rassoc-equal
+      append-alist-keys
+      append-alist-keys-exec
+      append-alist-vals
+      append-alist-vals-exec
 
       autohide
       autohide-delete
