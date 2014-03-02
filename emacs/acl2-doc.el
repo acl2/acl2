@@ -277,7 +277,7 @@ then restart the ACL2-Doc browser to view that manual."
   "ACL2-Doc"
   "Major mode for acl2-doc buffer."
 
-; By using lisp-mode-syntax-tablee, we arrange that the use of colon
+; By using lisp-mode-syntax-table, we arrange that the use of colon
 ; (:) doesn't break up an s-expression.  So for example,
 ; ACL2-PC::REWRITE is a single s-expression.  This matters because we
 ; define the function acl2-doc-topic-at-point in terms of
@@ -325,6 +325,17 @@ then restart the ACL2-Doc browser to view that manual."
   (set-buffer-modified-p nil)
   (force-mode-line-update))
 
+(defun acl2-doc-display-message (entry)
+  (let ((name (car (cdr entry)))
+	(manual-name (if (eq (acl2-doc-state-top-name) 'ACL2)
+			 "ACL2 User's"
+		       "acl2+books combined")))
+    (push name *acl2-doc-all-topics-rev*)
+    (if (eq (acl2-doc-state-top-name) name)
+	(message "At the top node of the %s manual"
+		 manual-name)
+      (message "Topic: %s (%s manual)" name manual-name))))
+
 (defun acl2-doc-display-basic (entry)
 
 ;;; Entry is a history entry, hence of the form (point name parents
@@ -336,18 +347,11 @@ then restart the ACL2-Doc browser to view that manual."
   (switch-to-acl2-doc-buffer)
   (setq buffer-read-only nil)
   (erase-buffer)
-  (acl2-doc-print-topic (cdr entry))	; entry is (cons position tuple)
+  (acl2-doc-print-topic (cdr entry))  ; entry is (cons position tuple)
   (setq buffer-read-only t)
   (goto-char (nth 0 entry))
-  (let ((name (car (cdr entry)))
-	(manual-name (if (eq (acl2-doc-state-top-name) 'ACL2)
-			 "ACL2 User's"
-		       "acl2+books combined")))
-    (push name *acl2-doc-all-topics-rev*)
-    (if (eq (acl2-doc-state-top-name) name)
-	(message "At the top node of the %s manual"
-		 manual-name)
-      (message "Topic: %s (%s manual)" name manual-name))))
+  (push (car (cdr entry)) *acl2-doc-all-topics-rev*)
+  (acl2-doc-display-message entry))
 
 (defun acl2-doc-display (name)
 
@@ -469,6 +473,14 @@ then restart the ACL2-Doc browser to view that manual."
   "Go to the specified topic; performs completion."
 
   (interactive (acl2-doc-completing-read "Go to topic" nil))
+  (acl2-doc-display name))
+
+(defun acl2-doc-go-from-anywhere (name)
+
+  "Go to the specified topic even if not within ACL2-Doc; performs completion."
+
+  (interactive (with-syntax-table lisp-mode-syntax-table
+		 (acl2-doc-completing-read "Go to topic" nil)))
   (acl2-doc-display name))
 
 (defun acl2-doc-go! ()
@@ -732,7 +744,13 @@ from the previous `i' command."
 	   ;; The first two assignments are redundant if continue-p is true.
 	   (setq *acl2-doc-search-string* str)
 	   (setq *acl2-doc-search-regexp-p* regexp-p)
-	   (acl2-doc-display (intern (cdr pair)))
+	   (let ((topic (intern (cdr pair))))
+	     (cond
+	      ((and (equal (buffer-name) *acl2-doc-buffer-name*)
+		    *acl2-doc-history*
+		    (eq topic (car (cdr (car *acl2-doc-history*)))))
+	       (acl2-doc-display-message (car *acl2-doc-history*)))
+	      (t (acl2-doc-display topic))))
 	   (goto-char (car pair))
 	   (acl2-doc-update-top-history-entry))
 	  (continue-p (with-current-buffer
@@ -854,20 +872,6 @@ ACL2-Doc browser."
   (interactive)
   (acl2-doc-go 'ACL2-DOC))
 
-(defun control-x-a-a-deprecated ()
-  (interactive)
-  (error "Use Control-t g to start the ACL2-Doc browser."))
-
-(defun control-x-a-A-deprecated ()
-  (interactive)
-  (error
-   "Use Control-t g to start the ACL2-Doc browser and then
-I if you want to initialize."))
-
-(defun control-t-G-deprecated ()
-  (interactive)
-  (error "Use Control-t . to go to a browser topic."))
-
 (when (not (boundp 'ctl-t-keymap))
 
 ; Warning: Keep this in sync with the introduction of ctl-t-keymap in
@@ -888,25 +892,7 @@ I if you want to initialize."))
   )
 
 (define-key global-map "\C-tg" 'acl2-doc)
-; We originally bound \C-tG and \C-t\C-G to acl2-doc-go! and
-; acl2-doc-go, respectively.  But it seems more intuitive just to use
-; \C-t. (in analogy to meta-.).  We can probably eliminate the two
-; deprecated keys, along with (of course) the definition of
-; control-t-G-deprecated, after January 2014.
-(define-key global-map "\C-t." 'acl2-doc-go)
-(define-key global-map "\C-tG" 'control-t-G-deprecated)
-(define-key global-map "\C-t\C-G" 'control-t-G-deprecated)
-
-; An early version of ACL2-Doc (from late 2013) used \C-Xaa to get to
-; the browser instead of \C-tg.  We bind that key (and a related one,
-; \C-XaA), if not already bound, as a courtesy to early adopters of
-; ACL2-Doc.  After the release of v6-4 we should probably eliminate
-; these forms as well as the definitions of the two "-deprecated"
-; functions.
-(when (not (key-binding "\C-Xaa"))
-  (define-key global-map "\C-Xaa" 'control-x-a-a-deprecated))
-(when (not (key-binding "\C-XaA"))
-  (define-key global-map "\C-XaA" 'control-x-a-A-deprecated))
+(define-key global-map "\C-t." 'acl2-doc-go-from-anywhere)
 
 (define-key acl2-doc-mode-map "g" 'acl2-doc-go)
 (define-key acl2-doc-mode-map "\C-M" 'acl2-doc-go!)
