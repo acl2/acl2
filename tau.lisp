@@ -7061,6 +7061,15 @@
 ; Wrld must be the ACL2 logial world, not some user-defined world.  We store
 ; val as the property prop of sym unless it is already stored there.
 
+; The following theorem (proved after calling verify-termination on the two
+; putprop-xxx functions) specifies the relationship between this function and
+; putprop-unless.
+
+;   (thm (equal (putprop-if-different sym prop val wrld)
+;               (let ((exception (getprop sym prop *acl2-property-unbound*
+;                                         'current-acl2-world wrld)))
+;                 (putprop-unless sym prop val exception wrld))))
+
   (if (equal (getprop sym prop *acl2-property-unbound*
                       'current-acl2-world wrld)
              val)
