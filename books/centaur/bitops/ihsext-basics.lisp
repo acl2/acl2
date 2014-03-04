@@ -129,7 +129,8 @@ off looking at the source code.</p>")
 (defsection bit-ops
 
   (local (in-theory (enable b-eqv b-nand b-nor b-andc1 b-andc2 b-orc1 b-orc2
-                            bfix b-not b-and b-ior b-xor bitp)))
+                            bfix b-not b-and b-ior b-xor bitp
+                            bit->bool)))
 
   ;; expand this to other bitops or canonicalize to these four?
   ;; b-eqv b-nand b-nor b-andc1 b-andc2 b-orc1 b-orc2
@@ -196,7 +197,11 @@ off looking at the source code.</p>")
 
   (defthm b-not-equal-0
     (equal (equal 0 (b-not x))
-           (equal 1 x))))
+           (bit->bool x)))
+
+  (defthm bit->bool-of-b-not
+    (equal (bit->bool (b-not x))
+           (not (bit->bool x)))))
 
 
 
@@ -512,7 +517,7 @@ off looking at the source code.</p>")
 
   (defthm logcons-posp-2
     (implies (and (natp x)
-                  (equal b 1))
+                  (bit->bool b))
              (posp (logcons b x)))
     :rule-classes :type-prescription)
 
@@ -587,7 +592,7 @@ off looking at the source code.</p>")
     ;; type restrictions.
     (equal (logbitp pos i)
            (cond ((zp pos)
-                  (equal (logcar i) 1))
+                  (bit->bool (logcar i)))
                  (t
                   (logbitp (1- pos) (logcdr i)))))
     :hints(("Goal" :use ((:instance logbitp*
@@ -603,7 +608,7 @@ off looking at the source code.</p>")
 
   (defun logbitp-ind (pos i)
     (if (zp pos)
-        (= (logcar i) 1)
+        (bit->bool (logcar i))
       (logbitp-ind (1- pos) (logcdr i))))
 
   (defthmd logbitp-induct
@@ -619,7 +624,7 @@ off looking at the source code.</p>")
   (defthm logbitp-of-logcons
     (equal (logbitp pos (logcons b i))
            (if (zp pos)
-               (= b 1)
+               (bit->bool b)
              (logbitp (1- pos) i)))
     :hints (("goal" :expand ((logbitp pos (logcons b i))))))
 
@@ -628,7 +633,7 @@ off looking at the source code.</p>")
   (defthm logbitp-0-of-bit
     (implies (bitp b)
              (equal (logbitp 0 b)
-                    (equal b 1))))
+                    (bit->bool b))))
 
   (defthm logbitp-nonzero-of-bit
     (implies (and (bitp b)
@@ -1106,7 +1111,7 @@ off looking at the source code.</p>")
 
   (defthm logbitp-of-lognot
     (equal (logbitp a (lognot x))
-           (equal 1 (b-not (logbit a x))))
+           (not (logbitp a x)))
     :hints (("goal" :induct (logbitp a x)
              :in-theory (enable b-not))))
 
@@ -1289,8 +1294,8 @@ off looking at the source code.</p>")
 
   (defthm logbitp-of-logand
     (equal (logbitp a (logand x y))
-           (equal 1 (b-and (logbit a x)
-                           (logbit a y))))
+           (bit->bool (b-and (logbit a x)
+                             (logbit a y))))
     :hints(("Goal" :induct (and (logbitp a x)
                                 (logbitp a y))
             :in-theory (enable bool->bit b-and))))
@@ -1378,7 +1383,7 @@ off looking at the source code.</p>")
              (natp (logand x y)))
     :rule-classes :type-prescription)
 
-    (defthm associativity-of-logand
+  (defthm associativity-of-logand
     (equal (logand (logand a b) c)
            (logand a b c))
     :hints (("goal" :induct (logcdr-3-ind a b c)
@@ -1488,8 +1493,8 @@ off looking at the source code.</p>")
 
   (defthm logbitp-of-logior
     (equal (logbitp a (logior x y))
-           (equal 1 (b-ior (logbit a x)
-                           (logbit a y))))
+           (bit->bool (b-ior (logbit a x)
+                             (logbit a y))))
     :hints(("Goal" :induct (and (logbitp a x)
                                 (logbitp a y))
             :in-theory (enable bool->bit b-ior))))
@@ -1701,8 +1706,8 @@ off looking at the source code.</p>")
 
   (defthm logbitp-of-logxor
     (equal (logbitp a (logxor x y))
-           (equal 1 (b-xor (logbit a x)
-                           (logbit a y))))
+           (bit->bool (b-xor (logbit a x)
+                             (logbit a y))))
     :hints (("goal" :induct (and (logbitp a x)
                                  (logbitp a y))
              :in-theory (enable b-xor))))
@@ -2637,9 +2642,8 @@ off looking at the source code.</p>")
   (defthmd signed-byte-p**
     (equal (signed-byte-p bits x)
            (and (integerp x)
-                (natp bits)
-                (cond ((= bits 0) nil)
-                      ((= bits 1) (or (= x 0) (= x -1)))
+                (posp bits)
+                (cond ((= bits 1) (or (= x 0) (= x -1)))
                       (t (signed-byte-p (1- bits) (logcdr x))))))
     :rule-classes ((:definition
                     :clique (signed-byte-p)
@@ -2652,9 +2656,8 @@ off looking at the source code.</p>")
 
   (defun signed-byte-p-ind (bits x)
     (and (integerp x)
-         (natp bits)
-         (cond ((= bits 0) nil)
-               ((= bits 1) (or (= x 0) (= x -1)))
+         (posp bits)
+         (cond ((= bits 1) (or (= x 0) (= x -1)))
                (t (signed-byte-p-ind (1- bits) (logcdr x))))))
 
   (defthm signed-byte-p-induct
@@ -3014,20 +3017,20 @@ off looking at the source code.</p>")
   ;; (add-to-ruleset ihsext-basic-thms '(logext-of-nfix logext-of-ifix))
 
   (defthm logext-of-0-i-when-logcar-1
-    (implies (equal (logcar i) 1)
+    (implies (bit->bool (logcar i))
              (equal (logext 0 i) -1))
     :hints(("Goal" :in-theory (enable logapp**))))
 
   (defthm logext-of-0-i-when-logcar-0
-    (implies (equal (logcar i) 0)
+    (implies (not (bit->bool (logcar i)))
              (equal (logext 0 i) 0)))
 
   (defthm logext-of-1-i-when-logcar-1
-    (implies (equal (logcar i) 1)
+    (implies (bit->bool (logcar i))
              (equal (logext 1 i) -1)))
 
   (defthm logext-of-1-i-when-logcar-0
-    (implies (equal (logcar i) 0)
+    (implies (not (bit->bool (logcar i)))
              (equal (logext 1 i) 0)))
 
   (defthm logext-of-sz-0
@@ -3041,7 +3044,7 @@ off looking at the source code.</p>")
     (equal (logext size i)
            (cond ((or (zp size)
                       (= size 1))
-                  (if (= (logcar i) 1) -1 0))
+                  (if (bit->bool (logcar i)) -1 0))
                  (t (logcons (logcar i)
                              (logext (1- size) (logcdr i))))))
     :hints(("Goal" :in-theory (disable logext)
@@ -3059,7 +3062,7 @@ off looking at the source code.</p>")
     (declare (xargs :measure (nfix size)))
     (cond ((or (zp size)
                (= size 1))
-           (if (= (logcar i) 1) -1 0))
+           (if (bit->bool (logcar i)) -1 0))
           (t (logcons (logcar i)
                       (logext-ind (1- size) (logcdr i))))))
 
@@ -3124,7 +3127,7 @@ off looking at the source code.</p>")
     (equal (bitmaskp i)
            (cond ((zip i) t)
                  ((= i -1) nil)
-                 (t (and (equal 1 (logcar i))
+                 (t (and (bit->bool (logcar i))
                          (bitmaskp (logcdr i))))))
     :hints(("Goal" :in-theory (e/d* (ihsext-inductions
                                      logmaskp*

@@ -133,16 +133,17 @@
 
 (defthm bfix-equal-0
   (equal (equal 0 (bfix x))
-         (not (equal x 1))))
+         (not (bit->bool x)))
+  :hints(("Goal" :in-theory (enable bit->bool))))
 
 (defthm bfix-equal-1
   (equal (equal 1 (bfix x))
-         (equal x 1)))
+         (bit->bool x))
+  :hints(("Goal" :in-theory (enable bit->bool))))
 
 (defthm bfix-when-not-1
   (implies (not (equal x 1))
            (equal (bfix x) 0)))
-
 
 
 (local (in-theory (enable negp)))
@@ -315,9 +316,35 @@
            (bit-equiv x y))
   :rule-classes :forward-chaining)
 
+(defthm equal-bit->bool-foward-to-bit-equiv
+  (implies (and (equal (bit->bool x) y)
+                (syntaxp (not (and (consp y)
+                                   (eq (car y) 'bit->bool)))))
+           (bit-equiv x (bool->bit y)))
+  :hints(("Goal" :in-theory (enable bit->bool)))
+  :rule-classes :forward-chaining)
+
+(defthm equal-bit->bool-foward-to-bit-equiv-both
+  (implies (equal (bit->bool x) (bit->bool y))
+           (bit-equiv x y))
+  :hints(("Goal" :in-theory (enable bit->bool)))
+  :rule-classes :forward-chaining)
+
 (defthm not-equal-1-forward-to-bit-equiv
   (implies (not (equal x 1))
            (bit-equiv x 0))
+  :rule-classes :forward-chaining)
+
+(defthm not-bit->bool-forward-to-bit-equiv-0
+  (implies (not (bit->bool x))
+           (bit-equiv x 0))
+  :hints(("Goal" :in-theory (enable bit->bool)))
+  :rule-classes :forward-chaining)
+
+(defthm bit->bool-forward-to-equal-1
+  (implies (bit->bool x)
+           (equal x 1))
+  :hints(("Goal" :in-theory (enable bit->bool)))
   :rule-classes :forward-chaining)
 
 
@@ -414,6 +441,8 @@
     equal-nfix-foward-to-nat-equiv-both
     equal-bfix-foward-to-bit-equiv
     equal-bfix-foward-to-bit-equiv-both
+    equal-bit->bool-foward-to-bit-equiv
+    equal-bit->bool-foward-to-bit-equiv-both
     not-equal-1-forward-to-bit-equiv
     ; inequality-with-nfix-forward-to-natp-1
     ; inequality-with-nfix-forward-to-natp-2
@@ -475,6 +504,11 @@
 (defthmd equal-of-bfixes
   (equal (equal (bfix a) (bfix b))
          (bit-equiv a b)))
+
+(defthmd equal-of-bit->bools
+  (equal (equal (bit->bool a) (bit->bool b))
+         (bit-equiv a b))
+  :hints(("Goal" :in-theory (enable bit->bool))))
 
 ;; (in-theory (disable int-equiv nat-equiv bit-equiv))
 
@@ -594,7 +628,7 @@
 (encapsulate
   ()
 
-  (local (in-theory (enable bool->bit)))
+  (local (in-theory (enable bool->bit bit->bool)))
 
   ;; (bit->bool x) would just be the same as (equal x 1).  So we just use this
   ;; as our bit->bool.
@@ -603,8 +637,16 @@
     (iff (equal 1 (bool->bit x))
          x))
 
+  (defthm bit->bool-of-bool->bit
+    (equal (bit->bool (bool->bit x))
+           (not (not x))))
+
   (defthm bool->bit-of-equal-1
     (equal (bool->bit (equal 1 x))
+           (bfix x)))
+
+  (defthm bool->bit-of-bit->bool
+    (equal (bool->bit (bit->bool x))
            (bfix x)))
 
   (defthm bool->bit-of-not
@@ -623,8 +665,51 @@
 
   (defthm bool->bit-equal-0
     (equal (equal (bool->bit x) 0)
-           (not x))))
+           (not x)))
 
+  (defthm bfix-when-bit->bool
+    (implies (bit->bool x)
+             (equal (bfix x) 1))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+  (defthm bfix-when-not-bit->bool
+    (implies (not (bit->bool x))
+             (equal (bfix x) 0))
+    :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+
+(defsection bitops-in-terms-of-bit->bool
+  (local (in-theory (enable bit->bool b-not b-and b-ior b-xor)))
+
+  ;; These rules can be enabled to allow case-splitting on some
+  ;; bit->bool occurrences.
+  (defthmd bfix-in-terms-of-bit->bool
+    (equal (bfix x)
+           (if (bit->bool x) 1 0))
+    :hints(("Goal" :in-theory (enable bfix))))
+
+
+  (defthmd b-not-in-terms-of-bit->bool
+    (equal (b-not x)
+           (if (bit->bool x) 0 1))
+    :hints(("Goal" :in-theory (enable bfix))))
+
+  (defthmd b-and-in-terms-of-bit->bool
+    (equal (b-and x y)
+           (if (bit->bool x) (bfix y) 0))
+    :hints(("Goal" :in-theory (enable bfix))))
+
+  (defthmd b-ior-in-terms-of-bit->bool
+    (equal (b-ior x y)
+           (if (bit->bool x) 1 (bfix y)))
+    :hints(("Goal" :in-theory (enable bfix))))
+
+  (defthmd b-xor-in-terms-of-bit->bool
+    (equal (b-xor x y)
+           (if (bit->bool x)
+               (b-not y)
+             (bfix y)))
+    :hints(("Goal" :in-theory (enable bfix)))))
 
 
 

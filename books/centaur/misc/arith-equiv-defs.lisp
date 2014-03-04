@@ -121,6 +121,40 @@
     (declare (xargs :guard t))
     (if x 1 0)))
 
+(defsection bit->bool
+  :parents (arith-equivs)
+  :short "Coerce a bit into a Boolean."
+  :long "<p>This is just @('(equal 1 x)').  However, using a function for this
+allows us to use congruences and to control case-splitting.  For example, if we
+have
+@({
+  (equal (equal 1 (foo x))
+         (equal 1 (bar y)))
+})
+this will case split into:
+@({
+  (if (equal 1 (foo x))
+      (equal 1 (bar y))
+    (not (equal 1 (bar y))))
+})
+whereas
+@({
+ (equal (bit->bool (foo x)) (bit->bool (bar y)))
+})
+will not.</p>
+
+<p>Because a bunch of libraries were written under the assumption that
+@('(equal 1 x)') was the way to tell if a bit was true or false, we leave this
+enabled by default.</p>"
+
+  (defun-inline bit->bool (x)
+    (declare (xargs :guard t))
+    (equal 1 x))
+
+  (defcong bit-equiv equal (bit->bool a) 1))
+
+
+
 
 (defsection negp
   :parents (arith-equivs)
