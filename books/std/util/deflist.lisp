@@ -25,7 +25,6 @@
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
 (include-book "tools/bstar" :dir :system)
-(include-book "std/strings/defs-program" :dir :system)
 (include-book "std/osets/top" :dir :system)
 (include-book "defsort/duplicated-members" :dir :system)
 (include-book "std/lists/sets" :dir :system)
@@ -569,7 +568,8 @@ of which recognizers require true-listp and which don't.</p>")
 
        (short (or short
                   (and parents
-                       (str::cat "@(call " (symbol-name name)
+                       (concatenate
+                        'string "@(call " (symbol-name name)
                                  ") recognizes lists where every element "
                                  (if negatedp
                                      "is rejected by "
