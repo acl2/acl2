@@ -24,6 +24,7 @@
 
 (in-package "STD")
 (include-book "deflist")
+(include-book "std/strings/defs-program" :dir :system)
 (include-book "std/lists/append" :dir :system)
 (set-state-ok t)
 

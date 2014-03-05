@@ -20,7 +20,7 @@
 
 (in-package "STD")
 (include-book "deflist")
-
+(include-book "std/strings/defs-program" :dir :system)
 (defxdoc defmvtypes
   :parents (std/util)
   :short "Introduce type-prescription rules for a function that returns

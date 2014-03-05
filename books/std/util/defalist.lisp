@@ -20,6 +20,7 @@
 
 (in-package "STD")
 (include-book "deflist")
+(include-book "std/strings/defs-program" :dir :system)
 (include-book "misc/hons-help" :dir :system)
 
 (defxdoc defalist
