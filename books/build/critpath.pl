@@ -148,7 +148,7 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 my $cache = {};
 $cache = retrieve_cache($cache_file);
 
-my %tscache = ();
+my $depdb = new Depdb( evcache => $cache );
 
 push (@user_targets, @ARGV);
 
@@ -158,7 +158,6 @@ if (!$options_okp || $OPTIONS{"help"})
     exit ($OPTIONS{"help"} ? 0 : 1);
 }
 
-my %deps = ();
 my $costs = {};
 my $warnings = [];
 
@@ -185,8 +184,9 @@ foreach my $target (@user_targets) {
 foreach my $top (@deps_of) {
     my $path = canonical_path(to_source_name($top));
     if ($path) {
-	my ($certdeps) = find_deps($path, $cache, \%tscache, 0);
-	push (@targets, @{$certdeps});
+	my $certinfo = find_deps($path, $depdb, 0);
+	push (@targets, @{$certinfo->bookdeps});
+	push (@targets, @{$certinfo->portdeps});
     } else {
 	print "Warning: bad path in --deps-of/-p $top\n";
     }
@@ -198,11 +198,9 @@ unless (@targets) {
     exit 1;
 }
 
-my %sourcehash = ();
-my %otherhash = ();
 foreach my $target (@targets) {
     if ($target =~ /\.cert/) {
-	add_deps($target, $cache, \%deps, \%sourcehash, \%otherhash, \%tscache, 0);
+	add_deps($target, $depdb, 0);
     }
 }
 
@@ -211,7 +209,7 @@ if ($params_file && open (my $params, "<", $params_file)) {
 	my @parts = $pline =~ m/([^:]*):(.*)/;
 	if (@parts) {
 	    my ($certname, $paramstr) = @parts;
-	    my $certpars = cert_get_params($certname, \%deps);
+	    my $certpars = cert_get_params($certname, $depdb);
 	    if ($certpars) {
 		my $passigns = parse_params($paramstr);
 		foreach my $pair (@$passigns) {
@@ -230,7 +228,7 @@ if ($OPTIONS{'costs_file'}) {
     $basecosts = retrieve($OPTIONS{'costs_file'});
 } else {
     $basecosts = {};
-    read_costs(\%deps, $basecosts, $warnings, $OPTIONS{'real'}, $OPTIONS{'pcert'});
+    read_costs($depdb, $basecosts, $warnings, $OPTIONS{'real'}, $OPTIONS{'pcert'});
     print "done read_costs\n" if $debug;
 }
 
@@ -245,17 +243,17 @@ if ($OPTIONS{'write_costs'}) {
 }
 
 
-compute_cost_paths(\%deps, $basecosts, $costs, $warnings, $OPTIONS{'pcert'});
+compute_cost_paths($depdb, $basecosts, $costs, $warnings, $OPTIONS{'pcert'});
 print "done compute_cost_paths\n" if $debug;
 
 print "costs: " .  $costs . "\n" if $debug;
 
 (my $topbook, my $topbook_cost) = find_most_expensive(\@targets, $costs);
 
-my $savings = compute_savings($costs, $basecosts, \@targets, $debug, \%deps, $OPTIONS{'pcert'}); 
+my $savings = compute_savings($costs, $basecosts, \@targets, $debug, $depdb, $OPTIONS{'pcert'}); 
 
 
-	# ($costs, $warnings) = make_costs_table($target, \%deps, $costs, $warnings, $OPTIONS{"short"});
+	# ($costs, $warnings) = make_costs_table($target, $depdb, $costs, $warnings, $OPTIONS{"short"});
 
 
 

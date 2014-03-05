@@ -31,6 +31,24 @@ use File::Spec;
 use Storable qw(nstore retrieve);
 use Cwd 'abs_path';
 
+# info about a book:
+use Class::Struct Certinfo => [ bookdeps => '@',        # books included by this one
+				portdeps => '@',        # books included in the portcullis
+				srcdeps => '@',         # source dependencies (.lisp, .acl2)
+				otherdeps => '@',       # from depends_on forms
+				image => '$',           # acl2, or from book.image/cert.image
+				params => '%',          # cert_param entries
+				include_dirs => '%',    # add-include-book-dir(!) forms
+				rec_visited => '%' ];   # already seen files for depends_rec
+
+# database:
+use Class::Struct Depdb => [ evcache => '%',   # event cache for src files
+			     certdeps => '%',  # certinfo for each book
+			     sources => '%',   # set of source files
+			     others  => '%',   # set of non-book dependency files
+			     stack => '@',     # add_deps traversal stack
+			     tscache => '%' ]; # cache of src file timestamps
+
 my $cache_version_code = 5;
 
 # Note: for debugging you can enable this use and then print an error message
@@ -253,53 +271,62 @@ sub cert_to_pcert1 {
     return $pcert;
 }
 
+
+# Ad hoc structure for data about a book: array with 7 entries --
+# 0. bookdeps -- books included by this one
+# 1. portdeps -- books included by the portcullis
+# 2. srcdeps  -- source files the book depends on (its .lisp file, .acl2 files)
+# 3. otherdeps -- from depends-on forms
+# 4. image -- default is acl2, or from book.image or cert.image file
+# 5. params -- table of cert_param entries
+# 6. include-dirs -- table of add-include-book-dir entries.
+
 sub cert_bookdeps {
-    my ($cert, $depmap) = @_;
-    my $entry = $depmap->{$cert};
-    return $entry ? $entry->[0] ? $entry->[0] : [] : [];
+    my ($cert, $depdb) = @_;
+    my $certinfo = $depdb->certdeps->{$cert};
+    return $certinfo ? $certinfo->bookdeps : [];
 }
 
 sub cert_portdeps {
-    my ($cert, $depmap) = @_;
-    my $entry = $depmap->{$cert};
-    return $entry ? $entry->[1] ? $entry->[1] : [] : [];
+    my ($cert, $depdb) = @_;
+    my $certinfo = $depdb->certdeps->{$cert};
+    return $certinfo ? $certinfo->portdeps : [];
 }
 
 sub cert_deps {
-    my ($cert, $depmap) = @_;
-    my $bookdeps = cert_bookdeps($cert, $depmap);
-    my $portdeps = cert_portdeps($cert, $depmap);
-    return [ @$bookdeps, @$portdeps ];
+    my ($cert, $depdb) = @_;
+    return [ @{cert_bookdeps($cert, $depdb)},
+	     @{cert_portdeps($cert, $depdb)} ];
 }
 
 sub cert_srcdeps {
-    my ($cert, $depmap) = @_;
-    my $entry = $depmap->{$cert};
-    return $entry && $entry->[2];
+    my ($cert, $depdb) = @_;
+    my $certinfo = $depdb->certdeps->{$cert};
+    return $certinfo ? $certinfo->srcdeps : [];
 }
 
 sub cert_otherdeps {
-    my ($cert, $depmap) = @_;
-    my $entry = $depmap->{$cert};
-    return $entry && $entry->[3];
+    my ($cert, $depdb) = @_;
+    my $certinfo = $depdb->certdeps->{$cert};
+    return $certinfo ? $certinfo->otherdeps : [];
 }
 
 sub cert_image {
-    my ($cert, $depmap) = @_;
-    my $entry = $depmap->{$cert};
-    return $entry && $entry->[4];
+    my ($cert, $depdb) = @_;
+    my $certinfo = $depdb->certdeps->{$cert};
+    return $certinfo && $certinfo->image;
 }
 
 sub cert_get_params {
-    my ($cert, $depmap) = @_;
-    my $entry = $depmap->{$cert};
-    return $entry && $entry->[5];
+    my ($cert, $depdb) = @_;
+    my $certinfo = $depdb->certdeps->{$cert};
+    return $certinfo ? $certinfo->params : {};
 }
 
 sub cert_get_param {
-    my ($cert, $depmap, $param) = @_;
-    my $params = cert_get_params($cert, $depmap);
-    return $params && $params->{$param};
+    my ($cert, $depdb, $param) = @_;
+    my $params = cert_get_params($cert, $depdb);
+    return $params->{$param};
 }
 
 sub cert_is_two_pass {
@@ -319,11 +346,16 @@ sub cert_sequential_dep {
     return $res;
 }
 
+sub cert_include_dirs {
+    my ($cert, $depdb) = @_;
+    my $certinfo = $depdb->certdeps->{$cert};
+    return $certinfo ? $certinfo->include_dirs : {};
+}
 
 sub read_costs {
     my ($deps, $basecosts, $warnings, $use_realtime, $pcert) = @_;
 
-    foreach my $certfile (keys %{$deps}) {
+    foreach my $certfile (keys %{$deps->certdeps}) {
 	if ($pcert) {
 	    my $pcert1file = cert_to_pcert1($certfile);
 	    $basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime, $pcert);
@@ -483,8 +515,7 @@ sub compute_cost_paths_aux {
 
 sub compute_cost_paths {
     my ($deps,$basecosts,$costs,$warnings,$pcert) = @_;
-    
-    foreach my $certfile (keys %{$deps}) {
+    foreach my $certfile (keys %{$deps->certdeps}) {
 	compute_cost_paths_aux($certfile, $deps, $basecosts, $costs, $warnings,$pcert);
     }
 }
@@ -784,7 +815,7 @@ sub get_add_dir {
     my ($base,$the_line,$events) = @_;
 
     # Check for ADD-INCLUDE-BOOK-DIR commands
-    my $regexp = "^[^;]*\\(add-include-book-dir[\\s]+:([^\\s]*)[\\s]*\"([^\"]*[^\"/])/?\"";
+    my $regexp = "^[^;]*\\(add-include-book-dir!?[\\s]+:([^\\s]*)[\\s]*\"([^\"]*[^\"/])/?\"";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
 	my $name = uc($res[0]);
@@ -1131,15 +1162,9 @@ my $src_deps_depth = -1;
 # (include-books, lds, etc.)
 sub src_deps {
     my ($fname,             # file to scan for dependencies
-	$cache,             # file event cache
-	$local_dirs,        # :dir name table
-	$certdeps,          # certificate dependency list (accumulator)
-	$srcdeps,           # source file dependency list (accumulator)
-	$recdeps,           # recursive include dependency list (accumulator)
-	$otherdeps,         # other file dependency list (accumulator)
-	$certparams,        # cert param hash (accumulator)
-	$tscache,           # timestamp cache
-	$ld_ok,             # Allow following LD commands
+	$depdb,             # dep database
+	$certinfo,          # certinfo accumulator
+	$portp,             # Allow following LD commands, and add books to port rather than bookdeps
 	$seen,              # seen table for detecting circular dependencies
 	$parent)            # file that required this one
 	= @_;
@@ -1155,16 +1180,17 @@ sub src_deps {
 
     $src_deps_depth = $src_deps_depth + 1;
     print "$src_deps_depth src_deps $fname\n"  if $debugging;
-    my $events = src_events($fname, $cache, $tscache, $parent);
+    my $events = src_events($fname, $depdb->evcache, $depdb->tscache, $parent);
     if ($debugging) {
 	print "events: $fname";
 	print_events($events);
     }
-    if (! ($believe_cache || $tscache->{$fname})) {
+    if (! ($believe_cache || $depdb->tscache->{$fname})) {
 	# The file doesn't exist.  We've already printed an error message.
 	return;
     }
-    push(@$srcdeps, $fname);
+    push(@{$certinfo->srcdeps}, $fname);
+    $depdb->sources->{$fname} = 1;
 
     foreach my $event (@$events) {
 	my $type = $event->[0];
@@ -1188,85 +1214,87 @@ sub src_deps {
 	    if (! $newdir) {
 		print "Bad path processing (add-include-book-dir :$name \"$dir\") in $fname\n";
 	    }
-	    $local_dirs->{$name} = $newdir;
-	    print "src_deps: add_dir $name $local_dirs->{$name}\n" if $debugging;
+	    $certinfo->include_dirs->{$name} = $newdir;
+	    print "src_deps: add_dir $name " . $certinfo->include_dirs->{$name} . "\n" if $debugging;
 	} elsif ($type eq $include_book_event) {
 	    my $bookname = $event->[1];
 	    my $dir = $event->[2];
 	    my $fullname = expand_dirname_cmd($bookname, $fname, $dir,
-					      $local_dirs,
+					      $certinfo->include_dirs,
 					      "include-book",
 					      ".cert");
 	    if (! $fullname) {
 		print "Bad path in (include-book \"$bookname\""
                       . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
+	    } else {
+		print "include-book fullname: $fullname\n" if $debugging;
+		if ($portp) {
+		    push(@{$certinfo->portdeps}, $fullname);
+		} else {
+		    push(@{$certinfo->bookdeps}, $fullname);
+		}
+		add_deps($fullname, $depdb, $fname);
+		my $book_certinfo = $depdb->certdeps->{$fullname};
+		if ($book_certinfo) {
+		    while (my ($kwd, $path) = each(%{$book_certinfo->include_dirs})) {
+			$certinfo->include_dirs->{$kwd} = $path;
+		    }
+		} else {
+		    # Presumably we've printed an error message already?
+		}
 	    }
-	    print "include-book fullname: $fullname\n" if $debugging;
-	    $fullname && push(@$certdeps, $fullname);
 	} elsif ($type eq $depends_on_event) {
 	    my $depname = $event->[1];
 	    my $dir = $event->[2];
 	    my $fullname = expand_dirname_cmd($depname, $fname, $dir,
-					      $local_dirs,
+					      $certinfo->include_dirs,
 					      "depends-on", "");
 	    if (! $fullname) {
 		print "Bad path in (depends-on \"$depname\""
                       . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
+	    } else {
+		push(@{$certinfo->otherdeps}, $fullname);
+		$depdb->others->{$fullname} = 1;
 	    }
-	    $fullname && push(@$otherdeps, $fullname);
 	} elsif ($type eq $depends_rec_event) {
 	    my $depname = $event->[1];
 	    my $dir = $event->[2];
 	    my $fullname = expand_dirname_cmd($depname, $fname, $dir,
-					      $local_dirs,
+					      $certinfo->include_dirs,
 					      "depends-rec", ".cert");
 	    if (! $fullname) {
 		print "Bad path in (depends-rec \"$depname\""
                       . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
+	    } else {
+		print "depends_rec $fullname\n" if $debugging;
+		add_deps($fullname, $depdb, $fname);
+		my @tmpcerts = ();
+		my @tmpothers = ();
+		deps_dfs($fullname, $depdb, $certinfo->rec_visited,
+			 $certinfo->srcdeps, \@tmpcerts, \@tmpothers);
 	    }
-	    $fullname && push(@$recdeps, $fullname);
 	} elsif ($type eq $loads_event) {
 	    my $srcname = $event->[1];
 	    my $dir = $event->[2];
 	    my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
-					      $local_dirs, "loads", "");
+					      $certinfo->include_dirs, "loads", "");
 	    if ($fullname) {
-		src_deps($fullname, $cache,
-			 $local_dirs,
-			 $certdeps,
-			 $srcdeps,
-			 $recdeps,
-			 $otherdeps,
-			 $certparams,
-			 $tscache,
-			 $ld_ok,
-			 $seen,
-			 $fname);
+		src_deps($fullname, $depdb, $certinfo, $portp, $seen, $fname);
 	    } else {
 		print "Bad path in (loads \"$srcname\""
 		    . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
 	    }
 	} elsif ($type eq $cert_param_event) {
 	    # print "cert_param: $fname, " . $event->[1] . " = " . $event->[2] . "\n";
-	    $certparams->{$event->[1]} = $event->[2];
+	    $certinfo->params->{$event->[1]} = $event->[2];
 	} elsif ($type eq $ld_event) {
-	    if ($ld_ok) {
+	    if ($portp) {
 		my $srcname = $event->[1];
 		my $dir = $event->[2];
 		my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
-						  $local_dirs, "ld", "");
+						  $certinfo->include_dirs, "ld", "");
 		if ($fullname) {
-		    src_deps($fullname, $cache,
-			     $local_dirs,
-			     $certdeps,
-			     $srcdeps,
-			     $recdeps,
-			     $otherdeps,
-			     $certparams,
-			     $tscache,
-			     $ld_ok,
-			     $seen,
-			     $fname);
+		    src_deps($fullname, $depdb, $certinfo, $portp, $seen, $fname);
 		} else {
 		    print "Bad path in (ld \"$srcname\""
 			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
@@ -1313,14 +1341,9 @@ sub remove_dups {
 # assume it's supposed to be a certifiable book, so we look for .acl2
 # and image files as well.  Calls src_deps to get the dependencies.
 sub find_deps {
-    my ($lispfile,$cache,$tscache,$parent) = @_;
+    my ($lispfile, $depdb, $parent) = @_;
 
-    my $bookdeps = [];
-    my $portdeps = [];
-    my $srcdeps = [];
-    my $recdeps = [];
-    my $otherdeps = [];
-    my $local_dirs = {};
+    my $certinfo = new Certinfo;
 
     # If this source file has a .lisp extension, we assume it's a
     # certifiable book and look for an .acl2 file.
@@ -1345,35 +1368,20 @@ sub find_deps {
 	# Scan the .acl2 file first so that we get the add-include-book-dir
 	# commands before the include-book commands.
 	if ($acl2file) {
-	    src_deps($acl2file, $cache,
-		     $local_dirs, 
-		     $portdeps,
-		     $srcdeps,
-		     $recdeps,
-		     $otherdeps,
-		     $certparams,
-		     $tscache,
-		     1,
-		     {}, $lispfile);
+	    src_deps($acl2file, $depdb, $certinfo, 1, {}, $lispfile);
 	}
     }
 
     # Scan the lisp file for include-books.
-    src_deps($lispfile, $cache, $local_dirs,
-	     $bookdeps, $srcdeps, $recdeps, $otherdeps, $certparams,
-	     $tscache, !$certifiable, {}, $parent);
+    src_deps($lispfile, $depdb, $certinfo, 0, {}, $parent);
 
     if ($debugging) {
 	print "find_deps $lispfile: bookdeps:\n";
-	print_lst($bookdeps);
-	print "portdeps:\n";
-	print_lst($portdeps);
+	print_lst($certinfo->bookdeps);
 	print "sources:\n";
-	print_lst($srcdeps);
-	print "rec:\n";
-	print_lst($recdeps);
+	print_lst($certinfo->srcdeps);
 	print "others:\n";
-	print_lst($otherdeps);
+	print_lst($certinfo->otherdeps);
     }
     
     my $image;
@@ -1396,7 +1404,7 @@ sub find_deps {
 	    my $imfilepath = canonical_path($imagefile);
 	    # Won't check the result of canonical_path because we're
 	    # already in the right directory.
-	    push(@{$otherdeps}, $imfilepath);
+	    push(@{$certinfo->otherdeps}, $imfilepath);
 	    my $line;
 	    if (open(my $im, "<", $imagefile)) {
 		$line = <$im>;
@@ -1405,11 +1413,11 @@ sub find_deps {
 	    } else {
 		print "Warning: find_deps: Could not open image file $imagefile: $!\n";
 	    }
-	    $image = $line;
+	    $certinfo->image($line);
 	}
     }
 
-    return ($bookdeps, $portdeps, $srcdeps, $recdeps, $otherdeps, $image, $certparams);
+    return $certinfo;
 
 }
 
@@ -1479,7 +1487,7 @@ sub propagate_reqparam {
 # If the target has been seen before, then it returns immediately.
 # Otherwise, this calls on find_deps to get those dependencies.
 sub add_deps {
-    my ($target,$cache,$depmap,$sources,$others,$tscache,$parent) = @_;
+    my ($target, $depdb, $parent) = @_;
 
     print "add_deps (check) $target\n" if $debugging;
 
@@ -1488,21 +1496,28 @@ sub add_deps {
 	return;
     }
 
-    if (exists $depmap->{$target}) {
-	# We've already calculated this file's dependencies.
+    if (exists $depdb->certdeps->{$target}) {
+	# We've already calculated this file's dependencies, or we're in a self-loop.
+	if ($depdb->certdeps->{$target} == 0) {
+	    print "Dependency loop on $target!\n";
+	    print "Current stack:\n";
+	    foreach my $book (@{$depdb->stack}) {
+		print "   $book\n";
+	    }
+	}
 	print "depmap entry exists\n" if $debugging;
 	return;
     }
 
     if (excludep($target)) {
-    	# $depmap->{$target} = [];
 	print "excludep\n" if $debugging;
     	return;
     }
 
+    $depdb->certdeps->{$target} = 0;
+
     print "add_deps $target\n" if $debugging;
 
-    my $local_dirs = {};
     (my $base = $target) =~ s/\.cert$//;
     my $lispfile = $base . ".lisp";
 
@@ -1562,34 +1577,41 @@ sub add_deps {
 	return;
     }
 
-    my ($bookdeps, $portdeps, $srcdeps, $recdeps, $otherdeps, $image, $certparams)
-	= find_deps($lispfile, $cache, $tscache, $parent);
+    # print "add_deps $target, current stack:\n";
+    # foreach my $book (@{$depdb->stack}) {
+    # 	print "   $book\n";
+    # }
+    # print "\n";
 
+    push (@{$depdb->stack}, $target);
 
-    $depmap->{$target} = [ $bookdeps, $portdeps, $srcdeps, $otherdeps, $image, $certparams ] ;
+    my $certinfo = find_deps($lispfile, $depdb, $parent);
+
+    my $topstack = pop(@{$depdb->stack});
+    if (! ($topstack eq $target) ) {
+	print "Stack discipline failed on $target! was $topstack\n";
+    }
+
+    $depdb->certdeps->{$target} = $certinfo ;
 
     if ($print_deps) {
 	print "Dependencies for $target:\n";
 	print "book:\n";
-	foreach my $dep (@$bookdeps) {
-	    print "$dep\n";
-	}
-	print "port:\n";
-	foreach my $dep (@$portdeps) {
+	foreach my $dep (@{$certinfo->bookdeps}) {
 	    print "$dep\n";
 	}
 	print "src:\n";
-	foreach my $dep (@{$srcdeps}) {
+	foreach my $dep (@{$certinfo->srcdeps}) {
 	    print "$dep\n";
 	}
 	print "other:\n";
-	foreach my $dep (@{$otherdeps}) {
+	foreach my $dep (@{$certinfo->otherdeps}) {
 	    print "$dep\n";
 	}
-	print "image: $image\n" if $image;
-	if ($certparams) {
+	print "image: " . $certinfo->image . "\n" if $certinfo->image;
+	if ($certinfo->certparams) {
 	    print "certparams: ";
-	    while (my ($key, $value) = each %$certparams) {
+	    while (my ($key, $value) = each %{$certinfo->certparams}) {
 		print "$key = $value";
 	    }
 	    print "\n";
@@ -1597,34 +1619,34 @@ sub add_deps {
 	print "\n";
     }
 
-    # Accumulate the set of sources.  We haven't checked yet if they exist.
-    foreach my $dep (@$srcdeps) {
-	$sources->{$dep} = 1;
-    }
+    # # Accumulate the set of sources.  We haven't checked yet if they exist.
+    # foreach my $dep (@$srcdeps) {
+    # 	$sources->{$dep} = 1;
+    # }
 
-    # Accumulate the set of non-source/cert deps..
-    foreach my $dep (@$otherdeps) {
-	$others->{$dep} = 1;
-    }
+    # # Accumulate the set of non-source/cert deps..
+    # foreach my $dep (@$otherdeps) {
+    # 	$others->{$dep} = 1;
+    # }
 
 
-    # Run the recursive add_deps on each dependency.
-    foreach my $dep  (@$bookdeps, @$portdeps, @$recdeps) {
-	add_deps($dep, $cache, $depmap, $sources, $others, $tscache, $target);
-    }
+    # # Run the recursive add_deps on each dependency.
+    # foreach my $dep  (@$bookdeps, @$portdeps, @$recdeps) {
+    # 	add_deps($dep, $cache, $depmap, $sources, $others, $tscache, $target);
+    # }
 
-    # Collect the recursive dependencies of @$recdeps and add them to srcdeps.
-    if (@$recdeps) {
-	my $recsrcs = [];
-	my $reccerts = [];
-	my $recothers = [];
-	my $visited = {};
-	foreach my $dep (@$recdeps) {
-	    deps_dfs($dep, $depmap, $visited, $recsrcs, $reccerts, $recothers);
-	}
+    # # Collect the recursive dependencies of @$recdeps and add them to srcdeps.
+    # if (@$recdeps) {
+    # 	my $recsrcs = [];
+    # 	my $reccerts = [];
+    # 	my $recothers = [];
+    # 	my $visited = {};
+    # 	foreach my $dep (@$recdeps) {
+    # 	    deps_dfs($dep, $depmap, $visited, $recsrcs, $reccerts, $recothers);
+    # 	}
 
-	push(@{$depmap->{$target}->[2]}, @$recsrcs);
-    }
+    # 	push(@{$depmap->{$target}->[2]}, @$recsrcs);
+    # }
 	
 }
 
@@ -1692,13 +1714,12 @@ sub to_cert_name {
 
 
 # Takes a list of inputs containing some filenames and some labels
-# and some entries of the form "-p filename".
-# (ending with a colon.)  Sorts out the filenames into a list of
-# targets (changing them to .cert extensions if necessary) and returns
-# the list of targets and a hash associating each label with its list
-# of targets.
+# (ending with a colon) and some entries of the form "-p filename".
+# Sorts out the filenames into a list of targets (changing them to
+# .cert extensions if necessary) and returns the list of targets and a
+# hash associating each label with its list of targets.
 sub process_labels_and_targets {
-    my ($input, $cache, $tscache) = @_;
+    my ($input, $depdb) = @_;
     my %labels = ();
     my @targets = ();
     my $label_started = 0;
@@ -1708,9 +1729,10 @@ sub process_labels_and_targets {
 	    # Deps-of.
 	    my $name = canonical_path(to_source_name(substr($str,3)));
 	    if ($name) {
-		my ($deps) = find_deps($name, $cache, $tscache, 0);
-		push (@targets, @$deps);
-		push (@$label_targets, @$deps) if $label_started;
+		my $certinfo = find_deps($name, $depdb, 0);
+		push (@targets, @{$certinfo->bookdeps});
+		push (@targets, @{$certinfo->portdeps});
+		push (@$label_targets, @{$certinfo->bookdeps}) if $label_started;
 	    } else {
 		print "Bad path for target: $str\n";
 	    }

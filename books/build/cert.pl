@@ -548,15 +548,11 @@ certlib_add_dir("SYSTEM", $acl2_books);
 my $acl2_books_env = path_export($acl2_books);
 $ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books_env;
 
-my %tscache = ();
+my $depdb = new Depdb(evcache => $cache);
 
-my ($targets_ref, $labels_ref) = process_labels_and_targets(\@user_targets, $cache, \%tscache);
+my ($targets_ref, $labels_ref) = process_labels_and_targets(\@user_targets, $depdb);
 my @targets = @$targets_ref;
 my %labels = %$labels_ref;
-
-my %depmap = ( );
-
-
 
 unless (@targets) {
     print "\nError: No targets provided.\n";
@@ -564,11 +560,8 @@ unless (@targets) {
     exit 1;
 }
 
-my %sourcehash = ( );
-my %otherhash = ( );
-
 foreach my $target (@targets) {
-    add_deps($target, $cache, \%depmap, \%sourcehash, \%otherhash, \%tscache, 0);
+    add_deps($target, $depdb, 0);
 }
 
 if ($params_file && open (my $params, "<", $params_file)) {
@@ -576,7 +569,7 @@ if ($params_file && open (my $params, "<", $params_file)) {
 	my @parts = $pline =~ m/([^:]*):(.*)/;
 	if (@parts) {
 	    my ($certname, $paramstr) = @parts;
-	    my $certpars = cert_get_params($certname, \%depmap);
+	    my $certpars = cert_get_params($certname, $depdb);
 	    if ($certpars) {
 		my $passigns = parse_params($paramstr);
 		foreach my $pair (@$passigns) {
@@ -591,7 +584,7 @@ if ($params_file && open (my $params, "<", $params_file)) {
 
 store_cache($cache, $cache_file);
 
-my @sources = sort(keys %sourcehash);
+my @sources = sort(keys %{$depdb->sources});
 
 # Is this how we want to nest these?  Pick a command, run it on
 # every source file, versus pick a source file, run every command?
@@ -602,14 +595,14 @@ foreach my $run (@run_sources) {
     }
 }
 
-my @certs = sort(keys %depmap);
+my @certs = sort(keys %{$depdb->certdeps});
 
 # Warn about books that include relocation stubs
 my %stubs = (); # maps stub files to the books that include them
 foreach my $cert (@certs) {
-    my $certdeps = cert_bookdeps($cert, \%depmap);
+    my $certdeps = cert_bookdeps($cert, $depdb);
     foreach my $dep (@$certdeps) {
-	if (cert_get_param($dep, \%depmap, "reloc_stub")) {
+	if (cert_get_param($dep, $depdb, "reloc_stub")) {
 	    if (exists $stubs{$dep}) {
 		push(@{$stubs{$dep}}, $cert);
 	    } else {
@@ -625,7 +618,7 @@ if (%stubs && ! $quiet) {
     foreach my $stub (@stubbooks) {
 	print "Stub file:       $stub\n";
 	# note: assumes each stub file includes only one book.
-	print "relocated to:    ${cert_bookdeps($stub, \%depmap)}[0]\n";
+	print "relocated to:    ${cert_bookdeps($stub, $depdb)}[0]\n";
 	print "is included by:\n";
 	foreach my $cert (sort(@{$stubs{$stub}})) {
 	    print "                 $cert\n";
@@ -688,7 +681,7 @@ unless ($no_makefile) {
 
     foreach my $cert (@certs) {
 	print $mf " \\\n     " . make_encode($cert);
-	# if (cert_get_param($cert, \%depmap, "acl2x")) {
+	# if (cert_get_param($cert, $depdb, "acl2x")) {
 	#     my $acl2xfile = cert_to_acl2x($cert);
 	#     print $mf " \\\n     $acl2xfile";
 	# }
@@ -723,12 +716,12 @@ unless ($no_makefile) {
     foreach my $reqparam (keys %reqparams) {
 	%visited = ();
 	foreach my $cert (@certs) {
-	    propagate_reqparam($cert, $reqparam, \%visited, \%depmap);
+	    propagate_reqparam($cert, $reqparam, \%visited, $depdb);
 	}
 
 	print $mf "${var_prefix}_${reqparams{$reqparam}} :=";
 	foreach my $cert (@certs) {
-	    if (cert_get_param($cert, \%depmap, $reqparam)) {
+	    if (cert_get_param($cert, $depdb, $reqparam)) {
 		print $mf " \\\n     " . make_encode($cert) . " ";
 	    }
 	}
@@ -743,14 +736,14 @@ unless ($no_makefile) {
 	# print "Processing label: $label\n";
 	foreach my $topcert (@topcerts) {
 	    # print "Visiting $topcert\n";
-	    deps_dfs($topcert, \%depmap, \%visited, \@labelsources, \@labelcerts);
+	    deps_dfs($topcert, $depdb, \%visited, \@labelsources, \@labelcerts);
 	}
 	@labelcerts = sort(@labelcerts);
 	@labelsources = sort(@labelsources);
 	print $mf "${label}_CERTS :=";
 	foreach my $cert (@labelcerts) {
 	    print $mf " \\\n     " . make_encode($cert);
-	    # if (cert_is_two_pass($cert, \%depmap)) {
+	    # if (cert_is_two_pass($cert, $depdb)) {
 	    # 	my $acl2x = cert_to_acl2x($cert);
 	    # 	print $mf " \\\n     $acl2x";
 	    # }
@@ -777,19 +770,19 @@ unless ($no_makefile) {
 
     # write out the dependencies
     foreach my $cert (@certs) {
-	my $certdeps = cert_deps($cert, \%depmap);
-	my $srcdeps = cert_srcdeps($cert, \%depmap);
-	my $otherdeps = cert_otherdeps($cert, \%depmap);
-	my $image = cert_image($cert, \%depmap);
-	my $useacl2x = cert_get_param($cert, \%depmap, "acl2x") || 0;
+	my $certdeps = cert_deps($cert, $depdb);
+	my $srcdeps = cert_srcdeps($cert, $depdb);
+	my $otherdeps = cert_otherdeps($cert, $depdb);
+	my $image = cert_image($cert, $depdb);
+	my $useacl2x = cert_get_param($cert, $depdb, "acl2x") || 0;
 	# BOZO acl2x implies no pcert
-	my $pcert_ok = ( ! $useacl2x && cert_get_param($cert, \%depmap, "pcert")) || 0;
-	my $acl2xskip = cert_get_param($cert, \%depmap, "acl2xskip") || 0;
+	my $pcert_ok = ( ! $useacl2x && cert_get_param($cert, $depdb, "pcert")) || 0;
+	my $acl2xskip = cert_get_param($cert, $depdb, "acl2xskip") || 0;
 
 	print $mf make_encode($cert) . " : acl2x = $useacl2x\n";
 	print $mf make_encode($cert) . " : pcert = $pcert_ok\n";
 	# print $mf "#$cert params: ";
-	# my $params = cert_get_params($cert, \%depmap);
+	# my $params = cert_get_params($cert, $depdb);
 	# while (my ($key, $val) = each %$params) {
 	#     print $mf "$key = $val ";
 	# }
@@ -846,26 +839,25 @@ unless ($no_makefile) {
     print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
 
     foreach my $cert (@certs) {
-	my $useacl2x = cert_get_param($cert, \%depmap, "acl2x") || 0;
+	my $useacl2x = cert_get_param($cert, $depdb, "acl2x") || 0;
 	# BOZO acl2x implies no pcert
-	my $pcert_ok = (! $useacl2x && cert_get_param($cert, \%depmap, "pcert")) || 0;
+	my $pcert_ok = (! $useacl2x && cert_get_param($cert, $depdb, "pcert")) || 0;
 
-	my $bookdeps = cert_bookdeps($cert, \%depmap);
-	my $portdeps = cert_portdeps($cert, \%depmap);
-	my $srcdeps = cert_srcdeps($cert, \%depmap);
-	my $otherdeps = cert_otherdeps($cert, \%depmap);
-	my $image = cert_image($cert, \%depmap);
+	my $deps = cert_deps($cert, $depdb);
+	my $srcdeps = cert_srcdeps($cert, $depdb);
+	my $otherdeps = cert_otherdeps($cert, $depdb);
+	my $image = cert_image($cert, $depdb);
 	(my $base = $cert) =~ s/\.cert$//;
 	# this is either the pcert0 or pcert1 depending on pcert_ok
-	my $pcert = cert_sequential_dep($cert, \%depmap);
+	my $pcert = cert_sequential_dep($cert, $depdb);
 	my $encpcert = make_encode($pcert);
 	print $mf "$encpcert : pcert = $pcert_ok\n";
 	print $mf "$encpcert : acl2x = $useacl2x\n";
 	print $mf "$encpcert :";
-	foreach my $dep (@$bookdeps, @$portdeps) {
+	foreach my $dep (@$deps) {
 	    # this is either the pcert0 or pcert1 depending whether the dependency
 	    # has pcert set
-	    print $mf " \\\n     " . make_encode(cert_sequential_dep($dep, \%depmap));
+	    print $mf " \\\n     " . make_encode(cert_sequential_dep($dep, $depdb));
 	}
 	foreach my $dep (@$srcdeps, @$otherdeps) {
 	    print $mf " \\\n     " . make_encode($dep);
