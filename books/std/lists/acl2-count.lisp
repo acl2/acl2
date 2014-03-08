@@ -35,3 +35,8 @@
   (implies (consp x)
            (< 0 (acl2-count x)))
   :rule-classes (:type-prescription :linear))
+
+(defthm acl2-count-of-cons
+  (> (acl2-count (cons a b))
+     (+ (acl2-count a) (acl2-count b)))
+  :rule-classes :linear)
