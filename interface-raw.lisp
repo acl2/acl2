@@ -2403,7 +2403,8 @@
   (case called-sys-fn
         (rewrite
          (cond ((integerp bkptr)
-                (cond ((eq calling-sys-fn 'rewrite-with-lemma)
+                (cond ((member-eq calling-sys-fn '(rewrite-with-lemma
+                                                   add-linear-lemma))
                        (dmr-increment-indent)
                        (format nil " the atom of hypothesis ~s" bkptr))
                       ((eq calling-sys-fn 'simplify-clause)
@@ -2438,8 +2439,9 @@
                (t (er hard 'tilde-@-bkptr-string
                       "When ~x0 calls ~x1 we get an unrecognized bkptr, ~x2."
                       calling-sys-fn called-sys-fn bkptr))))
-        ((rewrite-with-lemma  setup-simplify-clause-pot-lst simplify-clause
-                              synp)
+        ((rewrite-with-lemma setup-simplify-clause-pot-lst simplify-clause
+                             add-terms-and-lemmas add-linear-lemma
+                             non-linear-arithmetic synp)
          "")
         (t (er hard 'tilde-@-bkptr-string
                "When ~x0 calls ~x1 we get an unrecognized bkptr, ~x2."
@@ -2500,13 +2502,13 @@
               (format nil "; argument(s) ~s" (access gframe frame :bkptr)))
              (t
               (format nil "|~s" (access gframe frame :bkptr)))))
-      (rewrite-with-lemma
+      ((rewrite-with-lemma add-linear-lemma)
        (format
         nil
         "~a~s. Applying ~s~%"
         (dmr-prefix)
         i
-        (access rewrite-rule (cdr (access gframe frame :args)) :rune)))
+        (get-rule-field (cdr (access gframe frame :args)) :rune)))
       (add-terms-and-lemmas
        (let ((len (length (car (access gframe frame :args)))))
          (format

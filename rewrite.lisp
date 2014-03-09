@@ -4721,6 +4721,9 @@
 (defrec rewrite-rule (rune nume hyps equiv lhs rhs
                            subclass heuristic-info
 
+; Warning: Do not change the cheap flag, currently nil, without revisiting
+; macro get-rule-field.
+
 ; The backchain-limit-lst must be nil, a natp, or a list of these of the same
 ; length as hyps.  For subclass 'meta, only the first two of these is legal.
 ; Otherwise, only the first and third of these are legal.
@@ -4740,6 +4743,9 @@
 ; the hypotheses, else nil.
 
                            match-free)
+
+; See the warning above.
+
   nil)
 
 ; There are four subclasses of rewrite rule, distinguished by the :subclass slot.
@@ -5897,14 +5903,22 @@
 
 )
 
-(defrec linear-lemma ((nume . hyps) max-term concl
-                      backchain-limit-lst rune
-                      .
+(defrec linear-lemma
+
+; Warning: Do not change the cheap flag, currently nil, without revisiting
+; macro get-rule-field.
+
+  ((nume . hyps) max-term concl
+   backchain-limit-lst rune
+   .
 
 ; The match-free field should be :all or :once if there are free variables in
 ; the hypotheses, else nil.
 
-                      match-free)
+   match-free)
+
+; See the warning above.
+
   nil)
 
 ; Finally the Rewriter
@@ -6373,8 +6387,14 @@
     call
     #-acl2-loop-only
     (if (member-eq (caar args)
+
+; We could omit relieve-hyp-synp in the list below, even though it too calls
+; push-gframe, because relieve-hyp-synp is not called under rewrite-entry.  But
+; we add it just in case that changes.
+
                    '(rewrite rewrite-with-lemma add-terms-and-lemmas
-                             non-linear-arithmetic))
+                             add-linear-lemma non-linear-arithmetic
+                             relieve-hyp-synp))
 
 ; We restore *deep-gstack* to its value from before the call.  We really only
 ; need to do that for dmr monitoring, so that there aren't stale frames on
@@ -6528,7 +6548,8 @@
   (case called-sys-fn
         (rewrite
          (cond ((integerp bkptr)
-                (cond ((eq calling-sys-fn 'rewrite-with-lemma)
+                (cond ((member-eq calling-sys-fn '(rewrite-with-lemma
+                                                   add-linear-lemma))
                        (msg " the atom of the ~n0 hypothesis" (list bkptr)))
                       ((eq calling-sys-fn 'simplify-clause)
                        (msg " the atom of the ~n0 literal" (list bkptr)))
@@ -6558,11 +6579,33 @@
                       "When ~x0 calls ~x1 we get an unrecognized bkptr, ~x2."
                       calling-sys-fn called-sys-fn bkptr))))
         ((rewrite-with-lemma setup-simplify-clause-pot-lst simplify-clause
-                             add-terms-and-lemmas non-linear-arithmetic synp)
+                             add-terms-and-lemmas add-linear-lemma
+                             non-linear-arithmetic synp)
          "")
         (t (er hard 'tilde-@-bkptr-phrase
                "When ~x0 calls ~x1 we get an unrecognized bkptr, ~x2."
                calling-sys-fn called-sys-fn bkptr))))
+
+(defmacro get-rule-field (x field)
+
+; X is a rewrite-rule or linear-lemma record.  If the field is inappropriate
+; but the field is one as expected by the guard, then we return the special
+; value :get-rule-field-none.
+
+  (declare (xargs :guard (let ((fields '(:rune :hyps :lhs :rhs)))
+                           (and (not (member-eq x fields))
+                                (member-eq field fields)))))
+  `(let ((x ,x))
+     (cond ((eq (record-type x) 'rewrite-rule)
+            (access rewrite-rule x ,field))
+           ((eq (record-type x) 'linear-lemma)
+            ,(cond ((member-eq field '(:lhs :rhs)) :get-rule-field-none)
+                   (t `(access linear-lemma x ,field))))
+           (t
+            (er hard 'get-rule-field
+                "The object ~x0 is neither a rewrite-rule record nor a ~
+                 linear-lemma record."
+                x)))))
 
 (defun cw-gframe (i calling-sys-fn frame evisc-tuple)
 
@@ -6605,10 +6648,10 @@
                (cond ((eq obj nil) "falsify")
                      ((eq obj t) "establish")
                      (t "simplify")))))
-        (rewrite-with-lemma
+        ((rewrite-with-lemma add-linear-lemma)
          (cw "~x0. Attempting to apply ~F1 to~%     ~Y23"
              i
-             (access rewrite-rule (cdr (access gframe frame :args)) :rune)
+             (get-rule-field (cdr (access gframe frame :args)) :rune)
              (car (access gframe frame :args))
              evisc-tuple))
         (add-terms-and-lemmas
@@ -6720,21 +6763,25 @@
 ; rewrite-with-lemma and that rule is monitored (i.e., its rune is on
 ; brr-monitored-runes) then we imagine the rule is actually applied by
 ; "break-rewrite", which is analogous to rewrite-with-lemma but instrumented to
-; allow the user to watch the attempt to apply the rule.  Rewrite-fncall is
-; similarly affected.  Because we find "break-rewrite" a tedious name (in
-; connection with user-available macros for accessing context sensitive
-; information) we shorten it to simply brr when we need a name that is
-; connected with the implementation of "break-rewrite."  There is no
-; "break-rewrite" function -- its presence is an illusion -- and we reserve
-; the string "break-rewrite" to refer to this mythical function.
+; allow the user to watch the attempt to apply the rule.  Rewrite-fncall and
+; add-linear-lemma are similarly affected.  Because we find "break-rewrite" a
+; tedious name (in connection with user-available macros for accessing context
+; sensitive information) we shorten it to simply brr when we need a name that
+; is connected with the implementation of "break-rewrite."  There is no
+; "break-rewrite" function -- its presence is an illusion -- and we reserve the
+; string "break-rewrite" to refer to this mythical function.
 
 ; Rather than actually implement "break-rewrite" we sprinkle "break points"
 ; through the various rewrite functions.  These break points are the functions
 ; brkpt1 and brkpt2.  The reason we do this is so that we don't have to
-; maintain two parallel versions of rewrite.  It is not clear this is
-; justification for what is a surprisingly complicated alternative.  But since
-; we haven't pursued any other approach, it is not clear that the complications
-; are isolated in this one.
+; maintain two parallel versions of rewrite-with-lemma (and others) as
+; discussed above.  It is not clear this is justification for what is a
+; surprisingly complicated alternative, especially since a recursive call to
+; the rewriter would make it possible to :EVAL more than once.  (For example,
+; if the :EVAL says that the attempt failed because hyp 3 rewrote to xyz, we
+; might want to :monitor some other rules and do the :EVAL again to see what
+; went wrong.)  But since we haven't pursued any other approach, it is not
+; clear that the complications are isolated in this one.
 
 ; The main complication is that if we really had a recursive "break-rewrite"
 ; then we could have local variables associated with each attempt to apply a
@@ -7370,6 +7417,16 @@
          "the rewritten :RHS contains too many IFs for the given args.")
         ((eq failure-reason 'rewrite-fncallp)
          "the :REWRITTEN-RHS is judged heuristically unattractive.")
+        ((member-eq failure-reason '(linearize-unrewritten-produced-disjunction
+                                     linearize-rewritten-produced-disjunction))
+         (msg "the ~@0 term generated a disjunction of two conjunctions of ~
+               polynomials."
+              (if (eq failure-reason 'linearize-rewritten-produced-disjunction)
+                  'rewritten
+                'unrewritten)))
+        ((eq failure-reason 'linear-possible-loop)
+         "the rewritten term was judged to have the potential to cause a loop ~
+          related to linear arithmetic.")
         ((and (consp failure-reason)
               (integerp (car failure-reason)))
          (let ((n (car failure-reason)))
@@ -7697,6 +7754,12 @@
   (list "" "~@*" "~@*" "~@*"
          (tilde-*-ancestors-stack-msg1 0 ancestors wrld evisc-tuple)))
 
+(defun brr-result (state)
+  (let ((result (get-brr-local 'brr-result state)))
+    (cond ((eq (record-type (get-brr-local 'lemma state)) 'linear-lemma)
+           (show-poly-lst result))
+          (t result))))
+
 (defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree
                      gstack state)
 
@@ -7726,7 +7789,7 @@
      '(lambda (whs)
         (set-wormhole-entry-code
          whs
-         (if (assoc-equal (access rewrite-rule lemma :rune)
+         (if (assoc-equal (get-rule-field lemma :rune)
                           (cdr (assoc-eq 'brr-monitored-runes
                                          (wormhole-data whs))))
              :ENTER
@@ -7741,9 +7804,8 @@
      '(pprogn
        (push-brr-stack-frame state)
        (put-brr-local 'depth (1+ (or (get-brr-local 'depth state) 0)) state)
-       (let ((pair (assoc-equal (access rewrite-rule
-                                        (get-brr-local 'lemma state)
-                                        :rune)
+       (let ((pair (assoc-equal (get-rule-field (get-brr-local 'lemma state)
+                                                :rune)
                                 (get-brr-global 'brr-monitored-runes state))))
 ; We know pair is non-nil because of the entrance test on wormhole above
          (er-let*
@@ -7756,8 +7818,8 @@
                    (t state))
              (prog2$ (cw "~%(~F0 Breaking ~F1 on ~X23:~|"
                          (get-brr-local 'depth state)
-                         (access rewrite-rule (get-brr-local 'lemma state)
-                                 :rune)
+                         (get-rule-field (get-brr-local 'lemma state)
+                                         :rune)
                          (get-brr-local 'target state)
                          (term-evisc-tuple t state))
                      (value t))))
@@ -7813,33 +7875,50 @@
         0 (lambda nil
             (prog2$
              (cw "~x0~|"
-                 (access rewrite-rule (get-brr-local 'lemma state) :hyps))
+                 (get-rule-field (get-brr-local 'lemma state)
+                                 :hyps))
              (value :invisible))))
        (:hyp
         1 (lambda (n)
             (cond
              ((and (integerp n)
                    (>= n 1)
-                   (<= n (length (access rewrite-rule (get-brr-local 'lemma state) :hyps))))
+                   (<= n (length (get-rule-field (get-brr-local 'lemma state)
+                                                 :hyps))))
               (prog2$ (cw "~X01~|"
-                          (nth (1- n) (access rewrite-rule (get-brr-local 'lemma state) :hyps))
+                          (nth (1- n)
+                               (get-rule-field (get-brr-local 'lemma state)
+                                               :hyps))
                           nil)
                       (value :invisible)))
              (t (er soft :HYP
                     ":HYP must be given an integer argument between 1 and ~x0."
-                    (length (access rewrite-rule (get-brr-local 'lemma state) :hyps)))))))
+                    (length (get-rule-field (get-brr-local 'lemma state)
+                                            :hyps)))))))
        (:lhs
         0 (lambda nil
-            (prog2$
-             (cw "~x0~|"
-                 (access rewrite-rule (get-brr-local 'lemma state) :lhs))
-             (value :invisible))))
+            (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                       :lhs)))
+              (cond
+               ((eq val :get-rule-field-none) ; linear lemma
+                (er soft :LHS
+                    ":LHS is only legal for a :REWRITE rule."))
+               (t
+                (prog2$
+                 (cw "~x0~|" val)
+                 (value :invisible)))))))
        (:rhs
         0 (lambda nil
-            (prog2$
-             (cw "~x0~|"
-                 (access rewrite-rule (get-brr-local 'lemma state) :rhs))
-             (value :invisible))))
+            (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                       :rhs)))
+              (cond
+               ((eq val :get-rule-field-none) ; linear lemma
+                (er soft :RHS
+                    ":RHS is only legal for a :REWRITE rule."))
+               (t
+                (prog2$
+                 (cw "~x0~|" val)
+                 (value :invisible)))))))
        (:unify-subst
         0 (lambda nil
             (prog2$
@@ -7864,7 +7943,7 @@
         0 (lambda nil
             (prog2$
              (cw "Ancestors stack (from first backchain (0) to ~
-                current):~%~*0~%Use ~x1 to see actual ancestors stack.~%"
+                  current):~%~*0~%Use ~x1 to see actual ancestors stack.~%"
                  (tilde-*-ancestors-stack-msg
                   (get-brr-local 'ancestors state)
                   (w state)
@@ -7873,33 +7952,49 @@
              (value :invisible))))
        (:initial-ttree
         0 (lambda nil
-            (prog2$
-             (cw "~x0~|"
-                 (get-brr-local 'initial-ttree state))
-             (value :invisible))))
+            (let ((lemma (get-brr-local 'lemma state)))
+              (cond
+               ((eq (record-type lemma) 'linear-lemma)
+                (er soft :INITIAL-TTREE
+                    ":INITIAL-TTREE is not legal for a :LINEAR rule."))
+               (t (prog2$
+                   (cw "~x0~|"
+                       (get-brr-local 'initial-ttree state))
+                   (value :invisible)))))))
        (:final-ttree
         0 (lambda nil
-            (prog2$
-             (cw "~F0 has not yet been :EVALed.~%"
-                 (access rewrite-rule (get-brr-local 'lemma state) :rune))
-             (value :invisible))))
+            (let ((lemma (get-brr-local 'lemma state)))
+              (cond
+               ((eq (record-type lemma) 'linear-lemma)
+                (er soft :FINAL-TTREE
+                    ":FINAL-TTREE is not legal for a :LINEAR rule."))
+               (t (prog2$
+                   (cw "~F0 has not yet been :EVALed.~%"
+                       (get-rule-field lemma :rune))
+                   (value :invisible)))))))
        (:rewritten-rhs
         0 (lambda nil
             (prog2$
              (cw "~F0 has not yet been :EVALed.~%"
-                 (access rewrite-rule (get-brr-local 'lemma state) :rune))
+                 (get-rule-field (get-brr-local 'lemma state) :rune))
+             (value :invisible))))
+       (:poly-list
+        0 (lambda nil
+            (prog2$
+             (cw "~F0 has not yet been :EVALed.~%"
+                 (get-rule-field (get-brr-local 'lemma state) :rune))
              (value :invisible))))
        (:failure-reason
         0 (lambda nil
             (prog2$
              (cw "~F0 has not yet been :EVALed.~%"
-                 (access rewrite-rule (get-brr-local 'lemma state) :rune))
+                 (get-rule-field (get-brr-local 'lemma state) :rune))
              (value :invisible))))
        (:wonp
         0 (lambda nil
             (prog2$
              (cw "~F0 has not yet been :EVALed.~%"
-                 (access rewrite-rule (get-brr-local 'lemma state) :rune))
+                 (get-rule-field (get-brr-local 'lemma state) :rune))
              (value :invisible))))
        (:path
         0 (lambda nil
@@ -7933,7 +8028,7 @@
             (doc 'brr-commands)))
        (:standard-help 0 help))))))
 
-(defun brkpt2 (wonp failure-reason unify-subst gstack rewritten-rhs final-ttree
+(defun brkpt2 (wonp failure-reason unify-subst gstack brr-result final-ttree
                     rcnst state)
 
 ; #+ACL2-PAR note: see brkpt1.
@@ -7957,7 +8052,7 @@
        (brr-alist . ((wonp . ,wonp)
                      (failure-reason . ,failure-reason)
                      (unify-subst . ,unify-subst) ; maybe changed
-                     (rewritten-rhs . ,rewritten-rhs)
+                     (brr-result . ,brr-result)
                      (rcnst . ,rcnst)
                      (final-ttree . ,final-ttree))))
      '(cond
@@ -7975,16 +8070,12 @@
          (prog2$ (if (get-brr-local 'wonp state)
                      (cw "~%~F0 ~F1 produced ~X23.~|~F0)~%"
                          (get-brr-local 'depth state)
-                         (access rewrite-rule
-                                 (get-brr-local 'lemma state)
-                                 :rune)
-                         (get-brr-local 'rewritten-rhs state)
+                         (get-rule-field (get-brr-local 'lemma state) :rune)
+                         (brr-result state)
                          (term-evisc-tuple t state))
                    (cw "~%~F0x ~F1 failed because ~@2~|~F0)~%"
                        (get-brr-local 'depth state)
-                       (access rewrite-rule
-                               (get-brr-local 'lemma state)
-                               :rune)
+                       (get-rule-field (get-brr-local 'lemma state) :rune)
                        (tilde-@-failure-reason-phrase
                         (get-brr-local 'failure-reason state)
                         1
@@ -8014,16 +8105,12 @@
                      (if (get-brr-local 'wonp state)
                          (cw "~%~F0! ~F1 produced ~X23.~|~%"
                              (get-brr-local 'depth state)
-                             (access rewrite-rule
-                                     (get-brr-local 'lemma state)
-                                     :rune)
-                             (get-brr-local 'rewritten-rhs state)
+                             (get-rule-field (get-brr-local 'lemma state) :rune)
+                             (brr-result state)
                              (term-evisc-tuple t state))
                        (cw "~%~F0x ~F1 failed because ~@2~|~%"
                            (get-brr-local 'depth state)
-                           (access rewrite-rule
-                                   (get-brr-local 'lemma state)
-                                   :rune)
+                           (get-rule-field (get-brr-local 'lemma state) :rune)
                            (tilde-@-failure-reason-phrase
                             (get-brr-local 'failure-reason state)
                             1
@@ -8066,33 +8153,49 @@
         0 (lambda nil
             (prog2$
              (cw "~x0~|"
-                 (access rewrite-rule (get-brr-local 'lemma state) :hyps))
+                 (get-rule-field (get-brr-local 'lemma state) :hyps))
              (value :invisible))))
        (:hyp
         1 (lambda (n)
             (cond
              ((and (integerp n)
                    (>= n 1)
-                   (<= n (length (access rewrite-rule (get-brr-local 'lemma state) :hyps))))
+                   (<= n (length (get-rule-field (get-brr-local 'lemma state)
+                                                 :hyps))))
               (prog2$ (cw "~X01~|"
-                          (nth (1- n) (access rewrite-rule (get-brr-local 'lemma state) :hyps))
+                          (nth (1- n)
+                               (get-rule-field (get-brr-local 'lemma state)
+                                               :hyps))
                           nil)
                       (value :invisible)))
              (t (er soft :HYP
                     ":HYP must be given an integer argument between 1 and ~x0."
-                    (length (access rewrite-rule (get-brr-local 'lemma state) :hyps)))))))
+                    (length (get-rule-field (get-brr-local 'lemma state)
+                                            :hyps)))))))
        (:lhs
         0 (lambda nil
-            (prog2$
-             (cw "~x0~|"
-                 (access rewrite-rule (get-brr-local 'lemma state) :lhs))
-             (value :invisible))))
+            (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                       :lhs)))
+              (cond
+               ((eq val :get-rule-field-none) ; linear lemma
+                (er soft :LHS
+                    ":LHS is only legal for a :REWRITE rule."))
+               (t
+                (prog2$
+                 (cw "~x0~|" val)
+                 (value :invisible)))))))
        (:rhs
         0 (lambda nil
-            (prog2$
-             (cw "~x0~|"
-                 (access rewrite-rule (get-brr-local 'lemma state) :rhs))
-             (value :invisible))))
+            (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                       :rhs)))
+              (cond
+               ((eq val :get-rule-field-none) ; linear lemma
+                (er soft :RHS
+                    ":RHS is only legal for a :REWRITE rule."))
+               (t
+                (prog2$
+                 (cw "~x0~|" val)
+                 (value :invisible)))))))
        (:unify-subst
         0 (lambda nil
             (prog2$
@@ -8126,37 +8229,64 @@
              (value :invisible))))
        (:initial-ttree
         0 (lambda nil
-            (prog2$
-             (cw "~x0~|"
-                 (get-brr-local 'initial-ttree state))
-             (value :invisible))))
+            (let ((lemma (get-brr-local 'lemma state)))
+              (cond
+               ((eq (record-type lemma) 'linear-lemma)
+                (er soft :INITIAL-TTREE
+                    ":INITIAL-TTREE is not legal for a :LINEAR rule."))
+               (t (prog2$
+                   (cw "~x0~|"
+                       (get-brr-local 'initial-ttree state))
+                   (value :invisible)))))))
        (:final-ttree
         0 (lambda nil
-            (prog2$
-             (cw "~x0~|"
-                 (get-brr-local 'final-ttree state))
-             (value :invisible))))
-       (:rewritten-rhs
+            (let ((lemma (get-brr-local 'lemma state)))
+              (cond
+               ((eq (record-type lemma) 'linear-lemma)
+                (er soft :FINAL-TTREE
+                    ":FINAL-TTREE is not legal for a :LINEAR rule."))
+               (t (prog2$
+                   (cw "~x0~|"
+                       (get-brr-local 'final-ttree state))
+                   (value :invisible)))))))
+       (:rewritten-rhs ; keep in sync with :poly-list, below
         0 (lambda nil
-            (prog2$
-             (cond
-              ((or (get-brr-local 'wonp state)
-                   (member-eq (get-brr-local 'failure-reason state)
-                              '(too-many-ifs rewrite-fncallp)))
-               (cw "~x0~|" (get-brr-local 'rewritten-rhs state)))
-              (t (cw "? ~F0 failed.~%"
-                     (access rewrite-rule
-                             (get-brr-local 'lemma state)
-                             :rune))))
-             (value :invisible))))
+            (let ((lemma (get-brr-local 'lemma state)))
+              (cond
+               ((eq (record-type lemma) 'rewrite-rule)
+                (prog2$
+                 (cond
+                  ((or (get-brr-local 'wonp state)
+                       (member-eq (get-brr-local 'failure-reason state)
+                                  '(too-many-ifs rewrite-fncallp)))
+                   (cw "~x0~|" (get-brr-local 'brr-result state)))
+                  (t (cw "? ~F0 failed.~%"
+                         (get-rule-field lemma :rune))))
+                 (value :invisible)))
+               (t
+                (er soft :REWRITTEN-RHS
+                    ":REWRITTEN-RHS is only legal for a :REWRITE rule."))))))
+       (:poly-list ; keep in sync with :rewritten-rhs, above
+        0 (lambda nil
+            (let ((lemma (get-brr-local 'lemma state)))
+              (cond
+               ((eq (record-type lemma) 'linear-lemma)
+                (prog2$
+                 (cond
+                  ((get-brr-local 'wonp state)
+                   (cw "~x0~|" (brr-result state)))
+                  (t (cw "? ~F0 failed.~%"
+                         (get-rule-field lemma :rune))))
+                 (value :invisible)))
+               (t
+                (er soft :POLY-LIST
+                    ":POLY-LIST is only legal for a :LINEAR rule."))))))
        (:failure-reason
         0 (lambda nil
             (prog2$
              (if (get-brr-local 'wonp state)
                  (cw "? ~F0 succeeded.~%"
-                     (access rewrite-rule
-                             (get-brr-local 'lemma state)
-                             :rune))
+                     (get-rule-field (get-brr-local 'lemma state) :rune))
                (cw "~@0~|"
                    (tilde-@-failure-reason-phrase
                     (get-brr-local 'failure-reason state)
@@ -8170,13 +8300,9 @@
             (prog2$
              (if (get-brr-local 'wonp state)
                  (cw "? ~F0 succeeded.~%"
-                     (access rewrite-rule
-                             (get-brr-local 'lemma state)
-                             :rune))
+                     (get-rule-field (get-brr-local 'lemma state) :rune))
                (cw "? ~F0 failed.~%"
-                     (access rewrite-rule
-                             (get-brr-local 'lemma state)
-                             :rune)))
+                     (get-rule-field (get-brr-local 'lemma state) :rune)))
              (value :invisible))))
        (:path
         0 (lambda nil
@@ -8198,12 +8324,15 @@
                             nil)
                  (value :invisible)))
                (t (er soft :frame
-                      ":FRAME must be given an integer argument between 1 and ~x0."
+                      ":FRAME must be given an integer argument between 1 and ~
+                       ~x0."
                       (length rgstack)))))))
        (:top
         0 (lambda nil
             (prog2$
-             (cw-gframe 1 nil (car (reverse (get-brr-global 'brr-gstack state))) nil)
+             (cw-gframe 1 nil
+                        (car (reverse (get-brr-global 'brr-gstack state)))
+                        nil)
              (value :invisible))))
        (:help
         0 (lambda nil
@@ -16105,57 +16234,62 @@
   (the-mv
    3
    (signed-byte 30)
-   (mv-let
-    (unify-ans unify-subst)
-    (one-way-unify (access linear-lemma lemma :max-term)
-                   term)
-    (cond
-     (unify-ans
-      (let ((rune (access linear-lemma lemma :rune)))
-        (with-accumulated-persistence
-         rune
-         ((the (signed-byte 30) step-limit) contradictionp pot-lst)
-         (or contradictionp
+   (let ((gstack (push-gframe 'add-linear-lemma nil term lemma))
+         (rdepth (adjust-rdepth rdepth)))
+     (mv-let
+      (unify-ans unify-subst)
+      (one-way-unify (access linear-lemma lemma :max-term)
+                     term)
+      (cond
+       ((and unify-ans
+             (null (brkpt1 lemma term unify-subst
+                           type-alist ancestors
+                           nil ; ttree
+                           gstack state)))
+        (let ((rune (access linear-lemma lemma :rune)))
+          (with-accumulated-persistence
+           rune
+           ((the (signed-byte 30) step-limit) contradictionp pot-lst)
+           (or contradictionp
 
 ; The following mis-guarded use of eq instead of equal implies that we could be
 ; over-counting successes at the expense of failures.
 
-             (not (eq pot-lst simplify-clause-pot-lst)))
-         (sl-let
-          (relieve-hyps-ans failure-reason unify-subst ttree1)
-          (rewrite-entry (relieve-hyps rune
-                                       term
-                                       (access linear-lemma lemma :hyps)
-                                       (access linear-lemma lemma
-                                               :backchain-limit-lst)
-                                       unify-subst
-                                       (not (oncep (access rewrite-constant
-                                                           rcnst
-                                                           :oncep-override)
-                                                   (access linear-lemma lemma
-                                                           :match-free)
-                                                   rune
-                                                   (access linear-lemma lemma
-                                                           :nume))))
-                         :obj nil :geneqv nil :pequiv-info nil ; all ignored
-                         :ttree nil)
-          (declare (ignore failure-reason))
-          (cond
-           (relieve-hyps-ans
-            (sl-let
-             (rewritten-concl ttree2)
-             (with-accumulated-persistence
-              rune
-              ((the (signed-byte 30) step-limit) rewritten-concl ttree2)
-              t ; considered a success unless the parent with-acc-p fails
-              (rewrite-entry
-               (rewrite-linear-term
-                (access linear-lemma lemma :concl)
-                unify-subst)
-               :obj nil :geneqv nil :pequiv-info nil ; all ignored
-               :ttree ttree1)
-              :conc
-              (access linear-lemma lemma :hyps))
+               (not (eq pot-lst simplify-clause-pot-lst)))
+           (sl-let
+            (relieve-hyps-ans failure-reason unify-subst ttree1)
+            (rewrite-entry (relieve-hyps rune
+                                         term
+                                         (access linear-lemma lemma :hyps)
+                                         (access linear-lemma lemma
+                                                 :backchain-limit-lst)
+                                         unify-subst
+                                         (not (oncep (access rewrite-constant
+                                                             rcnst
+                                                             :oncep-override)
+                                                     (access linear-lemma lemma
+                                                             :match-free)
+                                                     rune
+                                                     (access linear-lemma lemma
+                                                             :nume))))
+                           :obj nil :geneqv nil :pequiv-info nil ; all ignored
+                           :ttree nil)
+            (cond
+             (relieve-hyps-ans
+              (sl-let
+               (rewritten-concl ttree2)
+               (with-accumulated-persistence
+                rune
+                ((the (signed-byte 30) step-limit) rewritten-concl ttree2)
+                t ; considered a success unless the parent with-acc-p fails
+                (rewrite-entry
+                 (rewrite-linear-term
+                  (access linear-lemma lemma :concl)
+                  unify-subst)
+                 :obj nil :geneqv nil :pequiv-info nil ; all ignored
+                 :ttree ttree1)
+                :conc
+                (access linear-lemma lemma :hyps))
 
 ; Previous to Version_2.7, we just went ahead and used the result of
 ; (linearize rewritten-concl ...).  This had long been known to be
@@ -16241,67 +16375,89 @@
 
 ; We thank Robert Krug for providing this improvement.
 
-             (let* ((force-flg (ok-to-force rcnst))
-                    (temp-lst (linearize rewritten-concl
-                                         t
-                                         type-alist
-                                         (access rewrite-constant rcnst
-                                                 :current-enabled-structure)
-                                         force-flg
-                                         wrld
-                                         (push-lemma
-                                          rune
-                                          ttree2)
-                                         state))
-                    (lst (or temp-lst
-                             (linearize (sublis-var
-                                         unify-subst
-                                         (access linear-lemma lemma :concl))
-                                        t
-                                        type-alist
-                                        (access rewrite-constant rcnst
-                                                :current-enabled-structure)
-                                        force-flg
-                                        wrld
-                                        (push-lemma
-                                         rune
-                                         (accumulate-rw-cache t ttree2 ttree1))
-                                        state))))
-               (cond
-                ((and (null (cdr lst))
-                      (not (new-and-ugly-linear-varsp
+               (let* ((force-flg (ok-to-force rcnst))
+                      (temp-lst (linearize rewritten-concl
+                                           t
+                                           type-alist
+                                           (access rewrite-constant rcnst
+                                                   :current-enabled-structure)
+                                           force-flg
+                                           wrld
+                                           (push-lemma
+                                            rune
+                                            ttree2)
+                                           state))
+                      (lst (or temp-lst
+                               (linearize (sublis-var
+                                           unify-subst
+                                           (access linear-lemma lemma :concl))
+                                          t
+                                          type-alist
+                                          (access rewrite-constant rcnst
+                                                  :current-enabled-structure)
+                                          force-flg
+                                          wrld
+                                          (push-lemma
+                                           rune
+                                           (accumulate-rw-cache t ttree2 ttree1))
+                                          state))))
+                 (cond
+                  ((cdr lst)
+                   (prog2$
+                    (brkpt2 nil
+                            (if temp-lst
+                                'linearize-rewritten-produced-disjunction
+                              'linearize-unrewritten-produced-disjunction)
+                            unify-subst gstack nil nil
+                            rcnst state)
+                    (mv step-limit nil simplify-clause-pot-lst)))
+                  ((new-and-ugly-linear-varsp
+                    (car lst)
+                    (<= *max-linear-pot-loop-stopper-value*
+                        (loop-stopper-value-of-var
+                         term
+                         simplify-clause-pot-lst))
+                    term)
+                   (prog2$
+                    (brkpt2 nil 'linear-possible-loop
+                            unify-subst gstack nil nil
+                            rcnst state)
+                    (mv step-limit nil simplify-clause-pot-lst)))
+                  (t
+                   (prog2$
+                    (brkpt2 t nil unify-subst gstack
                             (car lst)
-                            (<= *max-linear-pot-loop-stopper-value*
-                                (loop-stopper-value-of-var
-                                 term
-                                 simplify-clause-pot-lst))
-                            term)))
-                 (mv-let
-                  (contradictionp new-pot-lst)
-                  (add-polys (car lst)
-                             simplify-clause-pot-lst
-                             (access rewrite-constant rcnst :pt)
-                             (access rewrite-constant rcnst :nonlinearp)
-                             type-alist
-                             (access rewrite-constant rcnst
-                                     :current-enabled-structure)
-                             force-flg
-                             wrld)
-                  (cond
-                   (contradictionp (mv step-limit contradictionp nil))
-                   (t (mv step-limit
-                          nil
-                          (set-loop-stopper-values
-                           (new-vars-in-pot-lst new-pot-lst
-                                                simplify-clause-pot-lst
-                                                nil)
-                           new-pot-lst
-                           term
-                           (loop-stopper-value-of-var
-                            term simplify-clause-pot-lst)))))))
-                (t (mv step-limit nil simplify-clause-pot-lst))))))
-           (t (mv step-limit nil simplify-clause-pot-lst)))))))
-     (t (mv step-limit nil simplify-clause-pot-lst))))))
+                            nil ; ttree, not used (see brkpt2)
+                            rcnst state)
+                    (mv-let
+                     (contradictionp new-pot-lst)
+                     (add-polys (car lst)
+                                simplify-clause-pot-lst
+                                (access rewrite-constant rcnst :pt)
+                                (access rewrite-constant rcnst :nonlinearp)
+                                type-alist
+                                (access rewrite-constant rcnst
+                                        :current-enabled-structure)
+                                force-flg
+                                wrld)
+                     (cond
+                      (contradictionp (mv step-limit contradictionp nil))
+                      (t (mv step-limit
+                             nil
+                             (set-loop-stopper-values
+                              (new-vars-in-pot-lst new-pot-lst
+                                                   simplify-clause-pot-lst
+                                                   nil)
+                              new-pot-lst
+                              term
+                              (loop-stopper-value-of-var
+                               term simplify-clause-pot-lst))))))))))))
+             (t (prog2$
+                 (brkpt2 nil failure-reason
+                         unify-subst gstack nil nil
+                         rcnst state)
+                 (mv step-limit nil simplify-clause-pot-lst))))))))
+       (t (mv step-limit nil simplify-clause-pot-lst)))))))
 
 (defun add-linear-lemmas (term linear-lemmas ; &extra formals
                                rdepth step-limit

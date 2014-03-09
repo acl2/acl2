@@ -5607,11 +5607,20 @@
 
 (defmacro defrec (name field-lst cheap &optional recog-name)
 
+; Warning: If when cheap = nil, the car of a record is no longer name, then 
+; consider changing the definition or use of record-type.
+
 ; A recognizer with guard t has is defined using recog-name, if supplied; else,
 ; by default, its name for (defrec foo ...) is the symbol WEAK-FOO-P, in the
 ; same package as foo.
 
   (record-macros name field-lst cheap recog-name))
+
+(defmacro record-type (x)
+
+; X is a non-cheap record, i.e., a record whose defrec has cheap = nil.
+
+  `(car ,x))
 
 (defabbrev equalityp (term)
 

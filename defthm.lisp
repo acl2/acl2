@@ -9582,10 +9582,10 @@
   (cond
    ((not (runep rune (w state)))
     (er soft ctx "~x0 is not a rune." rune))
-   ((not (member-eq (car rune) '(:rewrite :definition)))
+   ((not (member-eq (car rune) '(:rewrite :definition :linear)))
     (er soft ctx
-        "Only :REWRITE and :DEFINITION runes may be monitored.  We cannot ~
-         break ~x0."
+        "Only :REWRITE, :DEFINITION, and :LINEAR runes may be monitored.  We ~
+         cannot break ~x0."
         rune))
    (t (er-let*
           ((term (translate-break-condition expr ctx state)))
@@ -9815,6 +9815,7 @@
                                           :unify-subst
                                           :wonp
                                           :rewritten-rhs
+                                          :poly-list
                                           :failure-reason
                                           :lemma
                                           :type-alist
@@ -9826,7 +9827,8 @@
         (:target '(get-brr-local 'target state))
         (:unify-subst '(get-brr-local 'unify-subst state))
         (:wonp '(get-brr-local 'wonp state))
-        (:rewritten-rhs '(get-brr-local 'rewritten-rhs state))
+        (:rewritten-rhs '(get-brr-local 'brr-result state))
+        (:poly-list '(brr-result state))
         (:failure-reason '(get-brr-local 'failure-reason state))
         (:lemma '(get-brr-local 'lemma state))
         (:type-alist '(get-brr-local 'type-alist state))
