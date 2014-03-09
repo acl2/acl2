@@ -336,6 +336,12 @@ then restart the ACL2-Doc browser to view that manual."
 		 manual-name)
       (message "Topic: %s (%s manual)" name manual-name))))
 
+(defun acl2-doc-where ()
+  (interactive)
+  (cond ((consp *acl2-doc-history*)
+	 (acl2-doc-display-message (car *acl2-doc-history*)))
+	(t (error "Empty history: No `where' to display!"))))
+
 (defun acl2-doc-display-basic (entry)
 
 ;;; Entry is a history entry, hence of the form (point name parents
@@ -912,3 +918,4 @@ ACL2-Doc browser."
 (define-key acl2-doc-mode-map "D" 'acl2-doc-rendered-combined-download)
 (define-key acl2-doc-mode-map "\t" 'acl2-doc-tab)
 (define-key acl2-doc-mode-map "H" 'acl2-doc-history)
+(define-key acl2-doc-mode-map "w" 'acl2-doc-where)
