@@ -14684,7 +14684,8 @@
 ; Warning: Keep this in sync with check-print-base.
 
   (declare (xargs :guard t))
-  (member print-base '(2 8 10 16)))
+  (and (member print-base '(2 8 10 16))
+       t))
 
 (defun explode-nonnegative-integer (n print-base ans)
   (declare (xargs :guard (and (integerp n)
