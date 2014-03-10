@@ -1164,7 +1164,8 @@ sub src_deps {
     my ($fname,             # file to scan for dependencies
 	$depdb,             # dep database
 	$certinfo,          # certinfo accumulator
-	$portp,             # Allow following LD commands, and add books to port rather than bookdeps
+        $ldp,               # allow following LD commands
+	$portp,             # Add books to port rather than bookdeps
 	$seen,              # seen table for detecting circular dependencies
 	$parent)            # file that required this one
 	= @_;
@@ -1279,7 +1280,7 @@ sub src_deps {
 	    my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
 					      $certinfo->include_dirs, "loads", "");
 	    if ($fullname) {
-		src_deps($fullname, $depdb, $certinfo, $portp, $seen, $fname);
+		src_deps($fullname, $depdb, $certinfo, $ldp, $portp, $seen, $fname);
 	    } else {
 		print "Bad path in (loads \"$srcname\""
 		    . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
@@ -1288,18 +1289,17 @@ sub src_deps {
 	    # print "cert_param: $fname, " . $event->[1] . " = " . $event->[2] . "\n";
 	    $certinfo->params->{$event->[1]} = $event->[2];
 	} elsif ($type eq $ld_event) {
-	    if ($portp) {
-		my $srcname = $event->[1];
-		my $dir = $event->[2];
-		my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
-						  $certinfo->include_dirs, "ld", "");
-		if ($fullname) {
-		    src_deps($fullname, $depdb, $certinfo, $portp, $seen, $fname);
-		} else {
-		    print "Bad path in (ld \"$srcname\""
-			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
-		}
+	    my $srcname = $event->[1];
+	    my $dir = $event->[2];
+	    my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
+					      $certinfo->include_dirs, "ld", "");
+	    if ($fullname) {
+		src_deps($fullname, $depdb, $certinfo, $ldp, $portp, $seen, $fname);
 	    } else {
+		print "Bad path in (ld \"$srcname\""
+		    . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
+	    }
+	    if (! $ldp) {
 		print "Warning: LD event in book context in $fname:\n";
 		print_event($event);
 		print "\n";
@@ -1368,12 +1368,12 @@ sub find_deps {
 	# Scan the .acl2 file first so that we get the add-include-book-dir
 	# commands before the include-book commands.
 	if ($acl2file) {
-	    src_deps($acl2file, $depdb, $certinfo, 1, {}, $lispfile);
+	    src_deps($acl2file, $depdb, $certinfo, 1, 1, {}, $lispfile);
 	}
     }
 
     # Scan the lisp file for include-books.
-    src_deps($lispfile, $depdb, $certinfo, 0, {}, $parent);
+    src_deps($lispfile, $depdb, $certinfo, (! $certifiable), 0, {}, $parent);
 
     if ($debugging) {
 	print "find_deps $lispfile: bookdeps:\n";
