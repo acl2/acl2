@@ -7023,6 +7023,13 @@
               is written this way, see the comment in ~
               check-built-in-constants."))
     (cond
+     ((not (equal *force-xrune*
+                  (fn-rune-nume 'force nil t (w *the-live-state*))))
+      (interface-er str
+                    '*force-xrune*
+                    *force-xrune*
+                    (fn-rune-nume 'force nil t (w *the-live-state*)))))
+    (cond
      ((not (equal *force-xnume* (fn-rune-nume 'force t t (w *the-live-state*))))
       (interface-er str
                     '*force-xnume*

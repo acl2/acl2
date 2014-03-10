@@ -821,6 +821,9 @@
    (t (and (dumb-occur-in-type-alist (car vars) type-alist)
            (all-dumb-occur-in-type-alist (cdr vars) type-alist)))))
 
+(defconst *force-xrune*
+  '(:EXECUTABLE-COUNTERPART FORCE))
+
 (defun force-assumption
   (rune target term type-alist rewrittenp immediatep force-flg ttree)
 
@@ -896,7 +899,8 @@
 ; allowing force-flg to be 'weak:  it will always be t or nil.  See the comment
 ; in ok-to-force.
 
-  (let ((type-alist (remove-assumption-entries-from-type-alist type-alist)))
+  (let ((type-alist (remove-assumption-entries-from-type-alist type-alist))
+        (ttree (push-lemma *force-xrune* ttree)))
     (cond
      ((not force-flg)
       (mv force-flg
