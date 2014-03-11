@@ -997,6 +997,11 @@
           (and stable-under-simplificationp
                '(:cases ((equal 1 (regp (stype (car aignet))))))))))
 
+(local (defthm <=-minus-1-rewrite
+           (implies (and (natp x) (natp y))
+                    (equal (< (+ -1 y) x)
+                           (not (< x y))))))
+
 (define aignet-aiger-copy-nxsts (idx maxid regarr aignet)
   (declare (type (integer 0 *) idx)
            (type (integer 1 *) maxid)

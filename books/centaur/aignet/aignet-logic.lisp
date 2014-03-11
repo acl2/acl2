@@ -1292,10 +1292,10 @@
                            (lookup-id id y)))
            :hints(("Goal" :in-theory (enable aignet-extension-p lookup-id)))))
 
-  (defthm <=-minus-1-rewrite
-    (implies (and (natp x) (natp y))
-             (equal (< (+ -1 y) x)
-                    (not (< x y)))))
+  (local (defthm <=-minus-1-rewrite
+           (implies (and (natp x) (natp y))
+                    (equal (< (+ -1 y) x)
+                           (not (< x y))))))
 
   (defthm aignet-lit-fix-id-val-linear
     (<= (lit-id (aignet-lit-fix lit aignet))
