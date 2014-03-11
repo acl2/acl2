@@ -28,6 +28,9 @@
 
 ; (include-book "centaur/gl/gl" :dir :system)
 
+; prevent this from being certified in non-hons acl2:
+; cert_param: (hons-only)
+
 (in-package "ACL2")
 
 ; The following four events set up an environment that is similar to the one
