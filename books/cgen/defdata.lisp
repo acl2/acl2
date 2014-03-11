@@ -3500,7 +3500,9 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
                       (implies (and (,tpred x)
                                     (,tpred acl2::y))
                                (,tpred (acl2::append x acl2::y))) ;July 11th v941 - why is induction on binary-append disabled? ans: coi/lists/basic
-                      :hints (("Goal" :induct (true-listp x)))
+                      :hints (("Goal" :induct (true-listp x)
+                                      :in-theory (enable true-listp)
+                               ))
                       :rule-classes ((:rewrite :backchain-limit-lst 1)))
                     ))
        

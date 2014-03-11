@@ -3,35 +3,34 @@
 ;$ACL2s-Preamble$|#
 
 ;Author: Harsh Raju Chamarthi
-;Acknowledgements: Many thanks to Matt Kaufmann.
+;Acknowledgements: Matt Kaufmann provided significant help.
 
 (in-package "ACL2")
-(include-book "xdoc/top" :dir :system)
 
-(defxdoc with-timeout
-  :parents (testing)
-  :short "Evaluate form with a timeout (in seconds)"
-  :long "Evaluate form with a timeout in seconds. The syntax of
-  this macro is (with-timeout <i>duration</i> <i>body</i>
-  <i>timeout-form</i>). 
+(defdoc with-timeout
+  ":Doc-Section with-timeout
+  Evaluate form with a timeout (in seconds) ~/~/
+
+  Evaluate form with a timeout in seconds. The syntax of
+  this macro is (with-timeout ~i[duration] ~i[body] ~i[timeout-form]). 
   A duration of 0 seconds disables the timeout mechanism, 
-  i.e its a no-op. Otherwise, if <i>duration</i> seconds elapse
-  during evaluation of <i>body</i> then the evaluation is
-  aborted and the value of <tt>timeout-form</tt> is returned,
-  otherwise returns the value of <tt>body</tt>. The signature of 
-  <tt>body</tt> and <tt>timeout-form</tt> should be the same.
+  i.e its a no-op. Otherwise, if ~i[duration] seconds elapse
+  during evaluation of ~i[body] then the evaluation is
+  aborted and the value of ~t[timeout-form] is returned,
+  otherwise returns the value of ~t[body]. The signature of 
+  ~t[body] and ~t[timeout-form] should be the same.
   
   
   Advanced Notes:
-  This form should be called either at the top-level or in an environment
-  where state is available and <tt>body</tt> has no free variables
-  other than state.
+  This form should be called either at the top-level or in
+  an environment where state is available and ~t[body] has
+  no free variables other than state.
   If the timeout-form is a long running computation, 
   then the purpose of with-timeout is defeated.
 
   <code>
   Usage:
-  (with-timeout 5 (fibonacci 40) :timeout)
+  (with-timeout 5 (fibonacci 40) :timed-out)
    :doc with-timeout
   </code>"
   )

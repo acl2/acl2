@@ -1759,10 +1759,10 @@ enumerator type/expr to be displayed in verbose mode")
 
 (def make-next-sigma-defuns (hyps concl ord-vs 
                                   partial-A type-alist tau-interval-alist
-                                  vl wrld R$ types-ht$)
+                                  programp vl wrld R$ types-ht$)
   (decl :sig ((pseudo-term-list pseudo-term symbol-list 
                       symbol-doublet-listp symbol-alist symbol-alist
-                      fixnum plist-worldp R$ types-ht$) 
+                      boolean fixnum plist-worldp R$ types-ht$) 
               -> (mv erp all symbol-alist))
         :doc "return the defun forms defining next-sigma function, given a
         list of hypotheses and conclusion (terms). Also return the enum-alist to be displayed")
@@ -1792,7 +1792,7 @@ enumerator type/expr to be displayed in verbose mode")
                        (kwote-symbol-doublet-list partial-A))
                      seed. BE.)))
            (defun next-sigma-current-gv (sampling-method seed. BE.)
-             (declare (xargs :guard T :verify-guards t))
+             (declare (xargs :guard T :verify-guards ,(not programp)))
              ;(declare (type (unsigned-byte 31) seed.))
              (ec-call (next-sigma-current sampling-method seed. BE.))))))
          
@@ -1857,8 +1857,14 @@ enumerator type/expr to be displayed in verbose mode")
     (cons `(,(first vs) (cadr (assoc-eq ',(first vs) ,sigma-symbol)))
           (make-let-binding-for-sigma (cdr vs) sigma-symbol))))
 
-(def make-hypotheses-val-defuns (terms ord-vars mv-sig-alist)
-  (decl :sig ((pseudo-term-list symbol-list symbol-alist) -> all)
+
+; 9th Nov '13 -- stupid bug. I recently fixed -gv function to have
+; :verify-guards t, so that even in the presence of
+; set-verify-guards-eagerness 0, but in program mode, or if
+; hypotheses-val-current has a program mode function, then the pair
+; :verify-guards t is not allowed.
+(def make-hypotheses-val-defuns (terms ord-vars mv-sig-alist programp)
+  (decl :sig ((pseudo-term-list symbol-list symbol-alist boolean) -> all)
         :doc "make the defun forms for hypotheses-val defstub")
   `((defun hypotheses-val-current (A)
       (declare (ignorable A))
@@ -1869,11 +1875,11 @@ enumerator type/expr to be displayed in verbose mode")
           ,(mv-list-ify (single-hypothesis terms)
                         mv-sig-alist)))
     (defun hypotheses-val-current-gv (A)
-      (declare (xargs :guard T :verify-guards t))
+      (declare (xargs :guard T :verify-guards ,(not programp)))
       (ec-call (hypotheses-val-current A)))))
 
-(def make-conclusion-val-defuns (term ord-vars mv-sig-alist)
-  (decl :sig ((pseudo-term symbol-list symbol-alist) -> all)
+(def make-conclusion-val-defuns (term ord-vars mv-sig-alist programp)
+  (decl :sig ((pseudo-term symbol-list symbol-alist boolean) -> all)
         :doc "make the defun forms for conclusion-val defstub")
   `((defun conclusion-val-current (A)
       (declare (ignorable A))
@@ -1883,7 +1889,7 @@ enumerator type/expr to be displayed in verbose mode")
         (declare (ignorable ,@ord-vars))
           ,(mv-list-ify term mv-sig-alist)))
     (defun conclusion-val-current-gv (A)
-      (declare (xargs :guard T :verify-guards t))
+      (declare (xargs :guard T :verify-guards ,(not programp)))
       (ec-call (conclusion-val-current A)))))
 
 ;add the following for guard verif
@@ -2448,8 +2454,8 @@ Use :simple search strategy to find counterexamples and witnesses.
        (- (cw? (verbose-flag vl) "~%~%"))
        (- (cw? (verbose-stats-flag vl) 
                "~|CEgen/Stats/simple-search:: *START*~|"))
-       (hyp-val-defuns   (make-hypotheses-val-defuns hyps vars mv-sig-alist))
-       (concl-val-defuns (make-conclusion-val-defuns concl vars mv-sig-alist))
+       (hyp-val-defuns   (make-hypotheses-val-defuns hyps vars mv-sig-alist programp))
+       (concl-val-defuns (make-conclusion-val-defuns concl vars mv-sig-alist programp))
        (- (cw? (system-debug-flag vl) 
                "~%~%~x0 **SYSTEM-DEBUG** hyp/concl defuns: ~| ~x1 ~x2~|" 
                name hyp-val-defuns concl-val-defuns))
@@ -2472,6 +2478,7 @@ Use :simple search strategy to find counterexamples and witnesses.
                               (make-next-sigma-defuns ',hyps ',concl 
                                                       ',vars ',partial-A 
                                                       ',type-alist ',tau-interval-alist
+                                                      ',programp
                                                       ',vl ',wrld R$ types-ht$))
                     ctx state t))
        ((when erp0)
