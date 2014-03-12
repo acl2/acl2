@@ -49,7 +49,9 @@
 ; (vl::vl-ppcs-modulelist (vl::vl-translation->mods *counter-translation*))
 
 (defconst *counter-vl*
-  (vl::vl-find-module "counter" (vl::vl-translation->mods *counter-translation*)))
+  (vl::vl-find-module "counter"
+                      (vl::vl-design->mods
+                       (vl::vl-translation->good *counter-translation*))))
 
 ; (vl::vl-ppcs-module *counter-vl*)
 

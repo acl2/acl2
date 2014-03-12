@@ -3140,7 +3140,7 @@
                      acl2::rewrite-rule-term
                      rewrite-rule-term-alt-def
                      len hons-assoc-equal
-                     acl2::alistp-when-hons-duplicity-alist-p
+                     ;; acl2::alistp-when-hons-duplicity-alist-p
                      acl2::alistp-when-esc-alist-p
                      glcp-generic-eval-context-equiv*-suff
 ;glcp-if-test-contexts

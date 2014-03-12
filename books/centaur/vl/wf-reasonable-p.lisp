@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,7 +28,6 @@
 (local (include-book "util/arithmetic"))
 (local (include-book "util/osets"))
 
-
 (defxdoc reasonable
   :parents (well-formedness)
   :short "Identify modules in our supported subset of Verilog."
@@ -52,8 +51,6 @@ the small subset of Verilog that we actually encounter at Centaur.  There is
 little motivation for us to support things like complicated port lists merely
 because they are in the Verilog-2005 standard.</p>")
 
-
-
 (defwellformed vl-portlist-reasonable-p (x)
   :parents (reasonable)
   :short "@(call vl-portlist-reasonable-p) determines if a @(see vl-portlist-p)
@@ -69,7 +66,6 @@ number of additional well-formedness checks are done in @(see argresolve) and
                       :vl-bad-ports
                       "Duplicate port names: ~&0."
                       (list dupes))))
-
 
 (defwellformed vl-portdecl-reasonable-p (x)
   :parents (reasonable)
@@ -709,62 +705,34 @@ item.</p>"
   :element vl-module-reasonable-p)
 
 
-
-(defsection vl-module-check-reasonable
+(define vl-module-check-reasonable
   :parents (reasonable)
-  :short "@(call vl-module-check-reasonable) annotates @('x') with any warnings
-about whether it is @(see reasonable).  Furthermore, if @('x') is unreasonable,
-a fatal warning is added that mentions this."
-
-  (defund vl-module-check-reasonable (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((when (vl-module->hands-offp x))
-          x)
-         (warnings
-          (vl-module->warnings x))
-         ((mv okp warnings)
-          (vl-module-reasonable-p-warn x warnings))
-         (warnings
-          (if okp
-              warnings
-            (cons (make-vl-warning
-                   :type :vl-mod-unreasonable
-                   :msg "Module ~m0 has been deemed unreasonable."
-                   :args (list (vl-module->name x))
-                   :fatalp t
-                   :fn 'vl-module-check-reasonable)
-                  warnings)))
-         (x-prime
-          (change-vl-module x :warnings warnings)))
-        x-prime))
-
-  (local (in-theory (enable vl-module-check-reasonable)))
-
-  (defthm vl-module-p-of-vl-module-check-reasonable
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-check-reasonable x))))
-
-  (defthm vl-module->name-of-vl-module-check-reasonable
-    (equal (vl-module->name (vl-module-check-reasonable x))
-           (vl-module->name x))))
-
+  :short "Annotate a module with any warnings concerning whether it is @(see
+reasonable).  Furthermore, if @('x') is unreasonable, a fatal warning to it."
+  ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard)
+  (b* (((when (vl-module->hands-offp x))
+        x)
+       (warnings          (vl-module->warnings x))
+       ((mv okp warnings) (vl-module-reasonable-p-warn x warnings))
+       (warnings          (if okp
+                              (ok)
+                            (fatal :type :vl-mod-unreasonable
+                                   :msg "Module ~m0 is unreasonable."
+                                   :args (list (vl-module->name x)))))
+       (x-prime (change-vl-module x :warnings warnings)))
+    x-prime))
 
 (defprojection vl-modulelist-check-reasonable (x)
   (vl-module-check-reasonable x)
   :guard (vl-modulelist-p x)
   :result-type vl-modulelist-p
-  :parents (reasonable)
-  :short "@(call vl-modulelist-check-reasonable) annotates each module in
-@('x') with any warnings regarding whether it is @(see reasonable);
-furthermore, any unreasonable modules are annotated with a fatal warning."
+  :parents (reasonable))
 
-  :long "<p>This function may be used in conjunction with @(see
-vl-propagate-errors) to safely eliminate any unreasonable modules and their
-dependents.</p>"
-
-  :rest ((defthm vl-modulelist->names-of-vl-modulelist-check-reasonable
-           (equal (vl-modulelist->names (vl-modulelist-check-reasonable x))
-                  (vl-modulelist->names x))
-           :hints(("Goal" :induct (len x))))))
-
+(define vl-design-check-reasonable ((design vl-design-p))
+  :returns (new-design vl-design-p)
+  (b* ((design (vl-design-fix design))
+       ((vl-design design) design)
+       (new-mods (vl-modulelist-check-reasonable design.mods)))
+    (change-vl-design design :mods new-mods)))
 

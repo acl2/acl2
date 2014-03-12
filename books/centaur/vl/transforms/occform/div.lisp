@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -365,7 +365,7 @@ circuitry to achieve the desired behavior.</p>"
 
   :guard (posp n)
   :body
-  (b* (((when (int= n 1))
+  (b* (((when (eql n 1))
         ;; Custom definition for absurd case of 1-bit by 1-bit division
         (list *vl-1-bit-div-rem* *vl-1-bit-x* *vl-1-bit-not* *vl-1-bit-and*
               *vl-1-bit-or* *vl-1-bit-xor*))

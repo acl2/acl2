@@ -2989,7 +2989,7 @@ transforms to not modules with this attribute.</p>"
     :rule-classes :compound-recognizer))
 
 
-(defaggregate design
+(defaggregate vl-design
   :short "Top level representation of all modules, interfaces, programs, etc.,
 resulting from parsing some Verilog source code."
   :tag :vl-design
@@ -3004,3 +3004,15 @@ resulting from parsing some Verilog source code."
    ;; bind directives?
    (configs    "List of configurations")))
 
+(define vl-design-fix ((x vl-design-p))
+  :returns (fixed-x vl-design-p)
+  :inline t
+  (mbe :logic (if (vl-design-p x)
+                  x
+                (make-vl-design))
+       :exec x)
+  ///
+  (defthm vl-design-fix-when-vl-design-p
+    (implies (vl-design-p x)
+             (equal (vl-design-fix x)
+                    x))))

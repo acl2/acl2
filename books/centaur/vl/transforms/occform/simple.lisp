@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -87,11 +87,11 @@ endmodule
 ; consistency we go ahead and try to keep the wrapper in all cases.
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_POINTWISE_"
-                                  (case type
-                                    (:vl-and "AND")
-                                    (:vl-or "OR")
-                                    (:vl-xor "XOR")
-                                    (:vl-xnor "XNOR")))))
+                             (case type
+                               (:vl-and "AND")
+                               (:vl-or "OR")
+                               (:vl-xor "XOR")
+                               (:vl-xnor "XNOR")))))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))
@@ -150,7 +150,7 @@ endmodule
   :guard (posp n)
 
   :body
-  (b* (((when (= n 1))
+  (b* (((when (eql n 1))
         (list *vl-1-bit-assign*))
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_ASSIGN")))
@@ -209,7 +209,7 @@ above we would have:</p>
 
   :guard (posp n)
   :body
-  (b* (((when (= n 1))
+  (b* (((when (eql n 1))
         (list *vl-1-bit-not*))
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_NOT")))
@@ -276,10 +276,10 @@ endmodule
 
   :body
   (b* ((name (hons-copy (cat "VL_" (natstr n) "_BIT_REDUCTION_"
-                                  (case type
-                                    (:vl-unary-bitand "AND")
-                                    (:vl-unary-bitor "OR")
-                                    (:vl-unary-xor "XOR")))))
+                             (case type
+                               (:vl-unary-bitand "AND")
+                               (:vl-unary-bitor "OR")
+                               (:vl-unary-xor "XOR")))))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
        ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
@@ -293,7 +293,7 @@ endmodule
        ((when (< n 3))
         ;; Special cases.  See test-redux.v.
         (b* (((mv inst prim)
-              (if (= n 1)
+              (if (eql n 1)
                   (mv (vl-simple-inst *vl-1-bit-buf* "ans" out-expr in-expr)
                       *vl-1-bit-buf*)
                 ;; Any two-bit op is just the op applied to the argument bits.
@@ -406,7 +406,7 @@ when the select is X.  So, we generally set @('approxp') to T.</p>"
   :body
   (b* ((onebitmux (if approxp *vl-1-bit-approx-mux* *vl-1-bit-mux*))
 
-       ((when (= n 1))
+       ((when (eql n 1))
         (list onebitmux))
 
        (name (cat "VL_" (natstr n) "_BIT_" (if approxp "APPROX_MUX" "MUX")))
@@ -464,7 +464,7 @@ actually handles both cases.</p>"
   :guard (posp n)
 
   :body
-  (b* (((when (= n 1))
+  (b* (((when (eql n 1))
         (list *vl-1-bit-zmux*))
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_ZMUX")))
@@ -522,7 +522,7 @@ reduction-and the results.</p> "
 
   :guard (posp n)
   :body
-  (b* (((when (= n 1))
+  (b* (((when (eql n 1))
         (list *vl-1-bit-ceq*))
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_CEQ")))
@@ -594,7 +594,7 @@ endmodule
   :guard (posp n)
 
   :body
-  (b* (((when (int= n 1))
+  (b* (((when (eql n 1))
         (list *vl-1-bit-x*))
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_X")))

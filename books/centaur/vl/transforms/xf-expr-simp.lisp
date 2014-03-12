@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2012 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -42,6 +42,8 @@ Boolean values of expressions.</p>
 soundness here.  There are probably many things that could go wrong
 w.r.t. expression sizes, etc.  You should check that this produces reasonable
 output using an equivalence checker.</p>")
+
+(local (xdoc::set-default-parents expr-simp))
 
 (local (defthm crock
          (implies (vl-expr-resolved-p x)
@@ -308,231 +310,120 @@ output using an equivalence checker.</p>")
     ;; Else, no rewrites to do.  Just install the new args.
     (change-vl-nonatom x :args args)))
 
-
-
-(defsection vl-expr-simp
-  :parents (expr-simp)
+(defines vl-expr-simp
   :short "Core routine to simplify expressions."
+  (define vl-expr-simp
+    ((x vl-expr-p))
+    :returns (new-x vl-expr-p :hyp :fguard)
+    :measure (vl-expr-count x)
+    :verify-guards nil
+    :flag :expr
+    (b* (((when (vl-idexpr-p x))
+          (b* ((name (vl-idexpr->name x))
+               ((when (and (or (equal name "vdd0")
+                               (equal name "vdd3"))
+                           (equal (vl-expr->finalwidth x) 1)
+                           (equal (vl-expr->finaltype x) :vl-unsigned)))
+                |*sized-1'b1*|)
+               ((when (and (equal name "vss0")
+                           (equal (vl-expr->finalwidth x) 1)
+                           (equal (vl-expr->finaltype x) :vl-unsigned)))
+                |*sized-1'b0*|))
+            ;; Otherwise leave it alone
+            x))
+         ((when (vl-fast-atom-p x))
+          x)
+         ((vl-nonatom x) x)
+         (args (vl-exprlist-simp x.args))
+         ((when (eq x.op :vl-unary-bitnot))  (vl-expr-simp-unary-bitnot x args))
+         ((when (eq x.op :vl-binary-bitand)) (vl-expr-simp-binary-bitand x args))
+         ((when (eq x.op :vl-binary-bitor))  (vl-expr-simp-binary-bitor x args))
+         ((when (eq x.op :vl-qmark))         (vl-expr-simp-qmark x args))
+         )
+      ;; Else, nothing to do, just install the reweritten args
+      (change-vl-nonatom x :args args)))
 
-  (mutual-recursion
-
-   (defund vl-expr-simp (x)
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (vl-expr-count x)
-                     :verify-guards nil))
-     (b* (((when (vl-idexpr-p x))
-           (b* ((name (vl-idexpr->name x))
-                ((when (and (or (equal name "vdd0")
-                                (equal name "vdd3"))
-                            (equal (vl-expr->finalwidth x) 1)
-                            (equal (vl-expr->finaltype x) :vl-unsigned)))
-                 |*sized-1'b1*|)
-                ((when (and (equal name "vss0")
-                            (equal (vl-expr->finalwidth x) 1)
-                            (equal (vl-expr->finaltype x) :vl-unsigned)))
-                 |*sized-1'b0*|))
-             ;; Otherwise leave it alone
-             x))
-          ((when (vl-fast-atom-p x))
-           x)
-          ((vl-nonatom x) x)
-          (args (vl-exprlist-simp x.args))
-          ((when (eq x.op :vl-unary-bitnot))  (vl-expr-simp-unary-bitnot x args))
-          ((when (eq x.op :vl-binary-bitand)) (vl-expr-simp-binary-bitand x args))
-          ((when (eq x.op :vl-binary-bitor))  (vl-expr-simp-binary-bitor x args))
-          ((when (eq x.op :vl-qmark))         (vl-expr-simp-qmark x args))
-          )
-       ;; Else, nothing to do, just install the reweritten args
-       (change-vl-nonatom x :args args)))
-
-   (defund vl-exprlist-simp (x)
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (vl-exprlist-count x)))
-     (if (atom x)
-         nil
-       (cons (vl-expr-simp (car x))
-             (vl-exprlist-simp (cdr x))))))
-
-  (local (flag::make-flag flag-vl-expr-simp
-                          vl-expr-simp
-                          :flag-mapping ((vl-expr-simp . expr)
-                                         (vl-exprlist-simp . list))))
-
-  (defthm len-of-vl-exprlist-simp
-    (equal (len (vl-exprlist-simp x))
-           (len x))
-    :hints(("Goal"
-            :induct (len x)
-            :expand (vl-exprlist-simp x)))
-    :rule-classes ((:rewrite)
-                   (:forward-chaining :trigger-terms ((vl-exprlist-simp x)))))
-
-  (defthm consp-of-vl-exprlist-simp
-    (equal (consp (vl-exprlist-simp x))
-           (consp x))
-    :hints(("Goal"
-            :induct (len x)
-            :expand (vl-exprlist-simp x)))
-    :rule-classes ((:rewrite)
-                   (:forward-chaining :trigger-terms ((vl-exprlist-simp x)))))
-
-  (defthm vl-nonatom-p-when-vl-expr-resolved-p
-    (implies (vl-expr-resolved-p x)
-             (equal (vl-nonatom-p x)
-                    nil))
-    :hints(("Goal" :in-theory (enable vl-expr-resolved-p))))
-
-  (defthm vl-exprlist-simp-under-iff
-    (iff (vl-exprlist-simp x)
-         (consp x))
-    :hints(("Goal" :induct (len x)
-            :expand (vl-exprlist-simp x))))
-
-  (local
-   (defsection gah
-     (local (defthm cdr-of-vl-exprlist-simp
-              (equal (cdr (vl-exprlist-simp x))
-                     (vl-exprlist-simp (cdr x)))
-              :hints(("Goal" :expand (vl-exprlist-simp x)))))
-
-     (defthm gaaaaaah
-       (iff (CDR (VL-EXPRLIST-SIMP X))
-            (consp (cdr x))))
-
-     (defthm gaaaaaaaaah!@@$!%
-       (iff (CDDR (VL-EXPRLIST-SIMP X))
-            (consp (cddr x))))))
-
-  (local (defthm-flag-vl-expr-simp
-           (defthm vl-expr-p-of-vl-expr-simp
-             (implies (force (vl-expr-p x))
-                      (vl-expr-p (vl-expr-simp x)))
-             :flag expr)
-           (defthm vl-exprlist-p-of-vl-exprlist-simp
-             (implies (force (vl-exprlist-p x))
-                      (vl-exprlist-p (vl-exprlist-simp x)))
-             :flag list)
-           :hints(("Goal"
-                   :do-not '(generalize fertilize)
-                   :expand ((vl-expr-simp x)
-                            (vl-exprlist-simp x))))))
-
-  (defthm vl-expr-p-of-vl-expr-simp
-    (implies (force (vl-expr-p x))
-             (vl-expr-p (vl-expr-simp x))))
-
-  (defthm vl-exprlist-p-of-vl-exprlist-simp
-    (implies (force (vl-exprlist-p x))
-             (vl-exprlist-p (vl-exprlist-simp x))))
-
+  (define vl-exprlist-simp
+    ((x vl-exprlist-p))
+    :returns (new-x (and (vl-exprlist-p new-x)
+                         (equal (len new-x) (len x)))
+                    :hyp :fguard)
+    :measure (vl-exprlist-count x)
+    :flag :list
+    (if (atom x)
+        nil
+      (cons (vl-expr-simp (car x))
+            (vl-exprlist-simp (cdr x)))))
+  ///
   (verify-guards vl-expr-simp))
 
 
 ; We could do these reductions in more places, but mainly we care about
-; assignments and instance arguments...
+; assignments and instance arguments.
 
-(defsection vl-assign-simp
-  :parents (expr-simp)
-
-  (defund vl-assign-simp (x)
-    (declare (xargs :guard (vl-assign-p x)))
-    (change-vl-assign x :expr (vl-expr-simp (vl-assign->expr x))))
-
-  (local (in-theory (enable vl-assign-simp)))
-
-  (defthm vl-assign-p-of-vl-assign-simp
-    (implies (vl-assign-p x)
-             (vl-assign-p (vl-assign-simp x)))))
+(define vl-assign-simp
+  ((x vl-assign-p))
+  :returns (new-x vl-assign-p :hyp :fguard)
+  (change-vl-assign x :expr (vl-expr-simp (vl-assign->expr x))))
 
 (defprojection vl-assignlist-simp (x)
   (vl-assign-simp x)
   :guard (vl-assignlist-p x)
-  :result-type vl-assignlist-p
-  :parents (expr-simp))
+  :result-type vl-assignlist-p)
 
-
-
-(defsection vl-plainarg-simp
-  :parents (expr-simp)
-
-  (defund vl-plainarg-simp (x)
-    (declare (xargs :guard (vl-plainarg-p x)))
-    (b* (((vl-plainarg x) x)
-         ((unless (eq x.dir :vl-input))
-          ;; Don't want to tamper with outputs/inouts, not that they should
-          ;; have negations anyway...
-          x)
-         ((unless x.expr)
-          x))
-      (change-vl-plainarg x :expr (vl-expr-simp x.expr))))
-
-  (local (in-theory (enable vl-plainarg-simp)))
-
-  (defthm vl-plainarg-p-of-vl-plainarg-simp
-    (implies (vl-plainarg-p x)
-             (vl-plainarg-p (vl-plainarg-simp x)))))
+(define vl-plainarg-simp ((x vl-plainarg-p))
+  :returns (new-x vl-plainarg-p :hyp :fguard)
+  (b* (((vl-plainarg x) x)
+       ((unless (eq x.dir :vl-input))
+        ;; Don't want to tamper with outputs/inouts, not that they should
+        ;; have negations anyway...
+        x)
+       ((unless x.expr)
+        x))
+    (change-vl-plainarg x :expr (vl-expr-simp x.expr))))
 
 (defprojection vl-plainarglist-simp (x)
   (vl-plainarg-simp x)
   :guard (vl-plainarglist-p x)
-  :result-type vl-plainarglist-p
-  :parents (expr-simp))
+  :result-type vl-plainarglist-p)
 
-
-
-(defsection vl-modinst-simp
-  :parents (expr-simp)
-
-  (defund vl-modinst-simp (x)
-    (declare (xargs :guard (vl-modinst-p x)))
-    (b* (((vl-modinst x) x)
-         ((when (vl-arguments->namedp x.portargs))
-          ;; Not resolved, don't modify
-          x)
-         (args (vl-arguments->args x.portargs))
-         (args (vl-plainarglist-simp args)))
-      (change-vl-modinst x
-                         :portargs (vl-arguments nil args))))
-
-  (local (in-theory (enable vl-modinst-simp)))
-
-  (defthm vl-modinst-p-of-vl-modinst-simp
-    (implies (vl-modinst-p x)
-             (vl-modinst-p (vl-modinst-simp x)))))
+(define vl-modinst-simp ((x vl-modinst-p))
+  :returns (new-x vl-modinst-p :hyp :fguard)
+  (b* (((vl-modinst x) x)
+       ((when (vl-arguments->namedp x.portargs))
+        ;; Not resolved, don't modify
+        x)
+       (args (vl-arguments->args x.portargs))
+       (args (vl-plainarglist-simp args)))
+    (change-vl-modinst x
+                       :portargs (vl-arguments nil args))))
 
 (defprojection vl-modinstlist-simp (x)
   (vl-modinst-simp x)
   :guard (vl-modinstlist-p x)
-  :result-type vl-modinstlist-p
-  :parents (expr-simp))
+  :result-type vl-modinstlist-p)
 
 
-
-(defsection vl-module-simp
-  :parents (expr-simp)
-
-  (defund vl-module-simp (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((vl-module x) x)
-         ((when (vl-module->hands-offp x))
-          x))
-      (change-vl-module x
-                        :assigns (vl-assignlist-simp x.assigns)
-                        :modinsts (vl-modinstlist-simp x.modinsts))))
-
-  (local (in-theory (enable vl-module-simp)))
-
-  (defthm vl-module-p-of-vl-module-simp
-    (implies (vl-module-p x)
-             (vl-module-p (vl-module-simp x))))
-
-  (defthm vl-module->name-of-vl-module-simp
-    (equal (vl-module->name (vl-module-simp x))
-           (vl-module->name x))))
+(define vl-module-simp ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard)
+  (b* (((vl-module x) x)
+       ((when (vl-module->hands-offp x))
+        x))
+    (change-vl-module x
+                      :assigns (vl-assignlist-simp x.assigns)
+                      :modinsts (vl-modinstlist-simp x.modinsts))))
 
 (defprojection vl-modulelist-simp (x)
   (vl-module-simp x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :parents (expr-simp))
+  :result-type vl-modulelist-p)
+
+(define vl-design-simp
+  :short "Top-level @(see expr-simp) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-simp x.mods))))
+
 

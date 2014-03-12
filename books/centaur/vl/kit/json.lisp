@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2013 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -157,14 +157,19 @@ Options:" *nls* *nls* *vl-json-opts-usage* *nls*))
         (cwtime (vl-load loadconfig)))
 
        (- (cw "JSON-Encoding Modules...~%"))
+
+       ;; BOZO, Eventually we can change this to output the whole design, but
+       ;; for now continue to just print only the modules.
+
+       (mods (vl-design->mods res.design))
        (state
         (cwtime
          (with-ps-file outfile
                        (vl-ps-update-autowrap-col 120)
                        (vl-ps-update-autowrap-ind 10)
                        (cwtime (if opts.separate
-                                   (vl-jp-individual-modules res.mods)
-                                 (vl-jp-modalist (vl-modalist res.mods)))
+                                   (vl-jp-individual-modules mods)
+                                 (vl-jp-modalist (vl-modalist mods)))
                                :name vl-json-encode))
          :name vl-json-export)))
     (exit-ok)

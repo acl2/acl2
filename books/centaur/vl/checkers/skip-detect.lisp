@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -82,32 +82,30 @@ assign bcNxtWCBEntSrc_P =
 
 <p>We try to also detect skipped signals in these kinds of expressions.</p>")
 
+(local (xdoc::set-default-parents skip-detection))
+
 (defaggregate sd-key
-  (pat index orig)
   :tag :sd-key
   :legiblep nil
-  :require ((stringp-of-sd-key->pat         (stringp pat))
-            (maybe-natp-of-sd-key->index (maybe-natp index))
-            (stringp-of-sd-key->orig        (stringp orig)))
-
-  :parents (skip-detection)
   :short "Keys are derived from wire names and are the basis of our skip
-detection."
+          detection."
 
-  :long "<p>The @('pat') for each key is a string, and is the same as the wire
-name except that some embedded number (perhaps spanning many digits) may have
-been replaced by a @('*') character.</p>
+  ((pat stringp :rule-classes :type-prescription
+        "The same as the wire name except that some embedded number (perhaps
+         spanning many digits) may have been replaced by a @('*') character.")
 
-<p>The @('index') is the parsed value of the number that has been replaced, or
-@('nil') if no replacement was made.</p>
+   (index maybe-natp :rule-classes :type-prescription
+          "The parsed value of the number that has been replaced, or @('nil')
+           if no replacement was made.")
 
-<p>The @('orig') field is the original wire name.  This is somewhat unnecessary
-since it can be recovered by just replacing @('*') in @('pat') with the
-characters for @('index'), but we thought it was convenient to keep around.</p>
+   (orig stringp :rule-classes :type-prescription
+         "The original wire name.  This is somewhat unnecessary since it can be
+          recovered by just replacing @('*') in @('pat') with the characters
+          for @('index'), but we thought it was convenient to keep around"))
 
-<p>The idea of keys is to cause related signals to have the same pattern.  For
-instance, @('bcWCB0Ent_P') and @('bcWCB1Ent_P') will both give rise to the
-pattern @('bcWCB*Ent_P').</p>
+  :long "<p>The idea of keys is to cause related signals to have the same
+pattern.  For instance, @('bcWCB0Ent_P') and @('bcWCB1Ent_P') will both give
+rise to the pattern @('bcWCB*Ent_P').</p>
 
 <p>Because a particular wire name might include many numbers, we may generate a
 list of keys for a single wire.  For instance, for @('bcL2RB1NoRtry_P') we will
@@ -125,9 +123,7 @@ index.</p>")
   :guard (sd-keylist-p x))
 
 
-
 (defsection sd-keygen
-  :parents (skip-detection)
   :short "@(call sd-keygen) derives a list of @(see sd-key-p)s from @('x'), a
 wire name, and accumulates them into @('acc')."
 
@@ -191,7 +187,6 @@ wire name, and accumulates them into @('acc')."
 
 
 (defsection sd-patalist-p
-  :parents (skip-detection)
   :short "@(call sd-patalist-p) recognizes alists that bind strings to @(see
 sd-keylist-p)s."
 
@@ -231,7 +226,6 @@ sd-keylist-p)s."
 
 
 (defsection sd-patalist
-  :parents (skip-detection)
   :short "@(call sd-patalist) separates a @(see sd-keylist-p) by their
 patterns, producing a @(see sd-patalist-p)."
 
@@ -276,48 +270,39 @@ patterns, producing a @(see sd-patalist-p)."
     (alistp (sd-patalist x))))
 
 
-
-
 (defaggregate sd-problem
-  (type priority groupsize key ctx)
   :tag :sd-problem
-  :require ((symbolp-of-sd-problem->type     (symbolp type))
-            (natp-of-sd-problem->priority    (natp priority))
-            (natp-of-sd-problem->groupsize   (natp groupsize))
-            (sd-key-p-of-sd-problem->key     (sd-key-p key))
-            (vl-context-p-of-sd-problem->ctx (vl-context-p ctx)))
-  :parents (skip-detection)
   :short "An alleged problem noticed by skip detection."
+  ((type symbolp :rule-classes :type-prescription
+         "What kind of problem this is.  At the moment the type is always
+          @(':skipped') and means that we think some wire is suspiciously
+          skipped. But we imagine that we could add other kinds of analysis
+          that look, e.g., for wires that are oddly duplicated, etc., and hence
+          have other types.")
 
-  :long "<ul>
+   (priority natp :rule-classes :type-prescription
+             "A heuristic score that we give to problems to indicate how likely
+              they are to be a real problem.  For instance, we assign extra
+              priority to a sequence of wires like @('foo1'), @('foo2'),
+              @('foo4'), @('foo5') because the skipped wire is in the middle.
+              We also might assign extra priority if one of the other wires is
+              duplicated.")
 
-<li>@('type') says what kind of problem this is.  At the moment the type is
-always @(':skipped') and means that we think some wire is suspiciously skipped.
-But we imagine that we could add other kinds of analysis that look, e.g., for
-wires that are oddly duplicated, etc., and hence have other types.</li>
+   (groupsize natp :rule-classes :type-prescription
+              "Says how many wires had this same pattern.  We generally think
+               that the larger the group size is, the more likely the problem
+               is to be legitimate.")
 
-<li>@('priority') is a heuristic score that we give to problems to indicate how
-likely they are to be a real problem.  For instance, we assign extra priority
-to a sequence of wires like @('foo1'), @('foo2'), @('foo4'), @('foo5') because
-the skipped wire is in the middle.  We also might assign extra priority if one
-of the other wires is duplicated.</li>
+   (key sd-key-p "The @(see sd-key-p) for the missing wire.")
 
-<li>@('groupsize') says how many wires had this same pattern.  We generally
-think that the larger the group size is, the more likely the problem is to be
-legitimate.</li>
-
-<li>@('key') is the @(see sd-key-p) for the missing wire.</li>
-
-<li>@('ctx') says where this problem originates.</li>
-
-</ul>")
+   (ctx vl-context-p "Says where this problem originates.")))
 
 (deflist sd-problemlist-p (x)
   (sd-problem-p x)
   :elementp-of-nil nil)
 
-(defund sd-problem-score (x)
-  (declare (xargs :guard (sd-problem-p x)))
+(define sd-problem-score ((x sd-problem-p))
+  :returns (score natp :rule-classes :type-prescription)
   (b* (((sd-problem x) x)
        (elem (vl-context->elem x.ctx))
        (elem-score (cond ((eq (tag elem) :vl-assign) 1)
@@ -332,25 +317,20 @@ legitimate.</li>
        (score (+ x.priority gs-score elem-score)))
       (nfix score)))
 
-(defthm natp-of-sd-problem-score
-  (natp (sd-problem-score x))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable sd-problem-score))))
-
-(defund sd-problem-> (x y)
-  (declare (xargs :guard (and (sd-problem-p x)
-                              (sd-problem-p y))))
+(define sd-problem->
+  :short "Basic ordering on skip-detect problems."
+  ((x sd-problem-p)
+   (y sd-problem-p))
   (> (sd-problem-score x)
-     (sd-problem-score y)))
-
-(defthm sd-problem->-transitive
-  (implies (and (sd-problem-> x y)
-                (sd-problem-> y z)
-                (sd-problem-p x)
-                (sd-problem-p y)
-                (sd-problem-p z))
-           (sd-problem-> x z))
-  :hints(("Goal" :in-theory (enable sd-problem->))))
+     (sd-problem-score y))
+  ///
+  (defthm sd-problem->-transitive
+    (implies (and (sd-problem-> x y)
+                  (sd-problem-> y z)
+                  (sd-problem-p x)
+                  (sd-problem-p y)
+                  (sd-problem-p z))
+             (sd-problem-> x z))))
 
 (acl2::defsort
  :comparablep sd-problem-p
@@ -372,11 +352,9 @@ legitimate.</li>
 
 
 
-;; One reason we might bump the priority is if the wires are linearly
-;; progressing and we're missing one in the middle.
-
-(defund sd-natlist-linear-increments-p (x)
-  (declare (xargs :guard (nat-listp x)))
+(define sd-natlist-linear-increments-p ((x nat-listp))
+  "One reason we might bump the priority is if the wires are linearly
+   progressing and we're missing one in the middle."
   (cond ((atom x)
          t)
         ((atom (cdr x))
@@ -385,8 +363,7 @@ legitimate.</li>
          (and (equal (+ 1 (first x)) (second x))
               (sd-natlist-linear-increments-p (cdr x))))))
 
-(defund sd-keylist-linear-increments-p (x)
-  (declare (xargs :guard (sd-keylist-p x)))
+(define sd-keylist-linear-increments-p ((x sd-keylist-p))
   (let ((indicies (sd-keylist->indicies x)))
     (and (nat-listp indicies)
          (sd-natlist-linear-increments-p indicies))))
@@ -395,22 +372,21 @@ legitimate.</li>
 
 
 
-(defsection sd-keylist-find-skipped
-  :parents (skip-detection)
+(define sd-keylist-find-skipped
   :short "Perform skip-detection for a single pattern within an expression."
+  ((x sd-keylist-p)
+   (y sd-keylist-p)
+   (ctx vl-context-p))
+  :returns (prob? (equal (sd-problem-p prob?) (if prob? t nil))
+                  :hyp :fguard)
 
-  :long "<p><b>Signature:</b> @(call sd-keylist-find-skipped) returns a
-@('nil') or a @(see sd-problem-p).</p>
-
-<p>As inputs, we are given @('x') and @('y'), which are two lists of @(see
-sd-key-p)s.</p>
-
-<p>We expect that all of the keys in @('x') and @('y') have the same pattern.
-In practice, assuming the original wire names are free of @('*') characters,
-this means that all keys throughout @('x') and @('y') should differ only by
-their indices.  More specifically, our expectation here is that the keys in
-@('x') have been generated from the wires in some particular expression, while
-the keys in @('y') were generated by looking at the entire module.</p>
+  :long "<p>We expect that all of the keys in @('x') and @('y') have the same
+pattern.  In practice, assuming the original wire names are free of @('*')
+characters, this means that all keys throughout @('x') and @('y') should differ
+only by their indices.  More specifically, our expectation here is that the
+keys in @('x') have been generated from the wires in some particular
+expression, while the keys in @('y') were generated by looking at the entire
+module.</p>
 
 <p>Our goal is to investigate whether this expression uses \"all but one\" of
 the wires of this pattern.  That is, it would be suspicious for @('x') to
@@ -435,124 +411,75 @@ In other words, the alarm level is somehow like a confidence indicator that
 says how suspicious this omission is -- it's not too suspicious to omit one out
 of three wires, but it's really suspicious to omit one out of ten.</p>"
 
-  (defund sd-keylist-find-skipped (x y ctx)
-    (declare (xargs :guard (and (sd-keylist-p x)
-                                (sd-keylist-p y)
-                                (vl-context-p ctx))))
-    (b* ((ys (mergesort y))
-         (yl (len ys))
-         ((unless (> yl 2))
-          nil)
-         (xs (mergesort x))
-         (missing  (difference ys xs))
-         (nmissing (len missing))
-         ((unless (= nmissing 1))
-          nil)
-         ;; Extra priority will be assigned if the keys of Y are linear
-         ;; increments and the one we are missing is in the middle!
-         (linearp     (sd-keylist-linear-increments-p ys))
-         (idx-min     (sd-key->index (car ys)))
-         (idx-max     (sd-key->index (car (last ys))))
-         (idx-missing (sd-key->index (car missing)))
-         (middlep     (and linearp
-                           (natp idx-min)
-                           (natp idx-max)
-                           (natp idx-missing)
-                           (< idx-min idx-missing)
-                           (< idx-missing idx-max)))
+  (b* ((ys (mergesort y))
+       (yl (len ys))
+       ((unless (> yl 2))
+        nil)
+       (xs (mergesort x))
+       (missing  (difference ys xs))
+       (nmissing (len missing))
+       ((unless (= nmissing 1))
+        nil)
+       ;; Extra priority will be assigned if the keys of Y are linear
+       ;; increments and the one we are missing is in the middle!
+       (linearp     (sd-keylist-linear-increments-p ys))
+       (idx-min     (sd-key->index (car ys)))
+       (idx-max     (sd-key->index (car (last ys))))
+       (idx-missing (sd-key->index (car missing)))
+       (middlep     (and linearp
+                         (natp idx-min)
+                         (natp idx-max)
+                         (natp idx-missing)
+                         (< idx-min idx-missing)
+                         (< idx-missing idx-max)))
 
-         ;; Another reason we might bump the priority is if the wires are all
-         ;; mentioned with duplicity 1 except that one is duplicated.  This
-         ;; might be something like foo1, foo2, foo2, foo4, foo5.  We know
-         ;; there is exactly one wire missing, so if there is exactly one
-         ;; duplicate, the len of X will be the len of YS.
-         (dupep       (same-lengthp x ys))
+       ;; Another reason we might bump the priority is if the wires are all
+       ;; mentioned with duplicity 1 except that one is duplicated.  This
+       ;; might be something like foo1, foo2, foo2, foo4, foo5.  We know
+       ;; there is exactly one wire missing, so if there is exactly one
+       ;; duplicate, the len of X will be the len of YS.
+       (dupep       (same-lengthp x ys))
 
-         (priority    (cond ((and middlep dupep)
-                             10)
-                            (middlep
-                             6)
-                            (dupep
-                             4)
-                            (linearp
-                             2)
-                            (t
-                             1))))
-        (make-sd-problem :type :skipped
-                         :priority priority
-                         :groupsize yl
-                         :key (car missing)
-                         :ctx ctx)))
+       (priority    (cond ((and middlep dupep)
+                           10)
+                          (middlep
+                           6)
+                          (dupep
+                           4)
+                          (linearp
+                           2)
+                          (t
+                           1))))
+    (make-sd-problem :type :skipped
+                     :priority priority
+                     :groupsize yl
+                     :key (car missing)
+                     :ctx ctx)))
 
-  (local (in-theory (enable sd-keylist-find-skipped)))
-
-  (defthm sd-problem-p-of-sd-keylist-find-skipped
-    (implies (and (force (sd-keylist-p x))
-                  (force (sd-keylist-p y))
-                  (force (vl-context-p ctx)))
-             (equal (sd-problem-p (sd-keylist-find-skipped x y ctx))
-                    (if (sd-keylist-find-skipped x y ctx)
-                        t
-                      nil)))))
-
-
-
-
-(defsection sd-patalist-compare
-  :parents (skip-detection)
+(define sd-patalist-compare
   :short "Perform skip-detection for a single expression."
-
-  :long "<p><b>Signature:</b> @(call sd-patalist-compare) returns a list of
-@(see sd-problem-p)s.</p>
-
-<p>In reverse order, the inputs are:</p>
-
-<ul>
-
-<li>@('ctx') says where the expression is from.</li>
-
-<li>@('y') is the global @(see sd-patalist-p) that we assume was produced for
-the entire module.</li>
-
-<li>@('x') is the pattern alist produced for this particular expression.</li>
-
-<li>@('dom') is, in practice, the strip-cars of @('x').  That is, it is the
-list of all pattern names that were found in the expression, and which we need
-to investigate.</li>
-
-</ul>
-
-<p>We recur over @('dom').  For each pattern named in the expression, we use
-@(see sd-keylist-find-skipped) to try to find any skipped wires, collecting any
-problems that have been reported.</p>"
-
-  (defund sd-patalist-compare (dom x y ctx)
-    (declare (xargs :guard (and (sd-patalist-p x)
-                                (sd-patalist-p y)
-                                (vl-context-p ctx))))
-    (if (atom dom)
-        nil
-      (let ((first (sd-keylist-find-skipped (cdr (hons-get (car dom) x))
-                                            (cdr (hons-get (car dom) y))
-                                            ctx))
-            (rest  (sd-patalist-compare (cdr dom) x y ctx)))
-        (if first
-            (cons first rest)
-          rest))))
-
-  (local (in-theory (enable sd-patalist-compare)))
-
-  (defthm sd-problemlist-p-of-sd-patalist-compare
-    (implies (and (force (sd-patalist-p x))
-                  (force (sd-patalist-p y))
-                  (force (vl-context-p ctx)))
-             (sd-problemlist-p (sd-patalist-compare dom x y ctx)))))
-
-
-
+  ((dom "In practice, this is the @(see strip-cars) of @('x').  That is, it is
+         the list of all pattern names that were found in the expression, and
+         which we need to investigate.")
+   (x sd-patalist-p "The pattern produced for some particular expression.")
+   (y sd-patalist-p "The global @(see sd-patalist-p) that we assume was 
+                     produced for the entire module.")
+   (ctx vl-context-p "Where this expression came from."))
+  :returns (probs sd-problemlist-p :hyp :fguard)
+  :long "<p>We recur over @('dom').  For each pattern named in the expression,
+we use @(see sd-keylist-find-skipped) to try to find any skipped wires,
+collecting any problems that have been reported.</p>"
+  (if (atom dom)
+      nil
+    (let ((first (sd-keylist-find-skipped (cdr (hons-get (car dom) x))
+                                          (cdr (hons-get (car dom) y))
+                                          ctx))
+          (rest  (sd-patalist-compare (cdr dom) x y ctx)))
+      (if first
+          (cons first rest)
+        rest))))
 
 (defsection sd-analyze-ctxexprs
-  :parents (skip-detection)
   :short "Perform skip-detection for a list of expressions."
 
   :long "<p><b>Signature:</b> @(call sd-analyze-ctxexprs) returns a list of
@@ -602,122 +529,76 @@ names in the module, which is needed by @(see sd-patalist-compare).</li>
 
 
 
-(defsection sd-analyze-module-aux
+(define sd-analyze-module-aux
+  :short "Collect all the problems."
+  ((x vl-module-p))
+  :returns (probs sd-problemlist-p :hyp :fguard "Not sorted yet.")
+  (b* (;;(modname (vl-module->name x))
+       ;;(- (cw "Analyzing ~s0.~%" modname))
+       (ctxexprs  (cwtime (vl-module-ctxexprs x)
+                          :mintime 1/2
+                          :name sd-harvest-ctxexprs))
 
-; The aux function just collects problems.
-; The main function then sorts them into priority order.
+       ;; BOZO is all-names sufficient?  Should we perhaps also collect all
+       ;; declared wire names, in case they aren't ever used in an expression?
 
-  (defund sd-analyze-module-aux (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (;(modname (vl-module->name x))
-         ;(- (cw "Analyzing ~s0.~%" modname))
-         (ctxexprs  (cwtime (vl-module-ctxexprs x)
+       (all-names (cwtime (vl-exprlist-names (strip-cars ctxexprs))
+                          :mintime 1/2
+                          :name sd-extract-names))
+       (all-keys  (cwtime (mergesort (sd-keygen-list all-names nil))
+                          :mintime 1/2
+                          :name sd-make-global-keys))
+       (global-pats (cwtime (sd-patalist all-keys)
                             :mintime 1/2
-                            :name sd-harvest-ctxexprs))
+                            :name sd-make-global-pats))
+       (report (cwtime (sd-analyze-ctxexprs ctxexprs global-pats)
+                       :mintime 1/2
+                       :name sd-analyze-ctxexprs)))
+    (fast-alist-free global-pats)
+    report))
 
-; BOZO is all-names sufficient?  Should we perhaps also collect all declared
-; wire names, in case they aren't ever used in an expression?
-
-         (all-names (cwtime (vl-exprlist-names (strip-cars ctxexprs))
-                            :mintime 1/2
-                            :name sd-extract-names))
-         (all-keys  (cwtime (mergesort (sd-keygen-list all-names nil))
-                            :mintime 1/2
-                            :name sd-make-global-keys))
-         (global-pats (cwtime (sd-patalist all-keys)
-                              :mintime 1/2
-                              :name sd-make-global-pats))
-         (report (cwtime (sd-analyze-ctxexprs ctxexprs global-pats)
-                         :mintime 1/2
-                         :name sd-analyze-ctxexprs))
-         (-      (flush-hons-get-hash-table-link global-pats)))
-        report))
-
-  (local (in-theory (enable sd-analyze-module-aux)))
-
-  (defthm true-listp-of-sd-analyze-module-aux
-    (true-listp (sd-analyze-module-aux x))
-    :rule-classes :type-prescription)
-
-  (defthm sd-problemlist-p-of-sd-analyze-module-aux
-    (implies (force (vl-module-p x))
-             (sd-problemlist-p (sd-analyze-module-aux x)))))
-
-
-(defsection sd-analyze-module
-  :parents (skip-detection)
+(define sd-analyze-module
   :short "Perform skip-detection on a module."
-
-  :long "<p><b>Signature:</b> @(call sd-analyze-module) returns a list of @(see
-sd-problem-p)s, sorted in priority order.</p>"
-
-  (defund sd-analyze-module (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (sd-problem-sort (sd-analyze-module-aux x)))
-
-  (local (in-theory (enable sd-analyze-module)))
-
+  ((x vl-module-p))
+  :returns (probs sd-problemlist-p :hyp :fguard "Sorted in priority order.")
+  (sd-problem-sort (sd-analyze-module-aux x))
+  ///
   (defthm true-listp-of-sd-analyze-module
     (true-listp (sd-analyze-module x))
-    :rule-classes :type-prescription)
-
-  (defthm sd-problemlist-p-of-sd-analyze-module
-    (implies (force (vl-module-p x))
-             (sd-problemlist-p (sd-analyze-module x)))))
+    :rule-classes :type-prescription))
 
 
+(define sd-analyze-modulelist-aux ((x vl-modulelist-p))
+  :returns (probs sd-problemlist-p :hyp :fguard "Not sorted yet.")
+  (if (atom x)
+      nil
+    (append (sd-analyze-module-aux (car x))
+            (sd-analyze-modulelist-aux (cdr x)))))
 
-(defsection sd-analyze-modulelist-aux
-
-; The aux function just collects problems.
-; The main function then sorts them into priority order.
-
-  (defund sd-analyze-modulelist-aux (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (if (atom x)
-        nil
-      (append (sd-analyze-module-aux (car x))
-              (sd-analyze-modulelist-aux (cdr x)))))
-
-  (local (in-theory (enable sd-analyze-modulelist-aux)))
-
-  (defthm true-listp-of-sd-analyze-modulelist-aux
-    (true-listp (sd-analyze-modulelist-aux x))
-    :rule-classes :type-prescription)
-
-  (defthm sd-problemlist-p-of-sd-analyze-modulelist-aux
-    (implies (force (vl-modulelist-p x))
-             (sd-problemlist-p (sd-analyze-modulelist-aux x)))))
-
-
-(defsection sd-analyze-modulelist
-  :parents (skip-detection)
+(define sd-analyze-modulelist
   :short "Perform skip-detection on a module list."
-
-  :long "<p><b>Signature:</b> @(call sd-analyze-module) returns a list of @(see
-sd-problem-p)s, sorted in priority order.</p>"
-
-  (defund sd-analyze-modulelist (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (let* ((analyze (cwtime (sd-analyze-modulelist-aux x)
-                            :name sd-analyze-modulelist-aux
-                            :mintime 1))
-           (sort    (cwtime (sd-problem-sort analyze)
-                            :name sd-analyze-modulelist-sort
-                            :mintime 1/2)))
-      sort))
-
-  (local (in-theory (enable sd-analyze-modulelist)))
-
+  ((x vl-modulelist-p))
+  :returns (probs sd-problemlist-p :hyp :fguard "Sorted in priority order.")
+  (b* ((analyze (cwtime (sd-analyze-modulelist-aux x)
+                        :name sd-analyze-modulelist-aux
+                        :mintime 1))
+       (sort    (cwtime (sd-problem-sort analyze)
+                        :name sd-analyze-modulelist-sort
+                        :mintime 1/2)))
+    sort)
+  ///
   (defthm true-listp-of-sd-analyze-modulelist
     (true-listp (sd-analyze-modulelist x))
-    :rule-classes :type-prescription)
-
-  (defthm sd-problemlist-p-of-sd-analyze-modulelist
-    (implies (force (vl-modulelist-p x))
-             (sd-problemlist-p (sd-analyze-modulelist x)))))
+    :rule-classes :type-prescription))
 
 
+(define sd-analyze-design
+  :short "Top level skip-detection for a design."
+  ((x vl-design-p))
+  :returns (probs sd-problemlist-p "Sorted in priority order.")
+  (b* ((x (vl-design-fix x))
+       (mods (vl-design->mods x)))
+    (sd-analyze-modulelist mods)))
 
 
 ; Pretty-printing results

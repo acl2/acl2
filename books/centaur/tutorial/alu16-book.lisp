@@ -53,7 +53,8 @@
    :start-files (list "alu16.v")))
 
 (defconst *alu16*
-  (b* ((mods  (vl::vl-translation->mods *alu16-translation*))
+  (b* ((good  (vl::vl-translation->good *alu16-translation*))
+       (mods  (vl::vl-design->mods good))
        (alu16 (vl::vl-find-module "alu16" mods))
        ((unless alu16)
         (er hard? '*alu16* "Failed to translate alu16?"))

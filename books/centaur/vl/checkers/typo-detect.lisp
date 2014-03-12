@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,11 +26,8 @@
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
-
-
 (defxdoc typo-detection
   :parents (use-set)
-
   :short "We try to detect possible typos in wire names."
 
   :long "<p>Verilog implementations allow the use of implicit wires.  Because
@@ -178,22 +175,19 @@ they end with distinct numbers, we reject the match.  This is intended to
 prevent matching between signals like @('bcDWCBAEnt_C0_P') and
 @('bcDWCBAEnt_C1_P').</li>
 
-</ul>
-")
+</ul>")
+
+(local (xdoc::set-default-parents typo-detection))
 
 (defchar typo-lowercase
-  (or (and (<= 97 (char-code x)) (<= (char-code x) 122)) ;; a-z in ascii.
-      (and (<= 48 (char-code x)) (<= (char-code x) 57))) ;; 0-9 in ascii
-  :parents (typo-detection))
+  (or (and (<= 97 (char-code x)) (<= (char-code x) 122))  ;; a-z in ascii.
+      (and (<= 48 (char-code x)) (<= (char-code x) 57)))) ;; 0-9 in ascii
 
 (defchar typo-uppercase
-  (and (<= 65 (char-code x)) (<= (char-code x) 90)) ;; A-Z in ascii
-  :parents (typo-detection))
+  (and (<= 65 (char-code x)) (<= (char-code x) 90))) ;; A-Z in ascii
 
 (defchar typo-number
-  (and (<= 48 (char-code x)) (<= (char-code x) 57)) ;; 0-9 in ascii
-  :parents (typo-detection))
-
+  (and (<= 48 (char-code x)) (<= (char-code x) 57))) ;; 0-9 in ascii
 
 
 (defconst *typo-special-substrings*
@@ -216,41 +210,33 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
         "EC"
         ))
 
-
-(defconst *typo-special-substrings-chars*
+(defval *typo-special-substrings-chars*
   (explode-list *typo-special-substrings*))
 
-(defsection typo-read-special
-
-  (defund typo-read-special (substrings x)
-    (declare (xargs :guard (and (character-list-listp substrings)
-                                (character-listp x))))
-    (cond ((atom substrings)
-           (mv nil x))
-          ((str::iprefixp (car substrings) x)
-           (let ((len (mbe :logic (len (car substrings))
-                           :exec (length (car substrings)))))
-             (mv (take len x)
-                 (nthcdr len x))))
-          (t
-           (typo-read-special (cdr substrings) x))))
-
-  (local (in-theory (enable typo-read-special)))
-
+(define typo-read-special ((substrings character-list-listp)
+                           (x          character-listp))
+  :returns (mv (prefix character-listp :hyp (force (character-listp x)))
+               (remainder character-listp :hyp (force (character-listp x))))
+  (cond ((atom substrings)
+         (mv nil x))
+        ((str::iprefixp (car substrings) x)
+         (let ((len (mbe :logic (len (car substrings))
+                         :exec (length (car substrings)))))
+           (mv (take len x)
+               (nthcdr len x))))
+        (t
+         (typo-read-special (cdr substrings) x)))
+  :prepwork
+  ((local (defthm lemma
+            (implies (str::iprefixp a b)
+                     (<= (len a) (len b)))
+            :rule-classes ((:rewrite) (:linear))
+            :hints(("Goal" :in-theory (enable str::iprefixp))))))
+  ///
   (defthm true-listp-of-typo-read-special
     (true-listp (mv-nth 0 (typo-read-special substrings x)))
-    :rule-classes :type-prescription)
-
-  (local (defthm lemma
-           (implies (str::iprefixp a b)
-                    (<= (len a) (len b)))
-           :rule-classes ((:rewrite) (:linear))
-           :hints(("Goal" :in-theory (enable str::iprefixp)))))
-
-  (defthm typo-read-special-basics
-    (implies (force (character-listp x))
-             (and (character-listp (mv-nth 0 (typo-read-special substrings x)))
-                  (character-listp (mv-nth 1 (typo-read-special substrings x))))))
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (disable (force)))))
 
   (defthm acl2-count-of-typo-read-special-weak
     (<= (acl2-count (mv-nth 1 (typo-read-special substrings x)))
@@ -264,44 +250,33 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
     :rule-classes ((:rewrite) (:linear))))
 
 
-
-(defsection typo-read-lowercase-part
-
-  (defund typo-read-lowercase-part (x)
-    ;; Read as many lowercase characters as possible, but stop early if a
-    ;; special is encountered.
-    "Returns (MV PREFIX REMAINDER)"
-    (declare (xargs :guard (character-listp x)))
-    (if (atom x)
-        (mv nil x)
-      (b* (((mv prefix ?remainder)
-            (typo-read-special *typo-special-substrings-chars* x)))
-          (cond
-           (prefix ;; Stop early because a special is coming next.
-            (mv nil x))
-           ((vl-typo-lowercase-p (car x))
-            (mv-let (prefix remainder)
-                    (typo-read-lowercase-part (cdr x))
-                    (mv (cons (car x) prefix)
-                        remainder)))
-           (t
-            (mv nil x))))))
-
-  (local (in-theory (enable typo-read-lowercase-part)))
-
+(define typo-read-lowercase-part
+  :short "Read as many lowercase characters as possible, but stop early if a special
+          is encountered."
+  ((x character-listp))
+  :returns (mv (prefix character-listp :hyp (force (character-listp x)))
+               (remainder character-listp :hyp (force (character-listp x))))
+  (b* (((when (atom x))
+        (mv nil x))
+       ((mv prefix ?remainder)
+        (typo-read-special *typo-special-substrings-chars* x))
+       ((when prefix)
+        ;; Stop early because a special is coming next.
+        (mv nil x))
+       ((unless (vl-typo-lowercase-p (car x)))
+        (mv nil x))
+       ((mv prefix remainder) (typo-read-lowercase-part (cdr x))))
+    (mv (cons (car x) prefix) remainder))
+  ///
   (defthm true-listp-of-typo-read-lowercase-part
     (true-listp (mv-nth 0 (typo-read-lowercase-part x)))
-    :rule-classes :type-prescription)
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (disable (force)))))
 
   (defthm typo-read-lowercase-car-under-iff
     (implies (not (mv-nth 0 (typo-read-special *typo-special-substrings-chars* x)))
              (iff (mv-nth 0 (typo-read-lowercase-part x))
                   (vl-typo-lowercase-p (car x)))))
-
-  (defthm typo-read-lowercase-part-basics
-    (implies (character-listp x)
-             (and (character-listp (mv-nth 0 (typo-read-lowercase-part x)))
-                  (character-listp (mv-nth 1 (typo-read-lowercase-part x))))))
 
   (defthm acl2-count-of-typo-read-lowercase-weak
     (<= (acl2-count (mv-nth 1 (typo-read-lowercase-part x)))
@@ -315,32 +290,23 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
     :rule-classes ((:rewrite) (:linear))))
 
 
-(defsection typo-read-uppercase-part
-
-  (defund typo-read-uppercase-part (x)
-    ;; Read as many uppercase characters as we can.
-    "Returns (MV PREFIX REMAINDER)"
-    (declare (xargs :guard (character-listp x)))
-    (cond ((atom x)
-           (mv nil x))
-          ((vl-typo-uppercase-p (car x))
-           (mv-let (prefix remainder)
-                   (typo-read-uppercase-part (cdr x))
-                   (mv (cons (car x) prefix)
-                       remainder)))
-          (t
-           (mv nil x))))
-
-  (local (in-theory (enable typo-read-uppercase-part)))
-
+(define typo-read-uppercase-part
+  :short "Read as many uppercase characters as we can."
+  ((x character-listp))
+  :returns (mv (prefix character-listp :hyp (force (character-listp x)))
+               (remainder character-listp :hyp (force (character-listp x))))
+  (b* (((when (atom x))
+        (mv nil x))
+       ((unless (vl-typo-uppercase-p (car x)))
+        (mv nil x))
+       ((mv prefix remainder)
+        (typo-read-uppercase-part (cdr x))))
+    (mv (cons (car x) prefix) remainder))
+  ///
   (defthm true-listp-of-typo-read-uppercase-part
     (true-listp (mv-nth 0 (typo-read-uppercase-part x)))
-    :rule-classes :type-prescription)
-
-  (defthm typo-read-uppercase-part-basics
-    (implies (character-listp x)
-             (and (character-listp (mv-nth 0 (typo-read-uppercase-part x)))
-                  (character-listp (mv-nth 1 (typo-read-uppercase-part x))))))
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (disable (force)))))
 
   (defthm typo-read-uppercase-under-iff
     (iff (mv-nth 0 (typo-read-uppercase-part x))
@@ -358,73 +324,56 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
     :rule-classes ((:rewrite) (:linear))))
 
 
-
-(defsection typo-read-part
-
-  (defund typo-read-part (x)
-    ;; Read the first "part" of a wire name.
-    "Returns (MV PREFIX REMAINDER)"
-    (declare (xargs :guard (character-listp x)))
-    (if (atom x)
-        (mv nil nil)
-      (b* (((mv prefix remainder)
-            (typo-read-special *typo-special-substrings-chars* x)))
-          (cond
-           (prefix
-            ;; Found a special.  Make it its own part.
-            (mv prefix remainder))
-           ((vl-typo-lowercase-p (car x))
-            ;; Part starts with lowercase.  Read as much in lowercase
-            ;; as we possibly can.
-            (typo-read-lowercase-part x))
-           ((not (vl-typo-uppercase-p (car x)))
-            ;; Just completely skip any punctuation stuff.
-            (typo-read-part (cdr x)))
-           (t
-            (cond ((atom (cdr x))
-                   ;; One uppercase character all by itself gets its own part.
-                   (mv (list (car x)) (cdr x)))
-                  ((vl-typo-lowercase-p (second x))
-                   ;; One uppercase character followed by one lowercase.  Read
-                   ;; as much lowercase as we can from the cdr, and turn it
-                   ;; into a part.
-                   (mv-let (prefix remainder)
-                           (typo-read-lowercase-part (cdr x))
-                           (mv (cons (car x) prefix) remainder)))
-                  ((vl-typo-uppercase-p (second x))
-                   ;; At least two uppercase characters.  Read as much uppercase
-                   ;; as we can.
-                   (mv-let (prefix remainder)
-                           (typo-read-uppercase-part x)
-                           (cond ((atom remainder)
-                                  ;; Nothing follows, so it's just one part.
-                                  (mv prefix remainder))
-                                 ((not (vl-typo-lowercase-p (car remainder)))
-                                  ;; Either some underscore or other punctuation
-                                  ;; character follows.  Just take this.
-                                  (mv prefix remainder))
-                                 (t
-                                  ;; Finally, it's at least two uppercase chars
-                                  ;; followed by a lowercase char.  Remove the
-                                  ;; last char we read and leave it with the
-                                  ;; remainder.
-                                  (mv (butlast prefix 1)
-                                      (append (last prefix) remainder))))))
-                  (t
-                   ;; Some single uppercase character followed by punctuation
-                   ;; or something, just return the one char.
-                   (mv (list (car x)) (cdr x)))))))))
-
-  (local (in-theory (enable typo-read-part)))
-
+(define typo-read-part
+  :short "Read the first \"part\" of a wire name."
+  ((x character-listp))
+  :returns (mv (prefix character-listp :hyp (force (character-listp x)))
+               (remainder character-listp :hyp (force (character-listp x))))
+  (b* (((when (atom x))
+        (mv nil nil))
+       ((mv prefix remainder)
+        (typo-read-special *typo-special-substrings-chars* x))
+       ((when prefix)
+        ;; Found a special.  Make it its own part.
+        (mv prefix remainder))
+       ((when (vl-typo-lowercase-p (car x)))
+        ;; Part starts with lowercase.  Read as much in lowercase
+        ;; as we possibly can.
+        (typo-read-lowercase-part x))
+       ((unless (vl-typo-uppercase-p (car x)))
+        ;; Just completely skip any punctuation stuff.
+        (typo-read-part (cdr x)))
+       ((when (atom (cdr x)))
+        ;; One uppercase character all by itself gets its own part.
+        (mv (list (car x)) (cdr x)))
+       ((when (vl-typo-lowercase-p (second x)))
+        ;; One uppercase character followed by one lowercase.  Read as much
+        ;; lowercase as we can from the cdr, and turn it into a part.
+        (b* (((mv prefix remainder) (typo-read-lowercase-part (cdr x))))
+          (mv (cons (car x) prefix) remainder)))
+       ((unless (vl-typo-uppercase-p (second x)))
+        ;; Some single uppercase character followed by punctuation or
+        ;; something, just return the one char.
+        (mv (list (car x)) (cdr x)))
+       ;; Else, at least two uppercase characters.  Read as much uppercase as
+       ;; we can.
+       ((mv prefix remainder) (typo-read-uppercase-part x))
+       ((when (atom remainder))
+        ;; Nothing follows, so it's just one part.
+        (mv prefix remainder))
+       ((unless (vl-typo-lowercase-p (car remainder)))
+        ;; Either some underscore or other punctuation character follows.  Just
+        ;; take this.
+        (mv prefix remainder)))
+    ;; Finally, it's at least two uppercase chars followed by a lowercase char.
+    ;; Remove the last char we read and leave it with the remainder.
+    (mv (butlast prefix 1)
+        (append (last prefix) remainder)))
+  ///
   (defthm true-listp-of-typo-read-part
     (true-listp (mv-nth 0 (typo-read-part x)))
-    :rule-classes :type-prescription)
-
-  (defthm typo-read-part-basics
-    (implies (character-listp x)
-             (and (character-listp (mv-nth 0 (typo-read-part x)))
-                  (character-listp (mv-nth 1 (typo-read-part x))))))
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (disable (force)))))
 
   (local (defthm crock
            (equal (acl2-count (mv-nth 1 (typo-read-uppercase-part x)))
@@ -451,58 +400,46 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
     :rule-classes ((:rewrite) (:linear))))
 
 
-
-(defsection typo-partition
-
-  (defund typo-partition (x)
-    ;; Fully partition a wire name.
-    "Returns a character-list-listp"
-    (declare (xargs :guard (character-listp x)))
-    (if (atom x)
-        nil
-      (mv-let (prefix remainder)
-              (typo-read-part x)
-              (if (not prefix)
-                  nil
-                (cons prefix (typo-partition remainder))))))
-
-  (local (in-theory (enable typo-partition)))
-
+(define typo-partition
+  :short "Fully partition a wire name."
+  ((x character-listp))
+  :returns (parts character-list-listp :hyp :fguard)
+  (b* (((when (atom x))
+        nil)
+       ((mv prefix remainder)
+        (typo-read-part x))
+       ((unless prefix)
+        nil))
+    (cons prefix (typo-partition remainder)))
+  ///
   (defthm true-listp-of-typo-partition
     (true-listp (typo-partition x))
-    :rule-classes :type-prescription)
+    :rule-classes :type-prescription))
 
-  (defthm character-list-listp-of-typo-partition
-    (implies (force (character-listp x))
-             (character-list-listp (typo-partition x)))))
-
-
+#||
 ;; Some simple test cases.
 
-;; (typo-partition (coerce "mmSnoopDataValid_CX_P" 'list))
-;; (typo-partition (coerce "mmSnopDataValid_CX_P" 'list))
-;; (typo-partition (coerce "STPCLKB" 'list))
-;; (typo-partition (coerce "rrT0McTm1PdgClr_P" 'list))
-;; (typo-partition (coerce "orvHi" 'list))
-;; (typo-partition (coerce "x1I3_ReadGflags_X" 'list))
-;; (typo-partition (coerce "rnRomEnSel_A" 'list))
-;; (typo-partition (coerce "matchb39_6b" 'list))
-;; (typo-partition (coerce "bcDWCBAEnt_C0_P" 'list))
+(typo-partition (coerce "mmSnoopDataValid_CX_P" 'list))
+(typo-partition (coerce "mmSnopDataValid_CX_P" 'list))
+(typo-partition (coerce "STPCLKB" 'list))
+(typo-partition (coerce "rrT0McTm1PdgClr_P" 'list))
+(typo-partition (coerce "orvHi" 'list))
+(typo-partition (coerce "x1I3_ReadGflags_X" 'list))
+(typo-partition (coerce "rnRomEnSel_A" 'list))
+(typo-partition (coerce "matchb39_6b" 'list))
+(typo-partition (coerce "bcDWCBAEnt_C0_P" 'list))
+||#
 
-
-(defsection typo-partitioning-alist
-
-  (defund typo-partitioning-alist (x)
-    ;; Build an alist mapping strings to their partitionings.
-    (declare (xargs :guard (string-listp x)))
-    (if (atom x)
-        nil
-      (cons (cons (car x)
-                  (typo-partition (explode (car x))))
-            (typo-partitioning-alist (cdr x)))))
-
-  (local (in-theory (enable typo-partitioning-alist)))
-
+(define typo-partitioning-alist
+  :short "Build an alist mapping strings to their partitionings."
+  ((x string-listp))
+  :returns (al alistp)
+  (if (atom x)
+      nil
+    (cons (cons (car x)
+                (typo-partition (explode (car x))))
+          (typo-partitioning-alist (cdr x))))
+  ///
   (defthm alistp-of-typo-partitioning-alist
     (alistp (typo-partitioning-alist x)))
 
@@ -514,10 +451,10 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
     (vl-character-list-list-values-p (typo-partitioning-alist x))))
 
 
-
-(defund vl-typo-count-mismatches (x y)
-  ;; Given two same-length partitionings, determine how many of their pieces are mismatched.
-  (declare (xargs :guard (same-lengthp x y)))
+(define vl-typo-count-mismatches (x y)
+  :short "Given two same-length partitionings, determine how many of their
+  pieces are mismatched."
+  :guard (same-lengthp x y)
   (cond ((atom x)
          0)
         ((equal (car x) (car y))
@@ -526,21 +463,17 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
          (+ 1 (vl-typo-count-mismatches (cdr x) (cdr y))))))
 
 
-
-(defsection vl-typo-first-mismatch
-
-  (defund vl-typo-first-mismatch (x y)
-    ;; Given two same-length partitionings, return their first mismatch as a pair.
-    (declare (xargs :guard (same-lengthp x y)))
-    (cond ((atom x)
-           nil)
-          ((equal (car x) (car y))
-           (vl-typo-first-mismatch (cdr x) (cdr y)))
-          (t
-           (cons (car x) (car y)))))
-
-  (local (in-theory (enable vl-typo-first-mismatch)))
-
+(define vl-typo-first-mismatch (x y)
+  :short "Given two same-length partitionings, return their first mismatch as a
+  pair."
+  :guard (same-lengthp x y)
+  (cond ((atom x)
+         nil)
+        ((equal (car x) (car y))
+         (vl-typo-first-mismatch (cdr x) (cdr y)))
+        (t
+         (cons (car x) (car y))))
+  ///
   (defthm character-list-p-of-vl-typo-first-mismatch-1
     (implies (and (character-list-listp x)
                   (character-list-listp y))
@@ -551,30 +484,22 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
                   (character-list-listp y))
              (character-listp (cdr (vl-typo-first-mismatch x y))))))
 
+(defval *typo-numbers*
+  '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
 
-
-(defsection typo-numbers
-
-  (defconst *typo-numbers*
-    '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-
-  (defund typo-numbers ()
-    (declare (xargs :guard t))
-    *typo-numbers*)
-
+(define typo-numbers ()
+  *typo-numbers*
+  ///
   (in-theory (disable (:executable-counterpart typo-numbers)))
-
   (defthm setp-of-typo-numbers
-    (setp (typo-numbers))
-    :hints(("Goal" :in-theory (enable typo-numbers)))))
+    (setp (typo-numbers))))
 
 
-
-(defund typo-mismatch-plausibly-typo-p (x y)
-  ;; X and Y are single pieces that are mismatched.  Do they satisfy
-  ;; our criteria for being considered "possibly a typo"?
-  (declare (xargs :guard (and (character-listp x)
-                              (character-listp y))))
+(define typo-mismatch-plausibly-typo-p
+  :short "X and Y are single pieces that are mismatched.  Do they satisfy our
+  criteria for being considered \"possibly a typo\"?"
+  ((x character-listp)
+   (y character-listp))
   (and (consp x)
        (consp y)
        ;; Require the first character to agree.
@@ -609,14 +534,13 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
           (not (and (equal (butlast x 1) y)
                     (vl-typo-number-p xlast)))
           (not (and (equal (butlast y 1) x)
-                    (vl-typo-number-p ylast))))))
-  )
+                    (vl-typo-number-p ylast)))))))
 
-(defund typo-partitions-plausibly-typo-p (x y)
-  ;; X and Y are whole-partitionings.  Do they satisfy our criteria
-  ;; for being considered "possibly a typo"?
-  (declare (xargs :guard (and (character-list-listp x)
-                              (character-list-listp y))))
+(define typo-partitions-plausibly-typo-p
+  :short "X and Y are whole-partitionings.  Do they satisfy our criteria
+          for being considered \"possibly a typo\"?"
+  ((x character-list-listp)
+   (y character-list-listp))
 
 ; First criteria: they have the same length.
 
@@ -649,60 +573,42 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
 ;;  (typo-partition (coerce "rnRomEnSel_A" 'list))
 ;;  (typo-partition (coerce "rnRomEnSel_B" 'list)))
 
-(defsection typo-find-plausible-typos1
+(define typo-find-plausible-typos1
+  :short "Walk down the partitioning alist and gather the names of all signals
+          that Part might be a typo for."
+  ((part  character-list-listp "Partitioning of a single wire.")
+   (alist alistp               "Partitioning alist for a list of wires."))
+  :guard (and (vl-string-keys-p alist)
+              (vl-character-list-list-values-p alist))
+  :returns (plausible-typos string-listp :hyp (force (vl-string-keys-p alist)))
+  (cond ((atom alist)
+         nil)
+        ((typo-partitions-plausibly-typo-p part (cdar alist))
+         (cons (caar alist)
+               (typo-find-plausible-typos1 part (cdr alist))))
+        (t
+         (typo-find-plausible-typos1 part (cdr alist)))))
 
-  (defund typo-find-plausible-typos1 (part alist)
-    ;; Part is the partitioning of a single wire.  Alist is a partitioning
-    ;; alist for a list of wires.  Walk down the partitioning alist and
-    ;; gather the names of all signals that Part might be a typo for.
-    (declare (xargs :guard (and (character-list-listp part)
-                                (alistp alist)
-                                (vl-string-keys-p alist)
-                                (vl-character-list-list-values-p alist))))
-    (cond ((atom alist)
-           nil)
-          ((typo-partitions-plausibly-typo-p part (cdar alist))
-           (cons (caar alist)
-                 (typo-find-plausible-typos1 part (cdr alist))))
-          (t
-           (typo-find-plausible-typos1 part (cdr alist)))))
-
-  (local (in-theory (enable typo-find-plausible-typos1)))
-
-  (defthm string-listp-of-typo-find-plausible-typos1
-    (implies (force (vl-string-keys-p alist))
-             (string-listp (typo-find-plausible-typos1 part alist)))))
-
-
-
-(defsection typo-detect-aux
-
-  (defund typo-detect-aux (strs alist)
-    ;; Strs is a list of strings, generally the "implicit wires" for a module;
-    ;; Alist is a partitioning alist, generally constructed from the "explicit
-    ;; wires."
-    ;;
-    ;; We build an alist that might associate some of the wires in strs to the
-    ;; lists of wires we think they could be typos of.
-    (declare (xargs :guard (and (string-listp strs)
-                                (alistp alist)
-                                (vl-string-keys-p alist)
-                                (vl-character-list-list-values-p alist))))
-    (if (atom strs)
-        nil
-      (let* ((name1      (car strs))
-             (partition1 (typo-partition (explode name1)))
-             (typos1     (typo-find-plausible-typos1 partition1 alist)))
-        (if typos1
-            (cons (cons name1 typos1)
-                  (typo-detect-aux (cdr strs) alist))
-          (typo-detect-aux (cdr strs) alist)))))
-
-  (local (in-theory (enable typo-detect-aux)))
-
-  (defthm alistp-of-typo-detect-aux
-    (alistp (typo-detect-aux strs alist)))
-
+(define typo-detect-aux
+  :short "We build an alist that might associate some of the wires to the
+          lists of wires we think they could be typos of."
+  ((strs string-listp "A list of strings, generally the \"implicit wires\" for
+                       a module.")
+   (alist alistp      "A partitioning alist, generally constructed from the
+                       \"explicit wires\" for the module."))
+  :guard (and (vl-string-keys-p alist)
+              (vl-character-list-list-values-p alist))
+  :returns (typo-alist alistp)
+  (b* (((when (atom strs))
+        nil)
+       (name1      (car strs))
+       (partition1 (typo-partition (explode name1)))
+       (typos1     (typo-find-plausible-typos1 partition1 alist))
+       ((when typos1)
+        (cons (cons name1 typos1)
+              (typo-detect-aux (cdr strs) alist))))
+    (typo-detect-aux (cdr strs) alist))
+  ///
   (defthm vl-string-keys-p-of-typo-detect-aux
     (implies (force (string-listp strs))
              (vl-string-keys-p (typo-detect-aux strs alist))))
@@ -712,31 +618,23 @@ prevent matching between signals like @('bcDWCBAEnt_C0_P') and
              (vl-string-list-values-p (typo-detect-aux strs alist)))))
 
 
-(defsection typo-detect
-
-  (defund typo-detect (bad good)
-    ;; Bad is a string list that names any wires we think are somehow bad.  It
-    ;; could be, e.g., all of the implicit wires in a module, or all of the
-    ;; implicit wires that are only partly used, etc.  Good is a string list that
-    ;; names all the wires we think are somehow good; e.g., declared, used, etc.
-    ;; We build an alist associating some wires from Bad with the wires in Good
-    ;; that they may be typos of.
-    (declare (xargs :guard (and (string-listp bad)
-                                (string-listp good))))
-
-    ;; Note: consider removing any good wires from bad, and any bad wires from
-    ;; good.  E.g.,
-    ;(let* ((bad*  (mergesort bad))
-    ;       (good* (mergesort good))
-    ;       (bad   (difference bad* good*))
-    ;       (good  (difference good* bad*)))
-      (typo-detect-aux bad (typo-partitioning-alist good)))
-
-  (local (in-theory (enable typo-detect)))
-
-  (defthm alistp-of-typo-detect
-    (alistp (typo-detect bad good)))
-
+(define typo-detect
+  :short "Build an alist associating any \"bad\" wires with any \"good\" wires
+   that they may be typos for."
+  ((bad string-listp  "Names of wires we think are somehow bad.  It could be,
+                       e.g., all of the implicit wires in a module, or all of
+                       the implicit wires that are only partly used, etc.")
+   (good string-listp "Names of all the wires we think are somehow good; e.g.,
+                       declared, used, etc."))
+  :returns (alist alistp)
+  ;; Note: consider removing any good wires from bad, and any bad wires from
+  ;; good.  E.g.,
+  ;;(let* ((bad*  (mergesort bad))
+  ;;       (good* (mergesort good))
+  ;;       (bad   (difference bad* good*))
+  ;;       (good  (difference good* bad*)))
+  (typo-detect-aux bad (typo-partitioning-alist good))
+  ///
   (defthm vl-string-keys-p-of-typo-detect
     (implies (force (string-listp bad))
              (vl-string-keys-p (typo-detect bad good))))

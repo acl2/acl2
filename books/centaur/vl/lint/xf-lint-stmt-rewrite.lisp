@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -45,60 +45,34 @@ constructs.")
                        (list "$display" "$vcover" "$verror" "$acc_readmem"))
          t)))
 
-(defsection vl-lint-stmt-rewrite
+(defines vl-lint-stmt-rewrite
   :short "Main rewrite.  Recursively convert any throwaway statements into null
 statements."
 
-  (mutual-recursion
+  (define vl-lint-stmt-rewrite ((x vl-stmt-p))
+    :returns (new-x vl-stmt-p :hyp :fguard)
+    :measure (two-nats-measure (acl2-count x) 1)
+    :verify-guards nil
+    (cond ((vl-fast-atomicstmt-p x)
+           (if (vl-lint-throwaway-fn-p x)
+               (make-vl-nullstmt)
+             x))
+          (t
+           (change-vl-compoundstmt x
+                                   :stmts (vl-lint-stmtlist-rewrite
+                                           (vl-compoundstmt->stmts x))))))
 
-   (defund vl-lint-stmt-rewrite (x)
-     (declare (xargs :guard (vl-stmt-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)
-                     :verify-guards nil))
-     (cond ((vl-fast-atomicstmt-p x)
-            (if (vl-lint-throwaway-fn-p x)
-                (make-vl-nullstmt)
-              x))
-           (t
-            (change-vl-compoundstmt x
-                                    :stmts (vl-lint-stmtlist-rewrite
-                                            (vl-compoundstmt->stmts x))))))
-
-   (defund vl-lint-stmtlist-rewrite (x)
-     (declare (xargs :guard (vl-stmtlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (atom x)
-         nil
-       (cons (vl-lint-stmt-rewrite (car x))
-             (vl-lint-stmtlist-rewrite (cdr x))))))
-
-  (defthm len-of-vl-lint-stmtlist-rewrite
-    (equal (len (vl-lint-stmtlist-rewrite x))
-           (len x))
-    :hints(("Goal"
-            :expand ((vl-lint-stmtlist-rewrite x))
-            :induct (len x))))
-
-  (flag::make-flag vl-flag-lint-stmt-rewrite
-                   vl-lint-stmt-rewrite
-                   :flag-mapping ((vl-lint-stmt-rewrite . stmt)
-                                  (vl-lint-stmtlist-rewrite . list)))
-
-  (defthm-vl-flag-lint-stmt-rewrite
-    (defthm vl-stmt-p-of-vl-lint-stmt-rewrite
-      (implies (force (vl-stmt-p x))
-               (vl-stmt-p (vl-lint-stmt-rewrite x)))
-      :flag stmt)
-    (defthm vl-stmtlist-p-of-vl-lint-stmtlist-rewrite
-      (implies (force (vl-stmtlist-p x))
-               (vl-stmtlist-p (vl-lint-stmtlist-rewrite x)))
-      :flag list)
-    :hints(("Goal"
-            :expand ((vl-lint-stmt-rewrite x)
-                     (vl-lint-stmtlist-rewrite x)))))
-
+  (define vl-lint-stmtlist-rewrite ((x vl-stmtlist-p))
+    :returns (new-x (and (implies (force (vl-stmtlist-p x))
+                                  (vl-stmtlist-p new-x))
+                         (equal (len new-x) (len x))))
+    :measure (two-nats-measure (acl2-count x) 0)
+    (if (atom x)
+        nil
+      (cons (vl-lint-stmt-rewrite (car x))
+            (vl-lint-stmtlist-rewrite (cdr x)))))
+  ///
   (verify-guards vl-lint-stmt-rewrite))
-
 
 
 (define vl-always-lint-stmt-rewrite ((x vl-always-p))
@@ -129,18 +103,16 @@ statements."
        (initials (vl-initiallist-lint-stmt-rewrite x.initials)))
     (change-vl-module x
                       :alwayses alwayses
-                      :initials initials))
-  ///
-  (defthm vl-module->name-of-vl-module-lint-stmt-rewrite
-    (equal (vl-module->name (vl-module-lint-stmt-rewrite x))
-           (vl-module->name x))))
+                      :initials initials)))
 
 (defprojection vl-modulelist-lint-stmt-rewrite (x)
   (vl-module-lint-stmt-rewrite x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  ///
-  (defthm vl-modulelist->names-of-vl-modulelist-lint-stmt-rewrite
-    (equal (vl-modulelist->names (vl-modulelist-lint-stmt-rewrite x))
-           (vl-modulelist->names x))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-lint-stmt-rewrite ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-lint-stmt-rewrite x.mods))))
 

@@ -189,7 +189,9 @@
    :start-files (list "alu16.v")))
 
 (defconst *alu16-vl*
-  (vl::vl-find-module "alu16" (vl::vl-translation->mods *translation*)))
+  (vl::vl-find-module "alu16"
+                      (vl::vl-design->mods
+                       (vl::vl-translation->good *translation*))))
 
 (defconst *alu16*
   (vl::vl-module->esim *alu16-vl*))

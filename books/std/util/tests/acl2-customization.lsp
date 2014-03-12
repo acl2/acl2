@@ -1,4 +1,4 @@
-; VL Verilog Toolkit
+; Standard Utilities Library
 ; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
@@ -18,32 +18,11 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL")
-(include-book "progutils")
-(include-book "tools/include-raw" :dir :system)
-(include-book "std/util/define" :dir :system)
-; (depends-on "shell-raw.lsp")
+#!ACL2
+(in-package "ACL2")
 
-(defconst *vl-shell-help* "
-vl shell:  Starts an interactive VL command loop (for experts).
-
-Usage:     vl shell    (there are no options)
-
-VL is built atop the ACL2 theorem prover.  The VL shell gives you access to the
-ACL2 command loop, with all of the VL functions already built in.
-
-This is mainly useful for VL developers who want to debug problems or explore
-adding new functionality.
-
-")
-
-(define vl-shell ((argv string-listp) &key (state 'state))
-  :returns state
-  :ignore-ok t
-  (progn$ (die "Raw lisp definition not installed?")
-          state))
-
-
-(defttag :vl-shell)
-(acl2::include-raw "shell-raw.lsp")
+(assign :suppress-preload-xdoc t)
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
+(ld "../../package.lsp")
+(in-package "STD")
 

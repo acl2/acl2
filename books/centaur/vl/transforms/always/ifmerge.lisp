@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2012 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -48,187 +48,144 @@
 <p>We expect expressions to be sized, and that @(see unelse) has been run to
 remove @('else') expressions.</p>")
 
-(defsection vl-stmt-ifmerge
-  :parents (ifmerge)
+(local (xdoc::set-default-parents ifmerge))
+
+(defines vl-stmt-ifmerge
   :short "Main if-merging rewrite."
 
-  (mutual-recursion
+  (define vl-stmt-ifmerge
+    ((x          "Statement to rewrite."
+                 vl-stmt-p)
+     (outer-cond "Initially @('nil'), but becomes the merged outer-condition as
+                  we descend through ifs."
+                 (or (not outer-cond)
+                     (and (vl-expr-p outer-cond)
+                          (posp (vl-expr->finalwidth outer-cond))
+                          (equal (vl-expr->finaltype outer-cond)
+                                 :vl-unsigned))))
+     (warnings vl-warninglist-p)
+     (elem     vl-modelement-p
+               "Context for error messages."))
+    :returns (mv (warnings vl-warninglist-p)
+                 (flat-stmts vl-stmtlist-p :hyp :fguard))
+    :verify-guards nil
+    :measure (two-nats-measure (acl2-count x) 1)
+    :hints(("Goal" :in-theory (disable (force))))
+    :flag :stmt
+    (b* (((fun (stop outer-cond x warnings))
+          ;; We can stop at any time, by wrapping up the statement we've
+          ;; gotten to in the outer-cond we've accumulated so far.
+          (mv (ok)
+              (if outer-cond
+                  (list (make-vl-ifstmt :condition outer-cond
+                                        :truebranch x
+                                        :falsebranch (make-vl-nullstmt)))
+                (list x))))
 
-   (defund vl-stmt-ifmerge
-     (x          ;; statement to rewrite
-      outer-cond ;; initially nil, but becomes the merged outer-condition as we
-                 ;; descend through ifs.
-      warnings
-      elem)
-     "Returns (MV WARNINGS FLAT-STMTS)"
-     (declare (xargs :guard (and (vl-stmt-p x)
-                                 (or (not outer-cond)
-                                     (and (vl-expr-p outer-cond)
-                                          (posp (vl-expr->finalwidth outer-cond))
-                                          (equal (vl-expr->finaltype outer-cond)
-                                                 :vl-unsigned)))
-                                 (vl-warninglist-p warnings)
-                                 (vl-modelement-p elem))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)
-                     :hints(("Goal" :in-theory (disable (force))))))
+         ((when (vl-fast-nullstmt-p x))
+          ;; Special case: don't call STOP.  A null statement does nothing,
+          ;; whether it has a condition or not, so just let it fizzle away.
+          ;; This is like  rewriting "if (condition) [null] --> null".
+          (mv (ok) nil))
 
-     (b* (((fun (stop outer-cond x warnings))
-           ;; We can stop at any time, by wrapping up the statement we've
-           ;; gotten to in the outer-cond we've accumulated so far.
-           (mv warnings
-               (if outer-cond
-                   (list (make-vl-ifstmt :condition outer-cond
-                                         :truebranch x
-                                         :falsebranch (make-vl-nullstmt)))
-                 (list x))))
+         ((when (vl-fast-atomicstmt-p x))
+          (stop outer-cond x warnings))
 
-          ((when (vl-fast-nullstmt-p x))
-           ;; Special case: don't call STOP.  A null statement does nothing,
-           ;; whether it has a condition or not, so just let it fizzle away.
-           ;; This is like  rewriting "if (condition) [null] --> null".
-           (mv warnings nil))
-
-          ((when (vl-fast-atomicstmt-p x))
-           (stop outer-cond x warnings))
-
-          ((when (vl-ifstmt-p x))
-           (b* (((vl-ifstmt x) x)
-                (width (vl-expr->finalwidth x.condition))
-                (type  (vl-expr->finaltype x.condition))
-                ((unless (and type (posp width)))
-                 (stop outer-cond x
-                       (warn :type :vl-ifmerge-fail
-                             :msg "~a0: can't merge if statement.  Expected ~
+         ((when (vl-ifstmt-p x))
+          (b* (((vl-ifstmt x) x)
+               (width (vl-expr->finalwidth x.condition))
+               (type  (vl-expr->finaltype x.condition))
+               ((unless (and type (posp width)))
+                (stop outer-cond x
+                      (warn :type :vl-ifmerge-fail
+                            :msg "~a0: can't merge if statement.  Expected ~
                                    the condition, ~a1, to have positive width ~
                                    and decided type, but found width ~x2 and ~
                                    type ~x3."
-                             :args (list elem x.condition width type)
-                             :fn 'vl-stmt-ifmerge)))
-                ((unless (vl-expr-welltyped-p x.condition))
-                 (stop outer-cond x
-                       (warn :type :vl-ifmerge-fail
-                             :msg "~a0: can't merge if statement.  Expected ~
+                            :args (list elem x.condition width type)
+                            :fn 'vl-stmt-ifmerge)))
+               ((unless (vl-expr-welltyped-p x.condition))
+                (stop outer-cond x
+                      (warn :type :vl-ifmerge-fail
+                            :msg "~a0: can't merge if statement.  Expected ~
                                    the condition, ~a1, to be well-typed, but ~
                                    it is not.  Raw expression: ~x1."
-                             :args (list elem x.condition)
-                             :fn 'vl-stmt-ifmerge)))
-                ((unless (vl-fast-nullstmt-p x.falsebranch))
-                 (stop outer-cond x
-                       (warn :type :vl-ifmerge-fail
-                             :msg "~a0: can't merge if statement.  Expected ~
+                            :args (list elem x.condition)
+                            :fn 'vl-stmt-ifmerge)))
+               ((unless (vl-fast-nullstmt-p x.falsebranch))
+                (stop outer-cond x
+                      (warn :type :vl-ifmerge-fail
+                            :msg "~a0: can't merge if statement.  Expected ~
                                    all 'else' statements to be gone by now."
-                             :args (list elem x)
-                             :fn 'vl-stmt-ifmerge)))
-                (merged-cond (vl-condition-merge outer-cond x.condition)))
-             (vl-stmt-ifmerge x.truebranch merged-cond warnings elem)))
+                            :args (list elem x)
+                            :fn 'vl-stmt-ifmerge)))
+               (merged-cond (vl-condition-merge outer-cond x.condition)))
+            (vl-stmt-ifmerge x.truebranch merged-cond warnings elem)))
 
-          ((when (vl-blockstmt-p x))
-           (b* (((vl-blockstmt x) x)
-                ((when (or x.name x.decls (not x.sequentialp)))
-                 ;; Too hard to think about, just stop here.
-                 (stop outer-cond x warnings)))
-             ;; Else, simple begin/else block: dive into it
-             (vl-stmtlist-ifmerge x.stmts outer-cond warnings elem)))
+         ((when (vl-blockstmt-p x))
+          (b* (((vl-blockstmt x) x)
+               ((when (or x.name x.decls (not x.sequentialp)))
+                ;; Too hard to think about, just stop here.
+                (stop outer-cond x warnings)))
+            ;; Else, simple begin/else block: dive into it
+            (vl-stmtlist-ifmerge x.stmts outer-cond warnings elem)))
 
-          ((when (vl-timingstmt-p x))
-           (b* (((when outer-cond)
-                 ;; We've gotten to something like:
-                 ;;  if (foo) begin
-                 ;;    @(posedge clk) ...
-                 ;;  end
-                 ;; so we have to stop, because it's not okay to move the
-                 ;; @(posedge clk) above the if test.
-                 (stop outer-cond x warnings))
-                ;; Else, we found somethign like @(posedge clk) but we don't
-                ;; have any ifs above us anyway, so we can freely keep going
-                ;; here.
-                ((vl-timingstmt x) x)
-                ((mv warnings stmt-list)
-                 (vl-stmt-ifmerge x.body nil warnings elem))
-                (new-body
-                 (if (equal (len stmt-list) 1)
-                     (car stmt-list)
-                   (make-vl-blockstmt :sequentialp t
-                                      :stmts stmt-list))))
-             (mv warnings
-                 (list (change-vl-timingstmt x :body new-body))))))
+         ((when (vl-timingstmt-p x))
+          (b* (((when outer-cond)
+                ;; We've gotten to something like:
+                ;;  if (foo) begin
+                ;;    @(posedge clk) ...
+                ;;  end
+                ;; so we have to stop, because it's not okay to move the
+                ;; @(posedge clk) above the if test.
+                (stop outer-cond x warnings))
+               ;; Else, we found somethign like @(posedge clk) but we don't
+               ;; have any ifs above us anyway, so we can freely keep going
+               ;; here.
+               ((vl-timingstmt x) x)
+               ((mv warnings stmt-list)
+                (vl-stmt-ifmerge x.body nil warnings elem))
+               (new-body
+                (if (equal (len stmt-list) 1)
+                    (car stmt-list)
+                  (make-vl-blockstmt :sequentialp t
+                                     :stmts stmt-list))))
+            (mv (ok)
+                (list (change-vl-timingstmt x :body new-body))))))
 
-       (stop outer-cond x warnings)))
+      (stop outer-cond x warnings)))
 
-   (defund vl-stmtlist-ifmerge
-     (x ;; list of statements from a simple begin/end block
-      outer-cond
-      warnings
-      elem)
-     "Returns (MV WARNINGS FLAT-STMTS)"
-     (declare (xargs :guard (and (vl-stmtlist-p x)
-                                 (or (not outer-cond)
-                                     (and (vl-expr-p outer-cond)
-                                          (posp (vl-expr->finalwidth outer-cond))
-                                          (equal (vl-expr->finaltype outer-cond)
-                                                 :vl-unsigned)))
-                                 (vl-warninglist-p warnings)
-                                 (vl-modelement-p elem))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (b* (((when (atom x))
-           (mv warnings nil))
-          ((mv warnings stmts1)
-           (vl-stmt-ifmerge (car x) outer-cond warnings elem))
-          ((mv warnings stmts2)
-           (vl-stmtlist-ifmerge (cdr x) outer-cond warnings elem)))
-       (mv warnings
-           (append-without-guard stmts1 stmts2)))))
+  (define vl-stmtlist-ifmerge
+    ((x          "List of statements from a simple begin/end block."
+                 vl-stmtlist-p)
+     (outer-cond (or (not outer-cond)
+                     (and (vl-expr-p outer-cond)
+                          (posp (vl-expr->finalwidth outer-cond))
+                          (equal (vl-expr->finaltype outer-cond)
+                                 :vl-unsigned))))
+     (warnings   vl-warninglist-p)
+     (elem       vl-modelement-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (flat-stmts vl-stmtlist-p :hyp :fguard))
+    :verify-guards nil
+    :measure (two-nats-measure (acl2-count x) 0)
+    :flag :list
+    (b* (((when (atom x))
+          (mv (ok) nil))
+         ((mv warnings stmts1)
+          (vl-stmt-ifmerge (car x) outer-cond warnings elem))
+         ((mv warnings stmts2)
+          (vl-stmtlist-ifmerge (cdr x) outer-cond warnings elem)))
+      (mv warnings
+          (append-without-guard stmts1 stmts2))))
 
-  (flag::make-flag vl-flag-stmt-ifmerge
-                   vl-stmt-ifmerge
-                   :flag-mapping ((vl-stmt-ifmerge . stmt)
-                                  (vl-stmtlist-ifmerge . list)))
-
-  (defthm-vl-flag-stmt-ifmerge
-    (defthm return-type-of-vl-stmt-ifmerge
-      (implies (and (force (vl-stmt-p x))
-                    (force (or (not outer-cond)
-                               (and (vl-expr-p outer-cond)
-                                    (posp (vl-expr->finalwidth outer-cond))
-                                    (equal (vl-expr->finaltype outer-cond)
-                                           :vl-unsigned))))
-                    (force (vl-warninglist-p warnings))
-                    (force (vl-modelement-p elem)))
-               (b* (((mv warnings stmts)
-                     (vl-stmt-ifmerge x outer-cond warnings elem)))
-                 (and (vl-warninglist-p warnings)
-                      (vl-stmtlist-p stmts))))
-      :flag stmt)
-
-    (defthm return-type-of-vl-stmtlist-ifmerge
-      (implies (and (force (vl-stmtlist-p x))
-                    (force (or (not outer-cond)
-                               (and (vl-expr-p outer-cond)
-                                    (posp (vl-expr->finalwidth outer-cond))
-                                    (equal (vl-expr->finaltype outer-cond)
-                                           :vl-unsigned))))
-                    (force (vl-warninglist-p warnings))
-                    (force (vl-modelement-p elem)))
-               (b* (((mv warnings stmts)
-                     (vl-stmtlist-ifmerge x outer-cond warnings elem)))
-                 (and (vl-warninglist-p warnings)
-                      (vl-stmtlist-p stmts))))
-      :flag list)
-    :hints(("Goal"
-            :expand ((:free (outer-cond)
-                            (vl-stmt-ifmerge x outer-cond warnings elem))
-                     (:free (outer-cond)
-                            (vl-stmtlist-ifmerge x outer-cond warnings elem))))))
-
+  ///
   (verify-guards vl-stmt-ifmerge))
 
 (define vl-always-ifmerge ((x        vl-always-p)
                            (warnings vl-warninglist-p))
-  :returns (mv (warnings vl-warninglist-p :hyp :fguard)
+  :returns (mv (warnings vl-warninglist-p)
                (new-x    vl-always-p      :hyp :fguard))
-  :parents (ifmerge)
   (b* (((vl-always x) x)
        ((mv warnings stmt-list)
         (vl-stmt-ifmerge x.stmt nil warnings x))
@@ -237,23 +194,20 @@ remove @('else') expressions.</p>")
             (car stmt-list)
           (make-vl-blockstmt :sequentialp t
                              :stmts stmt-list))))
-    (mv warnings
-        (change-vl-always x :stmt new-stmt))))
+    (mv warnings (change-vl-always x :stmt new-stmt))))
 
 (define vl-alwayslist-ifmerge ((x        vl-alwayslist-p)
                                (warnings vl-warninglist-p))
-  :returns (mv (warnings vl-warninglist-p :hyp :fguard)
+  :returns (mv (warnings vl-warninglist-p)
                (new-x    vl-alwayslist-p  :hyp :fguard))
-  :parents (ifmerge)
   (b* (((when (atom x))
-        (mv warnings x))
+        (mv (ok) x))
        ((mv warnings car) (vl-always-ifmerge (car x) warnings))
        ((mv warnings cdr) (vl-alwayslist-ifmerge (cdr x) warnings)))
     (mv warnings (cons car cdr))))
 
 (define vl-module-ifmerge ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
-  :parents (ifmerge)
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
@@ -261,22 +215,22 @@ remove @('else') expressions.</p>")
         ;; Optimization: not going to do anything, don't bother re-consing the
         ;; module.
         x)
-       ((mv warnings alwayses) (vl-alwayslist-ifmerge x.alwayses x.warnings)))
+       ((mv warnings alwayses)
+        (vl-alwayslist-ifmerge x.alwayses x.warnings)))
     (change-vl-module x
                       :warnings warnings
-                      :alwayses alwayses))
-  ///
-  (defthm vl-module->name-of-vl-module-ifmerge
-    (equal (vl-module->name (vl-module-ifmerge x))
-           (vl-module->name x))))
+                      :alwayses alwayses)))
 
 (defprojection vl-modulelist-ifmerge (x)
   (vl-module-ifmerge x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-ifmerge
-    (equal (vl-modulelist->names (vl-modulelist-ifmerge x))
-           (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
 
+(define vl-design-ifmerge
+  :short "Top-level @(see ifmerge) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-ifmerge x.mods))))
 

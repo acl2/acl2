@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -202,23 +202,20 @@ either upper or lower case, treating - and _ as equivalent, and with or without
 
 (define vl-module-suppress-lint-warnings ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
-  (change-vl-module x
-                    :warnings (vl-lint-suppress-warnings (vl-module->warnings x)))
-  ///
-  (defthm vl-module->name-of-vl-module-suppress-lint-warnings
-    (equal (vl-module->name (vl-module-suppress-lint-warnings x))
-           (vl-module->name x))))
-
+  (b* ((warnings (vl-lint-suppress-warnings (vl-module->warnings x))))
+    (change-vl-module x :warnings warnings)))
 
 (defprojection vl-modulelist-suppress-lint-warnings (x)
   (vl-module-suppress-lint-warnings x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-suppress-lint-warnings
-     (equal (vl-modulelist->names (vl-modulelist-suppress-lint-warnings x))
-            (vl-modulelist->names x))
-     :hints(("Goal" :induct (len x))))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-suppress-lint-warnings ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-suppress-lint-warnings x.mods))))
+
 
 
 (define vl-warninglist-lint-ignoreall
@@ -235,32 +232,19 @@ either upper or lower case, treating - and _ as equivalent, and with or without
     (cons (car x)
           (vl-warninglist-lint-ignoreall (cdr x) mashed-ignore-list))))
 
-
 (define vl-module-lint-ignoreall
   ((x                  vl-module-p)
    (mashed-ignore-list string-listp))
   :returns (new-x vl-module-p :hyp (force (vl-module-p x)))
   (b* (((vl-module x) x)
        (new-warnings (vl-warninglist-lint-ignoreall x.warnings mashed-ignore-list)))
-    (change-vl-module x :warnings new-warnings))
-  ///
-  (defthm vl-module->name-of-vl-module-lint-ignoreall
-    (equal (vl-module->name (vl-module-lint-ignoreall x mashed-ignore-list))
-           (vl-module->name x))))
-
+    (change-vl-module x :warnings new-warnings)))
 
 (defprojection vl-modulelist-lint-ignoreall-aux (x mashed-ignore-list)
   (vl-module-lint-ignoreall x mashed-ignore-list)
   :guard (and (vl-modulelist-p x)
               (string-listp mashed-ignore-list))
-  :result-type vl-modulelist-p
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-lint-ignoreall-aux
-     (equal (vl-modulelist->names
-             (vl-modulelist-lint-ignoreall-aux x mashed-ignore-list))
-            (vl-modulelist->names x))
-     :hints(("Goal" :induct (len x))))))
-
+  :result-type vl-modulelist-p)
 
 (define vl-modulelist-lint-ignoreall
   ((x                vl-modulelist-p)
@@ -271,9 +255,13 @@ either upper or lower case, treating - and _ as equivalent, and with or without
                       or \"warn-oddexpr\" etc., to suppress oddexpr warnings."))
   :returns (new-mods vl-modulelist-p :hyp (force (vl-modulelist-p x)))
   (b* ((mashed-ignore-list (vl-mash-warning-strings user-ignore-list)))
-    (vl-modulelist-lint-ignoreall-aux x mashed-ignore-list))
-  ///
-  (defthm vl-modulelist->names-of-vl-modulelist-lint-ignoreall
-    (equal (vl-modulelist->names (vl-modulelist-lint-ignoreall x user-ignore-list))
-           (vl-modulelist->names x))))
+    (vl-modulelist-lint-ignoreall-aux x mashed-ignore-list)))
 
+(define vl-design-lint-ignoreall
+  ((x                vl-design-p)
+   (user-ignore-list string-listp))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x
+                      :mods (vl-modulelist-lint-ignoreall x.mods user-ignore-list))))

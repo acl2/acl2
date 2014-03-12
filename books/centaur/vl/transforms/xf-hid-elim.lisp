@@ -1216,3 +1216,9 @@ hierarchical references to wires inside of @('processor'), etc.</p>")
     (equal (vl-modulelist->names (vl-modulelist-hid-elim x))
            (vl-modulelist->names x))))
 
+(define vl-design-hid-elim ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x
+                      :mods (vl-modulelist-hid-elim x.mods))))

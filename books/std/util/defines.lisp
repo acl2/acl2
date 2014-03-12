@@ -180,11 +180,10 @@ documentation and rest-events.  As a convenience, if global documentation is
 provided while individual documentation is not, a basic topic will be created
 whose @(':parents') point at the @('clique-name').</dd>
 
-<dd>BOZO does this make sense?  What if clique-name agrees with a function's
-name?  Are we going to accidentally overwrite it?  This is all pretty subtle
-and we should go through the various cases and consider whether they make
-sense.</dd>
-
+<dd>A corner case is when the @('clique-name') agrees with an individual
+function's name.  In this case we try to grab the documentation from
+<i>either</i> the named function or the global options.  To prevent confusion,
+we cause an error if documentation is provided in both places.</dd>
 
 <dt>:ignore-ok val</dt>
 <dt>:irrelevant-formals-ok val</dt>
@@ -214,11 +213,7 @@ options are @(see local) to the definitions; they do not affect the
 })
 
 <p>Each define can also have a :flag option, which governs the name for
-its flag in the flag-function.</p>
-
-
-
-")
+its flag in the flag-function.</p>")
 
 
 
@@ -381,9 +376,6 @@ its flag in the flag-function.</p>
 ;;     (append (defguts->rest-events (car gutslist))
 ;;             (collect-rest-events-from-guts (cdr gutslist)))))
 
-
-
-
 (defun make-fn-defsection (guts cliquename process-returns)
   (b* (((defguts guts) guts)
        (short      (getarg :short          nil guts.kwd-alist))
@@ -407,7 +399,6 @@ its flag in the flag-function.</p>
         (with-output :stack :pop (progn . ,guts.rest-events))
       (with-output :on (error) ,(add-signature-from-guts guts))))))
 
-
 (defun collect-fn-defsections (gutslist cliquename process-returns)
   (if (atom gutslist)
       nil
@@ -425,7 +416,6 @@ its flag in the flag-function.</p>
                 (guts->flag (car gutslist)))
           (collect-flag-mapping (cdr gutslist)))))
 
-
 (defun returnspec-thm-bodies (fnname binds retspecs world)
   (b* (((when (atom retspecs)) nil)
        (body (returnspec-thm-body fnname binds (car retspecs) world))
@@ -433,7 +423,6 @@ its flag in the flag-function.</p>
     (if (eq body t)
         rest
       (cons body rest))))
-
 
 (defun returnspec-thm-ruleclasses-add-corollary (classes body)
   (b* (((when (atom classes)) nil)
@@ -447,7 +436,6 @@ its flag in the flag-function.</p>
             :corollary ,body
             . ,(cdr class))
           rest)))
-       
 
 (defun returnspec-thm-ruleclasses (fnname binds retspecs world)
   (b* (((when (atom retspecs)) nil)
@@ -526,9 +514,6 @@ its flag in the flag-function.</p>
            :hints ,returns-hints)
       `(value-triple :skipped))))
 
-
-                     
-
 (def-primitive-aggregate defines-guts
   (name             ;; name of the defines section
    gutslist         ;; define guts of functions
@@ -554,6 +539,62 @@ its flag in the flag-function.</p>
         (gutslist-find-hints (cdr gutslist)))))
 
 
+; Documentation hack.
+;
+; Case 1: clique-name doesn't clash with the individual function names.  Then
+; everything works out and we'll get reasonable documentation out
+;
+; Case 2: clique-name is the same as some function name.  We don't want to
+; create documentation for "both" the global and local functions.  If we do,
+; the local function will win (because its docs come second) and we'll lose
+; the global docs.  Worse, this can lead to new top-level topics because we
+; can easily end up with topics that are their own parents.
+;
+; A solution.  If we hit case 2, we'll try to "inject" the global docs into the
+; individual function's docs.  (This is better than going the other way around
+; and "extracting" the individual docs, because the individual function gets a
+; nice "signature" block, etc.)
+
+(defun maybe-inject-global-docs
+  (name parentsp parents short long  ;; global clique-name and global docs
+   gutslist                 ;; guts for individual defines, which we'll rewrite
+   )
+  (b* ((__function__ 'maybe-inject-global-docs)
+       ((when (atom gutslist))
+        nil)
+       (rest (maybe-inject-global-docs name parentsp parents short long
+                                       (cdr gutslist)))
+       (guts1 (car gutslist))
+       ((defguts guts1) guts1)
+       ((unless (equal guts1.name name))
+        (cons (car gutslist) rest))
+
+       (sub-short    (getarg :short   nil guts1.kwd-alist))
+       (sub-long     (getarg :long    nil guts1.kwd-alist))
+       (sub-parents  (getarg :parents nil guts1.kwd-alist))
+       (sub-parentsp (consp (assoc :parents guts1.kwd-alist)))
+       ((when (and parentsp sub-parentsp))
+        (raise "Can't give :parents in (~x1 ~x0 ...) because there are global ~
+                :parents in the (~x2 ~x0 ...) form."
+               name 'define 'defines))
+       ((when (and short sub-short))
+        (raise "Can't give :short in (~x1 ~x0 ...) because there is a global ~
+                :short in the (~x2 ~x0 ...) form."
+               name 'define 'defines))
+       ((when (and long sub-long))
+        (raise "Can't give :long in (~x1 ~x0 ...) because there is a global ~
+                :long in the (~x2 ~x0 ...) form."))
+
+       (kwd-alist guts1.kwd-alist)
+       (kwd-alist (delete-assoc :short kwd-alist))
+       (kwd-alist (delete-assoc :long  kwd-alist))
+       (kwd-alist (delete-assoc :parents kwd-alist))
+       (kwd-alist (acons :short (or short sub-short) kwd-alist))
+       (kwd-alist (acons :long  (or long  sub-long) kwd-alist))
+       (kwd-alist (acons :parents (or parents sub-parents) kwd-alist))
+       (new-guts (change-defguts guts1 :kwd-alist kwd-alist)))
+    (cons new-guts rest)))
+
 (defun defines-fn (name args world)
   (declare (xargs :guard (plist-worldp world)))
   (b* ((__function__ 'defines)
@@ -568,13 +609,30 @@ its flag in the flag-function.</p>
        ((unless (consp (cdr gutslist)))
         (raise "Error in ~x0: expected more than one function." name))
 
-       (short      (getarg :short          nil kwd-alist))
-       (long       (getarg :long           nil kwd-alist))
-       (parents    (getarg :parents        nil kwd-alist))
-       (parents    (if (assoc :parents kwd-alist)
+       (short      (getarg :short   nil kwd-alist))
+       (long       (getarg :long    nil kwd-alist))
+       (parents    (getarg :parents nil kwd-alist))
+       (parents-p  (consp (assoc :parents kwd-alist)))
+       (parents    (if parents-p
                        parents
                      (xdoc::get-default-parents world)))
+       (fnnames    (collect-names-from-guts gutslist))
+
        (want-xdoc-p (or short long parents))
+
+       ((mv short long parents kwd-alist gutslist)
+        (if (and want-xdoc-p (member name fnnames))
+            ;; Special case: move the documentation into the function;
+            ;; don't produce our own section.
+            (mv nil nil nil
+                (delete-assoc :parents
+                              (delete-assoc :short
+                                            (delete-assoc :long kwd-alist)))
+                (maybe-inject-global-docs
+                 name parents-p parents short long gutslist))
+          ;; Normal case: have docs, no function with the same name,
+          ;; make our own section
+          (mv short long parents kwd-alist gutslist)))
 
        (prepwork (getarg :prepwork nil kwd-alist))
        ((unless (true-listp prepwork))
@@ -596,8 +654,6 @@ its flag in the flag-function.</p>
        (mutual-rec  (cons 'mutual-recursion final-defs))
        (aliases     (collect-macro-aliases gutslist))
        (guts-table-exts (collect-guts-alist-exts gutslist))
-
-       (fnnames (collect-names-from-guts gutslist))
 
        (flag-name (if (assoc :flag kwd-alist)
                       (cdr (assoc :flag kwd-alist))
@@ -625,7 +681,7 @@ its flag in the flag-function.</p>
 
        (thm-macro      (and flag-name
                             (or flag-defthm-macro (flag::thm-macro-name flag-name))))
-       
+
        (fn-sections (collect-fn-defsections gutslist
                                             (and want-xdoc-p name)
                                             (not returns-induct)))
@@ -677,7 +733,7 @@ its flag in the flag-function.</p>
                    (let ((event (returnspec-flag-thm
                                  ',thm-macro ',gutslist ',returns-hints (w state))))
                      `(with-output :stack :pop ,event)))))
-                   
+
          ,@fn-sections
          (with-output :stack :pop (progn . ,rest-events))))))
 

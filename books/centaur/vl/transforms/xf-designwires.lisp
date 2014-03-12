@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -42,9 +42,10 @@ vl-atts-p)'>attribute</see>.</p>
 they will not have this attribute.  Hence, you can check for this attribute to
 tell whether a wire was in the original design.</p>")
 
+(local (xdoc::set-default-parents designwires))
+
 (define vl-netdecl-designwires ((x vl-netdecl-p))
   :returns (new-x vl-netdecl-p :hyp :fguard)
-  :parents (designwires)
   :short "Add a @('VL_DESIGN_WIRE') attribute to a @(see vl-netdecl-p)."
   (b* (((vl-netdecl x) x)
        ((when (assoc-equal "VL_DESIGN_WIRE" x.atts))
@@ -57,12 +58,10 @@ tell whether a wire was in the original design.</p>")
   (vl-netdecl-designwires x)
   :guard (vl-netdecllist-p x)
   :result-type vl-netdecllist-p
-  :nil-preservingp nil
-  :parents (designwires))
+  :nil-preservingp nil)
 
 (define vl-regdecl-designwires ((x vl-regdecl-p))
   :returns (new-x vl-regdecl-p :hyp :fguard)
-  :parents (designwires)
   :short "Add a @('VL_DESIGN_WIRE') attribute to a @(see vl-regdecl-p)."
   (b* (((vl-regdecl x) x)
        ((when (assoc-equal "VL_DESIGN_WIRE" x.atts))
@@ -75,12 +74,10 @@ tell whether a wire was in the original design.</p>")
   (vl-regdecl-designwires x)
   :guard (vl-regdecllist-p x)
   :result-type vl-regdecllist-p
-  :nil-preservingp nil
-  :parents (designwires))
+  :nil-preservingp nil)
 
 (define vl-module-designwires ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
-  :parents (designwires)
   :short "Add a @('VL_DESIGN_WIRE') attribute to every net and reg declaration
 in a module."
   (b* (((vl-module x) x)
@@ -88,20 +85,16 @@ in a module."
         x))
     (change-vl-module x
                       :netdecls (vl-netdecllist-designwires x.netdecls)
-                      :regdecls (vl-regdecllist-designwires x.regdecls)))
-  ///
-  (defthm vl-module->name-of-vl-module-designwires
-    (equal (vl-module->name (vl-module-designwires x))
-           (vl-module->name x))))
+                      :regdecls (vl-regdecllist-designwires x.regdecls))))
 
 (defprojection vl-modulelist-designwires (x)
   (vl-module-designwires x)
   :guard (vl-modulelist-p x)
   :result-type vl-modulelist-p
-  :nil-preservingp nil
-  :parents (designwires)
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-designwires
-     (equal (vl-modulelist->names (vl-modulelist-designwires x))
-            (vl-modulelist->names x)))))
+  :nil-preservingp nil)
 
+(define vl-design-designwires ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-designwires x.mods))))

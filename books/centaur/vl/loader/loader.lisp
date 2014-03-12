@@ -92,15 +92,14 @@ assign foo = bar;
 are lots of special implementation details (and extensions like @(see
 overrides)) that we should probably discuss somewhere.</p>")
 
+(local (xdoc::set-default-parents loader))
 
 (defaggregate vl-loadstate
-  :parents (loader)
   :short "Internal state object used throughout the VL loading routines."
 
   ((config    vl-loadconfig-p
               "Original configuration passed to @(see vl-load).  This remains
                constant throughout our loading routines.")
-
 
    (overrides vl-override-db-p
               "Database of modules to override; see @(see overrides).")
@@ -120,7 +119,6 @@ overrides)) that we should probably discuss somewhere.</p>")
                @('(vl-override-requirement-names oused)'), but that would
                be expensive to recompute during flushing, so we keep it as
                part of the state.")
-
 
    (mods      (and (vl-modulelist-p mods)
                    (uniquep (vl-modulelist->names mods)))
@@ -170,7 +168,6 @@ overrides)) that we should probably discuss somewhere.</p>")
 
 
 (defsection scope-of-defines
-  :parents (loader)
   :short "How VL and other tools handle the scope of @('`defines')."
 
   :long "<p><i>What is the scope of a @('`define')?</i></p>
@@ -230,7 +227,6 @@ warning that maybe something is amiss with file loading.</p>")
   :returns (mv (merged   (vl-modulelist-p merged) :hyp :fguard)
                (modalist (equal modalist (vl-modalist merged)) :hyp :fguard)
                (walist   vl-modwarningalist-p :hyp :fguard))
-  :parents (loader)
   :short "Merge newly found Verilog modules with previously loaded modules,
 warning about multiply defined modules."
 
@@ -277,7 +273,6 @@ name clashes, the previous definition wins, and we add a warning to the
                       state)
   :returns (mv (st    vl-loadstate-p :hyp :fguard)
                (state state-p1       :hyp (force (state-p1 state))))
-  :parents (loader)
   :short "Main function for loading a single Verilog file."
 
   :long "<p>Even loading a single file is a multi-step process:</p>
@@ -444,7 +439,6 @@ our internal representation of Verilog.</li>
                        state)
   :returns (mv (st       vl-loadstate-p :hyp :fguard)
                (state    state-p1       :hyp (force (state-p1 state))))
-  :parents (loader)
   :short "Load a list of files."
   (b* (((when (atom filenames))
         (mv st state))
@@ -458,7 +452,6 @@ our internal representation of Verilog.</li>
                         state)
   :returns (mv (st    vl-loadstate-p :hyp :fguard)
                (state state-p1       :hyp (force (state-p1 state))))
-  :parents (loader)
   :short "Try to load a module from the search path."
   :prepwork ((local (in-theory (disable (force)))))
 
@@ -486,7 +479,6 @@ our internal representation of Verilog.</li>
                          state)
   :returns (mv (st    vl-loadstate-p :hyp :fguard)
                (state state-p1       :hyp (force (state-p1 state))))
-  :parents (loader)
   :short "Extend @(see vl-load-module) to try to load a list of modules."
 
   (b* (((when (atom modnames))
@@ -498,7 +490,6 @@ our internal representation of Verilog.</li>
 
 (define vl-modules-left-to-load ((st vl-loadstate-p))
   :returns (names string-listp :hyp :fguard)
-  :parents (loader)
   :short "Determine which modules we still need to load."
 
   :long "<p>For loading to be completely done, we want to have:</p>
@@ -539,7 +530,6 @@ up searching for.</p>"
   :returns (mv (st    vl-loadstate-p :hyp :fguard)
                (state state-p1       :hyp (force (state-p1 state))
                       :hints(("Goal" :in-theory (disable (force))))))
-  :parents (loader)
   :short "Attempt to find and load any missing modules."
 
   :long "<p>After some initial files have been loaded, it is generally
@@ -608,16 +598,13 @@ look for new modules.</p>"
 
 
 (defaggregate vl-loadresult
-  :parents (loader)
   :short "Return value from @(see vl-load)."
 
-  ((mods        (and (vl-modulelist-p mods)
-                     (uniquep (vl-modulelist->names mods)))
-                "The @(see modules) that were loaded.  These modules have been
-                 only minimally transformed (e.g., to add declarations for
-                 implicit wires).  They meant to be close to the actual source
-                 code as it occurs on the disk.  They are guaranteed to have
-                 unique names.")
+  ((design      vl-design-p
+                "The design that we loaded.  The contents of the design have
+                 been only minimally transformed (e.g., to add declarations for
+                 implicit wires).  They meant to closely reflect the actual
+                 source code as it occurs on the disk.")
 
    (filemap     vl-filemap-p
                 "Alist mapping file names to their original, unmodified
@@ -646,7 +633,6 @@ look for new modules.</p>"
                       state)
   :returns (mv (result vl-loadresult-p :hyp :fguard)
                (state  state-p1        :hyp (force (state-p1 state))))
-  :parents (loader)
   :short "Top level interface for loading Verilog sources."
 
   (b* ((config
@@ -714,10 +700,12 @@ look for new modules.</p>"
                :msg "; apply warnings: ~st sec, ~sa bytes~%"
                :mintime config.mintime))
 
-       (result (make-vl-loadresult :mods mods
-                                   :filemap st.filemap
+       (design (make-vl-design :mods mods))
+
+       (result (make-vl-loadresult :design   design
+                                   :filemap  st.filemap
                                    :warnings st.warnings
-                                   :defines st.defines)))
+                                   :defines  st.defines)))
 
     (fast-alist-free overrides)
     (fast-alist-free (vl-loadstate->modalist st))
@@ -726,7 +714,6 @@ look for new modules.</p>"
 
 
 (defsection vl-load-summary
-  :parents (loader)
   :short "Print summary information (e.g., warnings, numbers of modules loaded,
 etc.) after modules have been loaded."
 
@@ -751,7 +738,7 @@ you might want to attach some other kind of report here.</p>
   :parents (vl-load-summary)
   (declare (ignore config))
   (b* (((vl-loadresult result) result)
-       (mods result.mods)
+       (mods (vl-design->mods result.design))
        (- (cw "Loaded ~x0 modules.~%" (len mods)))
 
        ;; The warnings get returned, but we also summarize the floating
@@ -768,7 +755,7 @@ you might want to attach some other kind of report here.</p>
                (vl-ps-update-autowrap-col 68)
                (vl-cw "~x0 floating warning~s1:~%"
                       (len floating-warnings)
-                      (if (= (len floating-warnings) 1) "" "s"))
+                      (if (vl-plural-p floating-warnings) "s" ""))
                (vl-print-warnings floating-warnings)
                (vl-println ""))))
 
@@ -778,7 +765,7 @@ you might want to attach some other kind of report here.</p>
                (vl-ps-update-autowrap-col 68)
                (vl-cw "~x0 multiply defined module warning~s1:~%"
                       (len multidef-warnings)
-                      (if (= (len multidef-warnings) 1) "" "s"))
+                      (if (vl-plural-p multidef-warnings) "s" ""))
                (vl-print-warnings multidef-warnings)
                (vl-println "")))))
     nil))
@@ -788,7 +775,6 @@ you might want to attach some other kind of report here.</p>
 (define vl-load ((config vl-loadconfig-p)
                  &key
                  (state 'state))
-  :parents (loader)
   :short "Wrapper for @(see vl-load-main) that also reports errors or (with
 some configuration) can print other information."
 

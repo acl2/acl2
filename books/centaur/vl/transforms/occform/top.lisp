@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -1063,12 +1063,15 @@ below.</p>"
        (full-mods     (append new-mods-sort x-prime))
        (all-names     (vl-modulelist->names full-mods))
        ((unless (uniquep all-names))
-        (er hard? 'vl-modulelist-occform "Name collision")))
+        (raise "Name collision")))
     full-mods)
   ///
   (defthm no-duplicatesp-equal-of-vl-modulelist->names-of-vl-modulelist-occform
     (no-duplicatesp-equal (vl-modulelist->names (vl-modulelist-occform x)))))
 
-
-
+(define vl-design-occform ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-occform x.mods))))
 

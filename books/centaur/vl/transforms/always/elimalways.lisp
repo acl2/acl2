@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -31,10 +31,11 @@ throw away all @('always') blocks."
 blocks.  It is meant as a catch-all for @('always') blocks that are too complex
 to handle.</p>")
 
+(local (xdoc::set-default-parents elimalways))
+
 (define vl-warn-about-bad-always-blocks ((x        vl-alwayslist-p)
                                          (warnings vl-warninglist-p))
   :returns (warnings vl-warninglist-p :hyp :fguard)
-  :parents (elimalways)
   (b* (((when (atom x))
         warnings)
        (warnings (fatal :type :vl-bad-always
@@ -44,7 +45,6 @@ to handle.</p>")
 
 (define vl-module-elimalways ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
-  :parents (elimalways)
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
@@ -53,21 +53,18 @@ to handle.</p>")
        (warnings (vl-warn-about-bad-always-blocks x.alwayses x.warnings)))
     (change-vl-module x
                       :alwayses nil
-                      :warnings warnings))
-  ///
-  (defthm vl-module->name-of-vl-module-elimalways
-    (equal (vl-module->name (vl-module-elimalways x))
-           (vl-module->name x))))
+                      :warnings warnings)))
 
 (defprojection vl-modulelist-elimalways (x)
   (vl-module-elimalways x)
   :nil-preservingp t
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :parents (elimalways)
-  :short "Top-level elimalways transform."
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-elimalways
-     (equal (vl-modulelist->names (vl-modulelist-elimalways x))
-            (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
 
+(define vl-design-elimalways
+  :short "Top-level @(see elimalways) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-elimalways x.mods))))

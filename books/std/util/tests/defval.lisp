@@ -1,4 +1,4 @@
-; CUTIL - Centaur Basic Utilities
+; Standard Utilities Library
 ; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "defval")
+(include-book "../defval")
 (include-book "misc/assert" :dir :system)
 
 (defxdoc test-par1 :parents (defval))

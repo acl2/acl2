@@ -23,47 +23,64 @@
 
 (in-package "ACL2")
 
-
 (include-book "esim-sexpr")
 
+(defxdoc esim-steps
+  :parents (esim)
+  :short "Various stepping functions for esim."
 
-(defdoc esim-steps
-  ":doc-section esim
+  :long "<p>Usage</p>
 
-Various stepping functions for esim.~/
-
-Usage:
-~bv[]
+@({
  (<step-fn> mod ins st)
-~ev[]
+})
 
-where ~c[<step-fn>] is one of:
-~bv[]
- esim-sexpr-steps
- esim-sexpr-probe-steps
- esim-sexpr-top-steps
+<p>where @('<step-fn>') is one of:</p>
 
- esim-faig-steps
- esim-faig-probe-steps
- esim-faig-top-steps
-~ev[]
+<ul>
+<li>esim-sexpr-steps</li>
+<li>esim-sexpr-probe-steps</li>
+<li>esim-sexpr-top-steps</li>
+<li>esim-faig-steps</li>
+<li>esim-faig-probe-steps</li>
+<li>esim-faig-top-steps</li>
+</ul>
 
-In each case, ~c[mod] is an esim module, ~c[ins] is a list of alists, and
-~c[st] is a single alist.  These functions all simulate the module for ~c[n]
-steps, where ~c[n] is the length of ~c[ins], beginning with initial state
-~c[st], where the inputs for the ~c[k+1]st step are given by ~c[(nth k ins)].
+<p>In each case:</p>
 
-The -probe- variants produce three outputs, each a list of alists: ~c[nsts],
-~c[outs], and ~c[internals].  The non-probe variants only produce ~c[nsts] and
-~c[outs].  Here ~c[nsts] is a list where ~c[(nth k nsts)] is an alist givng the
-module state after ~c[k+1] steps, and similarly ~c[(nth k outs)] gives the
-outputs, and in only the -top- variants additionally the top-level module's
-internal signals, from the ~c[k+1]st step and ~c[(nth k internals)] gives the
-internal signal settings after the ~c[k+1]st step.
+<ul>
+<li>@('mod') is an esim module</li>
+<li>@('ins') is a list of alists</li>
+<li>@('st') is a single alist</li>
+</ul>
 
-The -sexpr- variants take and produce alists mapping signals to 4v-sexprs,
-whereas the -faig- variants take and produce alists mapping signals to FAIGs.
-~/~/")
+<p>These functions all simulate the module for @('n') steps, where @('n') is
+the length of @('ins'), beginning with initial state @('st'), where the inputs
+for the @('k+1')st step are given by @('(nth k ins)').</p>
+
+<p>The @('-sexpr-') variants take and produce alists mapping signals to @(see
+4v-sexprs).</p>
+
+<p>The @('-faig-') variants take and produce alists mapping signals to @(see
+faig)s.</li>
+
+<p>The @('-probe-') variants produce three outputs, each a list of alists:
+@('nsts'), @('outs'), and @('internals').  The non-probe variants only produce
+@('nsts') and @('outs').</p>
+
+<ul>
+
+<li>@('nsts') is the list of next states, i.e., @('(nth k nsts)') is an
+alist giving the module state after @('k+1') steps,</li>
+
+<li>@('outs') is the list of outputs, i.e., @('(nth k outs)') gives the
+outputs from the @('k+1')th step.  In the @('-top-') variants only, this
+will also include the top-level module's internal signals.</li>
+
+<li>@('internals') is the list of internal signals, i.e., @('(nth k
+internals)') gives the internal signal settings after the @('k+1')st step.</li>
+
+</ul>")
 
 (defmacro def-esim-step (name vals step)
   (b* ((step-vals (if (eql vals 3)
@@ -77,10 +94,12 @@ whereas the -faig- variants take and produce alists mapping signals to FAIGs.
                            (pairlis$ step-vals
                                      (pairlis$ rest-vals
                                                nil-vals)))))
-    `(defun ,name (mod ins st)
-       ":doc-section esim-steps
-       ESIM stepping function.~/
-       See ~il[esim-steps].~/~/"
+    `(define ,name (mod ins st)
+       :parents (esim-steps)
+       :short "ESIM stepping function."
+       :long "<p>See @(see esim-steps).</p>"
+       :enabled t ;; for backwards compatibility
+       :verify-guards nil
        (b* (((when (atom ins))
              (mv . ,nil-vals))
             ((mv . ,step-vals)

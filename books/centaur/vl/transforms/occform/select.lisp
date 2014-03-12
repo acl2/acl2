@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -224,7 +224,7 @@ endmodule
   :body
   (b* (((when (zp n))
         (list *vl-1-bit-dynamic-bitselect*))
-       ((when (= n 1))
+       ((when (eql n 1))
         (list *vl-2-bit-dynamic-bitselect*))
 
        (m (expt 2 n))
@@ -335,7 +335,7 @@ endmodule
        (2^bitlength (expt 2 bitlength))
 
        (coremods (vl-make-2^n-bit-dynamic-bitselect bitlength))
-       ((when (= 2^bitlength n))
+       ((when (eql 2^bitlength n))
         ;; Powers of 2 -- don't need to do anything padding, just use the 2^n
         ;; modules directly.
         coremods)
@@ -418,7 +418,7 @@ with zeros.  When larger, we need to do additional out-of-bounds checking.</p>"
                  m))
              (vl-maybe-range-size range)))
 
-        ((when (= k m))
+        ((when (eql k m))
          ;; No need to do anything special, the width of the select is already
          ;; correct.
          coremods)

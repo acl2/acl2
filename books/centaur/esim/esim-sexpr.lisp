@@ -1630,10 +1630,23 @@ the existing update functions without modification."
   :features (:probe :simplify))
 
 
-(defdoc esim
-  ":doc-section esim
+(defxdoc esim
+  :parents (hardware-verification)
+  :short "ESIM is a simple, hierarchical, bit-level, cycle-based,
+register-transfer level hardware description language.  It is based on a clean,
+monotonic four-valued logic (see @(see acl2::4v)) and features strong support
+for symbolic simulation with @(see gl::gl)."
 
-ESIM is a hardware simulator similar to EMOD.~/~/~/")
+  :long "<p>Unfortunately E is not well documented.  An early version of E is
+described in:</p>
+
+<p>Warren A. Hunt, Jr. and Sol Swords.  <a
+href='http://dx.doi.org/10.1007/978-3-642-02658-4_28'>Centaur technology media
+unit verification.  Case study: Floating point addition.</a> in Computer Aided
+Verification (CAV '09), June 2009.</p>
+
+<p>E modules are typically produced from Verilog designs using @(see vl).</p>")
+
 
 (defmacro 4v-sexpr-to-faig-plain-alist (x onoff)
   `(4v-sexpr-to-faig-alist-fn1 ,x ,onoff nil))

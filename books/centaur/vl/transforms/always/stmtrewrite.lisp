@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -22,7 +22,6 @@
 (include-book "../xf-resolve-ranges")
 (include-book "../../mlib/stmt-tools")
 (local (include-book "../../util/arithmetic"))
-
 
 (defxdoc stmtrewrite
   :parents (always-top)
@@ -80,12 +79,13 @@ expressions.</li>
  <li>unroll simple while/for loops</li>
 </ul>")
 
+(local (xdoc::set-default-parents stmtrewrite))
+
 
 (define vl-waitstmt-rewrite ((condition vl-expr-p)
                              (body      vl-stmt-p)
                              (atts      vl-atts-p))
   :returns (stmt vl-stmt-p :hyp :fguard)
-  :parents (stmtrewrite)
   :short "Convert wait statements into empty while loops."
   :long "<p>The basic rewrite this performs is:</p>
 
@@ -118,7 +118,6 @@ valid?  What if the condition is X/Z?</p>"
 (define vl-foreverstmt-rewrite ((body vl-stmt-p)
                                 (atts vl-atts-p))
   :returns (stmt vl-stmt-p :hyp :fguard)
-  :parents (stmtrewrite)
   :short "Convert forever statements into while loops."
   :long "<p>The basic rewrite this performs is:</p>
 
@@ -150,7 +149,6 @@ implement.</p>"
                                (unroll-limit natp))
   :returns (mv (warnings vl-warninglist-p :hyp :fguard)
                (stmt     vl-stmt-p        :hyp :fguard))
-  :parents (stmtrewrite)
   :short "Unroll deterministic repeat statements."
   :long "<p>The basic rewrite this performs is:</p>
 
@@ -197,7 +195,6 @@ occurred.</p>"
                                    (falsebranch vl-stmt-p)
                                    (atts        vl-atts-p))
   :returns (stmt vl-stmt-p :hyp :fguard)
-  :parents (stmtrewrite)
   :short "Eliminate pure-null if statements and merge simply nested ifs."
 
   :long "<p>There are probably other things we could do here.  For now, we
@@ -251,7 +248,6 @@ just carry out two simple rewrites:</p>
 
 
 (define vl-stmtlist-all-null-p ((x vl-stmtlist-p))
-  :parents (stmtrewrite)
   (if (atom x)
       t
     (and (vl-fast-nullstmt-p (car x))
@@ -266,7 +262,6 @@ just carry out two simple rewrites:</p>
                              (atts    vl-atts-p))
   :guard (same-lengthp exprs bodies)
   :returns (stmt vl-stmt-p :hyp :fguard)
-  :parents (stmtrewrite)
   :short "Eliminate pure-null case statements."
   :long "<p>This is a pretty silly rewrite:</p>
 @({
@@ -300,7 +295,6 @@ anymore.</p>"
 
 (define vl-remove-null-statements ((x vl-stmtlist-p))
   :returns (new-x vl-stmtlist-p :hyp :fguard)
-  :parents (stmtrewrite)
   (cond ((atom x)
          nil)
         ((vl-fast-nullstmt-p (car x))
@@ -314,7 +308,6 @@ anymore.</p>"
    (stmts       vl-stmtlist-p))
   :returns (new-stmts vl-stmtlist-p :hyp :fguard)
   :measure (acl2-count stmts)
-  :parents (vl-blockstmt-rewrite)
   :short "Collapse nested @('begin/end') and @('fork/join') blocks."
   :long "<p>This function carries out rewrites such as:</p>
 
@@ -367,7 +360,6 @@ just some useless computation if it's not necessary.</p>"
                               (warnings    vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p :hyp :fguard)
                (stmt     vl-stmt-p        :hyp :fguard))
-  :parents (stmtrewrite)
   :short "Flatten sub-blocks, eliminate unnecessary blocks, and remove any null
 statements from a block."
 
@@ -428,7 +420,6 @@ blocks with names/decls seems tricky due to hierarchical identifiers.</p>"
 
 
 (define vl-$display-stmt-p ((x vl-stmt-p))
-  :parents (stmtrewrite)
   :short "Recognize a @('$display') statement."
   (declare (xargs :guard (vl-stmt-p x)))
   (b* (((unless (vl-fast-enablestmt-p x))
@@ -443,7 +434,6 @@ blocks with names/decls seems tricky due to hierarchical identifiers.</p>"
     (equal x.id.guts.name "$display")))
 
 (define vl-$vcover-stmt-p ((x vl-stmt-p))
-  :parents (stmtrewrite)
   :short "BOZO Centaur specific."
   (declare (xargs :guard (vl-stmt-p x)))
   (b* (((unless (vl-fast-enablestmt-p x))
@@ -459,7 +449,6 @@ blocks with names/decls seems tricky due to hierarchical identifiers.</p>"
 
 
 (defsection vl-stmt-rewrite
-  :parents (stmtrewrite)
   :short "Core statement rewriter."
 
   (mutual-recursion
@@ -597,7 +586,6 @@ blocks with names/decls seems tricky due to hierarchical identifiers.</p>"
                              (warnings     vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p :hyp :fguard)
                (new-x    vl-stmt-p        :hyp :fguard))
-  :parents (stmtrewrite)
   :short "Wrapper for @(see vl-stmt-rewrite) that adds additional rewrites that
 are valid only for top-level statements."
 
@@ -634,7 +622,6 @@ have a whole @('always') or @('initial') block that does nothing more than
                                (warnings     vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p :hyp :fguard)
                (new-x    vl-always-p      :hyp :fguard))
-  :parents (stmtrewrite)
   (b* (((mv warnings stmt)
         (vl-stmt-rewrite-top (vl-always->stmt x) unroll-limit warnings))
        (x-prime (change-vl-always x :stmt stmt)))
@@ -646,7 +633,6 @@ have a whole @('always') or @('initial') block that does nothing more than
                                    (warnings     vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p :hyp :fguard)
                (new-x    vl-alwayslist-p  :hyp :fguard))
-  :parents (stmtrewrite)
   (b* (((when (atom x))
         (mv warnings nil))
        ((mv warnings car-prime)
@@ -665,7 +651,6 @@ have a whole @('always') or @('initial') block that does nothing more than
                                (warnings     vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p :hyp :fguard)
                (new-x    vl-initial-p     :hyp :fguard))
-  :parents (stmtrewrite)
   (b* (((mv warnings stmt)
         (vl-stmt-rewrite-top (vl-initial->stmt x) unroll-limit warnings))
        (x-prime (change-vl-initial x :stmt stmt)))
@@ -676,7 +661,6 @@ have a whole @('always') or @('initial') block that does nothing more than
                                     (warnings     vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p :hyp :fguard)
                (new-x    vl-initiallist-p  :hyp :fguard))
-  :parents (stmtrewrite)
   (b* (((when (atom x))
         (mv warnings nil))
        ((mv warnings car-prime)
@@ -692,7 +676,6 @@ have a whole @('always') or @('initial') block that does nothing more than
 (define vl-module-stmtrewrite ((x            vl-module-p)
                                (unroll-limit natp))
   :returns (new-x vl-module-p :hyp :fguard)
-  :parents (stmtrewrite)
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
@@ -709,20 +692,22 @@ have a whole @('always') or @('initial') block that does nothing more than
     (change-vl-module x
                       :warnings warnings
                       :alwayses alwayses
-                      :initials initials))
-  ///
-  (defthm vl-module->name-of-vl-module-stmtrewrite
-    (equal (vl-module->name (vl-module-stmtrewrite x unroll-limit))
-           (vl-module->name x))))
-
+                      :initials initials)))
 
 (defprojection vl-modulelist-stmtrewrite (x unroll-limit)
   (vl-module-stmtrewrite x unroll-limit)
   :guard (and (vl-modulelist-p x)
               (natp unroll-limit))
-  :result-type vl-modulelist-p
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-stmtrewrite
-     (equal (vl-modulelist->names (vl-modulelist-stmtrewrite x unroll-limit))
-            (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-stmtrewrite
+  :short "Top-level @(see stmtrewrite) transform."
+  ((x            vl-design-p)
+   (unroll-limit natp))
+  :returns (new-x vl-design-p)
+  (b* ((x            (vl-design-fix x))
+       (unroll-limit (lnfix unroll-limit))
+       ((vl-design x) x)
+       (mods (vl-modulelist-stmtrewrite x.mods unroll-limit)))
+    (change-vl-design x :mods mods)))
 

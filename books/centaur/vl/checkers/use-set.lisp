@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -35,7 +35,7 @@
 
   :long "<p><b>USE-SET</b> is a simple tool for detecting wires which may be
 unset or unused.  This is a primitive, static analysis that can be carried out
-on the Verilog source tree, and does involve any use of E.</p>
+on the Verilog source tree.</p>
 
 <p><b>Unset</b> wires are those which have no values flowing into them. An
 unset wire should satisfy the following properties:</p>
@@ -122,8 +122,8 @@ want to add additional kinds of information here.</p>")
   (vl-netdecllist-impexp-names (vl-module->netdecls x) nil nil))
 
 (defaggregate vl-wireinfo
-  ((usedp booleanp)
-   (setp  booleanp))
+  ((usedp booleanp :rule-classes :type-prescription)
+   (setp  booleanp :rule-classes :type-prescription))
   :tag :vl-wireinfo
   :short "Information about a single wire.")
 
@@ -467,7 +467,7 @@ we add are</p>
   ((x    vl-module-p  "Module to analyze.")
    (omit string-listp "Names of any special wires to omit,"))
   :returns (mv (new-x vl-module-p :hyp (vl-module-p x))
-               (report-entry vl-useset-report-entry-p :hyp :guard))
+               (report-entry vl-useset-report-entry-p :hyp :fguard))
   (b* (((vl-module x) x)
 
        (warnings x.warnings)
@@ -606,12 +606,7 @@ we add are</p>
 ;:lvalue-inputs lvalue-inputs
                                                          )))
     (fast-alist-free alist)
-    (mv x-prime report-entry))
-  ///
-  (defthm vl-module->name-of-vl-mark-wires-for-module
-    (equal (vl-module->name (mv-nth 0 (vl-mark-wires-for-module x omit)))
-           (vl-module->name x))))
-
+    (mv x-prime report-entry)))
 
 (define vl-mark-wires-for-modulelist
   :short "Carry out use-set analysis on all modules."
@@ -628,8 +623,19 @@ we add are</p>
        ((mv car-prime car-entry) (vl-mark-wires-for-module (car x) omit))
        ((mv cdr-prime cdr-report) (vl-mark-wires-for-modulelist (cdr x) omit)))
     (mv (cons car-prime cdr-prime)
-        (cons car-entry cdr-report)))
-  ///
-  (defthm vl-modulelist->names-of-vl-mark-wires-for-modulelist
-    (equal (vl-modulelist->names (mv-nth 0 (vl-mark-wires-for-modulelist x omit)))
-           (vl-modulelist->names x))))
+        (cons car-entry cdr-report))))
+
+(define vl-design-use-set-report ((x    vl-design-p)
+                                  (omit string-listp))
+  :returns (mv (new-x  vl-design-p)
+               (report vl-useset-report-p))
+  (b* ((x    (vl-design-fix x))
+       (omit (mbe :logic (if (string-listp omit) omit nil)
+                  :exec omit))
+       ((vl-design x) x)
+       ((mv new-mods report)
+        (vl-mark-wires-for-modulelist x.mods omit))
+       (new-x (change-vl-design x :mods new-mods)))
+    (mv new-x report)))
+
+

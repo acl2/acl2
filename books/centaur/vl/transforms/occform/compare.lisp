@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -221,7 +221,7 @@ ordinary unsigned comparisons work in the other cases.</p>"
 
   :guard (posp n)
   :body
-  (b* (((when (= n 1))
+  (b* (((when (eql n 1))
         (list *vl-1-bit-signed-gte*))
 
        (name (hons-copy (cat "VL_" (natstr n) "_BIT_SIGNED_GTE")))

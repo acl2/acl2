@@ -29,21 +29,24 @@
 
 (defaggregate vl-translation
   :parents (defmodules)
-  :short "The result of translating Verilog modules."
+  :short "The result of translating a Verilog or SystemVerilog design."
 
-  ((mods          vl-modulelist-p
-                  "A list of fully simplified, successfully translated
-                   modules.")
+  ((good          vl-design-p
+                  "Fully translated modules, etc., for whatever subset of the
+                   overall design we were able to successfully translate.
+                   This is the \"good subset\" of the design.")
 
-   (failmods      vl-modulelist-p
-                  "A list of partially simplified modules that, for some reason,
-                   could not be fully simplified.  Typically each module here
-                   will have fatal @(see warnings).")
+   (bad           vl-design-p
+                  "Partially translated modules, etc., that, for whatever
+                   reason, we were unable to successfully translate.  The
+                   modules here will typically have fatal warnings.  This This
+                   is the \"bad subset\" or at least the \"unsupported subset\"
+                   of the design.")
 
-   (origmods      vl-modulelist-p
-                  "The raw list of unsimplified modules that were found
-                   immediately after parsing.  This can be useful for
-                   pretty-printing and understanding modules.")
+   (orig          vl-design-p
+                  "The raw, unsimplified design that we obtained immediately
+                   after parsing.  This can be useful for pretty-printing and
+                   understanding modules.")
 
    (filemap       vl-filemap-p
                   "The actual Verilog source code that was read. Occasionally
@@ -60,10 +63,10 @@
                   "A list of \"floating\" warnings that were encountered during
                    the load process.  This usually does not have anything
                    interesting in it, because most warnings get associated with
-                   modules in @('mods') or @('failmods') instead.  It may,
+                   design elements in @('good') or @('fail') instead.  It may,
                    however, contain miscellaneous warnings from <i>between</i>
-                   modules, or that cannot be attributed to particular
-                   modules.")
+                   design elements which, therefore, can't be associated with
+                   particular modules.")
 
    (useset-report vl-useset-report-p
                   "A report that contains the results of running the @(see
@@ -90,7 +93,9 @@ to say which version you want, e.g., @('\"adder$width=4\"').</p>
 the translation's @('failmods') field, whereas successful modules are kept in
 the @('mods') field.)</p>"
 
-  (vl-has-module modname (vl-translation->mods x)))
+  (vl-has-module modname
+                 (vl-design->mods
+                  (vl-translation->good x))))
 
 (define vl-translation-get-esim ((modname stringp)
                                  (x vl-translation-p))
@@ -100,7 +105,9 @@ the @('mods') field.)</p>"
   :short "Get an E Module for a successfully translated module."
   :prepwork ((local (in-theory (enable vl-translation-has-module))))
 
-  (b* ((mod  (vl-find-module modname (vl-translation->mods x)))
+  (b* ((mod  (vl-find-module modname
+                             (vl-design->mods
+                              (vl-translation->good x))))
        (esim (vl-module->esim mod))
        ((unless esim)
         (raise "Module ~x0 has no esim?" modname)))

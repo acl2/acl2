@@ -323,7 +323,7 @@ BOZO finish this readme
        ((mv translation state)
         (vl::defmodules-fn loadconfig simpconfig))
 
-       (mods   (vl::vl-translation->mods translation))
+       (mods   (vl::vl-design->mods (vl::vl-translation->good translation)))
        (vl-mod (vl::vl-find-module stv-spec.mod mods))
        ((unless vl-mod)
         (die "The Verilog module ~s0 (requested by ~s1) wasn't loaded?"

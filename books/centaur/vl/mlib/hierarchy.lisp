@@ -298,20 +298,31 @@ which missing modules it instantiates.</p>"
     (equal (vl-module->name (vl-module-check-complete x mods modalist))
            (vl-module->name x))))
 
-(defprojection vl-modulelist-check-complete (x mods modalist)
+(defprojection vl-modulelist-check-complete-aux (x mods modalist)
   (vl-module-check-complete x mods modalist)
   :guard (and (vl-modulelist-p x)
               (vl-modulelist-p mods)
               (equal modalist (vl-modalist mods)))
   :result-type vl-modulelist-p
   :parents (hierarchy completeness)
-  :short "Extends @(see vl-module-check-complete) to a list of modules."
-  :long "<p>BOZO make this an -aux function, and add a wrapper that builds the
-modalist.</p>"
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-check-complete
-     (equal (vl-modulelist->names (vl-modulelist-check-complete x mods modalist))
-            (vl-modulelist->names x)))))
+  :short "Extends @(see vl-module-check-complete) to a list of modules.")
+
+(define vl-modulelist-check-complete ((x vl-modulelist-p))
+  :short "Annotate all modules with any incompleteness warnings."
+  :parents (hierarchy)
+  :returns (new-x vl-modulelist-p :hyp :fguard)
+  (b* ((modalist (vl-modalist x))
+       (ans      (vl-modulelist-check-complete-aux x x modalist)))
+    (fast-alist-free modalist)
+    (clear-memoize-table 'vl-necessary-direct-for-module)
+    ans))
+
+(define vl-design-check-complete ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x
+                      :mods (vl-modulelist-check-complete x.mods))))
 
 
 (define vl-modulelist-missing

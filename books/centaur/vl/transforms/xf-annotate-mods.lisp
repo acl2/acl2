@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,56 +19,43 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../checkers/duplicate-detect" )
-(include-book "../checkers/portcheck" )
-(include-book "../mlib/warnings" )
-(include-book "../util/cwtime" )
-(include-book "xf-designwires" )
-(include-book "xf-portdecl-sign" )
-(include-book "xf-argresolve" )
-(include-book "xf-orig" )
-(include-book "cn-hooks" )
-(include-book "xf-follow-hids" )
+(include-book "xf-portdecl-sign")
+(include-book "xf-argresolve")
+(include-book "xf-orig")
+(include-book "xf-designwires")
+(include-book "xf-follow-hids")
 (include-book "xf-resolve-indexing")
+(include-book "cn-hooks")
+(include-book "../checkers/duplicate-detect")
+(include-book "../checkers/portcheck")
+(include-book "../mlib/warnings")
+(include-book "../util/cwtime")
 
+(define vl-annotate-design
+  :parents (transforms)
+  :short "Meta-transform.  Applies several basic, preliminary transforms to
+          annotate the original modules in various ways."
+  ((design vl-design-p))
+  :returns (new-design vl-design-p)
 
-(define vl-annotate-mods ((mods vl-modulelist-p))
-  :returns (new-mods vl-modulelist-p :hyp :fguard)
+  (b* ((design (xf-cwtime (vl-design-duplicate-detect design)
+                          :name xf-duplicate-detect))
+       (design (xf-cwtime (vl-design-portcheck design)
+                          :name xf-portcheck))
+       (design (xf-cwtime (vl-design-designwires design)
+                          :name xf-mark-design-wires))
+       (design (xf-cwtime (vl-design-portdecl-sign design)
+                          :name xf-crosscheck-port-signedness))
+       (design (xf-cwtime (vl-design-resolve-indexing design)
+                          :name xf-resolve-indexing))
+       (design (xf-cwtime (vl-design-argresolve design)
+                          :name xf-argresolve))
+       (design (xf-cwtime (vl-design-origexprs design)
+                          :name xf-origexprs))
+       (design (xf-cwtime (mp-verror-transform-hook design)
+                          :name xf-mp-verror))
+       (design (xf-cwtime (vl-design-clean-warnings design)
+                          :name xf-clean-warnings)))
 
-; Annotations that will be done to form the "origmods" in the server
-
-  (b* ((mods (xf-cwtime (vl-modulelist-duplicate-detect mods)
-                        :name xf-duplicate-detect))
-
-       (mods (xf-cwtime (vl-modulelist-portcheck mods)
-                        :name xf-portcheck))
-
-       (mods (xf-cwtime (vl-modulelist-designwires mods)
-                        :name xf-mark-design-wires))
-
-       (mods (xf-cwtime (vl-modulelist-portdecl-sign mods)
-                        :name xf-crosscheck-port-signedness))
-
-       (mods (xf-cwtime (vl-modulelist-resolve-indexing mods)
-                        :name xf-resolve-indexing))
-
-       (mods (xf-cwtime (vl-modulelist-argresolve mods)
-                        :name xf-argresolve))
-
-       (mods (xf-cwtime (vl-modulelist-origexprs mods)
-                        :name xf-origexprs))
-
-       (mods (xf-cwtime (mp-verror-transform-hook mods)
-                        :name xf-mp-verror))
-
-       (mods (xf-cwtime (vl-modulelist-clean-warnings mods)
-                        :name xf-clean-warnings)))
-
-    mods)
-
-  ///
-
-  (defthm vl-modulelist->names-of-vl-annotate-mods
-    (equal (vl-modulelist->names (vl-annotate-mods mods))
-           (vl-modulelist->names mods))))
+    design))
 

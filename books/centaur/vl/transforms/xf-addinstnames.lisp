@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -31,11 +31,12 @@ every gate and module instance which are unnamed.  The names are safely
 generated using a @(see vl-namefactory-p) and will have names such as
 @('modinst_11') and @('gateinst_46').</p>")
 
+(local (xdoc::set-default-parents addinstnames))
+
 (define vl-modinst-addinstnames ((x  vl-modinst-p)
                                  (nf vl-namefactory-p))
   :returns (mv (new-x vl-modinst-p     :hyp :fguard)
                (nf    vl-namefactory-p :hyp :fguard))
-  :parents (addinstnames)
   :short "Name a module instance, if necessary."
   (b* (((when (vl-modinst->instname x))
         ;; No need to generate a name.
@@ -48,7 +49,6 @@ generated using a @(see vl-namefactory-p) and will have names such as
                                      (nf vl-namefactory-p))
   :returns (mv (new-x vl-modinstlist-p :hyp :fguard)
                (nf    vl-namefactory-p :hyp :fguard))
-  :parents (addinstnames)
   :short "Name unnamed module instances."
   (b* (((when (atom x))
         (mv x nf))
@@ -60,7 +60,6 @@ generated using a @(see vl-namefactory-p) and will have names such as
                                   (nf vl-namefactory-p))
   :returns (mv (new-x vl-gateinst-p    :hyp :fguard)
                (nf    vl-namefactory-p :hyp :fguard))
-  :parents (addinstnames)
   :short "Name a gate instance, if necessary."
   (b* (((when (vl-gateinst->name x))
         ;; No need to generate a name.
@@ -73,7 +72,6 @@ generated using a @(see vl-namefactory-p) and will have names such as
                                       (nf vl-namefactory-p))
   :returns (mv (new-x vl-gateinstlist-p :hyp :fguard)
                (nf    vl-namefactory-p  :hyp :fguard))
-  :parents (addinstnames)
   :short "Name unnamed gate instances."
   (b* (((when (atom x))
         (mv x nf))
@@ -82,7 +80,6 @@ generated using a @(see vl-namefactory-p) and will have names such as
     (mv (cons car cdr) nf)))
 
 (define vl-modinstlist-all-named-p ((x vl-modinstlist-p))
-  :parents (addinstnames)
   :short "Are there any module instances that need names?"
   (or (atom x)
       (and (vl-modinst->instname (car x))
@@ -96,7 +93,6 @@ generated using a @(see vl-namefactory-p) and will have names such as
                                       vl-modinst-addinstnames)))))
 
 (define vl-gateinstlist-all-named-p ((x vl-gateinstlist-p))
-  :parents (addinstnames)
   :short "Are there any gate instances that need names?"
   (or (atom x)
       (and (vl-gateinst->name (car x))
@@ -111,7 +107,6 @@ generated using a @(see vl-namefactory-p) and will have names such as
 
 (define vl-module-addinstnames ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
-  :parents (addinstnames)
   :short "Name any unnamed module and gate instances throughout a module."
   (mbe :logic
        (b* (((vl-module x) x)
@@ -155,9 +150,12 @@ generated using a @(see vl-namefactory-p) and will have names such as
 (defprojection vl-modulelist-addinstnames (x)
   (vl-module-addinstnames x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :parents (addinstnames)
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-addinstnames
-     (equal (vl-modulelist->names (vl-modulelist-addinstnames x))
-            (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-addinstnames ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x)
+       (new-mods (vl-modulelist-addinstnames x.mods)))
+    (change-vl-design x :mods new-mods)))
+

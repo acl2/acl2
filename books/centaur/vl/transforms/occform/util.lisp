@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -93,25 +93,20 @@ and net declaration.</p>"
   (declare (xargs :guard (and (symbolp name)
                               (symbol-listp formals))))
   (let ((mksym-package-symbol name))
-    `(defsection ,name
+    `(define ,name
        :parents ,parents
        :short ,short
-       :long ,(cat "<p><b>Signature:</b> @(call " (symbol-name name) ")
-returns a non-empty module list.  The first module in the list is the desired
-module; the other modules are any necessary supporting modules.</p>" long)
-
-       (defund ,name ,formals
-         (declare (xargs :guard ,guard
-                         :guard-debug ,guard-debug
-                         :verify-guards ,verify-guards))
-         ,body)
-
-       (local (in-theory (enable ,name)))
-
-       (defthm ,(mksym 'vl-modulelist-p-of- name)
-         (implies (force ,guard)
-                  (vl-modulelist-p (,name . ,formals))))
-
+       ,formals
+       :guard ,guard
+       :guard-debug ,guard-debug
+       :verify-guards ,verify-guards
+       :returns (mods vl-modulelist-p :hyp :guard
+                      "A non-empty module list.  The first module in the list
+                       is the desired module; the other modules are any
+                       necessary supporting modules.")
+       :long ,long
+       ,body
+       ///
        (defthm ,(mksym 'type-of- name)
          (and (true-listp (,name . ,formals))
               (consp (,name . ,formals)))
@@ -135,13 +130,11 @@ portnames and directions."
                      port.expr
                      (vl-idexpr-p port.expr)
                      (equal (vl-idexpr->name port.expr) port.name)))
-        (er hard? 'vl-simple-instantiate-args-main
-            "Port too complicated: ~x0.~%" (car ports)))
+        (raise "Port too complicated: ~x0.~%" (car ports)))
 
        (decl (vl-find-portdecl port.name portdecls))
        ((unless decl)
-        (er hard? 'vl-simple-instantiate-args-main
-            "Port is not declared: ~x0.~%" port.name))
+        (raise "Port is not declared: ~x0.~%" port.name))
 
        (dir (vl-portdecl->dir decl))
        (arg (make-vl-plainarg :expr     (car actuals)
@@ -178,8 +171,7 @@ arity checking.</p>"
        (plainargs
         (if (same-lengthp actuals x.ports)
             (vl-simple-instantiate-args-main actuals x.ports x.portdecls)
-          (er hard? 'vl-simple-instantiate
-              "Wrong number of arguments for ~x0.~%" x.name))))
+          (raise "Wrong number of arguments for ~x0.~%" x.name))))
     (make-vl-modinst :modname   x.name
                      :instname  instname
                      :paramargs (vl-arguments nil nil)

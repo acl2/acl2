@@ -1,5 +1,5 @@
-; CUTIL - Centaur Basic Utilities
-; Copyright (C) 2008-2011 Centaur Technology
+; Standard Utilities Library
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,5 +18,21 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "../portcullis")
-; cert-flags: ? t :ttags :all
+(in-package "STD")
+
+#||
+;; Fool dependency scanner into certifying the other books.
+
+(include-book "defaggregate")
+(include-book "defaggrify-defrec")
+(include-book "defalist")
+(include-book "define")
+(include-book "defines")
+(include-book "deflist")
+(include-book "defmapappend")
+(include-book "defprojection")
+(include-book "defredundant")
+(include-book "defval")
+(include-book "fixtype")
+
+||#

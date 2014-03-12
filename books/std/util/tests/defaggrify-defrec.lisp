@@ -16,9 +16,27 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
-; Original authors: Jared Davis <jared@centtech.com>
-;                   Sol Swords <sswords@centtech.com>
+; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "../portcullis")
-(ld "tools/flag-package.lsp" :dir :system)
-; cert-flags: ? t :ttags :all
+; Tests for defaggrify-defrec utility.
+
+(in-package "ACL2")
+(include-book "../defaggrify-defrec")
+
+;; Just a handful of defrec from the ACL2 sources.
+
+(std::defaggrify-defrec rewrite-rule)
+(std::defaggrify-defrec def-body)
+(std::defaggrify-defrec io-record)
+(std::defaggrify-defrec state-vars)
+(std::defaggrify-defrec gag-info)
+(std::defaggrify-defrec rewrite-constant)
+(std::defaggrify-defrec attachment)
+(std::defaggrify-defrec clause-id)
+(std::defaggrify-defrec assumption)
+(std::defaggrify-defrec justification)
+
+
+
+
+

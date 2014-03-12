@@ -121,7 +121,9 @@
 ; simplified modules with the following command.  PPCS stands for "pretty print
 ; with comments to string."
 
-(vl::vl-ppcs-modulelist (vl::vl-translation->mods *translation*))
+(vl::vl-ppcs-modulelist
+ (vl::vl-design->mods
+  (vl::vl-translation->good *translation*)))
 
 ; Here, you will find modules with names like VL_1_BIT_AND, VL_1_BIT_OR, etc.,
 ; until we finally get to the alu16 module.
@@ -140,7 +142,9 @@
 ; from *translation*, and names it *alu16-vl*.
 
 (defconst *alu16-vl*
-  (vl::vl-find-module "alu16" (vl::vl-translation->mods *translation*)))
+  (vl::vl-find-module "alu16"
+                      (vl::vl-design->mods
+                       (vl::vl-translation->good *translation*))))
 
 
 ; This *alu16-vl* object is a "VL Module."  VL modules are the internal, parsed

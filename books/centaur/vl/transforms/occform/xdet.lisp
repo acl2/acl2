@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -58,7 +58,7 @@ original answer.  But if it is X, then the resulting bits are all X.</p>"
 
 ;; BOZO might we get rid of this special case?
 
-       ((when (= n 1))
+       ((when (eql n 1))
         ;; xor (out, in, in);
         (let ((out-inst (vl-simple-inst *vl-1-bit-xor* "ans" out-expr in-expr in-expr)))
           (list (make-vl-module :name      name

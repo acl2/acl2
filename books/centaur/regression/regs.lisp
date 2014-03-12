@@ -36,11 +36,13 @@
 
 (value-triple
  (vl::vl-modulelist->names
-  (vl::vl-translation->mods *translation*)))
+  (vl::vl-design->mods
+   (vl::vl-translation->good *translation*))))
 
 (value-triple
  (vl::vl-modulelist->names
-  (vl::vl-translation->failmods *translation*)))
+  (vl::vl-design->mods
+   (vl::vl-translation->bad *translation*))))
 
 #||
 ;; to debug some problematic module
@@ -63,8 +65,8 @@
   (make-event
    (cons 'progn (acl2::esims-to-defconsts-fn
                  (vl::vl-modulelist->esims
-                  (vl::vl-translation->mods *translation*))))))
-
+                  (vl::vl-design->mods
+                   (vl::vl-translation->good *translation*)))))))
 
 (defstv e1
   :mod |*ereg1$width=1*|

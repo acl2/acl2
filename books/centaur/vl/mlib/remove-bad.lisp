@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -24,14 +24,58 @@
 (local (include-book "../util/osets"))
 (local (include-book "modname-sets"))
 
+(defxdoc propagating-errors
+  :parents (warnings vl-simplify)
+  :short "The error handling strategy used by @(see vl-simplify)."
 
+  :long "<p>As described in @(see warnings), our @(see transforms) can
+sometimes run into severe problems, e.g., we might run into an instance of an
+undefined module.  In this case, the transform should typically extend the
+module with a fatal warning.</p>
+
+<p>In the context of @(see vl-simplify), we generally want to throw away any
+design elements (e.g., modules, packages, etc.) that have fatal errors, so that
+we only produce a formal model of whatever part of the design is well-formed
+and supported.</p>
+
+<p>For various reasons, it's a good idea to throw away any these bad parts of
+the design as early as possible.  The main reason for this is that it easier to
+identify the root cause of the problem.  Problems tend to snowball.  It's much
+better to see a single fatal error from the first transform that hit a problem
+than to see dozens errors from different transforms that all have the same
+underlying cause.  Throwing out modules early also helps to improve performance
+by cutting down the design; there's no point in further transforming stuff
+we're going to throw away, anyway.</p>
+
+<p>On the other hand, we can't really just throw bad parts of the design away.
+We at least need some way to see what went wrong, so that we can debug it.</p>
+
+<p>Our basic strategy for dealing with this, in @(see vl-simplify) at least, is
+to imagine two designs, <b>good</b> and <b>bad</b>.  Initially, we put all of
+the design elements into the good design, and the bad design is empty.  We
+always only try to transform the good design, and afterward we can move any
+design elements that had errors into the bad design.</p>
+
+<p>Moving things into the bad design is tricky because design elements do not
+exist in isolation.  When, for instance, some module M has an error, we would
+ideally like to remove not only M but also all modules that transitively depend
+on M.  Moreover, we also want to make sure that any modules that are killed off
+in this transitive way get extended with some kind of warning that explains why
+the module is being removed.</p>
+
+<p>Because this is so complicated, we bundle up the process into a function,
+@(see vl-design-propagate-errors), which is intended to move any design
+elements that (transitively) have errors from @('good') to @('bad').</p>")
+
+(local (xdoc::set-default-parents propagating-errors))
 
 (define vl-blame-alist-aux1
-  ((bad   "name of a module we are currently processing" stringp)
-   (deps  "modules that depend on @('bad')" string-listp)
-   (alist "partially constructed blame list"))
   :parents (vl-blame-alist)
   :short "For each module M in DEPS, we additionally blame BAD."
+  ((bad   "Name of a module we are currently processing." stringp)
+   (deps  "Modules that depend on @('bad')." string-listp)
+   (alist "Partially constructed blame list."))
+  :returns (new-alist alistp :hyp (alistp alist))
   (b* (((when (atom deps))
         alist)
        (m          (car deps))
@@ -39,13 +83,7 @@
        (new-blamed (cons bad old-blamed))
        (new-alist  (hons-acons m new-blamed alist)))
     (vl-blame-alist-aux1 bad (cdr deps) new-alist))
-
   ///
-
-  (defthm alistp-of-vl-blame-alist-aux1
-    (implies (force (alistp alist))
-             (alistp (vl-blame-alist-aux1 bad deps alist))))
-
   (defthm vl-string-keys-p-of-vl-blame-alist-aux1
     (implies (and (force (vl-string-keys-p alist))
                   (force (string-listp deps)))
@@ -56,35 +94,28 @@
                   (force (stringp bad)))
              (vl-string-list-values-p (vl-blame-alist-aux1 bad deps alist)))))
 
-
 (define vl-blame-alist-aux2
-  ((bads "names of all the bad modules" string-listp)
-   (mods "list of all modules." (and (setp mods)
-                                     (vl-modulelist-p mods)
-                                     (uniquep (vl-modulelist->names mods))))
-   (depalist "precomputed depalist for @('mods'), for fast lookups"
-             (equal depalist (vl-depalist mods)))
-   (alist "partially constructed blame alist"))
   :parents (vl-blame-alist)
   :short "For each Bi in BADS we compute deps(Bi) = {M1, ..., Mk}, and blame Bi
-for ruining each Mj."
-
+          for ruining each Mj."
+  ((bads "Names of all the bad modules." string-listp)
+   (mods "List of all modules." (and (setp mods)
+                                     (vl-modulelist-p mods)
+                                     (uniquep (vl-modulelist->names mods))))
+   (depalist "Precomputed depalist for @('mods'), for fast lookups"
+             (equal depalist (vl-depalist mods)))
+   (alist "Partially constructed blame alist"))
+  :returns (new-alist alistp :hyp (force (alistp alist)))
   (b* (((when (atom bads))
         alist)
        (deps  (vl-dependent-modules (list (car bads)) mods depalist))
        (alist (vl-blame-alist-aux1 (car bads) deps alist)))
     (vl-blame-alist-aux2 (cdr bads) mods depalist alist))
-
   ///
-
   (defthm vl-blame-alist-aux2-when-not-consp
     (implies (not (consp bads))
              (equal (vl-blame-alist-aux2 bads mods depalist alist)
                     alist)))
-
-  (defthm alistp-of-vl-blame-alist-aux2
-    (implies (force (alistp alist))
-             (alistp (vl-blame-alist-aux2 bads mods depalist alist))))
 
   (defthm vl-string-keys-p-of-vl-blame-alist-aux2
     (implies (and (force (string-listp bads))
@@ -106,51 +137,40 @@ for ruining each Mj."
              (vl-string-list-values-p
               (vl-blame-alist-aux2 bads mods depalist alist)))))
 
-
 (define vl-blame-alist
-  ((bads "names of bad modules" string-listp)
-   (mods "list of all modules" (and (vl-modulelist-p mods)
-                                    (uniquep (vl-modulelist->names mods)))))
-  :returns (ans alistp)
-  :parents (vl-remove-bad-modules)
-  :short "Build an alist describing which modules are to blame for their
-dependents being thrown away."
+  :short "Build an alist describing which modules are really to blame for their
+          dependents being thrown away."
 
-  :long "<p><b>Fast alist warning:</b> the returned alist is a fast alist, and
-should be freed by the caller with @('fast-alist-free') to avoid memory
-leaks.</p>
-
-<h3>Explanation of Blame Alists</h3>
+  ((bads "Names of bad modules." string-listp)
+   (mods "List of all modules."  (and (vl-modulelist-p mods)
+                                      (uniquep (vl-modulelist->names mods)))))
+  :returns
+  (blame-alist alistp "Fast alist.")
+  :long "<h3>Explanation of Blame Alists</h3>
 
 <p>Suppose we are transforming a list of modules, and we run into problems in
-some module, @('M').  Our basic error handling strategy is to:</p>
+some module, @('M').  Our basic strategy for @(see propagating-errors) is:</p>
 
 <ul>
-
 <li>Add a warning onto @('M') that says why we had the problem, and</li>
-
 <li>Remove @('M') from the list of modules, so that we can continue with the
 other modules.</li>
-
 </ul>
 
-<p>But this is not quite sufficient.  In addition to removing @('M'), we need
-to remove any dependents (@(see vl-dependent-modules)) of @('M'), since
-removing @('M') would cause these modules to be incomplete.  As we remove these
+<p>This isn't really good enough.  Besides removing @('M'), we should also
+remove any dependents (@(see vl-dependent-modules)) of @('M'), since removing
+@('M') would cause these modules to be incomplete.  As we remove these
 dependent modules, we would also like to annotate them with warnings explaining
-why they are being removed, and that @('M') is at fault.</p>
+that they are being removed because of problems with @('M').</p>
 
 <p>In general, instead of a single \"bad\" module, imagine that we have a list
 of bad modules, @('B1'), ..., @('Bn').  Additionally,</p>
 
 <ul>
-
 <li>Let @('deps(Bi)') be the set of all modules that (transitively) depend on
 @('Bi').</li>
-
 <li>Let @('D') be the union over @('deps(Bi)'), i.e., @('D') is the set of all
 modules that depend on any bad module)</li>
-
 </ul>
 
 <p>Note that there is no generally reason to think that @('deps(Bi)') is
@@ -158,7 +178,7 @@ disjoint from @('deps(Bj)').  If a module @('M') instantiates both @('Bi') and
 @('Bj'), then it will be in the dependents for both of them.  So, which one
 should be blamed?</p>
 
-<p>Our approach is to blame both of them.  To do this, we first construct a
+<p>Our approach is to blame them both..  To do this, we first construct a
 <b>blame alist</b>.  This alist includes an entry for every module @('M') in
 @('D').  In particular, we associate each such @('M') with @('{ Bi
 : M in deps(Bi) }').  Once the blame alist is constructed, we can easily use
@@ -194,7 +214,6 @@ the caller can use any module order he likes.</p>"
              shrunk))))
 
   ///
-
   (defthm vl-string-keys-p-of-vl-blame-alist
     (implies (and (force (string-listp bads))
                   (force (vl-modulelist-p mods))
@@ -208,145 +227,110 @@ the caller can use any module order he likes.</p>"
              (vl-string-list-values-p (vl-blame-alist bads mods)))))
 
 
+(defval *vl-bad-submodule-message*
+  :parents (vl-apply-blame-alist)
+  "Module ~m0 (perhaps transitively) depends upon modules which have been ~
+   eliminated.  In particular, the following submodule(s) are to blame: ~&1.")
+
+(define vl-apply-blame-alist-exec
+  :parents (vl-apply-blame-alist)
+  ((mods vl-modulelist-p)
+   alist
+   (nrev "Survivors")
+   (nrev2 "Victims"))
+  :returns (mv nrev nrev2)
+  (b* (((when (atom mods))
+        (mv nrev nrev2))
+       (mod1   (car mods))
+       (name1  (vl-module->name mod1))
+       (entry1 (hons-get name1 alist))
+       ((unless entry1)
+        (b* ((nrev (nrev-push mod1 nrev)))
+          (vl-apply-blame-alist-exec (cdr mods) alist nrev nrev2)))
+       ;; The blame falls upon everyone mentioned in the blame alist.  But it's
+       ;; weird to add a warning saying that a module is to blame for itself.
+       ;; So, we remove the module itself from the blame list.
+       (blame (remove-equal-without-guard name1 (cdr entry1)))
+       ((unless blame)
+        ;; This is still a victim that we're throwing out.  It just doesn't get
+        ;; a warning.
+        (b* ((nrev2 (nrev-push mod1 nrev2)))
+          (vl-apply-blame-alist-exec (cdr mods) alist nrev nrev2)))
+       ;; Else there is someone to blame, so blame them.
+       (new-warnings (fatal :type :vl-bad-submodule
+                            :msg *vl-bad-submodule-message*
+                            :args (list name1 (cdr entry1))
+                            ;; Horrible -- have to lie to get the MBE equivalence
+                            :fn 'vl-apply-blame-alist
+                            :acc (vl-module->warnings mod1)))
+       (new-mod1     (change-vl-module mod1 :warnings new-warnings))
+       (nrev2        (nrev-push new-mod1 nrev2)))
+    (vl-apply-blame-alist-exec (cdr mods) alist nrev nrev2)))
 
 
-(defsection vl-apply-blame-alist
+(define vl-apply-blame-alist
   :parents (vl-remove-bad-modules)
   :short "Annotates transitively-bad modules with warnings, and throws them
 away."
 
-  :long "<p>@(call vl-apply-blame-alist) returns @('(mv survivors
-  victims)').</p>
+  ((mods vl-modulelist-p "The list of all \"good\" modules.")
+   (alist                "The blame alist, see @(see vl-blame-alist)."))
+  :returns
+  (mv (survivors "The modules that are still okay."
+                 vl-modulelist-p :hyp :fguard)
+      (victims   "The modules that were thrown away, annotated with
+                  warnings about why they are being eliminated."
+                 vl-modulelist-p :hyp :fguard))
+  :verify-guards nil
 
-<p>Inputs:</p>
-
-<ul>
-
-<li>@('mods') are the list of all \"good\" modules,</li>
-
-<li>@('alist') is a blame alist formed by @(see vl-blame-alist),</li>
-
-</ul>
-
-<p>Outputs:</p>
-
-<ul>
-
-<li>@('survivors') contains the modules from @('mods') which are not
-transitively bad, and are not being thrown away.</li>
-
-<li>@('victims') contains the modules from @('mods') that are being thrown
-away, each of which has been updated with a warning explaining which modules
-are to blame.</li>
-
-</ul>
-
-<p>Note that the survivors are returned in the same order as they occur in
-@('mods').</p>"
-
-  ;; just a speed hint
-  (local (in-theory (disable hons-assoc-equal
-                             no-duplicatesp-equal-when-same-length-mergesort
-                             remove-equal
-                             promote-member-equal-to-membership
-                             true-listp
-                             acl2::subsetp-member
-                             acl2::true-listp-member-equal)))
-
-  (defconst *vl-bad-submodule-message*
-    "Module ~m0 (perhaps transitively) depends upon modules which have been ~
-     eliminated.  In particular, the following submodule(s) are to blame: ~
-     ~&1.")
-
-  (defund vl-apply-blame-alist-exec (mods alist survivors victims)
-    "Returns (mv survivors victims)"
-    (declare (xargs :guard (vl-modulelist-p mods)))
-    (if (atom mods)
-        (mv survivors victims)
-      (b* ((mod1   (car mods))
-           (name1  (vl-module->name mod1))
-           (entry1 (hons-get name1 alist)))
-        (if (not entry1)
-            (vl-apply-blame-alist-exec (cdr mods) alist (cons mod1 survivors) victims)
-          ;; The blame falls upon everyone mentioned in the blame alist.  But
-          ;; it's weird to add a warning saying that a module is to blame for
-          ;; itself.  So, we remove the module itself from the blame list.
-          (let ((blame (remove-equal-without-guard name1 (cdr entry1))))
-            (if (not blame)
-                ;; This is still a victim that we're throwing out.  It just
-                ;; doesn't get a warning.
-                (vl-apply-blame-alist-exec (cdr mods) alist survivors (cons mod1 victims))
-
-              ;; Else there is someone to blame, so blame them.
-              (b* ((new-warnings (cons (make-vl-warning :type :vl-bad-submodule
-                                                        :msg *vl-bad-submodule-message*
-                                                        :args (list name1 (cdr entry1))
-                                                        :fatalp t
-                                                        :fn 'vl-apply-blame-alist)
-                                       (vl-module->warnings mod1)))
-                   (new-mod1     (change-vl-module mod1 :warnings new-warnings)))
-                (vl-apply-blame-alist-exec (cdr mods) alist survivors
-                                           (cons new-mod1 victims)))))))))
-
-  (defund vl-apply-blame-alist (mods alist)
-    "Returns (mv survivors victims)"
-    (declare (xargs :guard (vl-modulelist-p mods)
-                    :verify-guards nil))
-    (mbe :logic
-         (if (atom mods)
-             (mv nil nil)
-           (b* ((mod1                   (car mods))
-                (name1                  (vl-module->name mod1))
-                (entry1                 (hons-get name1 alist))
-                (blame                  (remove-equal name1 (cdr entry1)))
-                ((mv survivors victims) (vl-apply-blame-alist (cdr mods) alist)))
-             (cond ((not entry1)
-                    (mv (cons mod1 survivors) victims))
-                   ((not blame)
-                    (mv survivors (cons mod1 victims)))
-                   (t
-                    (b* ((new-warnings (cons (make-vl-warning :type :vl-bad-submodule
-                                                              :msg *vl-bad-submodule-message*
-                                                              :args (list name1 (cdr entry1))
-                                                              :fatalp t
-                                                              :fn 'vl-apply-blame-alist)
-                                             (vl-module->warnings mod1)))
-                         (new-mod1     (change-vl-module mod1 :warnings new-warnings)))
-                      (mv survivors (cons new-mod1 victims)))))))
-         :exec (mv-let (survivors victims)
-                 (vl-apply-blame-alist-exec mods alist nil nil)
-                 (mv (reverse survivors) (reverse victims)))))
+  (mbe :logic
+       (b* (((when (atom mods))
+             (mv nil nil))
+            (mod1                   (car mods))
+            (name1                  (vl-module->name mod1))
+            (entry1                 (hons-get name1 alist))
+            (blame                  (remove-equal name1 (cdr entry1)))
+            ((mv survivors victims) (vl-apply-blame-alist (cdr mods) alist))
+            ((unless entry1)
+             (mv (cons mod1 survivors) victims))
+            ((unless blame)
+             (mv survivors (cons mod1 victims)))
+            (new-warnings (fatal :type :vl-bad-submodule
+                                 :msg *vl-bad-submodule-message*
+                                 :args (list name1 (cdr entry1))
+                                 :acc (vl-module->warnings mod1)))
+            (new-mod1     (change-vl-module mod1 :warnings new-warnings)))
+         (mv survivors (cons new-mod1 victims)))
+       :exec (b* (((local-stobjs nrev nrev2)
+                   (mv survivors victims nrev nrev2))
+                  ((mv nrev nrev2)
+                   (vl-apply-blame-alist-exec mods alist nrev nrev2))
+                  ((mv survivors nrev) (nrev-finish nrev))
+                  ((mv victims nrev2) (nrev-finish nrev2)))
+               (mv survivors victims nrev nrev2)))
+  ///
+  (local (in-theory (e/d (vl-apply-blame-alist-exec)
+                         ((force)
+                          hons-assoc-equal
+                          no-duplicatesp-equal-when-same-length-mergesort
+                          remove-equal
+                          promote-member-equal-to-membership
+                          true-listp
+                          acl2::subsetp-member
+                          acl2::true-listp-member-equal))))
 
   (defmvtypes vl-apply-blame-alist (true-listp true-listp))
-
-  (local (in-theory (enable vl-apply-blame-alist-exec
-                            vl-apply-blame-alist)))
 
   (defthm vl-apply-blame-alist-exec-removal
     (implies (and (true-listp survivors)
                   (true-listp victims))
              (equal (vl-apply-blame-alist-exec mod alist survivors victims)
-                    (mv (revappend (mv-nth 0 (vl-apply-blame-alist mod alist)) survivors)
-                        (revappend (mv-nth 1 (vl-apply-blame-alist mod alist)) victims)))))
+                    (mv (append survivors
+                                (mv-nth 0 (vl-apply-blame-alist mod alist)))
+                        (append victims
+                                (mv-nth 1 (vl-apply-blame-alist mod alist)))))))
 
   (verify-guards vl-apply-blame-alist)
-
-  (defttag vl-optimize)
-  (never-memoize vl-apply-blame-alist-exec)
-  (progn! (set-raw-mode t)
-          (defun vl-apply-blame-list (mods alist)
-            (mv-let (survivors victims)
-              (vl-apply-blame-alist-exec mods alist nil nil)
-              (mv (nreverse survivors) (nreverse victims)))))
-  (defttag nil)
-
-  (defthm vl-modulelist-p-of-vl-apply-blame-alist-0
-    (implies (force (vl-modulelist-p mods))
-             (vl-modulelist-p (mv-nth 0 (vl-apply-blame-alist mods alist)))))
-
-  (defthm vl-modulelist-p-of-vl-apply-blame-alist-1
-    (implies (force (vl-modulelist-p mods))
-             (vl-modulelist-p (mv-nth 1 (vl-apply-blame-alist mods alist)))))
 
   (defthm subsetp-equal-names-of-vl-apply-blame-alist-0
     (subsetp-equal
@@ -418,38 +402,29 @@ are to blame.</li>
 
 
 (define vl-remove-bad-modules
-  ((names "modules to be eliminated" string-listp)
-   (mods  "list of all modules" (and (vl-modulelist-p mods)
-                                     (uniquep (vl-modulelist->names mods)))))
-  :returns (mv (survivors "modules that didn't depend on @('names')")
-               (victims "modules that were eliminated"))
-  :parents (mlib)
   :short "Safely remove some faulty modules and their dependents."
+
+  ((names "Modules to be eliminated" string-listp)
+   (mods  "List of all modules" (and (vl-modulelist-p mods)
+                                     (uniquep (vl-modulelist->names mods)))))
+  :returns
+  (mv (survivors "Modules that didn't depend on @('names')."
+                 vl-modulelist-p :hyp (force (vl-modulelist-p mods)))
+      (victims "Modules that were eliminated, annotated with warnings."
+               vl-modulelist-p :hyp (force (vl-modulelist-p mods))))
 
   :long "<p>This is a high-level, convenient operation for safely eliminating
 modules.  We determine which modules depend upon @('names'), annotate them with
 warnings explaining that they are being removed because they instantiate bad
-modules, and separate them from the modules that are okay.</p>
-
-<p>The returned @('survivors') are in the same order as they occur in
-@('mods').</p>"
+modules, and separate them from the modules that are okay.</p>"
 
   (b* ((blame-alist            (vl-blame-alist names mods))
-       ((mv survivors victims) (vl-apply-blame-alist mods blame-alist))
-       (-                      (fast-alist-free blame-alist)))
+       ((mv survivors victims) (vl-apply-blame-alist mods blame-alist)))
+    (fast-alist-free blame-alist)
     (mv survivors victims))
 
   ///
-
   (defmvtypes vl-remove-bad-modules (true-listp true-listp))
-
-  (defthm vl-modulelist-p-of-vl-remove-bad-modules-0
-    (implies (force (vl-modulelist-p mods))
-             (vl-modulelist-p (mv-nth 0 (vl-remove-bad-modules names mods)))))
-
-  (defthm vl-modulelist-p-of-vl-remove-bad-modules-1
-    (implies (force (vl-modulelist-p mods))
-             (vl-modulelist-p (mv-nth 1 (vl-remove-bad-modules names mods)))))
 
   (defthm subsetp-equal-names-of-vl-remove-bad-modules-0
     (subsetp-equal
@@ -497,16 +472,11 @@ modules, and separate them from the modules that are okay.</p>
   )
 
 
-(define vl-modulelist-zombies ((x vl-modulelist-p))
-  :returns (ans string-listp :hyp :fguard)
-  :parents (warnings)
+(define vl-modulelist-zombies
   :short "Identify modules with fatal warnings."
-
-  :long "<p>@(call vl-modulelist-zombies) gathers and returns the names of all
-modules in @('x') which have some fatal warning (as determined by @(see
-vl-some-warning-fatalp).  This function is mainly used in @(see
-vl-propagate-errors).</p>"
-
+  ((x vl-modulelist-p))
+  :returns (ans string-listp :hyp :fguard
+                "Names of modules that have any fatal warnings.")
   (cond ((atom x)
          nil)
         ((vl-some-warning-fatalp (vl-module->warnings (car x)))
@@ -516,100 +486,107 @@ vl-propagate-errors).</p>"
          (vl-modulelist-zombies (cdr x)))))
 
 
-(define vl-propagate-errors ((x (and (vl-modulelist-p x)
-                                     (uniquep (vl-modulelist->names x)))))
-  :returns (mv survivors victims)
-  :parents (warnings)
+(define vl-modulelist-propagate-errors
   :short "Eliminate modules with fatal warnings (and their dependents)."
-  :long "<p>Given a list of modules, @('x'), we find all modules that have
-fatal @(see warnings) using @(see vl-modulelist-zombies).  We then use @(see
-vl-remove-bad-modules) to safely remove these modules and all of their
-dependents from the module list.  The resulting @('survivors') are kept in the
-same order as they occur in @('x').</p>"
-
-  (let ((zombies (vl-modulelist-zombies x)))
-    (if zombies
-        (vl-remove-bad-modules zombies x)
-      (mv (redundant-list-fix x) nil)))
-
+  ((x (and (vl-modulelist-p x)
+           (uniquep (vl-modulelist->names x)))
+      "A list of modules, some of which may have fatal errors."))
+  :returns
+  (mv (survivors vl-modulelist-p :hyp (force (vl-modulelist-p x))
+                 "The good portion of @('x'), i.e., the subset of the modules
+                  that do not depend on any faulty submodules.")
+      (victims   vl-modulelist-p :hyp (force (vl-modulelist-p x))
+                 "The bad portion of @('x'), i.e., any modules that have fatal
+                  warnings and (transitively) any modules that depend on
+                  them."))
+  (b* ((zombies (vl-modulelist-zombies x))
+       ((when zombies)
+        (vl-remove-bad-modules zombies x)))
+    (mv (redundant-list-fix x) nil))
   ///
+  (defmvtypes vl-modulelist-propagate-errors (true-listp true-listp))
 
-  (defmvtypes vl-propagate-errors (true-listp true-listp))
-
-  (defthm vl-modulelist-p-of-vl-propagate-errors-0
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (mv-nth 0 (vl-propagate-errors x)))))
-
-  (defthm vl-modulelist-p-of-vl-propagate-errors-1
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (mv-nth 1 (vl-propagate-errors x)))))
-
-  (defthm subsetp-equal-names-of-vl-propagate-errors-0
+  (defthm subsetp-equal-names-of-vl-modulelist-propagate-errors-0
     (subsetp-equal
-     (vl-modulelist->names (mv-nth 0 (vl-propagate-errors mods)))
+     (vl-modulelist->names (mv-nth 0 (vl-modulelist-propagate-errors mods)))
      (vl-modulelist->names mods)))
 
-  (defthm subsetp-equal-names-of-vl-propagate-errors-1
+  (defthm subsetp-equal-names-of-vl-modulelist-propagate-errors-1
     (subsetp-equal
-     (vl-modulelist->names (mv-nth 1 (vl-propagate-errors mods)))
+     (vl-modulelist->names (mv-nth 1 (vl-modulelist-propagate-errors mods)))
      (vl-modulelist->names mods)))
 
-  (defthm no-duplicatesp-equal-of-vl-propagate-errors-0
+  (defthm no-duplicatesp-equal-of-vl-modulelist-propagate-errors-0
     (implies (force (no-duplicatesp-equal (vl-modulelist->names x)))
              (no-duplicatesp-equal
               (vl-modulelist->names
-               (mv-nth 0 (vl-propagate-errors x))))))
+               (mv-nth 0 (vl-modulelist-propagate-errors x))))))
 
-  (defthm no-duplicatesp-equal-of-vl-propagate-errors-1
+  (defthm no-duplicatesp-equal-of-vl-modulelist-propagate-errors-1
     (implies (force (no-duplicatesp-equal (vl-modulelist->names mods)))
              (no-duplicatesp-equal
               (vl-modulelist->names
-               (mv-nth 1 (vl-propagate-errors mods))))))
+               (mv-nth 1 (vl-modulelist-propagate-errors mods))))))
 
-  (defthm names-of-vl-propagate-errors-1
+  (defthm names-of-vl-modulelist-propagate-errors-1
     ;; This is somewhat iffy and was intended to canonicalize the victims'
     ;; names to be in terms of the survivors' names.  It's not clear whether
     ;; this is a good rule.
     (implies (force (no-duplicatesp-equal (vl-modulelist->names mods)))
              (set-equiv
-              (vl-modulelist->names (mv-nth 1 (vl-propagate-errors mods)))
+              (vl-modulelist->names (mv-nth 1 (vl-modulelist-propagate-errors mods)))
               (set-difference-equal
                (vl-modulelist->names mods)
-               (vl-modulelist->names (mv-nth 0 (vl-propagate-errors mods))))))))
+               (vl-modulelist->names (mv-nth 0 (vl-modulelist-propagate-errors mods))))))))
 
 
+(define vl-design-propagate-errors
+  :short "Top-level function for @(see propagating-errors).  Move any faulty
+design elements out of a @('good') design and into a @('bad') design."
+  ((good vl-design-p
+         "The good design, which has presumably just been transformed in some way,
+          and may now have some design elements with fatal warnings.")
+   (bad  vl-design-p
+         "The bad design which holds any faulty design elements."))
+  :returns
+  (mv (good-- vl-design-p
+              "Cut down version of the good design, with any faulty elements and
+               their dependents eliminated.")
+      (bad++  vl-design-p
+              "Extended version of the bad design, with any faulty elements from
+               @('good') moved over into it."))
+  (b* ((good (vl-design-fix good))
+       (bad  (vl-design-fix bad))
+       ((vl-design good) good)
+       ((vl-design bad)  bad)
 
-(define vl-propagate-new-errors
-  ((x (and (vl-modulelist-p x)
-           (uniquep (vl-modulelist->names x))))
-   old-victims)
-  :parents (warnings)
-  :short "Trivial wrapper for @(see vl-propagate-errors) that accumulates
-victims."
+       ;; To make this as convenient as possible, we try hard to resolve any
+       ;; name conflicts.
+       ((mv uniquep mods)
+        (b* (((when (uniquep (vl-modulelist->names good.mods)))
+              (mv t good.mods))
+             (mods (mergesort good.mods))
+             ((when (uniquep (vl-modulelist->names mods)))
+              (mv t mods)))
+          (mv nil mods)))
+       ((unless uniquep)
+        (raise "Name clash.  We expected the module names to be unique, but ~
+                found multiple occurrences of ~&0."
+               (duplicated-members (vl-modulelist->names mods)))
+        (mv (make-vl-design) (make-vl-design)))
 
-  :long "<p>This function is like @(see vl-propagate-errors), except that it
-adds the new victims to @('old-victims').</p>"
+       ((mv survivors victims)
+        (vl-modulelist-propagate-errors mods))
 
-  (b* (((mv survivors victims) (vl-propagate-errors x))
-       (new-victims            (append victims (redundant-list-fix old-victims))))
-    (mv survivors new-victims))
-
+       (good-- (change-vl-design good
+                                 :mods survivors))
+       (bad++  (change-vl-design bad
+                                 :mods (append victims bad.mods))))
+    (mv good-- bad++))
   ///
-
-  (defmvtypes vl-propagate-new-errors (true-listp true-listp))
-
-  (defthm vl-modulelist-p-of-vl-propagate-new-errors-0
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (mv-nth 0 (vl-propagate-new-errors x old-victims)))))
-
-  (defthm vl-modulelist-p-of-vl-propagate-new-errors-1
-    (implies (and (force (vl-modulelist-p x))
-                  (force (vl-modulelist-p old-victims)))
-             (vl-modulelist-p (mv-nth 1 (vl-propagate-new-errors x old-victims)))))
-
-  (defthm no-duplicatesp-equal-of-vl-modulelist->names-of-vl-propagate-new-errors
-    (implies (force (no-duplicatesp-equal (vl-modulelist->names x)))
-             (no-duplicatesp-equal
-              (vl-modulelist->names
-               (mv-nth 0 (vl-propagate-new-errors x old-victims)))))))
+  (defthm no-duplicatesp-equal-of-vl-design-propagate-errors
+    (no-duplicatesp-equal
+     (vl-modulelist->names
+      (vl-design->mods
+       (mv-nth 0 (vl-design-propagate-errors good bad)))))))
 

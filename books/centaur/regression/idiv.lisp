@@ -19,7 +19,8 @@
    :start-files (list "idiv.v")))
 
 (defconst *divide-translation*
-  (VL::VL-TRANSLATION->MODS *DIVIDE-MODULES*))
+  (vl::vl-design->mods
+   (vl::vl-translation->good *DIVIDE-MODULES*)))
 
 ; (vl::vl-modulelist-flat-warnings
 ;  (vl::vl-translation->failmods *divide-modules*))

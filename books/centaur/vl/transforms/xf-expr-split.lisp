@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -24,7 +24,6 @@
 (include-book "../mlib/context")
 (include-book "../mlib/delta")
 (local (include-book "../util/arithmetic"))
-
 
 (defxdoc split
   :parents (transforms)
@@ -88,8 +87,9 @@ a new, fresh temporary wire is going to be used, whether or not that temporary
 is driven from both sides isn't really relevant.  It can't be used anywhere
 else in the module or affect anything except for exactly this port.</p>")
 
+(local (xdoc::set-default-parents split))
+
 (define vl-nosplit-p ((x vl-expr-p))
-  :parents (split)
   :short "Recognize an expression that is may as well be atomic for the
 purposes of @(see split)."
   :long "<p>This is almost just @(see vl-expr-sliceable-p), except that there
@@ -104,163 +104,99 @@ sliceable, but that we still don't want to split up.</p>"
 (deflist vl-nosplitlist-p (x)
   (vl-nosplit-p x)
   :guard (vl-exprlist-p x)
-  :elementp-of-nil nil
-  :parents (split))
+  :elementp-of-nil nil)
 
-(defsection vl-expr-split
-  :parents (split)
+(defval *vl-tmp-wire-atts*
+  (list (list (hons-copy "VL_TMP_WIRE"))))
+
+(defines vl-expr-split
   :short "Split up complex subexpressions throughout an expression."
+  :long "<p>We return a new, expression(-list) that is a replacement for
+@('x').  If @('x') was already sliceable we just return it unchanged.
+Otherwise @('x'') will be the name of a newly generated, equivalent wire.</p>"
 
-  :long "<p><b>Signature:</b> @(call vl-expr-split) returns @('(mv x'
-delta')').</p>
+  (define vl-expr-split
+    ((x    vl-expr-p       "Expression to split, which we recur through.")
+     (elem vl-modelement-p "Where this expression occurs; context for error
+                            messages and location for new wires/assignments.")
+     (delta vl-delta-p))
+    :returns (mv (new-x vl-expr-p :hyp :fguard)
+                 (delta vl-delta-p :hyp :fguard))
+    :verify-guards nil
+    :measure (vl-expr-count x)
+    :flag :expr
+    (b* ((width (vl-expr->finalwidth x))
+         (type  (vl-expr->finaltype x))
 
-<ul>
-
-<li>@('x') is an expression to split, which we recur through.</li>
-
-<li>@('elem') is a @(see vl-modelement-p) that says where this expression
-occurs.  It is used for better error messages and for the locations of newly
-generated wires/assignments, but is otherwise not meaningful.</li>
-
-<li>@('delta') is a @(see vl-delta-p) that gathers up the additions we are
-going to make.</li>
-
-</ul>
-
-<p>We return a new, expression @('x'') that is a replacement for @('x').  If
-@('x') was already sliceable we just return it unchanged.  Otherwise @('x'')
-will be the name of a newly generated, equivalent wire.</p>"
-
-  (defconst *vl-tmp-wire-atts* (list (list (hons-copy "VL_TMP_WIRE"))))
-
-  (mutual-recursion
-
-   (defund vl-expr-split (x elem delta)
-     "Returns (mv x' delta')"
-     (declare (xargs :guard (and (vl-expr-p x)
-                                 (vl-modelement-p elem)
-                                 (vl-delta-p delta))
-                     :verify-guards nil
-                     :measure (vl-expr-count x)))
-
-     (b* ((width (vl-expr->finalwidth x))
-          (type  (vl-expr->finaltype x))
-
-          ((unless (and (posp width) type))
-           ;; Basic sanity check.  Widths should be computed and positive, or
-           ;; what are we even doing??
-           (mv x (dwarn :type :vl-programming-error
-                        :msg "~a0: expected widths/types to be determined, ~
+         ((unless (and (posp width) type))
+          ;; Basic sanity check.  Widths should be computed and positive, or
+          ;; what are we even doing??
+          (mv x (dwarn :type :vl-programming-error
+                       :msg "~a0: expected widths/types to be determined, ~
                               but expression ~a1 has width ~x2 and type ~x3."
-                        :args (list elem x width type)
-                        :fatalp t
-                        :fn 'vl-expr-split)))
+                       :args (list elem x width type)
+                       :fatalp t
+                       :fn 'vl-expr-split)))
 
-          ((when (vl-nosplit-p x))
-           ;; X isn't anything we need to split, nothing to do.
-           (mv x delta))
+         ((when (vl-nosplit-p x))
+          ;; X isn't anything we need to split, nothing to do.
+          (mv x delta))
 
-          ;; Otherwise, X contains at least some unsliceable components.
-          ;; First, lets recursively split the arguments.  Note that each of
-          ;; the new-args will be either atoms or sliceable expressions.
-          ((mv new-args delta)
-           (vl-exprlist-split (vl-nonatom->args x) elem delta))
+         ;; Otherwise, X contains at least some unsliceable components.
+         ;; First, lets recursively split the arguments.  Note that each of
+         ;; the new-args will be either atoms or sliceable expressions.
+         ((mv new-args delta)
+          (vl-exprlist-split (vl-nonatom->args x) elem delta))
 
-          ((vl-delta delta) delta)
+         ((vl-delta delta) delta)
 
-          ;; Now, our operation applied to the simplified args is a simple
-          ;; expression.  We create a new, temporary wire of the appropriate
-          ;; width, and assign the expression to this new wire.
-          ((mv tmp-name nf) (vl-namefactory-indexed-name "temp" delta.nf))
-          (rhs-expr   (change-vl-nonatom x :args new-args))
-          (tmp-expr   (vl-idexpr tmp-name width type))
-          (tmp-decl   (make-vl-netdecl :loc     (vl-modelement-loc elem)
-                                       :name    tmp-name
-                                       :type    :vl-wire
-                                       :signedp (eq type :vl-signed)
-                                       :range   (vl-make-n-bit-range width)
-                                       :atts    *vl-tmp-wire-atts*))
-          (tmp-assign (make-vl-assign :loc (vl-modelement-loc elem)
-                                      :lvalue tmp-expr
-                                      :expr rhs-expr))
-          (delta      (change-vl-delta delta
-                                       :nf nf
-                                       :netdecls (cons tmp-decl delta.netdecls)
-                                       :assigns  (cons tmp-assign delta.assigns))))
-       (mv tmp-expr delta)))
+         ;; Now, our operation applied to the simplified args is a simple
+         ;; expression.  We create a new, temporary wire of the appropriate
+         ;; width, and assign the expression to this new wire.
+         ((mv tmp-name nf) (vl-namefactory-indexed-name "temp" delta.nf))
+         (rhs-expr   (change-vl-nonatom x :args new-args))
+         (tmp-expr   (vl-idexpr tmp-name width type))
+         (tmp-decl   (make-vl-netdecl :loc     (vl-modelement-loc elem)
+                                      :name    tmp-name
+                                      :type    :vl-wire
+                                      :signedp (eq type :vl-signed)
+                                      :range   (vl-make-n-bit-range width)
+                                      :atts    *vl-tmp-wire-atts*))
+         (tmp-assign (make-vl-assign :loc (vl-modelement-loc elem)
+                                     :lvalue tmp-expr
+                                     :expr rhs-expr))
+         (delta      (change-vl-delta delta
+                                      :nf nf
+                                      :netdecls (cons tmp-decl delta.netdecls)
+                                      :assigns  (cons tmp-assign delta.assigns))))
+      (mv tmp-expr delta)))
 
-   (defund vl-exprlist-split (x elem delta)
-     "Returns (mv x' delta')"
-     (declare (xargs :guard (and (vl-exprlist-p x)
-                                 (vl-modelement-p elem)
-                                 (vl-delta-p delta))
-                     :measure (vl-exprlist-count x)))
-     (b* (((when (atom x))
-           (mv nil delta))
-          ((mv car-prime delta)
-           (vl-expr-split (car x) elem delta))
-          ((mv cdr-prime delta)
-           (vl-exprlist-split (cdr x) elem delta))
-          (x-prime (cons car-prime cdr-prime)))
-       (mv x-prime delta))))
-
-  (flag::make-flag flag-vl-expr-split
-                   vl-expr-split
-                   :flag-mapping ((vl-expr-split . expr)
-                                  (vl-exprlist-split . list)))
-
-  (defthm-flag-vl-expr-split
-    (expr t :skip t)
-    (defthm len-of-vl-exprlist-split
-      (equal (len (mv-nth 0 (vl-exprlist-split x elem delta)))
-             (len x))
-      :flag list)
-    :hints(("Goal" :expand (vl-exprlist-split x elem delta))))
-
-  (defthm-flag-vl-expr-split
-    (expr t :skip t)
-    (defthm true-listp-of-vl-exprlist-split
-      (true-listp (mv-nth 0 (vl-exprlist-split x elem delta)))
-      :rule-classes :type-prescription
-      :flag list)
-    :hints(("Goal" :expand (vl-exprlist-split x elem delta))))
-
-  (defthm-flag-vl-expr-split
-
-    (defthm vl-expr-split-basics
-      (implies (and (force (vl-expr-p x))
-                    (force (vl-modelement-p elem))
-                    (force (vl-delta-p delta)))
-               (b* (((mv x-prime delta)
-                     (vl-expr-split x elem delta)))
-                 (and (vl-expr-p x-prime)
-                      (vl-delta-p delta))))
-      :flag expr)
-
-    (defthm vl-exprlist-split-basics
-      (implies (and (force (vl-exprlist-p x))
-                    (force (vl-modelement-p elem))
-                    (force (vl-delta-p delta)))
-               (b* (((mv x-prime delta)
-                     (vl-exprlist-split x elem delta)))
-                 (and (vl-exprlist-p x-prime)
-                      (vl-delta-p delta))))
-      :flag list)
-
-    :hints(("Goal"
-            :expand ((vl-expr-split x elem delta)
-                     (vl-exprlist-split x elem delta)))))
-
+  (define vl-exprlist-split ((x     vl-exprlist-p)
+                             (elem  vl-modelement-p)
+                             (delta vl-delta-p))
+    :returns (mv (new-x (and (vl-exprlist-p new-x)
+                             (equal (len new-x) (len x)))
+                        :hyp :fguard)
+                 (delta vl-delta-p :hyp :fguard))
+    :measure (vl-exprlist-count x)
+    :flag :list
+    (b* (((when (atom x))
+          (mv nil delta))
+         ((mv car-prime delta)
+          (vl-expr-split (car x) elem delta))
+         ((mv cdr-prime delta)
+          (vl-exprlist-split (cdr x) elem delta))
+         (x-prime (cons car-prime cdr-prime)))
+      (mv x-prime delta)))
+  ///
   (verify-guards vl-expr-split))
 
-
-(define vl-assign-split ((x vl-assign-p)
-                         (delta vl-delta-p))
+(define vl-assign-split
+  :short "Split up assignments with complex right-hand sides."
+  ((x vl-assign-p)
+   (delta vl-delta-p))
   :returns (mv (new-x vl-assign-p :hyp :fguard)
                (delta vl-delta-p :hyp :fguard))
-  :parents (split)
-  :short "Split up assignments with complex right-hand sides."
-
   :long "<p>This is a little more interesting than usual.  We want to split up
 the right-hand side of an assignment only if it is a compound expression that
 involves unsliceable arguments.  That is, we don't want to split up assignments
@@ -307,7 +243,6 @@ argument, @('(baz + 1)'), that isn't sliceable.</p>"
                              (delta vl-delta-p))
   :returns (mv (new-x vl-assignlist-p :hyp :fguard)
                (delta vl-delta-p :hyp :fguard))
-  :parents (split)
   (b* (((when (atom x))
         (mv nil delta))
        ((mv car delta) (vl-assign-split (car x) delta))
@@ -319,7 +254,6 @@ argument, @('(baz + 1)'), that isn't sliceable.</p>"
                            (delta vl-delta-p))
   :returns (mv (new-x vl-plainarg-p :hyp :fguard)
                (delta vl-delta-p    :hyp :fguard))
-  :parents (split)
   :short "Maybe split up an argument to a gate/module instances."
 
   :long "<p>We only want to split up expressions that are being given as inputs
@@ -338,17 +272,14 @@ up.</p>"
        ((unless (eq x.dir :vl-input))
         ;; Don't want to split it
         (mv x delta))
-
        ((unless x.expr)
         ;; Found a blank port.  Nothing to do.
         (mv x delta))
-
        ((when (vl-nosplit-p x.expr))
         ;; Historically we just split these up, too.  But we no longer want
         ;; to introduce temporary wires just for wiring-related expressions
         ;; like bit-selects, etc.  So, don't split this up.
         (mv x delta))
-
        ((mv new-expr delta) (vl-expr-split x.expr elem delta))
        (x-prime             (change-vl-plainarg x :expr new-expr)))
     (mv x-prime delta)))
@@ -358,7 +289,6 @@ up.</p>"
                                (delta vl-delta-p))
   :returns (mv (new-x vl-plainarglist-p :hyp :fguard)
                (delta vl-delta-p        :hyp :fguard))
-  :parents (split)
   (b* (((when (atom x))
         (mv nil delta))
        ((mv car delta) (vl-plainarg-split (car x) elem delta))
@@ -370,7 +300,6 @@ up.</p>"
                             (delta vl-delta-p))
   :returns (mv (new-x vl-arguments-p :hyp :fguard)
                (delta vl-delta-p     :hyp :fguard))
-  :parents (split)
   (b* (((vl-arguments x) x)
        ((when x.namedp)
         (mv x (dwarn :type :vl-bad-arguments
@@ -389,7 +318,6 @@ up.</p>"
                           (delta vl-delta-p))
   :returns (mv (new-x vl-modinst-p :hyp :fguard)
                (delta vl-delta-p   :hyp :fguard))
-  :parents (split)
   (b* (((vl-modinst x) x)
        ((mv new-args delta) (vl-arguments-split x.portargs x delta))
        (x-prime             (change-vl-modinst x :portargs new-args)))
@@ -399,7 +327,6 @@ up.</p>"
                               (delta vl-delta-p))
   :returns (mv (new-x vl-modinstlist-p :hyp :fguard)
                (delta vl-delta-p      :hyp :fguard))
-  :parents (split)
   (b* (((when (atom x))
         (mv nil delta))
        ((mv car delta) (vl-modinst-split (car x) delta))
@@ -410,7 +337,6 @@ up.</p>"
                            (delta vl-delta-p))
   :returns (mv (new-x vl-gateinst-p :hyp :fguard)
                (delta vl-delta-p    :hyp :fguard))
-  :parents (split)
   (b* (((vl-gateinst x) x)
        ((mv new-args delta) (vl-plainarglist-split x.args x delta))
        (x-prime             (change-vl-gateinst x :args new-args)))
@@ -420,7 +346,6 @@ up.</p>"
                                (delta vl-delta-p))
   :returns (mv (new-x vl-gateinstlist-p :hyp :fguard)
                (delta vl-delta-p        :hyp :fguard))
-  :parents (split)
   (b* (((when (atom x))
         (mv nil delta))
        ((mv car delta) (vl-gateinst-split (car x) delta))
@@ -429,14 +354,12 @@ up.</p>"
 
 (define vl-module-split ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
-  :parents (split)
   :short "Split up complex expressions throughout a module's assignments,
 module instances, and gate instances."
 
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
-
        (delta                (vl-starting-delta x))
        (delta                (change-vl-delta delta :netdecls x.netdecls))
        ((mv assigns delta)   (vl-assignlist-split x.assigns delta))
@@ -449,33 +372,27 @@ module instances, and gate instances."
      ;; We started out with the netdecls and extended them, so the delta has
      ;; the new netdecls we want.
      :netdecls delta.netdecls
-
      ;; We rewrote all of our own assigns, but there are also assigns in the
      ;; delta, so merge them.
      :assigns (revappend-without-guard delta.assigns assigns)
-
      ;; The rewritten modinsts/gateinsts above are fine, we haven't added any
      ;; modinsts, there are no addmods...
      :modinsts modinsts
      :gateinsts gateinsts
-
      ;; The starting delta includes all former warnings for X, so the delta's
      ;; warnings are fine.
-     :warnings delta.warnings))
-
-  ///
-
-  (defthm vl-module->name-of-vl-module-split
-    (equal (vl-module->name (vl-module-split x))
-           (vl-module->name x))))
-
+     :warnings delta.warnings)))
 
 (defprojection vl-modulelist-split (x)
   (vl-module-split x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :parents (split)
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-split
-     (equal (vl-modulelist->names (vl-modulelist-split x))
-            (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-split
+  :short "Top-level @(see split) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-split x.mods))))
+

@@ -115,19 +115,15 @@ repeatedly.  Linear in the length of @('x').</p>"
            :args (list x.name (with-local-ps (vl-equiv-strings-to-lines equiv-names)))
            :fatalp nil
            :fn __function__)))
-    (change-vl-module x :warnings (cons w x.warnings)))
-  ///
-  (defthm vl-module->name-of-vl-module-check-case
-    (equal (vl-module->name (vl-module-check-case x))
-           (vl-module->name x))))
+    (change-vl-module x :warnings (cons w x.warnings))))
 
 (defprojection vl-modulelist-check-case (x)
   (vl-module-check-case x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  ///
-  (defthm vl-modulelist->names-of-vl-modulelist-check-case
-    (equal (vl-modulelist->names (vl-modulelist-check-case x))
-           (vl-modulelist->names x))))
+  :result-type vl-modulelist-p)
 
-
+(define vl-design-check-case ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-check-case x.mods))))

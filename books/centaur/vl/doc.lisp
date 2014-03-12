@@ -55,26 +55,20 @@ includes:</p>
  <li>Pretty-printing and other report-generation functions.</li>
 </ul>
 
-<p>The original (and still primary) purpose of VL is to translate Verilog
-modules into E-language modules for formal verification.  E is a comparatively
-simple, hierarchical, register-transfer level hardware description language;
-see @(see esim).  An early version of E is described in:</p>
-
-<p>Warren A. Hunt, Jr. and Sol Swords.  <a
-href='http://dx.doi.org/10.1007/978-3-642-02658-4_28'>Centaur technology media
-unit verification.  Case study: Floating point addition.</a> in Computer Aided
-Verification (CAV '09), June 2009.</p>
-
-<p>Our overall approach to E translation is to apply several Verilog-to-Verilog
-source-code @(see transforms).  Together, these transforms work to simplify the
-input Verilog into a form that is very close to E, where modules consist only
-of gates and submodules.  Then, the final conversion into E is quite
-straightforward.</p>
-
-<p>A feature of this approach is that the majority of VL has nothing to do with
-E, and VL can be used to implement other Verilog tools.  For instance:</p>
+<p>Much of VL is general purpose Verilog processing code that is geared toward
+simplifying designs independently of any particular analysis or back-end tool.
+This approach has allowed us to use VL to implement many Verilog-related tools.
+For instance:</p>
 
 <ul>
+
+<li>VL can translate Verilog into E modules (see @(see acl2::esim)) for formal
+verification.  This is the basis for a good part of Centaur's formal
+verification efforts.  Our overall approach to E translation is to apply
+several Verilog-to-Verilog source-code @(see transforms).  Together, these
+transforms work to simplify the input Verilog into a form that is very close to
+E, where modules consist only of @(see primitives) and submodules.  The final
+conversion into E is quite straightforward.</li>
 
 <li>The publicly available VL @(see kit) is a command-line executable built on
 top of ACL2 and VL, which includes commands for @(see lint)ing Verilog designs,
@@ -85,11 +79,11 @@ released) that has a tick-based timing model and handles transistor-level
 constructs.  This tool uses the same parser and most of VL's transforms, but
 also has a couple of additional transformation steps.</li>
 
-<li>We have used it to implement a web-based \"module browser\" (which
-will probably not be released since it is very Centaur specific) that lets
-users see the original and translated source code for our modules, and has
-several nice features (e.g., hyperlinks for navigating between wires and
-following wires, and integrated linting and warning/error reporting).</li>
+<li>We have used it to implement a web-based \"module browser\" (which will
+probably not be released since it is very Centaur specific) that lets users see
+the original and translated source code for our modules, and has several nice
+features (e.g., hyperlinks for navigating between wires and following wires,
+and integrated linting and warning/error reporting).</li>
 
 <li>We have used it to implement <i>VL-Mangle</i>, a web-based refactoring
 tool (which will probably not be released because it is hard to distribute).
@@ -213,3 +207,174 @@ modules.")
   :parents (vl)
   :short "<b>M</b>odule <b>Lib</b>rary -- A collection of various functions for
 working with Verilog modules.")
+
+
+(defxdoc checkers
+  :parents (vl)
+  :short "Light-weight static checks in the spirit of \"lint\" or \"code
+smells.\""
+
+  :long "<p>We have implemented a few static checks tools to identify potential
+errors in modules.  Most of these checks are relatively simple heuristics: when
+they generate warnings, it does not necessarily mean that anything is actually
+wrong.  Instead, these tools are mainly intended to point out unusual things
+that a human might wish to investigate.</p>")
+
+
+(defxdoc warnings
+  :parents (vl)
+  :short "Support for handling warnings and errors."
+
+  :long "<h3>Introduction</h3>
+
+<p>Many parts of VL can run into situations where we want to issue a warning or
+cause an error.  For instance:</p>
+
+<ul>
+
+<li>Our @(see loader) could encounter syntax that is simply malformed, or it
+could run into a construct that is legal but that we don't support yet.  It
+could also notice valid but strange cases, e.g., @('4'd16') is well-defined but
+weird because 16 doesn't fit in 4 bits.</li>
+
+<li>Our @(see transforms) might run into semantically ill-formed constructs,
+e.g., perhaps a module declares @('wire [3:0] foo') and then later declares
+@('integer foo'), or perhaps we are trying to instantiate a module that is not
+defined.</li>
+
+<li>Our @(see checkers) might notice \"code smells\" where even though the
+input Verilog is semantically well-formed, it is somehow strange and looks like
+it could be an error.  For instance, perhaps there are multiple assignments to
+the same wire, or expressions like @('a & b') where @('a') and @('b') have
+different sizes.</li>
+
+</ul>
+
+<p>Handling these many kinds of cases is tricky.  In the early days of VL, our
+approach to warnings and errors was quite ad-hoc.  We sometimes printed warning
+messages to standard output using the @(see cw) function.  For more serious
+conditions, we sometimes caused errors using @(see er).  This approach had a
+number of problems.  In particular,</p>
+
+<ul>
+
+<li>It led us to see many of the same warnings repeatedly because our various
+well-formedness checks were run many times on the same modules in different
+stages of the translation.</li>
+
+<li>For some warnings, we did not particularly care about the individual
+instances of the warning.  For instance, unless we're interested in fixing the
+\"if\" statements to be ?: instead, we don't want to be told about each
+occurrence of an if statement.  We just want a higher-level note that hey,
+there are 30 if-statements to clean up.</li>
+
+<li>The warnings were not \"attached\" in any way to the modules that they were
+actually about.  Practically speaking, this might mean that users might not
+even see the warnings that had been generated for the modules they are working
+on.</li>
+
+<li>There is no way to recover form an error created with @(see er), so if we
+ran into some bad problem with a particular module, it could actually prevent
+us from translating <i>any</i> of the modules.  This was particularly
+troublesome because Verilog is such a large language that, especially in the
+beginning, we often ran into constructs that we did not yet support.</li>
+
+</ul>
+
+<p>These sorts of problems quickly led us to want a more coherent, global
+approach to dealing with warnings and errors.</p>
+
+
+<h3>Warning Objects</h3>
+
+<p>Our new approach to warning and error handling centers around explicit @(see
+vl-warning-p) objects.</p>
+
+<p>These objects are in many ways similar to the <a
+href='https://en.wikipedia.org/wiki/Exception_handling'>Exception</a> objects
+found in other programming languages.  Each warning has a <b>type</b> and a
+<b>message</b> that describes the error.  These messages can conveniently make
+use of VL's @(see printer), so you can directly pretty-print arbitrary Verilog
+constructs when writing warning messages.</p>
+
+<p>We use @('vl-warning-p') objects universally, for all kinds of warnings and
+errors.  That is, everything from the most minor of code smells (@('wire foo')
+is never used for anything), to the most severe problems (the module you're
+instantiating isn't defined) results in a warning.  Since it is useful to
+distinguish minor commentary from severe problems, our warning objects include
+a <b>fatalp</b> field.</p>
+
+<p>As a general philosophy or strategy for using these warning objects:</p>
+
+<ul>
+
+<li>Warnings messages should never be printed to standard output.  Instead, we
+should create a @(see vl-warning-p) object that gives the context, and explains
+the problem as clearly and concisely as possible.</li>
+
+<li>Errors should not cause sudden, unrecoverable exits.  That is, @(see er)
+should never be used for warnings that could plausibly be triggered by
+malformed Verilog.  (However, it <i>is</i> reasonable to use @('er') in an <a
+href='https://en.wikipedia.org/wiki/Assertion_(software_development)'>assert</a>-like
+fashion, to rule out programming problems that we believe are impossible.)</li>
+
+<li>Non-fatal warnings should be used for any issues that are purely stylistic,
+\"code smells,\" etc., such as linter-like checks.</li>
+
+<li>Fatal warnings should be used for any issues that are truly errors.  For
+instance: malformed syntax, conflicting declarations of some name, references
+to undefined modules, etc.</li>
+
+<li>Fatal warnings may also be used when a transform encounters constructs that
+are valid but not supported, e.g., because we have simply not yet spent the
+time to implement them.</li>
+
+</ul>
+
+
+<h3>Accumulating Warnings</h3>
+
+<p>Warning objects are simple enough to understand, but what do we actually
+<i>do</i> with them?  We adopt another general principle:</p>
+
+<ul>
+
+<li>Every warning object should be associated with the top-level design
+elements (e.g., module, package, interface, etc.) where it was caused.</li>
+
+</ul>
+
+<p>This approach allows us to easily do many practically useful things with the
+warnings.  For instance, it lets us easily filter out any modules that have
+fatal warnings&mdash;an important operation for @(see vl-simplify).  As another
+example, we can create reports, e.g., about all of the warnings for some
+particular module, or all the warnings of some particular type throughout all
+of the modules, etc.  These capability is used in tools like @(see
+vl-lint).</p>
+
+<p>Practically implementing this philosophy is slightly tricky.</p>
+
+<p>Deep within some particular transform, we might encounter something that is
+wrong and decide to issue a warning.  In a typical object-oriented programming
+language, this would be trivial: our module class might have an
+@('add-warning') that (destructively) adds a new warning to the module.</p>
+
+<p>But our programming language is truly functional, so we cannot modify
+existing modules.  Instead, whenever some subsidiary function wants to produce
+a warning, its caller must take measures to ensure that the warning is
+eventually added to the appropriate module.</p>
+
+<p>Our usual approach is to add a <b>warnings accumulator</b> as an argument to
+our functions.  Typically this argument should be named @('warnings').
+Functions that take a warnings accumulator return the (possibly extended)
+accumulator as one of their return values.  Macros like @(see ok), @(see warn)
+and @(see fatal) can assist with implementing this convention.</p>
+
+<p>At a high level, then, a function that transforms a top-level design
+element, e.g., a module, begins by obtaining the current warnings for the
+module.  Using these warnings as the initial accumulator, it calls its
+subsidiary helpers to carry out its work.  This work transforms various parts
+of the module, and meanwhile the warnings are perhaps extended.  Finally, the
+function returns a new @(see vl-module-p) which is updated with the extended
+list of warnings.</p>")
+

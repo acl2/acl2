@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -22,44 +22,37 @@
 (include-book "../parsetree")
 (local (include-book "../util/arithmetic"))
 
+(local (xdoc::set-default-parents warnings))
 
-(defsection vl-modulelist-clean-warnings
-  :parents (warnings)
+(define vl-modulelist-clean-warnings
   :short "Clean the warnings of every module in a module list."
-  :long "<p><b>Signature:</b> @(call vl-modulelist-clean-warnings) returns
-@('X-PRIME').</p>
+  ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p :hyp :fguard)
+  (b* (((when (atom x))
+        nil)
+       (old-warnings (vl-module->warnings (car x)))
+       (new-warnings (vl-clean-warnings old-warnings)))
+    (cons (change-vl-module (car x) :warnings new-warnings)
+          (vl-modulelist-clean-warnings (cdr x)))))
 
-<p>We change every module in @('X') by applying @(see vl-clean-warnings) to its
-warnings, and return the updated list of modules.  It may occasionally be
-useful to run this transformation to clean up any redundant warnings that have
-crept into the module list.</p>"
 
-  (defund vl-modulelist-clean-warnings (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (b* (((when (atom x))
-          nil)
-         (old-warnings (vl-module->warnings (car x)))
-         (new-warnings (vl-clean-warnings old-warnings)))
-      (cons (change-vl-module (car x) :warnings new-warnings)
-            (vl-modulelist-clean-warnings (cdr x)))))
-
-  (local (in-theory (enable vl-modulelist-clean-warnings)))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-clean-warnings
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-clean-warnings x))))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-clean-warnings
-    (equal (vl-modulelist->names (vl-modulelist-clean-warnings x))
-           (vl-modulelist->names x))))
-
+(define vl-design-clean-warnings
+  :short "Clean warnings everywhere throughout a design."
+  ((design vl-design-p))
+  :returns (new-design vl-design-p)
+  :long "<p>We apply @(see vl-clean-warnings) everywhere throughout the design.
+It may occasionally be useful to run this transformation to clean up any
+redundant warnings that have crept into the module list.</p>"
+  (b* ((design (vl-design-fix design))
+       ((vl-design design) design))
+    (change-vl-design design
+                      :mods (vl-modulelist-clean-warnings design.mods))))
 
 
 (defmapappend vl-modulelist-flat-warnings (x)
   (vl-module->warnings x)
   :guard (vl-modulelist-p x)
   :transform-true-list-p nil
-  :parents (warnings)
   :short "Gather all warnings from a @(see vl-modulelist-p) into a single @(see
 vl-warninglist-p)."
 
@@ -81,11 +74,12 @@ warnings of each module individually, before appending them all together.</p>"
               (vl-warninglist-p (vl-modulelist-flat-warnings x))))))
 
 
-
-(defsection vl-modwarningalist-p
-  :parents (warnings)
-  :short "A (fast) alist associating names to warnings."
-
+(defalist vl-modwarningalist-p (x)
+  :short "A (typically fast) alist associating names to warnings."
+  :key (stringp x)
+  :val (vl-warninglist-p x)
+  :keyp-of-nil nil
+  :valp-of-nil t
   :long "<p>A modwarningalist associates strings to lists of warnings, and are
 typically fast alists.</p>
 
@@ -101,47 +95,10 @@ these warnings to a module list.</p>
 
 <p>Second, modwarningalists can be useful when we want to print the warnings
 for a bunch of modules.  Depending on the context, we might want to associate
-either the orignames or names of the modules to their related warnings.</p>"
+either the orignames or names of the modules to their related warnings.</p>")
 
-;; BOZO switch to defalist?
-
-  (defund vl-modwarningalist-p (x)
-    (declare (xargs :guard t))
-    (if (atom x)
-        t
-      (and (consp (car x))
-           (stringp (caar x))
-           (vl-warninglist-p (cdar x))
-           (vl-modwarningalist-p (cdr x)))))
-
-  (local (in-theory (enable vl-modwarningalist-p)))
-
-  (defthm vl-modwarningalist-p-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-modwarningalist-p x)
-                    t)))
-
-  (defthm vl-modwarningalist-p-of-cons
-    (equal (vl-modwarningalist-p (cons a x))
-           (and (consp a)
-                (stringp (car a))
-                (vl-warninglist-p (cdr a))
-                (vl-modwarningalist-p x))))
-
-  (defthm vl-warninglist-p-of-cdr-of-hons-assoc-equal-when-vl-modwarningalist-p
-    (implies (vl-modwarningalist-p x)
-             (vl-warninglist-p (cdr (hons-assoc-equal a x)))))
-
-  (defthm vl-modwarningalist-p-of-append
-    (implies (and (vl-modwarningalist-p x)
-                  (vl-modwarningalist-p y))
-             (vl-modwarningalist-p (append x y))))
-
-  (defthm vl-modwarningalist-p-of-hons-shrink-alist
-    (implies (and (vl-modwarningalist-p x)
-                  (vl-modwarningalist-p acc))
-             (vl-modwarningalist-p (hons-shrink-alist x acc)))
-    :hints(("Goal" :in-theory (enable (:induction hons-shrink-alist)))))
+(defsection vl-modwarningalist-thms
+  :extension vl-modwarningalist-p
 
   (defthm vl-modwarningalist-p-of-insert
     (implies (and (consp a)
@@ -161,90 +118,48 @@ either the orignames or names of the modules to their related warnings.</p>"
     :hints(("Goal" :induct (len x)))))
 
 
-
-
-(defsection vl-extend-modwarningalist
-  :parents (warnings)
+(define vl-extend-modwarningalist
   :short "Add a single warning to a @(see vl-modwarningalist-p)."
-
-  :long "<p><b>Signature:</b> @(call vl-extend-modwarningalist) produces a new
-warning alist.</p>
-
-<p>This function is useful in the incremental construction of warning alists;
-it adds a particular @('warning') to the existing warnings for @('modname') in
-@('walist').</p>"
-
-  (defund vl-extend-modwarningalist (modname warning walist)
-    (declare (xargs :guard (and (stringp modname)
-                                (vl-warning-p warning)
-                                (vl-modwarningalist-p walist))))
-    (b* ((old-warnings (cdr (hons-get modname walist)))
-         (new-warnings (cons warning old-warnings)))
-      (hons-acons modname new-warnings walist)))
-
-  (local (in-theory (enable vl-extend-modwarningalist)))
-
-  (defthm vl-modwarningalist-p-of-vl-extend-modwarningalist
-    (implies (and (force (stringp modname))
-                  (force (vl-warning-p warning))
-                  (force (vl-modwarningalist-p walist)))
-             (vl-modwarningalist-p (vl-extend-modwarningalist modname warning walist)))))
+  ((modname stringp)
+   (warning vl-warning-p)
+   (walist  vl-modwarningalist-p))
+  :returns (new-walist vl-modwarningalist-p :hyp :fguard)
+  :long "<p>This function is useful in the incremental construction of warning
+alists; it adds a particular @('warning') to the existing warnings for
+@('modname') in @('walist').</p>"
+  (b* ((old-warnings (cdr (hons-get modname walist)))
+       (new-warnings (cons warning old-warnings)))
+    (hons-acons modname new-warnings walist)))
 
 
-
-(defsection vl-extend-modwarningalist-list
-  :parents (warnings)
+(define vl-extend-modwarningalist-list
   :short "Add a list of warnings to a @(see vl-modwarningalist-p)."
+  ((modname  stringp)
+   (warnings vl-warninglist-p)
+   (walist   vl-modwarningalist-p))
+  :returns (new-walist vl-modwarningalist-p :hyp :fguard)
+  :long "<p>This function is useful in the incremental construction of warning
+alists; it adds the list of @('warnings') to the existing warnings for
+@('modname') in @('walist').</p>"
+  (b* ((old-warnings (cdr (hons-get modname walist)))
+       (new-warnings (append-without-guard warnings old-warnings)))
+    (hons-acons modname new-warnings walist)))
 
-  :long "<p><b>Signature:</b> @(call vl-extend-modwarningalist-list) produces a new
-warning alist.</p>
-
-<p>This function is useful in the incremental construction of warning alists;
-it adds the list of @('warnings') to the existing warnings for @('modname') in
-@('walist').</p>"
-
-  (defund vl-extend-modwarningalist-list (modname warnings walist)
-    (declare (xargs :guard (and (stringp modname)
-                                (vl-warninglist-p warnings)
-                                (vl-modwarningalist-p walist))))
-    (b* ((old-warnings (cdr (hons-get modname walist)))
-         (new-warnings (append-without-guard warnings old-warnings)))
-      (hons-acons modname new-warnings walist)))
-
-  (local (in-theory (enable vl-extend-modwarningalist-list)))
-
-  (defthm vl-modwarningalist-p-of-vl-extend-modwarningalist-list
-    (implies (and (force (stringp modname))
-                  (force (vl-warninglist-p warnings))
-                  (force (vl-modwarningalist-p walist)))
-             (vl-modwarningalist-p (vl-extend-modwarningalist-list modname warnings walist)))))
-
-
-
-(defsection vl-apply-modwarningalist-aux
+(define vl-apply-modwarningalist-aux
   :parents (vl-apply-modwarningalist)
-
-  (defund vl-apply-modwarningalist-aux (x alist)
-    (declare (xargs :guard (and (vl-module-p x)
-                                (vl-modwarningalist-p alist))))
-    (b* ((entry (hons-get (vl-module->name x) alist))
-         ((unless entry)
+  ((x     vl-module-p)
+   (alist vl-modwarningalist-p))
+  :returns (new-x vl-module-p :hyp :fguard)
+  (b* ((entry (hons-get (vl-module->name x) alist))
+       ((unless entry)
           x)
-         (warnings (vl-module->warnings x))
-         (warnings (revappend-without-guard (cdr entry) warnings)))
-      (change-vl-module x :warnings warnings)))
-
-  (local (in-theory (enable vl-apply-modwarningalist-aux)))
-
-  (defthm vl-module-p-of-vl-apply-modwarningalist-aux
-    (implies (and (force (vl-module-p x))
-                  (force (vl-modwarningalist-p alist)))
-             (vl-module-p (vl-apply-modwarningalist-aux x alist))))
-
+       (warnings (vl-module->warnings x))
+       (warnings (revappend-without-guard (cdr entry) warnings)))
+    (change-vl-module x :warnings warnings))
+  ///
   (defthm vl-module->name-of-vl-apply-modwarningalist-aux
     (equal (vl-module->name (vl-apply-modwarningalist-aux x alist))
            (vl-module->name x))))
-
 
 (defprojection vl-apply-modwarningalist (x alist)
   (vl-apply-modwarningalist-aux x alist)
@@ -254,69 +169,64 @@ it adds the list of @('warnings') to the existing warnings for @('modname') in
   :parents (warnings)
   :short "Annotate modules with the warnings named in a @(see
 vl-modwarningalist-p)."
-
-  :long "<p><b>Signature:</b> @(call vl-apply-modwarningalist) returns
-@('mods-prime').</p>
-
-<p>We are given @('x'), a @(see vl-modulelist-p), and @('alist'), a @(see
-vl-modwarningalist-p), which should be a fast alist.  We change @('x') by
+  :long "<p>We are given @('x'), a @(see vl-modulelist-p), and @('alist'), a
+@(see vl-modwarningalist-p), which should be a fast alist.  We change @('x') by
 adding any warnings that are associated with each module's name in
 @('alist').</p>"
+  ///
+  (defthm vl-modulelist->names-of-vl-apply-modwarningalist
+    (equal (vl-modulelist->names (vl-apply-modwarningalist x alist))
+           (vl-modulelist->names x))))
 
-    :rest
-    ((defthm vl-modulelist->names-of-vl-apply-modwarningalist
-       (equal (vl-modulelist->names (vl-apply-modwarningalist x alist))
-              (vl-modulelist->names x)))))
 
+(define vl-clean-modwarningalist-aux
+  :parents (vl-clean-modwarningalist)
+  :short "Assumes X has already been shrunk, so we may safely recur down it."
+  ((x   vl-modwarningalist-p)
+   (acc vl-modwarningalist-p))
+  :returns (acc vl-modwarningalist-p :hyp :fguard)
+  (b* (((when (atom x))
+        acc)
+       (name     (caar x))
+       (warnings (vl-clean-warnings (cdar x)))
+       (acc      (if (atom warnings)
+                     acc
+                   (hons-acons name warnings acc))))
+    (vl-clean-modwarningalist-aux (cdr x) acc)))
 
-(defsection vl-clean-modwarningalist
-  :parents (warnings)
-  :short "@(call vl-clean-modwarningalist) shrinks a @(see
-vl-modwarningalist-p) and cleans all of its warning lists with @(see
-vl-clean-warnings)."
-
+(define vl-clean-modwarningalist
+  :short "Shrink a @(see vl-modwarningalist-p) and cleans all of its warning
+lists with @(see vl-clean-warnings)."
+  ((x vl-modwarningalist-p))
+  :returns (new-x vl-modwarningalist-p :hyp :fguard)
   :long "<p>We return a new fast-alist that is independent of @('x').  Any
 modules which have no warnings are eliminated.</p>"
-
-  (defund vl-clean-modwarningalist-aux (x acc)
-    "Assumes X has already been shrunk, so we may safely recur down it."
-    (declare (xargs :guard (and (vl-modwarningalist-p x)
-                                (vl-modwarningalist-p acc))))
-    (b* (((when (atom x))
-          acc)
-         (name     (caar x))
-         (warnings (vl-clean-warnings (cdar x)))
-         (acc      (if (atom warnings)
-                       acc
-                     (hons-acons name warnings acc))))
-      (vl-clean-modwarningalist-aux (cdr x) acc)))
-
-  (defund vl-clean-modwarningalist (x)
-    (declare (xargs :guard (vl-modwarningalist-p x)))
-    (b* ((x-shrink (hons-shrink-alist x nil))
-         (ret      (vl-clean-modwarningalist-aux x-shrink nil))
-         (-        (fast-alist-free x-shrink)))
-        ret))
-
-  (local (in-theory (enable vl-clean-modwarningalist
-                            vl-clean-modwarningalist-aux)))
-
-  (defthm vl-modwarningalist-p-of-vl-clean-modwarningalist-aux
-    (implies (and (vl-modwarningalist-p x)
-                  (vl-modwarningalist-p acc))
-             (vl-modwarningalist-p (vl-clean-modwarningalist-aux x acc))))
-
-  (defthm vl-modwarningalist-p-of-vl-clean-modwarningalist
-    (implies (force (vl-modwarningalist-p x))
-             (vl-modwarningalist-p (vl-clean-modwarningalist x)))))
+  (b* ((x-shrink (hons-shrink-alist x nil))
+       (ret      (vl-clean-modwarningalist-aux x-shrink nil)))
+    (fast-alist-free x-shrink)
+    ret))
 
 
+(define vl-origname-modwarningalist-aux
+  :parents (vl-origname-modwarningalist)
+  ((x   vl-modulelist-p)
+   (acc vl-modwarningalist-p))
+  :returns (acc vl-modwarningalist-p :hyp :fguard)
+  (b* (((when (atom x))
+        acc)
+       (origname      (vl-module->origname (car x)))
+       (my-warnings   (vl-module->warnings (car x)))
+       (prev-warnings (cdr (hons-get origname acc)))
+       (new-warnings  (revappend-without-guard my-warnings prev-warnings))
+       (acc           (hons-acons origname new-warnings acc)))
+    (vl-origname-modwarningalist-aux (cdr x) acc)))
 
+(define vl-origname-modwarningalist
+  :short "Constructs a @(see vl-modwarningalist-p) from a module list, using
+@('orignames') as the keys."
 
-(defsection vl-origname-modwarningalist
-  :parents (warnings)
-  :short "@(call vl-origname-modwarningalist) constructs a @(see
-vl-modwarningalist-p) from a module list, using @('orignames') as the keys."
+  ((x vl-modulelist-p))
+  :returns (mwalist vl-modwarningalist-p :hyp :fguard)
 
   :long "<p>Unparameterization causes problems for printing warnings about each
 module, because, e.g., instead of having warnings about @('adder'), we actually
@@ -330,37 +240,8 @@ builds a @(see vl-modwarningalist-p) that maps @('orignames') to warnings.  We
 take care to ensure that all of the warnings associated with each name are
 properly cleaned up and merged.</p>"
 
-  (defund vl-origname-modwarningalist-aux (x acc)
-    (declare (xargs :guard (and (vl-modulelist-p x)
-                                (vl-modwarningalist-p acc))))
-    (b* (((when (atom x))
-          acc)
-         (origname      (vl-module->origname (car x)))
-         (my-warnings   (vl-module->warnings (car x)))
-         (prev-warnings (cdr (hons-get origname acc)))
-         (new-warnings  (revappend-without-guard my-warnings prev-warnings))
-         (acc           (hons-acons origname new-warnings acc)))
-      (vl-origname-modwarningalist-aux (cdr x) acc)))
-
-  (defund vl-origname-modwarningalist (x)
-    (declare (xargs :guard (vl-modulelist-p x)
-                    :verify-guards nil))
-    (b* ((unclean (vl-origname-modwarningalist-aux x nil))
-         (ret     (vl-clean-modwarningalist unclean))
-         (-       (fast-alist-free unclean)))
-        ret))
-
-  (local (in-theory (enable vl-origname-modwarningalist-aux
-                            vl-origname-modwarningalist)))
-
-  (defthm vl-modwarningalist-p-of-vl-origname-modwarningalist-aux
-    (implies (and (force (vl-modulelist-p x))
-                  (force (vl-modwarningalist-p acc)))
-             (vl-modwarningalist-p (vl-origname-modwarningalist-aux x acc))))
-
-  (verify-guards vl-origname-modwarningalist)
-
-  (defthm vl-modwarningalist-p-of-vl-origname-modwarningalist
-    (implies (force (vl-modulelist-p x))
-             (vl-modwarningalist-p (vl-origname-modwarningalist x)))))
+  (b* ((unclean (vl-origname-modwarningalist-aux x nil))
+       (ret     (vl-clean-modwarningalist unclean)))
+    (fast-alist-free unclean)
+    ret))
 

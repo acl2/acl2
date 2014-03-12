@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,7 +19,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "checkers/checkers")
 (include-book "checkers/duplicate-detect")
 (include-book "checkers/multidrive-detect")
 (include-book "checkers/portcheck")
@@ -50,6 +49,7 @@
 (include-book "transforms/xf-optimize-rw")
 (include-book "transforms/xf-orig")
 (include-book "transforms/xf-portdecl-sign")
+(include-book "transforms/xf-problem-mods")
 (include-book "transforms/xf-replicate-insts")
 (include-book "transforms/xf-resolve-ranges")
 (include-book "transforms/xf-sizing")
@@ -62,6 +62,7 @@
 (include-book "simpconfig")
 (include-book "centaur/misc/sneaky-load" :dir :system)
 (local (include-book "mlib/modname-sets"))
+(local (include-book "mlib/design-meta"))
 (local (include-book "util/arithmetic"))
 (local (include-book "util/osets"))
 (local (include-book "system/f-put-global" :dir :system))
@@ -78,711 +79,217 @@
 
 ||#
 
-
-;; These seemed to be slowing us down.  This reduced the certification
-;; time from 324 to 101 seconds on 2010-01-19.
-(local (in-theory (disable acl2::consp-under-iff-when-true-listp
-                           mergesort
-                           setp-of-vl-modulelist->names-when-no-duplicates)))
-
-;; These aren't as big of a deal, but were able to cut it down to 82
-;; seconds.  Actually, at this point almost everything is the cost of
-;; including the books above.
-(local (in-theory (disable string-listp
-                           subsetp-equal-when-first-two-same-yada-yada
-                           no-duplicatesp-equal
-                           ;; No longer included after emod changes
-                           ;; acl2::subsetp-implies-subsetp-cdr
-                           true-listp)))
-
-
-
-(define vl-warn-problem-module ((x vl-module-p)
-                                (problems string-listp))
-  :returns (new-x vl-module-p :hyp :fguard)
-  :parents (vl-simplify)
-  :short "@(call vl-warn-problem-module) determines if the module @('x') is
-considered a \"problem module\", and if so annotates it with a fatal warning
-explaining this."
-
-  :long "<p>See @(see vl-simplify) for a description of problem modules.
-@('problems') are a list of the problem module names that have been supplied by
-the caller.</p>"
-
-  (if (member-equal (vl-module->name x) problems)
-      (let ((warning
-             (make-vl-warning
-              :type :vl-problem-module
-              :msg "Module ~m0 has been flagged by the user as a \"problem ~
-                    module.\"  This ordinarily indicates that the module ~
-                    leads to some poorly handled exceptional condition, e.g., ~
-                    perhaps we cannot sort the module's occurrences. At any ~
-                    rate, the module is being discarded not because the ~
-                    translator has seen some problem, but because the user ~
-                    has explicitly said not to look at this module."
-              :args (list (vl-module->name x))
-              :fatalp t
-              :fn __function__)))
-        (change-vl-module x :warnings (cons warning (vl-module->warnings x))))
-    x)
-  ///
-  (defthm vl-module->name-of-vl-warn-problem-module
-    (equal (vl-module->name (vl-warn-problem-module x problems))
-           (vl-module->name x))))
-
-
-(defprojection vl-warn-problem-modulelist (x problems)
-  (vl-warn-problem-module x problems)
-  :guard (and (vl-modulelist-p x)
-              (string-listp problems))
-  :parents (vl-simplify)
-  :short "Extend @(see vl-warn-problem-modulelist) to a list of modules."
-  :result-type vl-modulelist-p
-  :rest
-  ((defthm vl-modulelist->names-of-vl-warn-problem-modulelist
-     (equal (vl-modulelist->names (vl-warn-problem-modulelist x problems))
-            (vl-modulelist->names x)))))
-
-
-(define vl-simplify-part1-annotate-mods
-  ((mods vl-modulelist-p)
+(define vl-simplify-maybe-use-set
+  :parents (vl-simplify-main)
+  :short "Wrapper to hide the case split for optional use-set analysis."
+  ((design vl-design-p)
    (config vl-simpconfig-p))
-  :returns (new-mods vl-modulelist-p :hyp :fguard)
-  (declare (ignorable config))
+  :returns (mv (new-design vl-design-p)
+               (report     vl-useset-report-p))
+  (b* (((vl-simpconfig config) config)
+       ((unless config.use-set-p)
+        (mv (vl-design-fix design) nil)))
+    (xf-cwtime (vl-design-use-set-report design config.use-set-omit-wires))))
 
-  (b* (;;this was never any good
-       ;;mods (xf-cwtime (vl-modulelist-cross-active mods)
-       ;;                :name xf-cross-active))
-
-       (mods (xf-cwtime (vl-modulelist-lvaluecheck mods)
-                        :name xf-lvaluecheck)))
-    mods)
-
-  ///
-  (defthm vl-modulelist->names-of-vl-simplify-part1-annotate-mods
-    (equal (vl-modulelist->names (vl-simplify-part1-annotate-mods mods config))
-           (vl-modulelist->names mods))))
-
-
-
-(define vl-simplify-part1-sanify-mods
-  ((mods (and (vl-modulelist-p mods)
-              (uniquep (vl-modulelist->names mods))))
+(define vl-simplify-maybe-clean-params
+  :parents (vl-simplify-main)
+  :short "Wrapper to hide the case split for optional clean-params."
+  ((design vl-design-p)
    (config vl-simpconfig-p))
-  :returns (mv (mods vl-modulelist-p :hyp :fguard)
-               (failmods vl-modulelist-p :hyp :fguard))
+  :returns (new-design vl-design-p)
+  (b* (((vl-simpconfig config) config)
+       ((unless config.clean-params-p)
+        (vl-design-fix design)))
+    (xf-cwtime (vl-design-clean-params design))))
 
-; Sanifying the module list.
-;
-; Our later transforms want a clean module list.  To provide this, we are now
-; going to throw away modules which:
-;   (1) had any problems with argresolve, above
-;   (2) have been marked as problem modules by the user,
-;   (3) are incomplete (instantiate missing modules),
-;   (4) are unreasonable (use unsupported constructs), or
-;   (5) have always blocks that we do not support.
-;
-; In addition, all modules that depend upon modules thrown away for one of
-; these reasons must be removed.  The general approach is discussed in the
-; documentation for warnings.  In short: we annotate any bad module with a
-; fatal warning, then use vl-propagate-errors to throw these modules away.
+(define vl-simplify-maybe-multidrive-detect
+  :parents (vl-simplify-main)
+  :short "Wrapper to hide the case split for optional multidrive detection."
+  ((design vl-design-p)
+   (config vl-simpconfig-p))
+  :returns (new-design vl-design-p)
+  (b* (((vl-simpconfig config) config)
+       ((unless config.multidrive-detect-p)
+        (vl-design-fix design)))
+    (xf-cwtime (vl-design-multidrive-detect design))))
+
+(define vl-simplify-main
+  :parents (vl-simplify)
+  :short "Core transformation sequence for using VL to generate E modules."
+  ((design vl-design-p)
+   (config vl-simpconfig-p))
+  :returns (mv (good vl-design-p)
+               (bad  vl-design-p)
+               (use-set-report vl-useset-report-p))
 
   (b* (((vl-simpconfig config) config)
-       (mods (xf-cwtime (vl-warn-problem-modulelist mods config.problem-mods)
-                        :name warn-problem-mods))
-
-       (mods (xf-cwtime (vl-modulelist-check-reasonable mods)
-                        :name warn-unreasonable-mods))
-
-       (mods (xf-cwtime
-              ;; BOZO ugly.  Change check-complete to use an aux function and
-              ;; build the modalist on its own, and do the clearing of the memo
-              ;; table on its own, too.
-              (b* ((modalist (vl-modalist mods))
-                   (mods (vl-modulelist-check-complete mods mods modalist))
-                   (- (flush-hons-get-hash-table-link modalist))
-                   (- (clear-memoize-table 'vl-necessary-direct-for-module)))
-                mods)
-              :name warn-incomplete-mods))
-
-; New: do not throw away always blocks (yet)
-;      (mods (cwtime (vl-modulelist-check-always mods)
-;                    :name warn-unsupported-always-mods))
-
-       (mods (xf-cwtime (vl-modulelist-check-good-paramdecls mods)
-                        :name warn-bad-paramdecl-mods))
-
-       ((mv mods failmods) (xf-cwtime (vl-propagate-errors mods)
-                                      :name propagate-errors))
-;(- (cw "~x0 modules remain.~%" (len mods)))
-       )
-
-    (mv mods failmods))
-
-  ///
-  (defmvtypes vl-simplify-part1-sanify-mods (true-listp true-listp))
-
-  (defthm no-duplicatesp-equal-of-vl-simplify-part1-sanify-mods-0
-    (implies (no-duplicatesp-equal (vl-modulelist->names mods))
-             (no-duplicatesp-equal
-              (vl-modulelist->names
-               (mv-nth 0 (vl-simplify-part1-sanify-mods mods config)))))))
-
-
-
-(define vl-simplify-part1
-  ((mods   (and (vl-modulelist-p mods)
-                (uniquep (vl-modulelist->names mods))))
-   (config vl-simpconfig-p))
-  :returns (mv (mods vl-modulelist-p :hyp :fguard)
-               (failmods vl-modulelist-p :hyp :fguard)
-               (use-set-report vl-useset-report-p :hyp :fguard))
-  :parents (vl-simplify)
-  :short "Initial transformations up through unparameterization."
-
-  :long "<p>Part 1 addresses:</p>
-
-<ul>
- <li>Initial, simple transforms such as resolving arguments to modules,</li>
- <li>Generating the @(see use-set) report,</li>
- <li>Sanifying the module list by throwing away unreasonable, incomplete, or
-     otherwise problematic modules, and</li>
- <li>Carrying out @(see unparameterization).</li>
-</ul>"
-
-  (b* (((vl-simpconfig config) config)
-       (- (cw "Beginning simplification of ~x0 modules.~%" (len mods)))
-
-; We begin by trying to resolve argument lists and adding other basic
-; annotations.  This is the minimum we need for use-set generation.  These
-; transforms are quite robust and can deal with pretty much any constructs in
-; the modules, so we don't need to eliminate the unreasonable modules and such
-; first.  This is good, because it means the use-set report can span the entire
-; list of modules, rather than just the reasonable ones.
-
-       (mods (vl-simplify-part1-annotate-mods mods config))
-
-; Use-Set report generation.  Even though argresolve can sometimes produce
-; fatal warnings, the use-set report is intended to do as much as it can for
-; all of the modules, so we want to go ahead with it before throwing anything
-; away.
-
-       ((mv mods use-set-report)
-        (if config.use-set-p
-            (xf-cwtime (vl-mark-wires-for-modulelist mods config.use-set-omit-wires)
-                       :name use-set-analysis)
-          (mv mods nil)))
-
-; I'll eliminate functions before cleaning params, since we don't want to
-; allow function parameters to overlap with module parameters.
-
-       (mods (xf-cwtime (vl-modulelist-expand-functions mods)
-                        :name xf-expand-functions))
-
-       (mods
-        (if config.clean-params-p
-            (xf-cwtime (vl-modulelist-clean-params mods)
-                       :name xf-clean-params)
-          mods))
-
-       ((mv mods failmods)
-        (vl-simplify-part1-sanify-mods mods config))
-
-; Unparameterization.  Our final move is to carry out the unparameterization.
-; The guard for unparameterize is rather confining, so we want to make sure
-; that these criteria are met.  We might eventually try to prove these away.
+       (good (vl-design-fix design))
+       (bad  (make-vl-design))
 
-;<< BOZO doublecheck-reasonable, always-known in safe-mode? >>
+       (- (cw "Simplifying ~x0 modules.~%" (len (vl-design->mods good))))
 
-       ((unless
-            (and ;; proven now, eh?
-             ;;  (cwtime (uniquep (vl-modulelist->names mods))
-             ;;         :name doublecheck-unique-names)
-             (xf-cwtime (vl-modulelist-complete-p mods mods)
-                        :name doublecheck-completeness)
-             (xf-cwtime (vl-good-paramdecllist-list-p-of-vl-modulelist->paramdecls mods)
-                        :name doublecheck-paramdecls)))
-        (prog2$
-         (er hard? 'vl-simplify-part1
-             "Programming error.  Sanify incomplete.  Thought this was impossible.")
-         (mv nil nil nil)))
+; PART 1 --------------
 
-; BOZO unparam is kind of ugly.  Consider changing it to just annotate with
-; fatal warnings instead of returning failmods?  We could also consider moving
-; the uniqueness check into unparam itself, so that we do not need to
-; explicitly carry it out.
+       ;; Throw away problem modules before doing anything else.
+       (good          (xf-cwtime (vl-design-problem-mods good config.problem-mods)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-; <<We previously deleted top-level modules with params and warned that they
-; might be dead code before unparameterizing.  Do we want to bring that back?>>
+       ;; Optional use-set analysis.
+       ((mv good use-set-report) (vl-simplify-maybe-use-set good config))
 
-       ((mv mods failmods2) (xf-cwtime (vl-unparameterize mods 30)
-                                       :name vl-unparameterize))
-       (failmods (append failmods2 failmods))
-;(- (cw "~x0 modules remain.~%" (len mods)))
+       ;; We eliminate functions before cleaning params, since we don't want to
+       ;; allow function parameters to overlap with module parameters.
+       (good          (xf-cwtime (vl-design-expand-functions good)))
+       (good          (vl-simplify-maybe-clean-params good config))
 
-       ((unless (xf-cwtime (uniquep (vl-modulelist->names mods))
-                           :name doublecheck-unique-names))
-        (prog2$
-         (er hard? 'vl-simplify-part1
-             "Programming error.  Unparam name clash.  Thought this was impossible.")
-         (mv nil nil nil))))
+       (good          (xf-cwtime (vl-design-lvaluecheck good)))
+       (good          (xf-cwtime (vl-design-check-reasonable good)))
+       (good          (xf-cwtime (vl-design-check-complete good)))
+       (good          (xf-cwtime (vl-design-check-good-paramdecls good)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-    (mv mods failmods use-set-report))
+       ;;(- (sneaky-save :pre-unparam good))
+       (good          (xf-cwtime (vl-design-unparameterize good)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-  ///
-  (defmvtypes vl-simplify-part1 (true-listp true-listp nil))
 
-  (defthm no-duplicatesp-equal-of-vl-simplify-part1
-    (implies (and (force (vl-modulelist-p mods))
-                  (force (no-duplicatesp-equal (vl-modulelist->names mods))))
-             (no-duplicatesp-equal
-              (vl-modulelist->names
-               (mv-nth 0 (vl-simplify-part1 mods config)))))))
+; PART 2 ----------------
 
+       (good           (xf-cwtime (vl-design-rangeresolve good)))
+       ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 
+       (good           (xf-cwtime (vl-design-selresolve good)))
+       ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-(define vl-simplify-part2
-  ((mods         (and (vl-modulelist-p mods)
-                      (uniquep (vl-modulelist->names mods))))
-   (failmods     vl-modulelist-p)
-   (config       vl-simpconfig-p))
-  :returns (mv (mods vl-modulelist-p :hyp :fguard)
-               (failmods vl-modulelist-p :hyp :fguard))
-  :parents (vl-simplify)
-  :short "Expression rewriting, sizing, splitting; instance replication,
-assignment truncation, etc."
+       ;; BOZO this statement rewriting pass is likely not useful anymore.  It
+       ;; was originally intended to help with HID reset elimination, which we
+       ;; haven't done in years.
+       (good           (xf-cwtime (vl-design-stmtrewrite good config.unroll-limit)))
+       ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-  (b* (((vl-simpconfig config) config)
+       (good           (xf-cwtime (vl-design-oprewrite good)))
+       ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free>>
+       (good           (xf-cwtime (vl-design-exprsize good)))
+       ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-       (mods (xf-cwtime (vl-modulelist-rangeresolve mods)
-                        :name xf-rangeresolve))
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-;(- (cw "~x0 modules remain.~%" (len mods)))
+       (good           (xf-cwtime (vl-design-always-backend good)))
+       ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved>>
+       (good           (xf-cwtime (vl-design-elim-unused-regs good)))
+       (good           (xf-cwtime (vl-design-drop-blankports good)))
+       ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-       (mods (xf-cwtime (vl-modulelist-selresolve mods)
-                        :name xf-selresolve))
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
-
-
-
-; Subtle.  Rewrite statements before doing HID elimination because our "reset
-; alias detection" doesn't look very hard.
-
-       (mods (xf-cwtime (vl-modulelist-stmtrewrite mods config.unroll-limit)
-                        :name xf-stmtrewrite))
-
-;      (- (acl2::sneaky-save :pre-hid-elim mods))
-
-       ;; (mods (xf-cwtime (vl-modulelist-hid-elim mods)
-       ;;                  :name xf-hid-elim))
-
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
-;      (- (acl2::sneaky-save :post-hid-elim mods))
-
-
-
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
-; :vl-selects-resolved :vl-selects-in-bounds>>
-
-; <<We used to shift-ranges here.  We don't do that anymore.>>
-
-       ;; We rewrite statements before and after eliminating resets.  This is so
-       ;; (1) reset elimination can look for simpler forms, and (2) we can
-       ;; eliminate null statements produced by reset elimination.
-
-       ;; no, don't do this here, now we want it to be sized
-;       (mods (xf-cwtime (vl-modulelist-negedge-elim mods)
-;                        :name xf-negedge-elim))
-
-; Hrmn, maybe handling this in stmtrewrite is better?
-;      (mods (cwtime (vl-modulelist-drop-vcovers-hook mods)
-;                    :name xf-vcover-elim))
-
-       ;; (mods (xf-cwtime (vl-modulelist-stmtrewrite mods config.unroll-limit)
-       ;;                  :name xf-stmtrewrite))
-
-; Jared -- removing reset elimination!  Now gets handled by ordinary HID stuff.
-;
-;      (mods (cwtime (vl-modulelist-eliminate-resets mods)
-;                    :name xf-eliminate-resets))
-;
-;      (mods (cwtime (vl-modulelist-stmtrewrite mods unroll-limit)
-;                    :name xf-stmtrewrite))
-
-       (mods (xf-cwtime (vl-modulelist-oprewrite mods)
-                        :name xf-oprewrite))
-
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
-; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple>>
-
-       (mods (xf-cwtime (vl-modulelist-exprsize mods)
-                        :name xf-selfsize))
-
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
-; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple :vl-widths-fixed
-; :vl-args-compat>>
-
-       (mods (xf-cwtime (vl-modulelist-always-backend mods)
-                        :name xf-always-backend))
-
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
-
-       (mods (xf-cwtime (vl-modulelist-elim-unused-regs mods)
-                        :name xf-elim-unused-regs))
-
-
-
-       (mods (xf-cwtime (vl-modulelist-drop-blankports mods)
-                        :name xf-drop-blankports))
-
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-
-
-       (mods (xf-cwtime (vl-modulelist-delayredux mods)
-                        :name xf-delayredux))
-
-       (mods (xf-cwtime (vl-modulelist-split mods)
-                        :name xf-split))
-
+       (good           (xf-cwtime (vl-design-delayredux good)))
+       (good           (xf-cwtime (vl-design-split good)))
+       ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
        (- (vl-gc))
 
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
+       (good           (xf-cwtime (vl-design-replicate good)))
+       ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-;(- (cw "~x0 modules remain.~%" (len mods)))
+       (good           (xf-cwtime (vl-design-blankargs good)))
+       ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
-; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple :vl-widths-fixed
-; :vl-args-compat>>
-
-       (- (sneaky-save 'pre-repl mods))
-
-       (mods (xf-cwtime (vl-modulelist-replicate mods)
-                        :name xf-replicate-instance-arrays))
-
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-
-
-       (mods (xf-cwtime (vl-modulelist-blankargs mods)
-                        :name xf-blankargs))
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
-
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
-; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple :vl-widths-fixed
-; :vl-args-compat>>
-
-       (mods (xf-cwtime (vl-modulelist-trunc mods)
-                        :name xf-trunc))
-
+       (good           (xf-cwtime (vl-design-trunc good)))
 
        ;; This might not be the best time to do this, but it seems like here
        ;; we've got the widths figured out and there isn't too much serious
        ;; stuff left to do.
+       (good           (vl-simplify-maybe-multidrive-detect good config))
+       ((mv good bad)  (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-       (mods
-        (if config.multidrive-detect-p
-            (xf-cwtime (vl-modulelist-multidrive-detect mods)
-                       :name xf-multidrive-detect)
-          mods))
+; PART 3 -----------------------
 
+       (good          (xf-cwtime (vl-design-optimize good)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
-; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple :vl-widths-fixed
-; :vl-args-compat>>
-
-
-       )
-
-    (mv mods failmods))
-    ///
-
-    (defmvtypes vl-simplify-part2 (true-listp true-listp))
-
-    (defthm no-duplicatesp-equal-of-vl-simplify-part2
-      (implies (and (force (vl-modulelist-p mods))
-                    (force (no-duplicatesp-equal (vl-modulelist->names mods))))
-               (b* (((mv mods ?failmods)
-                     (vl-simplify-part2 mods failmods config)))
-                 (no-duplicatesp-equal (vl-modulelist->names mods))))))
-
-
-(define vl-simplify-part3
-  ((mods (and (vl-modulelist-p mods)
-              (uniquep (vl-modulelist->names mods))))
-   (failmods vl-modulelist-p)
-   (config   vl-simpconfig-p))
-  :returns (mv (mods vl-modulelist-p :hyp :fguard)
-               (failmods vl-modulelist-p :hyp :fguard))
-  :parents (vl-simplify)
-  :short "Occforming, gate simplification and splitting, naming blank
-instances, supply elimination, dependency-order sorting, E translation."
-
-  (declare (ignorable config))
-  (b* (;((vl-simpconfig config) config)
-       (mods (xf-cwtime (vl-modulelist-optimize mods)
-                        :name optimize))
-
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
-; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple :vl-widths-fixed
-; :vl-args-compat>>
-
-       (mods (xf-cwtime (vl-modulelist-occform mods)
-                        :name xf-occform))
-
+       (good          (xf-cwtime (vl-design-occform good)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
        (- (vl-gc))
 
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
+       ;; Weirdint elim must come AFTER occform, to avoid screwing up Zmux stuff.
+       (good          (xf-cwtime (vl-design-weirdint-elim good)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-;(- (cw "~x0 modules remain.~%" (len mods)))
+       (good          (xf-cwtime (vl-design-gatesplit good)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
+       (good          (xf-cwtime (vl-design-gate-elim good)))
+       (good          (xf-cwtime (vl-design-addinstnames good)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-       ;; NEW weirdint elimination -- must come after occform
-       (mods (xf-cwtime (vl-modulelist-weirdint-elim mods)
-                        :name xf-weirdint-elim))
-
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
-
-
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
-; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple :vl-widths-fixed
-; :vl-args-compat>>
-
-       ;; Used to run gateredux to get rid of MOS/tran/bufif gates etc.  Now we
-       ;; have primitives for them so they're taken care of by gate-elim.
-       ;; (mods (xf-cwtime (vl-modulelist-gateredux mods)
-       ;;                  :name xf-gateredux))
-
-       ;; ((unless (uniquep (vl-modulelist->names mods)))
-       ;;  (prog2$
-       ;;   (er hard? 'vl-simplify-part3
-       ;;       "Programming error: gateredux resulted in name clashes?")
-       ;;   (mv nil nil)))
-
-
-       ;; ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-       ;;                                :name propagate-errors))
-
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
-; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple :vl-widths-fixed
-; :vl-args-compat>>
-
-
-       (mods (xf-cwtime (vl-modulelist-gatesplit mods)
-                        :name xf-gatesplit))
-
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
-; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple :vl-widths-fixed
-; :vl-args-compat>>
-
-       (mods (xf-cwtime (vl-modulelist-gate-elim mods)
-                        :name xf-gate-elim))
-
-       (mods (xf-cwtime (vl-modulelist-addinstnames mods)
-                        :name xf-instname))
-
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
-; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple :vl-widths-fixed
-; :vl-args-compat>>
-
-       (mods (xf-cwtime (vl-modulelist-elim-supplies mods)
-                        :name xf-elim-supplies))
-
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
-
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
-; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple :vl-widths-fixed
-; :vl-args-compat>>
+       (good          (xf-cwtime (vl-design-elim-supplies good)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
        ;; Note: adding this here because one-bit selects from scalars make Verilog
        ;; simulators mad, and this gets rid of them... blah.
-       (mods (xf-cwtime (vl-modulelist-optimize mods)
-                        :name optimize))
+       (good          (xf-cwtime (vl-design-optimize good)))
 
        ;; This is just a useful place to add on any additional transforms you want
        ;; before E generation.
-       (mods (xf-cwtime (vl-modulelist-pre-toe-hook mods)
-                        :name pre-toe))
+       (good          (xf-cwtime (vl-design-pre-toe-hook good)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
+       (good          (xf-cwtime (vl-design-to-e good)))
+       ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
-       (- (sneaky-save 'pre-defm mods))
-
-       (mods (xf-cwtime (vl-modulelist-to-e mods)
-                        :name xf-convert-to-e))
-
-       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
-                                      :name propagate-errors))
-
-       (mods (xf-cwtime (vl-modulelist-clean-warnings mods)
-                        :name xf-clean-warnings))
-
-       (failmods (xf-cwtime (vl-modulelist-clean-warnings failmods)
-                            :name xf-clean-warnings-failmods))
-
-       (- (vl-gc))
-;(- (cw "~x0 modules remain.~%" (len mods)))
-
+       (good          (xf-cwtime (vl-design-clean-warnings good)))
+       (bad           (xf-cwtime (vl-design-clean-warnings bad)))
        )
 
-    (mv mods failmods))
-  ///
-  (defmvtypes vl-simplify-part3 (true-listp true-listp))
+    (mv good bad use-set-report))
 
-  (defthm no-duplicatesp-equal-of-vl-modulelist->names-of-vl-simplify-part3
-    (implies (and (force (vl-modulelist-p mods))
-                  (force (no-duplicatesp-equal (vl-modulelist->names mods))))
-             (b* (((mv mods ?failmods)
-                   (vl-simplify-part3 mods failmods config)))
-               (no-duplicatesp-equal (vl-modulelist->names mods))))))
-
-
-(define vl-simplify-main
-  ((mods (and (vl-modulelist-p mods)
-              (uniquep (vl-modulelist->names mods))))
-   (config vl-simpconfig-p))
-  :returns (mv (mods :hyp :fguard
-                     (and (vl-modulelist-p mods)
-                          (no-duplicatesp-equal (vl-modulelist->names mods))))
-               (failmods vl-modulelist-p :hyp :fguard)
-               (use-set-report vl-useset-report-p :hyp :fguard))
-  ;; Combines parts 1-3, but doesn't do the annotations.
-  (b* (((mv mods failmods use-set-report)
-        (vl-simplify-part1 mods config))
-       ((mv mods failmods)
-        (vl-simplify-part2 mods failmods config))
-       ((mv mods failmods)
-        (vl-simplify-part3 mods failmods config)))
-    (mv mods failmods use-set-report))
-  ///
-  (defmvtypes vl-simplify-main (true-listp true-listp nil)))
-
+  :prepwork
+  (;; This is a pretty large definition.  We make special use of HIDE, which we
+   ;; exploit using the rule vl-design-p-of-hide-meta.  See the documentation
+   ;; there for more information.
+   (defmacro vl-design-propagate-errors* (good bad)
+     `(vl-design-propagate-errors (hide ,good) (hide ,bad)))
+   (local (in-theory (disable (:executable-counterpart tau-system)
+                              acl2::mv-nth-cons-meta)))
+   (set-default-hints '('(:do-not '(preprocess))))))
 
 
 (define vl-simplify
-  ((mods "parsed Verilog modules, typically from @(see vl-load)."
-         (and (vl-modulelist-p mods)
-              (uniquep (vl-modulelist->names mods))))
-   (config "various options that govern how to simplify the modules."
-           vl-simpconfig-p))
-  :guard-debug t
-  :returns
-  (mv (mods "modules that we simplified successfully"
-            :hyp :fguard
-            (and (vl-modulelist-p mods)
-                 (no-duplicatesp-equal (vl-modulelist->names mods))))
-      (failmods "modules that we threw out due to errors"
-                :hyp :fguard vl-modulelist-p)
-      (use-set-report "a report about unused/unset wires"
-                      :hyp :fguard vl-useset-report-p))
   :parents (vl)
-  :short "Top level interface for simplifying Verilog modules."
-  :long "<p>This is a high-level routine that applies our @(see transforms) in
-a suitable order to simplify Verilog modules and to produce E modules.</p>"
+  :short "Top level interface for simplifying Verilog modules for use in
+          formal verification with @(see esim)."
 
+  ((design "Parsed Verilog design, typically from @(see vl-load)."
+           vl-design-p)
+
+   (config "Various options that govern how to simplify the modules."
+           vl-simpconfig-p))
+
+  :returns
+  (mv (good "Portion of the design that was simplified successfully."
+            vl-design-p)
+      (bad  "Portion of the design that was thrown out due to errors
+             or unsupported constructs."
+            vl-design-p)
+      (use-set-report "A report about unused/unset wires."
+                      vl-useset-report-p))
   (mbe :logic
-       (b* (((mv mods failmods use-set-report)
-             (vl-simplify-main (vl-annotate-mods mods) config)))
-         (mv mods failmods use-set-report))
+       (b* (((mv good bad use-set-report)
+             (vl-simplify-main (vl-annotate-design design) config)))
+         (mv good bad use-set-report))
        :exec
        (b* (((vl-simpconfig config) config)
-            (mods (vl-annotate-mods mods))
-            (mods (if config.compress-p
-                      (cwtime (hons-copy mods)
-                              :name compress-annotated-mods)
-                    mods))
-            ((mv mods failmods use-set-report)
-             (vl-simplify-main mods config))
-            (mods (if config.compress-p
-                      (cwtime (hons-copy mods)
-                              :name compress-simplified-mods)
-                    mods))
-            (failmods (if config.compress-p
-                          (cwtime (hons-copy failmods)
-                                  :name compress-failed-mods)
-                        failmods)))
+            (design (vl-annotate-design design))
+            (design (if config.compress-p
+                        (xf-cwtime (hons-copy design))
+                      design))
+            ((mv good bad use-set-report)
+             (vl-simplify-main design config))
+            (good (if config.compress-p
+                      (xf-cwtime (hons-copy good))
+                    good))
+            (bad  (if config.compress-p
+                      (xf-cwtime (hons-copy bad))
+                    bad)))
          (vl-gc)
-         (mv mods failmods use-set-report)))
-  ///
-  (defmvtypes vl-simplify (true-listp true-listp nil)))
-
+         (mv good bad use-set-report))))
 
 
 (define defmodules-fn ((loadconfig vl-loadconfig-p)
@@ -795,19 +302,20 @@ a suitable order to simplify Verilog modules and to produce E modules.</p>"
   :short "Load and simplify some modules."
 
   (b* (((mv loadresult state)
-        (cwtime (vl-load loadconfig)))
+        (xf-cwtime (vl-load loadconfig)))
 
        ((vl-loadresult loadresult)
         (if (vl-simpconfig->compress-p simpconfig)
-            (cwtime (change-vl-loadresult
-                     loadresult :mods (hons-copy (vl-loadresult->mods loadresult)))
-                    :name compress-original-mods)
+            (xf-cwtime (hons-copy loadresult))
           loadresult))
 
-       ((mv mods failmods use-set-report)
-        (cwtime (vl-simplify loadresult.mods simpconfig)))
+       ((mv good bad use-set-report)
+        (xf-cwtime (vl-simplify loadresult.design simpconfig)))
 
-       (walist (vl-origname-modwarningalist (append mods failmods)))
+       (mods     (vl-design->mods good))
+       (failmods (vl-design->mods bad))
+       (walist   (vl-origname-modwarningalist
+                  (append-without-guard mods failmods)))
        (- (vl-cw-ps-seq
            (vl-cw "Successfully simplified ~x0 module(s).~%" (len mods))
            ;; (vl-print-strings-with-commas (vl::vl-modulelist->names-exec mods nil) 4)
@@ -826,17 +334,15 @@ a suitable order to simplify Verilog modules and to produce E modules.</p>"
            (vl-println "")))
        (- (fast-alist-free walist))
 
-       (result (make-vl-translation :mods          mods
-                                    :failmods      failmods
-                                    :origmods      loadresult.mods
+       (result (make-vl-translation :good          good
+                                    :bad           bad
+                                    :orig          loadresult.design
                                     :filemap       loadresult.filemap
                                     :defines       loadresult.defines
                                     :loadwarnings  loadresult.warnings
                                     :useset-report use-set-report
                                     )))
     (mv result state)))
-
-
 
 
 (defsection defmodules

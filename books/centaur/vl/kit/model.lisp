@@ -209,7 +209,9 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
         (if (equal opts.esims-file "")
             state
           (serialize-write (oslib::catpath opts.outdir opts.esims-file)
-                           (vl-modulelist->esims (vl-translation->mods translation))
+                           (vl-modulelist->esims
+                            (vl-design->mods
+                             (vl-translation->good translation)))
                            :verbosep t))))
     state))
 
@@ -231,7 +233,7 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
         state)
        (opts (change-vl-model-opts opts
                                    :start-files start-files))
-       ((vl-model-opts opts) opts) 
+       ((vl-model-opts opts) opts)
 
        ((when opts.help)
         (vl-cw-ps-seq (vl-print *vl-model-help*))

@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -34,7 +34,6 @@
    (used   string-listp)
    (ualist (equal ualist (make-lookup-alist used))))
   :returns (new-regs vl-regdecllist-p :hyp :fguard)
-
   (cond ((atom regs)
          nil)
         ((fast-memberp (vl-regdecl->name (car regs)) used ualist)
@@ -43,7 +42,6 @@
         (t
          ;; Not used, eliminate it.
          (vl-regdecllist-elim-unused-regs (cdr regs) used ualist))))
-
 
 (define vl-module-elim-unused-regs ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
@@ -70,19 +68,20 @@
        (new-x (change-vl-module x
                                 :regdecls regs-prime
                                 :warnings warnings)))
-    new-x)
-  ///
-  (defthm vl-module->name-of-vl-module-elim-unused-regs
-    (equal (vl-module->name (vl-module-elim-unused-regs x))
-           (vl-module->name x))))
+    new-x))
 
 (defprojection vl-modulelist-elim-unused-regs (x)
   (vl-module-elim-unused-regs x)
   :guard (vl-modulelist-p x)
   :result-type vl-modulelist-p
-  :nil-preservingp t
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-elim-unused-regs
-     (equal (vl-modulelist->names (vl-modulelist-elim-unused-regs x))
-            (vl-modulelist->names x)))))
+  :nil-preservingp t)
+
+(define vl-design-elim-unused-regs
+  :short "Top-level @(see elim-unused-regs) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-elim-unused-regs x.mods))))
+
 

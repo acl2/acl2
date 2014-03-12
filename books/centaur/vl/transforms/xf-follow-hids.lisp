@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -539,8 +539,6 @@ identifier.</p>"
                   (force (equal modalist (vl-modalist mods))))
              (vl-range-resolved-p
               (mv-nth 4 (vl-find-hid-module x mod mods modalist toplev warnings))))))
-
-
 
 
 (defsection vl-expr-follow-hids
@@ -1219,49 +1217,32 @@ identifier.</p>"
 
 
 
-(defsection vl-module-follow-hids
-
-  (defund vl-module-follow-hids (x mods modalist toplev)
-    (declare (xargs :guard (and (vl-module-p x)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods))
-                                (equal toplev (vl-modulelist-toplevel mods)))))
-    (b* (((when (vl-module->hands-offp x))
-          x)
-         (warnings (vl-module->warnings x))
-         ((mv warnings assigns)
-          (vl-assignlist-follow-hids (vl-module->assigns x) x mods modalist toplev warnings))
-         ((mv warnings modinsts)
-          (vl-modinstlist-follow-hids (vl-module->modinsts x) x mods modalist toplev warnings))
-         ((mv warnings gateinsts)
-          (vl-gateinstlist-follow-hids (vl-module->gateinsts x) x mods modalist toplev warnings))
-         ((mv warnings alwayses)
-          (vl-alwayslist-follow-hids (vl-module->alwayses x) x mods modalist toplev warnings))
-         ((mv warnings initials)
-          (vl-initiallist-follow-hids (vl-module->initials x) x mods modalist toplev warnings)))
-        (change-vl-module x
-                          :assigns assigns
-                          :modinsts modinsts
-                          :gateinsts gateinsts
-                          :alwayses alwayses
-                          :initials initials
-                          :warnings warnings)))
-
-  (local (in-theory (enable vl-module-follow-hids)))
-
-  (defthm vl-module-p-of-vl-module-follow-hids
-    (implies (and (force (vl-module-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods)))
-                  (force (equal toplev (vl-modulelist-toplevel mods))))
-             (vl-module-p (vl-module-follow-hids x mods modalist toplev))))
-
-  (defthm vl-module->name-of-vl-module-follow-hids
-    (equal (vl-module->name (vl-module-follow-hids x mods modalist toplev))
-           (vl-module->name x))))
-
-
-
+(define vl-module-follow-hids
+  ((x        vl-module-p)
+   (mods     vl-modulelist-p)
+   (modalist (equal modalist (vl-modalist mods)))
+   (toplev   (equal toplev (vl-modulelist-toplevel mods))))
+  :returns (new-x vl-module-p :hyp :fguard)
+  (b* (((when (vl-module->hands-offp x))
+        x)
+       (warnings (vl-module->warnings x))
+       ((mv warnings assigns)
+        (vl-assignlist-follow-hids (vl-module->assigns x) x mods modalist toplev warnings))
+       ((mv warnings modinsts)
+        (vl-modinstlist-follow-hids (vl-module->modinsts x) x mods modalist toplev warnings))
+       ((mv warnings gateinsts)
+        (vl-gateinstlist-follow-hids (vl-module->gateinsts x) x mods modalist toplev warnings))
+       ((mv warnings alwayses)
+        (vl-alwayslist-follow-hids (vl-module->alwayses x) x mods modalist toplev warnings))
+       ((mv warnings initials)
+        (vl-initiallist-follow-hids (vl-module->initials x) x mods modalist toplev warnings)))
+    (change-vl-module x
+                      :assigns assigns
+                      :modinsts modinsts
+                      :gateinsts gateinsts
+                      :alwayses alwayses
+                      :initials initials
+                      :warnings warnings)))
 
 (defprojection vl-modulelist-follow-hids-aux (x mods modalist toplev)
   (vl-module-follow-hids x mods modalist toplev)
@@ -1269,31 +1250,23 @@ identifier.</p>"
               (vl-modulelist-p mods)
               (equal modalist (vl-modalist mods))
               (equal toplev (vl-modulelist-toplevel mods)))
-  :result-type vl-modulelist-p
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-follow-hids-aux
-     (let ((ret (vl-modulelist-follow-hids-aux x mods modalist toplev)))
-       (equal (vl-modulelist->names ret)
-              (vl-modulelist->names x))))))
+  :result-type vl-modulelist-p)
 
+(define vl-modulelist-follow-hids ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p :hyp :fguard)
+  (declare (xargs :guard (vl-modulelist-p x)))
+  (b* ((modalist (vl-modalist x))
+       (toplev   (vl-modulelist-toplevel x))
+       (x-prime  (vl-modulelist-follow-hids-aux x x modalist toplev)))
+    (fast-alist-free modalist)
+    x-prime))
 
-(defsection vl-modulelist-follow-hids
-
-  (defund vl-modulelist-follow-hids (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (b* ((modalist (vl-modalist x))
-         (toplev   (vl-modulelist-toplevel x))
-         (x-prime  (vl-modulelist-follow-hids-aux x x modalist toplev))
-         (-        (flush-hons-get-hash-table-link modalist)))
-        x-prime))
-
-  (local (in-theory (enable vl-modulelist-follow-hids)))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-follow-hids
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-follow-hids x))))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-follow-hids
-    (equal (vl-modulelist->names (vl-modulelist-follow-hids x))
-           (vl-modulelist->names x))))
+(define vl-design-follow-hids
+  :parents (hid-elim)
+  :short "Top-level @(see follow-hids) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-follow-hids x.mods))))
 

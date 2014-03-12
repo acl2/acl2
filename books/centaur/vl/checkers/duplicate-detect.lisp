@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -105,8 +105,6 @@ might well be copy/paste errors.</p>")
        (rest    (vl-duplicate-gateinst-warnings (cdr dupes) fixed orig modname)))
     (cons warning rest)))
 
-
-
 (define vl-duplicate-modinst-locations
   ((dupe  vl-modinst-p "Some modinst that was duplicated (fixed).")
    (fixed vl-modinstlist-p "Fixed versions of @('orig').")
@@ -134,7 +132,6 @@ might well be copy/paste errors.</p>")
        (warning (vl-make-duplicate-warning "module instances" locs modname))
        (rest    (vl-duplicate-modinst-warnings (cdr dupes) fixed orig modname)))
     (cons warning rest)))
-
 
 (define vl-duplicate-assign-locations
   ((dupe  vl-assign-p     "Some assign that was duplicated (fixed).")
@@ -173,7 +170,6 @@ might well be copy/paste errors.</p>")
        (rest    (vl-duplicate-assign-warnings (cdr dupes) fixed orig modname)))
     (cons warning rest)))
 
-
 (define vl-module-duplicate-detect ((x vl-module-p))
   :short "Detect duplicate assignments and instances throughout a module."
   :returns (new-x vl-module-p :hyp :fguard
@@ -211,18 +207,19 @@ might well be copy/paste errors.</p>")
                          ass-warnings
                          x.warnings)))
 
-    (change-vl-module x :warnings warnings))
-  ///
-  (defthm vl-module->name-of-vl-module-duplicate-detect
-    (equal (vl-module->name (vl-module-duplicate-detect x))
-           (vl-module->name x))))
+    (change-vl-module x :warnings warnings)))
 
 (defprojection vl-modulelist-duplicate-detect (x)
   (vl-module-duplicate-detect x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  ///
-  (defthm vl-modulelist->names-of-vl-modulelist-duplicate-detect
-    (equal (vl-modulelist->names (vl-modulelist-duplicate-detect x))
-           (vl-modulelist->names x))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-duplicate-detect
+  :short "Top-level @(see duplicate-detect) check."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-duplicate-detect x.mods))))
+
 

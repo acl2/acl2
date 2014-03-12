@@ -22,6 +22,7 @@
 (include-book "bvar-db")
 (include-book "def-gl-rewrite")
 (include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 (include-book "clause-processors/meta-extract-user" :dir :system)
 (include-book "bfr")
 (include-book "bfr-sat")

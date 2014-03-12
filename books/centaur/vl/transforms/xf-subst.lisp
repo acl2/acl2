@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -24,7 +24,6 @@
 
 ; BOZO move this whole file to mlib?
 
-
 (defxdoc substitution
   :parents (mlib)
   :short "Substitution into Verilog constructs"
@@ -39,9 +38,9 @@ module, we historically created ordinary alists and look up with @(see
 hons-assoc-equal) rather than @(see hons-get).  Since then we have found
 substitution to be more generally useful, and prefer to use fast alists.</p>")
 
+(local (xdoc::set-default-parents substitution))
 
 (defalist vl-sigma-p (x)
-  :parents (substitution)
   :short "An alist mapping strings to expressions, used in @(see substitution)."
   :key (stringp x)
   :val (vl-expr-p x)
@@ -62,86 +61,51 @@ substitution to be more generally useful, and prefer to use fast alists.</p>")
 
 
 
-(defsection vl-expr-subst
-  :parents (substitution)
+(defines vl-expr-subst
   :short "Substitute into a @(see vl-expr-p)."
 
-  :long "<p>@(call vl-expr-subst) is given @('sigma'), @(see vl-sigma-p), and
-@('x'), a @(see vl-expr-p), and produces a new expression by replacing any
-simple identifiers (i.e., atoms which are @(see vl-id-p)'s) that are bound in
+  :long "<p>We substitute into an expression, replacing any simple
+identifiers (i.e., atoms which are @(see vl-id-p)'s) that are bound in
 @('sigma') with their values.</p>
 
 <p>Note that this function does not descend into attributes.  It is not clear
 whether that is the right behavior, but it seems that the handling of
 attributes is left up to the implementation.</p>"
 
-  (mutual-recursion
-   (defund vl-expr-subst (x sigma)
-     (declare (xargs :guard (and (vl-expr-p x)
-                                 (vl-sigma-p sigma))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (if (vl-fast-atom-p x)
-         (let ((guts (vl-atom->guts x)))
-           (if (vl-fast-id-p guts)
-               (or (cdr (hons-get (vl-id->name guts) sigma))
-                   x)
-             x))
-       (let ((args-prime (vl-exprlist-subst (vl-nonatom->args x) sigma)))
-         (change-vl-nonatom x :args args-prime))))
+  (define vl-expr-subst ((x     vl-expr-p)
+                         (sigma vl-sigma-p))
+    :returns (new-x vl-expr-p :hyp :fguard)
+    :verify-guards nil
+    :measure (two-nats-measure (acl2-count x) 1)
+    :flag :expr
+    (if (vl-fast-atom-p x)
+        (let ((guts (vl-atom->guts x)))
+          (if (vl-fast-id-p guts)
+              (or (cdr (hons-get (vl-id->name guts) sigma))
+                  x)
+            x))
+      (let ((args-prime (vl-exprlist-subst (vl-nonatom->args x) sigma)))
+        (change-vl-nonatom x :args args-prime))))
 
-   (defund vl-exprlist-subst (x sigma)
-     (declare (xargs :guard (and (vl-exprlist-p x)
-                                 (vl-sigma-p sigma))
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (consp x)
-         (cons (vl-expr-subst (car x) sigma)
-               (vl-exprlist-subst (cdr x) sigma))
-       nil))))
-
-(defprojection vl-exprlist-subst (x sigma)
-  (vl-expr-subst x sigma)
-  :already-definedp t
-  :parents (substitution)
-  :nil-preservingp nil)
-
-(defsection vl-expr-subst-lemmas
-  :extension vl-expr-subst
-
-  (local (defthm lemma
-           (cond ((eq flag 'expr)
-                  (implies (and (vl-expr-p x)
-                                (vl-sigma-p sigma))
-                           (vl-expr-p (vl-expr-subst x sigma))))
-                 ((eq flag 'atts)
-                  t)
-                 (t
-                  (implies (and (vl-exprlist-p x)
-                                (vl-sigma-p sigma))
-                           (vl-exprlist-p (vl-exprlist-subst x sigma)))))
-           :rule-classes nil
-           :hints(("Goal"
-                   :induct (vl-expr-induct flag x)
-                   :in-theory (enable vl-expr-subst
-                                      vl-exprlist-subst)))))
-
-  (defthm vl-expr-p-of-vl-expr-subst
-    (implies (and (force (vl-expr-p x))
-                  (force (vl-sigma-p sigma)))
-             (vl-expr-p (vl-expr-subst x sigma)))
-    :hints(("Goal" :use ((:instance lemma (flag 'expr))))))
-
-  (defthm vl-exprlist-p-of-vl-exprlist-subst
-    (implies (and (force (vl-exprlist-p x))
-                  (force (vl-sigma-p sigma)))
-             (vl-exprlist-p (vl-exprlist-subst x sigma)))
-    :hints(("Goal" :use ((:instance lemma (flag 'list))))))
-
-  (verify-guards vl-expr-subst
-    :hints(("Goal" :in-theory (enable vl-expr-subst)))))
-
-
-
+  (define vl-exprlist-subst ((x     vl-exprlist-p)
+                             (sigma vl-sigma-p))
+    :returns (new-x (and (implies (and (force (vl-exprlist-p x))
+                                       (force (vl-sigma-p sigma)))
+                                  (vl-exprlist-p new-x))
+                         (equal (len new-x) (len x))))
+    :measure (two-nats-measure (acl2-count x) 0)
+    :flag :list
+    (if (consp x)
+        (cons (vl-expr-subst (car x) sigma)
+              (vl-exprlist-subst (cdr x) sigma))
+      nil)
+    ///
+    (defprojection vl-exprlist-subst (x sigma)
+      (vl-expr-subst x sigma)
+      :already-definedp t
+      :nil-preservingp nil))
+  ///
+  (verify-guards vl-expr-subst))
 
 
 ; Now we can extend our notion of expression substitution across an entire
@@ -151,7 +115,6 @@ attributes is left up to the implementation.</p>"
 
 (defmacro def-vl-subst (name &key type body)
   `(define ,name
-     :parents (substitution)
      :short ,(cat "Substitute into a @(see " (symbol-name type) ").")
      ((x     ,type)
       (sigma vl-sigma-p))
@@ -165,7 +128,6 @@ attributes is left up to the implementation.</p>"
      :guard (and (,type x)
                  (vl-sigma-p sigma))
      :nil-preservingp nil
-     :parents (substitution)
      :result-type ,type))
 
 (def-vl-subst vl-maybe-expr-subst
@@ -434,56 +396,40 @@ attributes is left up to the implementation.</p>"
   :element vl-blockitem-subst)
 
 
-(defxdoc vl-stmt-subst
-  :parents (substitution)
+(defines vl-stmt-subst
   :short "Substitute into a @(see vl-stmt-p)"
-  :long "@(def vl-stmt-subst)")
 
-(mutual-recursion
+  (define vl-stmt-subst ((x     vl-stmt-p)
+                         (sigma vl-sigma-p))
+    :returns (new-x vl-stmt-p :hyp :fguard)
+    :verify-guards nil
+    :measure (two-nats-measure (acl2-count x) 1)
+    :flag :stmt
+    (if (vl-fast-atomicstmt-p x)
+        (vl-atomicstmt-subst x sigma)
+      (change-vl-compoundstmt
+       x
+       :exprs (vl-exprlist-subst (vl-compoundstmt->exprs x) sigma)
+       :stmts (vl-stmtlist-subst (vl-compoundstmt->stmts x) sigma)
+       :decls (vl-blockitemlist-subst (vl-compoundstmt->decls x) sigma)
+       :ctrl (vl-maybe-delayoreventcontrol-subst (vl-compoundstmt->ctrl x) sigma))))
 
- (defund vl-stmt-subst (x sigma)
-   (declare (xargs :guard (and (vl-stmt-p x)
-                               (vl-sigma-p sigma))
-                   :verify-guards nil
-                   :measure (two-nats-measure (acl2-count x) 1)))
-   (if (vl-fast-atomicstmt-p x)
-       (vl-atomicstmt-subst x sigma)
-     (change-vl-compoundstmt
-      x
-      :exprs (vl-exprlist-subst (vl-compoundstmt->exprs x) sigma)
-      :stmts (vl-stmtlist-subst (vl-compoundstmt->stmts x) sigma)
-      :decls (vl-blockitemlist-subst (vl-compoundstmt->decls x) sigma)
-      :ctrl (vl-maybe-delayoreventcontrol-subst (vl-compoundstmt->ctrl x) sigma))))
+  (define vl-stmtlist-subst ((x     vl-stmtlist-p)
+                             (sigma vl-sigma-p))
+    :returns (new-x (and (implies (and (force (vl-stmtlist-p x))
+                                       (force (vl-sigma-p sigma)))
+                                  (vl-stmtlist-p new-x))
+                         (equal (len new-x) (len x))))
+    :verify-guards nil
+    :measure (two-nats-measure (acl2-count x) 0)
+    :flag :list
+    (if (consp x)
+        (cons (vl-stmt-subst (car x) sigma)
+              (vl-stmtlist-subst (cdr x) sigma))
+      nil))
 
- (defund vl-stmtlist-subst (x sigma)
-   (declare (xargs :guard (and (vl-stmtlist-p x)
-                               (vl-sigma-p sigma))
-                   :measure (two-nats-measure (acl2-count x) 0)))
-   (if (consp x)
-       (cons (vl-stmt-subst (car x) sigma)
-             (vl-stmtlist-subst (cdr x) sigma))
-     nil)))
-
-(defthm vl-stmtlist-subst-when-not-consp
-  (implies (not (consp x))
-           (equal (vl-stmtlist-subst x sigma)
-                  nil))
-  :hints(("Goal" :in-theory (enable vl-stmtlist-subst))))
-
-(defthm vl-stmtlist-subst-of-cons
-  (equal (vl-stmtlist-subst (cons a x) sigma)
-         (cons (vl-stmt-subst a sigma)
-               (vl-stmtlist-subst x sigma)))
-  :hints(("Goal" :in-theory (enable vl-stmtlist-subst))))
-
-(defprojection vl-stmtlist-subst (x sigma)
-  (vl-stmt-subst x sigma)
-  :already-definedp t
-  :parents (substitution))
-
-(encapsulate
-  ()
-  (local (defthm lemma-1
+  :prepwork
+  ((local (defthm lemma-1
            (implies (and (force (vl-maybe-delayoreventcontrol-p x))
                          (force (vl-sigma-p sigma)))
                     (iff (vl-maybe-delayoreventcontrol-subst x sigma)
@@ -494,35 +440,30 @@ attributes is left up to the implementation.</p>"
                                    (return-type-of-vl-delayoreventcontrol-subst))
                    :use ((:instance return-type-of-vl-delayoreventcontrol-subst))))))
 
-  (local (defthm lemma-2
-           (implies (and (not (vl-atomicstmt-p x))
-                         (vl-stmtlist-p (vl-stmtlist-subst (vl-compoundstmt->stmts x) sigma))
-                         (vl-stmt-p x)
-                         (vl-sigma-p sigma))
-                    (vl-compoundstmt-basic-checksp
-                     (vl-compoundstmt->type x)
-                     (vl-exprlist-subst (vl-compoundstmt->exprs x) sigma)
-                     (vl-stmtlist-subst (vl-compoundstmt->stmts x) sigma)
-                     (vl-compoundstmt->name x)
-                     (vl-blockitemlist-subst (vl-compoundstmt->decls x) sigma)
-                     (vl-maybe-delayoreventcontrol-subst (vl-compoundstmt->ctrl x) sigma)
-                     (vl-compoundstmt->sequentialp x)
-                     (vl-compoundstmt->casetype x)))
-           :hints(("goal"
-                   :in-theory (e/d (vl-compoundstmt-basic-checksp)
-                                   (vl-compoundstmt-basic-checksp-of-vl-compoundstmt))
-                   :use ((:instance vl-compoundstmt-basic-checksp-of-vl-compoundstmt))))))
+   (local (defthm lemma-2
+            (implies (and (equal (len args) (len (vl-compoundstmt->stmts x)))
+                          (not (vl-atomicstmt-p x))
+                          (vl-stmtlist-p args)
+                          (vl-stmt-p x)
+                          (vl-sigma-p sigma))
+                     (vl-compoundstmt-basic-checksp
+                      (vl-compoundstmt->type x)
+                      (vl-exprlist-subst (vl-compoundstmt->exprs x) sigma)
+                      args
+                      (vl-compoundstmt->name x)
+                      (vl-blockitemlist-subst (vl-compoundstmt->decls x) sigma)
+                      (vl-maybe-delayoreventcontrol-subst (vl-compoundstmt->ctrl x) sigma)
+                      (vl-compoundstmt->sequentialp x)
+                      (vl-compoundstmt->casetype x)))
+            :hints(("goal"
+                    :in-theory (e/d (vl-compoundstmt-basic-checksp)
+                                    (vl-compoundstmt-basic-checksp-of-vl-compoundstmt))
+                    :use ((:instance vl-compoundstmt-basic-checksp-of-vl-compoundstmt)))))))
 
-  (defthm-vl-flag-stmt-p vl-stmt-p-of-vl-stmt-subst
-    (stmt (implies (and (force (vl-stmt-p x))
-                        (force (vl-sigma-p sigma)))
-                   (vl-stmt-p (vl-stmt-subst x sigma))))
-    (list (implies (and (force (vl-stmtlist-p x))
-                        (force (vl-sigma-p sigma)))
-                   (vl-stmtlist-p (vl-stmtlist-subst x sigma))))
-    :hints(("Goal"
-            :induct (vl-flag-stmt-p flag x)
-            :expand ((vl-stmt-subst x sigma)))))
+  ///
+  (defprojection vl-stmtlist-subst (x sigma)
+    (vl-stmt-subst x sigma)
+    :already-definedp t)
 
   (verify-guards vl-stmt-subst))
 
@@ -534,7 +475,6 @@ attributes is left up to the implementation.</p>"
 (def-vl-subst-list vl-alwayslist-subst
   :type vl-alwayslist-p
   :element vl-always-subst)
-
 
 (def-vl-subst vl-initial-subst
   :type vl-initial-p
@@ -570,9 +510,6 @@ attributes is left up to the implementation.</p>"
   :type vl-fundecllist-p
   :element vl-fundecl-subst)
 
-
-
-
 (def-vl-subst vl-module-subst
   :type vl-module-p
   :body (b* (((vl-module x) x))
@@ -595,13 +532,6 @@ attributes is left up to the implementation.</p>"
                             ;; atts are unchanged
                             )))
 
-(defthm vl-module->name-of-vl-module-subst
-  (equal (vl-module->name (vl-module-subst x sigma))
-         (vl-module->name x))
-  :hints(("Goal" :in-theory (enable vl-module-subst))))
-
-
 (def-vl-subst-list vl-modulelist-subst
   :type vl-modulelist-p
   :element vl-module-subst)
-

@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -25,18 +25,13 @@
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
+(local (xdoc::set-default-parents use-set))
 
 (defaggregate vl-useset-report-entry
-
-; In addition to annotating the wires of each module, we can generate a
-; use-set report as an object that more concisely captures our analysis
-; for each module.  It is relatively convenient to print such reports.
-
-; It is convenient for name to come first, so that sorting with mergesort
-; orders the report by module name.
-
   :parents (use-set)
   :tag :vl-useset-report
+  :short "An object that concisely captures our @(see use-set) analysis for
+each module; it is relatively easy to print this object as a report."
 
   ((name     stringp :rule-classes :type-prescription)
    (spurious string-listp)
@@ -50,30 +45,34 @@
          (vl-string-list-values-p typos)))
    ;; mismatches -- active high/low mismatches, this stuff never worked well
    ;; backward-flow into inputs
-   (lvalue-inputs string-listp)))
+   (lvalue-inputs string-listp))
+
+  :long "<p>It is convenient for name to come first, so that sorting with @(see
+mergesort) orders the report by module name.</p>")
 
 (deflist vl-useset-report-p (x)
   (vl-useset-report-entry-p x)
   :elementp-of-nil nil)
 
 
-(define vl-split-useset-report ((x     vl-useset-report-p)
-                                (fine  string-listp)
-                                (probs vl-useset-report-p))
+(define vl-split-useset-report
+  :short "Filter modules based on which of them have use-set problems."
+  ((x     vl-useset-report-p)
+   (fine  string-listp)
+   (probs vl-useset-report-p))
   :returns (mv (fine  string-listp
                       "Names of modules with no problems."
                       :hyp :fguard)
                (probs vl-useset-report-p
                       "Subset of X that actually has problems."
                       :hyp :fguard))
+  :long "<p>Many modules do not have any unused or unset wires.  Rather than
+verbosely include these in the report, we would like to throw them away and
+only keep the modules for which we have identified some problems.</p>
 
-; Many modules do not have any unused or unset wires.  Rather than verbosely
-; include these in the report, we would like to throw them away and only keep
-; the modules for which we have identified some problems.
-
-; This function walks over the report and accumulates into FINE the names of
-; any modules for which we have nothing to report, and into PROBS the names of
-; any modules for which we have something to report.
+<p>This function walks over the report and accumulates into FINE the names of
+any modules for which we have nothing to report, and into PROBS the names of
+any modules for which we have something to report.</p>"
 
   (b* (((when (atom x))
         (mv fine probs))
@@ -95,12 +94,12 @@
                             (if finep (cons name fine) fine)
                             (if finep probs (cons entry probs)))))
 
-(define vl-star-names-of-warning-wires ((x             string-listp)
-                                        (warning-wires string-listp))
-  :returns (new-x string-listp :hyp (force (string-listp x)))
-  :parents (use-set)
+(define vl-star-names-of-warning-wires
   :short "Change names in @('x') by putting a @('*') in front of any name that
 is among the @('warning-wires')."
+  ((x             string-listp)
+   (warning-wires string-listp))
+  :returns (new-x string-listp :hyp (force (string-listp x)))
   (cond ((atom x)
          nil)
         ((member-equal (car x) warning-wires)
@@ -175,26 +174,28 @@ is among the @('warning-wires')."
                     (vl-println "")
                     (vl-print-typo-alist (cdr x))))))
 
-(define vl-print-useset-report-entry ((entry vl-useset-report-entry-p)
-                                      include-namep
-                                      suppress-spuriousp
-                                      suppress-unusedp
-                                      suppress-unsetp
-                                      suppress-typosp
-                                      suppress-linputsp
-                                      suppress-warningsp
-                                      &key (ps 'ps))
+(define vl-print-useset-report-entry
+  :short "Print an individual entry in the use-set report."
+  ((entry vl-useset-report-entry-p)
+   include-namep
+   suppress-spuriousp
+   suppress-unusedp
+   suppress-unsetp
+   suppress-typosp
+   suppress-linputsp
+   suppress-warningsp
+   &key (ps 'ps))
+  :long "<p>In HTML mode, this function is used for two purposes:</p>
 
-; This prints an individual entry in the use-set report.  In HTML mode, this
-; function is used for two purposes:
-;
-;   - To generate an individual report for a particular module, and
-;   - To generate a full report covering all of the modules.
-;
-; If we are dealing with a single module, we do not want to include the name of
-; the module and a link to it, because we are already on that page, so we set
-; include-namep to nil.  On the other hand, for a full report we do want to go
-; ahead and include the names with links.
+<ul>
+<li>To generate an individual report for a particular module, and</li>
+<li>To generate a full report covering all of the modules.</li>
+</ul>
+
+<p>If we are dealing with a single module, we do not want to include the name
+of the module and a link to it, because we are already on that page, so we set
+@('include-namep') to nil.  On the other hand, for a full report we do want to
+go ahead and include the names with links.</p>"
 
   (b* ((htmlp        (vl-ps->htmlp))
        (name         (vl-useset-report-entry->name entry))

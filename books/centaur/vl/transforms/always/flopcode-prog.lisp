@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2012 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -224,7 +224,7 @@ or @('nil') for no delay.</li>
 
 (define vl-flopcodestmt->delay ((x (and (vl-stmt-p x)
                                         (vl-flopcodestmt-p x))))
-  :returns ticks
+  :returns (ticks maybe-natp :rule-classes :type-prescription)
   :parents (vl-flopcodestmt-p)
   :inline t
   (b* (((vl-assignstmt ass) (if (vl-fast-compoundstmt-p x)
@@ -233,11 +233,7 @@ or @('nil') for no delay.</li>
     (and ass.ctrl
          (vl-simpledelaycontrol->ticks ass.ctrl)))
   :prepwork ((local (in-theory (enable vl-flopcodestmt-p
-                                       vl-flopcodeassign-p))))
-  ///
-  (defthm maybe-natp-of-vl-flopcodestmt->delay
-    (maybe-natp (vl-flopcodestmt->delay x))
-    :rule-classes :type-prescription))
+                                       vl-flopcodeassign-p)))))
 
 
 (deflist vl-flopcodestmtlist-p (x)

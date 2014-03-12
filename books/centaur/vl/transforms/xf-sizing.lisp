@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,7 +26,6 @@
 (include-book "../mlib/lvalues")
 (local (include-book "clause-processors/autohide" :dir :system))
 (local (include-book "../util/arithmetic"))
-
 
 (defxdoc expression-sizing
   :parents (transforms)
@@ -69,9 +68,9 @@ transform more than once on the same module (e.g., perhaps your subsequent
 transformation wishes to add some assignment statements, and subsequently wants
 to determine their sizes.</p>")
 
+(local (xdoc::set-default-parents expression-sizing))
 
 (defxdoc expression-sizing-intro
-  :parents (expression-sizing)
   :short "Introduction to Verilog's expression sizing/typing algorithm."
 
   :long "<p>Sizing expressions in Verilog is a <b>two-phase process</b>.</p>
@@ -210,7 +209,6 @@ is @(see vl-expr-typedecide).</p>
 
 
 (defxdoc expression-sizing-minutia
-  :parents (expression-sizing)
   :short "Specific issues and questions related to the expression sizing and
 typing of expressions."
 
@@ -412,17 +410,23 @@ the difference does not matter.  See @(see vl-expr-typedecide-aux) for
 details.</p>")
 
 
-
 ; -----------------------------------------------------------------------------
 ;
 ;                       DETERMINATION OF FINAL SIZES
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection vl-atom-selfsize
+(define vl-atom-selfsize
   :parents (vl-expr-selfsize)
   :short "Compute the self-determined size of an atom."
-
+  ((x        vl-atom-p)
+   (mod      vl-module-p)
+   (ialist   (equal ialist (vl-moditem-alist mod)))
+   (elem     vl-modelement-p)
+   (warnings vl-warninglist-p))
+  :returns
+  (mv (warnings vl-warninglist-p)
+      (size     maybe-natp :rule-classes :type-prescription))
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
@@ -448,118 +452,85 @@ HID pieces, function names, etc.; instead we just return @('nil') as the size.
 But we do not issue a warning in this case, because it seems like these things
 are not really supposed to have sizes.</p>"
 
-  (defund vl-atom-selfsize (x mod ialist elem warnings)
-    "Returns (MV WARNINGS SIZE)"
-    (declare (xargs :guard (and (vl-atom-p x)
-                                (vl-module-p mod)
-                                (equal ialist (vl-moditem-alist mod))
-                                (vl-modelement-p elem)
-                                (vl-warninglist-p warnings))))
-    (b* ((guts (vl-atom->guts x))
+  (b* ((guts (vl-atom->guts x))
 
-         ((when (vl-fast-constint-p guts))
-          (mv warnings (vl-constint->origwidth guts)))
+       ((when (vl-fast-constint-p guts))
+        (mv (ok) (vl-constint->origwidth guts)))
 
-         ((when (vl-fast-weirdint-p guts))
-          (mv warnings (vl-weirdint->origwidth guts)))
+       ((when (vl-fast-weirdint-p guts))
+        (mv (ok) (vl-weirdint->origwidth guts)))
 
-         ((when (vl-fast-string-p guts))
-          (mv warnings (* 8 (length (vl-string->value guts)))))
+       ((when (vl-fast-string-p guts))
+        (mv (ok) (* 8 (length (vl-string->value guts)))))
 
-         ((unless (vl-fast-id-p guts))
-          ;; Reals, function names, hierarchical identifier pieces, etc., for which
-          ;; a size is not applicable.
-          (mv warnings nil))
+       ((unless (vl-fast-id-p guts))
+        ;; Reals, function names, hierarchical identifier pieces, etc., for which
+        ;; a size is not applicable.
+        (mv (ok) nil))
 
-         (name (vl-id->name guts))
-         (item (vl-fast-find-moduleitem name mod ialist))
+       (name (vl-id->name guts))
+       (item (vl-fast-find-moduleitem name mod ialist))
 
-         ((unless item)
-          ;; Shouldn't happen if the module is well-formed and all used names
-          ;; are declared.
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-identifier
+       ((unless item)
+        ;; Shouldn't happen if the module is well-formed and all used names
+        ;; are declared.
+        (mv (fatal :type :vl-bad-identifier
                    :msg "~a0: cannot size ~w1 because it is not declared."
-                   :args (list elem name)
-                   :fatalp t
-                   :fn 'vl-atom-selfsize)))
-            (mv (cons w warnings) nil)))
+                   :args (list elem name))
+            nil))
 
-         ((when (mbe :logic (or (vl-netdecl-p item)
-                                (vl-regdecl-p item))
-                     :exec (or (eq (tag item) :vl-netdecl)
-                               (eq (tag item) :vl-regdecl))))
-          (b* (((mv arrdims range)
-                (if (eq (tag item) :vl-netdecl)
-                    (mv (vl-netdecl->arrdims item) (vl-netdecl->range item))
-                  (mv (vl-regdecl->arrdims item) (vl-regdecl->range item))))
-               ((when (consp arrdims))
-                ;; Shouldn't happen unless the module directly uses the name of
-                ;; an array in an expression; if we've properly converted
-                ;; bitselects to array-references, our expression-sizing code
-                ;; should not try to size its name.
-                (b* ((w (make-vl-warning
-                         :type :vl-bad-identifier
+       ((when (mbe :logic (or (vl-netdecl-p item)
+                              (vl-regdecl-p item))
+                   :exec (or (eq (tag item) :vl-netdecl)
+                             (eq (tag item) :vl-regdecl))))
+        (b* (((mv arrdims range)
+              (if (eq (tag item) :vl-netdecl)
+                  (mv (vl-netdecl->arrdims item) (vl-netdecl->range item))
+                (mv (vl-regdecl->arrdims item) (vl-regdecl->range item))))
+             ((when (consp arrdims))
+              ;; Shouldn't happen unless the module directly uses the name of
+              ;; an array in an expression; if we've properly converted
+              ;; bitselects to array-references, our expression-sizing code
+              ;; should not try to size its name.
+              (mv (fatal :type :vl-bad-identifier
                          :msg "~a0: cannot size w1 because it is an array."
-                         :args (list elem name)
-                         :fatalp t
-                         :fn 'vl-atom-selfsize)))
-                  (mv (cons w warnings) nil)))
-               ((unless (vl-maybe-range-resolved-p range))
-                ;; Shouldn't happen unless we had a problem resolving ranges
-                ;; earlier.
-                (b* ((w (make-vl-warning
-                         :type :vl-bad-range
+                         :args (list elem name))
+                  nil))
+             ((unless (vl-maybe-range-resolved-p range))
+              ;; Shouldn't happen unless we had a problem resolving ranges
+              ;; earlier.
+              (mv (fatal :type :vl-bad-range
                          :msg "~a0: cannot size ~w1 because its range is not ~
                                resolved: ~a2."
-                         :args (list elem name range)
-                         :fatalp t
-                         :fn 'vl-atom-selfsize)))
-                  (mv (cons w warnings) nil)))
-               (size (vl-maybe-range-size range)))
-            (mv warnings size)))
+                         :args (list elem name range))
+                  nil))
+             (size (vl-maybe-range-size range)))
+          (mv (ok) size)))
 
-         ((when (and (mbe :logic (vl-vardecl-p item)
-                          :exec (eq (tag item) :vl-vardecl))))
-          (b* (((unless (eq (vl-vardecl->type item) :vl-integer))
-                ;; We don't try to size real, realtime, or time variables.
-                (mv warnings nil))
-               ((when (consp (vl-vardecl->arrdims item)))
-                ;; Analogous to the netdecl/regdecl array case.
-                (b* ((w (make-vl-warning
-                         :type :vl-bad-identifier
+       ((when (and (mbe :logic (vl-vardecl-p item)
+                        :exec (eq (tag item) :vl-vardecl))))
+        (b* (((unless (eq (vl-vardecl->type item) :vl-integer))
+              ;; We don't try to size real, realtime, or time variables.
+              (mv (ok) nil))
+             ((when (consp (vl-vardecl->arrdims item)))
+              ;; Analogous to the netdecl/regdecl array case.
+              (mv (fatal :type :vl-bad-identifier
                          :msg "~a0: cannot size ~w1 because it is an array."
-                         :args (list elem name)
-                         :fatalp t
-                         :fn 'vl-atom-selfsize)))
-                  (mv (cons w warnings) nil))))
-            ;; Regular integer variables just have size 32.
-            (mv warnings 32)))
+                         :args (list elem name))
+                  nil)))
+          ;; Regular integer variables just have size 32.
+          (mv (ok) 32))))
 
-         ;; It would be surprising if we get here -- this is an identifier that
-         ;; refers to something in the module, maybe an event, parameter, or
-         ;; instance?  It seems like we shouldn't hit this case unless the
-         ;; module contains something really strange.
-         (w (make-vl-warning
-             :type :vl-bad-identifier
-             :msg "~a0: cannot size ~w1 because it is a ~x2; we expected to ~
-                   only need to size nets, registers, and variables."
-             :args (list elem name (tag item))
-             :fatalp t
-             :fn 'vl-atom-selfsize)))
-      (mv (cons w warnings) nil)))
-
-  (local (in-theory (enable vl-atom-selfsize)))
-
-  (defthm vl-warninglist-p-of-vl-atom-selfsize
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p (mv-nth 0 (vl-atom-selfsize x mod ialist elem warnings))))
-    :hints(("Goal" :in-theory (disable (force)))))
-
-  (defthm maybe-natp-of-vl-atom-selfsize
-    (maybe-natp (mv-nth 1 (vl-atom-selfsize x mod ialist elem warnings)))
-    :rule-classes ((:type-prescription)))
-
+    ;; It would be surprising if we get here -- this is an identifier that
+    ;; refers to something in the module, maybe an event, parameter, or
+    ;; instance?  It seems like we shouldn't hit this case unless the module
+    ;; contains something really strange.
+    (mv (fatal :type :vl-bad-identifier
+               :msg "~a0: cannot size ~w1 because it is a ~x2; we expected to ~
+                     only need to size nets, registers, and variables."
+               :args (list elem name (tag item)))
+        nil))
+  ///
   (defthm warning-irrelevance-of-vl-atom-selfsize
     (let ((ret1 (vl-atom-selfsize x mod ialist elem warnings))
           (ret2 (vl-atom-selfsize x mod ialist elem nil)))
@@ -567,13 +538,19 @@ are not really supposed to have sizes.</p>"
                (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
 
 
-
-
-
-(defsection vl-syscall-selfsize
+(define vl-syscall-selfsize
   :parents (vl-expr-selfsize)
   :short "Compute the self-determined size of an system call."
-
+  ((args      vl-exprlist-p)
+   (arg-sizes nat-listp)
+   (context   vl-expr-p)
+   (elem      vl-modelement-p)
+   (warnings  vl-warninglist-p))
+  :guard (same-lengthp args arg-sizes)
+  :returns
+  (mv (warnings vl-warninglist-p)
+      (size     maybe-natp :rule-classes :type-prescription))
+  (declare (ignorable arg-sizes context elem))
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
@@ -593,32 +570,12 @@ course has an implementation-dependent size which some implementation might
 treat as 64-bits.  But since we emulate a 32-bit implementation, we just regard
 the size of @('$random') as 32.</p>"
 
-  (defund vl-syscall-selfsize (args arg-sizes context elem warnings)
-    "Returns (MV WARNINGS SIZE)"
-    (declare (xargs :guard (and (vl-exprlist-p args)
-                                (nat-listp arg-sizes)
-                                (same-lengthp args arg-sizes)
-                                (vl-expr-p context)
-                                (vl-modelement-p elem)
-                                (vl-warninglist-p warnings)))
-             (ignorable arg-sizes context elem))
-    (b* ((expr (make-vl-nonatom :op :vl-syscall :args args))
-         ((when (vl-$random-expr-p expr))
-          (mv warnings 32)))
-      (mv warnings nil)))
+  (b* ((expr (make-vl-nonatom :op :vl-syscall :args args))
+       ((when (vl-$random-expr-p expr))
+        (mv (ok) 32)))
+    (mv (ok) nil))
 
-  (local (in-theory (enable vl-syscall-selfsize)))
-
-  (defthm vl-warninglist-p-of-vl-syscall-selfsize
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-syscall-selfsize args arg-sizes context elem warnings)))))
-
-  (defthm maybe-natp-of-vl-syscall-selfsize
-    (maybe-natp
-     (mv-nth 1 (vl-syscall-selfsize args arg-sizes context elem warnings)))
-    :rule-classes ((:type-prescription)))
-
+  ///
   (defthm warning-irrelevance-of-vl-syscall-selfsize
     (let ((ret1 (vl-syscall-selfsize args arg-sizes context elem warnings))
           (ret2 (vl-syscall-selfsize args arg-sizes context elem nil)))
@@ -628,77 +585,78 @@ the size of @('$random') as 32.</p>"
 
 
 
-(defsection vl-expr-interesting-size-atoms
+(defines vl-interesting-size-atoms
+  :parents (vl-tweak-fussy-warning-type)
+  :short "Heuristic for tweaking fussy size warnings."
+  :long "<p>Our basic goal is to gather all the atoms throughout an expression
+that are \"relevant\" to the current self-size computation.  This is a fuzzy
+concept and you should never use it for anything semantically meaningful, it's
+only meant as a heuristic for generating more useful warnings.</p>"
 
-; This is used to tweak fussy size warnings.  See below.
-;
-; Our basic goal is to gather all the atoms throughout an expression that are
-; sort of meaningful to the current self-size computation.  Obviously you
-; should never use this for anything semantically meaningful, it's only meant
-; as a heuristic for warning generation.
+  (define vl-expr-interesting-size-atoms ((x vl-expr-p))
+    :measure (two-nats-measure (acl2-count x) 1)
+    :verify-guards nil
+    :returns (exprs (and (vl-exprlist-p exprs)
+                         (vl-atomlist-p exprs))
+                    :hyp :fguard)
+    (b* (((when (vl-fast-atom-p x))
+          (list x))
+         (op   (vl-nonatom->op x))
+         (args (vl-nonatom->args x)))
+      (case op
+        ((:vl-bitselect :vl-unary-bitand :vl-unary-nand :vl-unary-bitor
+                        :vl-unary-nor :vl-unary-xor :vl-unary-xnor :vl-unary-lognot
+                        :vl-binary-logand :vl-binary-logor
+                        :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
+                        :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+                        :vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
+                        :vl-syscall :vl-funcall :vl-mintypmax :vl-hid-dot
+                        :vl-array-index :vl-index :vl-scope
 
-  (mutual-recursion
+                        ;; Eventually many of these may be worth considering...
+                        :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
+                        :vl-stream-left :vl-stream-right
+                        :vl-stream-left-sized :vl-stream-right-sized
 
-   (defund vl-expr-interesting-size-atoms (x)
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)
-                     :verify-guards nil))
-     (b* (((when (vl-fast-atom-p x))
-           (list x))
-          (op (vl-nonatom->op x))
-          (args (vl-nonatom->args x)))
-       (case op
-         ((:vl-bitselect :vl-unary-bitand :vl-unary-nand :vl-unary-bitor
-                         :vl-unary-nor :vl-unary-xor :vl-unary-xnor :vl-unary-lognot
-                         :vl-binary-logand :vl-binary-logor
-                         :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
-                         :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
-                         :vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
-                         :vl-syscall :vl-funcall :vl-mintypmax :vl-hid-dot
-                         :vl-array-index :vl-index :vl-scope
+                        :vl-tagged
 
-                         ;; Eventually many of these may be worth considering...
-                         :vl-with-index :vl-with-colon :vl-with-pluscolon :vl-with-minuscolon
-                         :vl-stream-left :vl-stream-right
-                         :vl-stream-left-sized :vl-stream-right-sized
+                        :vl-binary-wildeq :vl-binary-wildneq
+                        :vl-implies :vl-equiv
+                        )
+         ;; Don't gather anything from here.
+         nil)
 
-                         :vl-tagged
+        ((:vl-binary-power
+          :vl-unary-plus :vl-unary-minus :vl-unary-bitnot
+          :vl-binary-shl :vl-binary-shr :vl-binary-ashl :vl-binary-ashr)
+         ;; Second arg doesn't affect selfsize
+         (vl-expr-interesting-size-atoms (first args)))
 
-                         :vl-binary-wildeq :vl-binary-wildneq
-                         :vl-implies :vl-equiv
-                         )
-          ;; Don't gather anything from here.
-          nil)
+        ((:vl-qmark :vl-multiconcat)
+         ;; First arg is special, don't consider it
+         (vl-exprlist-interesting-size-atoms (cdr args)))
 
-         ((:vl-binary-power
-           :vl-unary-plus :vl-unary-minus :vl-unary-bitnot
-           :vl-binary-shl :vl-binary-shr :vl-binary-ashl :vl-binary-ashr)
-          ;; Second arg doesn't affect selfsize
-          (vl-expr-interesting-size-atoms (first args)))
+        ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem
+                          :vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor
+                          :vl-concat)
+         ;; All args affect size
+         (vl-exprlist-interesting-size-atoms args))
 
-         ((:vl-qmark :vl-multiconcat)
-          ;; First arg is special, don't consider it
-          (vl-exprlist-interesting-size-atoms (cdr args)))
+        (otherwise
+         ;; To make us account for all ops
+         (impossible)))))
 
-         ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem
-                           :vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor
-                           :vl-concat)
-          ;; All args affect size
-          (vl-exprlist-interesting-size-atoms args))
-
-         (otherwise
-          ;; To make us account for all ops
-          (er hard 'vl-expr-interesting-size-atoms
-              "Impossible")))))
-
-   (defund vl-exprlist-interesting-size-atoms (x)
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (consp x)
-         (append (vl-expr-interesting-size-atoms (car x))
-                 (vl-exprlist-interesting-size-atoms (cdr x)))
-       nil)))
-
+  (define vl-exprlist-interesting-size-atoms
+    ((x vl-exprlist-p))
+    :measure (two-nats-measure (acl2-count x) 0)
+    :returns (exprs (and (vl-exprlist-p exprs)
+                         (vl-atomlist-p exprs))
+                    :hyp :fguard)
+    (if (consp x)
+        (append (vl-expr-interesting-size-atoms (car x))
+                (vl-exprlist-interesting-size-atoms (cdr x)))
+      nil))
+  ///
   (defthm true-listp-of-vl-expr-interesting-size-atoms
     (true-listp (vl-expr-interesting-size-atoms x))
     :rule-classes :type-prescription)
@@ -707,46 +665,15 @@ the size of @('$random') as 32.</p>"
     (true-listp (vl-exprlist-interesting-size-atoms x))
     :rule-classes :type-prescription)
 
-  (FLAG::make-flag vl-flag-expr-interesting-size-atoms
-                   vl-expr-interesting-size-atoms
-                   :flag-mapping ((vl-expr-interesting-size-atoms . expr)
-                                  (vl-exprlist-interesting-size-atoms . list)))
-
   (verify-guards vl-expr-interesting-size-atoms
     :hints(("Goal"
             :use ((:instance return-type-of-vl-nonatom->op (x x)))
             :in-theory (e/d (vl-op-p vl-op-arity)
-                            (return-type-of-vl-nonatom->op)))))
-
-  (defthm-vl-flag-expr-interesting-size-atoms
-    (defthm vl-atomlist-p-of-vl-expr-interesting-size-atoms
-      (implies (force (vl-expr-p x))
-               (vl-atomlist-p (vl-expr-interesting-size-atoms x)))
-      :flag expr)
-    (defthm vl-atomlist-p-of-vl-exprlist-interesting-size-atoms
-      (implies (force (vl-exprlist-p x))
-               (vl-atomlist-p (vl-exprlist-interesting-size-atoms x)))
-      :flag list)
-    :hints(("Goal"
-            :expand ((vl-expr-interesting-size-atoms x)
-                     (vl-exprlist-interesting-size-atoms x)))))
-
-  (defthm-vl-flag-expr-interesting-size-atoms
-    (defthm vl-exprlist-p-of-vl-expr-interesting-size-atoms
-      (implies (force (vl-expr-p x))
-               (vl-exprlist-p (vl-expr-interesting-size-atoms x)))
-      :flag expr)
-    (defthm vl-exprlist-p-of-vl-exprlist-interesting-size-atoms
-      (implies (force (vl-exprlist-p x))
-               (vl-exprlist-p (vl-exprlist-interesting-size-atoms x)))
-      :flag list)
-    :hints(("Goal"
-            :expand ((vl-expr-interesting-size-atoms x)
-                     (vl-exprlist-interesting-size-atoms x))))))
-
+                            (return-type-of-vl-nonatom->op))))))
 
 
 (define vl-collect-unsized-ints ((x vl-exprlist-p))
+  :parents (vl-tweak-fussy-warning-type)
   :returns (sub-x vl-exprlist-p :hyp :guard)
   (cond ((atom x)
          nil)
@@ -763,113 +690,122 @@ the size of @('$random') as 32.</p>"
     :hints(("Goal" :in-theory (enable vl-expr-resolved-p)))))
 
 
-(defund nats-below-p (max x)
-  (declare (xargs :guard (and (natp max)
-                              (nat-listp x))))
+(define nats-below-p
+  :parents (vl-tweak-fussy-warning-type)
+  :short "Is every number in a list smaller than some maximum?"
+  ((max natp)
+   (x nat-listp))
   (if (atom x)
       t
     (and (< (car x) max)
          (nats-below-p max (cdr x)))))
 
+(define vl-tweak-fussy-warning-type
+  :short "Heuristically categorize fussy warnings according to severity."
+  ((type  symbolp   "Base warning type, which we may adjust.")
+   (a     vl-expr-p "LHS expression, i.e., A in: A + B, or C ? A : B")
+   (b     vl-expr-p "RHS expression, i.e., B in: A + B, or C ? A : B")
+   (asize natp      "Self-determined size of A.")
+   (bsize natp      "Self-determined size of B.")
+   (op    vl-op-p   "The particular operation."))
+  :returns
+  (adjusted-type symbolp :rule-classes :type-prescription
+                 "@('NIL') for <i>do not warn</i>, or some other warning type
+                  that is derived from @('type').")
+
+  :long "<p>This function is called when we've just noticed that A and B have
+different self-sizes but are used in an expression like @('A == B'), @('A &
+B'), @('C ? A : B'), or similar, and hence one or the other is going to be
+implicitly extended.  We're going to issue a fussy size warning, and we want to
+decide what type to give it.  I.e., is this a minor warning, or a normal
+warning?</p>
+
+<p>My original approach was just to say: the warning should be minor if ASIZE
+or BSIZE is 32.  But this happens in many very common cases where unsized
+numbers are used, such as:</p>
+
+@({
+    foo[3:0] == 7;          //  4 bits == 32 bits
+    foo[0] ? bar[3:0] : 0;  //  foo[0] ? 4 bits : 32 bits
+})
+
+<p>Over time I have added many additional tweaks, see the comments for
+details.</p>"
+  (b* ((type
+        ;; Force type to be unconditionally a symbol.
+        (and (mbt (symbolp type)) type))
+
+       ((when (and (or (and (vl-expr-resolved-p a)
+                            (< (vl-resolved->val a) (ash 1 bsize)))
+                       (and (vl-expr-resolved-p b)
+                            (< (vl-resolved->val b) (ash 1 asize))))
+                   (member op '(:vl-qmark
+                                :vl-binary-eq :vl-binary-neq
+                                :vl-binary-ceq :vl-binary-cne
+                                :vl-binary-lt :vl-binary-lte
+                                :vl-binary-gt :vl-binary-gte
+                                :vl-binary-wildeq :vl-binary-wildneq
+                                :vl-binary-xnor))))
+        ;; Always suppress warnings in the case where one argument or the other
+        ;; is a constant.  Even though its size isn't quite right, it is not
+        ;; *really* wrong.  For instance, if foo was once a three-bit wire but
+        ;; now is a five-bit wire, we might run into an expression like "foo ==
+        ;; 3'b7," which isn't really any kind of problem.
+        nil)
+
+       (a32p (eql asize 32))
+       (b32p (eql bsize 32))
+       ((unless (or a32p b32p))
+        ;; Neither op is 32 bits, so this doesn't seem like it's related to
+        ;; unsized numbers, go ahead and warn.
+        type)
+
+       ;; Figure out which one is 32-bit and which one is not.  We assume
+       ;; they aren't both 32 bits, since otherwise we shouldn't be called.
+       ((mv expr-32 size-other) (if a32p (mv a bsize) (mv b asize)))
+
+       ;; Collect up interesting unsized ints in the 32-bit expression.  If it
+       ;; has unsized ints, they're probably the reason it's 32 bits.  After
+       ;; collecting them, see if they fit into the size of the other expr.
+       (atoms         (vl-expr-interesting-size-atoms expr-32))
+       (unsized       (vl-collect-unsized-ints atoms))
+       (unsized-fit-p (nats-below-p (ash 1 size-other)
+                                    (vl-exprlist-resolved->vals unsized)))
+       ((unless unsized-fit-p)
+        ;; Well, hrmn, there's some integer here that doesn't fit into the size
+        ;; of the other argument.  This is especially interesting because
+        ;; there's likely to be some kind of truncation here.  Give it a new
+        ;; type.
+        (intern-in-package-of-symbol (cat (symbol-name type) "-CONST-TOOBIG") type))
+
+       ((when (consp unsized))
+        ;; What does this mean?  Well, there are at least some unsized numbers
+        ;; in positions that are affecting our selfsize, and every such unsized
+        ;; number does fit into the new size we're going into, so it seems
+        ;; pretty safe to make this a minor warning.
+        (intern-in-package-of-symbol (cat (symbol-name type) "-MINOR") type)))
+
+    ;; Otherwise, we didn't find any unsized atoms, so just go ahead and do the
+    ;; warning.
+    type))
 
 
-(defsection vl-tweak-fussy-warning-type
-
-; This function is called when we've just noticed that A and B have different
-; self-sizes but are used in an expression like A == B, A & B, C ? A : B, or
-; similar, and hence one or the other is going to be implicitly extended.
-; We're going to issue a fussy size warning, and we want to decide what type to
-; give it.  I.e., is this a minor warning, or a normal warning?
-;
-; Here, ASIZE and BSIZE are just the self-sizes of A and B, respectively, and
-; OP is the operator that is relating A and B.  In the case of a ?: operator,
-; note that A and B are the then/else branches.
-;
-; My original approach was just to say, "It's minor if ASIZE or BSIZE is 32."
-; This happens in many very common cases where unsized numbers are used, such
-; as:
-;
-;     foo[3:0] == 7;          //  4 bits == 32 bits
-;     foo[0] ? bar[3:0] : 0;  //  foo[0] ? 4 bits : 32 bits
-;
-; But over time I have added many additional tweaks, described in the comments
-; below.  At any rate, this function is either supposed to return NIL to say,
-; "I don't actually want to issue a warning," or else should return the :type
-; for the warning to be issued, so that one can filter out the probably
-; important and probably minor warnings.
-
-  (defund vl-tweak-fussy-warning-type (type a b asize bsize op)
-    "Returns NIL (meaning, do not warn) or a Warning Type derived from TYPE."
-    (declare (xargs :guard (and (symbolp type)
-                                (vl-expr-p a)
-                                (vl-expr-p b)
-                                (natp asize)
-                                (natp bsize)
-                                (vl-op-p op))))
-    (b* (((when (and (or (and (vl-expr-resolved-p a)
-                              (< (vl-resolved->val a) (ash 1 bsize)))
-                         (and (vl-expr-resolved-p b)
-                              (< (vl-resolved->val b) (ash 1 asize))))
-                     (member op '(:vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
-                                  :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
-                                  :vl-binary-wildeq :vl-binary-wildneq
-                                  :vl-binary-xnor :vl-qmark))))
-          ;; Always suppress warnings in the case where one argument or the
-          ;; other is a constant and even though its size isn't quite right, it
-          ;; is not *really* wrong.  For instance, if foo was once a three-bit
-          ;; wire but now is a five-bit wire, we might run into an expression
-          ;; like "foo == 3'b7," which isn't really any kind of problem.
-          nil)
-
-         (a32p (= asize 32))
-         (b32p (= bsize 32))
-         ((unless (or a32p b32p))
-          ;; Neither op is 32 bits, so this doesn't seem like it's related to
-          ;; unsized numbers, go ahead and warn.
-          type)
-
-         ;; Figure out which one is 32-bit and which one is not.  We assume
-         ;; they aren't both 32 bits, since otherwise we shouldn't be called.
-         ((mv expr-32 size-other) (if a32p (mv a bsize) (mv b asize)))
-
-         ;; Collect up interesting unsized ints in the 32-bit expression.  If
-         ;; it has unsized ints, they're probably the reason it's 32 bits.
-         ;; After collecting them, see if they fit into the size of the other
-         ;; expr.
-         (atoms         (vl-expr-interesting-size-atoms expr-32))
-         (unsized       (vl-collect-unsized-ints atoms))
-         (unsized-fit-p (nats-below-p (ash 1 size-other)
-                                      (vl-exprlist-resolved->vals unsized)))
-         ((unless unsized-fit-p)
-          ;; Well, hrmn, there's some integer here that doesn't fit into the
-          ;; size of the other argument.  This is especially interesting
-          ;; because there's likely to be some kind of truncation here.  Give
-          ;; it a new type.
-          (intern-in-package-of-symbol (cat (symbol-name type) "-CONST-TOOBIG") type))
-
-         ((when (consp unsized))
-          ;; What does this mean?  Well, there are at least some unsized
-          ;; numbers in positions that are affecting our selfsize, and every
-          ;; such unsized number does fit into the new size we're going into,
-          ;; so it seems pretty safe to make this a minor warning.
-          (intern-in-package-of-symbol (cat (symbol-name type) "-MINOR") type)))
-
-      ;; Otherwise, we didn't find any unsized atoms, so just go ahead and do the
-      ;; warning.
-      type))
-
-  (local (in-theory (enable vl-tweak-fussy-warning-type)))
-
-  (defthm symbolp-of-vl-tweak-fussy-warning-type
-    (implies (force (symbolp type))
-             (symbolp (vl-tweak-fussy-warning-type type a b asize bsize op)))
-    :rule-classes :type-prescription))
-
-
-
-(define vl-op-selfsize (op args arg-sizes context elem warnings)
+(define vl-op-selfsize
   :parents (vl-expr-selfsize)
   :short "Main function for computing self-determined expression sizes."
+  ((op        vl-op-p)
+   (args      vl-exprlist-p)
+   (arg-sizes nat-listp)
+   (context   vl-expr-p)
+   (elem      vl-modelement-p)
+   (warnings  vl-warninglist-p))
+  :guard
+  (and (or (not (vl-op-arity op))
+           (equal (len args) (vl-op-arity op)))
+       (same-lengthp args arg-sizes))
+  :returns
+  (mv (warnings vl-warninglist-p)
+      (size     maybe-natp :rule-classes :type-prescription))
 
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
@@ -888,17 +824,7 @@ expression.</p>
 SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
 
   :prepwork ((local (in-theory (enable maybe-natp))))
-  :returns (mv warnings size)
-  (declare (xargs :guard (and (vl-op-p op)
-                              (vl-exprlist-p args)
-                              (or (not (vl-op-arity op))
-                                  (equal (len args) (vl-op-arity op)))
-                              (nat-listp arg-sizes)
-                              (same-lengthp args arg-sizes)
-                              (vl-expr-p context)
-                              (vl-modelement-p elem)
-                              (vl-warninglist-p warnings))
-                  :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity)))))
+  :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity)))
 
   (case op
 
@@ -913,7 +839,7 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
       ;; SystemVerilog-2012 additions.  These also produce 1-bit results and
       ;; we don't care if their arguments have equal sizes.
       :vl-implies :vl-equiv)
-     (mv warnings 1))
+     (mv (ok) 1))
 
     (( ;; These were originally part of the above case; they all return
       ;; one-bit results.  However, we separate them out because,
@@ -937,22 +863,22 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                                                   op)))
           (warnings
            (if (not type)
-               warnings
+               (ok)
              (warn :type type
                    :msg "~a0: arguments to a comparison operator have ~
-                           different \"self-sizes\" (~x1 versus ~x2).  The ~
-                           smaller argument will be implicitly widened to ~
-                           match the larger argument.  The sub-expression in ~
-                           question is: ~a3."
+                         different \"self-sizes\" (~x1 versus ~x2).  The ~
+                         smaller argument will be implicitly widened to match ~
+                         the larger argument.  The sub-expression in question ~
+                         is: ~a3."
                    :args (list elem (first arg-sizes) (second arg-sizes)
                                context)))))
-       (mv warnings 1)))
+       (mv (ok) 1)))
 
     ((:vl-binary-power
       :vl-unary-plus :vl-unary-minus :vl-unary-bitnot
       :vl-binary-shl :vl-binary-shr :vl-binary-ashl :vl-binary-ashr)
      ;; All of these operations keep the size of their first operands.
-     (mv warnings (lnfix (first arg-sizes))))
+     (mv (ok) (lnfix (first arg-sizes))))
 
     ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem)
      ;; All of these operations take the max size of either operand.
@@ -960,8 +886,8 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
      ;; operators.  However, plus and minus are common.  We probably do not
      ;; want to issue any size warnings in the case of plus or minus, since
      ;; one argument or the other often needs to be expanded.
-     (mv warnings (max (lnfix (first arg-sizes))
-                       (lnfix (second arg-sizes)))))
+     (mv (ok) (max (lnfix (first arg-sizes))
+                   (lnfix (second arg-sizes)))))
 
     ((:vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor)
      ;; All of these operations take the max size of either operand.  But
@@ -979,16 +905,15 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                                                   op)))
           (warnings
            (if (not type)
-               warnings
+               (ok)
              (warn :type type
-                   :msg "~a0: arguments to a bitwise operator have ~
-                           different self-sizes (~x1 versus ~x2).  The ~
-                           smaller argument will be implicitly widened to ~
-                           match the larger argument.  The sub-expression in ~
-                           question is: ~a3."
+                   :msg "~a0: arguments to a bitwise operator have different ~
+                         self-sizes (~x1 versus ~x2).  The smaller argument ~
+                         will be implicitly widened to match the larger ~
+                         argument.  The sub-expression in question is: ~a3."
                    :args (list elem (first arg-sizes) (second arg-sizes)
                                context)))))
-       (mv warnings max)))
+       (mv (ok) max)))
 
     ((:vl-qmark)
      ;; The conditional takes the max size of its true and false branches.
@@ -1005,19 +930,19 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                                                   op)))
           (warnings
            (if (not type)
-               warnings
+               (ok)
              (warn :type type
                    :msg "~a0: branches of a ?: operator have different ~
-                           self-sizes (~x1 versus ~x2).  The smaller branch ~
-                           will be implicitly widened to match the larger ~
-                           argument.  The sub-expression in question is: ~a3."
+                         self-sizes (~x1 versus ~x2).  The smaller branch ~
+                         will be implicitly widened to match the larger ~
+                         argument.  The sub-expression in question is: ~a3."
                    :args (list elem (second arg-sizes) (third arg-sizes)
                                context)))))
-       (mv warnings max)))
+       (mv (ok) max)))
 
     ((:vl-concat)
      ;; Concatenations have the sum of their arguments' widths
-     (mv warnings (sum-nats arg-sizes)))
+     (mv (ok) (sum-nats arg-sizes)))
 
     ((:vl-syscall)
      ;; We do all syscall sizing in a separate function.
@@ -1036,7 +961,7 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                       :args (list elem context))
                nil))
           (size (* (vl-resolved->val multiplicity) concat-width)))
-       (mv warnings size)))
+       (mv (ok) size)))
 
     ((:vl-partselect-colon)
      ;; A part-select's width is one greater than the difference in its
@@ -1053,7 +978,7 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
           (left-val  (vl-resolved->val left))
           (right-val (vl-resolved->val right))
           (size      (+ 1 (abs (- left-val right-val)))))
-       (mv warnings size)))
+       (mv (ok) size)))
 
     ((:vl-partselect-pluscolon :vl-partselect-minuscolon)
      ;; foo[base_expr +: width_expr] has the width specified by width_expr,
@@ -1067,20 +992,20 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                       :args (list elem context))
                nil))
           (size (vl-resolved->val width-expr)))
-       (mv warnings size)))
+       (mv (ok) size)))
 
     ((:vl-funcall)
      ;; BOZO we don't currently try to support function calls.  Eventually it
      ;; should be easy to support sizing these, since it looks like functions
      ;; are returned with a syntax like "function [7:0] getbyte;" -- we'll
      ;; just need to look up the function and return the size of its range.
-     (mv warnings nil))
+     (mv (ok) nil))
 
     ((:vl-mintypmax)
      ;; I do not think it makes any sense to think about the size of a
      ;; mintypmax expression.  We just return nil and cause no warnings since
      ;; the width is basically "inapplicable."
-     (mv warnings nil))
+     (mv (ok) nil))
 
     ((:vl-hid-dot :vl-array-index :vl-index :vl-scope
 
@@ -1103,18 +1028,8 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
 
     (otherwise
      (progn$ (impossible)
-             (mv warnings nil))))
-
+             (mv (ok) nil))))
   ///
-  (defthm vl-warninglist-p-of-vl-op-selfsize
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-op-selfsize op args arg-sizes context elem warnings)))))
-
-  (defthm maybe-natp-of-vl-op-selfsize
-    (maybe-natp (mv-nth 1 (vl-op-selfsize op args arg-sizes context elem warnings)))
-    :rule-classes :type-prescription)
-
   (defthm warning-irrelevance-of-vl-op-selfsize
     (let ((ret1 (vl-op-selfsize op args arg-sizes context elem warnings))
           (ret2 (vl-op-selfsize op args arg-sizes context elem nil)))
@@ -1127,7 +1042,7 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
                              (warnings vl-warninglist-p))
   :returns
   (mv (new-warnings vl-warninglist-p)
-      (size maybe-natp :hints(("Goal" :in-theory (enable maybe-natp)))))
+      (size maybe-natp :rule-classes :type-prescription))
   (b* (((when (vl-fast-atom-p x))
         (mv (fatal :type :vl-hid-size-failed
                    :msg "~a0: found atomic hierarchical identifier???"
@@ -1162,35 +1077,11 @@ SystemVerilog-2012 Table 11-21. See @(see expression-sizing).</p>"
     :hints(("Goal" :in-theory (enable vl-hidexpr-welltyped-p)))))
 
 
-(defsection vl-expr-selfsize
-  :parents (vl-expr-size)
+(defines vl-expr-selfsize
   :short "Computation of self-determined expression sizes."
 
-  :long "<p><b>Warning</b>: this function should typically only be called by
+  :long "<p><b>Warning</b>: these functions should typically only be called by
 the @(see expression-sizing) transform.</p>
-
-<p><b>Signature: </b> @(call vl-expr-selfsize) returns @('(mv warnings
-size)').</p>
-
-<p>As inputs:</p>
-
-<ul>
-
-<li>@('x') is the expression whose size we wish to compute.</li>
-
-<li>@('mod') is the module that contains this expression; we use it to look up
-expression sizes from their declarations.</li>
-
-<li>@('ialist') is the precomputed @(see vl-moditem-alist) for @('mod'); we use
-it for fast wire lookups.</li>
-
-<li>@('elem') is a semantically irrelevant; it is a @(see vl-modelement-p) that
-provides a context for @(see warnings).</li>
-
-</ul>
-
-<p>The @('size') we return is a @(see maybe-natp); a @('size') of @('nil')
-indicates that we had some problem determining the expression's size.</p>
 
 <p>Some failures are expected, e.g., we do not know how to size some system
 calls.  In these cases we do not cause any warnings.  But in other cases, a
@@ -1203,143 +1094,97 @@ modalist so that we can look up HIDs.  An alternative would be to use the
 annotations left by @(see vl-modulelist-follow-hids) like (e.g.,
 @('VL_HID_RESOLVED_RANGE_P')) to see how wide HIDs are.</p>"
 
-  (mutual-recursion
+  (define vl-expr-selfsize
+    ((x        vl-expr-p        "Expression whose size we are to compute.")
+     (mod      vl-module-p      "Module where the expression occurs, so we
+                                 can look up wire sizes, etc.")
+     (ialist   (equal ialist (vl-moditem-alist mod)) "For fast lookups.")
+     (elem     vl-modelement-p  "Context for warnings.")
+     (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
+    :returns
+    (mv (warnings vl-warninglist-p)
+        (size     maybe-natp :rule-classes :type-prescription))
+    :verify-guards nil
+    :measure (two-nats-measure (acl2-count x) 1)
+    :flag :expr
+    (b* (((when (vl-fast-atom-p x))
+          (vl-atom-selfsize x mod ialist elem warnings))
 
-   (defund vl-expr-selfsize (x mod ialist elem warnings)
-     "Returns (MV WARNINGS SIZE)"
-     (declare (xargs :guard (and (vl-expr-p x)
-                                 (vl-module-p mod)
-                                 (equal ialist (vl-moditem-alist mod))
-                                 (vl-modelement-p elem)
-                                 (vl-warninglist-p warnings))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (b* (((when (vl-fast-atom-p x))
-           (vl-atom-selfsize x mod ialist elem warnings))
+         (op   (vl-nonatom->op x))
+         (args (vl-nonatom->args x))
 
-          (op   (vl-nonatom->op x))
-          (args (vl-nonatom->args x))
+         ((when (vl-hidexpr-p x))
+          (vl-hidexpr-selfsize x warnings))
 
-          ((when (vl-hidexpr-p x))
-           (vl-hidexpr-selfsize x warnings))
+         ((when (member op '(:vl-array-index)))
+          ;; BOZO we should try to size array-indexing here.  For now I'm
+          ;; skipping this so I can press on.
+          (mv (ok) nil))
 
-          ((when (member op '(:vl-array-index)))
-           ;; BOZO we should try to size array-indexing here.  For now I'm
-           ;; skipping this so I can press on.
-           (mv warnings nil))
+         ((mv warnings arg-sizes)
+          (vl-exprlist-selfsize args mod ialist elem warnings))
 
-          ((mv warnings arg-sizes)
-           (vl-exprlist-selfsize args mod ialist elem warnings))
+         ((when (member nil arg-sizes))
+          ;; Some subexpression was not given its size.  We don't try to
+          ;; produce a size.
+          (mv warnings nil))
 
-          ((when (member nil arg-sizes))
-           ;; Some subexpression was not given its size.  We don't try to
-           ;; produce a size.
-           (mv warnings nil))
+         ;; Otherwise, all subexpressions sized successfully.  Call
+         ;; vl-op-selfsize to do all the work.
+         ((mv warnings size)
+          (vl-op-selfsize op args arg-sizes x elem warnings)))
 
-          ;; Otherwise, all subexpressions sized successfully.  Call
-          ;; vl-op-selfsize to do all the work.
-          ((mv warnings size)
-           (vl-op-selfsize op args arg-sizes x elem warnings)))
+      (mv warnings size)))
 
-       (mv warnings size)))
+  (define vl-exprlist-selfsize
+    ((x        vl-exprlist-p    "Expressions whose sizes we are to compute.")
+     (mod      vl-module-p      "Module where the expression occurs, so we
+                                 can look up wire sizes, etc.")
+     (ialist   (equal ialist (vl-moditem-alist mod)) "For fast lookups.")
+     (elem     vl-modelement-p  "Context for warnings.")
+     (warnings vl-warninglist-p "Ordinary @(see warnings) accumulator."))
+    :returns
+    (mv (warnings vl-warninglist-p)
+        (size-list (and (vl-maybe-nat-listp size-list)
+                        (equal (len size-list) (len x)))))
+    :measure (two-nats-measure (acl2-count x) 0)
+    :flag :list
+    (b* (((when (atom x))
+          (mv (ok) nil))
+         ((mv warnings car-size)
+          (vl-expr-selfsize (car x) mod ialist elem warnings))
+         ((mv warnings cdr-sizes)
+          (vl-exprlist-selfsize (cdr x) mod ialist elem warnings))
+         (sizes (cons car-size cdr-sizes)))
+      (mv warnings sizes)))
+  ///
 
-   (defund vl-exprlist-selfsize (x mod ialist elem warnings)
-     "Returns (MV WARNINGS SIZE-LIST)"
-     (declare (xargs :guard (and (vl-exprlist-p x)
-                                 (vl-module-p mod)
-                                 (equal ialist (vl-moditem-alist mod))
-                                 (vl-modelement-p elem)
-                                 (vl-warninglist-p warnings))
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (b* (((when (atom x))
-           (mv warnings nil))
-          ((mv warnings car-size)
-           (vl-expr-selfsize (car x) mod ialist elem warnings))
-          ((mv warnings cdr-sizes)
-           (vl-exprlist-selfsize (cdr x) mod ialist elem warnings))
-          (sizes (cons car-size cdr-sizes)))
-       (mv warnings sizes))))
-
-  (defthm vl-exprlist-selfsize-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-exprlist-selfsize x mod ialist elem warnings)
-                    (mv warnings nil)))
-    :hints(("Goal" :in-theory (enable vl-exprlist-selfsize))))
-
-  (defthm vl-exprlist-selfsize-when-of-cons
-    (equal (vl-exprlist-selfsize (cons a x) mod ialist elem warnings)
-           (b* (((mv warnings car-size) (vl-expr-selfsize a mod ialist elem warnings))
-                ((mv warnings cdr-sizes) (vl-exprlist-selfsize x mod ialist elem warnings)))
-             (mv warnings (cons car-size cdr-sizes))))
-    :hints(("Goal" :in-theory (enable vl-exprlist-selfsize))))
-
-  (local (defun my-induct (x mod ialist elem warnings)
-           (b* (((when (atom x))
-                 (mv nil nil))
-                ((mv warnings car-size)
-                 (vl-expr-selfsize (car x) mod ialist elem warnings))
-                ((mv warnings cdr-sizes)
-                 (my-induct (cdr x) mod ialist elem warnings))
-                (sizes    (cons car-size cdr-sizes)))
-             (mv warnings sizes))))
-
-  (defthm len-of-vl-exprlist-selfsize-1
-    (equal (len (mv-nth 1 (vl-exprlist-selfsize x mod ialist elem warnings)))
-           (len x))
-    :hints(("Goal" :induct (my-induct x mod ialist elem warnings))))
-
-  (defthm true-listp-of-vl-exprlist-selfsize-1
-    (true-listp (mv-nth 1 (vl-exprlist-selfsize x mod ialist elem warnings)))
-    :rule-classes :type-prescription
-    :hints(("Goal" :induct (my-induct x mod ialist elem warnings))))
-
-  (FLAG::make-flag vl-flag-expr-selfsize
-                   vl-expr-selfsize
-                   :flag-mapping ((vl-expr-selfsize . expr)
-                                  (vl-exprlist-selfsize . list)))
-
-  (defthm-vl-flag-expr-selfsize
-    (defthm vl-warninglist-p-of-vl-expr-selfsize
-      (implies (force (vl-warninglist-p warnings))
-               (vl-warninglist-p
-                (mv-nth 0 (vl-expr-selfsize x mod ialist elem warnings))))
-      :flag expr)
-    (defthm vl-warninglist-p-of-vl-exprlist-selfsize
-      (implies (force (vl-warninglist-p warnings))
-               (vl-warninglist-p
-                (mv-nth 0 (vl-exprlist-selfsize x mod ialist elem warnings))))
-      :flag list)
-    :hints(("Goal" :expand (vl-expr-selfsize x mod ialist elem warnings))))
-
-  (defthm-vl-flag-expr-selfsize
-    (defthm maybe-natp-of-vl-expr-selfsize
-      (maybe-natp
-       (mv-nth 1 (vl-expr-selfsize x mod ialist elem warnings)))
-      :rule-classes :type-prescription
-      :flag expr)
-    (defthm vl-maybe-nat-listp-of-vl-exprlist-selfsize
-      (vl-maybe-nat-listp
-       (mv-nth 1 (vl-exprlist-selfsize x mod ialist elem warnings)))
-      :flag list)
-    :hints(("Goal" :expand (vl-expr-selfsize x mod ialist elem warnings))))
+  (local
+   (defthm-vl-expr-selfsize-flag
+     (defthm true-listp-of-vl-exprlist-selfsize
+       (true-listp (mv-nth 1 (vl-exprlist-selfsize x mod ialist elem warnings)))
+       :rule-classes :type-prescription
+       :flag :list)
+     :skip-others t))
 
   (verify-guards vl-expr-selfsize)
 
   (local
-   (defthm-vl-flag-expr-selfsize
-     ;; This is pretty subtle.  The induction scheme that the flag function would
-     ;; generate if we tried to directly use warnings and NIL isn't right in the
-     ;; list case.  We have to generalize this to an arbitrary warnings1 and
-     ;; warnings2.  Then, ACL2's induction heuristic is smart enough to get the
-     ;; right scheme, but only when we tell it to consider the flag function for
-     ;; both warnings1 and warnings2.  Ugh.  This took a long time to figure out.
+   (defthm-vl-expr-selfsize-flag
+     ;; This is pretty subtle.  The induction scheme that the flag function
+     ;; would generate if we tried to directly use warnings and NIL isn't right
+     ;; in the list case.  We have to generalize this to an arbitrary warnings1
+     ;; and warnings2.  Then, ACL2's induction heuristic is smart enough to get
+     ;; the right scheme, but only when we tell it to consider the flag function
+     ;; for both warnings1 and warnings2.  Ugh.  This took a long time to figure
+     ;; out.
      (defthm l0
        (let ((ret1 (vl-expr-selfsize x mod ialist elem warnings1))
              (ret2 (vl-expr-selfsize x mod ialist elem warnings2)))
          (equal (mv-nth 1 ret1)
                 (mv-nth 1 ret2)))
        :rule-classes nil
-       :flag expr)
+       :flag :expr)
 
      (defthm l1
        (let ((ret1 (vl-exprlist-selfsize x mod ialist elem warnings1))
@@ -1347,13 +1192,12 @@ annotations left by @(see vl-modulelist-follow-hids) like (e.g.,
          (equal (mv-nth 1 ret1)
                 (mv-nth 1 ret2)))
        :rule-classes nil
-       :flag list)
+       :flag :list)
 
      :hints(("Goal"
              :do-not '(generalize fertilize)
-
-             :induct (and (vl-flag-expr-selfsize flag x mod ialist elem warnings1)
-                          (vl-flag-expr-selfsize flag x mod ialist elem warnings2))
+             :induct (and (vl-expr-selfsize-flag flag x mod ialist elem warnings1)
+                          (vl-expr-selfsize-flag flag x mod ialist elem warnings2))
              :expand ((vl-expr-selfsize x mod ialist elem warnings1)
                       (vl-expr-selfsize x mod ialist elem warnings2))))))
 
@@ -1378,7 +1222,6 @@ annotations left by @(see vl-modulelist-follow-hids) like (e.g.,
                                     (warnings2 nil)))))))
 
 
-
 ; -----------------------------------------------------------------------------
 ;
 ;                    DETERMINATION OF FINAL SIGNEDNESS
@@ -1387,7 +1230,7 @@ annotations left by @(see vl-modulelist-follow-hids) like (e.g.,
 
 (defsection vl-exprtype-max
   :parents (vl-expr-typedecide)
-  :short "@(see vl-exprtype-max) is given @(see vl-exprtype-p)s as arguments;
+  :short "@(call vl-exprtype-max) is given @(see vl-exprtype-p)s as arguments;
 it returns @(':vl-unsigned') if any argument is unsigned, or @(':vl-signed')
 when all arguments are signed."
 
@@ -1432,15 +1275,23 @@ when all arguments are signed."
            (vl-exprtype-max x (vl-exprtype-max y z)))))
 
 
-(defsection vl-atom-typedecide
+(define vl-atom-typedecide
   :parents (vl-expr-typedecide)
   :short "Effectively computes the \"self-determined\" type of an atom."
+  ((x        vl-atom-p)
+   (mod      vl-module-p)
+   (ialist   (equal ialist (vl-moditem-alist mod)))
+   (elem     vl-modelement-p)
+   (warnings vl-warninglist-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (type (and (vl-maybe-exprtype-p type)
+                          (equal (vl-exprtype-p type) (if type t nil)))
+                     :hyp (and (force (vl-atom-p x))
+                               (force (vl-module-p mod))
+                               (force (equal ialist (vl-moditem-alist mod))))))
 
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
-
-<p><b>Signature:</b> @(call vl-atom-typedecide) returns @('(mv warnings
-type)').</p>
 
 <p>We compute what the type of the atom @('x') would be if it were in a
 self-determined location.  Another way to look at this function is as an
@@ -1451,134 +1302,86 @@ and strings.</p>
 vl-atom-selfsize), we might fail and return @('nil') for the type, perhaps
 producing some warnings.</p>"
 
-  (defund vl-atom-typedecide (x mod ialist elem warnings)
-    "Returns (MV WARNINGS TYPE)"
-    (declare (xargs :guard (and (vl-atom-p x)
-                                (vl-module-p mod)
-                                (equal ialist (vl-moditem-alist mod))
-                                (vl-modelement-p elem)
-                                (vl-warninglist-p warnings))
-                    :guard-debug t))
-    (b* ((guts (vl-atom->guts x))
+  (b* ((guts (vl-atom->guts x))
 
-         ((when (vl-fast-constint-p guts))
-          (mv warnings (vl-constint->origtype guts)))
+       ((when (vl-fast-constint-p guts))
+        (mv (ok) (vl-constint->origtype guts)))
 
-         ((when (vl-fast-weirdint-p guts))
-          (mv warnings (vl-weirdint->origtype guts)))
+       ((when (vl-fast-weirdint-p guts))
+        (mv (ok) (vl-weirdint->origtype guts)))
 
-         ((when (vl-fast-string-p guts))
-          (mv warnings :vl-unsigned))
+       ((when (vl-fast-string-p guts))
+        (mv (ok) :vl-unsigned))
 
-         ((unless (vl-fast-id-p guts))
-          ;; Other kinds of atoms don't get a type.
-          (mv warnings nil))
+       ((unless (vl-fast-id-p guts))
+        ;; Other kinds of atoms don't get a type.
+        (mv (ok) nil))
 
-         (name (vl-id->name guts))
-         (item (vl-fast-find-moduleitem name mod ialist))
+       (name (vl-id->name guts))
+       (item (vl-fast-find-moduleitem name mod ialist))
 
-         ((unless item)
-          ;; Shouldn't happen if the module is well-formed and all used names are
-          ;; declared.
-          (b* ((w (make-vl-warning
-                   :type :vl-bad-identifier
+       ((unless item)
+        ;; Shouldn't happen if the module is well-formed and all used names are
+        ;; declared.
+        (mv (fatal :type :vl-bad-identifier
                    :msg "~a0: cannot determine the type of ~w1 because it ~
                          is not declared."
-                   :args (list elem name)
-                   :fatalp t
-                   :fn 'vl-atom-typedecide)))
-            (mv (cons w warnings) nil)))
+                   :args (list elem name))
+            nil))
 
-         ((when (mbe :logic (or (vl-netdecl-p item)
-                                (vl-regdecl-p item))
-                     :exec (or (eq (tag item) :vl-netdecl)
-                               (eq (tag item) :vl-regdecl))))
-          (b* (((mv arrdims signedp)
-                (if (eq (tag item) :vl-netdecl)
-                    (mv (vl-netdecl->arrdims item)
-                        (vl-netdecl->signedp item))
-                  (mv (vl-regdecl->arrdims item)
-                      (vl-regdecl->signedp item))))
-               ((when (consp arrdims))
-                ;; Shouldn't happen unless the module directly uses the name of
-                ;; an array in an expression.
-                (b* ((w (make-vl-warning
-                         :type :vl-bad-identifier
+       ((when (mbe :logic (or (vl-netdecl-p item)
+                              (vl-regdecl-p item))
+                   :exec (or (eq (tag item) :vl-netdecl)
+                             (eq (tag item) :vl-regdecl))))
+        (b* (((mv arrdims signedp)
+              (if (eq (tag item) :vl-netdecl)
+                  (mv (vl-netdecl->arrdims item)
+                      (vl-netdecl->signedp item))
+                (mv (vl-regdecl->arrdims item)
+                    (vl-regdecl->signedp item))))
+             ((when (consp arrdims))
+              ;; Shouldn't happen unless the module directly uses the name of
+              ;; an array in an expression.
+              (mv (fatal :type :vl-bad-identifier
                          :msg "~a0: cannot determine the type of ~w1 because ~
                                it is an unindexed reference to an array."
-                         :args (list elem name)
-                         :fatalp t
-                         :fn 'vl-atom-typedecide)))
-                  (mv (cons w warnings) nil)))
-               (type (if signedp :vl-signed :vl-unsigned)))
-            (mv warnings type)))
+                         :args (list elem name))
+                  nil))
+             (type (if signedp :vl-signed :vl-unsigned)))
+          (mv (ok) type)))
 
-         ((when (and (mbe :logic (vl-vardecl-p item)
-                          :exec (eq (tag item) :vl-vardecl))))
-          (b* (((unless (eq (vl-vardecl->type item) :vl-integer))
-                ;; We don't try to give types to real, realtime, or time
-                ;; variables.
-                (mv warnings nil))
-               ((when (consp (vl-vardecl->arrdims item)))
-                ;; Analogous to the netdecl/regdecl array case.
-                (b* ((w (make-vl-warning
-                         :type :vl-bad-identifier
+       ((when (and (mbe :logic (vl-vardecl-p item)
+                        :exec (eq (tag item) :vl-vardecl))))
+        (b* (((unless (eq (vl-vardecl->type item) :vl-integer))
+              ;; We don't try to give types to real, realtime, or time
+              ;; variables.
+              (mv (ok) nil))
+             ((when (consp (vl-vardecl->arrdims item)))
+              ;; Analogous to the netdecl/regdecl array case.
+              (mv (fatal :type :vl-bad-identifier
                          :msg "~a0: cannot determine the type of ~w1 because ~
                                it is an unindexed reference to an array."
-                         :args (list elem name)
-                         :fatalp t
-                         :fn 'vl-atom-typedecide)))
-                  (mv (cons w warnings) nil))))
-            ;; Regular integer variables are signed.
-            (mv warnings :vl-signed)))
+                         :args (list elem name))
+                  nil)))
+          ;; Regular integer variables are signed.
+          (mv (ok) :vl-signed))))
 
-         ;; It would be surprising if we get here -- this is an identifier that
-         ;; refers to something in the module, maybe an event, parameter, or
-         ;; instance?  It seems like we shouldn't hit this case unless the module
-         ;; contains something really strange.
-         (w (make-vl-warning
-             :type :vl-bad-identifier
-             :msg "~a0: cannot determine the type of ~w1 because it is ~
-                   a ~x2; we only expected to type net, register, and ~
-                   variable declarations."
-             :args (list elem name (tag item))
-             :fatalp t
-             :fn 'vl-atom-typedecide)))
-      (mv (cons w warnings) nil)))
-
-  (local (in-theory (enable vl-atom-typedecide)))
-
-  (defthm vl-warninglist-p-of-vl-atom-typedecide
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 0 (vl-atom-typedecide x mod ialist elem warnings))))
-    :hints(("Goal" :in-theory (disable (force)))))
-
-  (defthm vl-maybe-exprtype-p-of-vl-atom-typedecide
-    (implies (and (force (vl-atom-p x))
-                  (force (vl-module-p mod))
-                  (force (equal ialist (vl-moditem-alist mod))))
-             (vl-maybe-exprtype-p
-              (mv-nth 1 (vl-atom-typedecide x mod ialist elem warnings))))
-    :rule-classes
-    ((:rewrite)
-     (:rewrite
-      :corollary
-      (implies (and (force (vl-atom-p x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
-               (equal (vl-exprtype-p
-                       (mv-nth 1 (vl-atom-typedecide x mod ialist elem warnings)))
-                      (if (mv-nth 1 (vl-atom-typedecide x mod ialist elem warnings))
-                          t
-                        nil))))))
-
+    ;; It would be surprising if we get here -- this is an identifier that
+    ;; refers to something in the module, maybe an event, parameter, or
+    ;; instance?  It seems like we shouldn't hit this case unless the module
+    ;; contains something really strange.
+    (mv (fatal :type :vl-bad-identifier
+               :msg "~a0: cannot determine the type of ~w1 because it is a ~
+                     ~x2; we only expected to type net, register, and ~
+                     variable declarations."
+               :args (list elem name (tag item)))
+        nil))
+  ///
   (defthm warning-irrelevance-of-vl-atom-typedecide
     (let ((ret1 (vl-atom-typedecide x mod ialist elem warnings))
           (ret2 (vl-atom-typedecide x mod ialist elem nil)))
       (implies (syntaxp (not (equal warnings ''nil)))
                (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
-
 
 (defsection vl-expr-typedecide-aux
   :parents (vl-expr-typedecide)
@@ -1841,7 +1644,7 @@ produce unsigned values.</li>
   (defsection warning-irrel
 
     (local
-     (defthm-vl-flag-expr-selfsize
+     (defthm-vl-flag-expr-typedecide-aux
        ;; This is pretty subtle.  The induction scheme that the flag function would
        ;; generate if we tried to directly use warnings and NIL isn't right in the
        ;; list case.  We have to generalize this to an arbitrary warnings1 and
@@ -2073,84 +1876,71 @@ the expression is an unsupported system call).  In such cases we just return
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection vl-expandsizes-zeroextend
+(define vl-expandsizes-zeroextend
   :parents (vl-expr-expandsizes)
   :short "Safely zero-extend an already-sized, unsigned expression to
 finalwidth."
+  ((x          "An expression that we may need to zero-extend."
+               (and (vl-expr-p x)
+                    (vl-expr->finalwidth x)
+                    (eq (vl-expr->finaltype x) :vl-unsigned)))
+   (finalwidth natp
+               "Width we want to expand @('x') to.  Must be at least as large
+               as the final width of @('x').")
+   (elem       vl-modelement-p  "Context for warnings.")
+   (warnings   vl-warninglist-p "Ordinary @(see warnings) accumulator."))
+  :returns
+  (mv (successp booleanp :rule-classes :type-prescription)
+      (warnings vl-warninglist-p)
+      (new-x    vl-expr-p :hyp (force (vl-expr-p x))))
 
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p><b>Signature:</b> @(call vl-expandsizes-zeroextend) returns @('(mv successp
-warnings expanded-expr)').</p>
+<p>If an extension is needed, we introduce an explicit concatenation, e.g., if
+we are expanding @('foo') from 3 to 7 bits, we produce a new expression like
+@('{ 4'b0, foo }').  When no extension is needed, we just return @('x')
+unchanged.</p>"
 
-<p>The @('finalwidth') must be at least as large as the finalwidth of @('x').
-If an extension is needed, we introduce an explicit concatenation, e.g., if we
-are expanding @('foo') from 3 to 7 bits, we produce an @('expanded-expr') of
-the form @('{ 4'b0, foo }').  When no extension is needed, we just return
-@('x') unchanged.</p>"
+  (b* ((finalwidth   (lnfix finalwidth))
+       (x.finalwidth (lnfix (vl-expr->finalwidth x)))
 
-  (defund vl-expandsizes-zeroextend (x finalwidth elem warnings)
-    "Returns (MV SUCCESSP WARNINGS EXPANDED-EXPR)"
-    (declare (xargs :guard (and (vl-expr-p x)
-                                (vl-expr->finalwidth x)
-                                (eq (vl-expr->finaltype x) :vl-unsigned)
-                                (natp finalwidth)
-                                (vl-modelement-p elem)
-                                (vl-warninglist-p warnings))))
-    (b* ((finalwidth   (lnfix finalwidth))
-         (x.finalwidth (lnfix (vl-expr->finalwidth x)))
-
-         ((when (> x.finalwidth finalwidth))
-          (b* ((w (make-vl-warning
-                   :type :vl-programming-error
+       ((when (> x.finalwidth finalwidth))
+        (mv nil
+            (fatal :type :vl-programming-error
                    :msg "~a0: trying to zero-extend ~a1, which has width ~x2, ~
-                       to ~x3 bits??? Serious bug in our sizing code."
-                   :args (list elem x x.finalwidth finalwidth)
-                   :fatalp t
-                   :fn 'vl-expandsizes-zeroextend)))
-            (mv nil (cons w warnings) x)))
+                         to ~x3 bits??? Serious bug in our sizing code."
+                   :args (list elem x x.finalwidth finalwidth))
+            x))
 
-         ((when (= x.finalwidth finalwidth))
-          ;; No need to expand.
-          (mv t warnings x))
+       ((when (eql x.finalwidth finalwidth))
+        ;; No need to expand.
+        (mv t (ok) x))
 
-         ;; Otherwise we need to go ahead and do the zero-extension.  We build an
-         ;; appropriately-sized constant zero atom and concatenate it onto X.
-         (pad-width (- finalwidth x.finalwidth))
-         (zero-guts (make-vl-constint :value 0
-                                      :origwidth pad-width
-                                      :origtype :vl-unsigned
-                                      :wasunsized nil))
-         (zero-atom (make-vl-atom :guts zero-guts
-                                  :finalwidth pad-width
-                                  :finaltype :vl-unsigned))
-         (atts      (acons (hons-copy "VL_ZERO_EXTENSION") nil nil))
-         (concat    (make-vl-nonatom :op :vl-concat
-                                     :args (list zero-atom x)
-                                     :finalwidth finalwidth
-                                     :finaltype :vl-unsigned
-                                     :atts atts)))
-      (mv t warnings concat)))
-
-  (local (in-theory (enable vl-expandsizes-zeroextend)))
-
-  (defthm vl-warninglist-p-of-vl-expandsizes-zeroextend
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p
-              (mv-nth 1 (vl-expandsizes-zeroextend x finalwidth elem warnings)))))
-
+       ;; Otherwise we need to go ahead and do the zero-extension.  We build an
+       ;; appropriately-sized constant zero atom and concatenate it onto X.
+       (pad-width (- finalwidth x.finalwidth))
+       (zero-guts (make-vl-constint :value 0
+                                    :origwidth pad-width
+                                    :origtype :vl-unsigned
+                                    :wasunsized nil))
+       (zero-atom (make-vl-atom :guts zero-guts
+                                :finalwidth pad-width
+                                :finaltype :vl-unsigned))
+       (atts      (acons (hons-copy "VL_ZERO_EXTENSION") nil nil))
+       (concat    (make-vl-nonatom :op :vl-concat
+                                   :args (list zero-atom x)
+                                   :finalwidth finalwidth
+                                   :finaltype :vl-unsigned
+                                   :atts atts)))
+    (mv t (ok) concat))
+  ///
   (defthm warning-irrelevance-of-vl-expandsizes-zeroextend
     (let ((ret1 (vl-expandsizes-zeroextend x finalwidth elem warnings))
           (ret2 (vl-expandsizes-zeroextend x finalwidth elem nil)))
       (implies (syntaxp (not (equal warnings ''nil)))
                (and (equal (mv-nth 0 ret1) (mv-nth 0 ret2))
                     (equal (mv-nth 2 ret1) (mv-nth 2 ret2))))))
-
-  (defthm vl-expr-p-of-vl-expandsizes-zeroextend
-    (implies (force (vl-expr-p x))
-             (vl-expr-p
-              (mv-nth 2 (vl-expandsizes-zeroextend x finalwidth elem warnings)))))
 
   (defthm vl-expr->finalwidth-of-vl-expandsizes-zeroextend
     (implies (and (force (mv-nth 0 (vl-expandsizes-zeroextend x finalwidth elem warnings)))
@@ -2190,12 +1980,15 @@ the form @('{ 4'b0, foo }').  When no extension is needed, we just return
 
 
 
-
-(defsection vl-sign-extend-constint
+(define vl-sign-extend-constint
   :parents (vl-expr-expandsizes)
   :short "@(call vl-sign-extend-constint) returns a new value, which is the
 sign extension of the @('origwidth')-bit @('value') to @('finalwidth') bits."
-
+  ((value natp)
+   (origwidth posp)
+   (finalwidth posp))
+  :guard (and (< value (expt 2 origwidth))
+              (< origwidth finalwidth))
   :long "<p>When the MSB is true we need to add the appropriate number of 1
 bits.  There are probably any number of ways to do this.  My method is
 relatively simple:</p>
@@ -2208,26 +2001,19 @@ relatively simple:</p>
  ----------------------------------------------------------
                result == 1111...1111   1bb...bbbbbbbbbbb
 })"
-
-  (defund vl-sign-extend-constint (value origwidth finalwidth)
-    (declare (xargs :guard (and (natp value)
-                                (posp origwidth)
-                                (< value (expt 2 origwidth))
-                                (posp finalwidth)
-                                (< origwidth finalwidth))))
-    (b* (;; Logbitp indexes from 0, so to get the most significant bit of an
-         ;; origwidth-wide constant, we get the {origwidth-1}th bit.
-         (msb (logbitp (1- origwidth) value))
-         ((unless msb)
-          ;; MSB is false; sign-extension is zero-extension, no value change.
-          value)
-         ;; Otherwise, MSB is true.  Add the appropriate number of 1s.
-         (finalwidth-many-ones (- (expt 2 finalwidth) 1))
-         (origwidth-many-ones  (- (expt 2 origwidth) 1))
-         (mask                 (logxor finalwidth-many-ones origwidth-many-ones))
-         (result               (logior mask value)))
-      result))
-
+  (b* ( ;; Logbitp indexes from 0, so to get the most significant bit of an
+       ;; origwidth-wide constant, we get the {origwidth-1}th bit.
+       (msb (logbitp (1- origwidth) value))
+       ((unless msb)
+        ;; MSB is false; sign-extension is zero-extension, no value change.
+        value)
+       ;; Otherwise, MSB is true.  Add the appropriate number of 1s.
+       (finalwidth-many-ones (- (expt 2 finalwidth) 1))
+       (origwidth-many-ones  (- (expt 2 origwidth) 1))
+       (mask                 (logxor finalwidth-many-ones origwidth-many-ones))
+       (result               (logior mask value)))
+    result)
+  ///
   (local
    (progn
 
@@ -2524,7 +2310,6 @@ and the final result is @('2').</p>"
 
 
 
-
 (defsection vl-weirdint-atom-expandsizes
   :parents (vl-expr-expandsizes)
   :short "Propagate the final width and type of an expression into a weird
@@ -2711,7 +2496,6 @@ that it deals with @(see vl-weirdint-p)s.</p>"
 
 
 
-
 (defsection vl-idatom-expandsizes
   :parents (vl-expr-expandsizes)
   :short "Propagate the final width and type of an expression into an
@@ -2882,7 +2666,6 @@ warnings x-prime)').</p>"
                     (force (equal ialist (vl-moditem-alist mod))))
                (equal (vl-expr->finaltype (mv-nth 2 ret))
                       finaltype)))))
-
 
 
 
@@ -5572,75 +5355,64 @@ the expression.</p>"
   :element vl-eventdecl-exprsize)
 
 
-
-(defsection vl-module-exprsize
+(define vl-module-exprsize ((x vl-module-p))
   :parents (expression-sizing)
+  :returns (new-x vl-module-p :hyp :fguard)
+  (b* (((when (vl-module->hands-offp x))
+        x)
 
-  (defund vl-module-exprsize (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((when (vl-module->hands-offp x))
-          x)
+       ((vl-module x) x)
+       (warnings  x.warnings)
 
-         ((vl-module x) x)
-         (warnings  x.warnings)
+       ((when x.paramdecls)
+        (b* ((w (make-vl-warning
+                 :type :vl-programming-error
+                 :msg "Trying to size module ~m0, which has parameters."
+                 :args (list x.name)
+                 :fatalp t
+                 :fn 'vl-module-exprsize)))
+          (change-vl-module x :warnings (cons w warnings))))
 
-         ((when x.paramdecls)
-          (b* ((w (make-vl-warning
-                   :type :vl-programming-error
-                   :msg "Trying to size module ~m0, which has parameters."
-                   :args (list x.name)
-                   :fatalp t
-                   :fn 'vl-module-exprsize)))
-            (change-vl-module x :warnings (cons w warnings))))
+       (ialist (vl-moditem-alist x))
 
-         (ialist (vl-moditem-alist x))
+       ((mv & warnings assigns)     (vl-assignlist-exprsize x.assigns x ialist warnings))
+       ((mv & warnings modinsts)    (vl-modinstlist-exprsize x.modinsts x ialist warnings))
+       ((mv & warnings gateinsts)   (vl-gateinstlist-exprsize x.gateinsts x ialist warnings))
+       ((mv & warnings alwayses)    (vl-alwayslist-exprsize x.alwayses x ialist warnings))
+       ((mv & warnings initials)    (vl-initiallist-exprsize x.initials x ialist warnings))
+       ((mv & warnings ports)       (vl-portlist-exprsize x.ports x ialist warnings))
+       ((mv & warnings portdecls)   (vl-portdecllist-exprsize x.portdecls x ialist warnings))
+       ((mv & warnings netdecls)    (vl-netdecllist-exprsize x.netdecls x ialist warnings))
+       ((mv & warnings regdecls)    (vl-regdecllist-exprsize x.regdecls x ialist warnings))
+       ((mv & warnings vardecls)   (vl-vardecllist-exprsize x.vardecls x ialist warnings))
+       ((mv & warnings eventdecls) (vl-eventdecllist-exprsize x.eventdecls x ialist warnings))
 
-         ((mv & warnings assigns)     (vl-assignlist-exprsize x.assigns x ialist warnings))
-         ((mv & warnings modinsts)    (vl-modinstlist-exprsize x.modinsts x ialist warnings))
-         ((mv & warnings gateinsts)   (vl-gateinstlist-exprsize x.gateinsts x ialist warnings))
-         ((mv & warnings alwayses)    (vl-alwayslist-exprsize x.alwayses x ialist warnings))
-         ((mv & warnings initials)    (vl-initiallist-exprsize x.initials x ialist warnings))
-         ((mv & warnings ports)       (vl-portlist-exprsize x.ports x ialist warnings))
-         ((mv & warnings portdecls)   (vl-portdecllist-exprsize x.portdecls x ialist warnings))
-         ((mv & warnings netdecls)    (vl-netdecllist-exprsize x.netdecls x ialist warnings))
-         ((mv & warnings regdecls)    (vl-regdecllist-exprsize x.regdecls x ialist warnings))
-         ((mv & warnings vardecls)   (vl-vardecllist-exprsize x.vardecls x ialist warnings))
-         ((mv & warnings eventdecls) (vl-eventdecllist-exprsize x.eventdecls x ialist warnings))
-
-         (- (fast-alist-free ialist))
-         )
-      (change-vl-module x
-                        :assigns assigns
-                        :modinsts modinsts
-                        :gateinsts gateinsts
-                        :alwayses alwayses
-                        :initials initials
-                        :ports ports
-                        :portdecls portdecls
-                        :netdecls netdecls
-                        :regdecls regdecls
-                        :vardecls vardecls
-                        :eventdecls eventdecls
-                        :warnings warnings)))
-
-  (local (in-theory (enable vl-module-exprsize)))
-
-  (defthm vl-module-p-of-vl-module-exprsize
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-exprsize x))))
-
-  (defthm vl-module->name-of-vl-module-exprsize
-    (equal (vl-module->name (vl-module-exprsize x))
-           (vl-module->name x))))
-
+       (- (fast-alist-free ialist))
+       )
+    (change-vl-module x
+                      :assigns assigns
+                      :modinsts modinsts
+                      :gateinsts gateinsts
+                      :alwayses alwayses
+                      :initials initials
+                      :ports ports
+                      :portdecls portdecls
+                      :netdecls netdecls
+                      :regdecls regdecls
+                      :vardecls vardecls
+                      :eventdecls eventdecls
+                      :warnings warnings)))
 
 (defprojection vl-modulelist-exprsize (x)
   (vl-module-exprsize x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :parents (expression-sizing)
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-exprsize
-     (equal (vl-modulelist->names (vl-modulelist-exprsize x))
-            (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-exprsize
+  :short "Top-level @(see expression-sizing) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-exprsize x.mods))))
 

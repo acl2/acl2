@@ -20,8 +20,8 @@
 ;                   Sol Swords <sswords@centtech.com>
 
 (in-package "STD")
-(include-book "defines")
-(include-book "deflist")
+(include-book "../defines")
+(include-book "../deflist")
 
 
 (defun foo (x)
@@ -62,6 +62,24 @@
     (if (zp x)
         nil
       (bool-evenp (- x 1)))))
+
+(local (xdoc::set-default-parents foo))
+
+(defines basic3
+;  :parents (hi)
+  :short "some dumb thing"
+  (define basic3 ((x natp))
+    :long "<p>goofy merged docs</p>"
+    :returns (evenp booleanp)
+    (if (zp x)
+        t
+      (basic3-oddp (- x 1))))
+  (define basic3-oddp (x)
+    :guard (natp x)
+    (if (zp x)
+        nil
+      (basic3 (- x 1)))))
+
 
 (defines spurious3
   (define my-oddp3 (x)

@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -73,6 +73,8 @@ vl-gateinst-dirassign), just because it is convenient.</li>
 
 </ul>")
 
+(local (xdoc::set-default-parents argresolve))
+
 
 (define vl-find-namedarg ((name stringp)
                           (args vl-namedarglist-p))
@@ -142,7 +144,7 @@ plainarg for it.</p>"
    (warnings "warnings accumulator"                           vl-warninglist-p)
    (inst     "just a context for warnings"                    vl-modinst-p))
   :returns (mv successp
-               (warnings vl-warninglist-p :hyp :fguard)
+               (warnings vl-warninglist-p)
                (new-x    vl-arguments-p   :hyp :fguard))
   :parents (argresolve)
   :short "Coerce arguments into plain (positional) style."
@@ -163,7 +165,7 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
 
        ((unless x.namedp)
         ;; Already uses plain arguments, nothing to do.
-        (mv t warnings x))
+        (mv t (ok) x))
 
        (formal-names   (vl-portlist->names ports))
        (actual-names   (vl-namedarglist->names x.args))
@@ -173,66 +175,57 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
        ((unless (vl-portlist-named-p ports))
         ;; BOZO do other Verilog tools tolerate this and just supply Zs
         ;; instead?  Maybe we should tolerate this, too.
-        (b* ((w (make-vl-warning
-                 :type :vl-bad-instance
-                 :msg "~a0 has named arguments, which is illegal since ~m1 ~
-                       has unnamed ports."
-                 :args (list inst inst.modname)
-                 :fatalp t
-                 :fn 'vl-convert-namedargs)))
-          (mv nil (cons w warnings) x)))
+        (mv nil
+            (fatal :type :vl-bad-instance
+                   :msg "~a0 has named arguments, which is illegal since ~m1 ~
+                         has unnamed ports."
+                   :args (list inst inst.modname))
+            x))
 
        ((unless (mbe :logic (uniquep actual-names)
                      :exec (same-lengthp actual-names sorted-actuals)))
-        (b* ((w (make-vl-warning
-                 :type :vl-bad-instance
-                 :msg "~a0 illegally has multiple connections for port~s1 ~&2."
-                 :args (let ((dupes (duplicated-members actual-names)))
-                         (list inst (if (vl-plural-p dupes) "s" "") dupes))
-                 :fatalp t
-                 :fn 'vl-convert-namedargs)))
-          (mv nil (cons w warnings) x)))
+        (mv nil
+            (fatal :type :vl-bad-instance
+                   :msg "~a0 illegally has multiple connections for port~s1 ~
+                         ~&2."
+                   :args (let ((dupes (duplicated-members actual-names)))
+                           (list inst (if (vl-plural-p dupes) "s" "") dupes)))
+            x))
 
        ((unless (subset sorted-actuals sorted-formals))
         ;; There are actuals that aren't formals, i.e., connections to "extra"
         ;; ports that don't exist in the module.  Seems like a pretty clear
         ;; error, and tools like Verilog-XL and NCVerilog reject it.
-        (b* ((extra (difference sorted-actuals sorted-formals))
-             (w     (make-vl-warning
-                     :type :vl-bad-instance
+        (b* ((extra (difference sorted-actuals sorted-formals)))
+          (mv nil
+              (fatal :type :vl-bad-instance
                      :msg "~a0 illegally connects to the following ~s1 in ~
                            ~m2: ~&3"
                      :args (list inst
                                  (if (vl-plural-p extra)
                                      "ports, which do not exist"
                                    "port, which does not exist")
-                                 inst.modname extra)
-                     :fatalp t
-                     :fn 'vl-convert-namedargs)))
-          (mv nil (cons w warnings) x)))
+                                 inst.modname extra))
+              x)))
 
        (warnings
         (if (subset sorted-formals sorted-actuals)
             ;; Every formal is connected, looking good...
-            warnings
+            (ok)
           ;; There are formals that aren't actuals, i.e., we don't have
           ;; connections to some ports.  Bad, bad.  But, we'll only issue a
           ;; NON-FATAL warning, because this is allowed by tools like
           ;; Verilog-XL and NCVerilog.
-          (b* ((missing (difference sorted-formals sorted-actuals))
-               (w       (make-vl-warning
-                         :type :vl-bad-instance
-                         :msg "~a0 omits the following ~s1 from ~m2: ~&3"
-                         :args (list inst
-                                     (if (vl-plural-p missing) "ports" "port")
-                                     inst.modname missing)
-                         :fatalp nil
-                         :fn 'vl-convert-namedargs)))
-            (cons w warnings))))
+          (b* ((missing (difference sorted-formals sorted-actuals)))
+            (warn :type :vl-bad-instance
+                  :msg "~a0 omits the following ~s1 from ~m2: ~&3"
+                  :args (list inst
+                              (if (vl-plural-p missing) "ports" "port")
+                              inst.modname missing)))))
 
        (plainargs (vl-convert-namedargs-aux x.args ports))
        (new-x     (vl-arguments nil plainargs)))
-    (mv t warnings new-x))
+    (mv t (ok) new-x))
 
   ///
   (defthm vl-arguments->named-of-vl-convert-namedargs
@@ -259,7 +252,6 @@ named arguments with missing ports, and only issue non-fatal warnings.</p>"
   (annotated-args "annotated version of @('args'), semantically equivalent
                    but typically has @(':dir') and @(':portname') information."
                   vl-plainarglist-p :hyp :fguard)
-  :parents (argresolve)
   :short "Annotates a plain argument list with port names and directions."
   :long "<p>This is a \"best-effort\" process which may fail to add annotations
 to any or all arguments.  Such failures are expected, so we do not generate any
@@ -319,8 +311,7 @@ for every port.</li>
                (same-lengthp args ports)))
    (inst  "just a context for warnings" vl-modinst-p)
    (warnings "warnings accumulator" vl-warninglist-p))
-  :returns (warnings vl-warninglist-p :hyp :fguard)
-  :parents (argresolve)
+  :returns (warnings vl-warninglist-p)
   :short "Warn about expressions connected to blank ports and for blanks
 connected to non-blank ports."
   :long "<p>Either of these situations is semantically well-formed and
@@ -329,31 +320,23 @@ and at least would seem to indicate a situation that could be optimized.  So,
 if we see either of these cases, we add a non-fatal warning explaining the
 problem.</p>"
   (b* (((when (atom args))
-        warnings)
+        (ok))
        (portexpr (vl-port->expr (car ports)))
        (argexpr  (vl-plainarg->expr (car args)))
        (warnings
         (if (and argexpr (not portexpr))
-            (cons (make-vl-warning
-                   :type :vl-warn-blank
-                   :msg "~a0 connects the expression ~a1 to the blank port at ~
-                         ~l2."
-                   :args (list inst argexpr (vl-port->loc (car ports)))
-                   :fatalp nil
-                   :fn 'vl-check-blankargs)
-                  warnings)
-          warnings))
+            (warn :type :vl-warn-blank
+                  :msg "~a0 connects the expression ~a1 to the blank port at ~
+                        ~l2."
+                  :args (list inst argexpr (vl-port->loc (car ports))))
+          (ok)))
        (warnings
         (if (and portexpr (not argexpr))
-            (cons (make-vl-warning
-                   :type :vl-warn-blank
-                   ;; BOZO linking doesn't quite work here for the foreign port.
-                   :msg "~a0 gives a blank expression for non-blank ~a1."
-                   :args (list inst (car ports))
-                   :fatalp nil
-                   :fn 'vl-check-blankargs)
-                  warnings)
-          warnings)))
+            (warn :type :vl-warn-blank
+                  ;; BOZO linking doesn't quite work here for the foreign port.
+                  :msg "~a0 gives a blank expression for non-blank ~a1."
+                  :args (list inst (car ports)))
+          (ok))))
     (vl-check-blankargs (cdr args) (cdr ports) inst warnings)))
 
 
@@ -366,9 +349,8 @@ problem.</p>"
    (warnings  "warnings accumulator" vl-warninglist-p)
    (inst      "just a context for error messages" vl-modinst-p))
   :returns
-  (mv (warnings vl-warninglist-p :hyp :fguard)
+  (mv (warnings vl-warninglist-p)
       (new-x    vl-arguments-p   :hyp :fguard))
-  :parents (argresolve)
   :short "Apply the @(see argresolve) transformation to some arguments."
   :long "<p>This wrapper is really the heart of the @(see argresolve)
 transform.  We convert @('x') into a plain argument list, do basic arity/blank
@@ -377,47 +359,40 @@ checking, and add direction/name annotations.</p>"
   (b* (((mv successp warnings x)
         (vl-convert-namedargs x ports warnings inst))
        ((unless successp)
-        (mv warnings x))
+        (mv (ok) x))
        (plainargs (vl-arguments->args x))
 
        ((unless (same-lengthp plainargs ports))
         (b* ((nports   (len ports))
-             (nargs    (len plainargs))
-             (w (make-vl-warning
-                 :type :vl-bad-instance
-                 ;; Wow this is hideous
-                 :msg "~a0 ~s1 ~x2 ~s3, but module ~m4 ~s5 ~x6 ~s7."
-                 :args (list inst
-                             (if (< nargs nports) "only has" "has")
-                             nargs
-                             (if (= nargs 1) "argument" "arguments")
-                             (vl-modinst->modname inst)
-                             (if (< nargs nports) "has" "only has")
-                             nports
-                             (if (= nports 1) "port" "ports"))
-                 :fatalp t
-                 :fn 'vl-arguments-argresolve)))
-          (mv (cons w warnings) x)))
-
+             (nargs    (len plainargs)))
+          (mv (fatal :type :vl-bad-instance
+                     ;; Wow this is hideous
+                     :msg "~a0 ~s1 ~x2 ~s3, but module ~m4 ~s5 ~x6 ~s7."
+                     :args (list inst
+                                 (if (< nargs nports) "only has" "has")
+                                 nargs
+                                 (if (= nargs 1) "argument" "arguments")
+                                 (vl-modinst->modname inst)
+                                 (if (< nargs nports) "has" "only has")
+                                 nports
+                                 (if (= nports 1) "port" "ports")))
+              x)))
        (warnings  (vl-check-blankargs plainargs ports inst warnings))
        (plainargs (vl-annotate-plainargs plainargs ports portdecls palist))
        (new-x     (vl-arguments nil plainargs)))
-    (mv warnings new-x)))
+    (mv (ok) new-x)))
 
 
 (define vl-modulelist-portdecl-alists ((x vl-modulelist-p))
-  :parents (argresolve)
   :short "Computes the @(see vl-portdecl-alist)s for a list of modules."
   :long "<p>@(call vl-modulelist-portdecl-alists) builds a fast alist
 associating each module name to its corresponding @(see vl-portdecl-alist).</p>"
-
   (if (atom x)
       nil
     (hons-acons (vl-module->name (car x))
                 (vl-portdecl-alist (vl-module->portdecls (car x)))
                 (vl-modulelist-portdecl-alists (cdr x))))
   ///
-
   (defthm hons-assoc-equal-of-vl-modulelist-portdecl-alists
     (implies
      (force (vl-modulelist-p x))
@@ -428,35 +403,29 @@ associating each module name to its corresponding @(see vl-portdecl-alist).</p>"
 
 
 (define vl-modinst-argresolve
+  :short "Resolve arguments in a @(see vl-modinst-p)."
   ((x        vl-modinst-p)
    (mods     vl-modulelist-p)
    (modalist (equal modalist (vl-modalist mods)))
    (mpalists (equal mpalists (vl-modulelist-portdecl-alists mods)))
    (warnings vl-warninglist-p))
   :returns
-  (mv (warnings vl-warninglist-p :hyp :fguard)
+  (mv (warnings vl-warninglist-p)
       (new-x    vl-modinst-p     :hyp :fguard))
-  :parents (argresolve)
-  :short "Resolve arguments in a @(see vl-modinst-p)."
-
   (b* (((vl-modinst x) x)
        (submod (vl-fast-find-module x.modname mods modalist))
        ((unless submod)
-        (b* ((w (make-vl-warning
-                 :type :vl-bad-instance
-                 :msg "~a0 refers to undefined module ~m1."
-                 :args (list x x.modname)
-                 :fatalp t
-                 :fn 'vl-modinst-argresolve)))
-          (mv (cons w warnings) x)))
-
+        (mv (fatal :type :vl-bad-instance
+                   :msg "~a0 refers to undefined module ~m1."
+                   :args (list x x.modname))
+            x))
        ((vl-module submod) submod)
        (palist    (cdr (hons-get x.modname mpalists)))
        ((mv warnings new-args)
         (vl-arguments-argresolve x.portargs submod.ports submod.portdecls
                                  palist warnings x))
        (new-x (change-vl-modinst x :portargs new-args)))
-    (mv warnings new-x)))
+    (mv (ok) new-x)))
 
 
 (define vl-modinstlist-argresolve
@@ -466,13 +435,13 @@ associating each module name to its corresponding @(see vl-portdecl-alist).</p>"
    (mpalists (equal mpalists (vl-modulelist-portdecl-alists mods)))
    (warnings vl-warninglist-p))
   :returns
-  (mv (warnings vl-warninglist-p :hyp :fguard)
+  (mv (warnings vl-warninglist-p)
       (new-x    vl-modinstlist-p :hyp :fguard))
   :parents (argresolve)
   :short "Resolve arguments in a @(see vl-modinstlist-p)."
 
   (b* (((when (atom x))
-        (mv warnings nil))
+        (mv (ok) nil))
        ((mv warnings car)
         (vl-modinst-argresolve (car x) mods modalist mpalists warnings))
        ((mv warnings cdr)
@@ -480,22 +449,43 @@ associating each module name to its corresponding @(see vl-portdecl-alist).</p>"
     (mv warnings (cons car cdr))))
 
 
+(define vl-plainarglist-assign-dir ((dir vl-direction-p)
+                                    (x   vl-plainarglist-p))
+  :parents (vl-gateinst-dirassign)
+  :returns (new-x vl-plainarglist-p :hyp :fguard)
+  :short "Assign DIR to every argument in the list X."
+  (if (atom x)
+      nil
+    (cons (change-vl-plainarg (car x) :dir dir)
+          (vl-plainarglist-assign-dir dir (cdr x)))))
 
-(defsection vl-gateinst-dirassign
-  :parents (argresolve)
+(define vl-plainarglist-assign-last-dir ((dir vl-direction-p)
+                                         (x vl-plainarglist-p))
+  :parents (vl-gateinst-dirassign)
+  :returns (new-x vl-plainarglist-p :hyp :fguard)
+  :short "Assign DIR to the last argument in the list X, leave the other
+          arguments unchanged."
+  (cond ((atom x)
+         nil)
+        ((atom (cdr x))
+         (list (change-vl-plainarg (car x) :dir dir)))
+        (t
+         (cons (car x)
+               (vl-plainarglist-assign-last-dir dir (cdr x))))))
+
+(define vl-gateinst-dirassign
   :short "Arity-checks a gate instance and annotates its arguments with their
-directions."
+          directions."
+  ((x        vl-gateinst-p)
+   (warnings vl-warninglist-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-x vl-gateinst-p :hyp (vl-gateinst-p x)
+                      "Semantically equivalent to @('x')."))
 
-  :long "<p><b>Signature:</b> @(call vl-gateinst-dirassign) returns @('(mv
-warnings x-prime)').</p>
-
-<p>We are given @('x'), a gate instance, and @('warnings'), an ordinary @(see
-warnings) accumulator.  We return a new gate instance, @('x-prime'), which is
-semantically equivalent to @('x').</p>
-
-<p>If @('x') is a well-formed gate instance, then no fatal warnings will be
-added and every argument of @('x-prime') will be given the correct @(':dir')
-annotation, following the rules in Chapter 7 of the Verilog specification.</p>
+  :long "<p>If @('x') is a well-formed gate instance, then no fatal warnings
+will be added and every argument of @('x-prime') will be given the correct
+@(':dir') annotation, following the rules in Chapter 7 of the Verilog-2005
+specification.</p>
 
 <p>If @('x') is a not well-formed (i.e., it has an improper arity), then it
 will be returned unchanged and a fatal warning will be added.</p>
@@ -503,296 +493,183 @@ will be returned unchanged and a fatal warning will be added.</p>
 <p>We also check for blank arguments in gates during this function.  BOZO this
 is convenient but isn't necessarily a very sensible place to do this.</p>"
 
-  (defund vl-plainarglist-assign-dir (dir x)
-    "Assign DIR to every argument in the list X."
-    (declare (xargs :guard (and (vl-direction-p dir)
-                                (vl-plainarglist-p x))))
-    (if (consp x)
-        (cons (change-vl-plainarg (car x) :dir dir)
-              (vl-plainarglist-assign-dir dir (cdr x)))
-      nil))
+  :verify-guards nil
 
-  (defthm vl-plainarglist-p-of-vl-plainarglist-assign-dir
-    (implies (and (force (vl-plainarglist-p x))
-                  (force (vl-direction-p dir)))
-             (vl-plainarglist-p (vl-plainarglist-assign-dir dir x)))
-    :hints(("Goal" :in-theory (enable vl-plainarglist-assign-dir))))
+  (b* (((vl-gateinst x) x)
+       (nargs (len x.args))
 
-  (defund vl-plainarglist-assign-last-dir (dir x)
-    "Assign DIR to the last argument in the list X.
-     Leave the other arguments unchanged."
-    (declare (xargs :guard (and (vl-direction-p dir)
-                                (vl-plainarglist-p x))))
-    (cond ((atom x)
-           nil)
-          ((atom (cdr x))
-           (list (change-vl-plainarg (car x) :dir dir)))
-          (t
-           (cons (car x)
-                 (vl-plainarglist-assign-last-dir dir (cdr x))))))
+       (warnings
+        (if (vl-plainarglist-blankfree-p x.args)
+            (ok)
+          (warn :type :vl-warn-blank-gateargs
+                :msg "~a0 has \"blank\" arguments; we treat these as ~
+                      unconnected wires, but other tools like Cadence's ~
+                      Verilog-XL simulator do not seem to support this."
+                :args (list x))))
 
-  (defthm vl-plainarglist-p-of-vl-plainarglist-assign-last-dir
-    (implies (and (force (vl-plainarglist-p x))
-                  (force (vl-direction-p dir)))
-             (vl-plainarglist-p (vl-plainarglist-assign-last-dir dir x)))
-    :hints(("Goal" :in-theory (enable vl-plainarglist-assign-last-dir))))
+       ((mv warnings args-prime)
+        (case x.type
 
+          ((:vl-and :vl-nand :vl-nor :vl-or :vl-xor :vl-xnor)
+           ;; Per Section 7.2 (Page 80), the first terminal is the output and
+           ;; the remaining terminals are inputs.
+           (if (< nargs 2)
+               (mv (fatal :type :vl-bad-gate
+                          :msg "~a0 has ~s1."
+                          :args (list x (if (= nargs 1)
+                                            "only one argument"
+                                          "no arguments")))
+                   x.args)
+             (mv (ok)
+                 (cons (change-vl-plainarg (car x.args) :dir :vl-output)
+                       (vl-plainarglist-assign-dir :vl-input (cdr x.args))))))
 
-  (defund vl-gateinst-dirassign (x warnings)
-    "Returns (MV WARNINGS X-PRIME)"
-    (declare (xargs :guard (and (vl-gateinst-p x)
-                                (vl-warninglist-p warnings))
-                    :verify-guards nil))
-
-    (b* (((vl-gateinst x) x)
-         (nargs (len x.args))
-
-         (warnings
-          (if (vl-plainarglist-blankfree-p x.args)
-              warnings
-            (cons (make-vl-warning
-                   :type :vl-warn-blank-gateargs
-                   :msg "~a0 has \"blank\" arguments; we treat these as ~
-                         unconnected wires, but other tools like Cadence's ~
-                         Verilog-XL simulator do not seem to support this."
-                   :args (list x)
-                   :fatalp nil
-                   :fn 'vl-gateinst-dirassign)
-                  warnings)))
-
-         ((mv warnings args-prime)
-          (case x.type
-
-            ((:vl-and :vl-nand :vl-nor :vl-or :vl-xor :vl-xnor)
-             ;; Per Section 7.2 (Page 80), the first terminal is the output and
-             ;; the remaining terminals are inputs.
-             (if (< nargs 2)
-                 (mv (cons (make-vl-warning :type :vl-bad-gate
-                                            :msg "~a0 has ~s1."
-                                            :args (list x (if (= nargs 1)
-                                                              "only one argument"
-                                                            "no arguments"))
-                                            :fatalp t
-                                            :fn 'vl-gateinst-dirassign)
-                           warnings)
-                     x.args)
-               (mv warnings
-                   (cons (change-vl-plainarg (car x.args) :dir :vl-output)
-                         (vl-plainarglist-assign-dir :vl-input (cdr x.args))))))
+          ((:vl-buf :vl-not)
+           ;; Per Section 7.3 (Page 81), the last terminal is the input and
+           ;; every other terminal is an output.
+           (if (< nargs 2)
+               (mv (fatal :type :vl-bad-gate
+                          :msg "~a0 has ~s1."
+                          :args (list x (if (= nargs 1)
+                                            "only one argument"
+                                          "no arguments")))
+                   x.args)
+             (mv (ok)
+                 (vl-plainarglist-assign-last-dir
+                  :vl-input
+                  (vl-plainarglist-assign-dir :vl-output x.args)))))
 
 
-            ((:vl-buf :vl-not)
-             ;; Per Section 7.3 (Page 81), the last terminal is the input and
-             ;; every other terminal is an output.
-             (if (< nargs 2)
-                 (mv (cons (make-vl-warning :type :vl-bad-gate
-                                            :msg "~a0 has ~s1."
-                                            :args (list x (if (= nargs 1)
-                                                              "only one argument"
-                                                            "no arguments"))
-                                            :fatalp t
-                                            :fn 'vl-gateinst-dirassign)
-                           warnings)
-                     x.args)
-               (mv warnings
-                   (vl-plainarglist-assign-last-dir
-                    :vl-input
-                    (vl-plainarglist-assign-dir :vl-output x.args)))))
+          ((:vl-bufif0 :vl-bufif1 :vl-notif0 :vl-notif1
+                       :vl-nmos :vl-pmos :vl-rnmos :vl-rpmos)
+
+           ;; Per Section 7.4 (page 82), bufif0..notif1 have exactly three terminals,
+           ;; which are output, data in, control in.
+
+           ;; Per Section 7.5 (page 84), nmos..rpmos also have exactly three terminals,
+           ;; which are output, data in, and control in.
+
+           (if (/= nargs 3)
+               (mv (fatal :type :vl-bad-gate
+                          :msg "~a0 has ~x1 argument~s2, but must have ~
+                                exactly 3 arguments."
+                          :args (list x nargs (if (= nargs 1) "s" "")))
+                   x.args)
+             (mv (ok)
+                 (cons (change-vl-plainarg (car x.args) :dir :vl-output)
+                       (vl-plainarglist-assign-dir :vl-input (cdr x.args))))))
 
 
-            ((:vl-bufif0 :vl-bufif1 :vl-notif0 :vl-notif1
-                         :vl-nmos :vl-pmos :vl-rnmos :vl-rpmos)
+          ((:vl-tranif1 :vl-tranif0 :vl-rtranif1 :vl-rtranif0)
 
-             ;; Per Section 7.4 (page 82), bufif0..notif1 have exactly three terminals,
-             ;; which are output, data in, control in.
+           ;; Per Section 7.6 (page 85), tranif1..rtranif0 have three terminals.
+           ;; the first two are inout, and the last is control in.
 
-             ;; Per Section 7.5 (page 84), nmos..rpmos also have exactly three terminals,
-             ;; which are output, data in, and control in.
-
-             (if (/= nargs 3)
-                 (mv (cons (make-vl-warning
-                            :type :vl-bad-gate
-                            :msg "~a0 has ~x1 argument~s2, but must have exactly 3 ~
-                                  arguments."
-                            :args (list x nargs (if (= nargs 1) "s" ""))
-                            :fatalp t
-                            :fn 'vl-gateinst-dirassign)
-                           warnings)
-                     x.args)
-               (mv warnings
-                   (cons (change-vl-plainarg (car x.args) :dir :vl-output)
-                         (vl-plainarglist-assign-dir :vl-input (cdr x.args))))))
+           (if (/= nargs 3)
+               (mv (fatal :type :vl-bad-gate
+                          :msg "~a0 has ~x1 argument~s2, but must have ~
+                                exactly 3 arguments."
+                          :args (list x nargs (if (= nargs 1) "s" "")))
+                   x.args)
+             (mv (ok)
+                 (list (change-vl-plainarg (first x.args) :dir :vl-inout)
+                       (change-vl-plainarg (second x.args) :dir :vl-inout)
+                       (change-vl-plainarg (third x.args) :dir :vl-input)))))
 
 
-            ((:vl-tranif1 :vl-tranif0 :vl-rtranif1 :vl-rtranif0)
+          ((:vl-tran :vl-rtran)
 
-             ;; Per Section 7.6 (page 85), tranif1..rtranif0 have three terminals.
-             ;; the first two are inout, and the last is control in.
+           ;; Per Section 7.6 (page 85), tran and rtran have two terminals, both of
+           ;; which are inouts.
 
-             (if (/= nargs 3)
-                 (mv (cons (make-vl-warning
-                            :type :vl-bad-gate
-                            :msg "~a0 has ~x1 argument~s2, but must have exactly 3 ~
-                                  arguments."
-                            :args (list x nargs (if (= nargs 1) "s" ""))
-                            :fatalp t
-                            :fn 'vl-gateinst-dirassign)
-                           warnings)
-                     x.args)
-               (mv warnings
-                   (list (change-vl-plainarg (first x.args) :dir :vl-inout)
-                         (change-vl-plainarg (second x.args) :dir :vl-inout)
-                         (change-vl-plainarg (third x.args) :dir :vl-input)))))
+           (if (/= nargs 2)
+               (mv (fatal :type :vl-bad-gate
+                          :msg "~a0 has ~x1 argument~s2, but must have ~
+                                exactly 2 arguments."
+                          :args (list x nargs (if (= nargs 1) "s" "")))
+                   x.args)
+             (mv (ok)
+                 (list (change-vl-plainarg (first x.args) :dir :vl-inout)
+                       (change-vl-plainarg (second x.args) :dir :vl-inout)))))
 
 
-            ((:vl-tran :vl-rtran)
+          ((:vl-cmos :vl-rcmos)
 
-             ;; Per Section 7.6 (page 85), tran and rtran have two terminals, both of
-             ;; which are inouts.
+           ;; Per Section 7.7 (page 85), cmos and rcmos have four terminals:
+           ;; data out, data in, n-channel control in, p-channel control in.
+           ;; It's kind of weird that data-in and data-out aren't inouts.
 
-             (if (/= nargs 2)
-                 (mv (cons (make-vl-warning
-                            :type :vl-bad-gate
-                            :msg "~a0 has ~x1 argument~s2, but must have exactly 2 ~
-                                  arguments."
-                            :args (list x nargs (if (= nargs 1) "s" ""))
-                            :fatalp t
-                            :fn 'vl-gateinst-dirassign)
-                           warnings)
-                     x.args)
-               (mv warnings
-                   (list (change-vl-plainarg (first x.args) :dir :vl-inout)
-                         (change-vl-plainarg (second x.args) :dir :vl-inout)))))
-
-
-            ((:vl-cmos :vl-rcmos)
-
-             ;; Per Section 7.7 (page 85), cmos and rcmos have four terminals:
-             ;; data out, data in, n-channel control in, p-channel control in.
-             ;; It's kind of weird that data-in and data-out aren't inouts.
-
-             (if (/= nargs 4)
-                 (mv (cons (make-vl-warning
-                            :type :vl-bad-gate
-                            :msg "~a0 has ~x1 argument~s2, but must have exactly 4 ~
-                                  arguments."
-                            :args (list x nargs (if (= nargs 1) "s" ""))
-                            :fatalp t
-                            :fn 'vl-gateinst-dirassign)
-                           warnings)
-                     x.args)
-               (mv warnings
-                   (list (change-vl-plainarg (first x.args) :dir :vl-output)
-                         (change-vl-plainarg (second x.args) :dir :vl-input)
-                         (change-vl-plainarg (third x.args) :dir :vl-input)
-                         (change-vl-plainarg (fourth x.args) :dir :vl-input)))))
+           (if (/= nargs 4)
+               (mv (fatal :type :vl-bad-gate
+                          :msg "~a0 has ~x1 argument~s2, but must have ~
+                                exactly 4 arguments."
+                          :args (list x nargs (if (= nargs 1) "s" "")))
+                   x.args)
+             (mv (ok)
+                 (list (change-vl-plainarg (first x.args) :dir :vl-output)
+                       (change-vl-plainarg (second x.args) :dir :vl-input)
+                       (change-vl-plainarg (third x.args) :dir :vl-input)
+                       (change-vl-plainarg (fourth x.args) :dir :vl-input)))))
 
 
-            ((:vl-pullup :vl-pulldown)
+          ((:vl-pullup :vl-pulldown)
 
-             ;; Per Section 7.8 (page 86), pullup and pulldown just emit 0/1
-             ;; on any connected terminals.  I think this means all the terminals
-             ;; are effectively outputs.
+           ;; Per Section 7.8 (page 86), pullup and pulldown just emit 0/1
+           ;; on any connected terminals.  I think this means all the terminals
+           ;; are effectively outputs.
 
-             (mv warnings (vl-plainarglist-assign-dir :vl-output x.args)))
+           (mv (ok) (vl-plainarglist-assign-dir :vl-output x.args)))
 
 
-            (otherwise
-             (prog2$ (er hard 'vl-gateinst-dirassign "Impossible")
-                     (mv warnings x.args)))))
+          (otherwise
+           (progn$ (impossible)
+                   (mv (ok) x.args)))))
 
-         (x-prime (change-vl-gateinst x :args args-prime)))
+       (x-prime (change-vl-gateinst x :args args-prime)))
 
-        (mv warnings x-prime)))
-
-  (local (in-theory (enable vl-gateinst-dirassign)))
-
+    (mv (ok) x-prime))
+  ///
   (verify-guards vl-gateinst-dirassign
                  :hints(("Goal"
                          :in-theory (e/d (vl-gatetype-p)
                                          (return-type-of-vl-gateinst->type))
-                         :use ((:instance return-type-of-vl-gateinst->type)))))
-
-  (defthm vl-warninglist-p-of-vl-gateinst-dirassign
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p (mv-nth 0 (vl-gateinst-dirassign x warnings))))
-    :hints(("Goal" :in-theory (disable (force)))))
-
-  (defthm vl-gateinst-p-of-vl-gateinst-dirassign
-    (implies (force (vl-gateinst-p x))
-             (vl-gateinst-p (mv-nth 1 (vl-gateinst-dirassign x warnings))))))
+                         :use ((:instance return-type-of-vl-gateinst->type))))))
 
 
-
-(defsection vl-gateinstlist-dirassign
-  :parents (argresolve)
+(define vl-gateinstlist-dirassign
   :short "Projects @(see vl-gateinst-dirassign) across a list of @(see
 vl-gateinst-p)s."
+  ((x        vl-gateinstlist-p)
+   (warnings vl-warninglist-p))
+  :returns (mv (warnings vl-warninglist-p)
+               (new-x vl-gateinstlist-p :hyp (vl-gateinstlist-p x)))
+  (b* (((when (atom x))
+        (mv (ok) nil))
+       ((mv warnings car-prime) (vl-gateinst-dirassign (car x) warnings))
+       ((mv warnings cdr-prime) (vl-gateinstlist-dirassign (cdr x) warnings)))
+    (mv warnings (cons car-prime cdr-prime))))
 
-  (defund vl-gateinstlist-dirassign (x warnings)
-    "Returns (MV WARNINGS-PRIME X-PRIME)"
-    (declare (xargs :guard (and (vl-gateinstlist-p x)
-                                (vl-warninglist-p warnings))))
-    (if (atom x)
-        (mv warnings nil)
-      (b* (((mv warnings car-prime) (vl-gateinst-dirassign (car x) warnings))
-           ((mv warnings cdr-prime) (vl-gateinstlist-dirassign (cdr x) warnings)))
-          (mv warnings (cons car-prime cdr-prime)))))
-
-  (local (in-theory (enable vl-gateinstlist-dirassign)))
-
-  (defthm vl-warninglist-p-of-vl-gateinstlist-dirassign
-    (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p (mv-nth 0 (vl-gateinstlist-dirassign x warnings)))))
-
-  (defthm vl-gateinstlist-p-of-vl-gateinstlist-dirassign
-    (implies (force (vl-gateinstlist-p x))
-             (vl-gateinstlist-p (mv-nth 1 (vl-gateinstlist-dirassign x warnings))))))
-
-
-
-(defsection vl-module-argresolve
-  :parents (argresolve)
+(define vl-module-argresolve
   :short "Apply the @(see argresolve) transformation to a @(see vl-module-p)."
-
-  :long "<p><b>Signature:</b> @(call vl-module-argresolve) returns
-@('x-prime').</p>
-
-<p>This is just glue-code to apply @(see vl-modinst-argresolve) to all of the
-module instances, and @(see vl-gateinst-dirassign) to all of the gate instances
-in the module.</p>"
-
-  (defund vl-module-argresolve (x mods modalist mpalists)
-    (declare (xargs :guard (and (vl-module-p x)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods))
-                                (equal mpalists (vl-modulelist-portdecl-alists mods)))))
-    (b* (((when (vl-module->hands-offp x))
-          x)
-         (warnings (vl-module->warnings x))
-         ((mv warnings modinsts)
-          (vl-modinstlist-argresolve (vl-module->modinsts x) mods modalist mpalists warnings))
-         ((mv warnings gateinsts)
-          (vl-gateinstlist-dirassign (vl-module->gateinsts x) warnings)))
-      (change-vl-module x
-                        :warnings warnings
-                        :modinsts modinsts
-                        :gateinsts gateinsts)))
-
-  (local (in-theory (enable vl-module-argresolve)))
-
-  (defthm vl-module-p-of-vl-module-argresolve
-    (implies (and (force (vl-module-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods)))
-                  (force (equal mpalists (vl-modulelist-portdecl-alists mods))))
-             (vl-module-p (vl-module-argresolve x mods modalist mpalists))))
-
-  (defthm vl-module->name-of-vl-module-argresolve
-    (equal (vl-module->name (vl-module-argresolve x mods modalist mpalists))
-           (vl-module->name x))))
-
-
+  :long "<p>This is just glue-code to apply @(see vl-modinst-argresolve) to all
+of the module instances, and @(see vl-gateinst-dirassign) to all of the gate
+instances in the module.</p>"
+  ((x        vl-module-p)
+   (mods     vl-modulelist-p)
+   (modalist (equal modalist (vl-modalist mods)))
+   (mpalists (equal mpalists (vl-modulelist-portdecl-alists mods))))
+  :returns (new-x vl-module-p :hyp :fguard)
+  (b* (((when (vl-module->hands-offp x))
+        x)
+       (warnings (vl-module->warnings x))
+       ((mv warnings modinsts)
+        (vl-modinstlist-argresolve (vl-module->modinsts x) mods modalist mpalists warnings))
+       ((mv warnings gateinsts)
+        (vl-gateinstlist-dirassign (vl-module->gateinsts x) warnings)))
+    (change-vl-module x
+                      :warnings warnings
+                      :modinsts modinsts
+                      :gateinsts gateinsts)))
 
 (defprojection vl-modulelist-argresolve-aux (x mods modalist mpalists)
   (vl-module-argresolve x mods modalist mpalists)
@@ -800,46 +677,30 @@ in the module.</p>"
               (vl-modulelist-p mods)
               (equal modalist (vl-modalist mods))
               (equal mpalists (vl-modulelist-portdecl-alists mods)))
-  :result-type vl-modulelist-p
-  :parents (argresolve)
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-argresolve-aux
-     (equal (vl-modulelist->names
-             (vl-modulelist-argresolve-aux x mods modalist mpalists))
-            (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
 
-
-
-(defsection vl-modulelist-argresolve
-  :parents (argresolve)
-  :short "Top-level @(see argresolve) transformation for a list of modules."
-
-  :long "<p><b>Signature:</b> @(call vl-modulelist-argresolve) returns a module
-list.</p>
-
-<p>All of the real work is done by @(see vl-modulelist-argresolve-aux).  This
+(define vl-modulelist-argresolve
+  :short "Apply @(see argresolve) to a list of modules."
+  ((x vl-modulelist-p))
+  :returns (new-x vl-modulelist-p :hyp :fguard)
+  :long "<p>The real work is done by @(see vl-modulelist-argresolve-aux).  This
 function is just a wrapper that builds a @(see vl-modalist) for fast module
 lookups and also pre-compute the @(see vl-portdecl-alist)s for all modules
 using @(see vl-modulelist-portdecl-alists).</p>"
 
-  (defund vl-modulelist-argresolve (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (b* ((modalist (vl-modalist x))
-         (mpalists (vl-modulelist-portdecl-alists x))
-         (result   (vl-modulelist-argresolve-aux x x modalist mpalists)))
-      (fast-alist-free modalist)
-      (fast-alist-free mpalists)
-      (fast-alist-free-each-alist-val mpalists)
-      result))
+  (b* ((modalist (vl-modalist x))
+       (mpalists (vl-modulelist-portdecl-alists x))
+       (result   (vl-modulelist-argresolve-aux x x modalist mpalists)))
+    (fast-alist-free modalist)
+    (fast-alist-free mpalists)
+    (fast-alist-free-each-alist-val mpalists)
+    result))
 
-  (local (in-theory (enable vl-modulelist-argresolve)))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-argresolve
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-argresolve x))))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-argresolve
-    (equal (vl-modulelist->names (vl-modulelist-argresolve x))
-           (vl-modulelist->names x))))
-
+(define vl-design-argresolve
+  :short "Top-level @(see argresolve) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-argresolve x.mods))))
 

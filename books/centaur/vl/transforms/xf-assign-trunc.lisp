@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -25,7 +25,6 @@
 (include-book "../mlib/welltyped")
 (include-book "../mlib/delta")
 (local (include-book "../util/arithmetic"))
-
 
 (defxdoc trunc
   :parents (transforms)
@@ -61,16 +60,16 @@ with something like:</p>
 <p>where @('trunc_12345') is a fresh variable name.  All of the resulting
 assignments are between lvalues and expressions that agree.</p>")
 
+(local (xdoc::set-default-parents trunc))
+
 (define vl-make-chopped-id
+  :short "Generate the expression to truncate a wire."
   ((name "name of an unsigned wire to be truncated" stringp)
    (name-width "width of @('name')" posp)
    (trunc-width "width to truncate to" posp))
   :guard (< trunc-width name-width)
   :returns (expr "expression like @('name[truncwidth-1:0]')"
                  vl-expr-p :hyp :fguard)
-  :parents (trunc)
-  :short "Generate the expression to truncate a wire."
-
   :long "<p>We require that @('trunc-width') is strictly less than @('width').
 We return the expression to truncate @('name') down to this new
 @('trunc-width'), with all of the intermediate widths set up correctly.</p>"
@@ -80,7 +79,7 @@ We return the expression to truncate @('name') down to this new
        (zero      (vl-make-index 0))
        ;; The goal is to make the expression name[left:zero].
 
-       ((when (int= trunc-width 1))
+       ((when (eql trunc-width 1))
         ;; We can use a bitselect instead of name[0:0].  By our guard, 1 <
         ;; name-width, so there is no chance to further simplify this to
         ;; simply "name".
@@ -98,18 +97,16 @@ We return the expression to truncate @('name') down to this new
 
 
 (define vl-truncate-constint
+  :short "Special routine for truncating ordinary, unsigned constant integers,
+without introducing temporary wires."
   ((n "width to truncate down to" posp)
    (x "resolved, unsigned, constant integer expression to truncate"
       (and (vl-atom-p x)
            (vl-expr-welltyped-p x)
            (vl-constint-p (vl-atom->guts x))
            (equal (vl-expr->finaltype x) :vl-unsigned))))
-  :returns chopped-expr
   :guard (< n (vl-expr->finalwidth x))
-  :parents (trunc)
-  :short "Special routine for truncating ordinary, unsigned constant integers,
-without introducing temporary wires."
-
+  :returns chopped-expr
   :long "<p>We can truncate resolved constants by just creating a new constant
 that has its width and value chopped down to size.</p>"
 
@@ -130,9 +127,7 @@ that has its width and value chopped down to size.</p>"
                              vl-expr-welltyped-p
                              vl-expr->finalwidth
                              vl-expr->finaltype))))
-
   ///
-
   (defthm vl-truncate-constint-basics
     (implies (and (force (posp n))
                   (force (vl-atom-p x))
@@ -147,6 +142,8 @@ that has its width and value chopped down to size.</p>"
 
 
 (define vl-truncate-weirdint
+  :short "Special routine for truncating unsigned weirdint literals without
+introducing temporary wires."
   ((n "width to truncate down to" posp)
    (x "unsigned @(see vl-weirdint-p) to truncate"
       (and (vl-atom-p x)
@@ -155,13 +152,8 @@ that has its width and value chopped down to size.</p>"
            (equal (vl-expr->finaltype x) :vl-unsigned))))
   :guard (< n (vl-expr->finalwidth x))
   :returns chopped-expr
-  :parents (trunc)
-  :short "Special routine for truncating unsigned weirdint literals without
-introducing temporary wires."
-
   :long "<p>We can truncate a weirdint by just creating a new weirdint that has
 its width reduced and that drops the chopped off bits.</p>"
-
   (b* ((guts      (vl-atom->guts x))
        ((vl-weirdint guts) guts)
        (bits-chop (nthcdr (- guts.origwidth n)
@@ -177,9 +169,7 @@ its width reduced and that drops the chopped off bits.</p>"
   :prepwork
   ((local (in-theory (enable vl-atom-welltyped-p vl-expr-welltyped-p
                              vl-expr->finalwidth vl-expr->finaltype))))
-
   ///
-
   (defthm vl-truncate-weirdint-basics
     (implies (and (force (posp n))
                   (force (vl-atom-p x))
@@ -193,14 +183,12 @@ its width reduced and that drops the chopped off bits.</p>"
                   (vl-expr-welltyped-p (vl-truncate-weirdint n x))))))
 
 
-
-(define vl-assign-trunc ((x vl-assign-p)
-                         (delta vl-delta-p))
+(define vl-assign-trunc
+  :short "Make any implicit truncation in an assignment explicit."
+  ((x vl-assign-p)
+   (delta vl-delta-p))
   :returns (mv (assign vl-assign-p :hyp :fguard)
                (delta  vl-delta-p  :hyp :fguard))
-  :parents (trunc)
-  :short "Make any implicit truncation in an assignment explicit."
-
   (b* (((vl-assign x) x)
 
        (lhsw (vl-expr->finalwidth x.lvalue))
@@ -283,20 +271,16 @@ its width reduced and that drops the chopped off bits.</p>"
                           :atts (acons (cat "TRUNC_" (natstr lhsw)) nil x.atts))))
     (mv x-prime delta)))
 
-
-
 (define vl-assignlist-trunc ((x vl-assignlist-p)
                              (delta vl-delta-p))
   :returns (mv (assigns vl-assignlist-p :hyp :fguard)
                (detla   vl-delta-p      :hyp :fguard))
-  :parents (trunc)
 
   (b* (((when (atom x))
         (mv nil delta))
        ((mv car delta) (vl-assign-trunc (car x) delta))
        ((mv cdr delta) (vl-assignlist-trunc (cdr x) delta)))
     (mv (cons car cdr) delta)))
-
 
 (define vl-assign-can-skip-trunc-p ((x vl-assign-p))
   :inline t
@@ -311,10 +295,8 @@ its width reduced and that drops the chopped off bits.</p>"
       (and (vl-assign-can-skip-trunc-p (car x))
            (vl-assignlist-can-skip-trunc-p (cdr x)))))
 
-
 (define vl-module-trunc ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
-  :parents (trunc)
   :short "Eliminate implicit truncations in assignments throughout a module."
 
   (b* (((vl-module x) x)
@@ -343,9 +325,7 @@ its width reduced and that drops the chopped off bits.</p>"
                       ;; The starting delta include's the former warnings for X,
                       ;; so the delta's warnings are fine.
                       :warnings delta.warnings))
-
   ///
-
   (defthm vl-module->name-of-vl-module-trunc
     (equal (vl-module->name (vl-module-trunc x))
            (vl-module->name x))))
@@ -354,9 +334,12 @@ its width reduced and that drops the chopped off bits.</p>"
 (defprojection vl-modulelist-trunc (x)
   (vl-module-trunc x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :parents (trunc)
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-trunc
-     (equal (vl-modulelist->names (vl-modulelist-trunc x))
-            (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-trunc
+  :short "Top-level @(see trunc) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-trunc x.mods))))

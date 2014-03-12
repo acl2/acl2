@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,7 +21,6 @@
 (in-package "VL")
 (include-book "../mlib/range-tools")
 (local (include-book "../util/arithmetic"))
-
 
 (defsection expression-optimization
   :parents (transforms)
@@ -143,183 +142,94 @@ rewritten, split up, simplified tree.</p>
     (otherwise
      nil)))
 
-(defsection vl-expr-optimize
+(defines vl-expr-optimize
   :short "Optimize sub-expressions throughout an expression."
   :long "<p>The use of @('changedp') is only to avoid re-consing expressions
   that aren't being optimized.</p>"
 
-  (mutual-recursion
+  (define vl-expr-optimize
+    ((x      vl-expr-p)
+     (mod    vl-module-p)
+     (ialist (equal ialist (vl-moditem-alist mod))))
+    :returns (mv (changedp booleanp :rule-classes :type-prescription)
+                 (new-x    vl-expr-p :hyp :fguard))
+    :verify-guards nil
+    :measure (two-nats-measure (acl2-count x) 1)
+    (b* (((when (vl-fast-atom-p x))
+          (mv nil x))
+         (op                            (vl-nonatom->op x))
+         (args                          (vl-nonatom->args x))
+         ((mv args-changedp args-prime) (vl-exprlist-optimize args mod ialist))
+         (candidate                     (vl-op-optimize op args-prime mod ialist))
+         ((when candidate)
+          (mv t candidate))
+         ((when args-changedp)
+          (mv t (change-vl-nonatom x :args args-prime))))
+      (mv nil x)))
 
-   (defund vl-expr-optimize (x mod ialist)
-     "Returns (MV CHANGEDP X-PRIME)"
-     (declare (xargs :guard (and (vl-expr-p x)
-                                 (vl-module-p mod)
-                                 (equal ialist (vl-moditem-alist mod)))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (if (vl-fast-atom-p x)
-         (mv nil x)
-       (b* ((op                            (vl-nonatom->op x))
-            (args                          (vl-nonatom->args x))
-            ((mv args-changedp args-prime) (vl-exprlist-optimize args mod ialist))
-            (candidate                     (vl-op-optimize op args-prime mod ialist)))
-         (cond (candidate
-                (mv t candidate))
-               (args-changedp
-                (mv t (change-vl-nonatom x :args args-prime)))
-               (t
-                (mv nil x))))))
-
-   (defund vl-exprlist-optimize (x mod ialist)
-     "Returns (MV CHANGEDP X-PRIME)"
-     (declare (xargs :guard (and (vl-exprlist-p x)
-                                 (vl-module-p mod)
-                                 (equal ialist (vl-moditem-alist mod)))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (atom x)
-         (mv nil nil)
-       (b* (((mv car-changedp car-prime) (vl-expr-optimize (car x) mod ialist))
-            ((mv cdr-changedp cdr-prime) (vl-exprlist-optimize (cdr x) mod ialist)))
-         (mv (or car-changedp cdr-changedp)
-             (cons car-prime cdr-prime))))))
-
-  (defthm vl-exprlist-optimize-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-exprlist-optimize x mod ialist)
-                    (mv nil nil)))
-    :hints(("Goal" :in-theory (enable vl-exprlist-optimize))))
-
-  (defthm vl-exprlist-optimize-of-cons
-    (equal (vl-exprlist-optimize (cons a x) mod ialist)
-           (b* (((mv car-changedp car-prime) (vl-expr-optimize a mod ialist))
-                ((mv cdr-changedp cdr-prime) (vl-exprlist-optimize x mod ialist)))
-             (mv (or car-changedp cdr-changedp)
-                 (cons car-prime cdr-prime))))
-    :hints(("Goal" :in-theory (enable vl-exprlist-optimize))))
-
-  (defthm true-listp-of-vl-exprlist-optimize
-    (true-listp (mv-nth 1 (vl-exprlist-optimize x mod ialist)))
-    :rule-classes :type-prescription
-    :hints(("Goal" :induct (len x))))
-
-  (defthm len-of-vl-exprlist-optimize
-    (equal (len (mv-nth 1 (vl-exprlist-optimize x mod ialist)))
-           (len x))
-    :hints(("Goal" :induct (len x))))
-
-  (encapsulate
-    ()
-    (local (defthm lemma
-             (case flag
-               (expr (implies (and (vl-expr-p x)
-                                   (vl-module-p mod)
-                                   (equal ialist (vl-moditem-alist mod)))
-                              (vl-expr-p (mv-nth 1 (vl-expr-optimize x mod ialist)))))
-               (atts t)
-               (t (implies (and (vl-exprlist-p x)
-                                (vl-module-p mod)
-                                (equal ialist (vl-moditem-alist mod)))
-                           (vl-exprlist-p (mv-nth 1 (vl-exprlist-optimize x mod ialist))))))
-             :rule-classes nil
-             :hints(("Goal"
-                     :induct (vl-expr-induct flag x)
-                     :expand ((vl-expr-optimize x mod ialist))))))
-
-    (defthm vl-expr-p-of-vl-expr-optimize
-      (implies (and (force (vl-expr-p x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
-               (vl-expr-p (mv-nth 1 (vl-expr-optimize x mod ialist))))
-      :hints(("Goal" :use ((:instance lemma (flag 'expr))))))
-
-    (defthm vl-exprlist-p-of-vl-exprlist-optimize
-      (implies (and (force (vl-exprlist-p x))
-                    (force (vl-module-p mod))
-                    (force (equal ialist (vl-moditem-alist mod))))
-               (vl-exprlist-p (mv-nth 1 (vl-exprlist-optimize x mod ialist))))
-      :hints(("Goal" :use ((:instance lemma (flag 'list)))))))
-
-  (verify-guards vl-expr-optimize
-    :hints(("Goal" :in-theory (enable vl-expr-optimize)))))
-
-
+  (define vl-exprlist-optimize
+    ((x      vl-exprlist-p)
+     (mod    vl-module-p)
+     (ialist (equal ialist (vl-moditem-alist mod))))
+    :returns
+    (mv (changedp booleanp :rule-classes :type-prescription)
+        (new-x    (and (implies (and (force (vl-exprlist-p x))
+                                     (force (vl-module-p mod))
+                                     (force (equal ialist (vl-moditem-alist mod))))
+                                (vl-exprlist-p new-x))
+                       (equal (len new-x) (len x)))))
+    :measure (two-nats-measure (acl2-count x) 0)
+    (b* (((when (atom x))
+          (mv nil nil))
+         ((mv car-changedp car-prime) (vl-expr-optimize (car x) mod ialist))
+         ((mv cdr-changedp cdr-prime) (vl-exprlist-optimize (cdr x) mod ialist)))
+      (mv (or car-changedp cdr-changedp)
+          (cons car-prime cdr-prime))))
+  ///
+  (verify-guards vl-expr-optimize))
 
 (defmacro def-vl-optimize (name type body)
-  `(defsection ,name
-     :short ,(cat "Optimize expressions throughout a @(see "
-                  (symbol-name type) ").")
-     (defund ,name (x mod ialist)
-       "Returns (MV CHANGEDP X-PRIME)"
-       (declare (xargs :guard (and (,type x)
-                                   (vl-module-p mod)
-                                   (equal ialist (vl-moditem-alist mod))))
-                (ignorable x mod ialist))
-       ,body)
-
-     (local (in-theory (enable ,name)))
-
-     (defthm ,(intern-in-package-of-symbol
-               (cat (symbol-name type) "-OF-" (symbol-name name))
-               name)
-       (implies (and (force (,type x))
-                     (force (vl-module-p mod))
-                     (force (equal ialist (vl-moditem-alist mod))))
-                (,type (mv-nth 1 (,name x mod ialist)))))
-
-     ))
+  `(define ,name
+     :short ,(cat "Optimize expressions throughout a @(see " (symbol-name type) ").")
+     ((x      ,type)
+      (mod    vl-module-p)
+      (ialist (equal ialist (vl-moditem-alist mod))))
+     :returns
+     (mv (changedp booleanp :rule-classes :type-prescription)
+         (new-x    ,type    :hyp :fguard))
+     (declare (ignorable x mod ialist))
+     ,body))
 
 (defmacro def-vl-optimize-list (name list-type element-name)
-  `(defsection ,name
+  `(define ,name
      :short ,(cat "Optimize expressions throughout a @(see "
                   (symbol-name list-type) ").")
-
-     (defund ,name (x mod ialist)
-       "Returns (MV CHANGEDP X-PRIME)"
-       (declare (xargs :guard (and (,list-type x)
-                                   (vl-module-p mod)
-                                   (equal ialist (vl-moditem-alist mod)))))
-       (if (atom x)
-           (mv nil nil)
-         (b* (((mv car-changedp car-prime) (,element-name (car x) mod ialist))
-              ((mv cdr-changedp cdr-prime) (,name (cdr x) mod ialist)))
-           (mv (or car-changedp cdr-changedp)
-               (cons car-prime cdr-prime)))))
-
-     (local (in-theory (enable ,name)))
-
-     (defthm ,(intern-in-package-of-symbol
-               (cat "TRUE-LISTP-OF-" (symbol-name name) "-2")
-               name)
-       (true-listp (mv-nth 1 (,name x mod ialist)))
-       :rule-classes :type-prescription)
-
-     (defthm ,(intern-in-package-of-symbol
-               (cat (symbol-name list-type) "-OF-" (symbol-name name))
-               name)
-       (implies (and (force (,list-type x))
-                     (force (vl-module-p mod))
-                     (force (equal ialist (vl-moditem-alist mod))))
-                (,list-type (mv-nth 1 (,name x mod ialist))))
-       :hints(("Goal" :induct (len x))))
-
-     ))
-
+     ((x      ,list-type)
+      (mod    vl-module-p)
+      (ialist (equal ialist (vl-moditem-alist mod))))
+     :returns
+     (mv (changedp booleanp :rule-classes :type-prescription)
+         (new-x    ,list-type :hyp :fguard))
+     (b* (((when (atom x))
+           (mv nil nil))
+          ((mv car-changedp car-prime) (,element-name (car x) mod ialist))
+          ((mv cdr-changedp cdr-prime) (,name (cdr x) mod ialist)))
+       (mv (or car-changedp cdr-changedp)
+           (cons car-prime cdr-prime)))
+     ///
+     (defmvtypes ,name (nil true-listp))))
 
 (def-vl-optimize vl-assign-optimize vl-assign-p
   (b* (((mv lvalue-changedp lvalue-prime)
         (vl-expr-optimize (vl-assign->lvalue x) mod ialist))
        ((mv expr-changedp expr-prime)
-        (vl-expr-optimize (vl-assign->expr x) mod ialist)))
-      (if (or lvalue-changedp expr-changedp)
-          (mv t (change-vl-assign x :lvalue lvalue-prime :expr expr-prime))
-        (mv nil x))))
+        (vl-expr-optimize (vl-assign->expr x) mod ialist))
+       ((when (or lvalue-changedp expr-changedp))
+        (mv t (change-vl-assign x :lvalue lvalue-prime :expr expr-prime))))
+    (mv nil x)))
 
 (def-vl-optimize-list vl-assignlist-optimize vl-assignlist-p
   vl-assign-optimize)
-
-
-
 
 (def-vl-optimize vl-plainarg-optimize vl-plainarg-p
   (b* ((expr (vl-plainarg->expr x))
@@ -334,8 +244,6 @@ rewritten, split up, simplified tree.</p>
 (def-vl-optimize-list vl-plainarglist-optimize vl-plainarglist-p
   vl-plainarg-optimize)
 
-
-
 (def-vl-optimize vl-namedarg-optimize vl-namedarg-p
   (b* ((expr (vl-namedarg->expr x))
        ((unless expr)
@@ -349,8 +257,6 @@ rewritten, split up, simplified tree.</p>
 (def-vl-optimize-list vl-namedarglist-optimize vl-namedarglist-p
   vl-namedarg-optimize)
 
-
-
 (def-vl-optimize vl-arguments-optimize vl-arguments-p
   (b* ((namedp (vl-arguments->namedp x))
        (args   (vl-arguments->args x))
@@ -360,7 +266,6 @@ rewritten, split up, simplified tree.</p>
       (if (not changedp)
           (mv nil x)
         (mv t (vl-arguments namedp args-prime)))))
-
 
 (def-vl-optimize vl-modinst-optimize vl-modinst-p
   (b* (((mv changedp args-prime)
@@ -372,8 +277,6 @@ rewritten, split up, simplified tree.</p>
 (def-vl-optimize-list vl-modinstlist-optimize vl-modinstlist-p
   vl-modinst-optimize)
 
-
-
 (def-vl-optimize vl-gateinst-optimize vl-gateinst-p
   (b* (((mv changedp args-prime)
         (vl-plainarglist-optimize (vl-gateinst->args x) mod ialist)))
@@ -383,8 +286,6 @@ rewritten, split up, simplified tree.</p>
 
 (def-vl-optimize-list vl-gateinstlist-optimize vl-gateinstlist-p
   vl-gateinst-optimize)
-
-
 
 (define vl-module-optimize ((x vl-module-p))
   :short "Optimize expressions throughout a module."
@@ -401,17 +302,17 @@ rewritten, split up, simplified tree.</p>
                           :modinsts modinsts
                           :gateinsts gateinsts
                           :assigns assigns)
-      x))
-  ///
-  (defthm vl-module->name-of-vl-module-optimize
-    (equal (vl-module->name (vl-module-optimize x))
-           (vl-module->name x))))
+      x)))
 
 (defprojection vl-modulelist-optimize (x)
   (vl-module-optimize x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  ///
-  (defthm vl-modulelist->names-of-vl-modulelist-optimize
-    (equal (vl-modulelist->names (vl-modulelist-optimize x))
-           (vl-modulelist->names x))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-optimize
+  :short "Top-level @(see optimize) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-optimize x.mods))))

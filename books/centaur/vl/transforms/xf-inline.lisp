@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,7 +29,6 @@
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
-
 (local (defthm vl-string-values-p-of-pairlis$
          (implies (and (force (same-lengthp x y))
                        (string-listp y))
@@ -40,7 +39,6 @@
          (implies (string-listp x)
                   (vl-string-keys-p (pairlis$ x y)))
          :hints(("Goal" :in-theory (enable pairlis$)))))
-
 
 (defxdoc inline-mods
   :parents (transforms)
@@ -129,11 +127,11 @@ clever.</p>")
    (warnings  vl-warninglist-p))
   :returns
   (mv (successp booleanp :rule-classes :type-prescription)
-      (warnings vl-warninglist-p :hyp (force (vl-warninglist-p warnings)))
+      (warnings vl-warninglist-p)
       (assigns  vl-assignlist-p :hyp :fguard))
 
   (b* (((when (atom ports))
-        (mv t warnings nil))
+        (mv t (ok) nil))
        (port1   (car ports))
        (inside  (vl-port->expr port1))
        (outside (vl-plainarg->expr (car plainargs)))
@@ -145,12 +143,11 @@ clever.</p>")
         (mv nil warnings nil))
 
        ((when (eq dir :vl-inout))
-        (b* ((w (make-vl-warning :type :vl-inline-fail
-                                 :msg "Inout ports aren't supported for inlining."
-                                 :args (list (car ports))
-                                 :fn 'vl-make-inlining-assigns
-                                 :fatalp nil)))
-          (mv nil (cons w warnings) nil)))
+        (mv nil
+            (warn :type :vl-inline-fail
+                  :msg "Inout ports aren't supported for inlining."
+                  :args (list (car ports)))
+            nil))
 
        (assigns1
         ;; If the port's expression (inside) is blank (nil), we don't need
@@ -227,39 +224,33 @@ clever.</p>")
       (gateinsts vl-gateinstlist-p :hyp :fguard)
       (assigns   vl-assignlist-p   :hyp :fguard)
       (netdecls  vl-netdecllist-p  :hyp :fguard)
-      (warnings  vl-warninglist-p  :hyp (force (vl-warninglist-p warnings))))
+      (warnings  vl-warninglist-p))
 
   (b* (((vl-modinst x) x)
        ((vl-module sub) sub)
 
        ((unless (equal x.modname sub.name))
         ;; Not an instance of the desired module, do nothing to this instance.
-        (mv nf (list x) nil nil nil warnings))
+        (mv nf (list x) nil nil nil (ok)))
 
        ((when (vl-arguments->namedp x.portargs))
-        (b* ((w (make-vl-warning :type :vl-inline-fail
-                                 :msg "~a0: can't inline because args aren't resolved."
-                                 :args (list x)
-                                 :fn 'vl-inline-mod-in-modinst
-                                 :fatalp t)))
-          (mv nf (list x) nil nil nil (cons w warnings))))
-       (plainargs (vl-arguments->args x.portargs))
+        (mv nf (list x) nil nil nil
+            (fatal :type :vl-inline-fail
+                   :msg "~a0: can't inline because args aren't resolved."
+                   :args (list x))))
 
+       (plainargs (vl-arguments->args x.portargs))
        ((when (vl-arguments->args x.paramargs))
-        (b* ((w (make-vl-warning :type :vl-inline-fail
-                                 :msg "~a0: can't inline because of parameters."
-                                 :args (list x)
-                                 :fn 'vl-inline-mod-in-modinst
-                                 :fatalp t)))
-          (mv nf (list x) nil nil nil (cons w warnings))))
+        (mv nf (list x) nil nil nil
+            (fatal :type :vl-inline-fail
+                   :msg "~a0: can't inline because of parameters."
+                   :args (list x))))
 
        ((unless (same-lengthp sub.ports plainargs))
-        (b* ((w (make-vl-warning :type :vl-inline-fail
-                                 :msg "~a0: can't inline due to improper arity."
-                                 :args (list x)
-                                 :fn 'vl-inline-mod-in-modinst
-                                 :fatalp t)))
-          (mv nf (list x) nil nil nil (cons w warnings))))
+        (mv nf (list x) nil nil nil
+            (fatal :type :vl-inline-fail
+                   :msg "~a0: can't inline due to improper arity."
+                   :args (list x))))
 
        ;; Mangle and relocate the submodule's guts so that they are all at the
        ;; location of the instance, all the names are fresh, and all the
@@ -299,12 +290,10 @@ clever.</p>")
         (vl-make-inlining-assigns ports plainargs portdecls palist x.loc warnings))
        (- (fast-alist-free palist))
        ((unless okp)
-        (b* ((w (make-vl-warning :type :vl-inline-fail
-                                 :msg "~a0: problem with inlining port connections."
-                                 :args (list x)
-                                 :fn 'vl-inline-mod-in-modinst
-                                 :fatalp t)))
-          (mv nf (list x) nil nil nil (cons w warnings))))
+        (mv nf (list x) nil nil nil
+            (fatal :type :vl-inline-fail
+                   :msg "~a0: problem with inlining port connections."
+                   :args (list x))))
 
        ;; If we get this far, then the port-assigns are already set and everything
        ;; else is looking good, too.
@@ -328,9 +317,9 @@ clever.</p>")
       (gateinsts vl-gateinstlist-p :hyp :fguard)
       (assigns   vl-assignlist-p   :hyp :fguard)
       (netdecls  vl-netdecllist-p  :hyp :fguard)
-      (warnings  vl-warninglist-p  :hyp (force (vl-warninglist-p warnings))))
+      (warnings  vl-warninglist-p))
   (b* (((when (atom x))
-        (mv nf nil nil nil nil warnings))
+        (mv nf nil nil nil nil (ok)))
        ((mv nf modinsts1 gateinsts1 assigns1 netdecls1 warnings)
         (vl-inline-mod-in-modinst sub (car x) nf warnings))
        ((mv nf modinsts2 gateinsts2 assigns2 netdecls2 warnings)
@@ -349,13 +338,11 @@ clever.</p>")
 
 (define vl-inline-mod-in-mod
   :short "Expand any instances of a submodule into its inlined body, throughout
-a module."
-
+          a module."
   ((sub (and (vl-module-p sub)
              (vl-ok-to-inline-p sub)))
    (x   vl-module-p))
   :returns (new-mod vl-module-p :hyp :guard)
-
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
@@ -364,33 +351,22 @@ a module."
         (vl-inline-mod-in-modinsts sub x.modinsts nf x.warnings)))
     (vl-free-namefactory nf)
     (change-vl-module x
-                        :modinsts  modinsts
-                        :gateinsts (append gateinsts x.gateinsts)
-                        :assigns   (append assigns x.assigns)
-                        :netdecls  (append netdecls x.netdecls)
-                        :warnings  warnings))
-  ///
-  (defthm vl-module->name-of-vl-inline-mod-in-mod
-    (equal (vl-module->name (vl-inline-mod-in-mod sub x))
-           (vl-module->name x))))
-
+                      :modinsts  modinsts
+                      :gateinsts (append gateinsts x.gateinsts)
+                      :assigns   (append assigns x.assigns)
+                      :netdecls  (append netdecls x.netdecls)
+                      :warnings  warnings)))
 
 (defprojection vl-inline-mod-in-mods-aux (sub x)
   (vl-inline-mod-in-mod sub x)
   :guard (and (vl-module-p sub)
               (vl-ok-to-inline-p sub)
               (vl-modulelist-p x))
-  :result-type vl-modulelist-p
-  :rest
-  ((defthm vl-modulelist->names-of-vl-inline-mod-in-mods-aux
-     (equal (vl-modulelist->names (vl-inline-mod-in-mods-aux sub x))
-            (vl-modulelist->names x)))))
-
-
+  :result-type vl-modulelist-p)
 
 (define vl-inline-mods
   :short "@(call vl-inline-mods) inlines all modules in @('x') throughout
-@('all-mods')."
+          @('all-mods')."
   ((x        (and (vl-modulelist-p x)
                   (vl-ok-to-inline-list-p x)))
    (all-mods vl-modulelist-p))
@@ -399,10 +375,15 @@ a module."
   (if (atom x)
       all-mods
     (b* ((all-mods (vl-inline-mod-in-mods-aux (car x) all-mods)))
-      (vl-inline-mods (cdr x) all-mods)))
-  ///
-  (defthm vl-modulelist->names-of-vl-inline-mods
-    (equal (vl-modulelist->names (vl-inline-mods x all-mods))
-           (vl-modulelist->names all-mods))))
+      (vl-inline-mods (cdr x) all-mods))))
 
+
+(define vl-design-inline-mods
+  ((mods-to-inline (and (vl-modulelist-p mods-to-inline)
+                        (vl-ok-to-inline-list-p mods-to-inline)))
+   (design vl-design-p))
+  (b* ((design (vl-design-fix design))
+       ((vl-design design) design)
+       (new-mods (vl-inline-mods mods-to-inline design.mods)))
+    (change-vl-design design :mods new-mods)))
 

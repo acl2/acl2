@@ -19,13 +19,13 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STD")
-(include-book "defprojection")
+(include-book "../defprojection")
 (include-book "misc/assert" :dir :system)
 
 (make-event
  (prog2$
   (cw "~%~%~%WARNING!  PRINTER ON FIRE!~%You are loading ~
-       std/util/defprojection-tests! Don't do that!~%~%")
+       std/util/tests/defprojection! Don't do that!~%~%")
   '(value-triple :invisible))
  :check-expansion t)
 

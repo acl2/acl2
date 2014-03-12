@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -33,6 +33,7 @@
 flopcode) for dealing with @('always') blocks for latches and combinational
 logic.  But for now our latch recognition is extremely primitive.</p>")
 
+(local (xdoc::set-default-parents latchcode))
 
 (define vl-evatom-plain-p ((x vl-evatom-p))
   :returns plainp
@@ -164,7 +165,6 @@ flip-flops.</p>"
                (rhs  :hyp :fguard (and (equal (vl-expr-p rhs) (if ctrl t nil))
                                        (iff rhs ctrl)))
                (delay "maybe natp"))
-  :parents (latchcode)
   :short "Pattern matcher for @('always') blocks that might be simple latches."
   :long "<p>We match always blocks of two forms.  Note that form1 is generally
 preferable to form2 since @('if') statements behave very badly when @('test')
@@ -227,7 +227,6 @@ Cummings</a> articles about coding styles for non-blocking assignments.</p>"
                          (and (equal (vl-expr-p rhs) (if test t nil))
                               (iff rhs test)))
                (delay "maybe natp"))
-  :parents (latchcode)
   :short "Match @('always') statements that are simple latches, with lots of
 extra sanity checking."
 
@@ -314,7 +313,6 @@ extra sanity checking."
                          (and (equal (vl-expr-p rhs) (if test t nil))
                               (iff rhs test)))
                (delay "maybe natp"))
-  :parents (latchcode)
   :short "Match @('always') statements that are simple latches, with minimal
 sanity checking."
 
@@ -406,7 +404,6 @@ sanity checking."
                        :hyp :fguard)
                (cvtregs string-listp :hyp :fguard)
                (delta   vl-delta-p   :hyp :fguard))
-  :parents (latchcode)
   :short "Try to synthesize a single @('always') block into a latch."
 
   (b* (((vl-always x) x)
@@ -541,7 +538,6 @@ sanity checking."
   :returns (mv (new-x   vl-alwayslist-p :hyp :fguard)
                (cvtregs string-listp :hyp :fguard)
                (delta   vl-delta-p   :hyp :fguard))
-  :parents (latchcode)
   (b* (((when (atom x))
         (mv nil cvtregs delta))
        ((mv new-car? cvtregs delta)

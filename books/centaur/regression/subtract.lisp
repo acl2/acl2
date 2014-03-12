@@ -57,9 +57,9 @@
     `(progn
        (defconst ,constant-name
          (vl::vl-module->esim
-          (vl::vl-find-module ,module-name (vl::vl-translation->mods *subtract-modules*))))
-
-
+          (vl::vl-find-module ,module-name
+                              (vl::vl-design->mods
+                               (vl::vl-translation->good *subtract-modules*)))))
 
        (defstv ,test-vector-name
          :mod ,constant-name

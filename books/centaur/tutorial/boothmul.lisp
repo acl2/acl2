@@ -77,7 +77,8 @@
 
 (defconst *boothmul*
   ;; Get the E module
-  (b* ((mods  (vl::vl-translation->mods *boothmul-translation*))
+  (b* ((good     (vl::vl-translation->good *boothmul-translation*))
+       (mods     (vl::vl-design->mods good))
        (boothmul (vl::vl-find-module "boothmul" mods))
        ((unless boothmul)
         (er hard? '*boothmul* "Failed to translate boothmul?"))

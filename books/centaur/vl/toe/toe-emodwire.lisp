@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -62,7 +62,6 @@ are being used.</li>
 <p>BOZO much of this code predates the exprsesion slicing code.  We may wish to
 eventually redo significant portions of the wirealist stuff to instead be based
 on the expression-slicing code.</p>")
-
 
 (local (defthm equal-of-string-and-nil-string
          (implies (force (stringp str))

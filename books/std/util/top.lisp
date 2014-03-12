@@ -20,6 +20,7 @@
 
 (in-package "STD")
 (include-book "defaggregate")
+(include-book "defaggrify-defrec")
 (include-book "defalist")
 (include-book "defconsts")
 (include-book "defenum")

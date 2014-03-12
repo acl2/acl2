@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2013 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -543,18 +543,15 @@ unsigned equivalent, by just wrapping it in a one-bit concatenation.</p>"
     (change-vl-module x
                       :warnings warnings
                       :alwayses alwayses
-                      :initials initials))
-  ///
-  (defthm vl-module->name-of-vl-module-caseelim
-    (equal (vl-module->name (vl-module-caseelim x))
-           (vl-module->name x))))
-
+                      :initials initials)))
 
 (defprojection vl-modulelist-caseelim (x)
   (vl-module-caseelim x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-caseelim
-     (equal (vl-modulelist->names (vl-modulelist-caseelim x))
-            (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-caseelim ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-caseelim x.mods))))

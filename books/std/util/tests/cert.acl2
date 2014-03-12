@@ -1,5 +1,5 @@
-; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Standard Utilities Library
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,15 +18,5 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "VL")
-
-(defxdoc checkers
-  :parents (vl)
-  :short "Light-weight static checks in the spirit of \"lint\" or \"code
-smells.\""
-
-  :long "<p>We have implemented a few static checks tools to identify potential
-errors in modules.  Most of these checks are relatively simple heuristics: when
-they generate warnings, it does not necessarily mean that anything is actually
-wrong.  Instead, these tools are mainly intended to point out unusual things
-that a human might wish to investigate.</p>")
+(include-book "../../portcullis")
+; cert-flags: ? t :ttags :all

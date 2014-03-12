@@ -23,14 +23,14 @@
 ; This file is adapted from Milawa, which is also released under the GPL.
 
 (in-package "STD")
-(include-book "deflist")
+(include-book "../deflist")
 (include-book "std/strings/top" :dir :system)
 (include-book "misc/assert" :dir :system)
 
 (make-event
  (prog2$
   (cw "~%~%~%WARNING!  PRINTER ON FIRE!~%You are loading ~
-       std/util/deflist-tests! Don't do that!~%~%")
+       std/util/tests/deflist! Don't do that!~%~%")
   '(value-triple :invisible))
  :check-expansion t)
 

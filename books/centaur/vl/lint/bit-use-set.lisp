@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -32,132 +32,244 @@
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
+(defsection bit-level-use-set
+  :parents (lint)
+  :short "A bit-level tool that analyzes a module to find bits of wires that
+are either unused (i.e., they never drive any other wire or affect any control
+decision), or unset (i.e., they are never driven by anything.)"
+
+  :long "<p>Our analysis proceeds in two passes.  Our first pass processes the
+innermost submodules first and moves upward toward the top-level modules.  In
+this pass we compute the \"local\" use/set information for each module, and
+propagate the information from lower-level modules upward to the superior
+modules.  Our second pass goes the opposite way, working from high-level
+modules down to low-level modules, to propagate \"used/set from above\"
+information down to the leaves.</p>
+
+<p>Leaf modules (those with no submodules) are easy to analyze.  For instance:</p>
+
+<ul>
+<li>Given @('assign foo = b + c'), we say all the wires for b and c are used and
+    that all of the wires for a are set.</li>
+
+<li>Given @('and (o, a, b)'), we say the wire for o is set and the wires for a
+     and b are used.</li>
+
+<li>Given a procedural statement like @('if (foo) bar = baz'), we say (1) the
+     wires for foo are used since they affect the control flow, (2) the wires
+     for bar are set since they are being assigned to, and (3) the wires for
+     baz are used since they are driving bar.</li>
+</ul>
+
+<p>We take a straightforward approach to this, so it is relatively easy to fool
+the tool.  For instance, an assignment like @('assign foo = foo') will trick
+our tool into thinking that foo is both unused and unset.  Similarly, if we
+just write @('assign foo = bar & 0'), then we'll still think bar is used even
+though it's really not relevant.</p>
+
+<p>(Perhaps we should eventually write an E-level analysis that, say, does a
+symbolic simulation, uses basic constant folding and rewriting, then finally
+looks at the @(see aig-vars) or something similar to try to identify wires that
+aren't used.  But this would be quite a bit of computation, so we haven't
+really considered it.)</p>
+
+<p>Handling submodule instances is trickier.  To make this concrete, imagine
+that we are trying to determine the used/set wires in module @('super'), where
+we have the following scenario:</p>
+
+@({
+      Picture form:                      Verilog form:
+
+        +----------------------+           module super (...) ;
+        |      A               |             ...
+        |   +--|----------+    |             sub mysub (.B(A), ...);
+        |   |  B          |    |             ...
+        |   |         sub |    |           endmodule
+        |   +-------------+    |
+        |               super  |
+        +----------------------+
+})
+
+<p>The tricky part is: are A's wires used/set?</p>
+
+<p><b>Old Approach</b>.  In the original, non bit-level use-set tool, I
+approximated the answer by just looking at the declaration for port B:</p>
+
+@({
+   Type of B  | Conclusion for Super      |  Conclusion for Sub
+   -----------+---------------------------+-----------------------------
+   input      |  A is used (by sub)       |  B is set      (by super)
+   output     |  A is set (by sub)        |  B is used     (by super)
+   inout      |  A is used/set (by sub)   |  B is used/set (by super)
+   -----------+---------------------------+-----------------------------
+})
+
+<p>But this approach has some serious problems.  First, the input/output labels
+on ports are really pretty meaningless in Verilog, e.g., you can assign to an
+input or read from an output.  I call this <b>backflow</b>.  Because of
+backflow, we might sometimes draw the wrong conclusions about whether A is used
+or set.</p>
+
+<p>Worse, imagine that B is an input port and is not used in sub; A is not set
+in super.  (This sort of thing is common: the designers might deprecate a port,
+but keep it in the module even though it is not actually used.)  When we draw
+the above conclusions, we will think that A is \"used but not set\" in super
+and thus we will flag A as being a serious concern!  We will similarly think
+that B is \"set but not used,\" which is a lesser concern but still noisy.  The
+inverse problem happens with a deprecated output port that isn't actually
+driven by the submodule or used by the supermodule.  Taken over the whole
+design, these problems cause a lot of noise in the analysis that distracts us
+from the warnings that really are serious.</p>
+
+<p><b>New Approach</b>.  In our new tool, we no longer automatically assume
+that the ports of a module are used or set.  In other words, after we process
+sub, B will only be marked as used/set if something within sub actually
+uses/sets it.  (BOZO: we may need to make an exception for top-level modules).
+Also, since we now carry out our analysis in dependency order, by the time we
+are analyzing super, we have already analyzed sub; when we get to A, we can
+tell whether B was used/set within sub.</p>
+
+<p>With these changes, there are now a couple of easy cases:</p>
+
+<ul>
+
+<li>If B is set by something in sub, then we think A should be regarded as set
+in super.</li>
+
+<li>If B is used by something in sub, then we think A should be regarded as
+used in super.</li>
+
+</ul>
+
+<p>These inferences can be made separately -- that is, if B is both used and
+set, then we want to mark A as both used and set.  Also, note that these
+inferences pay no attention to whether B is marked as an input, output, or
+inout, so we will not be fooled by backflow through incorrectly labeled
+ports.</p>
+
+<p>What should we do if B is unused and/or unset?  It seems most sensible to
+just not infer anything about A.  If we took this approach, we would just think
+that A was a \"spurious\" wire (neither used nor set).  This is a little
+strange, because usually we would think that a spurious wire doesn't appear
+anywhere in the module except for its declaration.  The logic designer who goes
+to remove the spurious wire could be surprised that it actually occurs
+somewhere in the module, and might not understand why the tool isn't regarding
+it as being used.</p>
+
+<p>So, we try to address this by tracking some new information.  The
+input/output/inout label for port B sort of tells us how B is supposed to be
+used.  We say:</p>
+
+<ul>
+<li>B is \"falsely used\" whenever it is an input/inout that is unused, and</li>
+<li>B is \"falsely set\" whenever it is an output/inout that is unset.</li>
+</ul>
+
+<p>We allow falsely used/set to propagate through module instances.  That is,
+whenever B is falsely used/set, we say A is also falsely used/set.  This allows
+us to distinguish between wires that are only used to drive deprecated ports
+from truly spurious wires.</p>
+
+<h3>IMPORTANT WHITEBOARD NOTES FROM JARED</h3>
+
+@({
+    PORTS.
+
+    Locally Truly     | Somewhere above   | CLASS                      NOTES                               MAYBE NOTES
+                      |                   |                            (to tell the user)
+     USED   SET       |   USED   SET      |
+    ------------------+-------------------+-------------------------------------------------------------------------------------------------------
+      0      0        |     0     0       | spurious port              never used/set above                {{ same 'looks set/used' messages   }}
+      0      0        |     0     1       | spurious port              sometimes set, never used above     {{ as for regular wires for submods }}
+      0      0        |     1     0       | spurious port              sometimes used, never set above     {{                                  }}
+      0      0        |     1     1       | spurious port              never used above                    {{                                  }}
+                      |                   |
+    'output':         |                   |
+      0      1        |     0     0       | unnecessary output *       never used/set above
+      0      1        |     0     1       | possible trainwreck **     none
+      0      1        |     1     0       | fine                       none
+      0      1        |     1     1       | possible trainwreck **     none
+                      |                   |
+    'input':          |                   |
+      1      0        |     0     0       | unset port (yikes!) **     never used/set above
+      1      0        |     0     1       | fine                       none
+      1      0        |     1     0       | unset port (yikes!) **     sometimes used, never set above
+      1      0        |     1     1       | fine                       none
+                      |                   |
+    'inout':          |                   |
+      1      1        |     0     0       | unnecessary port           never used/set above
+      1      1        |     0     1       | horrible trainwreck **     none
+      1      1        |     1     0       | fine                       none
+      1      1        |     1     1       | horrible trainwreck **     none
+    ------------------+-------------------+-------------------------------------------------------------------------------------------------------
 
 
-; IMPORTANT WHITEBOARD NOTES FROM JARED
-;
-;
-; PORTS.
-;
-; Locally Truly     | Somewhere above   | CLASS                      NOTES                               MAYBE NOTES
-;                   |                   |                            (to tell the user)
-;  USED   SET       |   USED   SET      |
-; ------------------+-------------------+-------------------------------------------------------------------------------------------------------
-;   0      0        |     0     0       | spurious port              never used/set above                {{ same "looks set/used" messages   }}
-;   0      0        |     0     1       | spurious port              sometimes set, never used above     {{ as for regular wires for submods }}
-;   0      0        |     1     0       | spurious port              sometimes used, never set above     {{                                  }}
-;   0      0        |     1     1       | spurious port              never used above                    {{                                  }}
-;                   |                   |
-; "output":         |                   |
-;   0      1        |     0     0       | unnecessary output *       never used/set above
-;   0      1        |     0     1       | possible trainwreck **     none
-;   0      1        |     1     0       | fine                       none
-;   0      1        |     1     1       | possible trainwreck **     none
-;                   |                   |
-; "input":          |                   |
-;   1      0        |     0     0       | unset port (yikes!) **     never used/set above
-;   1      0        |     0     1       | fine                       none
-;   1      0        |     1     0       | unset port (yikes!) **     sometimes used, never set above
-;   1      0        |     1     1       | fine                       none
-;                   |                   |
-; "inout":          |                   |
-;   1      1        |     0     0       | unnecessary port           never used/set above
-;   1      1        |     0     1       | horrible trainwreck **     none
-;   1      1        |     1     0       | fine                       none
-;   1      1        |     1     1       | horrible trainwreck **     none
-; ------------------+-------------------+-------------------------------------------------------------------------------------------------------
-;
-;
-; NON-PORT WIRES.
-;
-; Locally Truly     | Somewhere above   | CLASS          NOTES
-;                   |                   |                (to tell the user)
-;  USED   SET       |   USED   SET      |
-; ------------------+-------------------+------------------------------------------------
-;   0      0        |     0     0       | spurious       none
-;   0      0        |     0     1       | spurious       looks set, but isn't
-;   0      0        |     1     0       | spurious       looks used, but isn't
-;   0      0        |     1     1       | spurious       looks used and set, but isn't
-;                   |                   |
-;   0      1        |     0     0       | unused         none
-;   0      1        |     0     1       | unused         none
-;   0      1        |     1     0       | unused         looks used, but isn't
-;   0      1        |     1     1       | unused         looks used, but isn't
-;                   |                   |
-;   1      0        |     0     0       | unset          none
-;   1      0        |     0     1       | unset          looks set, but isn't
-;   1      0        |     1     0       | unset          none
-;   1      0        |     1     1       | unset          looks set, but isn't
-;                                       |
-;   1      1        |     0     0       | fine           none
-;   1      1        |     0     1       | fine           none
-;   1      1        |     1     0       | fine           none
-;   1      1        |     1     1       | fine           none
-; ------------------+-------------------+------------------------------------------------
+    NON-PORT WIRES.
 
+    Locally Truly     | Somewhere above   | CLASS          NOTES
+                      |                   |                (to tell the user)
+     USED   SET       |   USED   SET      |
+    ------------------+-------------------+------------------------------------------------
+      0      0        |     0     0       | spurious       none
+      0      0        |     0     1       | spurious       looks set, but isn't
+      0      0        |     1     0       | spurious       looks used, but isn't
+      0      0        |     1     1       | spurious       looks used and set, but isn't
+                      |                   |
+      0      1        |     0     0       | unused         none
+      0      1        |     0     1       | unused         none
+      0      1        |     1     0       | unused         looks used, but isn't
+      0      1        |     1     1       | unused         looks used, but isn't
+                      |                   |
+      1      0        |     0     0       | unset          none
+      1      0        |     0     1       | unset          looks set, but isn't
+      1      0        |     1     0       | unset          none
+      1      0        |     1     1       | unset          looks set, but isn't
+                                          |
+      1      1        |     0     0       | fine           none
+      1      1        |     0     1       | fine           none
+      1      1        |     1     0       | fine           none
+      1      1        |     1     1       | fine           none
+    ------------------+-------------------+------------------------------------------------
+})")
 
+(local (xdoc::set-default-parents bit-level-use-set))
 
 ;; BOZO axe all-wirealists, memoizing vl-module-wirealist seems better...
 
-
-(defsection vl-modulelist-all-wirealists
+(define vl-modulelist-all-wirealists
   :parents (vl-wirealist-p)
   :short "Safely generate the (fast) wirealists for a list of modules."
+  ((x vl-modulelist-p))
+  :returns
+  (mv (walist vl-modwarningalist-p :hyp :fguard)
+      (all-wirealists
+       "Fast alist binding every module name to its wirealist."
+       (equal (hons-assoc-equal name all-wirealists)
+              (let ((mod (vl-find-module name x)))
+                (and mod
+                     (cons name (mv-nth 2 (vl-module-wirealist mod nil))))))
+       :hyp :fguard))
 
-  :long "<p>@(call vl-modulelist-all-wirealists) returns @('(mv warning-alist
-all-wirealists)').</p>
+  (b* (((when (atom x))
+        (mv nil nil))
 
-<p>We attempt to construct the @(see vl-wirealist-p) for every module in the
-module list @('x').  This process might fail for any particular module; see
-@(see vl-module-wirealist) for details.  So, we return two values:</p>
+       (car-name (vl-module->name (car x)))
 
-<ul> <li>@('warning-alist') is a @(see vl-modwarningalist-p) that may bind the
-names of some modules in @('x') to new warnings explaining why we were unable
-to construct their wire alists.</li>
+       ((mv warning-alist cdr-wire-alists)
+        (vl-modulelist-all-wirealists (cdr x)))
 
-<li>@('all-wirealists') is a fast alist that binds each module's name to its
-wire alist.  Note that if there were any problems, this may be an empty or
-partial wire alist.</li> </ul>"
+       ((mv ?successp car-warnings car-wire-alist)
+        (vl-module-wirealist (car x) nil))
 
-  (defund vl-modulelist-all-wirealists (x)
-    "Returns (MV WARNING-ALIST ALL-WIREALISTS)"
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (b* (((when (atom x))
-          (mv nil nil))
+       (warning-alist
+        (if (consp car-warnings)
+            (vl-extend-modwarningalist-list car-name car-warnings warning-alist)
+          warning-alist))
 
-         (car-name (vl-module->name (car x)))
+       (wire-alists
+        (hons-acons car-name car-wire-alist cdr-wire-alists)))
 
-         ((mv warning-alist cdr-wire-alists)
-          (vl-modulelist-all-wirealists (cdr x)))
-
-         ((mv ?successp car-warnings car-wire-alist)
-          (vl-module-wirealist (car x) nil))
-
-         (warning-alist
-          (if (consp car-warnings)
-              (vl-extend-modwarningalist-list car-name car-warnings warning-alist)
-            warning-alist))
-
-         (wire-alists
-          (hons-acons car-name car-wire-alist cdr-wire-alists)))
-
-      (mv warning-alist wire-alists)))
-
-  (local (in-theory (enable vl-modulelist-all-wirealists)))
-
-  (defthm vl-modwarningalist-p-of-vl-modulelist-all-wirealists
-    (implies (force (vl-modulelist-p x))
-             (vl-modwarningalist-p (mv-nth 0 (vl-modulelist-all-wirealists x)))))
-
-  (defthm hons-assoc-equal-of-vl-modulelist-all-wirealists
-    (implies (and ;(no-duplicatesp-equal (vl-modulelist->names x))
-              (force (vl-modulelist-p x)))
-             (equal (hons-assoc-equal name (mv-nth 1 (vl-modulelist-all-wirealists x)))
-                    (let ((mod (vl-find-module name x)))
-                      (and mod
-                           (cons name (mv-nth 2 (vl-module-wirealist mod nil)))))))
-    :hints(("Goal" :induct (vl-modulelist-all-wirealists x)))))
-
+    (mv warning-alist wire-alists)))
 
   #||
 
@@ -242,23 +354,22 @@ partial wire alist.</li> </ul>"
 
   ; So the T/F/NIL check is totally inconsequential, less than 1%.
 
-
  ||#
 
 
-(defsection vl-nowarn-all-wirealists
+(define vl-nowarn-all-wirealists
   :parents (vl-wirealist-p)
   :short "Wrapper for @(see vl-modulelist-all-wirealists) that ignores any
 warnings."
+  ((x vl-modulelist-p))
+  :returns all-walists
+  :enabled t
   :long "<p>We leave this enabled.  It's mostly useful for guards.</p>"
 
-  (defun vl-nowarn-all-wirealists (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (b* (((mv warnings-alist all-walists)
-          (vl-modulelist-all-wirealists x)))
-      (fast-alist-free warnings-alist)
-      all-walists)))
-
+  (b* (((mv warnings-alist all-walists)
+        (vl-modulelist-all-wirealists x)))
+    (fast-alist-free warnings-alist)
+    all-walists))
 
 
 (defthm vl-portdecl->dir-default
@@ -283,50 +394,37 @@ warnings."
 
 
 
-(defsection us-portdecllist-bits
+(define us-portdecllist-bits
+  :short "Generate all the bits for the port declarations."
+  ((x      vl-portdecllist-p)
+   (walist vl-wirealist-p))
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (warnings vl-warninglist-p)
+               (bits     true-listp :rule-classes :type-prescription))
+  :long "<p>This seems pretty reasonable, since we've already checked in
+  vl-modulelist-check-namespace that the ports overlap with the net
+  declarations.</p>"
 
-; This seems like a reasonable way to generate all the bits for the port declarations,
-; since we've already checked in vl-modulelist-check-namespace that the ports overlap
-; with the net declarations.
-
-  (defund us-portdecllist-bits (x walist)
-    "Returns (MV SUCCESSP WARNINGS BITS)"
-    (declare (xargs :guard (and (vl-portdecllist-p x)
-                                (vl-wirealist-p walist))))
-    (if (atom x)
-        (mv t nil nil)
-      (b* ((lookup (hons-get (vl-portdecl->name (car x)) walist))
-           ((unless lookup)
-            (b* ((w (make-vl-warning :type :vl-bad-portdecl
-                                     :msg "~a0: no corresponding wires."
-                                     :args (list (car x))
-                                     :fatalp t
-                                     :fn 'us-portdecllist-bits)))
-              (mv nil (list w) nil)))
-           ((mv successp warnings bits)
-            (us-portdecllist-bits (cdr x) walist))
-           ((unless successp)
-            (mv nil warnings bits)))
-        (mv t warnings (append (cdr lookup) bits)))))
-
-  (local (in-theory (enable us-portdecllist-bits)))
-
-  (defthm vl-warninglist-p-of-us-portdecllist-bits
-    (vl-warninglist-p (mv-nth 1 (us-portdecllist-bits x walist))))
-
-  (defthm true-listp-of-us-portdecllist-bits
-    (true-listp (mv-nth 2 (us-portdecllist-bits x walist)))
-    :rule-classes :type-prescription)
-
+  (b* (((when (atom x))
+        (mv t nil nil))
+       (lookup (hons-get (vl-portdecl->name (car x)) walist))
+       ((unless lookup)
+        (b* ((w (make-vl-warning :type :vl-bad-portdecl
+                                 :msg "~a0: no corresponding wires."
+                                 :args (list (car x))
+                                 :fatalp t
+                                 :fn __function__)))
+          (mv nil (list w) nil)))
+       ((mv successp warnings bits)
+        (us-portdecllist-bits (cdr x) walist))
+       ((unless successp)
+        (mv nil warnings bits)))
+    (mv t warnings (append (cdr lookup) bits)))
+  ///
   (defthm vl-emodwirelist-p-of-us-portdecllist-bits
     (implies (and (force (vl-portdecllist-p x))
                   (force (vl-wirealist-p walist)))
              (vl-emodwirelist-p (mv-nth 2 (us-portdecllist-bits x walist))))))
-
-
-
-
-
 
 
 (defsection us-check-port-bits
@@ -468,131 +566,6 @@ warnings."
 
 
 
-
-;                       BIT-LEVEL USE-SET ANALYSIS
-;
-; We now introduce a tool that analyzes a module to find bits of wires that are
-; either unused (i.e., they never drive any other wire or affect any control
-; decision), or unset (i.e., they are never driven by anything.)
-;
-; Our analysis proceeds in two passes.  Our first pass processes the innermost
-; submodules first and moves upward toward the top-level modules.  In this pass
-; we compute the "local" use/set information for each module, and propagate the
-; information from lower-level modules upward to the superior modules.  Our
-; second pass goes the opposite way, working from high-level modules down to
-; low-level modules, to propagate "used/set from above" information down to the
-; leaves.
-;
-; Leaf modules (those with no submodules) are easy to analyze.  For instance:
-;
-;   - Given "assign foo = b + c," we say all the wires for b and c are used and
-;     that all of the wires for a are set.
-;
-;   - Given "and (o, a, b)," we say the wire for o is set and the wires for a
-;     and b are used.
-;
-;   - Given a procedural statement like "if (foo) bar = baz," we say (1) the
-;     wires for foo are used since they affect the control flow, (2) the wires
-;     for bar are set since they are being assigned to, and (3) the wires for
-;     baz are used since they are driving bar.
-;
-; We take a straightforward approach to this, so it is relatively easy to fool
-; the tool.  For instance, an assignment like "assign foo = foo;" will trick
-; our tool into thinking that foo is both unused and unset.  Similarly, if we
-; just write "assign foo = bar & 0", then we'll still think bar is used even
-; though it's really not relevant.
-;
-;   (Perhaps we should eventually write an E-level analysis that, say, does a
-;    symbolic simulation, uses basic constant folding and rewriting, then
-;    finally looks at the "aig-vars" or something similar to try to identify
-;    wires that aren't used.  But this would be quite a bit of computation, so
-;    we haven't really considered it.)
-;
-; Handling submodule instances is trickier.  To make this concrete, imagine
-; that we are trying to determine the used/set wires in module "super", where
-; we have the following scenario:
-;
-;      Picture form:                      Verilog form:
-;
-;        +----------------------+           module super (...) ;
-;        |      A               |             ...
-;        |   +--|----------+    |             sub mysub (.B(A), ...);
-;        |   |  B          |    |             ...
-;        |   |         sub |    |           endmodule
-;        |   +-------------+    |
-;        |               super  |
-;        +----------------------+
-;
-; The tricky part is: are A's wires used/set?
-;
-; Old Approach.  In the original, non bit-level use-set tool, I approximated
-; the answer by just looking at the declaration for port B:
-;
-;   Type of B  | Conclusion for Super      |  Conclusion for Sub
-;   -----------+---------------------------+-----------------------------
-;   input      |  A is used ("by sub")     |  B is set      ("by super")
-;   output     |  A is set ("by sub")      |  B is used     ("by super")
-;   inout      |  A is used/set ("by sub") |  B is used/set ("by super")
-;   -----------+---------------------------+-----------------------------
-;
-; But this approach has some serious problems.  First, the input/output labels
-; on ports are really pretty meaningless in Verilog, e.g., you can assign to an
-; input or read from an output.  I call this "backflow."  Because of backflow,
-; we might sometimes draw the wrong conclusions about whether A is used or set.
-;
-; Worse, imagine that B is an input port and is not used in sub; A is not set
-; in super.  (This sort of thing is common: the designers might "deprecate" a
-; port, but keep it in the module even though it is not actually used.)  When
-; we draw the above conclusions, we will think that A is "used but not set" in
-; super and thus we will flag A as being a serious concern!  We will similarly
-; think that B is "set but not used", which is a lesser concern but still
-; noisy.  The "inverse" problem happens with a deprecated output port that
-; isn't actually driven by the submodule or used by the supermodule.  Taken
-; over the whole design, these problems cause a lot of noise in the analysis
-; that distracts us from the warnings that really are serious.
-;
-; New Approach.  In our new tool, we no longer automatically assume that the
-; ports of a module are used or set.  In other words, after we process sub, B
-; will only be marked as used/set if something within sub actually uses/sets
-; it.  (BOZO: we may need to make an exception for top-level modules).  Also,
-; since we now carry out our analysis in dependency order, by the time we are
-; analyzing super, we have already analyzed sub; when we get to A, we can tell
-; whether B was used/set within sub.
-;
-; With these changes, there are now a couple of easy cases:
-;
-;   - If B is set by something in sub, then we think A should be regarded as
-;     set in super.
-;
-;   - If B is used by something in sub, then we think A should be regarded as
-;     used in super.
-;
-; These inferences can be made separately -- that is, if B is both used and
-; set, then we want to mark A as both used and set.  Also, note that these
-; inferences pay no attention to whether B is marked as an input, output, or
-; inout, so we will not be fooled by "backflow" through incorrectly labeled
-; ports.
-;
-; What should we do if B is unused and/or unset?  It seems most sensible to
-; just not infer anything about A.  If we took this approach, we would just
-; think that A was a "spurious" wire (neither used nor set).  This is a little
-; strange, because usually we would think that a spurious wire doesn't appear
-; anywhere in the module except for its declaration.  The logic designer who
-; goes to remove the spurious wire could be surprised that it actually occurs
-; somewhere in the module, and might not understand why the tool isn't
-; regarding it as being used.
-;
-; So, we try to address this by tracking some new information.  The
-; input/output/inout label for port B sort of tells us how B is supposed to be
-; used.  We say:
-;
-;   - B is "falsely used" whenever it is an input/inout that is unused, and
-;   - B is "falsely set" whenever it is an output/inout that is unset.
-;
-; We allow falsely used/set to propagate through module instances.  That is,
-; whenever B is falsely used/set, we say A is also falsely used/set.  This
-; allows us to distinguish between wires that are only used to drive deprecated
-; ports from truly spurious wires.
 
 
 (defsection us-db-p
@@ -2670,176 +2643,116 @@ warnings."
     (vl-warninglist-p (us-warn-nonport-results modname x))
     :hints(("Goal" :in-theory (enable us-warn-nonport-results)))))
 
+(define vl-netdecls-for-flattened-hids ((x vl-netdecllist-p))
+  :returns (flattened-decls vl-netdecllist-p :hyp :fguard)
+  (cond ((atom x)
+         nil)
+        ((assoc-equal "VL_HID_RESOLVED_MODULE_NAME" (vl-netdecl->atts (car x)))
+         (cons (car x) (vl-netdecls-for-flattened-hids (cdr x))))
+        (t
+         (vl-netdecls-for-flattened-hids (cdr x)))))
 
-(defsection vl-netdecls-for-flattened-hids
+(define vl-netdecllist-wires
+  ((x        vl-netdecllist-p)
+   (walist   vl-wirealist-p)
+   (warnings vl-warninglist-p))
+  :returns (mv (successp booleanp :rule-classes :type-prescription)
+               (warnings vl-warninglist-p)
+               (wires    vl-emodwirelist-p :hyp :fguard))
+  (b* (((when (atom x))
+        (mv t (ok) nil))
+       (car-look     (hons-get (vl-netdecl->name (car x)) walist))
+       (car-wires    (cdr car-look))
+       (warnings     (if car-look
+                         (ok)
+                       (warn :type :use-set-fudging
+                             :msg "~a0: No wires for this net?"
+                             :args (list (car x)))))
+       ((mv cdr-successp warnings cdr-wires)
+        (vl-netdecllist-wires (cdr x) walist warnings)))
+    (mv (and car-look cdr-successp)
+        warnings
+        (append car-wires cdr-wires))))
 
-  (defund vl-netdecls-for-flattened-hids (x)
-    (declare (xargs :guard (vl-netdecllist-p x)))
-    (cond ((atom x)
-           nil)
-          ((assoc-equal "VL_HID_RESOLVED_MODULE_NAME" (vl-netdecl->atts (car x)))
-           (cons (car x) (vl-netdecls-for-flattened-hids (cdr x))))
-          (t
-           (vl-netdecls-for-flattened-hids (cdr x)))))
+(define us-report-mod ((x       vl-module-p)
+                       (dbalist us-dbalist-p)
+                       (walist  vl-wirealist-p))
+  :returns (new-x vl-module-p :hyp :fguard)
+  (b* (((vl-module x) x)
+       (warnings x.warnings)
 
-  (local (in-theory (enable vl-netdecls-for-flattened-hids)))
+       (entry (hons-get x.name dbalist))
+       (db    (cdr entry))
+       ((unless entry)
+        (b* ((warnings (warn :type :use-set-fudging
+                             :msg "Expected a use-set database for ~m0; no ~
+                                   use-set information will be available for ~
+                                   this module."
+                             :args (list x.name))))
+          (change-vl-module x :warnings warnings)))
 
-  (defthm vl-netdecllist-p-of-vl-netdecls-for-flattened-hids
-    (implies (force (vl-netdecllist-p x))
-             (vl-netdecllist-p (vl-netdecls-for-flattened-hids x)))))
+       ;; Crucial: shrink the database to remove shadowed elements
+       (db (hons-shrink-alist db nil))
 
+       (ialist (vl-moditem-alist x))
+       ((mv warnings ignore-bits)
+        (us-analyze-commentmap x.comments x ialist walist warnings))
+       (- (fast-alist-free ialist))
 
-(defsection vl-netdecllist-wires
+       ((mv ?ignore-db1 db)
+        (us-filter-db-by-names
+         (append
+          #!ACL2 '( ;; always ignore vbna, vbpa, vss0, vdd0 since they're common and stupid
+                   |vbna| |vbpa| |vss0| |vdd0|
+                   ;; also ignore certain clocks...
+                   |d1ph1| |d2ph1| |d3ph1| |e1ph1| |e2ph1| |e3ph1|
+                   )
+          ;; bits to ignore from use_set_ignore(...); directives
+          ignore-bits)
+         db))
 
-  (defund vl-netdecllist-wires (x walist warnings)
-    "Returns (MV SUCCESSP WARNINGS WIRES)"
-    (declare (xargs :guard (and (vl-netdecllist-p x)
-                                (vl-wirealist-p walist)
-                                (vl-warninglist-p warnings))))
-    (b* (((when (atom x))
-          (mv t warnings nil))
-         (car-look     (hons-get (vl-netdecl->name (car x)) walist))
-         (car-wires    (cdr car-look))
-         (warnings     (if car-look
-                           warnings
-                         (cons (make-vl-warning
-                                :type :use-set-fudging
-                                :msg "~a0: No wires for this net?"
-                                :args (list (car x))
-                                :fatalp nil
-                                :fn 'vl-netdecllist-wires)
-                               warnings)))
-         ((mv cdr-successp warnings cdr-wires)
-          (vl-netdecllist-wires (cdr x) walist warnings)))
-      (mv (and car-look cdr-successp)
-          warnings
-          (append car-wires cdr-wires))))
+       ;; ignore hids since they'll look undriven
+       (hids (vl-netdecls-for-flattened-hids x.netdecls))
+       ((mv ?hidnames-okp warnings hidwires)
+        (vl-netdecllist-wires hids walist warnings))
+       ((mv ?ignore-db2 db)
+        (us-filter-db-by-names hidwires db))
 
-  (local (in-theory (enable vl-netdecllist-wires)))
+       ((mv successp warnings1 port-wires) (us-portdecllist-bits x.portdecls walist))
+       (warnings                           (append-without-guard warnings1 warnings))
+       ((unless successp)
+        (b* ((warnings (warn :type :use-set-fudging
+                             :msg "Failed to generate all port wires for ~m0; ~
+                                   no use-set information will be available ~
+                                   for this module."
+                             :args (list x.name))))
+          (change-vl-module x :warnings warnings)))
 
-  (defthm vl-netdecllist-wires-basics
-    (implies (and (force (vl-netdecllist-p x))
-                  (force (vl-wirealist-p walist))
-                  (force (vl-warninglist-p warnings)))
-             (let ((ret (vl-netdecllist-wires x walist warnings)))
-               (and (vl-warninglist-p (mv-nth 1 ret))
-                    (vl-emodwirelist-p (mv-nth 2 ret)))))))
+       ;; We'll handle port and internal wires separately.
+       ((mv ?extern-db intern-db)
+        (us-filter-db-by-names port-wires db))
 
+       (intern-results (us-organize-results intern-db))
+       (warnings2      (us-warn-nonport-results x.name intern-results))
+       (warnings       (append warnings2 warnings))
 
-(defsection us-report-mod
+       (- (fast-alist-free db)))
 
-  (defund us-report-mod (x dbalist walist)
-    (declare (xargs :guard (and (vl-module-p x)
-                                (us-dbalist-p dbalist)
-                                (vl-wirealist-p walist))))
-    (b* (((vl-module x) x)
-         (warnings x.warnings)
-
-         (entry (hons-get x.name dbalist))
-         (db    (cdr entry))
-         ((unless entry)
-          (b* ((w (make-vl-warning
-                   :type :use-set-fudging
-                   :msg "Expected a use-set database for ~m0; no use-set ~
-                         information will be available for this module."
-                   :args (list x.name)
-                   :fatalp nil
-                   :fn 'us-report-mod)))
-            (change-vl-module x :warnings (cons w warnings))))
-
-         ;; Crucial: shrink the database to remove shadowed elements
-         (db (hons-shrink-alist db nil))
-
-         (ialist (vl-moditem-alist x))
-         ((mv warnings ignore-bits)
-          (us-analyze-commentmap x.comments x ialist walist warnings))
-         (- (fast-alist-free ialist))
-
-         ((mv ?ignore-db1 db)
-          (us-filter-db-by-names
-           (append
-            #!ACL2 '(;; always ignore vbna, vbpa, vss0, vdd0 since they're common and stupid
-                     |vbna| |vbpa| |vss0| |vdd0|
-                     ;; also ignore certain clocks...
-                     |d1ph1| |d2ph1| |d3ph1| |e1ph1| |e2ph1| |e3ph1|
-                     )
-            ;; bits to ignore from use_set_ignore(...); directives
-            ignore-bits)
-           db))
-
-         ;; ignore hids since they'll look undriven
-         (hids (vl-netdecls-for-flattened-hids x.netdecls))
-         ((mv ?hidnames-okp warnings hidwires)
-          (vl-netdecllist-wires hids walist warnings))
-         ((mv ?ignore-db2 db)
-          (us-filter-db-by-names hidwires db))
-
-         ((mv successp warnings1 port-wires) (us-portdecllist-bits x.portdecls walist))
-         (warnings                           (append-without-guard warnings1 warnings))
-         ((unless successp)
-          (b* ((w (make-vl-warning
-                   :type :use-set-fudging
-                   :msg "Failed to generate all port wires for ~m0; no ~
-                         use-set information will be available for this ~
-                         module."
-                   :args (list x.name)
-                   :fatalp nil
-                   :fn 'use-report-mod)))
-            (change-vl-module x :warnings (cons w warnings))))
-
-         ;; We'll handle port and internal wires separately.
-         ((mv ?extern-db intern-db)
-          (us-filter-db-by-names port-wires db))
-
-         (intern-results (us-organize-results intern-db))
-         (warnings2      (us-warn-nonport-results x.name intern-results))
-         (warnings       (append warnings2 warnings))
-
-         (- (fast-alist-free db)))
-
-      (change-vl-module x :warnings warnings)))
-
-  (local (in-theory (enable us-report-mod)))
-
-  (defthm vl-module-p-of-us-report-mod
-    (implies (and (force (vl-module-p x))
-                  (force (us-dbalist-p dbalist))
-                  (force (vl-wirealist-p walist)))
-             (vl-module-p (us-report-mod x dbalist walist))))
-
-  (defthm vl-module->name-of-us-report-mod
-    (equal (vl-module->name (us-report-mod x dbalist walist))
-           (vl-module->name x))))
+    (change-vl-module x :warnings warnings)))
 
 
-(defsection us-report-mods
-
-  (defund us-report-mods (x mods dbalist all-walists)
-    (declare (xargs :guard (and (vl-modulelist-p x)
-                                (vl-modulelist-p mods)
-                                (us-dbalist-p dbalist)
-                                (equal all-walists (vl-nowarn-all-wirealists mods)))))
-    (if (atom x)
-        nil
-      (cons (us-report-mod (car x)
-                           dbalist
-                           (cdr (hons-get (vl-module->name (car x)) all-walists)))
-            (us-report-mods (cdr x) mods dbalist all-walists))))
-
-  (local (in-theory (enable us-report-mods)))
-
-  (defthm vl-modulelist-p-of-us-report-mods
-    (implies (and (force (vl-modulelist-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (us-dbalist-p dbalist))
-                  (force (equal all-walists (vl-nowarn-all-wirealists mods))))
-             (vl-modulelist-p (us-report-mods x mods dbalist all-walists))))
-
-  (defthm vl-modulelist->names-of-us-report-mods
-    (equal (vl-modulelist->names (us-report-mods x mods dbalist all-walists))
-           (vl-modulelist->names x))))
-
-
+(define us-report-mods
+  ((x           vl-modulelist-p)
+   (mods        vl-modulelist-p)
+   (dbalist     us-dbalist-p)
+   (all-walists (equal all-walists (vl-nowarn-all-wirealists mods))))
+  :returns (new-x vl-modulelist-p :hyp :fguard)
+  (if (atom x)
+      nil
+    (cons (us-report-mod (car x)
+                         dbalist
+                         (cdr (hons-get (vl-module->name (car x)) all-walists)))
+          (us-report-mods (cdr x) mods dbalist all-walists))))
 
 (defsection us-analyze-mod
 
@@ -3024,6 +2937,15 @@ warnings."
                (and (vl-modulelist-p (mv-nth 0 ret))
                     (us-dbalist-p (mv-nth 1 ret)))))
     :hints(("Goal" :in-theory (enable us-analyze-mods)))))
+
+(define vl-design-bit-use-set ((x vl-design-p))
+  :returns (mv (new-x   vl-design-p)
+               (dbalist us-dbalist-p))
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x)
+       ((mv new-mods dbalist) (us-analyze-mods x.mods))
+       (new-x (change-vl-design x :mods new-mods)))
+    (mv new-x dbalist)))
 
 
 

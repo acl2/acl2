@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -34,13 +34,12 @@
   :parents (transforms)
   :short "Transforms for synthesizing @('always') blocks.")
 
-(define vl-modulelist-always-backend ((mods vl-modulelist-p)
-                                       &key
-                                       ((careful-p booleanp) 't))
-  :returns (new-mods :hyp :fguard
-                     (and (vl-modulelist-p new-mods)
-                          (no-duplicatesp-equal (vl-modulelist->names new-mods))))
-  :parents (always-top)
+(local (xdoc::set-default-parents always-top))
+
+(define vl-design-always-backend ((x vl-design-p)
+                                  &key
+                                  ((careful-p booleanp) 't))
+  :returns (new-x vl-design-p)
   :short "Normal way to process @('always') blocks after sizing."
 
   :long "<p>This is a combination of several other transforms.  It is the
@@ -62,22 +61,20 @@ first do several preprocessing steps:</p>
 And, as a last step, we use @(see elimalways) to remove any unsupported always
 blocks that weren't synthesized, and add fatal warnings to their modules.</p>"
 
-  (b* ((mods (xf-cwtime (vl-modulelist-caseelim mods)
-                        :name xf-caseelim))
-       (mods (xf-cwtime (vl-modulelist-eliminitial mods)
-                        :name xf-eliminitial))
-       (mods (xf-cwtime (vl-modulelist-elimnegedge mods)
-                        :name xf-elimnegedge))
-       (mods (xf-cwtime (vl-modulelist-stmttemps mods)
-                        :name xf-stmttemps))
-       (mods (xf-cwtime (vl-modulelist-unelse mods)
-                        :name xf-unelse))
-       (mods (xf-cwtime (vl-modulelist-ifmerge mods)
-                        :name xf-ifmerge))
-       (mods (xf-cwtime (vl-modulelist-synthalways mods
-                                                   :careful-p careful-p)
-                        :name xf-synthalways))
-       (mods (xf-cwtime (vl-modulelist-elimalways mods)
-                        :name xf-elimalways)))
-    mods))
-
+  (b* ((x (xf-cwtime (vl-design-caseelim x)
+                     :name xf-caseelim))
+       (x (xf-cwtime (vl-design-eliminitial x)
+                     :name xf-eliminitial))
+       (x (xf-cwtime (vl-design-elimnegedge x)
+                     :name xf-elimnegedge))
+       (x (xf-cwtime (vl-design-stmttemps x)
+                     :name xf-stmttemps))
+       (x (xf-cwtime (vl-design-unelse x)
+                     :name xf-unelse))
+       (x (xf-cwtime (vl-design-ifmerge x)
+                     :name xf-ifmerge))
+       (x (xf-cwtime (vl-design-synthalways x :careful-p careful-p)
+                     :name xf-synthalways))
+       (x (xf-cwtime (vl-design-elimalways x)
+                     :name xf-elimalways)))
+    x))

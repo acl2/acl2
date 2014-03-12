@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,7 +28,8 @@
 
   ((compress-p   booleanp
                  "Hons the modules at various points.  This takes some time,
-                  but can produce smaller translation files.")
+                  but can produce smaller translation files."
+                 :rule-classes :type-prescription)
 
    (problem-mods string-listp
                  "Names of modules that should thrown out, perhaps because they

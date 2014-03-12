@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -219,7 +219,7 @@ endmodule
        (lhs-exprs (cons a-expr (butlast temp-exprs 1)))
        (b-wires   (vl-make-list-of-bitselects b-expr 0 (- m 1)))
 
-       ((when (= m k))
+       ((when (eql m k))
         ;; We have exactly the right number of bits in B, so we can give one
         ;; bit to each shifter.
         (b* ((pshift-insts (vl-make-modinsts-for-shl 1 pshift-mods temp-exprs lhs-exprs b-wires)))

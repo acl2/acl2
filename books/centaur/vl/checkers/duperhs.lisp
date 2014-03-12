@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -37,18 +37,17 @@
 <p>That is, where @('rhs') is literally identical in both assignments.  Such
 assignments are not necessarily errors, but are kind of odd.</p>")
 
+(local (xdoc::set-default-parents duperhs-check))
 
 (defalist vl-duperhs-alistp (x)
   :key (vl-expr-p x)        ;; Fixed up RHS
   :val (vl-assignlist-p x)  ;; Assignments that map to this RHS
   :keyp-of-nil nil
-  :valp-of-nil t
-  :parents (duperhs-check))
+  :valp-of-nil t)
 
 (define vl-make-duperhs-alist-aux ((x     vl-assignlist-p)
                                    (alist vl-duperhs-alistp))
   :returns (new-alist vl-duperhs-alistp :hyp :guard)
-  :parents (duperhs-check)
   (b* (((when (atom x))
         alist)
        (x1 (car x))
@@ -61,7 +60,6 @@ assignments are not necessarily errors, but are kind of odd.</p>")
 
 (define vl-make-duperhs-alist ((x vl-assignlist-p))
   :returns (alist "A slow alist."vl-duperhs-alistp :hyp :fguard)
-  :parents (duperhs-check)
   :short "Builds the @(see vl-duperhs-alistp) for a list of assignments."
   (b* ((alist (len x))
        (alist (vl-make-duperhs-alist-aux x alist))
@@ -74,7 +72,6 @@ assignments are not necessarily errors, but are kind of odd.</p>")
   ((rhs vl-expr-p "The rhs shared by some list of assignments."))
   :returns (trivial-p "Is this too trivial to warn about?"
                       booleanp :rule-classes :type-prescription)
-  :parents (duperhs-check)
   :short "Heuristic to avoid warning about assigning simple, common right-hand
 sides to multiple wires."
 
@@ -103,20 +100,18 @@ for odd but innocuous things like @('~ 1'b0') and @('{1'b0}').</p>"
          (not (vl-fast-id-p (vl-atom->guts (first rhs.args)))))))
 
 (define vl-maybe-warn-duperhs
-  :parents (duperhs-check)
   :short "Create warnings for assignments that share some RHS."
   ((rhs      vl-expr-p        "The shared RHS among all these assignments")
    (assigns  vl-assignlist-p  "A list of assignments that share this RHS.")
    (warnings vl-warninglist-p "A warnings accumulator to extend."))
-  :returns (new-warnings vl-warninglist-p
-                         :hyp (force (vl-warninglist-p warnings)))
+  :returns (new-warnings vl-warninglist-p)
   (b* (((when (or (atom assigns)
                   (atom (cdr assigns))))
         ;; Nothing to do -- there isn't more than one assignment for this RHS.
-        warnings)
+        (ok))
 
        ((when (vl-duperhs-too-trivial-p rhs))
-        warnings)
+        (ok))
 
        (rhs-names (vl-expr-names rhs))
        (special-names (append (str::collect-strs-with-isubstr "ph1" rhs-names)
@@ -130,64 +125,51 @@ for odd but innocuous things like @('~ 1'b0') and @('{1'b0}').</p>"
         ;; It's common for the same expression to be used multiple times for
         ;; clock enables and for a clock to go multiple places, so try to
         ;; filter this out.
-        warnings)
+        (ok)))
 
-       ;; BOZO maybe filter out other things? (reset, done, clear, stuff like
-       ;; that, by name?)
-       (w (make-vl-warning
-           :type :vl-warn-same-rhs
-           :msg "Found assignments that have exactly the same right-hand ~
-                 side, which might indicate a copy/paste error:~%~s0"
-           :args (list (str::prefix-lines (with-local-ps
-                                           ;; may help avoid unnecessary line wrapping
-                                           (vl-ps-update-autowrap-col 200)
-                                           (vl-pp-assignlist assigns))
-                                          "     ")
-                       ;; These aren't printed, but we include them in the
-                       ;; warning so our warning-suppression mechanism can be
-                       ;; applied.
-                       assigns)
-           :fatalp nil
-           :fn 'vl-maybe-warn-duperhs)))
-    (cons w warnings)))
-
+    ;; BOZO maybe filter out other things? (reset, done, clear, stuff like
+    ;; that, by name?)
+    (warn :type :vl-warn-same-rhs
+          :msg "Found assignments that have exactly the same right-hand side, ~
+                which might indicate a copy/paste error:~%~s0"
+          :args (list (str::prefix-lines (with-local-ps
+                                          ;; may help avoid unnecessary line wrapping
+                                          (vl-ps-update-autowrap-col 200)
+                                          (vl-pp-assignlist assigns))
+                                         "     ")
+                      ;; These aren't printed, but we include them in the
+                      ;; warning so our warning-suppression mechanism can be
+                      ;; applied.
+                      assigns))))
 
 (define vl-warnings-for-duperhs-alist
-  :parents (duperhs-check)
   ((alist    vl-duperhs-alistp  "The duperhs alist we've built for some module.")
    (warnings vl-warninglist-p   "A warnings accumulator to extend."))
-  :returns (new-warnings vl-warninglist-p
-                         :hyp (force (vl-warninglist-p warnings)))
+  :returns (new-warnings vl-warninglist-p)
   (b* (((when (atom alist))
-        warnings)
+        (ok))
        (rhs      (caar alist))
        (assigns  (cdar alist))
        (warnings (vl-maybe-warn-duperhs rhs assigns warnings)))
     (vl-warnings-for-duperhs-alist (cdr alist) warnings)))
 
-
 (define vl-module-duperhs-check ((x vl-module-p))
-  :parents (duperhs-check)
   :short "Look for duplicated rhses in a module, and add warnings about them."
   :returns (new-x "A copy of X, perhaps extended with new warnings."
                   vl-module-p :hyp :fguard)
   (b* (((vl-module x) x)
        (alist    (vl-make-duperhs-alist x.assigns))
        (warnings (vl-warnings-for-duperhs-alist alist x.warnings)))
-    (change-vl-module x :warnings warnings))
-  ///
-  (defthm vl-module->name-of-vl-module-duperhs-check
-    (equal (vl-module->name (vl-module-duperhs-check x))
-           (vl-module->name x))))
-
+    (change-vl-module x :warnings warnings)))
 
 (defprojection vl-modulelist-duperhs-check (x)
   (vl-module-duperhs-check x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :parents (duperhs-check)
-  :rest ((defthm vl-modulelist->names-of-vl-modulelist-duperhs-check
-           (equal (vl-modulelist->names (vl-modulelist-duperhs-check x))
-                  (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
 
+(define vl-design-duperhs-check ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-duperhs-check x.mods))))
 

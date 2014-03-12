@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -24,7 +24,6 @@
 (include-book "../mlib/fix")
 (local (include-book "../util/arithmetic"))
 
-
 (defxdoc leftright-check
   :parents (checkers)
   :short "Check for strange expressions like @('A [op] A')."
@@ -44,6 +43,8 @@ indices, e.g., @('foo[3:3]'), but these are somewhat more common and minor, and
 sometimes result from macros or parameterized modules, so we generally think
 these are pretty minor and uninteresting.</p>")
 
+(local (xdoc::set-default-parents leftright-check))
+
 (defenum vl-op-ac-p
   (:vl-binary-plus
    :vl-binary-times
@@ -57,7 +58,6 @@ these are pretty minor and uninteresting.</p>")
    :vl-binary-bitor
    :vl-binary-xor
    :vl-binary-xnor)
-  :parents (leftright-check)
   :short "Recognizes the associative/commutative binary @(see vl-op-p)s.")
 
 (defthm vl-op-p-when-vl-op-ac-p
@@ -70,23 +70,13 @@ these are pretty minor and uninteresting.</p>")
            (equal (vl-op-arity x) 2))
   :hints(("Goal" :in-theory (enable vl-op-ac-p))))
 
-
-
-(defsection vl-collect-ac-args
-  :parents (leftright-check)
+(define vl-collect-ac-args
   :short "Collect the nested arguments to an associative/commutative operator."
-
-  :long "<p><b>Signature:</b> @(call vl-collect-ac-args) returns an @(see
-vl-exprlist-p).</p>
-
-<p>@('op') should be one of Verilog's associative and commutative binary
-operators; see @(see vl-op-ac-p).</p>
-
-<p>@('x') is an expression; typically it is itself an argument to an
-@('op').</p>
-
-<p>If @('x') is itself an @('op') expression, we recursively collect up the
-ac-args of its sub-expressions.  Otherwise we just collect @('x').  For
+  ((op vl-op-ac-p "An associative and commutative binary operators.")
+   (x  vl-expr-p  "An expression, typically it is an argument to @('op')."))
+  :returns (args vl-exprlist-p :hyp :guard)
+  :long "<p>If @('x') is itself an @('op') expression, we recursively collect
+up the ac-args of its sub-expressions.  Otherwise we just collect @('x').  For
 instance, if @('op') is @('|') and @('x') is:</p>
 
 @({
@@ -96,223 +86,165 @@ instance, if @('op') is @('|') and @('x') is:</p>
 <p>Then we return a list with three expressions: @('a'), @('b + c'), and @('d &
 e').</p>"
 
-  (defund vl-collect-ac-args (op x)
-    (declare (xargs :guard (and (vl-op-ac-p op)
-                                (vl-expr-p x))))
-    (b* (((when (vl-fast-atom-p x))
-          (list x))
+  (b* (((when (vl-fast-atom-p x))
+        (list x))
+       ((unless (eq (vl-nonatom->op x) op))
+        (list x))
+       ((when (mbe :logic (atom x)
+                   :exec nil))
+        (impossible))
+       (args (vl-nonatom->args x)))
+    (append (vl-collect-ac-args op (first args))
+            (vl-collect-ac-args op (second args)))))
 
-         ((unless (eq (vl-nonatom->op x) op))
-          (list x))
-
-         ((when (mbe :logic (atom x)
-                     :exec nil))
-          (er hard 'vl-collect-ac-args "Impossble."))
-
-         (args (vl-nonatom->args x)))
-      (append (vl-collect-ac-args op (first args))
-              (vl-collect-ac-args op (second args)))))
-
-  (defthm vl-exprlist-p-of-vl-collect-ac-args
-    (implies (and (vl-op-ac-p op)
-                  (vl-expr-p x))
-             (vl-exprlist-p (vl-collect-ac-args op x)))
-    :hints(("Goal" :in-theory (enable vl-collect-ac-args)))))
-
-
-
-
-(defsection vl-expr-leftright-check
-  :parents (leftright-check)
+(defines vl-expr-leftright-check
   :short "Search for strange expressions like @('A [op] A')."
-  :long "<p><b>Signature:</b> @(call vl-expr-leftright-check) returns a
-@(see vl-warninglist-p).</p>
+  :long "<p>We search through the expression @('x') for sub-expressions of the
+form @('A [op] A'), and generate a warning whenever we find one.  The @('ctx')
+is a @(see vl-context-p) that says where @('x') occurs, for more helpful
+warnings.  We also use it to suppress warnings in certain cases.</p>"
 
-<p>We search through the expression @('x') for sub-expressions of the form @('A
-[op] A'), and generate a warning whenever we find one.  The @('ctx') is a @(see
-vl-context-p) that says where @('x') occurs, for more helpful warnings.  We
-also use it to suppress warnings in certain cases.</p>"
+  (define vl-expr-leftright-check ((x   vl-expr-p)
+                                   (ctx vl-context-p))
+    :measure (two-nats-measure (acl2-count x) 1)
+    ;; :hints(("Goal" :in-theory (disable (force))))))
+    :returns (warnings vl-warninglist-p)
+    (b* (((when (vl-fast-atom-p x))
+          nil)
+         (op   (vl-nonatom->op x))
+         (args (vl-nonatom->args x))
 
-  (mutual-recursion
+         ((when (and (eq op :vl-binary-minus)
+                     (member (tag (vl-context->elem ctx))
+                             '(:vl-netdecl :vl-regdecl :vl-vardecl))
+                     (equal (vl-expr-fix (first args))
+                            (vl-expr-fix (second args)))
+                     (vl-expr-resolved-p (first args))))
+          ;; Special hack: Don't warn about things like 5 - 5 in the context
+          ;; of net/reg/var declarations.  This can happen for things like:
+          ;;   wire bar[`FOO_MSB-`FOO_LSB:0] = baz[`FOO_MSB:`FOO_LSB]
+          ;; and leads to a lot of spurious warnings.
+          nil)
 
-   (defund vl-expr-leftright-check (x ctx)
-     (declare (xargs :guard (and (vl-expr-p x)
-                                 (vl-context-p ctx))
-                     :measure (two-nats-measure (acl2-count x) 1)
-                     :hints(("Goal" :in-theory (disable (force))))))
-     (b* (((when (vl-fast-atom-p x))
-           nil)
-          (op   (vl-nonatom->op x))
-          (args (vl-nonatom->args x))
-
-          ((when (and (eq op :vl-binary-minus)
-                      (member (tag (vl-context->elem ctx))
-                              '(:vl-netdecl :vl-regdecl :vl-vardecl))
-                      (equal (vl-expr-fix (first args))
-                             (vl-expr-fix (second args)))
-                      (vl-expr-resolved-p (first args))))
-           ;; Special hack: Don't warn about things like 5 - 5 in the context
-           ;; of net/reg/var declarations.  This can happen for things like:
-           ;;   wire bar[`FOO_MSB-`FOO_LSB:0] = baz[`FOO_MSB:`FOO_LSB]
-           ;; and leads to a lot of spurious warnings.
-           nil)
-
-          ((when (vl-op-ac-p op))
-           ;; For associative commutative ops, collect up all the args and
-           ;; see if there are any duplicates.
-           (b* ((subexprs     (append (vl-collect-ac-args op (first args))
-                                      (vl-collect-ac-args op (second args))))
-                (subexprs-fix (vl-exprlist-fix subexprs))
-                (dupes        (duplicated-members subexprs-fix))
-                ((when dupes)
-                 (cons (make-vl-warning
-                        :type :vl-warn-leftright
-                        :msg "~a0: found an ~s1 expression with duplicated ~
+         ((when (vl-op-ac-p op))
+          ;; For associative commutative ops, collect up all the args and
+          ;; see if there are any duplicates.
+          (b* ((subexprs     (append (vl-collect-ac-args op (first args))
+                                     (vl-collect-ac-args op (second args))))
+               (subexprs-fix (vl-exprlist-fix subexprs))
+               (dupes        (duplicated-members subexprs-fix))
+               ((when dupes)
+                (cons (make-vl-warning
+                       :type :vl-warn-leftright
+                       :msg "~a0: found an ~s1 expression with duplicated ~
                               arguments, which is ~s2: ~s3"
-                        :args (list ctx
-                                    (vl-op-string op)
-                                    (if (eq op :vl-binary-plus)
-                                        "somewhat odd (why not use wiring to double it?)"
-                                      "odd")
-                                    (with-local-ps (vl-pp-exprlist dupes)))
-                        :fatalp nil
-                        :fn 'vl-expr-leftright-check)
-                       ;; This can result in a pile of redundant warnings, but
-                       ;; whatever.  A better alternative would be to recur on
-                       ;; subexprs, but then we'd have to argue about the
-                       ;; acl2-count of collect-ac-args.... ugh.
-                       (vl-exprlist-leftright-check args ctx))))
-             ;; Else, no dupes; fine, keep going.
-             (vl-exprlist-leftright-check args ctx)))
+                       :args (list ctx
+                                   (vl-op-string op)
+                                   (if (eq op :vl-binary-plus)
+                                       "somewhat odd (why not use wiring to double it?)"
+                                     "odd")
+                                   (with-local-ps (vl-pp-exprlist dupes)))
+                       :fatalp nil
+                       :fn __function__)
+                      ;; This can result in a pile of redundant warnings, but
+                      ;; whatever.  A better alternative would be to recur on
+                      ;; subexprs, but then we'd have to argue about the
+                      ;; acl2-count of collect-ac-args.... ugh.
+                      (vl-exprlist-leftright-check args ctx))))
+            ;; Else, no dupes; fine, keep going.
+            (vl-exprlist-leftright-check args ctx)))
 
-          ((when (and (member op (list :vl-binary-minus :vl-binary-div :vl-binary-rem
-                                       :vl-binary-lt :vl-binary-lte
-                                       :vl-binary-gt :vl-binary-gte
+         ((when (and (member op (list :vl-binary-minus :vl-binary-div :vl-binary-rem
+                                      :vl-binary-lt :vl-binary-lte
+                                      :vl-binary-gt :vl-binary-gte
 
-                                       ;; There's no reason that these are
-                                       ;; necessarily wrong, but it still seems
-                                       ;; kind of weird so I include them
-                                       :vl-binary-shr :vl-binary-shl
-                                       :vl-binary-ashr :vl-binary-ashl))
-                      (equal (vl-expr-fix (first args))
-                             (vl-expr-fix (second args)))))
-           (cons (make-vl-warning
-                  :type :vl-warn-leftright
-                  :msg "~a0: found an expression of the form FOO ~s1 FOO, which is ~s2: ~a3."
-                  :args (list ctx (vl-op-string op)
-                              (if (eq op :vl-binary-plus)
-                                  "somewhat odd (why not use wiring to double it?)"
-                                "odd")
-                              x)
-                  :fatalp nil
-                  :fn 'vl-expr-leftright-check)
-                 (vl-exprlist-leftright-check args ctx)))
+                                      ;; There's no reason that these are
+                                      ;; necessarily wrong, but it still seems
+                                      ;; kind of weird so I include them
+                                      :vl-binary-shr :vl-binary-shl
+                                      :vl-binary-ashr :vl-binary-ashl))
+                     (equal (vl-expr-fix (first args))
+                            (vl-expr-fix (second args)))))
+          (cons (make-vl-warning
+                 :type :vl-warn-leftright
+                 :msg "~a0: found an expression of the form FOO ~s1 FOO, which is ~s2: ~a3."
+                 :args (list ctx (vl-op-string op)
+                             (if (eq op :vl-binary-plus)
+                                 "somewhat odd (why not use wiring to double it?)"
+                               "odd")
+                             x)
+                 :fatalp nil
+                 :fn __function__)
+                (vl-exprlist-leftright-check args ctx)))
 
-          ((when (and (member op '(:vl-partselect-colon))
-                      (equal (vl-expr-fix (second args))
-                             (vl-expr-fix (third args)))))
-           (cons (make-vl-warning
-                  :type :vl-warn-partselect-same
-                  :msg "~a0: slightly odd to have a part-select with the same indices: ~a1."
-                  :args (list ctx x)
-                  :fatalp nil
-                  :fn 'vl-expr-leftright-check)
-                 ;; Note: we might want to not recur here, for similar reasons to the
-                 ;; special hack above for minuses in net/reg/var decls.
-                 (vl-exprlist-leftright-check args ctx)))
+         ((when (and (member op '(:vl-partselect-colon))
+                     (equal (vl-expr-fix (second args))
+                            (vl-expr-fix (third args)))))
+          (cons (make-vl-warning
+                 :type :vl-warn-partselect-same
+                 :msg "~a0: slightly odd to have a part-select with the same indices: ~a1."
+                 :args (list ctx x)
+                 :fatalp nil
+                 :fn __function__)
+                ;; Note: we might want to not recur here, for similar reasons to the
+                ;; special hack above for minuses in net/reg/var decls.
+                (vl-exprlist-leftright-check args ctx)))
 
-          ((when (and (member op '(:vl-qmark))
-                      (equal (vl-expr-fix (second args))
-                             (vl-expr-fix (third args)))))
-           (cons (make-vl-warning
-                  :type :vl-warn-leftright
-                  :msg "~a0: found an expression of the form FOO ? BAR : BAR, which is odd: ~a1."
-                  :args (list ctx x)
-                  :fatalp nil
-                  :fn 'vl-expr-leftright-check)
-                 (vl-exprlist-leftright-check args ctx))))
+         ((when (and (member op '(:vl-qmark))
+                     (equal (vl-expr-fix (second args))
+                            (vl-expr-fix (third args)))))
+          (cons (make-vl-warning
+                 :type :vl-warn-leftright
+                 :msg "~a0: found an expression of the form FOO ? BAR : BAR, which is odd: ~a1."
+                 :args (list ctx x)
+                 :fatalp nil
+                 :fn __function__)
+                (vl-exprlist-leftright-check args ctx))))
 
-       (vl-exprlist-leftright-check args ctx)))
+      (vl-exprlist-leftright-check args ctx)))
 
-   (defund vl-exprlist-leftright-check (x ctx)
-     (declare (xargs :guard (and (vl-exprlist-p x)
-                                 (vl-context-p ctx))
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (atom x)
-         nil
-       (append (vl-expr-leftright-check (car x) ctx)
-               (vl-exprlist-leftright-check (cdr x) ctx)))))
-
-  (flag::make-flag vl-flag-expr-leftright-check
-                   vl-expr-leftright-check
-                   :flag-mapping ((vl-expr-leftright-check . expr)
-                                  (vl-exprlist-leftright-check . list)))
-
-  (defthm-vl-flag-expr-leftright-check
-    (defthm vl-warninglist-p-of-vl-expr-leftright-check
-      (vl-warninglist-p (vl-expr-leftright-check x ctx))
-      :flag expr)
-    (defthm vl-warninglist-p-of-vl-exprlist-leftright-check
-      (vl-warninglist-p (vl-exprlist-leftright-check x ctx))
-      :flag list)
-    :hints(("Goal" :expand ((vl-expr-leftright-check x ctx)
-                            (vl-exprlist-leftright-check x ctx))))))
-
-
-(defsection vl-exprctxalist-leftright-check
-  :parents (leftright-check)
-  :short "@(call vl-exprctxalist-leftright-check) extends @(see
-vl-expr-leftright-check) across an @(see vl-exprctxalist-p)."
-
-  (defund vl-exprctxalist-leftright-check (x)
-    (declare (xargs :guard (vl-exprctxalist-p x)))
+  (define vl-exprlist-leftright-check ((x vl-exprlist-p)
+                                       (ctx vl-context-p))
+    :measure (two-nats-measure (acl2-count x) 0)
+    :returns (warnings vl-warninglist-p)
     (if (atom x)
         nil
-      (append (vl-expr-leftright-check (caar x) (cdar x))
-              (vl-exprctxalist-leftright-check (cdr x)))))
-
-  (defthm vl-warninglist-p-of-vl-exprctxalist-leftright-check
-    (vl-warninglist-p (vl-exprctxalist-leftright-check x))
-    :hints(("Goal" :in-theory (enable vl-exprctxalist-leftright-check)))))
+      (append (vl-expr-leftright-check (car x) ctx)
+              (vl-exprlist-leftright-check (cdr x) ctx)))))
 
 
+(define vl-exprctxalist-leftright-check
+  :short "@(call vl-exprctxalist-leftright-check) extends @(see
+vl-expr-leftright-check) across an @(see vl-exprctxalist-p)."
+  ((x vl-exprctxalist-p))
+  :returns (warnings vl-warninglist-p)
+  (if (atom x)
+      nil
+    (append (vl-expr-leftright-check (caar x) (cdar x))
+            (vl-exprctxalist-leftright-check (cdr x)))))
 
-(defsection vl-module-leftright-check
-  :parents (leftright-check)
+(define vl-module-leftright-check
   :short "@(call vl-module-leftright-check) carries our our @(see
 leftright-check) on all the expressions in a module, and adds any resulting
 warnings to the module."
-
-  (defund vl-module-leftright-check (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* ((ctxexprs     (vl-module-ctxexprs x))
-         (new-warnings (vl-exprctxalist-leftright-check ctxexprs)))
-      (change-vl-module x
-                        :warnings (append new-warnings (vl-module->warnings x)))))
-
-  (local (in-theory (enable vl-module-leftright-check)))
-
-  (defthm vl-module-p-of-vl-module-leftright-check
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-leftright-check x))))
-
-  (defthm vl-module->name-of-vl-module-leftright-check
-    (equal (vl-module->name (vl-module-leftright-check x))
-           (vl-module->name x))))
-
+  ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard)
+  (b* ((ctxexprs     (vl-module-ctxexprs x))
+       (new-warnings (vl-exprctxalist-leftright-check ctxexprs)))
+    (change-vl-module x
+                      :warnings (append new-warnings
+                                        (vl-module->warnings x)))))
 
 (defprojection vl-modulelist-leftright-check (x)
   (vl-module-leftright-check x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :parents (leftright-check))
+  :result-type vl-modulelist-p)
 
-(defthm vl-modulelist->names-of-vl-modulelist-leftright-check
-  (equal (vl-modulelist->names (vl-modulelist-leftright-check x))
-         (vl-modulelist->names x))
-  :hints(("Goal" :induct (len x))))
-
-
+(define vl-design-leftright-check ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-leftright-check x.mods))))
 
 
 

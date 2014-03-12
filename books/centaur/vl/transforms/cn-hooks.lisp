@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -23,80 +23,79 @@
 (local (include-book "../util/arithmetic"))
 
 
-; These are hooks for additional transforms that we use at Centaur, but which
-; have not yet been released for whatever reason.  When it comes time for us to
-; run our transforms, we just defattach our implementations to these hooks.
-; For non-Centaur users, these steps are just no-ops.
-;
-; Some of these transforms will never be released because they're gross hacks
-; that are intended to address Centaur-specific things, and they wouldn't be of
-; any interest outside of Centaur.  We may release the others eventually, but
-; they may be in beta or tied into other libraries in a deep way that makes it
-; hard to make them available at this time.
+(defsection custom-transform-hooks
+  :parents (transforms)
+  :short "Ways of extending @(see vl-simplify) with custom transformations."
 
-(encapsulate
-  (((mp-verror-transform-hook *) => *
-    :formals (x)
-    :guard (vl-modulelist-p x)))
+  :long "<p>These are hooks for additional transforms that we use at Centaur,
+but which have not yet been released for whatever reason.  When it comes time
+for us to run our transforms, we just defattach our implementations to these
+hooks.  For non-Centaur users, these steps are just no-ops.</p>
 
-  (local (defun mp-verror-transform-hook (x) x))
+<p>Some of these transforms will never be released because they're gross hacks
+that are intended to address Centaur-specific things, and they wouldn't be of
+any interest outside of Centaur.  We may release the others eventually, but
+they may be in beta or tied into other libraries in a deep way that makes it
+hard to make them available at this time.</p>")
 
-  (defthm vl-modulelist-p-of-mp-verror-transform-hook
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (mp-verror-transform-hook x))))
+(local (xdoc::set-default-parents custom-transform-hooks))
 
-  (defthm vl-modulelist->names-of-mp-verror-transform-hook
-    (equal (vl-modulelist->names (mp-verror-transform-hook x))
-           (vl-modulelist->names x))))
+(defsection mp-verror-transform-hook
+  :short "Centaur specific transform."
 
-(defattach mp-verror-transform-hook identity)
+  (encapsulate
+    (((mp-verror-transform-hook *) => *
+      :formals (x)
+      :guard (vl-design-p x)))
 
+    (local (defun mp-verror-transform-hook (x)
+             (vl-design-fix x)))
 
+    (defthm vl-design-p-of-mp-verror-transform-hook
+      (vl-design-p (mp-verror-transform-hook x))))
 
-(encapsulate
-  (((vl-modulelist-pre-toe-hook *) => *
-    :formals (x)
-    :guard (and (vl-modulelist-p x)
-                (uniquep (vl-modulelist->names x)))))
-
-  (local (defun vl-modulelist-pre-toe-hook (x) x))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-pre-toe-hook
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-pre-toe-hook x))))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-pre-toe-hook
-    (equal (vl-modulelist->names (vl-modulelist-pre-toe-hook x))
-           (vl-modulelist->names x))))
-
-(defattach vl-modulelist-pre-toe-hook identity)
+  (defattach mp-verror-transform-hook vl-design-fix$inline))
 
 
+(defsection vl-design-pre-toe-hook
+  :short "Arbitrary hook for adding additional transforms before @(see
+e-conversion)."
+
+  (encapsulate
+    (((vl-design-pre-toe-hook *) => *
+      :formals (x)
+      :guard (vl-design-p x)))
+
+    (local (defun vl-design-pre-toe-hook (x)
+             (vl-design-fix x)))
+
+    (defthm vl-design-p-of-vl-design-pre-toe-hook
+      (vl-design-p (vl-design-pre-toe-hook x))))
+
+  (defattach vl-design-pre-toe-hook vl-design-fix$inline))
 
 
-(encapsulate
-  (((vl-modulelist-constcheck-hook * *) => *
-    :formals (x limit)
-    :guard (and (vl-modulelist-p x)
-                (natp limit))))
 
-  (local (defun vl-modulelist-constcheck-hook (x limit)
-           (declare (ignorable limit))
-           x))
+(defsection vl-design-constcheck-hook
+  :short "Beta transform, not ready for public release."
 
-  (defthm vl-modulelist-p-of-vl-modulelist-constcheck-hook
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-constcheck-hook x limit))))
+  (encapsulate
+    (((vl-design-constcheck-hook * *) => *
+      :formals (x limit)
+      :guard (and (vl-design-p x)
+                  (natp limit))))
 
-  (defthm vl-modulelist->names-of-vl-modulelist-constcheck-hook
-    (equal (vl-modulelist->names (vl-modulelist-constcheck-hook x limit))
-           (vl-modulelist->names x))))
+    (local (defun vl-design-constcheck-hook (x limit)
+             (declare (ignorable limit))
+             (vl-design-fix x)))
 
-(defun vl-modulelist-constcheck-hook-default (x limit)
-  (declare (xargs :guard (and (vl-modulelist-p x)
-                              (natp limit)))
-           (ignorable limit))
-  x)
+    (defthm vl-design-p-of-vl-design-constcheck-hook
+      (vl-design-p (vl-design-constcheck-hook x limit))))
 
-(defattach vl-modulelist-constcheck-hook
-  vl-modulelist-constcheck-hook-default)
+  (defun vl-design-constcheck-hook-default (x limit)
+    (declare (xargs :guard (and (vl-design-p x)
+                                (natp limit)))
+             (ignorable limit))
+    (vl-design-fix x))
+
+  (defattach vl-design-constcheck-hook vl-design-constcheck-hook-default))

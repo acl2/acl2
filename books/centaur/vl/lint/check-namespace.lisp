@@ -63,20 +63,17 @@ linting.</p>")
        ((mv & warnings)
         (vl-overlap-compatible-p-warn overlap x warnings)))
 
-    (change-vl-module x :warnings warnings))
-  ///
-  (defthm vl-module->name-of-vl-module-check-namespace
-    (equal (vl-module->name (vl-module-check-namespace x))
-           (vl-module->name x))))
-
+    (change-vl-module x :warnings warnings)))
 
 (defprojection vl-modulelist-check-namespace (x)
   (vl-module-check-namespace x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  ///
-  (defthm vl-modulelist->names-of-vl-modulelist-check-namespace
-    (equal (vl-modulelist->names (vl-modulelist-check-namespace x))
-           (vl-modulelist->names x))))
+  :result-type vl-modulelist-p)
 
+(define vl-design-check-namespace ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x
+                      :mods (vl-modulelist-check-namespace x.mods))))
 

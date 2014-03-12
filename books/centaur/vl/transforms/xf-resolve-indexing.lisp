@@ -112,7 +112,7 @@ able to handle more cases.</p>")
     (mv (new-warnings vl-warninglist-p)
         (changedp     booleanp :rule-classes :type-prescription
                       "Optimization, don't re-cons index-free expresions.")
-        (new-x))
+        (new-x        vl-expr-p :hyp (force (vl-expr-p x))))
     :verify-guards nil
     :measure (vl-expr-count x)
     :flag :expr
@@ -160,7 +160,9 @@ able to handle more cases.</p>")
     :returns
     (mv (new-warnings vl-warninglist-p)
         (changedp     booleanp :rule-classes :type-prescription)
-        (new-x))
+        (new-x        (and (implies (force (vl-exprlist-p x))
+                                    (vl-exprlist-p new-x))
+                           (equal (len new-x) (len x)))))
     :verify-guards nil
     :measure (vl-exprlist-count x)
     :flag :list
@@ -173,69 +175,24 @@ able to handle more cases.</p>")
          (changedp (or car-changedp cdr-changedp))
          (new-x    (cons car-prime cdr-prime)))
       (mv warnings changedp new-x)))
-
   ///
-  (defthm vl-exprlist-resolve-indexing-aux-when-atom
-    (implies (not (consp x))
-             (equal (vl-exprlist-resolve-indexing-aux x arrfal wirefal warnings)
-                    (mv (ok) nil nil))))
-
-  (defthm vl-exprlist-resolve-indexing-aux-of-cons
-    (equal (vl-exprlist-resolve-indexing-aux (cons a x) arrfal wirefal warnings)
-           (b* (((mv warnings car-changedp car-prime)
-                 (vl-expr-resolve-indexing-aux a arrfal wirefal warnings))
-                ((mv warnings cdr-changedp cdr-prime)
-                 (vl-exprlist-resolve-indexing-aux x arrfal wirefal warnings))
-                (changedp (or car-changedp cdr-changedp))
-                (new-x    (cons car-prime cdr-prime)))
-             (mv warnings changedp new-x))))
-
-  (local (defun my-induction (x arrfal wirefal warnings)
-           (b* (((when (atom x))
-                 (list x arrfal wirefal warnings))
-                ((mv warnings & &)
-                 (vl-expr-resolve-indexing-aux (car x) arrfal wirefal warnings)))
-             (my-induction (cdr x) arrfal wirefal warnings))))
-
-  (defthm len-of-vl-exprlist-resolve-indexing-aux
-    (b* (((mv ?warnings ?changedp new-x)
-          (vl-exprlist-resolve-indexing-aux x arrfal wirefal warnings)))
-      (equal (len new-x)
-             (len x)))
-    :hints(("Goal"
-            :induct (my-induction x arrfal wirefal warnings)
-            :expand ((vl-exprlist-resolve-indexing-aux x arrfal wirefal warnings)))))
-
-  (defthm true-listp-of-vl-exprlist-resolve-indexing-aux
-    (b* (((mv ?warnings ?changedp new-x)
-          (vl-exprlist-resolve-indexing-aux x arrfal wirefal warnings)))
-      (true-listp new-x))
-    :rule-classes :type-prescription
-    :hints(("Goal"
-            :induct (my-induction x arrfal wirefal warnings)
-            :expand (vl-exprlist-resolve-indexing-aux x arrfal wirefal warnings))))
-
-  (defthm vl-exprlist-resolve-indexing-aux-under-iff
-    (b* (((mv ?warnings ?changedp new-x)
-          (vl-exprlist-resolve-indexing-aux x arrfal wirefal warnings)))
-      (iff new-x (consp x)))
-    :hints(("Goal"
-            :induct (my-induction x arrfal wirefal warnings)
-            :expand (vl-exprlist-resolve-indexing-aux x arrfal wirefal warnings))))
-
   (defthm-vl-expr-resolve-indexing-aux-flag
-    (defthm vl-expr-p-of-vl-expr-resolve-indexing-aux
-      (b* (((mv ?warnings ?changedp new-x)
-            (vl-expr-resolve-indexing-aux x arrfal wirefal warnings)))
-        (implies (force (vl-expr-p x))
-                 (vl-expr-p new-x)))
-      :flag :expr)
-    (defthm vl-exprlist-p-of-vl-exprlist-resolve-indexing-aux
+    (defthm true-listp-of-vl-exprlist-resolve-indexing-aux
       (b* (((mv ?warnings ?changedp new-x)
             (vl-exprlist-resolve-indexing-aux x arrfal wirefal warnings)))
-        (implies (force (vl-exprlist-p x))
-                 (vl-exprlist-p new-x)))
-      :flag :list))
+        (true-listp new-x))
+      :rule-classes :type-prescription
+      :flag :list)
+    :skip-others t)
+
+  (local (defthm-vl-expr-resolve-indexing-aux-flag
+           ;; BOZO wtf, why do I need this?
+           (defthm l0
+             (b* (((mv ?warnings ?changedp new-x)
+                   (vl-exprlist-resolve-indexing-aux x arrfal wirefal warnings)))
+               (iff new-x (consp x)))
+             :flag :list)
+           :skip-others t))
 
   (verify-guards vl-expr-resolve-indexing-aux))
 
@@ -658,8 +615,6 @@ able to handle more cases.</p>")
   :element vl-port-resolve-indexing)
 
 
-
-
 (define vl-module-resolve-indexing ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
   (b* (((vl-module x) x)
@@ -697,17 +652,17 @@ able to handle more cases.</p>")
                                 :alwayses alwayses
                                 :initials initials
                                 :warnings warnings)))
-    new-x)
-  ///
-  (defthm vl-module->name-of-vl-module-resolve-indexing
-    (equal (vl-module->name (vl-module-resolve-indexing x))
-           (vl-module->name x))))
+    new-x))
 
 (defprojection vl-modulelist-resolve-indexing (x)
   (vl-module-resolve-indexing x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  ///
-  (defthm vl-modulelist->names-of-vl-modulelist-resolve-indexing
-    (equal (vl-modulelist->names (vl-modulelist-resolve-indexing x))
-           (vl-modulelist->names x))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-resolve-indexing ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x)
+       (new-mods (vl-modulelist-resolve-indexing x.mods)))
+    (change-vl-design x :mods new-mods)))
+

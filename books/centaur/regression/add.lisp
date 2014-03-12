@@ -55,7 +55,9 @@
     `(progn
        (defconst ,constant-name
          (vl::vl-module->esim
-          (vl::vl-find-module ,module-name (vl::vl-translation->mods *add-modules*))))
+          (vl::vl-find-module ,module-name
+                              (vl::vl-design->mods
+                               (vl::vl-translation->good *add-modules*)))))
 
 
 

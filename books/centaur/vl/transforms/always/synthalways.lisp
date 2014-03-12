@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -55,12 +55,13 @@ out modules whose @('always') blocks were not supported.</p>
 
 </ul>")
 
+(local (xdoc::set-default-parents synthalways))
+
 (define vl-module-synthalways
   ((x         vl-module-p)
    (careful-p booleanp "be careful when processing latches?"))
   :returns (mv (new-x   vl-module-p     :hyp :fguard)
                (addmods vl-modulelist-p :hyp :fguard))
-  :parents (flopcode)
   :short "Synthesize simple @('always') blocks in a module."
 
   (b* (((vl-module x) x)
@@ -161,48 +162,40 @@ out modules whose @('always') blocks were not supported.</p>
                                 :modinsts delta.modinsts
                                 :alwayses new-alwayses
                                 :warnings delta.warnings)))
-    (mv new-x delta.addmods))
-
-  ///
-  (defthm vl-module->name-of-vl-module-synthalways
-    (b* (((mv new-x ?addmods) (vl-module-synthalways x careful-p)))
-      (equal (vl-module->name new-x)
-             (vl-module->name x)))))
-
+    (mv new-x delta.addmods)))
 
 (define vl-modulelist-synthalways-aux ((x vl-modulelist-p)
                                        (careful-p booleanp))
   :returns (mv (new-x vl-modulelist-p   :hyp :fguard)
                (addmods vl-modulelist-p :hyp :fguard))
-  :parents (flopcode)
   (b* (((when (atom x))
         (mv nil nil))
        ((mv car addmods1) (vl-module-synthalways (car x) careful-p))
        ((mv cdr addmods2) (vl-modulelist-synthalways-aux (cdr x) careful-p)))
     (mv (cons car cdr)
-        (append-without-guard addmods1 addmods2)))
-
-  ///
-  (defthm vl-modulelist->names-of-vl-modulelist-synthalways-aux
-    (b* (((mv new-x ?addmods) (vl-modulelist-synthalways-aux x careful-p)))
-      (equal (vl-modulelist->names new-x)
-             (vl-modulelist->names x)))))
-
+        (append-without-guard addmods1 addmods2))))
 
 (define vl-modulelist-synthalways ((x vl-modulelist-p)
-                                   &key
-                                   ((careful-p booleanp) 't))
+                                   (careful-p booleanp))
   :returns (new-x :hyp :fguard
                   (and (vl-modulelist-p new-x)
                        (no-duplicatesp-equal (vl-modulelist->names new-x))))
-  :parents (flopcode)
   :short "Top-level @(see flopcode) transform."
   (b* (((mv new-x addmods)
         (vl-modulelist-synthalways-aux x careful-p))
        (all-mods  (union (mergesort new-x) (mergesort addmods)))
        (all-names (vl-modulelist->names all-mods))
        ((unless (uniquep all-names))
-        (er hard? __function__ "Name collision: ~x0"
-            (duplicated-members all-names))))
+        (raise "Name collision: ~x0" (duplicated-members all-names))))
     all-mods))
+
+(define vl-design-synthalways
+  :short "Top-level @(see synthalways) transform."
+  ((x vl-design-p) &key ((careful-p booleanp) 't))
+  :returns (new-x vl-design-p)
+  (b* ((x         (vl-design-fix x))
+       (careful-p (if careful-p t nil))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-synthalways x.mods careful-p))))
+
 

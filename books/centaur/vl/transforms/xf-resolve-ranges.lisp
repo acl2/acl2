@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -65,11 +65,14 @@ anyway, on the off chance that some day we will want @('2 * width') or @('width
 may occur in expressions such as bit-selects, part-selects, and multiple
 concatenations.</p>")
 
-(define vl-rangeexpr-reduce ((x vl-expr-p))
-  :returns (value "an unsigned 31-bit integer (i.e., a positive signed 32-bit
-                   integer) on success, or @('nil') on failure.")
-  :parents (rangeresolve)
+(local (xdoc::set-default-parents rangeresolve))
+
+(define vl-rangeexpr-reduce
   :short "An evaluator for a small set of \"constant expressions\" in Verilog."
+  ((x vl-expr-p))
+  :returns (value? "An unsigned 31-bit integer (i.e., a positive signed 32-bit
+                    integer) on success, or @('nil') on failure."
+                   maybe-natp :rule-classes :type-prescription)
 
   :long "<p>This is a very careful, limited evaluator.  It checks, after every
 computation, that the result is in [0, 2^31).  This is the minimum size of
@@ -162,26 +165,17 @@ think it can.</p>"
             nil))))
   :prepwork ((local (in-theory (enable maybe-natp))))
   ///
-
-  (defthm type-of-vl-rangeexpr-reduce
-    (maybe-natp (vl-rangeexpr-reduce x))
-    :rule-classes :type-prescription)
-
   (defthm upper-bound-of-vl-rangeexpr-reduce
     (implies (force (vl-expr-p x))
              (< (vl-rangeexpr-reduce x)
                 (expt 2 31)))
     :rule-classes :linear))
 
-
-
 (defmacro def-vl-rangeresolve (name &key type body guard-hints)
-
   `(define ,name ((x ,type)
                   (warnings vl-warninglist-p))
      :returns (mv (warnings vl-warninglist-p :hyp :fguard)
                   (new-x ,type :hyp :fguard))
-     :parents (rangeresolve)
      ,@(and guard-hints
             `(:guard-hints ,guard-hints))
      ,body))
@@ -191,7 +185,6 @@ think it can.</p>"
                   (warnings vl-warninglist-p))
      :returns (mv (warnings vl-warninglist-p :hyp :fguard)
                   (new-x ,type :hyp :fguard))
-     :parents (rangeresolve)
      (b* (((when (atom x))
            (mv warnings nil))
           ((mv warnings car-prime) (,element (car x) warnings))
@@ -199,7 +192,6 @@ think it can.</p>"
        (mv warnings (cons car-prime cdr-prime)))
      ///
      (defmvtypes ,name (nil true-listp))))
-
 
 (def-vl-rangeresolve vl-rangeresolve
   :type vl-range-p
@@ -380,7 +372,6 @@ think it can.</p>"
 
 (define vl-module-rangeresolve ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
-  :parents (rangeresolve)
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
@@ -404,20 +395,20 @@ think it can.</p>"
                         :eventdecls eventdecls
                         :modinsts   modinsts
                         :gateinsts  gateinsts
-                        :fundecls   fundecls))
-  ///
-  (defthm vl-module->name-of-vl-module-rangeresolve
-    (equal (vl-module->name (vl-module-rangeresolve x))
-           (vl-module->name x))))
+                        :fundecls   fundecls)))
 
 (defprojection vl-modulelist-rangeresolve (x)
   (vl-module-rangeresolve x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-rangeresolve
-     (equal (vl-modulelist->names (vl-modulelist-rangeresolve x))
-            (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-rangeresolve ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x)
+       (new-mods (vl-modulelist-rangeresolve x.mods)))
+    (change-vl-design x :mods new-mods)))
+
 
 
 
@@ -429,11 +420,10 @@ think it can.</p>"
    (warnings vl-warninglist-p)
    (context  "like @('op(args)'), for better warnings" vl-expr-p))
   :returns
-  (mv (warnings :hyp :fguard vl-warninglist-p)
+  (mv (warnings vl-warninglist-p)
       (new-args :hyp :fguard
                 (and (vl-exprlist-p new-args)
                      (equal (len new-args) (len args)))))
-  :parents (rangeresolve)
   :short "Non-recursively resolve indices on a single select or the
 multiplicity of a single multiconcat."
 
@@ -450,14 +440,10 @@ arisen during the course of unparameterization.</p>"
           (val1   (vl-rangeexpr-reduce index1))
           (val2   (vl-rangeexpr-reduce index2))
           ((unless (and val1 val2))
-           (mv (cons (make-vl-warning
-                      :type :vl-bad-expression
-                      ;; BOZO need some context
-                      :msg "Unable to safely resolve indices on part-select ~
-                            ~a0."
-                      :args (list context)
-                      :fn 'vl-op-selresolve)
-                     warnings)
+           (mv (warn :type :vl-bad-expression
+                     ;; BOZO need some context
+                     :msg "Unable to safely resolve indices on part-select ~a0."
+                     :args (list context))
                args))
           (msb (make-honsed-vl-atom
                 :guts (make-honsed-vl-constint :origwidth 32
@@ -469,155 +455,99 @@ arisen during the course of unparameterization.</p>"
                                                 :origtype :vl-signed
                                                 :value val2
                                                 :wasunsized t))))
-       (mv warnings (list from msb lsb))))
+       (mv (ok) (list from msb lsb))))
 
     (:vl-bitselect
      (b* ((from  (first args))
           (index (second args))
           (val   (vl-rangeexpr-reduce index))
           ((unless val)
-           (mv (cons (make-vl-warning
-                      :type :vl-dynamic-bsel
-                      ;; BOZO need some context
-                      :msg "Unable to safely resolve index on bit-select ~a0, ~
-                            so a dynamic bit-select will have to be used ~
-                            instead."
-                      :args (list context)
-                      :fn 'vl-op-selresolve)
-                     warnings)
+           (mv (warn :type :vl-dynamic-bsel
+                     ;; BOZO need some context
+                     :msg "Unable to safely resolve index on bit-select ~a0, ~
+                           so a dynamic bit-select will have to be used ~
+                           instead."
+                     :args (list context))
                args))
           (atom (make-honsed-vl-atom
                  :guts (make-honsed-vl-constint :origwidth 32
                                                 :origtype :vl-signed
                                                 :value val
                                                 :wasunsized t))))
-       (mv warnings (list from atom))))
+       (mv (ok) (list from atom))))
 
     (:vl-multiconcat
      (b* ((mult   (first args))
           (kitty  (second args))
           (val    (vl-rangeexpr-reduce mult))
           ((unless val)
-           (mv (cons (make-vl-warning
-                      :type :vl-bad-expression
-                      ;; BOZO need some context
-                      :msg "Unable to safely resolve multiplicity on ~
-                            multiconcat ~a0."
-                      :args (list context)
-                      :fn 'vl-op-selresolve)
-                     warnings)
+           (mv (warn :type :vl-bad-expression
+                     ;; BOZO need some context
+                     :msg "Unable to safely resolve multiplicity on ~
+                           multiconcat ~a0."
+                     :args (list context))
                args))
           (atom (make-honsed-vl-atom
                  :guts (make-honsed-vl-constint :origwidth 32
                                                 :origtype :vl-signed
                                                 :value val
                                                 :wasunsized t))))
-       (mv warnings (list atom kitty))))
+       (mv (ok) (list atom kitty))))
 
     (otherwise
-     (mv warnings args)))
+     (mv (ok) args)))
 
   :guard-hints (("Goal" :in-theory (enable vl-op-p vl-op-arity))))
 
 
-(defsection vl-expr-selresolve
-  :parents (rangeresolve)
+(defines vl-expr-selresolve
   :short "Recursively simplify indices on selects and multiplicities on
 multiconcats throughout an expression."
 
-  (mutual-recursion
-   (defund vl-expr-selresolve (x warnings)
-     "Returns (MV WARNINGS-PRIME X-PRIME)"
-     (declare (xargs :guard (and (vl-expr-p x)
-                                 (vl-warninglist-p warnings))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (b* (((when (vl-fast-atom-p x))
-           (mv warnings x))
-          (op                 (vl-nonatom->op x))
-          ((mv warnings args) (vl-exprlist-selresolve (vl-nonatom->args x) warnings))
-          ((mv warnings args) (vl-op-selresolve op args warnings x)))
-       (mv warnings (change-vl-nonatom x :args args))))
+  (define vl-expr-selresolve
+    ((x        vl-expr-p)
+     (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x    vl-expr-p :hyp (force (vl-expr-p x))))
+    :verify-guards nil
+    :measure (two-nats-measure (acl2-count x) 1)
+    (b* (((when (vl-fast-atom-p x))
+          (mv (ok) x))
+         (op                 (vl-nonatom->op x))
+         ((mv warnings args) (vl-exprlist-selresolve (vl-nonatom->args x) warnings))
+         ((mv warnings args) (vl-op-selresolve op args warnings x)))
+      (mv warnings (change-vl-nonatom x :args args))))
 
-   (defund vl-exprlist-selresolve (x warnings)
-     "Returns (MV WARNINGS-PRIME X-PRIME)"
-     (declare (xargs :guard (and (vl-exprlist-p x)
-                                 (vl-warninglist-p warnings))
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (b* (((when (atom x))
-           (mv warnings nil))
-          ((mv warnings car-prime) (vl-expr-selresolve (car x) warnings))
-          ((mv warnings cdr-prime) (vl-exprlist-selresolve (cdr x) warnings)))
-       (mv warnings (cons car-prime cdr-prime)))))
-
-  (defthm vl-exprlist-selresolve-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-exprlist-selresolve x warnings)
-                    (mv warnings nil)))
-    :hints(("Goal" :in-theory (enable vl-exprlist-selresolve))))
-
-  (defthm vl-exprlist-selresolve-of-cons
-    (equal (vl-exprlist-selresolve (cons a x) warnings)
-           (b* (((mv warnings car-prime) (vl-expr-selresolve a warnings))
-                ((mv warnings cdr-prime) (vl-exprlist-selresolve x warnings)))
-             (mv warnings (cons car-prime cdr-prime))))
-    :hints(("Goal" :in-theory (enable vl-exprlist-selresolve))))
-
-  (local (defun my-induction (x warnings)
-           (if (atom x)
-               (mv warnings nil)
-             (b* (((mv warnings car-prime) (vl-expr-selresolve (car x) warnings))
-                  ((mv warnings cdr-prime) (my-induction (cdr x) warnings)))
-               (mv warnings (cons car-prime cdr-prime))))))
-
-  (defthm len-of-vl-exprlist-selresolve
-    (equal (len (mv-nth 1 (vl-exprlist-selresolve x warnings)))
-           (len x))
-    :hints(("Goal" :induct (my-induction x warnings))))
-
-  (flag::make-flag vl-flag-expr-selresolve
-                   vl-expr-selresolve
-                   :flag-mapping ((vl-expr-selresolve . expr)
-                                  (vl-exprlist-selresolve . list)))
-
-  (defthm-vl-flag-expr-selresolve
-    (defthm return-type-of-vl-expr-selresolve
-      (implies (and (force (vl-expr-p x))
-                    (force (vl-warninglist-p warnings)))
-               (b* (((mv warnings new-x) (vl-expr-selresolve x warnings)))
-                 (and (vl-warninglist-p warnings)
-                      (vl-expr-p new-x))))
-      :flag expr)
-    (defthm return-type-of-vl-exprlist-selresolve
-      (implies (and (force (vl-exprlist-p x))
-                    (force (vl-warninglist-p warnings)))
-               (b* (((mv warnings new-x) (vl-exprlist-selresolve x warnings)))
-                 (and (vl-warninglist-p warnings)
-                      (vl-exprlist-p new-x))))
-      :flag list)
-    :hints(("Goal"
-            :expand ((vl-expr-selresolve x warnings)
-                     (vl-exprlist-selresolve x warnings)))))
-
+  (define vl-exprlist-selresolve
+    ((x        vl-exprlist-p)
+     (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x    (and (implies (force (vl-exprlist-p x))
+                                         (vl-exprlist-p new-x))
+                                (equal (len new-x) (len x)))))
+    :measure (two-nats-measure (acl2-count x) 0)
+    (b* (((when (atom x))
+          (mv (ok) nil))
+         ((mv warnings car-prime) (vl-expr-selresolve (car x) warnings))
+         ((mv warnings cdr-prime) (vl-exprlist-selresolve (cdr x) warnings)))
+      (mv warnings (cons car-prime cdr-prime))))
+  ///
   (verify-guards vl-expr-selresolve))
-
 
 (defmacro def-vl-selresolve (name &key type body)
   `(define ,name ((x ,type)
                   (warnings vl-warninglist-p))
-     :returns (mv (warnings vl-warninglist-p :hyp :fguard)
-                  (new-x    ,type            :hyp :fguard))
-     :parents (rangeresolve)
+     :returns (mv (warnings vl-warninglist-p)
+                  (new-x    ,type :hyp (force (,type x))))
      ,body))
 
 (defmacro def-vl-selresolve-list (name &key type element)
   `(define ,name ((x ,type)
                   (warnings vl-warninglist-p))
-     :returns (mv (warnings vl-warninglist-p :hyp :fguard)
-                  (new-x    ,type            :hyp :fguard))
-     :parents (rangeresolve)
+     :returns (mv (warnings vl-warninglist-p)
+                  (new-x    ,type :hyp (force (,type x))))
      (b* (((when (atom x))
-           (mv warnings nil))
+           (mv (ok) nil))
           ((mv warnings car-prime) (,element (car x) warnings))
           ((mv warnings cdr-prime) (,name (cdr x) warnings)))
        (mv warnings (cons car-prime cdr-prime)))
@@ -627,7 +557,7 @@ multiconcats throughout an expression."
 (def-vl-selresolve vl-maybe-expr-selresolve
   :type vl-maybe-expr-p
   :body (if (not x)
-            (mv warnings nil)
+            (mv (ok) nil)
           (vl-expr-selresolve x warnings)))
 
 (def-vl-selresolve vl-port-selresolve
@@ -745,13 +675,13 @@ multiconcats throughout an expression."
            (:vl-eventcontrol        (vl-eventcontrol-selresolve x warnings))
            (:vl-repeat-eventcontrol (vl-repeateventcontrol-selresolve x warnings))
            (otherwise
-            (mv (er hard __function__ "Impossible") x)))))
+            (mv (impossible) x)))))
 
 (def-vl-selresolve vl-maybe-delayoreventcontrol-selresolve
   :type vl-maybe-delayoreventcontrol-p
   :body (if x
             (vl-delayoreventcontrol-selresolve x warnings)
-          (mv warnings nil)))
+          (mv (ok) nil)))
 
 (defthm vl-maybe-delayoreventcontrol-selresolve-under-iff
   (implies (and (force (vl-maybe-delayoreventcontrol-p x))
@@ -797,6 +727,7 @@ multiconcats throughout an expression."
              ((mv warnings id) (vl-expr-selresolve x.id warnings)))
           (mv warnings (change-vl-disablestmt x :id id))))
 
+
 (def-vl-selresolve vl-eventtriggerstmt-selresolve
   :type vl-eventtriggerstmt-p
   :body (b* (((vl-eventtriggerstmt x) x)
@@ -806,101 +737,50 @@ multiconcats throughout an expression."
 (def-vl-selresolve vl-atomicstmt-selresolve
   :type vl-atomicstmt-p
   :body (case (tag x)
-          (:vl-nullstmt         (mv warnings x))
+          (:vl-nullstmt         (mv (ok) x))
           (:vl-assignstmt       (vl-assignstmt-selresolve x warnings))
           (:vl-deassignstmt     (vl-deassignstmt-selresolve x warnings))
           (:vl-enablestmt       (vl-enablestmt-selresolve x warnings))
           (:vl-disablestmt      (vl-disablestmt-selresolve x warnings))
           (:vl-eventtriggerstmt (vl-eventtriggerstmt-selresolve x warnings))
           (otherwise
-           (mv (er hard __function__ "Impossible")
-               x))))
+           (mv (impossible) x))))
 
-(defsection vl-stmt-selresolve
-  :parents (rangeresolve)
 
-  (mutual-recursion
+(defines vl-stmt-selresolve
 
-   (defund vl-stmt-selresolve (x warnings)
-     (declare (xargs :guard (and (vl-stmt-p x)
-                                 (vl-warninglist-p warnings))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (b* (((when (vl-fast-atomicstmt-p x))
-           (vl-atomicstmt-selresolve x warnings))
-          ((vl-compoundstmt x) x)
-          ((mv warnings exprs) (vl-exprlist-selresolve x.exprs warnings))
-          ((mv warnings stmts) (vl-stmtlist-selresolve x.stmts warnings))
-          ((mv warnings ctrl)  (vl-maybe-delayoreventcontrol-selresolve x.ctrl warnings)))
-       (mv warnings (change-vl-compoundstmt x
-                                            :exprs exprs
-                                            :stmts stmts
-                                            :ctrl ctrl))))
+  (define vl-stmt-selresolve
+    ((x        vl-stmt-p)
+     (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x    vl-stmt-p :hyp (force (vl-stmt-p x))))
+    :verify-guards nil
+    :measure (two-nats-measure (acl2-count x) 1)
+    (b* (((when (vl-fast-atomicstmt-p x))
+          (vl-atomicstmt-selresolve x warnings))
+         ((vl-compoundstmt x) x)
+         ((mv warnings exprs) (vl-exprlist-selresolve x.exprs warnings))
+         ((mv warnings stmts) (vl-stmtlist-selresolve x.stmts warnings))
+         ((mv warnings ctrl)  (vl-maybe-delayoreventcontrol-selresolve x.ctrl warnings)))
+      (mv warnings (change-vl-compoundstmt x
+                                           :exprs exprs
+                                           :stmts stmts
+                                           :ctrl ctrl))))
 
-   (defund vl-stmtlist-selresolve (x warnings)
-     (declare (xargs :guard (and (vl-stmtlist-p x)
-                                 (vl-warninglist-p warnings))
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (b* (((when (atom x))
-           (mv warnings nil))
-          ((mv warnings car-prime) (vl-stmt-selresolve (car x) warnings))
-          ((mv warnings cdr-prime) (vl-stmtlist-selresolve (cdr x) warnings)))
-       (mv warnings (cons car-prime cdr-prime)))))
-
-  (FLAG::make-flag vl-flag-stmt-selresolve
-                   vl-stmt-selresolve
-                   :flag-mapping ((vl-stmt-selresolve . stmt)
-                                  (vl-stmtlist-selresolve . list)))
-
-  (defthm vl-stmtlist-selresolve-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-stmtlist-selresolve x warnings)
-                    (mv warnings nil)))
-    :hints(("Goal" :in-theory (enable vl-stmtlist-selresolve))))
-
-  (defthm vl-stmtlist-selresolve-of-cons
-    (equal (vl-stmtlist-selresolve (cons a x) warnings)
-           (b* (((mv warnings car-prime) (vl-stmt-selresolve a warnings))
-                ((mv warnings cdr-prime) (vl-stmtlist-selresolve x warnings)))
-             (mv warnings (cons car-prime cdr-prime))))
-    :hints(("Goal" :in-theory (enable vl-stmtlist-selresolve))))
-
-  (local (defun my-induction (x warnings)
-           (if (atom x)
-               (mv warnings x)
-             (b* (((mv warnings car-prime) (vl-stmt-selresolve (car x) warnings))
-                  ((mv warnings cdr-prime) (my-induction (cdr x) warnings)))
-               (mv warnings (cons car-prime cdr-prime))))))
-
-  (defthm len-of-vl-stmtlist-selresolve
-    (equal (len (mv-nth 1 (vl-stmtlist-selresolve x warnings)))
-           (len x))
-    :hints(("Goal" :induct (my-induction x warnings))))
-
-  (defthm-vl-flag-stmt-selresolve
-
-    (defthm return-type-of-vl-stmt-selresolve
-      (implies (and (force (vl-stmt-p x))
-                    (force (vl-warninglist-p warnings)))
-               (b* (((mv warnings new-x)
-                     (vl-stmt-selresolve x warnings)))
-                 (and (vl-warninglist-p warnings)
-                      (vl-stmt-p new-x))))
-      :flag stmt)
-
-    (defthm return-type-of-vl-stmtlist-selresolve
-      (implies (and (force (vl-stmtlist-p x))
-                    (force (vl-warninglist-p warnings)))
-               (b* (((mv warnings new-x)
-                     (vl-stmtlist-selresolve x warnings)))
-                 (and (vl-warninglist-p warnings)
-                      (vl-stmtlist-p new-x))))
-      :flag list)
-
-    :hints(("Goal"
-            :expand ((vl-stmt-selresolve x warnings)
-                     (vl-stmtlist-selresolve x warnings)))))
-
+  (define vl-stmtlist-selresolve
+    ((x        vl-stmtlist-p)
+     (warnings vl-warninglist-p))
+    :returns (mv (warnings vl-warninglist-p)
+                 (new-x    (and (implies (force (vl-stmtlist-p x))
+                                         (vl-stmtlist-p new-x))
+                                (equal (len new-x) (len x)))))
+    :measure (two-nats-measure (acl2-count x) 0)
+    (b* (((when (atom x))
+          (mv (ok) nil))
+         ((mv warnings car-prime) (vl-stmt-selresolve (car x) warnings))
+         ((mv warnings cdr-prime) (vl-stmtlist-selresolve (cdr x) warnings)))
+      (mv warnings (cons car-prime cdr-prime))))
+  ///
   (verify-guards vl-stmt-selresolve))
 
 (def-vl-selresolve vl-always-selresolve
@@ -935,7 +815,6 @@ multiconcats throughout an expression."
 
 (define vl-module-selresolve ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
-  :parents (rangeresolve)
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
@@ -955,18 +834,16 @@ multiconcats throughout an expression."
                         :gateinsts gateinsts
                         :alwayses  alwayses
                         :initials  initials
-                        :fundecls  fundecls))
-  ///
-  (defthm vl-module->name-of-vl-module-selresolve
-    (equal (vl-module->name (vl-module-selresolve x))
-           (vl-module->name x))))
+                        :fundecls  fundecls)))
 
 (defprojection vl-modulelist-selresolve (x)
   (vl-module-selresolve x)
   :guard (vl-modulelist-p x)
-  :parents (rangeresolve)
-  :result-type vl-modulelist-p
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-selresolve
-     (equal (vl-modulelist->names (vl-modulelist-selresolve x))
-            (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-selresolve ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x)
+       (new-mods (vl-modulelist-selresolve x.mods)))
+    (change-vl-design x :mods new-mods)))

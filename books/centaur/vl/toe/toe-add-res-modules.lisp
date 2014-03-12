@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -26,7 +26,7 @@
 (local (include-book "../util/esim-lemmas"))
 (local (non-parallel-book))
 
-(defsection resolving-multiple-drivers
+(defxdoc resolving-multiple-drivers
   :parents (e-conversion)
   :short "How we replace multiply driven wires with explicit resolution
 modules."
@@ -66,6 +66,8 @@ This is done with @(see vl-make-res-occs).</li>
 
 <p>The top-level function is @(see vl-add-res-modules), and it just stitches
 these steps together.</p>")
+
+(local (xdoc::set-default-parents resolving-multiple-drivers))
 
 
 (defalist vl-res-sigma-p (x)

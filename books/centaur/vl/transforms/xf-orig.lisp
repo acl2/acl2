@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,7 +21,6 @@
 (in-package "VL")
 (include-book "../parsetree")
 (local (include-book "../util/arithmetic"))
-
 
 (defxdoc origexprs
   :parents (transforms)
@@ -52,98 +51,55 @@ any pretty-printing ahead of time.</p>
 <p><b>BOZO</b> consider extending origexprs to other parts of the parse tree,
 such as always statements.</p>")
 
+(local (xdoc::set-default-parents origexprs))
 
-(defsection vl-expr-origexprs
-  :parents (origexprs)
+(defines vl-expr-origexprs
   :short "Recursively annotate an expression with @('VL_ORIG_EXPR')
 attributes."
-  :long "<p><b>Signature:</b> @(call vl-expr-origexprs) returns
-@('x-prime').</p>
+  :long "<p>Even though we recursively annotate an expression, this function is
+really very fast.  We need not do any pretty-printing, because we are only
+consing the original version of X into its attributes.</p>"
 
-<p>Even though we recursively annotate an expression, this function is really
-very fast.  We need not do any pretty-printing, because we are only consing the
-original version of X into its attributes.</p>"
+  (define vl-expr-origexprs ((x vl-expr-p))
+    :returns (new-x vl-expr-p :hyp :fguard)
+    :measure (two-nats-measure (acl2-count x) 1)
+    ;; We don't annotate atoms, since they have no attributes.
+    (if (vl-fast-atom-p x)
+        x
+      (change-vl-nonatom x
+                         :args (vl-exprlist-origexprs (vl-nonatom->args x))
+                         :atts (acons "VL_ORIG_EXPR" x (vl-nonatom->atts x)))))
 
-  (mutual-recursion
+  (define vl-exprlist-origexprs ((x vl-exprlist-p))
+    :returns (new-x (and (implies (force (vl-exprlist-p x))
+                                  (vl-exprlist-p new-x))
+                         (equal (len new-x) (len x))))
+    :measure (two-nats-measure (acl2-count x) 0)
+    (if (atom x)
+        nil
+      (cons (vl-expr-origexprs (car x))
+            (vl-exprlist-origexprs (cdr x)))))
 
-   (defund vl-expr-origexprs (x)
-     "Returns X-PRIME"
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     ;; We don't annotate atoms, since they have no attributes.
-     (if (vl-fast-atom-p x)
-         x
-       (change-vl-nonatom x
-                          :args (vl-exprlist-origexprs (vl-nonatom->args x))
-                          :atts (acons "VL_ORIG_EXPR" x (vl-nonatom->atts x)))))
-
-   (defund vl-exprlist-origexprs (x)
-     "Returns X-PRIME"
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (atom x)
-         nil
-       (cons (vl-expr-origexprs (car x))
-             (vl-exprlist-origexprs (cdr x))))))
-
-  (defthm vl-exprlist-origexprs-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-exprlist-origexprs x)
-                    nil))
-    :hints(("Goal" :in-theory (enable vl-exprlist-origexprs))))
-
-  (defthm vl-exprlist-origexprs-of-cons
-    (equal (vl-exprlist-origexprs (cons a x))
-           (cons (vl-expr-origexprs a)
-                 (vl-exprlist-origexprs x)))
-    :hints(("Goal" :in-theory (enable vl-exprlist-origexprs))))
-
+  ///
   (defprojection vl-exprlist-origexprs (x)
     (vl-expr-origexprs x)
     :nil-preservingp nil
-    :already-definedp t)
-
-  (flag::make-flag vl-flag-expr-origexprs
-                   vl-expr-origexprs
-                   :flag-mapping ((vl-expr-origexprs . expr)
-                                  (vl-exprlist-origexprs . list)))
-
-  (defthm-vl-flag-expr-origexprs lemma
-    (expr (implies (force (vl-expr-p x))
-                   (vl-expr-p (vl-expr-origexprs x)))
-          :name vl-expr-p-of-vl-expr-origexprs)
-    (list (implies (force (vl-exprlist-p x))
-                   (vl-exprlist-p (vl-exprlist-origexprs x)))
-          :name vl-exprlist-p-of-vl-exprlist-origexprs)
-    :hints(("Goal"
-            :induct (vl-flag-expr-origexprs flag x)
-            :expand ((vl-expr-origexprs x)
-                     (vl-exprlist-origexprs x))
-            :do-not '(generalize fertilize)))))
-
-
-
+    :already-definedp t))
 
 (defmacro def-vl-origexprs (name &key type body)
-  (let* ((type-s (symbol-name type))
-         (short  (cat "Add @('VL_ORIG_EXPR') annotations throughout a @(see "
-                      type-s ")")))
-    `(define ,name ((x ,type))
-       :returns (new-x ,type :hyp :fguard)
-       :parents (origexprs)
-       :short ,short
-       ,body)))
+  `(define ,name ((x ,type))
+     :returns (new-x ,type :hyp :fguard)
+     :short ,(cat "Add @('VL_ORIG_EXPR') annotations throughout a @(see "
+                  (symbol-name type) ")")
+     ,body))
 
 (defmacro def-vl-origexprs-list (name &key type element)
-  (let* ((type-s (symbol-name type))
-         (short  (cat "Add @('VL_ORIG_EXPR') annotations throughout a @(see "
-                      type-s ")")))
-    `(defprojection ,name (x)
-       (,element x)
-       :guard (,type x)
-       :result-type ,type
-       :parents (origexprs)
-       :short ,short)))
+  `(defprojection ,name (x)
+     (,element x)
+     :guard (,type x)
+     :result-type ,type
+     :short ,(cat "Add @('VL_ORIG_EXPR') annotations throughout a @(see "
+                  (symbol-name type) ")")))
 
 (def-vl-origexprs vl-assign-origexprs
   :type vl-assign-p
@@ -154,35 +110,31 @@ original version of X into its attributes.</p>"
              (x-prime      (change-vl-assign x
                                              :lvalue lvalue-prime
                                              :expr expr-prime)))
-            x-prime))
+          x-prime))
 
 (def-vl-origexprs-list vl-assignlist-origexprs
   :type vl-assignlist-p
   :element vl-assign-origexprs)
 
-
-
 (def-vl-origexprs vl-plainarg-origexprs
   :type vl-plainarg-p
   :body (b* ((expr (vl-plainarg->expr x))
-             ((when (not expr))
+             ((unless expr)
               ;; No expressions in a blank.
               x)
              (expr-prime (vl-expr-origexprs expr))
-             (x-prime    (change-vl-plainarg x
-                                             :expr expr-prime)))
-            x-prime))
+             (x-prime    (change-vl-plainarg x :expr expr-prime)))
+          x-prime))
 
 (def-vl-origexprs vl-namedarg-origexprs
   :type vl-namedarg-p
   :body (b* ((expr (vl-namedarg->expr x))
-             ((when (not expr))
+             ((unless expr)
               ;; No expressions in a blank.
               x)
              (expr-prime (vl-expr-origexprs expr))
-             (x-prime    (change-vl-namedarg x
-                                             :expr expr-prime)))
-            x-prime))
+             (x-prime    (change-vl-namedarg x :expr expr-prime)))
+          x-prime))
 
 (def-vl-origexprs-list vl-plainarglist-origexprs
   :type vl-plainarglist-p
@@ -200,15 +152,14 @@ original version of X into its attributes.</p>"
                              (vl-namedarglist-origexprs args)
                            (vl-plainarglist-origexprs args)))
              (x-prime    (vl-arguments namedp args-prime)))
-            x-prime))
+          x-prime))
 
 (def-vl-origexprs vl-gateinst-origexprs
   :type vl-gateinst-p
   :body (b* ((args       (vl-gateinst->args x))
              (args-prime (vl-plainarglist-origexprs args))
-             (x-prime    (change-vl-gateinst x
-                                             :args args-prime)))
-            x-prime))
+             (x-prime    (change-vl-gateinst x :args args-prime)))
+          x-prime))
 
 (def-vl-origexprs-list vl-gateinstlist-origexprs
   :type vl-gateinstlist-p
@@ -218,9 +169,8 @@ original version of X into its attributes.</p>"
   :type vl-modinst-p
   :body (b* ((args       (vl-modinst->portargs x))
              (args-prime (vl-arguments-origexprs args))
-             (x-prime    (change-vl-modinst x
-                                            :portargs args-prime)))
-            x-prime))
+             (x-prime    (change-vl-modinst x :portargs args-prime)))
+          x-prime))
 
 (def-vl-origexprs-list vl-modinstlist-origexprs
   :type vl-modinstlist-p
@@ -237,20 +187,16 @@ original version of X into its attributes.</p>"
                                                 :assigns assigns-prime
                                                 :gateinsts gateinsts-prime
                                                 :modinsts modinsts-prime)))
-            x-prime))
-
-(defthm vl-module->name-of-vl-module-origexprs
-  (equal (vl-module->name (vl-module-origexprs x))
-         (vl-module->name x))
-  :hints(("Goal" :in-theory (enable vl-module-origexprs))))
-
+          x-prime))
 
 (def-vl-origexprs-list vl-modulelist-origexprs
   :type vl-modulelist-p
   :element vl-module-origexprs)
 
-(defthm vl-modulelist->names-of-vl-modulelist-origexprs
-  (equal (vl-modulelist->names (vl-modulelist-origexprs x))
-         (vl-modulelist->names x))
-  :hints(("Goal" :induct (len x))))
-
+(define vl-design-origexprs
+  :short "Top-level @(see origexprs) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-origexprs x.mods))))

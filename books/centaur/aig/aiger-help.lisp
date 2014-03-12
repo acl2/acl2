@@ -23,6 +23,7 @@
 (include-book "tools/mv-nth" :dir :system)
 (include-book "std/io/base" :dir :system)
 (include-book "std/util/defmvtypes" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (set-state-ok t)
 
 

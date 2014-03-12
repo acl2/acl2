@@ -57,9 +57,10 @@ we cross-check the port declarations against the net/reg declarations and
 propagate any signed attributes to ensure they are found in both
 declarations.</p>")
 
+(local (xdoc::set-default-parents portdecl-sign))
+
 (define vl-signed-portdecls ((x vl-portdecllist-p))
   :returns (names string-listp :hyp :fguard)
-  :parents (portdecl-sign)
   :short "Gather the names of any signed port declarations."
   (cond ((atom x)
          nil)
@@ -71,7 +72,6 @@ declarations.</p>")
 
 (define vl-signed-netdecls ((x vl-netdecllist-p))
   :returns (names string-listp :hyp :fguard)
-  :parents (portdecl-sign)
   :short "Gather the names of any signed net declarations."
   (cond ((atom x)
          nil)
@@ -83,7 +83,6 @@ declarations.</p>")
 
 (define vl-signed-regdecls ((x vl-regdecllist-p))
   :returns (names string-listp :hyp :fguard)
-  :parents (portdecl-sign)
   :short "Gather the names of any signed reg declarations."
   (cond ((atom x)
          nil)
@@ -97,7 +96,6 @@ declarations.</p>")
   ((names "names of portdecls to make signed" string-listp)
    (x     "original portdecls"                vl-portdecllist-p))
   :returns (new-x vl-portdecllist-p :hyp :fguard)
-  :parents (portdecl-sign)
   :short "Change some port declarations to make them signed."
   (b* (((when (atom x))
         nil)
@@ -105,14 +103,12 @@ declarations.</p>")
        (new-car (if (member-equal name names)
                     (change-vl-portdecl (car x) :signedp t)
                   (car x))))
-    (cons new-car
-          (vl-make-portdecls-signed names (cdr x)))))
+    (cons new-car (vl-make-portdecls-signed names (cdr x)))))
 
 (define vl-make-netdecls-signed
   ((names "names of netdecls to make signed" string-listp)
    (x     "original netdecls"                vl-netdecllist-p))
   :returns (new-x vl-netdecllist-p :hyp :fguard)
-  :parents (portdecl-sign)
   :short "Change some net declarations to make them signed."
   (b* (((when (atom x))
         nil)
@@ -120,14 +116,12 @@ declarations.</p>")
        (new-car (if (member-equal name names)
                     (change-vl-netdecl (car x) :signedp t)
                   (car x))))
-    (cons new-car
-          (vl-make-netdecls-signed names (cdr x)))))
+    (cons new-car (vl-make-netdecls-signed names (cdr x)))))
 
 (define vl-make-regdecls-signed
   ((names "names of regdecls to make signed" string-listp)
    (x     "original regdecls"                vl-regdecllist-p))
   :returns (new-x vl-regdecllist-p :hyp :fguard)
-  :parents (portdecl-sign)
   :short "Change some reg declarations to make them signed."
   (b* (((when (atom x))
         nil)
@@ -135,12 +129,10 @@ declarations.</p>")
        (new-car (if (member-equal name names)
                     (change-vl-regdecl (car x) :signedp t)
                   (car x))))
-    (cons new-car
-          (vl-make-regdecls-signed names (cdr x)))))
+    (cons new-car (vl-make-regdecls-signed names (cdr x)))))
 
 (define vl-module-portdecl-sign ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
-  :parents (portdecl-sign)
   :short "Cross-propagate @('signed') declarations between port declarations
 and net/reg declarations in a module."
 
@@ -211,14 +203,15 @@ and net/reg declarations in a module."
       (equal (vl-module->name (vl-module-portdecl-sign x))
              (vl-module->name x))))
 
-
 (defprojection vl-modulelist-portdecl-sign (x)
   (vl-module-portdecl-sign x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :parents (portdecl-sign)
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-portdecl-sign
-     (equal (vl-modulelist->names (vl-modulelist-portdecl-sign x))
-            (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
 
+(define vl-design-portdecl-sign
+  :short "Top-level @(see portdecl-sign) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-portdecl-sign x.mods))))

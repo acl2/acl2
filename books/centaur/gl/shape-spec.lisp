@@ -340,7 +340,7 @@
 
 (local (in-theory (disable logapp integer-length
                            loghead logtail sspec-geval
-                           acl2::member-equal-of-strip-cars-when-member-equal-of-hons-duplicated-members-aux
+                           ;;acl2::member-equal-of-strip-cars-when-member-equal-of-hons-duplicated-members-aux
                            acl2::consp-of-car-when-alistp
                            set::double-containment)))
 

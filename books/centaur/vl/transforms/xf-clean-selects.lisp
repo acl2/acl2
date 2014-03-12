@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2012 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -22,48 +22,35 @@
 (include-book "../mlib/clean-concats")
 (local (include-book "../util/arithmetic"))
 
-
 (defxdoc clean-selects
   :parents (transforms)
   :short "Simplify concatenations and selects throughout a module."
 
   :long "<p>This is a mainly aesthetic transform that applies @(see
 vl-expr-clean-selects) throughout modules.  This may help to make certain
-concatenation and select expressions more readable.</p>")
+concatenation and select expressions more readable.</p>
 
-; This is the usual boilerplate to extend vl-expr-clean-selects through the
-; parse tree, except that we aren't going to go through ranges: we only do this
-; in assignments, instances, and statements, where we expect to see wires.
+<p>Implementation-wise, this is the usual boilerplate to extend @(see
+vl-expr-clean-selects) through the parse tree, except that we aren't going to
+go through ranges: we only do this in assignments, instances, and statements,
+where we expect to see wires.</p>")
+
+(local (xdoc::set-default-parents clean-selects))
 
 (defmacro def-vl-clean-selects (name &key type body)
-  `(defsection ,name
-     :parents (clean-selects)
-
-     (defund ,name (x mod ialist)
-       (declare (xargs :guard (and (,type x)
-                                   (vl-module-p mod)
-                                   (equal ialist (vl-moditem-alist mod))))
-                (ignorable x mod ialist))
-       ,body)
-
-     (local (in-theory (enable ,name)))
-
-     (defthm ,(intern-in-package-of-symbol
-               (cat (symbol-name type) "-OF-" (symbol-name name))
-               name)
-       (implies (and (force (,type x))
-                     (force (vl-module-p mod))
-                     (force (equal ialist (vl-moditem-alist mod))))
-                (,type (,name x mod ialist))))))
+  `(define ,name ((x ,type)
+                  (mod vl-module-p)
+                  (ialist (equal ialist (vl-moditem-alist mod))))
+     :returns (new-x ,type :hyp :fguard)
+     (declare (ignorable x mod ialist))
+     ,body))
 
 (defmacro def-vl-clean-selects-list (name &key type element)
-
   `(defprojection ,name (x mod ialist)
      (,element x mod ialist)
      :guard (and (,type x)
                  (vl-module-p mod)
                  (equal ialist (vl-moditem-alist mod)))
-     :parents (clean-selects)
      :result-type ,type
      :nil-preservingp nil))
 
@@ -286,45 +273,31 @@ concatenation and select expressions more readable.</p>")
   :type vl-initiallist-p
   :element vl-initial-clean-selects)
 
-
-(defsection vl-module-clean-selects
-  :parents (clean-selects)
-
-  (defund vl-module-clean-selects (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (b* (((vl-module x) x)
-         ((when (vl-module->hands-offp x))
-          x)
-         (ialist (vl-moditem-alist x))
-         (ans (change-vl-module
-               x
-               :ports      (vl-portlist-clean-selects      x.ports      x ialist)
-               :assigns    (vl-assignlist-clean-selects    x.assigns    x ialist)
-               :modinsts   (vl-modinstlist-clean-selects   x.modinsts   x ialist)
-               :gateinsts  (vl-gateinstlist-clean-selects  x.gateinsts  x ialist)
-               :alwayses   (vl-alwayslist-clean-selects    x.alwayses   x ialist)
-               :initials   (vl-initiallist-clean-selects   x.initials   x ialist))))
-      (fast-alist-free ialist)
-      ans))
-
-  (local (in-theory (enable vl-module-clean-selects)))
-
-  (defthm vl-module-p-of-vl-module-clean-selects
-    (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-clean-selects x))))
-
-  (defthm vl-module->name-of-vl-module-clean-selects
-    (equal (vl-module->name (vl-module-clean-selects x))
-           (vl-module->name x))))
-
+(define vl-module-clean-selects ((x vl-module-p))
+  :returns (new-x vl-module-p :hyp :fguard)
+  (b* (((vl-module x) x)
+       ((when (vl-module->hands-offp x))
+        x)
+       (ialist (vl-moditem-alist x))
+       (ans (change-vl-module
+             x
+             :ports      (vl-portlist-clean-selects      x.ports      x ialist)
+             :assigns    (vl-assignlist-clean-selects    x.assigns    x ialist)
+             :modinsts   (vl-modinstlist-clean-selects   x.modinsts   x ialist)
+             :gateinsts  (vl-gateinstlist-clean-selects  x.gateinsts  x ialist)
+             :alwayses   (vl-alwayslist-clean-selects    x.alwayses   x ialist)
+             :initials   (vl-initiallist-clean-selects   x.initials   x ialist))))
+    (fast-alist-free ialist)
+    ans))
 
 (defprojection vl-modulelist-clean-selects (x)
   (vl-module-clean-selects x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :parents (clean-selects)
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-clean-selects
-     (equal (vl-modulelist->names (vl-modulelist-clean-selects x))
-            (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-clean-selects ((x vl-design-p))
+  :short "Top-level @(see clean-selects) transform."
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-clean-selects x.mods))))
 

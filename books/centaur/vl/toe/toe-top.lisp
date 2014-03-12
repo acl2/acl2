@@ -486,7 +486,7 @@ and extend @('eal') with the newly produced @('esim').</p>"
        ;; module port/port-declarations agree and that there are no unsupported
        ;; constructs.
        (mods (vl-modulelist-check-port-bits mods))
-       ((mv mods failmods) (vl-propagate-errors mods))
+       ((mv mods failmods) (vl-modulelist-propagate-errors mods))
        (names1  (mergesort (vl-modulelist->names mods)))
        (mods    (vl-deporder-sort mods))
        (names2  (vl-modulelist->names mods))
@@ -510,3 +510,12 @@ and extend @('eal') with the newly produced @('esim').</p>"
              (no-duplicatesp-equal (vl-modulelist->names (vl-modulelist-to-e mods))))
     :hints((set-reasoning))))
 
+(define vl-design-to-e ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x)
+       ((unless (uniquep (vl-modulelist->names x.mods)))
+        (raise "Name clash for modules ~&0."
+               (duplicated-members (vl-modulelist->names x.mods)))
+        x))
+    (change-vl-design x :mods (vl-modulelist-to-e x.mods))))

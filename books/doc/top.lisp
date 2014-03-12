@@ -148,10 +148,6 @@
 (include-book "centaur/vl/util/prefix-hash" :dir :system)
 ;;(include-book "vl/util/prefixp")
 
-(include-book "centaur/vl/checkers/use-set-tool" :dir :system)
-
-;; BOZO uh, incompatible with lint?  is this dead?
-;; (include-book "vl/lint/xf-drop-unresolved-submodules")
 (include-book "centaur/vl/mlib/lvalues-mentioning" :dir :system)
 (include-book "centaur/vl/mlib/rvalues" :dir :system)
 ;; (include-book "vl/mlib/ram-tools")   obsolete
@@ -193,14 +189,8 @@
 (include-book "xdoc/tests/preprocessor-tests" :dir :system)
 (include-book "xdoc/tests/unsound-eval-tests" :dir :system)
 (include-book "xdoc/tests/defsection-tests" :dir :system)
-
 (include-book "centaur/defrstobj/basic-tests" :dir :system)
-(include-book "std/util/deflist-tests" :dir :system)
-(include-book "std/util/defalist-tests" :dir :system)
-(include-book "std/util/defmapappend-tests" :dir :system)
-(include-book "std/util/defprojection-tests" :dir :system)
-(include-book "std/util/defredundant-tests" :dir :system)
-(include-book "std/util/defval-tests" :dir :system)
+(include-book "std/util/tests/top" :dir :system)
 (include-book "std/util/extensions/assert-return-thms" :dir :system)
 (include-book "centaur/misc/tshell-tests" :dir :system)
 (include-book "oslib/tests/top" :dir :system)
@@ -383,7 +373,6 @@ of proofs.")
 (xdoc::change-parents data-structures (macro-libraries))
 (xdoc::change-parents hacker (interfacing-tools))
 (xdoc::change-parents witness-cp (proof-automation))
-(xdoc::change-parents esim (hardware-verification))
 (xdoc::change-parents testing (debugging))
 
 (xdoc::change-parents leftist-trees (projects/leftist-trees))

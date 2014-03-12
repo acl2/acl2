@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -156,7 +156,7 @@ explicitly, which adds a layer of X-detection around the core circuitry.</p>"
 
   :guard (posp n)
   :body
-  (b* (((when (= n 1))
+  (b* (((when (eql n 1))
         (list *vl-1-bit-mult* *vl-1-bit-and* *vl-1-bit-xor*))
        (name  (hons-copy (cat "VL_" (natstr n) "_BIT_MULT")))
 

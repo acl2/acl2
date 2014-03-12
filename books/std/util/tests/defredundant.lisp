@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STD")
-(include-book "defredundant")
+(include-book "../defredundant")
 (include-book "misc/definline" :dir :system)
 (include-book "misc/assert" :dir :system)
 

@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -36,9 +36,10 @@ we want to consider the post synthesis/build behavior of the actual part.
 Throwing them away, then, is basically reasonable for any back-end tool that
 wants to analyze the behavior of the synthesized modules.</p>")
 
+(local (xdoc::set-default-parents eliminitial))
+
 (define vl-module-eliminitial ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
-  :parents (eliminitial)
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
@@ -56,21 +57,18 @@ wants to analyze the behavior of the synthesized modules.</p>")
          :acc x.warnings)))
     (change-vl-module x
                       :initials nil
-                      :warnings warnings))
-  ///
-  (defthm vl-module->name-of-vl-module-eliminitial
-    (equal (vl-module->name (vl-module-eliminitial x))
-           (vl-module->name x))))
+                      :warnings warnings)))
 
 (defprojection vl-modulelist-eliminitial (x)
   (vl-module-eliminitial x)
   :nil-preservingp t
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :parents (eliminitial)
-  :short "Top-level eliminitial transform."
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-eliminitial
-     (equal (vl-modulelist->names (vl-modulelist-eliminitial x))
-            (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
 
+(define vl-design-eliminitial
+  :short "Top-level @(see eliminitial) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-eliminitial x.mods))))

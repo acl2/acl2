@@ -20,7 +20,7 @@
 
 (in-package "STD")
 
-(include-book "fixtype")
+(include-book "../fixtype")
 (include-book "std/basic/defs" :dir :System)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "std/misc/two-nats-measure" :dir :system)

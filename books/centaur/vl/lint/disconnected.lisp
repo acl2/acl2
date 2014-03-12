@@ -26,25 +26,20 @@
 (include-book "../util/cwtime")
 (local (include-book "../util/arithmetic"))
 
-
-(defsection find-disconnected
+(defxdoc find-disconnected
   :parents (lint)
   :short "Basic check for entirely disconnected wires.")
 
 (local (xdoc::set-default-parents find-disconnected))
 
-
-(defsection vl-expr-allwires
-  :parents (vl-wirealist-p)
+(defines vl-expr-allwires
+  :parents (vl-wirealist-p find-disconnected)
   :short "Collect an @(see vl-emodwirelist-p) of every wire that is mentioned
 in an expression."
 
-  :long "<p><b>Signature:</b> @(call vl-expr-allwires) returns @('(mv warnings
-wires)').</p>
-
-<p>This is similar to @(see vl-msb-expr-bitlist), but can be applied to more
-kinds of expressions.  For instance, given the expression @('a + b'), this
-function will collect the wires of @('a') and the wires of @('b'), whereas
+  :long "<p>This is similar to @(see vl-msb-expr-bitlist), but can be applied
+to more kinds of expressions.  For instance, given the expression @('a + b'),
+this function will collect the wires of @('a') and the wires of @('b'), whereas
 @('vl-msb-expr-bitlist') will just fail since this isn't a sliceable
 expression.</p>
 
@@ -52,175 +47,174 @@ expression.</p>
 same level of error checking as @(see vl-msb-expr-bitlist).  Also, the wires
 are returned in a nonsensical order.</p>"
 
-  (mutual-recursion
+  (define vl-expr-allwires ((x      vl-expr-p)
+                            (walist vl-wirealist-p))
+    :verify-guards nil
+    :returns (mv (warnings vl-warninglist-p)
+                 (wires    vl-emodwirelist-p :hyp (force (vl-wirealist-p walist))))
+    :measure (two-nats-measure (acl2-count x) 1)
+    :flag :expr
+    (b* (((when (vl-fast-atom-p x))
+          (b* ((guts (vl-atom->guts x))
 
-   (defund vl-expr-allwires (x walist)
-     "Returns (MV WARNINGS WIRES)"
-     (declare (xargs :guard (and (vl-expr-p x)
-                                 (vl-wirealist-p walist))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (b* (((when (vl-fast-atom-p x))
-           (b* ((guts (vl-atom->guts x))
+               ((when (vl-fast-id-p guts))
+                ;; BOZO?  Not repeating the sign bit if there's an implicit
+                ;; signed extension.  Not necessarily something we need to do.
+                ;; We might want to do the sign extension if we ever care about
+                ;; the duplicity of the resulting wires, but for now we don't
+                ;; bother.
+                (b* ((name  (vl-id->name guts))
+                     (entry (hons-get name walist))
+                     (wires (mbe :logic (list-fix (cdr entry))
+                                 :exec (cdr entry)))
+                     ((when entry)
+                      (mv nil wires))
+                     (w (make-vl-warning
+                         :type :vl-collect-wires-fail
+                         :msg "Failed to collect wires for ~w0; no such entry ~
+                               in the wire-alist."
+                         :args (list name)
+                         :fn 'vl-expr-allwires)))
+                  (mv (list w) nil)))
 
-                ((when (vl-fast-id-p guts))
+               ((when (or (vl-fast-constint-p guts)
+                          (vl-fast-weirdint-p guts)
+                          (vl-fast-hidpiece-p guts)))
+                (mv nil nil))
 
-; BOZO?  Not repeating the sign bit if there's an implicit signed extension.
-; Not necessarily something we need to do.  We might want to do the sign
-; extension if we ever care about the duplicity of the resulting wires, but for
-; now we don't bother.
+               (w (make-vl-warning
+                   :type :vl-collect-wires-fail
+                   :msg "Failed to collect wires for ~a0; expression type is ~
+                         not supported."
+                   :args (list x)
+                   :fn 'vl-expr-allwires)))
+            (mv (list w) nil)))
 
-                 (b* ((name  (vl-id->name guts))
-                      (entry (hons-get name walist))
-                      (wires (mbe :logic (list-fix (cdr entry))
-                                  :exec (cdr entry)))
-                      ((when entry)
-                       (mv nil wires))
-                      (w (make-vl-warning
-                          :type :vl-collect-wires-fail
-                          :msg "Failed to collect wires for ~w0; no such entry ~
-                                in the wire-alist."
-                          :args (list name)
-                          :fn 'vl-expr-allwires)))
-                   (mv (list w) nil)))
+         (op   (vl-nonatom->op x))
+         (args (vl-nonatom->args x))
 
-                ((when (or (vl-fast-constint-p guts)
-                           (vl-fast-weirdint-p guts)
-                           (vl-fast-hidpiece-p guts)))
-                 (mv nil nil))
+         ((when (eq op :vl-bitselect))
+          (b* ((from (first args))
+               (index (second args))
+               ((unless (vl-idexpr-p from))
+                (b* ((w (make-vl-warning
+                         :type :vl-collect-wires-fail
+                         :msg "Failed to collect wires for ~a0; expected to ~
+                               select only from identifiers."
+                         :args (list x)
+                         :fn 'vl-expr-allwires)))
+                  (mv (list w) nil)))
 
-                (w (make-vl-warning
-                    :type :vl-collect-wires-fail
-                    :msg "Failed to collect wires for ~a0; expression type is ~
-                          not supported."
-                    :args (list x)
-                    :fn 'vl-expr-allwires)))
-             (mv (list w) nil)))
+               (name  (vl-idexpr->name from))
+               (entry (hons-get name walist))
+               (wires (mbe :logic (list-fix (cdr entry))
+                           :exec (cdr entry)))
 
-          (op   (vl-nonatom->op x))
-          (args (vl-nonatom->args x))
-
-          ((when (eq op :vl-bitselect))
-           (b* ((from (first args))
-                (index (second args))
-                ((unless (vl-idexpr-p from))
-                 (b* ((w (make-vl-warning
-                          :type :vl-collect-wires-fail
-                          :msg "Failed to collect wires for ~a0; expected to ~
-                                select only from identifiers."
-                          :args (list x)
-                          :fn 'vl-expr-allwires)))
-                   (mv (list w) nil)))
-
-                (name  (vl-idexpr->name from))
-                (entry (hons-get name walist))
-                (wires (mbe :logic (list-fix (cdr entry))
-                            :exec (cdr entry)))
-
-                ((unless entry)
-                 (b* ((w (make-vl-warning
-                          :type :vl-collect-wires-fail
-                          :msg "Failed to collect wires for ~a0; no entry for ~
+               ((unless entry)
+                (b* ((w (make-vl-warning
+                         :type :vl-collect-wires-fail
+                         :msg "Failed to collect wires for ~a0; no entry for ~
                                ~w1 in the wire alist."
-                          :args (list x name)
-                          :fn 'vl-expr-allwires)))
-                   (mv (list w) nil)))
+                         :args (list x name)
+                         :fn 'vl-expr-allwires)))
+                  (mv (list w) nil)))
 
-                ((unless (and (vl-expr-resolved-p index)
-                              (natp (vl-resolved->val index))))
-                 (b* ((w (make-vl-warning
-                          :type :vl-collect-wires-approx
-                          :msg "Approximating the wires for ~a0 with ~s1."
-                          :args (list x (vl-verilogify-emodwirelist wires))
-                          :fn 'vl-expr-allwires)))
-                   (mv (list w) wires)))
+               ((unless (and (vl-expr-resolved-p index)
+                             (natp (vl-resolved->val index))))
+                (b* ((w (make-vl-warning
+                         :type :vl-collect-wires-approx
+                         :msg "Approximating the wires for ~a0 with ~s1."
+                         :args (list x (vl-verilogify-emodwirelist wires))
+                         :fn 'vl-expr-allwires)))
+                  (mv (list w) wires)))
 
-                (option1 (vl-plain-wire-name name))
-                ((when (member option1 wires))
-                 (mv nil (list option1)))
+               (option1 (vl-plain-wire-name name))
+               ((when (member option1 wires))
+                (mv nil (list option1)))
 
-                (option2 (make-vl-emodwire :basename name
-                                           :index (vl-resolved->val index)))
-                ((when (member option2 wires))
-                 (mv nil (list option2)))
+               (option2 (make-vl-emodwire :basename name
+                                          :index (vl-resolved->val index)))
+               ((when (member option2 wires))
+                (mv nil (list option2)))
 
-                (w (make-vl-warning
-                    :type :vl-collect-wires-approx
-                    :msg "Failed to collect wires for ~a0; index out of range?"
-                    :args (list x)
-                    :fn 'vl-expr-allwires)))
-             (mv (list w) nil)))
+               (w (make-vl-warning
+                   :type :vl-collect-wires-approx
+                   :msg "Failed to collect wires for ~a0; index out of range?"
+                   :args (list x)
+                   :fn 'vl-expr-allwires)))
+            (mv (list w) nil)))
 
+         ((when (eq op :vl-partselect-colon))
+          (b* ((from  (first args))
+               (left  (second args))
+               (right (third args))
 
-          ((when (eq op :vl-partselect-colon))
-           (b* ((from  (first args))
-                (left  (second args))
-                (right (third args))
+               ((unless (vl-idexpr-p from))
+                (b* ((w (make-vl-warning
+                         :type :vl-collect-wires-fail
+                         :msg "Failed to collect wires for ~a0; expected to ~
+                               select only from identifiers."
+                         :args (list x)
+                         :fn 'vl-expr-allwires)))
+                  (mv (list w) nil)))
 
-                ((unless (vl-idexpr-p from))
-                 (b* ((w (make-vl-warning
-                          :type :vl-collect-wires-fail
-                          :msg "Failed to collect wires for ~a0; expected to ~
-                                select only from identifiers."
-                          :args (list x)
-                          :fn 'vl-expr-allwires)))
-                   (mv (list w) nil)))
+               (name  (vl-idexpr->name from))
+               (entry (hons-get name walist))
+               (wires (mbe :logic (list-fix (cdr entry))
+                           :exec (cdr entry)))
 
-                (name  (vl-idexpr->name from))
-                (entry (hons-get name walist))
-                (wires (mbe :logic (list-fix (cdr entry))
-                            :exec (cdr entry)))
+               ((unless entry)
+                (b* ((w (make-vl-warning
+                         :type :vl-collect-wires-fail
+                         :msg "Failed to collect wires for ~a0; no entry for ~
+                               ~w1 in the wire alist."
+                         :args (list x name)
+                         :fn 'vl-expr-allwires)))
+                  (mv (list w) nil)))
 
-                ((unless entry)
-                 (b* ((w (make-vl-warning
-                          :type :vl-collect-wires-fail
-                          :msg "Failed to collect wires for ~a0; no entry for ~
-                                ~w1 in the wire alist."
-                          :args (list x name)
-                          :fn 'vl-expr-allwires)))
-                   (mv (list w) nil)))
+               ((unless (and (vl-expr-resolved-p left)
+                             (vl-expr-resolved-p right)))
+                (b* ((w (make-vl-warning
+                         :type :vl-collect-wires-approx
+                         :msg "Approximating the wires for ~a0 with ~s1."
+                         :args (list x (vl-verilogify-emodwirelist wires))
+                         :fn 'vl-expr-allwires)))
+                  (mv (list w) wires)))
 
-                ((unless (and (vl-expr-resolved-p left)
-                              (vl-expr-resolved-p right)))
-                 (b* ((w (make-vl-warning
-                          :type :vl-collect-wires-approx
-                          :msg "Approximating the wires for ~a0 with ~s1."
-                          :args (list x (vl-verilogify-emodwirelist wires))
-                          :fn 'vl-expr-allwires)))
-                   (mv (list w) wires)))
+               (left  (vl-resolved->val left))
+               (right (vl-resolved->val right))
 
-                (left  (vl-resolved->val left))
-                (right (vl-resolved->val right))
+               ;; Special case for foo[0:0] when foo is a non-ranged wire.
+               ;; BOZO this is probably wrong, as in the normal partselect
+               ;; function.
 
-; Special case for foo[0:0] when foo is a non-ranged wire.  BOZO this is
-; probably wrong, as in the normal partselect function.
+               ((when (and (= left 0)
+                           (= right 0)
+                           (equal wires (list (vl-plain-wire-name name)))))
+                (mv nil wires))
 
-                ((when (and (= left 0)
-                            (= right 0)
-                            (equal wires (list (vl-plain-wire-name name)))))
-                 (mv nil wires))
+               (name[left]  (make-vl-emodwire :basename name :index left))
+               (name[right] (make-vl-emodwire :basename name :index right))
 
-                (name[left]  (make-vl-emodwire :basename name :index left))
-                (name[right] (make-vl-emodwire :basename name :index right))
+               ((when (and (member name[left] wires)
+                           (member name[right] wires)))
+                (mv nil (vl-emodwires-from-msb-to-lsb name left right)))
 
-                ((when (and (member name[left] wires)
-                            (member name[right] wires)))
-                 (mv nil (vl-emodwires-from-msb-to-lsb name left right)))
+               (w (make-vl-warning
+                   :type :vl-collect-wires-fail
+                   :msg "Failed to collect wires for ~a0; index out of range?"
+                   :args (list x)
+                   :fn 'vl-expr-allwires)))
+            (mv (list w) nil))))
 
-                (w (make-vl-warning
-                    :type :vl-collect-wires-fail
-                    :msg "Failed to collect wires for ~a0; index out of range?"
-                    :args (list x)
-                    :fn 'vl-expr-allwires)))
-             (mv (list w) nil))))
+      (vl-exprlist-allwires args walist)))
 
-       (vl-exprlist-allwires args walist)))
-
-   (defund vl-exprlist-allwires (x walist)
-     "Returns (MV WARNINGS WIRES)"
-     (declare (xargs :guard (and (vl-exprlist-p x)
-                                 (vl-wirealist-p walist))
-                     :measure (two-nats-measure (acl2-count x) 0)))
+   (define vl-exprlist-allwires ((x      vl-exprlist-p)
+                                 (walist vl-wirealist-p))
+     :returns (mv (warnings vl-warninglist-p)
+                  (wires vl-emodwirelist-p :hyp (force (vl-wirealist-p walist))))
+     :measure (two-nats-measure (acl2-count x) 0)
+     :flag :list
      (b* (((when (atom x))
            (mv nil nil))
           ((mv warnings1 car-wires)
@@ -228,63 +222,32 @@ are returned in a nonsensical order.</p>"
           ((mv warnings2 cdr-wires)
            (vl-exprlist-allwires (cdr x) walist)))
        (mv (append warnings1 warnings2)
-           (append car-wires cdr-wires)))))
+           (append car-wires cdr-wires))))
 
-  (local (in-theory (enable vl-exprlist-allwires)))
-
-  (flag::make-flag flag-vl-expr-allwires
-                   vl-expr-allwires
-                   :flag-mapping ((vl-expr-allwires . expr)
-                                  (vl-exprlist-allwires . list)))
-
-  (defthm-flag-vl-expr-allwires
+   ///
+  (defthm-vl-expr-allwires-flag
     (defthm true-listp-of-vl-expr-allwires-0
       (true-listp (mv-nth 0 (vl-expr-allwires x walist)))
       :rule-classes :type-prescription
-      :flag expr)
+      :flag :expr)
     (defthm true-listp-of-vl-exprlist-allwires-0
       (true-listp (mv-nth 0 (vl-exprlist-allwires x walist)))
       :rule-classes :type-prescription
-      :flag list)
-    :hints(("Goal" :expand ((vl-expr-allwires x walist)
-                            (vl-exprlist-allwires x walist)))))
+      :flag :list))
 
-  (defthm-flag-vl-expr-allwires
+  (defthm-vl-expr-allwires-flag
     (defthm true-listp-of-vl-expr-allwires-1
       (true-listp (mv-nth 1 (vl-expr-allwires x walist)))
       :rule-classes :type-prescription
-      :flag expr)
+      :flag :expr)
     (defthm true-listp-of-vl-exprlist-allwires-1
       (true-listp (mv-nth 1 (vl-exprlist-allwires x walist)))
       :rule-classes :type-prescription
-      :flag list)
-    :hints(("Goal" :expand ((vl-expr-allwires x walist)
-                            (vl-exprlist-allwires x walist)))))
-
-  (defthm-flag-vl-expr-allwires
-    (defthm vl-warninglist-p-of-vl-expr-allwires
-      (vl-warninglist-p (mv-nth 0 (vl-expr-allwires x walist)))
-      :flag expr)
-    (defthm vl-warninglist-p-of-vl-exprlist-allwires
-      (vl-warninglist-p (mv-nth 0 (vl-exprlist-allwires x walist)))
-      :flag list)
-    :hints(("Goal" :expand ((vl-expr-allwires x walist)
-                            (vl-exprlist-allwires x walist)))))
-
-  (defthm-flag-vl-expr-allwires
-    (defthm vl-emodwirelist-p-of-vl-expr-allwires
-      (implies (force (vl-wirealist-p walist))
-               (vl-emodwirelist-p (mv-nth 1 (vl-expr-allwires x walist))))
-      :flag expr)
-    (defthm vl-emodwirelist-p-of-vl-exprlist-allwires
-      (implies (force (vl-wirealist-p walist))
-               (vl-emodwirelist-p (mv-nth 1 (vl-exprlist-allwires x walist))))
-      :flag list)
+      :flag :list)
     :hints(("Goal" :expand ((vl-expr-allwires x walist)
                             (vl-exprlist-allwires x walist)))))
 
   (verify-guards vl-expr-allwires))
-
 
 (define vl-collect-flattened-hids ((x vl-netdecllist-p))
   :returns (netdecls vl-netdecllist-p :hyp :fguard)
@@ -296,7 +259,6 @@ are returned in a nonsensical order.</p>"
           (cons (car x)
                 (vl-collect-flattened-hids (cdr x)))
         (vl-collect-flattened-hids (cdr x))))))
-
 
 (define vl-delete-emodwires-with-basenames
   ((basenames string-listp)
@@ -449,30 +411,21 @@ are returned in a nonsensical order.</p>"
                            portion of the wire is disconnected: "
                           (strcat-like-tilde-& interesting))
                 :args (list x.name)))))
-    (change-vl-module x :warnings warnings))
-
-  ///
-  (defthm vl-module->name-of-vl-module-find-disconnected
-    (equal (vl-module->name (vl-module-find-disconnected x))
-           (vl-module->name x))))
-
+    (change-vl-module x :warnings warnings)))
 
 (defprojection vl-modulelist-find-disconnected-aux (x)
   (vl-module-find-disconnected x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  ///
-  (defthm vl-modulelist->names-of-vl-modulelist-find-disconnected-aux
-    (equal (vl-modulelist->names (vl-modulelist-find-disconnected-aux x))
-           (vl-modulelist->names x))))
+  :result-type vl-modulelist-p)
 
 (define vl-modulelist-find-disconnected ((x vl-modulelist-p))
   :returns (new-x vl-modulelist-p :hyp :fguard)
   (b* ((ans (vl-modulelist-find-disconnected-aux x)))
     (clear-memoize-table 'vl-module-wirealist)
-    ans)
-  ///
-  (defthm vl-modulelist->names-of-vl-modulelist-find-disconnected
-    (equal (vl-modulelist->names (vl-modulelist-find-disconnected x))
-           (vl-modulelist->names x))))
+    ans))
 
+(define vl-design-find-disconnected ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-find-disconnected x.mods))))

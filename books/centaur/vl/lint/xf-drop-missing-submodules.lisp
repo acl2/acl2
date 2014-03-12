@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2013 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -23,13 +23,27 @@
 (include-book "../mlib/hierarchy")
 (local (include-book "../util/arithmetic"))
 
+(defsection drop-missing-submodules
+  :parents (lint)
+  :short "(Unsound transform) Remove instances of missing submodules."
+
+  :long "<p>In our ordinary transformation process, e.g., @(see vl-simplify),
+modules that instance an undefined submodule are thrown out with fatal errors.
+In VL-Lint, we still want to analyze them as much as we can.  So, in this
+transformation, we simply delete any instances of missing submodules, perhaps
+leaving us with \"partial\" superior modules.</p>
+
+<p>This is obviously unsound and should never be used in our ordinary
+transformation process.</p>")
+
+(local (xdoc::set-default-parents drop-missing-submodules))
+
 (define vl-module-drop-missing-submodules
   ((x       vl-module-p  "Module to rewrite.")
    (missing string-listp "List of missing modules.")
    (fal     "Precomputed fast alist for missing."
             (equal fal (make-lookup-alist missing))))
   :returns (new-x vl-module-p :hyp :fguard)
-  :parents (vl-modulelist-drop-missing-submodules)
   (b* (((vl-module x) x)
        ((mv bad-insts good-insts)
         (vl-fast-filter-modinsts-by-modname missing fal x.modinsts nil nil))
@@ -52,49 +66,25 @@
           (change-vl-module x
                             :modinsts good-insts
                             :warnings (cons w x.warnings)))))
-    x)
-  ///
-  (defthm vl-module->name-of-vl-module-drop-missing-submodules
-    (equal (vl-module->name (vl-module-drop-missing-submodules x missing fal))
-           (vl-module->name x))
-    :hints(("Goal" :in-theory (disable (force))))))
-
+    x))
 
 (defprojection vl-modulelist-drop-missing-submodules-aux (x missing fal)
   (vl-module-drop-missing-submodules x missing fal)
   :guard (and (vl-modulelist-p x)
               (string-listp missing)
               (equal fal (make-lookup-alist missing)))
-  :result-type vl-modulelist-p
-  :parents (vl-modulelist-drop-missing-submodules)
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-drop-missing-submodules-aux
-     (implies (force (equal fal (make-lookup-alist missing)))
-              (equal (vl-modulelist->names
-                      (vl-modulelist-drop-missing-submodules-aux x missing fal))
-                     (vl-modulelist->names x))))))
-
+  :result-type vl-modulelist-p)
 
 (define vl-modulelist-drop-missing-submodules ((x vl-modulelist-p))
   :returns (new-x vl-modulelist-p :hyp :fguard)
-  :parents (lint)
-  :short "(Unsound transform) Remove instances of missing submodules."
-
-  :long "<p>In our ordinary transformation process, e.g., @(see vl-simplify),
-modules that instance an undefined submodule are thrown out with fatal errors.
-In VL-Lint, we still want to analyze them as much as we can.  So, in this
-transformation, we simply delete any instances of missing submodules, perhaps
-leaving us with \"partial\" superior modules.</p>
-
-<p>This is obviously unsound and should never be used in our ordinary
-transformation process.</p>"
-
   (b* ((missing (vl-modulelist-missing x))
        (fal     (make-lookup-alist missing))
-       (x-prime (vl-modulelist-drop-missing-submodules-aux x missing fal))
-       (-       (fast-alist-free fal)))
-    x-prime)
-  ///
-  (defthm vl-modulelist->names-of-vl-modulelist-drop-missing-submodules
-    (equal (vl-modulelist->names (vl-modulelist-drop-missing-submodules x))
-           (vl-modulelist->names x))))
+       (x-prime (vl-modulelist-drop-missing-submodules-aux x missing fal)))
+    (fast-alist-free fal)
+    x-prime))
+
+(define vl-design-drop-missing-submodules ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-drop-missing-submodules x.mods))))

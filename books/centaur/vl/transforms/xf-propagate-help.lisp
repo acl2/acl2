@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2012 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -56,6 +56,8 @@ assign net0413_0 = spb[0];
 things as safe as possible, we only simplify assignments wehre the widths work
 out exactly.</p>")
 
+(local (xdoc::set-default-parents propagate-help))
+
 (local (in-theory (disable all-equalp)))
 
 (local (defthm nat-listp-when-pos-listp
@@ -65,7 +67,6 @@ out exactly.</p>")
                   (nat-listp x))
          :rule-classes :tau-system
          :hints(("Goal" :induct (len x)))))
-
 
 (define vl-prophelp-split
   ((lhs-wires "individual wires from the left-hand side's concatenation"
@@ -80,7 +81,6 @@ out exactly.</p>")
   :guard (equal (sum-nats (vl-exprlist->finalwidths lhs-wires))
                 (len rhs-bits))
   :returns (assigns vl-assignlist-p :hyp :fguard)
-  :parents (propagate-help)
   :short "Create an assignment for each individual wire on the left-hand side
 to its associated bits from the right-hand side."
 
@@ -106,8 +106,7 @@ to its associated bits from the right-hand side."
             :hints(("Goal" :in-theory (enable nthcdr)))))))
 
 
-
-(define vl-prophelp-assign
+(define vl-assign-prophelp
   ((x        "assignment to be split up, if it has the right form."
              vl-assign-p)
    (mod      "module the assignment occurs in, so we can slice up the rhs."
@@ -116,7 +115,6 @@ to its associated bits from the right-hand side."
    (warnings vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p :hyp :fguard)
                (new-x vl-assignlist-p :hyp :fguard))
-  :parents (propagate-help)
   :short "Maybe split up an assignment."
   (b* (((vl-assign x) x)
 
@@ -174,29 +172,27 @@ to its associated bits from the right-hand side."
        (new-assigns (vl-prophelp-split x.lvalue.args rhs-bits x.loc)))
     (mv warnings new-assigns))
   ///
-  (defmvtypes vl-prophelp-assign (nil true-listp)))
+  (defmvtypes vl-assign-prophelp (nil true-listp)))
 
 
-(define vl-prophelp-assignlist
+(define vl-assignlist-prophelp
   ((x        vl-assignlist-p)
    (mod      vl-module-p)
    (ialist   (equal ialist (vl-moditem-alist mod)))
    (warnings vl-warninglist-p))
   :returns (mv (warnings vl-warninglist-p :hyp :fguard)
                (new-x vl-assignlist-p :hyp :fguard))
-  :parents (propagate-help)
   (b* (((when (atom x))
         (mv warnings nil))
-       ((mv warnings car) (vl-prophelp-assign (car x) mod ialist warnings))
-       ((mv warnings cdr) (vl-prophelp-assignlist (cdr x) mod ialist warnings)))
+       ((mv warnings car) (vl-assign-prophelp (car x) mod ialist warnings))
+       ((mv warnings cdr) (vl-assignlist-prophelp (cdr x) mod ialist warnings)))
     (mv warnings (append car cdr)))
   ///
-  (defmvtypes vl-prophelp-assign (nil true-listp)))
+  (defmvtypes vl-assign-prophelp (nil true-listp)))
 
 
-(define vl-prophelp-module ((x vl-module-p))
+(define vl-module-prophelp ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
-  :parents (propagate-help)
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
@@ -207,23 +203,21 @@ to its associated bits from the right-hand side."
         x)
        (ialist (vl-moditem-alist x))
        ((mv warnings assigns)
-        (vl-prophelp-assignlist x.assigns x ialist x.warnings)))
+        (vl-assignlist-prophelp x.assigns x ialist x.warnings)))
     (fast-alist-free ialist)
     (change-vl-module x
                       :assigns assigns
-                      :warnings warnings))
-  ///
-  (defthm vl-module->name-of-vl-prophelp-module
-    (equal (vl-module->name (vl-prophelp-module x))
-           (vl-module->name x))))
+                      :warnings warnings)))
 
-(defprojection vl-prophelp-modulelist (x)
-  (vl-prophelp-module x)
+(defprojection vl-modulelist-prophelp (x)
+  (vl-module-prophelp x)
   :guard (vl-modulelist-p x)
   :result-type vl-modulelist-p)
 
-(defthm vl-modulelist->names-of-vl-prophelp-modulelist
-  (equal (vl-modulelist->names (vl-prophelp-modulelist x))
-         (vl-modulelist->names x))
-  :hints(("Goal" :induct (len x))))
-
+(define vl-design-prophelp
+  :short "Top-level @(see prophelp) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-prophelp x.mods))))

@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -60,12 +60,13 @@ not a one-bit wire, we do not transform it and instead cause a fatal warning,
 since Verilog implementations disagree about what counts as the edge of a wide
 wire.</p>")
 
+(local (xdoc::set-default-parents elimnegedge))
+
 (define vl-evatom-elimnegedge ((x     vl-evatom-p)
                                (delta vl-delta-p)
                                (elem  vl-modelement-p))
   :returns (mv (new-x vl-evatom-p :hyp :fguard)
                (delta vl-delta-p  :hyp :fguard))
-  :parents (elimnegedge)
   :short "Maybe convert @('negedge clk') into @('posedge clkb'), after first
 adding a new wire for @('clkb')."
   (b* (((vl-evatom x) x)
@@ -131,7 +132,6 @@ adding a new wire for @('clkb')."
                                    (elem  vl-modelement-p))
   :returns (mv (new-x vl-evatomlist-p :hyp :fguard)
                (delta vl-delta-p      :hyp :fguard))
-  :parents (elimnegedge)
   (b* (((when (atom x))
         (mv x delta))
        ((mv car delta) (vl-evatom-elimnegedge (car x) delta elem))
@@ -143,7 +143,6 @@ adding a new wire for @('clkb')."
                                      (elem  vl-modelement-p))
   :returns (mv (new-x vl-eventcontrol-p :hyp :fguard)
                (delta vl-delta-p        :hyp :fguard))
-  :parents (elimnegedge)
   (b* (((vl-eventcontrol x) x)
        ((mv atoms delta) (vl-evatomlist-elimnegedge x.atoms delta elem))
        (new-x (change-vl-eventcontrol x :atoms atoms)))
@@ -154,138 +153,80 @@ adding a new wire for @('clkb')."
                                             (elem  vl-modelement-p))
   :returns (mv (new-x vl-delayoreventcontrol-p :hyp :fguard)
                (delta vl-delta-p               :hyp :fguard))
-  :parents (elimnegedge)
   (case (tag x)
     (:vl-eventcontrol (vl-eventcontrol-elimnegedge x delta elem))
     (otherwise (mv x delta))))
 
-(defsection vl-stmt-elimnegedge
-  :parents (elimnegedge)
+(defines vl-stmt-elimnegedge
 
-  (mutual-recursion
-   (defund vl-stmt-elimnegedge (x delta elem)
-     "Returns (mv new-x delta)"
-     (declare (xargs :guard (and (vl-stmt-p x)
-                                 (vl-delta-p delta)
-                                 (vl-modelement-p elem))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (b* (((when (vl-fast-atomicstmt-p x))
-           (mv x delta))
-          (stmts (vl-compoundstmt->stmts x))
-          ((mv stmts delta)
-           (vl-stmtlist-elimnegedge stmts delta elem))
-          (x (change-vl-compoundstmt x :stmts stmts))
-          ((unless (vl-timingstmt-p x))
-           (mv x delta))
-          ((vl-timingstmt x) x)
-          ((mv ctrl delta)
-           (vl-delayoreventcontrol-elimnegedge x.ctrl delta elem)))
-       (mv (change-vl-timingstmt x :ctrl ctrl) delta)))
+  (define vl-stmt-elimnegedge ((x     vl-stmt-p)
+                               (delta vl-delta-p)
+                               (elem  vl-modelement-p))
+    :returns (mv (new-x vl-stmt-p :hyp :fguard)
+                 (delta vl-delta-p :hyp :fguard))
+    :verify-guards nil
+    :measure (two-nats-measure (acl2-count x) 1)
+    :flag :stmt
+    (b* (((when (vl-fast-atomicstmt-p x))
+          (mv x delta))
+         (stmts (vl-compoundstmt->stmts x))
+         ((mv stmts delta)
+          (vl-stmtlist-elimnegedge stmts delta elem))
+         (x (change-vl-compoundstmt x :stmts stmts))
+         ((unless (vl-timingstmt-p x))
+          (mv x delta))
+         ((vl-timingstmt x) x)
+         ((mv ctrl delta)
+          (vl-delayoreventcontrol-elimnegedge x.ctrl delta elem)))
+      (mv (change-vl-timingstmt x :ctrl ctrl) delta)))
 
-   (defund vl-stmtlist-elimnegedge (x delta elem)
-     "Returns (mv new-x delta)"
-     (declare (xargs :guard (and (vl-stmtlist-p x)
-                                 (vl-delta-p delta)
-                                 (vl-modelement-p elem))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (b* (((when (atom x))
-           (mv nil delta))
-          ((mv car delta) (vl-stmt-elimnegedge (car x) delta elem))
-          ((mv cdr delta) (vl-stmtlist-elimnegedge (cdr x) delta elem)))
-       (mv (cons car cdr) delta))))
+  (define vl-stmtlist-elimnegedge ((x     vl-stmtlist-p)
+                                   (delta vl-delta-p)
+                                   (elem  vl-modelement-p))
+    :returns (mv (new-x (and (vl-stmtlist-p new-x)
+                             (equal (len new-x) (len x)))
+                        :hyp :fguard)
+                 (delta vl-delta-p :hyp :fguard))
+    :measure (two-nats-measure (acl2-count x) 0)
+    :flag :list
+    (b* (((when (atom x))
+          (mv nil delta))
+         ((mv car delta) (vl-stmt-elimnegedge (car x) delta elem))
+         ((mv cdr delta) (vl-stmtlist-elimnegedge (cdr x) delta elem)))
+      (mv (cons car cdr) delta)))
 
-  (flag::make-flag vl-flag-stmt-elimnegedge
-                   vl-stmt-elimnegedge
-                   :flag-mapping ((vl-stmt-elimnegedge . stmt)
-                                  (vl-stmtlist-elimnegedge . list)))
-
-  (defthm vl-stmtlist-elimnegedge-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-stmtlist-elimnegedge x delta elem)
-                    (mv nil delta)))
-    :hints(("Goal" :in-theory (enable vl-stmtlist-elimnegedge))))
-
-  (defthm vl-stmtlist-elimnegedge-of-cons
-    (equal (vl-stmtlist-elimnegedge (cons a x) delta elem)
-           (b* (((mv car delta) (vl-stmt-elimnegedge a delta elem))
-                ((mv cdr delta) (vl-stmtlist-elimnegedge x delta elem)))
-             (mv (cons car cdr) delta)))
-    :hints(("Goal" :in-theory (enable vl-stmtlist-elimnegedge))))
-
-  (local (defun my-induction (x delta elem)
-           (b* (((when (atom x))
-                 (mv nil delta))
-                ((mv car delta) (vl-stmt-elimnegedge (car x) delta elem))
-                ((mv cdr delta) (my-induction (cdr x) delta elem)))
-             (mv (cons car cdr) delta))))
-
-  (defthm len-of-vl-stmtlist-elimnegedge
-    (b* (((mv new-x ?delta) (vl-stmtlist-elimnegedge x delta elem)))
-      (equal (len new-x)
-             (len x)))
-    :hints(("Goal" :induct (my-induction x delta elem))))
-
-  (local
-   (defthm nasty-nasty
-
-; Uggggh... Can't use vl-compoundstmt-basic-checksp-of-change-vl-compoundstmt
-; because (vl-compoundstmt->type x) gets rewritten.  use of compoundstmt->exprs
-; is horrible but gives us a binding for x.
-
-     (implies (and (force (vl-compoundstmt-p x))
-                   (force (equal :vl-timingstmt           (vl-compoundstmt->type x)))
-                   (force (iff (double-rewrite new-name)  (vl-compoundstmt->name x)))
-                   (force (iff (double-rewrite new-ctrl)  (vl-compoundstmt->ctrl x)))
-                   (force (equal new-sequentialp          (vl-compoundstmt->sequentialp x)))
-                   (force (equal new-casetype             (vl-compoundstmt->casetype x)))
-                   (force (equal (consp new-decls) (consp (vl-compoundstmt->decls x))))
-                   (force (equal (len (double-rewrite new-stmts)) (len (vl-compoundstmt->stmts x))))
-                   )
-              (vl-compoundstmt-basic-checksp :vl-timingstmt
-                                             (vl-compoundstmt->exprs x)
-                                             new-stmts new-name new-decls
-                                             new-ctrl new-sequentialp new-casetype))
-     :hints(("Goal"
-             :in-theory (disable vl-compoundstmt-basic-checksp-of-change-vl-compoundstmt)
-             :use ((:instance vl-compoundstmt-basic-checksp-of-change-vl-compoundstmt
-                              (new-exprs (vl-compoundstmt->exprs x))
-                              ))))))
-
-  (defthm-vl-flag-stmt-elimnegedge
-
-    (defthm return-type-of-vl-stmt-elimnegedge
-      (implies (and (force (vl-stmt-p x))
-                    (force (vl-delta-p delta))
-                    (force (vl-modelement-p elem)))
-               (b* (((mv new-x delta)
-                     (vl-stmt-elimnegedge x delta elem)))
-                 (and (vl-stmt-p new-x)
-                      (vl-delta-p delta))))
-      :flag stmt)
-
-    (defthm return-type-of-vl-stmtlist-elimnegedge
-      (implies (and (force (vl-stmtlist-p x))
-                    (force (vl-delta-p delta))
-                    (force (vl-modelement-p elem)))
-               (b* (((mv new-x delta)
-                     (vl-stmtlist-elimnegedge x delta elem)))
-                 (and (vl-stmtlist-p new-x)
-                      (vl-delta-p delta))))
-      :flag list)
-
-    :hints(("Goal"
-            :expand ((vl-stmt-elimnegedge x delta elem)))))
-
+  :prepwork
+  ((local
+    (defthm nasty-nasty
+      ;; Uggggh... vl-compoundstmt-basic-checksp-of-change-vl-compoundstmt
+      ;; doesn't work because (vl-compoundstmt->type x) gets rewritten.  Using
+      ;; compoundstmt->exprs here is horrible, but gives us a binding for x.
+      (implies
+       (and (force (vl-compoundstmt-p x))
+            (force (equal :vl-timingstmt           (vl-compoundstmt->type x)))
+            (force (iff (double-rewrite new-name)  (vl-compoundstmt->name x)))
+            (force (iff (double-rewrite new-ctrl)  (vl-compoundstmt->ctrl x)))
+            (force (equal new-sequentialp          (vl-compoundstmt->sequentialp x)))
+            (force (equal new-casetype             (vl-compoundstmt->casetype x)))
+            (force (equal (consp new-decls) (consp (vl-compoundstmt->decls x))))
+            (force (equal (len (double-rewrite new-stmts)) (len (vl-compoundstmt->stmts x))))
+            )
+       (vl-compoundstmt-basic-checksp :vl-timingstmt
+                                      (vl-compoundstmt->exprs x)
+                                      new-stmts new-name new-decls
+                                      new-ctrl new-sequentialp new-casetype))
+      :hints(("Goal"
+              :in-theory (disable vl-compoundstmt-basic-checksp-of-change-vl-compoundstmt)
+              :use ((:instance vl-compoundstmt-basic-checksp-of-change-vl-compoundstmt
+                               (new-exprs (vl-compoundstmt->exprs x))
+                               )))))))
+  ///
   (verify-guards vl-stmt-elimnegedge))
-
 
 (define vl-always-elimnegedge ((x     vl-always-p)
                                (delta vl-delta-p))
   :returns (mv (new-x vl-always-p :hyp :fguard)
                (delta vl-delta-p  :hyp :fguard))
-  :parents (elimnegedge)
   (b* (((vl-always x) x)
        ((mv stmt delta) (vl-stmt-elimnegedge x.stmt delta x)))
     (mv (change-vl-always x :stmt stmt) delta)))
@@ -294,7 +235,6 @@ adding a new wire for @('clkb')."
                                     (delta vl-delta-p))
   :returns (mv (new-x vl-alwayslist-p :hyp :fguard)
                (delta vl-delta-p  :hyp :fguard))
-  :parents (elimnegedge)
   (b* (((when (atom x))
         (mv x delta))
        ((mv car delta) (vl-always-elimnegedge (car x) delta))
@@ -303,7 +243,6 @@ adding a new wire for @('clkb')."
 
 (define vl-module-elimnegedge ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
-  :parents (elimnegedge)
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
@@ -321,19 +260,18 @@ adding a new wire for @('clkb')."
                       :alwayses alwayses
                       :assigns  delta.assigns
                       :netdecls delta.netdecls
-                      :warnings delta.warnings))
-  ///
-  (defthm vl-module->name-of-vl-module-elimnegedge
-    (equal (vl-module->name (vl-module-elimnegedge x))
-           (vl-module->name x))))
+                      :warnings delta.warnings)))
 
 (defprojection vl-modulelist-elimnegedge (x)
   (vl-module-elimnegedge x)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  :parents (elimnegedge)
-  :rest
-  ((defthm vl-modulelist->names-of-vl-modulelist-elimnegedge
-     (equal (vl-modulelist->names (vl-modulelist-elimnegedge x))
-            (vl-modulelist->names x)))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-elimnegedge
+  :short "Top-level @(see elimnegedge) transform."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-elimnegedge x.mods))))
 

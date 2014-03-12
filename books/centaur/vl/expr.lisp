@@ -1573,3 +1573,16 @@ reason.</p>"
              (< (vl-exprlist-count (cdr x))
                 (vl-exprlist-count x)))
     :rule-classes ((:linear) (:rewrite))))
+
+
+(defthm vl-expr-p-of-reconstruct-expr-with-new-args
+  ;; Special theorem that can help in cases where we're rewriting the arguments
+  ;; of an expression, and expecting to get a good expression back.
+  (implies (and (equal (len args) (len (vl-nonatom->args x)))
+                (equal op (vl-nonatom->op x))
+                (not (vl-atom-p x))
+                (vl-expr-p x)
+                (vl-exprlist-p args))
+           (vl-expr-p (change-vl-nonatom x
+                                         :op op
+                                         :args args))))

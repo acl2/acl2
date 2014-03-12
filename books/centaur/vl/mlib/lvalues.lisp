@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -31,12 +31,9 @@
 expressions in lvalue positions.")
 
 
-(defsection vl-expr-lvaluep
+(defines vl-expr-lvaluep
   :parents (lvalues vl-expr-p)
-
-  :short "@(call vl-expr-lvaluep) determines if an expression looks like a good
-lvalue."
-
+  :short "Determine if an expression looks like a good lvalue."
   :long "<p>We say the <i>lvalue expressions</i> are the subset of expressions
 formed by recursively closing</p>
 
@@ -54,64 +51,49 @@ structural net expressions (see section 12.3.9.2) used in port connections and
 also the lvalues which are permitted in continuous and procedural assignment
 statements.</p>"
 
-  (mutual-recursion
+  (define vl-expr-lvaluep ((x vl-expr-p))
+    :measure (two-nats-measure (acl2-count x) 1)
+    (cond ((vl-fast-atom-p x)
+           (let ((guts (vl-atom->guts x)))
+             (or (vl-fast-hidpiece-p guts)
+                 (vl-fast-id-p guts))))
 
-   (defund vl-expr-lvaluep (x)
-     (declare (xargs :guard (vl-expr-p x)
-                     :measure (two-nats-measure (acl2-count x) 1)))
-     (cond ((vl-fast-atom-p x)
-            (let ((guts (vl-atom->guts x)))
-              (or (vl-fast-hidpiece-p guts)
-                  (vl-fast-id-p guts))))
+          ((mbe :logic (not (consp x))
+                :exec nil)
+           ;; Stupid termination hack
+           nil)
 
-           ((mbe :logic (not (consp x))
-                 :exec nil)
-            ;; Stupid termination hack
-            nil)
+          (t
+           ;; An lvalue should consist of identifiers, part selects, bit
+           ;; selects, concatenations, and multiple concatenations.
+           (let ((op   (vl-nonatom->op x))
+                 (args (vl-nonatom->args x)))
+             (case op
+               ((:vl-bitselect :vl-partselect-colon :vl-partselect-pluscolon
+                               :vl-partselect-minuscolon)
+                ;; foo[index] or foo[a:b] or foo[a+:b] or foo[a-:b] is an okay
+                ;; lvalue as long as foo is an identifier or hierarchical id.
+                (or (vl-idexpr-p (first args))
+                    (vl-hidexpr-p (first args))))
+               ((:vl-concat)
+                ;; { foo, bar, baz, ... } is valid if all the components are
+                ;; lvalues.
+                (vl-exprlist-lvaluesp args))
+               ((:vl-hid-dot)
+                ;; hierarchical identifiers are okay for lvalues
+                (vl-hidexpr-p x))
+               (otherwise
+                ;; nothing else is permitted.
+                nil))))))
 
-           (t
-            ;; An lvalue should consist of identifiers, part selects, bit
-            ;; selects, concatenations, and multiple concatenations.
-            (let ((op   (vl-nonatom->op x))
-                  (args (vl-nonatom->args x)))
-              (case op
-                ((:vl-bitselect :vl-partselect-colon :vl-partselect-pluscolon
-                                :vl-partselect-minuscolon)
-                 ;; foo[index] or foo[a:b] or foo[a+:b] or foo[a-:b] is an okay
-                 ;; lvalue as long as foo is an identifier or hierarchical id.
-                 (or (vl-idexpr-p (first args))
-                     (vl-hidexpr-p (first args))))
-                ((:vl-concat)
-                 ;; { foo, bar, baz, ... } is valid if all the components are
-                 ;; lvalues.
-                 (vl-exprlist-lvaluesp args))
-                ((:vl-hid-dot)
-                 ;; hierarchical identifiers are okay for lvalues
-                 (vl-hidexpr-p x))
-                (otherwise
-                 ;; nothing else is permitted.
-                 nil))))))
+  (define vl-exprlist-lvaluesp ((x vl-exprlist-p))
+    :measure (two-nats-measure (acl2-count x) 0)
+    (if (atom x)
+        t
+      (and (vl-expr-lvaluep (car x))
+           (vl-exprlist-lvaluesp (cdr x)))))
 
-   (defund vl-exprlist-lvaluesp (x)
-     (declare (xargs :guard (vl-exprlist-p x)
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (atom x)
-         t
-       (and (vl-expr-lvaluep (car x))
-            (vl-exprlist-lvaluesp (cdr x))))))
-
-  (defthm vl-exprlist-lvaluesp-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-exprlist-lvaluesp x)
-                    t))
-    :hints(("Goal" :in-theory (enable vl-exprlist-lvaluesp))))
-
-  (defthm vl-exprlist-lvaluesp-of-cons
-    (equal (vl-exprlist-lvaluesp (cons a x))
-           (and (vl-expr-lvaluep a)
-                (vl-exprlist-lvaluesp x)))
-    :hints(("Goal" :in-theory (enable vl-exprlist-lvaluesp))))
-
+  ///
   (deflist vl-exprlist-lvaluesp (x)
     (vl-expr-lvaluep x)
     :already-definedp t
@@ -124,8 +106,6 @@ statements.</p>"
                   (force (vl-expr-lvaluep x)))
              (vl-exprlist-lvaluesp (vl-nonatom->args x)))
     :hints(("Goal" :in-theory (enable vl-expr-lvaluep)))))
-
-
 
 
 (defxdoc lvalexprs
@@ -764,21 +744,16 @@ problematic lvalues encountered.</p>" long)))
        (warnings  (vl-initiallist-lvaluecheck  x.initials  warnings))
        (warnings  (vl-fundecllist-lvaluecheck  x.fundecls  warnings))
        (warnings  (vl-taskdecllist-lvaluecheck x.taskdecls warnings)))
-    (change-vl-module x :warnings warnings))
-  ///
-  (defthm vl-module->name-of-vl-module-lvaluecheck
-    (equal (vl-module->name (vl-module-lvaluecheck x))
-           (vl-module->name x))))
-
-
+    (change-vl-module x :warnings warnings)))
 
 (defprojection vl-modulelist-lvaluecheck (x)
   :guard (vl-modulelist-p x)
   :result-type vl-modulelist-p
-  (vl-module-lvaluecheck x)
-  ///
-  (defthm vl-modulelist->names-of-vl-modulelist-lvaluecheck
-    (equal (vl-modulelist->names (vl-modulelist-lvaluecheck x))
-           (vl-modulelist->names x))))
+  (vl-module-lvaluecheck x))
 
+(define vl-design-lvaluecheck ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-lvaluecheck x.mods))))
 

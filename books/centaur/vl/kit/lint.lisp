@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2013 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -29,7 +29,6 @@
 (include-book "../lint/xf-drop-user-submodules")
 (include-book "../lint/xf-lint-stmt-rewrite")
 (include-book "../lint/xf-remove-toohard")
-(include-book "../lint/xf-undefined-names")
 (include-book "../lint/xf-suppress-warnings")
 
 (include-book "../checkers/condcheck")
@@ -207,12 +206,13 @@ Verilog, reusing much of @(see vl).</p>")
                 "Print extra information for debugging."
                 :rule-classes :type-prescription)))
 
-(defsection *vl-lint-help*
+(defval *vl-lint-help*
   :parents (lint)
   :short "Usage message for vl lint."
   :long "@(def *vl-lint-help*)"
+  :showval t
 
-  (defconsts *vl-lint-help* (str::cat "
+  (str::cat "
 vl lint:  A linting tool for Verilog.  Scans your Verilog files for things
           that look like bugs (size mismatches, unused wires, etc.)
 
@@ -222,7 +222,7 @@ Example:  vl lint engine.v wrapper.v core.v \\
 
 Usage:    vl lint [OPTIONS] file.v [file2.v ...]
 
-Options:" *nls* *nls* *vl-lintconfig-usage* *nls*)))
+Options:" *nls* *nls* *vl-lintconfig-usage* *nls*))
 
 
 (define vl-filter-mods-with-good-paramdecls
@@ -299,11 +299,11 @@ shown.</p>"
   :parents (lint)
   :short "Results from running the linter."
   :tag :vl-lintresult
-  ((mods      vl-modulelist-p
+  ((design    vl-design-p
               "Final, transformed list of modules.  Typically this isn't very
                interesting or relevant to anything.")
 
-   (mods0     vl-modulelist-p
+   (design0   vl-design-p
               "Almost: the initial, pre-transformed modules.  The only twist is
                that we have already removed modules that are unnecessary or
                that we wanted to drop; see, e.g., the @('topmods') and
@@ -366,14 +366,75 @@ shown.</p>"
                    acl2::no-duplicatesp-equal-append-iff
                    mergesort)))
 
-(define run-vl-lint-main ((mods     (and (vl-modulelist-p mods)
-                                         (uniquep (vl-modulelist->names mods))))
-                          (config   vl-lintconfig-p))
+(define vl-design-remove-unnecessary-modules ((keep string-listp)
+                                              (design vl-design-p))
+  :returns (new-design vl-design-p)
+  (b* ((design (vl-design-fix design))
+       (keep   (mbe :logic (if (string-listp keep) keep nil) :exec keep))
+       (keep   (mergesort keep))
+       ((unless keep)
+        ;; Special feature: if the user didn't specify any top modules,
+        ;; then we want to keep everything.
+        design)
+       (mods (mergesort (vl-design->mods design)))
+       ((unless (uniquep (vl-modulelist->names mods)))
+        (raise "Name clash: duplicate module names: ~&0."
+               (duplicated-members (vl-modulelist->names mods)))
+        design)
+       (new-mods (vl-remove-unnecessary-modules keep mods)))
+    (change-vl-design design :mods new-mods)))
+
+
+(define vl-lint-unparam ((good vl-design-p))
+  :returns (good vl-design-p)
+  (b* ((good (vl-design-fix good))
+
+       ;; Subtle thing.  Move any bad modules out of the way before doing
+       ;; unparameterization.
+       ((mv ok-mods bad-mods)
+        (vl-filter-mods-with-good-paramdecls (vl-design->mods good) nil nil))
+
+       (- (or (not bad-mods)
+              (progn$
+               (cw "~%~%Note: deleting ~x0 module~s1 because they include ~
+                    unsupported parameter declarations.~%~%~
+                    Module~s1 being deleted: ~&2~%~%~
+                    Details:~%~%"
+                   (len bad-mods)
+                   (if (vl-plural-p bad-mods) "s" "")
+                   (mergesort (vl-modulelist->names bad-mods)))
+               (vl-print-certain-warnings bad-mods
+                                          (list :vl-bad-paramdecl
+                                                :vl-bad-paramdecls)
+                                          nil))))
+
+       (good (change-vl-design good :mods ok-mods))
+       (good (cwtime (vl-design-drop-missing-submodules good)))
+       (good (vl-design-unparameterize good))
+       (good (change-vl-design good :mods (append-without-guard
+                                           bad-mods (vl-design->mods good)))))
+    (or (uniquep (vl-modulelist->names (vl-design->mods good)))
+        (raise "Programming error.  Expected modules to have unique names ~
+                after vl-unparameterize, but found duplicate modules named ~
+                ~x0.  Please tell Jared."
+               (duplicated-members (vl-modulelist->names (vl-design->mods good)))))
+    good))
+
+(define vl-lint-apply-quiet ((quiet string-listp)
+                             (design vl-design-p))
+  :returns (new-design vl-design-p)
+  (b* ((design (vl-design-fix design))
+       (mods   (vl-design->mods design))
+       (mods   (vl-delete-modules quiet mods)))
+    (change-vl-design design :mods mods)))
+
+(define run-vl-lint-main ((design vl-design-p)
+                          (config vl-lintconfig-p))
+  :guard-debug t
   :returns (result vl-lintresult-p :hyp :fguard)
 
   (b* (((vl-lintconfig config) config)
-
-       (mods (vl-modulelist-drop-user-submodules mods config.dropmods))
+       (design (cwtime (vl-design-drop-user-submodules design config.dropmods)))
 
        ;; You might expect that we'd immediately throw out modules that we
        ;; don't need for topmods.  Historically we did that.  But then we found
@@ -382,153 +443,97 @@ shown.</p>"
        ;; thrown away!  So now we deal with this stuff after HID resolution.
        ;; Except that for skip-detection, we also need to remove them from
        ;; mods0, so do that now:
-       (mods0 (if (not config.topmods)
-                  mods
-                (vl-remove-unnecessary-modules (mergesort config.topmods)
-                                               (mergesort mods))))
-
+       (design0 (vl-design-remove-unnecessary-modules config.topmods design))
 
        (- (cw "~%vl-lint: initial processing...~%"))
-       (mods (cwtime (vl-modulelist-portcheck mods)))
-       (mods (cwtime (vl-modulelist-check-case mods)))
-       (mods (cwtime (vl-modulelist-duperhs-check mods)))
-       (mods (cwtime (vl-modulelist-duplicate-detect mods)))
-       (mods (cwtime (vl-modulelist-condcheck mods)))
-       (mods (cwtime (vl-modulelist-leftright-check mods)))
-       (mods (cwtime (vl-modulelist-drop-missing-submodules mods)))
+       (design (cwtime (vl-design-portcheck design)))
+       (design (cwtime (vl-design-check-case design)))
+       (design (cwtime (vl-design-duperhs-check design)))
+       (design (cwtime (vl-design-duplicate-detect design)))
+       (design (cwtime (vl-design-condcheck design)))
+       (design (cwtime (vl-design-leftright-check design)))
+       (design (cwtime (vl-design-drop-missing-submodules design)))
        ;; BOZO reinstate this??
        ;; (mods (cwtime (vl-modulelist-add-undefined-names mods)))
-       (mods (cwtime (vl-modulelist-resolve-indexing mods)))
-       (mods (cwtime (vl-modulelist-portdecl-sign mods)))
-       (mods (cwtime (vl-modulelist-origexprs mods)))
-       (mods (cwtime (vl-modulelist-check-namespace mods)))
+       (design (cwtime (vl-design-resolve-indexing design)))
+       (design (cwtime (vl-design-portdecl-sign design)))
+       (design (cwtime (vl-design-origexprs design)))
+       (design (cwtime (vl-design-check-namespace design)))
 
        (- (cw "~%vl-lint: processing arguments, parameters...~%"))
-       (mods (cwtime (vl-modulelist-elim-unused-regs mods)))
-       (mods (cwtime (vl-modulelist-argresolve mods)))
-       (mods (cwtime (vl-modulelist-dupeinst-check mods)))
+       (design (cwtime (vl-design-elim-unused-regs design)))
+       (design (cwtime (vl-design-argresolve design)))
+       (design (cwtime (vl-design-dupeinst-check design)))
 
        ;; BOZO not exactly sure where this should go, maybe this will work.
-       (mods (cwtime (vl-modulelist-expand-functions mods)))
+       (design (cwtime (vl-design-expand-functions design)))
 
        ;; BOZO we need to do something to throw away instances with unresolved
        ;; arguments to avoid programming-errors in drop-blankports... and actually
        ;; we hit errors like that later, too.
-       (mods (cwtime (vl-modulelist-drop-blankports mods)))
-       (mods (cwtime (mp-verror-transform-hook mods)))
-       (mods (cwtime (vl-modulelist-follow-hids mods)))
-       (mods (cwtime (vl-modulelist-clean-params mods)))
-       (mods (cwtime (vl-modulelist-check-good-paramdecls mods)))
-
-       ((mv mods bad)
-        (vl-filter-mods-with-good-paramdecls mods nil nil))
-       (- (or (not bad)
-              (progn$
-               (cw "~%~%Note: deleting ~x0 module~s1 because they include ~
-                    unsupported parameter declarations.~%~%~
-                    Module~s1 being deleted: ~&2~%~%~
-                    Details:~%~%"
-                   (len bad)
-                   (if (= (len bad) 1) "" "s")
-                   (mergesort (vl-modulelist->names bad)))
-               (vl-print-certain-warnings bad
-                                          (list :vl-bad-paramdecl
-                                                :vl-bad-paramdecls)
-                                          nil))))
-       (mods (cwtime (vl-modulelist-drop-missing-submodules mods)))
-       (mods (if (and (uniquep (vl-modulelist->names mods))
-                      (vl-modulelist-complete-p mods mods)
-                      (vl-good-paramdecllist-list-p-of-vl-modulelist->paramdecls mods))
-                 mods
-               (er hard? 'vl-lint
-                   "Programming error.  Expected modules to be complete ~
-                    and to have good parameters, but this is not the case. ~
-                    Please tell Jared about this failure.")))
-       ((mv mods failmods) (cwtime (vl-unparameterize mods 30)))
-       (mods (append mods failmods))
+       (design (cwtime (vl-design-drop-blankports design)))
+       (design (cwtime (mp-verror-transform-hook design))) ;; BOZO really keep this???
+       (design (cwtime (vl-design-follow-hids design)))
+       (design (cwtime (vl-design-clean-params design)))
+       (design (cwtime (vl-design-check-good-paramdecls design)))
+       (design (cwtime (vl-lint-unparam design)))
        (- (vl-gc))
 
-       (mods (if (uniquep (vl-modulelist->names mods))
-                 mods
-               (progn$
-                (sneaky-save :bad-names mods)
-                (er hard? 'vl-lint
-                    "Programming error.  Expected modules to have unique ~
-                      names after vl-unparameterize, but found duplicate ~
-                      modules named ~x0.  Please tell Jared."
-                    (duplicated-members (vl-modulelist->names mods))))))
-
-
        (- (cw "~%vl-lint: processing ranges, statements...~%"))
-       (mods (cwtime (vl-modulelist-rangeresolve mods)))
-       (mods (cwtime (vl-modulelist-selresolve mods)))
-       (mods (cwtime (vl-modulelist-check-selfassigns mods)))
-       (mods (cwtime (vl-modulelist-lint-stmt-rewrite mods)))
-       (mods (cwtime (vl-modulelist-stmtrewrite mods 1000)))
-       (mods (cwtime (vl-modulelist-hid-elim mods)))
-
-       (mods (if (uniquep (vl-modulelist->names mods))
-                 mods
-               (progn$
-                (sneaky-save :bad-names mods)
-                (er hard? 'vl-lint
-                    "Programming error.  Expected modules to have unique ~
-                    names after vl-modulelist-hid-elim, but found duplicate ~
-                    modules named ~x0.  Please tell Jared."
-                    (duplicated-members (vl-modulelist->names mods))))))
+       (design (cwtime (vl-design-rangeresolve design)))
+       (design (cwtime (vl-design-selresolve design)))
+       (design (cwtime (vl-design-check-selfassigns design)))
+       (design (cwtime (vl-design-lint-stmt-rewrite design)))
+       (design (cwtime (vl-design-stmtrewrite design 1000)))
+       (design (cwtime (vl-design-hid-elim design)))
 
        ;; Now that HIDs are gone, we can throw away any modules we don't care
        ;; about, if we have been given any topmods.
-       (mods (if (not config.topmods)
-                 mods
-               (vl-remove-unnecessary-modules (mergesort config.topmods)
-                                              (mergesort mods))))
-
+       (design (cwtime (vl-design-drop-user-submodules design config.dropmods)))
 
        ;; BOZO it seems sort of legitimate to do this before sizing, which
        ;; might be nice.  Of course, a more rigorous use/set analysis will
        ;; need to be post-sizing.
        (- (cw "~%vl-lint: finding disconnected wires...~%"))
-       (mods (cwtime (vl-modulelist-remove-toohard mods)))
-       (mods (cwtime (vl-modulelist-find-disconnected mods)))
+       (design (cwtime (vl-design-remove-toohard design)))
+       (design (cwtime (vl-design-find-disconnected design)))
 
        (- (cw "~%vl-lint: processing expressions...~%"))
-       (mods (cwtime (vl-modulelist-oddexpr-check mods)))
-       (mods (cwtime (vl-modulelist-oprewrite mods)))
-       (mods (cwtime (vl-modulelist-exprsize mods)))
-       (mods (cwtime (vl-modulelist-constcheck-hook mods config.cclimit)))
-       (mods (cwtime (vl-modulelist-qmarksize-check mods)))
+       (design (cwtime (vl-design-oddexpr-check design)))
+       (design (cwtime (vl-design-oprewrite design)))
+       (design (cwtime (vl-design-exprsize design)))
+       (design (cwtime (vl-design-constcheck-hook design config.cclimit)))
+       (design (cwtime (vl-design-qmarksize-check design)))
 
        (- (cw "~%vl-lint: finding unused/unset wires...~%"))
        ;; BOZO this probably doesn't quite work here due to replicate not having been done
-       ((mv mods dalist) (cwtime (us-analyze-mods mods)))
+       ((mv design dalist) (cwtime (vl-design-bit-use-set design)))
        (- (vl-gc))
 
        (- (cw "~%vl-lint: processing assignments...~%"))
-       (mods (cwtime (vl-modulelist-split mods)))
-       (mods (cwtime (vl-modulelist-replicate mods)))
-       (mods (cwtime (vl-modulelist-blankargs mods)))
-       (mods (cwtime (vl-modulelist-trunc mods)))
+       (design (cwtime (vl-design-split design)))
+       (design (cwtime (vl-design-replicate design)))
+       (design (cwtime (vl-design-blankargs design)))
+       (design (cwtime (vl-design-trunc design)))
 
        (- (cw "~%vl-lint: finding skipped and multiply driven wires...~%"))
-       ;; NOTE: use mods0, not mods, if you ever want this to finish. :)
-       (sd-probs (cwtime (sd-analyze-modulelist mods0)))
-       (mods     (cwtime (vl-modulelist-multidrive-detect mods)))
+       ;; NOTE: use design0, not design, if you ever want this to finish. :)
+       (sd-probs (cwtime (sd-analyze-design design0)))
+       (design   (cwtime (vl-design-multidrive-detect design)))
 
        (- (cw "~%vl-lint: cleaning up...~%"))
-       (mods     (cwtime (vl-modulelist-clean-warnings mods)))
-       (mods     (cwtime (vl-modulelist-suppress-lint-warnings mods)))
-       (mods     (cwtime (vl-modulelist-lint-ignoreall mods config.ignore)))
-       (mods     (cwtime (vl-delete-modules config.quiet mods)))
+       (design   (cwtime (vl-design-clean-warnings design)))
+       (design   (cwtime (vl-design-suppress-lint-warnings design)))
+       (design   (cwtime (vl-design-lint-ignoreall design config.ignore)))
+       (design   (cwtime (vl-lint-apply-quiet config.quiet design)))
        (sd-probs (cwtime (vl-delete-sd-problems-for-modnames config.quiet sd-probs)))
-       (mwalist  (cwtime (vl-origname-modwarningalist mods))))
+       (mwalist  (cwtime (vl-origname-modwarningalist (vl-design->mods design)))))
 
-    (make-vl-lintresult :mods mods
-                        :mods0 mods0
+    (make-vl-lintresult :design design
+                        :design0 design0
                         :mwalist mwalist
                         :sd-probs sd-probs
                         :dalist dalist)))
-
 
 (define run-vl-lint ((config vl-lintconfig-p) &key (state 'state))
   :returns (mv (res vl-lintresult-p :hyp :fguard)
@@ -551,85 +556,59 @@ shown.</p>"
        ((mv loadres state) (cwtime (vl-load loadconfig)))
 
        (lintres
-        (cwtime (run-vl-lint-main (vl-loadresult->mods loadres)
+        (cwtime (run-vl-lint-main (vl-loadresult->design loadres)
                                   config))))
     (mv lintres state)))
 
 
-(defund sd-problem-major-p (x)
-  (declare (xargs :guard (sd-problem-p x)))
+(define sd-problem-major-p ((x sd-problem-p))
   (b* (((sd-problem x) x))
     (or (>= x.priority 10)
         (and (>= x.priority 6) (>= x.groupsize 4))
         (>= (sd-problem-score x) 8))))
 
-(defsection sd-filter-problems
-
-  (defund sd-filter-problems (x major minor)
-    "Returns (MV MAJOR MINOR)"
-    (declare (xargs :guard (sd-problemlist-p x)))
-    (cond ((atom x)
-           (mv major minor))
-          ((sd-problem-major-p (car x))
-           (sd-filter-problems (cdr x) (cons (car x) major) minor))
-          (t
-           (sd-filter-problems (cdr x) major (cons (car x) minor)))))
-
-  (local (in-theory (enable sd-filter-problems)))
-
-  (defthm sd-problemlist-p-of-sd-filter-problems
-    (and (implies (and (sd-problemlist-p x)
-                       (sd-problemlist-p major))
-                  (sd-problemlist-p (mv-nth 0 (sd-filter-problems x major minor))))
-         (implies (and (sd-problemlist-p x)
-                       (sd-problemlist-p minor))
-                  (sd-problemlist-p (mv-nth 1 (sd-filter-problems x major minor))))))
-
+(define sd-filter-problems ((x     sd-problemlist-p)
+                            (major sd-problemlist-p)
+                            (minor sd-problemlist-p))
+  :returns (mv (major sd-problemlist-p :hyp :fguard)
+               (minor sd-problemlist-p :hyp :fguard))
+  (cond ((atom x)
+         (mv major minor))
+        ((sd-problem-major-p (car x))
+         (sd-filter-problems (cdr x) (cons (car x) major) minor))
+        (t
+         (sd-filter-problems (cdr x) major (cons (car x) minor))))
+  ///
   (defthm true-listp-sd-filter-problems
     (and (implies (true-listp major)
                   (true-listp (mv-nth 0 (sd-filter-problems x major minor))))
          (implies (true-listp minor)
                   (true-listp (mv-nth 1 (sd-filter-problems x major minor)))))))
 
-
-
 (defthm symbol-listp-of-vl-warninglist->types
   (implies (force (vl-warninglist-p x))
            (symbol-listp (vl-warninglist->types x)))
   :hints(("Goal" :induct (len x))))
 
-
 (define vl-modwarningalist-types ((x vl-modwarningalist-p))
+  :returns (types symbol-listp :hyp :fguard)
   (if (atom x)
       nil
     (append (vl-warninglist->types (cdar x))
-            (vl-modwarningalist-types (cdr x))))
-  ///
-  (defthm symbol-listp-of-vl-modwarningalist-types
-    (implies (force (vl-modwarningalist-p x))
-             (symbol-listp (vl-modwarningalist-types x)))))
+            (vl-modwarningalist-types (cdr x)))))
 
-
-(defund vl-keep-from-modwarningalist (types x)
-  ;; Returns a new fast alist.
-  (declare (xargs :guard (and (symbol-listp types)
-                              (vl-modwarningalist-p x))))
-  (if (atom x)
-      nil
-    (b* ((name1     (caar x))
-         (warnings1 (cdar x))
-         (keep1     (vl-keep-warnings types warnings1))
-         (rest      (vl-keep-from-modwarningalist types (cdr x))))
-      (if keep1
-          (hons-acons name1 keep1 rest)
-        rest))))
-
-(defthm vl-modwarningalist-p-of-vl-keep-from-modwarningalist
-  (implies (and (force (symbol-listp types))
-                (force (vl-modwarningalist-p x)))
-           (vl-modwarningalist-p (vl-keep-from-modwarningalist types x)))
-  :hints(("Goal" :in-theory (enable vl-keep-from-modwarningalist))))
-
+(define vl-keep-from-modwarningalist ((types symbol-listp)
+                                      (x vl-modwarningalist-p))
+  :returns (new-mwalist vl-modwarningalist-p :hyp :fguard "Fast alist.")
+  (b* (((when (atom x))
+        nil)
+       (name1     (caar x))
+       (warnings1 (cdar x))
+       (keep1     (vl-keep-warnings types warnings1))
+       (rest      (vl-keep-from-modwarningalist types (cdr x)))
+       ((when keep1)
+        (hons-acons name1 keep1 rest)))
+    rest))
 
 (define vl-lint-print-warnings ((filename stringp)
                                 (label    stringp)
@@ -639,21 +618,20 @@ shown.</p>"
   (b* ((walist (vl-keep-from-modwarningalist types walist))
        (walist (vl-clean-modwarningalist walist))
        (count  (length (append-alist-vals walist)))
-       (-      (cond ((int= count 0)
+       (-      (cond ((eql count 0)
                       (cw "~s0: No ~s1 Warnings.~%" filename label))
-                     ((int= count 1)
+                     ((eql count 1)
                       (cw "~s0: One ~s1 Warning.~%" filename label))
                      (t
                       (cw "~s0: ~x1 ~s2 Warnings.~%" filename count label)))))
     (vl-ps-seq
-     (cond ((int= count 0)
+     (cond ((eql count 0)
             (vl-cw "No ~s0 Warnings.~%~%" label))
-           ((int= count 1)
+           ((eql count 1)
             (vl-cw "One ~s0 Warning:~%~%" label))
            (t
             (vl-cw "~x0 ~s1 Warnings:~%~%" count label)))
      (vl-print-modwarningalist walist))))
-
 
 (define vl-jp-modwarningalist-aux ((x vl-modwarningalist-p) &key (ps 'ps))
   (b* (((when (atom x))
@@ -1114,9 +1092,3 @@ wide addition instead of a 10-bit wide addition.")))
     (exit-ok)
     state))
 
-
-#||
-
-(vl-lint (list "
-
-||#

@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,8 +28,9 @@
   :short "Trivial check to make sure that each module's ports agree with its
   port declarations.")
 
+(local (xdoc::set-default-parents portcheck))
+
 (define vl-module-portcheck ((x vl-module-p))
-  :parents (portcheck)
   :returns (new-x vl-module-p :hyp :fguard
                   "New version of @('x'), with at most some added warnings.")
   (b* (((vl-module x) x)
@@ -52,19 +53,19 @@
                  :fatalp t
                  :fn 'vl-check-ports-agree-with-portdecls)))
           (change-vl-module x :warnings (cons w x.warnings)))))
-    x)
-  ///
-  (defthm vl-module->name-of-vl-module-portcheck
-    (equal (vl-module->name (vl-module-portcheck x))
-           (vl-module->name x))))
-
+    x))
 
 (defprojection vl-modulelist-portcheck (x)
   (vl-module-portcheck x)
   :parents (portcheck)
   :guard (vl-modulelist-p x)
-  :result-type vl-modulelist-p
-  ///
-  (defthm vl-modulelist->names-of-vl-modulelist-portcheck
-    (equal (vl-modulelist->names (vl-modulelist-portcheck x))
-           (vl-modulelist->names x))))
+  :result-type vl-modulelist-p)
+
+(define vl-design-portcheck
+  :short "Top-level @(see portcheck) check."
+  ((x vl-design-p))
+  :returns (new-x vl-design-p)
+  (b* ((x (vl-design-fix x))
+       ((vl-design x) x))
+    (change-vl-design x :mods (vl-modulelist-portcheck x.mods))))
+
