@@ -1036,8 +1036,12 @@ variety.  Each @('vl-arguments-p') structure is an aggregate of two fields:</p>
 
   (local (in-theory (enable vl-arguments->namedp vl-arguments->args)))
 
-  (defmacro patbind-vl-arguments (args forms rest-expr)
-    (std::da-patbind-fn 'vl-arguments '(namedp args) args forms rest-expr))
+  (make-event
+   `(defmacro patbind-vl-arguments (args forms rest-expr)
+      (std::da-patbind-fn 'vl-arguments
+                          ',(let ((fields '(namedp args)))
+                              (pairlis$ fields (std::da-accessor-names 'vl-arguments fields)))
+                          args forms rest-expr)))
 
   (defthm booleanp-of-vl-arguments-p
     (booleanp (vl-arguments-p x))

@@ -249,15 +249,14 @@
 
 
 
-(acl2::def-b*-binder
- rewrite-rule
- #!acl2
- (std::da-patbind-fn 'rewrite-rule
-                     #!GL '(rune hyps lhs rhs equiv subclass heuristic-info)
-                     args forms rest-expr))
-;; Note: careful with this; variable names that are imported symbols yield
-;; names in the other package.  In particular, since we import single-letter
-;; variables from the ACL2 package, use multiletter variables.
+(make-event
+ `(acl2::def-b*-binder
+    rewrite-rule
+    #!acl2
+    (std::da-patbind-fn 'rewrite-rule
+                        #!GL ',(let ((fields '(rune hyps lhs rhs equiv subclass heuristic-info)))
+                                 (pairlis$ fields (std::da-accessor-names 'acl2::rewrite-rule fields)))
+                        args forms rest-expr)))
 
 ;; used for measure
 (defun pos-fix (x)

@@ -87,6 +87,12 @@ reasoning about @('car') in general.</p>"
    (concatenate 'string (symbol-name basename) "->" (symbol-name field))
    basename))
 
+(defun da-accessor-names (basename fields)
+  (if (consp fields)
+      (cons (da-accessor-name basename (car fields))
+            (da-accessor-names basename (cdr fields)))
+    nil))
+
 (defun da-recognizer-name (basename)
   (intern-in-package-of-symbol
    (concatenate 'string (symbol-name basename) "-P")
@@ -609,14 +615,14 @@ reasoning about @('car') in general.</p>"
 
 ; SUPPORT FOR B* INTEGRATION
 
-(defun da-patbind-make-field-vars-alist (var fields)
+(defun da-patbind-make-field-acc-alist (var fields-accs)
   ;; Given var = 'foo and fields = '(a b c),
   ;; Constructs '(("FOO.A" . a) ("FOO.B" . b) ("FOO.C" . c))
-  (if (atom fields)
+  (if (atom fields-accs)
       nil
-    (acons (concatenate 'string (symbol-name var) "." (symbol-name (car fields)))
-           (car fields)
-           (da-patbind-make-field-vars-alist var (cdr fields)))))
+    (acons (concatenate 'string (symbol-name var) "." (symbol-name (caar fields-accs)))
+           (cdar fields-accs)
+           (da-patbind-make-field-acc-alist var (cdr fields-accs)))))
 
 (defun da-patbind-find-used-vars (form varstrs acc)
   ;; Varstrs is a list of strings such as "X.FOO" "X.BAR" etc.
@@ -631,15 +637,14 @@ reasoning about @('car') in general.</p>"
     (da-patbind-find-used-vars (car form) varstrs
                                (da-patbind-find-used-vars (cdr form) varstrs acc))))
 
-(defun da-patbind-alist-to-bindings (name vars valist target)
+(defun da-patbind-alist-to-bindings (vars valist target)
   (if (atom vars)
       nil
-    (let* ((fldname (cdr (assoc-equal (symbol-name (car vars)) valist)))
-           (accessor (da-accessor-name name fldname))
+    (let* ((accessor (cdr (assoc-equal (symbol-name (car vars)) valist)))
            (call     (list accessor target))     ;; (taco->shell foo)
            (binding  (list (car vars) call))) ;; (x.foo (taco->shell foo))
       (cons binding
-            (da-patbind-alist-to-bindings name (cdr vars) valist target)))))
+            (da-patbind-alist-to-bindings (cdr vars) valist target)))))
 
 
 (defxdoc defaggregate-b*-syntax-error
@@ -692,7 +697,11 @@ variable itself.</p>
 href='https://code.google.com/p/acl2-books/issues/detail?id=41'>Issue 41</a> in
 the acl2-books issue tracker.</p>")
 
-(defun da-patbind-fn (name fields args forms rest-expr)
+;; notes: fields-accs is now a mapping from field names to accessors.
+;; Defaggregate itself just needs the field names because it always generates
+;; the accessor names in the same way, but this now could work in a broader
+;; context where the accessors are various different sorts of things.
+(defun da-patbind-fn (name fields-accs args forms rest-expr)
   (b* ((- (or (and (tuplep 1 args)
                    (tuplep 1 forms)
                    (symbolp (car args))
@@ -706,7 +715,8 @@ the acl2-books issue tracker.</p>")
                   name (cons (cons name args) forms))))
 
        (var             (car args))
-       (full-vars-alist (da-patbind-make-field-vars-alist var fields))
+       ;; maps variable names (strings) to accessor functions
+       (full-vars-alist (da-patbind-make-field-acc-alist var fields-accs))
        (field-vars      (strip-cars full-vars-alist))
        (used-vars       (da-patbind-find-used-vars rest-expr field-vars nil))
        ((unless used-vars)
@@ -726,7 +736,7 @@ the acl2-books issue tracker.</p>")
        (binding  (if forms (car forms) var))
        (evaledp  (or (atom binding) (eq (car binding) 'quote)))
        (target   (if evaledp binding (acl2::pack binding)))
-       (bindings (da-patbind-alist-to-bindings name used-vars full-vars-alist target))
+       (bindings (da-patbind-alist-to-bindings used-vars full-vars-alist target))
 
        ;;(- (cw "Binding is ~x0.~%" var))
        ;;(- (cw "Evaledp is ~x0.~%" var))
@@ -759,7 +769,10 @@ the acl2-books issue tracker.</p>")
                (concatenate 'string "PATBIND-" (symbol-name name))
                name)
      (args forms rest-expr)
-     (da-patbind-fn ',name ',fields args forms rest-expr)))
+     (da-patbind-fn ',name
+                    ;; associate field names with accessor names
+                    ',(pairlis$ fields (da-accessor-names name fields))
+                    args forms rest-expr)))
 
 
 

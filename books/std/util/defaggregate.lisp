@@ -684,12 +684,6 @@ optimization altogether.</p>")
             (da-fields-recognizer-map basename (cdr fields)))
     nil))
 
-(defun da-accessor-names (basename fields)
-  (if (consp fields)
-      (cons (da-accessor-name basename (car fields))
-            (da-accessor-names basename (cdr fields)))
-    nil))
-
 (defun da-make-requirement-of-recognizer (name require map accnames)
   (let ((rule-classes (if (eq (third require) :rule-classes)
                           (fourth require)
