@@ -28,7 +28,7 @@
 
 (defxdoc defrule
   :parents (std/util)
-  :short "A slightly enhanced version of @(see defthm)."
+  :short "An enhanced version of @(see defthm)."
 
   :long "<p>@('defrule') is a drop-in replacement for @('defthm') that
 adds:</p>
@@ -48,6 +48,11 @@ with @(see acl2::rulesets) integration.</li>
 
 <li>Integration with @(see xdoc).  You can give @(':parents'), @(':short'), and
 @(':long') documentation right at the top level of the @('defrule').</li>
+
+<li>The ability to make the theorem local.</li>
+
+<li>The ability to provide lemmas and include books in support of the theorem's
+proof.</li>
 
 </ul>
 
@@ -93,6 +98,18 @@ particular, these keywords are always translated into an @(see acl2::e/d*).</p>
 @(':local').  This results in surrounding the rule with a @(see
 acl2::local).</p>
 
+<h3>Supporting Lemmas and Books</h3>
+
+<p>We often write lemmas in support of one larger theorem.  In this case, you
+can provide these lemmas as a list of events with the @(':prep-lemmas')
+argument.  Note that including a book via the @(':prep-lemmas') keyword does
+not work.</p>
+
+<p>To include a book or many books for use in the main theorem you are proving,
+supply a list of book names (provided as strings) with the @(':prep-books')
+argument.  Only including books that are part of @(':dir :system') is currently
+supported.</p>
+
 <p>Some examples:</p>
 
 @({
@@ -115,7 +132,23 @@ acl2::local).</p>
   (defrule baz            -->  (local
       ...                        (encapsulate ()
       :local t)                    (defthm baz ...)))
-})")
+})
+
+@({
+  (defrule lets-loop                  --> (defsection lets-loop
+    (equal (+ x y)                          (local
+           (+ y x))                          (encapsulate ()
+                                              (defrule pretend-we-need-this
+    :prep-lemmas                                ...)
+    ((defrule pretend-we-need-this            (defrule pretend-we-need-this-too
+       ...)                                     ...)))
+     (defrule pretend-we-need-this-too        (local (progn (include-book
+       ...))                                                \"arithmetic/top\"
+                                                            :dir :system)))
+    :prep-books (\"arithmetic/top\"))       (defthm lets-loop (equal (+ x y) (+ y x))
+                                                    ...))
+})
+")
 
 (defxdoc defruled
   :parents (defrule)
@@ -135,7 +168,9 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
                  :enable
                  :disable
                  :e/d
-                 :local)
+                 :local
+                 :prep-lemmas
+                 :prep-books)
                acl2::*hint-keywords*))
 
 (defun split-alist (keys al)
@@ -164,6 +199,13 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
     (list* (caar hints-al)
            (cdar hints-al)
            (hints-alist-to-plist (cdr hints-al)))))
+
+(define prep-books-to-include-books
+  ((books string-listp "Books to include"))
+  (cond ((endp books)
+         nil)
+        (t (cons `(include-book ,(car books) :dir :system)
+                 (prep-books-to-include-books (cdr books))))))
 
 (defun merge-keyword-hints-alist-into-ordinary-hints (hints-al user-hints)
   (b* (((when (atom hints-al))
@@ -212,6 +254,8 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
        (hints (cdr (assoc :hints kwd-alist)))
        (hints (merge-keyword-hints-alist-into-ordinary-hints hint-alist hints))
        (local (cdr (assoc :local kwd-alist)))
+       (prep-lemmas (cdr (assoc :prep-lemmas kwd-alist)))
+       (prep-books (cdr (assoc :prep-books kwd-alist)))
 
        ((unless (tuplep 1 args))
         (er hard? 'defrule
@@ -227,6 +271,16 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
        (long      (cdr (assoc :long kwd-alist)))
        (want-xdoc (or parents short long))
 
+       (prep-lemmas-form
+        (if prep-lemmas
+            `((local (encapsulate () ,@prep-lemmas)))
+          nil))
+
+       (prep-books-form
+        (if prep-books
+            `((local (progn ,@(prep-books-to-include-books prep-books))))
+          nil))
+
        (thm `(,(if disablep 'defthmd 'defthm) ,name
                ,formula
                :hints        ,hints
@@ -238,12 +292,18 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
 
        (event
         (if (and (not want-xdoc)
-                 (not theory-hint))
+                 (not theory-hint)
+                 (not prep-lemmas)
+                 (not prep-books))
             thm
           `(defsection ,name
              ,@(and parents `(:parents ,parents))
              ,@(and short   `(:short ,short))
              ,@(and long    `(:long ,long))
+             ,@prep-lemmas-form
+             ,@prep-books-form
+; The theory-hint has to come after the inclusion of books, so we can disable
+; rules that come from the books.
              ,@(and theory-hint
                     `(,theory-hint))
              ,thm))))
