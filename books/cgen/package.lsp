@@ -28,10 +28,10 @@
      
      ;; misc exports: (n-x and finxlst-x added by harshrc)
      oneof anyof data-constructors 
-     x n v infxlst finxlst
+     x n v infxlst finxlst _
 
      ;;added by harshrc
-      listof enum record map set nfixg
+      listof enum range record map set nfixg
       set-acl2s-defdata-verbose
       get-acl2s-defdata-verbose
       mget mset c
