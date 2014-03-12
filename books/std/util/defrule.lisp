@@ -106,9 +106,8 @@ argument.  Note that including a book via the @(':prep-lemmas') keyword does
 not work.</p>
 
 <p>To include a book or many books for use in the main theorem you are proving,
-supply a list of book names (provided as strings) with the @(':prep-books')
-argument.  Only including books that are part of @(':dir :system') is currently
-supported.</p>
+supply a list of include-book commands with the @(':prep-books')
+argument.</p>
 
 <p>Some examples:</p>
 
@@ -145,8 +144,9 @@ supported.</p>
      (defrule pretend-we-need-this-too        (local (progn (include-book
        ...))                                                \"arithmetic/top\"
                                                             :dir :system)))
-    :prep-books (\"arithmetic/top\"))       (defthm lets-loop (equal (+ x y) (+ y x))
-                                                    ...))
+    :prep-books                             (defthm lets-loop (equal (+ x y) (+ y x))
+      ((include-book \"arithmetic/top\"             ...))
+      :dir :system)))
 })
 ")
 
@@ -199,13 +199,6 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
     (list* (caar hints-al)
            (cdar hints-al)
            (hints-alist-to-plist (cdr hints-al)))))
-
-(define prep-books-to-include-books
-  ((books string-listp "Books to include"))
-  (cond ((endp books)
-         nil)
-        (t (cons `(include-book ,(car books) :dir :system)
-                 (prep-books-to-include-books (cdr books))))))
 
 (defun merge-keyword-hints-alist-into-ordinary-hints (hints-al user-hints)
   (b* (((when (atom hints-al))
@@ -278,7 +271,7 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
 
        (prep-books-form
         (if prep-books
-            `((local (progn ,@(prep-books-to-include-books prep-books))))
+            `((local (progn ,@prep-books)))
           nil))
 
        (thm `(,(if disablep 'defthmd 'defthm) ,name
