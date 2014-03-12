@@ -24,6 +24,8 @@ Random "gotchas" that Rager has discovered while using ACL2 at an intermediate l
 
   * When making rewrite rules, worry about canonicalizing the lhs more than canonicalizing the rhs.  The rhs will be rewritten anyway, but the lhs has to match the checkpoint ACL2 (and the current set of rules) generates.
 
+  * Force the hypotheses of :type-prescription rules.  This is because just using type-prescription reasoning to relieve hyps is often too weak.  But the power of whole proof process is used during forcing.  And in fact, sometimes the forcing round won't actually occur, because a little bit of rewriting occurs (which can rewrite to T) before the clause is saved for forcing.
+
 = Gotchas =
 
   * :use hints only add the instance of the theorem being used to the hypotheses of the subgoal you're trying to prove.  They do not tell the prover to actually use to substitute the LHS of the instantiation for the RHS (provided its an equals relation).  The hypothesis will only help rewrite the conclusion of the subgoal if the RHS of the instantiated theorem (what becomes the additional hypothesis) is "less complex" (determined via some implementation-specific heuristics) than the LHS.
