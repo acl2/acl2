@@ -1574,6 +1574,7 @@ sub add_deps {
 	print "Error: Need $lispfile to build $target"
                . ($parent ? " (parent: $parent)" : "")
 	       . ".\n";
+	delete $depdb->certdeps->{$target};
 	return;
     }
 
