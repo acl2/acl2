@@ -106,7 +106,7 @@
 (defthm main-4
   (implies (and (natp i02)
                 (< i02 3)
-                (force (integerp mem-val)))
+                (integerp mem-val))
            (equal (mod (ash (mod mem-val *2^32*)
                             (* -8 i02))
                        256)
@@ -118,7 +118,7 @@
 (defthm main-5
   (implies (and (natp i02)
                 (< i02 3)
-                (force (integerp mem-val)))
+                (integerp mem-val))
            (equal (mod (ash (mod mem-val *2^32*)
                             (* -8 i02))
                        65536)
@@ -128,11 +128,21 @@
   :hints (("Goal" :in-theory (enable ash))))
 
 ; Finally, the main result follows by using main-2, given the three rewrite
-; rules just above.
+; rules just above.  We had originally considered forcing the hypotheses
+; (integerp mem-val) in the preceding two rules, but it turned out not to be
+; necessary, presumably because of case-splitting on (integerp mem-val)
+; provided by DEFAULT-ASH-1 and/or other rewrite rules.
 
 (defthm main
   (implies (and (natp i02)
-                (< i02 3))
+                (< i02 3)
+
+; Note that we do not need to assume (integerp mem-val); indeed, DEFAULT-ASH-1
+; can introduce a split for each (ash mem-val ...) expression such that it is
+; replaced by 0 in the case that (not (integerp mem-val)), in which case the
+; resulting formula follows by evaluation.
+
+                )
            (equal (logior (mod (ash mem-val (* -8 i02))
                                256)
                           (* 256
