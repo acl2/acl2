@@ -536,7 +536,7 @@ managed to answer most of their questions.</p>
 
 <p>I defended in September and somehow passed.  It was good to meet John
 Harrison, who gave me many useful comments and corrections.  We celebrated with
-a nice dinner.  After a few week break, I finished the corrections and received
+a nice dinner.  After a few weeks break, I finished the corrections and received
 the blessings of the ruler lady, and that was that for grad school.</p>
 
 
