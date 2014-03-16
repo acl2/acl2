@@ -237,8 +237,8 @@ e.g., @('make wp-gen') from the @('books/') directory.</p>
 <h3>Overview</h3>
 
 <p>This book generates weakest precondition predicates, which are admitted
-as (possibly mutually recursive) ACL2 functions as described in the paper “A
-Weakest Precondition Model for Assembly Language Programs” by Bill Legato,
+as (possibly mutually recursive) ACL2 functions as described in the paper <it>A
+Weakest Precondition Model for Assembly Language Programs</it> by Bill Legato,
 dated January 28, 2003.</p>
 
 <p>The input program is given in a variation of Legato's format for assembly
@@ -591,7 +591,7 @@ this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.</p>")
 
 
-(defxdoc projects/leftist-trees
+(defxdoc leftist-trees
   :parents (projects)
   :short "An implementation of leftist trees as described in <a
 href='http://www.cambridge.org/us/academic/subjects/computer-science/programming-languages-and-applied-logic/purely-functional-data-structures'>Purely
