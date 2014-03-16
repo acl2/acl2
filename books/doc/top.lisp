@@ -369,13 +369,14 @@ of proofs.")
 ; the combined manual.
 (xdoc::change-parents ihs (arithmetic))
 (xdoc::change-parents b* (macro-libraries))
-(xdoc::change-parents data-definitions (macro-libraries))
+(xdoc::change-parents data-definitions (macro-libraries projects debugging))
+(xdoc::change-parents with-timeout (data-definitions))
 (xdoc::change-parents data-structures (macro-libraries))
 (xdoc::change-parents hacker (interfacing-tools))
 (xdoc::change-parents witness-cp (proof-automation))
 (xdoc::change-parents testing (debugging))
 
-(xdoc::change-parents leftist-trees (projects/leftist-trees))
+(xdoc::change-parents leftist-trees (leftist-trees))
 (xdoc::change-parents ltree-sort (leftist-trees))
 (xdoc::change-parents how-many-lt (leftist-trees))
 
