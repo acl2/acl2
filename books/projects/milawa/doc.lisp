@@ -405,7 +405,7 @@ manually.</p>
 <p>To get a feel for tactics, and also to branch out a bit, I spent some time
 working with Isabelle/HOL.  I tried modelling my proof checker, figuring that
 if it worked well I could perhaps prove it sound in a higher order system.  I
-even gave a little talk at Isabelle to the ACL2 seminar in October, after which
+even gave a little talk on Isabelle to the ACL2 seminar in October, after which
 I decided this had been a bad digression and had taken me off task.</p>
 
 <p>Still, I think this was a useful in giving me a feel for tactics.  I figured
@@ -414,7 +414,7 @@ developed an initial system of proof \"skeletons\" that could later be filled
 in by a tactic compiler, and wrote some simple tactics for removing trivial and
 duplicate literals from clauses.</p>
 
-<p>This seemed like it would work well, so and decided that my first
+<p>This seemed like it would work well, so I decided that my first
 interesting tactic would be a clausifier and if-lifting program.  It wasn't
 easy to see that the algorithm terminated, and unfortunately the proof was
 interesting enough that I kept at it.  I probably spent two or three weeks on
