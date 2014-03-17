@@ -318,7 +318,7 @@ often want to non-locally include this book (to get definitions such as
 extracting \"the good parts\" of the richer @('ihs/logops-definitions') book.
 We typically do <b>not</b> load the additional definitions and macros that
 remain in @('ihs/logops-definitions'), or the @('@logops') book which defines
-various four-valued operations.  But it you have some particular reason to want
+various four-valued operations.  But if you have some particular reason to want
 these definitions, it would probably be fine to load them alongside Bitops.</p>
 
 <h5>IHS Lemma Books</h5>
