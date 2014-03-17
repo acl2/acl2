@@ -205,9 +205,9 @@
   :inline t)
   
 
-(defun char-fix (x)
-  (declare (xargs :guard t))
-  (if (characterp x) x #\a))
+;; (defun char-fix (x)
+;;   (declare (xargs :guard t))
+;;   (if (characterp x) x #\a))
 
 (defrstobj m5
 

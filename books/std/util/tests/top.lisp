@@ -33,6 +33,5 @@
 (include-book "defprojection")
 (include-book "defredundant")
 (include-book "defval")
-(include-book "fixtype")
 
 ||#

@@ -177,6 +177,8 @@
 (include-book "rtl/rel9/lib/add" :dir :system)
 (include-book "rtl/rel9/lib/mult" :dir :system)
 
+(include-book "centaur/fty/deftypes" :dir :system)
+
 #||
 
 ;; This is a nice place to put include-book scanner hacks that trick cert.pl

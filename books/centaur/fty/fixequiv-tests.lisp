@@ -18,9 +18,9 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-(in-package "STD")
+(in-package "FTY")
 
-(include-book "../fixtype")
+(include-book "fixequiv")
 (include-book "std/basic/defs" :dir :System)
 (include-book "centaur/misc/arith-equivs" :dir :system)
 (include-book "std/misc/two-nats-measure" :dir :system)
@@ -110,20 +110,28 @@
 
   (acl2::def-universal-equiv int-tree-equiv
     :equiv-terms ((equal (int-tree-fix acl2::x))))
-  (acl2::def-universal-equiv int-treelist-equiv
-    :equiv-terms ((equal (int-treelist-fix acl2::x))))
 
   (deffixtype int-tree
     :pred int-tree-p
     :fix int-tree-fix
     :equiv int-tree-equiv
-    :equiv-means-fixes-equal int-tree-equiv)
+    :hints (("goal" :in-theory (enable int-tree-equiv))))
 
   (deffixtype int-treelist
     :pred int-treelist-p
     :fix int-treelist-fix
-    :equiv int-treelist-equiv
-    :equiv-means-fixes-equal int-treelist-equiv))
+    :equiv int-treelist-equiv :define t)
+
+  (local (in-theory (e/d (int-treelist-equiv int-tree-equiv)
+                         (int-tree-fix))))
+
+  (deffixcong int-treelist-equiv int-treelist-equiv (cdr x) x
+    :hints (("goal" :expand ((int-treelist-fix x)))))
+  (deffixcong int-treelist-equiv int-treelist-equiv (cons x y) y)
+  (deffixcong int-tree-equiv int-treelist-equiv (cons x y) x
+    :hints (("goal" :expand ((int-treelist-fix x)))))
+  (deffixcong int-treelist-equiv int-tree-equiv (car x) x
+    :hints (("goal" :expand ((int-treelist-fix x))))))
 
 
 (defines count-leaves

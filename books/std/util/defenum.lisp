@@ -23,6 +23,8 @@
 (include-book "std/strings/cat" :dir :system)
 (set-state-ok t)
 
+(include-book "centaur/fty/fixtype" :dir :system)
+
 (defxdoc defenum
   :parents (std/util)
   :short "Introduce an enumeration type, like an @('enum') in C."
@@ -94,6 +96,15 @@ fast alist or other schemes, based on the elements it is given.</p>")
                    `(equal ,xvar ',e)))
             (defenum-members-to-tests (cdr members) xvar)))))
 
+(defund defenum-members-to-tests-equal (members xvar)
+  ;; Generate ((equal xvar member1) (equal xvar member2) ...)
+  (declare (xargs :guard t))
+  (if (atom members)
+      nil
+    (let ((e (car members)))
+      (cons `(equal ,xvar ',e)
+            (defenum-members-to-tests-equal (cdr members) xvar)))))
+
 ; (defenum-members-to-tests '(:a :b 3 5 #\a "foo" '(1 . 2)) 'x)
 
 (defun defenum-deduce-type-set (members)
@@ -122,7 +133,7 @@ fast alist or other schemes, based on the elements it is given.</p>")
         (t
          (dumb-collect-duplicates (cdr x) acc))))
 
-(defun defenum-fn (name members mode parents short long state)
+(defun defenum-fn (name members mode parents short long defaultp default state)
   (declare (xargs :mode :program))
   (b* ((__function__ 'defenum)
        ((unless (symbolp name))
@@ -164,7 +175,6 @@ fast alist or other schemes, based on the elements it is given.</p>")
            ,doc
            ,def))
 
-
        (long (str::cat long "@(gthm type-when-" (symbol-name name) ")"))
 
        (doc `(defxdoc ,name
@@ -176,7 +186,32 @@ fast alist or other schemes, based on the elements it is given.</p>")
 
        ((mv ts-concl &)
         ;; Magic function from :doc type-set
-        (acl2::convert-type-set-to-term x ts (acl2::ens state) (w state) nil)))
+        (acl2::convert-type-set-to-term x ts (acl2::ens state) (w state) nil))
+
+       (fc-rule `(defthm ,(intern-in-package-of-symbol
+                           (concatenate 'string (symbol-name name) "-POSSIBILITIES")
+                           name)
+                   (implies (,name ,x)
+                            (or . ,(defenum-members-to-tests-equal members x)))
+                   :rule-classes :forward-chaining))
+
+       (fixname (intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name name) "-FIX")
+                 name))
+       (fix `(defund ,fixname (,x)
+               (declare (xargs :guard t))
+               (if (,name ,x) ,x ',(if defaultp default (car (last members))))))
+
+       (fix-type `(defthm ,(intern-in-package-of-symbol
+                            (concatenate 'string "RETURN-TYPE-OF-" (symbol-name name) "-FIX")
+                            name)
+                    (,name (,fixname ,x))))
+
+       (fix-id `(defthm ,(intern-in-package-of-symbol
+                            (concatenate 'string (symbol-name name) "-FIX-IDEMPOTENT")
+                            name)
+                  (implies (,name ,x)
+                           (equal (,fixname ,x) ,x)))))
 
     `(encapsulate
        ()
@@ -192,6 +227,21 @@ fast alist or other schemes, based on the elements it is given.</p>")
                    ,ts-concl)
           :rule-classes :compound-recognizer))
 
+       ,fc-rule
+
+       ,fix
+
+       (local (in-theory (enable ,fixname)))
+
+       ,fix-type
+
+       ,fix-id
+
+       (fty::deffixtype ,name :pred ,name :fix ,fixname :equiv
+         ,(intern-in-package-of-symbol
+           (concatenate 'string (symbol-name name) "-EQUIV")
+           name)
+         :define t)
        )))
 
 (defmacro defenum (name members
@@ -199,13 +249,14 @@ fast alist or other schemes, based on the elements it is given.</p>")
                         mode
                         (parents 'nil parents-p)
                         (short 'nil)
-                        (long 'nil))
+                        (long 'nil)
+                        (default 'nil defaultp))
   `(make-event (let ((mode (or ',mode (default-defun-mode (w state))))
                      (parents (if ',parents-p
                                   ',parents
                                 (or (xdoc::get-default-parents (w state))
                                     '(acl2::undocumented)))))
-                 (defenum-fn ',name ',members mode parents ',short ',long state))))
+                 (defenum-fn ',name ',members mode parents ',short ',long ,defaultp ',default state))))
 
 
 ;; Primitive tests

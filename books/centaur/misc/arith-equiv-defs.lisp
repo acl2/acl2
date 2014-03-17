@@ -21,6 +21,7 @@
 
 (in-package "ACL2")
 (include-book "ihs/basic-definitions" :dir :system)
+(include-book "centaur/fty/basetypes" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 
 (defsection arith-equivs
@@ -64,16 +65,21 @@
   :parents (arith-equivs)
   :short "Equivalence under @(see ifix), i.e., integer equivalence."
 
-  (defun int-equiv (a b)
-    (declare (xargs :guard t))
-    (equal (ifix a) (ifix b)))
+  ;; this is now done in fty/basetypes.lisp
+  ;; (defun int-equiv (a b)
+  ;;   (declare (xargs :guard t))
+  ;;   (equal (ifix a) (ifix b)))
 
-  (defequiv int-equiv)
+  ;; (defequiv int-equiv)
 
-  (defthm ifix-under-int-equiv
-    (int-equiv (ifix a) a))
+  ;; (defthm ifix-under-int-equiv
+  ;;   (int-equiv (ifix a) a))
 
-  (defcong int-equiv equal (ifix a) 1)
+  ;; (defcong int-equiv equal (ifix a) 1)
+
+  ;; We leave int-equiv enabled since generally it's most useful as a congruence target.
+  (in-theory (enable int-equiv))
+
   (defcong int-equiv equal (zip a) 1))
 
 
@@ -81,17 +87,23 @@
   :parents (arith-equivs)
   :short "Equivalence under @(see nfix), i.e., natural number equivalence."
 
-  (defun nat-equiv (a b)
-    (declare (xargs :guard t))
-    (equal (nfix a) (nfix b)))
+  ;; this is now done in fty/basetypes.lisp
+  ;; (defun nat-equiv (a b)
+  ;;   (declare (xargs :guard t))
+  ;;   (equal (nfix a) (nfix b)))
 
-  (defequiv nat-equiv)
-  (defrefinement int-equiv nat-equiv)
+  ;; (defequiv nat-equiv)
+  ;; (defthm nfix-under-nat-equiv
+  ;;   (nat-equiv (nfix a) a))
 
-  (defthm nfix-under-nat-equiv
-    (nat-equiv (nfix a) a))
+  ;; (defcong nat-equiv equal (nfix a) 1)
 
-  (defcong nat-equiv equal (nfix a) 1)
+  ;; We leave nat-equiv enabled since generally it's most useful as a congruence target.
+  (in-theory (enable nat-equiv))
+
+  (defrefinement int-equiv nat-equiv
+    :hints(("Goal" :in-theory (enable int-equiv))))
+
   (defcong nat-equiv equal (zp a)  1))
 
 
@@ -99,17 +111,13 @@
   :parents (arith-equivs)
   :short "Equivalence under @(see bfix), i.e., bit equivalence."
 
-  (defun bit-equiv (x y)
-    (declare (xargs :guard t))
-    (equal (bfix x) (bfix y)))
+  (fty::deffixtype bit :pred bitp :fix bfix :equiv bit-equiv :define t)
 
-  (defequiv bit-equiv)
+  ;; We leave bit-equiv enabled since generally it's most useful as a congruence target.
+  (in-theory (enable bit-equiv))
+
   (defrefinement nat-equiv bit-equiv)
 
-  (defthm bfix-under-bit-equiv
-    (bit-equiv (bfix a) a))
-
-  (defcong bit-equiv equal (bfix a) 1)
   (defcong bit-equiv equal (zbp a) 1))
 
 
