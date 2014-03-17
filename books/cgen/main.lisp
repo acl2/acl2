@@ -17,7 +17,7 @@
 ;; (include-book "base")
 (include-book "acl2s-parameter")
 (include-book "simple-graph-array")
-(include-book "graph-tc" :ttags ((:hash-stobjs) (:redef+)));transtive closure and subtype relation
+(include-book "graph-tc" :ttags :all) ;((:hash-stobjs) (:redef+)));transtive closure and subtype relation
 (include-book "random-state")
 ;(include-book "tools/easy-simplify" :dir :system)
 (include-book "misc/expander" :dir :system)

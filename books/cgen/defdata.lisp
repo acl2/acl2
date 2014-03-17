@@ -2048,7 +2048,7 @@ X:rgbcolors = blue
 
 (defun process-enum-form (defs ctx wrld)
   (declare (xargs :mode :program))
-; 08/28/12 refactoring using b*
+;; 08/28/12 refactoring using b*
   (b* (((when (> (len defs) 1)) ;;mutually recursive
         (let ((defbodies (strip-cadrs defs)))
          (if (and (true-list-listp defbodies)
@@ -2103,10 +2103,9 @@ X:rgbcolors = blue
           (found-empty-defp (cdr defs)))))))
 
 (defun type-class-simple-p (x)
-  (mem-eq x '(:undefined 
-                  acl2::union acl2::product 
-                  acl2::singleton acl2::alias acl2::custom
-                  enum record map set listof)))
+  (mem-eq x '(:undefined acl2::union acl2::product acl2::singleton acl2::alias
+                         acl2::custom enum record map set listof range)))
+
 (defthm type-class-simple-p-is-tau-pred
   (booleanp (type-class-simple-p x))
   :rule-classes :tau-system)
@@ -2220,7 +2219,7 @@ X:rgbcolors = blue
 ~| 1. (tau-data ~x0) is probably nil.
 ~| 2. Is ~x0 a everywhere constant function?
 ~| 3. Its not obvious that ~x0 is a predicate in which case, 
-~| submit the followingas a :tau-system rule:
+~| submit the following as a :tau-system rule:
 ~|   (booleanp ~x0) ~|" TI.predicate)
                nil))
 
@@ -2939,6 +2938,166 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
         (er hard ctx "Enum ~x0 expected a (true-) list expression.~%" texp)))
     (list 'enum list-val)))
 
+
+
+;; Added range type syntactic sugar on 11 March 2014
+(deflabel range)
+(set-ignore-ok t)
+(defun is-range-type (texp)
+; returns range in normal form, returns nil if not range, but ill-formed ranges
+; are returned as is, for error to be raised in process-range-form.
+  (if (and (consp texp)
+           (eq (car texp) 'range))
+  (case-match texp
+    (('range 'integer rexp)
+     (case-match rexp
+       ((lo '< '_ '< hi) texp)
+       ((lo '< '_ '<= hi) texp)
+       ((lo '<= '_ '< hi) texp)
+       ((lo '<= '_ '<= hi) texp)
+
+       ((lo '< '_) `(range integer (,lo < _ < nil)))
+       (('_ '< hi) `(range integer (nil < _ < ,hi)))
+       
+       
+       ((lo '<= '_) `(range integer (,lo <= _ < nil)))
+       (('_ '<= hi) `(range integer (nil < _ <= ,hi)))
+       (& texp))) ;raise error later
+    (('range 'rational rexp)
+     (case-match rexp
+       ((lo '< '_ '< hi) texp)
+       ((lo '< '_ '<= hi) texp)
+       ((lo '<= '_ '< hi) texp)
+       ((lo '<= '_ '<= hi) texp)
+
+       ((lo '< '_) `(range rational (,lo < _ < nil)))
+       (('_ '< hi) `(range rational (nil < _ < ,hi)))
+       
+       
+       ((lo '<= '_) `(range rational (,lo <= _ < nil)))
+       (('_ '<= hi) `(range rational (nil < _ <= ,hi)))
+       (& texp))) 
+    (& texp)) ;raise error later
+  nil))
+(set-ignore-ok nil)   
+; keep in sync with code in main.lisp for function make-range-enum-info%.
+; Added 11 March 2014.
+; NOTE that the second argument has a different type here.
+(defun make-enumerator-body-for-range (domain tau-interval)
+
+  (b* ((lo (tau-interval-lo tau-interval))
+       (hi (tau-interval-hi tau-interval))
+       (lo-rel (tau-interval-lo-rel tau-interval))
+       (hi-rel (tau-interval-hi-rel tau-interval)))
+    (case domain
+      (acl2::integer (let ((lo (and lo (if lo-rel (1+ lo) lo))) ;make both inclusive bounds
+                           (hi (and hi (if hi-rel (1- hi) hi))))
+                       (cond ((and lo hi)
+                              `(acl2::nth-integer-between r ,lo ,hi))
+                             
+                             (lo ;hi is positive infinity
+                              `(+ ,lo r))
+
+                             ((posp hi) ;lo is neg infinity and hi is >=1
+                              `(let ((i-ans (acl2::nth-integer r)))
+                                 (if (> i-ans ,hi)
+                                     (mod i-ans (1+ ,hi))
+                                   i-ans)));ans shud be less than or equal to hi
+                             
+                             
+                             (t ;lo is neg inf, and hi is <= 0
+                              `(- ,hi r))))) ;ans shud be less than or equal to hi
+      
+      (otherwise  (cond ((and lo hi) ;ASSUME inclusive even when you have exclusive bounds
+                         `(acl2::nth-rational-between r ,lo ,hi))
+                        
+                        (lo ;hi is positive infinity
+                         `(+ ,lo (acl2::nth-positive-rational r)))
+                        
+                        ((> hi 0) ;lo is neg infinity and hi is is >= 1
+                         `(let ((rat-ans (acl2::nth-rational r)))
+                            (if (> rat-ans ,hi)
+                                (mod rat-ans (1+ ,hi))
+                              rat-ans)));ans shud be less than or equal to hi
+                        
+                        (t;lo is neg infinity and hi is is <= 0
+                         `(- ,hi (acl2::nth-positive-rational r))))))))
+
+(defun compute-range-type-events (nm psym esym rexp ctx wrld)
+  (declare (ignorable wrld) (xargs :mode :program))
+  (case-match rexp
+    (('range domain (lo lo-rel-sym '_ hi-rel-sym hi))
+     (b* ((lo-rel (eq lo-rel-sym '<))
+          (hi-rel (eq hi-rel-sym '<))
+          (dom (if (eq domain 'integer)
+                   'acl2::integerp
+                 'acl2::rationalp))
+          ((mv lo lo-rel) (if (eq domain 'integer)
+                              (if (and lo lo-rel)
+                                  (mv (+ lo 1) nil)
+                                (mv lo nil))
+                            (mv lo lo-rel)))
+          ((mv hi hi-rel) (if (eq domain 'integer)
+                              (if (and hi hi-rel)
+                                  (mv (- hi 1) nil)
+                                (mv hi nil))
+                            (mv hi hi-rel)))
+          (tau-int (acl2::make-tau-interval dom lo-rel lo hi-rel hi))
+          ((unless (acl2::tau-intervalp tau-int))
+           (er hard? ctx 
+               "~|Range ~x0 not a tau-interval~%" rexp))
+          (size  t)) ;FIXME this is just approximate. But table guard disallows an enum with finite size anyway!
+                 
+       (list 
+        `(defun ,psym (x)
+           (declare (xargs :guard t))
+           (acl2::in-tau-intervalp x ',tau-int))
+
+        `(defun ,(get-enumerator-symbol nm) (r)
+           (declare (xargs :guard (natp r)))
+           ,(make-enumerator-body-for-range domain tau-int))
+           
+        `(register-custom-type ,nm ,size ,esym ,psym 
+                               :type-class range))))))
+
+(defun process-range-form (defs ctx wrld)
+  (declare (xargs :mode :program))
+  (b* (((when (> (len defs) 1)) ;;mutually recursive
+        (let ((defbodies (strip-cadrs defs)))
+         (if (and (true-list-listp defbodies)
+                  (member-eq 'range (strip-cars defbodies)))
+             (er hard? ctx 
+"Syntax error in use of range: Range types cannot appear ~
+                     in mutually recursive definitions.~%")
+           nil)))
+       (def (car defs)) ;;single def
+       (name (car def))
+       (rbody (cadr def))
+       (rlen (len rbody))
+       ((unless (consp rbody)) nil)
+       ((unless (eq 'range (car rbody))) nil)
+       ((unless (and (= rlen 3)
+                     (member-eq (cadr rbody) '(integer rational))
+                     (= 5 (len (caddr rbody)))
+                     ;;(lo '< '_ '< hi)
+                     (eq (third (caddr rbody)) '_)
+                     (member-eq (second (caddr rbody)) '(< <=))
+                     (member-eq (fourth (caddr rbody)) '(< <=))))
+                     
+        (er hard? ctx 
+"~|Syntax error: Range ~x0 should be of following form: ~
+     ~| (defdata <id> (range (integer (lo < _ < hi)))) or ~
+     ~| (defdata <id> (range (rational (lo < _ < hi)))) ~
+     ~| <= can also be used in place of < and ~
+     ~| one of the bounds can be dropped.~%" rbody)))
+   (append
+    (compute-range-type-events name
+                               (get-predicate-symbol name)
+                               (get-enumerator-symbol name)
+                               rbody ctx wrld)
+    `((value-triple ',name)))))
+
+
 #|
 (defmacro define-map-list-lambda-fn (nm lambda-fn &key guard)
  `(make-event
@@ -3607,16 +3766,25 @@ but ~x0 if not.~%" texp)
 nor a predefined typename~%" dtexp)
           (mv t dtexp ds$)))
 ;is a data type expression (either union or product or some syntactic sugar
+
+       (is-range
+         (is-range-type dtexp))
+       ((when is-range) 
+         (let ((ds$ (update-type-class-top-level$ 'range typId ds$)))
+           (mv nil is-range ds$)))
+
        (is-enum 
 ;preprocessing and eval called inside enum
          (is-enum-type dtexp ctx (defdata-world ds$)))
        ((when is-enum) 
          (let ((ds$ (update-type-class-top-level$ 'enum typId ds$)))
            (mv nil is-enum ds$)))
+
        ((mv is-map ds$) (is-map-type dtexp typId ctx ds$))
        ((when is-map)     
         (let ((ds$ (update-type-class-top-level$ 'map typId ds$)))
           (mv nil is-map ds$))) ;ADDED 3rd May 2011 REMOVED 28th Aug '12 ADDED 17 July '13
+
        ((mv is-record ds$) (is-record-type dtexp typId ctx ds$ R$ types-ht$))
 ;type class of record also gets update on successful entry and not here
        ((when is-record) 
@@ -3624,20 +3792,25 @@ nor a predefined typename~%" dtexp)
             (cw? (defdata-debug ds$)
                           "record support lemmas: ~x0~%" (support-lemmas ds$))
             (mv nil is-record ds$)))
+
        ((mv is-list ds$) (is-list-type dtexp typId tnames ctx ds$ R$ types-ht$))
        ((when is-list) (mv nil is-list ds$))
+
        ((mv is-set ds$) (is-set-type dtexp typId tnames ctx ds$))
        ((when is-set) (mv nil is-set ds$))
+
        ((mv erp is-un ds$)
          (trans-union-type-exp dtexp typId tnames ctx ds$))
 ;For product and union  we update type class in the top-level call
 ;of trans-product-type-exp and trans-union-type-exp respectively
        ((when is-un)
         (mv erp is-un ds$))
+
        ((mv erp is-prod ds$)
         (trans-product-type-exp dtexp typId tnames ctx ds$))
        ((when is-prod)
         (mv erp is-prod ds$))
+
        ((when erp)
         (prog2$
          (er hard ctx "Error in translating type expression ~x0~%" dtexp)
@@ -3645,8 +3818,8 @@ nor a predefined typename~%" dtexp)
     (prog2$
      (er hard ctx 
          "Illegal DataType Expression ~x0.~
-               Should be either: typename, singletonType, enum, set~
-               record, listof, oneof (union), product type. ~%" dtexp )
+               Should be either: typename, singletonType, enum, range~
+               record, listof, oneof (union), product type, set, map.~%" dtexp )
      (mv t nil ds$))))
 
         
@@ -4603,7 +4776,9 @@ nor a predefined typename~%" dtexp)
        (ds$ (update-defdata-debug debug ds$)))
       ds$))
   
-;;process enums and normalise listof/record/set etc
+;; defdata frontend processing:
+;; standalone enum/range events and
+;; normalise listof/record/set/map and call compute-typecombs
 (defun compute-defdata (args debug-flag ctx wrld state R$ types-ht$)
   (declare (xargs :mode :program
                   :stobjs (state R$ types-ht$)))
@@ -4617,22 +4792,25 @@ nor a predefined typename~%" dtexp)
       (erp result state ds$)
       (b* ((ds$ (initialize-ds$ debug-flag wrld ds$))
            ((mv defs1 ds$) (translate-defs defs0 ctx ds$ R$ types-ht$))
-           (enum-event (process-enum-form defs1 ctx wrld)))
-        (if enum-event
-;submit enumeration event form
-            (mv nil `(progn ,@enum-event) state ds$) 
+           (enum-event (process-enum-form defs1 ctx wrld))
+           (range-event (process-range-form defs1 ctx wrld)))
+        
+        (cond 
+         (enum-event (mv nil `(progn ,@enum-event) state ds$))
+         (range-event (mv nil `(progn ,@range-event) state ds$))
+         (t 
           (let* ((cust-types (custom-types ds$))
                  (validate-type-consistency-ev 
                   (cons-up-type-consistent-thm-ev cust-types wrld))
-                (mk-ev-form
-                 `(make-event
-                   (mv-let 
-                    (erp res state)
-                    (er-progn 
-                     (value (and ',validate-type-consistency-ev
-                                 (cw? t "~|Proving consistency of custom types ~x0...~%" ',cust-types)))
-                     ,@validate-type-consistency-ev
-                     (value ':Type-is-consistent))
+                 (mk-ev-form
+                  `(make-event
+                    (mv-let 
+                     (erp res state)
+                     (er-progn 
+                      (value (and ',validate-type-consistency-ev
+                                  (cw? t "~|Proving consistency of custom types ~x0...~%" ',cust-types)))
+                      ,@validate-type-consistency-ev
+                      (value ':Type-is-consistent))
                      (declare (ignorable res))
                      (if erp ;if error
                          (prog2$
@@ -4640,7 +4818,7 @@ nor a predefined typename~%" dtexp)
                                and corresponding type enumerator are not consistent. Here's the list of events that failed: ~
                                ~x0 ~%" ',validate-type-consistency-ev)
                           (mv t nil state))
-                                      
+                       
                        (compute-typecombs ',defs1 ',kwd-options-lst 
                                           ',(newconstructors ds$)
                                           ',(support-lemmas ds$)
@@ -4649,7 +4827,7 @@ nor a predefined typename~%" dtexp)
                                           ',ctx (w state) 
                                           state R$ types-ht$)))
                     ))) 
-            (mv nil mk-ev-form state ds$))))
+            (mv nil mk-ev-form state ds$)))))
       (mv erp result state))))))
 
 

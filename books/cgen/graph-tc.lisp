@@ -8,7 +8,7 @@
 
 (include-book "tools/bstar" :dir :system)
 
-(include-book "add-ons/hash-stobjs" :dir :system :ttags ((:hash-stobjs) (:redef+)))
+(include-book "add-ons/hash-stobjs" :dir :system :ttags :all) ;((:hash-stobjs) (:redef+)))
 ; key: type name (symbolp)
 ; value: vertex
 ;;   - vertex is the index of key into adjacency list array rgraph

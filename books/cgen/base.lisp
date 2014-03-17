@@ -207,6 +207,12 @@
          n)
        :exec (1+ n)))
 
+(defthm nth-pos-is-posp
+  (implies (natp x)
+           (posp (nth-pos x)))
+  :hints (("goal" :in-theory (enable nth-pos)))
+  :rule-classes (:rewrite :type-prescription))
+
 (defexec pos-index (i)
   (declare (xargs :guard (posp i)))
   (mbe :logic
@@ -421,6 +427,13 @@
          (num (nth-integer (car two-n-list)))
          (den (nth-pos (cadr two-n-list))))
     (/ num den)))
+
+
+
+(defthm nth-rat-is-ratp
+  (implies (natp x)
+           (rationalp (nth-rational x)))
+  :rule-classes (:rewrite :type-prescription))
 
  ;lo included, hi included
     
