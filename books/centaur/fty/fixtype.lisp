@@ -32,19 +32,39 @@
   :short "A library of utilities supporting a type discipline that minimizes
 the need for type hypotheses in theorems."
 
-  :long "<p>FTY is short for @(see fixtype), which contains some documentation
-on the general approach to types supported by this library.</p>")
+  :long "<p>FTY is short for <i>fixtype</i>, a systematic way of using types in
+ACL2 that is intended to be easy to use and easy on prover and execution
+performance.</p>
+
+<p>Fixtype is one of several paradigms for \"type-safe\" programming in ACL2.
+In this discipline,</p>
+<ul>
+
+<li>Every type (predicate) @('q-p') has an associated fixing function
+@('q-fix') and equivalence relation @('q-equiv'), such that (for all @('x'), @('y'))
+@({
+    (q-p (q-fix x)),
+    (implies (q-p x) (equal (q-fix x) x)),
+    (equal (q-equiv x y) (equal (q-fix x) (q-fix y))).
+ })</li>
 
 
-(defxdoc fixtype
-  :parents (fty)
-  :short "An approach to \"static typing\" that is easy on the prover."
-  :long "<p>One of several paradigms for \"type-safe\" programming in ACL2 is a
-discipline where functions fix their arguments to the desired types.  This can
-be done without any negative consequences to performance by having guards that
-say the arguments are already of the correct type, and have the fixing occur
-only in the logic, not the exec, part of an @(see MBE).  For example:</p>
+<li>If a function @('foo') takes an argument of the @('q') type, then it has an
+equality congruence with @('q-equiv') on that argument, i.e.:
+@({
+ (implies (q-equiv x y) (equal (foo x) (foo y)))
+ })</li>
 
+<li>If @('foo') is supposed to return a value of type @('q'), then it does so unconditionally:
+@({
+ (q-p (foo x)).
+ })</li>
+</ul>
+
+<p>Given types that have associated fixing functions and equivalence relations,
+the latter two requirements are easy to engineer: you can either build on
+existing functions that already satisfy these requirements, or you can fix each
+of the inputs to a function to appropriate types for free, using MBE:</p>
 @({
  (defun nat-add-5 (n)
    (declare (xargs :guard (natp n)))
@@ -52,27 +72,26 @@ only in the logic, not the exec, part of an @(see MBE).  For example:</p>
      (+ n 5)))
  })
 
-<p>Some benefits of following this discipline:</p>
+<p>Having unconditional return types and congruences are both beneficial in
+themselves.  But the main benefit of using the fixtype discipline is that
+reasoning about such functions does not require hypotheses constraining their
+inputs to the expected types, because they are fixed to that type (in a
+consistent manner) before being used.</p>
 
+<p>The @('FTY') library contains various utilities to support this typing discipline, notably:</p>
 <ul>
-<li>Reasoning about such functions does not require hypotheses constraining
-their inputs to the expected types, because they are fixed to that type (in a
-consistent manner) before being used</li>
-
-<li>The return value(s) of such a function are of the correct type regardless
-of whether the inputs are good.</li>
-
-<li>Each such function has a equality congruence on the fixed inputs relative
-to the equivalence relation @('(equal (fix x) (fix y))').</li>
-</ul>
-
-<p>When following this pattern, it gets tedious to repeatedly prove these
-theorems, often several pieces of boilerplate per argument to each function.
-Utilities @(see deffixtype), with @(see deffixequiv) and @(see
-deffixequiv-mutual) are a stab at automating these proofs.  Also see @(see
-acl2::def-universal-equiv) for a utility that can easily prove that the
-equivalence relation derived from a fixing function is indeed an equivalence
-relation.</p>")
+<li>@(see deffixtype), associates a fixing function and equivalence relation
+with a type predicate (optionally defining the equivalence relation for
+you);</li>
+<li>@(see deffixequiv) and @(see deffixequiv-mutual) automate the (otherwise
+tedious) congruence proofs required for each function that follows the fixtype
+discipline;</li>
+<li>@(see deftypes) provides a set of type generating utilities that can be
+used with the fixtype discipline, supporting (recursive and mutually recursive)
+sum, product, list, and alist types;</li>
+<li>@(see basetypes) includes fixing function associations for many of the
+common ACL2 base types (numbers, symbols, strings).</li>
+</ul>")
 
 (defxdoc deffixtype
   :parents (fty)

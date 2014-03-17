@@ -1,6 +1,6 @@
 
 
-(in-package "ACL2")
+(in-package "FTY")
 
 (include-book "fixtype")
 
@@ -42,126 +42,127 @@
 (defmacro defbasetype (equiv pred &rest keys)
   (defbasetype-fn equiv pred keys))
 
+#!ACL2
+(progn
+  (fty::defbasetype nat-equiv natp :fix nfix)
 
-(defbasetype nat-equiv natp :fix nfix)
+  (fty::defbasetype int-equiv integerp :fix ifix :name int)
 
-(defbasetype int-equiv integerp :fix ifix :name int)
+  (fty::defbasetype rational-equiv rationalp :fix rfix)
 
-(defbasetype rational-equiv rationalp :fix rfix)
+  (fty::defbasetype number-equiv acl2-numberp :fix fix)
 
-(defbasetype number-equiv acl2-numberp :fix fix)
+  (defsection string-equiv
+    (defund string-fix (x)
+      (declare (xargs :guard t))
+      (if (stringp x) x ""))
 
-(defsection string-equiv
-  (defund string-fix (x)
-    (declare (xargs :guard t))
-    (if (stringp x) x ""))
+    (local (in-theory (enable string-fix)))
 
-  (local (in-theory (enable string-fix)))
+    (defthm stringp-of-string-fix
+      (stringp (string-fix x))
+      :rule-classes :type-prescription)
 
-  (defthm stringp-of-string-fix
-    (stringp (string-fix x))
-    :rule-classes :type-prescription)
+    (defthm string-fix-when-stringp
+      (implies (stringp x)
+               (equal (string-fix x) x)))
 
-  (defthm string-fix-when-stringp
-    (implies (stringp x)
-             (equal (string-fix x) x)))
+    (fty::defbasetype string-equiv stringp))
 
-  (defbasetype string-equiv stringp))
+  (defsection symbol-equiv
+    (defund symbol-fix (x)
+      (declare (xargs :guard t))
+      (if (symbolp x) x nil))
 
-(defsection symbol-equiv
-  (defund symbol-fix (x)
-    (declare (xargs :guard t))
-    (if (symbolp x) x nil))
+    (local (in-theory (enable symbol-fix)))
 
-  (local (in-theory (enable symbol-fix)))
+    (defthm symbolp-of-symbol-fix
+      (symbolp (symbol-fix x))
+      :rule-classes :type-prescription)
+    
+    (defthm symbol-fix-when-symbolp
+      (implies (symbolp x)
+               (equal (symbol-fix x) x)))
 
-  (defthm symbolp-of-symbol-fix
-    (symbolp (symbol-fix x))
-    :rule-classes :type-prescription)
-  
-  (defthm symbol-fix-when-symbolp
-    (implies (symbolp x)
-             (equal (symbol-fix x) x)))
+    (fty::defbasetype symbol-equiv symbolp))
 
-  (defbasetype symbol-equiv symbolp))
+  (defsection pos-equiv
+    (defund pos-fix (x)
+      (declare (xargs :guard t))
+      (if (posp x) x 1))
 
-(defsection pos-equiv
-  (defund pos-fix (x)
-    (declare (xargs :guard t))
-    (if (posp x) x 1))
+    (local (in-theory (enable pos-fix)))
 
-  (local (in-theory (enable pos-fix)))
+    (defthm posp-of-pos-fix
+      (posp (pos-fix x))
+      :rule-classes :type-prescription)
+    
+    (defthm pos-fix-when-posp
+      (implies (posp x)
+               (equal (pos-fix x) x)))
 
-  (defthm posp-of-pos-fix
-    (posp (pos-fix x))
-    :rule-classes :type-prescription)
-  
-  (defthm pos-fix-when-posp
-    (implies (posp x)
-             (equal (pos-fix x) x)))
+    (fty::defbasetype pos-equiv posp))
 
-  (defbasetype pos-equiv posp))
+  (defsection char-equiv
+    (defund char-fix (x)
+      (declare (xargs :guard t))
+      (if (characterp x) x (code-char 0)))
 
-(defsection char-equiv
-  (defund char-fix (x)
-    (declare (xargs :guard t))
-    (if (characterp x) x (code-char 0)))
+    (local (in-theory (enable char-fix)))
 
-  (local (in-theory (enable char-fix)))
+    (defthm characterp-of-char-fix
+      (characterp (char-fix x))
+      :rule-classes :type-prescription)
+    
+    (defthm char-fix-when-characterp
+      (implies (characterp x)
+               (equal (char-fix x) x)))
 
-  (defthm characterp-of-char-fix
-    (characterp (char-fix x))
-    :rule-classes :type-prescription)
-  
-  (defthm char-fix-when-characterp
-    (implies (characterp x)
-             (equal (char-fix x) x)))
+    (fty::defbasetype char-equiv characterp :name char))
 
-  (defbasetype char-equiv characterp :name char))
+  (defsection bool-equiv-is-just-iff
+    (defund bool-fix (x)
+      (declare (xargs :guard t))
+      (and x t))
+    
+    (local (in-theory (enable bool-fix)))
 
-(defsection bool-equiv-is-just-iff
-  (defund bool-fix (x)
-    (declare (xargs :guard t))
-    (and x t))
-  
-  (local (in-theory (enable bool-fix)))
+    (defthm booleanp-of-bool-fix
+      (booleanp (bool-fix x))
+      :rule-classes :type-prescription)
+    
+    (defthm bool-fix-when-booleanp
+      (implies (booleanp x)
+               (equal (bool-fix x) x)))
 
-  (defthm booleanp-of-bool-fix
-    (booleanp (bool-fix x))
-    :rule-classes :type-prescription)
-  
-  (defthm bool-fix-when-booleanp
-    (implies (booleanp x)
-             (equal (bool-fix x) x)))
+    (fty::deffixtype bool :pred booleanp :fix bool-fix :equiv iff))
 
-  (fty::deffixtype bool :pred booleanp :fix bool-fix :equiv iff))
-
-(local (defun center-in-n-char-field (str n)
-         (let* ((len (length str)))
-           (if (<= n (length str))
-               (coerce str 'list)
-             (let* ((diff (- n len))
-                    (pre-num (floor diff 2))
-                    (post-num (- diff pre-num)))
-               (append (make-list pre-num :initial-element #\Space)
-                       (coerce str 'list)
-                       (make-list post-num :initial-element #\Space)))))))
+  (local (defun center-in-n-char-field (str n)
+           (let* ((len (length str)))
+             (if (<= n (length str))
+                 (coerce str 'list)
+               (let* ((diff (- n len))
+                      (pre-num (floor diff 2))
+                      (post-num (- diff pre-num)))
+                 (append (make-list pre-num :initial-element #\Space)
+                         (coerce str 'list)
+                         (make-list post-num :initial-element #\Space)))))))
 
 
-(local
- (defun make-basetypes-table-rchars (table acc)
-   (declare (xargs :mode :program))
-   (b* (((when (atom table)) acc)
-        (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->name (cdar table)))) 18) acc))
-        (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->pred (cdar table)))) 18) acc))
-        (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->fix (cdar table)))) 18) acc))
-        (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->equiv (cdar table)))) 18) acc))
-        (acc (cons #\Newline acc)))
-     (make-basetypes-table-rchars (cdr table) acC))))
+  (local
+   (defun make-basetypes-table-rchars (table acc)
+     (declare (xargs :mode :program))
+     (b* (((when (atom table)) acc)
+          (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->name (cdar table)))) 18) acc))
+          (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->pred (cdar table)))) 18) acc))
+          (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->fix (cdar table)))) 18) acc))
+          (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->equiv (cdar table)))) 18) acc))
+          (acc (cons #\Newline acc)))
+       (make-basetypes-table-rchars (cdr table) acC)))))
 
 (make-event
- `(defxdoc fty::basetypes
-    :parents (fty::fty)
+ `(defxdoc basetypes
+    :parents (fty)
     :short "A few base types with associated fixing functions and equivalence relations"
 
     :long (concatenate
@@ -175,7 +176,7 @@ the ACL2 package):</p>
      Type Name        Predicate       Fixing function    Equiv relation
 -------------------------------------------------------------------------
 "
- ,(reverse (coerce (make-basetypes-table-rchars (cdar (table-alist 'fty::fixtypes (w state))) nil) 'string))
+#!ACL2  ,(reverse (coerce (make-basetypes-table-rchars (cdar (table-alist 'fty::fixtypes (w state))) nil) 'string))
 "
  })")))
            

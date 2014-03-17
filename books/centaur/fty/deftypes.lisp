@@ -93,11 +93,11 @@
         ((eq y t) x)
         ((eq x nil) nil)
         ((eq y nil) nil)
-        ((eq (car x) 'and)
-         (if (eq (car y) 'and)
+        ((and (consp x) (eq (car x) 'and))
+         (if (and (consp y) (eq (car y) 'and))
              (append x (cdr y))
            (append x (list y))))
-        ((eq (car y) 'and)
+        ((and (consp y) (eq (car y) 'and))
          `(and ,x . ,(cdr y)))
         (t `(and ,x ,y))))
 
@@ -106,11 +106,11 @@
         ((eq y t) t)
         ((eq x nil) y)
         ((eq y nil) x)
-        ((eq (car x) 'or)
+        ((and (consp x) (eq (car x) 'or))
          (if (eq (car y) 'or)
              (append x (cdr y))
            (append x (list y))))
-        ((eq (car y) 'or)
+        ((and (consp y) (eq (car y) 'or))
          `(or ,x . ,(cdr y)))
         (t `(or ,x ,y))))
 
@@ -2261,7 +2261,7 @@
                   ,x.measure)
        :verify-guards nil
        (if (atom ,x.xvar)
-           0
+           1
          (+ 1
             ,@(and eltcount `((,eltcount (car ,x.xvar))))
             (,x.count (cdr ,x.xvar))))))))
@@ -2756,7 +2756,7 @@ some base types with fixing functions.</p>
 
 <p>@('Deflist') does not attempt to be as comprehensive in the theorems it
 proves as is @(see std::deflist).  However, it is compatible with
-@('std::deflist') and @('std::defprojection') using their
+@(see std::deflist) and @(see std::defprojection) using their
 @(':already-definedp') arguments.  For example: </p>
 
 @({
@@ -2814,7 +2814,7 @@ to define an alist with neither a key-type nor value-type.</p>
 
 <p>@('Defalist') does not attempt to be as comprehensive in the theorems it
 proves as is @(see std::defalist).  However, it is compatible with
-@('std::defalist') using its @(':already-definedp') and @(':true-listp')
+@(see std::defalist) using its @(':already-definedp') and @(':true-listp')
 arguments.  For example: </p>
 
 @({
@@ -3125,13 +3125,13 @@ following modification of the above form works:</p>
 
 (defxdoc defflexsum
   :parents (fty deftypes)
-  :short "Define a (possibly recursive) sum of products (SUM) type."
+  :short "Define a (possibly recursive) sum of products type."
   :long "
 <h3>Caveat</h3>
 
 <p>@('Defflexsum') is not very user-friendly or automatic; it is easy to create
 instances that fail in incomprehensible ways.  It is used as a backend to
-define the @('deftagsum') and @('defprod') type generators, which are easier to
+define the @(see deftagsum) and @(see defprod) type generators, which are easier to
 use.</p>
 
 <h4>Example</h4>
