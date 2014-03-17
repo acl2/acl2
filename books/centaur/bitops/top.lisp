@@ -334,7 +334,7 @@ should probably use a library like @('arithmetic/top') instead; see below.</p>
 <p>The @('ihs/logops-lemmas') book is a key book for bit-vector reasoning in
 ihs.  But you should generally <b>not</b> use it when you are using Bitops,
 because the Bitops book @('ihsext-basics') supersedes it&mdash;it imports the
-good rules and then introduce improved replacements for many of the
+good rules and then introduces improved replacements for many of the
 @('ihsext-basics') rules.</p>
 
 
