@@ -1,5 +1,4 @@
 
-
 #!ACL2
 (in-package "ACL2")
 

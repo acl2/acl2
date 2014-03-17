@@ -1,5 +1,5 @@
-; Standard Utilities Library
-; Copyright (C) 2008-2014 Centaur Technology
+; FTY type support library
+; Copyright (C) 2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
