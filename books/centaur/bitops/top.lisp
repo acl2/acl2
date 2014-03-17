@@ -359,7 +359,7 @@ mostly incidental, e.g., you have a function that recurs by calling @('(- n
 <p><b>2.</b> The book @('arithmetic/top-with-meta') is only slightly stronger;
 it adds some @(see meta) rules that can more effectively cancel out summands
 and factors that can arise in various equalities and inequalities.  It's a fine
-choice that is about on part with @('arithmetic/top'), but which is superior in
+choice that is about on par with @('arithmetic/top'), but which is superior in
 some cases.</p>
 
 
@@ -372,7 +372,7 @@ arithmetic expressions return integers.  It also features a much stronger
 integration with @(see non-linear-arithmetic) reasoning, which may be
 especially useful when working with @('*') and @('/').</p>
 
-<p>This book is also very compatible with Bitops, and may be a good choice for
+<p>This book is also very compatible with Bitops and may be a good choice for
 cases where @('arithmetic/top-with-meta') is not doing a good enough job with
 respect to the basic arithmetic operations.  Just about the only issue is that
 it has some special support for @('(expt 2 ...)') which overlaps a bit with
