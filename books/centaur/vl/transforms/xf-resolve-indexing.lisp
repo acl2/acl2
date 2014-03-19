@@ -615,6 +615,51 @@ able to handle more cases.</p>")
   :element vl-port-resolve-indexing)
 
 
+(def-vl-resolve-indexing vl-fundecl-resolve-indexing
+  :type vl-fundecl-p
+  :body
+  (b* (((vl-fundecl x) x)
+
+       ;; This is tricky because the function can have its own declarations.
+       ((mv regdecls vardecls eventdecls paramdecls)
+        (vl-filter-blockitems x.decls))
+
+       ;; Remove any locally declared names from the global arrfal/wirefal
+       ;; we've been given.  In practice, shadowed-names should be short
+       ;; because most functions are pretty simple and don't have more than a
+       ;; few variables.  So, I'm not worried about just using
+       ;; set-difference-equal calls, here.
+       (shadowed-names
+        (mergesort (append (vl-regdecllist->names regdecls)
+                           (vl-vardecllist->names vardecls)
+                           (vl-eventdecllist->names eventdecls)
+                           (vl-paramdecllist->names paramdecls))))
+       (visible-global-arrnames
+        (set-difference-equal (alist-keys arrfal) shadowed-names))
+       (visible-global-wirenames
+        (set-difference-equal (alist-keys wirefal) shadowed-names))
+
+       ;; It would probably be safe to turn indexing operations that are
+       ;; selecting from most parameters and variables into bitselects.  But
+       ;; for now we'll play it safe, and only really try to deal with
+       ;; registers here.
+       ((mv reg-arrays reg-wires)
+        (vl-regdecllist-filter-arrays regdecls nil nil))
+       (local-arrnames  (append-without-guard reg-arrays visible-global-arrnames))
+       (local-wirenames (append-without-guard reg-wires visible-global-wirenames))
+       (local-arrfal    (make-lookup-alist local-arrnames))
+       (local-wirefal   (make-lookup-alist local-wirenames))
+       ((mv warnings new-body)
+        (vl-stmt-resolve-indexing x.body local-arrfal local-wirefal warnings))
+       (- (fast-alist-free local-arrfal))
+       (- (fast-alist-free local-wirefal))
+       (new-x (change-vl-fundecl x :body new-body)))
+    (mv warnings new-x)))
+
+(def-vl-resolve-indexing-list vl-fundecllist-resolve-indexing
+  :type vl-fundecllist-p
+  :element vl-fundecl-resolve-indexing)
+
 (define vl-module-resolve-indexing ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
   (b* (((vl-module x) x)
@@ -641,6 +686,7 @@ able to handle more cases.</p>")
        ((mv warnings gateinsts) (vl-gateinstlist-resolve-indexing x.gateinsts arrfal wirefal warnings))
        ((mv warnings alwayses)  (vl-alwayslist-resolve-indexing   x.alwayses arrfal wirefal warnings))
        ((mv warnings initials)  (vl-initiallist-resolve-indexing  x.initials arrfal wirefal warnings))
+       ((mv warnings fundecls)  (vl-fundecllist-resolve-indexing  x.fundecls arrfal wirefal warnings))
 
        (- (fast-alist-free arrfal))
        (- (fast-alist-free wirefal))
@@ -651,6 +697,7 @@ able to handle more cases.</p>")
                                 :gateinsts gateinsts
                                 :alwayses alwayses
                                 :initials initials
+                                :fundecls fundecls
                                 :warnings warnings)))
     new-x))
 

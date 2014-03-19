@@ -71,6 +71,14 @@
                  file, you can use the empty string, i.e., --esims-file ''."
                 :rule-classes :type-prescription)
 
+   (verilog-file stringp
+                 :argname "NAME"
+                 :default "vl_model.v"
+                 "Default is \"vl_model.v\".  Contains a \"simplified\" version
+                  of some subset of the input Verilog modules.  To avoid writing
+                  this file, use the empty string, i.e., --verilog-file ''."
+                 :rule-classes :type-prescription)
+
    (start-files string-listp
                 "The list of files to parse. (Not options; this is the rest of
                  the command line, hence :hide t)"
@@ -212,7 +220,17 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
                            (vl-modulelist->esims
                             (vl-design->mods
                              (vl-translation->good translation)))
-                           :verbosep t))))
+                           :verbosep t)))
+
+       (state
+        (if (equal opts.verilog-file "")
+            state
+          (with-ps-file opts.verilog-file
+                        (vl-ps-update-show-atts nil)
+                        (vl-pp-modulelist
+                         (vl-design->mods
+                          (vl-translation->good translation))))))
+       )
     state))
 
 (defconsts (*vl-model-readme* state)
@@ -267,15 +285,20 @@ Options:" *nls* *nls* *vl-model-opts-usage* *nls*))
        (state (must-be-directories! (list opts.outdir)))
 
        ((when (and (equal opts.model-file "")
-                   (equal opts.esims-file "")))
+                   (equal opts.esims-file "")
+                   (equal opts.verilog-file "")
+                   ))
         (die "No model file or esims file, so nothing to do?")
         state)
 
        (- (or (equal opts.model-file "")
-              (cw " - model file: ~x0" opts.model-file)))
+              (cw " - model file: ~x0~%" opts.model-file)))
 
        (- (or (equal opts.esims-file "")
-              (cw " - esims file: ~x0" opts.esims-file)))
+              (cw " - esims file: ~x0~%" opts.esims-file)))
+
+       (- (or (equal opts.verilog-file "")
+              (cw " - verilog file: ~x0~%" opts.verilog-file)))
 
        (- (cw "Soft heap size ceiling: ~x0 GB~%" opts.mem))
        (- (acl2::set-max-mem ;; newline to appease cert.pl's scanner
