@@ -25638,6 +25638,7 @@ Lisp definition."
     (set-temp-touchable-fns)
     (set-temp-touchable-vars)
     (sys-call)
+    (sys-call+)
     ))
 
 (defun ev-fncall-w-guard (fn args wrld temp-touchable-fns)

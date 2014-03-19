@@ -17037,7 +17037,11 @@
                         (cond ((member-eq write-port '(t nil))
                                (value write-port))
                               ((eq write-port :default)
-                               (getenv! "ACL2_WRITE_PORT" state))
+                               (er-let* ((str
+                                          (getenv! "ACL2_WRITE_PORT" state)))
+                                 (value (cond (str (intern$ (string-upcase str)
+                                                            "ACL2"))
+                                              (t t))))) ; default
                               (t (er soft ctx
                                      "Illegal :write-port argument, ~x0.  See ~
                                       :DOC certify-book."))))
