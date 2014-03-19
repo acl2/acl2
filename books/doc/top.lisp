@@ -156,6 +156,8 @@
 (include-book "hacking/all" :dir :system)
 (include-book "hints/consider-hint" :dir :system)
 (include-book "tools/do-not" :dir :system)
+(include-book "tools/plev" :dir :system)
+(include-book "tools/plev-ccl" :dir :system)
 
 ; [Jared] removing these to speed up the manual build
 ;(include-book "tutorial/intro")
