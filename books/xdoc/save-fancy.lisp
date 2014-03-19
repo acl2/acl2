@@ -503,6 +503,7 @@
                                           dir/images state)))
     state))
 
+(defttag :xdoc) ; for sys-call+ call below
 
 (defun run-fancy-zip (dir state)
   (b* ((- (cw "; XDOC: Running zip.sh to create download/ directory.~%"))
