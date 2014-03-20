@@ -67,4 +67,5 @@
 #+Unix ;; <-- maybe need to tweak this
 (progn
   (check-file-kind "/dev/null" :character-device)
+  #-darwin ;; fails on Mac OS 10.6.8, at least
   (check-file-kind "/dev/sda1" :block-device))
