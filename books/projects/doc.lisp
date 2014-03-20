@@ -591,6 +591,8 @@ this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA.</p>")
 
 
+#+skip
+; This topic is already documented in projects/leftist-trees/leftist-tree-defuns.lisp.
 (defxdoc leftist-trees
   :parents (projects)
   :short "An implementation of leftist trees as described in <a
