@@ -56,7 +56,7 @@ debug:
 
 clean:
 	rm -f */impl.v */*.sao */*.log */*.out */run.ok
-	rm -rf */INCA_libs */*.vcd
+	rm -rf */INCA_libs */*.vcd */*.key
 
 all: $(IMPL_FILES)
 all: $(RUN_OKS)

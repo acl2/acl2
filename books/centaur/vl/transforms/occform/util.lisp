@@ -27,6 +27,7 @@
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
 
+(local (xdoc::set-default-parents occform))
 
 (define vl-occform-mkwire ((name stringp)
                            (width posp)
@@ -35,7 +36,6 @@
   :returns (mv (expr    vl-expr-p    :hyp :fguard
                         "already sized, unsigned")
                (netdecl vl-netdecl-p :hyp :fguard))
-  :parents (occform)
   :short "Helper function for creating ports in generated modules."
   :long "<p>Imagine that we are trying to programmatically generate a module,
 and we want to add a wire with the given name and width.  This function just
@@ -59,7 +59,6 @@ generates the corresponding expression and net declaration.</p>"
                (port     vl-port-p     :hyp :fguard)
                (portdecl vl-portdecl-p :hyp :fguard)
                (netdecl  vl-netdecl-p  :hyp :fguard))
-  :parents (occform)
   :short "Helper for creating ports in generated modules."
   :long "<p>Imagine that we are trying to programmatically generate a module,
 and we want to add a port with the given name, direction, and width.  This
@@ -152,7 +151,6 @@ portnames and directions."
    &key
    ((loc vl-location-p) '*vl-fakeloc*))
   :returns (inst vl-modinst-p :hyp :fguard)
-  :parents (occform)
   :short "Convenient way to generating module instances."
 
   :long "<p>If you are writing code to generate modules (as we often are in
@@ -236,7 +234,6 @@ you don't have to put the actuals in a list."
   :guard   (<= i n)
   :returns (mv (exprs vl-exprlist-p :hyp :fguard)
                (decls vl-netdecllist-p :hyp :fguard))
-  :parents (occform)
   :short "Helper function for creating lists of net declarations."
   :long "<p>We generate a list of net declarations,</p>
 @({
@@ -250,7 +247,8 @@ sizes pre-computed.</p>"
 
   :measure (nfix (- (nfix n) (nfix i)))
 
-  (b* (((when (zp (- (lnfix n) (lnfix i))))
+  (b* (((when (mbe :logic (zp (- (lnfix n) (lnfix i)))
+                   :exec (eql i n)))
         (mv nil nil))
        (name  (hons-copy (cat prefix (natstr i))))
        (expr  (vl-idexpr name width :vl-unsigned))
@@ -280,3 +278,48 @@ sizes pre-computed.</p>"
                                                :loc loc)))
       (and (iff exprs (posp (- (nfix n) (nfix i))))
            (iff decls (posp (- (nfix n) (nfix i))))))))
+
+
+(define vl-occform-mkports ((prefix stringp "name prefix for each port")
+                            (i      natp    "starting index, <b>inclusive!</b>")
+                            (n      natp    "ending index, <b>non-inclusive!</b>")
+                            &key
+                            (dir    vl-direction-p "direction of each port")
+                            (width  posp           "width of each port")
+                            ((loc vl-location-p)   '*vl-fakeloc*))
+  :guard   (<= i n)
+  :returns (mv (exprs     vl-exprlist-p :hyp :fguard)
+               (ports     vl-portlist-p :hyp :fguard)
+               (portdecls vl-portdecllist-p :hyp :fguard)
+               (netdecls  vl-netdecllist-p :hyp :fguard))
+  :short "Helper function for creating lists of port declarations."
+  :measure (nfix (- (nfix n) (nfix i)))
+
+  (b* (((when (mbe :logic (zp (- (lnfix n) (lnfix i)))
+                   :exec (eql i n)))
+        (mv nil nil nil nil))
+       (name1 (hons-copy (cat prefix (natstr i))))
+       ((mv expr1 port1 portdecl1 netdecl1)
+        (vl-occform-mkport name1 dir width))
+       ((mv exprs2 ports2 portdecls2 netdecls2)
+        (vl-occform-mkports prefix (+ 1 (lnfix i)) n
+                            :dir dir :width width :loc loc)))
+    (mv (cons expr1 exprs2)
+        (cons port1 ports2)
+        (cons portdecl1 portdecls2)
+        (cons netdecl1 netdecls2)))
+  ///
+  (defmvtypes vl-occform-mkports-fn
+    (true-listp true-listp true-listp true-listp))
+
+  (defthm len-of-vl-occform-mkports
+    (b* (((mv exprs ports portdecls netdecls)
+          (vl-occform-mkports prefix i n
+                              :dir dir
+                              :width width
+                              :loc loc))
+         (len (nfix (- (nfix n) (nfix i)))))
+      (and (equal (len exprs) len)
+           (equal (len ports) len)
+           (equal (len portdecls) len)
+           (equal (len netdecls) len)))))

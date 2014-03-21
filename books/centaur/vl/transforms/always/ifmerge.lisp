@@ -139,7 +139,7 @@ remove @('else') expressions.</p>")
                 ;; so we have to stop, because it's not okay to move the
                 ;; @(posedge clk) above the if test.
                 (stop outer-cond x warnings))
-               ;; Else, we found somethign like @(posedge clk) but we don't
+               ;; Else, we found something like @(posedge clk) but we don't
                ;; have any ifs above us anyway, so we can freely keep going
                ;; here.
                ((vl-timingstmt x) x)

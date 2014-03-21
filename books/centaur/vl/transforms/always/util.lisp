@@ -66,7 +66,7 @@ isn't an array.</p>"
         (make-vl-warning
          :type :vl-always-too-hard
          :msg "~a0: statement is too complex to synthesize.  The variable ~
-               being targetted, ~w1, is not declared as a register."
+               being targeted, ~w1, is not declared as a register."
          :args (list elem name)
          :fatalp nil
          :fn __function__))
@@ -76,8 +76,17 @@ isn't an array.</p>"
         (make-vl-warning
          :type :vl-always-too-hard
          :msg "~a0: statement is too complex to synthesize.  The register ~
-               being targetted, ~w1, is an array, which we do not support."
+               being targeted, ~w1, is an array, which we do not support."
          :args (list elem name)
+         :fatalp nil
+         :fn __function__))
+
+       ((unless (vl-maybe-range-resolved-p decl.range))
+        (make-vl-warning
+         :type :vl-always-too-hard
+         :msg "~a0: statement is too complex to synthesize.  The register ~
+               being targeted, ~w1, does not have a resolved size: ~x2"
+         :args (list elem name decl.range)
          :fatalp nil
          :fn __function__)))
     nil)
@@ -107,7 +116,7 @@ isn't an array.</p>"
 
 
 (define vl-always-convert-reg ((x vl-regdecl-p))
-  :returns (wire vl-netdecl-p :hyp :fguard)
+  :returns (netdecl vl-netdecl-p :hyp :fguard)
   :parents (synthalways)
   :short "Convert a register into a wire."
 
@@ -120,8 +129,7 @@ register has array dimensions.</p>"
 
   (b* (((vl-regdecl x) x)
        (- (or (not x.arrdims)
-              (er hard? __function__
-                  "Expected all regs to convert to be non-arrays."))))
+              (raise "Expected all regs to convert to be non-arrays."))))
     (make-vl-netdecl :name    x.name
                      :type    :vl-wire
                      :signedp x.signedp
@@ -153,21 +161,13 @@ register has array dimensions.</p>"
 <p>in a uniform way.  If we see a @('begin ... end') we'll just return the
 @('...') part as a statement list.  If we see any other kind of statement,
 e.g., an if statement, a single assignment, etc., then we just return it as a
-singleton statemetn list.</p>"
+singleton statement list.</p>"
 
   (if (and (vl-blockstmt-p body)
            (vl-blockstmt->sequentialp body)
            (not (vl-blockstmt->decls body)))
       (vl-blockstmt->stmts body)
     (list body)))
-
-
-(defprojection vl-evatomlist->exprs (x)
-  ;; BOZO move to parsetere?
-  (vl-evatom->expr x)
-  :guard (vl-evatomlist-p x)
-  :result-type vl-exprlist-p
-  :parents (vl-evatomlist-p))
 
 
 (local (defthm consp-of-vl-evatom->expr
@@ -194,3 +194,11 @@ singleton statemetn list.</p>"
         (mv nil nil))
        (clk (vl-evatom->expr (car evatoms))))
     (mv clk stmt.body)))
+
+
+(defprojection vl-evatomlist->exprs (x)
+  ;; BOZO move to parsetree?
+  (vl-evatom->expr x)
+  :guard (vl-evatomlist-p x)
+  :result-type vl-exprlist-p
+  :parents (vl-evatomlist-p))

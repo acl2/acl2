@@ -56,11 +56,8 @@ sub check_file_for_errors
 foreach my $i (0 .. $#ARGV)
 {
     my $filename = $ARGV[$i];
-    print "Checking $filename.\n";
     check_file_for_errors($filename);
-    print "Done checking $filename.\n";
+    print "Checked $filename\n";
 }
-
-print "Exiting errcheck.pl\n";
 
 exit(0);
