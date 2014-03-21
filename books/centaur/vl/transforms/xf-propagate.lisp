@@ -193,6 +193,7 @@ correctly.</p>"
        (names   (vl-exprlist-names selects)))
     names))
 
+
 (define too-hard-to-propagate
   :short "Identify wires that are too hard to propagate."
   ((x vl-module-p))
@@ -244,7 +245,12 @@ propagating wires that have multiple drivers.  For instance, if we had:</p>
 
 <p>Then it wouldn't be safe to just go around replacing uses of A with either B
 or C, because neither B nor C captures the whole value being assigned to A.
-Hence, we need some code for detecting what wires are driven.</p>"
+Hence, we need some code for detecting what wires are driven.</p>
+
+<p>Another new restriction: we now allow ourselves to propagate into modules
+that have always blocks, initial blocks, and function declarations.  But to
+hopefully make this safe, we consider any names that are actually used in these
+places to be unsafe.</p>"
 
   (b* (((vl-module x) x))
     (mergesort
@@ -256,7 +262,23 @@ Hence, we need some code for detecting what wires are driven.</p>"
       (vl-maybe-driven-by-gateinsts x.gateinsts)
       (duplicated-members (vl-driven-by-assigns x.assigns))
       ;; Don't propagate wires used in selects, as discussed above.
-      (used-in-some-select-p x)))))
+      (used-in-some-select-p x)
+
+      ;; Don't propagate any names used in functions, always blocks, initial blocks
+      (vl-exprlist-names (vl-fundecllist-allexprs x.fundecls))
+      (vl-exprlist-names (vl-alwayslist-allexprs x.alwayses))
+      (vl-exprlist-names (vl-initiallist-allexprs x.initials))
+      (vl-exprlist-names (vl-regdecllist-allexprs x.regdecls))
+      (vl-exprlist-names (vl-vardecllist-allexprs x.vardecls))
+      (vl-exprlist-names (vl-taskdecllist-allexprs x.taskdecls))
+      (vl-exprlist-names (vl-eventdecllist-allexprs x.eventdecls))
+      (vl-exprlist-names (vl-paramdecllist-allexprs x.paramdecls))
+      (vl-regdecllist->names x.regdecls)
+      (vl-vardecllist->names x.vardecls)
+      (vl-taskdecllist->names x.taskdecls)
+      (vl-eventdecllist->names x.eventdecls)
+      (vl-paramdecllist->names x.paramdecls)
+      ))))
 
 
 (define remove-each-from-alist (keys alist)
@@ -380,15 +402,20 @@ Hence, we need some code for detecting what wires are driven.</p>"
   (b* (((vl-module x) x)
        ((when (vl-module->hands-offp x))
         x)
-       ((when (or x.alwayses
-                  x.paramdecls
-                  x.fundecls
-                  x.taskdecls
-                  x.eventdecls
-                  x.regdecls
-                  x.vardecls))
-        (cw "Note: not propagating in ~s0; module looks too complicated.~%" x.name)
-        x))
+       ;; We no longer prohibit this.  Instead we try to prevent it from
+       ;; causing problems by making sure we don't propagate anything that's
+       ;; used in these areas.
+       ;; ((when (or x.alwayses
+       ;;            x.fundecls
+       ;;            x.regdecls
+       ;;            x.vardecls
+       ;;            x.paramdecls
+       ;;            x.taskdecls
+       ;;            x.eventdecls
+       ;;            ))
+       ;;  (cw "Note: not propagating in ~s0; module looks too complicated.~%" x.name)
+       ;;  x))
+       )
     (vl-propagation-fixpoint x 1000 limits)))
 
 (defprojection vl-modulelist-propagate (x limits)

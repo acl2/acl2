@@ -1028,8 +1028,9 @@ vl-exprlist-p) and return them as a string list."
 
 (defsection vl-expr-selects
   :parents (expr-tools)
-  :short "Collects up all the bit-select and part-select expressions within an
-expression, and return them as a flat list of expressions."
+  :short "Collects up all the selection expressions (bit-selects, part-selects,
+array indexing, and unresolved indexing) and returns them as a flat list of
+expressions."
 
   (mutual-recursion
 
@@ -1043,7 +1044,9 @@ expression, and return them as a flat list of expressions."
           ((when (or (eq x.op :vl-bitselect)
                      (eq x.op :vl-partselect-colon)
                      (eq x.op :vl-partselect-pluscolon)
-                     (eq x.op :vl-partselect-minuscolon)))
+                     (eq x.op :vl-partselect-minuscolon)
+                     (eq x.op :vl-index)
+                     (eq x.op :vl-array-index)))
            (list x)))
        (vl-exprlist-selects x.args)))
 

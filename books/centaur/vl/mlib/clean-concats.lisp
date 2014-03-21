@@ -526,6 +526,56 @@ vl-merge-consts-aux on this yields</p>
 
 
 
+(define vl-spurious-concatenation-p
+  :parents (vl-expr-clean-concats)
+  :short "Determine if a concatenation such as @('{foo}') can be safely
+rewritten to just @('foo')."
+  ((arg vl-expr-p "The argument to the concatenation.")
+   (mod vl-module-p "Module where this expression resides.")
+   (ialist (equal ialist (vl-moditem-alist mod))))
+  :returns (spurious-p booleanp :rule-classes :type-prescription)
+
+  :long "<p>In early implementations of @(see vl-expr-clean-concats), we
+looked for singleton concatenations like @('{foo}') and replaced them with
+@('foo').</p>
+
+<p>Unfortunately, it's tricky to safely do this before sizing has been done.
+For instance, if we replace @('{a+b}') with just @('a+b'), then we've lost the
+fact that @('a+b') should be self-determined.  In general this wouldn't be safe
+and could screw things up.</p>
+
+<p>However, we found that we still wanted to carry out this reduction in places
+where it <i>is</i> safe.  For instance, it seems okay to do this in the special
+cases of bit- and part-selects: these expressions are always unsigned and,
+e.g., there is no difference between extending @('{foo[3]}') and @('foo[3]'),
+since a zero-extension is necessary in either case.</p>
+
+<p>As an additional tweak, which we wanted for a particular VL-Mangle project,
+we now also permit @('arg') to be an unsigned constint, weirdint, or identifier
+atom (if it is the name of an unsigned net or register.)</p>"
+
+  (if (vl-fast-atom-p arg)
+      (b* ((guts (vl-atom->guts arg))
+           ((when (vl-fast-constint-p guts))
+            (equal (vl-constint->origtype guts) :vl-unsigned))
+           ((when (vl-fast-weirdint-p guts))
+            (equal (vl-weirdint->origtype guts) :vl-unsigned))
+           ((unless (vl-fast-id-p guts))
+            ;; Other things might be okay too, but for now we don't care.
+            nil)
+           (look (vl-fast-find-moduleitem (vl-id->name guts) mod ialist))
+           ((unless look)
+            nil)
+           ((when (eq (tag look) :vl-netdecl))
+            (not (vl-netdecl->signedp look)))
+           ((when (eq (tag look) :vl-regdecl))
+            (not (vl-regdecl->signedp look))))
+        nil)
+    (or (eq (vl-nonatom->op arg) :vl-bitselect)
+        (eq (vl-nonatom->op arg) :vl-partselect-colon)
+        ;; It would probably be fine to extend this with other operators
+        ;; as long as they are unsigned and self-determined.
+        )))
 
 
 (defsection vl-expr-clean-concats
@@ -570,18 +620,9 @@ but may be aesthetically better.</p>"
           (args (vl-maybe-merge-selects args mod ialist))
           (args (vl-merge-consts args))
 
-          ;; Historically we looked for singleton concatenations like {a} here,
-          ;; and replaced them with just a.  It's tricky to safely do this
-          ;; before sizing has been done, because for instance if we replace
-          ;; {a+b} with just a+b then we've lost the fact that a+b should be
-          ;; self-determined.  But it seems okay to do this in the special
-          ;; cases of bit- and part-selects, since they must be unsigned and
-          ;; there is no difference between extending {foo[3]} and foo[3] -- a
-          ;; zero-extension is necessary in either case.
-          ((when (and (= (length args) 1)
-                      (vl-nonatom-p (car args))
-                      (or (eq (vl-nonatom->op (car args)) :vl-bitselect)
-                          (eq (vl-nonatom->op (car args)) :vl-partselect-colon))))
+          ((when (and (eql (length args) 1)
+                      (vl-spurious-concatenation-p (car args) mod ialist)))
+           ;; Safe to rewrite this singleton concatenation from {arg} --> arg
            (car args)))
        (change-vl-nonatom x :args args)))
 
