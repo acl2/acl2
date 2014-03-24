@@ -170,7 +170,7 @@
 (defthm get-character-list-from-positions--character-listp
   (implies (naturals-listp l)
            (and (character-listp (get-character-list-from-positions l))
-                (standard-char-listp (get-standard-char-list-from-positions l))))
+                (character-listp (get-standard-char-list-from-positions l))))
   :hints (("goal" :in-theory (enable standard-char-listp))))
 
 )
