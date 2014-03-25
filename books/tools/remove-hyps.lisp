@@ -12,11 +12,21 @@
 ; Written by Matt Kaufmann and Nathan Wetzler (original date March, 2014)
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+(in-package "ACL2")
+
+(include-book "xdoc/top" :dir :system)
+
 ;; ===================================================================
 
-; When event is a successful event (defthm name (implies ...) ...)  then the
-; form (remove-hyps event) results in storing a modified version of this event
-; in which, essentially, the hypotheses have been reduced to a minimal set.
+(defxdoc remove-hyps
+  :parents (debugging)
+  :short "Macro for defining a theorem with a minimal set of hypotheses"
+  :long "<p>When event is a successful event (defthm name (implies ...) ...)
+         then the form (remove-hyps event) results in storing a modified
+         version of this event in which, essentially, the hypotheses have been
+         reduced to a minimal set.</p>
+
+         <p>This tool is available in @('tools/remove-hyps.lisp')</p>")
 
 ; Possible enhancements include:
 
@@ -36,7 +46,7 @@
 ;   expansion in the certificate, in the common case where no hypotheses are
 ;   eliminated
 
-; - Adding documentation (via the XDOC system)
+; - Further develop documentation.  E.g., moving example into it.
 
 ; - Moving event destructuring out of remove-hyps to a separate function
 ;   (in analogy to event construction using make-defthm)
@@ -45,7 +55,6 @@
 
 ;; ===================================================================
 
-(in-package "ACL2")
 
 ;; We will be programming with state.
 (set-state-ok t)
@@ -54,7 +63,6 @@
 ;; need to verify their guards or we would get slower performance (because of
 ;; the use of executable-counterpart functions).
 (program)
-
 
 ;; ============================ HEURISTIC ============================
 
