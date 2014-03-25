@@ -29722,14 +29722,15 @@
 ; The implementation of this function uses hons-acons, so might only be
 ; efficient when #+hons (which was its intended use when written).
 
-  (extended-ancestors1 (cons (canonical-sibling f wrld)
-                             (canonical-ancestors f wrld nil))
-                       nil
-                       (attachment-records-fal
-                        (global-val 'attachment-records wrld)
-                        :attachment-records-fal)
-                       wrld
-                       f))
+  (let ((g (canonical-sibling f wrld)))
+    (extended-ancestors1 (cons g
+                               (canonical-ancestors g wrld nil))
+                         nil
+                         (attachment-records-fal
+                          (global-val 'attachment-records wrld)
+                          :attachment-records-fal)
+                         wrld
+                         f)))
 
 (defun ext-anc-attachment-missing (alist wrld)
 
