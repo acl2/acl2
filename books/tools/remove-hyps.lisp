@@ -1,3 +1,13 @@
+;;; General comments:
+
+;;; Lisp commenting conventions generally expect ";;;" at the start of a line,
+;;; ";;" for indented comments, and ";" at the end of a line after code.  But J
+;;; and I typically use ";" instead of ";;;" for the beginning of a line.
+;;; Actually ";;" is kind of important to use instead of ";", in order for
+;;; control-meta-q and <TAB> to work as expected in Emacs.  But I won't change
+;;; any of these, since that would make your diff or (meta-x compare-windows)
+;;; more awkward.
+
 ; Copyright (C) 2014, Regents of the University of Texas
 ; Written by Matt Kaufmann and Nathan Wetzler (original date March, 2014)
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
@@ -28,10 +38,10 @@
 
 ; - Adding documentation (via the XDOC system)
 
-; - Moving event destruction to a separate function (similar to event
-;   construction now
+; - Moving event destructuring out of remove-hyps to a separate function
+;   (in analogy to event construction using make-defthm)
 
-; - Support for other forms such as defrule
+; - Support for other forms besides defthm, such as defrule
 
 ;; ===================================================================
 
@@ -39,7 +49,10 @@
 
 ;; We will be programming with state.
 (set-state-ok t)
-;; This is a utility and we do not wish to reason about termination.
+;; This is a utility and we do not wish to reason about termination.  Moreover,
+;; if we were to put all the functions into :logic mode, then either we would
+;; need to verify their guards or we would get slower performance (because of
+;; the use of executable-counterpart functions).
 (program)
 
 
@@ -49,15 +62,16 @@
 ;; the original theorem.  We want to avoid a situation where removing some
 ;; hypothesis places the prover in a state where it is "out to lunch".  This
 ;; puts an upper bound on the number of prover steps (and hopefully time) the
-;; remove-hyps tool will use.
+;; remove-hyps tool will use.  The limit is rather arbitrary and there might
+;; well be better limits to use.
 (defun remove-hyps-formula-steps (steps)
   (+ 1000 (* 3 steps)))
 
 
 ;; ======================= DEFTHM CONSTRUCTION =======================
 
-;; The dumb-implicate function constructs an implicate based on a list of
-;; hypotheses.  If there are no hypotheses, the implicate is simply the
+;; The dumb-implicate function constructs an "implication" based on a list of
+;; hypotheses.  If there are no hypotheses, the result is simply the
 ;; conclusion.  If there is exactly one hypothesis, we don't need to splice in
 ;; an "and".  Finally, if there is more than one hypothesis, an "and" is used
 ;; to conjoin the hypotheses.
@@ -76,28 +90,30 @@
 
 ;; ======================== DEFTHM EXECUTION =========================
 
-;; The event-steps function performs two tasks.  The first is testing a
-;; (defthm) form for success/failure.  The second is calculating the number of
-;; prover steps used in a successful event.  Thus, the presence/absence of a
-;; return value indicates the success/failure of the form.
+;; The event-steps function performs two tasks.  The first is testing a defthm
+;; form for success/failure.  The second is calculating the number of prover
+;; steps used in a successful event.  This function returns an error triple (mv
+;; erp val state).  In the typical case, erp is nil; then if val is nil then
+;; the event failed, and otherwise the event succeeded with val prover steps.
+;; If erp is not nil, then all bets are off (but this should be rare).
 (defun event-steps (form state)
   (let ((new-form
          ; The progn will revert the state if one of the events fails, which we
-         ; guarantee with an ill-formed event.
-         `(progn ; First set a global variable to nil in case of failure.
+         ; guarantee with an ill-formed event (the defconst event below).
+         `(progn ; First set a state global variable to nil in case of failure.
                  (make-event (pprogn (f-put-global 'our-steps nil state)
                                      (value '(value-triple nil))))
-                 ; Try to execute a given form.
+                 ; Execute the given form.
                  ,form
-                 ; Record the number of prover steps used in the last event.
+                 ; Record the number of prover steps used in the last event, if
+                 ; it succeeded (otherwise we won't get this far).
                  (make-event (pprogn (f-put-global 'our-steps
                                                    (last-prover-steps state)
                                                    state)
                                      (value '(value-triple nil))))
                  ; Cause a failure by using an ill-formed defconst event.
-                 (defconst *bad*) ; Note: no args!
+                 (defconst *bad*) ; Note the missing second argument!
                  )))
-
     (er-progn
      ; Evaluate the new form constructed above.
      (trans-eval new-form 'event-steps state t)
@@ -108,11 +124,11 @@
 ;; ====================== REMOVE-HYPS ALGORITHM ======================
 
 ;; The main procedure of remove-hyps.  This function takes a list of necessary
-;; hypotheses and a list of unknown hypotheses, the second and third arguments
-;; respectively.  It then appends the two lists of hypotheses with the first
-;; element of the unknown list removed.  This creates an event with all
-;; hypotheses deemed necessary so far conjoined with all remaining hypotheses
-;; to be tested (minus the hypothesis being tested).
+;; hypotheses (presumably reversed from the original order) and an additional
+;; list of hypotheses, the second and third arguments respectively.  It recurs
+;; through the "additional" list, accumulating into the "necessary" list those
+;; "additional" hypotheses that are necessary, ultimately returning the reverse
+;; of the accumulated list.
 (defun remove-hyps-formula-1 (name rev-init-hyps rest-hyps concl kwd-alist
                                    steps state)
 
@@ -121,8 +137,12 @@
    ; necessary hypotheses.
    ((endp rest-hyps) (value (reverse rev-init-hyps)))
    ; Create a new form by appending the necessary hypotheses to the cdr of the
-   ; unknown hypotheses.  Limit the number of steps based on the heuristic
-   ; above.
+   ; additional hypotheses.  Evaluate the form, limiting the number of steps
+   ; based on the heuristic above.  Then recur using the cdr of the additional
+   ; hypotheses and with the list of necessary hypotheses perhaps extended, as
+   ; follows: If evaluation of the form succeeds, then the car of the
+   ; additional hypotheses is not necessary, so do not accumulate it into the
+   ; necessary hypotheses; otherwise, accumulate it.
    (t (let ((form `(with-prover-step-limit
                     ,steps
                     ,(make-defthm name
@@ -135,45 +155,42 @@
            name
            ; Modify the necessary hypotheses based on the result of the last
            ; event.
-           (cond ((null event-steps)
+           (cond ((null event-steps) ; the removed hypothesis was necessary
                   (cons (car rest-hyps) rev-init-hyps))
                  (t rev-init-hyps))
            (cdr rest-hyps)
            concl kwd-alist steps state))))))
 
-;; This function obtains a count for the number of steps the original form (if
-;; it even succeeds!) and then calls a recursive procedure to try the form
-;; without each hypothesis.
+;; This function returns an error triple whose value, in the non-error case, is
+;; a defthm form for the given hyps, concl, and kwd-alist -- except, hypotheses
+;; may be removed from hyps to provide a form whose proof nevertheless succeeds.
 (defun remove-hyps-formula (form name hyps concl kwd-alist ctx state)
   ; Try the original event and obtain the number of steps.
   (er-let* ((steps (event-steps form state)))
     (cond
-     ; If the original event failed, then we don't need to remove hypotheses.
+     ; If the original event failed, then we simply fail.
      ((null steps)
       ; So signal an error.
       (er soft ctx
           "Original theorem failed!"))
-     ; Else, call a recursive procedure to remove hypotheses
-     (t (mv-let
-         (erp final-hyps state)
-         ; Note that the second and third argument represent necessary and
-         ; unknown hypotheses.  We start with an empty list of necessary
-         ; hypotheses and a full list of unknown hypotheses.
-         (remove-hyps-formula-1 name nil hyps concl kwd-alist steps state)
-         (cond (erp
-                ; Signal an error (if one of the sub-events had an error)
-                (mv erp final-hyps state))
-               ; Else, return the new event with hypotheses removed.
-               (t (value (make-defthm name final-hyps concl kwd-alist)))))))))
+     ; Else, call a recursive procedure to remove hypotheses.
+     (t (er-let*
+         ((final-hyps
+           ; Note that the second and third argument represent necessary and
+           ; additional hypotheses.  We start with an empty list of necessary
+           ; hypotheses and a full list of additional hypotheses.
+           (remove-hyps-formula-1 name nil hyps concl kwd-alist steps state)))
+         (value (make-defthm name final-hyps concl kwd-alist)))))))
 
 ;; This function takes the original form and then calls remove-hyps-function to
 ;; create a new form with, potentially, fewer hypotheses.  A test is then
 ;; performed to see if any hypotheses were removed.  If so, the new form is
 ;; printed to the terminal.  Finally, after the form is printed, the new form
-;; is submitted silently.
+;; is submitted silently.  Note that form is essentially (defthm name (implies
+;; hyps concl) . kwd-alist).
 (defun remove-hyps-fn (form name hyps concl kwd-alist)
   `(make-event
-    ; Obtain a new form with a subset of the hypotheses.
+    ; Obtain a new form with a minimal subset of the hypotheses.
     (er-let* ((new-form
                (remove-hyps-formula ',form ',name ',hyps ',concl ',kwd-alist
                                     'remove-hyps state)))
@@ -189,14 +206,14 @@
                             (list (cons #\0 new-form))
                             (standard-co state) state nil)))
               ; Now submit the new form with all output disabled.
-              (value `(with-output
-                       :off :all
-                       :gag-mode t
-                       ,new-form))))))
+              (value (list 'with-output
+                           :off :all
+                           :gag-mode t
+                           new-form))))))
 
 ;; The remove-hyps macro takes a defthm form and attempts to match the case
-;; based on the number of hypotheses.  Note that defthms with no implicate or
-;; no hypotheses are signaled as an error.
+;; based on the number of hypotheses.  Note that an error occurs if the formula
+;; of the defthm is not an implication.
 (defmacro remove-hyps (defthm-form)
   (case-match defthm-form
     ; Form with multiple hypotheses bound by "and"
@@ -216,7 +233,6 @@
 
 ;; Return to logic mode.
 (logic)
-
 
 
 ;; ===================================================================
