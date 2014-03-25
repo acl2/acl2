@@ -1,3 +1,7 @@
+; Copyright (C) 2014, Regents of the University of Texas
+; Written by Matt Kaufmann and Nathan Wetzler (original date March, 2014)
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ;;; General comments:
 
 ;;; Lisp commenting conventions generally expect ";;;" at the start of a line,
@@ -8,10 +12,6 @@
 ;;; any of these, since that would make your diff or (meta-x compare-windows)
 ;;; more awkward.
 
-; Copyright (C) 2014, Regents of the University of Texas
-; Written by Matt Kaufmann and Nathan Wetzler (original date March, 2014)
-; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
-
 (in-package "ACL2")
 
 (include-book "xdoc/top" :dir :system)
@@ -21,12 +21,12 @@
 (defxdoc remove-hyps
   :parents (debugging)
   :short "Macro for defining a theorem with a minimal set of hypotheses"
-  :long "<p>When event is a successful event (defthm name (implies ...) ...)
-         then the form (remove-hyps event) results in storing a modified
-         version of this event in which, essentially, the hypotheses have been
-         reduced to a minimal set.</p>
+  :long "<p>Suppose E is an admissible event of the form @('(defthm
+  name (implies hyps ...))').  Then submitting instead the form @('(remove-hyps
+  E)') results in storing a modified version of E, in which @('hyps') has been
+  reduced to a minimal set of hypotheses.</p>
 
-         <p>This tool is available in @('tools/remove-hyps.lisp')</p>")
+ <p>This tool is available in @('tools/remove-hyps.lisp').</p>")
 
 ; Possible enhancements include:
 
@@ -46,15 +46,15 @@
 ;   expansion in the certificate, in the common case where no hypotheses are
 ;   eliminated
 
-; - Further develop documentation.  E.g., moving example into it.
+; - Further develop documentation, e.g., moving example into it.
 
 ; - Moving event destructuring out of remove-hyps to a separate function
 ;   (in analogy to event construction using make-defthm)
 
 ; - Support for other forms besides defthm, such as defrule
 
-;; ===================================================================
 
+;; ===================================================================
 
 ;; We will be programming with state.
 (set-state-ok t)
@@ -63,6 +63,7 @@
 ;; need to verify their guards or we would get slower performance (because of
 ;; the use of executable-counterpart functions).
 (program)
+
 
 ;; ============================ HEURISTIC ============================
 
@@ -243,9 +244,7 @@
 (logic)
 
 
-;; ===================================================================
 ;; ============================= EXAMPLE =============================
-;; ===================================================================
 
 ;; Include the arithmetic books for a theorem about nth.
 (local (include-book "arithmetic/top" :dir :system))
@@ -260,7 +259,8 @@
              (equal (nth n (append x y))
                     (if (< n (len x))
                         (nth n x)
-                      (nth (- n (len x)) y)))))))
+                      (nth (- n (len x)) y))))
+    :rule-classes nil)))
 
 ;; Set enforce-redundancy so to ensure the next event has the same form as the
 ;; last event.
@@ -274,4 +274,35 @@
             (equal (nth n (append x y))
                    (if (< n (len x))
                        (nth n x)
-                     (nth (- n (len x)) y))))))
+                     (nth (- n (len x)) y))))
+   :rule-classes nil))
+
+; Here is a (rather dumb) variant where all the hypotheses are removed.
+
+(set-enforce-redundancy nil)
+
+(local
+ (remove-hyps
+  (defthm nth-append-alt
+    (implies (and (true-listp x)
+                  (natp n)
+                  (true-listp y))
+             (equal (nth n (append x y))
+                    (if (not (natp n)) (car (append x y))
+                      (if (< n (len x))
+                          (nth n x)
+                        (nth (- n (len x)) y)))))
+    :rule-classes nil)))
+
+(set-enforce-redundancy t)
+
+;; Resubmit the reduced event to demonstrate that it was produced by
+;; remove-hyps.
+(local
+ (defthm nth-append-alt
+   (equal (nth n (append x y))
+          (if (not (natp n)) (car (append x y))
+            (if (< n (len x))
+                (nth n x)
+              (nth (- n (len x)) y))))
+   :rule-classes nil))
