@@ -170,7 +170,12 @@ toolkit with their own commands.</p>
   :parents (kit)
   :short "The top-level @('vl') meta-command."
 
-  (b* ((- (acl2::tshell-ensure))
+  (b* ((state
+        ;; Since the VL executable is a non-interactive program, there's no
+        ;; chance to enter a break loop if something crashes.  Printing a
+        ;; backtrace before aborting, then, can be extremely useful.
+        (set-debugger-enable :bt))
+       (- (acl2::tshell-ensure))
        ((mv argv state) (oslib::argv))
 
        ((unless (consp argv))
