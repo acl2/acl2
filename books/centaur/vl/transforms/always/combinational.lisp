@@ -80,9 +80,10 @@ logic.  Delays are not supported for simplicity.</li>
 Having multiple @('always') statements updating the same register is way too
 hard to think about.  See @(see vl-always-scary-regs).</li>
 
-<li>Always blocks that update only a portion of a register are not supported,
-since this leaves us without an easy way to convert the @('reg') into a
-@('wire').</li>
+<li>Always blocks that update only a portion of a register (even if the
+specified range is the entire register) are not supported, since this leaves us
+without an easy way to convert the @('reg') into a @('wire').  (The above
+parenthetical exception is just a casualty of having limited time.)</li>
 
 <li>Each lvalue register must be assigned to in every branch.  Otherwise we
 need to infer a latch, e.g., the following can't be turned into ordinary
