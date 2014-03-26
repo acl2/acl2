@@ -63,8 +63,8 @@ perhaps lead to loops, and is generally confusing.  For instance, consider:
     end
 })
 
-If @('c') transitions to 0, then this block start looping with itself, forever
-setting A to 1 and then back to 0.  It might be possible to relax this
+If @('c') transitions to 0, then this block can start looping with itself,
+forever setting A to 1 and then back to 0.  It might be possible to relax this
 restriction if it proves problematic, but this all gets very subtle.</li>
 
 <li>The module may not have initial statements.  We're going to want to convert
