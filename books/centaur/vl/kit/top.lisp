@@ -24,6 +24,7 @@
 (include-book "model")
 (include-book "shell")
 (include-book "pp")
+(include-book "gather")
 (include-book "oslib/argv" :dir :system)
 (include-book "centaur/esim/stv/stv2c/top" :dir :system)
 (include-book "centaur/misc/intern-debugging" :dir :system)
@@ -47,6 +48,7 @@ Commands:
   model   Translate Verilog designs for the ACL2 theorem prover
   stv2c   Translate symbolic runs of Verilog designs into C++
   pp      Preprocess Verilog designs
+  gather  Collect Verilog files into a single file
   shell   Interactive VL shell (for experts)
 
 Use 'vl help <command>' for help on a specific command.
@@ -82,13 +84,14 @@ commands.</p>
 @(def vl-toolkit-help-message)"
 
   (defconst *vl-help-messages*
-    (list (cons "help"  *vl-generic-help*)
-          (cons "json"  *vl-json-help*)
-          (cons "lint"  *vl-lint-help*)
-          (cons "model" *vl-model-help*)
-          (cons "stv2c" acl2::*stv2c-help*)
-          (cons "pp"    *vl-pp-help*)
-          (cons "shell" *vl-shell-help*)))
+    (list (cons "help"   *vl-generic-help*)
+          (cons "json"   *vl-json-help*)
+          (cons "lint"   *vl-lint-help*)
+          (cons "model"  *vl-model-help*)
+          (cons "stv2c"  acl2::*stv2c-help*)
+          (cons "pp"     *vl-pp-help*)
+          (cons "gather" *vl-gather-help*)
+          (cons "shell"  *vl-shell-help*)))
 
   (encapsulate
     (((vl-toolkit-help-message *) => *
@@ -209,6 +212,11 @@ toolkit with their own commands.</p>
 
        ((when (equal cmd "pp"))
         (b* ((state (vl-pp args)))
+          (exit-ok)
+          state))
+
+       ((when (equal cmd "gather"))
+        (b* ((state (vl-gather args)))
           (exit-ok)
           state))
 
