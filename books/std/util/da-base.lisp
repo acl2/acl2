@@ -707,7 +707,9 @@ the acl2-books issue tracker.</p>")
 ;; the accessor names in the same way, but this now could work in a broader
 ;; context where the accessors are various different sorts of things.
 (defun da-patbind-fn (name fields-accs args forms rest-expr)
-  (b* ((- (or (and (tuplep 1 args)
+  (b* (((mv kwd-alist args)
+        (extract-keywords `(da-patbind-fn ',name) '(:quietp) args nil))
+       (- (or (and (tuplep 1 args)
                    (tuplep 1 forms)
                    (symbolp (car args))
                    (not (booleanp (car args))))
@@ -724,7 +726,7 @@ the acl2-books issue tracker.</p>")
        (full-vars-alist (da-patbind-make-field-acc-alist var fields-accs))
        (field-vars      (strip-cars full-vars-alist))
        (used-vars       (da-patbind-find-used-vars rest-expr field-vars nil))
-       ((unless used-vars)
+       ((unless (or used-vars (cdr (assoc :quietp kwd-alist))))
         (progn$
          (cw "Note: not introducing any ~x0 field bindings for ~x1, since ~
               none of its fields appear to be used.~%" name var)

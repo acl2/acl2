@@ -1250,7 +1250,7 @@
     (cons `(,(if (atom (cdr prods))
                  'otherwise
                prod.kind)
-            (b* (((,prod.ctor-name ,var) ,var))
+            (b* (((,prod.ctor-name ,var :quietp t) ,var))
               ,(cdr (assoc prod.kind kwd-alist))))
           (flexsum-case-macro-kinds var (cdr prods) kwd-alist))))
 
@@ -1260,7 +1260,7 @@
     (cons `(,(if (atom (cdr prods))
                  t
                prod.cond)
-            (b* (((,prod.ctor-name ,var) ,var))
+            (b* (((,prod.ctor-name ,var :quietp t) ,var))
               ,(cdr (assoc prod.kind kwd-alist))))
           (flexsum-case-macro-conds var (cdr prods) kwd-alist))))
 
@@ -1467,25 +1467,27 @@
        ;;                        (,alist.pred (cdr ,stdx)))))
        ;;   :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-       (defthm ,(intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name alist.key-type)
-                              "-CAAR-OF-"
-                              (symbol-name alist.pred))
-                 alist.pred)
-         (implies (and (consp ,alist.xvar)
-                       (,alist.pred ,alist.xvar))
-                  (,alist.key-type (caar ,alist.xvar)))
-         :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+       ,@(and alist.key-type
+              `((defthm ,(intern-in-package-of-symbol
+                          (concatenate 'string (symbol-name alist.key-type)
+                                       "-CAAR-OF-"
+                                       (symbol-name alist.pred))
+                          alist.pred)
+                  (implies (and (consp ,alist.xvar)
+                                (,alist.pred ,alist.xvar))
+                           (,alist.key-type (caar ,alist.xvar)))
+                  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))))
 
-       (defthm ,(intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name alist.val-type)
-                              "-CDAR-OF-"
-                              (symbol-name alist.pred))
-                 alist.pred)
-         (implies (and (consp ,alist.xvar)
-                       (,alist.pred ,alist.xvar))
-                  (,alist.val-type (cdar ,alist.xvar)))
-         :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+       ,@(and alist.val-type
+              `((defthm ,(intern-in-package-of-symbol
+                          (concatenate 'string (symbol-name alist.val-type)
+                                       "-CDAR-OF-"
+                                       (symbol-name alist.pred))
+                          alist.pred)
+                  (implies (and (consp ,alist.xvar)
+                                (,alist.pred ,alist.xvar))
+                           (,alist.val-type (cdar ,alist.xvar)))
+                  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))))
 
        (defthm ,(intern-in-package-of-symbol
                  (concatenate 'string (symbol-name alist.pred)
@@ -1615,8 +1617,12 @@
        (mbe :logic (if (atom ,alist.xvar)
                        nil
                      (if (consp (car ,alist.xvar))
-                         (cons (cons (,alist.key-fix (caar ,alist.xvar))
-                                     (,alist.val-fix (cdar ,alist.xvar)))
+                         (cons (cons ,(if alist.key-fix
+                                          `(,alist.key-fix (caar ,alist.xvar))
+                                        `(caar ,alist.xvar))
+                                     ,(if alist.val-fix
+                                          `(,alist.val-fix (cdar ,alist.xvar))
+                                        `(cdar ,alist.xvar)))
                                (,alist.fix (cdr ,alist.xvar)))
                        (,alist.fix (cdr ,alist.xvar))))
             :exec ,alist.xvar))))
@@ -1794,8 +1800,8 @@
       ;;            :in-theory (enable ,x.val-equiv)))
       ;;   :rule-classes :congruence)
 
-
-      (deffixcong ,x.key-equiv ,x.equiv (cons (cons k v) x) k)
+      ,@(and x.key-type
+             `((deffixcong ,x.key-equiv ,x.equiv (cons (cons k v) x) k)))
       ;; (defthm ,(intern-in-package-of-symbol
       ;;           (concatenate 'string
       ;;                        (symbol-name x.equiv)
@@ -1810,8 +1816,8 @@
       ;;                            (,x.fix x-equiv))
       ;;            :in-theory (enable ,x.key-equiv)))
       ;;   :rule-classes :congruence)
-
-      (deffixcong ,x.val-equiv ,x.equiv (cons (cons k v) x) v)
+      ,@(and x.val-type
+             `((deffixcong ,x.val-equiv ,x.equiv (cons (cons k v) x) v)))
 
       ;; (defthm ,(intern-in-package-of-symbol
       ;;           (concatenate 'string
@@ -1844,8 +1850,8 @@
                 x.fix)
         ;; bozo make sure this is compatible with defprojection
         (equal (,x.fix (cons (cons a b) ,stdx))
-               (cons (cons (,x.key-fix a)
-                           (,x.val-fix b))
+               (cons (cons ,(if x.key-fix `(,x.key-fix a) 'a)
+                           ,(if x.val-fix `(,x.val-fix b) 'b))
                      (,x.fix ,stdx)))))))
 
 
@@ -1968,7 +1974,19 @@
                          unfixbody))
              :exec ,x.acc-body)
         ///
-        (deffixequiv ,x.acc-name :hints (("goal" :expand ((,sum.fix ,sum.xvar))))))
+        (deffixequiv ,x.acc-name :hints (("goal" :expand ((,sum.fix ,sum.xvar)))))
+
+        ,@(and (not (eq prod.guard t))
+               `((defthmd ,(intern-in-package-of-symbol
+                            (concatenate 'string (symbol-name x.acc-name)
+                                         "-WHEN-WRONG-KIND")
+                            x.acc-name)
+                   (implies (not ,prod.guard)
+                            (equal (,x.acc-name ,sum.xvar)
+                                   ,(if x.fix
+                                        `(,x.fix nil)
+                                      nil)))))))
+
       (local (in-theory (enable ,x.acc-name))))))
 
 (defun flexprod-field-acc-lst (fields prod sum)
@@ -2372,7 +2390,8 @@
       ,@(and
          keycount
          `((defthm ,(intern-in-package-of-symbol
-                     (concatenate 'string (symbol-name keycount) "-OF-CAAR")
+                     (concatenate 'string (symbol-name keycount) "-OF-CAAR-"
+                                  (symbol-name x.count))
                      x.count)
              (implies (and (consp ,x.xvar)
                            (consp (car ,x.xvar)))
@@ -2382,7 +2401,8 @@
       ,@(and
          valcount
          `((defthm ,(intern-in-package-of-symbol
-                     (concatenate 'string (symbol-name valcount) "-OF-CDAR")
+                     (concatenate 'string (symbol-name valcount) "-OF-CDAR-"
+                                  (symbol-name x.count))
                      x.count)
              (implies (and (consp ,x.xvar)
                            (consp (car ,x.xvar)))
