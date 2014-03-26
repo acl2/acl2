@@ -128,35 +128,34 @@ number or nil.</p>
                                 (= xl (length x))
                                 (<= n xl))
                     :measure (nfix (- (nfix xl) (nfix n)))))
-    (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (= n xl))
-        ;; End of string, didn't find loc.
-        nil
-      (let ((curr (char x n)))
-        (cond
-         ((< cline tline)
-          ;; Not even at the right line yet.  Don't bother maintaining ccol.
-          (let ((new-n     (+ 1 (lnfix n)))
-                (new-cline (if (eql curr #\Newline) (+ 1 cline) cline)))
-            (vl-string-findloc-aux x new-n xl new-cline 0 tline tcol)))
-
-         ((> cline tline)
-          ;; Went too far
-          nil)
-
-         ((< ccol tcol)
-          ;; Right line, not the right char yet.
-          (let ((new-n     (+ 1 (lnfix n)))
-                (new-cline (if (eql curr #\Newline) (+ 1 cline) cline))
-                (new-ccol  (if (eql curr #\Newline) 0 (+ 1 ccol))))
-            (vl-string-findloc-aux x new-n xl new-cline new-ccol tline tcol)))
-
-         ((= ccol tcol)
+    (b* (((when (and (eql cline tline) (eql ccol tcol))) ;; found, done
           (lnfix n))
+         ((when (mbe :logic (zp (- (nfix xl) (nfix n)))
+                     :exec (eql n xl)))
+          ;; End of string, didn't find loc.
+          nil)
+         (curr (char x n)))
+      (cond
+       ((< cline tline)
+        ;; Not even at the right line yet.  Don't bother maintaining ccol.
+        (let ((new-n     (+ 1 (lnfix n)))
+              (new-cline (if (eql curr #\Newline) (+ 1 cline) cline)))
+          (vl-string-findloc-aux x new-n xl new-cline 0 tline tcol)))
 
-         (t
-          ;; Right line, but went too far.
-          nil)))))
+       ((> cline tline)
+        ;; Went too far
+        nil)
+
+       ((< ccol tcol)
+        ;; Right line, not the right char yet.
+        (let ((new-n     (+ 1 (lnfix n)))
+              (new-cline (if (eql curr #\Newline) (+ 1 cline) cline))
+              (new-ccol  (if (eql curr #\Newline) 0 (+ 1 ccol))))
+          (vl-string-findloc-aux x new-n xl new-cline new-ccol tline tcol)))
+
+       (t
+        ;; Right line, but went too far.
+        nil))))
 
   (local (in-theory (enable vl-string-findloc-aux)))
 
