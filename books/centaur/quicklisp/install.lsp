@@ -25,6 +25,13 @@
  (let ((cbd (cbd)))
    `(defconst *cbd* ',cbd)))
 
+;; Horrible junk to try to get ASDF not to put its stuff here, in the
+;; quicklisp/asdf-home directory, rather than in the user's home directory in
+;; places like ~/.cache and ~/.config.
+(setenv$ "XDG_CONFIG_HOME" (concatenate 'string *cbd* "asdf-home/config"))
+(setenv$ "XDG_DATA_HOME"   (concatenate 'string *cbd* "asdf-home/data"))
+(setenv$ "XDG_CACHE_HOME"  (concatenate 'string *cbd* "asdf-home/cache"))
+
 :q
 (in-package "CL-USER")
 (load "quicklisp.lsp")

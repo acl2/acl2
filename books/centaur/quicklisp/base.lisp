@@ -22,6 +22,20 @@
 (include-book "tools/include-raw" :dir :system)
 ; cert_param: (uses-quicklisp)
 
+(make-event
+ (let ((cbd (cbd)))
+   `(defconst *quicklisp-dir* ',cbd)))
+
+(make-event
+ (let* ((dir *quicklisp-dir*))
+   ;; Keep these in sync with install.lsp
+   (progn$
+    (setenv$ "XDG_CONFIG_HOME" (concatenate 'string dir "asdf-home/config"))
+    (setenv$ "XDG_DATA_HOME"   (concatenate 'string dir "asdf-home/data"))
+    (setenv$ "XDG_CACHE_HOME"  (concatenate 'string dir "asdf-home/cache"))
+    (value '(value-triple :invisible))))
+ :check-expansion t)
+
 (defttag :quicklisp)
 
 (value-triple (cw "~%~%~
