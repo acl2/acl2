@@ -32,6 +32,7 @@
                                   (format nil "getpid: ~a" condition)))))
     (if (natp pid)
         (mv pid state)
-      (mv (cw "getpid error: (iolib.syscalls::getpid) returned ~a." pid)
-          state))))
+      (progn
+        (format t "getpid error: (iolib.syscalls::getpid) returned ~a." pid)
+        (mv nil state)))))
 
