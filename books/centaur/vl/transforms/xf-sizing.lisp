@@ -3656,6 +3656,21 @@ context-determined expressions."
                        :fn 'vl-expr-expandsizes)))
                 (mv nil (cons w warnings) x)))
 
+             (warnings
+              ;; Special extra (non-fatal) warning for 0-replications, because
+              ;; some tools do crazy things with them.
+              (if (posp (vl-resolved->val a))
+                  warnings
+                (warn :type :vl-zero-replication
+                      :msg "~a0: found 0-sized replication operation.  This is ~
+                            well defined by the Verilog standards and is handled ~
+                            correctly by NCVerilog.  However, we have seen bugs ~
+                            in VCS and Verilog-XL.  To avoid mismatches between ~
+                            Verilog tools, you should probably avoid this ~
+                            construct!"
+                      :args (list elem x)
+                      :fn 'vl-expr-expandsizes)))
+
              (inner (change-vl-nonatom x
                                        :args args-prime
                                        :finalwidth inner-width
