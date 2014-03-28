@@ -1012,7 +1012,8 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                                                 interp-st))
             ((mv hyp-bfr . ,(remove 'pathcond *glcp-common-retvals*))
              (interp-top-level-term
-              hypo al t 1000000 config interp-st bvar-db state))
+              hypo al t (glcp-config->hyp-clk config) config interp-st bvar-db
+              state))
             ((when er) (mv nil nil nil er interp-st bvar-db bvar-db1 state))
             (param-al (gobj-alist-to-param-space al hyp-bfr))
             (bvar-db1 (parametrize-bvar-db hyp-bfr bvar-db bvar-db1))
@@ -1021,7 +1022,8 @@ but its arity is ~x3.  Its formal parameters are ~x4."
             ((mv res-obj . ,(subst 'bvar-db1 'bvar-db
                                    (remove 'pathcond *glcp-common-retvals*)))
              (interp-top-level-term
-              term param-al hyp-bfr 100000 config interp-st bvar-db1 state)))
+              term param-al hyp-bfr (glcp-config->concl-clk config) config
+              interp-st bvar-db1 state)))
          (mv hyp-bfr param-al res-obj er interp-st bvar-db bvar-db1 state)))))
 
 
