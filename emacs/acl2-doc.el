@@ -89,9 +89,9 @@
 (defvar *acl2-doc-rendered-combined-url*
   "http://www.cs.utexas.edu/users/moore/acl2/manuals/current/rendered-doc-combined.lsp.gz")
 ; Set the following to 'ACL2 to get to the ACL2 User's Manual at
-; startup, but to 'TOP to get to the acl2+books combined manual.  Here
-; we set it to nil, which goes to the acl2+books combined manual if it
-; exists, and otherwise offers a choice.
+; startup, but to 'TOP to get to the ACL2+Books Manual.  Here we set
+; it to nil, which goes to the ACL2+Books Manual if it exists, and
+; otherwise offers a choice.
 (defvar *acl2-doc-top-default* nil)
 
 (defun acl2-doc-fix-alist (alist)
@@ -152,7 +152,7 @@
   (not (null *acl2-doc-state*)))
 
 (defun acl2-doc-rendered-combined-download ()
-  "Download the acl2+books combined manual from the web;
+  "Download the ACL2+Books Manual from the web;
 then restart the ACL2-Doc browser to view that manual."
   (interactive)
   (cond ((file-exists-p *acl2-doc-rendered-combined-pathname*)
@@ -221,7 +221,7 @@ then restart the ACL2-Doc browser to view that manual."
     (list top-name
 	  (acl2-doc-alist-create *acl2-doc-rendered-combined-pathname*)))
    ((eq top-name 'TOP)
-    (error "Combined acl2+books manual not loaded for browsing"))
+    (error "ACL2+Books Manual not loaded for browsing"))
    ((acl2-doc-rendered-combined-fetch)	; top-name is nil
     (list 'TOP
 	  (acl2-doc-alist-create *acl2-doc-rendered-combined-pathname*)))
@@ -328,13 +328,13 @@ then restart the ACL2-Doc browser to view that manual."
 (defun acl2-doc-display-message (entry)
   (let ((name (car (cdr entry)))
 	(manual-name (if (eq (acl2-doc-state-top-name) 'ACL2)
-			 "ACL2 User's"
-		       "acl2+books combined")))
+			 "ACL2 User's Manual"
+		       "ACL2+Books Manual")))
     (push name *acl2-doc-all-topics-rev*)
     (if (eq (acl2-doc-state-top-name) name)
-	(message "At the top node of the %s manual"
+	(message "At the top node of the %s"
 		 manual-name)
-      (message "Topic: %s (%s manual)" name manual-name))))
+      (message "Topic: %s (%s)" name manual-name))))
 
 (defun acl2-doc-where ()
   (interactive)
@@ -503,9 +503,9 @@ then restart the ACL2-Doc browser to view that manual."
   (interactive)
   (acl2-doc-go (acl2-doc-state-top-name))
   (let ((manual-name (if (eq (acl2-doc-state-top-name) 'ACL2)
-			 "ACL2 User's"
-		       "acl2+books combined")))
-    (message "At the top node of the %s manual; type h for help"
+			 "ACL2 User's Manual"
+		       "ACL2+Books Manual")))
+    (message "At the top node of the %s; type h for help"
 	     manual-name)))
 
 (defun acl2-doc (&optional clear)
@@ -611,8 +611,8 @@ Please report this error to the ACL2 implementors."))))
 
   "Restart the ACL2-Doc browser, clearing its state.  With
 prefix argument, toggle between the ACL2 User's Manual (the
-default) and the acl2+books combined manual.  For the
-latter, it will be necessary first to create file
+default) and the ACL2+Books Manual.  For the latter,
+it will be necessary first to create file
 books/system/doc/rendered-doc-combined.lsp; see :DOC
 acl2-doc."
 
