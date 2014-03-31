@@ -20,7 +20,7 @@
  )
 
 (defxdoc top
-  :short "ACL2 manual (not including documentation for the community books)"
+  :short "ACL2 User's Manual (not including documentation for the community books)"
 
   :long "<p>This manual is generated from ACL2 documentation only; it excludes
   documentation from the community books.</p>")

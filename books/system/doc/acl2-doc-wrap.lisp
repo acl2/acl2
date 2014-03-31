@@ -57,7 +57,7 @@
 
 ; We use the specific release rather than "current" in the URL, so that those
 ; who are looking at an older version of ACL2 will see the corresponding
-; combined manual at this link.
+; ACL2+Books Manual at this link.
 
   "http://www.cs.utexas.edu/users/moore/acl2/v6-4/")
 
@@ -78,7 +78,7 @@
    "<a href='"
    (concatenate 'string *acl2-url* "combined-manual/index.html") ; url
    "'>"
-   "acl2+books combined manual"
+   "ACL2+Books Manual"
    "</a>"))
 
 (defun clhs (url title)
