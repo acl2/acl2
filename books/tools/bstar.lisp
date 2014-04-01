@@ -13,56 +13,63 @@
 Flexible let*-like macro for variable bindings~/
 Usage:
 ~bv[]
- (b* ;; let*-like binding to a single variable:
-     ((x (cons 'a 'b))
+ (b* ( ;; don't forget the first open paren! (like with let*)
 
-     ;; mv binding
+      ;; let*-like binding to a single variable:
+      (x (cons 'a 'b))
+
+      ;; mv binding
       ((mv y z) (return-two-values x x))
 
-     ;; No binding: expression evaluated for side effects
+      ;; No binding: expression evaluated for side effects
       (- (cw \"Hello\")) ;; prints \"Hello\"
 
-     ;; Binding with type declaration:
+      ;; Binding with type declaration:
       ((the (integer 0 100) n) (foo z))
 
-     ;; MV which ignores a value:
+      ;; MV which ignores a value:
       ((mv & a) (return-garbage-in-first-mv y z))
 
-     ;; Binds value 0 to C and value 1 to D,
-     ;; declares (ignorable C) and (ignore D)
+      ;; Binds value 0 to C and value 1 to D,
+      ;; declares (ignorable C) and (ignore D)
       ((mv ?c ?!d) (another-mv a z))
 
-     ;; Bind V to the middle value of an error triple,
-     ;; quitting if there is an error condition (a la er-let*)
+      ;; Bind V to the middle value of an error triple,
+      ;; quitting if there is an error condition (a la er-let*)
       ((er v) (trans-eval '(len (list 'a 1 2 3)) 'foo state))
 
-     ;; The WHEN, IF, and UNLESS constructs insert an IF in the
-     ;; binding stream.  The WHEN and IF constructs are equivalent.
+      ;; The WHEN, IF, and UNLESS constructs insert an IF in the
+      ;; binding stream.  The WHEN and IF constructs are equivalent.
       ((when v) (finish-early-because-of v))
       ((if v)   (finish-early-because-of v))
       ((unless c) (finish-early-unless c))
 
-     ;; Pattern-based binding using cons, where D is ignorable
+      ;; Pattern-based binding using cons, where D is ignorable
       ((cons (cons b c) ?d) (must-return-nested-conses a))
 
-     ;; Alternate form of pattern binding with cons nests, where G is
-     ;; ignored and f has a type declaration:
+      ;; Alternate form of pattern binding with cons nests, where G is
+      ;; ignored and f has a type declaration:
       (`(,e (,(the (signed-byte 8) f) . ,?!g))
        (makes-a-list-of-conses b))
 
-     ;; LIST and LIST* are also supported:
+      ;; LIST and LIST* are also supported:
       ((list a b) '((1 2) (3 4)))
       ((list* a (the string b) c) '((1 2) \"foo\" 5 6 7))
 
-     ;; Pattern with user-defined constructor:
+      ;; Pattern with user-defined constructor:
       ((my-tuple foo bar hum) (something-of-type-my-tuple e c g))
 
-     ;; Don't-cares with pattern bindings:
+      ;; Don't-cares with pattern bindings:
       ((my-tuple & (cons carbar &) hum) (something-else foo f hum))
 
-     ;; Pattern inside an mv:
-      ((mv a (cons & c)) (make-mv-with-cons)))
-   (some-expression .....))
+      ;; Pattern inside an mv:
+      ((mv a (cons & c)) (make-mv-with-cons))
+
+      ) ;; also don't forget the close-paren after the binder list
+
+   ;; the body (after the binder list) is an implicit PROGN$
+   (run-this-for-side-effects ...)
+   (return-this-expression .....))
 ~ev[]
 ~/
 
@@ -1313,3 +1320,60 @@ is equivalent to
   `(flet ((,(caar args) ,(cdar args) (progn$ . ,forms)))
     ,rest-expr))
 
+(
+ (b* ( ;; don't forget the first open paren! (like with let*)
+
+      ;; let*-like binding to a single variable:
+      (x (cons 'a 'b))
+
+      ;; mv binding
+      ((mv y z) (return-two-values x x))
+
+      ;; No binding: expression evaluated for side effects
+      (- (cw \"Hello\")) ;; prints \"Hello\"
+
+      ;; Binding with type declaration:
+      ((the (integer 0 100) n) (foo z))
+
+      ;; MV which ignores a value:
+      ((mv & a) (return-garbage-in-first-mv y z))
+
+      ;; Binds value 0 to C and value 1 to D,
+      ;; declares (ignorable C) and (ignore D)
+      ((mv ?c ?!d) (another-mv a z))
+
+      ;; Bind V to the middle value of an error triple,
+      ;; quitting if there is an error condition (a la er-let*)
+      ((er v) (trans-eval '(len (list 'a 1 2 3)) 'foo state))
+
+      ;; The WHEN, IF, and UNLESS constructs insert an IF in the
+      ;; binding stream.  The WHEN and IF constructs are equivalent.
+      ((when v) (finish-early-because-of v))
+      ((if v)   (finish-early-because-of v))
+      ((unless c) (finish-early-unless c))
+
+      ;; Pattern-based binding using cons, where D is ignorable
+      ((cons (cons b c) ?d) (must-return-nested-conses a))
+
+      ;; Alternate form of pattern binding with cons nests, where G is
+      ;; ignored and f has a type declaration:
+      (`(,e (,(the (signed-byte 8) f) . ,?!g))
+       (makes-a-list-of-conses b))
+
+      ;; LIST and LIST* are also supported:
+      ((list a b) '((1 2) (3 4)))
+      ((list* a (the string b) c) '((1 2) \"foo\" 5 6 7))
+
+      ;; Pattern with user-defined constructor:
+      ((my-tuple foo bar hum) (something-of-type-my-tuple e c g))
+
+      ;; Don't-cares with pattern bindings:
+      ((my-tuple & (cons carbar &) hum) (something-else foo f hum))
+
+      ;; Pattern inside an mv:
+      ((mv a (cons & c)) (make-mv-with-cons))
+      ) ;; also don't forget the close-paren after the binder list
+
+   ;; the body (after the binder list) is an implicit PROGN$
+   (run-this-for-side-effects ...)
+   (return-this-expression .....))
