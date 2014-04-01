@@ -65,7 +65,7 @@
     (add-gl-rewrite-fn ',rune (w state))))
 
 (defsection def-gl-rewrite
-  :parents (reference)
+  :parents (reference term-level-reasoning)
   :short "Define a rewrite rule for GL to use on term-level objects"
   :long
   "<p>GL can use ACL2-style rewrite rules to simplify term-level symbolic
@@ -112,7 +112,7 @@ reference.</p>"
     `(table gl-uninterpreted-functions ',fn ,val)))
 
 (defsection gl-set-uninterpreted
-  :parents (reference)
+  :parents (reference term-level-reasoning)
   :short "Prevent GL from interpreting a function's definition or concretely executing it."
   :long
   "<p>Usage:</p>
@@ -159,7 +159,7 @@ simply produce an object (of the :g-apply type) representing a call of
     (car (third (second concl)))))
 
 (defsection def-gl-branch-merge
-  :parents (reference)
+  :parents (reference term-level-reasoning)
   :short "Define a rule for GL to use in merging IF branches"
   :long
   "<p>Usage:</p>
@@ -242,7 +242,7 @@ must be a function call.</li>
                                               'glcp-ctrex-rewrite world))))))))
 
 (defsection def-glcp-ctrex-rewrite
-  :parents (reference)
+  :parents (reference term-level-reasoning)
   :short "Define a heuristic for GL to use when generating counterexamples"
   :long
   "<p>Usage:</p>

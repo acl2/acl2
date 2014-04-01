@@ -1539,14 +1539,15 @@ that makes a series of terms take certain truth values, which is undecidable.
 In the next section, we describe a heuristic method for generating
 counterexamples that works in practice when applied carefully.</p>
 
-<p>Furthermore, unless this strategy is used with utmost care, it is likely that
-proofs will fail due to detection of \"counterexamples\" that are actually
+<p>Furthermore, unless this strategy is used with utmost care, it is likely
+that proofs will fail due to detection of \"counterexamples\" that are actually
 impossible.  For example, we might generate a Boolean variable for (integerp x)
 and another one for (logbitp 0 x).  But these two terms are not independent; in
-fact, (logbitp 0 x) implies (integerp x).  Currently, GL has no mechanism to
-pass this restriction to a SAT solver, so we may find false counterexamples
-that violate this constraint. This can't render GL unsound, but may lead to
-failed proofs.</p>
+fact, (logbitp 0 x) implies (integerp x).  If we don't let the SAT solver know
+about these constraints, it might find false counterexamples. This can't render
+GL unsound, but may lead to failed proofs.  You may provide rules for
+generating constraints among these Boolean variables to solve this kind of
+problem: see @(see def-gl-boolean-constraint).</p>
 
 <p>The situation described above (where every field is accessed via LOGHEAD and
 via concrete address) is a particularly good one for this strategy, since then
