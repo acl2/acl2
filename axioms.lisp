@@ -15026,6 +15026,17 @@
   (prog2$ (check-print-base base 'set-print-base)
           (f-put-global 'print-base base state)))
 
+(defun set-print-base-radix (base state)
+  (declare (xargs :guard (and (print-base-p base)
+                              (state-p state))))
+  (prog2$ (check-print-base base 'set-print-base)
+          (pprogn (f-put-global 'print-base base state)
+                  (f-put-global 'print-radix
+                                (if (int= base 10)
+                                    nil
+                                  t)
+                                state))))
+
 (defmacro set-acl2-print-base (base)
   (declare (ignore base))
   '(er soft 'set-acl2-print-base
