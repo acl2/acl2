@@ -166,7 +166,7 @@
 	   (equal (bits x i 0)
 		  (mod x (expt 2 (1+ i))))))
 
-(defthmd bits-bits-sum
+(defthm bits-bits-sum
   (implies (and (integerp x)
                 (integerp y)
                 (integerp i)
@@ -177,7 +177,7 @@
 	   (equal (bits (+ (bits x k 0) y) i j)
 		  (bits (+ x y) i j))))
 
-(defthmd bits-bits-sum-alt
+(defthm bits-bits-sum-alt
   (implies (and (integerp x)
                 (integerp y)
                 (integerp i)

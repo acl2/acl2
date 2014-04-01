@@ -56,6 +56,10 @@
 
 ;;(include-book "srt") ;SRT division and square root
 
+;; This must be included to use GL with this library:
+
+;;(include-book "gl")
+
 ;; These are relevant to code derived from Verilog:
 
 ;;(include-book "rtl") ;semantics of the basic RTL primitives

@@ -197,7 +197,7 @@
     (+ (pp4-theta (1- m) x y n)
        (sum-pp4-theta x y (1- m) n))))
 
-(defthm booth4-corollary
+(defthm booth4-corollary-1
     (implies (and (not (zp n))
 		  (not (zp m))
 		  (bvecp x (1- n))
@@ -206,6 +206,34 @@
 		   (sum-pp4-theta x y m n))
 		(+ (expt 2 (+ n (* 2 m)))
 		   (* x y))))
+  :rule-classes ())
+
+(defun pp4p-theta (i x y n)
+   (if (zerop i)
+       (cat (bitn (lognot (neg (theta i y))) 0) 1
+            (neg (theta i y)) 1
+            (neg (theta i y)) 1
+	    (bmux4 (theta i y) x n) n)
+     (cat 1 1
+	  (bitn (lognot (neg (theta i y))) 0) 1
+	  (bmux4 (theta i y) x n) n
+	  0 1
+	  (neg (theta (1- i) y)) 1
+	  0 (* 2 (1- i)))))
+
+(defun sum-pp4p-theta (x y m n)
+  (if (zp m)
+      0
+    (+ (pp4p-theta (1- m) x y n)
+       (sum-pp4p-theta x y (1- m) n))))
+
+(defthm booth4-corollary-2
+    (implies (and (not (zp n))
+		  (not (zp m))
+		  (bvecp x (1- n))
+		  (bvecp y (1- (* 2 m))))
+	     (= (bits (sum-pp4p-theta x y m n) (1- (+ n (* 2 m))) 0)
+                (* x y)))
   :rule-classes ())
 )
 

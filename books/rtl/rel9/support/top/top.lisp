@@ -88,3 +88,6 @@
 
 (include-book "../lib3.delta1/sqrt66")
 
+(include-book "../lib3.delta3/mult")
+
+(include-book "../lib3.delta3/gl")
