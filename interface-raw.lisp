@@ -7933,6 +7933,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 
           (- (round (* 100 (/ (hcl:current-stack-length) 80000))) 100)))
 
+       #+sbcl
+       (define-our-sbcl-putenv) ; see comment on this in acl2-fns.lisp
+
 ; Acl2-default-restart isn't enough in Allegro, at least, to get the new prompt
 ; when we start up:
 

@@ -17999,20 +17999,15 @@
                     (pair (cdr (assoc-eq key ext::*environment-list*))))
                (cond (pair (setf (cdr pair) val))
                      (t (push (cons key val) ext::*environment-list*)))))
-;     #+sbcl
-
-; The following is the best we could come up with for SBCL, but it
-; didn't work.
-
-;     (nconc (posix-environ) (list (format nil "~a=~a" str val)))
         #+allegro
         (setf (sys::getenv str) val)
         #+clisp
         (setf (ext::getenv str) val)
-        #+(or gcl allegro lispworks ccl sbcl clisp)
+        #+(or gcl lispworks ccl sbcl)
         (let ((fn
                #+gcl       'si::setenv
                #+lispworks 'hcl::setenv
+               #+sbcl      'our-sbcl-putenv
                #+ccl       'ccl::setenv))
           (and (fboundp fn)
                (funcall fn str val)))

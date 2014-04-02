@@ -87,6 +87,7 @@
   (concat *acl2-sources-dir*
 	  "doc.lisp"))
 (defvar *acl2-doc-rendered-combined-url*
+; "Bleeding-edge" combined manual.
   "http://www.cs.utexas.edu/users/moore/acl2/manuals/current/rendered-doc-combined.lsp.gz")
 ; Set the following to 'ACL2 to get to the ACL2 User's Manual at
 ; startup, but to 'TOP to get to the ACL2+Books Manual.  Here we set
@@ -152,7 +153,7 @@
   (not (null *acl2-doc-state*)))
 
 (defun acl2-doc-rendered-combined-download ()
-  "Download the ACL2+Books Manual from the web;
+  "Download the ``bleeding edge'' ACL2+Books Manual from the web;
 then restart the ACL2-Doc browser to view that manual."
   (interactive)
   (cond ((file-exists-p *acl2-doc-rendered-combined-pathname*)
