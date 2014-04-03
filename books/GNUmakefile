@@ -67,6 +67,8 @@
 #                 after an include-book, and writing the log for each book
 #                 <bk>.lisp to the file <bk>.special.out.
 #
+#   TAGS          Makes a tag database for emacs including all the book sources.
+#
 # Basic Options:
 #
 #   USE_QUICKLISP=1
@@ -267,6 +269,8 @@ REBUILD_MAKEFILE_DEPS := $(shell \
           --cache $(BUILD_DIR)/Makefile-cache \
           --acl2-books `pwd` \
           --targets $(BUILD_DIR)/Makefile-books \
+          --write-sources $(BUILD_DIR)/Makefile-sources \
+          --write-certs $(BUILD_DIR)/Makefile-certs \
           1>&2) ;\
   echo 'MFDEPS_DEBUG := $$(shell echo Reading book deps ' \
        'Makefile-deps created on' `date` '1>&2)' \
@@ -1344,6 +1348,23 @@ clean_vl:
 	@rm -f centaur/vl/bin/*
 
 clean: clean_vl
+
+##############################
+### Section: Tags
+##############################
+
+# These regular expressions may include things more appropriate for
+# raw Lisp.  May want to remove some of these or extend them to
+# support new types of definitions.
+ETAGS = etags --language=none \
+ --ignore-case-regex='/ *set[ \t]?\([^ =]*\)[ \n]*=/\1/' \
+ --ignore-case-regex='/(set[^ \t]*[ \t]?\([^ ]*\)[ \t]*/\2/' \
+ --ignore-case-regex='/ *(\(memoize\|def[^tc]\|defttag\|deftheory\)[^ \t]*[ \t]?\([^ ]*\)[ \t]*/\2/'
+
+TAGS : $(CERT_PL_SOURCES)
+	@echo "Making TAGS"
+	@rm -f TAGS
+	cat $(BUILD_DIR)/Makefile-sources | xargs -n 100 --delimiter='\n' $(ETAGS) -a
 
 
 

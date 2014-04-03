@@ -1,4 +1,6 @@
 Makefile-deps
+Makefile-sources
+Makefile-certs
 Makefile-tmp
 *.cert
 *.out
@@ -16,3 +18,4 @@ workxxx.*
 startjob.*
 centaur/manual/
 *.fasl
+TAGS

@@ -105,6 +105,8 @@ if ($bin_dir) {
     $bin_dir = $cbin_dir;
 }
 
+my $write_sources=0;
+my $write_certs=0;
 
 $base_path = abs_canonical_path(".");
 
@@ -406,6 +408,11 @@ COMMAND LINE OPTIONS
           events.  File modification times are used to determine when
           the cached information about a file must be updated.
 
+   --write-sources <filename>
+          Dump the list of all source files, one per line, into filename.
+
+   --write-certs <filename>
+          Dump the list of all cert files, one per line, into filename.
 ';
 
 GetOptions ("help|h"               => sub { print $summary_str;
@@ -476,6 +483,8 @@ GetOptions ("help|h"               => sub { print $summary_str;
 	    "accept-cache"         => \$certlib_opts{"believe_cache"},
 	    "deps-of|p=s"          => sub { shift; push(@user_targets, "-p " . shift); },
 	    "params=s"             => \$params_file,
+            "write-certs=s"        => \$write_certs,
+            "write-sources=s"        => \$write_sources,
 	    "<>"                   => sub { push(@user_targets, shift); },
 	    );
 
@@ -908,6 +917,26 @@ unless ($no_makefile) {
 	exec $make_cmd;
     }
 }
+
+if ($write_sources) {
+    open (my $sourcesfile, ">", $write_sources)
+	or die "Failed to open output file $write_sources\n";
+    foreach my $source (@sources) {
+	print $sourcesfile "${source}\n";
+    }
+    close($sourcesfile);
+}
+
+if ($write_certs) {
+    open (my $certsfile, ">", $write_certs)
+	or die "Failed to open output file $write_certs\n";
+    foreach my $cert (@certs) {
+	print $certsfile "${cert}\n";
+    }
+    close($certsfile);
+}
+
+
 
 # print_times_seen();
 
