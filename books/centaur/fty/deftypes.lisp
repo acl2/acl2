@@ -1652,7 +1652,7 @@
         :pred ,x.pred
         :fix ,x.fix
         :equiv ,x.equiv
-        :define t)
+        :define t :forward t)
       (local (in-theory (enable ,x.equiv)))
       (defthm ,(intern-in-package-of-symbol
                 (concatenate 'string "EQUAL-OF-" (symbol-name x.fix)
@@ -1683,7 +1683,7 @@
         :pred ,x.pred
         :fix ,x.fix
         :equiv ,x.equiv
-        :define t)
+        :define t :forward t)
       (local (in-theory (enable ,x.equiv)))
 
       (defthm ,(intern-in-package-of-symbol
@@ -1746,7 +1746,7 @@
         :pred ,x.pred
         :fix ,x.fix
         :equiv ,x.equiv
-        :define t)
+        :define t :forward t)
       (local (in-theory (enable ,x.equiv)))
 
       (defthm ,(intern-in-package-of-symbol

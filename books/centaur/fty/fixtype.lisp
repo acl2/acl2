@@ -155,7 +155,7 @@ defequiv)).</p>")
 (defun get-fixtypes-alist (world)
   (cdr (assoc 'fixtype-alist (table-alist 'fixtypes world))))
 
-(defun deffixtype-fn (name predicate fix equiv execp definep verbosep hints)
+(defun deffixtype-fn (name predicate fix equiv execp definep verbosep hints forward)
   (if definep
       `(with-output ,@(and (not verbosep) '(:off :all)) :stack :push
          (encapsulate nil
@@ -167,7 +167,7 @@ defequiv)).</p>")
                      (value-triple
                       (er hard? 'deffixtype
                           "Failed to prove that ~x0 is idempotent.~%" ',fix)))))
-           (defund ,equiv (x y)
+           (defun ,equiv (x y)
              (declare (xargs :verify-guards nil))
              (equal (,fix x) (,fix y)))
            (local (in-theory '(,equiv tmp-deffixtype-idempotent
@@ -179,6 +179,31 @@ defequiv)).</p>")
                                   (symbol-name fix) "-UNDER-" (symbol-name equiv))
                      equiv)
              (,equiv (,fix x) x))
+           ,@(and forward
+                  `((defthm ,(intern-in-package-of-symbol
+                              (concatenate 'string "EQUAL-OF-" (symbol-name fix) "-1-FORWARD-TO-" (symbol-name equiv))
+                              equiv)
+                      (implies (equal (,fix x) y)
+                               (,equiv x y))
+                      :rule-classes :forward-chaining)
+                    (defthm ,(intern-in-package-of-symbol
+                              (concatenate 'string "EQUAL-OF-" (symbol-name fix) "-2-FORWARD-TO-" (symbol-name equiv))
+                              equiv)
+                      (implies (equal x (,fix y))
+                               (,equiv x y))
+                      :rule-classes :forward-chaining)
+                    (defthm ,(intern-in-package-of-symbol
+                              (concatenate 'string (symbol-name equiv) "-OF-" (symbol-name fix) "-1-FORWARD")
+                              equiv)
+                      (implies (,equiv (,fix x) y)
+                               (,equiv x y))
+                      :rule-classes :forward-chaining)
+                    (defthm ,(intern-in-package-of-symbol
+                              (concatenate 'string (symbol-name equiv) "-OF-" (symbol-name fix) "-2-FORWARD")
+                              equiv)
+                      (implies (,equiv x (,fix y))
+                               (,equiv x y))
+                      :rule-classes :forward-chaining)))
            (table fixtypes 'fixtype-alist
                   (cons (cons ',name ',(fixtype name predicate fix equiv execp equiv))
                         (get-fixtypes-alist world)))))
@@ -212,8 +237,9 @@ defequiv)).</p>")
                            ;; optional 
                            define
                            verbosep
-                           hints)
-  (deffixtype-fn name pred fix equiv execp define verbosep hints))
+                           hints
+                           forward)
+  (deffixtype-fn name pred fix equiv execp define verbosep hints forward))
 
 (defun find-fixtype-for-pred (pred alist)
   (if (atom alist)

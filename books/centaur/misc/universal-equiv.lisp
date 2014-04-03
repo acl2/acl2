@@ -107,7 +107,9 @@ prove that a fixing function induces an equivalence relation, e.g.,</p>
 
 (defun universal-equiv-form (equivname qvars equivs defquant
                                        witness-dcls witness-dcls-p
-                                       parents parents-p short long
+                                       parents parents-p
+                                       already-definedp
+                                       short long
                                        state)
   (declare (xargs :mode :program))
   (let* ((equivterms `(and . ,(universal-equiv-equivterms
@@ -153,13 +155,15 @@ prove that a fixing function induces an equivalence relation, e.g.,</p>
        ,@(and short   `(:short ,short))
        ,@(and long    `(:long ,long))
 
-       ,(if qvars
-            `(,(if defquant 'defquant 'defun-sk) ,equivname (x y)
-               (forall ,qvars ,equivterms)
-               ,@(and witness-dcls-p
-                      `(:witness-dcls ,witness-dcls)))
-          `(defun ,equivname (x y)
-             ,equivterms))
+       ,@(and (not already-definedp)
+              (list
+               (if qvars
+                   `(,(if defquant 'defquant 'defun-sk) ,equivname (x y)
+                     (forall ,qvars ,equivterms)
+                     ,@(and witness-dcls-p
+                            `(:witness-dcls ,witness-dcls)))
+                 `(defun ,equivname (x y)
+                    ,equivterms))))
 
        (in-theory (disable ,@(and qvars (list equivname-necc))
                            ,equivname))
@@ -205,11 +209,13 @@ prove that a fixing function induces an equivalence relation, e.g.,</p>
 (defmacro def-universal-equiv (name &key qvars equiv-terms defquant
                                     (witness-dcls 'nil witness-dcls-p)
                                     (parents      'nil parents-p)
+                                    already-definedp
                                     short long)
   `(make-event
     (let ((form (universal-equiv-form ',name ',qvars ',equiv-terms ',defquant
                                       ',witness-dcls ',witness-dcls-p
                                       ',parents ',parents-p
+                                      ',already-definedp
                                       ',short ',long
                                       state)))
       (value form))))
