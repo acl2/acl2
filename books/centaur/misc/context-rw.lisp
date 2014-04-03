@@ -191,11 +191,12 @@ when it becomes available.
   :hints(("Goal" :in-theory (enable symbol-alistp))))
 
 
-(local (defthm pseudo-term-val-alistp-of-append
-         (implies (and (pseudo-term-val-alistp a)
-                       (pseudo-term-val-alistp b))
-                  (pseudo-term-val-alistp (append a b)))
-         :hints(("Goal" :in-theory (enable pseudo-term-val-alistp)))))
+(local (defthm pseudo-term-substp-of-append
+         (implies (and (pseudo-term-substp a)
+                       (pseudo-term-substp b))
+                  (pseudo-term-substp (append a b)))
+         :hints(("Goal" :in-theory (enable pseudo-term-substp)))))
+
 
 (defsection mx-relieve-hyp
   (local (defthm symbol-alistp-impl-true-listp
@@ -248,7 +249,7 @@ when it becomes available.
                                      (not (assoc-eq nil val))
                                      (not (intersectp-eq (strip-cars val)
                                                          (strip-cars alist)))
-                                     (pseudo-term-val-alistp val)))))
+                                     (pseudo-term-substp val)))))
           (mv nil alist)))
       (mv t (if (eq syntaxp-fn 'bind-free)
                 (append val alist)
@@ -298,7 +299,9 @@ when it becomes available.
         (mx-relieve-hyp hyp alist rune target n mfc state)
         (implies ok
                  (all-keys-bound (simple-term-vars hyp) new-alist)))
-      :hints(("Goal" :in-theory (enable all-keys-bound)))))
+      :hints(("Goal" :in-theory (enable all-keys-bound
+                                        simple-term-vars
+                                        simple-term-vars-lst)))))
 
 
   (defthm hons-assoc-equal-in-ctx-ev-alist
@@ -343,7 +346,9 @@ when it becomes available.
       :hints ((and stable-under-simplificationp
                    '(:in-theory (enable ctx-ev-of-fncall-args
                                         sub-alistp-hons-assoc-equal
-                                        all-keys-bound))))
+                                        simple-term-vars-lst
+                                        all-keys-bound)
+                     :expand ((simple-term-vars x)))))
       :flag substitute-into-term)
     (defthm ctx-ev-lst-extension-when-vars-bound
       (implies (and (all-keys-bound (simple-term-vars-lst x) a)
@@ -352,6 +357,7 @@ when it becomes available.
                (equal (equal (ctx-ev-lst x b)
                              (ctx-ev-lst x a))
                       t))
+      :hints ('(:expand ((simple-term-vars-lst x))))
       :flag substitute-into-list))
 
   (defthm-substitute-into-term-flag
@@ -362,17 +368,19 @@ when it becomes available.
                       (ctx-ev x a)))
       :hints ((and stable-under-simplificationp
                    '(:in-theory (enable ctx-ev-of-fncall-args
-                                        all-keys-bound))))
+                                        all-keys-bound)
+                     :expand ((simple-term-vars x)))))
       :flag substitute-into-term)
     (defthm ctx-ev-lst-extension-append-when-vars-bound
       (implies (and (all-keys-bound (simple-term-vars-lst x) a)
                     (pseudo-term-listp x))
                (equal (ctx-ev-lst x (append a b))
                       (ctx-ev-lst x a)))
+      :hints ('(:expand ((simple-term-vars-lst x))))
       :flag substitute-into-list))
 
   (local (in-theory (disable symbol-alistp magic-ev
-                             pseudo-term-val-alistp)))
+                             pseudo-term-substp)))
 
   (defthm ctx-ev-mx-relieve-hyp-correct
     (mv-let (ok new-alist)
@@ -409,9 +417,9 @@ when it becomes available.
              (not (assoc nil (mv-nth 1 (mx-relieve-hyp
                                         hyp alist rune target n mfc state))))))
 
-  (defthm pseudo-term-val-alistp-mx-relieve-hyp
-    (implies (pseudo-term-val-alistp alist)
-             (pseudo-term-val-alistp (mv-nth 1 (mx-relieve-hyp
+  (defthm pseudo-term-substp-mx-relieve-hyp
+    (implies (pseudo-term-substp alist)
+             (pseudo-term-substp (mv-nth 1 (mx-relieve-hyp
                                                 hyp alist rune target n mfc
                                                 state))))))
 
@@ -484,9 +492,9 @@ when it becomes available.
              (alistp (mv-nth 1 (mx-relieve-hyps
                                        hyps alist rune target n mfc state)))))
 
-  (defthm pseudo-term-val-alistp-mx-relieve-hyps
-    (implies (pseudo-term-val-alistp alist)
-             (pseudo-term-val-alistp (mv-nth 1 (mx-relieve-hyps
+  (defthm pseudo-term-substp-mx-relieve-hyps
+    (implies (pseudo-term-substp alist)
+             (pseudo-term-substp (mv-nth 1 (mx-relieve-hyps
                                                 hyps alist rune target n mfc
                                                 state)))))
 
@@ -502,9 +510,11 @@ when it becomes available.
   (defthm-substitute-into-term-flag
     (defthm nil-not-member-simple-term-vars
       (not (member nil (simple-term-vars x)))
+      :hints ('(:expand ((simple-term-vars x))))
       :flag substitute-into-term)
     (defthm nil-not-member-simple-term-vars-lst
       (not (member nil (simple-term-vars-lst x)))
+      :hints ('(:expand ((simple-term-vars-lst x))))
       :flag substitute-into-list))
 
   (defthm all-vars-bound-when-sub-alistp-mx-relieve-hyps
@@ -521,7 +531,8 @@ when it becomes available.
       (mx-relieve-hyps hyps alist rune target n mfc state)
       (implies ok
                (all-keys-bound (simple-term-vars-lst hyps) new-alist)))
-    :hints(("Goal" :in-theory (enable all-keys-bound))))
+    :hints(("Goal" :in-theory (enable all-keys-bound
+                                      simple-term-vars-lst))))
 
   (defthm hons-assoc-equal-ctx-ev-alist
     (implies (alistp x)
@@ -617,7 +628,9 @@ when it becomes available.
   (defthm all-keys-bound-of-conjoin
     (implies (all-keys-bound (simple-term-vars-lst hyps) a)
              (all-keys-bound (simple-term-vars (conjoin hyps)) a))
-    :hints(("Goal" :in-theory (enable conjoin all-keys-bound))))
+    :hints(("Goal" :in-theory (enable conjoin all-keys-bound
+                                      simple-term-vars-lst
+                                      simple-term-vars))))
 
   (defthm ctx-ev-mx-relieve-hyps-correct1
     (mv-let (ok new-alist)
@@ -741,10 +754,17 @@ when it becomes available.
 (local (defthm subsetp-of-union
          (subsetp-equal a (union-equal a b))))
 
+(defthm symbol-<-merge-under-set-equiv
+  (set-equiv (symbol-<-merge x y)
+             (append x y))
+  :hints((set-reasoning)))
+
 (defthm simple-term-vars-of-conjoin
   (subsetp-equal (simple-term-vars (conjoin x))
                  (simple-term-vars-lst x))
-  :hints(("Goal" :in-theory (enable conjoin))))
+  :hints(("Goal" :in-theory (enable conjoin
+                                    simple-term-vars-lst
+                                    simple-term-vars))))
 
 (defthm all-keys-bound-when-subsetp
   (implies (and (subsetp-equal a b)
@@ -918,8 +938,9 @@ when it becomes available.
 ;;                 (assoc-equal var alist))))
 
 (defthm pseudo-termp-hons-assoc
-  (implies (pseudo-term-val-alistp x)
-           (pseudo-termp (cdr (hons-assoc-equal k x)))))
+  (implies (pseudo-term-substp x)
+           (pseudo-termp (cdr (hons-assoc-equal k x))))
+  :hints(("Goal" :in-theory (enable pseudo-term-substp))))
 
 
 
@@ -1043,7 +1064,8 @@ when it becomes available.
                     (ctx-ev x (cons (cons var x1) a))))
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable ctx-ev-of-fncall-args
-                                      all-keys-bound))))
+                                      all-keys-bound)
+                   :expand ((simple-term-vars x)))))
     :flag substitute-into-term)
   (defthm ctx-ev-lst-when-all-identities-except-x
     (implies (and (pseudo-term-listp x)
@@ -1052,6 +1074,7 @@ when it becomes available.
              (equal (ctx-ev-lst x (cons (cons var x1)
                                         (ctx-ev-alist subst a)))
                     (ctx-ev-lst x (cons (cons var x1) a))))
+    :hints ('(:expand ((simple-term-vars-lst x))))
     :flag substitute-into-list))
 
 
@@ -1081,7 +1104,9 @@ when it becomes available.
     (implies (and ok
                   (all-keys-bound (simple-term-vars pat) alist))
              (equal subst alist)))
-  :hints(("Goal" :in-theory (enable unify-const all-keys-bound))))
+  :hints(("Goal" :in-theory (enable unify-const all-keys-bound
+                                    simple-term-vars-lst)
+          :expand ((simple-term-vars pat)))))
 
 
 (defthm-simple-one-way-unify-flag
@@ -1093,7 +1118,8 @@ when it becomes available.
                (equal subst alist)))
     :hints ((and stable-under-simplificationp
                  '(:expand ((:free (x) (simple-one-way-unify pat x alist))
-                            (:free (x) (simple-one-way-unify nil x alist)))
+                            (:free (x) (simple-one-way-unify nil x alist))
+                            (simple-term-vars pat))
                    :in-theory (enable all-keys-bound))))
     :flag simple-one-way-unify)
   (defthm one-way-unify-lst-reduce-when-all-keys-bound
@@ -1103,7 +1129,8 @@ when it becomes available.
                     (all-keys-bound (simple-term-vars-lst pat) alist))
                (equal subst alist)))
     :hints ((and stable-under-simplificationp
-                 '(:expand ((:free (x) (simple-one-way-unify-lst pat x alist))))))
+                 '(:expand ((:free (x) (simple-one-way-unify-lst pat x alist))
+                            (simple-term-vars-lst pat)))))
     :flag simple-one-way-unify-lst)
   :hints (("goal" :induct (simple-one-way-unify-flag flag pat x alist))))
 
@@ -1158,7 +1185,8 @@ when it becomes available.
                (set-equiv (alist-keys subst)
                            (append (simple-term-vars pat)
                                    (alist-keys subst0)))))
-    :hints(("Goal" :in-theory (enable unify-const)
+    :hints(("Goal" :in-theory (enable unify-const simple-term-vars
+                                      simple-term-vars-lst)
             :induct t))))
 
 (defthm-simple-one-way-unify-flag
@@ -1171,7 +1199,8 @@ when it becomes available.
                                    (alist-keys subst0)))))
     :hints ((and stable-under-simplificationp
                  '(:expand ((:free (x subst)
-                             (simple-one-way-unify pat x subst)))
+                             (simple-one-way-unify pat x subst))
+                            (simple-term-vars pat))
                    :in-theory (enable all-keys-bound))))
     :flag simple-one-way-unify)
   (defthm alist-keys-of-simple-one-way-unify-lst
@@ -1183,7 +1212,8 @@ when it becomes available.
                                    (alist-keys subst0)))))
     :hints ((and stable-under-simplificationp
                  '(:expand ((:free (x subst)
-                             (simple-one-way-unify-lst pat x subst))))))
+                             (simple-one-way-unify-lst pat x subst))
+                            (simple-term-vars-lst pat)))))
     :flag simple-one-way-unify-lst)
   :hints (("Goal" :induct (simple-one-way-unify-flag flag pat x subst0))))
 
@@ -1330,8 +1360,9 @@ when it becomes available.
                            (unify-const-redef nil x)))))
           (alist-reasoning)))
 
-(defthm pseudo-term-val-alistp-of-unify-const-redef
-  (pseudo-term-val-alistp (mv-nth 1 (unify-const-redef pat const))))
+(defthm pseudo-term-substp-of-unify-const-redef
+  (implies (pseudo-termp pat)
+           (pseudo-term-substp (mv-nth 1 (unify-const-redef pat const)))))
         
 (in-theory (disable unify-const-redef))
 
@@ -1441,10 +1472,6 @@ when it becomes available.
          (list (subst-ind t (car pat) (car term))
                (subst-ind nil (cdr pat) (cdr term)))))))
 
-  (defthm pseudo-term-listp-cdr
-    (implies (and (pseudo-termp x)
-                  (not (eq (car x) 'quote)))
-             (pseudo-term-listp (cdr x))))
 
   (encapsulate nil
     (local (defthm equal-of-len
@@ -1469,7 +1496,10 @@ when it becomes available.
                                         (ctx-ev-alist subst a)))
                              (ctx-ev-alist subst a)))
                       const))
-      :hints(("Goal" :in-theory (enable unify-const all-keys-bound)))))
+      :hints(("Goal" :in-theory (enable unify-const
+                                        simple-term-vars
+                                        simple-term-vars-lst
+                                        all-keys-bound)))))
 
 
   (defthm-simple-one-way-unify-flag
@@ -1487,7 +1517,8 @@ when it becomes available.
                              (ctx-ev-alist subst a)))
                       (ctx-ev term (ctx-ev-alist subst a))))
       :hints ('(:do-not-induct t
-                :expand ((:free (term) (simple-one-way-unify pat term alist))))
+                :expand ((:free (term) (simple-one-way-unify pat term alist))
+                         (simple-term-vars pat)))
               (and stable-under-simplificationp
                    '(:in-theory (enable ctx-ev-of-fncall-args all-keys-bound))))
       :flag simple-one-way-unify)
@@ -1507,7 +1538,8 @@ when it becomes available.
       :hints ('(:expand ((:free (term) (simple-one-way-unify-lst nil term
                                                                  alist))
                          (:free (term) (simple-one-way-unify-lst pat term
-                                                                 alist)))
+                                                                 alist))
+                         (simple-term-vars-lst pat))
                 :in-theory (enable ctx-ev-alist)))
       :flag simple-one-way-unify-lst)))
 

@@ -21,6 +21,8 @@
 
 (in-package "ACL2")
 
+(include-book "meta/pseudo-termp-lemmas" :dir :system)
+
 ;; This book establishes a table for the purpose of storing patterns that allow
 ;; us to recognize terms of some sort, and it provides a pattern-matching
 ;; algorithm for recognizing those terms.  For example, if we want to recognize
@@ -133,30 +135,18 @@
 
 (verify-guards term-pattern-match)
 
-(defun pseudo-term-val-alistp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (eq x nil)
-    (and (consp (car x))
-         (pseudo-termp (cdar x))
-         (pseudo-term-val-alistp (cdr x)))))
-
-(defthm assoc-pseudo-term-val-alistp
-  (implies (pseudo-term-val-alistp x)
-           (pseudo-termp (cdr (assoc k x)))))
-
 (defthm-term-pattern-match-flag
-  term-pattern-match-flag-pseudo-term-val-alistp
+  term-pattern-match-flag-pseudo-term-substp
   (term-pattern-match
    (implies (and (pseudo-termp x)
-                 (pseudo-term-val-alistp acc))
-            (pseudo-term-val-alistp (term-pattern-match x pat acc)))
-   :name term-pattern-match-pseudo-term-val-alistp)
+                 (pseudo-term-substp acc))
+            (pseudo-term-substp (term-pattern-match x pat acc)))
+   :name term-pattern-match-pseudo-term-substp)
   (term-pattern-match-list
    (implies (and (pseudo-term-listp x)
-                 (pseudo-term-val-alistp acc))
-            (pseudo-term-val-alistp (term-pattern-match-list x pat acc)))
-   :name term-pattern-match-list-pseudo-term-val-alistp)
+                 (pseudo-term-substp acc))
+            (pseudo-term-substp (term-pattern-match-list x pat acc)))
+   :name term-pattern-match-list-pseudo-term-substp)
   :hints (("goal" :induct (term-pattern-match-flag flag x pat acc))))
 
 
@@ -168,17 +158,17 @@
     (or (term-pattern-match x (car pats) '((& . &)))
         (match-term-pattern x (cdr pats)))))
 
-(defthm pseudo-term-val-alistp-match-term-pattern
+(defthm pseudo-term-substp-match-term-pattern
   (implies (pseudo-termp x)
-           (pseudo-term-val-alistp (match-term-pattern x pats))))
+           (pseudo-term-substp (match-term-pattern x pats))))
 
 (defun term-matches (term name world)
   (match-term-pattern
    term
    (cdr (assoc name (table-alist 'term-patterns world)))))
 
-(defthm pseudo-term-val-alistp-term-matches
+(defthm pseudo-term-substp-term-matches
   (implies (pseudo-termp x)
-           (pseudo-term-val-alistp (term-matches x name world))))
+           (pseudo-term-substp (term-matches x name world))))
 
 (in-theory (disable match-term-pattern term-pattern-match term-matches))

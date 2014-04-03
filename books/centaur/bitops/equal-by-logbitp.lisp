@@ -963,7 +963,7 @@ etc.</p>"
      examples config state)))
 
 
-(define eqbylbp-eval-example ((alist pseudo-term-val-alistp)
+(define eqbylbp-eval-example ((alist pseudo-term-substp)
                               (example pseudo-termp)
                               (config eqbylbp-config-p)
                               state)
@@ -986,7 +986,7 @@ etc.</p>"
     (mv includep (eqbylbp-collect-terms newterm-rw) state)))
   
 
-(define eqbylbp-try-example ((alist pseudo-term-val-alistp)
+(define eqbylbp-try-example ((alist pseudo-term-substp)
                              (example pseudo-termp)
                              (target-logbitp-args pseudo-term-list-listp)
                              (config eqbylbp-config-p) state)
@@ -994,7 +994,7 @@ etc.</p>"
   ;; :returns (mv (example? wcp-example-appsp)
   ;;              (new-logbitp-args pseudo-term-list-listp
   ;;                                :hyp (and (wcp-instance-rule-p rule)
-  ;;                                          (pseudo-term-val-alistp alist)
+  ;;                                          (pseudo-term-substp alist)
   ;;                                          (pseudo-termp example)
   ;;                                          (pseudo-term-list-listp target-logbitp-args)))
   ;;              state1)
@@ -1013,7 +1013,7 @@ etc.</p>"
         (append new-targets target-logbitp-args)
         state)))
 
-(define eqbylbp-try-examples ((alist pseudo-term-val-alistp)
+(define eqbylbp-try-examples ((alist pseudo-term-substp)
                               (examples pseudo-term-listp)
                               (target-logbitp-args pseudo-term-list-listp)
                               (config eqbylbp-config-p)

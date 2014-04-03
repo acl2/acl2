@@ -225,7 +225,8 @@
   (defthm pseudo-term-val-alistp-lit-get-equality-rules
     (implies (pseudo-termp lit)
              (pseudo-term-val-alistp
-              (lit-get-equality-rules lit rules w))))
+              (lit-get-equality-rules lit rules w)))
+    :hints(("Goal" :in-theory (enable pseudo-term-val-alistp))))
 
   (defthm repl-ev-equality-alist-p-lit-get-equality-rules
     (implies (and (repl-ev-meta-extract-global-facts)

@@ -265,12 +265,13 @@
 
 (defund scan-for-introduce-var (current-pkg clause)
   (declare (xargs :guard (and (stringp current-pkg)
-                              (not (equal current-pkg "")))))
+                              (not (equal current-pkg ""))
+                              (pseudo-term-listp clause))))
   (b* ((initial-alist (scan-termlist-for-introduce-var clause))
        ((unless initial-alist)
         ;; Optimization: avoid looking at the term vars if there's nothing to do
         nil)
-       (clause-vars (ec-call (term-vars-list clause)))
+       (clause-vars (simple-term-vars-lst clause))
        (avoid-names (names-for-introduce-var-to-avoid current-pkg clause-vars))
        (namedb      (vl::vl-starting-namedb avoid-names))
        ((mv fresh-alist namedb)

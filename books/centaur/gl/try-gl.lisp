@@ -312,7 +312,7 @@
        (final-type (if xsubst
                        (if (symbolp type-term)
                            (list type-term subterm)
-                         (let ((vars (acl2::term-vars type-term)))
+                         (let ((vars (acl2::simple-term-vars type-term)))
                            (acl2::substitute-into-term
                             type-term (cons (cons 'acl2::x subterm)
                                             (pairlis$ vars vars)))))
@@ -450,7 +450,7 @@
 (defun filter-nonhyp-lits (lits vars)
   (if (atom lits)
       nil
-    (if (intersectp-eq (acl2::term-vars (car lits)) vars)
+    (if (intersectp-eq (acl2::simple-term-vars (car lits)) vars)
         (cons (car lits)
               (filter-nonhyp-lits (cdr lits) vars))
       (filter-nonhyp-lits (cdr lits) vars))))
@@ -507,7 +507,7 @@
                        ',(let ((subs (acl2::collect-multi-occ-subterms-list clause)))
                            (pairlis$ subs
                                      (make-n-vars (len subs) 'y 0
-                                                  (acl2::term-vars-list clause)))))))
+                                                  (acl2::simple-term-vars-lst clause)))))))
 
 
 (defun maybe-print-clause-fn (print pr-name message clause state)
@@ -529,7 +529,7 @@
        (hyp (car clause))
        (concl (cadr clause))
        (vars (strip-cars g-bindings))
-       (all-vars (acl2::term-vars-list (list hyp concl)))
+       (all-vars (acl2::simple-term-vars-lst (list hyp concl)))
        (missing-vars (remove-duplicates-eq (set-difference-eq all-vars vars)))
        (g-bindings (add-var-bindings missing-vars g-bindings))
        (untr-concl (untranslate concl nil (w state)))
@@ -646,7 +646,7 @@
         (collect-subterm-types fixup-clause subterms-types))
        (subterms (remove-variables (remove-duplicates-equal subterms)))
        (type-hyps (remove-duplicates-equal type-hyps))
-       (clause-vars (acl2::term-vars-list fixup-clause))
+       (clause-vars (acl2::simple-term-vars-lst fixup-clause))
        (fresh-vars (make-n-vars (len subterms) 'x 0 clause-vars))
        (add-hyps-hint
         `(:computed-hint-replacement

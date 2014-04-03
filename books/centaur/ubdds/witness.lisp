@@ -350,7 +350,7 @@
         (if given-witnesses
             (list new-clause)
           (let* ((symbols (make-n-vars (len witnesses) 'bdd-vals 0
-                                       (term-vars-list new-clause)))
+                                       (simple-term-vars-lst new-clause)))
                  (alist (pairlis$ witnesses symbols)))
             (list (replace-subterms-list new-clause alist))))))))
 
@@ -371,7 +371,7 @@
 
 (defthm disjoin-replace-subterms-list-bdd
   (implies (and (not (intersectp-equal (strip-cdrs alist)
-                                       (term-vars-list x)))
+                                       (simple-term-vars-lst x)))
                 (symbol-listp (strip-cdrs alist))
                 (not (member-equal nil (strip-cdrs alist)))
                 (no-duplicatesp-equal (strip-cdrs alist))
@@ -402,7 +402,7 @@
         (if given-witnesses
             a
           (let* ((symbols (make-n-vars (len witnesses) 'bdd-vals 0
-                                       (term-vars-list new-clause)))
+                                       (simple-term-vars-lst new-clause)))
                  (alist (pairlis$ witnesses symbols)))
             (append (replace-alist-to-bindings-bdd alist a) a)))))))
 

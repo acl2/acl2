@@ -119,12 +119,6 @@
          :hints(("Goal" :in-theory (enable pseudo-term-list-listp)))))
 
 
-(local (defthm pseudo-term-listp-append
-         (implies (and (pseudo-term-listp a)
-                       (pseudo-term-listp b))
-                  (pseudo-term-listp (append a b)))
-         :hints(("Goal" :in-theory (enable pseudo-term-listp)))))
-
 (local (defthm strip-cars-of-append
          (equal (strip-cars (append a b))
                 (append (strip-cars a) (strip-cars b)))))
@@ -363,7 +357,7 @@
 
   (defthm pseudo-term-listp-cars-of-witness-generalize-alist
     (implies (and (pseudo-term-listp (strip-cars generalize-map))
-                  (pseudo-term-val-alistp alist))
+                  (pseudo-term-substp alist))
              (pseudo-term-listp (strip-cars (witness-generalize-alist
                                              generalize-map alist))))
     :hints(("Goal" :in-theory (enable pseudo-term-listp)))))
@@ -473,11 +467,6 @@
 ;; WCP-LIT-APPLY-EXAMPLES
 ;;========================================================================
 
-(local (defthm pseudo-term-val-alistp-append
-         (implies (and (pseudo-term-val-alistp a)
-                       (pseudo-term-val-alistp b))
-                  (pseudo-term-val-alistp (append a b)))))
-
 (local
  (defsection witness-ev-alist-lemmas
    (defthm-simple-term-vars-flag
@@ -486,12 +475,16 @@
                      (not (member-equal var (simple-term-vars term))))
                 (equal (witness-ev term (cons (cons var val) a))
                        (witness-ev term a)))
+       :hints ((and stable-under-simplificationp
+                    '(:expand ((simple-term-vars term)))))
        :flag simple-term-vars)
      (defthm witness-ev-lst-remove-non-var
        (implies (and (pseudo-term-listp term)
                      (not (member-equal var (simple-term-vars-lst term))))
                 (equal (witness-ev-lst term (cons (cons var val) a))
                        (witness-ev-lst term a)))
+       :hints ((and stable-under-simplificationp
+                    '(:expand ((simple-term-vars-lst term)))))
        :flag simple-term-vars-lst)
      :hints (("goal" :induct (simple-term-vars-flag flag term)
               :in-theory (enable pseudo-termp pseudo-term-listp))
@@ -639,7 +632,7 @@
 
 
 (define make-non-dup-vars ((x symbol-listp)
-                           (avoid true-listp))
+                           (avoid symbol-listp))
   :returns (vars symbol-listp)
   (if (atom x)
       nil
@@ -692,7 +685,7 @@
 
 (define wcp-fix-generalize-alist ((alist (and (alistp alist)
                                           (symbol-listp (strip-cdrs alist))))
-                              (used-vars true-listp))
+                              (used-vars symbol-listp))
   :returns (genalist (and (alistp genalist)
                           (not (intersectp-equal used-vars
                                                  (strip-cdrs genalist)))
@@ -703,6 +696,11 @@
   (pairlis$ (strip-cars alist)
             (make-non-dup-vars (strip-cdrs alist) used-vars)))
 
+(local (defthm pseudo-term-val-alistp-when-symbol-listp-strip-cdrs
+         (implies (and (alistp x)
+                       (symbol-listp (strip-cdrs x)))
+                  (pseudo-term-val-alistp x))
+         :hints(("Goal" :in-theory (enable pseudo-term-val-alistp alistp pseudo-termp)))))
 
 
 (define wcp-generalize-clause ((genalist (and (alistp genalist)
@@ -724,7 +722,7 @@
                                 (symbol-listp (strip-cdrs genalist))))
   (replace-subterms-list
    clause (wcp-fix-generalize-alist genalist
-                                    (term-vars-list clause)))
+                                    (simple-term-vars-lst clause)))
   ///
   
 
@@ -738,7 +736,7 @@
     :hints (("goal" :in-theory (e/d ()
                                     (replace-subterms-list
                                      wcp-fix-generalize-alist
-                                     term-vars-list))
+                                     simple-term-vars-lst))
              :use ((:instance witness-ev-falsify
                     (x (disjoin
                         (wcp-generalize-clause
@@ -746,7 +744,7 @@
                     (a (append
                         (witness-ev-replace-alist-to-bindings
                          (wcp-fix-generalize-alist
-                          genalist (term-vars-list clause))
+                          genalist (simple-term-vars-lst clause))
                          a)
                         a))))))))
 

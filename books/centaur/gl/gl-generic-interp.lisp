@@ -3183,6 +3183,11 @@
            (glcp-interp-accs-ok interp-st bvar-db config env))
     :hints(("Goal" :in-theory (enable glcp-interp-accs-ok))))
 
+  (defthm glcp-generic-geval-ev-quote
+    (equal (glcp-generic-geval-ev (cons 'quote x) env)
+           (car x))
+    :hints(("Goal" :in-theory (enable glcp-generic-geval-ev-of-quote))))
+
   (def-glcp-interp-thm glcp-generic-interp-correct
     :hyps (and (bfr-hyp-eval (nth *is-constraint* interp-st) (car env))
                (acl2::interp-defs-alistp (nth *is-obligs* interp-st))

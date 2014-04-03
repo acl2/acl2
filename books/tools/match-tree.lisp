@@ -307,30 +307,29 @@
                   (implies (symbol-alistp alist0)
                            (consp (assoc k alist)))))))
 
-;; BOZO this is also defined in clause-processors/unify-subst.lisp
-(defun all-keys-bound (keys alist)
+(defun keys-subset (keys alist)
   (declare (xargs :guard (alistp alist)))
   (if (atom keys)
       t
     (and (assoc-equal (car keys) alist)
-         (all-keys-bound (cdr keys) alist))))
+         (keys-subset (cdr keys) alist))))
 
 (defthm match-tree-all-binders-bound
   (b* (((mv ok alist) (match-tree pat x alist)))
     (implies (and ok
                   (subsetp keys (match-tree-binders pat)))
-             (all-keys-bound keys alist)))
-  :hints(("Goal" :in-theory (enable subsetp all-keys-bound)
+             (keys-subset keys alist)))
+  :hints(("Goal" :in-theory (enable subsetp keys-subset)
           :induct (len keys))))
 
-(defthm all-keys-bound-of-append
-  (equal (all-keys-bound (append x y) a)
-         (and (all-keys-bound x a)
-              (all-keys-bound y a))))
+(defthm keys-subset-of-append
+  (equal (keys-subset (append x y) a)
+         (and (keys-subset x a)
+              (keys-subset y a))))
 
 (defthm subst-tree-when-all-binders-bound
   (b* (((mv ?ok alist) (match-tree pat1 x alist0)))
-    (implies (all-keys-bound (match-tree-binders pat) alist0)
+    (implies (keys-subset (match-tree-binders pat) alist0)
              (equal (subst-tree pat alist)
                     (subst-tree pat alist0))))
   :hints (("goal" :induct (match-tree-binders pat))))

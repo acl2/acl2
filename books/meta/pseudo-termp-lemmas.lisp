@@ -1,35 +1,11 @@
-; By John Cowles, modified by Matt Kaufmann.
+; By John Cowles, modified by Matt Kaufmann and Sol Swords
 
 (in-package "ACL2")
 
-(include-book "term-lemmas" :load-compiled-file nil)
-
-(defthm pseudo-termp-cadr
+(defthm pseudo-term-listp-cdr
   (implies (and (pseudo-termp x)
-                (consp x)
                 (not (equal (car x) 'quote)))
-           (pseudo-termp (cadr x)))
-  :hints (("Goal" :expand (pseudo-termp x)))
-  :rule-classes (:rewrite
-                 (:forward-chaining
-                  :trigger-terms
-                  ((pseudo-termp (cadr x))))))
-
-(defthm pseudo-termp-caddr
-  (implies (and (pseudo-termp x)
-                (consp x)
-                (not (equal (car x) 'quote)))
-           (pseudo-termp (caddr x)))
-  :hints (("Goal" :expand (pseudo-termp x)))
-  :rule-classes (:rewrite
-                 (:forward-chaining
-                  :trigger-terms
-                  ((pseudo-termp (caddr x))))))
-
-(defthm pseudo-termp-term-list-to-type-term
-  (implies (and (pseudo-term-listp x)
-		(symbolp unary-op-name))
-           (pseudo-termp (term-list-to-type-term unary-op-name x))))
+           (pseudo-term-listp (cdr x))))
 
 (defthm pseudo-termp-opener
   (implies (and (consp x)
@@ -38,70 +14,106 @@
            (equal (pseudo-termp x)
                   (pseudo-term-listp (cdr x)))))
 
-(defthm pseudo-term-listp-opener
-  (and (implies (atom x)
-                (equal (pseudo-term-listp x)
-                       (equal x nil)))
-       (implies (consp x)
-                (equal (pseudo-term-listp x)
-                       (and (pseudo-termp (car x))
-                            (pseudo-term-listp (cdr x)))))))
+(defthm pseudo-term-listp-of-atom
+  (implies (not (consp x))
+           (equal (pseudo-term-listp x)
+                  (equal x nil)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+(defthm pseudo-term-listp-of-cons
+  (equal (pseudo-term-listp (cons a x))
+         (and (pseudo-termp a)
+              (pseudo-term-listp x))))
 
 (defthm pseudo-termp-list-cdr
   (implies (pseudo-term-listp x)
-           (pseudo-term-listp (cdr x)))
-  :rule-classes
-  (:rewrite :forward-chaining))
+           (pseudo-term-listp (cdr x))))
 
 (defthm pseudo-termp-car
   (implies (pseudo-term-listp x)
-           (pseudo-termp (car x)))
-  :rule-classes
-  (:rewrite :forward-chaining))
+           (pseudo-termp (car x))))
 
 (defthm pseudo-termp-cadr-from-pseudo-term-listp
   (implies (pseudo-term-listp x)
-           (pseudo-termp (cadr x)))
-  :rule-classes
-  (:rewrite :forward-chaining))
-
-(defthm pseudo-term-listp-del
-  (implies (pseudo-term-listp x)
-           (pseudo-term-listp (del a x))))
+           (pseudo-termp (cadr x))))
 
 (defthm pseudo-term-listp-append
   (implies (and (pseudo-term-listp x)
                 (pseudo-term-listp y))
            (pseudo-term-listp (append x y))))
 
-(defthm pseudo-term-listp-bagdiff
-  (implies (pseudo-term-listp x)
-           (pseudo-term-listp (bagdiff x y))))
 
-(defthm pseudo-term-listp-bagint
-  (implies (pseudo-term-listp x)
-           (pseudo-term-listp (bagint x y))))
 
-(defthm pseudo-term-listp-binary-op_fringe
-  (implies (and (symbolp binary-op-name)
-		(not (equal binary-op-name 'quote))
-		(pseudo-termp x))
-           (pseudo-term-listp (binary-op_fringe binary-op-name x))))
+(defund pseudo-term-substp  (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (eq x nil)
+    (and (consp (car x))
+         (symbolp (caar x))
+         (pseudo-termp (cdar x))
+         (pseudo-term-substp (cdr x)))))
 
-(defthm psuedo-termp-binary-op_tree
-  (implies (and (pseudo-term-listp l)
-		(symbolp binary-op-name)
-                (symbolp fix-name)
-                (not (equal binary-op-name 'quote))
-		(atom constant-name))
-           (pseudo-termp (binary-op_tree binary-op-name constant-name fix-name l)))
-  :rule-classes
-  (:rewrite
-   (:forward-chaining
-    :trigger-terms
-    ((binary-op_tree binary-op-name constant-name fix-name l)))))
+(local (in-theory (enable pseudo-term-substp)))
 
-(defthm
-  pseudo-term-listp-remove-duplicates-memb
-  (implies (pseudo-term-listp lst)
-	   (pseudo-term-listp (remove-duplicates-memb lst))))
+(defthm pseudo-termp-of-lookup-in-subst
+  (implies (pseudo-term-substp x)
+           (pseudo-termp (cdr (assoc k x)))))
+
+(defthm pseudo-term-substp-of-acons
+  (equal (pseudo-term-substp (cons (cons k v) x))
+         (and (symbolp k)
+              (pseudo-termp v)
+              (pseudo-term-substp x))))
+
+(defthm pseudo-term-substp-of-atom
+  (implies (not (consp x))
+           (equal (pseudo-term-substp x)
+                  (equal x nil)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+(defthm pseudo-term-substp-of-pairlis
+  (implies (and (symbol-listp x)
+                (pseudo-term-listp y))
+           (pseudo-term-substp (pairlis$ x y))))
+
+(defthm pseudo-term-substp-of-append
+  (implies (and (pseudo-term-substp a)
+                (pseudo-term-substp b))
+           (pseudo-term-substp (append a b))))
+
+
+(defund pseudo-term-val-alistp  (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (eq x nil)
+    (and (consp (car x))
+         (pseudo-termp (cdar x))
+         (pseudo-term-val-alistp (cdr x)))))
+
+(local (in-theory (enable pseudo-term-val-alistp)))
+
+(defthm pseudo-termp-of-lookup-in-pseudo-term-val-alistp
+  (implies (pseudo-term-val-alistp x)
+           (pseudo-termp (cdr (assoc k x)))))
+
+(defthm pseudo-term-val-alistp-of-acons
+  (equal (pseudo-term-val-alistp (cons (cons k v) x))
+         (and (pseudo-termp v)
+              (pseudo-term-val-alistp x))))
+
+(defthm pseudo-term-val-alistp-of-atom
+  (implies (not (consp x))
+           (equal (pseudo-term-val-alistp x)
+                  (equal x nil)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+(defthm pseudo-term-val-alistp-of-pairlis
+  (implies (pseudo-term-listp y)
+           (pseudo-term-val-alistp (pairlis$ x y))))
+
+(defthm pseudo-term-val-alistp-of-append
+  (implies (and (pseudo-term-val-alistp a)
+                (pseudo-term-val-alistp b))
+           (pseudo-term-val-alistp (append a b))))
+
+

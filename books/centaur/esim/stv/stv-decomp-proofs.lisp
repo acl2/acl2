@@ -479,7 +479,8 @@
 
 (local
  (define stv-decomp-alist-extract (vars al)
-   :returns (al1 pseudo-term-val-alistp :hyp (pseudo-term-val-alistp al))
+   :returns (al1 pseudo-term-val-alistp :hyp (pseudo-term-val-alistp al)
+                 :hints(("Goal" :in-theory (enable pseudo-term-val-alistp))))
    :prepwork ((local (defthm pseudo-termp-lookup-in-pseudo-term-val-alistp
                        (implies (and (pseudo-term-val-alistp x)
                                      (hons-assoc-equal k x))
@@ -511,21 +512,11 @@
 (finish-with-outer-local)
                     
 
-(local (defthm pseudo-term-val-alistp-of-append
-         (implies (and (pseudo-term-val-alistp a)
-                       (pseudo-term-val-alistp b))
-                  (pseudo-term-val-alistp (append a b)))))
-  
-
 (local
  (define stv-decomp-process-alist-term ((x pseudo-termp))
    :returns (mv err (al pseudo-term-val-alistp :hyp :guard))
    :verify-guards nil
-   :prepwork ((local (defthm pseudo-term-val-alistp-of-acons
-                       (equal (pseudo-term-val-alistp (cons (cons key val) rest))
-                              (and (pseudo-termp val)
-                                   (pseudo-term-val-alistp rest)))))
-              (local (in-theory (disable consp-of-car-when-alistp
+   :prepwork ((local (in-theory (disable consp-of-car-when-alistp
                                          pseudo-term-val-alistp))))
    (b* (((when (atom x)) (mv (msg "Couldn't process: ~x0" x) nil))
         ((when (eq (car x) 'quote))

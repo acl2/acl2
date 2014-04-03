@@ -1402,7 +1402,7 @@
                         (:META ACL2::CANCEL_TIMES-EQUAL-CORRECT)
                         (:META ACL2::CANCEL_PLUS-EQUAL-CORRECT)
                         ; (:REWRITE RUN-GIFIED-EV-CONSTRAINT-3)
-                        (:REWRITE ACL2::SYMBOLP-ASSOC-EQUAL)
+                        ;; (:REWRITE ACL2::SYMBOLP-ASSOC-EQUAL)
                         (:DEFINITION ACL2::LIST-FIX)
                         (:REWRITE GEVAL-LIST-DEF-THM-CORRECT)
                         (:DEFINITION SYMBOL-LISTP)

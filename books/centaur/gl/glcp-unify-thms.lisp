@@ -36,7 +36,10 @@
                  (glcp-generic-geval-alist al env)))))
 
 
-
+(local (defthm symbol-<-merge-under-set-equiv
+           (acl2::set-equiv (acl2::symbol-<-merge x y)
+                            (append x y))
+           :hints ((acl2::set-reasoning))))
 
 (defsection all-keys-bound
   (defund all-keys-bound (keys alist)
@@ -82,7 +85,8 @@
                (equal (glcp-generic-geval-ev x (cons (cons k v) a))
                       (glcp-generic-geval-ev x a)))
       :hints ((and stable-under-simplificationp
-                   '(:in-theory (enable glcp-generic-geval-ev-of-fncall-args))))
+                   '(:in-theory (enable glcp-generic-geval-ev-of-fncall-args
+                                        acl2::simple-term-vars))))
       :flag acl2::simple-term-vars)
     (defthm glcp-generic-geval-ev-lst-of-acons-when-all-vars-bound
       (implies (and (all-keys-bound (acl2::simple-term-vars-lst x) a)
@@ -90,6 +94,7 @@
                     (pseudo-term-listp x))
                (equal (glcp-generic-geval-ev-lst x (cons (cons k v) a))
                       (glcp-generic-geval-ev-lst x a)))
+      :hints ('(:expand (acl2::simple-term-vars-lst x)))
       :flag acl2::simple-term-vars-lst))
 
   (defthm all-keys-bound-of-glcp-generic-geval-alist
@@ -137,7 +142,9 @@
       (implies ok
                (all-keys-bound (acl2::simple-term-vars pat) newalist)))
     :hints (("goal" :induct (glcp-unify-concrete pat x alist)
-             :in-theory (enable all-keys-bound))))
+             :in-theory (enable all-keys-bound
+                                acl2::simple-term-vars
+                                acl2::simple-term-vars-lst))))
 
 
 
@@ -270,7 +277,8 @@
       (b* (((mv ok newalist) (glcp-unify-term/gobj pat x alist)))
         (implies ok
                  (all-keys-bound (acl2::simple-term-vars pat) newalist)))
-      :hints ('(:in-theory (enable all-keys-bound)
+      :hints ('(:in-theory (enable all-keys-bound acl2::simple-term-vars
+                                   acl2::simple-term-vars-lst)
                 :expand ((:free (x) (glcp-unify-term/gobj pat x alist))
                          (:free (x) (glcp-unify-term/gobj nil x alist)))))
       :flag term)
@@ -279,7 +287,8 @@
         (implies ok
                  (all-keys-bound (acl2::simple-term-vars-lst pat) newalist)))
       :hints ('(:in-theory (enable all-keys-bound)
-                :expand ((:free (x) (glcp-unify-term/gobj-list pat x alist)))))
+                :expand ((:free (x) (glcp-unify-term/gobj-list pat x alist))
+                         (acl2::simple-term-vars-lst pat))))
       :flag list))
 
 
@@ -318,7 +327,7 @@
                       (glcp-generic-geval-ev-lst term (glcp-generic-geval-alist
                                                        alist env)))))
     :hints (("goal" :induct (len term)
-             :in-theory (e/d () (glcp-unify-term/gobj)))))
+             :in-theory (e/d (acl2::simple-term-vars-lst) (glcp-unify-term/gobj)))))
 
   (defthm glcp-unify-term/gobj-list-preserves-eval-list
     (b* (((mv ok newalist) (glcp-unify-term/gobj-list pat x alist)))
@@ -330,7 +339,8 @@
                       (glcp-generic-geval-ev-lst term (glcp-generic-geval-alist
                                                        alist env)))))
     :hints (("goal" :induct (len term)
-             :in-theory (e/d () (glcp-unify-term/gobj-list)))))
+             :in-theory (e/d (acl2::simple-term-vars-lst)
+                             (glcp-unify-term/gobj-list)))))
 
   (local (defthm glcp-generic-geval-of-non-kw-cons
            (implies (and (consp x)

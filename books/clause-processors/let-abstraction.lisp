@@ -31,6 +31,13 @@
 
 (def-join-thms abs-ev)
 
+(local (in-theory (enable simple-term-vars simple-term-vars-lst)))
+
+(local (defthm symbol-<-merge-under-set-equiv
+         (set-equiv (symbol-<-merge x y)
+                    (append x y))
+         :hints ((witness))))
+
 (mutual-recursion
  (defun let-abstract-term-rec (x subterms bindings)
    (declare (xargs :guard (and (pseudo-termp x)
@@ -92,7 +99,7 @@
   (if (atom bindings)
       t
     (and (not (member (caar bindings)
-                      (term-vars-list (strip-cdrs bindings))))
+                      (simple-term-vars-lst (strip-cdrs bindings))))
          (var-ordered-bindingsp (cdr bindings)))))
 
 (defun eval-bindings (bindings a)
@@ -142,11 +149,11 @@
                                     x subterms bindings))))
     :flag list))
 
-(defthm term-vars-of-fcons
+(defthm simple-term-vars-of-fcons
   (implies (not (eq f 'quote))
-           (equal (term-vars (cons f args))
-                  (term-vars-list args)))
-  :hints(("Goal" :in-theory (enable term-vars))))
+           (equal (simple-term-vars (cons f args))
+                  (simple-term-vars-lst args)))
+  :hints(("Goal" :in-theory (enable simple-term-vars))))
 
 (defthm cdr-assoc-member-strip-cdrs
   (implies (consp (assoc k x))
@@ -209,16 +216,21 @@
                           (cdr (assoc x a))
                           b)))))
 
+  (local (defthm simple-term-vars-of-symbol
+           (implies (symbolp x)
+                    (equal (simple-term-vars x)
+                           (and x (list x))))))
+
   (defthm-let-abstract-flg
     (defthm var-ordered-bindings-of-let-abstract-term-rec
       (implies (and (no-duplicatesp (strip-cdrs subterms))
                     (symbol-listp (strip-cdrs subterms))
-                    (not (intersectp (strip-cdrs subterms) (term-vars x)))
-                    (not (intersectp (term-vars-list (strip-cars subterms))
+                    (not (intersectp (strip-cdrs subterms) (simple-term-vars x)))
+                    (not (intersectp (simple-term-vars-lst (strip-cars subterms))
                                      (strip-cdrs subterms)))
                     (alistp bindings)
                     (no-duplicatesp (strip-cars bindings))
-                    (not (intersectp (set-difference-eq (term-vars-list (strip-cdrs bindings))
+                    (not (intersectp (set-difference-eq (simple-term-vars-lst (strip-cdrs bindings))
                                                         (strip-cars bindings))
                                      (strip-cdrs subterms)))
                     (subsetp (strip-cars bindings) (strip-cdrs subterms))
@@ -226,13 +238,13 @@
                (b* (((mv bindings newx)
                      (let-abstract-term-rec x subterms bindings)))
                  (and (alistp bindings)
-                      (not (intersectp (set-difference-eq (term-vars-list (strip-cdrs bindings))
+                      (not (intersectp (set-difference-eq (simple-term-vars-lst (strip-cdrs bindings))
                                                           (strip-cars bindings))
                                        (strip-cdrs subterms)))
                       (subsetp (strip-cars bindings) (strip-cdrs subterms))
                       (var-ordered-bindingsp bindings)
                       (no-duplicatesp (strip-cars bindings))
-                      (not (intersectp (set-difference-eq (term-vars newx)
+                      (not (intersectp (set-difference-eq (simple-term-vars newx)
                                                           (strip-cars bindings))
                                        (strip-cdrs subterms))))))
       :hints ((and stable-under-simplificationp
@@ -241,12 +253,12 @@
     (defthm var-ordered-bindings-of-let-abstract-list-rec
       (implies (and (no-duplicatesp (strip-cdrs subterms))
                     (symbol-listp (strip-cdrs subterms))
-                    (not (intersectp (strip-cdrs subterms) (term-vars-list x)))
-                    (not (intersectp (term-vars-list (strip-cars subterms))
+                    (not (intersectp (strip-cdrs subterms) (simple-term-vars-lst x)))
+                    (not (intersectp (simple-term-vars-lst (strip-cars subterms))
                                      (strip-cdrs subterms)))
                     (alistp bindings)
                     (no-duplicatesp (strip-cars bindings))
-                    (not (intersectp (set-difference-eq (term-vars-list (strip-cdrs bindings))
+                    (not (intersectp (set-difference-eq (simple-term-vars-lst (strip-cdrs bindings))
                                                         (strip-cars bindings))
                                      (strip-cdrs subterms)))
                     (subsetp (strip-cars bindings) (strip-cdrs subterms))
@@ -254,13 +266,13 @@
                (b* (((mv bindings newx)
                      (let-abstract-list-rec x subterms bindings)))
                  (and (alistp bindings)
-                      (not (intersectp (set-difference-eq (term-vars-list (strip-cdrs bindings))
+                      (not (intersectp (set-difference-eq (simple-term-vars-lst (strip-cdrs bindings))
                                                           (strip-cars bindings))
                                        (strip-cdrs subterms)))
                       (subsetp (strip-cars bindings) (strip-cdrs subterms))
                       (var-ordered-bindingsp bindings)
                       (no-duplicatesp (strip-cars bindings))
-                      (not (intersectp (set-difference-eq (term-vars-list newx)
+                      (not (intersectp (set-difference-eq (simple-term-vars-lst newx)
                                                           (strip-cars bindings))
                                        (strip-cdrs subterms))))))
       :flag list)))
@@ -295,14 +307,6 @@
                                             a))
                     (assoc k (eval-bindings bindings a))))
     :flag list))
-
-
-(defthm pseudo-term-listp-cdr
-  (implies (and (pseudo-termp x)
-                (not (eq (car x) 'quote)))
-           (pseudo-term-listp (cdr x)))
-  :hints(("Goal" :in-theory (enable pseudo-termp))))
-
 
 (encapsulate nil
   (local (defthm pseudo-termp-subterm-lookup-when-symbol-vals
@@ -368,11 +372,11 @@
          (symbol-listp (strip-cdrs subterms))
          (not (member nil (strip-cdrs subterms)))
          (no-duplicatesp (strip-cdrs subterms))
-         (not (intersectp (term-vars-list (strip-cars subterms))
+         (not (intersectp (simple-term-vars-lst (strip-cars subterms))
                           (strip-cdrs subterms)))
          (symbol-alistp bindings)
          (pseudo-term-listp (strip-cdrs bindings))
-         (not (intersectp (set-difference-eq (term-vars-list (strip-cdrs bindings))
+         (not (intersectp (set-difference-eq (simple-term-vars-lst (strip-cdrs bindings))
                                              (strip-cars bindings))
                           (strip-cdrs subterms)))
          (no-duplicatesp (strip-cars bindings))
@@ -403,36 +407,36 @@
                                                                  bindings)))))
   
   (defthm subterms-bindings-ok-of-let-abstract-term-rec
-    (implies (and (not (intersectp (strip-cdrs subterms) (term-vars x)))
+    (implies (and (not (intersectp (strip-cdrs subterms) (simple-term-vars x)))
                   (subterms/bindings-ok subterms bindings)
                   (pseudo-termp x))
              (b* (((mv bindings newx)
                    (let-abstract-term-rec x subterms bindings)))
                (and (subterms/bindings-ok subterms bindings)
-                    (not (intersectp (set-difference-eq (term-vars newx)
+                    (not (intersectp (set-difference-eq (simple-term-vars newx)
                                                         (strip-cars bindings))
                                      (strip-cdrs subterms)))))))
 
   (defthm subterms-bindings-ok-of-let-abstract-list-rec
-    (implies (and (not (intersectp (strip-cdrs subterms) (term-vars-list x)))
+    (implies (and (not (intersectp (strip-cdrs subterms) (simple-term-vars-lst x)))
                   (subterms/bindings-ok subterms bindings)
                   (pseudo-term-listp x))
              (b* (((mv bindings newx)
                    (let-abstract-list-rec x subterms bindings)))
                (and (subterms/bindings-ok subterms bindings)
-                    (not (intersectp (set-difference-eq (term-vars-list newx)
+                    (not (intersectp (set-difference-eq (simple-term-vars-lst newx)
                                                         (strip-cars bindings))
                                      (strip-cdrs subterms)))))))
 
   (defthm subterms-bindings-ok-of-let-abstract-term-rec-expand
-    (implies (and (not (intersectp (strip-cdrs subterms) (term-vars x)))
+    (implies (and (not (intersectp (strip-cdrs subterms) (simple-term-vars x)))
                   (subterms/bindings-ok subterms bindings)
                   (pseudo-termp x))
              (b* (((mv bindings ?newx)
                    (let-abstract-term-rec x subterms bindings)))
                (and (symbol-alistp bindings)
                     (pseudo-term-listp (strip-cdrs bindings))
-                    (not (intersectp (set-difference-eq (term-vars-list (strip-cdrs bindings))
+                    (not (intersectp (set-difference-eq (simple-term-vars-lst (strip-cdrs bindings))
                                                         (strip-cars bindings))
                                      (strip-cdrs subterms)))
                     (no-duplicatesp (strip-cars bindings))
@@ -440,14 +444,14 @@
                     (var-ordered-bindingsp bindings)))))
 
   (defthm subterms-bindings-ok-of-let-abstract-list-rec-expand
-    (implies (and (not (intersectp (strip-cdrs subterms) (term-vars-list x)))
+    (implies (and (not (intersectp (strip-cdrs subterms) (simple-term-vars-lst x)))
                   (subterms/bindings-ok subterms bindings)
                   (pseudo-term-listp x))
              (b* (((mv bindings ?newx)
                    (let-abstract-list-rec x subterms bindings)))
                (and (symbol-alistp bindings)
                     (pseudo-term-listp (strip-cdrs bindings))
-                    (not (intersectp (set-difference-eq (term-vars-list (strip-cdrs bindings))
+                    (not (intersectp (set-difference-eq (simple-term-vars-lst (strip-cdrs bindings))
                                                         (strip-cars bindings))
                                      (strip-cdrs subterms)))
                     (no-duplicatesp (strip-cars bindings))
@@ -469,10 +473,10 @@
                                            (STRIP-CARS BINDINGS))))
            :hints(("Goal" :in-theory (enable set-difference-equal subterms/bindings-ok)))))
 
-  (defthm-flag-term-vars
+  (defthm-simple-term-vars-flag
     (defthm eval-of-add-irrelevant-binding
       (implies (and (not (intersectp-equal (strip-cdrs subterms)
-                                           (set-difference-eq (term-vars x)
+                                           (set-difference-eq (simple-term-vars x)
                                                               (strip-cars
                                                                bindings))))
                     (consp (assoc-equal k subterms))
@@ -485,10 +489,10 @@
                       (abs-ev x (eval-bindings bindings a))))
       :hints ((and stable-under-simplificationp
                    '(:in-theory (enable abs-ev-constraint-0))))
-      :flag term)
+      :flag simple-term-vars)
     (defthm eval-of-add-irrelevant-binding-list
       (implies (and (not (intersectp-equal (strip-cdrs subterms)
-                                           (set-difference-eq (term-vars-list x)
+                                           (set-difference-eq (simple-term-vars-lst x)
                                                               (strip-cars
                                                                bindings))))
                     (consp (assoc-equal k subterms))
@@ -499,30 +503,30 @@
                                                 val)
                                           (eval-bindings bindings a)))
                       (abs-ev-lst x (eval-bindings bindings a))))
-      :flag list)))
+      :flag simple-term-vars-lst)))
 
 (defthm-let-abstract-flg
   (defthm eval-of-let-abstract-term-rec-var-property-preserved
-    (implies (and (not (intersectp (strip-cdrs subterms) (term-vars x)))
+    (implies (and (not (intersectp (strip-cdrs subterms) (simple-term-vars x)))
                   (subterms/bindings-ok subterms bindings)
-                  (not (intersectp (set-difference-eq (term-vars y)
+                  (not (intersectp (set-difference-eq (simple-term-vars y)
                                                       (strip-cars bindings))
                                    (strip-cdrs subterms))))
              (b* (((mv new-bindings ?newx)
                    (let-abstract-term-rec x subterms bindings)))
-               (not (intersectp (set-difference-eq (term-vars y)
+               (not (intersectp (set-difference-eq (simple-term-vars y)
                                                    (strip-cars new-bindings))
                                 (strip-cdrs subterms)))))
     :flag term)
   (defthm eval-of-let-abstract-list-rec-var-property-preserved
-    (implies (and (not (intersectp (strip-cdrs subterms) (term-vars-list x)))
+    (implies (and (not (intersectp (strip-cdrs subterms) (simple-term-vars-lst x)))
                   (subterms/bindings-ok subterms bindings)
-                  (not (intersectp (set-difference-eq (term-vars y)
+                  (not (intersectp (set-difference-eq (simple-term-vars y)
                                                       (strip-cars bindings))
                                    (strip-cdrs subterms))))
              (b* (((mv new-bindings ?newx)
                    (let-abstract-list-rec x subterms bindings)))
-               (not (intersectp (set-difference-eq (term-vars y)
+               (not (intersectp (set-difference-eq (simple-term-vars y)
                                                    (strip-cars new-bindings))
                                 (strip-cdrs subterms)))))
     :flag list))
@@ -537,9 +541,9 @@
 
   (defthm-let-abstract-flg
     (defthm eval-of-let-abstract-term-rec-preserved
-      (implies (and (not (intersectp (strip-cdrs subterms) (term-vars x)))
+      (implies (and (not (intersectp (strip-cdrs subterms) (simple-term-vars x)))
                     (subterms/bindings-ok subterms bindings)
-                    (not (intersectp (set-difference-eq (term-vars y)
+                    (not (intersectp (set-difference-eq (simple-term-vars y)
                                                         (strip-cars bindings))
                                      (strip-cdrs subterms)))
                     (pseudo-termp y)
@@ -551,9 +555,9 @@
       :hints ('(:expand ((let-abstract-term-rec x subterms bindings))))
       :flag term)
     (defthm eval-of-let-abstract-list-rec-preserved
-      (implies (and (not (intersectp (strip-cdrs subterms) (term-vars-list x)))
+      (implies (and (not (intersectp (strip-cdrs subterms) (simple-term-vars-lst x)))
                     (subterms/bindings-ok subterms bindings)
-                    (not (intersectp (set-difference-eq (term-vars y)
+                    (not (intersectp (set-difference-eq (simple-term-vars y)
                                                         (strip-cars bindings))
                                      (strip-cdrs subterms)))
                     (pseudo-termp y)
@@ -586,14 +590,14 @@
 ;;   (defthm-let-abstract-flg
 ;;     (defthm pseudo-termp-of-let-abstract-term-rec
 ;;       (implies (and (subterms/bindings-ok subterms bindings)
-;;                     (not (intersectp (strip-cdrs subterms) (term-vars x)))
+;;                     (not (intersectp (strip-cdrs subterms) (simple-term-vars x)))
 ;;                     (pseudo-termp x))
 ;;                (pseudo-termp (mv-nth 1 (let-abstract-term-rec x subterms
 ;;                                                               bindings))))
 ;;       :flag term)
 ;;     (defthm pseudo-term-listp-of-let-abstract-list-rec
 ;;       (implies (and (subterms/bindings-ok subterms bindings)
-;;                     (not (intersectp (strip-cdrs subterms) (term-vars-list x)))
+;;                     (not (intersectp (strip-cdrs subterms) (simple-term-vars-lst x)))
 ;;                     (pseudo-term-listp x))
 ;;                (pseudo-term-listp (mv-nth 1 (let-abstract-list-rec x subterms
 ;;                                                                    bindings))))
@@ -688,7 +692,7 @@
                     
   (defthm-let-abstract-flg
     (defthm eval-of-let-abstract-term-rec
-      (implies (and (not (intersectp (strip-cdrs subterms) (term-vars x)))
+      (implies (and (not (intersectp (strip-cdrs subterms) (simple-term-vars x)))
                     (subterms/bindings-ok subterms bindings)
                     (bindings-correct subterms bindings a)
                     (pseudo-termp x))
@@ -701,7 +705,7 @@
                    '(:in-theory (enable abs-ev-constraint-0))))
       :flag term)
     (defthm eval-of-let-abstract-list-rec
-      (implies (and (not (intersectp (strip-cdrs subterms) (term-vars-list x)))
+      (implies (and (not (intersectp (strip-cdrs subterms) (simple-term-vars-lst x)))
                     (subterms/bindings-ok subterms bindings)
                     (bindings-correct subterms bindings a)
                     (pseudo-term-listp x))
@@ -720,7 +724,7 @@
          (SYMBOL-LISTP (STRIP-CDRS SUBTERMS))
          (NOT (MEMBER NIL (STRIP-CDRS SUBTERMS)))
          (NO-DUPLICATESP (STRIP-CDRS SUBTERMS))
-         (NOT (INTERSECTP (TERM-VARS-LIST (STRIP-CARS SUBTERMS))
+         (NOT (INTERSECTP (SIMPLE-TERM-VARS-LST (STRIP-CARS SUBTERMS))
                           (STRIP-CDRS SUBTERMS)))))
 
   (defthm invariants-ok-start-when-check-subterm-alist
@@ -775,30 +779,11 @@
          (assoc x (cons (cons k v)
                         (pairlis$ syms (abs-ev-lst syms a))))))
 
-;; (defthm-flag-term-vars
-;;   (defthm abs-ev-of-cons-pairlis-remove
-;;     (implies (pseudo-termp x)
-;;              (equal (abs-ev x (cons (cons k v)
-;;                                     (pairlis$ (remove k syms)
-;;                                               (abs-ev-lst (remove k syms) a))))
-;;                     (abs-ev x (cons (cons k v)
-;;                                     (pairlis$ syms (abs-ev-lst syms a))))))
-;;     :hints ((and stable-under-simplificationp
-;;                  '(:in-theory (enable abs-ev-constraint-0))))
-;;     :flag term)
-;;   (defthm abs-ev-lst-of-cons-pairlis-remove
-;;     (implies (pseudo-term-listp x)
-;;              (equal (abs-ev-lst x (cons (cons k v)
-;;                                     (pairlis$ (remove k syms)
-;;                                               (abs-ev-lst (remove k syms) a))))
-;;                     (abs-ev-lst x (cons (cons k v)
-;;                                         (pairlis$ syms (abs-ev-lst syms a))))))
-;;     :flag list))
 
-(defthm-flag-term-vars
+(defthm-simple-term-vars-flag
   (defthm abs-ev-of-cons-pairlis-remove-more
     (implies (and (pseudo-termp x)
-                  (subsetp (term-vars x) syms))
+                  (subsetp (simple-term-vars x) syms))
              (equal (abs-ev x (cons (cons k v)
                                     (pairlis$ (remove k syms)
                                               (abs-ev-lst (remove k syms) a))))
@@ -806,15 +791,15 @@
                                      a))))
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable abs-ev-constraint-0))))
-    :flag term)
+    :flag simple-term-vars)
   (defthm abs-ev-lst-of-cons-pairlis-remove-more
     (implies (and (pseudo-term-listp x)
-                  (subsetp (term-vars-list x) syms))
+                  (subsetp (simple-term-vars-lst x) syms))
              (equal (abs-ev-lst x (cons (cons k v)
                                     (pairlis$ (remove k syms)
                                               (abs-ev-lst (remove k syms) a))))
                     (abs-ev-lst x (cons (cons k v) a))))
-    :flag list))
+    :flag simple-term-vars-lst))
 
 (defsection let-abstract-build-lambdas
 
@@ -830,7 +815,7 @@
               `((lambda ,(cons (caar bindings) new-vars) ,abs-term)
                 ,(cdar bindings) . ,new-vars))
              (new-vars2 (remove-duplicates-eq
-                         (append (term-vars (cdar bindings)) new-vars))))
+                         (append (simple-term-vars (cdar bindings)) new-vars))))
         (let-abstract-build-lambdas (cdr bindings) new-abs-term new-vars2))))
 
   (local (in-theory (enable let-abstract-build-lambdas)))
@@ -842,9 +827,24 @@
 
   (defthm term-list-vars-of-symbol-list
     (implies (symbol-listp x)
-             (equal (term-vars-list x) x)))
+             (set-equiv (simple-term-vars-lst x) (remove nil x)))
+    :hints(("Goal" :in-theory (enable symbol-<-merge))))
     
   (local (in-theory (disable set-equiv)))
+
+  (defthm-simple-term-vars-flag
+    (defthm nil-not-member-of-simple-term-vars
+      (not (member nil (simple-term-vars x)))
+      :flag simple-term-vars)
+    (defthm nil-not-member-of-simple-term-vars-lst
+      (not (member nil (simple-term-vars-lst x)))
+      :flag simple-term-vars-lst))
+
+  (local (defthm remove-equal-redundant
+           (implies (and (symbol-listp x)
+                         (not (member k x)))
+                    (equal (remove k x) x))))
+                    
 
   (defthm let-abstract-build-lambdas-pseudo-termp
     (implies (and (var-ordered-bindingsp bindings)
@@ -852,7 +852,8 @@
                   (pseudo-term-listp (strip-cdrs bindings))
                   (pseudo-termp abs-term)
                   (symbol-listp vars)
-                  (double-rewrite (set-equiv vars (term-vars abs-term)))
+                  (not (member nil vars))
+                  (double-rewrite (set-equiv vars (simple-term-vars abs-term)))
                   (no-duplicatesp vars)
                   (no-duplicatesp (strip-cars bindings)))
              (pseudo-termp (let-abstract-build-lambdas bindings abs-term
@@ -864,7 +865,8 @@
                   (pseudo-term-listp (strip-cdrs bindings))
                   (pseudo-termp abs-term)
                   (symbol-listp vars)
-                  (double-rewrite (set-equiv vars (term-vars abs-term)))
+                  (not (member nil vars))
+                  (double-rewrite (set-equiv vars (simple-term-vars abs-term)))
                   (no-duplicatesp vars)
                   (no-duplicatesp (strip-cars bindings)))
              (equal (abs-ev (let-abstract-build-lambdas bindings abs-term vars)
@@ -879,7 +881,7 @@
                                 (check-subterm-alist subterms))
                     :guard-hints (("goal" :in-theory (enable check-subterm-alist)))))
     (b* (((mv bindings abs-term) (let-abstract-term-rec term subterms nil))
-         (vars (remove-duplicates-eq (term-vars abs-term))))
+         (vars (remove-duplicates-eq (simple-term-vars abs-term))))
       (let-abstract-build-lambdas bindings abs-term vars)))
 
   (local (in-theory (enable let-abstract-term-top)))
@@ -887,7 +889,7 @@
   (defthm let-abstract-term-top-pseudo-termp
     (implies (and (check-subterm-alist subterms)
                   (not (intersectp-eq (strip-cdrs subterms)
-                                      (term-vars term)))
+                                      (simple-term-vars term)))
                   (pseudo-termp term))
              (pseudo-termp (let-abstract-term-top term subterms)))
     :hints (("goal" :do-not-induct t)))
@@ -895,7 +897,7 @@
   (defthm let-abstract-term-top-correct
     (implies (and (check-subterm-alist subterms)
                   (not (intersectp-eq (strip-cdrs subterms)
-                                      (term-vars term)))
+                                      (simple-term-vars term)))
                   (pseudo-termp term))
              (equal (abs-ev (let-abstract-term-top term subterms) a)
                     (abs-ev term a)))
@@ -915,14 +917,14 @@
   (defthm let-abstract-literals-pseudo-termp
     (implies (and (check-subterm-alist subterms)
                   (not (intersectp-eq (strip-cdrs subterms)
-                                      (term-vars-list clause)))
+                                      (simple-term-vars-lst clause)))
                   (pseudo-term-listp clause))
              (pseudo-term-listp (let-abstract-literals clause subterms))))
 
   (defthm let-abstract-literals-correct
     (implies (and (check-subterm-alist subterms)
                   (not (intersectp-eq (strip-cdrs subterms)
-                                      (term-vars-list clause)))
+                                      (simple-term-vars-lst clause)))
                   (pseudo-term-listp clause))
              (equal (abs-ev-lst (let-abstract-literals clause subterms) a)
                     (abs-ev-lst clause a))))
@@ -930,7 +932,7 @@
   (defthm let-abstract-literals-disjoin
     (implies (and (check-subterm-alist subterms)
                   (not (intersectp-eq (strip-cdrs subterms)
-                                      (term-vars-list clause)))
+                                      (simple-term-vars-lst clause)))
                   (pseudo-term-listp clause))
              (iff (abs-ev (disjoin (let-abstract-literals clause subterms)) a)
                   (abs-ev (disjoin clause) a)))))
@@ -943,7 +945,7 @@
                     :guard-hints ('(:in-theory (enable check-subterm-alist)))))
     (b* (((unless (check-subterm-alist subterm-alist)) (list clause))
          (vars (strip-cdrs subterm-alist))
-         ((when (intersectp-eq vars (term-vars-list clause)))
+         ((when (intersectp-eq vars (simple-term-vars-lst clause)))
           (list clause)))
       (list (let-abstract-literals clause subterm-alist))))
   

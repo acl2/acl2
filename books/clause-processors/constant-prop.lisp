@@ -5,6 +5,7 @@
 (include-book "sublis-var-meaning")
 (include-book "tools/bstar" :dir :system)
 (include-book "join-thms")
+(include-book "meta/pseudo-termp-lemmas" :dir :system)
 
 (def-join-thms cterm-ev)
 
@@ -219,28 +220,6 @@
             (bindings-to-const-alist formals actuals)
             (pairlis$ formals (cterm-ev-lst actuals a)))))
 
-
-
-;; exists in several books...
-(defun pseudo-term-val-alistp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (eq x nil)
-    (and (consp (car x))
-         (pseudo-termp (cdar x))
-         (pseudo-term-val-alistp (cdr x)))))
-
-;; exists in several books...
-(defthm pseudo-termp-assoc
-  (implies (pseudo-term-val-alistp x)
-           (pseudo-termp (cdr (assoc-equal k x)))))
-
-;; exists in several books...
-(defthm pseudo-term-val-alistp-pairlis$
-  (implies (pseudo-term-listp x)
-           (pseudo-term-val-alistp (pairlis$ keys x))))
-
-
 (mutual-recursion
  ;; returns (mv changedp x)
  (defun deep-substitute-term (x subst)
@@ -341,6 +320,7 @@
 (local (defthm pseudo-term-val-alistp-impl-alistp
          (implies (pseudo-term-val-alistp x)
                   (alistp x))
+         :hints(("Goal" :in-theory (enable pseudo-term-val-alistp)))
          :rule-classes :forward-chaining))
 
 (encapsulate nil
