@@ -1339,6 +1339,26 @@ notation causes an error and (b) the use of ,. is not permitted."
     (and (fboundp fn)
          (funcall fn string))))
 
+#+sbcl
+(defmacro define-our-sbcl-putenv ()
+
+; Jared Davis found sb-posix::putenv and the necessary require form (below) for
+; using it.  We aren't finding much documentation about this function on the
+; web, but we also aren't particularly relying on any properties of it.  Our
+; function defined below is a wrapper (if the REQUIRE form succeeds without
+; error), for use in the raw Lisp definition of setenv$.
+
+; But we don't define our-sbcl-putenv here -- instead we define the present
+; macro to be called after starting up ACL2.  The reason is that during the
+; build, environment variable SBCL_HOME might not yet be set; we set it in our
+; function, save-acl2-in-sbcl-aux, so that it's set when ACL2 starts up.
+
+  '(ignore-errors
+    (require :sb-posix)
+    (defun our-sbcl-putenv (var value)
+      (funcall (intern "PUTENV" "SB-POSIX") ; avoid sb-posix package prefix
+               (concatenate 'string var "=" value)))))
+
 (defun get-os ()
 
 ; The following are in priority order.

@@ -8001,8 +8001,18 @@
 
 (defun putprop-unless (sym key val exception wrld)
 
-; We do (putprop sym key val wrld) unless val is exception, in
-; which case we do nothing.  We return the possibly modified wrld.
+; We do (putprop sym key val wrld) unless val is exception, in which case we do
+; nothing.  We return the possibly modified wrld.
+
+; It has occurred to us to wonder whether a form such as (putprop-unless sym
+; prop val nil wrld) -- that is, where exception is nil -- might cause problems
+; if the the value of property prop for symbol sym is *acl2-property-unbound*.
+; We don't think that's a problem, though, since in that case (getprop sym prop
+; default name wrld) returns nil, just as though we'd actually put nil
+; explicitly as the property value.
+
+; See also the related function putprop-if-different, whose definition contains
+; a comment showing how it relates to the present function.
 
   (cond ((equal val exception) wrld)
         (t (putprop sym key val wrld))))

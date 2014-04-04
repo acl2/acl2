@@ -171,7 +171,7 @@ Publications about ACL2 and Its Applications</A>
 <A HREF=\"#User's-Manual\"><IMG SRC=\"HTML/info04.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"#User's-Manual\">The User's Manual</A>
+<A HREF=\"#User's-Manual\">The User's Manuals</A>
 and <A HREF=\"http://www.cs.utexas.edu/users/moore/publications/hyper-card.html\">Hyper-Card</A>
 </TD>
 </TR>
@@ -315,37 +315,37 @@ included in a much more complete <A href=\"~sk\">acknowledgments page</A>.)
 
 <HR>
 
-<H2><A NAME=\"User's-Manual\">The User's Manual</A></H2>
+<H2><A NAME=\"User's-Manual\">The User's Manuals</A></H2>
 
-ACL2's user manual is a vast hypertext document.  If you are a newcomer to
-ACL2, we do <EM>not</EM> recommend that you wander off into the full
-documentation.  Instead start with the <A HREF=\"~sb\">ACL2-TUTORIAL</A>
+The <i>ACL2 User's Manual</i> is a vast hypertext document.  If you are a
+newcomer to ACL2, we do <EM>not</EM> recommend that you wander off into the
+full documentation.  Instead start with the <A HREF=\"~sb\">ACL2-TUTORIAL</A>
 documentation topic.  Experienced users tend mostly to use the manual as a
 reference manual, to look up concepts mentioned in error messages or vaguely
 remembered from their past experiences with ACL2.
 
 <P>
 
-The <i>ACL2+books combined manual</i> includes not only ACL2 User's Manual, but
-also documents many of the <A href=\"#Tools\">community books</A> (libraries).
-This manual, which is written by many authors, is thus more extensive than the
-ACL2 system, and thus potentially more useful.
+The <i>ACL2+Books Manual</i> includes not only the ACL2 User's Manual, but also
+documents many of the <A href=\"#Tools\">community books</A> (libraries).  This
+manual, which is written by many authors, is thus more extensive than the ACL2
+system, and is thus potentially more useful.
 
 <P>
 
 The following links take you to these two manuals.  The manuals can however be
 read not only in a Web browser, but in the <A HREF=\"~so\">ACL2-Doc Emacs
 browser</A> or by using the ACL2 <CODE><A HREF=\"~sr\">:DOC</A></CODE> command
-at the terminal; see the documetation topic, <CODE><A
+at the terminal; see the documentation topic, <CODE><A
 HREF=\"~ss\">DOCUMENTATION</A></CODE>.
 
 <ul>
 
-<li><A HREF=\"~sp\">ACL2 user manual</A></li>
+<li><A HREF=\"~sp\">ACL2 User's Manual</A></li>
 
-<li><A HREF=\"~s2\">ACL2+books combined manual</A></li>
+<li><A HREF=\"~s2\">ACL2+Books Manual</A></li>
 
-<li><A HREF=\"~s3\">ACL2+books combined manual</A> for
+<li><A HREF=\"~s3\">ACL2+Books Manual</A> for
 \"<A HREF=\"HTML/installation/obtaining-and-installing.html#Bleeding-edge\">bleeding edge</A>\" distributions</li>
 
 </ul>
@@ -401,10 +401,10 @@ community books, respectively.
 <li>
 
 The web views of <a href=\"#User's-Manual\">The ACL2 User's Manual</a> and <A
-HREF=\"http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/\">acl2+books
-combined manual</a> allow you to search the short strings of the
-documentation (which are typically summaries of a line or so).  To search the
-full content for a string or regular expression, you may use the Emacs-based <A
+HREF=\"http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/\">ACL2+Books
+Manual</a> allow you to search the short strings of the documentation (which
+are typically summaries of a line or so).  To search the full content for a
+string or regular expression, you may use the Emacs-based <A
 HREF=\"manual/index.html?topic=ACL2____ACL2-DOC\">ACL2-Doc browser</A>.
 
 <p>

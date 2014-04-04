@@ -14684,7 +14684,8 @@
 ; Warning: Keep this in sync with check-print-base.
 
   (declare (xargs :guard t))
-  (member print-base '(2 8 10 16)))
+  (and (member print-base '(2 8 10 16))
+       t))
 
 (defun explode-nonnegative-integer (n print-base ans)
   (declare (xargs :guard (and (integerp n)
@@ -15024,6 +15025,17 @@
                               (state-p state))))
   (prog2$ (check-print-base base 'set-print-base)
           (f-put-global 'print-base base state)))
+
+(defun set-print-base-radix (base state)
+  (declare (xargs :guard (and (print-base-p base)
+                              (state-p state))))
+  (prog2$ (check-print-base base 'set-print-base)
+          (pprogn (f-put-global 'print-base base state)
+                  (f-put-global 'print-radix
+                                (if (int= base 10)
+                                    nil
+                                  t)
+                                state))))
 
 (defmacro set-acl2-print-base (base)
   (declare (ignore base))
@@ -17987,20 +17999,15 @@
                     (pair (cdr (assoc-eq key ext::*environment-list*))))
                (cond (pair (setf (cdr pair) val))
                      (t (push (cons key val) ext::*environment-list*)))))
-;     #+sbcl
-
-; The following is the best we could come up with for SBCL, but it
-; didn't work.
-
-;     (nconc (posix-environ) (list (format nil "~a=~a" str val)))
         #+allegro
         (setf (sys::getenv str) val)
         #+clisp
         (setf (ext::getenv str) val)
-        #+(or gcl allegro lispworks ccl sbcl clisp)
+        #+(or gcl lispworks ccl sbcl)
         (let ((fn
                #+gcl       'si::setenv
                #+lispworks 'hcl::setenv
+               #+sbcl      'our-sbcl-putenv
                #+ccl       'ccl::setenv))
           (and (fboundp fn)
                (funcall fn str val)))
@@ -25637,6 +25644,7 @@ Lisp definition."
     (set-temp-touchable-fns)
     (set-temp-touchable-vars)
     (sys-call)
+    (sys-call+)
     ))
 
 (defun ev-fncall-w-guard (fn args wrld temp-touchable-fns)

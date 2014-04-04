@@ -2403,7 +2403,8 @@
   (case called-sys-fn
         (rewrite
          (cond ((integerp bkptr)
-                (cond ((eq calling-sys-fn 'rewrite-with-lemma)
+                (cond ((member-eq calling-sys-fn '(rewrite-with-lemma
+                                                   add-linear-lemma))
                        (dmr-increment-indent)
                        (format nil " the atom of hypothesis ~s" bkptr))
                       ((eq calling-sys-fn 'simplify-clause)
@@ -2438,8 +2439,9 @@
                (t (er hard 'tilde-@-bkptr-string
                       "When ~x0 calls ~x1 we get an unrecognized bkptr, ~x2."
                       calling-sys-fn called-sys-fn bkptr))))
-        ((rewrite-with-lemma  setup-simplify-clause-pot-lst simplify-clause
-                              synp)
+        ((rewrite-with-lemma setup-simplify-clause-pot-lst simplify-clause
+                             add-terms-and-lemmas add-linear-lemma
+                             non-linear-arithmetic synp)
          "")
         (t (er hard 'tilde-@-bkptr-string
                "When ~x0 calls ~x1 we get an unrecognized bkptr, ~x2."
@@ -2500,13 +2502,13 @@
               (format nil "; argument(s) ~s" (access gframe frame :bkptr)))
              (t
               (format nil "|~s" (access gframe frame :bkptr)))))
-      (rewrite-with-lemma
+      ((rewrite-with-lemma add-linear-lemma)
        (format
         nil
         "~a~s. Applying ~s~%"
         (dmr-prefix)
         i
-        (access rewrite-rule (cdr (access gframe frame :args)) :rune)))
+        (get-rule-field (cdr (access gframe frame :args)) :rune)))
       (add-terms-and-lemmas
        (let ((len (length (car (access gframe frame :args)))))
          (format
@@ -7021,6 +7023,13 @@
               is written this way, see the comment in ~
               check-built-in-constants."))
     (cond
+     ((not (equal *force-xrune*
+                  (fn-rune-nume 'force nil t (w *the-live-state*))))
+      (interface-er str
+                    '*force-xrune*
+                    *force-xrune*
+                    (fn-rune-nume 'force nil t (w *the-live-state*)))))
+    (cond
      ((not (equal *force-xnume* (fn-rune-nume 'force t t (w *the-live-state*))))
       (interface-er str
                     '*force-xnume*
@@ -7923,6 +7932,9 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
 ; this calculation sets the current stack length to be within 1% of 80000
 
           (- (round (* 100 (/ (hcl:current-stack-length) 80000))) 100)))
+
+       #+sbcl
+       (define-our-sbcl-putenv) ; see comment on this in acl2-fns.lisp
 
 ; Acl2-default-restart isn't enough in Allegro, at least, to get the new prompt
 ; when we start up:
