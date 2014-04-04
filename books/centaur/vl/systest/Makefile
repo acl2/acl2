@@ -21,7 +21,7 @@
 .PHONY: all clean debug
 
 ACL2     ?= acl2
-VERILOG  ?= ncverilog
+VERILOG  ?= ncverilog +access+r
 STARTJOB ?= bash
 VL       ?= $(PWD)/../bin/vl
 
@@ -42,7 +42,7 @@ debug:
 %/impl.v: %/spec.v
 	@echo "Making $*/impl.v"
 	@cd $*; $(STARTJOB) -c \
-	  "$(VL) model spec.v --verilog-file=impl.v --mem=2 --search=. &> impl.out"
+	  'echo `hostname` &> impl.out; $(VL) model spec.v --verilog-file=impl.v --mem=2 --search=. &>> impl.out'
 	@ls -l $*/impl.v
 
 %/run.ok: %/impl.v $(wildcard %/*.v)

@@ -2115,16 +2115,27 @@ expression into a string."
 
          ((:vl-ifstmt)
           (b* (((vl-ifstmt x) x))
-            (vl-ps-seq (vl-pp-stmt-autoindent)
-                       (if atts (vl-pp-atts atts) ps)
-                       (vl-ps-span "vl_key" (vl-print "if"))
-                       (vl-print " (")
-                       (vl-pp-expr x.condition)
-                       (vl-println ")")
-                       (vl-pp-stmt-indented (vl-pp-stmt x.truebranch))
-                       (vl-pp-stmt-autoindent)
-                       (vl-ps-span "vl_key" (vl-println "else"))
-                       (vl-pp-stmt-indented (vl-pp-stmt x.falsebranch)))))
+            (vl-ps-seq
+             (vl-pp-stmt-autoindent)
+             (if atts (vl-pp-atts atts) ps)
+             (vl-ps-span "vl_key" (vl-print "if"))
+             (vl-print " (")
+             (vl-pp-expr x.condition)
+             (vl-println ")")
+             (vl-pp-stmt-indented (vl-pp-stmt x.truebranch))
+             (vl-pp-stmt-autoindent)
+             (vl-ps-span "vl_key" (vl-print "else"))
+             (if (vl-ifstmt-p x.falsebranch)
+                 ;; It's very common for if/else if structures to be
+                 ;; deeply nested.  In this case we don't want to
+                 ;; print the sub-statement with extra indentation,
+                 ;; and we want it to occur on the same line.
+                 (vl-ps-seq (vl-print " ")
+                            (vl-pp-stmt x.falsebranch))
+               ;; A plain "else", not an "else if".  Go ahead and
+               ;; give it a new line and indent its body.
+               (vl-ps-seq (vl-println "")
+                          (vl-pp-stmt-indented (vl-pp-stmt x.falsebranch)))))))
 
          ((:vl-blockstmt)
           (b* (((vl-blockstmt x) x))
@@ -2168,8 +2179,15 @@ expression into a string."
             (vl-ps-seq (vl-pp-stmt-autoindent)
                        (if atts (vl-pp-atts atts) ps)
                        (vl-pp-delayoreventcontrol x.ctrl)
-                       (vl-print " ")
-                       (vl-pp-stmt x.body))))
+                       (if (eq (tag x.ctrl) :vl-eventcontrol)
+                           ;; Something like @(posedge clk) or @(foo or bar),
+                           ;; want to get a newline.
+                           (vl-ps-seq (vl-println "")
+                                      (vl-pp-stmt-indented (vl-pp-stmt x.body)))
+                         ;; Something like #5 foo <= bar, try to keep it on the
+                         ;; same line.
+                         (vl-ps-seq (vl-print " ")
+                                    (vl-pp-stmt x.body))))))
 
          ((:vl-casestmt)
           (b* (((vl-casestmt x) x))

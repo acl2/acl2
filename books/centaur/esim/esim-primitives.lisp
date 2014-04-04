@@ -218,14 +218,16 @@ than a @(see *esim-xnor*).</p>"
   :o ((|out|))
   :x (:out ((|out| . (tristate |sel| |a|)))))
 
-(def-esim-primitive *esim-flop*
-  :short "Primitive E module for a register."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-flop*).</p>"
-  :i ((|clk|) (|d|))
-  :o ((|q|))
-  :x (:out ((|q|  . (ite |clk| s- s+)))
-      :nst ((s- . (ite |clk| s- |d|))
-            (s+ . (ite |clk| s- s+)))))
+;; VL now generates its own flop primitives.
+
+;; (def-esim-primitive *esim-flop*
+;;   :short "Primitive E module for a register."
+;;   :long "<p>We use this to implement @(see vl::*vl-1-bit-flop*).</p>"
+;;   :i ((|clk|) (|d|))
+;;   :o ((|q|))
+;;   :x (:out ((|q|  . (ite |clk| s- s+)))
+;;       :nst ((s- . (ite |clk| s- |d|))
+;;             (s+ . (ite |clk| s- s+)))))
 
 (def-esim-primitive *esim-latch*
   :short "Primitive E module for a latch."
@@ -327,9 +329,9 @@ inputs, used to support experimental esim decomposition.</p>"
           *esim-nor*
           *esim-xnor*
           *esim-ceq*
-;;          *esim-res*
+          ;; *esim-res*
           *esim-tri*
-          *esim-flop*
+          ;; *esim-flop*
           *esim-latch*
           *esim-fsmreg*
           *esim-zif*

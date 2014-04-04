@@ -1,5 +1,5 @@
 // VL Verilog Toolkit
-// Copyright (C) 2008-2010 Centaur Technology
+// Copyright (C) 2008-2014 Centaur Technology
 //
 // Contact:
 //   Centaur Technology Formal Verification Group
@@ -21,14 +21,20 @@
 `include "spec.v"
 `include "impl.v"
 
+// Using a global random seed seems like a good idea -- When each instance of
+// randomBit2 had its own seed, they seemed to just always produce the same
+// values on NCVerilog, which was terrible.
+
+module random_top ();
+  integer seed;
+endmodule
 
 module randomBit2 (q) ;
   // Generates a random two-valued bit every #DELAY ticks.
   parameter delay = 1;
   output q;
   reg q;
-  integer seed;
-  always #delay q <= $random(seed);
+  always #delay q <= $random(random_top.seed);
 endmodule
 
 module randomVec2 (q);
@@ -44,8 +50,7 @@ module randomBit4 (q) ;
   parameter delay = 1;
   output q;
   reg [1:0] r;
-  integer   seed;
-  always #delay r <= $random(seed);
+  always #delay r <= $random(random_top.seed);
   assign q = (r == 2'b 00) ? 1'b0
 	   : (r == 2'b 01) ? 1'b1
 	   : (r == 2'b 10) ? 1'bX
@@ -156,9 +161,10 @@ module test () ;
   wire okg1 = (sg1 === ig1) | (ig1 === 1'bx);
   wire okg2 = (sg2 === ig2) | (ig2 === 1'bx);
   wire okg3 = (sg3 === ig3) | (ig3 === 1'bx);
-  wire okg4 = (sg4 === ig4) | (ig4 === 1'bx);
+  wire okg4 = (sg4 === ig4); // the ifs are irrelevant, require exact matching
   wire okg5 = (sg5 === ig5) | (ig5 === 1'bx);
-  wire okg6 = (sg6 === ig6) | (ig6 === 1'bx);
+  wire okg6 = (sg6 === ig6); // the ifs are irrelevant, require exact matching
+
   wire okg = &{okg1, okg2, okg3, okg4, okg5, okg6};
 
   // F Modules -- Size 4 Tests
@@ -196,12 +202,37 @@ module test () ;
   \g4$size=4 wg4impl (iwg4, d1, d2, en, clk);
   \g5$size=4 wg5impl (iwg5, d1, d2, en, clk);
   \g6$size=4 wg6impl (iwg6, d1, d2, en, clk);
-  wire okwg1 = (swg1 === iwg1) | (iwg1 === 4'bxxxx);
-  wire okwg2 = (swg2 === iwg2) | (iwg2 === 4'bxxxx);
-  wire okwg3 = (swg3 === iwg3) | (iwg3 === 4'bxxxx);
-  wire okwg4 = (swg4 === iwg4) | (iwg4 === 4'bxxxx);
-  wire okwg5 = (swg5 === iwg5) | (iwg5 === 4'bxxxx);
-  wire okwg6 = (swg6 === iwg6) | (iwg6 === 4'bxxxx);
+
+  // The IFs mean the implementaiton may only approximate the spec, bit by bit.
+
+  wire okwg1 = (swg1 === iwg1)
+                 | (  (iwg1[0] === swg1[0] | iwg1[0] === 1'bx)
+		    & (iwg1[1] === swg1[1] | iwg1[1] === 1'bx)
+		    & (iwg1[2] === swg1[2] | iwg1[2] === 1'bx)
+		    & (iwg1[3] === swg1[3] | iwg1[3] === 1'bx) );
+
+  wire okwg2 = (swg2 === iwg2)
+                 | (  (iwg2[0] === swg2[0] | iwg2[0] === 1'bx)
+		    & (iwg2[1] === swg2[1] | iwg2[1] === 1'bx)
+		    & (iwg2[2] === swg2[2] | iwg2[2] === 1'bx)
+		    & (iwg2[3] === swg2[3] | iwg2[3] === 1'bx) );
+
+  wire okwg3 = (swg3 === iwg3)
+                 | (  (iwg3[0] === swg3[0] | iwg3[0] === 1'bx)
+		    & (iwg3[1] === swg3[1] | iwg3[1] === 1'bx)
+		    & (iwg3[2] === swg3[2] | iwg3[2] === 1'bx)
+		    & (iwg3[3] === swg3[3] | iwg3[3] === 1'bx) );
+
+  wire okwg4 = (swg4 === iwg4);  // ifs are irrelevant, require exact match
+
+  wire okwg5 = (swg5 === iwg5)
+                 | (  (iwg4[0] === swg4[0] | iwg4[0] === 1'bx)
+		    & (iwg4[1] === swg4[1] | iwg4[1] === 1'bx)
+		    & (iwg4[2] === swg4[2] | iwg4[2] === 1'bx)
+		    & (iwg4[3] === swg4[3] | iwg4[3] === 1'bx) );
+
+  wire okwg6 = swg6 === iwg6;   // ifs are irrelevant, require exact match
+
   wire okwg = &{okwg1, okwg2, okwg3, okwg4, okwg5, okwg6};
 
   wire allok = &{okf, okg, okwf, okwg};
@@ -215,7 +246,7 @@ module test () ;
   initial begin
     $dumpfile("compare-flopcode.vcd");
     $dumpvars();
-    #10000;
+    #100000;
     $finish;
   end
 

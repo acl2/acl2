@@ -1,5 +1,5 @@
 ; VL Verilog Toolkit
-; Copyright (C) 2008-2011 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -23,77 +23,69 @@
 (include-book "../esim/esim-primitives")
 (local (include-book "mlib/stmt-tools"))
 
-
 (defxdoc primitives
   :parents (vl)
   :short "The primitive modules targetted by VL."
 
   :long "<p>The modules here can sort of be thought of as the target language
-for VL's simplification scheme.  That is, our usual sequence of @(see
-transforms) tries to convert rich Verilog modules that include expressions,
-gates, parameters, etc., into simple, hierarchical modules that do nothing more
-than instantiate other modules, with these primitive modules at the tips.</p>
+for VL's simplification scheme.  That is, the sequence of @(see transforms)
+applied by @(see vl-simplify) tries to convert rich Verilog modules that
+include expressions, gates, parameters, etc., into simple, hierarchical modules
+that do nothing more than instantiate other modules, with these primitive
+modules at the tips.</p>
 
-<p><b>BOZO</b> This set of primitives modules could be simplified, for instance
-we could rewrite all of the basic gate modules into @('nand') or some other
-basic form.  We haven't done this yet, under the (probably misguided) theory
-that having a richer set of primitives might somehow be more efficient for our
-symbolic simulator.</p>")
+<p>This set of primitives modules could be simplified.  For instance we could
+rewrite all of the basic gate modules into @('nand') or some other basic form.
+We haven't done this yet, under the (probably misguided) theory that having a
+richer set of primitives might somehow be more efficient for our symbolic
+simulator.</p>
 
+<p>Note that the list below is somewhat <b>incomplete</b>.  For instance, in
+the final @(see e-conversion) step, we can generate \"resolution\" modules for
+resolving multiple drivers.  These resolution modules are essentially
+primitives.  But there isn't a fixed set of resolution primitives, instead we
+generate the primitives we need on the fly; see @(see
+vl-make-n-bit-res-module), for instance.</p>
 
-(defsection vl-primitive-mkport
+<p>Similarly, historically VL had a single @('VL_1_BIT_FLOP') primitive, but
+when we added support for @('always') blocks with multiple edge triggers, we
+did away with this.  Instead, VL can now generate many kinds of primitive
+flops, each with a supporting E module.  See, e.g., @(see
+vl-make-1-bit-n-edge-flop).</p>")
 
-; This is similar to vl-occform-mkport, but our primitives are all one-bit
-; things so we leave out the ranges to make them prettier.
+(local (xdoc::set-default-parents primitives))
 
-  (defund vl-primitive-mkport (name dir)
-    "Returns (MV EXPR PORT PORTDECL NETDECL)"
-    (declare (xargs :guard (and (stringp name)
-                                (vl-direction-p dir))))
-    (b* ((name     (hons-copy name))
-         (expr     (vl-idexpr name 1 :vl-unsigned))
-         (port     (make-vl-port     :name name :expr expr     :loc *vl-fakeloc*))
-         (portdecl (make-vl-portdecl :name name :dir  dir      :loc *vl-fakeloc*))
-         (netdecl  (make-vl-netdecl  :name name :type :vl-wire :loc *vl-fakeloc*)))
-      (mv expr port portdecl netdecl)))
+(define vl-primitive-mkport
+  :short "Convenient way to generate a port for a primitive."
+  ((name stringp)
+   (dir  vl-direction-p))
+  :returns (mv (expr     vl-expr-p     :hyp :fguard)
+               (port     vl-port-p     :hyp :fguard)
+               (portdecl vl-portdecl-p :hyp :fguard)
+               (netdecl  vl-netdecl-p  :hyp :fguard))
+  :long "<p>This is like @(see vl-occform-mkport), but our primitives are all
+one-bit things so we leave out the ranges to make them prettier.</p>"
 
-  (local (in-theory (enable vl-primitive-mkport)))
+  (b* ((name     (hons-copy name))
+       (expr     (vl-idexpr name 1 :vl-unsigned))
+       (port     (make-vl-port     :name name :expr expr     :loc *vl-fakeloc*))
+       (portdecl (make-vl-portdecl :name name :dir  dir      :loc *vl-fakeloc*))
+       (netdecl  (make-vl-netdecl  :name name :type :vl-wire :loc *vl-fakeloc*)))
+    (mv expr port portdecl netdecl)))
 
-  (defthm vl-primitive-mkport-basics
-    (implies (and (force (stringp name))
-                  (force (vl-direction-p dir)))
-             (let ((ret (vl-primitive-mkport name dir)))
-               (and (vl-expr-p        (mv-nth 0 ret))
-                    (vl-port-p        (mv-nth 1 ret))
-                    (vl-portdecl-p    (mv-nth 2 ret))
-                    (vl-netdecl-p     (mv-nth 3 ret)))))))
-
-
-(defsection vl-primitive-mkwire
-
-; This is similar to vl-occform-mkwire, but our primitives are all one-bit
-; things so we leave out the ranges to make them prettier.
-
-  (defund vl-primitive-mkwire (name)
-    "Returns (MV EXPR NETDECL)"
-    (declare (xargs :guard (stringp name)))
-    (b* ((name     (hons-copy name))
-         (expr     (vl-idexpr name 1 :vl-unsigned))
-         (netdecl  (make-vl-netdecl :name name :type :vl-wire :loc *vl-fakeloc*)))
-      (mv expr netdecl)))
-
-  (local (in-theory (enable vl-primitive-mkwire)))
-
-  (defthm vl-primitive-mkwire-basics
-    (implies (and (force (stringp name))
-                  (force (posp width)))
-             (let ((ret (vl-primitive-mkwire name)))
-               (and (vl-expr-p        (mv-nth 0 ret))
-                    (vl-netdecl-p     (mv-nth 1 ret)))))))
-
+(define vl-primitive-mkwire
+  :short "Convenient way to generate an internal wire for a primitive."
+  ((name stringp))
+  :returns (mv (expr    vl-expr-p)
+               (netdecl vl-netdecl-p))
+  :long "<p>This is similar to @(see vl-occform-mkwire), but our primitives are
+all one-bit things so we leave out the ranges to make them prettier.</p>"
+  (b* ((name     (hons-copy (string-fix name)))
+       (expr     (vl-idexpr name 1 :vl-unsigned))
+       (netdecl  (make-vl-netdecl :name name :type :vl-wire :loc *vl-fakeloc*)))
+    (mv expr netdecl)))
 
 (defxdoc *vl-1-bit-t*
-  :parents (primitives)
   :short "Primitive 1 (true) generator."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -127,7 +119,6 @@ we are going to start using it soon.</p>
 
 
 (defxdoc *vl-1-bit-f*
-  :parents (primitives)
   :short "Primitive 0 (false) generator."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -161,7 +152,6 @@ we are going to start using it soon.</p>
 
 
 (defxdoc *vl-1-bit-x*
-  :parents (primitives)
   :short "Primitive X (unknown) generator."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -195,7 +185,6 @@ weirdint-elim) to eliminate explicit X values from literals.</p>
 
 
 (defxdoc *vl-1-bit-z*
-  :parents (primitives)
   :short "Primitive Z (floating) generator."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -229,7 +218,6 @@ weirdint-elim) to eliminate explicit Z values from literals.</p>
 
 
 (defxdoc *vl-1-bit-power*
-  :parents (primitives)
   :short "Primitive power source or @('supply1') signal."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -266,7 +254,6 @@ support can implement them in other ways.</p>")
 
 
 (defxdoc *vl-1-bit-ground*
-  :parents (primitives)
   :short "Primitive ground or @('supply0') signal."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -303,7 +290,6 @@ implement them in other ways.</p>")
 
 
 (defxdoc *vl-1-bit-assign*
-  :parents (primitives)
   :short "Primitive assignment module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -350,7 +336,6 @@ modules that involve transistors.</p>")
 
 
 (defxdoc *vl-1-bit-delay-1*
-  :parents (primitives)
   :short "Primitive assignment with delay."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -390,7 +375,6 @@ an ordinary @(see *vl-1-bit-assign*).</p>")
 
 
 (defxdoc *vl-1-bit-buf*
-  :parents (primitives)
   :short "Primitive buffer module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -431,7 +415,6 @@ probably not for much else since ordinary assignments are handled with @(see
 
 
 (defxdoc *vl-1-bit-not*
-  :parents (primitives)
   :short "Primitive not-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -472,7 +455,6 @@ endmodule
 
 
 (defxdoc *vl-1-bit-and*
-  :parents (primitives)
   :short "Primitive and-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -516,7 +498,6 @@ endmodule
 
 
 (defxdoc *vl-1-bit-or*
-  :parents (primitives)
   :short "Primitive or-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -560,7 +541,6 @@ endmodule
 
 
 (defxdoc *vl-1-bit-xor*
-  :parents (primitives)
   :short "Primitive xor-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -604,7 +584,6 @@ endmodule
 
 
 (defxdoc *vl-1-bit-nand*
-  :parents (primitives)
   :short "Primitive nand-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -647,7 +626,6 @@ probably not much else.</p>
 
 
 (defxdoc *vl-1-bit-nor*
-  :parents (primitives)
   :short "Primitive nor-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -690,7 +668,6 @@ probably not much else.</p>
 
 
 (defxdoc *vl-1-bit-xnor*
-  :parents (primitives)
   :short "Primitive xnor-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -733,7 +710,6 @@ probably not much else.</p>
                            :esim      acl2::*esim-xnor*)))
 
 (defxdoc *vl-1-bit-approx-mux*
-  :parents (primitives)
   :short "Primitive 1-bit (more conservative) multiplexor module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -825,7 +801,6 @@ vl-mux-occform) for more information.</p>")
 
 
 (defxdoc *vl-1-bit-mux*
-  :parents (primitives)
   :short "Primitive 1-bit (less conservative) multiplexor module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -898,7 +873,6 @@ selected data input is Z.</p>")
 
 
 (defxdoc *vl-1-bit-zmux*
-  :parents (primitives)
   :short "Primitive tri-state buffer module."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -959,7 +933,6 @@ matches the Verilog truth table exactly.</p>")
 
 
 (defxdoc *vl-1-bit-ceq*
-  :parents (primitives)
   :short "Primitive @('===') module."
   :long "<p>The Verilog definition of this module is:</p>
 
@@ -1009,60 +982,58 @@ just an @('xnor') gate.</p>")
 
 
 
-(defxdoc *vl-1-bit-flop*
-  :parents (primitives)
-  :short "Primitive edge-triggered register."
-  :long "<p>The Verilog meaning of this module is:</p>
+;; (defxdoc *vl-1-bit-flop*
+;;   :short "Primitive edge-triggered register."
+;;   :long "<p>The Verilog meaning of this module is:</p>
 
-@({
-module VL_1_BIT_FLOP (q, clk, d) ;
-  output reg q;
-  input clk;
-  input d;
+;; @({
+;; module VL_1_BIT_FLOP (q, clk, d) ;
+;;   output reg q;
+;;   input clk;
+;;   input d;
 
-  always @@(posedge clk)
-     q <= d;
+;;   always @@(posedge clk)
+;;      q <= d;
 
-endmodule
-})
+;; endmodule
+;; })
 
-<p>VL takes this as a primitive.  The @(see always-top) transform converts
-certain @('always') statements into instances of this module.</p>
+;; <p>VL takes this as a primitive.  The @(see always-top) transform converts
+;; certain @('always') statements into instances of this module.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-flop*).</p>")
+;; <p>The corresponding @(see esim) primitive is @(see acl2::*esim-flop*).</p>")
 
-(defconsts *vl-1-bit-flop*
-  (b* ((name "VL_1_BIT_FLOP")
-       (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
+;; (defconsts *vl-1-bit-flop*
+;;   (b* ((name "VL_1_BIT_FLOP")
+;;        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
 
-       ((mv q-expr   q-port   q-portdecl   &)           (vl-primitive-mkport "q"   :vl-output))
-       ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-primitive-mkport "clk" :vl-input))
-       ((mv d-expr   d-port   d-portdecl   d-netdecl)   (vl-primitive-mkport "d"   :vl-input))
+;;        ((mv q-expr   q-port   q-portdecl   &)           (vl-primitive-mkport "q"   :vl-output))
+;;        ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-primitive-mkport "clk" :vl-input))
+;;        ((mv d-expr   d-port   d-portdecl   d-netdecl)   (vl-primitive-mkport "d"   :vl-input))
 
-       (q-regdecl    (make-vl-regdecl :name "q" :loc *vl-fakeloc*))
+;;        (q-regdecl    (make-vl-regdecl :name "q" :loc *vl-fakeloc*))
 
-       ;; always @(posedge clk) q <= d;
-       (q<=d         (make-vl-assignstmt :type :vl-nonblocking :lvalue q-expr :expr d-expr :loc *vl-fakeloc*))
-       (posedge-clk  (make-vl-evatom :type :vl-posedge :expr clk-expr))
-       (@posedge-clk (make-vl-eventcontrol :starp nil :atoms (list posedge-clk)))
-       (stmt         (make-vl-timingstmt :ctrl @posedge-clk :body q<=d))
-       (always       (make-vl-always :stmt stmt :loc *vl-fakeloc*)))
+;;        ;; always @(posedge clk) q <= d;
+;;        (q<=d         (make-vl-assignstmt :type :vl-nonblocking :lvalue q-expr :expr d-expr :loc *vl-fakeloc*))
+;;        (posedge-clk  (make-vl-evatom :type :vl-posedge :expr clk-expr))
+;;        (@posedge-clk (make-vl-eventcontrol :starp nil :atoms (list posedge-clk)))
+;;        (stmt         (make-vl-timingstmt :ctrl @posedge-clk :body q<=d))
+;;        (always       (make-vl-always :stmt stmt :loc *vl-fakeloc*)))
 
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :atts      atts
-                           :ports     (list q-port      clk-port     d-port)
-                           :portdecls (list q-portdecl  clk-portdecl d-portdecl)
-                           :netdecls  (list             clk-netdecl  d-netdecl)
-                           :regdecls  (list q-regdecl)
-                           :alwayses  (list always)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :esim      acl2::*esim-flop*)))
+;;     (make-honsed-vl-module :name      name
+;;                            :origname  name
+;;                            :atts      atts
+;;                            :ports     (list q-port      clk-port     d-port)
+;;                            :portdecls (list q-portdecl  clk-portdecl d-portdecl)
+;;                            :netdecls  (list             clk-netdecl  d-netdecl)
+;;                            :regdecls  (list q-regdecl)
+;;                            :alwayses  (list always)
+;;                            :minloc    *vl-fakeloc*
+;;                            :maxloc    *vl-fakeloc*
+;;                            :esim      acl2::*esim-flop*)))
 
 
 (defxdoc *vl-1-bit-latch*
-  :parents (primitives)
   :short "Primitive level-sensitive latch."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1122,7 +1093,6 @@ certain @('always') statements into instances of this module.</p>
 
 
 (defxdoc *vl-1-bit-bufif0*
-  :parents (primitives)
   :short "Primitive conditional driver."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1165,7 +1135,6 @@ certain @('bufif0') gates into instances of this module.</p>
 
 
 (defxdoc *vl-1-bit-bufif1*
-  :parents (primitives)
   :short "Primitive conditional driver."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1207,7 +1176,6 @@ certain @('bufif1') gates into instances of this module.</p>
                            :esim      acl2::*esim-bufif1*)))
 
 (defxdoc *vl-1-bit-notif0*
-  :parents (primitives)
   :short "Primitive conditional driver."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1249,7 +1217,6 @@ certain @('notif0') gates into instances of this module.</p>
                            :esim      acl2::*esim-notif0*)))
 
 (defxdoc *vl-1-bit-notif1*
-  :parents (primitives)
   :short "Primitive conditional driver."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1292,7 +1259,6 @@ certain @('notif1') gates into instances of this module.</p>
 
 
 (defxdoc *vl-1-bit-nmos*
-  :parents (primitives)
   :short "Primitive nmos transistor."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1337,7 +1303,6 @@ target for other back-end tools.  The corresponding @(see esim) primitive is
 
 
 (defxdoc *vl-1-bit-rnmos*
-  :parents (primitives)
   :short "Primitive resistive nmos transistor."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1382,7 +1347,6 @@ this may be a convenient target for other back-end tools.  The corresponding
 
 
 (defxdoc *vl-1-bit-pmos*
-  :parents (primitives)
   :short "Primitive pmos transistor."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1426,7 +1390,6 @@ target for other back-end tools.  The corresponding @(see esim) primitive is
                            :esim      acl2::*esim-pmos*)))
 
 (defxdoc *vl-1-bit-rpmos*
-  :parents (primitives)
   :short "Primitive resistive pmos transistor."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1470,7 +1433,6 @@ this may be a convenient target for other back-end tools.  The corresponding
                            :esim      acl2::*esim-pmos*)))
 
 (defxdoc *vl-1-bit-cmos*
-  :parents (primitives)
   :short "Primitive cmos transistor."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1517,7 +1479,6 @@ target for other back-end tools.  The corresponding @(see esim) primitive is
                            :esim      acl2::*esim-cmos*)))
 
 (defxdoc *vl-1-bit-rcmos*
-  :parents (primitives)
   :short "Primitive resistive cmos transistor."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1564,7 +1525,6 @@ this may be a convenient target for other back-end tools.  The corresponding
                            :esim      acl2::*esim-cmos*)))
 
 (defxdoc *vl-1-bit-tran*
-  :parents (primitives)
   :short "Primitive bidirectional connection."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1606,7 +1566,6 @@ tools.</p>")
                            )))
 
 (defxdoc *vl-1-bit-rtran*
-  :parents (primitives)
   :short "Primitive, resistive bidirectional connection."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1648,7 +1607,6 @@ tools.</p>")
                            )))
 
 (defxdoc *vl-1-bit-tranif0*
-  :parents (primitives)
   :short "Primitive, conditional bidirectional connection."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1695,7 +1653,6 @@ tools.</p>")
 
 
 (defxdoc *vl-1-bit-rtranif0*
-  :parents (primitives)
   :short "Primitive, resistive, conditional bidirectional connection."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1741,7 +1698,6 @@ tools.</p>")
 
 
 (defxdoc *vl-1-bit-tranif1*
-  :parents (primitives)
   :short "Primitive, conditional bidirectional connection."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1786,7 +1742,6 @@ tools.</p>")
                            )))
 
 (defxdoc *vl-1-bit-rtranif1*
-  :parents (primitives)
   :short "Primitive, resistive, conditional bidirectional connection."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1831,7 +1786,6 @@ tools.</p>")
                            )))
 
 (defxdoc *vl-1-bit-pullup*
-  :parents (primitives)
   :short "Primitive pullup element."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1870,7 +1824,6 @@ tools.</p>")
                            )))
 
 (defxdoc *vl-1-bit-pulldown*
-  :parents (primitives)
   :short "Primitive pulldown element."
   :long "<p>The Verilog meaning of this module is:</p>
 
@@ -1913,7 +1866,6 @@ tools.</p>")
 ;; BOZO this is a whole family of primitives, I guess
 
 ;; (defxdoc *vl-1-bit-resolve-wire*
-;;   :parents (primitives)
 ;;   :short "Primitive module that resolves multiple drivers on a wire."
 ;;   :long "<p>The Verilog definition of this module is:</p>
 
@@ -1972,7 +1924,7 @@ tools.</p>")
         *vl-1-bit-xnor*
         *vl-1-bit-zmux*
         *vl-1-bit-ceq*
-        *vl-1-bit-flop*
+        ;; *vl-1-bit-flop*
         *vl-1-bit-latch*
 
         *vl-1-bit-bufif0*

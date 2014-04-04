@@ -20,11 +20,11 @@
 
 (in-package "VL")
 (include-book "util")
+(include-book "conditions")
 (include-book "../../mlib/delta")
 (include-book "../../mlib/stmt-tools")
 (include-book "../../mlib/filter")
 (include-book "stmttemps")
-(include-book "../xf-sizing")
 (local (include-book "../../util/arithmetic"))
 
 (defxdoc cblock
@@ -664,29 +664,6 @@ are well-typed and have compatible widths.</p>")
   ((local (in-theory (enable vl-atomicstmt-cblock-p
                              vl-atomicstmt-cblock-pathcheck1)))))
 
-(define vl-cblock-qmark-expr ((condition  vl-expr-p)
-                              (true-expr  vl-expr-p)
-                              (false-expr vl-expr-p))
-  :returns (new-expr vl-expr-p :hyp :fguard)
-  (b* (((unless (and (posp (vl-expr->finalwidth condition))
-                     (posp (vl-expr->finalwidth true-expr))
-                     (posp (vl-expr->finalwidth false-expr))
-                     (eql (vl-expr->finalwidth true-expr)
-                          (vl-expr->finalwidth false-expr))
-                     (vl-expr->finaltype condition)
-                     (vl-expr->finaltype true-expr)
-                     (vl-expr->finaltype false-expr)))
-        (raise "Bad sizes when trying to construct ?: expression: condition ~
-                ~x0, true ~x1, false ~x2."  condition true-expr false-expr)
-        |*sized-1'bx*|)
-       (new-type (vl-exprtype-max (vl-expr->finaltype true-expr)
-                                  (vl-expr->finaltype false-expr))))
-    (make-vl-nonatom :op :vl-qmark
-                     :args (list (vl-condition-fix condition)
-                                 true-expr false-expr)
-                     :finalwidth (vl-expr->finalwidth true-expr)
-                     :finaltype new-type)))
-
 (defines vl-stmt-cblock-varexpr
   :prepwork ((local (in-theory (enable vl-stmt-cblock-p
                                        vl-stmt-cblock-pathcheck1
@@ -715,17 +692,17 @@ are well-typed and have compatible widths.</p>")
                (false-expr (vl-stmt-cblock-varexpr varname x.falsebranch curr))
                ((when (and true-expr false-expr))
                 ;; Curr doesn't matter, the new statement overwrites it.
-                (vl-cblock-qmark-expr x.condition true-expr false-expr))
+                (vl-safe-qmark-expr x.condition true-expr false-expr))
                ((when (and curr true-expr))
                 ;; Something like:
                 ;;   var = curr
                 ;;   if (condition) var = true
-                (vl-cblock-qmark-expr x.condition true-expr curr))
+                (vl-safe-qmark-expr x.condition true-expr curr))
                ((when (and curr false-expr))
                 ;; Something like:
                 ;;   var = curr
                 ;;   if (condition) [nothing] else var = false;
-                (vl-cblock-qmark-expr x.condition curr false-expr)))
+                (vl-safe-qmark-expr x.condition curr false-expr)))
             ;; Possibility 1: this is something like:
             ;;    var = curr
             ;;    if (condition) othervar = blah;

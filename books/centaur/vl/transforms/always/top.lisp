@@ -21,11 +21,11 @@
 (in-package "VL")
 (include-book "caseelim")
 (include-book "combinational")
+(include-book "edgesplit")
+(include-book "edgesynth")
 (include-book "elimalways")
 (include-book "eliminitial")
-(include-book "elimnegedge")
-(include-book "synthalways")
-(include-book "stmtrewrite")
+(include-book "latchsynth")
 (include-book "stmttemps")
 (include-book "unelse")
 (include-book "ifmerge")
@@ -46,29 +46,33 @@
   :long "<p>This is a combination of several other transforms.  It is the
 typical way that we expect to process @('always') blocks.</p>
 
-<p>The heart of this transform is @(see synthalways).  But before we run it, we
-first do several preprocessing steps:</p>
+<p>Modules that survive this transform will be free of @('always')
+blocks&mdash;or, well, that's true except for the primitive VL flop and latch
+modules.</p>
 
-<ul>
-<li>@(see caseelim) to get rid of @('case') statements</li>
-<li>@(see eliminitial) to get rid of any @('initial') blocks</li>
-<li>@(see elimnegedge) to get rid of @('negedge clk') constructs</li>
-<li>@(see stmttemps) to split out complex conditions and rhs expressions</li>
-<li>@(see unelse) to reduce @('if/else') statements to just @('if')s</li>
-</ul>
+<p>Modules that are too difficult to process and will end up having fatal @(see
+warnings) added.</p>"
 
-<p>After these steps, our main @(see synthalways) transform converts supported
-@('always') blocks into explicit instances of primitive flop/latch modules.
-And, as a last step, we use @(see elimalways) to remove any unsupported always
-blocks that weren't synthesized, and add fatal warnings to their modules.</p>"
-
-  (b* ((x (xf-cwtime (vl-design-caseelim x)))
+  (b* (;; Preliminary simplifications
+       (x (xf-cwtime (vl-design-caseelim x)))
        (x (xf-cwtime (vl-design-eliminitial x)))
+
+       ;; Handle combinational blocks
        (x (xf-cwtime (vl-design-combinational-elim x)))
-       (x (xf-cwtime (vl-design-elimnegedge x)))
+
+       ;; Handle edge-triggered blocks
+       (x (xf-cwtime (vl-design-edgesplit x)))
+       (x (xf-cwtime (vl-design-edgesynth x)))
+
+       ;; Handle latch-like blocks.  This is kind of a mess.  I'm not sure
+       ;; how many of these transforms are still necessary.  Some of them
+       ;; may have only existed to support the old "flopcode" stuff, which
+       ;; predated edgesynth
        (x (xf-cwtime (vl-design-stmttemps x)))
        (x (xf-cwtime (vl-design-unelse x)))
        (x (xf-cwtime (vl-design-ifmerge x)))
-       (x (xf-cwtime (vl-design-synthalways x :careful-p careful-p)))
+       (x (xf-cwtime (vl-design-latchsynth x :careful-p careful-p)))
+
+       ;; Any surviving always blocks are just too hard to support.
        (x (xf-cwtime (vl-design-elimalways x))))
     x))

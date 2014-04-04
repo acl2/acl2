@@ -23,13 +23,20 @@
 
 // see flopcode/compare.v
 
+// Using a global random seed seems like a good idea -- When each instance of
+// randomBit2 had its own seed, they seemed to just always produce the same
+// values on NCVerilog, which was terrible.
+
+module random_top ();
+  integer seed;
+endmodule
+
 module randomBit2 (q) ;
   // Generates a random two-valued bit every #DELAY ticks.
   parameter delay = 1;
   output q;
   reg q;
-  integer seed;
-  always #delay q <= $random(seed);
+  always #delay q <= $random(random_top.seed);
 endmodule
 
 module randomVec2 (q);
@@ -45,8 +52,7 @@ module randomBit4 (q) ;
   parameter delay = 1;
   output q;
   reg [1:0] r;
-  integer   seed;
-  always #delay r <= $random(seed);
+  always #delay r <= $random(random_top.seed);
   assign q = (r == 2'b 00) ? 1'b0
 	   : (r == 2'b 01) ? 1'b1
 	   : (r == 2'b 10) ? 1'bX
@@ -157,9 +163,9 @@ module test () ;
   wire okg1 = (sg1 === ig1) | (ig1 === 1'bx);
   wire okg2 = (sg2 === ig2) | (ig2 === 1'bx);
   wire okg3 = (sg3 === ig3) | (ig3 === 1'bx);
-  wire okg4 = (sg4 === ig4) | (ig4 === 1'bx);
+  wire okg4 = (sg4 === ig4); // ifs are irrelevant so require exact matching
   wire okg5 = (sg5 === ig5) | (ig5 === 1'bx);
-  wire okg6 = (sg6 === ig6) | (ig6 === 1'bx);
+  wire okg6 = (sg6 === ig6); // ifs are irrelevant so require exact matching
   wire okg = &{okg1, okg2, okg3, okg4, okg5, okg6};
 
   // F Modules -- Size 4 Tests
@@ -197,22 +203,65 @@ module test () ;
   \g4$size=4 wg4impl (iwg4, d1, d2, en, clk);
   \g5$size=4 wg5impl (iwg5, d1, d2, en, clk);
   \g6$size=4 wg6impl (iwg6, d1, d2, en, clk);
-  wire okwg1 = (swg1 === iwg1) | (iwg1 === 4'bxxxx);
-  wire okwg2 = (swg2 === iwg2) | (iwg2 === 4'bxxxx);
-  wire okwg3 = (swg3 === iwg3) | (iwg3 === 4'bxxxx);
-  wire okwg4 = (swg4 === iwg4) | (iwg4 === 4'bxxxx);
-  wire okwg5 = (swg5 === iwg5) | (iwg5 === 4'bxxxx);
-  wire okwg6 = (swg6 === iwg6) | (iwg6 === 4'bxxxx);
+
+  // The spec is essentially: if (en) q <= d;
+  // The implementation will use: q <= en ? d : q;
+  // Unfortunately if EN is X, then the spec is crazy/nonsense and
+  // will fail to update Q.  The impl is better behaved and will X out
+  // Q except for the bits that are identical.  So, we need to allow
+  // the impl to have X bits anywhere it doesn't match the spec.
+  wire okwg1 = (swg1 === iwg1)
+                 | (  (iwg1[0] === swg1[0] | iwg1[0] === 1'bx)
+		    & (iwg1[1] === swg1[1] | iwg1[1] === 1'bx)
+		    & (iwg1[2] === swg1[2] | iwg1[2] === 1'bx)
+		    & (iwg1[3] === swg1[3] | iwg1[3] === 1'bx) );
+
+  // Same thing with IFs, so just require an approximation.
+  wire okwg2 = (swg2 === iwg2)
+                 | (  (iwg2[0] === swg2[0] | iwg2[0] === 1'bx)
+		    & (iwg2[1] === swg2[1] | iwg2[1] === 1'bx)
+		    & (iwg2[2] === swg2[2] | iwg2[2] === 1'bx)
+		    & (iwg2[3] === swg2[3] | iwg2[3] === 1'bx) );
+
+  // Same thing with IFs, so just require an approximation.
+  wire okwg3 = (swg3 === iwg3)
+                 | (  (iwg3[0] === swg3[0] | iwg3[0] === 1'bx)
+		    & (iwg3[1] === swg3[1] | iwg3[1] === 1'bx)
+		    & (iwg3[2] === swg3[2] | iwg3[2] === 1'bx)
+		    & (iwg3[3] === swg3[3] | iwg3[3] === 1'bx) );
+
+  // The ifs in g4 are irrelevant due to a later update, so require
+  // exact matching.
+  wire okwg4 = (swg4 === iwg4);
+
+  // IFs, so just require an approximation.
+  wire okwg5 = (swg5 === iwg5)
+                 | (  (iwg4[0] === swg4[0] | iwg4[0] === 1'bx)
+		    & (iwg4[1] === swg4[1] | iwg4[1] === 1'bx)
+		    & (iwg4[2] === swg4[2] | iwg4[2] === 1'bx)
+		    & (iwg4[3] === swg4[3] | iwg4[3] === 1'bx) );
+
+  // Although there are IFs here, they are irrelevant because the
+  // register always gets updated at the end, so require exact matching.
+  wire okwg6 = swg6 === iwg6;
   wire okwg = &{okwg1, okwg2, okwg3, okwg4, okwg5, okwg6};
 
   wire allok = &{okf, okg, okwf, okwg};
 
   reg  check;
 
+  /*
+
+  // This is an alternate checking strategy that Sol suggested might be better.
+
+  reg  everything_was_ok;
+
   always #1
-    begin
-    $display("checking at time %d", $time);
-    if (check && allok !== 1'b1)
+    if (check)
+      everything_was_ok <= allok;
+
+  always @(everything_was_ok)
+    if (check && everything_was_ok !== 1'b1)
       begin
 	$display("failure at time %d", $time);
 	$display("okf = %b, [%b]", okf, {okf5, okf4, okf3, okf2, okf1});
@@ -221,15 +270,32 @@ module test () ;
 	$display("okwg = %b, [%b]", okwg, {okwg6, okwg5, okwg4, okwg3, okwg2, okwg1});
 	$display("");
       end
+
+  */
+
+  // Simple checking strategy:
+  always #1
+    begin
+    $display("checking at time %d", $time);
+    if (check && allok !== 1'b1)
+      begin
+  	$display("failure at time %d", $time);
+  	$display("okf = %b, [%b]", okf, {okf5, okf4, okf3, okf2, okf1});
+  	$display("okg = %b, [%b]", okg, {okg6, okg5, okg4, okg3, okg2, okg1});
+  	$display("okwf = %b, [%b]", okwf, {okwf5, okwf4, okwf3, okwf2, okwf1});
+  	$display("okwg = %b, [%b]", okwg, {okwg6, okwg5, okwg4, okwg3, okwg2, okwg1});
+  	$display("");
+      end
     end
 
   initial begin
     $dumpfile("compare-flopcode4.vcd");
     $dumpvars();
     check = 0;
+//    everything_was_ok = 1;
     #30;
     check = 1;
-    #10000;
+    #100000;
     $finish;
   end
 

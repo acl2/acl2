@@ -34,12 +34,12 @@ module f1 (q, d, clk);
   always @(q or clk or d)
     // this should just all fizzle away into nothing
     begin
-      $display("stmtrewrite should take care of this");
-      $display("and this, too!");
+      $display("; stmtrewrite should take care of this");
+      $display("; and this, too!");
       repeat(3)
 	begin
-	  $display("and this tambien!");
-	  $display("this also");
+	  $display("; and this tambien!");
+	  $display("; this also");
 	end
     end
 
@@ -48,9 +48,9 @@ module f1 (q, d, clk);
       begin
       end
       if (clk)
-	$display("clock on");
+	$display("; clock on");
       else
-	$display("clock off");
+	$display("; clock off");
       begin
       end
       begin
@@ -58,7 +58,7 @@ module f1 (q, d, clk);
 	  begin
 	    q <= d;
 	  end
-	  $display("hello");
+	  $display("; hello");
 	end
       end
       begin
@@ -89,7 +89,7 @@ module f2 (q, d, clk);
       begin
 	q <= #2 6;
 	q <= #2 clk;
-        $display("blah");
+        $display("; blah");
 	q <= #2 d;
       end
     end
@@ -136,11 +136,11 @@ module f4 (q, d1, d2, d3, clk);
   always @(negedge clk)
     begin
       q <= d1;
-      $display("q is %b", q);
+      $display("; q is %b", q);
       q <= d2;
-      $display("q is %b", q);
+      $display("; q is %b", q);
       q <= d3;
-      $display("q is %b", q);
+      $display("; q is %b", q);
     end
 
 endmodule
@@ -209,7 +209,7 @@ module g2 (q, d1, d2, en, clk);
       else
 	begin
 	  q <= #2 d2;
-	  $display("else statement");
+	  $display("; else statement");
 	end
     end
 

@@ -23,7 +23,7 @@
 (defun vl::vl-shell-fn (argv state)
   (declare (ignore argv))
   (format t "VL Verilog Toolkit
-Copyright (C) 2008-2013 Centaur Technology <http://www.centtech.com>
+Copyright (C) 2008-2014 Centaur Technology <http://www.centtech.com>
 
   This program is free software; you can redistribute it and/or modify it under
   the terms of the GNU General Public License as published by the Free Software
@@ -40,7 +40,7 @@ Copyright (C) 2008-2013 Centaur Technology <http://www.centtech.com>
 |  VL Interactive Shell   |     This is an interactive ACL2 shell with VL pre-
 |     (for experts)       |     loaded.  To learn about ACL2 (and hence how to
 |                         |     use this shell) see the ACL2 homepage:
-|   Type :quit to quit    |      http://www.cs.utexas.edu/users/moore/acl2
+|  Enter (quit) to quit   |      http://www.cs.utexas.edu/users/moore/acl2
 `-------------------------'
 
 ")

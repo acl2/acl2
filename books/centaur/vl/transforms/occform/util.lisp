@@ -67,7 +67,7 @@ and net declaration.</p>"
 
   (b* ((name     (hons-copy name))
        (expr     (vl-idexpr name width :vl-unsigned))
-       (range    (and width (vl-make-n-bit-range width)))
+       (range    (vl-make-n-bit-range width))
        (port     (make-vl-port :name name :expr expr :loc *vl-fakeloc*))
        (portdecl (make-vl-portdecl :name  name
                                    :dir   dir
@@ -322,4 +322,16 @@ sizes pre-computed.</p>"
       (and (equal (len exprs) len)
            (equal (len ports) len)
            (equal (len portdecls) len)
-           (equal (len netdecls) len)))))
+           (equal (len netdecls) len))))
+
+  (defthm vl-occform-mkports-under-iff
+    (b* (((mv exprs ports portdecls netdecls)
+          (vl-occform-mkports prefix i n
+                              :dir dir
+                              :width width
+                              :loc loc))
+         (len (- (nfix n) (nfix i))))
+      (and (iff exprs     (posp len))
+           (iff ports     (posp len))
+           (iff portdecls (posp len))
+           (iff netdecls  (posp len))))))

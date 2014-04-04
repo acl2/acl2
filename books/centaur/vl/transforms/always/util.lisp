@@ -202,3 +202,58 @@ singleton statement list.</p>"
   :guard (vl-evatomlist-p x)
   :result-type vl-exprlist-p
   :parents (vl-evatomlist-p))
+
+
+
+(define vl-evatomlist-all-have-edges-p ((x vl-evatomlist-p))
+  (if (atom x)
+      t
+    (and (or (eq (vl-evatom->type (car x)) :vl-posedge)
+             (eq (vl-evatom->type (car x)) :vl-negedge))
+         (vl-evatomlist-all-have-edges-p (cdr x)))))
+
+(define vl-edge-control-p ((x vl-delayoreventcontrol-p))
+  :short "Recognize @@(posedge clk1 or negedge clk2 or ...) style event
+          controls."
+  (b* (((unless (mbe :logic (vl-eventcontrol-p x)
+                     :exec (eq (tag x) :vl-eventcontrol)))
+        ;; Maybe a delay control like #5, not an @(...) control.
+        nil)
+       ((vl-eventcontrol x) x))
+    (and (not x.starp)
+         (consp x.atoms)
+         (vl-evatomlist-all-have-edges-p x.atoms))))
+
+(local
+ ;; BOZO move me to statement tools?
+ (defthm vl-timingstmt->body-under-iff
+   (implies (and (force (vl-timingstmt-p x))
+                 (force (vl-stmt-p x)))
+            (vl-timingstmt->body x))
+   :hints(("Goal"
+           :in-theory (disable vl-stmt-p-of-vl-timingstmt->body)
+           :use ((:instance vl-stmt-p-of-vl-timingstmt->body))))))
+
+
+(define vl-match-always-at-some-edges ((x vl-stmt-p))
+  :short "Recognize and decompose edge-triggered statements."
+  :returns (mv (body? (equal (vl-stmt-p body?)
+                             (if body? t nil)))
+               (ctrl? (and (equal (vl-eventcontrol-p ctrl?)
+                                  (if body? t nil))
+                           (equal (vl-edge-control-p ctrl?)
+                                  (if body? t nil))))
+               (edges (and (vl-evatomlist-p edges)
+                           (vl-evatomlist-all-have-edges-p edges)
+                           (equal (consp edges) (if body? t nil))
+                           (iff edges body?))))
+  (b* (((unless (and (mbt (vl-stmt-p x))
+                     (vl-timingstmt-p x)))
+        (mv nil nil nil))
+       ((vl-timingstmt x) x)
+       ((unless (vl-edge-control-p x.ctrl))
+        (mv nil nil nil)))
+    (mv x.body x.ctrl (vl-eventcontrol->atoms x.ctrl)))
+  :prepwork ((local (in-theory (e/d (vl-edge-control-p)
+                                    ((force)))))))
+

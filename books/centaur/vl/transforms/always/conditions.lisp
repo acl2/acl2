@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../../mlib/welltyped")
+(include-book "../xf-sizing")
 (local (include-book "../../util/arithmetic"))
 
 (define vl-condition-fix
@@ -149,3 +149,27 @@ operators where possible.</p>"
                        (posp (vl-expr->finalwidth inner-cond))))
              (vl-expr-welltyped-p
               (vl-condition-merge outer-cond inner-cond)))))
+
+
+(define vl-safe-qmark-expr ((condition  vl-expr-p)
+                            (true-expr  vl-expr-p)
+                            (false-expr vl-expr-p))
+  :returns (new-expr vl-expr-p :hyp :fguard)
+  (b* (((unless (and (posp (vl-expr->finalwidth condition))
+                     (posp (vl-expr->finalwidth true-expr))
+                     (posp (vl-expr->finalwidth false-expr))
+                     (eql (vl-expr->finalwidth true-expr)
+                          (vl-expr->finalwidth false-expr))
+                     (vl-expr->finaltype condition)
+                     (vl-expr->finaltype true-expr)
+                     (vl-expr->finaltype false-expr)))
+        (raise "Bad sizes when trying to construct ?: expression: condition ~
+                ~x0, true ~x1, false ~x2."  condition true-expr false-expr)
+        |*sized-1'bx*|)
+       (new-type (vl-exprtype-max (vl-expr->finaltype true-expr)
+                                  (vl-expr->finaltype false-expr))))
+    (make-vl-nonatom :op :vl-qmark
+                     :args (list (vl-condition-fix condition)
+                                 true-expr false-expr)
+                     :finalwidth (vl-expr->finalwidth true-expr)
+                     :finaltype new-type)))
