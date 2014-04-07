@@ -44,66 +44,9 @@
   nil)
 
 
-(defmacro glcp-if (test then else &key report)
-  `(b* ((hyp pathcond)
-        (gtests (gtests ,test hyp))
-        (then-hyp (hf (bfr-or (gtests-unknown gtests)
-                               (gtests-nonnil gtests))))
-        (else-hyp (hf (bfr-or (gtests-unknown gtests)
-                               (bfr-not (gtests-nonnil gtests)))))
-        (- (and then-hyp else-hyp ,report))
-        ((glcp-er then)
-         (if then-hyp
-             (let ((pathcond (bfr-and hyp then-hyp)))
-               (declare (ignorable pathcond))
-               ,then)
-           (glcp-value nil)))
-        ((glcp-er else)
-         (if else-hyp
-             (let ((pathcond (bfr-and hyp else-hyp)))
-               (declare (ignorable pathcond))
-               ,else)
-           (glcp-value nil)))
-        (merge (gobj-ite-merge (gtests-nonnil gtests) then else
-                               (bfr-and (bfr-not (gtests-unknown gtests))
-                                         hyp))))
-     (if (hf (gtests-unknown gtests))
-         (glcp-value
-          (mk-g-ite (mk-g-boolean (gtests-unknown gtests))
-                    (mk-g-ite (gtests-obj gtests) then else)
-                    merge))
-       (glcp-value merge))))
-
-
-(defmacro glcp-or (test else)
-  `(b* ((hyp pathcond)
-        (test ,test)
-        (gtests (gtests test hyp))
-        (else-hyp (hf (bfr-or (gtests-unknown gtests)
-                               (bfr-not (gtests-nonnil gtests)))))
-        ((glcp-er else)
-         (if else-hyp
-             (let ((pathcond (bfr-and hyp else-hyp)))
-               (declare (ignorable pathcond))
-               ,else)
-           (glcp-value nil)))
-        (merge (gobj-ite-merge (gtests-nonnil gtests) test else
-                               (bfr-and (bfr-not (gtests-unknown gtests))
-                                         hyp))))
-     (if (hf (gtests-unknown gtests))
-         (glcp-value
-          (mk-g-ite (mk-g-boolean (gtests-unknown gtests))
-                    (mk-g-ite (gtests-obj gtests) test else)
-                    merge))
-       (glcp-value merge))))
-
-
-
-
 (acl2::def-meta-extract glcp-generic-geval-ev glcp-generic-geval-ev-lst)
 
-(encapsulate
-  (((glcp-generic-run-gified * * hyp * * bvar-db state)
+(encapsulate (((glcp-generic-run-gified * * hyp * * bvar-db state)
     => (mv * * hyp)
     :formals (fn actuals hyp clk config bvar-db state)
     :guard (and (symbolp fn)
@@ -210,7 +153,7 @@
           (general-concrete-obj-list (cdr x)))))
 
 
-(mutual-recursion
+(mutual-recursion ;; sublis-into-term
  (defun sublis-into-term (x alist)
    (declare (xargs :guard t))
    (cond ((null x) nil)
@@ -225,8 +168,6 @@
        nil
      (cons (sublis-into-term (car x) alist)
            (sublis-into-list (cdr x) alist)))))
-
-
 
 (defund gl-aside-wormhole (term alist)
   (declare (xargs :guard t))
@@ -249,7 +190,8 @@
 
 
 
-(make-event
+;; BOZO replace with defaggrify-defrec
+(make-event ;; rewrite-rule b* binder
  `(acl2::def-b*-binder
     rewrite-rule
     #!acl2
@@ -289,7 +231,7 @@
     (mv nil val bindings)))
 
 
-(mutual-recursion
+(mutual-recursion ;; gl-term-to-apply-obj
  (defun gl-term-to-apply-obj (x alist)
    (declare (xargs :guard (pseudo-termp x)
                    :verify-guards nil))
@@ -437,7 +379,7 @@
   :hints(("Goal" :in-theory (disable glcp-generic-eval-context-equiv-commute))))
 
 
-(encapsulate nil
+(defsection glcp-generic-eval-context-equiv*-trans
   (local (defthm last-of-append-when-first/last-equal
            (implies (equal (car b) (car (last a)))
                     (equal (car (last (append a (cdr b))))
@@ -1142,7 +1084,7 @@
     (cons '(clause-proc . glcp-generic)
           (pairlis$ names (glcp-put-name-each 'glcp-generic names)))))
 
-(make-event
+(make-event ;; glcp-generic-interp
  (sublis *glcp-generic-template-subst*
          *glcp-interp-template*))
 
