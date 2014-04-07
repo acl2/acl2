@@ -20,7 +20,7 @@
 
 (in-package "GL")
 (include-book "bfr")
-
+(include-book "centaur/misc/hons-extra" :dir :system)
 (encapsulate
   (((bfr-sat *) => (mv * * *)))
 
@@ -136,6 +136,7 @@
            ((unless ok) (mv t x)) ;; failed -- conservative result
            ((unless sat) (mv nil nil)) ;; path condition unsat!
            (env (bfr-ctrex-to-satisfying-assign nil ctrex))
+           ((acl2::with-fast env))
            (known-val (bfr-eval x env))
            ((mv sat ok &) (bfr-sat (bfr-and pathcond
                                             (if known-val
