@@ -1346,7 +1346,7 @@ that we were unable to unparameterize them.</p>"
 
 
 (define vl-design-unparameterize
-  :short "Top-level @(see unparameterize) transform."
+  :short "Top-level @(see unparameterization) transform."
   ((x vl-design-p))
   :returns (new-x vl-design-p)
   (b* ((x (vl-design-fix x))

@@ -1,5 +1,5 @@
 ; The SEQ Macro Language
-; Copyright (C) 2008-2010 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,190 +19,168 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
+
+(defsection seq
+  ;; BOZO not really a macro library, need somewhere better to put this
+  :parents (macro-libraries)
+  :short "<i>Seq</i> is a macro language for applying actions to a stream."
+
+  :long "<p>In this context, a <i>stream<i> is any data structure that we want
+to update in an essentially sequential/single-threaded way.  It might be a
+stobj, but it could also be a regular ACL2 list or some other kind of
+structure.  For example, in the @(see vl) Verilog parser, we typically use seq
+to traverse a list of tokens, which are regular ACL2 objects.</p>
+
+<p>Meanwhile, an <i>action</i> is some operation which typically inspects the
+stream, and then returns a triple of the form @('(mv error val stream)').  When
+the action is successful, @('error') is @('nil'), @('stream') is the updated
+stream, and @('val') is perhaps some piece of information that was gleaned from
+running this action.  For instance, in the Verilog parser we may take a token
+out of the stream and put it into val.</p>
+
+<p>But an action may also fail, in which case it should set @('error') to some
+non-nil value, typically an error message produced by @(see msg).</p>
+
+<p>A Seq program is introduced by writing:</p>
+
+@({
+    (seq <stream> ... statements ...)
+})
+
+<p>Where @('stream') is the name of the stream to operate on and update, and
+the valid statements are described below.  Every Seq program evaluates to an
+@('(mv error val stream)') triple.</p>
+
+<p>Some examples of using Seq can be found in @('misc/seq-examples.lsp').</p>
 
 
-; THE SEQ MACRO
-;
-; NOTE: See seq-examples.lsp for some examples.
-; NOTE: See seqw.lisp for an expanded version of SEQ.
-;
-; SEQ is a macro language for applying ACTIONS to a STREAM.
-;
-; In this context, a "stream" is any data structure that we want to update in
-; an essentially sequential/single-threaded way.  It might be a stobj, but it
-; could also be a regular ACL2 list or some other kind of structure.  For
-; example, in the Verilog parser we typically use seq to traverse a list of
-; tokens, which are regular ACL2 objects.
-;
-; Meanwhile, an "action" is some operation which typically inspects the stream,
-; and then returns a triple of the form (MV ERROR VAL STREAM).  When the action
-; is successful, ERROR is nil, STREAM is the updated stream, and VAL is perhaps
-; some piece of information that was gleaned from running this action.  For
-; instance, in the Verilog parser we may take a token out of the stream and put
-; it into val.
-;
-; But an action may also fail, in which case it should set ERROR to some
-; non-nil value.  Generally, we cons together a list of the form
-;
-;   (fmt-str arg0 arg1 ... argN)
-;
-; Where these arguments are just like in calls to "cw."  Assuming we have saved
-; such an object in "x", we would typically print it using (cw-obj x), which is
-; defined below.
-;
-; A SEQ program is introduced by writing:
-;    (SEQ <stream> ... statements ...)
-;
-; Where stream is the name of the stream to operate on and update, and the
-; valid statements are described below.  Every SEQ program evaluates to an (MV
-; ERROR VAL STREAM) triple.
-;
-;
-;
-; THE BASIC ASSIGNMENT STATEMENT
-;
-; In many ways, SEQ resembles a loop-free, imperative programming language with
-; a mechanism to throw exceptions.  SEQ programs are written as blocks of
-; statements, and the fundamental statement is assignment:
-;
-;    (var := (action ... <stream>))
-;
-; Such an assignment statement has two effects when action is successful:
-;
-;   1. It binds var to the val produced by the action, and
-;   2. It rebinds stream to the updated stream produced by the action
-;
-; But action may also fail, in which case the failure stops execution of the
-; current block and we propagate the error upwards throughout the entire SEQ
-; program.
-;
-;
-;
-; ALTERNATIVE FORMS OF ASSIGNMENT
-;
-; We have a couple of additional assignment statements.  The first variant
-; simply allows you to ignore the val produced by an action, and is written:
-;
-;     (:= (action ... <stream>))
-;
-; The second variant allows you to destructure the val produced by the action,
-; and is written:
-;
-;     ((foo . bar) := (action ... <stream>))
-;
-; NIL has a special meaning in this second form, and can be used to "drop"
-; parts of val which are not interesting.  For example, if action produces
-; the value (1 . 2), and you write:
-;
-;     ((foo . nil) := action)
-;
-; Then foo will be bound to 1 and the "2" part of val will be inaccessible.
-;
-; (Usually unnecessary): In place of := in any of the above, one can also write:
-;
-;   :w=  -- "weak count decrease"
-;   :s=  -- "strong count decrease"
-;
-; These act the same as :=, except that they add some (mbe :logic ...)-only
-; checks that ensure that the returned stream has a weakly lower or strongly
-; lower ACL2 count than the stream going into the action.  This is sometimes
-; needed when using seq in mutually-recursive functions.
-;
-;
-;
-;
-; CONDITIONAL EXECUTION
-;
-; A block can be only conditionally executed by wrapping it in a WHEN or UNLESS
-; clause.  For example:
-;
-;    (when (integerp x)
-;      (foo := (action1 ...)
-;      (bar := (action2 ...)))
-;
-;    (unless (consp x)
-;      (foo := (action ...)))
-;
-; This causes the bindings for foo and bar only to be executed when the
-; condition evaluates to non-nil.
-;
-;
-;
-; RETURN STATEMENTS
-;
-; The final statement of a SEQ program must be a return statement, and "early"
-; return statements can also occur as the last statement of a when or unless
-; block.  There are two versions of the return statement.
-;
-;    (return expr)
-;    (return-raw action)
-;
-; Either one of these causes the entire SEQ program to exit.  In the first
-; form, EXPR is expected to evaluate to a regular ACL2 object, and the result
-; of the SEQ program will be (MV NIL EXPR STREAM).  In the second form, ACTION
-; is expected to itself evaluate to an (MV ERROR VAL STREAM) tuple, and the
-; SEQ program returns this value verbatim.
-;
-;
-;
-; BACKTRACKING
-;
-; We also provide another macro, SEQ-BACKTRACK, which cannot be used on STOBJs,
-; but can be used with regular, applicative structures.  The general form is:
-;
-;    (SEQ-BACKTRACK STREAM BLOCK1 BLOCK2 ...)
-;
-; This macro has the following effect.  First, we try to run BLOCK1.  If it
-; succeeds, we return the (MV ERROR VAL NEW-STREAM) that it returns.
-; Otherwise, we start again with the initial STREAM and try to run the
-; remaining blocks, in order.  If none of the blocks succeed, we return the (MV
-; ERROR VAL NEW-STREAM) encountered by the final block.
+<h3>The Basic Assignment Statement</h3>
 
-(encapsulate
- ()
- (defund make-cw-obj-alist (x n)
-   (declare (xargs :guard (natp n)
-                   :verify-guards nil))
-   (if (atom x)
-       nil
-     (acons (case n
-              (0 #\0) (1 #\1) (2 #\2) (3 #\3) (4 #\4)
-              (5 #\5) (6 #\6) (7 #\7) (8 #\8) (9 #\9)
-              (otherwise
-               (er hard? 'cw-obj "Like cw, cw-obj is limited to 10 objects.")))
-            (car x)
-            (make-cw-obj-alist (cdr x) (1+ n)))))
+<p>In many ways, Seq resembles a loop-free, imperative programming language
+with a mechanism to throw exceptions.  Seq programs are written as blocks of
+statements, and the fundamental statement is assignment:</p>
 
- (defthm alistp-of-make-cw-obj-alist
-   (alistp (make-cw-obj-alist x n))
-   :hints(("Goal" :in-theory (enable make-cw-obj-alist))))
+@({
+    (var := (action ... <stream>))
+})
 
- (verify-guards make-cw-obj-alist)
+<p>Such an assignment statement has two effects when action is successful:</p>
 
- (defund cw-obj (x)
-   ;; This is a "lazy" version of cw.
-   ;; For instance,
-   ;;   (cw-obj (list "hello, ~x0~%" 5)) prints Hello, 5 followed by a newline.
-   ;; Note that it may cause an error.
-   (declare (xargs :guard t))
-   (and (or (consp x)
-            (er hard? 'cw-obj "Expected a cons, but got ~x0.~%" x))
-        (or (stringp (car x))
-            (er hard? 'cw-obj "Expected a fmt-string as the first arg, but got ~x0.~%" (car x)))
-        (fmt-to-comment-window (car x)
-                               (make-cw-obj-alist (cdr x) 0)
-                               0
-                               nil)))
+<ol>
+<li>It binds var to the val produced by the action, and</li>
+<li>It rebinds stream to the updated stream produced by the action</li>
+</ol>
 
- (defthm cw-obj-is-nil
-   (equal (cw-obj x) nil)
-   :rule-classes :definition))
+<p>But action may also fail, in which case the failure stops execution of the
+current block and we propagate the error upwards throughout the entire Seq
+program.</p>
 
 
+<h3>Alternative Forms of Assignment</h3>
+
+<p>We have a couple of additional assignment statements.  The first variant
+simply allows you to ignore the val produced by an action, and is written:</p>
+
+@({
+     (:= (action ... <stream>))
+})
+
+<p>The second variant allows you to destructure the val produced by the action,
+and is written:</p>
+
+@({
+     ((foo . bar) := (action ... <stream>))
+})
+
+<p>@('NIL') has a special meaning in this second form, and can be used to
+\"drop\" parts of val which are not interesting.  For example, if action
+produces the value (1 . 2), and you write:</p>
+
+@({
+     ((foo . nil) := action)
+})
+
+<p>Then @('foo') will be bound to 1 and the \"2\" part of val will be
+inaccessible.</p>
+
+<p>(Usually unnecessary): In place of @(':=') in any of the above, one can also
+write:</p>
+
+<ul>
+<li>@(':w=') &mdash; weak count decrease</li>
+<li>@(':s=') &mdash; strong count decrease</li>
+</ul>
+
+<p>These act the same as @(':='), except that they add some @('(mbe :logic
+...)')-only checks that ensure that the returned stream has a weakly lower or
+strongly lower @(see acl2-count) than the stream going into the action.  This
+is sometimes needed when using Seq in mutually-recursive functions.</p>
+
+
+<h3>Conditional Execution</h3>
+
+<p>A block can be only conditionally executed by wrapping it in a <b>when</b>
+or <b>unless</b> clause.  For example:</p>
+
+@({
+    (when (integerp x)
+      (foo := (action1 ...)
+      (bar := (action2 ...)))
+
+    (unless (consp x)
+      (foo := (action ...)))
+})
+
+<p>This causes the bindings for @('foo') and @('bar') only to be executed when
+the condition evaluates to non-@('nil').</p>
+
+
+<h3>Return Statements</h3>
+
+<p>The final statement of a Seq program must be a return statement, and \"early\"
+return statements can also occur as the last statement of a when or unless
+block.  There are two versions of the return statement.</p>
+
+@({
+    (return expr)
+    (return-raw action)
+})
+
+<p>Either one of these causes the entire Seq program to exit.  In the first
+form, @('expr') is expected to evaluate to a regular ACL2 object, and the result
+of the Seq program will be @('(mv nil expr stream)').</p>
+
+<p>In the second form, @('action') is expected to itself evaluate to an @('(mv
+error val stream)') tuple, and the Seq program returns this value verbatim.</p>
+
+
+<h3>Backtracking</h3>
+
+<p>We also provide another macro, <b>seq-backtrack</b>, which cannot be used on
+STOBJs, but can be used with regular, applicative structures.  The general form
+is:</p>
+
+@({
+    (seq-backtrack stream block1 block2 ...)
+})
+
+<p>This macro has the following effect.  First, we try to run @('block1').  If
+it succeeds, we return the @('(mv error val new-stream)') that it returns.
+Otherwise, we start again with the initial @('stream') and try to run the
+remaining blocks, in order.  If none of the blocks succeed, we return the
+@('(mv error val new-stream)') encountered by the final block.</p>
+
+
+<h3>Other Resources</h3>
+
+<p>While Seq is convenient in certain cases, the @(see b*) macro is generally
+more flexible.</p>
+
+<p>See also @(see seqw), an expanded version of @(see seq) that supports the
+creation of warnings while processing the stream.</p>")
 
 (program)
-
-
 
 ; NAMETREES
 ;

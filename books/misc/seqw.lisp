@@ -1,5 +1,5 @@
 ; The SEQW Macro Language
-; Copyright (C) 2008-2010 Centaur Technology
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -21,35 +21,39 @@
 (in-package "ACL2")
 (include-book "seq")
 
+(defsection seqw
+  :parents (seq)
+  :short "An alternative implementation of the Seq language which allows for
+warnings to be implicitly collected and stored in a list as your program
+executes."
 
-; THE SEQW MACRO
-;
-; SEQW is an alternative implementation of the SEQ language which allows for
-; warnings to be implicitly collected and stored in a list as your program
-; executes.  This comment only describes the differences between SEQW and SEQ,
-; so if you have not yet examined seq.lisp and seq-examples.lsp, you will
-; want to look at them first.
-;
-; The difference is quite straightforward:
-;
-;   - Whereas a SEQ program has the form (seq <stream> ...), a SEQW program
-;     instead has one additional argument, (seqw <stream> <warnings> ...),
-;     where <warnings> is the name of a warnings structure.
-;
-;   - Whereas every SEQ action returns (MV ERROR VAL STREAM), each SEQW action
-;     instead returns (MV ERROR VAL STREAM WARNINGS), where WARNINGS is the
-;     updated warnings structure.
-;
-; Similarly, every SEQW program returns (MV ERROR VAL STREAM WARNINGS) instead
-; of (MV ERROR VAL STREAM).
-;
-; What is a warnings structure?  When we use SEQW, we generally accumulate
-; warnings into a list, so our actions just cons new warnings into this list
-; when desired.  But SEQW itself imposes no particular constraints on what
-; a warnings structure is, and generally the way in which a warning is updated
-; is determined by the actions of the program rather than by SEQW itself.
-;
-; For examples of using SEQW, see the file seqw-examples.lsp.
+  :long "<p>As background see @(see seq); here we only describe the differences
+between Seqw and Seq.</p>
+
+<p>The difference is quite straightforward:</p>
+
+<ul>
+
+<li>Whereas a Seq program has the form @('(seq <stream> ...)'), a Seqw program
+instead has one additional argument, @('(seqw <stream> <warnings> ...)'), where
+@('<warnings>') is the name of a <i>warnings structure</i> (see below).</li>
+
+<li>Whereas every Seq action returns @('(mv error val stream)'), each Seqw action
+instead returns @('(mv error val stream warnings)'), where warnings is the
+updated warnings structure.</li>
+
+<li>Similarly, every Seqw program returns @('(mv error val stream warnings)')
+instead of @('(mv error val stream)').</li>
+
+</ul>
+
+<p>What is a warnings structure?  When we use Seqw, we generally accumulate
+warnings into a list, so our actions just cons new warnings into this list
+when desired.  But Seqw itself imposes no particular constraints on what
+a warnings structure is, and generally the way in which a warning is updated
+is determined by the actions of the program rather than by Seqw itself.</p>
+
+<p>For examples of using SEQW, see the file @('misc/seqw-examples.lsp').</p>")
 
 (program)
 

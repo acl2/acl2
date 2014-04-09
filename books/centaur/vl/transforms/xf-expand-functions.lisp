@@ -228,7 +228,7 @@ approach.</p>")
   :returns (alist "Alist associating funtion names (strings) to the the lists
                    of all functions that are called in their bodies (string
                    lists, perhaps with duplicates).  Suitable for sorting with
-                   @(see toposort).</p>"
+                   @(see toposort)."
                   (equal (alist-keys alist)
                          (vl-fundecllist->names x)))
   :long "<p>If we run into a recursive function, the dep graph will have a

@@ -32,9 +32,9 @@
   :short "Printing routines for displaying Verilog constructs."
 
   :long "<p>Using the VL @(see printer), we implement pretty-printing routines
-to display our @(see modules) and other parse-tree structures.  These functions
-produce either plain text or html output, depending upon the @('htmlp') setting
-in the printer state, @(see ps).</p>")
+to display our internal parse-tree representation (see @(see syntax)) as
+Verilog code.  These functions produce either plain text or html output,
+depending upon the @('htmlp') setting in the printer state, @(see ps).</p>")
 
 (define vl-ps->show-atts-p (&key (ps 'ps))
   :parents (verilog-printing)

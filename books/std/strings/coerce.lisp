@@ -27,9 +27,9 @@
 (include-book "make-character-list")
 
 
-(defsection str/coerce
+(defsection std/strings/coerce
   :parents (coercion coerce)
-  :short "Lemmas about @(see coerce) available in the @(see str) library."
+  :short "Lemmas about @(see coerce) available in the @(see std/strings) library."
 
   :long "<p>We typically do not want to ever reason about coerce.  Instead, we
 rewrite it away into @(see explode) or @(see implode).</p>"

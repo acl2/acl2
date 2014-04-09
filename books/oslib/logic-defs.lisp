@@ -326,7 +326,7 @@ string.</p>"
 
 (define lisp-type (&optional (state 'state))
   :returns (mv (description stringp :rule-classes :type-prescription
-                            "E.g., @('\"Clozure Common Lisp\").")
+                            "E.g., @('\"Clozure Common Lisp\"').")
                (state state-p1 :hyp (force (state-p1 state))))
   :short "Get a host-Lisp specific string describing what kind of Common Lisp
 implementation this is."
@@ -348,7 +348,7 @@ string.</p>"
 
 (define lisp-version (&optional (state 'state))
   :returns (mv (description stringp :rule-classes :type-prescription
-                            "E.g., @('\"Version 1.9-r15996  (LinuxX8664)\").")
+                            "E.g., @('\"Version 1.9-r15996  (LinuxX8664)\"').")
                (state state-p1 :hyp (force (state-p1 state))))
   :short "Get a host-Lisp specific string describing the version number for
 this Common Lisp implementation."

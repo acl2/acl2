@@ -304,10 +304,10 @@ so one way we could write this would be, e.g.,:</p>
 
 <p>This is perfectly valid, but you may sometimes prefer not to embed these
 dependent requirements directly in the fields.  For instance, in the example
-above, the result-type theorem about @('args') becomes two @(see rewrite)
+above, the result-type theorem about @('args') becomes two @(see acl2::rewrite)
 rules.  It would probably be better for the @('true-listp') part to be a @(see
-type-prescription) rule.  But the @('len') requirement doesn't make sense as a
-@(':type-prescription').</p>
+acl2::type-prescription) rule.  But the @('len') requirement doesn't make sense
+as a @(':type-prescription').</p>
 
 <p>To work around this, you could use an explicit, compound @(':rule-classes')
 form with separate @(':corollary') theorems.  This gets very ugly, because you

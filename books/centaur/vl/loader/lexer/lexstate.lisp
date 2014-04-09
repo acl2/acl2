@@ -73,7 +73,7 @@ particular standard we're implementing.</p>"
   :tag nil
 
   ((kwdtable vl-keyword-table-p
-             "The set of @(see keywords) that are currently supported; this
+             "The set of @(see lex-keywords) that are currently supported; this
               could be, e.g., the Verilog 2005 keywords or the SystemVerilog
               2012 keywords, and might or might not include VL extensions.")
 

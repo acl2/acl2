@@ -21,52 +21,72 @@
 (in-package "VL")
 (include-book "../mlib/allexprs")
 (include-book "../mlib/modnamespace")
+(include-book "../mlib/filter")
 (local (include-book "../util/arithmetic"))
 
 (defsection elim-unused-regs
   :parents (transforms)
-  :short "Remove any @('reg') declarations that are never used.")
+  :short "Remove any @('reg') and variable declarations that are never used.")
 
 (local (xdoc::set-default-parents elim-unused-regs))
 
-(define vl-regdecllist-elim-unused-regs
-  ((regs   vl-regdecllist-p)
-   (used   string-listp)
-   (ualist (equal ualist (make-lookup-alist used))))
-  :returns (new-regs vl-regdecllist-p :hyp :fguard)
-  (cond ((atom regs)
-         nil)
-        ((fast-memberp (vl-regdecl->name (car regs)) used ualist)
-         ;; It's used, keep it
-         (cons (car regs) (vl-regdecllist-elim-unused-regs (cdr regs) used ualist)))
-        (t
-         ;; Not used, eliminate it.
-         (vl-regdecllist-elim-unused-regs (cdr regs) used ualist))))
+;; (define vl-regdecllist-elim-unused-regs
+;;   ((regs   vl-regdecllist-p)
+;;    (used   string-listp)
+;;    (ualist (equal ualist (make-lookup-alist used))))
+;;   :returns (new-regs vl-regdecllist-p :hyp :fguard)
+;;   (cond ((atom regs)
+;;          nil)
+;;         ((fast-memberp (vl-regdecl->name (car regs)) used ualist)
+;;          ;; It's used, keep it
+;;          (cons (car regs) (vl-regdecllist-elim-unused-regs (cdr regs) used ualist)))
+;;         (t
+;;          ;; Not used, eliminate it.
+;;          (vl-regdecllist-elim-unused-regs (cdr regs) used ualist))))
 
 (define vl-module-elim-unused-regs ((x vl-module-p))
   :returns (new-x vl-module-p :hyp :fguard)
-  (b* ((regs (vl-module->regdecls x))
-       ((unless (consp regs))
+  (b* (((vl-module x) x)
+       ((unless (or (consp x.regdecls)
+                    (consp x.vardecls)))
         ;; Optimization.  Don't need to do anything if there aren't any
         ;; registers anyway.
         x)
        (used       (vl-exprlist-names (vl-module-allexprs x)))
-       (ualist     (make-lookup-alist used))
-       (regs-prime (vl-regdecllist-elim-unused-regs regs used ualist))
-       (-          (fast-alist-free ualist))
-       ((when (same-lengthp regs-prime regs))
-        ;; Optimization.  Don't need to do anything more unless we threw
-        ;; out some registers.
+       (new-regs   (and (consp x.regdecls)
+                        (vl-keep-regdecls used x.regdecls)))
+       (new-vars   (and (consp x.vardecls)
+                        (vl-keep-vardecls used x.vardecls)))
+
+       ((when (and (same-lengthp new-regs x.regdecls)
+                   (same-lengthp new-vars x.vardecls)))
+        ;; Optimization.  Don't need to do anything more unless we threw out
+        ;; some registers.
         x)
-       (old-names (mergesort (vl-regdecllist->names regs)))
-       (new-names (mergesort (vl-regdecllist->names regs-prime)))
-       (unused-names (difference old-names new-names))
-       (warnings (warn :type :vl-warn-unused-reg
-                       :msg "In ~m0, eliminating spurious registers ~&1."
-                       :args (list (vl-module->name x) unused-names)
-                       :acc (vl-module->warnings x)))
+
+       (warnings x.warnings)
+
+       (old-regnames    (mergesort (vl-regdecllist->names x.regdecls)))
+       (new-regnames    (mergesort (vl-regdecllist->names new-regs)))
+       (unused-regnames (difference old-regnames new-regnames))
+       (warnings (if unused-regnames
+                     (warn :type :vl-warn-unused-reg
+                           :msg "In ~m0, eliminating spurious registers ~&1."
+                           :args (list (vl-module->name x) unused-regnames))
+                   warnings))
+
+       (old-varnames    (mergesort (vl-vardecllist->names x.vardecls)))
+       (new-varnames    (mergesort (vl-vardecllist->names new-vars)))
+       (unused-varnames (difference old-varnames new-varnames))
+       (warnings (if unused-varnames
+                     (warn :type :vl-warn-unused-var
+                           :msg "In ~m0, eliminating spurious variables ~&1."
+                           :args (list (vl-module->name x) unused-varnames))
+                   warnings))
+
        (new-x (change-vl-module x
-                                :regdecls regs-prime
+                                :regdecls new-regs
+                                :vardecls new-vars
                                 :warnings warnings)))
     new-x))
 

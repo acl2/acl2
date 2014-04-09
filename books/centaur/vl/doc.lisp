@@ -48,7 +48,7 @@ href='http://en.wikipedia.org/wiki/Verilog'>Verilog</a> source code.  It
 includes:</p>
 
 <ul>
- <li>A representation for Verilog @(see modules),</li>
+ <li>An internal representation for Verilog @(see syntax),</li>
  <li>A @(see loader) for parsing Verilog source code into this representation,</li>
  <li>Utilities for inspecting and analyzing these modules,</li>
  <li>Various @(see transforms) that can simplify these modules, and</li>

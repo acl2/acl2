@@ -70,14 +70,13 @@ expressions.</li>
  <li>unroll some repeat statements (up to a limit)</li>
  <li>eliminate @('always null;')</li>
  <li>eliminate @('initial null;')</li>
+ <li>eliminate @('for(...) null;')</li>
 </ul>
 
-<p>BOZO we should eventually implement additional rewrites, such as:</p>
+<p>Note that we don't transform case statements into if statement here, but
+that's done in @(see caseelim).</p>
 
-<ul>
- <li>case statements &rarr; if statements</li>
- <li>unroll simple while/for loops</li>
-</ul>")
+<p>Bozo eventually we should also unroll simple while/for loops.</p>")
 
 (local (xdoc::set-default-parents stmtrewrite))
 
@@ -448,6 +447,42 @@ blocks with names/decls seems tricky due to hierarchical identifiers.</p>"
     (equal x.id.guts.name "$vcover")))
 
 
+
+
+(define vl-forstmt-rewrite ((initlhs vl-expr-p)
+                            (initrhs vl-expr-p)
+                            (test    vl-expr-p)
+                            (nextlhs vl-expr-p)
+                            (nextrhs vl-expr-p)
+                            (body    vl-stmt-p)
+                            (atts    vl-atts-p)
+                            (warnings vl-warninglist-p))
+  :returns (mv (warnings vl-warninglist-p :hyp :fguard)
+               (stmt     vl-stmt-p        :hyp :fguard))
+  :short "Eliminate purely null @(see for-statements)."
+  :long "<p>The basic rewrite this performs is:</p>
+
+@({
+ for(initlhs = initrhs; test; nextlhs = nextrhs)
+    [null] ;
+   -->
+ [null];
+})
+
+<p>We could eventually unroll things.  This rewrite is generally meant to allow
+us to ignore for loops with @('$display') statements and similar.</p>"
+
+  (if (vl-fast-nullstmt-p body)
+      (mv warnings body)
+    (mv warnings
+        (make-vl-forstmt :initlhs initlhs
+                         :initrhs initrhs
+                         :test test
+                         :nextlhs nextlhs
+                         :nextrhs nextrhs
+                         :body body
+                         :atts atts))))
+
 (defsection vl-stmt-rewrite
   :short "Core statement rewriter."
 
@@ -514,6 +549,16 @@ blocks with names/decls seems tricky due to hierarchical identifiers.</p>"
                  (x-prime               (vl-casestmt-rewrite x.casetype x.test x.exprs
                                                              bodies default x.atts)))
               (mv warnings x-prime)))
+
+           ((vl-forstmt-p x)
+            (b* (((vl-forstmt x) x)
+                 ((mv warnings body) (vl-stmt-rewrite x.body unroll-limit warnings))
+                 ((mv warnings new-x) (vl-forstmt-rewrite x.initlhs x.initrhs
+                                                          x.test
+                                                          x.nextlhs x.nextrhs
+                                                          body
+                                                          x.atts warnings)))
+              (mv warnings new-x)))
 
            (t
             (b* ((stmts               (vl-compoundstmt->stmts x))

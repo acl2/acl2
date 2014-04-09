@@ -47,7 +47,7 @@ of these languages.</p>
 <p>We can currently support most of the constructs in the Verilog 1364-2005
 standard.  Notably, we do not yet support user-defined primitives, generate
 statements, specify blocks, specparams, and genvars.  In some cases, the parser
-will just skip over unrecognized constructs (adding a @(see warning) when it
+will just skip over unrecognized constructs (adding @(see warnings) when it
 does so.)  Depending on what you are doing, this behavior may be actually
 appropriate, e.g., skipping specify blocks may be okay if you aren't trying to
 deal with low-level timing issues.</p>

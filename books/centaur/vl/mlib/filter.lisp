@@ -93,11 +93,11 @@ keep-long
 
        (defxdoc ,del-fn
          :parents (filtering-by-name)
-         :short ,(cat "Remove @(see vl-" (symbol-name type) "-p)s by "
+         :short ,(cat "Remove @(see VL-" (symbol-name type) "-P)s by "
 short-name ".")
 
          :long ,(cat "<p>We are given @('names'), a list of strings, and
-@('x'), a list of @(see vl-" (symbol-name type) "-p)s.  We remove all of the
+@('x'), a list of @(see VL-" (symbol-name type) "-P)s.  We remove all of the
 members of @('x') whose " short-name "s are in @('names').</p>"
 
 del-long
@@ -403,7 +403,7 @@ filter-long
 modules.  It can be \"unsafe\" in that it can ruin the @(see completeness) of a
 module list should any remaining modules instantiate the removed modules.  Some
 safer, higher-level alternatives include @(see vl-remove-bad-modules), @(see
-vl-remove-unnecessary-modules), and @(see vl-propagate-errors).</p>"
+vl-remove-unnecessary-modules), and @(see vl-design-propagate-errors).</p>"
 
   :keep-long "<p><b>Note</b>: it is often better to use the related function
 @(see vl-fast-find-modules).  When the list of names is short,

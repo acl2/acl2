@@ -65,7 +65,7 @@ functions, mapping over lists, and many other boilerplate tasks."
 <li>Automating other tedious tasks
 <ul>
  <li>@(':type-prescription')s for @('mv')-returning functions (@(see defmvtypes))</li>
- <li>defining simple constants with @(see xval) documentation (@(see defval))</li>
+ <li>defining simple constants with @(see xdoc) documentation (@(see defval))</li>
  <li>defining constants that depend on stobjs, with @('mv') support (@(see defconsts))</li>
 </ul></li>
 

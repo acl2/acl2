@@ -77,8 +77,8 @@ provided.  For instance,</p>
           (true-listp (mv-nth 2 (foo ...))))
 })
 
-<p>The @(':hints') argument can be used to specify custom @(see hints) to use.
-The same hints are given to each theorem.</p>
+<p>The @(':hints') argument can be used to specify custom @(see acl2::hints) to
+use.  The same hints are given to each theorem.</p>
 
 <h3>Interaction with @(see force)</h3>
 

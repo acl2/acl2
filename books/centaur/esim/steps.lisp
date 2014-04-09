@@ -62,7 +62,7 @@ for the @('k+1')st step are given by @('(nth k ins)').</p>
 4v-sexprs).</p>
 
 <p>The @('-faig-') variants take and produce alists mapping signals to @(see
-faig)s.</li>
+faig)s.</p>
 
 <p>The @('-probe-') variants produce three outputs, each a list of alists:
 @('nsts'), @('outs'), and @('internals').  The non-probe variants only produce

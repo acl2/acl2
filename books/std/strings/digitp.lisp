@@ -341,6 +341,8 @@ can tolerate non-numeric characters after the number.</p>"
     :hints(("Goal" :in-theory (enable digit-listp)))))
 
 (define digit-string-p
+  :parents (numbers)
+  :short "Recognizes strings of @(see digitp) characters."
   ((x :type string))
   :returns bool
 

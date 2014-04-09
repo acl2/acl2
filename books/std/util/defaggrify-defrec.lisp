@@ -30,7 +30,7 @@
 within the ACL2 theorem prover to introduce structures.  Although many of the
 details are different, it is in many ways like @(see defaggregate).</p>
 
-<p>@(call defaggregate-defrec-emulation) is a macro that automatically adds
+<p>@(call defaggrify-defrec) is a macro that automatically adds
 @('defaggregate')-style accessors and @(see b*) binders that work on
 @('defrec') structures.</p>
 
@@ -38,8 +38,8 @@ details are different, it is in many ways like @(see defaggregate).</p>
 
 @({
      (in-package \"ACL2\")
-     (std::defaggregate-defrec-emulation rewrite-rule)
-     (std::defaggregate-defrec-emulation def-body)
+     (std::defaggrify-defrec rewrite-rule)
+     (std::defaggrify-defrec def-body)
      ...
 })
 

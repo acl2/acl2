@@ -216,6 +216,22 @@ pretty-printing Verilog constructs as in @(see vl-fmt)."
 
 
 (define vl-cw-obj ((msg stringp) args &key (ps 'ps))
+  :parents (verilog-printing)
+  :short "Similar to @(see vl-cw), but the arguments are given as a list
+instead of as macro arguments."
+  :long "<p>For example:</p>
+
+@({
+    (vl-cw \"hello ~x0 ~x1 ~x2\" 3 4 5)
+      --->
+    (vl-cw-obj \"hello ~x0 ~x1 ~x2\" (list 3 4 5))
+})
+
+<p>This can be useful for grouping up arguments into cons structures.</p>
+
+<p>BOZO I should probably implement something like @('~@') and use @(see msg)
+instead.</p>"
+
   (cond ((<= (len args) 10)
          (vl-fmt msg (pairlis$
                       '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)

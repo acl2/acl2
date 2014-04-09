@@ -25,6 +25,7 @@
 (include-book "equal-by-logbitp")
 (include-book "extra-defs")
 (include-book "fast-logrev")
+(include-book "fast-logext")
 (include-book "ihs-extensions")
 (include-book "ihsext-basics")
 (include-book "install-bit")
@@ -33,7 +34,6 @@
 (include-book "part-select")
 (include-book "rotate")
 (include-book "saturate")
-(include-book "sign-extend")
 (include-book "signed-byte-p")
 
 (defxdoc bitops
@@ -57,7 +57,7 @@ bit-vector operations that are built into ACL2 like @(see logand), @(see ash),
 and @(see logbitp).</li>
 
 <li>Efficient implementations of certain bit-vector operations like @(see
-sign-extend), <see topic='@(url bitops/merge)'>merge operations</see>, <see
+fast-logext), <see topic='@(url bitops/merge)'>merge operations</see>, <see
 topic='@(url bitops/fast-logrev)'>fast-logrev</see>, etc., with lemmas or @(see
 mbe) to relate them to the logically nicer definitions.  These definitions
 generally don't add any logical power, but are useful for developing more
@@ -285,7 +285,7 @@ recursive definitions.</p>
 
 <p>This book defines some optimized signed and unsigned saturation functions.</p>
 
-<h5>@(see bitops/sign-extend)</h5>
+<h5>@(see bitops/fast-logext)</h5>
 
 <p>This book provides an optimized sign-extension functions, and proves them
 equivalent to @(see logext).  These optimizations don't impact reasoning

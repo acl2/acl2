@@ -72,6 +72,7 @@
 (include-book "centaur/bridge/top" :dir :system)
 
 (include-book "centaur/clex/example" :dir :system)
+(include-book "centaur/nrev/demo" :dir :system)
 
 (include-book "cgen/top" :dir :system)
 

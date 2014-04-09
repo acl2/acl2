@@ -32,7 +32,7 @@ href='http://www.json.org/'>JSON</a> format."
 
   :long "<p>This is a collection of printing routines for translating ACL2
 structures into JSON format.  These routines are mainly meant to make it easy
-to convert @(see vl) @(see modules) into nice JSON data, but are somewhat
+to convert @(see vl) @(see syntax) into nice JSON data, but are somewhat
 flexible and may be useful for other applications.</p>")
 
 

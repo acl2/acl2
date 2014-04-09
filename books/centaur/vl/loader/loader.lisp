@@ -39,7 +39,7 @@
 
 (defxdoc loader
   :parents (vl)
-  :short "Finds and loads Verilog source files into parsed @(see modules)."
+  :short "Finds and loads Verilog source files."
 
   :long "<p>Most Verilog designs involve many files spread out across multiple
 directories.  To really load a high-level module @('top'), we typically need
@@ -122,7 +122,7 @@ overrides)) that we should probably discuss somewhere.</p>")
 
    (mods      (and (vl-modulelist-p mods)
                    (uniquep (vl-modulelist->names mods)))
-              "@(see modules) we have loaded so far.  These modules have been
+              "Modules we have loaded so far.  These modules have been
                only minimally transformed, and are intended to capture the
                actual source code in the files on disk.")
 
@@ -291,8 +291,8 @@ name clashes, the previous definition wins, and we add a warning to the
 <li>Any applicable @(see overrides) are applied, perhaps resulting in a new
 token list.</li>
 
-<li>The @(see parser) transforms the token list into a list of @(see modules),
-our internal representation of Verilog.</li>
+<li>The @(see parser) transforms the token list into a list of modules and
+other design elements.</li>
 
 </ul>"
 

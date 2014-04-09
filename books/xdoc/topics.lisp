@@ -641,8 +641,8 @@ deprecate classic manuals in the future.</p>
 
 <p>However, you may find that even after setting @(':import nil'), some
 extraneous documentation is still being included!  For instance, you may find
-documentation from libraries like @(see str::str) and @(see oslib::oslib) in
-your output.</p>
+documentation from libraries like @(see acl2::std/strings) and @(see
+oslib::oslib) in your output.</p>
 
 <p>This is because @('xdoc/save') includes some supporting books that are,
 themselves, documented.  If you really want precise control over what goes into

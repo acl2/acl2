@@ -69,9 +69,9 @@ though it's really not relevant.</p>
 
 <p>(Perhaps we should eventually write an E-level analysis that, say, does a
 symbolic simulation, uses basic constant folding and rewriting, then finally
-looks at the @(see aig-vars) or something similar to try to identify wires that
-aren't used.  But this would be quite a bit of computation, so we haven't
-really considered it.)</p>
+looks at the @(see acl2::aig-vars) or something similar to try to identify
+wires that aren't used.  But this would be quite a bit of computation, so we
+haven't really considered it.)</p>
 
 <p>Handling submodule instances is trickier.  To make this concrete, imagine
 that we are trying to determine the used/set wires in module @('super'), where

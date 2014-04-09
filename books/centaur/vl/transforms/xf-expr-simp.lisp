@@ -160,7 +160,7 @@ output using an equivalence checker.</p>")
 
 
 (define vl-expr-simp-binary-bitand
-  ((x    vl-expr-p     "Expression to rewrite, of the form FOO & BAR.")
+  ((x    vl-expr-p     "Expression to rewrite, of the form @('a & b').")
    (args vl-exprlist-p "Its already-rewritten args."))
   :guard (and (vl-nonatom-p x)
               (equal (vl-nonatom->op x) :vl-binary-bitand)

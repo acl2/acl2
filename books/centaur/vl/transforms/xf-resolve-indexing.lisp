@@ -645,8 +645,15 @@ able to handle more cases.</p>")
        ;; registers here.
        ((mv reg-arrays reg-wires)
         (vl-regdecllist-filter-arrays regdecls nil nil))
+
+       ;; The function's inputs are also okay to turn into bit selects, because
+       ;; they can't be arrays.
+       (innames         (vl-taskportlist->names x.inputs))
+
        (local-arrnames  (append-without-guard reg-arrays visible-global-arrnames))
-       (local-wirenames (append-without-guard reg-wires visible-global-wirenames))
+       (local-wirenames (append-without-guard reg-wires
+                                              innames
+                                              visible-global-wirenames))
        (local-arrfal    (make-lookup-alist local-arrnames))
        (local-wirefal   (make-lookup-alist local-wirenames))
        ((mv warnings new-body)

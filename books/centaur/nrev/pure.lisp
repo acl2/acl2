@@ -91,7 +91,7 @@ destructive, under-the-hood operations.</p>
 tail-recursive version.</li>
 
 <li>Runtime &mdash; perhaps around 1.3x worse than @('reverse') due to the
-@(see stobj) overhead.</li>
+@(see acl2::stobj) overhead.</li>
 
 </ul>
 
@@ -321,7 +321,7 @@ nrev)."
 
 (defsection nrev2
   :parents (nrev)
-  :short "An extra @(see nrev) created with @(see defstobj-clone)."
+  :short "An extra @(see nrev) created with @(see acl2::defstobj-clone)."
   :long "<p>This may be useful if you need two @(see nrev) stobjs at once.</p>
 @(def nrev2)"
 

@@ -23,7 +23,7 @@
 
 (defsection code-char-lemmas
   :parents (code-char)
-  :short "Lemmas about @(see code-char) from the @(see str) library."
+  :short "Lemmas about @(see code-char) from the @(see std/strings) library."
 
   (defthm default-code-char
     (implies (or (zp x)
@@ -108,7 +108,7 @@ See also @(see chareqv).</p>"
 
 (defsection char-code-lemmas
   :parents (char-code)
-  :short "Lemmas about @(see char-code) from the @(see str) library."
+  :short "Lemmas about @(see char-code) from the @(see std/strings) library."
 
   (defthm equal-of-char-code-and-constant
     (implies (syntaxp (quotep c))

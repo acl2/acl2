@@ -29,9 +29,10 @@
 
 (in-theory (disable make-character-list))
 
-(defsection str/make-character-list
+(defsection std/strings/make-character-list
   :parents (coercion make-character-list)
-  :short "Lemmas about @(see make-character-list) in the @(see str) library."
+  :short "Lemmas about @(see make-character-list) in the @(see std/strings)
+library."
 
   :long "<p>This function is normally not anything you would ever want to use.
 It is notable mainly for the role it plays in the completion axiom for @(see

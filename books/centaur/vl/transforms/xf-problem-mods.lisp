@@ -26,7 +26,7 @@
   :parents (transforms)
   :short "Eliminate modules (that the user) says cause problems."
 
-  :long "<p>This is a trivial transform that simply adds a fatal @(see warning)
+  :long "<p>This is a trivial transform that simply adds fatal @(see warnings)
 to any modules we are told are \"problem modules.\"</p>
 
 <p>This is a barbaric but effective way to work around any modules that, e.g.,

@@ -56,7 +56,9 @@
           top
           defxdoc defsection lnfix definlined definline
           define defaggregate unsigned-byte-p signed-byte-p
-          raise)
+          raise
+          std
+          std/strings)
    *standard-acl2-imports*))
 
 ; Packages for the ordered sets library.  We should probably consolidate this
