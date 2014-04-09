@@ -19,9 +19,13 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "VL")
-(include-book "modnamespace")
+
+(include-book "centaur/vl/parsetree" :dir :system)
+(include-book "centaur/vl/mlib/modnamespace" :dir :system)
 (include-book "find-module")
 (include-book "centaur/misc/dag-measure" :dir :system)
+
+
 
 
 (defsection vl-modhier-measure
@@ -241,9 +245,9 @@ each instance.</p>
      (declare (xargs :guard (and (vl-modalist-p modalist)
                                  (vl-modhier-loopfree-p x modalist))
                      :measure (vl-modhier-measure x modalist)))
-     (b* (((unless (mbt (vl-modhier-loopfree-p x modalist))) 0)
+     (b* (((unless (mbt (vl-modhier-loopfree-p x modalist))) 1)
           (look (hons-get x modalist))
-          ((unless look) 0))
+          ((unless look) 1))
        (+ 1 (vl-modinstlist-modinst-count (vl-module->modinsts (cdr look)) modalist))))
    (defun vl-modinstlist-modinst-count (x modalist)
      (declare (xargs :guard (and (vl-modinstlist-p x)
@@ -253,6 +257,19 @@ each instance.</p>
      (if (atom x)
          0
        (+ (vl-module-modinst-count (vl-modinst->modname (car x)) modalist)
-          (vl-modinstlist-modinst-count (cdr x) modalist))))))
+          (vl-modinstlist-modinst-count (cdr x) modalist)))))
+
+  (flag::make-flag vl-module-modinst-count-flag vl-module-modinst-count)
+
+
+  (defthm-vl-module-modinst-count-flag
+    (defthm vl-module-modinst-count-type
+      (posp (vl-module-modinst-count x modalist))
+      :rule-classes :type-prescription
+      :flag vl-module-modinst-count)
+    (defthm vl-modinstlist-modinst-count-type
+      (natp (vl-module-modinst-count x modalist))
+      :rule-classes :type-prescription
+      :flag vl-modinstlist-modinst-count)))
 
 
