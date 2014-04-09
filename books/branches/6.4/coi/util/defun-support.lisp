@@ -1237,21 +1237,112 @@
   ..)
 	   
 |#
-;; We currently do not support congruences for multiple value returns
-;; Given ACL2's congruence limitations I'm not even sure what that
-;; would look like.
+
+;; Support for multiple-value return congruences
+
+(defun mv-equiv (equiv offset)
+  (declare (type symbol equiv)
+           (type (integer 0 *) offset))
+  (cons equiv offset))
+
+(defun mv-equivp (x)
+  (declare (type t x))
+  (and (consp x)
+       (symbolp (car x))
+       (natp (cdr x))))
+
+(defthm mv-equivp-implies-symbolp-mv-equiv
+  (implies
+   (and
+    (symbolp equiv)
+    (natp offset))
+   (mv-equivp (mv-equiv equiv offset)))
+  :rule-classes (:rewrite
+                 (:forward-chaining :trigger-terms ((mv-equiv equiv offset)))))
+
+(defun outer-equivp (x)
+  (declare (type t x))
+  (or (symbolp x)
+      (mv-equivp x)))
+
+(defthm outer-equivp-from-symbolp
+  (implies
+   (symbolp x)
+   (outer-equivp x))
+  :rule-classes (:forward-chaining))
+
+(defthm outer-equivp-from-mv-equivp
+  (implies
+   (mv-equivp x)
+   (outer-equivp x))
+  :rule-classes (:forward-chaining))
+
+(defun outer-equiv (x)
+  (declare (type (satisfies outer-equivp) x))
+  (if (symbolp x) x (car x)))
+
+(defun mv-offset (x)
+  (declare (type (satisfies mv-equivp) x))
+  (cdr x))
+
+(defthm outer-equivp-implies-symbolp-outer-equiv
+  (implies
+   (outer-equivp x)
+   (symbolp (outer-equiv x)))
+  :rule-classes (:rewrite
+                 (:forward-chaining :trigger-terms ((outer-equiv x)))))
+
+(defthm mv-equivp-implies-natp-mv-offset
+  (implies
+   (mv-equivp x)
+   (natp (mv-offset x)))
+  :rule-classes (:rewrite
+                 (:forward-chaining :trigger-terms ((mv-offset x)))))
+
+(defthm symbolp-implies-not-mv-equivp
+  (implies
+   (and
+    (outer-equivp x)
+    (not (symbolp x)))
+   (mv-equivp x))
+  :rule-classes (:forward-chaining))
+
+(in-theory (disable mv-equivp mv-equiv outer-equivp))
+(in-theory (disable outer-equiv mv-offset))
+
+(defun outer-equiv-listp (list)
+  (declare (type t list))
+  (if (not (consp list)) (null list)
+    (and (outer-equivp (car list))
+         (outer-equiv-listp (cdr list)))))
+
+(defthm outer-equiv-listp-implies-true-listp
+  (implies
+   (outer-equiv-listp x)
+   (true-listp x))
+  :rule-classes (:forward-chaining))
 
 (defun congruence-spec (list)
   (declare (type t list))
   (and (consp list)
        (symbol-listp (car list))
        (consp (cdr list))
-       (symbolp (cadr list))
+       (outer-equivp (cadr list))
        (null (cddr list))))
+
+(defund mv-congruencep (x)
+  (declare (type (satisfies congruence-spec) x))
+  (not (symbolp (cadr x))))
+
+(defund congruence-offset (x)
+  (declare (type (satisfies congruence-spec) x)
+           (type (satisfies mv-congruencep) x)
+           (xargs :guard-hints (("Goal" :in-theory (enable mv-congruencep)))))
+  (mv-offset (cadr x)))
 
 (defund congruence-equiv (cong)
   (declare (type (satisfies congruence-spec) cong))
-  (cadr cong))
+  (outer-equiv (cadr cong)))
 
 (defund congruence-pattern (cong)
   (declare (type (satisfies congruence-spec) cong))
@@ -1269,27 +1360,101 @@
    (symbolp (congruence-equiv cong)))
   :hints (("Goal" :in-theory (enable congruence-equiv))))
 
+(defthm natp-congrence-offset
+  (implies
+   (and
+    (congruence-spec cong)
+    (mv-congruencep cong))
+   (natp (congruence-offset cong)))
+  :hints (("Goal" :in-theory (enable mv-congruencep congruence-offset)))
+  :rule-classes (:rewrite
+                 (:forward-chaining :trigger-terms ((congruence-offset cong)))))
+
 (in-theory (disable congruence-spec))
 
-(defun congruence-spec-list (list)
+(defun congruence-spec-listp (list)
   (declare (type t list))
   (if (consp list) 
       (and (congruence-spec (car list))
-	   (congruence-spec-list (cdr list)))
+	   (congruence-spec-listp (cdr list)))
     (null list)))
+
+(defthm congruence-spec-listp-implies-true-listp
+  (implies
+   (congruence-spec-listp x)
+   (true-listp x))
+  :rule-classes (:forward-chaining))
+
+;; User level congruence specifications
 
 (defun wf-congruence-spec (x)
   (declare (type t x))
-  (or (congruence-spec-list x)
-      (congruence-spec x)))
+  (and (consp x)
+       (symbol-listp (car x))
+       (symbol-listp (cdr x))
+       (< 0 (len (cdr x)))))
 
-(defun wf-congruence-spec-list (x)
+(defund wf-congruence-pattern (cong)
+  (declare (type (satisfies wf-congruence-spec) cong))
+  (car cong))
+
+(defthm symbol-listp-wf-congrence-pattern
+  (implies
+   (wf-congruence-spec cong)
+   (symbol-listp (wf-congruence-pattern cong)))
+  :hints (("Goal" :in-theory (enable wf-congruence-pattern))))
+
+#+joe
+(defun congruence-spec-list-from-wf-congruence-spec-rec (args off res)
+  (declare (type (satisfies symbol-listp) args res)
+           (type (integer 0 *) off))
+  (if (endp res) nil
+    (if (not (car res)) (congruence-spec-list-from-wf-congruence-spec-rec args (1+ off) (cdr res))
+      (cons (list args (mv-equiv (car res) off))
+            (congruence-spec-list-from-wf-congruence-spec-rec args (1+ off) (cdr res))))))
+
+#+joe
+(defthm congruence-spec-listp-congruence-spec-list-from-wf-congruence-spec-rec
+  (implies
+   (and
+    (symbol-listp args)
+    (symbol-listp res)
+    (natp off))
+   (congruence-spec-listp (congruence-spec-list-from-wf-congruence-spec-rec args off res)))
+  :hints (("Goal" :in-theory (enable congruence-spec))))
+
+#+joe
+(defund congruence-spec-list-from-wf-congruence-spec (x)
+  (declare (type (satisfies wf-congruence-spec) x))
+  (if (< 1 (len (cdr x)))
+      (congruence-spec-list-from-wf-congruence-spec-rec (car x) 0 (cdr x))
+    (list (list (car x) (cadr x)))))
+
+#+joe
+(defthm congruence-spec-listp-congruence-spec-list-from-wf-congruence-spec
+  (implies
+   (wf-congruence-spec x)
+   (congruence-spec-listp (congruence-spec-list-from-wf-congruence-spec x)))
+  :rule-classes (:rewrite
+                 (:forward-chaining :trigger-terms ((congruence-spec-list-from-wf-congruence-spec x))))
+  :hints (("Goal" :in-theory (enable congruence-spec
+                                     congruence-spec-list-from-wf-congruence-spec))))
+
+(defun wf-congruence-spec-listp (x)
   (declare (type t x))
   (if (consp x)
       (and (wf-congruence-spec (car x))
-	   (wf-congruence-spec-list (cdr x)))
+	   (wf-congruence-spec-listp (cdr x)))
     (null x)))
 
+#+joe
+(defun congruence-spec-list-from-wf-congruence-spec-list (x)
+  (declare (type (satisfies wf-congruence-spec-listp) x))
+  (if (endp x) nil
+    (append (congruence-spec-list-from-wf-congruence-spec (car x))
+            (congruence-spec-list-from-wf-congruence-spec-list (cdr x)))))
+
+#+joe
 (defun flatten-wf-congruence-spec-list (x)
   (declare (type t x))
   (if (consp x)
@@ -1298,27 +1463,30 @@
 	(cons (car x) (flatten-wf-congruence-spec-list (cdr x))))
     nil))
 
+#+joe
 (defthm congruence-spec-list-flatten-wf-congruence-spec-list
   (implies
    (wf-congruence-spec-list x)
    (congruence-spec-list (flatten-wf-congruence-spec-list x))))
 
-(defun congruence-hint (hint)
+(defun wf-congruence-hint (hint)
   (declare (type t hint))
   (true-list-listp hint))
 
-(defun congruence-hint-list (list)
+(defun wf-congruence-hint-listp (list)
   (declare (type t list))
   (if (consp list)
-      (and (congruence-hint (car list))
-	   (congruence-hint-list (cdr list)))
+      (and (wf-congruence-hint (car list))
+	   (wf-congruence-hint-listp (cdr list)))
     (null list)))
 
+#+joe
 (defun wf-congruence-hint (x)
   (declare (type t x))
   (or (congruence-hint x)
       (congruence-hint-list x)))
 
+#+joe
 (defun wf-congruence-hint-list (x)
   (declare (type t x))
   (if (consp x)
@@ -1326,6 +1494,7 @@
 	   (wf-congruence-hint-list (cdr x)))
     (null x)))
 
+#+joe
 (defun flatten-wf-congruence-hint-list (x)
   (declare (type t x))
   (if (consp x)
@@ -1334,6 +1503,7 @@
 	(cons (car x) (flatten-wf-congruence-hint-list (cdr x))))
     nil))
 
+#+joe
 (defthm congruence-hint-list-flatten-wf-congruence-hint-list
   (implies
    (wf-congruence-hint-list x)
@@ -1350,21 +1520,43 @@
    (symbol-listp y)
    (symbol-listp (nullify-list-append x y))))
 
+(defun map-list (x list)
+  (declare (type (satisfies symbol-listp) x)
+           (type (satisfies outer-equiv-listp) list))
+  (if (endp list) nil
+    (cons (list x (car list))
+          (map-list x (cdr list)))))
+
+(defthm congruence-spec-listp-map-list
+  (implies
+   (and
+    (symbol-listp x)
+    (outer-equiv-listp list))
+   (congruence-spec-listp (map-list x list)))
+  :hints (("Goal" :in-theory (enable CONGRUENCE-SPEC))))
+
 (defun split-pattern (prev next equiv)
-  (declare (type (satisfies symbol-listp) prev next))
+  (declare (type (satisfies symbol-listp) prev next)
+           (type (satisfies outer-equiv-listp) equiv))
   (if (endp next) nil
     (if (null (car next))
 	(split-pattern (cons (car next) prev) (cdr next) equiv)
-      (cons (list (nullify-list-append prev (cons (car next) (nullify-list-append (cdr next) nil))) equiv)
-	    (split-pattern (cons (car next) prev) (cdr next) equiv)))))
+      (append (map-list (nullify-list-append prev (cons (car next) (nullify-list-append (cdr next) nil))) equiv)
+              (split-pattern (cons (car next) prev) (cdr next) equiv)))))
+
+(defthm congruence-spec-listp-append
+  (implies
+   (congruence-spec-listp x)
+   (equal (congruence-spec-listp (append x y))
+          (congruence-spec-listp y))))
 
 (defthm congruence-spec-list-split-pattern
   (implies
    (and
-    (symbolp equiv)
+    (outer-equiv-listp equiv)
     (symbol-listp prev)
     (symbol-listp next))
-   (congruence-spec-list (split-pattern prev next equiv)))
+   (congruence-spec-listp (split-pattern prev next equiv)))
   :hints (("Goal" :in-theory (enable congruence-spec))))
 
 (defun map-cons (a list)
@@ -1374,11 +1566,20 @@
 	    (map-cons a (cdr list)))
     nil))
 
+(defun wf-congruence-pairing (pairs)
+  (declare (type t pairs))
+  (if (consp pairs)
+      (and (consp (car pairs))
+	   (wf-congruence-hint (caar pairs))
+	   (wf-congruence-spec (cdar pairs))
+	   (wf-congruence-pairing (cdr pairs)))
+    (null pairs)))
+
 (defun congruence-pairing (pairs)
   (declare (type t pairs))
   (if (consp pairs)
       (and (consp (car pairs))
-	   (congruence-hint (caar pairs))
+	   (wf-congruence-hint (caar pairs))
 	   (congruence-spec (cdar pairs))
 	   (congruence-pairing (cdr pairs)))
     (null pairs)))
@@ -1393,23 +1594,52 @@
 (defthm congruence-pairing-map-cons
   (implies
    (and
-    (congruence-hint a)
-    (congruence-spec-list list))
+    (wf-congruence-hint a)
+    (congruence-spec-listp list))
    (congruence-pairing (map-cons a list))))
 
+(defun outer-equiv-list (off list)
+  (declare (type (integer 0 *) off)
+           (type (satisfies symbol-listp) list))
+  (if (endp list) nil
+    (let ((entry (car list)))
+      (if (not entry) (outer-equiv-list (1+ off) (cdr list))
+        (cons (mv-equiv (car list) off)
+              (outer-equiv-list (1+ off) (cdr list)))))))
+
+(defthm outer-equiv-listp-outer-equiv-list
+  (implies
+   (and
+    (natp off)
+    (symbol-listp list))
+   (outer-equiv-listp (outer-equiv-list off list))))
+
+(defund wf-congruence-outer-equiv-list (cong)
+  (declare (type (satisfies wf-congruence-spec) cong)
+           (xargs :guard-hints (("Goal" :in-theory (enable wf-congruence-spec)))))
+  (let ((outer (cdr cong)))
+    (if (= (len outer) 1) (list (car outer))
+      (outer-equiv-list 0 outer))))
+
+(defthm outer-equiv-listp-wf-congruence-outer-equiv-list
+  (implies
+   (wf-congruence-spec cong)
+   (outer-equiv-listp (wf-congruence-outer-equiv-list cong)))
+  :hints (("Goal" :in-theory (enable wf-congruence-outer-equiv-list))))
+
 (defun split-paired-congruences (pairs)
-  (declare (type (satisfies congruence-pairing) pairs))
+  (declare (type (satisfies wf-congruence-pairing) pairs))
   (if (consp pairs)
       (let ((pair (car pairs)))
 	(let ((hint (car pair))
 	      (cong (cdr pair)))
-	  (append (map-cons hint (split-pattern nil (congruence-pattern cong) (congruence-equiv cong)))
+	  (append (map-cons hint (split-pattern nil (wf-congruence-pattern cong) (wf-congruence-outer-equiv-list cong)))
 		  (split-paired-congruences (cdr pairs)))))
     nil))
 
 (defthm congruence-pairing-split-paired-congruences
   (implies
-   (congruence-pairing pairs)
+   (wf-congruence-pairing pairs)
    (congruence-pairing (split-paired-congruences pairs))))
 
 (defun pair-hints-and-patterns (hints spec)
@@ -1425,24 +1655,21 @@
 (defthm congruence-pairing-pair-hints-and-patterns
   (implies
    (and
-    (congruence-spec-list spec)
-    (congruence-hint-list hints))
-   (congruence-pairing (pair-hints-and-patterns hints spec))))
+    (wf-congruence-spec-listp spec)
+    (wf-congruence-hint-listp hints))
+   (wf-congruence-pairing (pair-hints-and-patterns hints spec))))
 
 (defun pair-hints-with-patterns-and-split (hints spec)
-  (declare (type (satisfies wf-congruence-hint) hints)
-	   (type (satisfies wf-congruence-spec) spec))
-  (let ((spec (if (congruence-spec-list spec) spec
-		    (list spec))))
-    (let ((pairs (if (congruence-hint-list hints) (pair-hints-and-patterns hints spec)
-		   (map-cons hints spec))))
-      (split-paired-congruences pairs))))
+  (declare (type (satisfies wf-congruence-hint-listp) hints)
+	   (type (satisfies wf-congruence-spec-listp) spec))
+  (let ((pairs (pair-hints-and-patterns hints spec)))
+    (split-paired-congruences pairs)))
 
 (defthm congruence-pairing-pair-hints-with-patterns-and-split
   (implies
    (and
-    (wf-congruence-hint hints)
-    (wf-congruence-spec spec))
+    (wf-congruence-hint-listp hints)
+    (wf-congruence-spec-listp spec))
    (congruence-pairing (pair-hints-with-patterns-and-split hints spec))))
 
 (include-book "../symbol-fns/symbol-fns")
@@ -1471,7 +1698,7 @@
    (symbolp (arg-equiv pattern args))))
 
 (defun add-to-goal-hint (hint value res)
-  (declare (type (satisfies congruence-hint) hint)
+  (declare (type (satisfies wf-congruence-hint) hint)
 	   (type (satisfies true-listp) value res))
   (if (consp hint)
       (if (or (equal (caar hint) "Goal")
@@ -1486,7 +1713,7 @@
    (true-listp (add-to-goal-hint hint value res))))
 
 (defund make-congruence-hint (fn-induct args alt-args hint)
-  (declare (type (satisfies congruence-hint) hint)
+  (declare (type (satisfies wf-congruence-hint) hint)
 	   (type (satisfies true-listp) args alt-args))
   (if fn-induct
       (add-to-goal-hint hint `(:induct (,fn-induct ,@args ,@alt-args)) nil)
@@ -1498,26 +1725,45 @@
    (true-listp (make-congruence-hint fn-induct args alt-args hint)))
   :hints (("Goal" :in-theory (enable make-congruence-hint))))
 
+(defund indexed-equiv-prefix (cong)
+  (declare (type (satisfies congruence-spec) cong))
+  (if (mv-congruencep cong)
+      (symbol-fns::join-symbols '- (congruence-offset cong) '-)
+    '-))
+
+(defthm symbolp-indexed-equiv-prefix
+  (symbolp (indexed-equiv-prefix cong))
+  :hints (("Goal" :in-theory (enable indexed-equiv-prefix))))
+
+(defun make-congruence-conclusion (cong equiv fn args alt-args)
+  (declare (type (satisfies congruence-spec) cong)
+           (type (satisfies true-listp) args alt-args))
+  (if (mv-congruencep cong)
+      (let ((off (congruence-offset cong)))
+        `(,equiv (val ,off (,fn ,@args))
+                 (val ,off (,fn ,@alt-args))))
+    `(,equiv (,fn ,@args) (,fn ,@alt-args))))
+
 (defund make-congruence-theorem (n fn fn-induct args congruence hint )
-  (declare (type (satisfies congruence-hint) hint)
+  (declare (type (satisfies wf-congruence-hint) hint)
 	   (type (satisfies symbol-listp) args)
 	   (type (satisfies congruence-spec) congruence))
-  (let ((equiv   (congruence-equiv congruence))
-	(pattern (congruence-pattern congruence)))
-    (let ((alt-args (alt-args-from-pattern args pattern (symbol-fns::prefix '- equiv))))
-      (let ((arg-equiv (arg-equiv pattern pattern))
-	    (alt-arg   (arg-equiv pattern alt-args))
-	    (arg       (arg-equiv pattern args)))
-	(let ((thm-name (symbol-fns::suffix arg-equiv '- n '-implies- equiv '- fn)))
-	  (let ((hint (make-congruence-hint fn-induct args alt-args hint)))
-	    (let ((hints (and hint `(:hints ,hint))))
-	      `(defthm ,thm-name
-		 (implies
-		  (,arg-equiv ,arg ,alt-arg)
-		  (,equiv (,fn ,@args)
-			  (,fn ,@alt-args)))
-		 :rule-classes :congruence
-		 ,@hints))))))))
+  (let ((equiv    (congruence-equiv congruence))
+        (pattern  (congruence-pattern congruence)))
+    (let ((offset (indexed-equiv-prefix congruence)))
+      (let ((alt-args (alt-args-from-pattern args pattern (symbol-fns::prefix offset equiv))))
+        (let ((arg-equiv (arg-equiv pattern pattern))
+              (alt-arg   (arg-equiv pattern alt-args))
+              (arg       (arg-equiv pattern args)))
+          (let ((thm-name (symbol-fns::suffix arg-equiv '- n '-implies- equiv '- fn)))
+            (let ((hint (make-congruence-hint fn-induct args alt-args hint)))
+              (let ((hints (and hint `(:hints ,hint))))
+                `(defthm ,thm-name
+                   (implies
+                    (,arg-equiv ,arg ,alt-arg)
+                    ,(make-congruence-conclusion congruence equiv fn args alt-args))
+                   :rule-classes :congruence
+                   ,@hints)))))))))
 
 (defun make-congruence-theorems (n fn fn-induct args pairs )
   (declare (type integer n)
@@ -1532,19 +1778,17 @@
 
 (defun process-congruence-arguments (fn args hints specs rec)
   (declare (type (satisfies symbol-listp) args)
-	   (type symbol fn))
-  (if (and (wf-congruence-hint-list hints)
-	   (wf-congruence-spec-list specs))
-      (let ((specs (flatten-wf-congruence-spec-list specs))
-	    (hints (flatten-wf-congruence-hint-list hints)))
-	(let ((pairs (pair-hints-with-patterns-and-split hints specs)))
-	  (let ((fn-induct (and rec (symbol-fns::suffix fn '-induction))))
-	    (let ((events (make-congruence-theorems 1 fn fn-induct args pairs)))
-	      (and events `((encapsulate
-				()
-			      ,@events
-			      )))))))
-    `(:malformed-congruence-xargs)))
+	   (type symbol fn)
+           (type (satisfies wf-congruence-hint-listp) hints)
+           (type (satisfies wf-congruence-spec-listp) specs))
+  (let ((pairs (pair-hints-with-patterns-and-split hints specs)))
+    (let ((fn-induct (and rec (symbol-fns::suffix fn '-induction))))
+      (let ((events (make-congruence-theorems 1 fn fn-induct args pairs)))
+        (and events `((encapsulate
+                          ()
+                        ,@events
+                        )))))))
+;;    `(:malformed-congruence-xargs)))
 
 (defthm true-listp-process-congruence-arguments
   (true-listp (process-congruence-arguments fn args hints spec rec)))
