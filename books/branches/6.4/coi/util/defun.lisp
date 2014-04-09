@@ -257,11 +257,11 @@
       ;; no congruence should be asserted for that location
       (def::congruence goo (nil nfixequiv) ifixequiv nil)
 
-      ;; The def::signature macro allows congruence relations to be
+      ;; The def::signature macro allows type signatures to be
       ;; specified after function admission.  This is particularly
       ;; useful when you want weak guards but strong type theorems.
-      ;; For signatures, use either 't' to indicate
-      ;; that the associated value has no type restriction.
+      ;; For signatures, use 't' to indicate that the associated value
+      ;; has no type restriction.
       (def::signature goo (integerp t) t natp)
 
       ))
