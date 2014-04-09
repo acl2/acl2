@@ -46,8 +46,9 @@
                (iprod (bfr-+-ss nil (bfr-*-ss xrn yin)
                             (bfr-*-ss xin yrn))))
           (mk-g-number
-           rprod
-           1 iprod))
+           (rlist-fix rprod)
+           1
+           (rlist-fix iprod)))
       (g-apply 'binary-* (gl-list x y)))))
 
 (in-theory (disable (g-binary-*-of-numbers)))

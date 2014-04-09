@@ -512,7 +512,7 @@
        ((unless iintp-known) (mv t nil)) ;; error
        ;; ifix
        (ibits (bfr-ite-bss-fn iintp irn nil)))
-    (mv nil (mk-g-number ibits))))
+    (mv nil (mk-g-number (rlist-fix ibits)))))
 
 (defthm deps-of-g-ifix-of-number
   (implies (and (not (gobj-depends-on k p i))
@@ -589,7 +589,8 @@
 (def-gobj-dependency-thm maybe-integer
   :hints `(("goal" :induct ,gcall
             :expand (,gcall)
-            :in-theory (disable (:d ,gfn)))))
+            :in-theory (disable (:d ,gfn)
+                                (g-ifix-of-number)))))
 
 
 (def-g-correct-thm maybe-integer eval-g-base

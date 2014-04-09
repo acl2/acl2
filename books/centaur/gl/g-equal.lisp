@@ -298,7 +298,6 @@
                            (:type-prescription general-booleanp)
                            (:type-prescription general-numberp)
                            (:type-prescription general-concretep)
-                           (:type-prescription bfr-=-uu)
                            hyp-fix-of-hyp-fixedp
                            (:meta mv-nth-cons-meta)
                            zp-open default-<-2 default-<-1

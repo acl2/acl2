@@ -47,8 +47,9 @@
           (mv nil nil))))
     (if (and xintp-known yintp-known)
         (mk-g-number
-         (bfr-logior-ss (bfr-ite-bss-fn xintp xrn nil)
-                    (bfr-ite-bss-fn yintp yrn nil)))
+         (rlist-fix
+          (bfr-logior-ss (bfr-ite-bss-fn xintp xrn nil)
+                         (bfr-ite-bss-fn yintp yrn nil))))
       (g-apply 'binary-logior (gl-list x y)))))
 
 (in-theory (disable (g-binary-logior-of-numbers)))

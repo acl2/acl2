@@ -18,6 +18,8 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
+; cert_param: (non-acl2r)
+
 (in-package "GL")
 (include-book "bvec-ite")
 (include-book "tools/mv-nth" :dir :system)
@@ -26,11 +28,9 @@
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-; cert_param: (non-acl2r)
 
+;;---------------- Misc function definitions and lemmas -------------------
 
-;;---------------------------------------------------------------------------
-;; Misc function definitions and lemmas
 (defthm equal-complexes-rw
   (implies (and (acl2-numberp x)
                 (rationalp a)
@@ -87,13 +87,7 @@
          (non-int-fix x))
   :hints(("Goal" :in-theory (enable maybe-integer))))
 
-
-
-
-
-
-;;---------------------------------------------------------------------------
-;; DEFSYMBOLIC
+;;-------------------------- DEFSYMBOLIC -----------------------------------
 
 (defun extract-some-keywords
   (legal-kwds ; what keywords the args are allowed to contain
@@ -120,7 +114,6 @@
        (value (second args))
        (kwd-alist (acons arg1 value kwd-alist)))
     (extract-some-keywords legal-kwds (cddr args) kwd-alist)))
-
 
 (defun defsymbolic-check-formals (x)
   (if (atom x)
@@ -168,6 +161,15 @@
             (p `(,(caar x) posp))
             (t (caar x)))
           (defsymbolic-define-formals (cdr x)))))
+
+(defun defsymbolic-guards (x)
+  (if (atom x)
+      nil
+    (append (case (cadar x)
+              (n `((natp ,(caar x))))
+              (i `((integerp ,(caar x))))
+              (p `((posp ,(caar x)))))
+            (defsymbolic-guards (cdr x)))))
 
 (defun defsymbolic-define-returns1 (x)
   (if (atom x)
@@ -221,16 +223,16 @@
 (defmacro induct/expand (fn)
   `(induct/expand-fn ',fn id world))
 
-
 (defun defsymbolic-fn (name args)
   (declare (xargs :mode :program))
   (b* (((mv kwd-alist other-kws other-args)
         (extract-some-keywords
-         '(:spec :returns :correct-hints :depends-hints :correct-hyp) args nil))
+         '(:spec :returns :correct-hints :depends-hints :correct-hyp :abstract) args nil))
        ((unless (eql (len other-args) 2))
         (er hard? 'defsymbolic-fn "Need formals and body in addition to keyword args"))
        (formals (car other-args))
        (body (cadr other-args))
+       (abstractp (std::getarg :abstract t kwd-alist))
        (returns (cdr (assoc :returns kwd-alist)))
        ((unless (consp returns))
         (er hard? 'defsymbolic-fn "Need a returns list"))
@@ -245,34 +247,71 @@
        (return-binder (if (consp (cdr returns))
                           `(mv . ,(strip-cars returns))
                         (caar returns)))
-       (formal-vars (strip-cars formals)))
-    `(define ,name ,(defsymbolic-define-formals formals)
-       ,@other-kws
-       :returns ,(defsymbolic-define-returns returns)
-       ,body
-       ///
-       (defthm ,(intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name name) "-CORRECT")
-                 name)
-         (b* ((,return-binder (,name . ,formal-vars)))
-           ,(let ((concl `(and . ,(defsymbolic-return-specs returns
-                                    (defsymbolic-formals-pair-with-evals formals))))
-                  (correct-hyp (cdr (assoc :correct-hyp kwd-alist))))
-              (if correct-hyp
-                  `(implies ,correct-hyp ,concl)
-                concl)))
-         :hints ((induct/expand ,name)
-                 . ,(cdr (assoc :correct-hints kwd-alist))))
+       (formal-vars (strip-cars formals))
+       (exec-name (if abstractp
+                      (intern-in-package-of-symbol
+                       (concatenate 'string (symbol-name name) "-EXEC")
+                       name)
+                    name)))
+    `(progn
+       (define ,exec-name ,(defsymbolic-define-formals formals)
+         ,@other-kws
+         :returns ,(defsymbolic-define-returns returns)
+         ,(subst exec-name name body)
+         ///
+         (defthm ,(intern-in-package-of-symbol
+                   (concatenate 'string (symbol-name exec-name) "-CORRECT")
+                   exec-name)
+           (b* ((,return-binder (,exec-name . ,formal-vars)))
+             ,(let ((concl `(and . ,(defsymbolic-return-specs returns
+                                      (defsymbolic-formals-pair-with-evals formals))))
+                    (correct-hyp (cdr (assoc :correct-hyp kwd-alist))))
+                (if correct-hyp
+                    `(implies ,correct-hyp ,concl)
+                  concl)))
+           :hints ((induct/expand ,exec-name)
+                   . ,(subst exec-name name (cdr (assoc :correct-hints kwd-alist)))))
 
-       (defthm ,(intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name name) "-DEPS")
-                 name)
-         (b* ((,return-binder (,name . ,formal-vars)))
-           (implies (and . ,(defsymbolic-not-depends-on formals))
-                    (and . ,(defsymbolic-not-depends-on returns))))
-         :hints ((induct/expand ,name)
-                 . ,(cdr (assoc :depends-hints kwd-alist)))))))
+         (defthm ,(intern-in-package-of-symbol
+                   (concatenate 'string (symbol-name exec-name) "-DEPS")
+                   exec-name)
+           (b* ((,return-binder (,exec-name . ,formal-vars)))
+             (implies (and . ,(defsymbolic-not-depends-on formals))
+                      (and . ,(defsymbolic-not-depends-on returns))))
+           :hints ((induct/expand ,exec-name)
+                   . ,(subst exec-name name (cdr (assoc :depends-hints kwd-alist))))))
+       ,@(and abstractp
+              `((encapsulate
+                  (((,name . ,(acl2::replicate (len formals) '*))
+                    => ,(if (consp (cdr returns))
+                            `(mv . ,(acl2::replicate (len returns) '*))
+                          '*)
+                    :formals ,formal-vars
+                    :guard (and ,@(let ((guard (cadr (assoc-keyword :guard other-kws))))
+                                    (and guard `(,guard)))
+                                . ,(defsymbolic-guards formals))))
+                  
+                  (local (defun ,name ,formal-vars
+                           (,exec-name . ,formal-vars)))
 
+                  (defthm ,(intern-in-package-of-symbol
+                            (concatenate 'string (symbol-name name) "-CORRECT")
+                            name)
+                    (b* ((,return-binder (,name . ,formal-vars)))
+                      ,(let ((concl `(and . ,(defsymbolic-return-specs returns
+                                               (defsymbolic-formals-pair-with-evals formals))))
+                             (correct-hyp (cdr (assoc :correct-hyp kwd-alist))))
+                         (if correct-hyp
+                             `(implies ,correct-hyp ,concl)
+                           concl))))
+                  (defthm ,(intern-in-package-of-symbol
+                            (concatenate 'string (symbol-name name) "-DEPS")
+                            name)
+                    (b* ((,return-binder (,name . ,formal-vars)))
+                      (implies (and . ,(defsymbolic-not-depends-on formals))
+                               (and . ,(defsymbolic-not-depends-on returns))))))
+                (defattach ,name ,exec-name))))))
+                  
 (defmacro defsymbolic (name &rest args)
   (defsymbolic-fn name args))
 
@@ -282,15 +321,12 @@
                          acl2::ihsext-inductions
                          pbfr-list-depends-on))))
                         
-
-
 (defsymbolic bfr-loghead-ns ((n n)  ;; name n, type n (natp)
                              (x s)) ;; name x, type s (signed bvec)
   :returns (xx s (loghead n x))     ;; return name, type (signed bvec), spec
   (b* (((when (zp n)) (bfr-sterm nil))
        ((mv head tail ?end) (first/rest/end x)))
     (bfr-scons head (bfr-loghead-ns (1- n) tail))))
-
 
 (defsymbolic bfr-logext-ns ((n p)  ;; name n, type p (posp)
                             (x s)) ;; name x, type s (signed bvec)
@@ -302,16 +338,12 @@
        ((when (eql n 1)) (bfr-sterm head)))
     (bfr-scons head (bfr-logext-ns (1- n) tail))))
 
-
 (defsymbolic bfr-logtail-ns ((place n)
                              (x s))
   :returns (xx s (logtail place x))
   (if (or (zp place) (s-endp x))
       x
     (bfr-logtail-ns (1- place) (scdr x))))
-
-
-
 
 (defsymbolic bfr-+-ss ((c b)
                        (v1 s)
@@ -331,8 +363,6 @@
         (bfr-scons s rst))))
   :correct-hints ('(:in-theory (enable logcons))))
 
-
-
 (defsymbolic bfr-lognot-s ((x s))
   :returns (nx s (lognot x))
   (b* (((mv head tail end) (first/rest/end x)))
@@ -345,7 +375,6 @@
   :returns (ms s (- x))
   (bfr-+-ss t nil (bfr-lognot-s x))
   :correct-hints ('(:in-theory (enable lognot))))
-
 
 (defsymbolic bfr-logxor-ss ((a s)
                             (b s))
@@ -366,14 +395,11 @@
         first
       (bfr-sign-s rest))))
 
-
-
 (defthm not-s-endp-compound-recognizer
   (implies (not (s-endp x))
            (consp x))
   :hints(("Goal" :in-theory (enable s-endp)))
   :rule-classes :compound-recognizer)
-
 
 (defsymbolic bfr-integer-length-s1 ((offset p)
                                     (x s))
@@ -422,8 +448,6 @@
        (bfr-integer-length-bound-s x))
     :rule-classes :linear))
 
-
-
 (local (defthmd loghead-of-integer-length-nonneg
          (implies (and (<= (integer-length x) (nfix n))
                        (<= 0 (ifix x)))
@@ -458,14 +482,6 @@
                                       bfr-sign-s-correct
                                       acl2::ihsext-redefs)))))
                    
-
-
-
-
-
-
-
-
 (defsymbolic bfr-=-uu ((a u) (b u))
   :returns (a=b b (equal a b))
   :measure (+ (len a) (len b))
@@ -476,8 +492,6 @@
       (bfr-and (bfr-iff head1 head2)
                (bfr-=-uu tail1 tail2)))))
 
-
-
 (defsymbolic bfr-=-ss ((a s) (b s))
   :returns (a=b b (equal a b))
   :measure (+ (len a) (len b))
@@ -487,8 +501,6 @@
         (bfr-iff head1 head2)
       (bfr-and (bfr-iff head1 head2)
                (bfr-=-ss tail1 tail2)))))
-
-
 
 (defsymbolic bfr-*-ss ((v1 s) (v2 s))
   :measure (+ (len v1) (len v2))
@@ -503,8 +515,6 @@
               (bfr-ite-bss dig1 v2 nil)
               (bfr-scons nil rest)))))
   :correct-hints ('(:in-theory (enable logcons))))
-
-
 
 (defsymbolic bfr-<-=-ss ((a s) (b s))
   :measure (+ (len a) (len b))
@@ -530,7 +540,6 @@
         (bfr-<-=-ss tail1 tail2)
         (bfr-or rst< (bfr-and rst= head2 (bfr-not head1)))))))
 
-
 (defsymbolic bfr-logapp-nss ((n n)
                              (a s)
                              (b s))
@@ -548,7 +557,6 @@
       b
     (b* (((mv first rest) (car/cdr a)))
       (bfr-scons first (bfr-logapp-nus (1- n) rest b)))))
-
 
 (defsymbolic bfr-ash-ss ((place p)
                     (n s)
@@ -587,7 +595,6 @@
                              (bfr-ash-ss place n shamt))
                     :in-theory (disable acl2::logtail-identity
                                         unsigned-byte-p))))
-
 
 (defsymbolic bfr-logbitp-n2v ((place p)
                               (digit u)
@@ -640,8 +647,7 @@
            (r (bfr-logeqv-ss ar br)))
         (bfr-scons c r)))))
 
-
-(local
+(local ;; integer-length lemmas
  (progn
    (include-book "ihs/quotient-remainder-lemmas" :dir :system)
 
@@ -661,8 +667,6 @@
    (add-bfr-pat (bfr-=-ss . &))
 
    (in-theory (disable (force)))))
-
-;; (include-book "clause-processors/find-matching" :dir :system)
 
 (defsymbolic bfr-floor-ss-aux ((a s)
                              (b s)
@@ -754,23 +758,6 @@
                             (and stable-under-simplificationp
                                  '(:in-theory (disable floor)))))))
 
-                ;; (defthm floor-rewrite-+-1-*-2-a
-                ;;   (implies (and (integerp a) (integerp b)
-                ;;                 (< 0 b))
-                ;;            (equal (floor (+ 1 (* 2 a)) b)
-                ;;                   (if (<= b (+ 1 (* 2 (mod a b))))
-                ;;                       (+ 1 (* 2 (floor a b)))
-                ;;                     (* 2 (floor a b)))))
-                ;;   :hints(("Goal" :in-theory (disable floor))))
-
-                ;; (defthm floor-rewrite-*-2-a
-                ;;   (implies (and (integerp a) (integerp b)
-                ;;                 (< 0 b))
-                ;;            (equal (floor (* 2 a) b)
-                ;;                   (if (<= b (* 2 (mod a b)))
-                ;;                       (+ 1 (* 2 (floor a b)))
-                ;;                     (* 2 (floor a b)))))
-                ;;   :hints(("Goal" :in-theory (disable floor))))
 
                 (defthm floor-rewrite-+-bit-*-2-a
                   (implies (and (integerp a) (integerp b)
@@ -779,27 +766,12 @@
                                   (if (<= b (logcons c (mod a b)))
                                       (logcons 1 (floor a b))
                                     (logcons 0 (floor a b)))))
-                  :hints(("Goal" :in-theory (e/d (logcons bfix) (floor)))))
+                  :hints(("Goal" :in-theory (e/d* (logcons bfix)
+                                                  (floor
+                                                   (:rules-of-class
+                                                    :generalize :here))
+                                                  ((:generalize acl2::mod-bounds))))))
 
-                ;; (defthm mod-rewrite-*-2-a
-                ;;   (implies (and (integerp a) (integerp b)
-                ;;                 (< 0 b))
-                ;;            (equal (mod (* 2 a) b)
-                ;;                   (if (<= b (* 2 (mod a b)))
-                ;;                       (+ (* -1  b)
-                ;;                          (* 2 (mod a b)))
-                ;;                     (* 2 (mod a b)))))
-                ;;   :hints (("goal" :in-theory (disable mod))))
-
-                ;; (defthm mod-rewrite-+-1-*-2-a
-                ;;   (implies (and (integerp a) (integerp b)
-                ;;                 (< 0 b))
-                ;;            (equal (mod (+ 1 (* 2 a)) b)
-                ;;                   (if (<= b (+ 1 (* 2 (mod a b))))
-                ;;                       (+ 1 (* -1  b)
-                ;;                          (* 2 (mod a b)))
-                ;;                     (+ 1 (* 2 (mod a b))))))
-                ;;   :hints (("goal" :in-theory (e/d (mod) (floor)))))
 
                 (defthm mod-rewrite-+-bit-*-2-a
                   (implies (and (integerp a) (integerp b)
@@ -809,14 +781,12 @@
                                       (+ (- b)
                                          (logcons c (mod a b)))
                                     (logcons c (mod a b)))))
-                  :hints (("goal" :in-theory (e/d (logcons bfix mod) (floor)))))
+                  :hints (("goal" :in-theory (e/d* (logcons bfix mod)
+                                                  (floor
+                                                   (:rules-of-class
+                                                    :generalize :here))
+                                                  ((:generalize acl2::mod-bounds))))))
 
-
-
-                ;; (in-theory (disable mod-between-b-and-2-b
-                ;;                     mod-less-than-b
-                ;;                     floor-between-b-and-2b
-                ;;                     floor-less-than-b))
 
                 (defthm denominator-of-unary-/
                   (implies (and (integerp n) (< 0 n))
@@ -914,15 +884,11 @@
                              (:free (not-b) (bfr-floor-ss-aux nil b not-b))
                              (:free (a b) (bfr-list->s (bfr-scons a b) env))
                              (bfr-list->s a env)))
-                  ;; (and (acl2::find-matches-list '(scdr$inline b) clause '((b . b)))
-                  ;;      `(:error ',(acl2::prettyify-clause clause nil world)))
                   (bfr-reasoning)
                   (and stable-under-simplificationp
                        '(:in-theory (enable lognot)))
                   (and stable-under-simplificationp
                        '(:error t))))
-
-
 
 (defsymbolic bfr-mod-ss-aux ((a s)
                              (b s)
@@ -930,8 +896,8 @@
   :returns (m s (mod a b))
   :correct-hyp (< 0 (bfr-list->s b env))
   :guard (equal not-b (bfr-lognot-s b))
-  :guard-hints ('(:expand ((:free (not-b) (bfr-floor-ss-aux a b not-b)))))
-  (mbe :logic (non-exec (mv-nth 1 (bfr-floor-ss-aux a b not-b)))
+  :guard-hints ('(:expand ((:free (not-b) (bfr-floor-ss-aux-exec a b not-b)))))
+  (mbe :logic (non-exec (mv-nth 1 (bfr-floor-ss-aux-exec a b not-b)))
        :exec (b* (((mv first rest endp) (first/rest/end a))
                   (not-b (mbe :logic (bfr-lognot-s b) :exec not-b)))
                (if endp
@@ -947,9 +913,6 @@
                     (bfr-loghead-ns (bfr-integer-length-bound-s b)
                                     (bfr-+-ss t not-b rm))))))))
 
-
-
-
 (defun bfr-sign-abs-not-s (x)
   (declare (xargs :guard t))
   (let ((abs (bfr-abs-s x)))
@@ -957,53 +920,19 @@
         abs
         (bfr-lognot-s abs))))
 
-
-;; (defund floor-ss (a b)
-;;   (declare (xargs :guard t))
-;;   (if (=-ss b nil)
-;;       nil
-;;     (b* (((mv bsign & babs bneg) (sign-abs-neg-s b))
-;;          (anorm (if bsign (unary-minus-s a) a))
-;;          ((mv f &) (floor-mod-ss anorm babs bneg)))
-;;       f)))
-
-(local (defthm floor-of-negations
-         (equal (floor (- a) (- b))
-                (floor a b))
-         :hints(("Goal" :in-theory (enable floor)))))
-
-(defsymbolic bfr-floor-ss ((a s)
-                           (b s))
-  :returns (f s (floor a b))
-  (bfr-ite-bss (bfr-=-ss b nil)
-               nil
-               (b* (((mv bsign babs bneg) (bfr-sign-abs-not-s b))
-                    (anorm (bfr-ite-bss bsign (bfr-unary-minus-s a) a))
-                    ((mv f &) (bfr-floor-ss-aux anorm babs bneg)))
-                 f))
-  :correct-hints ((bfr-reasoning)))
-
-;; (defund mod-ss (a b)
-;;   (declare (xargs :guard t))
-;;   (if (=-ss b nil)
-;;       a
-;;     (b* (((mv bsign & babs bneg) (sign-abs-not-s b))
-;;          (anorm (if bsign (unary-minus-s a) a))
-;;          ((mv & m) (floor-mod-ss anorm babs bneg)))
-;;       (if bsign (unary-minus-s m) m))))
-
-
-
-(local
- (defthm logext-of-integer-length-bound
-   (implies (< (integer-length x) (ifix n))
-            (equal (acl2::logext n x)
-                   (ifix x)))))
-
-
-
-(local
+(local ;; integer-length, floor/mod/rem/truncate lemmas
  (progn
+
+   (defthm floor-of-negations
+     (equal (floor (- a) (- b))
+            (floor a b))
+     :hints(("Goal" :in-theory (enable floor))))
+
+   (defthm logext-of-integer-length-bound
+     (implies (< (integer-length x) (ifix n))
+              (equal (acl2::logext n x)
+                     (ifix x))))
+
    (local (in-theory (disable acl2::mod-minus
                               ACL2::/R-WHEN-ABS-NUMERATOR=1)))
 
@@ -1100,8 +1029,19 @@
 
    (in-theory (disable (force) acl2::logext**
                        acl2::logext-identity
-                       bfr-list->s))))
+                       bfr-list->s
+                       truncate))))
 
+(defsymbolic bfr-floor-ss ((a s)
+                           (b s))
+  :returns (f s (floor a b))
+  (bfr-ite-bss (bfr-=-ss b nil)
+               nil
+               (b* (((mv bsign babs bneg) (bfr-sign-abs-not-s b))
+                    (anorm (bfr-ite-bss bsign (bfr-unary-minus-s a) a))
+                    ((mv f &) (bfr-floor-ss-aux anorm babs bneg)))
+                 f))
+  :correct-hints ((bfr-reasoning)))
 
 (defsymbolic bfr-mod-ss ((a s)
                          (b s))
@@ -1115,8 +1055,6 @@
                                 (bfr-ite-bss bsign (bfr-unary-minus-s m) m))))
   :correct-hints ((bfr-reasoning)))
 
-(local (in-theory (disable truncate)))
-
 (defsymbolic bfr-truncate-ss ((a s)
                               (b s))
   :returns (tr s (truncate a b))
@@ -1128,18 +1066,6 @@
                  (bfr-ite-bss (bfr-xor bsign asign)
                               (bfr-unary-minus-s f) f)))
   :correct-hints ((bfr-reasoning)))
-
-
-
-;; (defund rem-ss (a b)
-;;   (declare (xargs :guard t))
-;;   (if (=-ss b nil)
-;;       a
-;;     (b* (((mv & & babs bneg) (sign-abs-not-s b))
-;;          ((mv asign & aabs &) (sign-abs-not-s a))
-;;          ((mv & m) (floor-mod-ss aabs babs bneg)))
-;;       (if asign (unary-minus-s m) m))))
-
 
 (defsymbolic bfr-rem-ss ((a s)
                          (b s))

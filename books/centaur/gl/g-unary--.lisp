@@ -50,9 +50,9 @@
         (mv-let (rn rd in id)
           (break-g-number num)
           (gret
-           (mk-g-number (bfr-unary-minus-s rn)
+           (mk-g-number (rlist-fix (bfr-unary-minus-s rn))
                         (rlist-fix rd)
-                        (bfr-unary-minus-s in)
+                        (rlist-fix (bfr-unary-minus-s in))
                         (rlist-fix id)))))
        (& (gret 0)))))
 

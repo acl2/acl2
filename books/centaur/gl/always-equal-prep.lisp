@@ -801,7 +801,6 @@
                            (:type-prescription general-numberp)
                            (:type-prescription acl2::ubddp)
                            (:type-prescription general-concretep)
-                           (:type-prescription bfr-=-uu)
                            ;; (:type-prescription assume-true-under-hyp2)
                            ;; (:type-prescription assume-false-under-hyp2)
 ;(:type-prescription assume-true-under-hyp)

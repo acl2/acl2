@@ -45,7 +45,9 @@
              (equal yid '(t)))
         (let* ((rsum (bfr-+-ss nil xrn yrn))
                (isum (bfr-+-ss nil xin yin)))
-          (mk-g-number rsum 1 isum))
+          (mk-g-number (rlist-fix rsum)
+                       1
+                       (rlist-fix isum)))
       (g-apply 'binary-+ (gl-list x y)))))
 
 (in-theory (disable (g-binary-+-of-numbers)))
@@ -145,7 +147,7 @@
   `(("goal" :in-theory (e/d* (general-concretep-atom
                               (:ruleset general-object-possibilities))
                              ((:definition ,gfn)
-                              i2v n2v bfr-+-ss
+                              i2v n2v
                               general-numberp-eval-to-numberp
                               general-boolean-value-correct
                               bool-cond-itep-eval
@@ -185,7 +187,9 @@
              (equal yid '(t)))
         (let* ((rsum (bfr-+-ss t xrn (bfr-lognot-s yrn)))
                (isum (bfr-+-ss t xin (bfr-lognot-s yin))))
-          (mk-g-number rsum 1 isum))
+          (mk-g-number (rlist-fix rsum)
+                       1
+                       (rlist-fix isum)))
       (g-apply 'binary-- (gl-list x y)))))
 
 (in-theory (disable (g-binary---of-numbers)))
@@ -314,7 +318,7 @@
   `(("goal" :in-theory (e/d* (general-concretep-atom
                               (:ruleset general-object-possibilities))
                              ((:definition ,gfn)
-                              i2v n2v bfr-+-ss
+                              i2v n2v
                               general-numberp-eval-to-numberp
                               general-boolean-value-correct
                               bool-cond-itep-eval

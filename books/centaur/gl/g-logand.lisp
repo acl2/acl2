@@ -46,8 +46,9 @@
           (mv nil nil))))
     (if (and xintp-known yintp-known)
         (mk-g-number
-         (bfr-logand-ss (bfr-ite-bss-fn xintp xrn nil)
-                    (bfr-ite-bss-fn yintp yrn nil)))
+         (rlist-fix
+          (bfr-logand-ss (bfr-ite-bss-fn xintp xrn nil)
+                         (bfr-ite-bss-fn yintp yrn nil))))
       (g-apply 'binary-logand (gl-list x y)))))
 
 (in-theory (disable (g-binary-logand-of-numbers)))
