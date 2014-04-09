@@ -20,7 +20,7 @@
 
 (in-package "GL")
 (include-book "generic-geval")
-(include-book "symbolic-arithmetic-fns")
+(include-book "symbolic-arithmetic")
 ;; (include-book "defapply")
 
 

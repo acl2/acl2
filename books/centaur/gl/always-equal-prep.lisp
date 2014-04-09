@@ -19,7 +19,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-(include-book "symbolic-arithmetic-fns")
+(include-book "symbolic-arithmetic")
 (include-book "g-if")
 (include-book "eval-g-base")
 (include-book "gl-mbe")

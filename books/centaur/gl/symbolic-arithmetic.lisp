@@ -19,13 +19,18 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "GL")
-(include-book "symbolic-arithmetic-fns")
+(include-book "bvec-ite")
+(include-book "tools/mv-nth" :dir :system)
+(include-book "ihs/logops-definitions" :dir :system)
 (local (include-book "clause-processors/find-subterms" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
 ; cert_param: (non-acl2r)
 
+
+;;---------------------------------------------------------------------------
+;; Misc function definitions and lemmas
 (defthm equal-complexes-rw
   (implies (and (acl2-numberp x)
                 (rationalp a)
@@ -35,1341 +40,1136 @@
                        (equal b (imagpart x)))))
   :hints (("goal" :use ((:instance realpart-imagpart-elim)))))
 
-
-(local (in-theory (disable bfr-ite-bss-fn)))
-
-(local (defun cdr3-ind (a e b)
-         (declare (xargs :measure (+ (len a) (len e) (len b))))
-         (if (and (atom a) (atom e) (atom b))
-             (list a e b)
-           (cdr3-ind (cdr a) (cdr e) (cdr b)))))
-
-(local (defun scdr2-ind (a e)
-         (declare (xargs :measure (+ (len a) (len e))))
-         (if (and (s-endp a) (s-endp e))
-             (list a e)
-           (scdr2-ind (scdr a) (scdr e)))))
-
-(local (defun scdr3-ind (a e b)
-         (declare (xargs :measure (+ (len a) (len e) (len b))))
-         (if (and (s-endp a) (s-endp e) (s-endp b))
-             (list a e b)
-           (scdr3-ind (scdr a) (scdr e) (scdr b)))))
-
-
-
-(defsection =-uu
-
-  (local (in-theory (enable bfr-=-uu)))
-
-  ;; (defcong uv-equiv equal (=-uu a b) 1
-  ;;   :hints(("Goal" :in-theory (e/d (uv-equiv-implies-cars-equiv)
-  ;;                                  (uv-equiv))
-  ;;           :induct (cdr3-ind a a-equiv b))))
-  ;; (defcong uv-equiv equal (=-uu a b) 2
-  ;;   :hints(("Goal" :in-theory (e/d (uv-equiv-implies-cars-equiv)
-  ;;                                  (uv-equiv))
-  ;;           :induct (cdr3-ind a b b-equiv))))
-
-  (defthm bfr-=-uu-correct
-    (equal (bfr-eval (bfr-=-uu a b) env)
-           (= (bfr-list->u a env) (bfr-list->u b env))))
-
-  (defthm pbfr-depends-on-of-bfr-=-uu
-    (implies (and (not (pbfr-list-depends-on n p a))
-                  (not (pbfr-list-depends-on n p b)))
-             (not (pbfr-depends-on n p (bfr-=-uu a b))))
-    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
-
-(defsection =-ss
-
-  (local (in-theory (enable bfr-=-ss)))
-
-  ;; (defcong sv-equiv equal (=-ss a b) 1
-  ;;   :hints(("Goal" :in-theory (e/d (scdr-when-equiv-to-endp)
-  ;;                                  (sv-equiv))
-  ;;           :induct (scdr3-ind a a-equiv b))))
-  ;; (defcong sv-equiv equal (=-ss a b) 2
-  ;;   :hints(("Goal" :in-theory (e/d (scdr-when-equiv-to-endp)
-  ;;                                  (sv-equiv))
-  ;;           :induct (scdr3-ind a b b-equiv))))
-
-  (defthm bfr-=-ss-correct
-    (equal (bfr-eval (bfr-=-ss a b) env)
-           (= (bfr-list->s a env)
-              (bfr-list->s b env)))
-    :hints (("goal" :induct (scdr2-ind a b))))
-
-  (defthm pbfr-depends-on-of-bfr-=-ss
-    (implies (and (not (pbfr-list-depends-on n p a))
-                  (not (pbfr-list-depends-on n p b)))
-             (not (pbfr-depends-on n p (bfr-=-ss a b))))
-    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
-
-(defsection logtail-ns
-
-  (local (in-theory (enable logtail-ns)))
-
-  ;; (local (defun scdr2/count-ind (n x y)
-  ;;          (declare (xargs :measure (nfix n)))
-  ;;          (if (or (zp n) (s-endp x) (s-endp y))
-  ;;              (list n x y)
-  ;;            (scdr2/count-ind (1- (nfix n)) (scdr x) (scdr y)))))
-
-  ;; (local (defthm logtail-of-equiv-to-endp
-  ;;          (IMPLIES (AND (S-ENDP X-EQUIV)
-  ;;                        (SV-EQUIV X X-EQUIV))
-  ;;                   (SV-EQUIV (LOGTAIL-NS N X)
-  ;;                             X))
-  ;;          :hints (("goal" :induct (LOGTAIL-NS N X)
-  ;;                   :in-theory (e/d (scdr-when-equiv-to-endp)
-  ;;                                   (sv-equiv))))))
-
-  ;; (defcong sv-equiv sv-equiv (logtail-ns n x) 2
-  ;;   :hints(("Goal" :in-theory (e/d (scdr-when-equiv-to-endp)
-  ;;                                  (sv-equiv))
-  ;;           :induct (scdr2/count-ind n x x-equiv)
-  ;;           :expand ((:free (x) (logtail-ns n x))))))
-
-  (defthm bfr-logtail-ns-correct
-    (equal (bfr-list->s (logtail-ns place n) env)
-           (logtail place (bfr-list->s n env)))
-    :hints(("Goal" :in-theory (enable acl2::logtail**))))
-
-  (defthm pbfr-list-depends-on-of-logtail-ns
-    (implies (not (pbfr-list-depends-on k p n))
-             (not (pbfr-list-depends-on k p (logtail-ns place n))))
-    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
-
-  ;; (defthm logtail-ns-correct
-  ;;   (equal (v2i (logtail-ns place n))
-  ;;          (logtail place (v2i n)))
-  ;;   :hints(("Goal" :in-theory (e/d (bfr-eval-list v2i acl2::logtail**))))))
-
-
-(defsection s-sign
-  (local (in-theory (enable s-sign)))
-
-  ;; (defcong sv-equiv iff (s-sign x) 1
-  ;;   :hints(("Goal" :in-theory (e/d (scdr-when-equiv-to-endp)
-  ;;                                  (sv-equiv))
-  ;;           :induct (scdr2-ind x x-equiv))))
-
-  (defthm bfr-s-sign-correct
-    (equal (bfr-eval (s-sign x) env)
-           (< (bfr-list->s x env) 0)))
-
-  (defthm pbfr-depends-on-of-s-sign
-    (implies (not (pbfr-list-depends-on k p n))
-             (not (pbfr-depends-on k p (s-sign n))))
-    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
-
-  ;; (defthm s-sign-correct
-  ;;   (iff (s-sign x)
-  ;;        (< (v2i x) 0))
-  ;;   :hints(("Goal" :in-theory (enable v2i last s-sign)))))
-
-
-(defsection +-ss
-
-  ;; (local (defthm consp-cdr-sfix
-  ;;          (implies (not (consp (cdr x)))
-  ;;                   (not (consp (cdr (sfix x)))))))
-
-  ;; (local (in-theory (enable car-of-sfix)))
-
-  (local (in-theory (enable bfr-+-ss)))
-
-  (defthm bfr-+-ss-correct
-    (equal (bfr-list->s (bfr-+-ss c v1 v2) env)
-           (+ (acl2::bool->bit (bfr-eval c env))
-              (bfr-list->s v1 env)
-              (bfr-list->s v2 env)))
-    :hints(("Goal" :in-theory (e/d (logcons)
-                                   ((:d bfr-+-ss)))
-            :induct (bfr-+-ss c v1 v2)
-            :expand ((bfr-+-ss c v1 v2)
-                     ;; (:free (a b) (bfr-eval-list (cons a b) env))
-                     ;; (bfr-eval-list nil env)
-                     ))))
-
-
-  (defthm pbfr-list-depends-on-of-bfr-+-ss
-    (implies (and (not (pbfr-depends-on n p c))
-                  (not (pbfr-list-depends-on n p v1))
-                  (not (pbfr-list-depends-on n p v2)))
-             (not (pbfr-list-depends-on n p (bfr-+-ss c v1 v2))))
-    :hints(("Goal" :in-theory (e/d (pbfr-list-depends-on)
-                                   ((pbfr-list-depends-on)
-                                    (pbfr-depends-on)
-                                    (:d bfr-+-ss)))
-            :induct (bfr-+-ss c v1 v2)
-            :expand ((bfr-+-ss c v1 v2)))))
-)
- ;;           (and stable-under-simplificationp
-;;                 (let ((call (acl2::find-call '+-ss (caddr (car (last clause))))))
-;;                   (and call
-;;                        (let ((res `(:expand (,call
-;;                                              (bfr-+-ss c v1 v2)
-;;                                              (:free (a b) (sfix (cons a b)))
-;;                                              ;; (:free (a b) (bfr-eval-list (cons a b) env))
-;;                                              ;; (bfr-eval-list nil env)
-;;                                              )
-;;                                     :use ((:instance
-;;                                            bfr-eval-list-when-not-s-endp
-;;                                            (x v1))
-;;                                           (:instance
-;;                                            bfr-eval-list-when-not-s-endp
-;;                                            (x v2))))))
-;; ;                         (or (cw "expand: ~x0~%" res)
-;;                          res))))
-;;            (bfr-reasoning)))
-
-;;   ;; (defcong iff sv-equiv (+-ss c a b) 1)
-
-
-;;   ;; (defthm +-ss-correct
-;;   ;;   (equal (v2i (+-ss c v1 v2))
-;;   ;;          (+ (acl2::bool->bit c)
-;;   ;;             (v2i v1) (v2i v2)))
-;;   ;;   :hints(("Goal" :in-theory (enable v2i +-ss logcons xor (:t v2i)))))
-
-
-;;   ;; (defcong sv-equiv sv-equiv (+-ss c a b) 2
-;;   ;;   :hints (("goal" :use ((:instance i2v-v2i
-;;   ;;                          (v (+-ss c a b)))
-;;   ;;                         (:instance i2v-v2i
-;;   ;;                          (v (+-ss c a-equiv b))))
-;;   ;;            :in-theory (disable sv-equiv)
-;;   ;;            :do-not-induct t)
-;;   ;;           (and stable-under-simplificationp
-;;   ;;                '(:in-theory (enable sv-equiv)))))
-
-;;   ;; (defcong sv-equiv sv-equiv (+-ss c a b) 3
-;;   ;;   :hints (("goal" :use ((:instance i2v-v2i
-;;   ;;                          (v (+-ss c a b)))
-;;   ;;                         (:instance i2v-v2i
-;;   ;;                          (v (+-ss c a b-equiv))))
-;;   ;;            :in-theory (disable sv-equiv)
-;;   ;;            :do-not-induct t)
-;;   ;;           (and stable-under-simplificationp
-;;   ;;                '(:in-theory (enable sv-equiv)))))
-
-
-;;   ;; (local (defthm sv-equiv-sterm
-;;   ;;          (implies (and (sv-equiv a b)
-;;   ;;                        (s-endp b))
-;;   ;;                   (and (equal (sv-equiv a (sterm c))
-;;   ;;                               (iff (car b) c))
-;;   ;;                        (equal (sv-equiv (sterm c) a)
-;;   ;;                               (iff (car b) c))))
-;;   ;;          :rule-classes ((:rewrite :backchain-limit-lst 0))))
-
-;;   ;; (local (defthmd sv-equiv-+-ss-endp
-;;   ;;          (implies (and (sv-equiv a a-equiv)
-;;   ;;                        (s-endp a-equiv)
-;;   ;;                        (s-endp b))
-;;   ;;                   (sv-equiv (+-ss c a b)
-;;   ;;                             ;; (scons (xor c (xor (car a-equiv) (car b)))
-;;   ;;                             ;;        (sterm (if (xor (car a-equiv) (car b))
-;;   ;;                             ;;                   c
-;;   ;;                             ;;                 (car a-equiv))))))
-;;   ;;                             (+-ss c a-equiv b)))
-;;   ;;          :hints (("goal" :induct (+-ss c a b)
-;;   ;;                   :expand ((:free (c b) (+-ss c a b))
-;;   ;;                            (:free (c b) (+-ss c a-equiv b)))
-;;   ;;                   :in-theory (e/d (sv-equiv-of-scons)
-;;   ;;                                   (sv-equiv (:d +-ss) (sterm)))))))
-
-;;   ;; ;; (local (defthm sv-equiv-+-ss-endp2
-;;   ;; ;;          (implies (and (sv-equiv a a-equiv)
-;;   ;; ;;                        (s-endp a-equiv)
-;;   ;; ;;                        (s-endp b))
-;;   ;; ;;                   (sv-equiv (+-ss c a b)
-;;   ;; ;;                             (scons (xor c (xor (car a-equiv) (car b)))
-;;   ;; ;;                                    (sterm (if (xor (car a-equiv) (car b))
-;;   ;; ;;                                               (not c)
-;;   ;; ;;                                             (car a-equiv))))))
-;;   ;; ;;          :hints (("goal" :use sv-equiv-+-ss-endp
-;;   ;; ;;                   :in-theory (disable sv-equiv)
-;;   ;; ;;                   :do-not-induct t))))
-
-
-;;   ;; ;; (local (defthm sv-equiv-sterm-2
-;;   ;; ;;          (implies (sv-equiv (scdr a) (sterm c))
-;;   ;; ;;                   (and (equal (sv-equiv a (sterm c))
-;;   ;; ;;                               (iff (car a) c))
-;;   ;; ;;                        (equal (sv-equiv (sterm c) a)
-;;   ;; ;;                               (iff (car a) c))))
-;;   ;; ;;          :hints(("Goal" :in-theory (e/d (scons sterm))))
-;;   ;; ;;          :rule-classes ((:rewrite :backchain-limit-lst 0))))
-
-;;   ;; (local (defthm sv-equiv-of-scons-2
-;;   ;;          (equal (sv-equiv c (scons a b))
-;;   ;;                 (and (iff (car c) a)
-;;   ;;                      (sv-equiv (scdr c) b)))
-;;   ;;          :hints (("goal" :in-theory (disable sv-equiv-of-scons)
-;;   ;;                   :use sv-equiv-of-scons))))
-
-;;   ;; ;; (local (defthm sv-equiv-of-singleton-2
-;;   ;; ;;          (implies (and (sv-equiv a b)
-;;   ;; ;;                        (s-endp b))
-;;   ;; ;;                   (equal (sv-equiv (list c) a)
-;;   ;; ;;                          (iff (car b) c)))
-;;   ;; ;;          :hints(("Goal" :in-theory (enable sfix s-endp)))
-;;   ;; ;;          :rule-classes ((:rewrite :backchain-limit-lst 0))))
-
-;;   ;; (local (defun-nx +-ss-cong-ind (c a b e)
-;;   ;;          (declare (xargs :measure (+ (len a) (len b) (len e))))
-;;   ;;          (b* (((mv heada taila enda) (first/rest/end a))
-;;   ;;               ((mv headb tailb endb) (first/rest/end b))
-;;   ;;               ((mv ?heade taile ende) (first/rest/end e))
-;;   ;;               (axorb (xor heada headb)))
-;;   ;;            (if (and enda endb ende)
-;;   ;;                (list c a b e)
-;;   ;;              (+-ss-cong-ind (or (and c axorb)
-;;   ;;                                 (and heada headb))
-;;   ;;                             taila tailb taile)))))
-
-
-;;   ;; (defcong sv-equiv sv-equiv (+-ss c a b) 2
-;;   ;;   :hints (("goal" :induct (+-ss-cong-ind c a b a-equiv)
-;;   ;;            :expand ((:free (c) (+-ss c a b))
-;;   ;;                     (:free (c) (+-ss c a-equiv b)))
-;;   ;;            :in-theory (e/d (scdr-when-equiv-to-endp
-;;   ;;                             ;; sv-equiv-of-scons
-;;   ;;                             )
-;;   ;;                            (sv-equiv (sterm)
-;;   ;;                                      ; sterm-when-s-endp
-;;   ;;                                      ;; (:d +-ss)
-;;   ;;                                      )))
-;;   ;;           (and stable-under-simplificationp
-;;   ;;                '(:use ((:instance sv-equiv-+-ss-endp))))))
-
-;;   ;; (defthmd +-ss-commutes
-;;   ;;   (sv-equiv (+-ss c a b)
-;;   ;;             (+-ss c b a))
-;;   ;;   :hints (("goal" :induct t :do-not-induct t
-;;   ;;            :in-theory (disable sv-equiv))))
-
-;;   ;; (defcong sv-equiv sv-equiv (+-ss c a b) 3
-;;   ;;   :hints (("goal" :do-not-induct t
-;;   ;;            :in-theory (disable sv-equiv)
-;;   ;;            :use ((:instance +-ss-commutes)
-;;   ;;                  (:instance +-ss-commutes (b b-equiv))))))
-
-;;   ;; (defthmd bfr-eval-list-when-not-s-endp
-;;   ;;   (implies (not (s-endp x))
-;;   ;;            (sv-equiv (bfr-eval-list x env)
-;;   ;;                      (scons (bfr-eval (car x) env)
-;;   ;;                             (bfr-eval-list (scdr x) env))))
-;;   ;;   :hints(("Goal" :in-theory (enable s-endp scdr scons))))
-
-;;   ;; ;; (local (defthm v2i-when-empty
-;;   ;; ;;          (implies (not (consp (cdr x)))
-;;   ;; ;;                   (equal (v2i x)
-;;   ;; ;;                          (if (car x) -1 0)))
-;;   ;; ;;          :hints(("Goal" :in-theory (enable v2i)))
-;;   ;; ;;          :rule-classes ((:rewrite :backchain-limit-lst 0))))
-
-;;   ;; (local (in-theory (disable (:t acl2::logcons-negp)
-;;   ;;                            (:t acl2::logcons-posp-2)
-;;   ;;                            (:t acl2::logcons-natp)
-;;   ;;                            (:t acl2::logcons-posp-1)
-;;   ;;                            (:t natp)
-;;   ;;                            (:t acl2::negp)
-;;   ;;                            (:t posp)
-;;   ;;                            (:t bfr-eval)
-;;   ;;                            (:t bfr-+-ss)
-;;   ;;                            (:t +-ss)
-;;   ;;                            (:t v2i)
-;;   ;;                            (:t acl2::logcons-type)
-;;   ;;                            iff xor not
-;;   ;;                            equal-of-booleans-rewrite
-;;   ;;                            set::double-containment
-;;   ;;                            boolean-list-bfr-eval-list-const)))
-
-;;   ;; (local (defthm open-+-ss-rec
-;;   ;;          (implies (or (consp (cdr v1))
-;;   ;;                       (consp (cdr v2)))
-;;   ;;                   (equal (+-ss c v1 v2)
-;;   ;;                          (B* (((MV HEAD1 TAIL1 ?END1)
-;;   ;;                                (FIRST/REST/END V1))
-;;   ;;                               ((MV HEAD2 TAIL2 ?END2)
-;;   ;;                                (FIRST/REST/END V2))
-;;   ;;                               (AXORB (XOR HEAD1 HEAD2))
-;;   ;;                               (S (XOR C AXORB)))
-;;   ;;                            (LET* ((C (OR (AND C AXORB) (AND HEAD1 HEAD2)))
-;;   ;;                                   (RST (+-SS C TAIL1 TAIL2)))
-;;   ;;                                  (IF (AND (ATOM (CDR RST)) (IFF S (CAR RST)))
-;;   ;;                                      RST (CONS S RST))))))
-;;   ;;          :rule-classes ((:rewrite :backchain-limit-lst 1))))
-
-;;   ;; (local (defthm consp-of-bfr-eval-list
-;;   ;;          (equal (consp (bfr-eval-list x env))
-;;   ;;                 (consp x))
-;;   ;;          :hints(("Goal" :in-theory (enable bfr-eval-list)))))
-
-;;   ;; (local (defthm open-+-ss-base
-;;   ;;          (implies (and (not (consp (cdr v1)))
-;;   ;;                        (not (consp (cdr v2))))
-;;   ;;                   (equal (+-ss c v1 v2)
-;;   ;;                          (B* (((MV HEAD1 ?TAIL1 ?END1)
-;;   ;;                                (FIRST/REST/END V1))
-;;   ;;                               ((MV HEAD2 ?TAIL2 ?END2)
-;;   ;;                                (FIRST/REST/END V2))
-;;   ;;                               (AXORB (XOR HEAD1 HEAD2))
-;;   ;;                               (S (XOR C AXORB)))
-;;   ;;                            (LET ((LAST (IF AXORB (NOT C) HEAD1)))
-;;   ;;                                 (IF (IFF S LAST)
-;;   ;;                                     (LIST S)
-;;   ;;                                     (LIST S LAST))))))
-;;   ;;          :rule-classes ((:rewrite :backchain-limit-lst 0))))
-
-;;   (local (in-theory (e/d (;; bfr-eval-list-when-not-s-endp
-;;                           )
-;;                          (bfr-eval-list-of-scdr))))
-
-;;   (defthm s-endp-of-scons
-;;     (equal (s-endp (scons b x))
-;;            (and (s-endp x)
-;;                 (iff b (car x))))
-;;     :hints(("Goal" :in-theory (enable s-endp scons))))
-
-;;   ;; (defthm sterm-of-bfr-eval-of-car
-;;   ;;   (implies (s-endp x)
-;;   ;;            (equal (sterm (bfr-eval (car x) env))
-;;   ;;                   (bfr-eval-list x env)))
-;;   ;;   :hints(("Goal" :in-theory (enable s-endp sterm)
-
-;;   (defthm bfr-+-ss-correct
-;;     (sv-equiv (bfr-eval-list (bfr-+-ss c v1 v2) env)
-;;               (+-ss (bfr-eval c env)
-;;                     (bfr-eval-list v1 env)
-;;                     (bfr-eval-list v2 env)))
-;;     :hints(("Goal" :in-theory (e/d ()
-;;                                    ((:d bfr-+-ss) sv-equiv (sterm)))
-;;             :induct (bfr-+-ss c v1 v2)
-;;             :expand ((bfr-+-ss c v1 v2)
-;;                      (:free (a b) (sfix (cons a b)))
-;;                      ;; (:free (a b) (bfr-eval-list (cons a b) env))
-;;                      ;; (bfr-eval-list nil env)
-;;                      ))
-;;            (and stable-under-simplificationp
-;;                 (let ((call (acl2::find-call '+-ss (caddr (car (last clause))))))
-;;                   (and call
-;;                        (let ((res `(:expand (,call
-;;                                              (bfr-+-ss c v1 v2)
-;;                                              (:free (a b) (sfix (cons a b)))
-;;                                              ;; (:free (a b) (bfr-eval-list (cons a b) env))
-;;                                              ;; (bfr-eval-list nil env)
-;;                                              )
-;;                                     :use ((:instance
-;;                                            bfr-eval-list-when-not-s-endp
-;;                                            (x v1))
-;;                                           (:instance
-;;                                            bfr-eval-list-when-not-s-endp
-;;                                            (x v2))))))
-;; ;                         (or (cw "expand: ~x0~%" res)
-;;                              res))))
-;;            (bfr-reasoning)))
-
-;; )
-
-
-(defsection lognot-s
-  (local (in-theory (enable bfr-lognot-s)))
-
-  (defthm bfr-lognot-s-correct
-    (equal (bfr-list->s (bfr-lognot-s x) env)
-           (lognot (bfr-list->s x env))))
-
-  (defthm pbfr-list-depends-on-of-bfr-lognot-s
-    (implies (not (pbfr-list-depends-on k p x))
-             (not (pbfr-list-depends-on k p (bfr-lognot-s x))))
-    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
-
-  ;; (defthm lognot-s-correct
-  ;;   (equal (v2i (lognot-s x))
-  ;;          (lognot (v2i x)))
-  ;;   :hints(("Goal" :in-theory (enable v2i)))))
-
-
-(defsection unary-minus-s
-  (local (in-theory (enable bfr-unary-minus-s)))
-
-  (defthm bfr-unary-minus-s-correct
-    (equal (bfr-list->s (bfr-unary-minus-s x) env)
-           (- (bfr-list->s x env)))
-    :hints(("Goal" :in-theory (enable logcons lognot))))
-
-  (defthm pbfr-list-depends-on-of-bfr-unary-minus-s
-    (implies (not (pbfr-list-depends-on n p x))
-             (not (pbfr-list-depends-on n p (bfr-unary-minus-s x))))
-    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
-
-  ;; (defthm unary-minus-s-correct
-  ;;   (equal (v2i (unary-minus-s x))
-  ;;          (- (v2i x)))
-  ;;   :hints(("Goal" :in-theory (enable v2i lognot)))))
-
-(defsection *-ss
-
-  (local (in-theory (enable bfr-*-ss)))
-
-  (defthm bfr-*-ss-correct
-    (equal (bfr-list->s (bfr-*-ss v1 v2) env)
-           (* (bfr-list->s v1 env)
-              (bfr-list->s v2 env)))
-    :hints(("Goal" :induct (bfr-*-ss v1 v2)
-            :in-theory (enable bfr-*-ss logcons)
-            :expand ((bfr-*-ss v1 v2)
-                     (bfr-*-ss nil v2)))))
-
-  (defthm pbfr-list-depends-on-of-bfr-*-ss
-    (implies (and (not (pbfr-list-depends-on n p v1))
-                  (not (pbfr-list-depends-on n p v2)))
-             (not (pbfr-list-depends-on n p (bfr-*-ss v1 v2))))
-    :hints(("Goal" :in-theory (e/d (pbfr-list-depends-on)
-                                   ((pbfr-list-depends-on)
-                                    (pbfr-depends-on)
-                                    (:d bfr-*-ss)))
-            :induct (bfr-*-ss v1 v2)
-            :expand ((bfr-*-ss v1 v2))))))
-
-  ;; (local (defthm +-double-minus
-  ;;          (equal (+ x (- (* 2 x)))
-  ;;                 (- x))))
-
-  ;; (local (defthm +-double-minus-s
-  ;;          (sv-equiv (+-ss nil v2 (scons nil (unary-minus-s v2)))
-  ;;                    (unary-minus-s v2))
-  ;;          :hints (("goal" :use ((:instance i2v-v2i
-  ;;                                 (v (+-ss nil v2 (scons nil (unary-minus-s
-  ;;                                                             v2)))))
-  ;;                                (:instance i2v-v2i
-  ;;                                 (v (unary-minus-s v2))))
-  ;;                   :in-theory (enable logcons)))))
-
-  ;; (local (defthmd *-ss-equiv-when-end
-  ;;          (implies (and (sv-equiv v1 v1-equiv)
-  ;;                        (s-endp v1-equiv))
-  ;;                   (sv-equiv (*-ss v1 v2)
-  ;;                             (*-ss v1-equiv v2)))
-  ;;          :hints (("goal" :induct (*-ss v1 v2)
-  ;;                   :in-theory (disable sv-equiv)))))
-
-  ;; ;; (local (defun *-ss-cong-ind-1 (v1 v1e)
-  ;; ;;          (b* (((mv dig1 rest1 end1) (first/rest/end v1))
-  ;; ;;               ((mv ?dige reste ende) (first/rest/end v1e)))
-  ;; ;;            (if (and end1 ende)
-  ;; ;;                (list v1 v1e)
-  ;; ;;              (*-ss-cong-ind-1 rest1 reste)))))
-
-  ;; (defcong sv-equiv sv-equiv (*-ss x y) 1
-  ;;   :hints (("goal" :induct (scdr2-ind x x-equiv)
-  ;;            :in-theory (disable sv-equiv)))))
-
-  ;; (local (in-theory (disable bfr-ite-bss-fn v2i
-  ;;                            (:definition bfr-*-ss))))
-
-  ;; (defthm bfr-*-ss-correct
-  ;;   (
-
-
-
-  ;; (local (bfr-reasoning-mode t))
-
-
-
-  ;; )
-
-
-(defsection <-=-ss
-  (local (in-theory (enable bfr-<-=-ss)))
-
-  (defthm bfr-<-=-ss-correct
-    (b* (((mv less equal) (bfr-<-=-ss a b)))
-      (and (equal (bfr-eval less env)
-                  (< (bfr-list->s a env)
-                     (bfr-list->s b env)))
-           (equal (bfr-eval equal env)
-                  (= (bfr-list->s a env)
-                     (bfr-list->s b env)))))
-    :hints(("Goal" :in-theory (e/d () ((:d bfr-<-=-ss)))
-            :induct (bfr-<-=-ss a b)
-            :expand ((bfr-<-=-ss a b)))))
-
-  (defthm pbfr-depends-on-of-bfr-<-=-ss
-    (b* (((mv less equal) (bfr-<-=-ss a b)))
-      (implies (and (not (pbfr-list-depends-on n p a))
-                    (not (pbfr-list-depends-on n p b)))
-               (and (not (pbfr-depends-on n p less))
-                    (not (pbfr-depends-on n p equal)))))))
-
-
-(defsection bfr-<-ss
-
-  (local (in-theory (enable bfr-<-ss)))
-
-  (defthm bfr-<-ss-correct
-    (equal (bfr-eval (bfr-<-ss a b) env)
-           (< (bfr-list->s a env)
-              (bfr-list->s b env))))
-
-  (defthm pbfr-depends-on-of-bfr-<-ss
-    (implies (and (not (pbfr-list-depends-on n p a))
-                  (not (pbfr-list-depends-on n p b)))
-             (not (pbfr-depends-on n p (bfr-<-ss a b))))))
-
-
-(defsection bfr-logapp-nss
-  (local (in-theory (enable bfr-logapp-nss)))
-
-  (defthm bfr-logapp-nss-correct
-    (equal (bfr-list->s (bfr-logapp-nss n a b) env)
-           (logapp n (bfr-list->s a env)
-                   (bfr-list->s b env)))
-    :hints(("Goal" :in-theory (enable acl2::logapp** acl2::ash**))))
-
-  (defthm pbfr-list-depends-on-of-bfr-logapp-nss
-    (implies (and (not (pbfr-list-depends-on n p a))
-                  (not (pbfr-list-depends-on n p b)))
-             (not (pbfr-list-depends-on n p (bfr-logapp-nss m a b))))))
-
-(defsection bfr-logapp-nus
-  (local (in-theory (enable bfr-logapp-nus)))
-
-  (defthm bfr-logapp-nus-correct
-    (equal (bfr-list->s (bfr-logapp-nus n a b) env)
-           (logapp n (bfr-list->u a env)
-                   (bfr-list->s b env)))
-    :hints(("Goal" :in-theory (enable acl2::logapp**
-                                      acl2::ash**
-                                      acl2::loghead**))))
-
-  (defthm pbfr-list-depends-on-of-bfr-logapp-nus
-    (implies (and (not (pbfr-list-depends-on n p a))
-                  (not (pbfr-list-depends-on n p b)))
-             (not (pbfr-list-depends-on n p (bfr-logapp-nus m a b))))))
-
-(defsection bfr-ash-ss
-
-  (local (in-theory (enable bfr-ash-ss)))
-
-  (local
-   (defthm reverse-distrib-1
-     (and (equal (+ n n) (* 2 n))
-          (implies (syntaxp (quotep k))
-                   (equal (+ n (* k n)) (* (+ 1 k) n)))
-          (implies (syntaxp (quotep k))
-                   (equal (+ (- n) (* k n)) (* (+ -1 k) n)))
-          (implies (syntaxp (quotep k))
-                   (equal (+ (- n) (* k n) m) (+ (* (+ -1 k) n) m)))
-          (implies (syntaxp (and (quotep a) (quotep b)))
-                   (equal (+ (* a n) (* b n)) (* (+ a b) n)))
-          (equal (+ n n m) (+ (* 2 n) m))
-          (implies (syntaxp (quotep k))
-                   (equal (+ n (* k n) m) (+ (* (+ 1 k) n) m)))
-          (implies (syntaxp (and (quotep a) (quotep b)))
-                   (equal (+ (* a n) (* b n) m) (+ (* (+ a b) n) m)))
-          (equal (+ n (- (* 2 n)) m)
-                 (+ (- n) m))
-          )))
-
-  (defthm bfr-ash-ss-correct
-    (implies (posp place)
-             (equal (bfr-list->s (bfr-ash-ss place n shamt) env)
-                    (ash (bfr-list->s n env)
-                         (+ -1 place (* place (bfr-list->s shamt env))))))
-    :hints(("Goal" :in-theory (e/d (acl2::ash**) ((:d bfr-ash-ss)))
-            :induct (bfr-ash-ss place n shamt)
-            :expand ((bfr-ash-ss place n shamt)
-                     (:free (b) (logcons b (bfr-list->s (scdr shamt) env)))))))
-
-  (defthm pbfr-list-depends-on-of-bfr-ash-ss
-    (implies (and (not (pbfr-list-depends-on n p a))
-                  (not (pbfr-list-depends-on n p b)))
-             (not (pbfr-list-depends-on n p (bfr-ash-ss place a b))))
-    :hints(("Goal" :in-theory (enable pbfr-list-depends-on)))))
-
-;; (encapsulate nil
-;;   (local (defthm ash-of-logcons-0
-;;            (implies (<= 0 (ifix m))
-;;                     (equal (ash (logcons 0 n) m)
-;;                            (logcons 0 (ash n m))))
-;;            :hints(("Goal" :in-theory (enable* acl2::ihsext-inductions
-;;                                               acl2::ihsext-recursive-redefs)))))
-
-;;   (local
-;;    (defthm make-list-ac-nil-v2i-eval
-;;      (equal (v2i (bfr-eval-list (make-list-ac n nil m) env))
-;;             (acl2::logapp (nfix n) 0 (v2i (bfr-eval-list m env))))
-;;      :hints(("Goal" :in-theory (enable bfr-eval-list v2i acl2::ash**)))))
-
-;;   (local (in-theory (disable acl2::logtail-identity
-;;                              bfr-ite-bss-fn
-;;                              equal-of-booleans-rewrite)))
-;;   (local (in-theory (enable bfr-ash-ss logcons)))
-
-;;   (local (defthm logtail-of-logtail-free
-;;            (implies (equal y (logtail m z))
-;;                     (equal (logtail n y)
-;;                            (logtail (+ (nfix m) (nfix n)) z)))))
-
-
-;;   ;; (local (bfr-reasoning-mode t))
-;;   (defthm bfr-ash-ss-correct
-;;     (implies (and
-;;               (posp place))
-;;              (equal (v2i (bfr-eval-list (bfr-ash-ss place n shamt) env))
-;;                     (ash (v2i (bfr-eval-list n env))
-;;                          (+ -1 place (* place (v2i (bfr-eval-list shamt env)))))))
-;;     :hints (("goal" :induct (bfr-ash-ss place n shamt)
-;;              :in-theory (e/d () ((:definition bfr-ash-ss)))
-;;              :expand ((bfr-ash-ss place n shamt)
-;;                       (bfr-ash-ss place n nil)
-;;                       (bfr-eval-list shamt env)
-;;                       (:free (a b) (v2i (cons a b)))))
-;;             (and stable-under-simplificationp
-;;                  '(:cases ((<= 0 (+ -1 PLACE
-;;                                     (* 2 PLACE
-;;                                        (V2I (BFR-EVAL-LIST (CDR SHAMT)
-;;                                                            ENV))))))))
-;;             (and stable-under-simplificationp
-;;                  '(:cases ((<= 0 (+ -1 (* 2 PLACE)
-;;                                     (* 2 PLACE
-;;                                        (V2I (BFR-EVAL-LIST (CDR SHAMT)
-;;                                        ENV)))))))))))
-
-(defsection bfr-logbitp-n2v
-  (local (in-theory (enable bfr-logbitp-n2v)))
-
-  (defthm bfr-logbitp-n2v-correct
-    (implies (posp place)
-             (equal (bfr-eval (bfr-logbitp-n2v place digit n) env)
-                    (logbitp (* place (bfr-list->u digit env))
-                             (bfr-list->s n env))))
-    :hints(("Goal" :in-theory (e/d (acl2::logbitp** logcons acl2::bool->bit)
-                                   ((:d bfr-logbitp-n2v) floor
-                                    boolean-listp))
-            :induct (bfr-logbitp-n2v place digit n)
-            :expand ((bfr-logbitp-n2v place digit n)))))
-
-  (defthm pbfr-list-depends-on-of-bfr-logbitp-n2v
-    (implies (and (not (pbfr-list-depends-on n p digit))
-                  (not (pbfr-list-depends-on n p x)))
-             (not (pbfr-depends-on n p (bfr-logbitp-n2v place digit x))))))
-
-;; (encapsulate nil
-;;   (local (in-theory (enable bfr-logbitp-n2v logcons acl2::ash**)))
-
-;;   (defthm bfr-logbitp-n2v-correct
-;;     (implies (and
-;;               (posp place))
-;;              (equal (bfr-eval (bfr-logbitp-n2v place digit n) env)
-;;                     (logbitp (* place (v2n (bfr-eval-list digit env)))
-;;                              (v2i (bfr-eval-list n env)))))
-;;     :hints(("Goal" :in-theory (e/d (bfr-eval-list acl2::bool->bit)
-;;                                    ((:definition bfr-logbitp-n2v) floor
-;;                                     boolean-listp))
-;;             :induct (bfr-logbitp-n2v place digit n)
-;;             :expand ((bfr-logbitp-n2v place digit n)
-;;                      (bfr-logbitp-n2v place nil n)
-;;                      (bfr-logbitp-n2v place digit nil)
-;;                      (:free (n) (logbitp 0 n))
-;;                      (:free (a b) (v2i (cons a b)))
-;;                      (:free (a b) (v2n (cons a b))))))))
-
-(defsection bfr-integer-length
-  (local (defthm bfr-eval-of-car-when-bfr-list->s
-           (implies (and (equal (bfr-list->s x env) c)
-                         (syntaxp (quotep c)))
-                    (equal (bfr-eval (car x) env)
-                           (equal 1 (logcar c))))))
-
-  (defthm bfr-integer-length-s1-correct1
-    (b* (((mv done ilen) (bfr-integer-length-s1 offset x))
-         (xval (bfr-list->s x env)))
-      (implies (posp offset)
-               (and (equal (bfr-eval done env)
-                           (and (not (equal xval 0))
-                                (not (equal xval -1))))
-                    (equal (bfr-list->s ilen env)
-                           (if (or (equal xval 0)
-                                   (equal xval -1))
-                               0
-                             (+ -1 offset (integer-length xval)))))))
-    :hints(("Goal" :induct (bfr-integer-length-s1 offset x)
-            :in-theory (enable (:i bfr-integer-length-s1)
-                               acl2::integer-length**)
-            ;; :in-theory (enable v2i-of-list-implies-car)
-            :expand ((bfr-integer-length-s1 offset x)))
-           (bfr-reasoning)))
-
-  (defthm pbfr-depends-on-of-bfr-integer-length-s1-rw
-    (b* (((mv done ilen) (bfr-integer-length-s1 offset x)))
-      (implies (not (pbfr-list-depends-on n p x))
-               (and (not (pbfr-depends-on n p done))
-                    (not (pbfr-list-depends-on n p ilen)))))
-    :hints(("Goal" :in-theory (enable pbfr-list-depends-on
-                                      bfr-integer-length-s1))))
-
-  (defthm bfr-integer-length-s-correct
-    (equal (bfr-list->s (bfr-integer-length-s x) env)
-           (integer-length (bfr-list->s x env)))
-    :hints(("Goal" :in-theory (enable bfr-integer-length-s))))
-
-  (defthm pbfr-depends-on-of-bfr-integer-length-s
-    (implies (not (pbfr-list-depends-on n p x))
-             (not (pbfr-list-depends-on n p (bfr-integer-length-s x))))
-    :hints(("Goal" :in-theory (enable pbfr-list-depends-on
-                                      bfr-integer-length-s)))))
-
-
-
-;; (encapsulate nil
-;;   (local (in-theory (enable bfr-integer-length-s1 bfr-integer-length-s)))
-;;   (local (bfr-reasoning-mode t))
-;;   (local (defthm bfr-integer-length-s1-correct1
-;;            (implies (posp offset)
-;;                     (and (equal (bfr-eval (mv-nth 0 (bfr-integer-length-s1 offset x)) env)
-;;                                 (not (or (equal (v2i (bfr-eval-list x env)) 0)
-;;                                          (equal (v2i (bfr-eval-list x env)) -1))))
-;;                          (equal (v2i (bfr-eval-list (mv-nth 1 (bfr-integer-length-s1 offset
-;;                                                                                  x))
-;;                                                     env))
-;;                                 (if (or (equal (v2i (bfr-eval-list x env)) 0)
-;;                                         (equal (v2i (bfr-eval-list x env)) -1))
-;;                                     0
-;;                                   (+ -1 offset (integer-length (v2i (bfr-eval-list x env))))))))
-;;            :hints(("Goal" :induct (bfr-integer-length-s1 offset x)
-;;                    :in-theory (enable acl2::integer-length**)
-;;                    ;; :in-theory (enable v2i-of-list-implies-car)
-;;                    :expand ((bfr-integer-length-s1 offset x)
-;;                             (bfr-integer-length-s1 offset nil)
-;;                             (bfr-eval-list x env)
-;;                             (:free (a b) (v2i (cons a b)))
-;;                             (:free (a B) (bfr-eval-list (cons a b) env)))))))
-
-
-;;   (defthm bfr-integer-length-s-correct
-;;     (equal (v2i (bfr-eval-list (bfr-integer-length-s x) env))
-;;            (integer-length (v2i (bfr-eval-list x env))))
-;;     :hints(("Goal" :in-theory (disable bfr-integer-length-s1)))))
-
-(defsection bfr-logand-ss
-  (defthm bfr-logand-ss-correct
-    (equal (bfr-list->s (bfr-logand-ss a b) env)
-           (logand (bfr-list->s a env)
-                   (bfr-list->s b env)))
-    :hints(("Goal"
-            :induct (scdr2-ind a b)
-            :in-theory (e/d (acl2::logand**))
-            :expand ((bfr-logand-ss a b)))))
-
-  (defthm pbfr-list-depends-on-of-bfr-logand-ss
-    (implies (and (not (pbfr-list-depends-on n p v1))
-                  (not (pbfr-list-depends-on n p v2)))
-             (not (pbfr-list-depends-on n p (bfr-logand-ss v1 v2))))
-    :hints(("Goal" :in-theory (e/d (pbfr-list-depends-on bfr-logand-ss)
-                                   ((pbfr-list-depends-on)
-                                    (pbfr-depends-on)
-                                    (:d bfr-logand-ss)))
-            :induct (bfr-logand-ss v1 v2)
-            :expand ((bfr-logand-ss v1 v2))))))
-
-(defsection bfr-logior-ss
-  (defthm bfr-logior-ss-correct
-    (equal (bfr-list->s (bfr-logior-ss a b) env)
-           (logior (bfr-list->s a env)
-                   (bfr-list->s b env)))
-    :hints(("Goal"
-            :induct (scdr2-ind a b)
-            :in-theory (e/d (acl2::logior**))
-            :expand ((bfr-logior-ss a b)))))
-
-  (defthm pbfr-list-depends-on-of-bfr-logior-ss
-    (implies (and (not (pbfr-list-depends-on n p v1))
-                  (not (pbfr-list-depends-on n p v2)))
-             (not (pbfr-list-depends-on n p (bfr-logior-ss v1 v2))))
-    :hints(("Goal" :in-theory (e/d (pbfr-list-depends-on bfr-logior-ss)
-                                   ((pbfr-list-depends-on)
-                                    (pbfr-depends-on)
-                                    (:d bfr-logior-ss)))
-            :induct (bfr-logior-ss v1 v2)
-            :expand ((bfr-logior-ss v1 v2))))))
-
-(defsection bfr-logxor-ss
-  (defthm bfr-logxor-ss-correct
-    (equal (bfr-list->s (bfr-logxor-ss a b) env)
-           (logxor (bfr-list->s a env)
-                   (bfr-list->s b env)))
-    :hints(("Goal"
-            :induct (scdr2-ind a b)
-            :in-theory (e/d (acl2::logxor**))
-            :expand ((bfr-logxor-ss a b)))))
-
-  (defthm pbfr-list-depends-on-of-bfr-logxor-ss
-    (implies (and (not (pbfr-list-depends-on n p v1))
-                  (not (pbfr-list-depends-on n p v2)))
-             (not (pbfr-list-depends-on n p (bfr-logxor-ss v1 v2))))
-    :hints(("Goal" :in-theory (e/d (pbfr-list-depends-on bfr-logxor-ss)
-                                   ((pbfr-list-depends-on)
-                                    (pbfr-depends-on)
-                                    (:d bfr-logxor-ss)))
-            :induct (bfr-logxor-ss v1 v2)
-            :expand ((bfr-logxor-ss v1 v2))))))
-
-(defsection bfr-logeqv-ss
-  (defthm bfr-logeqv-ss-correct
-    (equal (bfr-list->s (bfr-logeqv-ss a b) env)
-           (logeqv (bfr-list->s a env)
-                   (bfr-list->s b env)))
-    :hints(("Goal"
-            :induct (scdr2-ind a b)
-            :in-theory (e/d (acl2::binary-logeqv
-                             acl2::logior**
-                             acl2::lognot**
-                             acl2::logand**))
-            :expand ((bfr-logeqv-ss a b)))))
-
-  (defthm pbfr-list-depends-on-of-bfr-logeqv-ss
-    (implies (and (not (pbfr-list-depends-on n p v1))
-                  (not (pbfr-list-depends-on n p v2)))
-             (not (pbfr-list-depends-on n p (bfr-logeqv-ss v1 v2))))
-    :hints(("Goal" :in-theory (e/d (pbfr-list-depends-on bfr-logeqv-ss)
-                                   ((pbfr-list-depends-on)
-                                    (pbfr-depends-on)
-                                    (:d bfr-logeqv-ss)))
-            :induct (bfr-logeqv-ss v1 v2)
-            :expand ((bfr-logeqv-ss v1 v2))))))
-
-
-;; ------
-
-
-
-
-;; (defthmd logtail-ns-0
-;;   (equal (logtail-ns 0 n) n)
-;;   :hints(("Goal" :in-theory (enable logtail-ns))))
-
-
-
-;; (defthmd boolean-listp-bfr-+-ss-v2i-bind-env-car-env
-;;   (implies (and (bind-free '((env . (car env))) (env))
-;; ;                 (bfr-p c) (bfr-listp v1) (bfr-listp v2)
-;;                 (boolean-listp (bfr-+-ss c v1 v2)))
-;;            (equal (v2i (bfr-+-ss c v1 v2))
-;;                   (+ (if (bfr-eval c env) 1 0)
-;;                      (v2i (bfr-eval-list v1 env))
-;;                      (v2i (bfr-eval-list v2 env)))))
-;;   :hints (("goal" :use ((:instance bfr-eval-list-consts
-;;                                    (x (bfr-+-ss c v1 v2)))
-;;                         bfr-+-ss-correct)
-;;            :in-theory (disable bfr-+-ss bfr-+-ss-correct
-;;                                bfr-eval-list-consts))))
-
-
-;; (defthmd boolean-listp-bfr-*-ss-v2i-bind-env-car-env
-;;   (implies (and (bind-free '((env . (car env))) (env))
-;;                 (boolean-listp (bfr-*-ss v1 v2)))
-;;            (equal (v2i (bfr-*-ss v1 v2))
-;;                   (* (v2i (bfr-eval-list v1 env))
-;;                      (v2i (bfr-eval-list v2 env)))))
-;;   :hints (("goal" :use ((:instance bfr-eval-list-consts
-;;                                    (x (bfr-*-ss v1 v2)))
-;;                         bfr-*-ss-correct)
-;;            :in-theory (disable bfr-*-ss bfr-*-ss-correct
-;;                                bfr-eval-list-consts))))
-
-
-
-
-
-
-
-
-;; ---------------- bfr-floor-mod-ss ---------------------
-
-(defsection bfr-floor-mod-ss
-
-  (local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;
-
-  (local
-   (encapsulate nil
-     (local
-      (progn
-        (defthm floor-between-b-and-2b
-          (implies (and (integerp a)
-                        (integerp b)
-                        (< 0 b)
-                        (<= b a)
-                        (< a (* 2 b)))
-                   (equal (floor a b) 1))
-          :hints(("Goal" :in-theory (disable floor acl2::floor-bounds
-                                             acl2::<-*-/-left)
-                  :use ((:instance acl2::floor-bounds
-                         (x a) (y b))
-                        (:theorem (implies (and (integerp a)
-                                                (integerp b)
-                                                (< 0 b)
-                                                (< a (* 2 b)))
-                                           (< (* a (/ b)) 2)))))
-                 (and stable-under-simplificationp
-                      '(:in-theory (disable floor)))))
-
-        (defthm floor-less-than-b
-          (implies (and (integerp a)
-                        (integerp b)
-                        (< 0 b)
-                        (<= 0 a)
-                        (< a b))
-                   (equal (floor a b) 0))
-          :hints(("Goal" :in-theory (disable floor acl2::floor-bounds
-                                             acl2::<-*-/-left)
-                  :use ((:instance acl2::floor-bounds
-                         (x a) (y b))
-                        (:theorem (implies (and (integerp a)
-                                                (integerp b)
-                                                (< 0 b)
-                                                (< a b))
-                                           (< (* a (/ b)) 1)))))
-                 (and stable-under-simplificationp
-                      '(:in-theory (disable floor)))))
-
-        (defthm mod-between-b-and-2-b
-          (implies (and (integerp a)
-                        (integerp b)
-                        (< 0 b)
-                        (<= b a)
-                        (< a (* 2 b)))
-                   (equal (mod a b) (- a b)))
-          :hints(("Goal" :in-theory (e/d (mod)
-                                         (floor acl2::floor-bounds
-                                                acl2::<-*-/-left))
-                  :use ((:instance acl2::floor-bounds
-                         (x a) (y b))
-                        (:theorem (implies (and (integerp a)
-                                                (integerp b)
-                                                (< 0 b)
-                                                (< a (* 2 b)))
-                                           (< (* a (/ b)) 2)))))
-                 (and stable-under-simplificationp
-                      '(:in-theory (disable floor)))))
-
-        (defthm mod-less-than-b
-          (implies (and (integerp a)
-                        (integerp b)
-                        (< 0 b)
-                        (<= 0 a)
-                        (< a b))
-                   (equal (mod a b) a))
-          :hints(("Goal" :in-theory (disable floor acl2::floor-bounds
-                                             acl2::<-*-/-left)
-                  :use ((:instance acl2::floor-bounds
-                         (x a) (y b))
-                        (:theorem (implies (and (integerp a)
-                                                (integerp b)
-                                                (< 0 b)
-                                                (< a (* 2 b)))
-                                           (< (* a (/ b)) 2)))))
-                 (and stable-under-simplificationp
-                      '(:in-theory (disable floor)))))))
-
-
-     ;; (defthm floor-rewrite-+-1-*-2-a
-     ;;   (implies (and (integerp a) (integerp b)
-     ;;                 (< 0 b))
-     ;;            (equal (floor (+ 1 (* 2 a)) b)
-     ;;                   (if (<= b (+ 1 (* 2 (mod a b))))
-     ;;                       (+ 1 (* 2 (floor a b)))
-     ;;                     (* 2 (floor a b)))))
-     ;;   :hints(("Goal" :in-theory (disable floor))))
-
-     ;; (defthm floor-rewrite-*-2-a
-     ;;   (implies (and (integerp a) (integerp b)
-     ;;                 (< 0 b))
-     ;;            (equal (floor (* 2 a) b)
-     ;;                   (if (<= b (* 2 (mod a b)))
-     ;;                       (+ 1 (* 2 (floor a b)))
-     ;;                     (* 2 (floor a b)))))
-     ;;   :hints(("Goal" :in-theory (disable floor))))
-
-     (defthm floor-rewrite-+-bit-*-2-a
-       (implies (and (integerp a) (integerp b)
-                     (< 0 b))
-                (equal (floor (logcons c a) b)
-                       (if (<= b (logcons c (mod a b)))
-                           (logcons 1 (floor a b))
-                         (logcons 0 (floor a b)))))
-       :hints(("Goal" :in-theory (e/d (logcons bfix) (floor)))))
-
-     ;; (defthm mod-rewrite-*-2-a
-     ;;   (implies (and (integerp a) (integerp b)
-     ;;                 (< 0 b))
-     ;;            (equal (mod (* 2 a) b)
-     ;;                   (if (<= b (* 2 (mod a b)))
-     ;;                       (+ (* -1  b)
-     ;;                          (* 2 (mod a b)))
-     ;;                     (* 2 (mod a b)))))
-     ;;   :hints (("goal" :in-theory (disable mod))))
-
-     ;; (defthm mod-rewrite-+-1-*-2-a
-     ;;   (implies (and (integerp a) (integerp b)
-     ;;                 (< 0 b))
-     ;;            (equal (mod (+ 1 (* 2 a)) b)
-     ;;                   (if (<= b (+ 1 (* 2 (mod a b))))
-     ;;                       (+ 1 (* -1  b)
-     ;;                          (* 2 (mod a b)))
-     ;;                     (+ 1 (* 2 (mod a b))))))
-     ;;   :hints (("goal" :in-theory (e/d (mod) (floor)))))
-
-     (defthm mod-rewrite-+-bit-*-2-a
-       (implies (and (integerp a) (integerp b)
-                     (< 0 b))
-                (equal (mod (logcons c a) b)
-                       (if (<= b (logcons c (mod a b)))
-                           (+ (- b)
-                              (logcons c (mod a b)))
-                         (logcons c (mod a b)))))
-       :hints (("goal" :in-theory (e/d (logcons bfix mod) (floor)))))
-
-
-
-     ;; (in-theory (disable mod-between-b-and-2-b
-     ;;                     mod-less-than-b
-     ;;                     floor-between-b-and-2b
-     ;;                     floor-less-than-b))
-
-     (defthm denominator-of-unary-/
-       (implies (and (integerp n) (< 0 n))
-                (equal (denominator (/ n)) n))
-       :hints (("goal" :use ((:instance rational-implies2
-                              (x (/ n)))))))
-
-     (defthm <-1-not-integer-recip
-       (implies (and (integerp n)
-                     (< 1 n))
-                (not (integerp (/ n))))
-       :hints (("goal"
-                :use ((:instance denominator-of-unary-/))
-                :in-theory (disable denominator-of-unary-/))))
-
-     (defthm integer-and-integer-recip
-       (implies (and (integerp n)
-                     (< 0 n))
-                (equal (integerp (/ n))
-                       (equal n 1))))))
-
-  (local (add-bfr-pat (bfr-<-ss . &)))
-
-  (local (defthm +-1-logcons-0
-           (equal (+ 1 (logcons 0 a))
-                  (logcons 1 a))
-           :hints(("Goal" :in-theory (enable logcons)))))
-
-  (defthm bfr-floor-mod-ss-correct
-    (b* (((mv floor mod) (bfr-floor-mod-ss a b bminus))
-         (a (bfr-list->s a env))
-         (b (bfr-list->s b env))
-         (bminus (bfr-list->s bminus env)))
-      (implies
-       (and (< 0 b)
-            (equal bminus (- b)))
-       (and (equal (bfr-list->s floor env)
-                   (floor a b))
-            (equal (bfr-list->s mod env)
-                   (mod a b)))))
-    :hints (("goal" :induct (bfr-floor-mod-ss a b bminus)
-             :in-theory (e/d* ((:i bfr-floor-mod-ss))
-                              (floor mod
-                                     bfr-eval-list
-                                     equal-of-booleans-rewrite
-                                     (:definition bfr-floor-mod-ss)
-                                     acl2::mod-type
-                                     acl2::floor-type-3 acl2::floor-type-1
-                                     acl2::logcons-posp-1 acl2::logcons-posp-2
-                                     acl2::logcons-negp
-                                     acl2::rationalp-mod (:t floor) (:t mod)))
-             :do-not-induct t
-             :expand ((bfr-floor-mod-ss a b bminus)
-                      (bfr-floor-mod-ss nil b bminus)))
-            (bfr-reasoning)))
-
-  (defthm pbfr-list-depends-on-of-bfr-floor-mod-ss
-    (b* (((mv floor mod) (bfr-floor-mod-ss a b bminus)))
-      (implies (and (not (pbfr-list-depends-on n p a))
-                    (not (pbfr-list-depends-on n p b))
-                    (not (pbfr-list-depends-on n p bminus)))
-               (and (not (pbfr-list-depends-on n p floor))
-                    (not (pbfr-list-depends-on n p mod)))))
-    :hints(("Goal" :in-theory (enable bfr-floor-mod-ss pbfr-list-depends-on)))))
-
-(defsection bfr-sign-abs-neg-s
-
-  (local (in-theory (enable bfr-sign-abs-neg-s)))
-  (local (add-bfr-pat (s-sign . &)))
-
-  (defthm bfr-sign-abs-neg-s-correct
-    (b* (((mv sign minus abs neg) (bfr-sign-abs-neg-s x))
-         (x (bfr-list->s x env)))
-      (and (equal (bfr-eval sign env)
-                  (< x 0))
-           (equal (bfr-list->s minus env)
-                  (- x))
-           (equal (bfr-list->s abs env)
-                  (abs x))
-           (equal (bfr-list->s neg env)
-                  (- (abs x)))))
-    :hints ((bfr-reasoning)))
-
-  (defthm pbfr-list-depends-on-of-bfr-sign-abs-neg-s-rw
-    (b* (((mv sign minus abs neg) (bfr-sign-abs-neg-s x)))
-      (implies (not (pbfr-list-depends-on n p x))
-               (and (not (pbfr-depends-on n p sign))
-                    (not (pbfr-list-depends-on n p minus))
-                    (not (pbfr-list-depends-on n p abs))
-                    (not (pbfr-list-depends-on n p neg)))))))
-
-
-(defsection bfr-floor-ss
-
-  (local (add-bfr-pat (bfr-=-ss . &)))
-  (local (add-bfr-pat (mv-nth 0 (bfr-sign-abs-neg-s . &))))
-
-  (local (defthm floor-negative
-           (equal (floor x (- y))
-                  (floor (- x) y))
-           :hints(("Goal" :in-theory (enable floor)))))
-
-  (defthm bfr-floor-ss-correct
-    (equal (bfr-list->s (bfr-floor-ss a b) env)
-           (floor (bfr-list->s a env)
-                  (bfr-list->s b env)))
-    :hints (("goal" :do-not-induct t
-             :in-theory (enable bfr-floor-ss))
-            (bfr-reasoning)))
-
-  (defthm pbfr-list-depends-on-of-bfr-floor-ss
-      (implies (and (not (pbfr-list-depends-on n p a))
-                    (not (pbfr-list-depends-on n p b)))
-               (not (pbfr-list-depends-on n p (bfr-floor-ss a b))))
-    :hints(("Goal" :in-theory (enable bfr-floor-ss
-                                      pbfr-list-depends-on)))))
-
-(defsection bfr-mod-ss
-
-  (local (add-bfr-pat (bfr-=-ss . &)))
-  (local (add-bfr-pat (mv-nth 0 (bfr-sign-abs-neg-s . &))))
-
-  (local (defthm floor-negative
-           (equal (floor x (- y))
-                  (floor (- x) y))
-           :hints(("Goal" :in-theory (enable floor)))))
-
-  (local (defthm mod-negative
-           (equal (mod x (- y))
-                  (- (mod (- x) y)))
-           :hints(("Goal" :in-theory (enable mod)))))
-
-  (defthm bfr-mod-ss-correct
-    (equal (bfr-list->s (bfr-mod-ss a b) env)
-           (mod (bfr-list->s a env)
-                  (bfr-list->s b env)))
-    :hints (("goal" :do-not-induct t
-             :in-theory (enable bfr-mod-ss))
-            (bfr-reasoning)))
-
-  (defthm pbfr-list-depends-on-of-bfr-mod-ss
-      (implies (and (not (pbfr-list-depends-on n p a))
-                    (not (pbfr-list-depends-on n p b)))
-               (not (pbfr-list-depends-on n p (bfr-mod-ss a b))))
-    :hints(("Goal" :in-theory (enable bfr-mod-ss
-                                      pbfr-list-depends-on)))))
-
-(defsection bfr-truncate-ss
-
-  (local (add-bfr-pat (bfr-=-ss . &)))
-  (local (add-bfr-pat (mv-nth 0 (bfr-sign-abs-neg-s . &))))
-
-  (local
-   (defthm truncate-is-floor
+(defun binary-- (x y)
+  (declare (xargs :guard (and (acl2-numberp x)
+                              (acl2-numberp y))))
+  (- x y))
+
+(defund int-set-sign (negp i)
+  (declare (xargs :guard (integerp i)))
+  (let ((i (lifix i)))
+    (acl2::logapp (integer-length i) i (if negp -1 0))))
+
+(defthm sign-of-int-set-sign
+  (iff (< (int-set-sign negp i) 0)
+       negp)
+  :hints(("Goal" :in-theory (e/d* (int-set-sign)
+                                  (acl2::logapp
+                                   acl2::ifix-under-int-equiv)))))
+
+(defthm int-set-sign-integerp
+  (integerp (int-set-sign negp i))
+  :rule-classes :type-prescription)
+
+(defund non-int-fix (x)
+  (declare (xargs :guard t))
+  (and (not (integerp x)) x))
+
+(defthm non-int-fix-when-non-integer
+  (implies (not (integerp x))
+           (equal (non-int-fix x) x))
+  :hints(("Goal" :in-theory (enable non-int-fix)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+
+(defund maybe-integer (i x intp)
+  (declare (xargs :guard (integerp i)))
+  (if intp
+      (ifix i)
+    (non-int-fix x)))
+
+(defthm maybe-integer-t
+  (equal (maybe-integer i x t)
+         (ifix i))
+  :hints(("Goal" :in-theory (enable maybe-integer))))
+
+(defthm maybe-integer-nil
+  (equal (maybe-integer i x nil)
+         (non-int-fix x))
+  :hints(("Goal" :in-theory (enable maybe-integer))))
+
+
+
+
+
+
+;;---------------------------------------------------------------------------
+;; DEFSYMBOLIC
+
+(defun extract-some-keywords
+  (legal-kwds ; what keywords the args are allowed to contain
+   args       ; args that the user supplied
+   kwd-alist  ; accumulator alist of extracted keywords to values
+   )
+  "Returns (mv kwd-alist other-args other-keywords)"
+  (declare (xargs :guard (and (symbol-listp legal-kwds)
+                              (no-duplicatesp legal-kwds)
+                              (alistp kwd-alist))))
+  (b* (((when (atom args))
+        (mv kwd-alist nil args))
+       (arg1 (first args))
+       ((unless (and (keywordp arg1)
+                     (consp (cdr args))))
+        (b* (((mv kwd-alist other-kws other-args)
+              (extract-some-keywords legal-kwds (cdr args) kwd-alist)))
+          (mv kwd-alist other-kws (cons arg1 other-args))))
+       ((unless (member arg1 legal-kwds))
+        (b* (((mv kwd-alist other-kws other-args)
+              (extract-some-keywords legal-kwds (cddr args) kwd-alist)))
+          (mv kwd-alist (cons arg1 (cons (cadr args) other-kws))
+              other-args)))
+       (value (second args))
+       (kwd-alist (acons arg1 value kwd-alist)))
+    (extract-some-keywords legal-kwds (cddr args) kwd-alist)))
+
+
+(defun defsymbolic-check-formals (x)
+  (if (atom x)
+      t
+    (if (and (consp (car x))
+             (eql (len (car x)) 2)
+             (symbolp (caar x))
+             (member (cadar x) '(n i p b u s)))
+        (defsymbolic-check-formals (cdr x))
+      (er hard? 'defsymbolic-check-formals
+          "Bad formal: ~x0" (car x)))))
+
+(defun defsymbolic-check-returns (x)
+  (if (atom x)
+      t
+    (if (and (consp (car x))
+             (>= (len (car x)) 2)
+             (symbolp (caar x))
+             (member (cadar x) '(n i p b u s))
+             (or (member (cadar x) '(n i))
+                 (eql (len (car x)) 3)))
+        (defsymbolic-check-returns (cdr x))
+      (er hard? 'defsymbolic-check-returns
+          "Bad return: ~x0" (car x)))))
+
+(defun defsymbolic-formals-pair-with-evals (x)
+  (if (atom x)
+      nil
+    (cons (cons (caar x)
+                (case (cadar x)
+                  (n `(nfix ,(caar x)))
+                  (i `(ifix ,(caar x)))
+                  (p `(acl2::pos-fix ,(caar x)))
+                  (b `(bfr-eval ,(caar x) env))
+                  (u `(bfr-list->u ,(caar x) env))
+                  (s `(bfr-list->s ,(caar x) env))))
+          (defsymbolic-formals-pair-with-evals (cdr x)))))
+
+(defun defsymbolic-define-formals (x)
+  (if (atom x)
+      nil
+    (cons (case (cadar x)
+            (n `(,(caar x) natp))
+            (i `(,(caar x) integerp))
+            (p `(,(caar x) posp))
+            (t (caar x)))
+          (defsymbolic-define-formals (cdr x)))))
+
+(defun defsymbolic-define-returns1 (x)
+  (if (atom x)
+      nil
+    (cons (case (cadar x)
+            (n `(,(caar x) natp :rule-classes :type-prescription))
+            (i `(,(caar x) integerp :rule-classes :type-prescription))
+            (p `(,(caar x) posp :rule-classes :type-prescription))
+            (b (caar x))
+            (t (caar x)))
+          (defsymbolic-define-returns1 (cdr x)))))
+
+(defun defsymbolic-define-returns (x)
+  (let ((rets (defsymbolic-define-returns1 x)))
+    (if (atom (cdr rets))
+        (car rets)
+      (cons 'mv rets))))
+
+(defun defsymbolic-return-specs (x formal-evals)
+  (if (atom x)
+      nil
+    (append (case (cadar x)
+              ((n i p) (and (third (car x))
+                            `((equal ,(caar x)
+                                     ,(sublis formal-evals (third (car x)))))))
+              (b `((equal (bfr-eval ,(caar x) env)
+                          ,(sublis formal-evals (third (car x))))))
+              (u `((equal (bfr-list->u ,(caar x) env)
+                          ,(sublis formal-evals (third (car x))))))
+              (s `((equal (bfr-list->s ,(caar x) env)
+                          ,(sublis formal-evals (third (car x)))))))
+            (defsymbolic-return-specs (cdr x) formal-evals))))
+
+(defun defsymbolic-not-depends-on (x)
+  (if (atom x)
+      nil
+    (append (case (cadar x)
+              (b `((not (pbfr-depends-on varname param ,(caar x)))))
+              ((u s) `((not (pbfr-list-depends-on varname param ,(caar x))))))
+            (defsymbolic-not-depends-on (cdr x)))))
+
+(defun induct/expand-fn (fn id world)
+  (declare (xargs :mode :program))
+  (and (not (acl2::access acl2::clause-id id :pool-lst))
+       (let ((formals (formals fn world)))
+         (append (and (recursivep fn world)
+                      `(:induct (,fn . ,formals)))
+                 `(:expand ((,fn . ,formals))
+                   :in-theory (disable (:d ,fn)))))))
+
+(defmacro induct/expand (fn)
+  `(induct/expand-fn ',fn id world))
+
+
+(defun defsymbolic-fn (name args)
+  (declare (xargs :mode :program))
+  (b* (((mv kwd-alist other-kws other-args)
+        (extract-some-keywords
+         '(:spec :returns :correct-hints :depends-hints :correct-hyp) args nil))
+       ((unless (eql (len other-args) 2))
+        (er hard? 'defsymbolic-fn "Need formals and body in addition to keyword args"))
+       (formals (car other-args))
+       (body (cadr other-args))
+       (returns (cdr (assoc :returns kwd-alist)))
+       ((unless (consp returns))
+        (er hard? 'defsymbolic-fn "Need a returns list"))
+       (returns (if (eq (car returns) 'mv)
+                    (cdr returns)
+                  (list returns)))
+       (- (defsymbolic-check-formals formals))
+       (- (defsymbolic-check-returns returns))
+       ((when (intersectp-eq (strip-cars formals)
+                             (strip-cars returns)))
+        (er hard? 'defsymbolic-fn "Formals and returns overlap"))
+       (return-binder (if (consp (cdr returns))
+                          `(mv . ,(strip-cars returns))
+                        (caar returns)))
+       (formal-vars (strip-cars formals)))
+    `(define ,name ,(defsymbolic-define-formals formals)
+       ,@other-kws
+       :returns ,(defsymbolic-define-returns returns)
+       ,body
+       ///
+       (defthm ,(intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name name) "-CORRECT")
+                 name)
+         (b* ((,return-binder (,name . ,formal-vars)))
+           ,(let ((concl `(and . ,(defsymbolic-return-specs returns
+                                    (defsymbolic-formals-pair-with-evals formals))))
+                  (correct-hyp (cdr (assoc :correct-hyp kwd-alist))))
+              (if correct-hyp
+                  `(implies ,correct-hyp ,concl)
+                concl)))
+         :hints ((induct/expand ,name)
+                 . ,(cdr (assoc :correct-hints kwd-alist))))
+
+       (defthm ,(intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name name) "-DEPS")
+                 name)
+         (b* ((,return-binder (,name . ,formal-vars)))
+           (implies (and . ,(defsymbolic-not-depends-on formals))
+                    (and . ,(defsymbolic-not-depends-on returns))))
+         :hints ((induct/expand ,name)
+                 . ,(cdr (assoc :depends-hints kwd-alist)))))))
+
+(defmacro defsymbolic (name &rest args)
+  (defsymbolic-fn name args))
+
+
+
+(local (in-theory (e/d* (acl2::ihsext-redefs
+                         acl2::ihsext-inductions
+                         pbfr-list-depends-on))))
+                        
+
+
+(defsymbolic bfr-loghead-ns ((n n)  ;; name n, type n (natp)
+                             (x s)) ;; name x, type s (signed bvec)
+  :returns (xx s (loghead n x))     ;; return name, type (signed bvec), spec
+  (b* (((when (zp n)) (bfr-sterm nil))
+       ((mv head tail ?end) (first/rest/end x)))
+    (bfr-scons head (bfr-loghead-ns (1- n) tail))))
+
+
+(defsymbolic bfr-logext-ns ((n p)  ;; name n, type p (posp)
+                            (x s)) ;; name x, type s (signed bvec)
+  :returns (xx s (acl2::logext n x))     ;; return name, type (signed bvec), spec
+  :measure (acl2::pos-fix n)
+  (b* ((n (mbe :logic (acl2::pos-fix n) :exec n))
+       ((mv head tail ?end) (first/rest/end x))
+       ((when end) x)
+       ((when (eql n 1)) (bfr-sterm head)))
+    (bfr-scons head (bfr-logext-ns (1- n) tail))))
+
+
+(defsymbolic bfr-logtail-ns ((place n)
+                             (x s))
+  :returns (xx s (logtail place x))
+  (if (or (zp place) (s-endp x))
+      x
+    (bfr-logtail-ns (1- place) (scdr x))))
+
+
+
+
+(defsymbolic bfr-+-ss ((c b)
+                       (v1 s)
+                       (v2 s))
+  :returns (sum s (+ (acl2::bool->bit c) v1 v2))
+  :measure (+ (len v1) (len v2))
+  (b* (((mv head1 tail1 end1) (first/rest/end v1))
+       ((mv head2 tail2 end2) (first/rest/end v2))
+       (axorb (bfr-xor head1 head2))
+       (s (bfr-xor c axorb)))
+    (if (and end1 end2)
+        (let ((last (bfr-ite axorb (bfr-not c) head1)))
+          (bfr-scons s (bfr-sterm last)))
+      (let* ((c (bfr-or (bfr-and c axorb)
+                        (bfr-and head1 head2)))
+             (rst (bfr-+-ss c tail1 tail2)))
+        (bfr-scons s rst))))
+  :correct-hints ('(:in-theory (enable logcons))))
+
+
+
+(defsymbolic bfr-lognot-s ((x s))
+  :returns (nx s (lognot x))
+  (b* (((mv head tail end) (first/rest/end x)))
+    (if end
+        (bfr-sterm (bfr-not head))
+      (bfr-scons (bfr-not head)
+                 (bfr-lognot-s tail)))))
+
+(defsymbolic bfr-unary-minus-s ((x s))
+  :returns (ms s (- x))
+  (bfr-+-ss t nil (bfr-lognot-s x))
+  :correct-hints ('(:in-theory (enable lognot))))
+
+
+(defsymbolic bfr-logxor-ss ((a s)
+                            (b s))
+  :returns (xab s (logxor a b))
+  :measure (+ (len a) (len b))
+  (b* (((mv af ar aend) (first/rest/end a))
+       ((mv bf br bend) (first/rest/end b)))
+    (if (and aend bend)
+        (bfr-sterm (bfr-xor af bf))
+      (b* ((c (bfr-xor af bf))
+           (r (bfr-logxor-ss ar br)))
+        (bfr-scons c r)))))
+
+(defsymbolic bfr-sign-s ((x s))
+  :returns (sign b (< x 0))
+  (b* (((mv first rest endp) (first/rest/end x)))
+    (if endp
+        first
+      (bfr-sign-s rest))))
+
+
+
+(defthm not-s-endp-compound-recognizer
+  (implies (not (s-endp x))
+           (consp x))
+  :hints(("Goal" :in-theory (enable s-endp)))
+  :rule-classes :compound-recognizer)
+
+
+(defsymbolic bfr-integer-length-s1 ((offset p)
+                                    (x s))
+  :measure (len x)
+  :returns (mv (not-done b (and (not (equal x 0))
+                                (not (equal x -1))))
+               (ilen s (if (or (equal x 0)
+                               (equal x -1))
+                           0
+                         (+ -1 offset (integer-length x)))))
+  :prepwork ((local (defthm bfr-eval-of-car-when-bfr-list->s
+                      (implies (and (equal (bfr-list->s x env) c)
+                                    (syntaxp (quotep c)))
+                               (equal (bfr-eval (car x) env)
+                                      (equal 1 (logcar c)))))))
+  (b* (((mv first rest end) (first/rest/end x))
+       (offset (mbe :logic (acl2::pos-fix offset) :exec offset)))
+    (if end
+        (mv nil nil)
+      (mv-let (changed res)
+        (bfr-integer-length-s1 (1+ offset) rest)
+        (if (eq changed t)
+            (mv t res)
+          (let ((change (bfr-xor first (car rest))))
+            (mv (bfr-or changed change)
+                (bfr-ite-bss changed
+                             res
+                             (bfr-ite-bss change
+                                          (i2v offset)
+                                          nil))))))))
+  :correct-hints ((bfr-reasoning)))
+
+(defsymbolic bfr-integer-length-s ((x s))
+  :returns (ilen s (integer-length x))
+  (mv-let (ign res)
+    (bfr-integer-length-s1 1 x)
+    (declare (ignore ign))
+    res))
+
+(define bfr-integer-length-bound-s (x)
+  :returns (bound posp :rule-classes :type-prescription)
+  (max (len x) 1)
+  ///
+  (defthm bfr-integer-length-bound-s-correct
+    (< (integer-length (bfr-list->s x env))
+       (bfr-integer-length-bound-s x))
+    :rule-classes :linear))
+
+
+
+(local (defthmd loghead-of-integer-length-nonneg
+         (implies (and (<= (integer-length x) (nfix n))
+                       (<= 0 (ifix x)))
+                  (equal (loghead n x)
+                         (ifix x)))))
+
+(defsymbolic bfr-abs-s ((x s))
+  :returns (xabs s (abs x))
+  :prepwork ((local (in-theory (enable loghead-of-integer-length-nonneg)))
+             (local (defthm loghead-of-abs-2
+                      (implies (and (< (integer-length x) (nfix n))
+                                    (integerp x)
+                                    (< x 0))
+                               (equal (loghead n (- x))
+                                      (- x)))
+                      :hints(("Goal" :induct (loghead n x)
+                              :expand ((loghead n (- x)))
+                              :in-theory (disable acl2::loghead**))
+                             (and stable-under-simplificationp
+                                  '(:in-theory (e/d (logcons
+                                                     acl2::minus-to-lognot)
+                                                    (acl2::loghead**))))))))
+  (let ((sign (bfr-sign-s x)))
+    (bfr-loghead-ns (bfr-integer-length-bound-s x)
+                    (bfr-+-ss sign nil
+                              (bfr-logxor-ss (bfr-sterm sign) x))))
+
+  :correct-hints ('(:use (bfr-integer-length-bound-s-correct
+                          bfr-sign-s-correct)
+                    :in-theory (e/d* (lognot)
+                                     (bfr-integer-length-bound-s-correct
+                                      bfr-sign-s-correct
+                                      acl2::ihsext-redefs)))))
+                   
+
+
+
+
+
+
+
+
+(defsymbolic bfr-=-uu ((a u) (b u))
+  :returns (a=b b (equal a b))
+  :measure (+ (len a) (len b))
+  (if (and (atom a) (atom b))
+      t
+    (b* (((mv head1 tail1) (car/cdr a))
+         ((mv head2 tail2) (car/cdr b)))
+      (bfr-and (bfr-iff head1 head2)
+               (bfr-=-uu tail1 tail2)))))
+
+
+
+(defsymbolic bfr-=-ss ((a s) (b s))
+  :returns (a=b b (equal a b))
+  :measure (+ (len a) (len b))
+  (b* (((mv head1 tail1 end1) (first/rest/end a))
+       ((mv head2 tail2 end2) (first/rest/end b)))
+    (if (and end1 end2)
+        (bfr-iff head1 head2)
+      (bfr-and (bfr-iff head1 head2)
+               (bfr-=-ss tail1 tail2)))))
+
+
+
+(defsymbolic bfr-*-ss ((v1 s) (v2 s))
+  :measure (+ (len v1) (len v2))
+  :returns (prod s (* v1 v2))
+  (b* (((mv dig1 rest end1) (first/rest/end v1)))
+    (if end1
+        (bfr-ite-bss dig1
+                     (bfr-unary-minus-s v2)
+                     nil)
+      (let ((rest (bfr-*-ss rest v2)))
+        (bfr-+-ss nil
+              (bfr-ite-bss dig1 v2 nil)
+              (bfr-scons nil rest)))))
+  :correct-hints ('(:in-theory (enable logcons))))
+
+
+
+(defsymbolic bfr-<-=-ss ((a s) (b s))
+  :measure (+ (len a) (len b))
+  :returns (mv (a<b b (< a b))
+               (a=b b (= a b)))
+  (b* (((mv head1 tail1 end1) (first/rest/end a))
+       ((mv head2 tail2 end2) (first/rest/end b)))
+    (if (and end1 end2)
+        (mv (bfr-and head1 (bfr-not head2))
+            (bfr-iff head1 head2))
+      (mv-let (rst< rst=)
+        (bfr-<-=-ss tail1 tail2)
+        (mv (bfr-or rst< (bfr-and rst= head2 (bfr-not head1)))
+            (bfr-and rst= (bfr-iff head1 head2)))))))
+
+(defsymbolic bfr-<-ss ((a s) (b s))
+  :returns (a<b b (< a b))
+  (b* (((mv head1 tail1 end1) (first/rest/end a))
+       ((mv head2 tail2 end2) (first/rest/end b)))
+    (if (and end1 end2)
+        (bfr-and head1 (bfr-not head2))
+      (mv-let (rst< rst=)
+        (bfr-<-=-ss tail1 tail2)
+        (bfr-or rst< (bfr-and rst= head2 (bfr-not head1)))))))
+
+
+(defsymbolic bfr-logapp-nss ((n n)
+                             (a s)
+                             (b s))
+  :returns (a-app-b s (logapp n a b))
+  (if (zp n)
+      b
+    (b* (((mv first rest &) (first/rest/end a)))
+      (bfr-scons first (bfr-logapp-nss (1- n) rest b)))))
+
+(defsymbolic bfr-logapp-nus ((n n)
+                        (a u)
+                        (b s))
+  :returns (a-app-b s (logapp n a b))
+  (if (zp n)
+      b
+    (b* (((mv first rest) (car/cdr a)))
+      (bfr-scons first (bfr-logapp-nus (1- n) rest b)))))
+
+
+(defsymbolic bfr-ash-ss ((place p)
+                    (n s)
+                    (shamt s))
+  :returns (sh s (ash n (+ -1 place (* place shamt))))
+  :measure (len shamt)
+  :prepwork ((local
+              (defthm reverse-distrib-1
+                (and (equal (+ n n) (* 2 n))
+                     (implies (syntaxp (quotep k))
+                              (equal (+ n (* k n)) (* (+ 1 k) n)))
+                     (implies (syntaxp (quotep k))
+                              (equal (+ (- n) (* k n)) (* (+ -1 k) n)))
+                     (implies (syntaxp (quotep k))
+                              (equal (+ (- n) (* k n) m) (+ (* (+ -1 k) n) m)))
+                     (implies (syntaxp (and (quotep a) (quotep b)))
+                              (equal (+ (* a n) (* b n)) (* (+ a b) n)))
+                     (equal (+ n n m) (+ (* 2 n) m))
+                     (implies (syntaxp (quotep k))
+                              (equal (+ n (* k n) m) (+ (* (+ 1 k) n) m)))
+                     (implies (syntaxp (and (quotep a) (quotep b)))
+                              (equal (+ (* a n) (* b n) m) (+ (* (+ a b) n) m)))
+                     (equal (+ n (- (* 2 n)) m)
+                            (+ (- n) m))))))
+  (b* (((mv shdig shrst shend) (first/rest/end shamt))
+       (place (mbe :logic (acl2::pos-fix place) :exec place)))
+    (if shend
+        (bfr-ite-bss shdig
+                     (bfr-logtail-ns 1 n)
+                     (bfr-logapp-nss (1- place) nil n))
+      (let ((rst (bfr-ash-ss (* 2 place) n shrst)))
+        (bfr-ite-bss shdig
+                     rst
+                     (bfr-logtail-ns place rst)))))
+  :correct-hints ('(:expand ((:free (b) (logcons b (bfr-list->s (scdr shamt) env)))
+                             (bfr-ash-ss place n shamt))
+                    :in-theory (disable acl2::logtail-identity
+                                        unsigned-byte-p))))
+
+
+(defsymbolic bfr-logbitp-n2v ((place p)
+                              (digit u)
+                              (n s))
+  :returns (bit b (logbitp (* place digit) n))
+  :measure (len digit)
+  (b* (((mv first & end) (first/rest/end n))
+       (place (mbe :logic (acl2::pos-fix place) :exec place)))
+    (if (or (atom digit) end)
+        first
+      (bfr-ite (car digit)
+               (bfr-logbitp-n2v (* 2 place) (cdr digit) (bfr-logtail-ns place n))
+               (bfr-logbitp-n2v (* 2 place) (cdr digit) n))))
+  :correct-hints ((and stable-under-simplificationp
+                       '(:in-theory (enable logcons acl2::bool->bit)))))
+
+(defsymbolic bfr-logand-ss ((a s)
+                            (b s))
+  :returns (a&b s (logand a b))
+  :measure (+ (len a) (len b))
+  (b* (((mv af ar aend) (first/rest/end a))
+       ((mv bf br bend) (first/rest/end b)))
+    (if (and aend bend)
+        (bfr-sterm (bfr-and af bf))
+      (b* ((c (bfr-and af bf))
+           (r (bfr-logand-ss ar br)))
+        (bfr-scons c r)))))
+
+(defsymbolic bfr-logior-ss ((a s)
+                            (b s))
+  :returns (avb s (logior a b))
+  :measure (+ (len a) (len b))
+  (b* (((mv af ar aend) (first/rest/end a))
+       ((mv bf br bend) (first/rest/end b)))
+    (if (and aend bend)
+        (bfr-sterm (bfr-or af bf))
+      (b* ((c (bfr-or af bf))
+           (r (bfr-logior-ss ar br)))
+        (bfr-scons c r)))))
+
+(defsymbolic bfr-logeqv-ss ((a s)
+                            (b s))
+  :returns (a=b s (logeqv a b))
+  :measure (+ (len a) (len b))
+  (b* (((mv af ar aend) (first/rest/end a))
+       ((mv bf br bend) (first/rest/end b)))
+    (if (and aend bend)
+        (bfr-sterm (bfr-not (bfr-xor af bf)))
+      (b* ((c (bfr-not (bfr-xor af bf)))
+           (r (bfr-logeqv-ss ar br)))
+        (bfr-scons c r)))))
+
+
+(local
+ (progn
+   (include-book "ihs/quotient-remainder-lemmas" :dir :system)
+
+   (defthmd integer-length-lte-by-compare-nonneg
+     (implies (and (<= 0 (ifix a))
+                   (<= (ifix a) (ifix b)))
+              (<= (integer-length a) (integer-length b)))
+     :hints (("goal" :induct (logxor a b))))
+
+   (defthmd integer-length-lte-by-compare-neg
+     (implies (and (<= (ifix a) 0)
+                   (<= (ifix b) (ifix a)))
+              (<= (integer-length a) (integer-length b)))
+     :hints (("goal" :induct (logxor a b))))
+
+   (add-bfr-pat (bfr-sign-s . &))
+   (add-bfr-pat (bfr-=-ss . &))
+
+   (in-theory (disable (force)))))
+
+;; (include-book "clause-processors/find-matching" :dir :system)
+
+(defsymbolic bfr-floor-ss-aux ((a s)
+                             (b s)
+                             (not-b s))
+  :returns (mv (f s (floor a b))
+               (m s (mod a b)))
+  :correct-hyp (< 0 (bfr-list->s b env))
+  :guard (equal not-b (bfr-lognot-s b))
+  :prepwork ((local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;
+
+             (local
+              (encapsulate nil
+                (local
+                 (progn
+                   (defthm floor-between-b-and-2b
+                     (implies (and (integerp a)
+                                   (integerp b)
+                                   (< 0 b)
+                                   (<= b a)
+                                   (< a (* 2 b)))
+                              (equal (floor a b) 1))
+                     :hints(("Goal" :in-theory (disable floor acl2::floor-bounds
+                                                        acl2::<-*-/-left)
+                             :use ((:instance acl2::floor-bounds
+                                    (x a) (y b))
+                                   (:theorem (implies (and (integerp a)
+                                                           (integerp b)
+                                                           (< 0 b)
+                                                           (< a (* 2 b)))
+                                                      (< (* a (/ b)) 2)))))
+                            (and stable-under-simplificationp
+                                 '(:in-theory (disable floor)))))
+
+                   (defthm floor-less-than-b
+                     (implies (and (integerp a)
+                                   (integerp b)
+                                   (< 0 b)
+                                   (<= 0 a)
+                                   (< a b))
+                              (equal (floor a b) 0))
+                     :hints(("Goal" :in-theory (disable floor acl2::floor-bounds
+                                                        acl2::<-*-/-left)
+                             :use ((:instance acl2::floor-bounds
+                                    (x a) (y b))
+                                   (:theorem (implies (and (integerp a)
+                                                           (integerp b)
+                                                           (< 0 b)
+                                                           (< a b))
+                                                      (< (* a (/ b)) 1)))))
+                            (and stable-under-simplificationp
+                                 '(:in-theory (disable floor)))))
+
+                   (defthm mod-between-b-and-2-b
+                     (implies (and (integerp a)
+                                   (integerp b)
+                                   (< 0 b)
+                                   (<= b a)
+                                   (< a (* 2 b)))
+                              (equal (mod a b) (- a b)))
+                     :hints(("Goal" :in-theory (e/d (mod)
+                                                    (floor acl2::floor-bounds
+                                                           acl2::<-*-/-left))
+                             :use ((:instance acl2::floor-bounds
+                                    (x a) (y b))
+                                   (:theorem (implies (and (integerp a)
+                                                           (integerp b)
+                                                           (< 0 b)
+                                                           (< a (* 2 b)))
+                                                      (< (* a (/ b)) 2)))))
+                            (and stable-under-simplificationp
+                                 '(:in-theory (disable floor)))))
+
+                   (defthm mod-less-than-b
+                     (implies (and (integerp a)
+                                   (integerp b)
+                                   (< 0 b)
+                                   (<= 0 a)
+                                   (< a b))
+                              (equal (mod a b) a))
+                     :hints(("Goal" :in-theory (disable floor acl2::floor-bounds
+                                                        acl2::<-*-/-left)
+                             :use ((:instance acl2::floor-bounds
+                                    (x a) (y b))
+                                   (:theorem (implies (and (integerp a)
+                                                           (integerp b)
+                                                           (< 0 b)
+                                                           (< a (* 2 b)))
+                                                      (< (* a (/ b)) 2)))))
+                            (and stable-under-simplificationp
+                                 '(:in-theory (disable floor)))))))
+
+                ;; (defthm floor-rewrite-+-1-*-2-a
+                ;;   (implies (and (integerp a) (integerp b)
+                ;;                 (< 0 b))
+                ;;            (equal (floor (+ 1 (* 2 a)) b)
+                ;;                   (if (<= b (+ 1 (* 2 (mod a b))))
+                ;;                       (+ 1 (* 2 (floor a b)))
+                ;;                     (* 2 (floor a b)))))
+                ;;   :hints(("Goal" :in-theory (disable floor))))
+
+                ;; (defthm floor-rewrite-*-2-a
+                ;;   (implies (and (integerp a) (integerp b)
+                ;;                 (< 0 b))
+                ;;            (equal (floor (* 2 a) b)
+                ;;                   (if (<= b (* 2 (mod a b)))
+                ;;                       (+ 1 (* 2 (floor a b)))
+                ;;                     (* 2 (floor a b)))))
+                ;;   :hints(("Goal" :in-theory (disable floor))))
+
+                (defthm floor-rewrite-+-bit-*-2-a
+                  (implies (and (integerp a) (integerp b)
+                                (< 0 b))
+                           (equal (floor (logcons c a) b)
+                                  (if (<= b (logcons c (mod a b)))
+                                      (logcons 1 (floor a b))
+                                    (logcons 0 (floor a b)))))
+                  :hints(("Goal" :in-theory (e/d (logcons bfix) (floor)))))
+
+                ;; (defthm mod-rewrite-*-2-a
+                ;;   (implies (and (integerp a) (integerp b)
+                ;;                 (< 0 b))
+                ;;            (equal (mod (* 2 a) b)
+                ;;                   (if (<= b (* 2 (mod a b)))
+                ;;                       (+ (* -1  b)
+                ;;                          (* 2 (mod a b)))
+                ;;                     (* 2 (mod a b)))))
+                ;;   :hints (("goal" :in-theory (disable mod))))
+
+                ;; (defthm mod-rewrite-+-1-*-2-a
+                ;;   (implies (and (integerp a) (integerp b)
+                ;;                 (< 0 b))
+                ;;            (equal (mod (+ 1 (* 2 a)) b)
+                ;;                   (if (<= b (+ 1 (* 2 (mod a b))))
+                ;;                       (+ 1 (* -1  b)
+                ;;                          (* 2 (mod a b)))
+                ;;                     (+ 1 (* 2 (mod a b))))))
+                ;;   :hints (("goal" :in-theory (e/d (mod) (floor)))))
+
+                (defthm mod-rewrite-+-bit-*-2-a
+                  (implies (and (integerp a) (integerp b)
+                                (< 0 b))
+                           (equal (mod (logcons c a) b)
+                                  (if (<= b (logcons c (mod a b)))
+                                      (+ (- b)
+                                         (logcons c (mod a b)))
+                                    (logcons c (mod a b)))))
+                  :hints (("goal" :in-theory (e/d (logcons bfix mod) (floor)))))
+
+
+
+                ;; (in-theory (disable mod-between-b-and-2-b
+                ;;                     mod-less-than-b
+                ;;                     floor-between-b-and-2b
+                ;;                     floor-less-than-b))
+
+                (defthm denominator-of-unary-/
+                  (implies (and (integerp n) (< 0 n))
+                           (equal (denominator (/ n)) n))
+                  :hints (("goal" :use ((:instance rational-implies2
+                                         (x (/ n)))))))
+
+                (defthm <-1-not-integer-recip
+                  (implies (and (integerp n)
+                                (< 1 n))
+                           (not (integerp (/ n))))
+                  :hints (("goal"
+                           :use ((:instance denominator-of-unary-/))
+                           :in-theory (disable denominator-of-unary-/))))
+
+                (defthm integer-and-integer-recip
+                  (implies (and (integerp n)
+                                (< 0 n))
+                           (equal (integerp (/ n))
+                                  (equal n 1))))
+
+                (defthm loghead-of-bfr-integer-length-bound
+                  (implies (and (bind-free '((env . env)))
+                                (<= 0 (ifix a))
+                                (<= (ifix a) (bfr-list->s b env)))
+                           (equal (loghead (bfr-integer-length-bound-s b) a)
+                                  (ifix a)))
+                  :hints (("goal" :use ((:instance loghead-of-integer-length-nonneg
+                                         (n (bfr-integer-length-bound-s b))
+                                         (x a))
+                                        (:instance integer-length-lte-by-compare-nonneg
+                                         (a a) (b (bfr-list->s b env))))
+                           :in-theory (disable loghead-of-integer-length-nonneg))))
+
+                (defthm logcons-onto-mod-b-bound
+                  (implies (and (integerp b)
+                                (integerp a)
+                                (< 0 b))
+                           (< (logcons bit (mod a b)) (* 2 b)))
+                  :hints(("Goal" :in-theory (enable logcons)))
+                  :rule-classes :linear)))
+
+             (local (add-bfr-pat (bfr-<-ss . &)))
+
+             (local (defthm +-1-logcons-0
+                      (equal (+ 1 (logcons 0 a))
+                             (logcons 1 a))
+                      :hints(("Goal" :in-theory (enable logcons)))))
+
+             (local (defthm boolean-listp-of-scdr
+                      (implies (boolean-listp x)
+                               (boolean-listp (scdr x)))
+                      :hints(("Goal" :in-theory (enable scdr)))))
+
+             (local (defthm bfr-list->s-of-quoted-boolean-list
+                      (implies (and (syntaxp (quotep x))
+                                    (boolean-listp x))
+                               (equal (bfr-list->s x env)
+                                      (v2i x)))
+                      :hints(("Goal" :in-theory (enable bfr-list->s v2i)
+                              :expand ((boolean-listp x))
+                              :induct (bfr-list->s x env)))))
+
+             (local (in-theory (e/d* ()
+                                     (floor
+                                      mod
+                                      acl2::loghead**
+                                      acl2::loghead-identity
+                                      bfr-eval-list
+                                      bfr-list->s
+                                      equal-of-booleans-rewrite
+                                      acl2::mod-type
+                                      acl2::floor-type-3 acl2::floor-type-1
+                                      acl2::logcons-posp-1 acl2::logcons-posp-2
+                                      acl2::logcons-negp
+                                      acl2::rationalp-mod (:t floor) (:t mod))))))
+  (b* (((mv first rest endp) (first/rest/end a))
+       (not-b (mbe :logic (bfr-lognot-s b) :exec not-b)))
+    (if endp
+        (mv (bfr-sterm first) ;; (floor  0  b) = 0
+            (bfr-ite-bss
+             first
+             (bfr-+-ss nil '(t) b) ;; (mod -1 b) = b-1 with b > 0
+             '(nil))) ;; (mod  0  b) = 0
+      (b* (((mv rf rm)
+            (bfr-floor-ss-aux rest b not-b))
+           (rm (bfr-scons first rm))
+           (less (bfr-<-ss rm b)))
+        (mv (bfr-scons (bfr-not less) rf)
+            (bfr-ite-bss
+             less rm
+             (bfr-loghead-ns (bfr-integer-length-bound-s b)
+                             (bfr-+-ss t not-b rm)))))))
+  :correct-hints ('(:expand ((:free (not-b) (bfr-floor-ss-aux a b not-b))
+                             (:free (not-b) (bfr-floor-ss-aux nil b not-b))
+                             (:free (a b) (bfr-list->s (bfr-scons a b) env))
+                             (bfr-list->s a env)))
+                  ;; (and (acl2::find-matches-list '(scdr$inline b) clause '((b . b)))
+                  ;;      `(:error ',(acl2::prettyify-clause clause nil world)))
+                  (bfr-reasoning)
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable lognot)))
+                  (and stable-under-simplificationp
+                       '(:error t))))
+
+
+
+(defsymbolic bfr-mod-ss-aux ((a s)
+                             (b s)
+                             (not-b s))
+  :returns (m s (mod a b))
+  :correct-hyp (< 0 (bfr-list->s b env))
+  :guard (equal not-b (bfr-lognot-s b))
+  :guard-hints ('(:expand ((:free (not-b) (bfr-floor-ss-aux a b not-b)))))
+  (mbe :logic (non-exec (mv-nth 1 (bfr-floor-ss-aux a b not-b)))
+       :exec (b* (((mv first rest endp) (first/rest/end a))
+                  (not-b (mbe :logic (bfr-lognot-s b) :exec not-b)))
+               (if endp
+                   (bfr-ite-bss
+                    first
+                    (bfr-+-ss nil '(t) b) ;; (mod -1 b) = b-1 with b > 0
+                    '(nil)) ;; (mod  0  b) = 0
+                 (b* ((rm (bfr-mod-ss-aux rest b not-b))
+                      (rm (bfr-scons first rm))
+                      (less (bfr-<-ss rm b)))
+                   (bfr-ite-bss
+                    less rm
+                    (bfr-loghead-ns (bfr-integer-length-bound-s b)
+                                    (bfr-+-ss t not-b rm))))))))
+
+
+
+
+(defun bfr-sign-abs-not-s (x)
+  (declare (xargs :guard t))
+  (let ((abs (bfr-abs-s x)))
+    (mv (bfr-sign-s x)
+        abs
+        (bfr-lognot-s abs))))
+
+
+;; (defund floor-ss (a b)
+;;   (declare (xargs :guard t))
+;;   (if (=-ss b nil)
+;;       nil
+;;     (b* (((mv bsign & babs bneg) (sign-abs-neg-s b))
+;;          (anorm (if bsign (unary-minus-s a) a))
+;;          ((mv f &) (floor-mod-ss anorm babs bneg)))
+;;       f)))
+
+(local (defthm floor-of-negations
+         (equal (floor (- a) (- b))
+                (floor a b))
+         :hints(("Goal" :in-theory (enable floor)))))
+
+(defsymbolic bfr-floor-ss ((a s)
+                           (b s))
+  :returns (f s (floor a b))
+  (bfr-ite-bss (bfr-=-ss b nil)
+               nil
+               (b* (((mv bsign babs bneg) (bfr-sign-abs-not-s b))
+                    (anorm (bfr-ite-bss bsign (bfr-unary-minus-s a) a))
+                    ((mv f &) (bfr-floor-ss-aux anorm babs bneg)))
+                 f))
+  :correct-hints ((bfr-reasoning)))
+
+;; (defund mod-ss (a b)
+;;   (declare (xargs :guard t))
+;;   (if (=-ss b nil)
+;;       a
+;;     (b* (((mv bsign & babs bneg) (sign-abs-not-s b))
+;;          (anorm (if bsign (unary-minus-s a) a))
+;;          ((mv & m) (floor-mod-ss anorm babs bneg)))
+;;       (if bsign (unary-minus-s m) m))))
+
+
+
+(local
+ (defthm logext-of-integer-length-bound
+   (implies (< (integer-length x) (ifix n))
+            (equal (acl2::logext n x)
+                   (ifix x)))))
+
+
+
+(local
+ (progn
+   (local (in-theory (disable acl2::mod-minus
+                              ACL2::/R-WHEN-ABS-NUMERATOR=1)))
+
+   (defthm mod-of-negatives
      (implies (and (integerp a) (integerp b)
+                   (not (equal 0 b)))
+              (equal (mod (- a) (- b))
+                     (- (mod a b))))
+     :hints(("Goal" :in-theory (enable mod))))
+
+   (defthm integer-length-of-mod
+     (implies (and (integerp b)
+                   (integerp a)
                    (not (equal b 0)))
-              (equal (truncate a b)
-                     (if (acl2::xor (< a 0) (< b 0))
-                         (- (floor (abs a) (abs b)))
-                       (floor (abs a) (abs b)))))
-     :hints(("Goal" :in-theory (enable truncate floor)))))
+              (<= (integer-length (mod a b))
+                  (integer-length b)))
+     :hints (("goal" :in-theory (enable integer-length-lte-by-compare-nonneg
+                                        integer-length-lte-by-compare-neg)
+              :cases ((< 0 b))))
+     :rule-classes :linear)
+
+   (defthm integer-length-of-plus-1
+     (implies (integerp x)
+              (<= (integer-length (+ 1 x)) (+ 1 (integer-length x)))))
+
+   (defthm integer-length-of-lognot
+     (equal (integer-length (lognot x))
+            (integer-length x)))
+
+   (defthm integer-length-of-abs
+     (implies (integerp x)
+              (<= (integer-length (abs x)) (+ 1 (integer-length x))))
+     :hints (("goal" :use ((:instance integer-length-of-lognot)
+                           (:instance integer-length-of-plus-1
+                            (x (+ -1 (- x)))))
+              :in-theory (enable lognot))))
+   
 
 
-  (local (defthm truncate-0
-           (equal (truncate x 0) 0)
-           :hints(("Goal" :in-theory (enable truncate)))))
+   (defthm integer-length-of-between-abs-and-minus-abs
+     (implies (and (integerp x)
+                   (integerp y)
+                   (< y (abs x))
+                   (< (- (abs x)) y))
+              (<= (integer-length y) (integer-length x)))
+     :hints (("goal" :use ((:instance integer-length-of-lognot)
+                           (:instance integer-length-lte-by-compare-nonneg
+                            (a y) (b (abs x)))
+                           (:instance integer-length-lte-by-compare-neg
+                            (a y) (b (1- (- (abs x)))))
+                           (:instance integer-length-lte-by-compare-neg
+                            (a y) (b (- (abs x)))))
+              :cases ((<= 0 y))
+              :do-not-induct t
+              :in-theory (e/d (lognot)
+                              (integer-length-of-plus-1))))
+     :otf-flg t)
 
-  (local (in-theory (disable truncate)))
+   (defthm integer-length-of-rem
+     (implies (and (integerp b)
+                   (integerp a)
+                   (not (equal b 0)))
+              (<= (integer-length (rem a b))
+                  (integer-length b)))
+     :hints (("goal" :in-theory (e/d (integer-length-lte-by-compare-nonneg
+                                      integer-length-lte-by-compare-neg)
+                                     (acl2::rem-bounds
+                                      rem abs))
+              :use ((:instance acl2::rem-bounds (x a) (y b)))
+              :do-not-induct t
+              :cases ((< 0 b))))
+     :otf-flg t
+     :rule-classes :linear)
 
-
-  (defthm bfr-truncate-ss-correct
-    (equal (bfr-list->s (bfr-truncate-ss a b) env)
-           (truncate (bfr-list->s a env)
-                     (bfr-list->s b env)))
-    :hints (("goal" :do-not-induct t
-             :in-theory (enable bfr-truncate-ss))
-            (bfr-reasoning))
-    :otf-flg t)
-
-  (defthm pbfr-list-depends-on-of-bfr-truncate-ss
-      (implies (and (not (pbfr-list-depends-on n p a))
-                    (not (pbfr-list-depends-on n p b)))
-               (not (pbfr-list-depends-on n p (bfr-truncate-ss a b))))
-    :hints(("Goal" :in-theory (enable bfr-truncate-ss
-                                      pbfr-list-depends-on)))))
-
-(defsection bfr-rem-ss
-
-  (local (add-bfr-pat (bfr-=-ss . &)))
-  (local (add-bfr-pat (mv-nth 0 (bfr-sign-abs-neg-s . &))))
-
-  (local (defthm rem-0
-           (equal (rem x 0) (fix x))))
-
-
-  (local
    (defthm truncate-is-floor
-     (implies (and (integerp a) (integerp b)
-                   (not (equal b 0)))
+     (implies (and (integerp a) (integerp b))
               (equal (truncate a b)
-                     (if (acl2::xor (< a 0) (< b 0))
-                         (- (floor (abs a) (abs b)))
-                       (floor (abs a) (abs b)))))
-     :hints(("Goal" :in-theory (enable truncate floor)))))
+                     (if (equal b 0)
+                         0
+                       (if (acl2::xor (< a 0) (< b 0))
+                           (- (floor (abs a) (abs b)))
+                         (floor (abs a) (abs b))))))
+     :hints(("Goal" :in-theory (enable truncate floor))))
 
-  (local
    (defthm rem-is-mod
-     (implies (and (integerp a) (integerp b)
-                   (not (equal b 0)))
+     (implies (and (integerp a) (integerp b))
               (equal (rem a b)
-                     (if (< a 0)
-                         (- (mod (abs a) (abs b)))
-                       (mod (abs a) (abs b)))))
-     :hints(("Goal" :in-theory (e/d (rem mod) (floor truncate))))))
+                     (if (equal b 0)
+                         a
+                       (if (< a 0)
+                           (- (mod (- a) (abs b)))
+                         (mod a (abs b))))))
+     :hints(("Goal" :in-theory (enable rem mod))))
 
-  (local (in-theory (disable rem)))
+   (in-theory (disable (force) acl2::logext**
+                       acl2::logext-identity
+                       bfr-list->s))))
 
-  (defthm bfr-rem-ss-correct
-    (equal (bfr-list->s (bfr-rem-ss a b) env)
-           (rem (bfr-list->s a env)
-                  (bfr-list->s b env)))
-    :hints (("goal" :do-not-induct t
-             :in-theory (enable bfr-rem-ss))
-            (bfr-reasoning)))
 
-  (defthm pbfr-list-depends-on-of-bfr-rem-ss
-      (implies (and (not (pbfr-list-depends-on n p a))
-                    (not (pbfr-list-depends-on n p b)))
-               (not (pbfr-list-depends-on n p (bfr-rem-ss a b))))
-    :hints(("Goal" :in-theory (enable bfr-rem-ss
-                                      pbfr-list-depends-on)))))
+(defsymbolic bfr-mod-ss ((a s)
+                         (b s))
+  :returns (m s (mod a b))
+  (bfr-ite-bss (bfr-=-ss b nil)
+               a
+               (bfr-logext-ns (bfr-integer-length-bound-s b)
+                              (b* (((mv bsign babs bneg) (bfr-sign-abs-not-s b))
+                                   (anorm (bfr-ite-bss bsign (bfr-unary-minus-s a) a))
+                                   (m (bfr-mod-ss-aux anorm babs bneg)))
+                                (bfr-ite-bss bsign (bfr-unary-minus-s m) m))))
+  :correct-hints ((bfr-reasoning)))
+
+(local (in-theory (disable truncate)))
+
+(defsymbolic bfr-truncate-ss ((a s)
+                              (b s))
+  :returns (tr s (truncate a b))
+  (bfr-ite-bss (bfr-=-ss b nil)
+               nil
+               (b* (((mv bsign babs bneg) (bfr-sign-abs-not-s b))
+                    ((mv asign aabs &) (bfr-sign-abs-not-s a))
+                    ((mv f &) (bfr-floor-ss-aux aabs babs bneg)))
+                 (bfr-ite-bss (bfr-xor bsign asign)
+                              (bfr-unary-minus-s f) f)))
+  :correct-hints ((bfr-reasoning)))
+
+
+
+;; (defund rem-ss (a b)
+;;   (declare (xargs :guard t))
+;;   (if (=-ss b nil)
+;;       a
+;;     (b* (((mv & & babs bneg) (sign-abs-not-s b))
+;;          ((mv asign & aabs &) (sign-abs-not-s a))
+;;          ((mv & m) (floor-mod-ss aabs babs bneg)))
+;;       (if asign (unary-minus-s m) m))))
+
+
+(defsymbolic bfr-rem-ss ((a s)
+                         (b s))
+  :returns (r s (rem a b))
+  :prepwork ((local (in-theory (disable integer-length-of-between-abs-and-minus-abs
+                                        logext-of-integer-length-bound
+                                        rem
+                                        acl2::logbitp-upper-bound
+                                        acl2::integer-length**))))
+  (bfr-ite-bss (bfr-=-ss b nil)
+               a
+               (b* (((mv & babs bneg) (bfr-sign-abs-not-s b))
+                    ((mv asign aabs &) (bfr-sign-abs-not-s a))
+                    (m (bfr-mod-ss-aux aabs babs bneg)))
+                 (bfr-logext-ns (bfr-integer-length-bound-s b)
+                                (bfr-ite-bss asign (bfr-unary-minus-s m) m))))
+  :correct-hints ((bfr-reasoning)
+                  (and stable-under-simplificationp
+                       '(:use ((:instance integer-length-of-rem
+                                (a (bfr-list->s a env))
+                                (b (bfr-list->s b env))))
+                         :in-theory (e/d (logext-of-integer-length-bound)
+                                         (integer-length-of-rem
+                                          integer-length-of-mod))))))
+
+
+
+
+
+
+
+
+

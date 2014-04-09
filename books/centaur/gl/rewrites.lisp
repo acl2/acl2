@@ -20,7 +20,7 @@
 
 (in-package "GL")
 (include-book "def-gl-rewrite")
-(include-book "symbolic-arithmetic-fns")
+(include-book "symbolic-arithmetic")
 (local (include-book "centaur/bitops/congruences" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))

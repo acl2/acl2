@@ -23,7 +23,7 @@
 (include-book "gtests")
 (include-book "glcp-templates")
 (include-book "shape-spec-defs")
-(include-book "symbolic-arithmetic-fns")
+(include-book "symbolic-arithmetic")
 (include-book "param")
 (include-book "bfr-sat")
 (include-book "glcp-config")

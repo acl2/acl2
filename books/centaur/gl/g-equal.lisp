@@ -21,11 +21,11 @@
 (in-package "GL")
 (include-book "g-if")
 (include-book "g-primitives-help")
-(include-book "symbolic-arithmetic-fns")
+(include-book "symbolic-arithmetic")
 (include-book "eval-g-base")
 (include-book "centaur/misc/outer-local" :dir :system)
 (local (include-book "eval-g-base-help"))
-(local (include-book "symbolic-arithmetic"))
+
 (local (include-book "hyp-fix"))
 (local (include-book "var-bounds"))
 

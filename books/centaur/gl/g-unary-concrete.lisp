@@ -22,9 +22,9 @@
 
 (include-book "g-if")
 (include-book "g-primitives-help")
-(include-book "symbolic-arithmetic-fns")
+(include-book "symbolic-arithmetic")
 (include-book "eval-g-base")
-(local (include-book "symbolic-arithmetic"))
+
 (local (include-book "eval-g-base-help"))
 (local (include-book "hyp-fix"))
 (in-theory (disable (mk-g-concrete)))

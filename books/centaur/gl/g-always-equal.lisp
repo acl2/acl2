@@ -21,7 +21,7 @@
 (in-package "GL")
 (include-book "g-primitives-help")
 (include-book "g-if")
-(include-book "symbolic-arithmetic-fns")
+(include-book "symbolic-arithmetic")
 (include-book "eval-g-base")
 (include-book "always-equal-prep")
 (include-book "g-equal")

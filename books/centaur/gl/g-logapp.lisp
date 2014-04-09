@@ -21,9 +21,9 @@
 (in-package "GL")
 (include-book "g-if")
 (include-book "g-primitives-help")
-(include-book "symbolic-arithmetic-fns")
+(include-book "symbolic-arithmetic")
 (include-book "eval-g-base")
-(local (include-book "symbolic-arithmetic"))
+
 (local (include-book "eval-g-base-help"))
 (local (include-book "hyp-fix"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -88,7 +88,7 @@
     (bfr-ite-bss
      (car n)
      (bfr-logapp-nus (lnfix w) (s-take w x)
-                 (logapp-uss (ash (lnfix w) 1) (cdr n) (logtail-ns w x)
+                 (logapp-uss (ash (lnfix w) 1) (cdr n) (bfr-logtail-ns w x)
                              y))
      (logapp-uss (ash (lnfix w) 1) (cdr n) x y))))
 
@@ -213,7 +213,7 @@
        ((unless (and nintp-known xintp-known yintp-known))
         (g-apply 'logapp (gl-list n x y)))
        ;; nfix
-       (nbits (bfr-ite-bvv-fn (bfr-and (bfr-not (s-sign nrn)) nintp)
+       (nbits (bfr-ite-bvv-fn (bfr-and (bfr-not (bfr-sign-s nrn)) nintp)
                               nrn nil))
        ;; ifix
        (xbits (bfr-ite-bss-fn xintp xrn nil))

@@ -22,9 +22,9 @@
 (include-book "g-if")
 (include-book "g-primitives-help")
 (include-book "eval-g-base")
-(include-book "symbolic-arithmetic-fns")
+(include-book "symbolic-arithmetic")
 (include-book "g-lessthan")
-(local (include-book "symbolic-arithmetic"))
+
 (local (include-book "eval-g-base-help"))
 (local (include-book "hyp-fix"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))

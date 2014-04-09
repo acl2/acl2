@@ -21,10 +21,10 @@
 (in-package "GL")
 (include-book "g-if")
 (include-book "g-primitives-help")
-(include-book "symbolic-arithmetic-fns")
+(include-book "symbolic-arithmetic")
 (include-book "eval-g-base")
 ;(include-book "tools/with-arith5-help" :dir :system)
-(local (include-book "symbolic-arithmetic"))
+
 (local (include-book "eval-g-base-help"))
 (local (include-book "hyp-fix"))
 (local (include-book "clause-processors/just-expand" :dir :system))

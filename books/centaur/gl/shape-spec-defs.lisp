@@ -20,7 +20,7 @@
 
 (in-package "GL")
 (include-book "gobject-types")
-(include-book "symbolic-arithmetic-fns")
+(include-book "symbolic-arithmetic")
 
 ; cert_param: (non-acl2r)
 

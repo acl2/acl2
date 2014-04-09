@@ -21,8 +21,8 @@
 (in-package "GL")
 (include-book "shape-spec-defs")
 (include-book "gtypes")
-(include-book "symbolic-arithmetic-fns")
-(local (include-book "symbolic-arithmetic"))
+(include-book "symbolic-arithmetic")
+
 (local (include-book "gtype-thms"))
 (local (include-book "data-structures/no-duplicates" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))

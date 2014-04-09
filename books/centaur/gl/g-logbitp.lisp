@@ -21,9 +21,9 @@
 (in-package "GL")
 (include-book "g-if")
 (include-book "g-primitives-help")
-(include-book "symbolic-arithmetic-fns")
+(include-book "symbolic-arithmetic")
 (include-book "eval-g-base")
-(local (include-book "symbolic-arithmetic"))
+
 (local (include-book "eval-g-base-help"))
 (local (include-book "hyp-fix"))
 (set-inhibit-warnings "theory")
@@ -47,7 +47,7 @@
         (mk-g-boolean
          (bfr-logbitp-n2v 1
                       (bfr-ite-bvv-fn (bfr-and
-                                     aintp (bfr-not (s-sign arn)))
+                                     aintp (bfr-not (bfr-sign-s arn)))
                                     arn nil)
                       (bfr-ite-bss-fn bintp brn nil)))
       (g-apply 'logbitp (gl-list a b)))))
