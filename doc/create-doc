@@ -5,10 +5,15 @@
 #   make DOC
 
 # from the main ACL2 directory.  The environment variable ACL2 is used
-# in this script; it is typically set in ../GNUmakefile.  To run this
-# script directly in the doc/ directory, submit something like this:
+# in this script; it MUST be set.  To run this script directly in the
+# doc/ directory, submit something like this:
 
 #   (export ACL2=~/acl2/devel/saved_acl2 ; ./create-doc)
+
+if [ "$ACL2" = "" ] ; then
+    echo "Note: Setting variable ACL2 to the default: acl2."
+    ACL2=acl2
+fi
 
 # It is our convention to keep the .fig and .gif files in graphics/
 # (under the main ACL2 source directory.  The present script copies
@@ -58,8 +63,11 @@ echo ':u' >> workxxx
 echo '(include-book "home-page")' >> workxxx
 echo '(write-home-page-top)' >> workxxx
 echo ':q' >> workxxx
+echo '(acl2::quit)' >> workxxx
 echo "ACL2 = $ACL2"
+echo "Certifying home-page.lisp and writing home-page.html; see home-page.out..."
 $ACL2 < workxxx > home-page.out
+echo "Done"
 
 cp home-page.html HTML/
 

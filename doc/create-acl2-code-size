@@ -20,6 +20,11 @@ actual_sources=`echo $ACL2_SOURCES | sed 's/doc.lisp//'`
 
 echo 'Computing code size statistics.'
 
+if [ "$ACL2" = "" ] ; then
+    echo "Note: Setting variable ACL2 to the default: acl2."
+    ACL2=acl2
+fi
+
 echo '; Lines / Characters'                               > doc/acl2-wc.txt
 echo '; Code lines (whitespace followed by non-whitespace other than ; ):' >> doc/acl2-wc.txt
 
@@ -52,6 +57,7 @@ echo '(lp)' >> workxxx.create-acl2-code-size
 echo '(certify-book "write-acl2-code-size")' >> workxxx.create-acl2-code-size
 echo '(acl2::write-acl2-code-size "acl2-wc.txt" "acl2-code-size.txt")' >> workxxx.create-acl2-code-size
 echo ':q' >> workxxx.create-acl2-code-size
+echo '(acl2::quit)' >> workxxx.create-acl2-code-size
 
 ${ACL2} < workxxx.create-acl2-code-size
 
