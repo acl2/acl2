@@ -276,7 +276,8 @@
 (defstub hyp2 (u v x) t)
 (defstub concl (x y) t)
 
-(include-book "rewrite-with-equality")
+(include-book
+ "rewrite-with-equality")
 
 (table rewrite-with-equality
        :preferences
