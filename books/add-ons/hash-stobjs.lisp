@@ -671,10 +671,15 @@
              (type (access defstobj-field-template
                            field-template
                            :type))
-             (init (access defstobj-field-template
-                           field-template
-                           :init))
              (arrayp (and (consp type) (eq (car type) 'array)))
+             (init0 (access defstobj-field-template
+                            field-template
+                            :init))
+             (creator (get-stobj-creator (if arrayp (cadr type) type)
+                                         wrld))
+             (init (if creator
+                       `(non-exec (,creator))
+                     (kwote init0)))
 ;---<
              (hashp (and (consp type) (eq (car type) 'hash-table)))
              (hash-test (and hashp (cadr type)))
@@ -740,7 +745,7 @@
                               '((ignore i))))
               ,(if resizable
                    `(update-nth ,n
-                                (resize-list (nth ,n ,var) i ',init)
+                                (resize-list (nth ,n ,var) i ,init)
                                 ,var)
                  `(prog2$ (hard-error
                            ',resize-name

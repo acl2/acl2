@@ -100,6 +100,14 @@ and is not (logically) tail-recursive."
     (iff (index-of k x)
          (member k x)))
 
+  (defthm integerp-of-index-of
+    (iff (integerp (index-of k x))
+         (member k x)))
+
+  (defthm natpp-of-index-of
+    (iff (natp (index-of k x))
+         (member k x)))
+
   (defthm nth-of-index-when-member
     (implies (member k x)
              (equal (nth (index-of k x) x)
