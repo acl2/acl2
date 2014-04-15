@@ -9778,8 +9778,9 @@
 ; not have to protect the world here in case of error, though we do set the
 ; world back to the starting world when returning a non-erroneous error triple.
 ; Form should evaluate either to an ordinary value, val, or to (mv nil val
-; state stobj1 ... stobjk), where k may be 0.  If so, we return (value (cons
-; val new-kpa)), where new-kpa is the known-package-alist immediately after
+; state stobj1 ... stobjk), where k may be 0.  If so, we return (value (list*
+; val new-kpa new-ttags-seen)), where new-kpa and new-ttags-seen are the
+; known-package-alist and value of world global 'ttags-seen immediately after
 ; form is evaluated; and if not, we return a soft error.
 
   (let ((original-wrld (w state)))
@@ -10105,12 +10106,19 @@
                     (protected-eval form on-behalf-of ctx state t)))))
                 (expansion0 (value (car expansion0/new-kpa/new-ttags-seen)))
                 (new-kpa (value (cadr expansion0/new-kpa/new-ttags-seen)))
-                (new-ttags-seen (value (cddr expansion0/new-kpa/new-ttags-seen)))
+                (new-ttags-seen
+                 (value (cddr expansion0/new-kpa/new-ttags-seen)))
                 (need-event-landmark-p
                  (pprogn
                   (make-event-debug-post debug-depth expansion0 state)
-                  (cond ((equal new-ttags-seen
-                                (global-val 'ttags-seen wrld))
+                  (cond ((or (null new-ttags-seen)
+
+; The condition above holds when the new ttags-seen is nil or was not computed.
+; Either way, no addition has been made to the value of world global
+; 'ttags-seen.
+
+                             (equal new-ttags-seen
+                                    (global-val 'ttags-seen wrld)))
                          (value nil))
                         (t (pprogn
                             (set-w 'extension
@@ -19636,10 +19644,15 @@
              (type (access defstobj-field-template
                            field-template
                            :type))
-             (init (access defstobj-field-template
-                           field-template
-                           :init))
              (arrayp (and (consp type) (eq (car type) 'array)))
+             (init0 (access defstobj-field-template
+                            field-template
+                            :init))
+             (creator (get-stobj-creator (if arrayp (cadr type) type)
+                                         wrld))
+             (init (if creator
+                       `(non-exec (,creator))
+                     (kwote init0)))
              (type-term            ; used in guard
               (and (not arrayp)    ; else type-term is not used
                    (if (null wrld) ; called from raw Lisp, so guard is ignored
@@ -19686,7 +19699,7 @@
                               '((ignore i))))
               ,(if resizable
                    `(update-nth ,n
-                                (resize-list (nth ,n ,var) i ',init)
+                                (resize-list (nth ,n ,var) i ,init)
                                 ,var)
                  `(prog2$ (hard-error
                            ',resize-name
