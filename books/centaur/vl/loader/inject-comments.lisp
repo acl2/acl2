@@ -82,8 +82,6 @@ we ignore file names.</p>"
 
 
 
-
-
 (defsection vl-gather-comments
   :parents (vl-commentmap-p)
   :short "Slow, but straightforward routine for gathering all comments between
@@ -348,10 +346,107 @@ and max, gathering their comments.</p>"
 
 
 
+; Tweaking module starting locations
+
+(define vl-adjust-minloc-for-comments
+  :short "Tweak starting location so that we get comments preceding the
+          @('module') keyword."
+  ((acc    vl-location-p   "Initially line 0 of the file.")
+   (minloc vl-location-p   "True @('minloc') of the module we're considering.")
+   (mods   vl-modulelist-p "All modules found in the file."))
+  :returns (adjusted-minloc vl-location-p :hyp :guard)
+  :long "<p>It turns out that useful comments about a module are often put
+<b>before</b> the module instead of within it.  For instance:</p>
+
+@({
+    // Module: SuchAndSo
+    // Author: John Q. Designer
+    // Purpose: This module is responsible for blah blah blah.  It
+    //          interfaces with units blah and blah, and implements ...
+    // ...
+    module SuchAndSo (...) ;
+      ...
+    endmodule
+})
+
+<p>This is especially common when modules are written in separate files, and
+the comments describing the module are found at the top.  Unfortunately, our
+basic approach to comment gathering&mdash;associating all comments between
+@('module') and @('endmodule')&mdash;misses these comments.</p>
+
+<p>To correct for this, we no longer use the actual @('minloc') for the module.
+Instead, we (almost) choose the largest @('maxloc') of any <i>other</i> module
+such that @('other-maxloc < minloc').  That sounds like gibberish but it makes
+sense if you just draw what portion of the file you want:</p>
+
+@({
+     module foo1 (...);
+      ...
+     endmodule
+
+     module foo2 (...);
+      ...
+     endmodule              <-- largest maxloc less than minloc of bar
+
+     // helpful comments about module bar, which we
+     // want to make sure are associated with bar.
+     module bar (...);
+      ...
+     endmodule
+})
+
+<p>Well, we don't <i>quite</i> use the maxloc of the previous module.  Instead,
+we use <i>maxloc+1</i>.  The reason for this is that sometimes people put in
+really stupid comments after @('end') keywords, such as:</p>
+
+@({
+    module foo (...);
+      ...
+    endmodule // foo
+})
+
+<p>And we don't want to associate this @('// foo') comment with the subsequent
+module.</p>"
+
+  (b* (((when (atom mods))
+        acc)
+       (mod1.maxloc (vl-module->maxloc (car mods)))
+       ((unless (and
+                 ;; The other module needs to be in the same file,
+                 ;; or we don't care about it.
+                 (equal (vl-location->filename acc)
+                        (vl-location->filename mod1.maxloc))
+                 ;; The other module must come BEFORE us, or we don't
+                 ;; care about it.
+                 (< (vl-location->line mod1.maxloc)
+                    (vl-location->line minloc))
+                 ;; The other module must be PAST our current max,
+                 ;; or we don't care about it.
+                 (< (vl-location->line acc)
+                    (vl-location->line mod1.maxloc))))
+        (vl-adjust-minloc-for-comments acc minloc (cdr mods)))
+       ;; Else, mod1.maxloc is better than what we have now.
+       (acc (change-vl-location acc
+                                ;; Goofy computation ensures we never go backwards,
+                                ;; in case of one-line module ... endmodule stuff.
+                                :line (min (+ 1 (vl-location->line mod1.maxloc))
+                                           (vl-location->line minloc)))))
+    (vl-adjust-minloc-for-comments acc minloc (cdr mods)))
+  ///
+  (defthm bound-of-vl-adjust-minloc-for-comments
+    (implies (and (<= (vl-location->line acc) (vl-location->line minloc))
+                  (force (vl-location-p acc))
+                  (force (vl-location-p minloc))
+                  (force (vl-modulelist-p mods)))
+             (<= (vl-location->line (vl-adjust-minloc-for-comments acc minloc mods))
+                 (vl-location->line minloc)))
+    :rule-classes ((:rewrite) (:linear))))
+
 (define vl-inject-comments-module
   :parents (vl-commentmap-p)
   ((x   vl-module-p        "Module to inject some comments into.")
-   (fal vl-commentmap-falp "All comments, gathered before parsing."))
+   (fal vl-commentmap-falp "All comments, gathered before parsing.")
+   (all-mods vl-modulelist-p "All modules, used to adjust starting locations."))
   :returns (new-x vl-module-p :hyp :fguard
                   "Same as @('x'), but with comments added.")
   (b* (((when (vl-module->hands-offp x))
@@ -365,25 +460,29 @@ and max, gathering their comments.</p>"
                               :args (list minloc maxloc)
                               :acc (vl-module->warnings x))))
           (change-vl-module x :warnings warnings)))
+
+       (minloc (vl-adjust-minloc-for-comments (change-vl-location minloc :line 1)
+                                              minloc all-mods))
        (comments (vl-gather-comments-fal minloc maxloc fal)))
     (if (not comments)
         x
       (change-vl-module x :comments comments)))
   ///
   (defthm vl-module->name-of-vl-inject-comments-module
-    (equal (vl-module->name (vl-inject-comments-module x comment-map))
+    (equal (vl-module->name (vl-inject-comments-module x comment-map all-mods))
            (vl-module->name x))))
 
 
-(defprojection vl-inject-comments-modulelist-aux (x fal)
-  (vl-inject-comments-module x fal)
+(defprojection vl-inject-comments-modulelist-aux (x fal all-mods)
+  (vl-inject-comments-module x fal all-mods)
   :guard (and (vl-modulelist-p x)
-              (vl-commentmap-falp fal))
+              (vl-commentmap-falp fal)
+              (vl-modulelist-p all-mods))
   :result-type vl-modulelist-p
   :parents (vl-commentmap-p)
   :rest
   ((defthm vl-modulelist->names-of-vl-inject-comments-modulelist-aux
-     (equal (vl-modulelist->names (vl-inject-comments-modulelist-aux x comment-map))
+     (equal (vl-modulelist->names (vl-inject-comments-modulelist-aux x comment-map all-mods))
             (vl-modulelist->names x)))))
 
 
@@ -395,7 +494,7 @@ and max, gathering their comments.</p>"
   :returns (new-x vl-modulelist-p :hyp :fguard
                   "Parsed modules with their comments attached.")
   (b* ((fal (vl-commentmap-fal comment-map))
-       (ret (vl-inject-comments-modulelist-aux x fal)))
+       (ret (vl-inject-comments-modulelist-aux x fal x)))
     (fast-alist-free fal)
     ret)
   ///
