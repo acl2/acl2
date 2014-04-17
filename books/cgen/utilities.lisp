@@ -1167,7 +1167,48 @@ Mainly to be used for evaluating enum lists "
   (and (possible-constant-valuep (car obj-lst))
        (is-singleton-type-lst-p (cdr obj-lst)))))
 
+(defun tau-predicate-p (pred world)
+  (declare (xargs :mode :program))
+  (b* ((td (acl2::tau-data-fn pred world))
+       ((unless (consp td)) nil)
+       (entry (assoc-eq 'acl2::recognizer-index (cdr td)))
+       ((unless (and (consp entry) (consp (cdr entry)))) nil))
+    (natp (cadr entry))))
 
+
+; CHECK with J. TODO What if there is some information in pos-implicants of P1,
+; that is missed below!?
+(defun subtype-p (P1 P2 wrld)
+  "Is P1 => P2 in tau-database?"
+  (declare (xargs :verify-guards nil
+                  :guard (and (symbolp P1)
+                              (symbolp P2)
+                              (plist-worldp wrld))))
+  (b* (
+       ;((unless (tau-predicate-p P1 wrld)) nil)
+       ;((unless (tau-predicate-p P2 wrld)) nil) ;expensive calls 
+       ((when (eq P2 'acl2::allp)) t)
+       ((when (eq P1 P2)) t)
+       (P2-neg-implicants-tau (getprop P2 'acl2::neg-implicants acl2::*tau-empty* 'acl2::current-acl2-world wrld))
+       (P2-neg-pairs (acl2::access acl2::tau P2-neg-implicants-tau :neg-pairs)))
+    ;guard verif fails since, we dont know if P2-neg-implicants is a alist.
+    (rassoc-eq P1 P2-neg-pairs)))
+
+(defun disjoint-p (P1 P2 wrld)
+  "Is P1 x => (not (P2 x)) in tau-database?"
+  (declare (xargs :verify-guards nil
+                  :guard (and (symbolp P1)
+                              (symbolp P2)
+                              (plist-worldp wrld))))
+  (b* (
+       ;((unless (tau-predicate-p P1 wrld)) nil)
+       ;((unless (tau-predicate-p P2 wrld)) nil) ;expensive calls 
+       ((when (or (eq P1 'acl2::allp) (eq P2 'acl2::allp))) nil)
+       ((when (eq P1 P2)) nil)
+       (P1-pos-implicants-tau (getprop P1 'acl2::pos-implicants acl2::*tau-empty* 'acl2::current-acl2-world wrld))
+       (P1-neg-pairs (acl2::access acl2::tau P1-pos-implicants-tau :neg-pairs)))
+    ;guard verif fails since, we dont know if P2-pos-implicants is a alist.
+    (rassoc-eq P2 P1-neg-pairs)))
 
 ;; (defstub is-disjoint (* * *) => *)
 ;; (defstub is-subtype (* * *) => *)

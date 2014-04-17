@@ -47,8 +47,8 @@
 ;;rational number constructor
 ;;pair constructor
 (register-data-constructor (consp cons)
-                           ((allp car) (allp cdr))
-                           :proper t)
+                           ((allp car) (allp cdr)))
+                
 
 ;;jared's oset implementation
 (defun set::non-empty-setp (x)
@@ -63,10 +63,11 @@
 
 
 
-
 ;;symbols
 (register-data-constructor (symbolp intern$)
-                           ((stringp symbol-name) (stringp symbol-package-name)))
+                           ((stringp symbol-name) (stringp symbol-package-name))
+                           :proper nil) ;package name destructor fails
+
 
 
 (register-data-constructor (rationalp /)
@@ -82,14 +83,13 @@
 
 (register-data-constructor (aconsp acons)
                            (caar cdar cdr)
-                           :proper t
-                           :rule-classes nil;(:rewrite)
-                           :forcep t) 
+                           :rule-classes nil);(:rewrite)
+
 
 ;;complex number type
 (register-data-constructor (acl2-numberp complex)
-                           ((rationalp realpart) (rationalp imagpart))
-                           :proper t)
+                           ((rationalp realpart) (rationalp imagpart)))
+
 
 #||
 ;;natural numbers
@@ -623,6 +623,29 @@
 ;(register-custom-type boolean 2 *boolean-values*  booleanp );taken care of by define-enumeration-type
 (register-custom-type symbol t nth-symbol  symbolp)
 
+(defun proper-symbolp (x)
+  (declare (xargs :guard t))
+  (and (symbolp x)
+       (not (or (keywordp x);a keyword
+                (booleanp x);t or nil
+                (legal-constantp x)))))
+
+(in-theory (disable legal-constantp))
+
+(defconst *nice-symbol-names*
+  '(x y z a b c i j k p q r s u v w l d e f g h m n))
+
+(defun nth-proper-symbol (n)
+  (declare (xargs :guard (natp n)))
+  (let ((psym (nth-symbol n)))
+    (if (proper-symbolp psym)
+        psym
+      (nth (mod n (len *nice-symbol-names*)) *nice-symbol-names*))))
+
+(register-custom-type proper-symbol t nth-proper-symbol proper-symbolp)
+
+
+
 ;MAKE SURE THIS IS ALWAYS SYNCED, if you change character-values then change here too!
 ;(len *character-values*) = 62
 (defun nth-character (n)
@@ -680,6 +703,7 @@
 (defdata-subtype rational acl2-number)
 (defdata-subtype acl2-number atom)
 (defdata-subtype boolean symbol)
+(defdata-subtype proper-symbol symbol)
 (defdata-subtype character atom)
 (defdata-subtype string atom)
 (defdata-subtype symbol atom)
@@ -707,6 +731,7 @@
 (defdata-disjoint character string)
 (defdata-disjoint character symbol)
 (defdata-disjoint string symbol)
+(defdata-disjoint boolean proper-symbol)
 
 ;(assign make-event-debug t)
 ;lists of atoms
@@ -951,42 +976,23 @@
   (declare (xargs :guard (natp n)))
   (nth-all-but-zero-nil-t n))
 
-(register-custom-type wf-key t nth-wf-key  wf-keyp)
+(register-custom-type wf-key t nth-wf-key wf-keyp)
 
-;; (register-data-constructor (good-map mset)
-;;                            ((wf-keyp caar) (allp cdar) (good-map cdr))
-;;                            :proper nil)
-(PROGN (DEFTHM MSET-CONSTRUCTOR-PRED
-                (IMPLIES (AND (WF-KEYP CAAR)
-                              (ALLP CDAR)
-                              (GOOD-MAP CDR))
-                         (GOOD-MAP (MSET CAAR CDAR CDR)))
-                :HINTS NIL
-                :RULE-CLASSES NIL)
-        ;; (DEFTHM MSET-CONSTRUCTOR-ELIM-RULE
-        ;;         (IMPLIES (GOOD-MAP X)
-        ;;                  (EQUAL (MSET (CAAR X) (CDAR X) (CDR X))
-        ;;                         X))
-        ;;         :HINTS NIL
-        ;;         :RULE-CLASSES NIL)
-        (DEFTHM MSET-CONSTRUCTOR-DESTRUCTORS
-          (IMPLIES (GOOD-MAP X)
-                         (AND (WF-KEYP (CAAR X))
-                              (ALLP (CDAR X))
-                              (GOOD-MAP (CDR X))))
-                :RULE-CLASSES NIL
-                :HINTS NIL)
-        (TABLE DATA-CONSTRUCTORS 'MSET
-               '(NIL GOOD-MAP
-                     ((CAAR . WF-KEYP)
-                      (CDAR . ALLP)
-                      (CDR . GOOD-MAP))
-                     . DEFDATA::NONE)
-               :PUT)
-        (VALUE-TRIPLE (LIST '(GOOD-MAP MSET)
-                            '((WF-KEYP CAAR)
-                              (ALLP CDAR)
-                              (GOOD-MAP CDR)))))
+;; Same problem as in sets. A nil is also a good-map!
+;; 3 April 2014
+(defun non-empty-good-map (x)
+  (declare (xargs :guard t))
+  (and (consp x)
+       (good-map x)))
+
+(defun all-but-nilp (x)
+  (declare (xargs :guard t))
+  (not (equal x 'nil)))
+; TODO: this is a major hiccup of our map and record implementation, disallowing nil explicitly!!
+(register-data-constructor (non-empty-good-map mset)
+                           ((wf-keyp caar) (all-but-nilp cdar) (good-map cdr))
+                           :proper nil)
+
 
 (defdata-subtype all-but-zero-nil-t all)
 
@@ -1109,34 +1115,34 @@
 ;  `(is-disjoint ',T1 ',T2 R$ types-ht$))
 
 
-(defmacro show-acl2s-defdata-all-types ()
+(defmacro show-all-defdata-types ()
   `(table-alist 'defdata::types-info-table (w state)))
 
-(defmacro subtype-p (T1 T2)
-   ":Doc-Section DATA-DEFINITIONS
-  top-level query wether two types are disjoint~/
-  ~c[(subtype-p T1 T2)] asks the question
-  is T1 a subtype of T2? This call makes a quick
-  lookup into the internal data type graph where
-  subtype relation information provided by the user
-  in the past is stored and used to compute the
-  subtype relation closure. If T1 is indeed a subtype
-  of T2 (according to the computed information)
-  then we get back an affirmative , i.e ~c[t]. otherwise
-  it returns ~c[nil].
+;; (defmacro subtype-p (T1 T2)
+;;    ":Doc-Section DATA-DEFINITIONS
+;;   top-level query wether two types are disjoint~/
+;;   ~c[(subtype-p T1 T2)] asks the question
+;;   is T1 a subtype of T2? This call makes a quick
+;;   lookup into the internal data type graph where
+;;   subtype relation information provided by the user
+;;   in the past is stored and used to compute the
+;;   subtype relation closure. If T1 is indeed a subtype
+;;   of T2 (according to the computed information)
+;;   then we get back an affirmative , i.e ~c[t]. otherwise
+;;   it returns ~c[nil].
   
-  ~bv[]
-  Examples:
-  (subtype-p boolean atom)
-  (subtype-p character string)
-  (subtype-p list cons)
-  ~ev[]                      
-  ~bv[]
-  Usage:
-  (subtype-p <Type-name1> <Type-name2>)
-  ~ev[]~/
-  "
-   `(trans-eval '(defdata::is-subtype$$ ',t1 ',t2 defdata::R$ defdata::types-ht$) 'subtype-p state nil))
+;;   ~bv[]
+;;   Examples:
+;;   (subtype-p boolean atom)
+;;   (subtype-p character string)
+;;   (subtype-p list cons)
+;;   ~ev[]                      
+;;   ~bv[]
+;;   Usage:
+;;   (subtype-p <Type-name1> <Type-name2>)
+;;   ~ev[]~/
+;;   "
+;;    `(trans-eval '(defdata::is-subtype$$ ',t1 ',t2 defdata::R$ defdata::types-ht$) 'subtype-p state nil))
   ;`(is-subtype$$ ',T1 ',T2 R$ types-ht$))
 
 ;; (defun is-subtype (t1 t2 state)
@@ -1157,3 +1163,29 @@
 (defun map-identity (x) 
   "for map elim rules -- dummy destructor"
   x)
+
+
+; TODO 29 March 2014
+; - add oddp and evenp (but do this consistently, these definitions are only valid when we additionally know that v is a integer.
+(defun nth-even (n) 
+  (declare (xargs :guard (natp n)))
+  (* 2 (nth-integer n)))
+
+(register-type even 
+               :predicate evenp 
+               :enumerator nth-even 
+               :type-class basic)
+
+(defun nth-odd (n) 
+  (declare (xargs :guard (natp n)))
+  (if (evenp n)
+      (1+ n)
+    (- 0 n)))
+
+;(defun nth-odd (n) (1+ (* 2 (nth-integer))))
+(register-type odd 
+               :predicate oddp 
+               :enumerator nth-odd 
+               :type-class basic)
+
+

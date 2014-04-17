@@ -39,8 +39,9 @@
      ;; function/macro exports:
      register-data-constructor
      define-enumeration-type
-     defdata-subtype defdata-disjoint register-custom-type
-     defdata defdata-testing
+     defdata-subtype defdata-disjoint 
+     register-custom-type register-type
+     defdata defdata-attach
      
      ;acl2-check
      test? top-level-test? acl2s-defaults

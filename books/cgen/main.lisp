@@ -17,7 +17,7 @@
 ;; (include-book "base")
 (include-book "acl2s-parameter")
 (include-book "simple-graph-array")
-(include-book "graph-tc" :ttags :all) ;((:hash-stobjs) (:redef+)));transtive closure and subtype relation
+;(include-book "graph-tc" :ttags :all) ;((:hash-stobjs) (:redef+)));transtive closure and subtype relation
 (include-book "random-state")
 ;(include-book "tools/easy-simplify" :dir :system)
 (include-book "misc/expander" :dir :system)
@@ -69,11 +69,63 @@
           (pseudo-termp expr2)))))
 
 
-;redundant from data.lisp
+;redundant from defdata.lisp
 (defrec types-info%
-  (size enumerator predicate test-enumerator enum-uniform
-        recursivep derivedp
-        type-class defs) NIL)
+  (size 
+   predicate 
+   enumerator enum-uniform
+   enumerator-test enum-uniform-test
+   recursivep derivedp consistentp
+   type-class defs) NIL)
+
+;redundant from defdata.lisp
+(defun is-subtype (T1 T2 wrld)
+  "subtype check for tau database"
+  (declare (xargs :verify-guards nil
+                  :guard (and (symbolp T1)
+                              (symbolp T2)
+                              (plist-worldp wrld))))
+    (cond ((eq T2 'acl2::all) t)
+          ((eq T1 'acl2::empty) t)
+          ((eq T1 T2) t) ;trivial
+;ASSUMPTION: Types equivalent to all and empty should be recognized
+;separately. In this function, we simply return nil, so we can have false
+;positives.
+          ((eq T2 'acl2::empty) nil)
+          ((eq T1 'acl2::all) nil)
+
+          (t 
+           (b* ((typ-alst (table-alist 'types-info-table wrld))
+                (typ-entry1 (assoc-eq T1 typ-alst))
+                (typ-entry2 (assoc-eq T2 typ-alst))
+                ((unless (and (consp typ-entry1) (consp typ-entry2))) nil)
+                (P1 (acl2::access types-info% (cdr typ-entry1) :predicate))
+                (P2 (acl2::access types-info% (cdr typ-entry2) :predicate)))
+             (subtype-p P1 P2 wrld)))))
+  
+
+              
+          
+(defun is-disjoint (T1 T2 wrld)
+  "disjoint check for tau database"
+  (declare (xargs :verify-guards nil
+                  :guard (and (symbolp T1)
+                              (symbolp T2)
+                              (plist-worldp wrld))))
+    (cond ((or (eq T1 'acl2::all) (eq T2 'acl2::all) nil))
+          ((or (eq T1 'acl2::empty) (eq T1 'acl2::empty)) t)
+          ((eq T1 T2) nil) ;trivial
+;ASSUMPTION: Types equivalent to all and empty should be recognized
+;separately. 
+          (t 
+           (b* ((typ-alst (table-alist 'types-info-table wrld))
+                (typ-entry1 (assoc-eq T1 typ-alst))
+                (typ-entry2 (assoc-eq T2 typ-alst))
+                ((unless (and (consp typ-entry1) (consp typ-entry2))) nil)
+                (P1 (acl2::access types-info% (cdr typ-entry1) :predicate))
+                (P2 (acl2::access types-info% (cdr typ-entry2) :predicate)))
+             (disjoint-p P1 P2 wrld)))))      
+
 
 (verify-termination acl2::empty-tau-intervalp )
 (verify-termination acl2::singleton-tau-intervalp)
@@ -213,8 +265,8 @@
 
 ; 5 July '13 - Fixed bug. 2nd argument to 'nth' should be in bounds for finite types (-values* defconst).
 ; 15 July '13 - added range support
-(def get-enum-info% (type range vl wrld R$ types-ht$)
-  (decl :sig ((possible-defdata-type-p tau-interval fixnum plist-world R$ types-ht$)
+(def get-enum-info% (type range vl wrld)
+  (decl :sig ((possible-defdata-type-p tau-interval fixnum plist-world)
               -> enum-info%-p)
 
 ;TODO: union types
@@ -232,7 +284,7 @@
      
     (if entry ;if we find enum-info from type-info-table then use it
         (b* ((types-info% (cdr entry))
-              (TI.test-enumerator (access types-info% test-enumerator))
+              (TI.test-enumerator (access types-info% enumerator-test))
               (TI.enumerator      (access types-info% enumerator))
               (TI.enum-uniform    (access types-info% enum-uniform))
               (TI.size            (access types-info% size))
@@ -252,11 +304,11 @@
 ; interesting numeric type, like 4divp, primep, arithmetic
 ; progression, etc. But you can use / constructor to define some
 ; interesting types, so I need to think about how to make this more general!! TODO
-             ((when (and (is-subtype$$ type 'acl2::integer R$ types-ht$)
+             ((when (and (is-subtype type 'acl2::integer wrld)
                          (non-empty-non-universal-interval-p range)))
               (make-range-enum-info% 'acl2::integer range))
                                      
-             ((when (and (is-subtype$$ type 'acl2::acl2-number R$ types-ht$)
+             ((when (and (is-subtype type 'acl2::acl2-number wrld)
                          (non-empty-non-universal-interval-p range)))
               (make-range-enum-info% 'acl2::rational range)))
                                              
@@ -1148,9 +1200,9 @@ overridden by entries in override-alist"
 ;;; Foll fun lifted from  type.lisp
 ;; NOTE: In the following the type 'empty' has
 ;; special status and treated seperately
-(def meet (typ1 typ2 vl wrld R$ types-ht$)
+(def meet (typ1 typ2 vl wrld)
   
-  (decl :sig ((symbol symbol vl plist-worldp R$ types-ht$) -> symbol)
+  (decl :sig ((symbol symbol vl plist-worldp) -> symbol)
         :doc "find smaller type in subtype hierarchy/lattice")
   (declare (xargs :verify-guards nil))
   ;; (decl :sig ((possible-defdata-type-p possible-defdata-type-p
@@ -1166,20 +1218,20 @@ overridden by entries in override-alist"
          'acl2::all))
        ((when (eq 'acl2::all typ1)) typ2)
        ((when (eq 'acl2::all typ2)) typ1)
-       ((when (is-subtype$$ typ1 typ2 R$ types-ht$))   typ1)
-       ((when (is-subtype$$ typ2 typ1 R$ types-ht$))   typ2)
-       ((when (is-disjoint$$ typ2 typ1 R$ types-ht$))  'acl2::empty) ;Should we instead define the NULL type??? Modified: so Ans is YES instead of Ans: NO, the way its used now, this is right!
+       ((when (is-subtype typ1 typ2 wrld))   typ1)
+       ((when (is-subtype typ2 typ1 wrld))   typ2)
+       ((when (is-disjoint typ2 typ1 wrld))  'acl2::empty) ;Should we instead define the NULL type??? Modified: so Ans is YES instead of Ans: NO, the way its used now, this is right!
 ;give preference to custom type
        ((when (defdata::is-a-custom-type typ1 wrld)) typ1)
        ((when (defdata::is-a-custom-type typ2 wrld)) typ2)
 
 ; choose the one that was defined later (earlier in 
 ; reverse chronological order)
-       (u1 (type-vertex-ht-get typ1 types-ht$))
-       (u2 (type-vertex-ht-get typ2 types-ht$)))
-   (if (< u1 u2) 
-       typ2 
-     typ1)))
+       (all-types (strip-cars (table-alist 'defdata::types-info-table wrld)))
+       )
+   (if (< (position-eq typ1 all-types) (position-eq typ2 all-types)) 
+       typ1 
+     typ2)))
 
 
 
@@ -1288,16 +1340,16 @@ overridden by entries in override-alist"
 ;2 july '13 (type-info-lost-via-dest-elim issue)
 ; TODO: check if check for cycles is correct!
 ; 15 Oct '13: ugly hack to reorder around dependency change.
-(def put-var-eq-constraint. (v1 v2 vl wrld R$ types-ht$ v-cs%-alst.)
-  (decl :sig ((symbol symbol vl plist-world R$ types-ht$ symbol-cs%-alist) 
+(def put-var-eq-constraint. (v1 v2 vl wrld v-cs%-alst.)
+  (decl :sig ((symbol symbol vl plist-world symbol-cs%-alist) 
               -> symbol-cs%-alist)
         :doc "put variable equality constraint in alist for key v")
-  (declare (xargs :verify-guards nil) (ignore wrld))
+  (declare (xargs :verify-guards nil))
   (b* (((cons & cs1%) (assoc-eq v1 v-cs%-alst.))
        ((cons & cs2%) (assoc-eq v2 v-cs%-alst.))
        (dt1 (acl2::access cs% cs1% :defdata-type))
        (dt2 (acl2::access cs% cs2% :defdata-type))
-       ((mv v other-v cs% other-cs%) (if (is-subtype$$ dt2 dt1 R$ types-ht$) 
+       ((mv v other-v cs% other-cs%) (if (is-subtype dt2 dt1 wrld) 
                                          (mv v1 v2 cs1% cs2%) ;dt2 is better
                                        (mv v2 v1 cs2% cs1%) 
                                        ))
@@ -1348,8 +1400,8 @@ overridden by entries in override-alist"
 (defs  ;;might be mut-rec, but right now I assume tht I wont encounter
        ;;AND and OR like if expressions, and hence dont need the
        ;;mutually-recursive counterpart of v-cs%-alist-from-term. TODO
-  (v-cs%-alist-from-term. (term vl wrld R$ types-ht$ ans.)
-  (decl :sig ((pseudo-term fixnum plist-world R$ types-ht$ symbol-cs%-alist)
+  (v-cs%-alist-from-term. (term vl wrld  ans.)
+  (decl :sig ((pseudo-term fixnum plist-world  symbol-cs%-alist)
               ->
               symbol-cs%-alist)
         :doc "helper to collect-constraints")
@@ -1359,7 +1411,7 @@ overridden by entries in override-alist"
          
        (add-eq-constraint... (t1) (if (acl2::equivalence-relationp R wrld)
                                       (if (symbolp t1)
-                                          (put-var-eq-constraint. x t1 vl wrld R$ types-ht$ ans.)
+                                          (put-var-eq-constraint. x t1 vl wrld  ans.)
                                         (put-eq-constraint. x t1 vl ans.))
                                     (add-constraints...))))
      
@@ -1382,7 +1434,7 @@ overridden by entries in override-alist"
       ((P x)   (b* ((tname (is-type-predicate P wrld))
                     ((cons & cs%) (assoc-eq x ans.))
                     (curr-typ (access cs% defdata-type))
-                    (smaller-typ (meet tname curr-typ vl wrld R$ types-ht$)))
+                    (smaller-typ (meet tname curr-typ vl wrld )))
                 (if tname
                     (if (not (eq smaller-typ curr-typ))
                         (put-defdata-type. x smaller-typ vl ans.)
@@ -1403,16 +1455,16 @@ overridden by entries in override-alist"
       (&                   (add-constraints...)))))))
                          
   
-(def v-cs%-alist-from-terms. (terms vl wrld R$ types-ht$ ans.)
-  (decl :sig ((pseudo-term-listp fixnum plist-worldp R$ types-ht$ symbol-cs%-alist) 
+(def v-cs%-alist-from-terms. (terms vl wrld ans.)
+  (decl :sig ((pseudo-term-listp fixnum plist-worldp symbol-cs%-alist) 
               -> symbol-cs%-alist)
         :doc "helper to collect-constraints%")
   (declare (xargs :verify-guards nil))
   (if (endp terms)
       ans.
-    (v-cs%-alist-from-terms. (cdr terms) vl wrld R$ types-ht$ 
+    (v-cs%-alist-from-terms. (cdr terms) vl wrld  
                              (v-cs%-alist-from-term. (car terms)
-                                                     vl wrld R$ types-ht$ ans.))))
+                                                     vl wrld ans.))))
 
 (def put-range-constraint. (v int v-cs%-alst.)
   (decl :sig ((symbolp acl2::tau-intervalp symbol-cs%-alistp) 
@@ -1422,35 +1474,35 @@ overridden by entries in override-alist"
        (cs% (change cs% range int)))
    (put-assoc-eq v cs% v-cs%-alst.)))
 
-(def range-is-alias-p (interval type wrld R$ types-ht$)
-  (decl :sig ((non-empty-non-universal-interval-p symbolp plist-worldp R$ types-ht$) -> boolean)
+(def range-is-alias-p (interval type wrld)
+  (decl :sig ((non-empty-non-universal-interval-p symbolp plist-worldp) -> boolean)
         :doc "is interval an alias of type?")
-  (declare (xargs :verify-guards nil) (ignore wrld))
+  (declare (xargs :verify-guards nil))
   (b* ((lo (acl2::access acl2::tau-interval interval :lo))
        (hi (acl2::access acl2::tau-interval interval :hi))
        (lo-rel (acl2::access acl2::tau-interval interval :lo-rel))
        (hi-rel (acl2::access acl2::tau-interval interval :hi-rel)))
     (case (acl2::access acl2::tau-interval interval :domain)
-      (acl2::integerp (or (and (is-subtype$$ type 'acl2::nat R$ types-ht$) ;use the fact that integers are squeezed (weak inequalities)
+      (acl2::integerp (or (and (is-subtype type 'acl2::nat wrld) ;use the fact that integers are squeezed (weak inequalities)
                                (equal lo 0)
                                (null hi))
-                          (and (is-subtype$$ type 'acl2::pos R$ types-ht$) 
+                          (and (is-subtype type 'acl2::pos wrld) 
                                (equal lo 1)
                                (null hi))
-                          (and (is-subtype$$ type 'acl2::neg R$ types-ht$) 
+                          (and (is-subtype type 'acl2::neg wrld) 
                                (null lo)
                                (equal hi -1))))
-      (otherwise (or (and (is-subtype$$ type 'acl2::positive-rational R$ types-ht$)
+      (otherwise (or (and (is-subtype type 'acl2::positive-rational wrld)
                           lo-rel ;strict
                           (null hi)
                           (equal lo 0))
-                     (and (is-subtype$$ type 'acl2::negative-rational R$ types-ht$) 
+                     (and (is-subtype type 'acl2::negative-rational wrld) 
                           hi-rel
                           (null lo)
                           (equal hi 0)))))))
 
-(def assimilate-apriori-type-information (vs type-alist tau-interval-alist vl wrld R$ types-ht$ ans.)
-  (decl :sig ((symbol-list symbol-alist symbol-alist fixnum plist-world R$ types-ht$ symbol-cs%-alist) 
+(def assimilate-apriori-type-information (vs type-alist tau-interval-alist vl wrld ans.)
+  (decl :sig ((symbol-list symbol-alist symbol-alist fixnum plist-world symbol-cs%-alist) 
               -> symbol-cs%-alist)
         :doc 
 "overwrite into v-cs%-alst. the type information in type-alist/tau-interval-alist.
@@ -1484,26 +1536,26 @@ into eq-constraint field, put interval into range constraint field")
 ; is a singleton, then treat it as a eq-constraint
 ; BOZO: meet-type-alist does it differently. (03/04/13)
           (assimilate-apriori-type-information 
-           (cdr vs) type-alist tau-interval-alist vl wrld R$ types-ht$ 
+           (cdr vs) type-alist tau-interval-alist vl wrld  
            (put-eq-constraint. x typ-given vl ans.)))
          (int-entry (assoc-eq x tau-interval-alist))
          (int (cdr int-entry)) ;possible type bug
          ((when (singleton-tau-intervalp int))
 ; is a singleton, then treat it as a eq-constraint
           (assimilate-apriori-type-information 
-           (cdr vs) type-alist tau-interval-alist vl wrld R$ types-ht$ 
+           (cdr vs) type-alist tau-interval-alist vl wrld  
            (put-eq-constraint. x (kwote (acl2::access acl2::tau-interval int :lo)) vl ans.)))
          ((cons & cs%) (assoc-eq x ans.))
          (curr-typ (access cs% defdata-type))
-         (final-typ (meet curr-typ typ-given vl wrld R$ types-ht$))
+         (final-typ (meet curr-typ typ-given vl wrld))
          (ans. (if (and (non-empty-non-universal-interval-p int)
-                        (not (range-is-alias-p int final-typ wrld R$ types-ht$)))
+                        (not (range-is-alias-p int final-typ wrld)))
                    (put-range-constraint. x int ans.)
                  ans.)))
                    
 ; update the current defdata type with the new type information (type-alist)
      (assimilate-apriori-type-information 
-      (cdr vs) type-alist tau-interval-alist vl wrld R$ types-ht$
+      (cdr vs) type-alist tau-interval-alist vl wrld
       (put-defdata-type. x final-typ vl ans.)))))
 
 (defconst *empty-cs%*
@@ -1514,9 +1566,9 @@ into eq-constraint field, put interval into range constraint field")
         :range (acl2::make-tau-interval nil nil nil nil nil)
         :additional-constraints '()))
 
-(def collect-constraints% (hyps ordered-vars type-alist tau-interval-alist vl wrld R$ types-ht$)
+(def collect-constraints% (hyps ordered-vars type-alist tau-interval-alist vl wrld)
   (decl :sig ((pseudo-term-listp symbol-listp symbol-alistp symbol-alistp
-                                 fixnum plist-worldp R$ types-ht$) -> symbol-cs%-alist)
+                                 fixnum plist-worldp) -> symbol-cs%-alist)
         :doc 
 " 
 * Synopsis 
@@ -1546,9 +1598,9 @@ into eq-constraint field, put interval into range constraint field")
     (b* ((v-cs%-alst  (unconstrained-v-cs%-alst ordered-vars))
          (v-cs%-alst  (assimilate-apriori-type-information
                        ordered-vars type-alist tau-interval-alist
-                       vl wrld R$ types-ht$ v-cs%-alst)))
+                       vl wrld v-cs%-alst)))
        
-     (v-cs%-alist-from-terms. hyps vl wrld R$ types-ht$ v-cs%-alst))))
+     (v-cs%-alist-from-terms. hyps vl wrld v-cs%-alst))))
 
 (defun symbol-unsigned-29bits-alistp (v)
   (declare (xargs :guard T))
@@ -1638,8 +1690,8 @@ thought about how to implement it.
     (cons `(member-eq ',(car vars) ,alst)
           (make-guard-var-member-eq (cdr vars) alst))))
   
-(def cs%-enumcalls (cs% vl wrld R$ types-ht$ computed-vars)
-  (decl :sig ((cs%-p fixnump plist-worldp R$ types-ht$ symbol-listp) 
+(def cs%-enumcalls (cs% vl wrld  computed-vars)
+  (decl :sig ((cs%-p fixnump plist-worldp  symbol-listp) 
               -> (mv fixnum (cons pseudo-termp pseudo-termp)))
         :doc "for each cs% record we translate it into the a (mv
   size (list enumcall enumcall2)), where the enumcall is an expression
@@ -1656,7 +1708,7 @@ thought about how to implement it.
 ;('cs% defdata-type spilled-types eq-constraint interval additional-constraints)
     (('cs% defdata-type & 'defdata::empty-eq-constraint range &) 
 ; ACHTUNG: cs% defrec exposed
-     (b* ((enum-info% (get-enum-info% defdata-type range vl wrld R$ types-ht$)))
+     (b* ((enum-info% (get-enum-info% defdata-type range vl wrld )))
       (mv (access enum-info% size) (list (access enum-info% expr)
                                          (access enum-info% expr2)))))
 
@@ -1667,7 +1719,7 @@ thought about how to implement it.
      (b* ((eq-vs (all-vars eq-constraint))
           (remaining (set-difference-eq eq-vs computed-vars)))
       (if remaining
-          (b* ((enum-info% (get-enum-info% defdata-type range vl wrld R$ types-ht$)))
+          (b* ((enum-info% (get-enum-info% defdata-type range vl wrld)))
            (mv (access enum-info% size) (list (access enum-info% expr)
                                               (access enum-info% expr2))))
         (mv 1 (list eq-constraint (list 'mv eq-constraint 'seed.))))))
@@ -1676,8 +1728,8 @@ thought about how to implement it.
         (mv 0 NIL)))))
                
      
-(def make-enumerator-calls-alist (v-cs%-alst vl wrld R$ types-ht$ ans.)
-  (decl :sig ((symbol-cs%-alist fixnum plist-world R$ types-ht$ symbol-alist) 
+(def make-enumerator-calls-alist (v-cs%-alst vl wrld  ans.)
+  (decl :sig ((symbol-cs%-alist fixnum plist-world  symbol-alist) 
               -> (mv erp symbol-alist))
         :doc 
         "given an alist mapping variables to cs% records (in dependency order),
@@ -1687,13 +1739,13 @@ enumerator call expression")
   (if (endp v-cs%-alst)
       (mv nil (rev ans.)) ;dont change the original dependency order
     (b* (((cons x cs%) (car v-cs%-alst))
-         ((mv size calls) (cs%-enumcalls cs% vl wrld R$ types-ht$ (strip-cars ans.)))
+         ((mv size calls) (cs%-enumcalls cs% vl wrld  (strip-cars ans.)))
 
 ; simple bug July 9 2013: below comparison, replaced int= with equal,
 ; this could have been caught by type-checking/guard-verif
          ((when (equal size 0)) (mv t '()))) 
 ;    in
-     (make-enumerator-calls-alist (cdr v-cs%-alst) vl wrld R$ types-ht$
+     (make-enumerator-calls-alist (cdr v-cs%-alst) vl wrld
                                  ;; add in reverse order
                                  (cons (cons x calls) ans.)))))
     
@@ -1759,10 +1811,10 @@ enumerator type/expr to be displayed in verbose mode")
 
 (def make-next-sigma-defuns (hyps concl ord-vs 
                                   partial-A type-alist tau-interval-alist
-                                  programp vl wrld R$ types-ht$)
+                                  programp vl wrld )
   (decl :sig ((pseudo-term-list pseudo-term symbol-list 
                       symbol-doublet-listp symbol-alist symbol-alist
-                      boolean fixnum plist-worldp R$ types-ht$) 
+                      boolean fixnum plist-worldp ) 
               -> (mv erp all symbol-alist))
         :doc "return the defun forms defining next-sigma function, given a
         list of hypotheses and conclusion (terms). Also return the enum-alist to be displayed")
@@ -1806,9 +1858,9 @@ enumerator type/expr to be displayed in verbose mode")
        
    (b* ((v-cs%-alst (collect-constraints% 
                      (cons (dumb-negate-lit concl) hyps)
-                     ord-vs type-alist tau-interval-alist vl wrld R$ types-ht$))
+                     ord-vs type-alist tau-interval-alist vl wrld ))
         ((mv erp var-enumcalls-alist)
-         (make-enumerator-calls-alist v-cs%-alst vl wrld R$ types-ht$ '()))
+         (make-enumerator-calls-alist v-cs%-alst vl wrld '()))
         ((when erp) (mv erp '() '()))
         )
 ;   in
@@ -2197,8 +2249,8 @@ enumerator type/expr to be displayed in verbose mode")
    vt-acl2-alst))
 
 
-(def dumb-type-alist-infer-from-term (term vl wrld R$ types-ht$ ans.)
-  (decl :sig ((pseudo-term-listp fixnum plist-worldp R$ types-ht$ symbol-alistp) 
+(def dumb-type-alist-infer-from-term (term vl wrld  ans.)
+  (decl :sig ((pseudo-term-listp fixnum plist-worldp  symbol-alistp) 
               -> symbol-alistp)
         :doc "main aux function to infer type-alist from term")
   (declare (xargs :verify-guards nil))
@@ -2239,7 +2291,7 @@ enumerator type/expr to be displayed in verbose mode")
                   (curr-typ (car curr-typs))
                   ((when (possible-constant-valuep curr-typ)) ans.)
                    
-                  (final-typ (meet tname curr-typ vl wrld R$ types-ht$)))
+                  (final-typ (meet tname curr-typ vl wrld)))
                (put-assoc x (list final-typ) ans.)))
 
     ((R (f . &) (g . &)) (declare (ignore R f g)) ans.) ;ignore
@@ -2254,31 +2306,31 @@ enumerator type/expr to be displayed in verbose mode")
     ;; has to be a (R t1 t2 ...) or atomic term
     (&                   ans.))))
 
-(def dumb-type-alist-infer-from-terms (H vl wrld R$ types-ht$ ans.)
-  (decl :sig ((pseudo-term-listp fixnum plist-worldp R$ types-ht$ 
+(def dumb-type-alist-infer-from-terms (H vl wrld  ans.)
+  (decl :sig ((pseudo-term-listp fixnum plist-worldp  
                                  symbol-alistp) -> symbol-alistp)
         :doc "aux function for dumb extraction of defdata types from terms in H")
   (declare (xargs :verify-guards nil))
   (if (endp H)
       ans.
     (b* ((term (car H))
-         (ans. (dumb-type-alist-infer-from-term term vl wrld R$ types-ht$ ans.)))
-      (dumb-type-alist-infer-from-terms (cdr H) vl wrld R$ types-ht$ ans.))))
+         (ans. (dumb-type-alist-infer-from-term term vl wrld  ans.)))
+      (dumb-type-alist-infer-from-terms (cdr H) vl wrld ans.))))
 
-(def dumb-type-alist-infer (H vars vl wrld R$ types-ht$)
-  (decl :sig ((pseudo-term-listp symbol-listp fixnum plist-worldp R$ types-ht$) 
+(def dumb-type-alist-infer (H vars vl wrld)
+  (decl :sig ((pseudo-term-listp symbol-listp fixnum plist-worldp) 
               -> symbol-alistp)
         :doc "dumb infer defdata types from terms in H")
   (declare (xargs :verify-guards nil))
   (dumb-type-alist-infer-from-terms 
-   H vl wrld R$ types-ht$
+   H vl wrld
    (pairlis$ vars (make-list (len vars)
                              :initial-element 
                              (list 'ACL2::ALL)))))
 
 
-(def meet-type-alist (A1 A2 vl wrld R$ types-ht$)
-  (decl :sig ((symbol-alistp symbol-alistp fixnum plist-world R$ types-ht$)
+(def meet-type-alist (A1 A2 vl wrld)
+  (decl :sig ((symbol-alistp symbol-alistp fixnum plist-world)
               -> (mv erp symbol-alistp))
         :mode :program ;ev-fncall-w
         :doc "take intersection of types in the type alist")
@@ -2326,11 +2378,11 @@ enumerator type/expr to be displayed in verbose mode")
          ((unless (and (possible-defdata-type-p typ1) 
                        (possible-defdata-type-p typ2)))
           (mv t '()))
-         ((mv erp rest) (meet-type-alist (cdr A1) A2 vl wrld R$ types-ht$))
+         ((mv erp rest) (meet-type-alist (cdr A1) A2 vl wrld ))
          ((when erp) (mv t '())))
 
       (cond ((and (is-a-variablep typ1) (is-a-variablep typ2))
-             (mv nil (acons var (list (meet typ1 typ2 vl wrld R$ types-ht$)) rest)))
+             (mv nil (acons var (list (meet typ1 typ2 vl wrld)) rest)))
 
             ((and (is-singleton-type-p typ1)
                   (is-singleton-type-p typ2)
@@ -2462,7 +2514,7 @@ Use :simple search strategy to find counterexamples and witnesses.
        (top-vt-alist (access gcs% top-vt-alist))
 
        ((mv erp0 tr-res state)
-        (trans-eval `(mv-list 2 (meet-type-alist ',type-alist ',top-vt-alist ',vl ',wrld R$ types-ht$))
+        (trans-eval `(mv-list 2 (meet-type-alist ',type-alist ',top-vt-alist ',vl ',wrld))
                     ctx state t))
        ((when erp0)
         (mv t (list nil run-hist% gcs%) state))
@@ -2479,7 +2531,7 @@ Use :simple search strategy to find counterexamples and witnesses.
                                                       ',vars ',partial-A 
                                                       ',type-alist ',tau-interval-alist
                                                       ',programp
-                                                      ',vl ',wrld R$ types-ht$))
+                                                      ',vl ',wrld))
                     ctx state t))
        ((when erp0)
         (mv t (list nil run-hist% gcs%) state))
@@ -2595,9 +2647,9 @@ Use :simple search strategy to find counterexamples and witnesses.
    var))
 
 ; May 14 '12: changed to v-cs%-alst parameter for optimization
-(def assign-value (x |#assigns| cs% partial-A sm vl ctx wrld state R$ types-ht$)
+(def assign-value (x |#assigns| cs% partial-A sm vl ctx wrld state )
   (decl :sig ((symbol fixnum cs% symbol-doublet-listp
-                      sampling-method fixnum symbol plist-world state R$ types-ht$)
+                      sampling-method fixnum symbol plist-world state )
               -> (mv erp (list pseudo-term keyword fixnum) state))
         :mode :program
         :doc "assign a value to x. Infer type constraints from hyps, get the
@@ -2617,7 +2669,7 @@ made to x already.")
 
   (b* ((- (assert$ (cs%-p cs%) 'assign-value))
        (bound-vars (strip-cars partial-A))
-       ((mv size calls) (cs%-enumcalls cs% ctx wrld R$ types-ht$ bound-vars))
+       ((mv size calls) (cs%-enumcalls cs% ctx wrld bound-vars))
        
        (seed. (getseed state))
        ((mv erp seed. ans state)
@@ -2846,9 +2898,9 @@ made to x already.")
 ; tested carefully I would not have gotten hold of this simple programming err.
 ; May 24th '12: making this into a defun
 ; 18 July '13 -- modified to a simplified signature
-(def assign-propagate (a% name sm vl ctx wrld state R$ types-ht$)
+(def assign-propagate (a% name sm vl ctx wrld state )
   (decl :sig ((a% string sampling-method 
-                  fixnum symbol plist-world state R$ types-ht$)
+                  fixnum symbol plist-world state )
               -> (mv erp (list pseudo-term-list pseudo-term symbol-list 
                                symbol-doublet-list symbol-alist symbol-alist a%) state))
         :mode :program
@@ -2861,10 +2913,10 @@ made to x already.")
                  (assert$ (member-eq x vars)
                           (cdr (assoc-eq x (collect-constraints% 
                                              H vars type-alist tau-interval-alist
-                                             vl wrld R$ types-ht$))))))
+                                             vl wrld ))))))
 ;DESIGN decision: not taking into account type constraint from nconcl at the moment.
        
-       ((mv erp ans state) (assign-value x i cs% partial-A sm vl ctx wrld state R$ types-ht$))
+       ((mv erp ans state) (assign-value x i cs% partial-A sm vl ctx wrld state ))
        ((when erp)
         (progn$
          (cw? (normal-output-flag vl)
@@ -2965,7 +3017,7 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
                                             ctx wrld state)))
 
       (b* (((mv erp ap-res state) ;snapshot a% moves to second stage/form
-            (trans-eval `(assign-propagate ',a% ',name ',sm ',vl ',ctx ',wrld state R$ types-ht$)
+            (trans-eval `(assign-propagate ',a% ',name ',sm ',vl ',ctx ',wrld state)
                         ctx state t))
            ((when erp) ;error in assign value
             (prog2$
@@ -4157,7 +4209,7 @@ it checks if on-demain dest elim needs to be done"
        ((mv hyps ?concl) (clause-mv-hyps-concl cl))
        (vars (all-vars-lst hyps))
        ((mv erp0 trval state) 
-        (trans-eval `(dumb-type-alist-infer ',hyps ',vars ',vl ',wrld R$ types-ht$)
+        (trans-eval `(dumb-type-alist-infer ',hyps ',vars ',vl ',wrld)
                     ctx state t))
        (dumb-type-alist (if erp0 '() (cdr trval)));ASSUMPTION: trans-eval will not error out
        (initial-elim-alst (initial-eliminable-type-alist dumb-type-alist wrld '()))
@@ -4322,9 +4374,9 @@ or are constrained without an attachment.~%")))
        
          
 
-(defun update-gcs%-top-level-fields (term vl ctx state R$ types-ht$)
-  (declare (xargs :mode :program 
-                   :stobjs (state R$ types-ht$)))
+(defun update-gcs%-top-level-fields (term vl ctx state)
+  (declare (xargs :mode :program :stobjs (state)))
+          
 
   (b* ((cse-stack (@ cgen-stats-event-stack))
        ((when ;(acl2::function-symbolp 'inside-test? (w state))
@@ -4344,7 +4396,7 @@ or are constrained without an attachment.~%")))
        (vars (vars-in-dependency-order hyps concl vl (w state)))
        (d-type-al (dumb-type-alist-infer
                    (cons (dumb-negate-lit concl) hyps) vars 
-                   vl (w state) R$ types-ht$))
+                   vl (w state)))
        (gcs% (change gcs% top-vt-alist d-type-al))
        (- (cw? (system-debug-flag vl)
                "~|DEBUG: update-top : ~x0 dumb top vt-alist: ~x1 ~|"
@@ -4431,7 +4483,7 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
        ((mv & & state) ;ASSUMPTION: trans-eval wont error out
         (if (equal (ffn-symb (access gcs% top-term))
                    'dummy-topform)
-            (trans-eval `(update-gcs%-top-level-fields ',top-level-term ',vl ',ctx state R$ types-ht$)
+            (trans-eval `(update-gcs%-top-level-fields ',top-level-term ',vl ',ctx state)
                         ctx state t)
           (value nil)))
        
@@ -4585,10 +4637,10 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
      
 ;Note on xdoc: <= or < cannot be used inside defxdoc!!
 
-(def test?-fn (form hints override-defaults dont-pts? ctx wrld state R$ types-ht$)
+(def test?-fn (form hints override-defaults dont-pts? ctx wrld state)
 ; Jan 9th 2013, dont print summary unless there was a counterexample.
   (decl :mode :program
-        :sig ((any true-list symbol-alist symbol plist-world state R$ types-ht$) 
+        :sig ((any true-list symbol-alist symbol plist-world state) 
               -> (mv erp any state))
         :doc "gives an error triple wrapping a form that will be ... ")
   (f* ((check-syntax   (form logicp) 
@@ -4645,7 +4697,7 @@ id processor ctx (acl2::prettyify-clause cl nil (w state)) (len hist)))
           (vars (all-vars term))
           (d-type-al (dumb-type-alist-infer 
                       (cons (dumb-negate-lit concl) hyps)
-                      vars vl (w state) R$ types-ht$))
+                      vars vl (w state)))
           (- (cw? (verbose-stats-flag vl) 
                  "~|CEgen/Verbose/test?: dumb type-alist is ~x0~|" d-type-al))
           (gcs%  (initial-gcs% 
@@ -4995,7 +5047,7 @@ but copying its contents into the test? stats entry ~%")))
      (make-event
       (test?-fn ',form ',hints 
                 ',override-defaults ',dont-print-summary
-                'test? (w state) state R$ types-ht$)))))
+                'test? (w state) state)))))
 
    
 ;Lets start with the canonical rev-rev example!

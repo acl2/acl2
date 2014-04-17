@@ -29,10 +29,10 @@
 ; For now lets keep the nats not more than 1000 to avoid stack-overflow
 ; on non-tail-recursive functions. If you dont like these, comment
 ; them out, or write your own custom test enumerators and attach them
-(defdata-testing pos :test-enumerator nth-pos-testing)
-(defdata-testing integer :test-enumerator nth-integer-testing)
-(defdata-testing nat :test-enumerator nth-nat-testing)
-(defdata-testing neg :test-enumerator nth-neg-testing)
+(defdata-attach pos :test-enumerator nth-pos-testing)
+(defdata-attach integer :test-enumerator nth-integer-testing)
+(defdata-attach nat :test-enumerator nth-nat-testing)
+(defdata-attach neg :test-enumerator nth-neg-testing)
 
 
 ; The following shows the various configuration parameters that you
@@ -64,5 +64,3 @@
 ;; EXAMPLES:
 ;; Check our testing-regression.lsp
 
-;; NOTE: If you want to browse code, you might wonder what def, f* etc
-;; mean. You should then first read basis.lisp to understand what they do

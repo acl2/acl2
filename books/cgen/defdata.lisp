@@ -18,7 +18,7 @@
 (include-book "acl2s-parameter")
 (include-book "splitnat")
 (include-book "switchnat")
-(include-book "graph-tc" :ttags ((:hash-stobjs) (:redef+)));transtive closure and subtype relation
+;(include-book "graph-tc" :ttags ((:hash-stobjs) (:redef+)));transtive closure and subtype relation
 
 (set-verify-guards-eagerness 2)
 
@@ -247,14 +247,14 @@
 
 
 
-; TODO: what about well-foundedness?
-#|
+;; TODO: what about well-foundedness?
+#||
 (thm (implies (consp x)
               (and (o< (acl2-count (car x)) (acl2-count x))
                    (o< (acl2-count (cdr x)) (acl2-count x)))))
 (default-well-founded-relation (w state))
-|#
-; nah.  doesn't imply compositions well-founded. ASK Peter!!
+||#
+;; nah.  doesn't imply compositions well-founded. ASK Peter!!
 
 ;;-- stores information about data contructors
 ;;--i.e. constructor name, cons predicate and (pred destructor) pairs, measure-fn and the foll:
@@ -299,7 +299,7 @@
             
        
 
-;auto-generated constructors have only synctatic guards
+;auto-generated constructors have same shape but only syntactic guards
 (table record-constructors nil nil :guard
        (and
          (consp val)
@@ -319,7 +319,7 @@
 
 
 
-#|
+#||
 ;auto-generated constructors have only synctatic guards
 (defun add-to-record-constructors-global (constructor cons-info ctx state)
   (declare (xargs :stobjs (state) :mode :program                  
@@ -355,10 +355,11 @@
              (value `(value-triple ,(cons key val)))))))
       (er soft ctx "Constructor ~x0 and its Info ~x1 are invalid, and cannot be added to generated-constructor table!~%" key val))))
 
-|#
+||#
 
 
-;selectors for the above constructors stored in the *-constructor tables, use them only.
+;; selectors for the above constructors stored in the *-constructor
+;; tables, use them only.
 (defun cons-name-entry (constructor-table-entry)
   (declare (xargs :guard (and (consp constructor-table-entry)
                               (consp (cdr constructor-table-entry))
@@ -493,26 +494,16 @@
   (get-improper-dex-theorems1 conx-name dex-names
                               dex-names dex-prexs recordp))
 
-(defun build-one-param-calls-forcep (fns params forcep)
-  (declare (xargs :guard (and (true-listp fns)
-                              (true-listp params)
-                              (booleanp forcep)
-                              (= (len fns) (len params)))))
-  (if (endp fns)
-    nil
-    (cons (if forcep
-              (list 'acl2::force (list (car fns) (car params)))
-              (list (car fns) (car params)))
-          (build-one-param-calls-forcep (cdr fns) (cdr params) forcep))))
-
 (defun build-one-param-calls (fns params)
-  (declare (xargs :guard (and (true-listp fns)
-                              (true-listp params)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (symbol-listp params)
                               (= (len fns) (len params)))))
   (if (endp fns)
     nil
-    (cons (list (car fns) (car params))
-          (build-one-param-calls (cdr fns) (cdr params)))))
+    (if (eq (car fns) 'ACL2::ALLP)
+        (build-one-param-calls (cdr fns) (cdr params))
+      (cons (list (car fns) (car params))
+            (build-one-param-calls (cdr fns) (cdr params))))))
 
 
 ;(o< (acl2-count (car x)) (acl2-count x))
@@ -527,11 +518,10 @@
 ;;--added measure-fn flag with default 'none
 (defmacro register-data-constructor (constructor destructor-lst
                                                  &key 
-                                                 hints proper
-                                                 measure-fn ;added by harshrc
-                                                 rule-classes
-                                                 forcep ;force typ hyps
-                                                 )
+                                                 hints 
+                                                 (proper 't)
+                                                 (measure-fn 'none)
+                                                 rule-classes)
   
   ":Doc-Section DATA-DEFINITIONS
   Register a data constructor to be used in data definitions(FOR ADVANCED USERS)~/
@@ -543,8 +533,8 @@
   For example ~em[cons] is already registered for you:
   ~bv[]
   (register-data-constructor (consp cons)
-                             ((allp car) (allp cdr))
-                             :proper t)
+                             ((allp car) (allp cdr)))
+
   ~ev[]                           
   It says that ~c[cons] is a constructor and anything that satisfies
   ~c[consp] can be constructed with this constructor, like ~c[(cons nat pos)].
@@ -567,7 +557,8 @@
   
   ;an improper constructor                           
   (register-data-constructor (rationalp /)
-                             ((integerp numerator) (posp denominator)))
+                             ((integerp numerator) (posp denominator))
+                             :proper nil)
   ~ev[]                      
   ~bv[]
   Usage:
@@ -576,13 +567,11 @@
                              [:proper <boolean>]
                              [:hints hints]
                              [:rule-classes rule-classes]
-                             [:forcep <boolean>]
                              )
   ~ev[]~/
   "
   (declare (xargs :guard (and (true-listp destructor-lst)
-                              (booleanp proper)
-                              (booleanp forcep))))
+                              (booleanp proper))))
   (let* ((ctx 'register-data-constructor)
          (conx-pair (fix-structor-and-pred constructor ctx))
          (dex-pairs (fix-structor-and-pred-lst destructor-lst ctx))
@@ -591,7 +580,15 @@
          (dex-names (strip-cars dex-pairs))
          (dex-prexs (strip-cdrs dex-pairs))
          (table-name 'data-constructors)
-         (msr-fn  measure-fn))
+         (msr-fn  measure-fn)
+         (hyps (build-one-param-calls dex-prexs dex-names))
+         (hyp (if (and (consp hyps) (consp (cdr hyps))) ;at least 2
+                  (cons 'AND hyps)
+                (if (consp hyps)
+                    (car hyps)
+                  t))))
+
+    
        ;(thm (implies (consp x)
        ;      (and (o< (acl2-count (car x)) (acl2-count x))
        ;           (o< (acl2-count (cdr x)) (acl2-count x)))))
@@ -602,33 +599,39 @@
         
     `(progn
        (defthm ,(modify-symbol "" conx-name "-CONSTRUCTOR-PRED")
-         (implies (and . ,(build-one-param-calls-forcep dex-prexs dex-names forcep))
+         (implies ,hyp
                   (,conx-prex (,conx-name . ,dex-names)))
          :hints ,hints
          :rule-classes ,rule-classes)
                       
-       (defthm ,(modify-symbol "" conx-name "-CONSTRUCTOR-ELIM-RULE")
-         (implies (,conx-prex x)
-                  (equal (,conx-name . ,(apply-to-x-lst dex-names))
-                         x))
-         :hints ,hints
-         :rule-classes ,(if rule-classes '(:elim) 'nil))
-       
        (defthm ,(modify-symbol "" conx-name "-CONSTRUCTOR-DESTRUCTORS")
-         (implies (and . ,(build-one-param-calls-forcep dex-prexs dex-names forcep))
-                  (and . ,(if proper
-                              (append (get-proper-dex-theorems conx-name dex-names nil)
-                                      (get-improper-dex-theorems conx-name dex-names dex-prexs nil))
-                            (get-improper-dex-theorems conx-name dex-names dex-prexs nil))))
-         :rule-classes ,rule-classes
-         :hints ,hints)
+         (implies (,conx-prex x)
+                  (and . ,(acl2::listlis dex-prexs (apply-to-x-lst dex-names))))
+         :hints ,hints
+         :rule-classes ,rule-classes)
+
+
+       ,@(and proper
+              `((defthm ,(modify-symbol "" conx-name "-CONSTRUCTOR-ELIM-RULE")
+                  (implies (,conx-prex x)
+                           (equal (,conx-name . ,(apply-to-x-lst dex-names))
+                                  x))
+                  :hints ,hints
+                  :rule-classes ,(if rule-classes '(:elim) 'nil))
+                
+                
+                (defthm ,(modify-symbol "" conx-name "-CONSTRUCTOR-DESTRUCTORS-PROPER")
+                  (implies ,hyp
+                           (and . ,(get-proper-dex-theorems conx-name dex-names nil)))
+                  :hints ,hints
+                  :rule-classes ,rule-classes)))
       
       (table
        ,table-name
        ',conx-name
        ',(list* (if proper '(:proper) '())
                 conx-prex dex-pairs 
-                (if msr-fn msr-fn 'none))
+                msr-fn)
        :put)
       
       (value-triple (list ',constructor ',destructor-lst)))))
@@ -691,9 +694,10 @@
                                                    hints
                                                    (rule-classes '(:rewrite :tau-system))
                                                    forcep ;force typ hyps
-                                                   measure-fn
+                                                   (measure-fn 'none)
                                                    )
   
+  (declare (ignorable forcep))
   (declare (xargs :guard (and (true-listp destructor-lst)
                               (booleanp forcep))))
   (let* ((ctx 'register-record-constructor)
@@ -717,26 +721,33 @@
         
     `(progn
        (defthm ,(modify-symbol "" conx-name "-RECORD-PRED")
-         (implies (and . ,(build-one-param-calls-forcep dex-prexs dex-names forcep))
+         (implies (and . ,(build-one-param-calls dex-prexs dex-names))
                   (,conx-prex (,conx-name . ,dex-names)))
-         :hints ,hints
+         
+         :hints (("goal" :in-theory (e/d (,conx-prex) (acl2::mset-diff-mset))))
          :rule-classes ,rule-classes)
                        
        (defthm ,elim-rule-name
          (implies (,conx-prex x)
                   (equal (,conx-name
-                          . ,(apply-mget-to-x-lst dex-names nil))
+                          . ,(apply-mget-to-x-lst dex-names '()))
                          x))
          :hints ,hints
          :rule-classes nil) ;elim form not satisfied TODO
 
        (defthm ,(modify-symbol "" conx-name "-RECORD-DESTRUCTORS")
-         (implies (and . ,(build-one-param-calls-forcep dex-prexs dex-names forcep))
+         (implies (,conx-prex x)
+                  (and . ,(acl2::listlis dex-prexs (apply-mget-to-x-lst dex-names '()))))
+         :hints ,hints
+         :rule-classes :rewrite) ;,rule-classes) (mget :field x) does not satisfy tau-rule accepted form!! TODO
+
+       ;; (defthm ,(modify-symbol "" conx-name "-RECORD-DESTRUCTORS")
+       ;;   (implies (and . ,(build-one-param-calls dex-prexs dex-names))
                   
-                  (and . ,(append (get-proper-dex-theorems conx-name dex-names t)
-                                  (get-improper-dex-theorems conx-name dex-names dex-prexs t))))
-         :rule-classes nil ;subsumed by record theorems
-         :hints ,hints)
+       ;;            (and . ,(append (get-proper-dex-theorems conx-name dex-names t)
+       ;;                            (get-improper-dex-theorems conx-name dex-names dex-prexs t))))
+       ;;   :rule-classes nil ;subsumed by record theorems
+       ;;   :hints ,hints)
 
        ,@generalize-rules
 
@@ -744,7 +755,7 @@
              ',conx-name
              ',(list* '(:generated :proper)
                       conx-prex dex-pairs 
-                      (if msr-fn msr-fn 'none))
+                      (or msr-fn 'none))
              :put)
 
       (table record-elim-table ',conx-name ',elim-rule :put)
@@ -1878,22 +1889,29 @@ X:hyperlink = (hyperlink "httpx" "my site" "192.168.1.10")
 ;;make a constructor defun and corresponding predicate
 (defun make-constructor-predicate (conx-name dex-pairs)
   (declare (xargs :guard (and (symbolp conx-name)
-                              (symbol-alistp dex-pairs))))
-                  ;:guard-hints (("Goal" :in-theory (disable modify-symbol string-append)))))
-  (let* ((dex-orig-names (strip-cars dex-pairs))
-         (prefix (string-append (symbol-name conx-name) "-"))
-         (dex-names (modify-symbol-lst prefix dex-orig-names "")) ;make new prefixed destr names
-         (dex-preds (strip-cdrs dex-pairs))
-         (dex-var-names (modify-symbol-lst "Var" dex-names ""))
-         (dex-prex-calls (build-one-param-calls dex-preds dex-var-names))
-         (dex-alist (build-dex-alist dex-orig-names dex-var-names))
-         (dex-bindings  (build-dex-recordImpl-bindings dex-orig-names dex-var-names 'v))
-        
-         (conx-pred (get-predicate-symbol conx-name)))
+                              (symbol-alistp dex-pairs))
+                  :guard-hints (("Goal" :in-theory (disable modify-symbol string-append)))))
+  (b* ((dex-orig-names (strip-cars dex-pairs))
+       ((unless (symbol-listp dex-orig-names)) 
+        (er hard? 'make-constructor-predicate
+            "~|Destructor type decl list ~x0 should be an alist with symbol keys.~%"
+            dex-pairs))
+       (prefix (string-append (symbol-name conx-name) "-"))
+       (dex-names (modify-symbol-lst prefix dex-orig-names "")) ;make new prefixed destr names
+       (dex-var-names (modify-symbol-lst "Var" dex-names ""))
+       (dex-preds (strip-cdrs dex-pairs))
+       ((unless (symbol-listp dex-preds)) 
+        (er hard? 'make-constructor-predicate
+            "~|Destructor type decl list ~x0 should be an alist with symbol values.~%"
+            dex-pairs))
+       (dex-prex-calls (build-one-param-calls dex-preds dex-var-names))
+       (dex-alist (build-dex-alist dex-orig-names dex-var-names))
+       (dex-bindings (build-dex-recordImpl-bindings dex-orig-names dex-var-names 'v))
+       (conx-pred (get-predicate-symbol conx-name)))
     `((defund ,conx-pred (v) ;disabled def
         (declare (xargs :guard t))
-        (if (not (acl2::good-map v));for guards and termination (CCG)
-          nil
+        (if (not (acl2::non-empty-good-map v));for guards and termination (CCG)
+            nil
           (let ,dex-bindings 
             (and  (equal v (mset 'constructor ',conx-name ,dex-alist))
                   ,@dex-prex-calls 
@@ -1925,16 +1943,19 @@ X:hyperlink = (hyperlink "httpx" "my site" "192.168.1.10")
 (defun make-constructor (conx-name dex-pairs)
   (declare (xargs :guard (and (symbolp conx-name)
                               (symbol-alistp dex-pairs))))
-  (let* ((dex-orig-names (strip-cars dex-pairs))
-         (prefix (string-append (symbol-name conx-name) "-"))
-         (dex-names (modify-symbol-lst prefix dex-orig-names "")) ;make new prefixed destr names
-         (dex-prex (strip-cdrs dex-pairs))
-         (dex-var-names (modify-symbol-lst "Var" dex-names ""))
-         (dex-prex-calls (build-one-param-calls dex-prex dex-var-names))
-         (dex-alist (build-dex-alist dex-orig-names dex-var-names)))
+  (b* ((dex-orig-names (strip-cars dex-pairs))
+       (prefix (string-append (symbol-name conx-name) "-"))
+       (dex-names (modify-symbol-lst prefix dex-orig-names "")) ;make new prefixed destr names
+       (dex-var-names (modify-symbol-lst "Var" dex-names ""))
+       (dex-prex (strip-cdrs dex-pairs))
+       ((unless (symbol-listp dex-prex)) 
+        (er hard? 'make-constructor-predicate
+            "~|Destructor type decl list ~x0 should be an alist with symbol values.~%"
+            dex-pairs))
+       (dex-prex-calls (build-one-param-calls dex-prex dex-var-names))
+       (dex-alist (build-dex-alist dex-orig-names dex-var-names)))
     `((defun ,conx-name ,dex-var-names
-        (declare (xargs :guard (and . ,dex-prex-calls))) ;guards not working with new record impl
-                        ;:verify-guards nil))
+        (declare (xargs :guard (and . ,dex-prex-calls)))
         (mset 'constructor ',conx-name ,dex-alist)))))
 
 ;cons-up calls of above function
@@ -1996,6 +2017,33 @@ X:hyperlink = (hyperlink "httpx" "my site" "192.168.1.10")
          (conx-pred (get-predicate-symbol conx-name)))
     (cons-up-dex-defuns conx-pred selector-fn-names dex-names)))
 
+(defun cons-up-mod-defuns (conx-pred modifier-fn-names dex-names)
+  (declare ;(ignore conx-pred)
+           (xargs :guard (and (symbol-listp modifier-fn-names)
+                              (symbol-listp dex-names)
+                              (equal conx-pred conx-pred))))
+  (if (endp dex-names)
+    nil
+    (let* ((mod-fn-name (car modifier-fn-names))
+           (dname (car dex-names))
+           (d-keyword-name (intern (symbol-name dname) "KEYWORD")))
+    (cons `(defun ,mod-fn-name (new v)
+             (declare (xargs :guard (,conx-pred v))) ;not working with new record impl
+                             ;:verify-guards nil))
+             (mset ,d-keyword-name new v))
+          (cons-up-mod-defuns conx-pred
+                              (cdr modifier-fn-names)
+                              (cdr dex-names))))))
+
+(defun make-modifiers (conx-name dex-pairs)
+  (declare (xargs :guard (and (symbolp conx-name)
+                              (symbol-alistp dex-pairs))))
+  (let* ((dex-names (strip-cars dex-pairs))
+         (prefix (string-append "SET-" (string-append (symbol-name conx-name) "-")))
+         (modifier-fn-names (modify-symbol-lst prefix dex-names ""))
+         (conx-pred (get-predicate-symbol conx-name)))
+    (cons-up-mod-defuns conx-pred modifier-fn-names dex-names)))
+
 ;do the above for more than one constructors defined during a datadef
 (defun append-up-dex-ev (conx-names dex-pairs-lst)
   (declare (xargs :guard (and (symbol-listp conx-names)
@@ -2006,6 +2054,29 @@ X:hyperlink = (hyperlink "httpx" "my site" "192.168.1.10")
     nil
     (append (make-destructors (car conx-names) (car dex-pairs-lst))
             (append-up-dex-ev (cdr conx-names) (cdr dex-pairs-lst)))))
+
+(defun append-up-modifiers-ev (conx-names dex-pairs-lst)
+  (declare (xargs :guard (and (symbol-listp conx-names)
+                              (true-list-symbol-alistp dex-pairs-lst)
+                              (= (len conx-names) (len dex-pairs-lst))
+                              )))
+  (if (endp conx-names)
+    nil
+    (append (make-modifiers (car conx-names) (car dex-pairs-lst))
+            (append-up-modifiers-ev (cdr conx-names) (cdr dex-pairs-lst)))))
+
+(defun rcd-patbind-macro-ev (conx-names dex-pairs-lst)
+  (declare (xargs :guard (and (symbol-listp conx-names)
+                              (true-list-symbol-alistp dex-pairs-lst)
+                              (= (len conx-names) (len dex-pairs-lst)))))
+  (if (endp conx-names)
+      nil
+    (let* ((dex-names (strip-cars (car dex-pairs-lst)))
+           (conx-name (car conx-names))
+           (prefix (string-append (symbol-name conx-name) "-"))
+           (selector-fn-names (modify-symbol-lst prefix dex-names "")))
+      (cons `(acl2::def-patbind-macro ,conx-name ,selector-fn-names)
+            (rcd-patbind-macro-ev (cdr conx-names) (cdr dex-pairs-lst))))))
 
 
 (defun compute-reg-conx-dex (conx-name dex-pairs)   
@@ -2021,7 +2092,7 @@ X:hyperlink = (hyperlink "httpx" "my site" "192.168.1.10")
         (conx-pair (cons conx-name conx-pred)))
     `((register-record-constructor ,conx-pair 
                                    ,dex-pairs
-                                   :hints (("Goal" :in-theory (enable ,conx-pred)))))))
+                                   :hints (("Goal" :in-theory (e/d (,conx-pred))))))))
 
 (defun cons-up-reg-conx-dex-ev (conx-names dex-pairs-lst)
   (declare (xargs :guard (and (symbol-listp conx-names)
@@ -2098,13 +2169,16 @@ X:rgbcolors = blue
                           (eq (caadr def) 'record)
                           (eq (caadr def) 'map)
                           (eq (caadr def) 'set)
+                          (eq (caadr def) 'range)
                           (eq (caadr def) 'enum))))
           t
           (found-empty-defp (cdr defs)))))))
 
 (defun type-class-simple-p (x)
   (mem-eq x '(:undefined acl2::union acl2::product acl2::singleton acl2::alias
-                         acl2::custom enum record map set listof range)))
+                         acl2::primitive acl2::basic acl2::custom 
+                         enum record map set
+                         listof range)))
 
 (defthm type-class-simple-p-is-tau-pred
   (booleanp (type-class-simple-p x))
@@ -2154,33 +2228,35 @@ X:rgbcolors = blue
 
 ;--------------------------TYPE Metadata Table----------------------------------------------
 (defrec types-info%
-  (size enumerator predicate test-enumerator enum-uniform
-        recursivep derivedp
-        type-class defs) NIL)
+  (size 
+   predicate 
+   enumerator enum-uniform
+   enumerator-test enum-uniform-test
+   recursivep derivedp consistentp
+   type-class defs) NIL)
 
 (defun types-info%-p (v)
   (declare (xargs :guard T))
   (case-match v
     (
-     ('types-info% size enumerator predicate test-enumerator enum-uniform
-            recursivep derivedp
-            typeclass defs)
-     (declare (ignorable enumerator test-enumerator defs))
+     ('types-info% 
+      size 
+      predicate 
+      enumerator enum-uniform
+      enumerator-test enum-uniform-test
+      recursivep derivedp consistentp
+      typeclass defs)
+     (declare (ignorable enumerator enumerator-test enum-uniform-test defs))
      (and (or (natp size)
               (eq 't size))
           (symbolp predicate)
           (symbolp enum-uniform)
           (booleanp recursivep)
           (booleanp derivedp)
+          (booleanp consistentp)
           (type-class-p typeclass)))))
   
-(defun tau-predicate-p (pred world)
-  (declare (xargs :mode :program))
-  (b* ((td (acl2::tau-data-fn pred world))
-       ((unless (consp td)) nil)
-       (entry (assoc-eq 'acl2::recognizer-index (cdr td)))
-       ((unless (and (consp entry) (consp (cdr entry)))) nil))
-    (natp (cadr entry))))
+
 
 ;;-- stores information about types introduced using defdata
 ;;-- (key val)
@@ -2207,7 +2283,7 @@ X:rgbcolors = blue
              (TI.enum-uniform (acl2::access types-info%  val
                                             :enum-uniform))
              (TI.test-enumerator (acl2::access types-info%  val
-                                          :test-enumerator))
+                                          :enumerator-test))
              
           
              ;;(plausible-predicate-functionp TI.predicate world)
@@ -2248,7 +2324,146 @@ X:rgbcolors = blue
                nil)))
           t)))
 
+;;make type consistency check event for all types in arg
+;;Generate the foll form:
+;; (thm (implies (natp x) (Tp (nth-T x)))) or
+;; (thm (implies (< n (len *T-values*)) (Tp (nth n *T-values*))))
+;; TODO.Note: *T-values* might be very big list in that case, there must be a cleaner/efficient way.
+(defun cons-up-type-consistent-thm-ev (tnames wrld)
+  (declare (xargs :mode :program
+                  :guard (symbol-listp tnames)))
+  (if (endp tnames)
+    nil
+    (let* ((tname (car tnames))
+           (tpred (get-predicate-symbol tname))
+           (tenum (get-enumerator-symbol tname))
+           (tvalues (get-values-symbol tname))
+           (tpred-lst (modify-symbol "" tpred "-LST-AUTO-GENERATED"))) 
+      (append (if (allows-arity tenum 1 wrld)
+                (list `(thm (implies (natp n) (,tpred (,tenum n)))
+                            :hints (("Goal" :in-theory (e/d (,tpred ,tenum))))))
+                (list `(defun ,tpred-lst (xs) 
+                         (if (endp xs)
+                           t
+                           (and (,tpred (car xs))
+                                (,tpred-lst (cdr xs)))))
+                      `(thm (,tpred-lst ,tvalues))))
+              (cons-up-type-consistent-thm-ev (cdr tnames) wrld)))))
 
+
+(defun make-enum-uniform-defun-ev (name enum)
+  (declare (xargs :guard (symbolp enum)))
+  `((defund ,name (m seed)
+     (declare (ignorable m))
+     (declare (type (unsigned-byte 31) seed))
+     (declare (xargs :verify-guards nil ;todo
+                     :guard (and (natp m)
+                                 (unsigned-byte-p 31 seed))))
+; 12 July 2013 - adding uniform random seed distribution to cgen enum
+; we will take advantage of the recent addition for an uniform
+; interface to both infinite and finite enum (defconsts)
+     (mv-let (n seed)
+             (random-natural-seed seed)
+             (mv (,enum n) (the (unsigned-byte 31) seed))))))
+
+
+
+(defun register-custom-type-events (typename typesize enum pred 
+                                             test-enum enum-uniform
+                                             type-class)
+  (declare (xargs :guard (and (symbolp typename)
+                              (or (natp typesize) (eq typesize 't))
+                              (symbolp enum)
+                              (symbolp pred)
+                              (symbolp test-enum)
+                              (symbolp enum-uniform)
+                              (type-class-p type-class))))
+  `((in-theory (disable ,(get-enumerator-symbol typename)))
+    ,@(and (not enum-uniform)
+           (make-enum-uniform-defun-ev 
+            (get-uniform-enumerator-symbol typename)
+            (get-enumerator-symbol typename)))
+    ,@(and test-enum
+           (make-enum-uniform-defun-ev ;TODO check where this is used!
+            (get-uniform-enumerator-symbol test-enum) test-enum))
+    (table defdata::types-info-table ',typename 
+           ',(acl2::make types-info%
+                         :size typesize 
+                          :enumerator enum
+                          :predicate pred
+                          :enumerator-test test-enum
+                          :enum-uniform (if enum-uniform 
+                                            enum-uniform 
+                                          ;; shudnt be empty
+                                          (get-uniform-enumerator-symbol typename))
+                          :enum-uniform-test (get-uniform-enumerator-symbol test-enum)
+                          :defs nil
+                          :derivedp nil
+                          :recursivep nil
+                          :consistentp nil
+                          :type-class type-class))
+
+;;; 1 April 2014 -- use tau-database instead of internal graphs
+        ;; (make-event 
+        ;;  (er-progn 
+        ;;   (trans-eval `(add-vertex$$ ',',typename R$ types-ht$)
+        ;;               'register-custom-type state t)
+        ;;   (value '(value-triple :invisible)))
+        ;;  :check-expansion t)
+;        (add-datatype-node-batch ,typename)
+;        (sync-globals-for-dtg) ;sync globals with SCC and TC 
+     (value-triple (list ',typename 
+                         ',(list typesize enum pred test-enum 
+                                 nil nil type-class)))
+     ))
+       
+
+ ;register the type by adding it into the types-info-table
+(defmacro register-custom-type  (typename typesize enum pred 
+                                          &key test-enum
+                                          enum-uniform
+                                          (type-class 'acl2::custom))
+  "Usage: (register-custom-type foo t nth-foo foop :test-enum my-nth-foo :type-class custom)
+    Purpose: add foo to type metadata table 'types-info-table'. 
+    Second argument is t if foo is infinite, and a positive number o.w., in which case the
+    standard naming convention for the third arg (enumerator) is *foo-values*.
+    keyword args are optional."
+  `(with-output
+    :stack :push
+    :off ,#!acl2(remove1-eq 'error *valid-output-names*)
+
+    (make-event
+     '(progn . ,(register-custom-type-events typename typesize enum pred 
+                                             test-enum enum-uniform
+                                             type-class)))))
+
+
+(defmacro register-type (name &key predicate
+                              enumerator
+                              ;optional
+                              (size 't)
+                              enum-uniform
+                              enum-testing
+                              skip-consistency-check ;dummy - but at one point we want to ensure some soundness check for the enumerators.
+                              (type-class 'acl2::custom)
+                              ;defs
+                              ;derivedp
+                              ;recursivep
+                              )
+  "export this as the external api"
+  (declare (ignorable skip-consistency-check))
+
+`(with-output
+    :stack :push
+    :off ,#!acl2(remove1-eq 'error *valid-output-names*)
+
+    (make-event
+       (b* ((ctx 'register-type)
+            ((unless (and ',predicate ',enumerator))
+             (er hard ctx "~| Keyword args predicate, enumerator are mandatory!~|")))
+         '(progn . ,(register-custom-type-events name size enumerator predicate
+                                                 enum-testing enum-uniform
+                                                 type-class))))))
 
 ;TYPES
 ;check if fn-name is a type-pred by checking for corresponding typ pres rule
@@ -2399,15 +2614,15 @@ X:rgbcolors = blue
 
 ;User-controlled testing
 ;;;Per type syntax:
-;;;(defdata-testing <type-name>
+;;;(defdata-attach <type-name>
 ;;;                 :test-enumerator <enum-fn>
 ;;;                 :filter <filter-fn>
 ;;;                 ...)                              
 ;register the type by adding it into the types info table
- (defmacro defdata-testing  (typename &key test-enumerator)
+ (defmacro defdata-attach  (typename &key test-enumerator)
    ":Doc-Section acl2::DATA-DEFINITIONS
   Specify a custom testing enumerator for a type~/
-  ~c[(defdata-testing T1 :test-enumerator nth-T1-testing)]
+  ~c[(defdata-attach T1 :test-enumerator nth-T1-testing)]
   adds a user-specified enumerator to be used for randomly
   generating values for type ~c[T1]. This can be used
   to restrict the testing domain of any type for the
@@ -2415,14 +2630,14 @@ X:rgbcolors = blue
   
   ~bv[]
   Examples:
-  (defdata-testing nat :test-enumerator nth-nat-small-values)
-  (defdata-testing list :test-enumerator nth-list-test-small-lists) ;to test small lists
-  (defdata-testing character :test-enumerator *special-chars-only*) ;to test special chars
-  (defdata-testing foo :test-enumerator 999) ;restrict domain of foo to a singleton value
+  (defdata-attach nat :test-enumerator nth-nat-small-values)
+  (defdata-attach list :test-enumerator nth-list-test-small-lists) ;to test small lists
+  (defdata-attach character :test-enumerator *special-chars-only*) ;to test special chars
+  (defdata-attach foo :test-enumerator 999) ;restrict domain of foo to a singleton value
   ~ev[]                      
   ~bv[]
   Usage:
-  (defdata-testing <Type-name1> :test-enumerator <test-enum>)
+  (defdata-attach <Type-name1> :test-enumerator <test-enum>)
   ~ev[]~/
   "
   `(with-output
@@ -2437,81 +2652,24 @@ X:rgbcolors = blue
                                (make-enum-uniform-defun-ev 
                                 (modify-symbol "" ',test-enumerator "-UNIFORM")
                                 ',test-enumerator))
+                        
                         (table defdata::types-info-table 
                                ',',typename 
-                               (acl2::change types-info% ',type-info
-                                             :test-enumerator
-                                             ',',test-enumerator))
+                               (let* ((type-info (acl2::change types-info% ',type-info
+                                                               :enumerator-test
+                                                               ',',test-enumerator))
+                                      (type-info (acl2::change types-info% type-info 
+                                                               :enum-uniform-test
+                                                               ',(modify-symbol "" ',test-enumerator "-UNIFORM"))))
+                                 type-info))
+;TODO: check if table is good.
                         (value-triple (list ',',typename ',',test-enumerator))))
-               (er soft 'defdata-testing "~x0 is not a registered type. Use register-custom-type to register it.~%" ',typename))))))
+               (er soft 'defdata-attach "~x0 is not a registered type. Use register-custom-type to register it.~%" ',typename))))))
  
-(defun make-enum-uniform-defun-ev (name enum)
-  (declare (xargs :guard (symbolp enum)))
-  `((defund ,name (m seed)
-     (declare (ignorable m))
-     (declare (type (unsigned-byte 31) seed))
-     (declare (xargs :verify-guards nil ;todo
-                     :guard (and (natp m)
-                                 (unsigned-byte-p 31 seed))))
-; 12 July 2013 - adding uniform random seed distribution to cgen enum
-; we will take advantage of the recent addition for an uniform
-; interface to both infinite and finite enum (defconsts)
-     (mv-let (n seed)
-             (random-natural-seed seed)
-             (mv (,enum n) (the (unsigned-byte 31) seed))))))
-     
-     
-     
- ;register the type by adding it into the types-info-table
- (defmacro register-custom-type  (typename typesize enum pred 
-                                           &key test-enum
-                                                enum-uniform
-                                                (type-class 'acl2::custom))
-   "Usage: (register-custom-type foo t nth-foo foop :test-enum my-nth-foo :type-class custom)
-    Purpose: add foo to type metadata table 'types-info-table'. 
-    Second argument is t if foo is infinite, and a positive number o.w., in which case the
-    standard naming convention for the third arg (enumerator) is *foo-values*.
-    keyword args are optional."
-  `(with-output
-    :stack :push
-    :off ,#!acl2(remove1-eq 'error *valid-output-names*)
 
-    (make-event
-     '(progn
-        (in-theory (disable ,(get-enumerator-symbol typename)))
-        ,@(and (not enum-uniform)
-               (make-enum-uniform-defun-ev 
-                (get-uniform-enumerator-symbol typename)
-                (get-enumerator-symbol typename)))
-        ,@(and test-enum
-             (make-enum-uniform-defun-ev
-              (get-uniform-enumerator-symbol test-enum) test-enum))
-        (table defdata::types-info-table ',typename 
-               ',(acl2::make types-info%
-                  :size typesize 
-                  :enumerator enum
-                  :predicate pred
-                  :test-enumerator test-enum
-                  :enum-uniform (if enum-uniform 
-                                    enum-uniform 
-                                  ;; shudnt be empty
-                                  (get-uniform-enumerator-symbol typename))
-                  :defs nil
-                  :derivedp nil
-                  :recursivep nil
-                  :type-class type-class))
-        (make-event 
-         (er-progn 
-          (trans-eval `(add-vertex$$ ',',typename R$ types-ht$)
-                      'register-custom-type state t)
-          (value '(value-triple :invisible)))
-         :check-expansion t)
-;        (add-datatype-node-batch ,typename)
-;        (sync-globals-for-dtg) ;sync globals with SCC and TC 
-        (value-triple (list ',typename 
-                            ',(list typesize enum pred test-enum 
-                                    nil nil type-class)))
-        ))))
+     
+     
+     
 
  #|
  (defconst *foo1-values* '(1 2 3))
@@ -2522,7 +2680,7 @@ X:rgbcolors = blue
  (include-book ;; fool dependency scanners
    "graph")
 (register-custom-type foo1 3 *foo1-values* foop nil)
-(defdata-testing foo1 :test-enumerator *foo1-values-testing*)
+(defdata-attach foo1 :test-enumerator *foo1-values-testing*)
  |#
 
 
@@ -2581,61 +2739,60 @@ X:rgbcolors = blue
 
 
 ;defdata temp storage
-(defstobj ds$
-  (defdata-world :type T :initially nil)
-  (newconstructors :type T :initially nil);list
-  (support-lemmas :type T;(satisfies supp-lemmas%-p)
-                  :initially nil);*initial-supp-lemmas*)
-;(struct (set . list) (listof . list) (record . list) (oneof . list))
-  (custom-types :type T :initially nil)
-  (defdata-debug :type (satisfies booleanp) :initially nil)
-  (type-class :type (satisfies type-class-p) :initially :undefined)
-  (record-constituents :type T :initially nil)
-  (product-constituents :type T :initially nil)
-  (union-constituents :type T :initially nil)
-  (is-recursive :type (satisfies booleanp) :initially nil)
-  )
+(defrec ds%
+  (defdata-world 
+    newconstructors 
+    support-lemmas ;(satisfies supp-lemmas%-p)
+    custom-types 
+    defdata-debug 
+    type-class ;(satisfies type-class-p) :initially :undefined)
+    record-constituents 
+    product-constituents 
+    union-constituents 
+    is-recursive 
+    ) NIL)
   
 ;Ideally write a macro to generate these forms
 (defmacro add-record-constituent-types-to-ds$ (type)
-`(update-record-constituents (cons ,type (record-constituents ds$)) ds$))
+`(acl2::change ds% ds$ :record-constituents (cons ,type (acl2::access ds% ds$ :record-constituents))))
 
 (defmacro add-product-constituent-types-to-ds$ (type)
-`(update-product-constituents (cons ,type (product-constituents ds$)) ds$))
+`(acl2::change ds% ds$ :product-constituents (cons ,type (acl2::access ds% ds$ :product-constituents))))
 
 (defmacro add-union-constituent-types-to-ds$ (type)
-`(update-union-constituents (cons ,type (union-constituents ds$)) ds$))
+`(acl2::change ds% ds$ :union-constituents (cons ,type (acl2::access ds% ds$ :union-constituents))))
   
 (defmacro add-custom-types-to-ds$ (type)
-`(update-custom-types (cons ,type (custom-types ds$)) ds$))
+`(acl2::change ds% ds$ :custom-types (cons ,type (acl2::access ds% ds$ :custom-types))))
+
+(defmacro add-newconstructor-to-ds$ (cons-info)
+`(acl2::change ds% ds$ :newconstructors (cons ,cons-info (acl2::access ds% ds$ :newconstructors))))
 
 ;add generated constructor information in a record to a temporary
 ;global variable changed pred-body-lst to pred-lst since only
 ;typenames are allowed not type expressions.
 ;July 8 2010, this was checked with the datadef syntax document
 ;June 26 2011, changed to ds$ transient/temp storage stobj for defdata
-(defun add-newconstructor-to-ds$ (newconsid dex pred-lst ds$)
-  (declare (xargs :mode :program 
-                  :stobjs (ds$)))
+(defun add-newconstructor (newconsid dex pred-lst ds$)
+  (declare (xargs :mode :program))
   (let ((new-constructor-info 
          (cons newconsid (list* (list ':generated ':proper)
                                 (get-predicate-symbol newconsid)
                                 (cons-up-lists dex pred-lst)
-                                'none)))
-        (newconstructors-alreadyseen-lst (newconstructors ds$)))
-    (update-newconstructors (cons new-constructor-info
-                                  newconstructors-alreadyseen-lst) ds$)))
+                                'none))))
+        
+    (add-newconstructor-to-ds$ new-constructor-info)))
+                                  
 
 (defun update-type-class-top-level$ (tc nm ds$)
   (declare (xargs :guard (and (type-class-p tc)
                               (symbolp nm)
-                              (ds$p ds$))
-                  :verify-guards nil
-                  :stobjs (ds$)))
+                              )
+                  :verify-guards nil))
   (declare (ignorable nm))
-  (let ((current-tc (type-class ds$)))
+  (let ((current-tc (acl2::access ds% ds$ :type-class)))
     (cond ((eq current-tc :undefined)
-           (let ((ds$ (update-type-class tc ds$)))
+           (let ((ds$ (acl2::change ds% ds$ :type-class tc)))
              ds$))
           ((and (consp current-tc)
                 (eq (car current-tc) 'acl2::mutually-recursive))
@@ -2646,7 +2803,7 @@ X:rgbcolors = blue
                 ((unless (and (consp entry)
                               (eq (cdr entry) :undefined))) ds$)
                 (alst~ (put-assoc-eq nm tc alst))
-                (ds$ (update-type-class (cons 'acl2::mutually-recursive alst~) ds$)))
+                (ds$ (acl2::change ds% ds$ :type-class (cons 'acl2::mutually-recursive alst~))))
              ds$))
         (t ds$))))
 
@@ -2655,14 +2812,13 @@ X:rgbcolors = blue
 
 ;is dexpair a destructor type declaration
 (defun trans-dest-type-decl (conx-name dexpair tnames ctx ds$)
-  (declare (xargs :stobjs (ds$)))
   (b* (((unless (consp dexpair))
         (prog2$
          (er hard ctx "~x0 destructor type decl should be a cons. ~%" dexpair)
          (mv t nil ds$)))
        (conx-prefix-str (string-append (symbol-name conx-name) "-"))
        (id-name (modify-symbol conx-prefix-str (car dexpair) ""))
-       (id (is-a-identifier id-name (defdata-world ds$)))
+       (id (is-a-identifier id-name (acl2::access ds% ds$ :defdata-world)))
        (dte (cdr dexpair))
       ((unless id)
        (prog2$
@@ -2670,22 +2826,22 @@ X:rgbcolors = blue
 Choose something different~%" (car dexpair) dexpair)
          (mv t nil ds$)))
 ;strip away the destructor information for uniform product data treatment
-      ((when (is-registered dte (defdata-world ds$)))
-       (let ((ds$ (if (not (eq 'acl2::union (type-class ds$)))
+      ((when (is-registered dte (acl2::access ds% ds$ :defdata-world)))
+       (let ((ds$ (if (not (eq 'acl2::union (acl2::access ds% ds$ :type-class)))
 ;check if we are not inside union
                       (add-record-constituent-types-to-ds$ dte)
                     ds$)))
          (mv nil dte ds$)))
       ((when (mem1 dte tnames))
-       (let ((ds$ (update-is-recursive 't ds$)))
+       (let ((ds$ (acl2::change ds% ds$ :is-recursive 't)))
          (mv nil dte ds$)));recursive type reference
-      ((unless (is-a-custom-type dte (defdata-world ds$)))
+      ((unless (is-a-custom-type dte (acl2::access ds% ds$ :defdata-world)))
        (prog2$
         (er hard ctx "~x0 should be a type name. ~%" dte)
         (mv t nil ds$)))
 ;Custom type (only remaining case)
 ;add custom types used in defdata form to be validated later  
-      (ds$ (if (not (eq 'acl2::union (type-class ds$)))
+      (ds$ (if (not (eq 'acl2::union (acl2::access ds% ds$ :type-class)))
 ;check if we are not inside union
                (add-record-constituent-types-to-ds$ dte)
              ds$))
@@ -2700,7 +2856,6 @@ Choose something different~%" (car dexpair) dexpair)
   
 ;check and construct(stripping away destructors) dex-pair list      
  (defun trans-dest-typ-decl-lst (conx-name dex-pairs tnames ctx ds$)
-   (declare (xargs :stobjs (ds$)))
    (if (symbol-alistp dex-pairs)
      (if (endp dex-pairs)
          (mv nil nil ds$)
@@ -2732,28 +2887,27 @@ Choose something different~%" (car dexpair) dexpair)
 ;; in the series of syntax check and so if its not a 
 ;; union or prod then its not legal syntax.
  (defun trans-constituent-type (texp typid tnames ctx ds$)
-   (declare (xargs :stobjs (ds$)))
-   (b* (((when (is-singleton-type-p texp))
+    (b* (((when (is-singleton-type-p texp))
          (mv nil texp ds$))
-        ((when (is-registered texp (defdata-world ds$)))
+        ((when (is-registered texp (acl2::access ds% ds$ :defdata-world)))
           (let ((ds$ 
-                 (case (type-class ds$)
+                 (case (acl2::access ds% ds$ :type-class)
                    ('acl2::product (add-product-constituent-types-to-ds$ texp))
                    ('record (add-record-constituent-types-to-ds$ texp))
 ;might be buggy, right now im not supporting union constituents
                    (otherwise (add-union-constituent-types-to-ds$ texp)))))
             (mv nil texp ds$)))
-        ((when (is-a-custom-type texp (defdata-world ds$)))
+        ((when (is-a-custom-type texp (acl2::access ds% ds$ :defdata-world)))
          (let* ((ds$ (add-custom-types-to-ds$ texp))
                 (ds$ 
-                 (case (type-class ds$)
+                 (case (acl2::access ds% ds$ :type-class)
                    ('acl2::product (add-product-constituent-types-to-ds$ texp))
                    ('record (add-record-constituent-types-to-ds$ texp))
 ;might be buggy, right now im not supporting union constituents
                   (otherwise (add-union-constituent-types-to-ds$ texp)))))
            (mv nil texp ds$)))
         ((when (mem1 texp tnames)) 
-         (let ((ds$ (update-is-recursive 't ds$)))
+         (let ((ds$ (acl2::change ds% ds$ :is-recursive 't)))
            (mv nil texp ds$)));is a recursive type reference
         ((unless (consp texp))
          (prog2$
@@ -2772,7 +2926,6 @@ previously defined typeName, Singleton or Union/Product type here~%" texp )
        
  ;check and construct the constituent type list
  (defun trans-constituent-type-lst (texp-lst typid tnames ctx ds$)
-   (declare (xargs :stobjs (ds$)))
    (if (endp texp-lst)
          (mv nil nil ds$)
        (b* (((mv erp1 ctype1 ds$)
@@ -2788,8 +2941,7 @@ previously defined typeName, Singleton or Union/Product type here~%" texp )
 ;;; otherwise give nil, dont give any errors, cos we still 
 ;;; have product expression in the sequential check left
  (defun trans-union-type-exp (texp typid tnames ctx ds$)
-   (declare (xargs :guard (consp texp)
-                   :stobjs (ds$)))
+   (declare (xargs :guard (consp texp)))
    (b* (((unless (and (consp texp)
                       (or (eq (car texp) 'oneof) 
                           (eq (car texp) 'anyof))))
@@ -2807,15 +2959,14 @@ previously defined typeName, Singleton or Union/Product type here~%" texp )
  
  
  (defun trans-product-type-exp (texp typid tnames ctx ds$)
-   (declare (xargs :guard (consp texp)
-                   :stobjs (ds$)))
+   (declare (xargs :guard (consp texp)))
    (b* (((when (and (consp texp)
                     (or (eq (car texp) 'oneof) 
                         (eq (car texp) 'anyof))))
 ;is an union, so return nil (indicating not a product)
          (mv nil nil ds$))
         (consid (is-a-consId (car texp) (len (cdr texp)) 
-                             (defdata-world ds$)))
+                             (acl2::access ds% ds$ :defdata-world)))
         ((when consid)
          (mv-let (erp ctype-lst1 ds$)
                  (let ((ds$ (update-type-class-top-level$ 'acl2::product typid ds$)))
@@ -2826,7 +2977,7 @@ previously defined typeName, Singleton or Union/Product type here~%" texp )
 
 
         (newconsid (is-a-newconsId (car texp) (len (cdr texp)) 
-                                   (defdata-world ds$)))
+                                   (acl2::access ds% ds$ :defdata-world)))
         ((unless newconsid)
          (prog2$
             (er hard ctx "~|~x0 is an illegal Constructor id~|" (car texp))
@@ -2845,15 +2996,14 @@ previously defined typeName, Singleton or Union/Product type here~%" texp )
           (prog2$
             (er hard ctx "Malformed destructor declarations~%")
             (mv t nil ds$)))
-        (ds$ (add-newconstructor-to-ds$ newconsid dex pred-lst ds$)))
+        (ds$ (add-newconstructor newconsid dex pred-lst ds$)))
      
      (mv nil (cons newconsid ct-lst1) ds$)))
          
  (defun trans-prod-or-union-type (texp typid tnames ctx ds$)
 ;returns (mv erp trans-texp ds$)
-    (declare (xargs :guard (consp texp)
-                    :stobjs (ds$)))
-   (b* (((mv erp un-texp ds$)
+    (declare (xargs :guard (consp texp)))
+      (b* (((mv erp un-texp ds$)
          (trans-union-type-exp texp typid tnames ctx ds$)))
      (if (and (not erp)
               un-texp)
@@ -3026,9 +3176,21 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
 (defun compute-range-type-events (nm psym esym rexp ctx wrld)
   (declare (ignorable wrld) (xargs :mode :program))
   (case-match rexp
-    (('range domain (lo lo-rel-sym '_ hi-rel-sym hi))
+    (('range domain (lo-sym lo-rel-sym '_ hi-rel-sym hi-sym))
      (b* ((lo-rel (eq lo-rel-sym '<))
           (hi-rel (eq hi-rel-sym '<))
+          ((mv erp hi) 
+           (trans-my-ev-w hi-sym ctx wrld nil))
+          ((when erp)
+           (er hard ctx "Evaluating rational expression ~x0 failed!~%" hi-sym))
+          ((mv erp lo) 
+           (trans-my-ev-w lo-sym ctx wrld nil))
+          ((when erp)
+           (er hard ctx "Evaluating rational expression ~x0 failed!~%" lo-sym))
+          ((unless (and (or (null lo) (if (eq domain 'integer) (integerp lo) (rationalp lo)))
+                        (or (null hi) (if (eq domain 'integer) (integerp hi) (rationalp hi)))))
+           (er hard ctx "~|Syntax error: lo and hi in range expressions should evaluate to rationals, ~ 
+but instead got lo=~x0 and hi=~x1~%" lo hi))
           (dom (if (eq domain 'integer)
                    'acl2::integerp
                  'acl2::rationalp))
@@ -3281,50 +3443,110 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
                           :trigger-terms ((mget ,(car fnames) x)))))
      (record-selector-lemmas (cdr nms) tpred (cdr fnames) (cdr dprex) disabled))))
 
-(defun record-modifier-lemmas (nms tpred fnames dprex disabled)
+(defun record-modifier-lemmas (nms tpred fnames dprex disabled wrld)
   (if (endp fnames)
       (list '(value-triple 
               (prog2$ 
                (time-tracker :defdata-record-lemmas :print?)
                :invisible)))
-    (cons 
-     `(defthm ,(car nms)
-        (implies (and (,tpred x)
-                      (,(car dprex) v))
-                 (,tpred (mset ,(car fnames) v x)))
-        :hints (("Goal" :in-theory (e/d (,tpred) (,@disabled))))
-        :rule-classes (:rewrite 
-                       (:forward-chaining
-                        :trigger-terms ((mset ,(car fnames) v x)))))
-     (record-modifier-lemmas (cdr nms) tpred (cdr fnames) (cdr dprex) disabled))))
+
+    (b* ((dpred (car dprex))
+         (ctx 'record-modifier-lemmas)
+         ((mv erp contains-nilp)
+          (trans-my-ev-w (list dpred 'nil) ctx wrld nil)))
+      (if (or erp contains-nilp)
+          (record-modifier-lemmas (cdr nms) tpred (cdr fnames) (cdr dprex) disabled wrld)
+        (cons `(defthm ,(car nms)
+                 (implies (and (,tpred x)
+                               (,(car dprex) v))
+                          (,tpred (mset ,(car fnames) v x)))
+                 :hints (("Goal" :in-theory (e/d (,tpred) (,@disabled))))
+                 :rule-classes (:rewrite 
+                                (:forward-chaining
+                                 :trigger-terms ((mset ,(car fnames) v x)))))
+              (record-modifier-lemmas (cdr nms) tpred (cdr fnames) (cdr dprex) disabled wrld))))))
 
 
 
-(defun is-subtype (T1 T2 R$ types-ht$)
-  "conservative subtype check, return false if T1 or T2 are not present in graph"
-  (declare (xargs :guard (and (R$p R$)
-                              (types-ht$p types-ht$))
-                  :stobjs (R$ types-ht$)))
+
+(defun is-subtype (T1 T2 wrld)
+  "subtype check for tau database"
+  (declare (xargs :guard (and (symbolp T1)
+                              (symbolp T2)
+                              (plist-worldp wrld))))
     (cond ((eq T2 'acl2::all) t)
-        ((eq T1 'acl2::empty) t)
+          ((eq T1 'acl2::empty) t)
+          ((eq T1 T2) t) ;trivial
 ;ASSUMPTION: Types equivalent to all and empty should be recognized
 ;separately. In this function, we simply return nil, so we can have false
 ;positives.
-        ((eq T2 'acl2::empty) nil)
-        ((eq T1 'acl2::all) nil)
-        (t 
-         (if (and (vertex-ht-valid-p T1 (rgraph-length R$) types-ht$)
-                  (vertex-ht-valid-p T2 (rgraph-length R$) types-ht$))
-             (is-subtype$$ T1 T2 R$ types-ht$)
-           nil))))
+          ((eq T2 'acl2::empty) nil)
+          ((eq T1 'acl2::all) nil)
+
+          (t 
+           (b* ((typ-alst (table-alist 'types-info-table wrld))
+                (typ-entry1 (assoc-eq T1 typ-alst))
+                (typ-entry2 (assoc-eq T2 typ-alst))
+                ((unless (and (consp typ-entry1) (consp typ-entry2))) nil)
+                (P1 (acl2::access types-info% (cdr typ-entry1) :predicate))
+                (P2 (acl2::access types-info% (cdr typ-entry2) :predicate)))
+             (subtype-p P1 P2 wrld)))))
+  
+
+              
+          
+(defun is-disjoint (T1 T2 wrld)
+  "disjoint check for tau database"
+  (declare (xargs :guard (and (symbolp T1)
+                              (symbolp T2)
+                              (plist-worldp wrld))))
+    (cond ((or (eq T1 'acl2::all) (eq T2 'acl2::all) nil))
+          ((or (eq T1 'acl2::empty) (eq T1 'acl2::empty)) t)
+          ((eq T1 T2) nil) ;trivial
+;ASSUMPTION: Types equivalent to all and empty should be recognized
+;separately. 
+          (t 
+           (b* ((typ-alst (table-alist 'types-info-table wrld))
+                (typ-entry1 (assoc-eq T1 typ-alst))
+                (typ-entry2 (assoc-eq T2 typ-alst))
+                ((unless (and (consp typ-entry1) (consp typ-entry2))) nil)
+                (P1 (acl2::access types-info% (cdr typ-entry1) :predicate))
+                (P2 (acl2::access types-info% (cdr typ-entry2) :predicate)))
+             (disjoint-p P1 P2 wrld)))))      
+              
+
+(defun is-alias (T1 T2 wrld)
+  (declare (xargs :guard (and (symbolp T1)
+                              (symbolp T2)
+                              (plist-worldp wrld))))
+  (and (is-subtype T1 T2 wrld)
+       (is-subtype T2 T1 wrld)))
+
+;; (defun is-subtype (T1 T2 R$ types-ht$)
+;;   "conservative subtype check, return false if T1 or T2 are not present in graph"
+;;   (declare (xargs :guard (and (R$p R$)
+;;                               (types-ht$p types-ht$))
+;;                   :stobjs (R$ types-ht$)))
+;;     (cond ((eq T2 'acl2::all) t)
+;;         ((eq T1 'acl2::empty) t)
+;; ;ASSUMPTION: Types equivalent to all and empty should be recognized
+;; ;separately. In this function, we simply return nil, so we can have false
+;; ;positives.
+;;         ((eq T2 'acl2::empty) nil)
+;;         ((eq T1 'acl2::all) nil)
+;;         (t 
+;;          (if (and (vertex-ht-valid-p T1 (rgraph-length R$) types-ht$)
+;;                   (vertex-ht-valid-p T2 (rgraph-length R$) types-ht$))
+;;              (is-subtype$$ T1 T2 R$ types-ht$)
+;;            nil))))
 
 
-(defun is-alias (T1 T2 R$ types-ht$)
-  (declare (xargs :guard (and (R$p R$)
-                              (types-ht$p types-ht$))
-                  :stobjs (R$ types-ht$)))
-  (and (is-subtype T1 T2 R$ types-ht$)
-       (is-subtype T2 T1 R$ types-ht$)))
+;; (defun is-alias (T1 T2 R$ types-ht$)
+;;   (declare (xargs :guard (and (R$p R$)
+;;                               (types-ht$p types-ht$))
+;;                   :stobjs (R$ types-ht$)))
+;;   (and (is-subtype T1 T2 R$ types-ht$)
+;;        (is-subtype T2 T1 R$ types-ht$)))
 
 
 ; 13 July 2013 -- equiv enum and oneof defs of Lett dont work
@@ -3343,42 +3565,43 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
 ; not first. the disjoint lemma fails.
 ; Q: How does tau-system discharge the obligation in one case and
 ; not the other?
-(defun record-disjoint-constituent-lemmas (nms tpred dex-types R$ types-ht$)
-  (declare (xargs :stobjs (R$ types-ht$)))
-  (if (endp nms)
-      (list '(value-triple 
-              (prog2$ 
-               (time-tracker :defdata-record-lemmas :print?)
-               :invisible)))
-    (append 
-     (b* ((dex-type (car dex-types))
-          (dpred (get-predicate-symbol dex-type))
-; bugfix defdata-record-all-field-bug
-          ((when (or (is-alias dex-type 'acl2::all R$ types-ht$)
-                     (is-alias dex-type 'acl2::cons R$ types-ht$) 
-                     (is-alias dex-type 'acl2::list R$ types-ht$)
-                     (is-alias dex-type 'acl2::alist R$ types-ht$)
-                     (is-alias dex-type 'acl2::acons R$ types-ht$) 
-                     (is-alias dex-type 'acl2::true-list R$ types-ht$)
-                     ;; TODO
-                     ;; 16 July 2013 - due to example from mitesh
-                     ;; the disjoint lemma generation is nowhere near
-                     ;; complete
-                     (is-subtype dex-type 'acl2::true-list R$ types-ht$)))
 
-           '()))
-       `((defthm ,(car nms)
-          (implies (,tpred x)
-                   (not (,dpred x)))
+;; (defun record-disjoint-constituent-lemmas (nms tpred dex-types R$ types-ht$)
+;;   (declare (xargs :stobjs (R$ types-ht$)))
+;;   (if (endp nms)
+;;       (list '(value-triple 
+;;               (prog2$ 
+;;                (time-tracker :defdata-record-lemmas :print?)
+;;                :invisible)))
+;;     (append 
+;;      (b* ((dex-type (car dex-types))
+;;           (dpred (get-predicate-symbol dex-type))
+;; ; bugfix defdata-record-all-field-bug
+;;           ((when (or (is-alias dex-type 'acl2::all R$ types-ht$)
+;;                      (is-alias dex-type 'acl2::cons R$ types-ht$) 
+;;                      (is-alias dex-type 'acl2::list R$ types-ht$)
+;;                      (is-alias dex-type 'acl2::alist R$ types-ht$)
+;;                      (is-alias dex-type 'acl2::acons R$ types-ht$) 
+;;                      (is-alias dex-type 'acl2::true-list R$ types-ht$)
+;;                      ;; TODO
+;;                      ;; 16 July 2013 - due to example from mitesh
+;;                      ;; the disjoint lemma generation is nowhere near
+;;                      ;; complete
+;;                      (is-subtype dex-type 'acl2::true-list R$ types-ht$)))
 
-          :hints (("Goal" :in-theory (e/d (,dpred) (,tpred ))))))) 
-     (record-disjoint-constituent-lemmas (cdr nms) tpred (cdr dex-types) R$ types-ht$))))
+;;            '()))
+;;        `((defthm ,(car nms)
+;;           (implies (,tpred x)
+;;                    (not (,dpred x)))
+
+;;           :hints (("Goal" :in-theory (e/d (,dpred) (,tpred ))))))) 
+;;      (record-disjoint-constituent-lemmas (cdr nms) tpred (cdr dex-types) R$ types-ht$))))
 
 (defun record-constructor-lemma (nm cname tpred dprex vnames disabled)
   `(defthm ,nm ;TODO: of no use if cname is not disabled!
      (implies (and ,@(build-one-param-calls dprex vnames))
               (,tpred (,cname . ,vnames)))
-     :hints (("Goal" :in-theory (e/d (,tpred ,cname) (,@disabled))))))
+     :hints (("Goal" :in-theory (e/d (,tpred ,cname) (,@disabled acl2::mset-diff-mset))))))
        
 
 ;find recursive records
@@ -3407,44 +3630,42 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
         (find-recursive-records (cdr preds) new-constructors)))))
               
 
-(defun add-record-type-support-lemmas-to-ds$ (typid dnames dex-types ds$ R$ types-ht$)
-  (declare (xargs :stobjs (ds$ R$ types-ht$)))
+(defun add-record-type-support-lemmas-to-ds$ (typid dnames dex-types ds$)
   (b* ((tpred (get-predicate-symbol typid))
        (dprex (get-predicate-symbol-lst dex-types))
-       (s-lemm (support-lemmas ds$))
+       (s-lemm (acl2::access ds% ds$ :support-lemmas))
        (fnames (map-get-field-name dnames))
        (snms (modify-symbol-lst (string-append (symbol-name tpred) "-")
                                      dnames "-SELECTOR-LEMMA"))
        (mnms (modify-symbol-lst (string-append (symbol-name tpred) "-")
                                      dnames "-MODIFIER-LEMMA"))
-       (wrld (defdata-world ds$))
+       (wrld (acl2::access ds% ds$ :defdata-world))
        (disabled (runes-to-be-disabled dprex wrld))
        (selector-lemmas (record-selector-lemmas snms tpred fnames dprex disabled))
        
-       (modifier-lemmas (record-modifier-lemmas mnms tpred fnames dprex disabled))
+       (modifier-lemmas (record-modifier-lemmas mnms tpred fnames dprex disabled wrld))
        (vs (modify-symbol-lst "VAR-" dnames ""))
        (cnm (modify-symbol "" tpred "-CONSTRUCTOR-LEMMA"))
        (constructor-lemma (record-constructor-lemma cnm typid tpred dprex vs disabled))
-       (dnms (modify-symbol-lst (string-append (symbol-name tpred) "-")
+       (?dnms (modify-symbol-lst (string-append (symbol-name tpred) "-")
                                 dprex "-DISJOINT-LEMMA"))
-       (disjoint-lemmas 
-        (record-disjoint-constituent-lemmas dnms tpred dex-types R$ types-ht$))
+       (disjoint-lemmas nil)
+;        (record-disjoint-constituent-lemmas dnms tpred dex-types R$ types-ht$))
                          
        (record-lemmas (append disjoint-lemmas
                               (cons constructor-lemma
                                     (append selector-lemmas modifier-lemmas)))))
     
-    (update-support-lemmas
+    (acl2::change ds% ds$ :support-lemmas
      (acl2::change supp-lemmas%
       s-lemm
       :record
       (append record-lemmas (acl2::access supp-lemmas% s-lemm :record)))
-     ds$)))
+     )))
       
-(defun is-record-type (texp typId ctx ds$ R$ types-ht$)
+(defun is-record-type (texp typId ctx ds$)
 ;returns (mv trans-record-def ds$) where trans-record-def is nil if texp is
 ;not a record
-  (declare (xargs :stobjs (ds$ R$ types-ht$)))
   (b* (((unless (and (consp texp)
                     (eq (car texp) 'record)))
         (mv nil ds$))
@@ -3466,8 +3687,8 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
              "~|Record ~x0 has malformed destructor declarations.~%"
              texp)
          (mv nil ds$)))
-       (ds$ (add-newconstructor-to-ds$ typId dnames dprex ds$))
-       (ds$ (add-record-type-support-lemmas-to-ds$ typId dnames dex-types ds$ R$ types-ht$))
+       (ds$ (add-newconstructor typId dnames dprex ds$))
+       (ds$ (add-record-type-support-lemmas-to-ds$ typId dnames dex-types ds$))
        )
 ;just use the product-datadef function, so record is just syntactic
 ;sugar. TODO: But you dont generate record lemmas for this desugared
@@ -3477,11 +3698,10 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
 
 
 (defun add-map-type-support-lemmas-to-ds$ (typid t1 t2 ds$)
-  (declare (xargs :stobjs (ds$)))
   (b* ((tpred (get-predicate-symbol typid))
        (t1p (get-predicate-symbol t1))
        (t2p (get-predicate-symbol t2))
-       (s-lemm (support-lemmas ds$))
+       (s-lemm (acl2::access ds% ds$ :support-lemmas))
        (s-nm (modify-symbol "" tpred "-SELECTOR-LEMMA"))
        (m-nm (modify-symbol "" tpred "-MODIFIER-LEMMA"))
        (d-nm1 (modify-symbol "DISJOINT-" tpred 
@@ -3560,6 +3780,17 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
                                        (,t1p ,t2p))))
            :rule-classes (:rewrite :generalize)))
 
+       
+       (modifier-lemma1
+        `(local (defthm ,(modify-symbol "" m-nm "-SUPPORT")
+                  (implies (and (,tpred x)
+                                (,t1p acl2::a)
+                                (,t2p v))
+                           (,tpred (acl2::mset-wf acl2::a v x)))
+                  :hints (("Goal" :induct (acl2::good-map x)
+                           :in-theory (e/d (,tpred acl2::good-map acl2::mset-wf)
+                                           (,t1p ,t2p acl2::wf-keyp))))
+                  :rule-classes (:rewrite :generalize))))
        (modifier-lemma
         `(defthm ,m-nm
            (implies (and (,tpred x)
@@ -3567,8 +3798,7 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
                          (,t2p v))
                     (,tpred (mset acl2::a v x)))
            :hints (("Goal" :in-theory 
-                    (e/d (,tpred mset acl2::mset-wf
-                                 acl2::acl2->map acl2::map->acl2)
+                    (e/d (,tpred mset)
                          (,t1p ,t2p acl2::wf-keyp))))
            :rule-classes (:rewrite :generalize)))
        
@@ -3581,21 +3811,20 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
                                  address-in-domain-lemma
                                  selector-lemma 
                                  wf-key-lemma
-                                 modifier-lemma
+                                 modifier-lemma1 modifier-lemma
                                  map-elim-put-table-event
                                  ))))
                           
-    (update-support-lemmas
+    (acl2::change ds% ds$ :support-lemmas
      (acl2::change supp-lemmas%
       s-lemm
       :map
       (append map-lemmas (acl2::access supp-lemmas% s-lemm :map)))
-     ds$)))
+     )))
 
 
 (defun is-map-type (texp typId ctx ds$)
 ;returns (mv trans-map ds$) trans-map is nil if not a map
-  (declare (xargs :stobjs (ds$)))
   (b* (((unless (and (consp texp)
                      (eq (car texp) 'map)))
         (mv nil ds$))
@@ -3608,7 +3837,7 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
        (lpair (cdr texp))
        (keyT (car lpair))
        (valT (cadr lpair))
-       (w (defdata-world ds$))
+       (w (acl2::access ds% ds$ :defdata-world))
        ((unless (and (is-registered keyT w)
                      (is-registered valT w)))
         (prog2$
@@ -3622,10 +3851,9 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
 ;add generated set type lemmas to a temporary global variable
 ;For each type only one set type is added
 (defun add-set-type-support-lemmas-to-ds$ (typid ds$)
-  (declare (xargs :stobjs (ds$)))
   (let ((tpred (get-predicate-symbol typid))
-        (s-lemm (support-lemmas ds$)))
-  (update-support-lemmas
+        (s-lemm (acl2::access ds% ds$ :support-lemmas)))
+  (acl2::change ds% ds$ :support-lemmas
    (acl2::change supp-lemmas%
     s-lemm
     :set
@@ -3636,22 +3864,24 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
                             (:rewrite :backchain-limit-lst 1)
                             ))
           (acl2::access supp-lemmas%  s-lemm :set)))
-   ds$)))
+   )))
 
 
   
 ;add generated list type lemmas to a temporary global variable
 ;For each type only one list type is added
-(defun add-list-type-support-lemmas-to-ds$ (typid ctype1 ds$ R$ types-ht$)
-  (declare (xargs :stobjs (ds$ R$ types-ht$)))
+(defun add-list-type-support-lemmas-to-ds$ (typid ctype1 ds$)
   (b* ((tpred (get-predicate-symbol typid))
-       (s-lemm (support-lemmas ds$))
-        (atom-list-subtypep (and (symbolp ctype1)
-                                 (is-subtype ctype1 'acl2::atom R$ types-ht$)))
+       (s-lemm (acl2::access ds% ds$ :support-lemmas))
+       (wrld (acl2::access ds% ds$ :defdata-world))
+       (atom-list-subtypep (and (symbolp ctype1)
+                                 (is-subtype ctype1 'acl2::atom wrld)))
        
        (tlp-forms `((defthm ,(modify-symbol "" tpred "-IMPLIES-TLP")
                       (implies (,tpred x)
                                (true-listp x))
+;ASK Pete: true-listp is disabled in the std/lists theory, earlier we used coi/lists/basic, where it was enabled! Which to use?
+                      :hints (("Goal" :in-theory (enable true-listp)))
                       :rule-classes ((:forward-chaining)
                                      (:compound-recognizer)
                                      (:rewrite :backchain-limit-lst 1)))
@@ -3665,7 +3895,7 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
                       :rule-classes ((:rewrite :backchain-limit-lst 1)))
                     ))
        
-       (tlp-ctype1-forms (if (is-a-typeName ctype1 (defdata-world ds$))
+       (tlp-ctype1-forms (if (is-a-typeName ctype1 (acl2::access ds% ds$ :defdata-world))
                              (let ((ctype1-pred (get-predicate-symbol ctype1)))
                                `((defthm ,(modify-symbol "" tpred "-TLP-CONS")
                                    (implies (and (,ctype1-pred x)
@@ -3673,10 +3903,10 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
                                             (,tpred (cons x acl2::y)))
                                    :rule-classes :tau-system)
                                  (defthm ,(modify-symbol "" tpred "-TLP-DESTR")
-                                   (implies (and (,tpred l) 
-                                                 (not (equal l nil)))
-                                            (and (,ctype1-pred (car l))
-                                                 (,tpred (cdr l))))
+                                   (implies (and (,tpred x) 
+                                                 (not (equal x nil)))
+                                            (and (,ctype1-pred (car x))
+                                                 (,tpred (cdr x))))
                                    :rule-classes :tau-system)
                                  ))
                            '()))
@@ -3692,13 +3922,13 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
        
 
    
-  (update-support-lemmas
+  (acl2::change ds% ds$ :support-lemmas
    (acl2::change supp-lemmas%
     s-lemm
     :listof
     (append ev-forms
             (acl2::access supp-lemmas% s-lemm :listof)))
-   ds$)))
+   )))
 
 ;;PETE: Should we get rid of the compound recognizer rule above?
 ;;It can be dangerous, eg, Harsh had the rule (tlp x) => (tlp x)
@@ -3709,8 +3939,7 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
 ;;needed. I did more experiments. The rule is fine as is. Just
 ;;make sure not to screw up with the above rules.
 
-(defun is-list-type (texp typid tnames ctx ds$ R$ types-ht$)
-  (declare (xargs :stobjs (ds$ R$ types-ht$)))
+(defun is-list-type (texp typid tnames ctx ds$)
 ;return (mv constituentTypeExpr|nil ds$)
   (b* (((unless (and (consp texp)
                      (eq (car texp) 'listof)))
@@ -3724,12 +3953,11 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
       ((mv & ctype1 ds$)
        (trans-constituent-type (cadr texp) typid tnames ctx ds$))
       ;;skipped error check.
-      (ds$ (add-list-type-support-lemmas-to-ds$ typid ctype1 ds$ R$ types-ht$)))
+      (ds$ (add-list-type-support-lemmas-to-ds$ typid ctype1 ds$)))
     (mv `(oneof nil (cons ,ctype1 ,typid)) ds$)))
        
 (defun is-set-type (texp typid tnames ctx ds$)
 ;returns (mv trans-list|nil ds$)
-  (declare (xargs :stobjs (ds$)))
  (b* (((unless (and (consp texp)
                      (eq (car texp) 'set)))
         (mv nil ds$))
@@ -3751,13 +3979,12 @@ but ~x0 if not.~%" texp)
 ;dtexp : TypeName | Singleton | Enum | Map | Record | List | Set | Prod-Union-type
 ;record, list, map, set have been normalized (converted
 ;to constituentTypeExpr) in trans-dtexp
-(defun translate-defbody (dtexp typId tnames ctx ds$ R$ types-ht$)
-  (declare (xargs :stobjs (ds$ R$ types-ht$)))
+(defun translate-defbody (dtexp typId tnames ctx ds$)
 ;returns (mv erp trans-defbody ds$)
   (b* (((when (is-singleton-type-p dtexp))
         (let ((ds$ (update-type-class-top-level$ 'acl2::singleton typId ds$)))
           (mv nil dtexp ds$)));constant expression or constant value?
-       ((when (is-a-typeName dtexp (defdata-world ds$)))
+       ((when (is-a-typeName dtexp (acl2::access ds% ds$ :defdata-world)))
         (let ((ds$ (update-type-class-top-level$ 'acl2::alias typId ds$)))
           (mv nil dtexp ds$)))
        ((unless (consp dtexp))
@@ -3775,7 +4002,7 @@ nor a predefined typename~%" dtexp)
 
        (is-enum 
 ;preprocessing and eval called inside enum
-         (is-enum-type dtexp ctx (defdata-world ds$)))
+         (is-enum-type dtexp ctx (acl2::access ds% ds$ :defdata-world)))
        ((when is-enum) 
          (let ((ds$ (update-type-class-top-level$ 'enum typId ds$)))
            (mv nil is-enum ds$)))
@@ -3785,15 +4012,15 @@ nor a predefined typename~%" dtexp)
         (let ((ds$ (update-type-class-top-level$ 'map typId ds$)))
           (mv nil is-map ds$))) ;ADDED 3rd May 2011 REMOVED 28th Aug '12 ADDED 17 July '13
 
-       ((mv is-record ds$) (is-record-type dtexp typId ctx ds$ R$ types-ht$))
+       ((mv is-record ds$) (is-record-type dtexp typId ctx ds$))
 ;type class of record also gets update on successful entry and not here
        ((when is-record) 
            (prog2$
-            (cw? (defdata-debug ds$)
-                          "record support lemmas: ~x0~%" (support-lemmas ds$))
+            (cw? (acl2::access ds% ds$ :defdata-debug)
+                          "record support lemmas: ~x0~%" (acl2::access ds% ds$ :support-lemmas))
             (mv nil is-record ds$)))
 
-       ((mv is-list ds$) (is-list-type dtexp typId tnames ctx ds$ R$ types-ht$))
+       ((mv is-list ds$) (is-list-type dtexp typId tnames ctx ds$))
        ((when is-list) (mv nil is-list ds$))
 
        ((mv is-set ds$) (is-set-type dtexp typId tnames ctx ds$))
@@ -3829,22 +4056,21 @@ nor a predefined typename~%" dtexp)
 ;3. dataTypeExp is a legal data type expression
 ;4. keyword-list [:hints ...] TODO: should it be defined per mut-rec def or for defdata whole?
 ;5. dataTypeExp is also pre-processed 
-(defun translate-defs0 (def tnames ctx ds$ R$ types-ht$)
+(defun translate-defs0 (def tnames ctx ds$)
 ;return (trans-def ds$) or aborts on error
-  (declare (xargs :stobjs (ds$ R$ types-ht$)))
-  (b* (((unless (and (true-listp def)
+   (b* (((unless (and (true-listp def)
                      (>= (len def) 2)))
         (prog2$
          (er hard ctx "Definition ~x0 incorrectly formed.~%" def)
          (mv nil ds$)))
        (typId (car def))
        (dataTypExp (cadr def))
-       ((unless (is-a-typeId-p typId (defdata-world ds$)))
+       ((unless (is-a-typeId-p typId (acl2::access ds% ds$ :defdata-world)))
         (prog2$
          (er hard ctx "~x0 is not a valid Type Identifier .~%" typId)
          (mv nil ds$)))
        ((mv erp dtexp ds$) 
-        (translate-defbody dataTypExp typId tnames ctx ds$ R$ types-ht$))
+        (translate-defbody dataTypExp typId tnames ctx ds$))
        ((unless (not erp))
         (prog2$
          (er hard ctx "Could not translate defdata body ~x0~%" dataTypExp)
@@ -3858,16 +4084,15 @@ nor a predefined typename~%" dtexp)
        (mv (append (list typId dtexp) rst) ds$))) 
 
         
-(defun translate-defs0-lst (defs tnames ctx ds$ R$ types-ht$ ans)
-  (declare (xargs :stobjs (ds$ R$ types-ht$)))
+(defun translate-defs0-lst (defs tnames ctx ds$ ans)
   (if (endp defs)
     (mv ans ds$)
     (b* ((def (car defs))
 ;check for errors in syntax and also preprocess (translate)
-         ((mv cdef ds$) (translate-defs0 def tnames ctx ds$ R$ types-ht$)))
+         ((mv cdef ds$) (translate-defs0 def tnames ctx ds$)))
       (translate-defs0-lst (cdr defs) 
                            tnames 
-                           ctx ds$ R$ types-ht$
+                           ctx ds$
                            (append ans (list cdef))))))
                                                                                  
     
@@ -3876,10 +4101,9 @@ nor a predefined typename~%" dtexp)
 ;;; and then call check-syntax-defs on resulting normalised form
 ;;; Additionaly check for empty definitions and 
 ;;; empty enum/oneof/anyof/record/listof(Not required i guess, redundant)
-(defun translate-defs (defs ctx ds$ R$ types-ht$)
+(defun translate-defs (defs ctx ds$)
 ;returns (mv trans-defs ds$) or aborts on error
-  (declare (xargs :stobjs (ds$ R$ types-ht$)
-                  :mode :program))
+  (declare (xargs :mode :program))
 
   (b* (((unless (and (consp defs) 
                      (true-listp defs)))
@@ -3899,11 +4123,11 @@ nor a predefined typename~%" dtexp)
         ;;should i name this in acl2 package (mut-rec)?
         (let* ((tnames (strip-cars defs))
                (undef-lst (make-list (len tnames) :initial-element :undefined))
-               (ds$ (if (eq (type-class ds$) :undefined)
-                         (update-type-class (cons 'acl2::mutually-recursive 
-                                                  (pairlis$ tnames undef-lst)) ds$)
+               (ds$ (if (eq (acl2::access ds% ds$ :type-class) :undefined)
+                         (acl2::change ds% ds$ :type-class (cons 'acl2::mutually-recursive 
+                                                  (pairlis$ tnames undef-lst)))
                        ds$)))
-          (translate-defs0-lst defs tnames ctx ds$ R$ types-ht$ nil)))
+          (translate-defs0-lst defs tnames ctx ds$ nil)))
 ;single defn to be normalised
        (def (if (symbolp (car defs)) defs (car defs))) 
 ;rename defs to def to avoid confusion, def is the single definition
@@ -3923,7 +4147,7 @@ nor a predefined typename~%" dtexp)
          (er hard ctx "Found empty definition or Empty body in ~x0.~%"
              def)
          (mv nil ds$))))
-    (translate-defs0-lst (list def) (list (car def)) ctx ds$ R$ types-ht$ nil)))
+    (translate-defs0-lst (list def) (list (car def)) ctx ds$ nil)))
          
  
 
@@ -4030,7 +4254,7 @@ nor a predefined typename~%" dtexp)
                   :size (car tsizes) 
                   :enumerator (car tenums)
                   :predicate (car tpreds)
-                  :test-enumerator (car ttestenums)
+                  :enumerator-test (car ttestenums)
                   :enum-uniform (get-uniform-enumerator-symbol (car tnames))
                   :defs defs
                   :derivedp t;defdata == derived data-type
@@ -4038,6 +4262,7 @@ nor a predefined typename~%" dtexp)
                                                 recursive-tnames)
                                   t
                                 nil)
+                  :consistentp nil
                   :type-class type-class)
              :put)
           (cons-up-add-type-info-calls (cdr tsizes)
@@ -4319,31 +4544,6 @@ nor a predefined typename~%" dtexp)
                   
   (append Xs Ys));for debugging
 
-;;make type consistency check event for all types in arg
-;;Generate the foll form:
-;; (thm (implies (natp x) (Tp (nth-T x)))) or
-;; (thm (implies (< n (len *T-values*)) (Tp (nth n *T-values*))))
-;; TODO.Note: *T-values* might be very big list in that case, there must be a cleaner/efficient way.
-(defun cons-up-type-consistent-thm-ev (tnames wrld)
-  (declare (xargs :mode :program
-                  :guard (symbol-listp tnames)))
-  (if (endp tnames)
-    nil
-    (let* ((tname (car tnames))
-           (tpred (get-predicate-symbol tname))
-           (tenum (get-enumerator-symbol tname))
-           (tvalues (get-values-symbol tname))
-           (tpred-lst (modify-symbol "" tpred "-LST-AUTO-GENERATED"))) 
-      (append (if (allows-arity tenum 1 wrld)
-                (list `(thm (implies (natp n) (,tpred (,tenum n)))
-                            :hints (("Goal" :in-theory (e/d (,tpred ,tenum))))))
-                (list `(defun ,tpred-lst (xs) 
-                         (if (endp xs)
-                           t
-                           (and (,tpred (car xs))
-                                (,tpred-lst (cdr xs)))))
-                      `(thm (,tpred-lst ,tvalues))))
-              (cons-up-type-consistent-thm-ev (cdr tnames) wrld)))))
 
   
 
@@ -4368,9 +4568,9 @@ nor a predefined typename~%" dtexp)
                            new-record-constructors 
                            support-lemmas custom-types
                            type-class
-                           ctx wrld state R$ types-ht$)
+                           ctx wrld state)
   (declare (xargs :mode :program
-                  :stobjs (state R$ types-ht$)))
+                  :stobjs (state)))
   (b* ((names (strip-cars defs))
        (?verbose (get-acl2s-defdata-verbose))
 ;(defbodies (strip-cadrs defs))
@@ -4412,7 +4612,9 @@ nor a predefined typename~%" dtexp)
        (conx-pred-recur-names (strip-cadrs conx-pred-recur-events))
        (conx-pred-non-recur-events (cons-up-conx-prex-ev conx-non-recur-names dex-pairs-non-recur-lst))
        (?conx-pred-non-recur-names (strip-cadrs conx-pred-non-recur-events))
-;(dex-events (append-up-dex-ev conx-names dex-pairs-lst))
+       (dex-events (append-up-dex-ev conx-names dex-pairs-lst))
+       (modifier-events (append-up-modifiers-ev conx-names dex-pairs-lst))
+       (bstar-integration-events (rcd-patbind-macro-ev conx-names dex-pairs-lst))
        (conx-events (cons-up-conx-ev conx-names dex-pairs-lst))
        (register-conx-dex-events (cons-up-reg-conx-dex-ev conx-names dex-pairs-lst))
        
@@ -4436,7 +4638,7 @@ nor a predefined typename~%" dtexp)
 ;(base-type-support-lemmas (g :base support-lemmas))
 ;(verbose (get-acl2s-defdata-verbose))
        (generate-allp-alias-boolean-tau-rule-p (and (eq type-class 'acl2::alias)
-                                                    (is-subtype 'ACL2::ALL (cadr (car defs)) R$ types-ht$))) ;TODO, new graph book doesnt support this.
+                                                    (is-subtype 'ACL2::ALL (cadr (car defs)) wrld))) ;TODO, maintain ALLP aliases!
                                          
        )
     (if (not (no-duplicatesp names))
@@ -4507,249 +4709,252 @@ nor a predefined typename~%" dtexp)
            (current-termination-method-entry (assoc :termination-method acl2-defaults-tbl))
            );*b
 ;in
-        (value `
-         (progn
-           ;; (set-internal-acl2s-inside-defdata-flag t)
-           
-           (acl2s-defaults :set testing-enabled nil)
-           ,@(and 
-              conx-pred-non-recur-names
-              `((value-triple
-                 (cw? t
-                      "Submitting (non-recursive) record predicate functions ~x0.~%"
-                      ',conx-pred-non-recur-names))))
-           
-           ,@conx-pred-non-recur-events
+        (value 
+         `(progn
+            ;; (set-internal-acl2s-inside-defdata-flag t)
+            
+            (acl2s-defaults :set testing-enabled nil)
+            ,@(and 
+               conx-pred-non-recur-names
+               `((value-triple
+                  (cw? t
+                       "Submitting (non-recursive) record predicate functions ~x0.~%"
+                       ',conx-pred-non-recur-names))))
+            
+            ,@conx-pred-non-recur-events
 
-           ,@(and 
-              (append pred-syms-need-preds
-                      conx-pred-recur-names)
-              `((value-triple
-                 (cw? t
-                      "Submitting predicate functions ~x0.~%"
-                      ',(append pred-syms-need-preds
-                                conx-pred-recur-names)))))
-           ,@(and 
-              pred-syms-need-preds
-              `((defuns . ,(append 
-                            conx-pred-recur-defun-cdrs
-                            (cons-up-names-decls-lls-bodies
-                             pred-syms-need-preds
-                             (if T;declare-guardsp  
+            ,@(and 
+               (append pred-syms-need-preds
+                       conx-pred-recur-names)
+               `((value-triple
+                  (cw? t
+                       "Submitting predicate functions ~x0.~%"
+                       ',(append pred-syms-need-preds
+                                 conx-pred-recur-names)))))
+            ,@(and 
+               pred-syms-need-preds
+               `((defuns . ,(append 
+                             conx-pred-recur-defun-cdrs
+                             (cons-up-names-decls-lls-bodies
+                              pred-syms-need-preds
+                              (if T;declare-guardsp  
 ;harshrc Sep 3rd 2012 -- OK, predicates need their guards to be
 ;verified. I hope this wont break anything, since this change though
 ;it reduces flexibility it does not change the behavior of
 ;declare-guardsp for now, since the default value for it was T anyway.
-                                 (make-list (len pred-syms-need-preds) 
-                                            :initial-element 
-                                            '(declare (xargs :guard t
-                                                             :ruler-extenders :all
-                                                             )))
-                               (make-list (len pred-syms-need-preds) 
-                                          :initial-element 
-                                          '(declare (xargs :ruler-extenders :all)))
-                               );end of if , this gives the declare form for the predicate
-                             (make-list (len pred-syms-need-preds)
-                                        :initial-element '(v))
-                             pred-bodies-need)))))
-           ;; ,@(and 
-           ;;    (or non-recursive-pred-syms conx-pred-non-recur-names)
-           ;;    `((in-theory (disable ,@(union-eq non-recursive-pred-syms 
-           ;;                                      conx-pred-non-recur-names)))))
-           
-           ,@conx-events
-           
+                                  (make-list (len pred-syms-need-preds) 
+                                             :initial-element 
+                                             '(declare (xargs :guard t
+                                                              :ruler-extenders :all
+                                                              )))
+                                (make-list (len pred-syms-need-preds) 
+                                           :initial-element 
+                                           '(declare (xargs :ruler-extenders :all)))
+                                );end of if , this gives the declare form for the predicate
+                              (make-list (len pred-syms-need-preds)
+                                         :initial-element '(v))
+                              pred-bodies-need)))))
+            ;; ,@(and 
+            ;;    (or non-recursive-pred-syms conx-pred-non-recur-names)
+            ;;    `((in-theory (disable ,@(union-eq non-recursive-pred-syms 
+            ;;                                      conx-pred-non-recur-names)))))
+            
+            ,@conx-events
+            
 ; 10th April 2013 - Generate record=>consp/good-map for all records
 ; (earlier only recursive records were getting these lemmas)
-           
-           ,@(and conx-names
-                  `((value-triple
-                     (progn$
-                      (time-tracker :defdata-generic-record-lemmas :end)
-                      (time-tracker :defdata-generic-record-lemmas :init
-                                    :times '(2 7)
-                                    :interval 5
-                                    :msg "Elapsed runtime in generic lemma proofs for records is ~st secs;~|~%")
-                      (cw? t
-                           "Submitting generic record lemmas... ~%")
-                      (cw? t;,verbose
-                           "~x0~%" ',record-implies-consp/good-map-lemmas)))))
-           ,@(and conx-names record-implies-consp/good-map-lemmas)
-           
-;,@ dex-events (Jan25 2011 No need, mget handles it)
-           ,@register-conx-dex-events
+            
+            ,@(and conx-names
+                   `((value-triple
+                      (progn$
+                       (time-tracker :defdata-generic-record-lemmas :end)
+                       (time-tracker :defdata-generic-record-lemmas :init
+                                     :times '(2 7)
+                                     :interval 5
+                                     :msg "Elapsed runtime in generic lemma proofs for records is ~st secs;~|~%")
+                       (cw? t
+                            "Submitting generic record lemmas... ~%")
+                       (cw? t;,verbose
+                            "~x0~%" ',record-implies-consp/good-map-lemmas)))))
+            ,@(and conx-names record-implies-consp/good-map-lemmas)
+            
+            ;; selectors/accessors and modifiers/updators for records
+            ,@dex-events 
+            ,@modifier-events
+            ,@bstar-integration-events
+   
+            ,@register-conx-dex-events
 ; TODO: check if the fin and enum names of fin-names are fresh!
-           ,@(cons-up-defconsts fin-names ;fin-enum-syms -- 5 july '13 add defuns too
-                                fin-lens
-                                fin-values)
-           ,@(cons-up-pred-defthms thm-syms-with-preds
-                                   pred-syms-with-preds
-                                   pred-bodies-with
-                                   rsts-with-preds)
+            ,@(cons-up-defconsts fin-names ;fin-enum-syms -- 5 july '13 add defuns too
+                                 fin-lens
+                                 fin-values)
+            ,@(cons-up-pred-defthms thm-syms-with-preds
+                                    pred-syms-with-preds
+                                    pred-bodies-with
+                                    rsts-with-preds)
 
-                 ,@(and inf-enums
-                  `((value-triple
-                     (cw? t
-                          "Submitting enumerator functions ~x0.~%"
-                          ',inf-enum-syms))))
-           
-           
-           ,@(and 
-              inf-enums
-              `((defuns . 
-                  ,(cons-up-names-decls-lls-bodies
-                    inf-enum-syms
-                    (if declare-guardsp
-                        (make-list (len inf-enums)
-                                   :initial-element 
-                                   (if current-termination-method-entry
-                                       '(declare (xargs :consider-only-ccms ((nfix x))
-                                                        :guard (natp x)))
-                                     '(declare (xargs :measure (nfix x)
-                                                      :guard (natp x) ))
-                                     
-                                     ))
-                      (make-list (len inf-enums)
-                                 :initial-element 
-                                 (if current-termination-method-entry
-                                     '(declare (xargs :consider-only-ccms ((nfix x))))
-                                   '(declare (xargs :measure (nfix x))))
-                                 )
-                      );end of if , this gives the declare form for the enum
-                    (make-list (len inf-enums)
-                               :initial-element '(x))
-                    (strip-cdrs inf-enums)))))
-           (in-theory (disable ,@inf-enum-syms))
-           ,@(cons-up-register-custom-type-ev custom-types)
-           
-           ;;hack
-           ,@(and current-termination-method-entry
-                  '((acl2::set-termination-method :measure)))
-                
-           ,@(and 
-              inf-uniform-enums
-              `((defuns . 
-                  ,(cons-up-names-decls-lls-bodies
-                    inf-uniform-enum-syms
-                    (make-list (len inf-uniform-enums)
-                               :initial-element 
-                               `(declare (ignorable m)
-                                         (type (unsigned-byte 31) seed)
-                                         (xargs ,@(if nil;current-termination-method-entry 
-                                                      '(:consider-only-ccms ((nfix m)))
-                                                    '(:measure (nfix m)))
-                                                :verify-guards nil
-                                                :guard (and (natp m)
-                                                            (unsigned-byte-p 31 seed))))
-                               )
-                    (make-list (len inf-uniform-enums)
-                               :initial-element '(m seed))
-                    (strip-cdrs inf-uniform-enums)))))
-           ;;hack
-           ,@(and current-termination-method-entry
-                  `((acl2::set-termination-method ,(cdr current-termination-method-entry))))
+            ,@(and inf-enums
+                   `((value-triple
+                      (cw? t
+                           "Submitting enumerator functions ~x0.~%"
+                           ',inf-enum-syms))))
+            
+            
+            ,@(and 
+               inf-enums
+               `((defuns . 
+                   ,(cons-up-names-decls-lls-bodies
+                     inf-enum-syms
+                     (if declare-guardsp
+                         (make-list (len inf-enums)
+                                    :initial-element 
+                                    (if current-termination-method-entry
+                                        '(declare (xargs :consider-only-ccms ((nfix x))
+                                                         :guard (natp x)))
+                                      '(declare (xargs :measure (nfix x)
+                                                       :guard (natp x) ))
+                                      
+                                      ))
+                       (make-list (len inf-enums)
+                                  :initial-element 
+                                  (if current-termination-method-entry
+                                      '(declare (xargs :consider-only-ccms ((nfix x))))
+                                    '(declare (xargs :measure (nfix x))))
+                                  )
+                       );end of if , this gives the declare form for the enum
+                     (make-list (len inf-enums)
+                                :initial-element '(x))
+                     (strip-cdrs inf-enums)))))
+            (in-theory (disable ,@inf-enum-syms))
+            ,@(cons-up-register-custom-type-ev custom-types)
+            
+            ;;hack
+            ,@(and current-termination-method-entry
+                   '((acl2::set-termination-method :measure)))
+            
+            ,@(and 
+               inf-uniform-enums
+               `((defuns . 
+                   ,(cons-up-names-decls-lls-bodies
+                     inf-uniform-enum-syms
+                     (make-list (len inf-uniform-enums)
+                                :initial-element 
+                                `(declare (ignorable m)
+                                          (type (unsigned-byte 31) seed)
+                                          (xargs ,@(if nil;current-termination-method-entry 
+                                                       '(:consider-only-ccms ((nfix m)))
+                                                     '(:measure (nfix m)))
+                                                 :verify-guards nil
+                                                 :guard (and (natp m)
+                                                             (unsigned-byte-p 31 seed))))
+                                )
+                     (make-list (len inf-uniform-enums)
+                                :initial-element '(m seed))
+                     (strip-cdrs inf-uniform-enums)))))
+            ;;hack
+            ,@(and current-termination-method-entry
+                   `((acl2::set-termination-method ,(cdr current-termination-method-entry))))
 
-           (in-theory (disable ,@inf-uniform-enum-syms))
-           
+            (in-theory (disable ,@inf-uniform-enum-syms))
+            
 
-           
-           (value-triple
-            (cw? t
-                 "Updating defdata type table (type-class ~x0).~%" ',type-class))
-           
-           ,@(and generate-allp-alias-boolean-tau-rule-p ;TODO HACK, shud i do this for all names?
-                  (make-boolean-tau-rule-event names))
-           
+            
+            (value-triple
+             (cw? t
+                  "Updating defdata type table (type-class ~x0).~%" ',type-class))
+            
+            ,@(and generate-allp-alias-boolean-tau-rule-p ;TODO HACK, shud i do this for all names?
+                   (make-boolean-tau-rule-event names))
+            
 ;add fin and inf type information to types-table 
 ;(but seperately because we have to do this outside make-event)
-           ,@(cons-up-add-type-info-calls 
-              fin-lens
-              fin-names (get-predicate-symbol-lst fin-names)
-              fin-enum-syms nil defs
-              nil type-class);test-enums=nil, recursive-names=nil
+            ,@(cons-up-add-type-info-calls 
+               fin-lens
+               fin-names (get-predicate-symbol-lst fin-names)
+               fin-enum-syms nil defs
+               nil type-class);test-enums=nil, recursive-names=nil
 ;Question: How can u have multiple finite types? Multiple type defs 
 ;invariably mean mutually-recursive!! Put an assert?
-           ,@(cons-up-add-type-info-calls 
-              (make-list (len inf-enums) :initial-element 't)
-              inf-names (get-predicate-symbol-lst inf-names)
-              inf-enum-syms nil defs;test-enums = nil
-              (get-recursive-typenames names defs names)
-              type-class)
-           
-           (value-triple
-            (cw? t
-                 "Adding ~x0 to the type relation graphs.~%" ',names))
-           
-; test-enums will only be explicitly provided by the user and added to the table
-           ,(add-vertices-to-type-graph-event names) ;add the noded to datatype-graph
- 
-           (value-triple
-            (cw? ,gen-lemmasp
-                 "Updating defdata subtype/disjoint graphs.~%"))
+            ,@(cons-up-add-type-info-calls 
+               (make-list (len inf-enums) :initial-element 't)
+               inf-names (get-predicate-symbol-lst inf-names)
+               inf-enum-syms nil defs;test-enums = nil
+               (get-recursive-typenames names defs names)
+               type-class)
+            
+            (value-triple
+             (cw? t
+                  "Adding ~x0 to the type relation graphs.~%" ',names))
+            
+            ,(add-vertices-to-type-graph-event names) ;add the node to datatype-graph
+            
+            (value-triple
+             (cw? ,gen-lemmasp
+                  "Updating defdata subtype/disjoint graphs.~%"))
 
 
 ; Record type relations with following events. Finally completely characterize the defdata def using tau rules. TODO
-           ,@(and gen-lemmasp 
-                  (let* ((ev-forms0 (constituent-types-oneof-subtype-events defs names (w state)))
-                         (ev-forms1 ;hack 16 July '13
-                          (cond ((and (eq type-class 'acl2::listof)
-                                      (is-registered 'acl2::true-list wrld))
-                                 (make-subtype-events type-class defs))
+            ,@(and gen-lemmasp 
+                   (let* ((ev-forms0 (constituent-types-oneof-subtype-events defs names (w state)))
+                          (ev-forms1 ;hack 16 July '13
+                           (cond ((and (eq type-class 'acl2::listof)
+                                       (is-registered 'acl2::true-list wrld))
+                                  (make-subtype-events type-class defs))
 ;assumption: there are no mutual-recursive types in base.lisp where true-list is still undefined.
-                                ((member-eq type-class '(acl2::mutually-recursive acl2::alias map)) 
-                                 (make-subtype-events type-class defs))
-                                (t '()))))
-                    (append ev-forms1 ev-forms0)))
-           
-                ,@(and list-type-support-lemmas
-                  `((value-triple
-                     (progn$
-                      (cw? t
-                           "Submitting list type lemmas... ~%")
-                      (cw? t;,verbose
-                          "~x0~%" ',list-type-support-lemmas)))))
-           ,@list-type-support-lemmas   
-           
-           ,@(and set-type-support-lemmas
-                  `((value-triple
-                     (cw? t
-                          "Submitting set type lemmas... ~%"))))
-           ,@set-type-support-lemmas
-
-           ,@(and record-type-support-lemmas
-                  `((value-triple
-                     (progn$
-                      (time-tracker :defdata-record-lemmas :end)
-                      (time-tracker :defdata-record-lemmas :init
-                                    :times '(2 7)
-                                    :interval 5
-                                    :msg "Elapsed runtime in type proofs for records is ~st secs;~|~%")
-                      (time-tracker :defdata-record-lemmas :start)
-                      
-                     (cw? t
-                          "Submitting record type lemmas... ~%")
-                     (cw? t;,verbose
-                          "~x0~%" ',record-type-support-lemmas)))))
-           ,@record-type-support-lemmas
-           ,@(and record-type-support-lemmas
-                  '((value-triple (prog2$
-                                   (time-tracker :defdata-record-lemmas :stop)
-                                   :invisible))))
+                                 ((member-eq type-class '(acl2::mutually-recursive acl2::alias map)) 
+                                  (make-subtype-events type-class defs))
+                                 (t '()))))
+                     (append ev-forms1 ev-forms0)))
             
-           
-           ,@ (and map-type-support-lemmas
+            ,@(and list-type-support-lemmas
+                   `((value-triple
+                      (progn$
+                       (cw? t
+                            "Submitting list type lemmas... ~%")
+                       (cw? t;,verbose
+                            "~x0~%" ',list-type-support-lemmas)))))
+            ,@list-type-support-lemmas   
+            
+            ,@(and set-type-support-lemmas
                    `((value-triple
                       (cw? t
-                                    "Submitting map type lemmas... ~%"))))
-           ,@ map-type-support-lemmas
+                           "Submitting set type lemmas... ~%"))))
+            ,@set-type-support-lemmas
 
-           ;; ;,@ base-type-support-lemmas
-      
+            ,@(and record-type-support-lemmas
+                   `((value-triple
+                      (progn$
+                       (time-tracker :defdata-record-lemmas :end)
+                       (time-tracker :defdata-record-lemmas :init
+                                     :times '(2 7)
+                                     :interval 5
+                                     :msg "Elapsed runtime in type proofs for records is ~st secs;~|~%")
+                       (time-tracker :defdata-record-lemmas :start)
+                       
+                       (cw? t
+                            "Submitting record type lemmas... ~%")
+                       (cw? t;,verbose
+                            "~x0~%" ',record-type-support-lemmas)))))
+            ,@record-type-support-lemmas
+            ,@(and record-type-support-lemmas
+                   '((value-triple (prog2$
+                                    (time-tracker :defdata-record-lemmas :stop)
+                                    :invisible))))
+            
+            
+            ,@(and map-type-support-lemmas
+                    `((value-triple
+                       (cw? t
+                            "Submitting map type lemmas... ~%"))))
+            ,@map-type-support-lemmas
 
-           (acl2s-defaults :set testing-enabled ,testing-enabled)
-           (value-triple ',names)
-           ;; (set-internal-acl2s-inside-defdata-flag nil)
-           ))
+            ;; ;,@ base-type-support-lemmas
+                  
+
+            (acl2s-defaults :set testing-enabled ,testing-enabled)
+            (value-triple ',names)
+            ;; (set-internal-acl2s-inside-defdata-flag nil)
+            ))
          
          ))))
 
@@ -4764,42 +4969,40 @@ nor a predefined typename~%" dtexp)
       (get-defs-and-keyword-list (cdr args) 
                                  (append defs-ans (list (car args)))))))
 
-(defun initialize-ds$ (debug wrld ds$)
-  (declare (xargs :stobjs (ds$)
-                  :guard (and (booleanp debug)
-                              (ds$p ds$))))
+(defun initialize-ds$ (debug wrld)
+  (declare (xargs :guard (and (booleanp debug)
+                              (plist-worldp wrld))))
                  
-  (b* ((ds$ (update-defdata-world wrld ds$))
-       (ds$ (update-newconstructors nil ds$))
-       (ds$ (update-custom-types nil ds$))
-       (ds$ (update-support-lemmas *initial-supp-lemmas* ds$))
-       (ds$ (update-defdata-debug debug ds$)))
-      ds$))
+  (acl2::make ds%
+              :type-class :undefined
+              :defdata-world wrld
+              :newconstructors nil
+              :custom-types nil
+              :support-lemmas *initial-supp-lemmas*
+              :defdata-debug debug))
   
 ;; defdata frontend processing:
 ;; standalone enum/range events and
 ;; normalise listof/record/set/map and call compute-typecombs
-(defun compute-defdata (args debug-flag ctx wrld state R$ types-ht$)
+(defun compute-defdata (args debug-flag ctx wrld state)
   (declare (xargs :mode :program
-                  :stobjs (state R$ types-ht$)))
+                  :stobjs (state)))
   (acl2::state-global-let*
    ((acl2::guard-checking-on :all))
   (b* (((mv defs0 kwd-options-lst)
          (get-defs-and-keyword-list args nil)))
-    (acl2::with-local-stobj
-     ds$
-     (mv-let 
-      (erp result state ds$)
-      (b* ((ds$ (initialize-ds$ debug-flag wrld ds$))
-           ((mv defs1 ds$) (translate-defs defs0 ctx ds$ R$ types-ht$))
-           (enum-event (process-enum-form defs1 ctx wrld))
-           (range-event (process-range-form defs1 ctx wrld)))
+    (mv-let 
+     (erp result state)
+     (b* ((ds$ (initialize-ds$ debug-flag wrld))
+          ((mv defs1 ds$) (translate-defs defs0 ctx ds$))
+          (enum-event (process-enum-form defs1 ctx wrld))
+          (range-event (process-range-form defs1 ctx wrld)))
         
         (cond 
-         (enum-event (mv nil `(progn ,@enum-event) state ds$))
-         (range-event (mv nil `(progn ,@range-event) state ds$))
+         (enum-event (mv nil `(progn ,@enum-event) state))
+         (range-event (mv nil `(progn ,@range-event) state))
          (t 
-          (let* ((cust-types (custom-types ds$))
+          (let* ((cust-types (acl2::access ds% ds$ :custom-types))
                  (validate-type-consistency-ev 
                   (cons-up-type-consistent-thm-ev cust-types wrld))
                  (mk-ev-form
@@ -4820,15 +5023,15 @@ nor a predefined typename~%" dtexp)
                           (mv t nil state))
                        
                        (compute-typecombs ',defs1 ',kwd-options-lst 
-                                          ',(newconstructors ds$)
-                                          ',(support-lemmas ds$)
-                                          ',(custom-types ds$)
-                                          ',(type-class ds$)
+                                          ',(acl2::access ds% ds$ :newconstructors)
+                                          ',(acl2::access ds% ds$ :support-lemmas)
+                                          ',(acl2::access ds% ds$ :custom-types)
+                                          ',(acl2::access ds% ds$ :type-class)
                                           ',ctx (w state) 
-                                          state R$ types-ht$)))
+                                          state)))
                     ))) 
-            (mv nil mk-ev-form state ds$)))))
-      (mv erp result state))))))
+            (mv nil mk-ev-form state)))))
+      (mv erp result state)))))
 
 
 #|
@@ -4957,7 +5160,7 @@ nor a predefined typename~%" dtexp)
       :gag-mode ,(if (get-acl2s-defdata-debug) 'nil 't)
       (make-event
         (compute-defdata ',',args  ,(get-acl2s-defdata-debug)
-                         ','defdata (w state) state R$ types-ht$)))
+                         ','defdata (w state) state)))
     )))
 
 
@@ -4980,6 +5183,7 @@ nor a predefined typename~%" dtexp)
     (intern$ str "DEFDATA")))
 
 #||
+
 (defun allp (x)
   (or (atom x)
       (consp x)))
@@ -5016,17 +5220,23 @@ BUT replacing atom with atomp in last 3 defthms fails.
 
 Note that J specifically precludes predicates that are
 constant-everywhere in tau-system.
+
 ||# 
 
-(defun compute-defdata-relation (T1 T2 hints rule-classes otf-flg doc ctx wrld R$ types-ht$)
-  (declare (xargs :mode :program :stobjs (R$ types-ht$)
+
+;;; TODO: Need to separately keep track of ALLP aliases!
+
+
+
+(defun compute-defdata-relation (T1 T2 hints rule-classes otf-flg doc ctx wrld)
+  (declare (xargs :mode :program
                   :guard (and (is-a-variablep T1)
                               (is-a-variablep T2)
                               (keyword-listp rule-classes)
-                              (R$p2 (rgraph-length R$) R$)
-                              (types-ht$p types-ht$)
-                              (vertex-ht-valid-p T1 (rgraph-length R$) types-ht$)
-                              (vertex-ht-valid-p T2 (rgraph-length R$) types-ht$)
+                              ;(R$p2 (rgraph-length R$) R$)
+                              ;(types-ht$p types-ht$)
+                              ;(vertex-ht-valid-p T1 (rgraph-length R$) types-ht$)
+                              ;(vertex-ht-valid-p T2 (rgraph-length R$) types-ht$)
                               )))
   (b* ((T1p (get-predicate-symbol T1))
        (T2p (get-predicate-symbol T2))
@@ -5040,15 +5250,15 @@ constant-everywhere in tau-system.
 ;;                        (eq T2 'ACL2::ALL))))
 ;; ;if not existing typenames raise error
 ;;         (er hard ctx  "~|Subtype/disjoint relation not allowed on predicate ALL with non-empty rule-classes~%"))
-       (rule-classes (if (or (is-subtype$$ 'ACL2::ALL T1 R$ types-ht$)
-                             (is-subtype$$ 'ACL2::ALL T2 R$ types-ht$))
-                         '() 
+       (rule-classes (if (or (eq 'ACL2::ALL T1)
+                             (eq 'ACL2::ALL T2)) ; TODO: Need to separately keep track of ALLP aliases!
+                         '()
 ; force not to be a tau-rule bcos tau complains
                           rule-classes))
        ((when (or (and (eq ctx 'defdata-disjoint)
-                       (is-disjoint$$ T1 T2 R$ types-ht$))
+                       (is-disjoint T1 T2 wrld))
                   (and (eq ctx 'defdata-subtype)
-                       (is-subtype$$ T1 T2 R$ types-ht$))))
+                       (is-subtype T1 T2 wrld))))
           '(value-triple :redundant))
        (form (if (eq ctx 'defdata-disjoint)
                  `(implies (,T1p x) (not (,T2p x)))
@@ -5098,12 +5308,13 @@ constant-everywhere in tau-system.
              `(progn
 ;macros call so dont need quotes
                 ,@event-form
-                ,(if (eq ctx 'defdata::defdata-disjoint)
-                     ;`(add-edge-to-disjoint-graph-batch ,T1 ,T2)
-                     `(add-edge-event :disjoint ,T1 ,T2)
-                   ;`(add-edge-to-subtype-graph-batch ,T1 ,T2)
-                   `(add-edge-event :subtype ,T1 ,T2))
-        ;        (sync-globals-for-dtg)
+
+                ;; ,(if (eq ctx 'defdata::defdata-disjoint)
+                ;;      ;`(add-edge-to-disjoint-graph-batch ,T1 ,T2)
+                ;;      `(add-edge-event :disjoint ,T1 ,T2)
+                ;;    ;`(add-edge-to-subtype-graph-batch ,T1 ,T2)
+                ;;    `(add-edge-event :subtype ,T1 ,T2))
+                ;; (sync-globals-for-dtg)
                 (value-triple :success))))
 
 ;; (defun compute-defdata-subtype (T1 T2 state rule-classes hints otf-flg doc)
@@ -5192,7 +5403,7 @@ constant-everywhere in tau-system.
        (make-event
         (compute-defdata-relation ',',T1 ',',T2  
                                  ',',hints ',',rule-classes ',',otf-flg ',',doc
-                                 'defdata::defdata-subtype (w state) R$ types-ht$)
+                                 'defdata::defdata-subtype (w state))
         ))
      )))
         ;(compute-defdata-subtype ',',T1 ',',T2 state ',',hints ',',otf-flg ',',doc))))))
@@ -5258,7 +5469,7 @@ constant-everywhere in tau-system.
        (make-event 
         (compute-defdata-relation ',',T1 ',',T2  
                                   ',',hints ',',rule-classes',',otf-flg ',',doc
-                                  'defdata::defdata-disjoint (w state) R$ types-ht$)
+                                  'defdata::defdata-disjoint (w state))
         ))
      )))
 
