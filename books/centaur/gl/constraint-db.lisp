@@ -235,7 +235,7 @@ hints for the proof obligation.)</p>
 constraint @('(implies a b)').</li>
 
 <li>Conversely, when a Boolean variable @('b') is generated from an IF
-condition matching @('integerp x)'), GL will search for existing generated
+condition matching @('(integerp x)'), GL will search for existing generated
 Boolean variables @('ai') matching @('(logbitp n x)'), and for each of them,
 add the constraint @('(implies ai b)').</li>
 </ul>

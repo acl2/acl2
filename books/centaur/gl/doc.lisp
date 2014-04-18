@@ -867,7 +867,12 @@ symbolically simulate functions that take user-defined stobjs or even the ACL2
 @(see state), it does not operate on \"real\" @(see acl2::stobj)s; instead, it
 uses the logical definitions of the relevant stobj operations, which do not
 provide the performance benefits of destructive operations.  Non-executable
-functions cannot be symbolically executed.</p>")
+functions cannot be symbolically executed.</p>
+
+<p>In the event that one is performing a very large decomposition proof (e.g.,
+the theorem @('boothmul-decomp-is-boothmul-via-GL') in book
+@('centaur/tutorial/boothmul.lisp'), one should consider using book
+@('centaur/esim/stv/stv-decomp-proofs').</p>")
 
 
 (defxdoc modes
@@ -1524,7 +1529,7 @@ already done so).  Here is one rule that will accomplish that:</p>
                           0))))))))
 })
 
-<p>Performing this rewrite will causes GL to generate a Boolean variable for each
+<p>Performing this rewrite will cause GL to generate a Boolean variable for each
 of these LOGBITP terms, because they produce term-level objects that are then
 used in IF tests.</p>
 
