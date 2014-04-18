@@ -5552,13 +5552,15 @@
 
 (defun stobj-field-fn-of-stobj-type-p (fn wrld)
 
-; Return true if fn is a stobj accessor or updater for a field of stobj type.
-; This is equivalent to taking or returning that stobj type, respectively,
-; which is equivalent to taking or returning some stobj other than the
-; stobj-function for fn (i.e., the stobj containing the field in question).
+; Return true if for some concrete stobj st, fn is the accessor or updater for
+; a field fld of st of stobj type.  For fn the accessor or updater for fld,
+; this is equivalent to taking or returning that stobj type, respectively,
+; which is equivalent to taking or returning some stobj other than st.
+; Abstract stobjs are not a concern here; they don't have "fields".
 
   (let ((st (getprop fn 'stobj-function nil 'current-acl2-world wrld)))
     (and st
+         (not (getprop st 'absstobj-info nil 'current-acl2-world wrld))
          (or (not (all-nils-or-x st (stobjs-in fn wrld)))
              (not (all-nils-or-x st (stobjs-out fn wrld)))))))
 
