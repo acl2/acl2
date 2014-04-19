@@ -280,7 +280,7 @@ bind names to sexprs.  It evaluates the sexprs under @('env') and returns a new
 alist that binds the same names to the resulting four-valued constants.  The
 new alist is an ordinary, non-fast alist.</p>
 
-<p>It is beneficial for @('env') to be a fast alist; if it is not fast, we we
+<p>It is beneficial for @('env') to be a fast alist; if it is not fast, we
 temporarily make it fast.</p>"
 
   (defund 4v-sexpr-eval-alist1 (x env)
