@@ -1916,10 +1916,10 @@
 
 (local
  (defthm near+-exact-3
-    (implies (and (integerp 2f)
-		  (< 0 2f)
-		  (< 2f 2))
-	     (= 2f 1))
+    (implies (and (integerp |2F|)
+		  (< 0 |2F|)
+		  (< |2F| 2))
+	     (= |2F| 1))
   :rule-classes ()))
 
 (local
@@ -1933,7 +1933,7 @@
   :rule-classes ()
   :hints (("goal" :use ((:instance near+-exact-1)
 			(:instance near+-exact-2)
-			(:instance near+-exact-3 (2f (* 2 (re (* (expt 2 (1- n)) (sig x)))))))))))
+			(:instance near+-exact-3 (|2F| (* 2 (re (* (expt 2 (1- n)) (sig x)))))))))))
 
 (local
  (defthm near+-exact-10
