@@ -176,3 +176,191 @@
                       (value (list* 'progn
                                     (cons 'std::defredundant fns)
                                     ',events)))))))))
+
+(defxdoc with-supporters
+  :parents (macro-libraries)
+  :short "Automatically define necessary redundant definitions from @(see
+          local)ly included books"
+  :long
+  "<p>When @(see local) @(tsee include-book) forms are used in support of
+  definitions and theorems, the resulting book or @(tsee encapsulate) event may
+  be ill-formed because of missing definitions.  The macro,
+  @('with-supporters'), is intended to avoid this problem.  See also @(tsee
+  with-supporters-after) for a related utility.</p>
+
+  <p>General form:</p>
+
+  @({(with-supporters local-event event-1 ... event-k)})
+
+  <p>where @('local-event') and event @('event-i') are @(see events) and
+  @('local-event') is @(see local).  The effect is the same as</p>
+
+  @({((encapsulate () local-event EXTRA event-1 ... event-k)})
+
+  <p>where @('EXTRA') includes redundant definitions of functions as necessary,
+  in order to avoid undefined function errors when processing this @(tsee
+  encapsulate) event.  @('EXTRA') also includes @(see in-theory) events so that
+  the rules introduced by the @('EXTRA') definitions are suitably enable or
+  disabled.  We now illustrate with an example.</p>
+
+  <p>Consider the following event.</p>
+
+  @({
+  (encapsulate
+   ()
+   (local (include-book \"std/lists/duplicity\" :dir :system))
+   (defthm duplicity-append
+     (equal (duplicity a (append x y))
+            (+ (duplicity a x) (duplicity a y)))))
+  })
+
+  <p>This event fails because the function @('duplicity') is defined in the
+  locally included book, and hence that function is undefined when the above
+  @(tsee defthm) form is processed during the second pass of the @(tsee
+  encapsulate) event.  (Recall that @(see local) events are skipped during that
+  pass; see @(see encapsulate).)</p>
+
+  <p>One solution is to move the @('include-book') form so that it appears
+  non-locally in front of the @('encapsulate') event.  But we may not want to
+  include other @(see events) from that book, out of concern that rules defined
+  in that book could affect our proof development.</p>
+
+  <p>A more suitable solution may thus be to use the macro,
+  @('with-supporters'), in place of @('encapsulate'), as follows.</p>
+
+  @({
+  (with-supporters
+   (local (include-book \"std/lists/duplicity\" :dir :system))
+   (defthm duplicity-append
+     (equal (duplicity a (append x y))
+            (+ (duplicity a x) (duplicity a y)))))
+  })
+
+  <p>That macro determines automatically that the function @('duplicity') needs
+  to be defined, so it generates an @('encapsulate') event like the original
+  one above but with the definition of @('duplicity') added non-locally.  In
+  this example, @('duplicity') is actually defined in terms of another
+  function, @('duplicity-exec'), so its definition is needed as well.
+  Moreover, @(tsee in-theory) events are generated in an attempt to set the
+  enable/disable status of each rule introduced by each function to match the
+  status after the original @('include-book') event.</p>
+
+  @({
+  (encapsulate
+   ()
+   (set-enforce-redundancy t)
+   (defun duplicity-exec (a x n)
+     (declare (xargs :mode :logic :verify-guards t))
+     (declare (xargs :measure (:? x)))
+     (declare (xargs :guard (natp n)))
+     (if (atom x)
+         n
+       (duplicity-exec a (cdr x)
+                       (if (equal (car x) a) (+ 1 n) n))))
+   (in-theory (e/d ((:type-prescription duplicity-exec)
+                    (:executable-counterpart duplicity-exec))
+                   ((:induction duplicity-exec)
+                    (:definition duplicity-exec))))
+   (defun duplicity (a x)
+     (declare (xargs :mode :logic :verify-guards t))
+     (declare (xargs :measure (:? x)))
+     (declare (xargs :guard t))
+     (mbe :logic (cond ((atom x) 0)
+                       ((equal (car x) a)
+                        (+ 1 (duplicity a (cdr x))))
+                       (t (duplicity a (cdr x))))
+          :exec (duplicity-exec a x 0)))
+   (in-theory (e/d ((:type-prescription duplicity)
+                    (:executable-counterpart duplicity))
+                   ((:induction duplicity)
+                    (:definition duplicity)))))
+
+  })
+
+  <p>This macro is implemented using the macro @(tsee std::defredundant).  Also see
+  @(see redundant-events).</p>")
+
+(defxdoc with-supporters-after
+  :parents (macro-libraries)
+  :short "Automatically define necessary redundant definitions from after a
+  specified event"
+  :long
+  "<p>When @(see local) @(tsee include-book) forms are used in support of
+  definitions and theorems, the resulting book or @(tsee encapsulate) event may
+  be ill-formed because of missing definitions.  The macro,
+  @('with-supporters-after'), is intended to avoid this problem.</p>
+
+  <p>See @(tsee with-supporters) for a related utility.  The documentation
+  below assumes familiarity with that macro.</p>
+
+  <p>General form:</p>
+
+  @({(with-supporters-after name event-1 ... event-k)})
+
+  <p>where @('name') is the name of an event and @('event-i') are @(see
+  events).  The effect is the same as</p>
+
+  @({((encapsulate () EXTRA event-1 ... event-k)})
+
+  <p>where @('EXTRA') includes redundant definitions of functions introduced
+  after @('name'), as necessary, in order to avoid undefined function errors
+  when processing this @(tsee encapsulate) event.  @('EXTRA') also includes
+  @(see in-theory) events so that the rules introduced by the @('EXTRA')
+  definitions are suitably enable or disabled.  Consider the following
+  example.</p>
+
+  @({
+  (in-package \"ACL2\")
+
+  (include-book \"tools/with-supporters\" :dir :system)
+
+  (deflabel my-label)
+
+  (local (include-book \"std/lists/duplicity\" :dir :system))
+
+  (with-supporters-after
+   my-label
+   (defthm duplicity-append
+     (equal (duplicity a (append x y))
+            (+ (duplicity a x) (duplicity a y)))))
+  })
+
+  <p>The form above is equivalent to the following.  Again, see @(tsee
+  with-supporters) for relevant background.  Note that the present macro, like
+  that one, is also implemented using the macro @(tsee std::defredundant).</p>
+
+  @({
+  (progn
+   (encapsulate
+    ()
+    (set-enforce-redundancy t)
+    (logic)
+    (defun duplicity-exec (a x n)
+      (declare (xargs :mode :logic :verify-guards t))
+      (declare (xargs :measure (:? x)))
+      (declare (xargs :guard (natp n)))
+      (if (atom x)
+          n
+          (duplicity-exec a (cdr x)
+                          (if (equal (car x) a) (+ 1 n) n))))
+    (in-theory (e/d ((:type-prescription duplicity-exec)
+                     (:executable-counterpart duplicity-exec))
+                    ((:induction duplicity-exec)
+                     (:definition duplicity-exec))))
+    (defun duplicity (a x)
+      (declare (xargs :mode :logic :verify-guards t))
+      (declare (xargs :measure (:? x)))
+      (declare (xargs :guard t))
+      (mbe :logic (cond ((atom x) 0)
+                        ((equal (car x) a)
+                         (+ 1 (duplicity a (cdr x))))
+                        (t (duplicity a (cdr x))))
+           :exec (duplicity-exec a x 0)))
+    (in-theory (e/d ((:type-prescription duplicity)
+                     (:executable-counterpart duplicity))
+                    ((:induction duplicity)
+                     (:definition duplicity)))))
+   (defthm duplicity-append
+     (equal (duplicity a (append x y))
+            (+ (duplicity a x) (duplicity a y)))))
+  })")
