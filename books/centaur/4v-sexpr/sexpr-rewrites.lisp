@@ -1005,6 +1005,9 @@ input."
              ;; ITE* constant propagation
              ((ite* (t) a b)         . (buf a))
              ((ite* (f) a b)         . (buf b))
+             ((ite* a (T) (F))       . (buf a))
+             ((ite* a (F) (T))       . (not a))
+
              ;; ITE* remove NOT on condition
              ((ite* (not c) a b)     . (ite* c b a))
              ;; ITE* inputs are buffered
@@ -2563,7 +2566,7 @@ simplifying using the known signals."
 
 
   (defthm subsetp-4v-sexpr-vars-of-sexpr-boolean-rw-n
-    (subsetp-equal (4v-sexpr-vars 
+    (subsetp-equal (4v-sexpr-vars
                     (sexpr-boolean-rw-n n x brules))
                    (4v-sexpr-vars x))
     :hints ((set-reasoning))))
