@@ -7,6 +7,11 @@
   (set-difference-equal
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*
+
+; The following symbols are useful for documentation.  For potentially useful
+; information about that, see:
+; http://code.google.com/p/acl2-books/issues/detail?id=4
+
              '(arithmetic
                cowles
                abelian-semigroups
