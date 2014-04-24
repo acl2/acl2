@@ -7032,7 +7032,9 @@
               (bad
 
 ; Before eliminating the error below, think carefully!  In particular, consider
-; the following problem involving trans-eval.
+; the following problem involving trans-eval.  A related concern, which points
+; to the comment below, may be found in a comment in the definition of
+; magic-ev-fncall.
 
 ; Sol Swords wondered whether there might be an issue when function takes and
 ; returns both a user-defined stobj and state, calling trans-eval to change the

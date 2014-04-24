@@ -30311,6 +30311,12 @@
 
 #-acl2-loop-only
 (defun-overrides magic-ev-fncall (fn args state hard-error-returns-nilp aok)
+
+; Warning: Do not allow this function to modify state without reading the
+; comment in chk-logic-subfunctions showing that if trans-eval is in :logic
+; mode, then user-defined stobjs can be changed in a way inconsistent with
+; logical definitions.
+
   (let ((wrld (w state)))
     (cond
      ((and (symbolp fn)
