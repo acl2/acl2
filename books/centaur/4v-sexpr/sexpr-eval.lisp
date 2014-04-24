@@ -108,7 +108,7 @@ logic constants.  It must be a fast alist.</p>
 Moreover, the main theorems about other 4v-sexpr operations are usually stated
 in terms of the evaluations of their results.</p>
 
-<p>We @(see memoize) evaluation to avoid having to recomputing shared
+<p>We @(see memoize) evaluation to avoid having to recompute shared
 subexpressions.  Note that we do not memoize with @(':forget t') because you
 frequently want to evaluate several related expressions under the same
 environment, as in @(see 4v-sexpr-eval-alist).  As a consequence, you'll
