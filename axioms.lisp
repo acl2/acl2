@@ -12846,6 +12846,7 @@
     (in-local-flg . nil)
     (in-prove-flg . nil)
     (in-verify-flg . nil)
+    (including-uncertified-p . nil) ; valid only during include-book
     (infixp . nil)                   ; See the Essay on Infix below
     (inhibit-output-lst . (summary)) ; Without this setting, initialize-acl2
                                      ; will print a summary for each event.
@@ -19316,6 +19317,7 @@
     illegal-to-certify-message
     acl2-sources-dir
     last-prover-steps ; being conservative here; perhaps could omit
+    including-uncertified-p
     ))
 
 ; There are a variety of state global variables, 'ld-skip-proofsp among them,

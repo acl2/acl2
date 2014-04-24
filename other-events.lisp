@@ -10073,6 +10073,7 @@
                  (cond
                   ((and expansion?
                         (eq (ld-skip-proofsp state) 'include-book)
+                        (not (f-get-global 'including-uncertified-p state))
 
 ; Even if expansion? is specified, we do not assume it's right if
 ; check-expansion is t.
@@ -14723,7 +14724,8 @@
                            (guard-checking-on nil)
                            (in-local-flg
                             (and (f-get-global 'in-local-flg state)
-                                 'local-include-book)))
+                                 'local-include-book))
+                           (including-uncertified-p (not certified-p)))
                           (er-progn
                            (with-hcomp-ht-bindings
                             (process-embedded-events
