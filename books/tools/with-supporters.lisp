@@ -148,17 +148,62 @@
                   wrld
                   state))))))))
 
+(defun get-events (names ctx wrld state)
+  (cond ((endp names) (value nil))
+        ((null (getprop (car names) 'absolute-event-number nil
+                        'current-acl2-world wrld))
+         (er soft ctx
+             "The symbol ~x0 does not name an event."
+             (car names)))
+        (t (let ((ev (get-event (car names) wrld)))
+             (cond ((or (atom ev)
+                        (eq (car ev) 'ENTER-BOOT-STRAP-MODE))
+                    (er soft ctx
+                        "The symbol ~x0 appears to name a built-in event."
+                        (car names)))
+                   (t (er-let* ((rest (get-events (cdr names) ctx wrld state)))
+                        (value (cons ev rest)))))))))
+
 (defmacro with-supporters (local-event &rest events)
-  `(make-event
-    (let ((num (max-absolute-event-number (w state))))
-      (er-progn (progn ,local-event ,@events)
-                (er-let* ((fns (supporting-fns ',events nil nil num
-                                               (w state) state)))
-                  (value (list* 'encapsulate
-                                ()
-                                ',local-event
-                                (cons 'std::defredundant fns)
-                                ',events)))))))
+  (mv-let
+   (names events)
+   (cond ((eq (car events) :names)
+          (cond ((null (cdr events))
+                 (mv (er hard 'with-supporters
+                         "No argument was supplied for :NAMES!")
+                     nil))
+                ((not (symbol-listp (cadr events)))
+                 (mv (er hard 'with-supporters
+                         "The value of :NAMES must be a list of symbols, ~
+                          which ~x0 is not."
+                         (cadr events))
+                     nil))
+                (t (mv (cadr events) (cddr events)))))
+         ((atom (car events))
+          (mv (er hard 'with-supporters
+                  "An event must be a cons, but your first event was ~x0. ~
+                   Perhaps you intended to use :NAMES?")
+              nil))
+         ((or (eq local-event :names)
+              (member-eq :names (cdr events)))
+          (mv (er hard 'with-supporters
+                  "The :NAMES keyword of WITH-SUPPORTERS must appear ~
+                   immediately after the (initial) LOCAL event.")
+              nil))
+         (t (mv nil events)))
+   `(make-event
+     (let ((num (max-absolute-event-number (w state))))
+       (er-progn (progn ,local-event ,@events)
+                 (er-let* ((fns (supporting-fns ',events nil nil num
+                                                (w state) state))
+                           (named-events (get-events ',names 'with-supporters
+                                                     (w state) state)))
+                   (value (list* 'encapsulate
+                                 ()
+                                 ',local-event
+                                 (append named-events
+                                         (cons (cons 'std::defredundant fns)
+                                               ',events))))))))))
 
 (defmacro with-supporters-after (name &rest events)
   (declare (xargs :guard (symbolp name)))
@@ -188,20 +233,32 @@
   @('with-supporters'), is intended to avoid this problem.  See also @(tsee
   with-supporters-after) for a related utility.</p>
 
-  <p>General form:</p>
+  <p>General forms:</p>
 
-  @({(with-supporters local-event event-1 ... event-k)})
+  @({
+  (with-supporters local-event event-1 ... event-k)
+  })
 
-  <p>where @('local-event') and event @('event-i') are @(see events) and
-  @('local-event') is @(see local).  The effect is the same as</p>
+  @({
+  (with-supporters local-event
+                   :names (name-1 ... name-m)
+                   event-1 ... event-k)
+  })
+
+  <p>where @('local-event') and each event @('event-i') and (if supplied)
+  @('name-i') are @(see events) and @('local-event') is @(see local).  The
+  effect is the same as</p>
 
   @({((encapsulate () local-event EXTRA event-1 ... event-k)})
 
-  <p>where @('EXTRA') includes redundant definitions of functions as necessary,
-  in order to avoid undefined function errors when processing this @(tsee
-  encapsulate) event.  @('EXTRA') also includes @(see in-theory) events so that
-  the rules introduced by the @('EXTRA') definitions are suitably enable or
-  disabled.  We now illustrate with an example.</p>
+  <p>where @('EXTRA') is a sequence of events that includes redundant
+  definitions of functions as necessary, in order to avoid undefined function
+  errors when processing this @(tsee encapsulate) event.  @('EXTRA') also
+  includes @(see in-theory) events so that the rules introduced by the
+  @('EXTRA') definitions are suitably enable or disabled.  Finally, if
+  @(':names') is supplied, then the first events in @('EXTRA') are the events
+  named by the @('name-i'), in order.  We now illustrate with examples,
+  starting with one that does not use the @(':names') keyword.</p>
 
   <p>Consider the following event.</p>
 
@@ -240,8 +297,24 @@
   to be defined, so it generates an @('encapsulate') event like the original
   one above but with the definition of @('duplicity') added non-locally.  In
   this example, @('duplicity') is actually defined in terms of another
-  function, @('duplicity-exec'), so its definition is needed as well.
-  Moreover, @(tsee in-theory) events are generated in an attempt to set the
+  function, @('duplicity-exec'), so its definition is needed as well.  The
+  generated event is initially as follows.</p>
+
+  @({
+  (encapsulate
+   ()
+   (local (include-book \"std/lists/duplicity\"
+                        :dir :system))
+   (std::defredundant duplicity-exec duplicity)
+   (defthm duplicity-append
+     (equal (duplicity a (append x y))
+            (+ (duplicity a x) (duplicity a y)))))
+  })
+
+  <p>Notice that @('with-supporters') is implemented using the macro @(tsee
+  std::defredundant).  (Also see @(see redundant-events).)  When the call above
+  of @('std::defredundant') is expanded, the result is essentially as follows.
+  Note that @(tsee in-theory) events are generated in an attempt to set the
   enable/disable status of each rule introduced by each function to match the
   status after the original @('include-book') event.</p>
 
@@ -277,8 +350,59 @@
 
   })
 
-  <p>This macro is implemented using the macro @(tsee std::defredundant).  Also see
-  @(see redundant-events).</p>")
+  <p>For a second example, consider the following form from the @(see
+  community-books), file @('tools/with-supporters-test-top.lisp').</p>
+
+  @({
+  (with-supporters
+   (local (include-book \"with-supporters-test-sub\"))
+   :names (mac1 mac2-fn mac2)
+   (defun h2 (x)
+     (g3 x)))
+  })
+
+  <p>This example illustrates the following important point: @(':names') may be
+  required when the necessary supporting events include macros.  In this
+  example, @('g3') is defined using a function @('g2') that is defined using a
+  macro in the locally included book.</p>
+
+  @({
+  (defun mac2-fn (x)
+    x)
+
+  (defmacro mac2 (x)
+    (mac2-fn x))
+
+  (defun g2 (x)
+    (declare (xargs :guard (g1 x)))
+    (mac2 x))
+  })
+
+  <p>We need to tell @('with-supporters') to include the definition of
+  @('mac2') in the generated @(tsee encapsulate) event &mdash; but that, in
+  turn, also requires the definition of @('mac2-fn').  The basic problem is
+  that @('with-supporters') only tracks dependencies using translated terms
+  (see @(see term)), for which macros have been expanded away; so, macros and
+  their supporters must be specified explicitly.  The @(':names') argument
+  causes the generated @('encapsulate') event to include definitions of the
+  specified names, in order.  In the example above that generated event is as
+  follows.</p>
+
+  @({
+  (ENCAPSULATE
+   ()
+   (LOCAL (INCLUDE-BOOK \"with-supporters-test-sub\"))
+   (DEFMACRO MAC1 (X) X)
+   (DEFUN MAC2-FN (X) X)
+   (DEFMACRO MAC2 (X) (MAC2-FN X))
+   (STD::DEFREDUNDANT G1 G2 G3)
+   (DEFUN H2 (X) (G3 X)))
+  })
+
+  <p>As in the first example, @('std::defredundant') generates definitions for
+  the indicated names.</p>
+
+  ")
 
 (defxdoc with-supporters-after
   :parents (macro-libraries)
@@ -290,8 +414,10 @@
   be ill-formed because of missing definitions.  The macro,
   @('with-supporters-after'), is intended to avoid this problem.</p>
 
-  <p>See @(tsee with-supporters) for a related utility.  The documentation
-  below assumes familiarity with that macro.</p>
+  <p>See @(tsee with-supporters) for a related utility.  (However,
+  @('with-supporters-after') does not support the @(':names') argument; that
+  should be straightforward to add, if needed.)  The documentation below
+  assumes familiarity with @('with-supporters').</p>
 
   <p>General form:</p>
 
