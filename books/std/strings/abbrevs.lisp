@@ -33,11 +33,6 @@
 (add-macro-alias revappend-chars STR::revappend-chars)
 
 
-(defmacro char-fix (x) `(STR::char-fix ,x))
-(add-macro-alias char-fix STR::char-fix)
-
-(defmacro chareqv (x y) `(STR::chareqv ,x ,y))
-(add-macro-alias chareqv STR::chareqv)
 
 (defmacro charlisteqv (x y) `(STR::charlisteqv ,x ,y))
 (add-macro-alias charlisteqv STR::charlisteqv)

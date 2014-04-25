@@ -26,38 +26,11 @@
 
 (in-theory (disable char<))
 
-(define chareqv (x y)
-  :returns equivp
-  :parents (equivalences)
-  :short "Case-sensitive character equivalence test."
-
-  :long "<p>@(call chareqv) determines if @('x') and @('y') are equivalent when
-interpreted as characters.  That is, non-characters are first coerced to be the
-NUL character (via @(see char-fix)), then we see if these coerced arguments are
-equal.</p>
-
-<p>See also @(see ichareqv) for a case-insensitive alternative.</p>"
-  :inline t
-  (eql (char-fix x) (char-fix y))
-  ///
-  (local (in-theory (enable char-fix char<)))
-
-  (defequiv chareqv)
-
-  (defthm chareqv-of-char-fix
-    (chareqv (char-fix x) x))
-
-  (defcong chareqv equal (char-fix x) 1)
-  (defcong chareqv equal (char-code x) 1)
-  (defcong chareqv equal (char< x y) 1)
-  (defcong chareqv equal (char< x y) 2))
-
-
 (defsection char<-order-thms
   :parents (char<)
   :short "Basic ordering facts about @('char<')."
 
-  (local (in-theory (enable char<)))
+  (local (in-theory (enable char< char-fix)))
 
   (defthm char<-irreflexive
     (equal (char< x x)
@@ -183,54 +156,7 @@ same length and their elements must be @(see chareqv) to one another.</p>
              (not (charlisteqv x y)))))
 
 
-(define str-fix (x)
-  :returns (str stringp :rule-classes :type-prescription)
-  :parents (equivalences)
-  :short "Coerce to a string."
-  :long "<p>@(call str-fix) is the identity on @(see acl2::stringp)s, or
-returns the empty string, @('\"\"'), for any non-string.</p>
-
-<p>This is similar to other fixing functions like @(see fix) and @(see nfix).
-See also @(see streqv).</p>"
-  :inline t
-  (if (stringp x)
-      x
-    "")
-  ///
-  (defthm str-fix-default
-    (implies (not (stringp x))
-             (equal (str-fix x)
-                    "")))
-
-  (defthm str-fix-when-stringp
-    (implies (stringp x)
-             (equal (str-fix x)
-                    x))))
-
-
-(define streqv (x y)
-  :returns (equivp)
-  :parents (equivalences)
-  :short "Case-sensitive string equivalence test."
-
-  :long "<p>@(call streqv) determines if @('x') and @('y') are equivalent when
-interpreted as strings.  That is, non-strings are first coerced to be the empty
-string (via @(see str-fix)), then we see if these coerced arguments are
-equal.</p>
-
-<p>See also @(see istreqv) for a case-insensitive alternative.</p>"
-  :inline t
-  (equal (str-fix x) (str-fix y))
-  ///
-  (local (in-theory (enable str-fix)))
-
-  (defequiv streqv)
-
-  (defthm streqv-of-str-fix
-    (streqv (str-fix x) x))
-
-  (defcong streqv equal (char x n) 1)
-  (defcong streqv equal (explode x) 1)
-  (defcong streqv equal (string-append x y) 1)
-  (defcong streqv equal (string-append x y) 2))
+;; BOZO kind of misplaced
+(defcong streqv equal (explode x) 1
+  :hints(("Goal" :in-theory (enable streqv str-fix))))
 

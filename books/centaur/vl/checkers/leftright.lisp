@@ -117,8 +117,8 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
          ((when (and (eq op :vl-binary-minus)
                      (member (tag (vl-context->elem ctx))
                              '(:vl-netdecl :vl-regdecl :vl-vardecl))
-                     (equal (vl-expr-fix (first args))
-                            (vl-expr-fix (second args)))
+                     (equal (vl-expr-strip (first args))
+                            (vl-expr-strip (second args)))
                      (vl-expr-resolved-p (first args))))
           ;; Special hack: Don't warn about things like 5 - 5 in the context
           ;; of net/reg/var declarations.  This can happen for things like:
@@ -163,8 +163,8 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
                                       ;; kind of weird so I include them
                                       :vl-binary-shr :vl-binary-shl
                                       :vl-binary-ashr :vl-binary-ashl))
-                     (equal (vl-expr-fix (first args))
-                            (vl-expr-fix (second args)))))
+                     (equal (vl-expr-strip (first args))
+                            (vl-expr-strip (second args)))))
           (cons (make-vl-warning
                  :type :vl-warn-leftright
                  :msg "~a0: found an expression of the form FOO ~s1 FOO, which is ~s2: ~a3."
@@ -178,8 +178,8 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
                 (vl-exprlist-leftright-check args ctx)))
 
          ((when (and (member op '(:vl-partselect-colon))
-                     (equal (vl-expr-fix (second args))
-                            (vl-expr-fix (third args)))))
+                     (equal (vl-expr-strip (second args))
+                            (vl-expr-strip (third args)))))
           (cons (make-vl-warning
                  :type :vl-warn-partselect-same
                  :msg "~a0: slightly odd to have a part-select with the same indices: ~a1."
@@ -191,8 +191,8 @@ warnings.  We also use it to suppress warnings in certain cases.</p>"
                 (vl-exprlist-leftright-check args ctx)))
 
          ((when (and (member op '(:vl-qmark))
-                     (equal (vl-expr-fix (second args))
-                            (vl-expr-fix (third args)))))
+                     (equal (vl-expr-strip (second args))
+                            (vl-expr-strip (third args)))))
           (cons (make-vl-warning
                  :type :vl-warn-leftright
                  :msg "~a0: found an expression of the form FOO ? BAR : BAR, which is odd: ~a1."

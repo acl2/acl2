@@ -38,21 +38,9 @@
     ;; some subsequent functions such as upcase-string.
     acl2::return-type-of-implode$inline
 
-    ;; char-fix.lisp
-    char-fix$inline
-    char-fix
-
     ;; eqv.lisp
-    chareqv$inline
-    chareqv
-    chareqv-is-an-equivalence
     charlisteqv
     charlisteqv-is-an-equivalence
-    str-fix$inline
-    str-fix
-    streqv$inline
-    streqv
-    streqv-is-an-equivalence
 
     ;; cat.lisp
     fast-string-append

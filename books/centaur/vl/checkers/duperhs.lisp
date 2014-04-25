@@ -52,7 +52,7 @@ assignments are not necessarily errors, but are kind of odd.</p>")
         alist)
        (x1 (car x))
        ((vl-assign x1) x1)
-       (rhs1 (hons-copy (vl-expr-fix x1.expr)))
+       (rhs1 (hons-copy (vl-expr-strip x1.expr)))
        (look (hons-get rhs1 alist))
        ;; It doesn't matter if it exists or not, just add it in.
        (alist (hons-acons rhs1 (cons x1 (cdr look)) alist)))

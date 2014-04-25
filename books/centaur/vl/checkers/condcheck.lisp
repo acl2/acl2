@@ -76,7 +76,7 @@ would get rid of the nested branches.</p>")
   :returns (new-x vl-expr-p :hyp :fguard)
   :short "Canonicalize an test expression for condcheck."
 
-  :long "<p>We fix X (in the normal sense of @(see vl-expr-fix), to throw away
+  :long "<p>We fix X (in the normal sense of @(see vl-expr-strip), to throw away
 widths, attributes, etc., to facilitate equality checking), and then do certain
 kinds of not-necessarily-sound rewriting to try to further canonicalize things.
 These rewrites might possibly help us recognize a broader class of errors, but
@@ -99,7 +99,7 @@ that we only apply these rewrites at the top-level and not in any deep way,
 which also sort of makes sense since we only want to assume that the top-level
 expression is one-bit wide.</p>"
 
-  (b* ((x (vl-expr-fix x))
+  (b* ((x (vl-expr-strip x))
 
        ((when (vl-fast-atom-p x))
         x)

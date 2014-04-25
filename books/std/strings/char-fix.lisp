@@ -19,6 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
+(include-book "std/basic/defs" :dir :system)
 (include-book "std/util/define" :dir :system)
 
 (defsection code-char-lemmas
@@ -79,31 +80,6 @@
     :hints(("goal" :use ((:instance completion-of-code-char))))))
 
 
-(define char-fix (x)
-  :returns (char characterp :rule-classes :type-prescription)
-  :parents (equivalences)
-  :short "Coerce to a character."
-
-  :long "<p>@(call char-fix) is the identity on @(see acl2::characters), and
-returns the NUL character (i.e., the character whose code is 0) for any
-non-character.</p>
-
-<p>This is similar to other fixing functions like @(see fix) and @(see nfix).
-See also @(see chareqv).</p>"
-  :inline t
-  (if (characterp x)
-      x
-    (code-char 0))
-  ///
-  (defthm char-fix-default
-    (implies (not (characterp x))
-             (equal (char-fix x)
-                    (code-char 0))))
-
-  (defthm char-fix-when-characterp
-    (implies (characterp x)
-             (equal (char-fix x)
-                    x))))
 
 
 (defsection char-code-lemmas

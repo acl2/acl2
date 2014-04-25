@@ -884,6 +884,7 @@
    measure    ;; termination measure
    xvar       ;; variable name denoting the object
    kwd-alist  ;; original keyword alist
+   true-listp ;; require nil final cdr
    )
   :tag :list)
 
@@ -892,6 +893,7 @@
     :elt-type
     :measure
     :xvar
+    :true-listp
     :parents :short :long  ;; xdoc
     :no-count :prepwork))
 
@@ -929,7 +931,8 @@
                  (car (find-symbols-named-x (getarg :measure nil kwd-alist)))
                  'acl2::x))
        (measure (or (getarg :measure nil kwd-alist)
-                    `(acl2-count ,xvar))))
+                    `(acl2-count ,xvar)))
+       (true-listp (getarg :true-listp t kwd-alist)))
     (make-flexlist :name name
                   :pred pred
                   :fix fix
@@ -938,6 +941,7 @@
                   :elt-type elt-type
                   :elt-fix elt-fix
                   :elt-equiv elt-equiv
+                  :true-listp true-listp
                   :measure measure
                   :xvar xvar)))
 
@@ -1383,7 +1387,9 @@
     `(define ,list.pred (,list.xvar)
        :measure ,list.measure
        (if (atom ,list.xvar)
-           (eq ,list.xvar nil)
+           ,(if list.true-listp
+                `(eq ,list.xvar nil)
+              t)
          (and (,list.elt-type (car ,list.xvar))
               (,list.pred (cdr ,list.xvar))))
        ///
@@ -1413,14 +1419,15 @@
                   (,list.elt-type (car ,list.xvar)))
          :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
 
-       (defthm ,(intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name list.pred)
-                              "-COMPOUND-RECOGNIZER")
-                 list.pred)
-         (implies (,list.pred ,list.xvar)
-                  (or (consp ,list.xvar)
-                      (not ,list.xvar)))
-         :rule-classes :compound-recognizer))))
+       ,@(and list.true-listp
+              `((defthm ,(intern-in-package-of-symbol
+                          (concatenate 'string (symbol-name list.pred)
+                                       "-COMPOUND-RECOGNIZER")
+                          list.pred)
+                  (implies (,list.pred ,list.xvar)
+                           (or (consp ,list.xvar)
+                               (not ,list.xvar)))
+                  :rule-classes :compound-recognizer))))))
 
 
 (defun flexalist-predicate-def (alist)
@@ -1613,7 +1620,9 @@
                       :hints('(:in-theory (enable ,list.pred))))
        :verify-guards nil
        (mbe :logic (if (atom ,list.xvar)
-                       nil
+                       ,(if list.true-listp
+                            nil
+                          list.xvar)
                      (cons (,list.elt-fix (car ,list.xvar))
                            (,list.fix (cdr ,list.xvar))))
             :exec ,list.xvar))))

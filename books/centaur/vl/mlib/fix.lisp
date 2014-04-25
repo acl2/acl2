@@ -67,12 +67,12 @@ details.</p>")
                x)))
 
 
-(defsection vl-expr-fix
+(defsection vl-expr-strip
   :short "Throw away attributes and widths, keeping just the core of an
 expression."
   ;; BOZO consider optimizing to avoid reconsing already-fixed expressions
   (mutual-recursion
-   (defund vl-expr-fix (x)
+   (defund vl-expr-strip (x)
      (declare (xargs :guard (vl-expr-p x)
                      :measure (two-nats-measure (acl2-count x) 1)))
      (if (vl-fast-atom-p x)
@@ -87,12 +87,12 @@ expression."
                      :measure (two-nats-measure (acl2-count x) 0)))
      (if (atom x)
          nil
-       (cons (vl-expr-fix (car x))
+       (cons (vl-expr-strip (car x))
              (vl-exprlist-fix (cdr x))))))
 
-  (flag::make-flag flag-vl-expr-fix
-                   vl-expr-fix
-                   :flag-mapping ((vl-expr-fix . expr)
+  (flag::make-flag flag-vl-expr-strip
+                   vl-expr-strip
+                   :flag-mapping ((vl-expr-strip . expr)
                                   (vl-exprlist-fix . list)))
 
   (defthm len-of-vl-exprlist-fix
@@ -102,16 +102,16 @@ expression."
             :induct (len x)
             :expand (vl-exprlist-fix x))))
 
-  (defthm-flag-vl-expr-fix lemma
+  (defthm-flag-vl-expr-strip lemma
     (expr (implies (force (vl-expr-p x))
-                   (vl-expr-p (vl-expr-fix x)))
-          :name vl-expr-p-of-vl-expr-fix)
+                   (vl-expr-p (vl-expr-strip x)))
+          :name vl-expr-p-of-vl-expr-strip)
     (list (implies (force (vl-exprlist-p x))
                    (vl-exprlist-p (vl-exprlist-fix x)))
           :name vl-exprlist-p-of-vl-exprlist-fix)
     :hints(("Goal"
-            :induct (flag-vl-expr-fix flag x)
-            :expand ((vl-expr-fix x)
+            :induct (flag-vl-expr-strip flag x)
+            :expand ((vl-expr-strip x)
                      (vl-exprlist-fix x))))))
 
 
@@ -119,8 +119,8 @@ expression."
   :returns (x-fix vl-range-p :hyp :fguard)
   (b* (((vl-range x) x))
     (change-vl-range x
-                     :msb (vl-expr-fix x.msb)
-                     :lsb (vl-expr-fix x.lsb))))
+                     :msb (vl-expr-strip x.msb)
+                     :lsb (vl-expr-strip x.lsb))))
 
 (define vl-maybe-range-fix ((x vl-maybe-range-p))
   :returns (x-fix vl-maybe-range-p :hyp :fguard)
@@ -137,8 +137,8 @@ expression."
   :returns (x-fix vl-assign-p :hyp :fguard)
   (b* (((vl-assign x) x))
     (change-vl-assign x
-                      :lvalue   (vl-expr-fix x.lvalue)
-                      :expr     (vl-expr-fix x.expr)
+                      :lvalue   (vl-expr-strip x.lvalue)
+                      :expr     (vl-expr-strip x.expr)
                       :delay    nil
                       :strength nil
                       :loc      *vl-fakeloc*
@@ -154,7 +154,7 @@ expression."
   (b* (((vl-plainarg x) x))
     (change-vl-plainarg x
                         :expr     (if x.expr
-                                      (vl-expr-fix x.expr)
+                                      (vl-expr-strip x.expr)
                                     nil)
                         :atts     nil
                         :portname nil
@@ -170,7 +170,7 @@ expression."
   (b* (((vl-namedarg x) x))
     (change-vl-namedarg x
                         :expr (if x.expr
-                                  (vl-expr-fix x.expr)
+                                  (vl-expr-strip x.expr)
                                 nil)
                         :atts nil)))
 

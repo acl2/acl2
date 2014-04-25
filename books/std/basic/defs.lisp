@@ -194,3 +194,123 @@ satisfies @('maybe-stringp'), then either it is a string or nothing.</p>"
                (stringp x)))
     :rule-classes :compound-recognizer))
 
+
+(defsection char-fix
+  :parents (std/basic str::equivalences)
+  :short "Coerce to a character."
+
+  :long "<p>@(call char-fix) is the identity on @(see acl2::characters), and
+returns the NUL character (i.e., the character whose code is 0) for any
+non-character.</p>
+
+<p>This is similar to other fixing functions like @(see fix) and @(see nfix).
+See also @(see chareqv).</p>"
+
+  (defund-inline char-fix (x)
+    (declare (xargs :guard t))
+    (if (characterp x)
+        x
+      (code-char 0)))
+
+  (local (in-theory (enable char-fix)))
+
+  (defthm characterp-of-char-fix
+    (characterp (char-fix x))
+    :rule-classes :type-prescription)
+
+  (defthm char-fix-default
+    (implies (not (characterp x))
+             (equal (char-fix x)
+                    (code-char 0))))
+
+  (defthm char-fix-when-characterp
+    (implies (characterp x)
+             (equal (char-fix x)
+                    x))))
+
+
+(defsection chareqv
+  :parents (std/basic str::equivalences)
+  :short "Case-sensitive character equivalence test."
+
+  :long "<p>@(call chareqv) determines if @('x') and @('y') are equivalent when
+interpreted as characters.  That is, non-characters are first coerced to be the
+NUL character (via @(see char-fix)), then we see if these coerced arguments are
+equal.</p>
+
+<p>See also @(see ichareqv) for a case-insensitive alternative.</p>"
+
+  (defund-inline chareqv (x y)
+    (declare (xargs :guard t))
+    (eql (char-fix x) (char-fix y)))
+
+  (local (in-theory (enable char-fix char< chareqv)))
+
+  (defequiv chareqv)
+
+  (defthm chareqv-of-char-fix
+    (chareqv (char-fix x) x))
+
+  (defcong chareqv equal (char-fix x) 1)
+  (defcong chareqv equal (char-code x) 1)
+  (defcong chareqv equal (char< x y) 1)
+  (defcong chareqv equal (char< x y) 2))
+
+
+(defsection str-fix
+  :parents (std/basic str::equivalences)
+  :short "Coerce to a string."
+  :long "<p>@(call str-fix) is the identity on @(see acl2::stringp)s, or
+returns the empty string, @('\"\"'), for any non-string.</p>
+
+<p>This is similar to other fixing functions like @(see fix) and @(see nfix).
+See also @(see streqv).</p>"
+
+  (defund-inline str-fix (x)
+    (declare (xargs :guard t))
+    (if (stringp x)
+        x
+      ""))
+
+  (local (in-theory (enable str-fix)))
+
+  (defthm stringp-of-str-fix
+    (stringp (str-fix x))
+    :rule-classes :type-prescription)
+
+  (defthm str-fix-default
+    (implies (not (stringp x))
+             (equal (str-fix x)
+                    "")))
+
+  (defthm str-fix-when-stringp
+    (implies (stringp x)
+             (equal (str-fix x)
+                    x))))
+
+
+(defsection streqv
+  :parents (std/basic str::equivalences)
+  :short "Case-sensitive string equivalence test."
+
+  :long "<p>@(call streqv) determines if @('x') and @('y') are equivalent when
+interpreted as strings.  That is, non-strings are first coerced to be the empty
+string (via @(see str-fix)), then we see if these coerced arguments are
+equal.</p>
+
+<p>See also @(see istreqv) for a case-insensitive alternative.</p>"
+
+  (defund-inline streqv (x y)
+    (declare (xargs :guard t))
+    (equal (str-fix x) (str-fix y)))
+
+  (local (in-theory (enable str-fix streqv)))
+
+  (defequiv streqv)
+
+  (defthm streqv-of-str-fix
+    (streqv (str-fix x) x))
+
+  (defcong streqv equal (char x n) 1)
+  (defcong streqv equal (string-append x y) 1)
+  (defcong streqv equal (string-append x y) 2))

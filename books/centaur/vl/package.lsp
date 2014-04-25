@@ -25,6 +25,7 @@
 (include-book "centaur/bridge/portcullis" :dir :system)
 (include-book "centaur/getopt/portcullis" :dir :system)
 (include-book "centaur/nrev/portcullis" :dir :system)
+(include-book "centaur/fty/portcullis" :dir :system)
 
 (defmacro multi-union-eq (x y &rest rst)
   (xxxjoin 'union-eq (list* x y rst)))
@@ -72,11 +73,23 @@
       maybe-posp
       maybe-integerp
       never-memoize
+      char-fix
+      chareqv
+      str-fix
+      streqv
+      pos-fix
 
       std::mksym
       std::mksym-package-symbol
       std::extract-keyword-from-args
       std::throw-away-keyword-parts
+
+      fty::defprod
+      fty::deftypes
+      fty::deftagsum
+      fty::deffixtype
+      fty::deffixequiv
+      fty::deffixequiv-mutual
 
       value
       file-measure

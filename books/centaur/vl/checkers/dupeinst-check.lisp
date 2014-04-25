@@ -173,7 +173,7 @@ filtered out into minor warnings.</p>
 
 (define vl-modinstlist-fixed-up-outs ((x vl-modinstlist-p))
   :parents (vl-maybe-warn-dupeinst)
-  :short "Extract the @(see vl-expr-fix)ed outputs from each module instance."
+  :short "Extract the @(see vl-expr-strip)ed outputs from each module instance."
   (b* (((when (atom x))
         nil)
        ((vl-modinst x1) (car x))

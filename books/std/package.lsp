@@ -56,6 +56,8 @@
           top
           defxdoc defsection lnfix definlined definline
           define defaggregate unsigned-byte-p signed-byte-p
+          char-fix chareqv
+          str-fix streqv
           raise
           std
           std/strings)

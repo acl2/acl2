@@ -19,7 +19,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "FTY")
-
+(include-book "std/basic/defs" :dir :system)
 (include-book "fixtype")
 
 (defconst *defbasetype-keys*
@@ -70,22 +70,8 @@
 
   (fty::defbasetype number-equiv acl2-numberp :fix fix)
 
-  (defsection string-equiv
-    (defund string-fix (x)
-      (declare (xargs :guard t))
-      (if (stringp x) x ""))
-
-    (local (in-theory (enable string-fix)))
-
-    (defthm stringp-of-string-fix
-      (stringp (string-fix x))
-      :rule-classes :type-prescription)
-
-    (defthm string-fix-when-stringp
-      (implies (stringp x)
-               (equal (string-fix x) x)))
-
-    (fty::defbasetype string-equiv stringp))
+  (local (in-theory (enable streqv)))
+  (fty::deffixtype string :pred stringp :fix str-fix :equiv streqv)
 
   (defsection symbol-equiv
     (defund symbol-fix (x)
@@ -121,22 +107,8 @@
 
     (fty::defbasetype pos-equiv posp))
 
-  (defsection char-equiv
-    (defund char-fix (x)
-      (declare (xargs :guard t))
-      (if (characterp x) x (code-char 0)))
+  (fty::deffixtype character :pred characterp :fix char-fix :equiv chareqv)
 
-    (local (in-theory (enable char-fix)))
-
-    (defthm characterp-of-char-fix
-      (characterp (char-fix x))
-      :rule-classes :type-prescription)
-    
-    (defthm char-fix-when-characterp
-      (implies (characterp x)
-               (equal (char-fix x) x)))
-
-    (fty::defbasetype char-equiv characterp :name char))
 
   (defsection bool-equiv-is-just-iff
     (defund bool-fix (x)
