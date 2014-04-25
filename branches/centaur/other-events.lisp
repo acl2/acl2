@@ -10073,6 +10073,7 @@
                  (cond
                   ((and expansion?
                         (eq (ld-skip-proofsp state) 'include-book)
+                        (not (f-get-global 'including-uncertified-p state))
 
 ; Even if expansion? is specified, we do not assume it's right if
 ; check-expansion is t.
@@ -12819,24 +12820,25 @@
              (state-global-let*
               ((current-package "ACL2")
                (connected-book-directory dir set-cbd-state))
-              (mv-let (error-flg val state)
-                      (chk-certificate-file1 file1 file2 ch
-                                             (case caller ; light-chkp
-                                               (convert-pcert nil)
-                                               (certify-book t) ; k=t
-                                               (include-book nil)
-                                               (puff t)
-                                               (otherwise
-                                                (er hard ctx
-                                                    "Implementation error in ~
-                                                     chk-certificate-file: ~
-                                                     Unexpected case!")))
-                                             caller ctx state
-                                             suspect-book-action-alist evalp)
-                      (let ((val (cond ((and val
-                                             pcert-op
-                                             (not (access cert-obj val
-                                                          :pcert-info)))
+              (let ((saved-wrld (w state)))
+                (mv-let (error-flg val state)
+                        (chk-certificate-file1
+                         file1 file2 ch
+                         (case caller ; light-chkp
+                           (convert-pcert nil)
+                           (certify-book t) ; k=t
+                           (include-book nil)
+                           (puff t)
+                           (otherwise
+                            (er hard ctx
+                                "Implementation error in ~
+                                 chk-certificate-file: Unexpected case!")))
+                         caller ctx state
+                         suspect-book-action-alist evalp)
+                        (let ((val (cond ((and val
+                                               pcert-op
+                                               (not (access cert-obj val
+                                                            :pcert-info)))
 
 ; We don't print a :pcert-info field to the .pcert1 file, because it will
 ; ultimately be moved to a .cert file.  (We could live with such fields in
@@ -12844,16 +12846,36 @@
 ; bother printing a :pcert-info field to a .pcert0 file when its value is nil
 ; (perhaps an arbitrary decision).  We now deal with the above observations.
 
-                                        (change cert-obj val
-                                                :pcert-info
-                                                (if (eq pcert-op :create-pcert)
-                                                    :unproved
-                                                  (assert$
-                                                   (eq pcert-op :convert-pcert)
-                                                   :proved))))
-                                       (t val))))
-                        (pprogn (close-input-channel ch state)
-                                (mv error-flg val state)))))))))))))
+                                          (change cert-obj val
+                                                  :pcert-info
+                                                  (if (eq pcert-op :create-pcert)
+                                                      :unproved
+                                                    (assert$
+                                                     (eq pcert-op :convert-pcert)
+                                                     :proved))))
+                                         (t val))))
+                          (pprogn (close-input-channel ch state)
+                                  (cond
+                                   (error-flg
+                                    (pprogn
+
+; Chk-certificate-file1 may have evaluated portcullis commands from the
+; certificate before determining that there is an error (e.g., due to a
+; checksum problem that might have been caused by a package change).  It might
+; be confusing to a user to see those portcullis commands survive after a
+; report that the book is uncertified, so we restore the world.
+
+                                     (set-w! saved-wrld state)
+                                     (include-book-er file1 file2
+                                                      "An error was ~
+                                                       encountered when ~
+                                                       checking the ~
+                                                       certificate file for ~
+                                                       ~x0."
+                                                      :uncertified-okp
+                                                      suspect-book-action-alist
+                                                      ctx state)))
+                                   (t (value val))))))))))))))))
 
 ; All of the above is used during an include-book to verify that a
 ; certificate is well-formed and to raise the portcullis of the book.
@@ -14447,7 +14469,8 @@
                                                 t))))
              (wrld2 (er-progn
                      (cond ((or cert-obj
-                                behalf-of-certify-flg)
+                                behalf-of-certify-flg
+                                (not (f-get-global 'port-file-enabled state)))
                             (value nil))
                            (t (eval-port-file full-book-name ctx state)))
                      (value (w state))))
@@ -14723,7 +14746,8 @@
                            (guard-checking-on nil)
                            (in-local-flg
                             (and (f-get-global 'in-local-flg state)
-                                 'local-include-book)))
+                                 'local-include-book))
+                           (including-uncertified-p (not certified-p)))
                           (er-progn
                            (with-hcomp-ht-bindings
                             (process-embedded-events
@@ -15129,75 +15153,78 @@
                      nil
                      '(set-compiler-enabled nil state)))
           (t state))
-    (er-let*
-        ((dir-value
-          (cond (dir (include-book-dir-with-chk soft ctx dir))
-                (t (value (cbd))))))
-      (mv-let
-       (full-book-name directory-name familiar-name)
-       (parse-book-name dir-value user-book-name ".lisp" ctx state)
-       (er-progn
-        (chk-input-object-file full-book-name ctx state)
-        (let* ((behalf-of-certify-flg (not (eq expansion-alist :none)))
-               (load-compiled-file0 load-compiled-file)
-               (load-compiled-file (and (f-get-global 'compiler-enabled state)
-                                        load-compiled-file))
-               (cddr-event-form
-                (if (and event-form
-                         (eq load-compiled-file0
-                             load-compiled-file))
-                    (cddr event-form)
-                  (append
-                   (if (not (eq load-compiled-file
-                                :default))
-                       (list :load-compiled-file
-                             load-compiled-file)
-                     nil)
-                   (if (not (eq uncertified-okp t))
-                       (list :uncertified-okp
-                             uncertified-okp)
-                     nil)
-                   (if (not (eq defaxioms-okp t))
-                       (list :defaxioms-okp
-                             defaxioms-okp)
-                     nil)
-                   (if (not (eq skip-proofs-okp t))
-                       (list :skip-proofs-okp
-                             skip-proofs-okp)
-                     nil)
-                   (if doc
-                       (list :doc doc)
-                     nil)))))
-          (cond ((or behalf-of-certify-flg
-                     #-acl2-loop-only *hcomp-book-ht*
-                     (null load-compiled-file))
+    (state-global-let*
+     ((compiler-enabled (f-get-global 'compiler-enabled state))
+      (port-file-enabled (f-get-global 'port-file-enabled state)))
+     (er-let*
+         ((dir-value
+           (cond (dir (include-book-dir-with-chk soft ctx dir))
+                 (t (value (cbd))))))
+       (mv-let
+        (full-book-name directory-name familiar-name)
+        (parse-book-name dir-value user-book-name ".lisp" ctx state)
+        (er-progn
+         (chk-input-object-file full-book-name ctx state)
+         (let* ((behalf-of-certify-flg (not (eq expansion-alist :none)))
+                (load-compiled-file0 load-compiled-file)
+                (load-compiled-file (and (f-get-global 'compiler-enabled state)
+                                         load-compiled-file))
+                (cddr-event-form
+                 (if (and event-form
+                          (eq load-compiled-file0
+                              load-compiled-file))
+                     (cddr event-form)
+                   (append
+                    (if (not (eq load-compiled-file
+                                 :default))
+                        (list :load-compiled-file
+                              load-compiled-file)
+                      nil)
+                    (if (not (eq uncertified-okp t))
+                        (list :uncertified-okp
+                              uncertified-okp)
+                      nil)
+                    (if (not (eq defaxioms-okp t))
+                        (list :defaxioms-okp
+                              defaxioms-okp)
+                      nil)
+                    (if (not (eq skip-proofs-okp t))
+                        (list :skip-proofs-okp
+                              skip-proofs-okp)
+                      nil)
+                    (if doc
+                        (list :doc doc)
+                      nil)))))
+           (cond ((or behalf-of-certify-flg
+                      #-acl2-loop-only *hcomp-book-ht*
+                      (null load-compiled-file))
 
 ; So, *hcomp-book-ht* was previously bound by certify-book-fn or in the other
 ; case, below.
 
-                 (include-book-fn1
-                  user-book-name state load-compiled-file expansion-alist
-                  uncertified-okp defaxioms-okp skip-proofs-okp ttags doc
+                  (include-book-fn1
+                   user-book-name state load-compiled-file expansion-alist
+                   uncertified-okp defaxioms-okp skip-proofs-okp ttags doc
 ; The following were bound above:
-                  ctx full-book-name directory-name familiar-name
-                  behalf-of-certify-flg cddr-event-form))
-                (t
-                 (let #+acl2-loop-only ()
-                      #-acl2-loop-only
-                      ((*hcomp-book-ht* (make-hash-table :test 'equal)))
+                   ctx full-book-name directory-name familiar-name
+                   behalf-of-certify-flg cddr-event-form))
+                 (t
+                  (let #+acl2-loop-only ()
+                       #-acl2-loop-only
+                       ((*hcomp-book-ht* (make-hash-table :test 'equal)))
 
 ; Populate appropriate hash tables; see the Essay on Hash Table Support for
 ; Compilation.
 
-                      #-acl2-loop-only
-                      (include-book-raw-top full-book-name directory-name
-                                            load-compiled-file dir ctx state)
-                      (include-book-fn1
-                       user-book-name state load-compiled-file expansion-alist
-                       uncertified-okp defaxioms-okp skip-proofs-okp ttags doc
+                       #-acl2-loop-only
+                       (include-book-raw-top full-book-name directory-name
+                                             load-compiled-file dir ctx state)
+                       (include-book-fn1
+                        user-book-name state load-compiled-file expansion-alist
+                        uncertified-okp defaxioms-okp skip-proofs-okp ttags doc
 ; The following were bound above:
-                       ctx full-book-name directory-name familiar-name
-                       behalf-of-certify-flg cddr-event-form)))))))))))
+                        ctx full-book-name directory-name familiar-name
+                        behalf-of-certify-flg cddr-event-form))))))))))))
 
 (defun spontaneous-decertificationp1 (ibalist alist files)
 
@@ -17136,7 +17163,9 @@
                                :quiet ; ttags in cert. world: already reported
                                ctx state)))
                (state-global-let*
-                ((certify-book-info (make certify-book-info
+                ((compiler-enabled (f-get-global 'compiler-enabled state))
+                 (port-file-enabled (f-get-global 'port-file-enabled state))
+                 (certify-book-info (make certify-book-info
                                           :full-book-name full-book-name
                                           :cert-op cert-op
                                           :include-book-phase nil))
@@ -30309,6 +30338,12 @@
 
 #-acl2-loop-only
 (defun-overrides magic-ev-fncall (fn args state hard-error-returns-nilp aok)
+
+; Warning: Do not allow this function to modify state without reading the
+; comment in chk-logic-subfunctions showing that if trans-eval is in :logic
+; mode, then user-defined stobjs can be changed in a way inconsistent with
+; logical definitions.
+
   (let ((wrld (w state)))
     (cond
      ((and (symbolp fn)
