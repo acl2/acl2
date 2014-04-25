@@ -12232,6 +12232,7 @@
     ev-fncall-meta ; *metafunction-context*
     ld-loop ; *ld-level*
     print-summary ; dmr-flush
+; WARNING: See chk-logic-subfunctions before removing ev from this list!
     ev ; *ev-shortcut-okp*
     ev-lst ; *ev-shortcut-okp*
     allegro-allocate-slowly-fn ; sys:gsgc-parameter

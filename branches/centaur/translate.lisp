@@ -5552,13 +5552,15 @@
 
 (defun stobj-field-fn-of-stobj-type-p (fn wrld)
 
-; Return true if fn is a stobj accessor or updater for a field of stobj type.
-; This is equivalent to taking or returning that stobj type, respectively,
-; which is equivalent to taking or returning some stobj other than the
-; stobj-function for fn (i.e., the stobj containing the field in question).
+; Return true if for some concrete stobj st, fn is the accessor or updater for
+; a field fld of st of stobj type.  For fn the accessor or updater for fld,
+; this is equivalent to taking or returning that stobj type, respectively,
+; which is equivalent to taking or returning some stobj other than st.
+; Abstract stobjs are not a concern here; they don't have "fields".
 
   (let ((st (getprop fn 'stobj-function nil 'current-acl2-world wrld)))
     (and st
+         (not (getprop st 'absstobj-info nil 'current-acl2-world wrld))
          (or (not (all-nils-or-x st (stobjs-in fn wrld)))
              (not (all-nils-or-x st (stobjs-out fn wrld)))))))
 
@@ -7355,13 +7357,17 @@
                      (translate-deref stobjs-out bindings))
                     (no-dups-exprs
                      (no-duplicatesp-checks-for-stobj-let-actuals actuals
-                                                                  nil)))
+                                                                  nil))
+                    (producer-stobjs
+                     (collect-non-x
+                      nil
+                      (compute-stobj-flags producer-vars known-stobjs wrld))))
                 (cond
                  ((and updaters
 
 ; It may be impossible for actual-stobjs-out to be an atom here (presumably
-; :stobjs-out).  But we cover that case, even if the error message isn't
-; particularly beautiful in that case.
+; :stobjs-out or a function symbol).  But we cover that case, albeit with a
+; potentially mysterious error message.
 
                        (or (not (consp actual-stobjs-out))
                            (not (member-eq stobj actual-stobjs-out))))
@@ -7387,6 +7393,27 @@
                                    (zero-one-or-more stobjs-returned)
                                  3)
                                stobjs-returned)))
+                 ((and (atom actual-stobjs-out) ; impossible?
+                       (set-difference-eq producer-stobjs bound-vars))
+                  (trans-er+ x ctx
+                             "A STOBJ-LET form has been encountered that ~
+                              specifies stobj producer variable~#0~[~/s~] ~&0 ~
+                              that cannot be determined to be returned by ~
+                              that STOBJ-LET form, that is, by its consumer ~
+                              form.  See :DOC stobj-let."
+                             (set-difference-eq producer-stobjs bound-vars)))
+                 ((set-difference-eq
+                   (set-difference-eq producer-stobjs bound-vars)
+                   actual-stobjs-out)
+                  (trans-er+ x ctx
+                             "A STOBJ-LET form has been encountered that ~
+                              specifies stobj producer variable~#0~[ ~&0 that ~
+                              is~/s ~&0~ that are~] not returned by that ~
+                              STOBJ-LET form, that is, not returned by its ~
+                              consumer form.  See :DOC stobj-let."
+                             (set-difference-eq
+                              (set-difference-eq producer-stobjs bound-vars)
+                              actual-stobjs-out)))
                  (t
                   (trans-er-let*
                    ((val

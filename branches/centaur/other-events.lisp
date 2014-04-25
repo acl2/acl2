@@ -6440,8 +6440,8 @@
 ; expansion-alist entries before calling expansion-alist-pkg-names.
 
 ; Caller is as in process-embedded-events.  We introduced this argument on the
-; advent of setting world global 'cert-replay.  (It wasn't sufficient for to
-; query the environment argument for this purpose, because we don't want to set
+; advent of setting world global 'cert-replay.  (It wasn't sufficient to query
+; the environment argument for this purpose, because we don't want to set
 ; 'cert-replay here when processing events under a progn.)
 
 ; Channel is generally (proofs-co state), but doesn't have to be.
@@ -17676,20 +17676,26 @@
                                                 (and compile-flg
                                                      (expansion-filename
                                                       full-book-name t state)))
+                                               (include-book-alist-wrld2
+                                                (global-val 'include-book-alist
+                                                            wrld2))
                                                (post-alist2
-                                                (cdr (global-val 'include-book-alist
-                                                                 wrld2))))
+                                                (cond
+                                                 (index/old-wrld
 
-; The cdr above removes the certification tuple stored by the include-book-fn
-; itself.  That pair is guaranteed to be the car because it is the most
-; recently added one (with add-to-set-equal) and we know it was not already a
-; member of the list because chk-acceptable-certify-book1 checked that.  Could
-; a file include itself?  It could try.  But if (include-book file) is one of
-; the events in file, then the attempt to (include-book file) will cause
-; infinite recursion -- because we don't put file on the list of files we've
-; included (and hence recognize as redundant) until after we've completed the
-; processing.
+; In this case, include-book-fn was evaluated above.  The following call of cdr
+; removes the certification tuple stored by the include-book-fn itself.  That
+; pair is guaranteed to be the car because it is the most recently added one
+; (with add-to-set-equal) and we know it was not already a member of the list
+; because chk-acceptable-certify-book1 checked that.  Could a file include
+; itself?  It could try.  But if (include-book file) is one of the events in
+; file, then the attempt to (include-book file) will cause infinite recursion
+; -- because we don't put file on the list of files we've included (and hence
+; recognize as redundant) until after we've completed the processing.
 
+                                                  (cdr
+                                                   include-book-alist-wrld2))
+                                                 (t include-book-alist-wrld2))))
                                           (pprogn
                                            (maybe-write-bookdata
                                             full-book-name wrld2 ctx state)
