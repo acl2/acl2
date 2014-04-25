@@ -495,16 +495,25 @@
 
 (std::deflist 4uplelist-p (x)
   (4uple-p x)
+  :elementp-of-nil nil
+  :already-definedp t)
+
+
+(deflist 4uplelist2 :elt-type 4uple :true-listp t)
+
+(std::deflist 4uplelist2-p (x)
+  (4uple-p x)
   :true-listp t
   :elementp-of-nil nil
   :already-definedp t)
 
 (include-book "std/util/defprojection" :dir :system)
 
-(std::defprojection 4uplelist-fix (x)
+(std::defprojection 4uplelist2-fix (x)
   (4uple-fix x)
   :guard (4uplelist-p x)
   :already-definedp t)
+
 
 ;; make sure b* binders are working
 (define 3ple->list ((x 3ple-f-p))
@@ -532,6 +541,7 @@
 
 
 (defalist sym-nat-alist :key-type symbol :val-type nat)
+(defalist sym-nat-alist2 :key-type symbol :val-type nat :true-listp t)
 
 
 (deftypes recalist
@@ -545,9 +555,10 @@
 
 (include-book "std/util/defalist" :dir :system)
 
-(std::defalist recalist-p (x) :key (integerp x) :val (alterm-p x)
-  :true-listp t
-  :already-definedp t)
+(std::defalist recalist-p (x) :key (integerp x) :val (alterm-p x) :already-definedp t)
+
+
+
 
 (deftypes recalist2
   (deftagsum alterm2
@@ -555,7 +566,7 @@
     (:t ((fn symbolp)
          (al recalist2)))
     :layout :list)
-  (defalist recalist2 :key-type alterm2 :val-type int))
+  (defalist recalist2 :key-type alterm2 :val-type int :true-listp t))
 
 (std::defalist recalist2-p (x) :key (alterm2-p x) :val (integerp x)
   :true-listp t :already-definedp t)

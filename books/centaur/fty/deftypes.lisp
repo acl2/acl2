@@ -244,11 +244,14 @@
    ctor-macro ;; constructor macro (keyword args) name
    ctor-body  ;; constructor body, without fixing
    doc        ;; string, not yet used
-   inline     ;; inline accessors/constructor
+   inline     ;; inline keywords
    ))
 
 (defconst *flexprod-keywords*
   '(:require :fields :ctor-body :ctor-name :ctor-macro :cond :type-name :doc :inline))
+
+(defconst *inline-keywords* '(:kind :fix :acc :xtor))
+(defconst *inline-defaults* '(:kind :fix :acc))
 
 (defun dumb-append-conjunct (rev-prev-conds newcond)
   (cond ((or (eq newcond t)
@@ -263,6 +266,16 @@
         ((or (eq newcond nil)
              (eq newcond ''nil)) (list nil))
         (t (cons newcond conds))))
+
+(defun get-deftypes-inline-opt (default kwd-alist)
+  (b* ((inline (getarg :inline default kwd-alist))
+       (inline (if (eq inline :all) *inline-keywords* inline))
+       ((unless (subsetp inline *inline-keywords*))
+        (er hard? 'get-deftypes-inline-opt
+            ":inline must be a subset of ~x0, but is ~x1"
+            *inline-keywords* inline)))
+    inline))
+
 
 (defun parse-flexprod (x sumname sumkind sum-kwds xvar rev-not-prevconds fixtypes)
   (b* (((cons kind kws) x)
@@ -300,7 +313,7 @@
                   (cond ((atom fullcond-terms) t)
                         ((atom (cdr fullcond-terms)) (car fullcond-terms))
                         (t `(and . ,fullcond-terms))))))
-       (inline (getarg :inline (getarg :inline t sum-kwds) kwd-alist)))
+       (inline (get-deftypes-inline-opt (getarg :inline *inline-defaults* sum-kwds) kwd-alist)))
     (make-flexprod :kind kind
                   :cond cond
                   :guard guard
@@ -356,7 +369,7 @@
     ;; :fixprep
     :post-pred-events
     :post-fix-events
-    :inline   ;; future
+    :inline
     ))
 
 (defun find-symbols-named-x (tree)
@@ -426,7 +439,7 @@
                        (concatenate 'string (symbol-name name) "-CASE")
                        name)
                       kwd-alist))
-       (inline (getarg :inline t kwd-alist))
+       (inline (get-deftypes-inline-opt *inline-defaults* kwd-alist))
        (require (getarg :require t kwd-alist))
        (count (flextype-get-count-fn name kwd-alist))
        (xvar (flexsum-infer-xvar kwd-alist xvar orig-prods))
@@ -648,7 +661,7 @@
         (er hard? 'parse-tagsum "Should have exactly one set of field specifiers: ~x0~%" fields)
         (mv nil nil))
        (layout (getarg :layout (getarg :layout :list sum-kwds) kwd-alist))
-       (inline (getarg :inline (getarg :inline t sum-kwds) kwd-alist))
+       (inlinep (assoc :inline kwd-alist))
        (hons (getarg :hons nil kwd-alist))
        (fields (car fields))
        (field-formals (tagprod-parse-formals 'parse-tagsum fields
@@ -673,7 +686,7 @@
                         `(and (eq (car ,xvar) ,kind) ,require1)
                       require1)
           :fields ,flexsum-fields
-          :inline ,inline
+          ,@(and inlinep `(:inline ,(cdr inlinep)))
           ,@(and base-name `(:type-name ,base-name))
           :ctor-body (,(if hons 'hons 'cons) ,kind ,ctor-body1))
         basep)))
@@ -705,7 +718,7 @@
     :prepwork
     :no-count
     :parents :short :long  ;; xdoc
-    :inline   ;; future
+    :inline
     :layout ;; :list, :tree, :alist
     :case
     :base-case-override
@@ -742,7 +755,7 @@
                        (concatenate 'string (symbol-name name) "-CASE")
                        name)
                       kwd-alist))
-       (inline (getarg :inline t kwd-alist))
+       (inline (get-deftypes-inline-opt *inline-defaults* kwd-alist))
        (count (flextype-get-count-fn name kwd-alist))
        (xvar (or (getarg :xvar xvar kwd-alist)
                  (car (find-symbols-named-x (getarg :measure nil kwd-alist)))
@@ -785,7 +798,7 @@
     :xvar  ;; var name
     :no-count
     :parents :short :long  ;; xdoc
-    :inline   ;; future
+    :inline
     :layout ;; :list, :tree, :alist
     :tag
     :hons
@@ -838,6 +851,7 @@
                   (intern-in-package-of-symbol
                    (concatenate 'string (symbol-name name) "-EQUIV")
                    name)))
+       (inline (get-deftypes-inline-opt *inline-defaults* kwd-alist))
        (count (flextype-get-count-fn name kwd-alist))
        (xvar (or (getarg :xvar xvar kwd-alist)
                  (car (find-symbols-named-x (getarg :measure nil kwd-alist)))
@@ -863,7 +877,8 @@
                   :xvar xvar
                   :measure measure
                   :kwd-alist kwd-alist
-                  :orig-prods orig-prods)))
+                  :orig-prods orig-prods
+                  :inline inline)))
 
        
 
@@ -932,7 +947,7 @@
                  'acl2::x))
        (measure (or (getarg :measure nil kwd-alist)
                     `(acl2-count ,xvar)))
-       (true-listp (getarg :true-listp t kwd-alist)))
+       (true-listp (getarg :true-listp nil kwd-alist)))
     (make-flexlist :name name
                   :pred pred
                   :fix fix
@@ -948,7 +963,7 @@
 
 (def-primitive-aggregate flexalist
   (name       ;; name of the type
-   pred       ;; preducate function name
+   pred       ;; predicate function name
    fix        ;; fix function name
    equiv      ;; equiv function name
    count      ;; count function name
@@ -962,7 +977,8 @@
    xvar       ;; variable name denoting the object
    kwd-alist  ;; original keyword alist
    get get-fast ;; more fn names
-   set set-fast)
+   set set-fast
+   true-listp)
   :tag :alist)
 
 (defconst *flexalist-keywords*
@@ -973,7 +989,8 @@
     :measure
     :xvar
     :parents :short :long  ;; xdoc
-    :no-count :prepwork))
+    :no-count :prepwork
+    :true-listp))
 
 (defun parse-flexalist (x xvar fixtypes)
   (b* (((cons name args) x)
@@ -1033,7 +1050,8 @@
                  (car (find-symbols-named-x (getarg :measure nil kwd-alist)))
                  'acl2::x))
        (measure (or (getarg :measure nil kwd-alist)
-                    `(acl2-count ,xvar))))
+                    `(acl2-count ,xvar)))
+       (true-listp (getarg :true-listp nil kwd-alist)))
     (make-flexalist :name name
                   :pred pred
                   :fix fix
@@ -1048,7 +1066,8 @@
                   :get get :get-fast get-fast
                   :set set :set-fast set-fast
                   :measure measure
-                  :xvar xvar)))
+                  :xvar xvar
+                  :true-listp true-listp)))
 
 
 
@@ -1238,7 +1257,7 @@
                                           (pairlis$ values nil))))
        (condform (nice-cond conds)))
     `((define ,sum.kind ((,sum.xvar ,sum.pred))
-        ,@(and sum.inline `(:inline t))
+        ,@(and (member :kind sum.inline) `(:inline t))
         :guard-hints ((and stable-under-simplificationp '(:expand ((,sum.pred ,sum.xvar)))))
         ,(if sum.kind-body
              `(mbe :logic ,condform
@@ -1377,6 +1396,17 @@
        ,(nice-and sum.require
                   (nice-cond (flexsum-pred-cases-nokind sum.prods)))
        ///
+       (make-event
+        '(:or (defthm ,(intern-in-package-of-symbol
+                        (concatenate 'string "CONSP-WHEN-" (symbol-name sum.pred))
+                        sum.pred)
+                (implies (,sum.pred ,sum.xvar)
+                         (consp ,sum.xvar))
+                :hints (("goal" :expand ((,sum.pred ,sum.xvar)))
+                        (and stable-under-simplificationp
+                             '(:error t)))
+                :rule-classes :compound-recognizer)
+          (value-triple :skip-compound-recognizer)))
        ,@post-pred)))
 
 (defun flexlist-predicate-def (list)
@@ -1438,7 +1468,9 @@
     `(define ,alist.pred (,alist.xvar)
        :measure ,alist.measure
        (if (atom ,alist.xvar)
-           (eq ,alist.xvar nil)
+           ,(if alist.true-listp
+                `(eq ,alist.xvar nil)
+              t)
          (and (consp (car ,alist.xvar))
               ,@(and alist.key-type
                      `((,alist.key-type (caar ,alist.xvar))))
@@ -1503,14 +1535,15 @@
                            (,alist.val-type (cdar ,alist.xvar)))
                   :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))))
 
-       (defthm ,(intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name alist.pred)
-                              "-COMPOUND-RECOGNIZER")
-                 alist.pred)
-         (implies (,alist.pred ,alist.xvar)
-                  (or (consp ,alist.xvar)
-                      (not ,alist.xvar)))
-         :rule-classes :compound-recognizer))))
+       ,@(and alist.true-listp
+              `((defthm ,(intern-in-package-of-symbol
+                          (concatenate 'string (symbol-name alist.pred)
+                                       "-COMPOUND-RECOGNIZER")
+                          alist.pred)
+                  (implies (,alist.pred ,alist.xvar)
+                           (or (consp ,alist.xvar)
+                               (not ,alist.xvar)))
+                  :rule-classes :compound-recognizer))))))
 
 
 
@@ -1594,7 +1627,7 @@
                     . ,(flexsum-fix-cases sum.prods))
                (nice-cond (flexsum-fix-cases-nokind sum.prods)))))
     `(define ,sum.fix ((,sum.xvar ,sum.pred))
-       ,@(and sum.inline `(:inline t))
+       ,@(and (member :fix sum.inline) `(:inline t))
        :measure ,sum.measure
        ,@(and flagp `(:flag ,sum.name))
        :returns (newx ,sum.pred
@@ -1636,7 +1669,7 @@
                       :hints('(:in-theory (enable ,alist.pred))))
        :verify-guards nil
        (mbe :logic (if (atom ,alist.xvar)
-                       nil
+                       ,(if alist.true-listp nil alist.xvar)
                      (if (consp (car ,alist.xvar))
                          (cons (cons ,(if alist.key-fix
                                           `(,alist.key-fix (caar ,alist.xvar))
@@ -1737,7 +1770,16 @@
         ;; bozo make sure this is compatible with defprojection
         (equal (,x.fix (cons ,stda ,stdx))
                (cons (,x.elt-fix ,stda)
-                     (,x.fix ,stdx)))))))
+                     (,x.fix ,stdx))))
+
+      (defthm ,(intern-in-package-of-symbol
+                (concatenate 'string "LEN-OF-"
+                             (symbol-name x.fix))
+                x.fix)
+        (equal (len (,x.fix x))
+               (len x))
+        :hints (("goal" :expand ((,x.fix x))
+                 :in-theory (enable len)))))))
 
 (defun flexalist-fix-postevents (x)
   (b* (((flexalist x) x)
@@ -1949,7 +1991,7 @@
        ;; (fixprep (cdr (assoc :fixprep sum.kwd-alist)))
        )
     `((define ,x.acc-name ((,sum.xvar ,sum.pred))
-        ,@(and prod.inline `(:inline t))
+        ,@(and (member :acc prod.inline) `(:inline t))
         :guard ,prod.guard
         :guard-hints (("goal" :expand ((,sum.pred ,sum.xvar))))
         :returns ,(if x.type
@@ -2075,7 +2117,7 @@
        (field-accs (pairlis$ fieldnames
                              (flexprod-fields->acc-names prod.fields))))
     `((define ,prod.ctor-name ,(flexprod-field-names-types prod.fields)
-        ,@(and prod.inline `(:inline t))
+        ,@(and (member :xtor prod.inline) `(:inline t))
         :returns (,sum.xvar ,(if (eq prod.guard t)
                                  sum.pred
                                `(and (,sum.pred ,sum.xvar)
@@ -2586,6 +2628,8 @@
        
        ,@(flextypes-count x)
 
+       (table flextypes-table ',x.name ',x)
+
        . ,(flextypes-defxdoc x world))))
 
 (defun deftypes-fn (args wrld)
@@ -2779,6 +2823,7 @@ some base types with fixing functions.</p>
     :count foolistcnt  ;; default: foolist-count
                        ;; (may be nil; skipped unless mutually recursive)
     :no-count t        ;; default: nil, same as :count nil
+    :true-listp t      ;; default: nil, require nil final cdr
   )
  })
 
@@ -2836,6 +2881,7 @@ functions.</p>
     :count fooalistcnt  ;; default: fooalist-count
                        ;; (may be nil; skipped unless mutually recursive)
     :no-count t        ;; default: nil, same as :count nil
+    :true-listp t      ;; default: nil, require nil final cdr
   )
  })
 
@@ -2948,9 +2994,10 @@ second component.</li>
 <li>@(':hons'), NIL by default; when T, the constructor is defined using @(see
 hons) rather than cons.</li>
 
-<li>@(':inline') is T by default; this causes accessors and the constructor to
-be defined inlined, which probably is good for execution performance.  May be
-set to NIL to avoid inlining.</li>
+<li>@(':inline') is @('(:acc :fix)') by default, which causes the accessors and
+fixing function (which for execution purposes is just the identity) to be
+inlined.  The list may also contain @(':xtor'), which causes the constructor to
+be inlined as well; @(':all') (not in a list) is also possible.</li>
 </ul>
 
 
@@ -3072,8 +3119,9 @@ The possible keyword arguments are:</p>
 <ul>
 <li>@(':layout'), one of @(':tree'), @(':list'), or @(':alist'), determining
 the arrangement of fields within the product object (as in @(see defprod)),</li>
-<li>@(':inline), T by default, determining whether the constructor and
-accessors are inlined or not</li>
+<li>@(':inline), determining whether the constructor and accessors are inlined
+or not.  This may be @(':all') or a subset of @('(:xtor :acc)').  Defaults to
+@('(:acc)') if not overridden.</li>
 <li>@(':hons'), NIL by default, determining whether objects are constructed
 with @(see hons).</li>
 <li>@(':base-name'), overrides the name of the constructor and the base name
@@ -3099,8 +3147,9 @@ function, and count function; the default is @('(acl2-count x)').</li>
 
 <li>@(':prepwork'): events submitted before</li>
 
-<li>@(':inline'): sets default for inlining of products, and determines whether
-the kind function is inlined</li>
+<li>@(':inline'): sets default for inlining of products and determines whether
+the kind and fixing functions are inlined.  This may be @(':all') or a subset
+of @('(:kind :fix :acc :xtor)'), defaulting to @('(:kind :fix :acc)').</li>
 
 <li>@(':layout'): sets default layout for products</li>
 
@@ -3268,7 +3317,9 @@ process; usually these are local lemmas needed for the various proofs.</li>
 
 <li>@(':parents'), @(':short'), and @(':long') provide xdoc for the type</li>
 
-<li>@(':inline') inlines the kind, accessor, and constructor functions.</li>
+<li>@(':inline'): sets default for inlining of products and determines whether
+the kind and fixing functions are inlined.  This may be @(':all') or a subset
+of @('(:kind :fix :acc :xtor)'), defaulting to @('(:kind :fix :acc)').</li>
 
 </ul>
 
@@ -3313,6 +3364,10 @@ is used as a base for generating the field accessor names.</li>
 
 <li>@(':ctor-name') overrides the name of the product constructor function,
 which by default is the type-name.</li>
+
+<li>@(':inline), determining whether the constructor and accessors are inlined
+or not.  This may be @(':all') or a subset of @('(:xtor :acc)').  Defaults to
+@('(:acc)') if not overridden.</li>
 
 </ul>
 
