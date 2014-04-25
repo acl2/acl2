@@ -171,7 +171,8 @@
        (fixtype (find-fixtype type fixtypes))
        ((unless fixtype)
         (er hard? 'get-type-and-fix
-            "Type ~x0 doesn't have an associated fixing function.  Please provide that association using  you may provide one with :fix" type)
+            "Type ~x0 doesn't have an associated fixing function.  Please ~
+             provide that association using ~x1.~%" type 'deffixtype)
         (mv nil nil 'equal)))
     (mv (fixtype->pred fixtype) (fixtype->fix fixtype)
         (fixtype->equiv fixtype))))
@@ -352,6 +353,9 @@
     :require
     :kind-body ;; :exec part of kind function
     :parents :short :long  ;; xdoc
+    ;; :fixprep
+    :post-pred-events
+    :post-fix-events
     :inline   ;; future
     ))
 
@@ -1358,7 +1362,8 @@
           (flexsum-pred-cases-nokind (cdr prods)))))
 
 (defun flexsum-predicate-def (sum)
-  (b* (((flexsum sum) sum))
+  (b* (((flexsum sum) sum)
+       (post-pred (cdr (assoc :post-pred-events sum.kwd-alist))))
     `(define ,sum.pred (,sum.xvar)
        :measure ,sum.measure
        ;; ,(if sum.kind
@@ -1366,7 +1371,9 @@
        ;;         . ,(flexsum-pred-cases sum.prods))
        ;;    `(cond . ,(flexsum-pred-cases-nokind sum.prods)))
        ,(nice-and sum.require
-                  (nice-cond (flexsum-pred-cases-nokind sum.prods))))))
+                  (nice-cond (flexsum-pred-cases-nokind sum.prods)))
+       ///
+       ,@post-pred)))
 
 (defun flexlist-predicate-def (list)
   (b* (((flexlist list) list)
@@ -1573,7 +1580,12 @@
           (flexsum-fix-cases-nokind (cdr prods)))))
 
 (defun flexsum-fix-def (sum flagp)
-  (b* (((flexsum sum) sum))
+  (b* (((flexsum sum) sum)
+       ;; (fixprep (cdr (assoc :fixprep sum.kwd-alist)))
+       (body (if sum.kind
+                 `(case (,sum.kind ,sum.xvar)
+                    . ,(flexsum-fix-cases sum.prods))
+               (nice-cond (flexsum-fix-cases-nokind sum.prods)))))
     `(define ,sum.fix ((,sum.xvar ,sum.pred))
        ,@(and sum.inline `(:inline t))
        :measure ,sum.measure
@@ -1586,10 +1598,10 @@
                                          `(:expand (,lit)))))))
        :verify-guards nil
        (mbe :logic
-            ,(if sum.kind
-                 `(case (,sum.kind ,sum.xvar)
-                    . ,(flexsum-fix-cases sum.prods))
-               (nice-cond (flexsum-fix-cases-nokind sum.prods)))
+            ;; ,(if fixprep
+            ;; `(let* ((,sum.xvar (,fixprep ,sum.xvar)))
+            ;;         ,body)
+            ,body
             :exec ,sum.xvar))))
 
 (defun flexlist-fix-def (list flagp)
@@ -1647,32 +1659,28 @@
           (flextypelist-equivs (cdr types)))))
 
 (defun flexsum-fix-postevents (x)
-  (b* (((flexsum x) x))
-    `((deffixtype ,x.name
-        :pred ,x.pred
-        :fix ,x.fix
-        :equiv ,x.equiv
-        :define t :forward t)
-      (local (in-theory (enable ,x.equiv)))
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string "EQUAL-OF-" (symbol-name x.fix)
-                             "-BOTH-FORWARD-TO-" (symbol-name x.equiv))
-                x.equiv)
-        (implies (equal (,x.fix x) (,x.fix y))
-                 (,x.equiv x y))
-        :rule-classes :forward-chaining)
+  (b* (((flexsum x) x)
+       ;; (fixprep (cdr (assoc :fixprep x.kwd-alist)))
+       (post-fix (cdr (assoc :post-fix-events x.kwd-alist))))
+    `(;; ,@(and fixprep
+      ;;        `((defthm ,(intern-in-package-of-symbol
+      ;;                    (concatenate 'string (symbol-name x.fix) "-OF-"
+      ;;                                 (symbol-name fixprep))
+      ;;                    x.fix)
+      ;;            (equal (,x.fix (,fixprep ,x.xvar))
+      ;;                   (,x.fix ,x.xvar)))))
 
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string "EQUAL-OF-" (symbol-name x.fix)
-                             "-ONE-FORWARD-TO-" (symbol-name x.equiv))
-                x.equiv)
-        (implies (equal (,x.fix x) y)
-                 (,x.equiv x y))
-        :rule-classes :forward-chaining)
+        (deffixtype ,x.name
+          :pred ,x.pred
+          :fix ,x.fix
+          :equiv ,x.equiv
+          :define t :forward t)
+        (local (in-theory (enable ,x.equiv)))
+        ,@(and x.kind
+               `((deffixequiv ,x.kind :args ((,x.xvar ,x.pred))
+                   :hints (("goal" :expand ((,x.fix ,x.xvar)))))))
 
-      ,@(and x.kind
-             `((deffixequiv ,x.kind :args ((,x.xvar ,x.pred))
-                 :hints (("goal" :expand ((,x.fix ,x.xvar))))))))))
+        ,@post-fix)))
 
 (defun flexlist-fix-postevents (x)
   (b* (((flexlist x) x)
@@ -1685,22 +1693,6 @@
         :equiv ,x.equiv
         :define t :forward t)
       (local (in-theory (enable ,x.equiv)))
-
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string "EQUAL-OF-" (symbol-name x.fix)
-                             "-BOTH-FORWARD-TO-" (symbol-name x.equiv))
-                x.equiv)
-        (implies (equal (,x.fix x) (,x.fix y))
-                 (,x.equiv x y))
-        :rule-classes :forward-chaining)
-
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string "EQUAL-OF-" (symbol-name x.fix)
-                             "-ONE-FORWARD-TO-" (symbol-name x.equiv))
-                x.equiv)
-        (implies (equal (,x.fix x) y)
-                 (,x.equiv x y))
-        :rule-classes :forward-chaining)
 
       (deffixcong ,x.equiv ,x.elt-equiv (car x) x
         :hints (("goal" :expand ((,x.fix x)))))
@@ -1748,22 +1740,6 @@
         :equiv ,x.equiv
         :define t :forward t)
       (local (in-theory (enable ,x.equiv)))
-
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string "EQUAL-OF-" (symbol-name x.fix)
-                             "-BOTH-FORWARD-TO-" (symbol-name x.equiv))
-                x.equiv)
-        (implies (equal (,x.fix x) (,x.fix y))
-                 (,x.equiv x y))
-        :rule-classes :forward-chaining)
-
-      (defthm ,(intern-in-package-of-symbol
-                (concatenate 'string "EQUAL-OF-" (symbol-name x.fix)
-                             "-ONE-FORWARD-TO-" (symbol-name x.equiv))
-                x.equiv)
-        (implies (equal (,x.fix x) y)
-                 (,x.equiv x y))
-        :rule-classes :forward-chaining)
       
       ;; (deffixcong ,x.equiv ,x.key-equiv (caar x) x
       ;;   :hints (("goal" :expand ((,x.fix x)))))
@@ -1960,7 +1936,9 @@
 (defun flexprod-field-acc (x prod sum)
   (b* (((flexsum sum) sum)
        ((flexprod prod) prod)
-       ((flexprod-field x) x))
+       ((flexprod-field x) x)
+       ;; (fixprep (cdr (assoc :fixprep sum.kwd-alist)))
+       )
     `((define ,x.acc-name ((,sum.xvar ,sum.pred))
         ,@(and prod.inline `(:inline t))
         :guard ,prod.guard
@@ -1968,10 +1946,14 @@
         :returns ,(if x.type
                       `(,x.name ,x.type . ,x.rule-classes)
                     `(x.name))
-        (mbe :logic ,(let ((unfixbody (nice-and prod.guard x.acc-body)))
-                       (if x.fix
-                           `(,x.fix ,unfixbody)
-                         unfixbody))
+        (mbe :logic ,(let* ((unfixbody (nice-and prod.guard x.acc-body))
+                            (body (if x.fix
+                                      `(,x.fix ,unfixbody)
+                                    unfixbody)))
+                       ;; (if fixprep
+                       ;;     `(let* ((,sum.xvar (,fixprep ,sum.xvar)))
+                       ;;        ,body)
+                       body)
              :exec ,x.acc-body)
         ///
         (deffixequiv ,x.acc-name :hints (("goal" :expand ((,sum.fix ,sum.xvar)))))

@@ -167,7 +167,7 @@ defequiv)).</p>")
                      (value-triple
                       (er hard? 'deffixtype
                           "Failed to prove that ~x0 is idempotent.~%" ',fix)))))
-           (defun ,equiv (x y)
+           (,(if execp 'defun 'defun-nx) ,equiv (x y)
              (declare (xargs :verify-guards nil))
              (equal (,fix x) (,fix y)))
            (local (in-theory '(,equiv tmp-deffixtype-idempotent
@@ -292,8 +292,11 @@ defequiv)).</p>")
                           keys nil))
        ((when rest) (raise "Bad args: ~x0~%" rest))
        (fixtype-al (get-fixtypes-alist world))
+       (stobjname (and (fgetprop arg 'acl2::stobj nil world)
+                       (acl2::congruent-stobj-rep arg world)))
        (fixtype (or (find-fixtype-for-typename type fixtype-al)
-                    (find-fixtype-for-pred type fixtype-al)))
+                    (find-fixtype-for-pred type fixtype-al)
+                    (find-fixtype-for-typename stobjname fixtype-al)))
        (skip-ok (cdr (assoc :skip-ok kwd-alist)))
        ((unless fixtype)
         (if skip-ok

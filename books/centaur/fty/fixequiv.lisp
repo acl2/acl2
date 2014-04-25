@@ -225,6 +225,9 @@ syntax of these parameters is extended, as shown in the following examples:</p>
 (defun fixequiv-from-define-formal (fn formal hints state)
   (b* (((std::formal fm) formal)
        (type (fixequiv-type-from-guard fm.guard))
+       (stobjname (and (fgetprop fm.name 'acl2::stobj nil (w state))
+                       (acl2::congruent-stobj-rep fm.name (w state))))
+       (type (or type stobjname))
        ((unless type) nil)
        (formals (fgetprop fn 'acl2::formals :none (w state)))
        (event (deffixequiv-basic-parse (cons fn formals) fm.name type
@@ -258,7 +261,9 @@ syntax of these parameters is extended, as shown in the following examples:</p>
                          (raise "Can't derive argument types from ~x0 because it ~
                         wasn't created with DEFINE." fn)))
                       ((std::formal fm) formal)
-                      (type (fixequiv-type-from-guard fm.guard))
+                      (type (or (fixequiv-type-from-guard fm.guard)
+                                (and (fgetprop fm.name 'acl2::stobj nil (w state))
+                                     (acl2::congruent-stobj-rep fm.name (w state)))))
                       ((unless type)
                        (raise "Argument ~x0 of function ~x1 wasn't given a ~
                                (unary) type in its DEFINE declaration" var fn)))
