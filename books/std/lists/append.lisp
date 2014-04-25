@@ -104,5 +104,20 @@ library."
 
   (defthm associativity-of-append
     (equal (append (append a b) c)
-           (append a (append b c)))))
+           (append a (append b c))))
+
+  (def-projection-rule elementlist-projection-of-append
+    (equal (elementlist-projection (append a b))
+           (append (elementlist-projection a)
+                   (elementlist-projection b))))
+
+  (def-projection-rule elementlist-mapappend-of-append
+    (equal (elementlist-mapappend (append a b))
+           (append (elementlist-mapappend a)
+                   (elementlist-mapappend b))))
+
+  (defcong element-list-equiv element-list-equiv (append a b) 1)
+  (add-listp-rule)
+  (defcong element-list-equiv element-list-equiv (append a b) 2)
+  (add-listp-rule))
 

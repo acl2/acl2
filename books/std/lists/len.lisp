@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "xdoc/top" :dir :system)
+(include-book "abstract")
 (local (include-book "arithmetic/top" :dir :system))
 
 (defsection std/lists/len
@@ -74,5 +74,9 @@
     :hints(("Goal" :expand ((len x)
                             (len (cdr x))
                             (len (cddr x))
-                            (len (cdddr x)))))))
+                            (len (cdddr x))))))
+
+  (def-projection-rule len-of-elementlist-projection
+    (equal (len (elementlist-projection x))
+           (len x))))
 

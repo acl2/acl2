@@ -123,4 +123,19 @@ these lemmas may be useful.</p>"
             :in-theory (disable revappend-equal-x-cdrs-lemma
                                 revappend-equal-x-cars-lemma)
             :use ((:instance revappend-equal-x-cdrs-lemma)
-                  (:instance revappend-equal-x-cars-lemma))))))
+                  (:instance revappend-equal-x-cars-lemma)))))
+
+  (def-listp-rule element-list-p-of-revappend
+    (implies (element-list-p x)
+             (equal (element-list-p (revappend x y))
+                    (element-list-p y))))
+
+  (def-listfix-rule element-list-fix-of-revappend
+    (equal (element-list-fix (revappend x y))
+           (revappend (element-list-fix x)
+                      (element-list-fix y))))
+
+  (def-projection-rule elementlist-projection-of-revappend
+    (equal (elementlist-projection (revappend x y))
+           (revappend (elementlist-projection x)
+                      (elementlist-projection y)))))

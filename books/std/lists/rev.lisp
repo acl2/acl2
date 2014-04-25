@@ -150,6 +150,20 @@ perform quite well thanks to @(see mbe).</p>"
       ;; rev just to get lemmas about make-character-list.
       (equal (make-character-list (rev x))
              (rev (make-character-list x)))
-      :hints(("Goal" :in-theory (enable make-character-list))))))
+      :hints(("Goal" :in-theory (enable make-character-list)))))
+
+
+  (def-listp-rule element-list-p-of-rev
+    (implies (element-list-p x)
+             (element-list-p (rev x))))
+
+  (def-listfix-rule element-list-fix-of-rev
+    (equal (element-list-fix (rev x))
+           (rev (element-list-fix x))))
+
+  (def-projection-rule elementlist-projection-of-rev
+    (equal (elementlist-projection (rev x))
+           (rev (elementlist-projection x)))))
+
 
 

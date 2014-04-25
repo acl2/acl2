@@ -15,8 +15,7 @@
 ; This file was originally part of the Unicode library.
 
 (in-package "ACL2")
-(include-book "xdoc/top" :dir :system)
-(local (include-book "arithmetic/top" :dir :system))
+(include-book "abstract")
 
 (defsection list-fix
   :parents (std/lists)
@@ -106,4 +105,8 @@ common @(see equivalence) relation.</p>"
 
   (defthm equal-of-list-fix-and-self
     (equal (equal x (list-fix x))
-           (true-listp x))))
+           (true-listp x)))
+
+  (def-listp-rule element-list-fix-of-list-fix
+    (equal (element-list-fix (list-fix x))
+           (element-list-fix x))))
