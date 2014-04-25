@@ -12886,6 +12886,7 @@
     (pc-prompt-depth-prefix . "#")
     (pc-ss-alist . nil)
     (pc-val . nil)
+    (port-file-enabled . t)
     (ppr-flat-right-margin . 40)
     (print-base . 10)
     (print-case . :upcase)
@@ -20307,29 +20308,24 @@
   nil)
 
 (defun set-compiler-enabled (val state)
-
-; We disallow the modification of 'compiler-enabled while inside include-book
-; or certify-book, simply because it's too strange to contemplate; we think of
-; 'compiler-enabled as a global property affecting defaults for certify-book
-; and include-book.
-
-  (declare (xargs :guard (and (member-eq val '(t nil :books))
-                              (boundp-global 'certify-book-info state))
+  (declare (xargs :guard t
                   :stobjs state))
-  #-acl2-loop-only
-  (when *inside-include-book-fn*
-    (let ((str
-           "It is illegal to call set-compiler-enabled inside include-book."))
-      (illegal 'set-compiler-enabled str nil)
-      (error str) ; in surprising case that illegal doesn't cause an error
-      ))
-  (cond ((f-get-global 'certify-book-info state)
-         (prog2$ (hard-error 'set-compiler-enabled
-                             "It is illegal to call set-compiler-enabled ~
-                              inside certify-book."
-                             nil)
-                 state))
-        (t (f-put-global 'compiler-enabled val state))))
+  (cond ((member-eq val '(t nil :books))
+         (f-put-global 'compiler-enabled val state))
+        (t (prog2$ (hard-error 'set-compiler-enabled
+                               "Illegal value for set-compiler-enabled: ~x0"
+                               val)
+                   state))))
+
+(defun set-port-file-enabled (val state)
+  (declare (xargs :guard t
+                  :stobjs state))
+  (cond ((member-eq val '(t nil))
+         (f-put-global 'port-file-enabled val state))
+        (t (prog2$ (hard-error 'set-port-file-enabled
+                               "Illegal value for set-port-file-enabled: ~x0"
+                               val)
+                   state))))
 
 (defun default-measure-function (wrld)
   (declare (xargs :guard (and (plist-worldp wrld)

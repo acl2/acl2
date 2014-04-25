@@ -4564,14 +4564,47 @@
             (let ((*load-compiled-stack* (acons file
                                                 load-compiled-file
                                                 *load-compiled-stack*)))
-              (cond (ofile-p (load-compiled ofile t))
-                    (t (with-reckless-read (load efile))))
-              (value (setq status (if to-be-compiled-p
-                                      'to-be-compiled
-                                    'complete))))))
-         (hcomp-transfer-to-hash-tables)
-         (assert$ (member-eq status '(to-be-compiled complete incomplete))
-                  status)))))))
+              (multiple-value-bind
+               (er val)
+               (catch 'my-book-error
+                 (handler-bind
+                  ((error (function
+                           (lambda (c)
+
+; Function hcomp-transfer-to-hash-tables might not have been run, which would
+; leave *hcomp-fn-ht* in an odd state.  In the worst case that function would
+; have emptied these hash tables; here, we do the easy thing and set them all
+; to nil.
+
+                             (setq *hcomp-fn-ht* nil
+                                   *hcomp-const-ht* nil
+                                   *hcomp-macro-ht* nil)
+                             (throw 'my-book-error
+                                    (values t (format nil "~a" c)))))))
+                  (values nil
+                          (cond (ofile-p (load-compiled ofile t))
+                                (t (with-reckless-read (load efile)))))))
+               (value (setq status
+                            (cond (er (setq status val))
+                                  (to-be-compiled-p 'to-be-compiled)
+                                  (t 'complete))))))))
+         (cond
+          ((stringp status) ; status is raw Lisp error message
+           (warning$ ctx "Compiled file"
+                     "The following raw Lisp error occurred when loading ~
+                      file~|~s0:~|~s1"
+                     (cond (ofile-p ofile)
+                           (t efile))
+                     status)
+           (missing-compiled-book
+            ctx
+            file
+            (msg "an error occurred in raw Lisp (see above)")
+            load-compiled-file
+            state))
+          (t (hcomp-transfer-to-hash-tables)
+             (assert$ (member-eq status '(to-be-compiled complete incomplete))
+                      status)))))))))
 
 (defun include-book-raw (book-name directory-name load-compiled-file dir ctx
                                    state)

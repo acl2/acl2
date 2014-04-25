@@ -4048,6 +4048,8 @@
             print-clause-ids           ;;; allow user to modify this in a book
             fmt-soft-right-margin      ;;; allow user to modify this in a book
             fmt-hard-right-margin      ;;; allow user to modify this in a book
+            compiler-enabled           ;;; allow user to modify this in a book
+            port-file-enabled          ;;; allow user to modify this in a book
             parallel-execution-enabled ;;; allow user to modify this in a book
             waterfall-parallelism      ;;; allow user to modify this in a book
             waterfall-parallelism-timing-threshold ;;; see just above
