@@ -30,7 +30,7 @@
 <li>element-list-equiv</li>
 <li>element-list-projection</li>
 <li>element-list-mapappend</li>
-<ul>
+</ul>
 
 <p>The idea is that in other books, we can add various theorems about how these
 generic functions behave in relation to other functions such as nth, index-of,
@@ -279,7 +279,7 @@ there must exist some element satisfying element-p."
 
 
 (defsection element-listxformer
-  :short "Generic element->list transform for mapappend"
+  :short "Generic element-list transform for mapappend"
   
   (encapsulate (((element-listxformer *) => *))
 
