@@ -355,3 +355,32 @@
                                              '(pairlis$-of-cons
                                                pairlis$-when-atom))))))
 )
+
+;; Function for helping debug
+#|
+(defun my-alist-equiv-bad-guy (a b)
+  (cond ((atom a)
+         (atom b)) ; none left behind
+        ((assoc (caar a) b)
+         (let ((match (assoc (caar a) b)))
+           (if (equal (cdr match)
+                      (cdar a))
+               (my-alist-equiv-bad-guy (vl::vl-remove-keys (list (caar a))
+                                                           (cdr a))
+                                       (vl::vl-remove-keys (list (caar a))
+                                                           b))
+             (cons (list (car a) match)
+                   (my-alist-equiv-bad-guy
+
+                    (vl::vl-remove-keys (list (caar a))
+                                        (cdr a))
+                    (vl::vl-remove-keys (list (caar a))
+                                        b))))))
+        (t (cons (car a)
+                 (my-alist-equiv-bad-guy
+
+                  (vl::vl-remove-keys (list (caar a))
+                                      (cdr a))
+                  (vl::vl-remove-keys (list (caar a))
+                                      b))))))
+|#
