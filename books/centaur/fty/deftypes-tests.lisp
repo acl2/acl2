@@ -21,10 +21,12 @@
 (in-package "FTY")
 
 (include-book "deftypes")
+(include-book "basetypes")
 
 (include-book "std/lists/acl2-count" :dir :system)
 
 (logic)
+
 
 (in-theory (disable acl2-count))
 
@@ -63,7 +65,7 @@
    :ctor-body val)
   (:triple
    :cond t
-   :require (and (true-listp w) (eql (len w) 3))
+   :shape (and (true-listp w) (eql (len w) 3))
    :fields ((left :acc-body (car w) :type var-tree)
             (mid :acc-body (cadr w) :type var-tree)
             (right :acc-body (caddr w) :type var-tree))
@@ -123,7 +125,7 @@
      :ctor-body name)
     (:quote
      :cond (eq (car y) 'quote)
-     :require (and (consp (cdr y))
+     :shape (and (consp (cdr y))
                    (not (cddr y)))
      :fields ((val :acc-body (cadr y)))
      :ctor-body (list 'quote val))
@@ -139,7 +141,7 @@
      :fields ((fnname :acc-body z :type fnsym-p))
      :ctor-body fnname)
     (:lambda
-     :require (and (eq (car z) 'lambda)
+     :shape (and (eq (car z) 'lambda)
                    (true-listp z)
                    (eql (len z) 3))
      :fields ((formals :acc-body (cadr z) :type varlist-p)
@@ -165,7 +167,7 @@
      :ctor-body val)
     (:triple
      :cond t
-     :require (and (true-listp w) (eql (len w) 4))
+     :shape (and (true-listp w) (eql (len w) 4))
      :fields ((left :acc-body (car w) :type fnsym-tree)
               (mid :acc-body (cadr w) :type fnsym-tree)
               (right :acc-body (caddr w) :type fnsym-tree)
@@ -201,7 +203,7 @@
        :ctor-body name)
       (:quote
        :cond (eq (car y) 'quote)
-       :require (and (consp (cdr y))
+       :shape (and (consp (cdr y))
                      (not (cddr y)))
        :fields ((val :acc-body (cadr y)))
        :ctor-body (list 'quote val))
@@ -217,7 +219,7 @@
        :fields ((fnname :acc-body z :type fnsym-p))
        :ctor-body fnname)
       (:lambda
-       :require (and (eq (car z) 'lambda)
+       :shape (and (eq (car z) 'lambda)
                      (true-listp z)
                      (eql (len z) 3))
        :fields ((formals :acc-body (cadr z) :type varlist-p)
@@ -253,7 +255,7 @@
        :ctor-body name)
       (:quote
        :cond (eq (car y) 'quote)
-       :require (and (consp (cdr y))
+       :shape (and (consp (cdr y))
                      (not (cddr y)))
        :fields ((val :acc-body (cadr y)))
        :ctor-body (list 'quote val))
@@ -269,7 +271,7 @@
        :fields ((fnname :acc-body z :type fnsym-p))
        :ctor-body fnname)
       (:lambda
-       :require (and (eq (car z) 'lambda)
+       :shape (and (eq (car z) 'lambda)
                      (true-listp z)
                      (eql (len z) 3))
        :fields ((formals :acc-body (cadr z) :type varlist-p)
@@ -286,7 +288,7 @@
    :fields ((val :type natp :acc-body x))
    :ctor-body val)
   (:pair
-   :require (consp x)
+   :shape (consp x)
    :fields ((fn :type fnsym :acc-body (car x))
             (var :type fnsym :acc-body (cdr x)))
    :ctor-body (cons fn var)))
@@ -321,12 +323,12 @@
    :ctor-body val)
   (:plus
    :cond (eq (car x) '+)
-   :require (and (true-listp x) (eql (len x) 3))
+   :shape (and (true-listp x) (eql (len x) 3))
    :fields ((left :type arithterm :acc-body (cadr x))
             (right :type arithterm :acc-body (caddr x)))
    :ctor-body (list '+ left right))
   (:minus
-   :require (and (eq (car x) '-)
+   :shape (and (eq (car x) '-)
                  (true-listp x)
                  (eql (len x) 2))
    :fields ((arg :type arithterm :acc-body (cadr x)))
@@ -373,7 +375,7 @@
 (defflexsum foo
   :kind nil
   (:foo
-   :require (and (true-listp x)
+   :shape (and (true-listp x)
                  (eql (len x) 3))
    :fields ((nat :type nat :acc-body (car x))
             (int :type int :acc-body (cadr x))
@@ -389,7 +391,7 @@
     :kind nil
     :measure (two-nats-measure (acl2-count x) 1)
     (:fa
-     :require (and (true-listp x)
+     :shape (and (true-listp x)
                    (eql (len x) 3))
      :fields ((nat :type nat :acc-body (car x))
               (int :type int :acc-body (cadr x))
@@ -526,7 +528,7 @@
 (defflexsum foo2
   :kind nil
   (:foo
-   :require (and (true-listp x)
+   :shape (and (true-listp x)
                  (eql (len x) 3))
    :fields ((nat :type nat :acc-body (car x) :acc-name foo2n)
             (int :type int :acc-body (cadr x) :acc-name foo2i)
@@ -628,3 +630,102 @@
                                 (arithtm-double x.right))
             :minus (arithtm-minus (arithtm-double x.arg)))
           (arithtmlist-double (cdr x)))))
+
+
+
+
+(include-book "ihs/basic-definitions" :dir :system)
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (in-theory (disable unsigned-byte-p)))
+
+(defprod sizednum
+  ((size natp)
+   (bits natp
+         :reqfix (acl2::loghead size bits)))
+  :require (unsigned-byte-p size bits))
+
+(defprod sizednum2
+  ((size natp)
+   (bits :reqfix (acl2::loghead size bits)))
+  :require (unsigned-byte-p size bits))
+
+
+
+
+(include-book "std/lists/take" :dir :system)
+
+
+(deftypes pterm3
+  :prepwork ((local (defthm len-equal-val
+                      (implies (syntaxp (quotep val))
+                               (equal (equal (len x) val)
+                                      (if (zp val)
+                                          (and (equal 0 val)
+                                               (atom x))
+                                        (and (consp x)
+                                             (equal (len (cdr x)) (1- val))))))))
+             ;; (local (defthm equal-of-cons
+             ;;          (equal (equal (cons a b) c)
+             ;;                 (and (consp c)
+             ;;                      (equal a (car c))
+             ;;                      (equal b (cdr c))))))
+             (local (in-theory (disable len)))
+             ;; (local (in-theory (enable var-fix varp fnsym-fix fnsym-p)))
+             )
+  (defflexsum pterm3
+    (:null
+     :cond (not y)
+     :ctor-body nil)
+    (:var 
+     :cond (atom y)
+     :fields ((name :acc-body y :type varp))
+     :ctor-body name)
+    (:quote
+     :cond (eq (car y) 'quote)
+     :shape (and (consp (cdr y))
+                   (not (cddr y)))
+     :fields ((val :acc-body (cadr y)))
+     :ctor-body (list 'quote val))
+    (:fncall
+     :cond (atom (car y))
+     :fields ((fn :acc-body (car y) :type fnsym-p)
+              (args :acc-body (cdr y) :type pterm3list-p))
+     :ctor-body (cons fn args))
+    (:lambdacall
+     :shape (and (eq (caar y) 'lambda)
+                 (true-listp (car y))
+                 (eql (len (car y)) 3))
+     :fields ((formals :acc-body (cadar y) :type varlist-p)
+              (body :acc-body (caddar y) :type pterm3-p)
+              (args :acc-body (cdr y) :type pterm3list-p
+                    :reqfix (take (len formals) args)))
+     :require (eql (len formals) (len args))
+     :ctor-body (cons (list 'lambda formals body) args))
+
+    
+    :post-pred-events ((defthm pterm3list-p-of-take
+                         (implies (pterm3list-p x)
+                                  (pterm3list-p (take n x))))
+                       (defthm pterm3list-p-implies-true-listp
+                         (implies (pterm3list-p x)
+                                  (true-listp x))
+                         :rule-classes :forward-chaining))
+
+    :xvar y)
+  ;; (defflexsum pfunc
+  ;;   ;; :kind nil
+  ;;   (:sym
+  ;;    :cond (atom z)
+  ;;    :fields ((fnname :acc-body z :type fnsym-p))
+  ;;    :ctor-body fnname)
+  ;;   (:lambda
+  ;;    :shape (and (eq (car z) 'lambda)
+  ;;                  (true-listp z)
+  ;;                  (eql (len z) 3))
+  ;;    :fields ((formals :acc-body (cadr z) :type varlist-p)
+  ;;             (body :acc-body (caddr z) :type pterm-p))
+  ;;    :ctor-body (list 'lambda formals body))
+  ;;   :xvar z)
+
+  (deflist pterm3list :elt-type pterm3-p :xvar acl2-asg::x
+    :true-listp t))

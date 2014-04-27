@@ -23,7 +23,10 @@
 
 (include-book "std/util/da-base" :dir :system)
 (include-book "fixequiv")
+(include-book "tools/rulesets" :dir :system)
 (include-book "misc/hons-help" :dir :system) ;; for hons-list
+
+(def-ruleset! std::tag-reasoning nil)
 
 ;; Lemmas for deftagprod.
 (defthmd equal-of-strip-cars
@@ -81,7 +84,7 @@
      :ctor-body name)
     (:quote
      :cond (eq (car x) 'quote)
-     :require (and (consp (cdr x))
+     :shape (and (consp (cdr x))
                    (not (cddr x)))
      :fields ((val :acc-body (cadr x)))
      :ctor-body (list 'quote val))
@@ -95,7 +98,7 @@
      :fields ((fnname :acc-body x :type symbolp))
      :ctor-body fnname)
     (:lambda
-     :require (and (eq (car x) 'lambda)
+     :shape (and (eq (car x) 'lambda)
                    (true-listp x)
                    (eql (len x) 3))
      :fields ((formals :acc-body (cadr x) :type symbol-listp)
@@ -152,13 +155,16 @@
    type     ;; element type, or nil
    fix      ;; element fix, or nil
    equiv    ;; element equiv, or nil
+   ;; require ;; dependent type constraint (term) -- now associated with product, not field
+   reqfix  ;; dependent type fix (term)
    default  ;; default value
    doc      ;; not yet used
    rule-classes ;; for return type theorem, either empty (default) or of the form (:rule-classes ...)
    ))
 
 (defconst *flexprod-field-keywords*
-  '(:type :acc-body :acc-name :default :doc :rule-classes))
+  '(:type :acc-body :acc-name :default :doc :rule-classes
+    :reqfix))
 
 
 (defun find-fixtype (typename alist)
@@ -212,7 +218,8 @@
                                 (symbol-name type-name) "->" (symbol-name name))
                    type-name)
                   kwd-alist))
-       ((mv type fix equiv) (get-pred/fix/equiv kwd-alist fixtypes :type)))
+       ((mv type fix equiv) (get-pred/fix/equiv kwd-alist fixtypes :type))
+       (reqfix (getarg :reqfix name kwd-alist)))
     (make-flexprod-field
      :name name
      :acc-body acc-body
@@ -222,6 +229,8 @@
      :equiv equiv
      :default (getarg :default nil kwd-alist)
      :doc (getarg :doc "" kwd-alist)
+     ;; :require require
+     :reqfix reqfix
      :rule-classes (let ((look (assoc :rule-classes kwd-alist)))
                      (and look `(:rule-classes ,(cdr look)))))))
 
@@ -237,7 +246,8 @@
   (kind       ;; kind symbol
    cond       ;; term to check whether x is of this kind, after checking previous ones
    guard      ;; additional guard for accessors
-   require    ;; other requirements, given kindcheck
+   shape      ;; other requirements, given kindcheck
+   require    ;; dependent type requirement (term)
    fields     ;; flexprod-field list
    type-name   ;; base for constructing default accessor names
    ctor-name  ;; constructor function name
@@ -248,7 +258,7 @@
    ))
 
 (defconst *flexprod-keywords*
-  '(:require :fields :ctor-body :ctor-name :ctor-macro :cond :type-name :doc :inline))
+  '(:shape :fields :ctor-body :ctor-name :ctor-macro :cond :type-name :doc :inline :require))
 
 (defconst *inline-keywords* '(:kind :fix :acc :xtor))
 (defconst *inline-defaults* '(:kind :fix :acc))
@@ -293,7 +303,7 @@
             "Malformed product: ~x0: :ctor-body should be a term." x))
        (ctor-body (cdr ctor-body-lookup))
        (cond (getarg :cond t kwd-alist))
-       (require (getarg :require t kwd-alist))
+       (shape (getarg :shape t kwd-alist))
        (type-name (getarg-nonnil! :type-name
                                   (intern-in-package-of-symbol
                                    (concatenate 'string (symbol-name sumname)
@@ -313,10 +323,12 @@
                   (cond ((atom fullcond-terms) t)
                         ((atom (cdr fullcond-terms)) (car fullcond-terms))
                         (t `(and . ,fullcond-terms))))))
-       (inline (get-deftypes-inline-opt (getarg :inline *inline-defaults* sum-kwds) kwd-alist)))
+       (inline (get-deftypes-inline-opt (getarg :inline *inline-defaults* sum-kwds) kwd-alist))
+       (require (getarg :require t kwd-alist)))
     (make-flexprod :kind kind
                   :cond cond
                   :guard guard
+                  :shape shape
                   :require require
                   :fields fields
                   :type-name type-name
@@ -348,7 +360,7 @@
    case        ;; case macro name
    prods       ;; flexprod structures
    measure     ;; measure for termination
-   require     ;; require for all prods
+   shape       ;; shape for all prods
    xvar        ;; variable name denoting the object
    kwd-alist   ;; original keyword arguments
    orig-prods  ;; original products
@@ -363,7 +375,7 @@
     :xvar  ;; var name
     :prepwork
     :no-count
-    :require
+    :shape
     :kind-body ;; :exec part of kind function
     :parents :short :long  ;; xdoc
     ;; :fixprep
@@ -440,7 +452,7 @@
                        name)
                       kwd-alist))
        (inline (get-deftypes-inline-opt *inline-defaults* kwd-alist))
-       (require (getarg :require t kwd-alist))
+       (shape (getarg :shape t kwd-alist))
        (count (flextype-get-count-fn name kwd-alist))
        (xvar (flexsum-infer-xvar kwd-alist xvar orig-prods))
        (prods (parse-flexprods orig-prods name kind kwd-alist xvar nil fixtypes))
@@ -460,14 +472,14 @@
                   :prods prods
                   :xvar xvar
                   :inline inline
-                  :require require
+                  :shape shape
                   :measure measure
                   :kwd-alist kwd-alist
                   :orig-prods orig-prods)))
 
 
 (defconst *tagprod-keywords*
-  '(:layout :hons :inline :base-name))
+  '(:layout :hons :inline :base-name :require))
 
 (defun tagsum-acc-for-tree (pos num expr)
   (if (zp num)
@@ -496,7 +508,9 @@
     `(,x.name :acc-body ,accessor :doc ,x.doc :type ,x.guard
               :default ,(cdr (assoc :default x.opts))
               ,@(let ((look (assoc :rule-classes x.opts)))
-                  (and look `(:rule-classes ,(cdr look)))))))
+                  (and look `(:rule-classes ,(cdr look))))
+              ,@(let ((look (assoc :reqfix x.opts)))
+                  (and look `(:reqfix ,(cdr look)))))))
 
 (defun tagsum-formals-to-flexsum-fields (x pos num xvar layout)
   (if (atom x)
@@ -528,26 +542,26 @@
       (:tree (tagsum-tree-ctor fieldnames (len fieldnames) cons))
       (:list `(,list . ,fieldnames)))))
 
-(defun tagsum-tree-require (len expr)
+(defun tagsum-tree-shape (len expr)
   (if (zp len)
-      (er hard? 'tagsum-tree-require "bad programmer")
+      (er hard? 'tagsum-tree-shape "bad programmer")
     (if (eql len 1)
         nil
       (let ((half (floor len 2)))
         (cons `(consp ,expr)
-              (append (tagsum-tree-require half `(car ,expr))
-                      (tagsum-tree-require (- len half) `(cdr ,expr))))))))
+              (append (tagsum-tree-shape half `(car ,expr))
+                      (tagsum-tree-shape (- len half) `(cdr ,expr))))))))
 
 
 ;; This is used for both tagsum and defprod.  In tagsum, xvar is actually `(cdr
 ;; ,xvar) because this doesn't involve the tag.
-(defun tagsum-fields-to-require (fields xvar layout)
+(defun tagsum-fields-to-shape (fields xvar layout)
   (case layout
     (:alist `(and (alistp ,xvar)
                   (equal (strip-cars ,xvar) ',(strip-cars fields))))
     (:list `(and (true-listp ,xvar)
                  (eql (len ,xvar) ,(len fields))))
-    (:tree `(and . ,(tagsum-tree-require (len fields) xvar)))))
+    (:tree `(and . ,(tagsum-tree-shape (len fields) xvar)))))
               
 
 (defun tagprod-parse-formal-item
@@ -653,6 +667,8 @@
     (and (not (find-fixtype (std::formal->guard (car formals)) our-fixtypes))
          (tagsum-prod-check-base-case (cdr formals) our-fixtypes))))
 
+(defconst *tagprod-formal-keywords* '(:rule-classes :default :reqfix))
+
 (defun tagsum-prod-to-flexprod (x xvar sum-kwds lastp have-basep our-fixtypes)
   (b* (((cons kind args) x)
        ((mv kwd-alist fields)
@@ -662,10 +678,11 @@
         (mv nil nil))
        (layout (getarg :layout (getarg :layout :list sum-kwds) kwd-alist))
        (inlinep (assoc :inline kwd-alist))
+       (requirep (assoc :require kwd-alist))
        (hons (getarg :hons nil kwd-alist))
        (fields (car fields))
        (field-formals (tagprod-parse-formals 'parse-tagsum fields
-                                             '(:rule-classes :default)))
+                                             *tagprod-formal-keywords*))
        (basep (and (if have-basep
                        (eq have-basep kind)
                      (tagsum-prod-check-base-case field-formals our-fixtypes))
@@ -674,7 +691,7 @@
                         field-formals 0 (len field-formals) `(cdr ,xvar) layout))
        (base-name (getarg :base-name nil kwd-alist))
        (ctor-body1 (tagsum-fields-to-ctor-body (strip-cars flexsum-fields) layout hons))
-       (require1 (tagsum-fields-to-require flexsum-fields `(cdr ,xvar) layout)))
+       (shape1 (tagsum-fields-to-shape flexsum-fields `(cdr ,xvar) layout)))
     (mv `(,kind
           :cond ,(if lastp
                      t
@@ -682,11 +699,12 @@
                        `(or (atom ,xvar)
                             (eq (car ,xvar) ,kind))
                      `(eq (car ,xvar) ,kind)))
-          :require ,(if lastp
-                        `(and (eq (car ,xvar) ,kind) ,require1)
-                      require1)
+          :shape ,(if lastp
+                        `(and (eq (car ,xvar) ,kind) ,shape1)
+                      shape1)
           :fields ,flexsum-fields
           ,@(and inlinep `(:inline ,(cdr inlinep)))
+          ,@(and requirep `(:require ,(cdr requirep)))
           ,@(and base-name `(:type-name ,base-name))
           :ctor-body (,(if hons 'hons 'cons) ,kind ,ctor-body1))
         basep)))
@@ -759,7 +777,7 @@
        (count (flextype-get-count-fn name kwd-alist))
        (xvar (or (getarg :xvar xvar kwd-alist)
                  (car (find-symbols-named-x (getarg :measure nil kwd-alist)))
-                 'acl2::x))
+                 (intern-in-package-of-symbol "X" name)))
        (layout (getarg :layout :alist kwd-alist))
        ((unless (member layout '(:tree :list :alist)))
         (er hard? 'parse-tagsum "Bad layout type ~x0~%" layout))
@@ -782,7 +800,7 @@
                   :kind kind
                   :case case
                   :kind-body `(car ,xvar)
-                  :require `(consp ,xvar)
+                  :shape `(consp ,xvar)
                   :count count
                   :prods prods
                   :xvar xvar
@@ -799,6 +817,7 @@
     :no-count
     :parents :short :long  ;; xdoc
     :inline
+    :require
     :layout ;; :list, :tree, :alist
     :tag
     :hons
@@ -810,21 +829,55 @@
         (er hard? 'parse-defprod "Bad layout type ~x0~%" layout))
        (tag (getarg :tag nil kwd-alist))
        (hons (getarg :hons nil kwd-alist))
-       (field-formals (tagprod-parse-formals 'parse-defprod fields '(:rule-classes :default)))
+       (field-formals (tagprod-parse-formals 'parse-defprod fields *tagprod-formal-keywords*))
        (xbody (if tag `(cdr ,xvar) xvar))
        (flexsum-fields (tagsum-formals-to-flexsum-fields
                         field-formals 0 (len field-formals) xbody layout))
        (ctor-body1 (tagsum-fields-to-ctor-body (strip-cars flexsum-fields) layout hons))
        (ctor-body (if tag `(,(if hons 'hons 'cons) ,tag ,ctor-body1) ctor-body1))
-       (require (tagsum-fields-to-require flexsum-fields xbody layout))
+       (shape (tagsum-fields-to-shape flexsum-fields xbody layout))
+       (requirep (assoc :require kwd-alist))
        (kind (or tag (intern$ (symbol-name name) "KEYWORD"))))
     `(,kind
-      :require ,(if tag
-                    (nice-and `(eq (car ,xvar) ,tag) require)
-                  require)
+      :shape ,(if tag
+                    (nice-and `(eq (car ,xvar) ,tag) shape)
+                  shape)
       :fields ,flexsum-fields
-      :type-name ,name
-      :ctor-body ,ctor-body)))
+      :type-name ,name 
+      :ctor-body ,ctor-body
+      ,@(and requirep `(:require ,(cdr requirep))))))
+
+
+
+(defun defprod-tag-events (pred xvar tag name)
+  (b* ((foop pred)
+       (x xvar))
+    `((defthmd ,(intern-in-package-of-symbol
+                 (concatenate 'string "TAG-WHEN-" (symbol-name foop))
+                 name)
+        (implies (,foop ,x)
+                 (equal (tag ,x)
+                        ,tag))
+        :rule-classes ((:rewrite :backchain-limit-lst 1)
+                       (:forward-chaining))
+        :hints(("Goal" :in-theory (enable tag ,foop))))
+
+      (defthmd ,(intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name foop) "-WHEN-WRONG-TAG")
+                 name)
+        (implies (not (equal (tag ,x) ,tag))
+                 (equal (,foop ,x)
+                        nil))
+        :rule-classes ((:rewrite :backchain-limit-lst 1))
+        :hints(("Goal" :in-theory (enable tag ,foop))))
+
+      (add-to-ruleset std::tag-reasoning
+                      '(,(intern-in-package-of-symbol
+                          (concatenate 'string "TAG-WHEN-" (symbol-name foop))
+                          name)
+                        ,(intern-in-package-of-symbol
+                          (concatenate 'string (symbol-name foop) "-WHEN-WRONG-TAG")
+                          name))))))
 
 
 (defun parse-defprod (x xvar fixtypes)
@@ -855,7 +908,7 @@
        (count (flextype-get-count-fn name kwd-alist))
        (xvar (or (getarg :xvar xvar kwd-alist)
                  (car (find-symbols-named-x (getarg :measure nil kwd-alist)))
-                 'acl2::x))
+                 (intern-in-package-of-symbol "X" name)))
 
        (tag (getarg :tag nil kwd-alist))
        ((unless (or (not tag) (keywordp tag)))
@@ -871,12 +924,16 @@
                   :fix fix
                   :equiv equiv
                   :kind nil
-                  :require (if tag `(consp ,xvar) t)
+                  :shape (if tag `(consp ,xvar) t)
                   :count count
                   :prods prods
                   :xvar xvar
                   :measure measure
-                  :kwd-alist kwd-alist
+                  :kwd-alist (if tag (cons
+                                      (cons :post-pred-events
+                                            (defprod-tag-events pred xvar tag name))
+                                      kwd-alist)
+                               kwd-alist)
                   :orig-prods orig-prods
                   :inline inline)))
 
@@ -944,7 +1001,7 @@
        (xvar (or (getarg :xvar nil kwd-alist)
                  xvar
                  (car (find-symbols-named-x (getarg :measure nil kwd-alist)))
-                 'acl2::x))
+                 (intern-in-package-of-symbol "X" name)))
        (measure (or (getarg :measure nil kwd-alist)
                     `(acl2-count ,xvar)))
        (true-listp (getarg :true-listp nil kwd-alist)))
@@ -1048,7 +1105,7 @@
        (xvar (or (getarg :xvar nil kwd-alist)
                  xvar
                  (car (find-symbols-named-x (getarg :measure nil kwd-alist)))
-                 'acl2::x))
+                 (intern-in-package-of-symbol "X" name)))
        (measure (or (getarg :measure nil kwd-alist)
                     `(acl2-count ,xvar)))
        (true-listp (getarg :true-listp nil kwd-alist)))
@@ -1336,19 +1393,22 @@
   (b* (((when (atom fields)) nil)
        ((flexprod-field x) (car fields))
        ((unless x.type)
-        (flexprod-fields-pred-bindings (cdr fields))))
+        (cons (list (intern-in-package-of-symbol
+                     (concatenate 'string "?" (symbol-name x.name))
+                     x.name) x.acc-body)
+              (flexprod-fields-pred-bindings (cdr fields)))))
     (cons (list x.name x.acc-body)
           (flexprod-fields-pred-bindings (cdr fields)))))
 
 ;; ((pfunc-p fn)
 ;;  (ptermlist-p args))
-(defun flexprod-fields-typechecks (fields)
-  (b* (((when (atom fields)) nil)
+(defun flexprod-fields-typechecks (fields last)
+  (b* (((when (atom fields)) last)
        ((flexprod-field x) (car fields))
        ((unless x.type)
-        (flexprod-fields-typechecks (cdr fields))))
-    (cons (list x.type x.name)
-          (flexprod-fields-typechecks (cdr fields)))))
+        (flexprod-fields-typechecks (cdr fields) last)))
+    (nice-and (list x.type x.name)
+              (flexprod-fields-typechecks (cdr fields) last))))
 
 ;;        (let* ((fn (car x))
 ;;               (args (cdr x)))
@@ -1357,18 +1417,10 @@
 (defun flexsum-pred-prod-case (prod)
   (b* (((flexprod prod) prod)
        (bindings (flexprod-fields-pred-bindings prod.fields))
-       (typechecks (flexprod-fields-typechecks prod.fields))
-       (typecheckterm (if (atom typechecks)
-                          t
-                        `(let* ,bindings
-                           ,(if (atom (cdr typechecks))
-                                (car typechecks)
-                              `(and . ,typechecks))))))
-    (if (eq prod.require t)
-        typecheckterm
-      (if (eq typecheckterm t)
-          prod.require
-        (nice-and prod.require typecheckterm)))))
+       (typechecks (flexprod-fields-typechecks
+                    prod.fields prod.require))
+       (typecheckterm `(b* ,bindings ,typechecks)))
+    (nice-and prod.shape typecheckterm)))
 
 (defun flexsum-pred-cases (prods)
   (if (atom prods)
@@ -1393,7 +1445,7 @@
        ;;      `(case (,sum.kind ,sum.xvar)
        ;;         . ,(flexsum-pred-cases sum.prods))
        ;;    `(cond . ,(flexsum-pred-cases-nokind sum.prods)))
-       ,(nice-and sum.require
+       ,(nice-and sum.shape
                   (nice-cond (flexsum-pred-cases-nokind sum.prods)))
        ///
        (make-event
@@ -1590,9 +1642,17 @@
        ((flexprod-field x) (car fields))
        (fix-body (if x.fix
                      `(,x.fix ,x.acc-body)
-                   x.acc-body)))
-    (cons (list x.name fix-body)
+                   x.acc-body))
+       (reqfix-body (if (eq x.name x.reqfix)
+                        fix-body
+                      `(let ((,x.name ,fix-body)) ,x.reqfix))))
+    (cons (list (intern-in-package-of-symbol
+                 (concatenate 'string "?" (symbol-name x.name))
+                 x.name)
+                reqfix-body)
           (flexprod-fields-fix-bindings (cdr fields)))))
+
+;;-----***
 
 ;;        (let* ((fn (pfunc-fix (car x)))
 ;;               (args (ptermlist-fix (cdr x))))
@@ -1601,7 +1661,7 @@
   (b* (((flexprod prod) prod)
        (bindings (flexprod-fields-fix-bindings prod.fields)))
     (if bindings
-        `(let* ,bindings
+        `(b* ,bindings
            ,prod.ctor-body)
       prod.ctor-body)))
 
@@ -1974,6 +2034,16 @@
       )))
 
 
+;; (defun flexprod-lookup-field-acc-body (fieldname fields)
+;;   (if (atom fields)
+;;       nil
+;;     (b* (((flexprod-field x) (car fields)))
+;;       (if (eq x.name fieldname)
+;;           x.acc-body
+;;         (fledprod-lookup-field-acc-body fieldname (cdr fields))))))
+
+;; (defun flexprod-fields-bind-
+
 
   ;; (define pterm-varname ((x pterm-p))
   ;;   :guard (eq (pterm-kind x) :var)
@@ -1982,6 +2052,13 @@
   ;;     (mbe :logic (var-fix varname) :exec varname))
   ;;   ///
   ;;   (fty::deffixequiv pterm-varname :hints (("goal" :expand ((pterm-fix x))))))
+
+(defun flexprod-fields-discard-later-bindings (name bindings)
+  (if (atom bindings)
+      nil
+    (cons (car bindings)
+          (and (not (eq name (caar bindings)))
+               (flexprod-fields-discard-later-bindings name (cdr bindings))))))
 
 
 (defun flexprod-field-acc (x prod sum)
@@ -1992,19 +2069,21 @@
        )
     `((define ,x.acc-name ((,sum.xvar ,sum.pred))
         ,@(and (member :acc prod.inline) `(:inline t))
+        ;; :prepwork ((local (in-theory (enable ,sum.fix ,sum.pred))))
         :guard ,prod.guard
         :guard-hints (("goal" :expand ((,sum.pred ,sum.xvar))))
         :returns ,(if x.type
                       `(,x.name ,x.type . ,x.rule-classes)
                     `(x.name))
-        (mbe :logic ,(let* ((unfixbody (nice-and prod.guard x.acc-body))
-                            (body (if x.fix
-                                      `(,x.fix ,unfixbody)
-                                    unfixbody)))
-                       ;; (if fixprep
-                       ;;     `(let* ((,sum.xvar (,fixprep ,sum.xvar)))
-                       ;;        ,body)
-                       body)
+        (mbe :logic (b* ((,sum.xvar (and ,prod.guard ,sum.xvar))
+                         . ,(flexprod-fields-discard-later-bindings
+                             x.name (flexprod-fields-fix-bindings prod.fields)))
+                      ,x.name)
+             ;; (let* ((unfixbody (nice-and prod.guard x.acc-body))
+             ;;                (body (if x.fix
+             ;;                          `(,x.fix ,unfixbody)
+             ;;                        unfixbody)))
+             ;;   body)
              :exec ,x.acc-body)
         ///
         (deffixequiv ,x.acc-name :hints (("goal" :expand ((,sum.fix ,sum.xvar)))))
@@ -2043,9 +2122,14 @@
 (defun flexprod-fields-mbefix-bindings (fields)
   (b* (((when (atom fields)) nil)
        ((flexprod-field x) (car fields))
-       ((when (not x.fix))
+       ((unless (or x.fix (not (eq x.reqfix x.name))))
         (flexprod-fields-mbefix-bindings (cdr fields))))
-    (cons `(,x.name (mbe :logic (,x.fix ,x.name)
+    (cons `(,x.name (mbe :logic ,(if (eq x.reqfix x.name)
+                                     `(,x.fix ,x.name)
+                                   (if x.fix
+                                       `(let ((,x.name (,x.fix ,x.name)))
+                                          ,x.reqfix)
+                                     x.reqfix))
                          :exec ,x.name))
           (flexprod-fields-mbefix-bindings (cdr fields)))))
 
@@ -2070,15 +2154,25 @@
 ;;              (var-fix varname)))
 (defun flexprod-acc-of-ctor-thms1 (fields ctor-call)
   (b* (((when (atom fields)) nil)
-       ((flexprod-field x) (car fields)))
+       ((flexprod-field x) (car fields))
+       (fixterm (if (eq x.reqfix x.name)
+                    (if x.fix
+                      `(,x.fix ,x.name)
+                    x.name)
+                  (if x.fix
+                        `(let ((,x.name (,x.fix ,x.name)))
+                           ,x.reqfix)
+                      x.reqfix))))
     (cons `(defthm ,(intern-in-package-of-symbol
                      (concatenate 'string (symbol-name x.acc-name)
                                   "-OF-" (symbol-name (car ctor-call)))
                      x.acc-name)
              (equal (,x.acc-name ,ctor-call)
-                    ,(if x.fix
-                         `(,x.fix ,x.name)
-                       x.name)))
+                    ,fixterm)
+             :hints(("Goal" :in-theory (e/d (,x.acc-name)
+                                            (,(car ctor-call))))
+                    (and stable-under-simplificationp
+                         '(:in-theory (enable ,(car ctor-call))))))
           (flexprod-acc-of-ctor-thms1 (cdr fields) ctor-call))))
 
 (defun flexprod-acc-of-ctor-thms (prod)
@@ -2096,9 +2190,14 @@
       nil
     (cons (b* (((flexprod-field x) (car fields)))
             `(equal (,x.acc-name ,xvar)
-                    ,(if x.fix
-                         `(,x.fix ,x.name)
-                       x.name)))
+                    ,(if (eq x.reqfix x.name)
+                         (if x.fix
+                             `(,x.fix ,x.name)
+                           x.name)
+                       (if x.fix
+                           `(let ((,x.name (,x.fix ,x.name)))
+                              ,x.reqfix)
+                         x.reqfix))))
           (flexprod-equal-of-field-accessors (cdr fields) xvar))))
 
 (defun flexprod-fields-macro-args (x)
@@ -2106,8 +2205,18 @@
        ((flexprod-field f) (car x)))
     (cons `(,f.name ',f.default)
           (flexprod-fields-macro-args (cdr x)))))
-       
-    
+
+
+(defun flexprod-fields-bind-accessors (x xvar)
+  (b* (((when (atom x)) nil)
+       ((flexprod-field f) (car x)))
+    (cons (list (intern-in-package-of-symbol
+                 (concatenate 'string "?" (symbol-name f.name))
+                 f.name)
+                `(,f.acc-name ,xvar))
+          (flexprod-fields-bind-accessors (cdr x) xvar))))
+                
+
 
 (defun flexprod-constructor (prod sum)
   (b* (((flexsum sum) sum)
@@ -2118,6 +2227,7 @@
                              (flexprod-fields->acc-names prod.fields))))
     `((define ,prod.ctor-name ,(flexprod-field-names-types prod.fields)
         ,@(and (member :xtor prod.inline) `(:inline t))
+        :guard ,prod.require
         :returns (,sum.xvar ,(if (eq prod.guard t)
                                  sum.pred
                                `(and (,sum.pred ,sum.xvar)
@@ -2129,6 +2239,15 @@
         (deffixequiv ,prod.ctor-name)
         
         ,@(flexprod-acc-of-ctor-thms prod)
+        
+        ,@(and (not (eq prod.require t))
+               `((defthm ,(intern-in-package-of-symbol
+                           (concatenate 'string
+                                        (symbol-name prod.ctor-name)
+                                        "-REQUIREMENTS")
+                           prod.ctor-name)
+                   (b* ,(flexprod-fields-bind-accessors prod.fields sum.xvar)
+                     ,prod.require))))
 
         ,@(and
            (consp prod.fields)
@@ -2164,7 +2283,13 @@
                  (and (,sum.pred ,sum.xvar)
                       ,@(and (not (eq prod.guard t)) (list prod.guard))
                       . ,(flexprod-equal-of-field-accessors prod.fields sum.xvar)))
-          :hints (("goal" :expand ((,sum.pred ,sum.xvar)))))
+          :hints (("goal" :expand ((,sum.pred ,sum.xvar))
+                   :in-theory (disable ,(intern-in-package-of-symbol
+                                         (concatenate 'string
+                                                      (symbol-name sum.fix)
+                                                      "-WHEN-"
+                                                      (symbol-name prod.kind))
+                                         sum.fix)))))
 
         (defmacro ,prod.ctor-macro (&key . ,(flexprod-fields-macro-args prod.fields))
           (list ',prod.ctor-name
@@ -2277,18 +2402,37 @@
     (append (flexprod-field-count-var (car fields) types)
             (flexprod-field-counts-vars (cdr fields) types))))
 
+;; (defun flexprod-fields-check-reqfixes (x types)
+;;   ;; Check whether there's a recursive field that has a reqfix on it.
+;;   (b* (((when (atom x)) nil)
+;;        ((flexprod-field f) (car x)))
+;;     (if (and f.type
+;;              (not (eq f.reqfix f.name))
+;;              (flextypes-find-count-for-pred f.type types))
+;;         nil
+;;       (flexprod-fields-check-reqfixes (cdr x) types))))
+    
+
 (defun flexprod-ctor-count-thm (prod sum types)
   (b* (((flexprod x) prod)
+       ;; ((unless (flexprod-fields-check-reqfixes x.fields types)) nil)
        ((flexsum sum) sum)
        (call (flexprod-ctor-call prod))
        (field-counts (flexprod-field-counts-vars x.fields types))
-       ((when (not field-counts)) nil))
+       ((when (not field-counts)) nil)
+       (body `(< (+ . ,field-counts)
+                 (,sum.count ,call))))
     `((defthm ,(intern-in-package-of-symbol
                 (concatenate 'string (symbol-name sum.count)
                              "-OF-" (symbol-name x.ctor-name))
                 sum.count)
-        (< (+ . ,field-counts)
-           (,sum.count ,call))
+        ,(if x.require
+             ;; NOTE: Not sure this makes sense, but is necessary in at least
+             ;; some cases, e.g.: requirement that arglist arity matches lambda
+             ;; formals arity.
+             `(implies ,x.require
+                       ,body)
+           body)
         :hints (("goal" :expand ((,sum.count ,call))))
         :rule-classes :linear))))
 
@@ -2468,6 +2612,13 @@
                      (,x.count (,x.fix ,x.xvar)))))
             (flextypes-count-expands (cdr types)))))
 
+(defun flextypes-count-names (x)
+  (if (atom x)
+      nil
+    (append (with-flextype-bindings (x (car x))
+              (and x.count (list x.count)))
+            (flextypes-count-names (cdr x)))))
+
 (defun flextypes-count-post-events (types alltypes)
   (if (atom types)
       nil
@@ -2546,6 +2697,7 @@
   (b* (((flextypes x) x)
        ((when x.no-count) nil)
        (defs (flextypes-count-defs x.types x.types))
+       (names (flextypes-count-names x.types))
        ((when (not defs)) ;; none of the types have a count
         nil)
        (flagp (consp (cdr defs)))
@@ -2564,7 +2716,21 @@
               ///
               (verify-guards+ ,(cadr (car defs)))
               (deffixequiv-mutual ,defines-name
-                :hints (("goal" :expand ,(flextypes-count-expands x.types))))
+                :hints (;; ("goal" :expand ,(flextypes-count-expands x.types))
+                        (and stable-under-simplificationp
+                             (let ((lit (car (last clause))))
+                               (and (eq (car lit) 'equal)
+                                    (let ((expands (append (and (consp (cadr lit))
+                                                                (member (car (cadr lit))
+                                                                        ',names)
+                                                                (list (cadr lit)))
+                                                           (and (consp (caddr lit))
+                                                                (member (car (caddr lit))
+                                                                        ',names)
+                                                                (list (caddr lit))))))
+                                      (and expands
+                                           `(:expand ,expands))))))))
+                                            
               . ,(flextypes-count-post-events x.types x.types))))
       (list
        (append
@@ -2815,7 +2981,7 @@ some base types with fixing functions.</p>
     :long \"...\"        ;; xdoc
     :measure (+ 1 (* 2 (acl2-count x)))
                        ;; default: (acl2-count x)
-    :xvar x            ;; default: acl2::x, or find x symbol in measure
+    :xvar x            ;; default: x, or find x symbol in measure
     :prepwork          ;; admit these events before starting
     :pred foolistp     ;; default: foolist-p
     :fix foolistfix    ;; default: foolist-fix
@@ -2873,7 +3039,7 @@ functions.</p>
     :long \"...\"        ;; xdoc
     :measure (+ 1 (* 2 (acl2-count x)))
                        ;; default: (acl2-count x)
-    :xvar x            ;; default: acl2::x, or find x symbol in measure
+    :xvar x            ;; default: x, or find x symbol in measure
     :prepwork          ;; admit these events before starting
     :pred fooalistp     ;; default: fooalist-p
     :fix fooalistfix    ;; default: fooalist-fix
@@ -2998,9 +3164,32 @@ hons) rather than cons.</li>
 fixing function (which for execution purposes is just the identity) to be
 inlined.  The list may also contain @(':xtor'), which causes the constructor to
 be inlined as well; @(':all') (not in a list) is also possible.</li>
+
+<li>@(':require') adds a dependent type requirement; see the section on this feature below.</li>
 </ul>
 
+<h4>Experimental Dependent Type Option</h4>
 
+<p>An additional top-level keyword, @(':require'), can add a requirement that
+the fields satisfy some relation.  Using this option requires that one or more
+fields be given a @(':reqfix') option; it must be a theorem that applying the
+regular fixing functions followed by the @(':reqfix') of each field yields
+fields that satisfy the requirement.  (It should also be the case that applying
+the reqfixes to fields already satisfying the requirement leaves them
+unchanged.) For example:</p>
+
+@({
+ (defprod sizednum
+   ((size natp)
+    (bits natp :reqfix (loghead size bits)))
+   :require (unsigned-byte-p size bits))
+ })
+
+<p>As an experimental feature, this has some idiosyncrasies.  For example,
+putting the @('bits') field before the @('size') field in the example above
+will not work: the fields must be listed in dependency order, i.e., since the
+@(':reqfix') of @('bits') accesses @('size'), @('bits') must occur after
+@('size').</p>
 ")
 
 (defxdoc deftagsum
@@ -3126,6 +3315,8 @@ or not.  This may be @(':all') or a subset of @('(:xtor :acc)').  Defaults to
 with @(see hons).</li>
 <li>@(':base-name'), overrides the name of the constructor and the base name
 used to generate accessors.</li>
+<li>@(':require') adds a dependent type requirement; see the section on this
+feature in @(see defprod).</li>
 </ul>
 
 <h4>Tagsum Options</h4>
@@ -3225,12 +3416,12 @@ different.</p>
      :ctor-body val)
     (:plus
      :cond (eq (car x) '+)
-     :require (and (true-listp x) (eql (len x) 3))
+     :shape (and (true-listp x) (eql (len x) 3))
      :fields ((left :type arithterm :acc-body (cadr x))
               (right :type arithterm :acc-body (caddr x)))
      :ctor-body (list '+ left right))
     (:minus
-     :require (and (eq (car x) '-)
+     :shape (and (eq (car x) '-)
                    (true-listp x)
                    (eql (len x) 2))
      :fields ((arg :type arithterm :acc-body (cadr x)))
@@ -3338,7 +3529,7 @@ condition.  So the condition for a given product assumes the negations of the
 conditions of the previous listed products.  The @(':cond') field defaults to
 @('t'), so typically it can be left off the last product type.</li>
 
-<li>@(':require') adds well-formedness requirements for a product.  One purpose
+<li>@(':shape') adds well-formedness requirements for a product.  One purpose
 these may serve is to make well-formed objects canonical: it must be a theorem
 that the fixing function applied to a well-formed object is the same object.
 So if a product is (e.g.) a tuple represented as a list, and the constructor
@@ -3352,7 +3543,7 @@ below.</li>
 
 <li>@(':ctor-body') describes how to make a product object from the fields.
 This must be consistent with the field accessor bodies (described below) and
-with the @(':cond') and @(':require') fields of this product and the previous
+with the @(':cond') and @(':shape') fields of this product and the previous
 ones (i.e., it can't produce something that could be mistaken for one of the
 previous products listed).  The actual constructor function will have fixing
 functions added; these should not be present in the @(':ctor-body')
@@ -3368,6 +3559,9 @@ which by default is the type-name.</li>
 <li>@(':inline), determining whether the constructor and accessors are inlined
 or not.  This may be @(':all') or a subset of @('(:xtor :acc)').  Defaults to
 @('(:acc)') if not overridden.</li>
+
+<li>@(':require') adds a dependent type requirement; see the section on this
+feature in @(see defprod).</li>
 
 </ul>
 

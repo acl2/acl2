@@ -32,7 +32,7 @@
 
 (program)
 
-(def-ruleset tag-reasoning nil)
+(def-ruleset! tag-reasoning nil)
 
 (defxdoc defaggregate
   :parents (std/util)

@@ -199,8 +199,8 @@ ruleset."
 
 (defsection def-ruleset!
   :parents (rulesets)
-  :short "Same as @(see def-ruleset) except that it overwrites any already
-existing ruleset instead of causing an error."
+  :short "Same as @(see def-ruleset) except that it does not complain if the
+ruleset already exists, instead acting like add-to-ruleset in that case."
 
   (defmacro def-ruleset! (name form)
     (declare (xargs :guard (symbolp name)))
