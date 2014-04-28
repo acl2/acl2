@@ -225,38 +225,6 @@
 ;;          (4v-sexpr-eval a env)))
 
 
-;; alist is something consed or appended together; looks for either a final cdr
-;; or appended element that is a 4v-sexpr-eval-alist and returns its
-;; sexpr-alist and environment.
-(defun find-composition-in-alist (alist)
-  (b* (((when (atom alist)) nil)
-       ((when (eq (car alist) '4v-sexpr-eval-alist))
-        `((sexpr-alist . ,(cadr alist))
-          (env . ,(caddr alist))))
-       ((when (eq (car alist) 'binary-append))
-        (b* ((arg1 (cadr alist))
-             ((when (eq (car arg1) '4v-sexpr-eval-alist))
-              `((sexpr-alist . ,(cadr arg1))
-                (env . ,(caddr arg1)))))
-          (find-composition-in-alist (caddr alist))))
-       ((when (eq (car alist) 'cons))
-        (find-composition-in-alist (caddr alist))))
-    nil))
-    
-
-(defun 4v-sexpr-restrict-list-fast (sexprs sexpr-alist)
-  (with-fast-alist sexpr-alist
-    (4v-sexpr-restrict-list sexprs sexpr-alist)))
-
-(defthmd 4v-sexpr-eval-list-of-composition
-  (implies (and (bind-free (find-composition-in-alist alist) (sexpr-alist env))
-                (force (4v-env-equiv alist
-                                     (append (4v-sexpr-eval-alist sexpr-alist env)
-                                             env))))
-           (equal (4v-sexpr-eval-list sexprs alist)
-                  (4v-sexpr-eval-list
-                   (4v-sexpr-restrict-list-fast sexprs sexpr-alist)
-                   env))))
 
 (defun 4v-alist-extract-fast (keys al)
   (with-fast-alist al
@@ -293,6 +261,53 @@
                           (4v-sexpr-vars-list x))))
        :flag sexpr-list))))
 
+
+
+;; alist is something consed or appended together; looks for either a final cdr
+;; or appended element that is a 4v-sexpr-eval-alist and returns its
+;; sexpr-alist and environment.
+(defun find-composition-in-alist (alist)
+  (b* (((when (atom alist)) nil)
+       ((when (eq (car alist) '4v-sexpr-eval-alist))
+        `((sexpr-alist . ,(cadr alist))
+          (env . ,(caddr alist))))
+       ((when (eq (car alist) 'binary-append))
+        (b* ((arg1 (cadr alist))
+             ((when (eq (car arg1) '4v-sexpr-eval-alist))
+              `((sexpr-alist . ,(cadr arg1))
+                (env . ,(caddr arg1)))))
+          (find-composition-in-alist (caddr alist))))
+       ((when (eq (car alist) 'cons))
+        (find-composition-in-alist (caddr alist))))
+    nil))
+    
+
+(defun 4v-sexpr-restrict-list-fast (sexprs sexpr-alist)
+  (with-fast-alist sexpr-alist
+    (4v-sexpr-restrict-list sexprs sexpr-alist)))
+
+(defthmd 4v-sexpr-eval-list-of-composition
+  (implies (and (bind-free (find-composition-in-alist alist) (sexpr-alist env))
+                (equal vars (4v-sexpr-vars-1pass-list (sexpr-rewrite-default-list sexprs)))
+                (4v-env-equiv (4v-alist-extract vars alist)
+                              (4v-alist-extract
+                               vars
+                               (append (4v-sexpr-eval-alist sexpr-alist env)
+                                       env))))
+           (equal (4v-sexpr-eval-list sexprs alist)
+                  (4v-sexpr-eval-list
+                   (4v-sexpr-restrict-list-fast sexprs sexpr-alist)
+                   env)))
+  :hints (("goal" :use ((:instance sexpr-rewrite-list-correct
+                         (rewrites *sexpr-rewrites*) (x sexprs))
+                        (:instance 4v-sexpr-eval-list-of-alist-extract
+                         (x (sexpr-rewrite-default-list sexprs))
+                         (env alist))
+                        (:instance 4v-sexpr-eval-list-of-alist-extract
+                         (x (sexpr-rewrite-default-list sexprs))
+                         (env (append (4v-sexpr-eval-alist sexpr-alist env)
+                                      env))))
+           :in-theory (e/d () (sexpr-rewrite-list-correct)))))
 
 
 (defthmd equal-of-4v-to-nat-sexpr-eval-lists
