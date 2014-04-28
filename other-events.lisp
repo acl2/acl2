@@ -23486,17 +23486,17 @@
                         kwd))
                    (t (value nil))))))
 
-(defun trace$-value-msgp (x)
+(defun trace$-value-msgp (x kwd)
   (and (consp x)
        (keywordp (car x))
        (or (and (member-eq (car x) '(:fmt :fmt!))
                 (consp (cdr x))
                 (null (cddr x)))
            (er hard 'trace$
-               "Illegal :ENTRY value.  A legal :ENTRY value starting with a ~
-                keyword must be of the form (:FMT x).  The :ENTRY value ~x0 ~
+               "Illegal ~x0 value.  A legal ~x0 value starting with a ~
+                keyword must be of the form (:FMT x).  The ~x0 value ~x1 ~
                 is therefore illegal."
-               x))
+               kwd x))
        (car x)))
 
 (defun chk-trace-options (fn predefined trace-options formals ctx wrld state)
@@ -23574,14 +23574,14 @@
            (value nil))
          (if entry-tail
              (chk-trace-options-aux
-              (if (trace$-value-msgp (cadr entry-tail))
+              (if (trace$-value-msgp (cadr entry-tail) :entry)
                   (cadr (cadr entry-tail))
                 (cadr entry-tail))
               :entry formals ctx wrld state)
            (value nil))
          (if exit-tail
              (chk-trace-options-aux
-              (if (trace$-value-msgp (cadr exit-tail))
+              (if (trace$-value-msgp (cadr exit-tail) :exit)
                   (cadr (cadr exit-tail))
                 (cadr exit-tail))
               :exit formals ctx wrld state)
@@ -23746,11 +23746,11 @@
                    (cadr hide-tail)))
          (entry (or (cadr (assoc-keyword :entry trace-options))
                     (list 'cons (kwote fn) 'arglist)))
-         (entry-msgp (trace$-value-msgp entry))
+         (entry-msgp (trace$-value-msgp entry :entry))
          (entry (if entry-msgp (cadr entry) entry))
          (exit  (or (cadr (assoc-keyword :exit  trace-options))
                     (list 'cons (kwote fn) 'values)))
-         (exit-msgp (trace$-value-msgp exit))
+         (exit-msgp (trace$-value-msgp exit :exit))
          (exit (if exit-msgp (cadr exit) exit))
          (notinline-tail (assoc-keyword :notinline trace-options))
          (notinline-nil (and notinline-tail
