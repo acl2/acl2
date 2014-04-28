@@ -311,6 +311,7 @@ equal.</p>
   (defthm streqv-of-str-fix
     (streqv (str-fix x) x))
 
+  (defcong streqv equal (str-fix x) 1)
   (defcong streqv equal (char x n) 1)
   (defcong streqv equal (string-append x y) 1)
   (defcong streqv equal (string-append x y) 2))
