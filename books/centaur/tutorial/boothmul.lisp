@@ -47,7 +47,7 @@
 (include-book "intro")
 (include-book "centaur/gl/bfr-satlink" :dir :system)
 (local (include-book "booth-support"))
-(local (include-book "centaur/esim/stv/stv-decomp-proofs" :dir :system))
+(local (include-book "centaur/esim/stv/stv-decomp-proofs-even-better" :dir :system))
 ; (depends-on "boothmul.v")
 ; cert_param: (hons-only)
 ; cert_param: (uses-glucose)
@@ -440,11 +440,66 @@
    :hints (("goal"
             ;; Need to know that the intermediate values are non-X:
             :use ((:instance boothmul-pps-types))
-            :in-theory (stv-decomp-theory))
-           (and stable-under-simplificationp
-                '(:in-theory (union-theories (stv-decomp-theory)
-                                             '(pairlis$-of-cons
-                                               pairlis$-when-atom)))))))
+            :in-theory (stv-decomp-theory)))))
+
+#|
+
+; BOZO: Using specific inputs instead of the autoins macros causes a 15-way
+; case-split.  Using specific hyps insteada of autohyps furthers that case
+; split to be 272-way.  Also, the proof doesn't go through.
+
+; If you are using the approach found in this book in your own proofs, you
+; should probably just use autoins and autohyps (or fix the cause).
+
+(local
+ (defthmd boothmul-decomp-is-boothmul-with-specific-inputs
+   (implies ;(boothmul-decomp-autohyps)
+             (AND (NATP A)
+                  (< A (EXPT 2 16))
+                  (NATP B)
+                  (< B (EXPT 2 16)))
+
+            (b* ( ;; Run the decomposed circuit to get the partial products
+                 (in-alist1 ;(boothmul-decomp-autoins)
+                            `((A . ,A)
+                              (B . ,B))
+                             )
+                 (out-alist1 (stv-run (boothmul-decomp) in-alist1))
+
+                 ;; Grab the resulting partial products out.
+                 ((assocs pp0 pp1 pp2 pp3 pp4 pp5 pp6 pp7) out-alist1)
+
+                 ;; Run the decomposed circuit again, sticking the partial
+                 ;; products back in on the inputs.  (This is a rather subtle use
+                 ;; of the autoins macro, which uses the bindings for pp0...pp7
+                 ;; above.)
+                 (in-alist2 ;(boothmul-decomp-autoins)
+                            `((PP0 . ,PP0)
+                              (PP1 . ,PP1)
+                              (PP2 . ,PP2)
+                              (PP3 . ,PP3)
+                              (PP4 . ,PP4)
+                              (PP5 . ,PP5)
+                              (PP6 . ,PP6)
+                              (PP7 . ,PP7)))
+                 (out-alist2 (stv-run (boothmul-decomp) in-alist2))
+
+                 ;; Separately, run the original circuit.
+                 (orig-in-alist  (boothmul-direct-autoins))
+                 (orig-out-alist (stv-run (boothmul-direct) orig-in-alist)))
+
+              (equal
+               ;; The final answer from running the decomposed circuit the second
+               ;; time, after feeding its partial products back into itself.
+               (cdr (assoc 'o out-alist2))
+
+               ;; The answer from running the original circuit.
+               (cdr (assoc 'o orig-out-alist)))))
+   :hints (("goal"
+            ;; Need to know that the intermediate values are non-X:
+            :use ((:instance boothmul-pps-types))
+            :in-theory (stv-decomp-theory)))))
+|#
 
 ; For reference, here is the same decomposition lemma, but proven using GL
 ; instead of the specialized theory:
