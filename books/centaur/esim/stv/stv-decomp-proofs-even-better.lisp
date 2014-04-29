@@ -20,7 +20,28 @@
 ; stv-decomp-proofs.lisp -- lemmas for proofs about decomposition of STVs
 ;
 ; Original authors: Sol Swords <sswords@centtech.com>
-;                  Jared Davis <jared@centtech.com>
+;                   Jared Davis <jared@centtech.com>
+; Contributing authors: David Rager <ragerdl@gmail.com>
+;                       Matt Kaufmann <kaufmann@cs.utexas.edu>
+
+; TODO:
+;
+; (1) Provide feedback to the user when they fail to include lemmas that
+;     describe the types of the intermediate values.  The error the user
+;     receives will look something like:
+;
+;; HARD ACL2 ERROR in STV-DECOMP-4V-ENV-EQUIV-META:  Not equivalent
+;;
+;; A-alist:
+;; ((WIRENAME[0] CAR (IF (EQUAL (4V-TO-NAT #) 'X) '(X X X X X ...) (IF (IF # # #) (BOOL-TO-4V-LST #) '#))) (WIRENAME[10] CAR (CDR (CDR (CDR #)))) (WIRENAME[11] CAR (CDR (CDR (CDR #)))) (WIRENAME[12] CAR (CDR (CDR (CDR #)))) (WIRENAME[13] CAR (CDR (CDR (CDR #)))) ...)
+;; B-alist:
+;; ((WIRENAME[0] BOOL-TO-4V (LOGBITP '0 WIRENAME)) (WIRENAME[10] BOOL-TO-4V (LOGBITP '10 WIRENAME)) (WIRENAME[11] BOOL-TO-4V (LOGBITP '11 WIRENAME)) (WIRENAME[12] BOOL-TO-4V (LOGBITP '12 WIRENAME)) (WIRENAME[13] BOOL-TO-4V (LOGBITP '13 WIRENAME)) ...)
+;
+; (2) It seems that this book now works for compositions that don't use the
+;     autohyps and autoins.  I think it's the revappend-pairlis$-open that
+;     allows this functionality, but it could also have to do with the changes
+;     to find-composition-in-alist.  Anyway, keep being able to pass in exact
+;     inputs instead of the whole list of autoins in mind as a goal.
 
 (in-package "ACL2")
 
@@ -59,6 +80,14 @@
 
 (defthm revappend-nil
   (equal (revappend nil b) b))
+
+(defthmd revappend-pairlis$-open
+  (equal (revappend (pairlis$ (cons a x)
+                              y)
+                    z)
+         (revappend (pairlis$ x (cdr y))
+                    (cons (cons a (car y))
+                          z))))
 
 (defthmd stv-simvar-inputs-to-bits-open
   (equal (stv-simvar-inputs-to-bits (cons (cons name val) alist) in-usersyms)
@@ -122,10 +151,10 @@
   :hints(("Goal" :in-theory (enable 4v-sexpr-eval-list))))
 
 
-             
-           
-             
-             
+
+
+
+
 (defthm bool-to-4v-lst-of-bool-from-4v-lst-when-4v-bool-listp
   (implies (4v-bool-listp x)
            (equal (bool-to-4v-lst (bool-from-4v-list x))
@@ -274,13 +303,35 @@
        ((when (eq (car alist) 'binary-append))
         (b* ((arg1 (cadr alist))
              ((when (eq (car arg1) '4v-sexpr-eval-alist))
-              `((sexpr-alist . ,(cadr arg1))
-                (env . ,(caddr arg1)))))
+              ;;(cw "No longer discarding: ~x0~%" (caddr alist))
+              (b* ((curr-sexpr-alist (cadr arg1))
+                   (curr-env (caddr arg1))
+                   ((cons (cons ?sexpr-alist-label recur-sexpr-alist)
+                          (cons ?env-label recur-env))
+                    (find-composition-in-alist (caddr alist)))
+                   (- (if (and (not (equal curr-env recur-env))
+                               (not (null recur-env)))
+                          (prog2$ (cw "Warning from find-composition-in-alist: ~
+                                       4v-sexpr environments are different in ~
+                                       a~%non-trivial way.  See :doc ~
+                                       topic symbolic-test-vector-composition.")
+; We use two separate cw calls in case the terms are large and evisceration is
+; disabled.  This way the user will at least see the :doc topic reference.  We
+; also print them flat, because we don't want to have to call pretty printing
+; routines.  The user can copy+paste the resulting forms to manipulate them.
+                                  (cw "~% curr-env: ~f0~%recur-env: ~f1~%"
+                                      curr-env recur-env))
+                        nil)))
+                `((sexpr-alist . (quote ,(append (unquote curr-sexpr-alist)
+                                                 (unquote recur-sexpr-alist))))
+                  (env .  ,curr-env)))))
+          ;; (cw "discarding : ~x0~%" (cadr alist))
           (find-composition-in-alist (caddr alist))))
        ((when (eq (car alist) 'cons))
+        ;; (cw "discarding : ~x0~%" (cadr alist))
         (find-composition-in-alist (caddr alist))))
     nil))
-    
+
 
 (defun 4v-sexpr-restrict-list-fast (sexprs sexpr-alist)
   (with-fast-alist sexpr-alist
@@ -363,11 +414,11 @@
 
 
 
-    
-  
 
 
-;; (implies 
+
+
+;; (implies
 ;;          (b* ( ;; Run the decomposed circuit to get the partial products
 ;;               (in-alist1  (boothmul-decomp-autoins))
 ;;               (out-alist1 (stv-run (boothmul-decomp) in-alist1))
@@ -490,7 +541,7 @@
         (implies (not (hons-assoc-equal key alist))
                  (equal (hons-assoc-equal key res) nil)))))))
 (finish-with-outer-local)
-       
+
 
 (local
  (define stv-decomp-alist-extract (vars al)
@@ -502,7 +553,7 @@
                                 (pseudo-termp (cdr (hons-assoc-equal k x))))
                        :hints(("Goal" :in-theory (e/d (pseudo-term-val-alistp)
                                                       (pseudo-termp)))))))
-   
+
    (b* (((when (atom vars)) nil)
         (look (hons-get (car vars) al))
         (rest (stv-decomp-alist-extract (cdr vars) al)))
@@ -513,7 +564,7 @@
     (defthm stv-decomp-alist-extract-lookup-under-iff
       (iff (hons-assoc-equal key (stv-decomp-alist-extract vars al))
            (member key vars))))
-   
+
    (outer-local
     (defthm stv-decomp-alist-extract-correct
       (equal (4v-fix (stv-decomp-ev
@@ -525,7 +576,7 @@
                           env))
                'x))))))
 (finish-with-outer-local)
-                    
+
 
 (local
  (define stv-decomp-process-alist-term ((x pseudo-termp))
@@ -617,7 +668,9 @@
         x)
        ((when (alist-equiv a-al b-al))
         ''t))
-    (er hard? 'stv-decomp-4v-env-equiv-meta "Not equivalent")
+    (er hard? 'stv-decomp-4v-env-equiv-meta "Not equivalent~%~
+        See :doc topic symbolic-test-vector-composition.~%~
+        A-alist:~%~x0 ~%B-alist:~%~x1" a-al b-al)
     x)
   ///
   (defthmd stv-decomp-4v-env-equiv-meta-rule
@@ -638,9 +691,10 @@
     lookup-each-of-4v-sexpr-eval-alist
     assoc-of-stv-assemble-output-alist
     ;; pairlis$-of-cons
-    ;; pairlis$-when-atom
+    pairlis$-when-atom ; required and cheap so can be left enabled
     revappend-open
     revappend-nil
+    revappend-pairlis$-open
     stv-simvar-inputs-to-bits-open
     stv-simvar-inputs-to-bits-nil
     v-to-nat-bound
@@ -673,4 +727,3 @@
 (defmacro stv-decomp-theory ()
   '(union-theories (get-ruleset 'stv-decomp-rules world)
                    (executable-counterpart-theory :here)))
-    
