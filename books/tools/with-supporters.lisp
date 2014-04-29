@@ -110,43 +110,67 @@
            (ans2 (instantiable-ancestors-with-guards imm+guard-fns wrld ans1)))
       (instantiable-ancestors-with-guards (cdr fns) wrld ans2)))))
 
-(defun supporting-fns (events ev-names acc-names n wrld state)
+(defun macro-names-from-aliases (names macro-aliases acc)
+  (cond ((endp names) acc)
+        (t (macro-names-from-aliases
+            (cdr names)
+            macro-aliases
+            (let ((pair (rassoc (car names) macro-aliases)))
+              (cond (pair (cons (car pair) acc))
+                    (t acc)))))))
 
-; Initially ev-names and acc-names is nil.  We return all functions with
-; absolute-event-number exceeding n that support events in the given list of
-; events, where wrld is (w state).
+(defun supporting-fns (lst ev-names acc-names n macro-aliases wrld state)
 
-  (cond ((endp events) (value (sort-supporting-fns
-                               (set-difference-eq acc-names ev-names)
-                               wrld)))
-        (t (er-let* ((x (macroexpand-till-event (car events) state)))
+; Lst is initially a list of events, but macro names can be added to it as we
+; recur.  Initially ev-names and acc-names is nil.  We return all functions
+; with absolute-event-number exceeding n that support events in the given list
+; of events, where wrld is (w state).
+
+  (cond ((endp lst) (value (sort-supporting-fns
+                            (set-difference-eq acc-names ev-names)
+                            wrld)))
+        (t (er-let* ((ev (if (consp (car lst))
+                             (macroexpand-till-event (car lst) state)
+                           (value nil)))
+                     (name (value (if (symbolp (car lst))
+                                      (car lst)
+                                    (and (consp ev)
+                                         (consp (cdr ev))
+                                         (symbolp (cadr ev))
+                                         (cadr ev))))))
              (cond
-              ((null x)
-               (supporting-fns (cdr events) ev-names acc-names n wrld state))
+              ((or (null name)
+                   (member-eq name acc-names))
+               (supporting-fns (cdr lst) ev-names acc-names n macro-aliases
+                               wrld state))
               (t
-               (let* ((name (cadr x))
-                      (formula (and (symbolp name)
-                                    (formula name nil wrld)))
-                      (guard (and (symbolp name)
-                                  (getprop name 'guard nil 'current-acl2-world
-                                           wrld))))
+               (let* ((formula (or (getprop name 'macro-body nil
+                                            'current-acl2-world wrld)
+                                   (formula name nil wrld)))
+                      (guard (getprop name 'guard nil 'current-acl2-world
+                                      wrld))
+                      (new-names
+                       (and formula ; non-nil if guard is non-nil
+                            (new-fns (instantiable-ancestors-with-guards
+                                      (new-fns
+                                       (all-fnnames1 nil
+                                                     formula
+                                                     (and guard
+                                                          (all-fnnames guard)))
+                                       n wrld nil)
+                                      wrld
+                                      nil)
+                                     n wrld nil))))
                  (supporting-fns
-                  (cdr events)
-                  (cons name ev-names)
-                  (cond (formula
-                         (new-fns (instantiable-ancestors-with-guards
-                                   (new-fns (all-fnnames1 nil
-                                                          formula
-                                                          (and guard
-                                                               (all-fnnames guard)))
-                                            n wrld nil)
-                                   wrld
-                                   nil)
-                                  n wrld acc-names))
-                        (t acc-names))
-                  n
-                  wrld
-                  state))))))))
+; Collect names of new macros that might be ancestral in the bodies.
+                  (macro-names-from-aliases new-names
+                                            macro-aliases
+                                            (cdr lst))
+                  (if ev
+                      (cons name ev-names)
+                    ev-names)
+                  (append new-names (if ev acc-names (cons name acc-names)))
+                  n macro-aliases wrld state))))))))
 
 (defun get-events (names ctx wrld state)
   (cond ((endp names) (value nil))
@@ -195,9 +219,14 @@
      (let ((num (max-absolute-event-number (w state))))
        (er-progn (progn ,local-event ,@events)
                  (er-let* ((fns (supporting-fns ',events nil nil num
-                                                (w state) state))
-                           (named-events (get-events ',names 'with-supporters
-                                                     (w state) state)))
+                                                (macro-aliases (w state))
+                                                (w state)
+                                                state))
+                           (named-events
+                            (get-events (sort-supporting-fns ',names (w state))
+                                        'with-supporters
+                                        (w state)
+                                        state)))
                    (value (list* 'encapsulate
                                  ()
                                  ',local-event
@@ -217,7 +246,9 @@
             ',name))
        (t (er-progn (progn ,@events)
                     (er-let* ((fns (supporting-fns ',events nil nil num
-                                                   (w state) state)))
+                                                   (macro-aliases (w state))
+                                                   (w state)
+                                                   state)))
                       (value (list* 'progn
                                     (cons 'std::defredundant fns)
                                     ',events)))))))))
@@ -251,14 +282,28 @@
 
   @({((encapsulate () local-event EXTRA event-1 ... event-k)})
 
-  <p>where @('EXTRA') is a sequence of events that includes redundant
-  definitions of functions as necessary, in order to avoid undefined function
-  errors when processing this @(tsee encapsulate) event.  @('EXTRA') also
-  includes @(see in-theory) events so that the rules introduced by the
-  @('EXTRA') definitions are suitably enable or disabled.  Finally, if
-  @(':names') is supplied, then the first events in @('EXTRA') are the events
-  named by the @('name-i'), in order.  We now illustrate with examples,
-  starting with one that does not use the @(':names') keyword.</p>
+  <p>where @('EXTRA') is a sequence of events that includes the following, in
+  an attempt to re-create the environment produced by @('local-event') in order
+  to process each @('event-i') during the second pass of the @(tsee
+  encapsulate) event.</p>
+
+  <ul>
+
+  <li>function definitions</li>
+
+  <li>definitions of macros that are aliases for additional functions being
+  defined; see @(see macro-aliases-table)</li>
+
+  <li>@(tsee in-theory) events so that the rules introduced by the @('EXTRA')
+  definitions are suitably enable or disabled</li>
+
+  <li>If @(':names') is supplied, then the first events in @('EXTRA') are the
+  events named by the @('name-i'), in order.</li>
+
+  </ul>
+
+  <p>We now illustrate with examples, starting with one that does not use the
+  @(':names') keyword.</p>
 
   <p>Consider the following event.</p>
 
@@ -356,53 +401,78 @@
   @({
   (with-supporters
    (local (include-book \"with-supporters-test-sub\"))
-   :names (mac1 mac2-fn mac2)
+   :names (mac1 mac1-fn)
    (defun h2 (x)
      (g3 x)))
   })
 
-  <p>This example illustrates the following important point: @(':names') may be
-  required when the necessary supporting events include macros.  In this
-  example, @('g3') is defined using a function @('g2') that is defined using a
-  macro in the locally included book.</p>
+  <p>Here are the events in the locally included book.</p>
 
   @({
-  (defun mac2-fn (x)
+  (defun mac1-fn (x)
     x)
+
+  (defmacro mac1 (x)
+    (mac1-fn x))
+
+  (defun g1 (x)
+    (declare (xargs :guard t))
+    (mac1 x))
+
+  (defun mac2-fn-b (x)
+    x)
+
+  (defun mac2-fn (x)
+    (mac2-fn-b x))
 
   (defmacro mac2 (x)
     (mac2-fn x))
 
+  (add-macro-alias mac2 g2)
+
   (defun g2 (x)
     (declare (xargs :guard (g1 x)))
     (mac2 x))
+
+  (defun g3 (x)
+    (g2 x))
   })
 
-  <p>We need to tell @('with-supporters') to include the definition of
-  @('mac2') in the generated @(tsee encapsulate) event &mdash; but that, in
-  turn, also requires the definition of @('mac2-fn').  The basic problem is
-  that @('with-supporters') only tracks dependencies using translated terms
-  (see @(see term)), for which macros have been expanded away; so, macros and
-  their supporters must be specified explicitly.  The @(':names') argument
-  causes the generated @('encapsulate') event to include definitions of the
-  specified names, in order.  In the example above that generated event is as
-  follows.</p>
+  <p>Notice that @('g3') in the top-level book calls @('g2'), whose @(see
+  guard) mentions @('g1').  Now although @('g1') calls the macro @('mac1'),
+  @('with-supporters') is not clever enough to notice this, because it tracks
+  dependencies using translated terms (see @(see term)), for which macros have
+  been expanded away.  Thus, macros like @('mac1'), as well as functions used
+  in their definitions (like @('mac1-fn')), must be specified explicitly.
+  This specification is made with @(':names (mac1 mac1-fn)') in the call of
+  @('with-supporters') above.</p>
+
+  <p>There is an exception to this required use of the @(':names') keyword
+  argument: macros that are aliases for functions that support the events.
+  Returning to our example, notice that @('g3') is defined using the function
+  @('g2'), which in turn calls the macro, @('mac2').  So we might expect, as
+  described for @('mac1') above, that @('mac2') must be included in
+  @(':names').  But fortunately, @('mac2') is a macro alias for a function that
+  supports the definition of @('h2') specified in the call of
+  @('with-supporters'): @('g2') supports that definition and @('mac2') is a
+  macro alias for @('g2').  Thus @('mac2') and its supporting function
+  @('mac2-fn') are added to the list of generated events (called @('EXTRA'),
+  above).</p>
+
+  <p>In summary, the above call of @('with-supporters') generates the following
+  event.</p>
 
   @({
-  (ENCAPSULATE
-   ()
-   (LOCAL (INCLUDE-BOOK \"with-supporters-test-sub\"))
-   (DEFMACRO MAC1 (X) X)
-   (DEFUN MAC2-FN (X) X)
-   (DEFMACRO MAC2 (X) (MAC2-FN X))
-   (STD::DEFREDUNDANT G1 G2 G3)
-   (DEFUN H2 (X) (G3 X)))
+  (ENCAPSULATE NIL
+                (LOCAL (INCLUDE-BOOK \"with-supporters-test-sub\"))
+                (DEFUN MAC1-FN (X) X)
+                (DEFMACRO MAC1 (X) (MAC1-FN X))
+                (STD::DEFREDUNDANT G1 MAC2-FN-B MAC2-FN MAC2 G2 G3)
+                (DEFUN H2 (X) (G3 X)))
   })
 
   <p>As in the first example, @('std::defredundant') generates definitions for
-  the indicated names.</p>
-
-  ")
+  the indicated names.</p>")
 
 (defxdoc with-supporters-after
   :parents (macro-libraries)
@@ -430,10 +500,12 @@
 
   <p>where @('EXTRA') includes redundant definitions of functions introduced
   after @('name'), as necessary, in order to avoid undefined function errors
-  when processing this @(tsee encapsulate) event.  @('EXTRA') also includes
-  @(see in-theory) events so that the rules introduced by the @('EXTRA')
-  definitions are suitably enable or disabled.  Consider the following
-  example.</p>
+  when processing this @(tsee encapsulate) event.  (As with
+  @('with-supporters), @('EXTRA') may also include macro aliases and their
+  supporters; see @(see with-supporters) for details.)  @('EXTRA') also
+  includes @(see in-theory) events so that the rules introduced by the
+  @('EXTRA') definitions are suitably enable or disabled.  Consider the
+  following example.</p>
 
   @({
   (in-package \"ACL2\")
