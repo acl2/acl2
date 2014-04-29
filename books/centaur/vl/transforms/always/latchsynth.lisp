@@ -39,7 +39,7 @@ explicit instances of generated modules, except that here we are converting
 <ul>
 
 <li>We support only a very small set of @('always') statements here; see @(see
-@(see latchcode).  Typically you will want to run other statement-simplifying
+latchcode).  Typically you will want to run other statement-simplifying
 transformations first to get them into this form; see @(see always-top).</li>
 
 <li>We expect expressions to be sized so that we can tell which sizes of latch
@@ -48,10 +48,10 @@ modules to introduce.</li>
 <li>We expect modules to be free of @('initial') statements, otherwise we could
 produce invalid modules when we convert registers into nets.</li>
 
-<p>This is a best-effort style transform which will leave unsupported
+<li>This is a best-effort style transform which will leave unsupported
 @('always') blocks alone.  We usually follow up with @(see elimalways) to throw
 out (with fatal warnings) modules whose @('always') blocks were not
-supported.</p>
+supported.</li>
 
 </ul>")
 

@@ -83,6 +83,12 @@ can handle this task, they are certified by using the target @('everything').
 Also, the value of the @('-j') option of the @('make') command is no longer
 ignored.</p>
 
+<p>A bug has been fixed in @(see xdoc) preprocessor directive @('@(def ...)'),
+which sometimes printed the wrong event.  The bug can be seen in the expansion
+of @('@(def alist)') in previous releases of the manual.  The bug was in
+community book @('xdoc/preprocess.lisp'), in the definition of function
+@('xdoc::get-event*').</p>
+
 ")
 
 

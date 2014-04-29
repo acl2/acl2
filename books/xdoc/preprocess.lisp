@@ -216,7 +216,7 @@
                            '(verify-termination
                              verify-termination-boot-strap
                              verify-guards)))
-           (xdoc::get-event* name (cdr wrld1)))
+           (xdoc::get-event* name (scan-to-event (cdr wrld1))))
           (t ev))))
 
 (defun get-event-aux (name world)
