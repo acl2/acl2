@@ -371,8 +371,9 @@
 ; [TRIPLE REG] Scenario 0
 ;
 ; This one doesn't work.  It uses autohyps and autoins in both the theorem and
-; in the hyps for the type lemma.  It errors out in the way that we expect when
-; we're missing an applicable type lemma
+; in the hyps for the type lemma.  Before stv-decomp-theory-rager, it would
+; error out in the way that we expect when we're missing an applicable type
+; lemma:
 ;
 ;; HARD ACL2 ERROR in STV-DECOMP-4V-ENV-EQUIV-META:  Not equivalent
 ;; See :doc topic symbolic-test-vector-composition.
@@ -385,7 +386,22 @@
 ;; B-alist:
 ;; ((QQ[0] BOOL-TO-4V (LOGBITP '0 QQ)))
 ;
+; Now there's a relatively nice subgoal failure:
+;
+;; (NOT
+;;  (EQUAL
+;;   (4V-FIX (CDR (HONS-ASSOC-EQUAL 'D[0]
+;;                                  (LIST (CONS 'D[0]
+;;                                              (BOOL-TO-4V (LOGBITP 0 D)))))))
+;;   'F)))
+;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-ruleset stv-decomp-theory-rager
+  '((:DEFINITION 4V-NOT$INLINE)
+    (:DEFINITION 4V-SEXPR-EVAL)
+    (:DEFINITION 4V-SEXPR-EVAL-LIST)
+    (:REWRITE NTH-4V-SEXPR-EVAL-LIST)))
 
 (must-fail
 (defthmd triple-reg-decomp-is-full-via-rewriting-fails-with-hard-error
@@ -413,19 +429,23 @@
              (equal comp-qqq full-qqq)))
      :hints (("goal"
               :use ((:instance triple-reg-decomp-cutpoint-type-with-autohyps))
-              :in-theory (stv-decomp-theory))))
-)
+              :in-theory (union-theories (stv-decomp-theory)
+                                         (get-ruleset 'stv-decomp-theory-rager
+                                                      world))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; [TRIPLE REG] Scenario 1
 ;
-; This one also doesn't work but seems to get closer.  It uses specific hyps
-; and specific inputs for both the theorem and in the hyps for the type lemma.
+; This one now works.  It uses specific hyps and specific inputs for both the
+; theorem and in the hyps for the type lemma.
 ;
-; Provided the wrapper functions do what I'd expect, it's pretty obvious from
-; looking at the checkpoint why this is true.  It looks like the '(not (not
-; (not d[0]))) just needs to be rewritten via sexpr-rewrites once more.  (not
-; (not a)) is already part of *sexpr-rewrites*, so I'm not sure what to do yet.
+; It's pretty obvious from looking at the checkpoint we used to get why this is
+; true.  It looks like the '(not (not (not d[0]))) just needs to be rewritten
+; via sexpr-rewrites once more.  (not (not a)) is already part of
+; *sexpr-rewrites*, so I wasn't sure what to do.  But, enabling some
+; definitions worked, so I'm calling this one good for now.
+;
+; Old checkpoint:
 ;
 ;; (EQUAL
 ;;  (4V-TO-NAT (4V-SEXPR-EVAL-LIST '((NOT (NOT (NOT D[0]))))
@@ -439,33 +459,34 @@
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-fail
+
 (defthmd triple-reg-decomp-is-full-via-rewriting-passes
   (implies (and (natp d)
                 (< d (expt 2 1))
-                (b* ((comp1-ins `((d . ,d)))
-                     (comp1-outs (stv-run (triple-reg-decomp-stv)
-                                          comp1-ins))
-                     (q (cdr (assoc 'q comp1-outs)))
+                ;; (b* ((comp1-ins `((d . ,d)))
+                ;;      (comp1-outs (stv-run (triple-reg-decomp-stv)
+                ;;                           comp1-ins))
+                ;;      (q (cdr (assoc 'q comp1-outs)))
 
-                     (comp2-ins `((q . ,q)))
-                     (comp2-outs (stv-run (triple-reg-decomp-stv)
-                                          comp2-ins))
-                     (qq (cdr (assoc 'qq comp2-outs)))
+                ;;      (comp2-ins `((q . ,q)))
+                ;;      (comp2-outs (stv-run (triple-reg-decomp-stv)
+                ;;                           comp2-ins))
+                ;;      (qq (cdr (assoc 'qq comp2-outs)))
 
-                     ;; (comp3-ins `((qq . ,qq)))
-                     ;; (comp3-outs (stv-run (triple-reg-decomp-stv)
-                     ;;                      comp3-ins))
-                     ;; (comp-qqq (cdr (assoc 'qqq comp3-outs)))
+                ;;      ;; (comp3-ins `((qq . ,qq)))
+                ;;      ;; (comp3-outs (stv-run (triple-reg-decomp-stv)
+                ;;      ;;                      comp3-ins))
+                ;;      ;; (comp-qqq (cdr (assoc 'qqq comp3-outs)))
 
 
-                     ;; (full-ins (triple-reg-full-stv-autoins))
-                     ;; (full-outs (stv-run (triple-reg-full-stv)
-                     ;;                     full-ins))
-                     ;; (full-qqq (cdr (assoc 'qqq full-outs)))
-                     )
-                  (and (natp q)
-                       (natp qq))))
+                ;;      ;; (full-ins (triple-reg-full-stv-autoins))
+                ;;      ;; (full-outs (stv-run (triple-reg-full-stv)
+                ;;      ;;                     full-ins))
+                ;;      ;; (full-qqq (cdr (assoc 'qqq full-outs)))
+                ;;      )
+                ;;   (and (natp q)
+                ;;        (natp qq)))
+                )
            (b* ((comp1-ins `((d . ,d)))
                 (comp1-outs (stv-run (triple-reg-decomp-stv)
                                      comp1-ins))
@@ -489,9 +510,9 @@
              (equal comp-qqq full-qqq)))
   :hints (("goal"
            :use ((:instance triple-reg-decomp-cutpoint-type-with-specific-hyps))
-           :in-theory (stv-decomp-theory))))
-)
-
+           :in-theory (union-theories (stv-decomp-theory)
+                                      (get-ruleset 'stv-decomp-theory-rager
+                                                   world)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
