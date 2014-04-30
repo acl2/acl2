@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "common")
-(include-book "make-event/eval-tests" :dir :system)
+(include-book "misc/eval" :dir :system)
 
 (defmodules *mods*
   (vl::make-vl-loadconfig
@@ -22,6 +22,18 @@
 (defconst *double-reg*
   (vl::vl-module->esim
    (vl::vl-find-module "compose"
+                       (vl::vl-design->mods
+                        (vl::vl-translation->good *mods*)))))
+
+(defconst *triple-reg*
+  (vl::vl-module->esim
+   (vl::vl-find-module "compose_three"
+                       (vl::vl-design->mods
+                        (vl::vl-translation->good *mods*)))))
+
+(defconst *quadruple-reg*
+  (vl::vl-module->esim
+   (vl::vl-find-module "compose_four"
                        (vl::vl-design->mods
                         (vl::vl-translation->good *mods*)))))
 
@@ -41,6 +53,38 @@
 ; because it is the third slot that is "clocked in" to the register.
   :overrides '(("q" _ _ q _))
   :outputs '(("qq" _ _ _ _ qq _)))
+
+(defstv triple-reg-full-stv
+  :mod *triple-reg*
+  :inputs '(("clk" 0 ~)
+            ("d" d _))
+  :outputs '(("qqq" _ _ _ _ _ _ qqq _)))
+
+(defstv triple-reg-decomp-stv
+  :mod *triple-reg*
+  :inputs '(("clk" 0 ~)
+            ("d" d _))
+  :overrides '(("q" _ _ q _)
+               ("qq" _ _ _ _ qq _))
+  :outputs '(("qqq" _ _ _ _ _ _ qqq _)))
+
+
+(defstv quadruple-reg-full-stv
+  :mod *quadruple-reg*
+  :inputs '(("clk" 0 ~)
+            ("d" d _))
+  :outputs '(("qqqq" _ _ _ _ _ _ _ _ qq _)))
+
+(defstv quadruple-reg-decomp-stv
+  :mod *quadruple-reg*
+  :inputs '(("clk" 0 ~)
+            ("d" d _))
+  :overrides '(("q" _ _ q _)
+               ("qq" _ _ _ _ qq _)
+               ("qqq" _ _ _ _ _ _ qqq _))
+  :outputs '(("qqqq" _ _ _ _ _ _ _ _ qqqq _)))
+
+
 
 
 (def-gl-thm double-reg-decomp-is-full-with-exact-inputs
@@ -95,7 +139,12 @@
   :g-bindings (double-reg-decomp-stv-autobinds))
 (in-theory (disable double-reg-full-spec))
 
-(include-book "centaur/esim/stv/stv-decomp-proofs" :dir :system)
+(include-book "centaur/esim/stv/stv-decomp-proofs-even-better" :dir :system)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Setup typing lemmas
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-gl-thm double-reg-decomp-cutpoint-type-with-autohyps
   :hyp (double-reg-decomp-stv-autohyps)
@@ -118,15 +167,42 @@
   :g-bindings (gl::auto-bindings (:nat d 1)))
 (in-theory (disable double-reg-decomp-cutpoint-type-with-specific-hyps))
 
+(def-gl-thm triple-reg-decomp-cutpoint-type-with-autohyps
+  :hyp (force (triple-reg-decomp-stv-autohyps))
+  :concl (b* ((comp1-outs (stv-run (triple-reg-decomp-stv)
+                                   (triple-reg-decomp-stv-autoins)))
+              (q (cdr (assoc 'q comp1-outs)))
+
+              (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                   (triple-reg-decomp-stv-autoins)))
+              (qq (cdr (assoc 'qq comp2-outs))))
+           (and (natp q)
+                (natp qq)))
+  :g-bindings (gl::auto-bindings (:nat d 1)))
+(in-theory (disable triple-reg-decomp-cutpoint-type-with-autohyps))
+
+(def-gl-thm triple-reg-decomp-cutpoint-type-with-specific-hyps
+  :hyp (and (force (natp d))
+            (force (< d (expt 2 1))))
+  :concl (b* ((comp1-outs (stv-run (triple-reg-decomp-stv)
+                                   `((d . ,d))))
+              (q (cdr (assoc 'q comp1-outs)))
+              (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                   `((q . ,q))))
+              (qq (cdr (assoc 'qq comp2-outs))))
+           (and (natp q)
+                (natp qq)))
+  :g-bindings (gl::auto-bindings (:nat d 1)))
+(in-theory (disable triple-reg-decomp-cutpoint-type-with-specific-hyps))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Scenario 0
+; [DOUBLE REG] Scenario 0
 ;
 ; This one works.  It uses autohyps and autoins in both the theorem and in the
 ; hyps for the type lemma.
 ;
-; Note that it doesn't matter whether we keep stv-decomp-4v-env-equiv-meta-rule
-; disabled until stable-under-simplificationp.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd double-reg-decomp-is-full-via-rewriting-passes
@@ -148,22 +224,17 @@
              (equal comp-qq full-qq)))
      :hints (("goal"
               :use ((:instance double-reg-decomp-cutpoint-type-with-autohyps))
-              :in-theory (set-difference-theories (stv-decomp-theory)
-                                                  '(;stv-decomp-4v-env-equiv-meta-rule
-                                                    ))
-              )
-             (and stable-under-simplificationp
-                  '(:in-theory (union-theories (stv-decomp-theory)
-                                               '(pairlis$-of-cons
-                                                 pairlis$-when-atom))))))
+              :in-theory (stv-decomp-theory))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Scenario 1
+; [DOUBLE REG] Scenario 1
 ;
 ; In this scenario we change the second use of autoin's to only pass in the
-; variables we need bound.  This results in an environment mismatch, which
-; causes the following error:
+; variables we need bound.  This used to result in an environment mismatch but
+; no longer does so since we improved 4v-sexpr-eval-list-of-composition.
+;
+; For the sake of future debugging, the error we used to receive looked like:
 ;
 ; HARD ACL2 ERROR in STV-DECOMP-4V-ENV-EQUIV-META:  Not equivalent
 ;
@@ -179,54 +250,7 @@
 ;;                    'NIL)))
 ;;  (D[0] BOOL-TO-4V (LOGBITP '0 D))
 ;;  (Q[0] BOOL-TO-4V (LOGBITP '0 Q)))
-;
-; However, we are able to prevent this error from happening by changing the
-; rule that forces the obligation that causes stv-decomp-process-alist-term to
-; need to process the environment as stated.  We change it to (1) only care
-; about the environment for the relevant variables (Q).
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-fail
-(defthmd double-reg-decomp-is-full-via-rewriting-challenge-1-fails
-  (implies (double-reg-decomp-stv-autohyps)
-           (b* ((comp1-outs (stv-run (double-reg-decomp-stv)
-                                     (double-reg-decomp-stv-autoins)))
-                (q (cdr (assoc 'q comp1-outs)))
-                (comp2-outs (stv-run (double-reg-decomp-stv)
-                                     `((q . ,q))))
-                (comp-qq (cdr (assoc 'qq comp2-outs)))
-
-                (full-outs (stv-run (double-reg-full-stv)
-                                    `((d . ,d))))
-                (full-qq (cdr (assoc 'qq full-outs))))
-             (equal comp-qq full-qq)))
-     :hints (("goal"
-; Question: the type lemma must have exactly the hyps as the hyps given in this
-; theorem.  Even if the current hyps imply the hyps of the type lemma, it
-; doesn't work.
-              :use ((:instance double-reg-decomp-cutpoint-type-with-autohyps))
-              :in-theory (set-difference-theories (stv-decomp-theory)
-                                                  '(stv-decomp-4v-env-equiv-meta-rule))
-             )
-           (and stable-under-simplificationp
-                '(:in-theory (union-theories (stv-decomp-theory)
-                                             '(pairlis$-of-cons
-                                               pairlis$-when-atom)))))))
-
-(redef)
-(skip-proofs
-(defthmd 4v-sexpr-eval-list-of-composition
-  (implies (and (bind-free (find-composition-in-alist alist) (sexpr-alist env))
-                (equal sexpr-vars (4v-sexpr-vars-1pass-list
-                                   (sexpr-rewrite-default-list sexprs)))
-                (force (4v-env-equiv (4v-alist-extract sexpr-vars alist)
-                                     (4v-alist-extract sexpr-vars
-                                                       (append (4v-sexpr-eval-alist sexpr-alist env)
-                                                               env)))))
-           (equal (4v-sexpr-eval-list sexprs alist)
-                  (4v-sexpr-eval-list
-                   (4v-sexpr-restrict-list-fast sexprs sexpr-alist)
-                   env)))))
 
 (defthmd double-reg-decomp-is-full-via-rewriting-challenge-1
   (implies (double-reg-decomp-stv-autohyps)
@@ -244,15 +268,10 @@
              (equal comp-qq full-qq)))
      :hints (("goal"
               :use ((:instance double-reg-decomp-cutpoint-type-with-specific-hyps))
-              :in-theory (set-difference-theories (stv-decomp-theory)
-                                                  '(stv-decomp-4v-env-equiv-meta-rule)))
-           (and stable-under-simplificationp
-                '(:in-theory (union-theories (stv-decomp-theory)
-                                             '(pairlis$-of-cons
-                                               pairlis$-when-atom))))))
+              :in-theory (stv-decomp-theory))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Scenario 2
+; [DOUBLE REG] Scenario 2
 ;
 ; If we use explicit ins for the first decomposition, we can use the stronger
 ; type lemma (because it has weaker hypotheses).
@@ -284,21 +303,16 @@
                                                pairlis$-when-atom))))))
 
 
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Scenario 3
+; [DOUBLE REG] Scenario 3
 ;
-; Question: Disabling the meta rule until it's stable-under-simplification
-; results in a case split.  Can we make that case-split go away by allowing the
-; meta rule to fire earlier?
+; We used to have a problem with revappend of pairlist$. But that is now
+; solved.  We include the obsolete error for future reference.
 ;
-; Currently we get this error:
 ;; HARD ACL2 ERROR in STV-DECOMP-PROCESS-ALIST-TERM:  Couldn't process:
 ;; (REVAPPEND (PAIRLIS$ '(D[0]) (BOOL-TO-4V-LST (INT-TO-V D '1))) 'NIL)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-fail
 (defthmd double-reg-decomp-is-full-via-rewriting-challenge-3
   (implies (double-reg-decomp-stv-autohyps)
            (b* ((comp1-outs (stv-run (double-reg-decomp-stv)
@@ -315,21 +329,16 @@
              (equal comp-qq full-qq)))
      :hints (("goal"
               :use ((:instance double-reg-decomp-cutpoint-type-with-specific-hyps))
-              :in-theory (set-difference-theories (stv-decomp-theory)
-                                                  '(;stv-decomp-4v-env-equiv-meta-rule
-                                                    )))
-           (and stable-under-simplificationp
-                '(:in-theory (union-theories (stv-decomp-theory)
-                                             '(pairlis$-of-cons
-                                               pairlis$-when-atom))))))
-)
+              :in-theory (stv-decomp-theory))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Scenario 4
+; [DOUBLE REG] Scenario 4
 ;
-; Using the autohyps type lemma causes the error generatd from a submission
-; similar to Scenario 3 to be more verbose.  This tends to imply that an
-; approach similar to Scenario 3 is more favorable.
+; Using the autohyps type lemma caused the error generatd from a submission
+; similar to Scenario 3 to be more verbose. We include it here for future
+; reference.  This may be a clue as to how using autohyps vs specific hyps in
+; the typing lemma can affect the proof.
 ;
 ;; HARD ACL2 ERROR in STV-DECOMP-PROCESS-ALIST-TERM:  Couldn't process:
 ;; (REVAPPEND (PAIRLIS$ '(D[0])
@@ -339,12 +348,11 @@
 ;;                       'NIL))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-fail
-(defthmd double-reg-decomp-is-full-via-rewriting-challenge-3
+
+(defthmd double-reg-decomp-is-full-via-rewriting-challenge-4
   (implies (double-reg-decomp-stv-autohyps)
            (b* ((comp1-outs (stv-run (double-reg-decomp-stv)
-                                     (double-reg-decomp-stv-autoins)
-                                     ))
+                                     (double-reg-decomp-stv-autoins)))
                 (q (cdr (assoc 'q comp1-outs)))
                 (comp2-outs (stv-run (double-reg-decomp-stv)
                                      `((q . ,q))))
@@ -356,14 +364,134 @@
              (equal comp-qq full-qq)))
      :hints (("goal"
               :use ((:instance double-reg-decomp-cutpoint-type-with-autohyps))
-              :in-theory (set-difference-theories (stv-decomp-theory)
-                                                  '(;stv-decomp-4v-env-equiv-meta-rule
-                                                    )))
-           (and stable-under-simplificationp
-                '(:in-theory (union-theories (stv-decomp-theory)
-                                             '(pairlis$-of-cons
-                                               pairlis$-when-atom))))))
+              :in-theory (stv-decomp-theory))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; [TRIPLE REG] Scenario 0
+;
+; This one doesn't work.  It uses autohyps and autoins in both the theorem and
+; in the hyps for the type lemma.  It errors out in the way that we expect when
+; we're missing an applicable type lemma
+;
+;; HARD ACL2 ERROR in STV-DECOMP-4V-ENV-EQUIV-META:  Not equivalent
+;; See :doc topic symbolic-test-vector-composition.
+;; A-alist:
+;; ((QQ[0] CAR
+;;         (IF (EQUAL (4V-TO-NAT #) 'X)
+;;             '(X)
+;;             (IF (IF # # #) (BOOL-TO-4V-LST #) '#))))
+;;
+;; B-alist:
+;; ((QQ[0] BOOL-TO-4V (LOGBITP '0 QQ)))
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+(defthmd triple-reg-decomp-is-full-via-rewriting-fails-with-hard-error
+  (implies (triple-reg-decomp-stv-autohyps)
+           (b* ((comp1-ins (triple-reg-decomp-stv-autoins))
+                (comp1-outs (stv-run (triple-reg-decomp-stv)
+                                     comp1-ins))
+                (q (cdr (assoc 'q comp1-outs)))
+
+                (comp2-ins (triple-reg-decomp-stv-autoins))
+                (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                     comp2-ins))
+                (qq (cdr (assoc 'qq comp2-outs)))
+
+                (comp3-ins (triple-reg-decomp-stv-autoins))
+                (comp3-outs (stv-run (triple-reg-decomp-stv)
+                                     comp3-ins))
+                (comp-qqq (cdr (assoc 'qqq comp3-outs)))
+
+
+                (full-ins (triple-reg-full-stv-autoins))
+                (full-outs (stv-run (triple-reg-full-stv)
+                                    full-ins))
+                (full-qqq (cdr (assoc 'qqq full-outs))))
+             (equal comp-qqq full-qqq)))
+     :hints (("goal"
+              :use ((:instance triple-reg-decomp-cutpoint-type-with-autohyps))
+              :in-theory (stv-decomp-theory))))
 )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; [TRIPLE REG] Scenario 1
+;
+; This one also doesn't work but seems to get closer.  It uses specific hyps
+; and specific inputs for both the theorem and in the hyps for the type lemma.
+;
+; Provided the wrapper functions do what I'd expect, it's pretty obvious from
+; looking at the checkpoint why this is true.  It looks like the '(not (not
+; (not d[0]))) just needs to be rewritten via sexpr-rewrites once more.  (not
+; (not a)) is already part of *sexpr-rewrites*, so I'm not sure what to do yet.
+;
+;; (EQUAL
+;;  (4V-TO-NAT (4V-SEXPR-EVAL-LIST '((NOT (NOT (NOT D[0]))))
+;;                                 (LIST (CONS 'D[0]
+;;                                             (BOOL-TO-4V (LOGBITP 0 D))))))
+;;  (V-TO-NAT
+;;       (BOOL-FROM-4V-LIST
+;;            (4V-SEXPR-EVAL-LIST '((NOT D[0]))
+;;                                (LIST (CONS 'D[0]
+;;                                            (BOOL-TO-4V (LOGBITP 0 D)))))))))
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+(defthmd triple-reg-decomp-is-full-via-rewriting-passes
+  (implies (and (natp d)
+                (< d (expt 2 1))
+                (b* ((comp1-ins `((d . ,d)))
+                     (comp1-outs (stv-run (triple-reg-decomp-stv)
+                                          comp1-ins))
+                     (q (cdr (assoc 'q comp1-outs)))
+
+                     (comp2-ins `((q . ,q)))
+                     (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                          comp2-ins))
+                     (qq (cdr (assoc 'qq comp2-outs)))
+
+                     ;; (comp3-ins `((qq . ,qq)))
+                     ;; (comp3-outs (stv-run (triple-reg-decomp-stv)
+                     ;;                      comp3-ins))
+                     ;; (comp-qqq (cdr (assoc 'qqq comp3-outs)))
+
+
+                     ;; (full-ins (triple-reg-full-stv-autoins))
+                     ;; (full-outs (stv-run (triple-reg-full-stv)
+                     ;;                     full-ins))
+                     ;; (full-qqq (cdr (assoc 'qqq full-outs)))
+                     )
+                  (and (natp q)
+                       (natp qq))))
+           (b* ((comp1-ins `((d . ,d)))
+                (comp1-outs (stv-run (triple-reg-decomp-stv)
+                                     comp1-ins))
+                (q (cdr (assoc 'q comp1-outs)))
+
+                (comp2-ins `((q . ,q)))
+                (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                     comp2-ins))
+                (qq (cdr (assoc 'qq comp2-outs)))
+
+                (comp3-ins `((qq . ,qq)))
+                (comp3-outs (stv-run (triple-reg-decomp-stv)
+                                     comp3-ins))
+                (comp-qqq (cdr (assoc 'qqq comp3-outs)))
+
+
+                (full-ins (triple-reg-full-stv-autoins))
+                (full-outs (stv-run (triple-reg-full-stv)
+                                    full-ins))
+                (full-qqq (cdr (assoc 'qqq full-outs))))
+             (equal comp-qqq full-qqq)))
+  :hints (("goal"
+           :use ((:instance triple-reg-decomp-cutpoint-type-with-specific-hyps))
+           :in-theory (stv-decomp-theory))))
+)
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

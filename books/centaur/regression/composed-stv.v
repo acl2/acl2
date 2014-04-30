@@ -54,5 +54,50 @@ module compose (qq, d, clk);
   always @(posedge clk)
     qq <= ~q;
 
+endmodule
+
+
+module compose_three (qqq, d, clk);
+  output qqq;
+  input d;
+  input clk;
+
+  reg 	q;
+  reg qq;
+  reg qqq;
+
+  always @(posedge clk)
+    q <= ~d;
+
+  always @(posedge clk)
+    qq <= ~q;
+
+  always @(posedge clk)
+    qqq <= ~qq;
+
+endmodule
+
+
+module compose_four (qqqq, d, clk);
+  output qqqq;
+  input d;
+  input clk;
+
+  reg q;
+  reg qq;
+  reg qqq;
+  reg qqqq;
+
+  always @(posedge clk)
+    q <= ~d;
+
+  always @(posedge clk)
+    qq <= ~q;
+
+  always @(posedge clk)
+    qqq <= ~qq;
+
+   always @(posedge clk)
+    qqqq <= ~qqq;
 
 endmodule
