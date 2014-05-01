@@ -227,9 +227,10 @@ its flag in the flag-function.</p>")
     ;; :measure -- no, individual
     ;; :non-executable -- no, individual
     ;; :split-types -- no, individual
-    ;; :ruler-extenders -- no, individual
+    ;; :ruler-extenders -- no, individual (actually yes, for flag)
     ;; :normalize -- no, individual
     ;; :stobjs -- no, individual
+    :ruler-extenders ;; used for flag
     :guard-hints ;; Appended to guard-hints for all sub-functions.
     :hints       ;; Appended to hints for all sub-functions.
     :guard-debug ;; Must agree with any individual guard-debug settings.
@@ -692,7 +693,9 @@ its flag in the flag-function.</p>")
           :gutslist gutslist
           :kwd-alist kwd-alist
           :flag-mapping flag-mapping
-          :flag-defthm-macro thm-macro)))
+          :flag-defthm-macro thm-macro))
+
+       (ruler-extenders (getarg :ruler-extenders nil kwd-alist)))
 
     `(encapsulate nil
        (with-output :stack :pop (progn . ,prepwork))
@@ -718,6 +721,7 @@ its flag in the flag-function.</p>")
                                    ,@(and flag-defthm-macro
                                           `(:defthm-macro-name ,flag-defthm-macro))
                                    ,@(and flag-var `(:flag-var ,flag-var))
+                                   ,@(and ruler-extenders `(:ruler-extenders ,ruler-extenders))
                                    :hints ,flag-hints))))
 
        (local

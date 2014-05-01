@@ -268,6 +268,7 @@ defequiv)).</p>")
     :verbosep
     :out-equiv
     :other-var
+    :thm-suffix
     :basename))
 
 
@@ -319,21 +320,22 @@ defequiv)).</p>")
               basename))
        (under-out-equiv (if (eq out-equiv 'equal) ""
                           (concatenate 'string "-UNDER-" (symbol-name out-equiv))))
+       (suffix (getarg :thm-suffix "" kwd-alist))
        (fix-thmname
         (intern-in-package-of-symbol
          (concatenate
           'string (symbol-name basename) "-OF-" (symbol-name fix) "-" (symbol-name arg)
-          under-out-equiv)
+          under-out-equiv suffix)
          pkg))
        (const-thmname
         (intern-in-package-of-symbol
          (concatenate
-          'string (symbol-name basename) "-OF-" (symbol-name fix) "-" (symbol-name arg) "-NORMALIZE-CONST" under-out-equiv)
+          'string (symbol-name basename) "-OF-" (symbol-name fix) "-" (symbol-name arg) "-NORMALIZE-CONST" under-out-equiv suffix)
          pkg))
        (congruence-thmname
         (intern-in-package-of-symbol
          (concatenate
-          'string (symbol-name basename) "-" (symbol-name equiv) "-CONGRUENCE-ON-" (symbol-name arg) under-out-equiv)
+          'string (symbol-name basename) "-" (symbol-name equiv) "-CONGRUENCE-ON-" (symbol-name arg) under-out-equiv suffix)
          pkg))
        (argequiv (or (getarg :other-var nil kwd-alist)
                      (intern-in-package-of-symbol

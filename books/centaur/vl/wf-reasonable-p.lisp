@@ -410,19 +410,22 @@ item.</p>"
       (er hard 'vl-portdecl-and-moduleitem-compatible-p "Impossible case")
       (@wf-assert nil)))))
 
-(defwellformed vl-overlap-compatible-p (names x)
+(defwellformed vl-overlap-compatible-p (names x portdeclalist ialist)
   :parents (reasonable)
   :guard (and (string-listp names)
               (vl-module-p x)
+              (equal portdeclalist (vl-portdecl-alist (vl-module->portdecls x)))
+              (equal ialist (vl-moditem-alist x))
               (subsetp-equal names (vl-portdecllist->names (vl-module->portdecls x)))
               (subsetp-equal names (vl-module->modnamespace x)))
   :body (if (atom names)
             (@wf-assert t)
           (@wf-progn
            (@wf-call vl-portdecl-and-moduleitem-compatible-p
-                     (vl-find-portdecl (car names) (vl-module->portdecls x))
-                     (vl-find-moduleitem (car names) x))
-           (@wf-call vl-overlap-compatible-p (cdr names) x))))
+                     (vl-fast-find-portdecl (car names) (vl-module->portdecls x)
+                                            portdeclalist)
+                     (vl-fast-find-moduleitem (car names) x ialist))
+           (@wf-call vl-overlap-compatible-p (cdr names) x portdeclalist ialist))))
 
 
 
@@ -666,7 +669,9 @@ item.</p>"
          (pdnames-s     (mergesort pdnames))
          (namespace     (vl-module->modnamespace x))
          (namespace-s   (mergesort namespace))
-         (overlap       (intersect pdnames-s namespace-s)))
+         (overlap       (intersect pdnames-s namespace-s))
+         (portdeclalist (vl-portdecl-alist portdecls))
+         (ialist        (vl-moditem-alist x)))
     (declare (ignorable name eventdecls minloc initials alwayses))
     (@wf-progn
      (@wf-call vl-portlist-reasonable-p ports)
@@ -697,7 +702,10 @@ item.</p>"
                  :vl-namespace-error
                  "~l0: ~s1 illegally redefines ~&2."
                  (list minloc name (duplicated-members namespace)))
-     (@wf-call vl-overlap-compatible-p overlap x))))
+
+     ;; BOZO make a moditem and portdecl alist and use fast versions of
+     ;; find-* in this function
+     (@wf-call vl-overlap-compatible-p overlap x portdeclalist ialist))))
 
 (defwellformed-list vl-modulelist-reasonable-p (x)
   :parents (reasonable)

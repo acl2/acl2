@@ -217,7 +217,23 @@
 
 
 
-
+(define aignet-trans-get-outs-aux ((n :type (integer 0 *))
+                                   aigtrans aignet
+                                   aig-acc)
+  :enabled t
+  :guard (and (<= (num-nodes aignet) (aigs-length aigtrans))
+              (<= n (num-outs aignet))
+              (true-listp aig-acc))
+  :measure (nfix (- (nfix (num-outs aignet))
+                    (nfix n)))
+  (b* (((when (mbe :logic (zp (- (num-outs aignet)
+                                 (nfix n)))
+                   :exec (int= n (num-outs aignet))))
+        (reverse aig-acc)))
+    (aignet-trans-get-outs-aux
+     (1+ (lnfix n)) aigtrans aignet
+     (cons (get-aig (outnum->id n aignet) aigtrans)
+           aig-acc))))
 
 (define aignet-trans-get-outs ((n :type (integer 0 *))
                                aigtrans aignet)
@@ -225,12 +241,23 @@
               (<= n (num-outs aignet)))
   :measure (nfix (- (nfix (num-outs aignet))
                     (nfix n)))
-  (b* (((when (mbe :logic (zp (- (num-outs aignet)
-                                 (nfix n)))
-                   :exec (int= n (num-outs aignet))))
-        nil))
-    (cons (get-aig (outnum->id n aignet) aigtrans)
-          (aignet-trans-get-outs (1+ (lnfix n)) aigtrans aignet))))
+  :verify-guards nil
+  (mbe :logic
+       (b* (((when (mbe :logic (zp (- (num-outs aignet)
+                                      (nfix n)))
+                        :exec (int= n (num-outs aignet))))
+             nil))
+         (cons (get-aig (outnum->id n aignet) aigtrans)
+               (aignet-trans-get-outs (1+ (lnfix n)) aigtrans aignet)))
+       :exec
+       (aignet-trans-get-outs-aux n aigtrans aignet nil))
+  ///
+  (defthm aignet-trans-get-outs-aux-elim
+    (implies (true-listp aig-acc)
+             (equal (aignet-trans-get-outs-aux n aigtrans aignet aig-acc)
+                    (revappend aig-acc
+                               (aignet-trans-get-outs n aigtrans aignet)))))
+  (verify-guards aignet-trans-get-outs))
 
 (define aignet-trans-get-nxsts ((n :type (integer 0 *))
                                 aigtrans aignet)

@@ -427,6 +427,20 @@
                              acl2::nth-with-large-index
                              set::double-containment)))
 
+  (defund aiglist-to-aignet-aux (x xmemo varmap gatesimp strash aignet lits)
+    (declare (xargs :stobjs (aignet strash)
+                    :guard (and (natp gatesimp)
+                                (good-varmap-p varmap aignet)
+                                (xmemo-well-formedp xmemo aignet)
+                                (true-listp lits))
+                    :verify-guards nil))
+    (b* (((when (atom x))
+          (mv (reverse lits) xmemo strash aignet))
+         ((mv lit xmemo strash aignet)
+          (aig-to-aignet (car x) xmemo varmap gatesimp strash aignet)))
+      (aiglist-to-aignet-aux (cdr x) xmemo varmap gatesimp strash aignet
+                             (cons lit lits))))
+
   ;; just puts the gates in and adds inputs/regs as needed, doesn't set up
   ;; outputs or reg inputs
   (defund aiglist-to-aignet (x xmemo varmap gatesimp strash aignet)
@@ -435,16 +449,26 @@
                                 (good-varmap-p varmap aignet)
                                 (xmemo-well-formedp xmemo aignet))
                     :verify-guards nil))
-    (b* (((when (atom x))
-          (mv nil xmemo strash aignet))
-         ((mv lit xmemo strash aignet)
-          (aig-to-aignet (car x) xmemo varmap gatesimp strash aignet))
-         ((mv rest xmemo strash aignet)
-          (aiglist-to-aignet (cdr x) xmemo varmap gatesimp strash aignet)))
-      (mv (cons lit rest)
-          xmemo strash aignet)))
+    (mbe :logic (b* (((when (atom x))
+                      (mv nil xmemo strash aignet))
+                     ((mv lit xmemo strash aignet)
+                      (aig-to-aignet (car x) xmemo varmap gatesimp strash aignet))
+                     ((mv rest xmemo strash aignet)
+                      (aiglist-to-aignet (cdr x) xmemo varmap gatesimp strash aignet)))
+                  (mv (cons lit rest)
+                      xmemo strash aignet))
+         :exec
+         (aiglist-to-aignet-aux x xmemo varmap gatesimp strash aignet nil)))
 
-  (local (in-theory (enable aiglist-to-aignet)))
+  (local (in-theory (enable aiglist-to-aignet
+                            aiglist-to-aignet-aux)))
+
+  (defthm aiglist-to-aignet-aux-elim
+    (implies (true-listp lits)
+             (equal (aiglist-to-aignet-aux x xmemo varmap gatesimp strash aignet lits)
+                    (mv-let (rest-lits xmemo strash aignet)
+                      (aiglist-to-aignet x xmemo varmap gatesimp strash aignet)
+                      (mv (revappend lits rest-lits) xmemo strash aignet)))))
 
   (def-aignet-preservation-thms aiglist-to-aignet)
 
@@ -482,6 +506,7 @@
                     (equal (aignet-eval-to-env varmap in-vals reg-vals aignet1)
                            (aignet-eval-to-env varmap in-vals reg-vals aignet))))))
 
+  (verify-guards aiglist-to-aignet-aux)
   (verify-guards aiglist-to-aignet)
 
   (defun aiglist-to-aignet-top (x varmap gatesimp strash aignet)
