@@ -61,7 +61,10 @@ linting.</p>")
                 warnings)))
 
        ((mv & warnings)
-        (vl-overlap-compatible-p-warn overlap x warnings)))
+        (vl-overlap-compatible-p-warn overlap x
+                                      (vl-portdecl-alist x.portdecls)
+                                      (vl-moditem-alist x)
+                                       warnings)))
 
     (change-vl-module x :warnings warnings)))
 
