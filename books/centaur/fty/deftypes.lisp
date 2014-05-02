@@ -848,8 +848,14 @@
       ,@(and requirep `(:require ,(cdr requirep))))))
 
 
+(defun flexprod-fields->names (fields)
+  (if (atom fields)
+      nil
+    (cons (flexprod-field->name (car fields))
+          (flexprod-fields->names (cdr fields)))))
 
-(defun defprod-tag-events (pred xvar tag name)
+
+(defun defprod-tag-events (pred xvar tag name formals)
   (b* ((foop pred)
        (x xvar))
     `((defthmd ,(intern-in-package-of-symbol
@@ -858,7 +864,7 @@
         (implies (,foop ,x)
                  (equal (tag ,x)
                         ,tag))
-        :rule-classes ((:rewrite :backchain-limit-lst 1)
+        :rule-classes ((:rewrite :backchain-limit-lst 0)
                        (:forward-chaining))
         :hints(("Goal" :in-theory (enable tag ,foop))))
 
@@ -870,6 +876,13 @@
                         nil))
         :rule-classes ((:rewrite :backchain-limit-lst 1))
         :hints(("Goal" :in-theory (enable tag ,foop))))
+
+      (defthm ,(intern-in-package-of-symbol
+                (concatenate 'string "TAG-OF-" (symbol-name name))
+                name)
+        (equal (tag (,name . ,formals))
+               ,tag)
+        :hints (("goal" :in-theory (enable ,name tag))))
 
       (add-to-ruleset std::tag-reasoning
                       '(,(intern-in-package-of-symbol
@@ -918,7 +931,8 @@
        (prods (parse-flexprods orig-prods name nil kwd-alist xvar nil fixtypes))
 
        (measure (or (getarg :measure nil kwd-alist)
-                    `(acl2-count ,xvar))))
+                    `(acl2-count ,xvar)))
+       (field-names (flexprod-fields->names (flexprod->fields (car prods)))))
     (make-flexsum :name name
                   :pred pred
                   :fix fix
@@ -930,8 +944,8 @@
                   :xvar xvar
                   :measure measure
                   :kwd-alist (if tag (cons
-                                      (cons :post-pred-events
-                                            (defprod-tag-events pred xvar tag name))
+                                      (cons :post-events
+                                            (defprod-tag-events pred xvar tag name field-names))
                                       kwd-alist)
                                kwd-alist)
                   :orig-prods orig-prods
@@ -2133,11 +2147,6 @@
                          :exec ,x.name))
           (flexprod-fields-mbefix-bindings (cdr fields)))))
 
-(defun flexprod-fields->names (fields)
-  (if (atom fields)
-      nil
-    (cons (flexprod-field->name (car fields))
-          (flexprod-fields->names (cdr fields)))))
                        
 (defun flexprod-ctor-call (prod)
   (b* (((flexprod prod) prod))
@@ -2683,6 +2692,13 @@
                  (flexsum-prod-fns (flexsum->prods (car types))))
             (flextypes-acc/ctors (cdr types)))))
 
+(defun flextypes-post-events (types)
+  (if (atom types)
+      nil
+    (append (with-flextype-bindings (x (car types))
+              (getarg :post-events nil x.kwd-alist))
+            (flextypes-post-events (cdr types)))))
+
 (defun flextypes-nokind-expand-fixes (types)
   (if (atom types)
       nil
@@ -2793,6 +2809,8 @@
        (local (in-theory (disable . ,(flextypes-fns x.types))))
        
        ,@(flextypes-count x)
+
+       ,@(flextypes-post-events x.types)
 
        (table flextypes-table ',x.name ',x)
 
