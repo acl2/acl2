@@ -53,6 +53,11 @@
 
 ; - Support for other forms besides defthm, such as defrule
 
+; - Consider somehow reporting the correct prover-steps for the final defthm,
+;   but still reporting the total prover-steps for the entire remove-hyps
+;   invocation (as might be done now -- maybe figure that out and document
+;   it).
+
 
 ;; ===================================================================
 
@@ -145,6 +150,15 @@
    ; If there are no more hypotheses to test, then return the reverse of the
    ; necessary hypotheses.
    ((endp rest-hyps) (value (reverse rev-init-hyps)))
+   ; Don't drop syntaxp or bind-free hypotheses.
+   ((and (consp (car rest-hyps))
+         (member-eq (caar rest-hyps)
+                    '(syntaxp bind-free synp)))
+    (remove-hyps-formula-1
+     name
+     (cons (car rest-hyps) rev-init-hyps)
+     (cdr rest-hyps)
+     concl kwd-alist steps state))
    ; Create a new form by appending the necessary hypotheses to the cdr of the
    ; additional hypotheses.  Evaluate the form, limiting the number of steps
    ; based on the heuristic above.  Then recur using the cdr of the additional
@@ -188,7 +202,9 @@
            ; Note that the second and third argument represent necessary and
            ; additional hypotheses.  We start with an empty list of necessary
            ; hypotheses and a full list of additional hypotheses.
-           (remove-hyps-formula-1 name nil hyps concl kwd-alist steps state)))
+           (remove-hyps-formula-1 name nil hyps concl kwd-alist
+                                  (remove-hyps-formula-steps steps)
+                                  state)))
          (value (make-defthm name final-hyps concl kwd-alist)))))))
 
 ;; This function takes the original form and then calls remove-hyps-function to
