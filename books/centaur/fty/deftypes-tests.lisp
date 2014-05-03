@@ -729,3 +729,240 @@
 
   (deflist pterm3list :elt-type pterm3-p :xvar acl2-asg::x
     :true-listp t))
+
+
+(define pterm4-take ((n natp) x)
+  :guard (eql (len x) n)
+  (mbe :logic (let ((n (nfix n)))
+                (if (equal (len x) n)
+                    x
+                  (if (< (len x) n)
+                      (append x (replicate (- n (len x)) ''nil))
+                    (take n x))))
+       :exec x)
+  ///
+  (defthm len-of-pterm4-take
+    (equal (len (pterm4-take n x))
+           (nfix n)))
+  (defthm pterm4-take-when-len
+    (implies (equal (len x) (nfix n))
+             (equal (pterm4-take n x) x))))
+
+
+
+(deftypes pterm4
+  :prepwork ((local (defthm len-equal-val
+                      (implies (syntaxp (quotep val))
+                               (equal (equal (len x) val)
+                                      (if (zp val)
+                                          (and (equal 0 val)
+                                               (atom x))
+                                        (and (consp x)
+                                             (equal (len (cdr x)) (1- val))))))))
+             ;; (local (defthm equal-of-cons
+             ;;          (equal (equal (cons a b) c)
+             ;;                 (and (consp c)
+             ;;                      (equal a (car c))
+             ;;                      (equal b (cdr c))))))
+             (local (in-theory (disable len)))
+             ;; (local (in-theory (enable var-fix varp fnsym-fix fnsym-p)))
+             )
+  (defflexsum pterm4
+    (:var 
+     :cond (atom y)
+     :fields ((name :acc-body y :type varp))
+     :ctor-body name)
+    (:quote
+     :cond (eq (car y) 'quote)
+     :shape (and (consp (cdr y))
+                 (not (cddr y)))
+     :fields ((val :acc-body (cadr y)))
+     :ctor-body (list 'quote val))
+    (:fncall
+     :cond (atom (car y))
+     :fields ((fn :acc-body (car y) :type fnsym-p)
+              (args :acc-body (cdr y) :type pterm4list-p))
+     :ctor-body (cons fn args))
+    (:lambdacall
+     :shape (and (eq (caar y) 'lambda)
+                 (true-listp (car y))
+                 (eql (len (car y)) 4))
+     :fields ((formals :acc-body (cadar y) :type varlist-p)
+              (body :acc-body (caddar y) :type pterm4-p)
+              (atts :acc-body (car (cdddar y)) :type pterm4-atts)
+              (args :acc-body (cdr y) :type pterm4list-p
+                    :reqfix (pterm4-take (len formals) args)))
+     :require (eql (len formals) (len args))
+     :ctor-body (cons (list 'lambda formals body atts) args))
+
+    :xvar y
+    :measure (two-nats-measure (acl2-count y) 1))
+
+  (defflexsum maybe-pterm4
+    :kind nil
+    (:null :cond (not x)
+     :ctor-body nil)
+    (:term :cond t
+     :fields ((val :acc-body x :type pterm4))
+     :ctor-body val)
+    :measure (two-nats-measure (acl2-count x) 3))
+
+  (defalist pterm4-atts :key-type stringp :val-type maybe-pterm4
+    :measure (two-nats-measure (acl2-count x) 0))
+  ;; (defflexsum pfunc
+  ;;   ;; :kind nil
+  ;;   (:sym
+  ;;    :cond (atom z)
+  ;;    :fields ((fnname :acc-body z :type fnsym-p))
+  ;;    :ctor-body fnname)
+  ;;   (:lambda
+  ;;    :shape (and (eq (car z) 'lambda)
+  ;;                  (true-listp z)
+  ;;                  (eql (len z) 3))
+  ;;    :fields ((formals :acc-body (cadr z) :type varlist-p)
+  ;;             (body :acc-body (caddr z) :type pterm-p))
+  ;;    :ctor-body (list 'lambda formals body))
+  ;;   :xvar z)
+
+  (deflist pterm4list :elt-type pterm4-p :xvar acl2-asg::x
+    :true-listp t
+    :measure (two-nats-measure (acl2-count acl2-asg::x) 0) )
+
+
+  
+  :post-pred-events ((defthm pterm4list-p-of-append
+                       (implies (and (pterm4list-p x)
+                                     (pterm4list-p y))
+                                (pterm4list-p (append x y)))
+                       :hints(("Goal" :in-theory (enable pterm4list-p))))
+                     (defthm pterm4list-p-of-take
+                       (implies (and (pterm4list-p x)
+                                     (< (nfix n) (len x)))
+                                (pterm4list-p (take n x)))
+                       :hints(("Goal" :in-theory (enable pterm4list-p len))))
+                     (defthm pterm4list-p-of-replicate
+                       (implies (pterm4-p x)
+                                (pterm4list-p (replicate n x)))
+                       :hints(("Goal" :in-theory (enable pterm4list-p
+                                                         replicate))))
+                     (defthm pterm4list-p-of-pterm4-take
+                       (implies (pterm4list-p x)
+                                (pterm4list-p (pterm4-take n x)))
+                       :hints(("Goal" :in-theory (enable pterm4-take))))
+                     (defthm pterm4list-p-implies-true-listp
+                       (implies (pterm4list-p x)
+                                (true-listp x))
+                       :rule-classes :forward-chaining)))
+
+
+
+
+
+(define pterm5-take ((n natp) x)
+  :guard (eql (len x) n)
+  (mbe :logic (let ((n (nfix n)))
+                (if (equal (len x) n)
+                    x
+                  (if (< (len x) n)
+                      (append x (replicate (- n (len x)) '(:quote . nil)))
+                    (take n x))))
+       :exec x)
+  ///
+  (defthm len-of-pterm5-take
+    (equal (len (pterm5-take n x))
+           (nfix n)))
+  (defthm pterm5-take-when-len
+    (implies (equal (len x) (nfix n))
+             (equal (pterm5-take n x) x))))
+
+
+
+(deftypes pterm5
+  :prepwork ((local (defthm len-equal-val
+                      (implies (syntaxp (quotep val))
+                               (equal (equal (len x) val)
+                                      (if (zp val)
+                                          (and (equal 0 val)
+                                               (atom x))
+                                        (and (consp x)
+                                             (equal (len (cdr x)) (1- val))))))))
+             ;; (local (defthm equal-of-cons
+             ;;          (equal (equal (cons a b) c)
+             ;;                 (and (consp c)
+             ;;                      (equal a (car c))
+             ;;                      (equal b (cdr c))))))
+             (local (in-theory (disable len)))
+             ;; (local (in-theory (enable var-fix varp fnsym-fix fnsym-p)))
+             )
+  (deftagsum pterm5
+    :layout :tree
+    (:var  ((name varp)))
+    (:quote (val))
+    (:fncall ((fn fnsym)
+              (args pterm4list)))
+    (:lambdacall ((formals varlist)
+                  (body pterm5)
+                  (atts pterm5-atts)
+                  (args pterm5list
+                        :reqfix (pterm5-take (len formals) args)))
+     :require (eql (len formals) (len args)))
+
+    :xvar y
+    :measure (two-nats-measure (acl2-count y) 1))
+
+  (defflexsum maybe-pterm5
+    :kind nil
+    (:null :cond (not x)
+     :ctor-body nil)
+    (:term :cond t
+     :fields ((val :acc-body x :type pterm5))
+     :ctor-body val)
+    :measure (two-nats-measure (acl2-count x) 3))
+
+  (defalist pterm5-atts :key-type stringp :val-type maybe-pterm5
+    :measure (two-nats-measure (acl2-count x) 0))
+  ;; (defflexsum pfunc
+  ;;   ;; :kind nil
+  ;;   (:sym
+  ;;    :cond (atom z)
+  ;;    :fields ((fnname :acc-body z :type fnsym-p))
+  ;;    :ctor-body fnname)
+  ;;   (:lambda
+  ;;    :shape (and (eq (car z) 'lambda)
+  ;;                  (true-listp z)
+  ;;                  (eql (len z) 3))
+  ;;    :fields ((formals :acc-body (cadr z) :type varlist-p)
+  ;;             (body :acc-body (caddr z) :type pterm-p))
+  ;;    :ctor-body (list 'lambda formals body))
+  ;;   :xvar z)
+
+  (deflist pterm5list :elt-type pterm5-p :xvar acl2-asg::x
+    :true-listp t
+    :measure (two-nats-measure (acl2-count acl2-asg::x) 0) )
+
+
+  
+  :post-pred-events ((defthm pterm5list-p-of-append
+                       (implies (and (pterm5list-p x)
+                                     (pterm5list-p y))
+                                (pterm5list-p (append x y)))
+                       :hints(("Goal" :in-theory (enable pterm5list-p))))
+                     (defthm pterm5list-p-of-take
+                       (implies (and (pterm5list-p x)
+                                     (< (nfix n) (len x)))
+                                (pterm5list-p (take n x)))
+                       :hints(("Goal" :in-theory (enable pterm5list-p len))))
+                     (defthm pterm5list-p-of-replicate
+                       (implies (pterm5-p x)
+                                (pterm5list-p (replicate n x)))
+                       :hints(("Goal" :in-theory (enable pterm5list-p
+                                                         replicate))))
+                     (defthm pterm5list-p-of-pterm5-take
+                       (implies (pterm5list-p x)
+                                (pterm5list-p (pterm5-take n x)))
+                       :hints(("Goal" :in-theory (enable pterm5-take))))
+                     (defthm pterm5list-p-implies-true-listp
+                       (implies (pterm5list-p x)
+                                (true-listp x))
+                       :rule-classes :forward-chaining)))
+
