@@ -17259,8 +17259,12 @@
                                      (cons #\2 (f-get-global 'acl2-version
                                                              state)))
                                (proofs-co state) state nil))
-                     (er-let* ((ev-lst (read-object-file full-book-name ctx
-                                                         state))
+                     (er-let* ((ev-lst
+                                (let (#-acl2-loop-only
+                                      (*acl2-error-msg*
+                                       *acl2-error-msg-certify-book-step1*))
+                                  (read-object-file full-book-name ctx
+                                                    state)))
                                (acl2x-expansion-alist
 ; See the Essay on .acl2x Files (Double Certification).
                                 (cond (write-acl2x (value nil))

@@ -1633,3 +1633,4 @@ notation causes an error and (b) the use of ,. is not permitted."
   `(defparameter ,@r)
   #+Clozure
   `(ccl::defstaticvar ,@r))
+

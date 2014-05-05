@@ -7712,15 +7712,8 @@ Missing functions (use *check-built-in-constants-debug* = t for verbose report):
            (when btp (format t "~%NOTE: See above for backtrace.~%"))
            (format t
                    "~&***********************************************~&")
-           (unless *acl2-error-p*
-             (format
-              t
-              "~%The message above might explain the error.  If not, and~%~
-               if you didn't cause an explicit interrupt (Control-C),~%~
-               then the root cause may be call of a :program mode~%~
-               function that has the wrong guard specified, or even no~%~
-               guard specified (i.e., an implicit guard of t).~%~
-               See :DOC guards.~&"))
+           (when *acl2-error-msg*
+             (format t *acl2-error-msg*))
            (when (not (member-eq 'set-debugger-enable-fn
 ;                                (global-val 'untouchable-fns (w state))
                                  (getprop 'untouchable-fns 'global-value nil
