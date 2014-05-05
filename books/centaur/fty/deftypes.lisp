@@ -153,17 +153,19 @@
   (or (find-fixtype-for-typename typename alist)
       (find-fixtype-for-pred typename alist)))
 
-(defun get-pred/fix/equiv (kwd-alist fixtypes typekw)
+(defun get-pred/fix/equiv (kwd-alist our-fixtypes fixtypes typekw)
   (b* ((type (getarg typekw nil kwd-alist))
-       ((unless type) (mv nil nil 'equal))
-       (fixtype (find-fixtype type fixtypes))
+       ((unless type) (mv nil nil 'equal nil))
+       (fixtype1 (find-fixtype type our-fixtypes))
+       (fixtype (or fixtype1 (find-fixtype type fixtypes)))
        ((unless fixtype)
         (er hard? 'get-type-and-fix
             "Type ~x0 doesn't have an associated fixing function.  Please ~
              provide that association using ~x1.~%" type 'deffixtype)
-        (mv nil nil 'equal)))
+        (mv nil nil 'equal nil)))
     (mv (fixtype->pred fixtype) (fixtype->fix fixtype)
-        (fixtype->equiv fixtype))))
+        (fixtype->equiv fixtype)
+        (and fixtype1 t))))
 
 (defmacro getarg-nonnil! (key default kwd-alist)
   `(let* ((getarg-look (assoc ,key ,kwd-alist)))
@@ -232,6 +234,7 @@
    default  ;; default value
    doc      ;; not yet used
    rule-classes ;; for return type theorem, either empty (default) or of the form (:rule-classes ...)
+   recp ;; is the field type part of the mutual recursion
    ))
 
 (defconst *flexprod-field-keywords*
@@ -243,7 +246,7 @@
     :rule-classes
     :reqfix))
 
-(defun parse-flexprod-field (x type-name fixtypes)
+(defun parse-flexprod-field (x type-name our-fixtypes fixtypes)
   (b* (((cons name kws) x)
        ((unless (symbolp name))
         (er hard? 'parse-flexprod-field
@@ -265,7 +268,7 @@
                                 (symbol-name type-name) "->" (symbol-name name))
                    type-name)
                   kwd-alist))
-       ((mv type fix equiv) (get-pred/fix/equiv kwd-alist fixtypes :type))
+       ((mv type fix equiv recp) (get-pred/fix/equiv kwd-alist our-fixtypes fixtypes :type))
        (reqfix (getarg :reqfix name kwd-alist)))
     (make-flexprod-field
      :name name
@@ -279,13 +282,14 @@
      ;; :require require
      :reqfix reqfix
      :rule-classes (let ((look (assoc :rule-classes kwd-alist)))
-                     (and look `(:rule-classes ,(cdr look)))))))
+                     (and look `(:rule-classes ,(cdr look))))
+     :recp recp)))
 
-(defun parse-flexprod-fields (x type-name fixtypes)
+(defun parse-flexprod-fields (x type-name our-fixtypes fixtypes)
   (if (atom x)
       nil
-    (cons (parse-flexprod-field (car x) type-name fixtypes)
-          (parse-flexprod-fields (cdr x) type-name fixtypes))))
+    (cons (parse-flexprod-field (car x) type-name our-fixtypes fixtypes)
+          (parse-flexprod-fields (cdr x) type-name our-fixtypes fixtypes))))
        
 ;; --- Flexprods ---
 (def-primitive-aggregate flexprod
@@ -306,7 +310,7 @@
 (defconst *flexprod-keywords*
   '(:shape :fields :ctor-body :ctor-name :ctor-macro :cond :type-name :doc :inline :require))
 
-(defun parse-flexprod (x sumname sumkind sum-kwds xvar rev-not-prevconds fixtypes)
+(defun parse-flexprod (x sumname sumkind sum-kwds xvar rev-not-prevconds our-fixtypes fixtypes)
   (b* (((cons kind kws) x)
        ((unless (keywordp kind))
         (er hard? 'parse-flexprod
@@ -335,7 +339,7 @@
                                     (concatenate 'string "MAKE-" (symbol-name ctor-name))
                                     ctor-name)
                                    kwd-alist))
-       (fields (parse-flexprod-fields (getarg :fields nil kwd-alist) type-name fixtypes))
+       (fields (parse-flexprod-fields (getarg :fields nil kwd-alist) type-name our-fixtypes fixtypes))
        (guard (if sumkind
                   `(equal (,sumkind ,xvar) ,kind)
                 (let* ((fullcond-terms (dumb-append-conjunct rev-not-prevconds cond)))
@@ -357,16 +361,16 @@
                   :doc (getarg :doc "" kwd-alist)
                   :inline inline)))
 
-(defun parse-flexprods (x sumname sumkind sum-kwds xvar rev-not-prevconds fixtypes)
+(defun parse-flexprods (x sumname sumkind sum-kwds xvar rev-not-prevconds our-fixtypes fixtypes)
   (if (atom x)
       nil
-    (let* ((newprod (parse-flexprod (car x) sumname sumkind sum-kwds xvar rev-not-prevconds fixtypes))
+    (let* ((newprod (parse-flexprod (car x) sumname sumkind sum-kwds xvar rev-not-prevconds our-fixtypes fixtypes))
            (rev-not-prevconds (dumb-cons-conjunct
                                (acl2::dumb-negate-lit
                                 (flexprod->cond newprod))
                                rev-not-prevconds)))
     (cons newprod
-          (parse-flexprods (cdr x) sumname sumkind sum-kwds xvar rev-not-prevconds fixtypes)))))
+          (parse-flexprods (cdr x) sumname sumkind sum-kwds xvar rev-not-prevconds our-fixtypes fixtypes)))))
 
 ;; --- Flexsum ---
 (def-primitive-aggregate flexsum
@@ -385,6 +389,7 @@
    kwd-alist   ;; original keyword arguments
    orig-prods  ;; original products
    inline      ;; inline kind, fix functions
+   recp        ;; has a recusive field in some product
    )
   :tag :sum)
 
@@ -427,7 +432,19 @@
              the variable denoting the typed object with :xvar.")))
     (car xsyms)))
 
-(defun parse-flexsum (x xvar fixtypes)
+(defun flexprod-fields-recursivep (x)
+  (if (atom x)
+      nil
+    (or (flexprod-field->recp (car x))
+        (flexprod-fields-recursivep (cdr x)))))
+
+(defun flexprods-recursivep (x)
+  (if (atom x)
+      nil
+    (or (flexprod-fields-recursivep (flexprod->fields (car x)))
+        (flexprods-recursivep (cdr x)))))
+
+(defun parse-flexsum (x xvar our-fixtypes fixtypes)
   (b* (((cons name args) x)
        ((unless (symbolp name))
         (er hard? 'parse-flexsum
@@ -460,12 +477,13 @@
        (shape (getarg :shape t kwd-alist))
        (count (flextype-get-count-fn name kwd-alist))
        (xvar (flexsum-infer-xvar kwd-alist xvar orig-prods))
-       (prods (parse-flexprods orig-prods name kind kwd-alist xvar nil fixtypes))
+       (prods (parse-flexprods orig-prods name kind kwd-alist xvar nil our-fixtypes fixtypes))
        ((when (atom prods))
         (er hard? 'parse-flexsum
             "Malformed SUM ~x0: Must have at least one product"))
        (measure (or (getarg :measure nil kwd-alist)
-                    `(acl2-count ,xvar))))
+                    `(acl2-count ,xvar)))
+       (recp (flexprods-recursivep prods)))
     (make-flexsum :name name
                   :pred pred
                   :fix fix
@@ -480,7 +498,8 @@
                   :shape shape
                   :measure measure
                   :kwd-alist kwd-alist
-                  :orig-prods orig-prods)))
+                  :orig-prods orig-prods
+                  :recp recp)))
 
 
 ;; ------------------------- Defprod/tagsum Parsing -----------------------
@@ -796,7 +815,7 @@
                     (member base-override (strip-cars flexprods-in))))
         (er hard? 'parse-tagsum
             ":Base-case-override value must be one of the product names"))
-       (prods (parse-flexprods flexprods-in name kind kwd-alist xvar nil fixtypes))
+       (prods (parse-flexprods flexprods-in name kind kwd-alist xvar nil these-fixtypes fixtypes))
        ((when (atom prods))
         (er hard? 'parse-tagsum
             "Malformed SUM ~x0: Must have at least one product"))
@@ -816,7 +835,8 @@
                   :inline inline
                   :measure measure
                   :kwd-alist kwd-alist
-                  :orig-prods orig-prods)))
+                  :orig-prods orig-prods
+                  :recp (flexprods-recursivep prods))))
 
 ;; --- Defprod parsing ---
 (defconst *defprod-keywords*
@@ -903,7 +923,7 @@
                           (concatenate 'string (symbol-name foop) "-WHEN-WRONG-TAG")
                           name))))))
 
-(defun parse-defprod (x xvar fixtypes)
+(defun parse-defprod (x xvar our-fixtypes fixtypes)
   (b* (((cons name args) x)
        ((unless (symbolp name))
         (er hard? 'parse-defprod
@@ -938,7 +958,7 @@
         (er hard? 'parse-defprod ":Tag, if provided, must be a keyword symbol"))
        (orig-prod (defprod-fields-to-flexsum-prod fields xvar name kwd-alist))
        (orig-prods (list orig-prod))
-       (prods (parse-flexprods orig-prods name nil kwd-alist xvar nil fixtypes))
+       (prods (parse-flexprods orig-prods name nil kwd-alist xvar nil our-fixtypes fixtypes))
 
        (measure (or (getarg :measure nil kwd-alist)
                     `(acl2-count ,xvar)))
@@ -959,7 +979,8 @@
                                       kwd-alist)
                                kwd-alist)
                   :orig-prods orig-prods
-                  :inline inline)))
+                  :inline inline
+                  :recp (flexprods-recursivep prods))))
 
 ;; ------------------------- Deflist Parsing -----------------------
 (def-primitive-aggregate flexlist
@@ -975,6 +996,7 @@
    xvar       ;; variable name denoting the object
    kwd-alist  ;; original keyword alist
    true-listp ;; require nil final cdr
+   recp       ;; elt-type is recursive
    )
   :tag :list)
 
@@ -991,7 +1013,7 @@
     :post-fix-events
     :post-events))
 
-(defun parse-flexlist (x xvar fixtypes)
+(defun parse-flexlist (x xvar our-fixtypes fixtypes)
   (b* (((cons name args) x)
        ((unless (symbolp name))
         (er hard? 'parse-flexlist
@@ -1005,8 +1027,8 @@
        ((unless (and (symbolp elt-type) elt-type))
         (er hard? 'parse-flexlist
             "Bad flexlist ~x0: Element type must be a symbol" x))
-       ((mv elt-type elt-fix elt-equiv)
-        (get-pred/fix/equiv kwd-alist fixtypes :elt-type))
+       ((mv elt-type elt-fix elt-equiv recp)
+        (get-pred/fix/equiv kwd-alist our-fixtypes fixtypes :elt-type))
        (pred (or (getarg :pred nil kwd-alist)
                  (intern-in-package-of-symbol
                   (concatenate 'string (symbol-name name) "-P")
@@ -1037,7 +1059,8 @@
                   :elt-equiv elt-equiv
                   :true-listp true-listp
                   :measure measure
-                  :xvar xvar)))
+                  :xvar xvar
+                  :recp recp)))
 
 ;; ------------------------- Defalist Parsing -----------------------
 (def-primitive-aggregate flexalist
@@ -1057,7 +1080,9 @@
    kwd-alist  ;; original keyword alist
    get get-fast ;; more fn names
    set set-fast
-   true-listp)
+   true-listp
+   recp
+   )
   :tag :alist)
 
 (defconst *flexalist-keywords*
@@ -1074,7 +1099,7 @@
     :post-fix-events
     :post-events))
 
-(defun parse-flexalist (x xvar fixtypes)
+(defun parse-flexalist (x xvar our-fixtypes fixtypes)
   (b* (((cons name args) x)
        ((unless (symbolp name))
         (er hard? 'parse-flexalist
@@ -1088,14 +1113,14 @@
        ((unless (symbolp key-type))
         (er hard? 'parse-flexalist
             "Bad flexalist ~x0: Element type must be a symbol" x))
-       ((mv key-type key-fix key-equiv)
-        (get-pred/fix/equiv kwd-alist fixtypes :key-type))
+       ((mv key-type key-fix key-equiv key-recp)
+        (get-pred/fix/equiv kwd-alist our-fixtypes fixtypes :key-type))
        (val-type (getarg :val-type nil kwd-alist))
        ((unless (symbolp val-type))
         (er hard? 'parse-flexalist
             "Bad flexalist ~x0: Element type must be a symbol" x))
-       ((mv val-type val-fix val-equiv)
-        (get-pred/fix/equiv kwd-alist fixtypes :val-type))
+       ((mv val-type val-fix val-equiv val-recp)
+        (get-pred/fix/equiv kwd-alist our-fixtypes fixtypes :val-type))
        (pred (or (getarg :pred nil kwd-alist)
                  (intern-in-package-of-symbol
                   (concatenate 'string (symbol-name name) "-P")
@@ -1125,7 +1150,7 @@
                                        (concatenate 'string (symbol-name name) "-SET-FAST")
                                        name)
                             kwd-alist))
-                       
+       
        (count (flextype-get-count-fn name kwd-alist))
        (xvar (or (getarg :xvar nil kwd-alist)
                  xvar
@@ -1135,21 +1160,22 @@
                     `(acl2-count ,xvar)))
        (true-listp (getarg :true-listp nil kwd-alist)))
     (make-flexalist :name name
-                  :pred pred
-                  :fix fix
-                  :equiv equiv
-                  :count count
-                  :key-type key-type
-                  :key-fix key-fix
-                  :key-equiv key-equiv
-                  :val-type val-type
-                  :val-fix val-fix
-                  :val-equiv val-equiv
-                  :get get :get-fast get-fast
-                  :set set :set-fast set-fast
-                  :measure measure
-                  :xvar xvar
-                  :true-listp true-listp)))
+                    :pred pred
+                    :fix fix
+                    :equiv equiv
+                    :count count
+                    :key-type key-type
+                    :key-fix key-fix
+                    :key-equiv key-equiv
+                    :val-type val-type
+                    :val-fix val-fix
+                    :val-equiv val-equiv
+                    :get get :get-fast get-fast
+                    :set set :set-fast set-fast
+                    :measure measure
+                    :xvar xvar
+                    :true-listp true-listp
+                    :recp (or key-recp val-recp))))
 
 ;; --- With-flextype-bindings ---
 (defun replace-*-in-symbol-with-str (x str)
@@ -1211,11 +1237,11 @@
   (if (atom x)
       nil
     (cons (case (caar x)
-            (defflexsum (parse-flexsum (cdar x) xvar fixtypes))
-            (defprod   (parse-defprod (cdar x) xvar fixtypes))
+            (defflexsum (parse-flexsum (cdar x) xvar our-fixtypes fixtypes))
+            (defprod   (parse-defprod (cdar x) xvar our-fixtypes fixtypes))
             (deftagsum (parse-tagsum (cdar x) xvar our-fixtypes fixtypes))
-            (deflist (parse-flexlist (cdar x) xvar fixtypes))
-            (defalist (parse-flexalist (cdar x) xvar fixtypes))
+            (deflist (parse-flexlist (cdar x) xvar our-fixtypes fixtypes))
+            (defalist (parse-flexalist (cdar x) xvar our-fixtypes fixtypes))
             (otherwise (er hard? 'parse-flextypelist
                            "Recognized flextypes are ~x0, not ~x1~%"
                            *known-flextype-generators* (caar x))))
@@ -1261,7 +1287,8 @@
    prepwork
    post-pred-events
    post-fix-events
-   post-events))
+   post-events
+   recp))
    
 (defconst *flextypes-keywords*
   '(:xvar :no-count
@@ -1271,7 +1298,13 @@
     :post-fix-events
     :post-events
     ))
-                                    
+
+(defun flextypelist-recp (x)
+  (if (atom x)
+      nil
+    (or (with-flextype-bindings (x (car x)) x.recp)
+        (flextypelist-recp (cdr x)))))
+
 (defun parse-flextypes (x wrld)
   (b* (((cons name x) x)
        ((unless (symbolp name))
@@ -1288,7 +1321,8 @@
     (make-flextypes :name name
                     :types types
                     :no-count no-count
-                    :kwd-alist kwd-alist)))
+                    :kwd-alist kwd-alist
+                    :recp (flextypelist-recp types))))
 
 ;; ------------------ Predicate: flexsum -----------------------
 
@@ -1929,6 +1963,12 @@
                 (local (in-theory (enable ,x.equiv)))))
             (flextypelist-fixtypes (cdr types)))))
 
+(defun flextypes-form-append-hints (new-hints form)
+  (b* ((mem (member :hints form))
+       ((unless mem) (append form `(:hints ,new-hints)))
+       (prefix (take (- (len form) (len mem)) form)))
+    (append prefix (cons :hints (cons (append new-hints (cadr mem))
+                                      (cddr mem))))))
 
 (defun flextypes-fix-def (x)
   (b* (((flextypes x) x)
@@ -1952,7 +1992,11 @@
                `(///
                  ,(if flagp
                       `(,flag-defthm-name . ,fix-when-pred-thms)
-                    (car fix-when-pred-thms))
+                    (if x.recp
+                        (flextypes-form-append-hints
+                         '(("goal" :induct t))
+                         (car fix-when-pred-thms))
+                      (car fix-when-pred-thms)))
                       
                  (verify-guards+ ,(cadr (car defs))
                    :hints (("goal"
@@ -2165,7 +2209,8 @@
                ,(nice-implies prod.guard
                               `(,sum.equiv (,prod.ctor-name . ,field-calls)
                                            ,sum.xvar))
-               :hints(("Goal" :in-theory (enable ,sum.fix))))))
+               :hints(("Goal" :in-theory (enable ,sum.fix)
+                       :expand ((,sum.fix ,sum.xvar)))))))
 
         (,(if (eq prod.guard t) 'defthmd 'defthm)
          ,(intern-in-package-of-symbol
@@ -2722,15 +2767,17 @@
   `(make-event (deftypes-fn ',args (w state))))
 
 (defun defflexsum-fn (whole wrld)
-  (b* ((fixtype-al (cons (flextype-form->fixtype whole)
-                         (get-fixtypes-alist wrld)))
-       (x (parse-flexsum (cdr whole) nil fixtype-al))
+  (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
+       (fixtype-al (append our-fixtypes
+                           (get-fixtypes-alist wrld)))
+       (x (parse-flexsum (cdr whole) nil our-fixtypes fixtype-al))
        ((flexsum x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
                                   :prepwork (cdr (assoc :prepwork x.kwd-alist))
                                   :no-count (not x.count)
-                                  :kwd-alist nil)))
+                                  :kwd-alist nil
+                                  :recp x.recp)))
     (deftypes-events flextypes wrld)))
 
 (defmacro defflexsum (&whole form &rest args)
@@ -2738,15 +2785,17 @@
   `(make-event (defflexsum-fn ',form (w state))))
 
 (defun deflist-fn (whole wrld)
-  (b* ((fixtype-al (cons (flextype-form->fixtype whole)
-                         (get-fixtypes-alist wrld)))
-       (x (parse-flexlist (cdr whole) nil fixtype-al))
+  (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
+       (fixtype-al (append our-fixtypes
+                           (get-fixtypes-alist wrld)))
+       (x (parse-flexlist (cdr whole) nil our-fixtypes fixtype-al))
        ((flexlist x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
                                   :prepwork (cdr (assoc :prepwork x.kwd-alist))
                                   :no-count (not x.count)
-                                  :kwd-alist nil)))
+                                  :kwd-alist nil
+                                  :recp x.recp)))
     (deftypes-events flextypes wrld)))
 
 (defmacro deflist (&whole form &rest args)
@@ -2754,15 +2803,17 @@
   `(make-event (deflist-fn ',form (w state))))
 
 (defun defalist-fn (whole wrld)
-  (b* ((fixtype-al (cons (flextype-form->fixtype whole)
-                         (get-fixtypes-alist wrld)))
-       (x (parse-flexalist (cdr whole) nil fixtype-al))
+  (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
+       (fixtype-al (append our-fixtypes
+                           (get-fixtypes-alist wrld)))
+       (x (parse-flexalist (cdr whole) nil our-fixtypes fixtype-al))
        ((flexalist x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
                                   :prepwork (cdr (assoc :prepwork x.kwd-alist))
                                   :no-count (not x.count)
-                                  :kwd-alist nil)))
+                                  :kwd-alist nil
+                                  :recp x.recp)))
     (deftypes-events flextypes wrld)))
 
 (defmacro defalist (&whole form &rest args)
@@ -2779,7 +2830,8 @@
                                   :types (list x)
                                   :prepwork '((local (in-theory (enable equal-of-strip-cars))))
                                   :no-count (not x.count)
-                                  :kwd-alist nil)))
+                                  :kwd-alist nil
+                                  :recp x.recp)))
     (deftypes-events flextypes wrld)))
 
 (defmacro deftagsum (&whole form &rest args)
@@ -2790,14 +2842,15 @@
   (b* ((fixtype (flextype-form->fixtype whole))
        (fixtype-al (cons fixtype
                          (get-fixtypes-alist wrld)))
-       (x (parse-defprod (cdr whole) nil fixtype-al))
+       (x (parse-defprod (cdr whole) nil (list fixtype) fixtype-al))
        (x (change-flexsum x :count nil)) ;; no count for a single product
        ((flexsum x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
                                   :prepwork '((local (in-theory (enable equal-of-strip-cars))))
                                   :no-count (not x.count)
-                                  :kwd-alist nil)))
+                                  :kwd-alist nil
+                                  :recp x.recp)))
     (deftypes-events flextypes wrld)))
 
 (defmacro defprod (&whole form &rest args)
