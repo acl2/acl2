@@ -177,6 +177,8 @@
 ;; other topics...
 (include-book "arithmetic-5/top" :dir :system)
 (include-book "arithmetic/top" :dir :system)
+; The rest of ihs is included elsewhere transitively
+(include-book "ihs/logops-lemmas" :dir :system)
 
 (include-book "rtl/rel9/lib/top" :dir :system)
 (include-book "rtl/rel9/lib/logn" :dir :system)
