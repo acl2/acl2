@@ -13,7 +13,7 @@
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "centaur/bitops/sign-extend" :dir :system)
+(include-book "centaur/bitops/fast-logext" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (set-verify-guards-eagerness 2)
