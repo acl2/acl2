@@ -8802,7 +8802,7 @@
 
 (mutual-recursion
 
-(defun find-first-non-local-name (x)
+(defun find-first-non-local-name (x wrld primitives state-vars)
 
 ; Keep this in sync with chk-embedded-event-form and primitive-event-macros;
 ; see comments below.
@@ -8827,7 +8827,9 @@
 ; handle local and defun first, since these are the most common.  We then
 ; handle all event forms in (primitive-event-macros) that introduce a new name
 ; that is a symbol.  Finally, we deal with compound event forms that are
-; handled by chk-embedded-event-form.
+; handled by chk-embedded-event-form.  Note: As of this writing, it is
+; surprising that make-event is not in (primitive-event-macros).  But we handle
+; it here, too.
 
            (('local . &) nil)
            (('defun name . &) name)
@@ -8855,25 +8857,37 @@
                           . &)
             name)
            (('encapsulate nil . ev-lst)
-            (find-first-non-local-name-lst ev-lst))
+            (find-first-non-local-name-lst ev-lst wrld primitives state-vars))
            (('mutual-recursion ('defun name . &) . &) name)
+           (('make-event . &) ; no good way to get the name
+            nil)
            (('progn . ev-lst)
-            (find-first-non-local-name-lst ev-lst))
+            (find-first-non-local-name-lst ev-lst wrld primitives state-vars))
 
 ; Keep the following in sync with chk-embedded-event-form; see comment above.
 
            ((sym . lst)
-            (and (member-eq sym '(skip-proofs
-                                  with-output
-                                  with-prover-step-limit
-                                  with-prover-time-limit))
-                 (find-first-non-local-name (car (last lst)))))
-
+            (cond ((member-eq sym '(skip-proofs
+                                    with-output
+                                    with-prover-step-limit
+                                    with-prover-time-limit))
+                   (find-first-non-local-name (car (last lst))
+                                              wrld primitives state-vars))
+                  ((member-eq sym primitives) nil)
+                  ((getprop (car x) 'macro-body nil 'current-acl2-world wrld)
+                   (mv-let
+                    (erp expansion)
+                    (macroexpand1-cmp x 'find-first-non-local-name wrld
+                                      state-vars)
+                    (and (not erp)
+                         (find-first-non-local-name expansion wrld primitives
+                                                    state-vars))))
+                  (t nil)))
            (& nil))))
     (and (symbolp val)
          val)))
 
-(defun find-first-non-local-name-lst (lst)
+(defun find-first-non-local-name-lst (lst wrld primitives state-vars)
 
 ; Challenge: If lst is a true list of embedded event forms that is
 ; successfully processed with ld-skip-proofsp nil, name one name that
@@ -8887,8 +8901,9 @@
 ; processed before.
 
   (cond ((atom lst) nil)
-        (t (or (find-first-non-local-name (car lst))
-               (find-first-non-local-name-lst (cdr lst))))))
+        (t (or (find-first-non-local-name (car lst) wrld primitives state-vars)
+               (find-first-non-local-name-lst (cdr lst) wrld primitives
+                                              state-vars)))))
 
 )
 
@@ -9030,7 +9045,10 @@
                  (if (eq equal? :expanded)
                      old-event-form
                    t))))))))
-   (t (let ((name (find-first-non-local-name-lst ev-lst)))
+   (t (let ((name (find-first-non-local-name-lst ev-lst
+                                                 wrld
+                                                 (primitive-event-macros)
+                                                 (default-state-vars nil))))
         (and (or (not name)
 
 ; A non-local name need not be found.  But if one is found, then redundancy
