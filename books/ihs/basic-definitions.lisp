@@ -264,7 +264,8 @@
 
 (defun-inline logcar (i)
   ":doc-section logops-definitions
-  (LOGCAR i) is the CAR of an integer conceptualized as a bit-vector.
+  (LOGCAR i) is the CAR of an integer conceptualized as a bit-vector (where the
+  least significant bit is at the head of the list).
   ~/~/~/"
   (declare (xargs :guard (integerp i)))
   (mbe :logic (imod i 2)
@@ -272,7 +273,8 @@
 
 (defun-inline logcdr (i)
   ":doc-section logops-definitions
-  (LOGCDR i) is the CDR of an integer conceptualized as a bit-vector.
+  (LOGCDR i) is the CDR of an integer conceptualized as a bit-vector (where the
+  least significant bit is at the head of the list).
   ~/~/~/"
   (declare (xargs :guard (integerp i)))
   (mbe :logic (ifloor i 2)
@@ -281,7 +283,8 @@
 (defun-inline logcons (b i)
   ":doc-section logops-definitions
   (LOGCONS b i) is the CONS operation for integers conceptualized as
-  bit-vectors.
+  bit-vectors (where i is multiplied by 2 and b becomes the new least
+  significant bit).
   ~/
   For clarity and efficiency, b is required to be BITP.~/~/"
   (declare (xargs :guard (and (bitp b)
