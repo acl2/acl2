@@ -1311,15 +1311,9 @@
 
 (defvar *acl2-error-msg-certify-book-step1*
   "~%The message above might explain the error.  If it mentions packages,
-it is probably because Step 1 is done before any of the forms are
-evaluated, so packages used in the book must be defined before certifying
-the book.  For example, if the error above complains about a missing
-package \"FOO\" or a symbol FOO::X not in any of the packages known to
-ACL2, then your book contains a symbol such as FOO::X for which the
-package \"FOO\" has not yet been defined.  In that case, you probably
-need to include a book to define package \"FOO\" before attempting this
-certification.  See :DOC certify-book, in particular, the discussion
-about portcullis commands.~&")
+it is probably because Step 1 is performed before any form in the book is
+evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
+1'' and portcullis commands.~&")
 
 (defun interface-er (&rest args)
 
