@@ -1576,7 +1576,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defun ser-cons-reader-macro (stream subchar arg)
   (declare (ignorable subchar arg))
-  ;; This is the reader macro for #z.  When it is called the #z part has
+  ;; This is the reader macro for #Y.  When it is called the #Z part has
   ;; already been read, so we just want to read the serialized object.
   (ser-decode-from-stream nil :never stream))
 

@@ -5201,6 +5201,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #-acl2-loop-only
 (defun-one-output pkg-witness (pkg)
+
+; Warning: Function ser-decode-and-load-package sometimes relies on an error
+; being signalled by pkg-witness when the package is not known to ACL2.
+
   (declare (type string pkg))
   (cond ((find-non-hidden-package-entry pkg
                                         (known-package-alist *the-live-state*))

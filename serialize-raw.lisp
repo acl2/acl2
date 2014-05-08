@@ -22,19 +22,11 @@
 
 ; serialize-raw.lisp -- a scheme for serializing ACL2 objects to disk.
 
-; This file was developed and contributed by Jared Davis on behalf of
-; Centaur Technology.
-
-; Note: this file is currently only included as part of ACL2(h).  But
-; it is independent of the remainder of the Hons extension and might
-; some day become part of ordinary ACL2.
-
-; Please direct correspondence about this file to Jared Davis
-; <jared@centtech.com>.
+; This file was initially developed and contributed by Jared Davis on behalf of
+; Centaur Technology.  Comments referring to "I" or "my" are from Jared.  This
+; file is now maintained by the ACL2 authors (see above).
 
 (in-package "ACL2")
-
-
 
 ; INTRODUCTION
 ;
@@ -43,13 +35,13 @@
 ;
 ; We configure ACL2's print-object$ function so that it writes objects with our
 ; encoding scheme when writing certificate files.  This allows large objects
-; produced by make-event to be written efficiently.
+; produced by make-event to be read and written efficiently.
 ;
 ; We extend the ACL2 readtable so that serialized objects can be read at any
-; time, using the extended reader macros #z[...] and #Z[...].  These macros are
+; time, using the extended reader macros #Y[...] and #Z[...].  These macros are
 ; almost identical, but
 ;
-;    #z rebuilds the object entirely with CONS and does not restore any
+;    #Y rebuilds the object entirely with CONS and does not restore any
 ;       fast alists, whereas
 ;
 ;    #Z uses HONS for the parts of the structure that were originally normed,
@@ -60,9 +52,7 @@
 ; bootstrapping reasons, these are introduced in hons.lisp and hons-raw.lisp
 ; instead of here in serialize-raw.lisp.
 
-
-
-; ESSAY ON BAD OBJECTS AND SERIALIZE
+; Essay on Bad Objects and Serialize
 ;
 ; When we decode serialized objects, must we ensure that the object returned is
 ; a valid ACL2 object, i.e., not something that BAD-LISP-OBJECTP would reject?
@@ -89,9 +79,7 @@
 ; packages are known.  We think this is sufficient to justify not checking
 ; BAD-LISP-OBJECTP explicitly.
 
-
-
-; ESSAY ON THE SERIALIZE OBJECT FORMAT
+; Essay on the Serialize Object Format
 ;
 ; Our scheme involves encoding ACL2 objects into a fairly simple, byte-based,
 ; binary format.
@@ -103,7 +91,7 @@
 ;
 ; Why these different versions?
 ;
-;    V1.  We originally developed our serialization scheme as ttag-based
+;    V1.  We originally developed our serialization scheme as a ttag-based
 ;         library in :dir :system, but this left us with no way to tightly
 ;         integrate it into ACL2's certificate printing/reading routines.
 ;
@@ -120,12 +108,14 @@
 ;
 ; Eventually we should be able to drop support for the old versions, but the
 ; formats are all very similar so supporting them is not that much work.  Since
-; all of the versions are very similar, we begin with the V1 format:
+; all of the versions are very similar, we begin with the V1 format.  A
+; sequence of objects is encoded by OBJECT: first MAGIC, then LEN, then the
+; indicated homogeneous sequences of objects, and then MAGIC.
 ;
 ;   OBJECT ::= MAGIC                       ; marker for sanity checking
 ;              LEN                         ; total number of objects
 ;              NATS RATS COMPLEXES CHARS   ; object data
-;              STRS SYMBOLS CONSES         ;
+;              STRS PACKAGES CONSES        ;
 ;              MAGIC                       ; marker for sanity checking
 ;
 ;   NATS      ::= LEN NAT*        ; number of nats, followed by that many nats
@@ -148,6 +138,12 @@
 ;   MAGIC ::= #xAC120BC7          ; also see the discussion below
 ;
 ;   NAT ::= [see below]
+;
+; You can experiment with these formats, for example as follows in raw Lisp.
+;
+;   (let ((str (with-output-to-string (s) (ser-encode-to-stream 5/2 s))))
+;        (loop for i from 0 to (1- (length str))
+;              collect (char-code (char str i))))
 ;
 ;
 ; Magic Numbers.  The magic number, #xAC120BC7, is a 32-bit integer that sort
@@ -176,8 +172,17 @@
 ;      2 is encoded as   #x02       (continue bit: 0, data: 2)
 ;       ...
 ;      127 is encoded as #x7F       (continue bit: 0, data: 127)
-;      128 is encoded as #x80 #x01  [(continue bit: 1, data: 1) = 1] + 127*[(c: 0, d: 1) = 1]
-;      129 is encoded as #x81 #x01  [(continue bit: 1, data: 2) = 2] + 127*[(c: 0, d: 1) = 1]
+;      128 is encoded as #x80 #x01  [(c: 1, d: 0) = 0] + 128*[(c: 0, d: 1) = 1]
+;      129 is encoded as #x81 #x01  [(c: 1, d: 1) = 1] + 128*[(c: 0, d: 1) = 1]
+;      519 is encoded as #x87 #x04  [(c: 1, d: 7) = 7] + 128*[(c: 0, d: 4) = 4]
+;    16383 is encoded as #xFF #x7F
+;          [(c: 1, d: 127) = 127] + 128 * [(c: 0, d: 127) = 127]
+;    16384 is encoded as #x80 #x80 #x01
+;          [(c: 1, d:   0) =   0] + 128 * [(c: 0, d:   0) =   0]
+;                                 + 128^2*[(c: 0, d:   1) =   1]
+;    16387 is encoded as #x83 #x80 #x01
+;          [(c: 1, d:   3) =   3] + 128 * [(c: 0, d:   0) =   0]
+;                                 + 128^2*[(c: 0, d:   1) =   1]
 ;       ...
 ;
 ;
@@ -189,8 +194,8 @@
 ;
 ;
 ; Conses.  Every object in the file has an (implicit) index, determined by its
-; position in the file.  The naturals are given the smallest indexes 0, 1, 2,
-; and so on.  Supposing there are N naturals, the rationals will have indexes
+; position in the file.  The naturals are given the smallest indices 0, 1, 2,
+; and so on.  Supposing there are N naturals, the rationals will have indices
 ; N, N+1, etc.  After that we have the complexes, then the characters, strings,
 ; symbols, and finally the conses.
 ;
@@ -204,20 +209,23 @@
 ; decoding the file, whenever we construct a cons we can make sure its indices
 ; refer to already-constructed conses.
 ;
-; The object with the maximal index in the "the object" that has been saved,
-; and is returned by the #z and #Z readers, or by the whole-file reader.
+; The object with the maximal index is "the object" that has been saved,
+; and is returned by the #Y and #Z readers, or by the whole-file reader,
+; serialize-read.
 ;
 ;
-; The V2 format.  The V2 format is almost the same as the V1 format, but with
+; The V2 Format.  The V2 format is almost the same as the V1 format, but with
 ; the following changes that allow us to restore the normedness of conses.
 ;
 ;   (1) The magic number changes to #xAC120BC8, so we know which format is
 ;       being used,
 ;
 ;   (2) We tweak the way indices are handled so that NIL and T are implicitly
-;       given index 0 and 1, respectively, which can sometimes slightly improve
-;       compression for cons structures that have lots of NILs and Ts within
-;       them.
+;       given index 0 and 1, respectively (i.e., we do not actually write out
+;       those symbols), which can sometimes slightly improve compression for
+;       cons structures that have lots of NILs and Ts within them (since
+;       without this tweak, NIL and T might have large indices that are
+;       represented using many bytes).
 ;
 ;   (3) We change the way conses are represented so we can mark which conses
 ;       were normed.  Instead of recording a cons by writing down its car-index
@@ -227,12 +235,14 @@
 ;
 ;       Because of the way we encode naturals, this neatly only costs an extra
 ;       byte if the car-index happens to have an integer length that is a
-;       multiple of 7.
+;       multiple of 7.  (To see this, note that our encoding is essentially a
+;       base-128 encoding, so we need an extra "digit" only when the top 7-bit
+;       "digit" has its top bit set to 1.)
 ;
 ;   (4) Instead of the total number of objects, we replace LEN with the maximum
-;       index of the object to be read.  Usually this just means that instead of
-;       LEN we record LEN-1.  But it allows us to detect the special case of NIL
-;       where the object being encoded is not necessarily at LEN - 1.
+;       index of the object to be read.  Usually this just means that instead
+;       of LEN we record LEN - 1.  But it allows us to detect the special case
+;       of NIL where the object being encoded is not necessarily at LEN - 1.
 ;
 ;
 ; The V3 format.  The V3 format is almost the same as the V2 format, but with
@@ -247,7 +257,7 @@
 ;         OBJECT ::= MAGIC                       ; marker for sanity checking
 ;                    LEN                         ; total number of objects
 ;                    NATS RATS COMPLEXES CHARS   ; object data
-;                    STRS SYMBOLS CONSES         ;
+;                    STRS PACKAGES CONSES        ;
 ;                    FALS
 ;                    MAGIC                       ; marker for sanity checking
 ;
@@ -256,9 +266,8 @@
 ;         FAL ::= NAT NAT                        ; index and hash-table-count
 ;
 ;   (3) We change the encoding of STR so that we can mark which strings were
-;       normed.  Instead of recording the string's LEN, we record:
+;       normed.  In place of recording the string's LEN, we instead record:
 ;          (len << 1) | (if honsp 1 0)
-
 
 ; -----------------------------------------------------------------------------
 ;
@@ -277,15 +286,14 @@
   `(when *ser-verbose*
      (format t ,msg . ,args)))
 
-
-
 ; To make it easy to switch the kind of input/output stream being used, all of
 ; our stream reading/writing is done with the following macros.
 ;
 ; In previous versions of serialize we used binary streams and wrote/read from
 ; them with write/read-byte on most Lisps; on CCL we used memory-mapped files
 ; for better performance while reading.  But we had to switch to using ordinary
-; character streams to get compatibility with the Common Lisp reader.
+; character streams to get compatibility with the Common Lisp reader (where we
+; use #Y and #Z), which reads character streams.
 
 (defmacro ser-write-char (x stream)
   `(write-char (the character ,x) ,stream))
@@ -294,11 +302,21 @@
   `(ser-write-char (code-char (the (unsigned-byte 8) ,x)) ,stream))
 
 (defmacro ser-read-char (stream)
-  ;; Note that Lisp's read-char causes an end-of-file error if EOF is reached,
-  ;; so we don't have to detect unexpected EOFs in our decoding routines.
+
+; Note that Lisp's read-char causes an end-of-file error (HyperSpec says that
+; it "is signaled") if EOF is reached, so we don't have to detect unexpected
+; EOFs in our decoding routines.
+
   `(the character (read-char ,stream)))
 
 (defmacro ser-read-byte (stream)
+
+; How do we know that the char-code is 8 bits when reading a file stream?  We
+; try to enforce this in acl2-set-character-encoding.  The magic number might
+; save us if this changes, since its first byte is #xAC = 172 > 127 and will
+; presumably be misread if we are using a file character encoding other than
+; iso-8859-1.
+
   `(the (unsigned-byte 8) (char-code (ser-read-char ,stream))))
 
 (defun ser-encode-magic (stream)
@@ -327,8 +345,6 @@
                magic-1 magic-2 magic-3 magic-4))
       version)))
 
-
-
 ; -----------------------------------------------------------------------------
 ;
 ;                      ENCODING AND DECODING NATURALS
@@ -349,6 +365,11 @@
 ; encoding we would need 64 bits for an overhead of 61/64 = 95%.  So the 8-bit
 ; encoding is much more efficient for small integers.
 ;
+; Another potential disadvantage of 64-bit blocks may seem to be that 64-bit
+; numbers are not fixnums in CCL (or perhaps any Lisp circa 2014 or for years
+; to come).  However, that issue is probably actually quite minor; 8 8-bit
+; fixnums quite possibly use more memory than one 64-bit bignum.
+;
 ; Of course, there are cases where 64-bit blocks win.  For instance, 2^62
 ; nicely fits into a single 64-bit block, but requires 9 8-bit blocks (at 7
 ; data bits apiece), i.e., 72 bits.  But on some other larger numbers, 8-bit
@@ -358,7 +379,6 @@
 ; long, or when there aren't very many unnecessary data bits in the final
 ; block.
 
-
 ; WHY ALL THESE OPTIMIZATIONS?
 ;
 ; The performance of natural number encoding/decoding is especially important
@@ -366,7 +386,8 @@
 ; encode/decode naturals all over the place for string lengths, symbol name
 ; lengths, and the representation of any number.  These optimizations are a big
 ; deal: on one example benchmark, they improve CCL's decoding performance by
-; almost 20%.
+; almost 20% (as opposed to using just ser-encode-nat-large to encode
+; naturals).
 
 (defun ser-encode-nat-fixnum (n stream)
 
@@ -375,11 +396,11 @@
   (declare (type fixnum n))
   (loop while (>= n 128)
         do
-        (ser-write-byte (the fixnum (logior
-                                     ;; The 7 low data bits
-                                     (the fixnum (logand (the fixnum n) #x7F))
-                                     ;; A continue bit
-                                     #x80))
+        (ser-write-byte (logior
+                         ;; The 7 low data bits
+                         (the fixnum (logand n #x7F))
+                         ;; A continue bit
+                         #x80)
                         stream)
         (setq n (the fixnum (ash n -7))))
   (ser-write-byte n stream))
@@ -388,16 +409,16 @@
 
 ; Safe encoder that doesn't assume how large N is.
 
-  (declare (type integer n))
+  (declare (type (integer 0 *) n))
   (loop until (typep n 'fixnum)
         do
         ;; Fixnums are at least (signed-byte 16) in Common Lisp, so we must
         ;; be in the large case, i.e., n > 128.
-        (ser-write-byte (the fixnum (logior
-                                     ;; The 7 low data bits
-                                     (the fixnum (logand (the integer n) #x7F))
-                                     ;; A continue bit
-                                     #x80))
+        (ser-write-byte (logior
+                         ;; The 7 low data bits
+                         (the fixnum (logand (the integer n) #x7F))
+                         ;; A continue bit
+                         #x80)
                         stream)
         (setq n (the integer (ash n -7))))
   (ser-encode-nat-fixnum n stream))
@@ -407,12 +428,13 @@
 ; This is kind of silly, but it lets us avoid the function overhead of calling
 ; ser-encode-nat-large in the very common case that N is a fixnum.
 
+  (when (eq stream 'n)
+    (error "~s called with stream = N, which would cause capture!"
+           'ser-encode-nat))
   `(let ((n ,n))
      (if (typep n 'fixnum)
          (ser-encode-nat-fixnum n ,stream)
        (ser-encode-nat-large n ,stream))))
-
-
 
 (defun ser-decode-nat-large (shift value stream)
 
@@ -453,12 +475,15 @@
         ((< x1 128)
          ;; The returned VALUE + (X1 << SHIFT) is a fixnum since it is less than
          ;; 2^(7+SHIFT), which above we checked is a fixnum.
-         (setq x1 (the fixnum (ash (the fixnum x1) ,shift)))
+         (setq x1 (the fixnum (ash x1 ,shift)))
          (the fixnum (+ value x1)))
 
         (t
          ;; Else, we increment value by (x1 - 128) << SHIFT.  This is still a
          ;; fixnum because (x1 - 128) < 2^7, so the sum is under 2^(7+SHIFT).
+         ;; To see this let x2=x1-128, s=SHIFT, and v=value; then since v<2^s
+         ;; and x2 <= 2^7-1, we have:
+         ;; value + (x1-128)<<s = v + x2*2^s < 2^s + (2^7-1)*2^s = 2^(7+s).
          (setq x1 (the fixnum (- x1 128)))
          (setq x1 (the fixnum (ash x1 ,shift)))
          (setq value (the fixnum (+ value x1)))
@@ -479,11 +504,8 @@
       (return-from ser-decode-nat x1))
     (setq x1 (the fixnum (- x1 128)))
     (let ((value x1))
-      (declare (fixnum value))
+      (declare (type fixnum value))
       (ser-decode-nat-body 7))))
-
-
-
 
 ; -----------------------------------------------------------------------------
 ;
@@ -518,13 +540,12 @@
            (error "Trying to decode rational, but the sign is invalid.")))
 
     (when (= denominator 0)
-      ;; This check probably isn't necessary since the Lisp should probably an
-      ;; error if we try to divide by zero, but it seems cheap enough and is
-      ;; probably basically reasonable.
+      ;; This check probably isn't necessary since the Lisp should probably
+      ;; signal an error if we try to divide by zero, but it seems cheap enough
+      ;; and is probably basically reasonable.
       (error "Trying to decode rational, but the denominator is zero."))
 
     (the rational (/ numerator denominator))))
-
 
 ; COMPLEX ::= RAT RAT           ; real, imaginary parts
 
@@ -546,8 +567,6 @@
       (error "Trying to decode complex, but the imagpart is zero."))
     (complex realpart imagpart)))
 
-
-
 ; (v1/v2): STR ::= LEN CHAR*             ; length and then its characters
 ; (v3):    STR ::= [(LEN << 1) | (if normedp 1 0)] CHAR*
 
@@ -555,9 +574,8 @@
 ; so we care about string encoding/decoding performance a bit.
 ;
 ; A very minor note is that in Common Lisp, the length of a string must be a
-; fixnum (a string is a specialized vector, which is a one-dimensional array,
-; and hence its size must be less than the array-dimension-limit, which is a
-; fixnum.)
+; fixnum (a string is a vector, which is a one-dimensional array, and hence its
+; size must be less than the array-dimension-limit, which is a fixnum.)
 
 (declaim (inline ser-encode-str ser-decode-str))
 
@@ -580,6 +598,11 @@
                       (not (eq hons-mode :never)))))
     (unless (and (typep len 'fixnum)
                  (< (the fixnum len) array-dimension-limit))
+
+; Sanity check: shouldn't normally happen if we encoded with ser-encode-str,
+; though could perhaps happen if that was done with a different Lisp
+; implementation.
+
       (error "Trying to decode a string, but the length is too long."))
     (let ((str (make-string (the fixnum len))))
       (declare (type vector str))
@@ -589,9 +612,6 @@
           (hons-copy str)
         str))))
 
-
-
-
 ; -----------------------------------------------------------------------------
 ;
 ;                    ENCODING AND DECODING BASIC OBJECT LISTS
@@ -600,7 +620,6 @@
 
 ; We now build upon our encoders/decoders for individual elements, and write
 ; versions to deal with lists of naturals, rationals, etc.
-
 
 (defstruct ser-decoder
 
@@ -617,8 +636,6 @@
 
   (version nil))
 
-
-
 ; NATS ::= LEN NAT*        ; number of nats, followed by that many nats
 
 (defun ser-encode-nats (x stream)
@@ -634,7 +651,7 @@
          (arr  (ser-decoder-array decoder))
          (free (ser-decoder-free decoder))
          (stop (+ free len)))
-    (declare (fixnum free))
+    (declare (type fixnum free))
     (ser-print? "; Decoding ~a naturals.~%" len)
     (unless (<= stop (length arr))
       ;; Note that we need just one bounds check for the whole list of naturals.
@@ -643,8 +660,6 @@
           (setf (svref arr free) (ser-decode-nat stream))
           (incf free))
     (setf (ser-decoder-free decoder) stop)))
-
-
 
 ; RATS ::= LEN RAT*        ; number of rats, followed by that many rats
 
@@ -661,7 +676,7 @@
          (arr  (ser-decoder-array decoder))
          (free (ser-decoder-free decoder))
          (stop (+ free len)))
-    (declare (fixnum free))
+    (declare (type fixnum free))
     (ser-print? "; Decoding ~a rationals.~%" len)
     (unless (<= stop (length arr))
       (error "Invalid serialized object, too many rationals."))
@@ -669,8 +684,6 @@
           (setf (svref arr free) (ser-decode-rat stream))
           (incf free))
     (setf (ser-decoder-free decoder) stop)))
-
-
 
 ; COMPLEXES ::= LEN COMPLEX*   ; number of complexes, followed by that many complexes
 
@@ -687,7 +700,7 @@
          (arr  (ser-decoder-array decoder))
          (free (ser-decoder-free decoder))
          (stop (+ free len)))
-    (declare (fixnum free))
+    (declare (type fixnum free))
     (ser-print? "; Decoding ~a complexes.~%" len)
     (unless (<= stop (length arr))
       (error "Invalid serialized object, too many complexes."))
@@ -695,8 +708,6 @@
           (setf (svref arr free) (ser-decode-complex stream))
           (incf free))
     (setf (ser-decoder-free decoder) stop)))
-
-
 
 ; CHARS ::= LEN CHAR*     ; number of characters, followed by that many chars
 
@@ -713,7 +724,7 @@
          (arr  (ser-decoder-array decoder))
          (free (ser-decoder-free decoder))
          (stop (+ free len)))
-    (declare (fixnum free))
+    (declare (type fixnum free))
     (ser-print? "; Decoding ~a characters.~%" len)
     (unless (<= stop (length arr))
       (error "Invalid serialized object, too many characters."))
@@ -721,8 +732,6 @@
           (setf (svref arr free) (ser-read-char stream))
           (incf free))
     (setf (ser-decoder-free decoder) stop)))
-
-
 
 ; STRS ::= LEN STR*      ; number of strings, followed by that many strs
 
@@ -740,7 +749,7 @@
          (free    (ser-decoder-free decoder))
          (version (ser-decoder-version decoder))
          (stop    (+ free len)))
-    (declare (fixnum free))
+    (declare (type fixnum free))
     (ser-print? "; Decoding ~a strings.~%" len)
     (unless (<= stop (length arr))
       (error "Invalid serialized object, too many strings."))
@@ -748,9 +757,6 @@
           (setf (svref arr free) (ser-decode-str version hons-mode stream))
           (incf free))
     (setf (ser-decoder-free decoder) stop)))
-
-
-
 
 ; -----------------------------------------------------------------------------
 ;
@@ -772,8 +778,8 @@
 ; If checking packages is so cheap, why not just check packages all the time?
 ; We tried that originally, but sometimes ACL2 actually DOES read in bad
 ; objects, e.g., foo@expansion.lsp may have *1* symbols in it, etc.  So we need
-; to not complain if ACL2 is using the #z readers when reading these files.
-
+; to avoid complaining if ACL2 is using the #Y or #Z reader when reading these
+; files.
 
 ; PACKAGE ::= STR LEN STR*      ; package name, number of symbols, symbol names
 
@@ -787,17 +793,21 @@
       (ser-encode-str (symbol-name elem) stream))))
 
 (defun ser-decode-and-load-package (check-packagesp decoder stream)
+
+; We always use hons-mode :never below, because there's no need to norm the
+; package or symbol names since we're going to intern them and not return them.
+; The point here is that it is difficult to control norming of symbol-names;
+; imagine for example reading FOO::X and then later (defconst *a* (intern
+; (hons-copy "X") "FOO")).  Then (symbol-name 'foo::x) will not be normed.
+
   (declare (type ser-decoder decoder))
   (let* ((version  (ser-decoder-version decoder))
          (arr      (ser-decoder-array decoder))
          (free     (ser-decoder-free decoder))
-         ;; We always use hons-mode :never here, because there's no need to
-         ;; the package or symbol names since we're going to intern them and
-         ;; not return them
          (pkg-name (ser-decode-str version :never stream))
          (len      (ser-decode-nat stream))
          (stop     (+ free len)))
-    (declare (fixnum free))
+    (declare (type fixnum free))
     (ser-print? "; Decoding ~a symbols for ~a package.~%" len pkg-name)
     (unless (<= stop (length arr))
       (error "Invalid serialized object, too many symbols."))
@@ -805,9 +815,12 @@
       (acl2::pkg-witness pkg-name))
     (loop until (= (the fixnum stop) free) do
           (setf (svref arr free)
-;               (intern (ser-decode-str version :never stream) pkg-name))
-; Change by Matt K. to avoid package errors when *read-suppress* is t:
                 (let ((temp (ser-decode-str version :never stream)))
+
+; We use *read-suppress* to avoid trying to handle symbols in contexts like
+; #+sbcl (sb-ext:inhibit-warnings 3)
+; where the feature is false (as in CCL for the example above).
+
                   (if *read-suppress* nil (intern temp pkg-name))))
           (incf free))
     (setf (ser-decoder-free decoder) stop)))
@@ -815,10 +828,12 @@
 ; PACKAGES ::= LEN PACKAGE*    ; number of packages, followed by that many packages
 
 (defun ser-encode-packages (alist stream)
-  ;; Alist maps package-names to the lists of their symbols
+
+; Alist maps package-names to the lists of their symbols.
+
   (let ((len (length alist)))
     (ser-print? "; Encoding symbols for ~a packages.~%" len)
-    (ser-encode-nat (length alist) stream)
+    (ser-encode-nat len stream)
     (dolist (entry alist)
       (ser-encode-package (car entry) (cdr entry) stream))))
 
@@ -828,9 +843,6 @@
     (ser-print? "; Decoding symbols for ~a packages.~%" len)
     (loop for i from 1 to len do
           (ser-decode-and-load-package check-packagesp decoder stream))))
-
-
-
 
 ; -----------------------------------------------------------------------------
 ;
@@ -849,7 +861,6 @@
                    :rehash-size 2.2
                    #+Clozure :shared #+Clozure nil
                    ))
-
 
 (defstruct ser-encoder
 
@@ -878,7 +889,6 @@
   (seen-str  (ser-hashtable-init 1000 'eq)  :type hash-table)
   (seen-cons (ser-hashtable-init 2000 'eq)  :type hash-table)
 
-
 ; In addition to the above seen tables, the encoder has several accumulators
 ; which collect the atoms it finds during the GATHER-ATOMS phase.  The basic
 ; idea here is to separate these objects by their types, so that we can then
@@ -888,7 +898,7 @@
 ; are simple lists that we push new values into.  Because of our seen-tables, we
 ; can guarantee that the accumulators for naturals, rationals, complexes, and
 ; characters have no duplicates.  However, the strings accumulator may contain
-; duplicates in the sense of EQUAL.
+; duplicates in the sense that two members might be equal but not eq.
 
   (naturals     nil :type list)
   (rationals    nil :type list)
@@ -904,7 +914,6 @@
 
   (symbol-ht    (ser-hashtable-init 60 'eq) :type hash-table)
   (symbol-al    nil :type list)
-
 
 ; The free-index here is only used in ser-encode-conses.  Bundling it with the
 ; encoder's state is beneficial in two ways for ser-encode-conses: it reduces
@@ -922,14 +931,14 @@
 )
 
 (defmacro ser-see-obj (x table)
-  ;; Mark X as seen, and return T/NIL based on whether it was previously seen
+
+; Mark X as seen, and return T/NIL based on whether it was previously seen.
+
   `(let ((x   ,x)
          (tbl ,table))
-     (if (gethash x tbl)
-         t
-       (progn
-         (setf (gethash x tbl) t)
-         nil))))
+     (cond ((gethash x tbl) t)
+           (t (setf (gethash x tbl) t)
+              nil))))
 
 (defun ser-gather-atoms (x encoder)
 
@@ -939,8 +948,8 @@
 ; But this does not gain us much, because almost all of the time seems to be
 ; spent on hashing.
 ;
-; Sol uses a destructive hashing scheme in his AIGER writer which we could
-; probably adapt for use here, and it would probably lead to significant
+; Sol Swords uses a destructive hashing scheme in his AIGER writer which we
+; could probably adapt for use here, and it would probably lead to significant
 ; performance gains.  However, anything destructive is scary with respect to
 ; multithreaded code, and we don't want to use it unless we really have no
 ; other choice.
@@ -961,8 +970,8 @@
                             (ser-encoder-symbol-ht encoder)))))
 
         ((typep x 'fixnum)
-         ;; This is probably common enough to check explicitly even though with
-         ;; our fast check.
+         ;; This case is probably common enough to add explicitly, since this
+         ;; fixnum check is so fast.
          (unless (ser-see-obj x (ser-encoder-seen-eql encoder))
            (if (< (the fixnum x) 0)
                (push x (ser-encoder-rationals encoder))
@@ -972,7 +981,8 @@
          (unless (ser-see-obj x (ser-encoder-seen-str encoder))
            (push x (ser-encoder-strings encoder))))
 
-        ;; Performance is probably already pretty bad at this point.
+        ;; Performance is probably already pretty bad at this point, because of
+        ;; all the typep checks above.
         (t
          (unless (ser-see-obj x (ser-encoder-seen-eql encoder))
            (cond ((typep x 'character)
@@ -988,10 +998,7 @@
                  (t
                   (error "ser-gather-atoms-types given non-ACL2 object.")))))))
 
-
-
-
-; ESSAY ON HOW WE HANDLE EQUAL-BUT-NOT-EQ STRINGS
+; Essay on How We Handle Equal-but-not-eq Strings
 ;
 ; A subtle change in V3 is that we no longer make any effort to avoid
 ; redundantly encoding EQUAL-but-not-EQ or strings.
@@ -1007,7 +1014,7 @@
 ;        ...
 ;     endmodule
 ;
-; Then you could end up with lots of different strings that all said "foo".
+; then you could end up with lots of different strings that all said "foo".
 ; Note also that in this context, I really wanted to optimize for read time
 ; instead of write time (a script made the processor models at night, where
 ; time is irrelevant, but I needed to read them in while developing proofs.)
@@ -1066,12 +1073,11 @@
 ;     etc., and other users can do the same if they think EQUAL-but-not-EQ
 ;     copies of a string are likely to occur.
 
-
 (defun ser-make-atom-map (encoder)
 
-; After the atoms have been gathered we want to assign them unique indexes.
-; These indexes will need to agree with the implicit order of the indexes in
-; the serialized file.  So, we need to assign indexes to the naturals first,
+; After the atoms have been gathered we want to assign them unique indices.
+; These indices will need to agree with the implicit order of the indices in
+; the serialized file.  So, we need to assign indices to the naturals first,
 ; then the rationals, etc.
 ;
 ; In earlier versions of serialize, we constructed "atom map" structures that
@@ -1096,14 +1102,14 @@
 ; might be worthwhile: it should significantly reduce the amount of hashing we
 ; need to do.
 
-  ;; Note: this order must agree with ser-encode-main.
+  ;; Note: this order must agree with ser-encode-atoms.
 
   (let ((free-index 2)
         ;; In v2, the first free index is 2 (nil and t are implicitly 0 and 1)
         (seen-sym (ser-encoder-seen-sym encoder))
         (seen-eql (ser-encoder-seen-eql encoder))
         (seen-str (ser-encoder-seen-str encoder)))
-    (declare (fixnum free-index)
+    (declare (type fixnum free-index)
              (type hash-table seen-sym seen-eql seen-str))
 
     (dolist (elem (ser-encoder-naturals encoder))
@@ -1149,9 +1155,6 @@
 
     ;; Finally, update the encoder with the free index we've arrived at.
     (setf (ser-encoder-free-index encoder) free-index)))
-
-
-
 
 ; -----------------------------------------------------------------------------
 ;
@@ -1215,12 +1218,12 @@
                ;; V2 change: we now write (car-index << 1) | (if honsp 1 0)
                ;; instead of just car-index.  Note that these fixnum
                ;; declarations are justified by the checking we do in
-               ;; ser-encode-to-stream
+               ;; ser-encode-to-stream.
                (v2-car-index
                 (if (hl-hspace-honsp-wrapper x)
                     (the fixnum (logior (the fixnum (ash car-index 1)) 1))
                   (the fixnum (ash car-index 1)))))
-
+          (declare (type fixnum car-index cdr-index v2-car-index free-index))
           (setf (gethash x seen-cons) free-index)
           (ser-encode-nat v2-car-index stream)
           (ser-encode-nat cdr-index stream)
@@ -1263,7 +1266,6 @@
                         (cons car-obj cdr-obj)))
                 (incf free))))))
 
-
 (defun ser-decode-and-load-conses (hons-mode decoder stream)
 
   ;; The valid hons modes are:
@@ -1278,7 +1280,7 @@
          (free         (ser-decoder-free decoder))
          (version      (ser-decoder-version decoder))
          (stop         (+ free len)))
-    (declare (fixnum free))
+    (declare (type fixnum free))
     (ser-print? "; Decoding ~a consing instructions.~%" len)
 
     (unless (<= stop (length arr))
@@ -1301,7 +1303,6 @@
              (ser-decode-loop :v2 :smart))))
 
     (setf (ser-decoder-free decoder) stop)))
-
 
 
 ; -----------------------------------------------------------------------------
@@ -1421,7 +1422,6 @@
     (ser-encode-strs      (ser-encoder-strings encoder)   stream)
     (ser-encode-packages  (ser-encoder-symbol-al encoder) stream)))
 
-
 (defun ser-encode-to-stream (obj stream)
 
 ; Serialize the OBJ and write it to the stream.  This writes "everything from
@@ -1448,12 +1448,13 @@
                            nconses)
                         1)
                    'fixnum)
-      ;; This check ensures that all indexes will be fixnums.  The sum above
+      ;; This check ensures that all indices will be fixnums.  The sum above
       ;; may actually exceed the actual maximum index we will have, because
       ;; EQUAL-but-not-EQ strings will be removed.  But it is at least as large
-      ;; as the maximum index, so if it is a fixnum then all indexes are
+      ;; as the maximum index, so if it is a fixnum then all indices are
       ;; fixnums.  In V1 we just checked if the sum was a fixnum.  In V2 we
-      ;; need to shift it since indices get shifted in the file.
+      ;; need to shift it since indices get shifted in the file.  Note that we
+      ;; rely on this check in ser-encode-conses.
       (error "Maximum index exceeded."))
 
     (ser-time? (ser-make-atom-map encoder))
@@ -1492,9 +1493,6 @@
 
     (ser-encode-magic stream)))
 
-
-
-
 (defun ser-decode-and-load-atoms (check-packagesp hons-mode decoder stream)
   (declare (type ser-decoder decoder))
   (ser-decode-and-load-nats decoder stream)
@@ -1504,8 +1502,10 @@
   (ser-decode-and-load-strs hons-mode decoder stream)
   (ser-decode-and-load-packages check-packagesp decoder stream))
 
-
 (defun ser-decode-from-stream (check-packagesp hons-mode stream)
+
+; Warning: If you change the input or output signature of this function, change
+; its (declaim (ftype ...)) form in acl2-fns.lisp.
 
 ; Read a serialized object from the stream.  This reads "everything from magic
 ; number to magic number."  Note that it does NOT expect there to be a #Z
