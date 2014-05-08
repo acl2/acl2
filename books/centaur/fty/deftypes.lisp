@@ -1078,8 +1078,8 @@
    measure    ;; termination measure
    xvar       ;; variable name denoting the object
    kwd-alist  ;; original keyword alist
-   get get-fast ;; more fn names
-   set set-fast
+   ;; get get-fast ;; more fn names
+   ;; set set-fast
    true-listp
    recp
    )
@@ -1133,24 +1133,6 @@
                   (intern-in-package-of-symbol
                    (concatenate 'string (symbol-name name) "-EQUIV")
                    name)))
-       (get   (getarg! :get (intern-in-package-of-symbol
-                             (concatenate 'string (symbol-name name) "-GET")
-                             name)
-                       kwd-alist))
-       (get-fast   (getarg! :get-fast (intern-in-package-of-symbol
-                                       (concatenate 'string (symbol-name name) "-GET-FAST")
-                                       name)
-                            kwd-alist))
-
-       (set   (getarg! :set (intern-in-package-of-symbol
-                             (concatenate 'string (symbol-name name) "-SET")
-                             name)
-                       kwd-alist))
-       (set-fast   (getarg! :set-fast (intern-in-package-of-symbol
-                                       (concatenate 'string (symbol-name name) "-SET-FAST")
-                                       name)
-                            kwd-alist))
-       
        (count (flextype-get-count-fn name kwd-alist))
        (xvar (or (getarg :xvar nil kwd-alist)
                  xvar
@@ -1170,8 +1152,6 @@
                     :val-type val-type
                     :val-fix val-fix
                     :val-equiv val-equiv
-                    :get get :get-fast get-fast
-                    :set set :set-fast set-fast
                     :measure measure
                     :xvar xvar
                     :true-listp true-listp
@@ -1284,10 +1264,10 @@
    types      ;; flexlist and flexsums
    no-count   ;; skip the count function
    kwd-alist
-   prepwork
-   post-pred-events
-   post-fix-events
-   post-events
+   ;; prepwork
+   ;; post-pred-events
+   ;; post-fix-events
+   ;; post-events
    recp))
    
 (defconst *flextypes-keywords*
@@ -1326,115 +1306,6 @@
 
 ;; ------------------ Predicate: flexsum -----------------------
 
-(defun flexprods->kinds (prods)
-  (if (atom prods)
-      nil
-    (cons (flexprod->kind (car prods))
-          (flexprods->kinds (cdr prods)))))
-
-;; returns something like:
-;;          (((not x) :null)
-;;           ((atom x) :var)
-;;           ((eq (car x) 'quote) :quote)
-;;           (t :call)))
-(defun flextype-sum-kind-conds (prods)
-  (if (atom prods)
-      nil
-    (cons `(,(flexprod->cond (car prods)) ,(flexprod->kind (car prods)))
-          (flextype-sum-kind-conds (cdr prods)))))
-
-;; (define pterm-kind (x)
-;;   (cond ((not x) :null)
-;;         ((atom x) :var)
-;;         ((eq (car x) 'quote) :quote)
-;;         (t :call))
-;;   ///
-;;   (defthm pterm-kind-possibilities
-;;     (or (equal (pterm-kind x) :null)
-;;         (equal (pterm-kind x) :var)
-;;         (equal (pterm-kind x) :quote)
-;;         (equal (pterm-kind x) :call))
-;;     :rule-classes ((:forward-chaining :trigger-terms ((pterm-kind x))))))
-(defun flextype-def-sum-kind (sum)
-  (b* (((flexsum sum) sum)
-       ((when (not sum.kind)) nil)
-       (conds (flextype-sum-kind-conds sum.prods))
-       (values (flexprods->kinds sum.prods))
-       (possibilities (pairlis$ (make-list (len values) :initial-element 'equal)
-                                (pairlis$ (make-list (len values) :initial-element `(,sum.kind ,sum.xvar))
-                                          (pairlis$ values nil))))
-       (condform (nice-cond conds)))
-    `((define ,sum.kind ((,sum.xvar ,sum.pred))
-        ,@(and (member :kind sum.inline) `(:inline t))
-        :guard-hints ((and stable-under-simplificationp '(:expand ((,sum.pred ,sum.xvar)))))
-        ,(if sum.kind-body
-             `(mbe :logic ,condform
-                   :exec ,sum.kind-body)
-           condform)
-        ///
-        (defthm ,(intern-in-package-of-symbol
-                  (concatenate 'string (symbol-name sum.kind) "-POSSIBILITIES")
-                  sum.kind)
-          (or . ,possibilities)
-          :rule-classes ((:forward-chaining :trigger-terms ((,sum.kind ,sum.xvar))))))
-      (local (in-theory (enable ,sum.kind))))))
-
-(defun flexsum-case-macro-kinds (var prods kwd-alist)
-  (b* (((when (atom prods)) nil)
-       ((flexprod prod) (car prods)))
-    (cons `(,(if (atom (cdr prods))
-                 'otherwise
-               prod.kind)
-            (b* (((,prod.ctor-name ,var :quietp t) ,var))
-              ,(cdr (assoc prod.kind kwd-alist))))
-          (flexsum-case-macro-kinds var (cdr prods) kwd-alist))))
-
-(defun flexsum-case-macro-conds (var prods kwd-alist)
-  (b* (((when (atom prods)) nil)
-       ((flexprod prod) (car prods)))
-    (cons `(,(if (atom (cdr prods))
-                 t
-               prod.cond)
-            (b* (((,prod.ctor-name ,var :quietp t) ,var))
-              ,(cdr (assoc prod.kind kwd-alist))))
-          (flexsum-case-macro-conds var (cdr prods) kwd-alist))))
-
-(defun flexsum-case-macro-fn (var-or-binding rest-args sum)
-  (b* (((flexsum sum) sum)
-       (var (if (consp var-or-binding) (car var-or-binding) var-or-binding))
-       ((mv kwd-alist rest)
-        (extract-keywords sum.case (flexprods->kinds sum.prods)
-                          rest-args nil))
-       ((when rest)
-        (er hard? sum.case "Extra arguments: ~x0" rest))
-       (body
-        (if sum.kind
-            `(case (,sum.kind ,var)
-               . ,(flexsum-case-macro-kinds var sum.prods kwd-alist))
-          (nice-cond (flexsum-case-macro-conds var sum.prods kwd-alist)))))
-    (if (consp var-or-binding)
-        `(let* ((,var ,(cadr var-or-binding))) ,body)
-      body)))
-
-(defun flexsum-def-case-macro (sum)
-  (b* (((flexsum sum) sum)
-       ((unless sum.case) nil))
-    `((defmacro ,sum.case (var-or-binding &rest args)
-        (declare (xargs :guard (or (symbolp var-or-binding)
-                                   (and (true-listp var-or-binding)
-                                        (eql (len var-or-binding) 2)
-                                        (symbolp (car var-or-binding))))))
-        (flexsum-case-macro-fn var-or-binding args ',sum)))))
-
-(defun flextype-def-sum-kinds (sums)
-  (if (atom sums)
-      nil
-    (append (and (eq (tag (car sums)) :sum)
-                 (flextype-def-sum-kind (car sums)))
-            (and (eq (tag (car sums)) :sum)
-                 (flexsum-def-case-macro (car sums)))
-            (flextype-def-sum-kinds (cdr sums)))))
-
 ;; ((fn (car x))
 ;;  (args (cdr x)))
 (defun flexprod-fields-pred-bindings (fields)
@@ -1470,13 +1341,6 @@
        (typecheckterm `(b* ,bindings ,typechecks)))
     (nice-and prod.shape typecheckterm)))
 
-(defun flexsum-pred-cases (prods)
-  (if (atom prods)
-      nil
-    (cons (list (flexprod->kind (car prods))
-                (flexsum-pred-prod-case (car prods)))
-          (flexsum-pred-cases (cdr prods)))))
-
 (defun flexsum-pred-cases-nokind (prods)
   (if (atom prods)
       nil
@@ -1485,8 +1349,7 @@
           (flexsum-pred-cases-nokind (cdr prods)))))
 
 (defun flexsum-predicate-def (sum)
-  (b* (((flexsum sum) sum)
-       (post-pred (cdr (assoc :post-pred-events sum.kwd-alist))))
+  (b* (((flexsum sum) sum))
     `(define ,sum.pred (,sum.xvar)
        :measure ,sum.measure
        ;; ,(if sum.kind
@@ -1497,18 +1360,18 @@
                   (nice-cond (flexsum-pred-cases-nokind sum.prods)))
        ///
        (make-event
-        '(:or (with-output :off (error)
-                (defthm ,(intern-in-package-of-symbol
-                          (concatenate 'string "CONSP-WHEN-" (symbol-name sum.pred))
-                          sum.pred)
-                  (implies (,sum.pred ,sum.xvar)
-                           (consp ,sum.xvar))
-                  :hints (("goal" :expand ((,sum.pred ,sum.xvar)))
-                          (and stable-under-simplificationp
-                               '(:error t)))
-                  :rule-classes :compound-recognizer))
-          (value-triple :skip-compound-recognizer)))
-       ,@post-pred)))
+        '(:or (:do-proofs
+               (with-output :off (error)
+                 (defthm ,(intern-in-package-of-symbol
+                           (concatenate 'string "CONSP-WHEN-" (symbol-name sum.pred))
+                           sum.pred)
+                   (implies (,sum.pred ,sum.xvar)
+                            (consp ,sum.xvar))
+                   :hints (("goal" :expand ((,sum.pred ,sum.xvar)))
+                           (and stable-under-simplificationp
+                                '(:error t)))
+                   :rule-classes :compound-recognizer)))
+          (value-triple :skip-compound-recognizer))))))
 
 ;; ------------------ Predicate: deflist -----------------------
 
@@ -1686,6 +1549,119 @@
         ;;           )))
         ;; (local (in-theory (enable . ,(flextypelist-predicates x.types))))
         )))
+
+
+
+;; --------------- Kind function & case macro (sums) ----------
+
+(defun flexprods->kinds (prods)
+  (if (atom prods)
+      nil
+    (cons (flexprod->kind (car prods))
+          (flexprods->kinds (cdr prods)))))
+
+;; returns something like:
+;;          (((not x) :null)
+;;           ((atom x) :var)
+;;           ((eq (car x) 'quote) :quote)
+;;           (t :call)))
+(defun flextype-sum-kind-conds (prods)
+  (if (atom prods)
+      nil
+    (cons `(,(flexprod->cond (car prods)) ,(flexprod->kind (car prods)))
+          (flextype-sum-kind-conds (cdr prods)))))
+
+;; (define pterm-kind (x)
+;;   (cond ((not x) :null)
+;;         ((atom x) :var)
+;;         ((eq (car x) 'quote) :quote)
+;;         (t :call))
+;;   ///
+;;   (defthm pterm-kind-possibilities
+;;     (or (equal (pterm-kind x) :null)
+;;         (equal (pterm-kind x) :var)
+;;         (equal (pterm-kind x) :quote)
+;;         (equal (pterm-kind x) :call))
+;;     :rule-classes ((:forward-chaining :trigger-terms ((pterm-kind x))))))
+(defun flextype-def-sum-kind (sum)
+  (b* (((flexsum sum) sum)
+       ((when (not sum.kind)) nil)
+       (conds (flextype-sum-kind-conds sum.prods))
+       (values (flexprods->kinds sum.prods))
+       (possibilities (pairlis$ (make-list (len values) :initial-element 'equal)
+                                (pairlis$ (make-list (len values) :initial-element `(,sum.kind ,sum.xvar))
+                                          (pairlis$ values nil))))
+       (condform (nice-cond conds)))
+    `((define ,sum.kind ((,sum.xvar ,sum.pred))
+        ,@(and (member :kind sum.inline) `(:inline t))
+        :guard-hints ((and stable-under-simplificationp '(:expand ((,sum.pred ,sum.xvar)))))
+        ,(if sum.kind-body
+             `(mbe :logic ,condform
+                   :exec ,sum.kind-body)
+           condform)
+        ///
+        (defthm ,(intern-in-package-of-symbol
+                  (concatenate 'string (symbol-name sum.kind) "-POSSIBILITIES")
+                  sum.kind)
+          (or . ,possibilities)
+          :rule-classes ((:forward-chaining :trigger-terms ((,sum.kind ,sum.xvar))))))
+      (local (in-theory (enable ,sum.kind))))))
+
+(defun flexsum-case-macro-kinds (var prods kwd-alist)
+  (b* (((when (atom prods)) nil)
+       ((flexprod prod) (car prods)))
+    (cons `(,(if (atom (cdr prods))
+                 'otherwise
+               prod.kind)
+            (b* (((,prod.ctor-name ,var :quietp t) ,var))
+              ,(cdr (assoc prod.kind kwd-alist))))
+          (flexsum-case-macro-kinds var (cdr prods) kwd-alist))))
+
+(defun flexsum-case-macro-conds (var prods kwd-alist)
+  (b* (((when (atom prods)) nil)
+       ((flexprod prod) (car prods)))
+    (cons `(,(if (atom (cdr prods))
+                 t
+               prod.cond)
+            (b* (((,prod.ctor-name ,var :quietp t) ,var))
+              ,(cdr (assoc prod.kind kwd-alist))))
+          (flexsum-case-macro-conds var (cdr prods) kwd-alist))))
+
+(defun flexsum-case-macro-fn (var-or-binding rest-args sum)
+  (b* (((flexsum sum) sum)
+       (var (if (consp var-or-binding) (car var-or-binding) var-or-binding))
+       ((mv kwd-alist rest)
+        (extract-keywords sum.case (flexprods->kinds sum.prods)
+                          rest-args nil))
+       ((when rest)
+        (er hard? sum.case "Extra arguments: ~x0" rest))
+       (body
+        (if sum.kind
+            `(case (,sum.kind ,var)
+               . ,(flexsum-case-macro-kinds var sum.prods kwd-alist))
+          (nice-cond (flexsum-case-macro-conds var sum.prods kwd-alist)))))
+    (if (consp var-or-binding)
+        `(let* ((,var ,(cadr var-or-binding))) ,body)
+      body)))
+
+(defun flexsum-def-case-macro (sum)
+  (b* (((flexsum sum) sum)
+       ((unless sum.case) nil))
+    `((defmacro ,sum.case (var-or-binding &rest args)
+        (declare (xargs :guard (or (symbolp var-or-binding)
+                                   (and (true-listp var-or-binding)
+                                        (eql (len var-or-binding) 2)
+                                        (symbolp (car var-or-binding))))))
+        (flexsum-case-macro-fn var-or-binding args ',sum)))))
+
+(defun flextype-def-sum-kinds (sums)
+  (if (atom sums)
+      nil
+    (append (and (eq (tag (car sums)) :sum)
+                 (flextype-def-sum-kind (car sums)))
+            (and (eq (tag (car sums)) :sum)
+                 (flexsum-def-case-macro (car sums)))
+            (flextype-def-sum-kinds (cdr sums)))))
 
 
 ;; ------------------ Fixing function: flexsum -----------------------
@@ -2174,7 +2150,11 @@
        (field-calls (flexprod-fields-acc-calls prod.fields sum.xvar))
        (fieldnames (flexprod-fields->names prod.fields))
        (field-accs (pairlis$ fieldnames
-                             (flexprod-fields->acc-names prod.fields))))
+                             (flexprod-fields->acc-names prod.fields)))
+       ;; (othervar (intern-in-package-of-symbol
+       ;;            (if (equal (symbol-name sum.xvar) "X") "Y" "X")
+       ;;            prod.ctor-name))
+       )
     `((define ,prod.ctor-name ,(flexprod-field-names-types prod.fields)
         ,@(and (member :xtor prod.inline) `(:inline t))
         :guard ,prod.require
@@ -2200,6 +2180,8 @@
                      ,prod.require))))
 
         ,@(and
+           ;; special case: we can have an empty product, in which case we don't
+           ;; want a rule like (equal (my-const-product) (my-sum-fix x))
            (consp prod.fields)
            `((defthm ,(intern-in-package-of-symbol
                        (concatenate 'string
@@ -2207,12 +2189,13 @@
                                     "-OF-FIELDS")
                        prod.ctor-name)
                ,(nice-implies prod.guard
-                              `(,sum.equiv (,prod.ctor-name . ,field-calls)
-                                           ,sum.xvar))
+                              `(equal (,prod.ctor-name . ,field-calls)
+                                      (,sum.fix ,sum.xvar)))
                :hints(("Goal" :in-theory (enable ,sum.fix)
                        :expand ((,sum.fix ,sum.xvar)))))))
 
-        (,(if (eq prod.guard t) 'defthmd 'defthm)
+        (,(if (atom prod.fields) 'defthm 'defthmd)
+               ;; ,(if (eq prod.guard t) 'defthmd 'defthm)
          ,(intern-in-package-of-symbol
                   (concatenate 'string
                                (symbol-name sum.fix)
@@ -2222,7 +2205,8 @@
           ,(nice-implies prod.guard
                          `(equal (,sum.fix ,sum.xvar)
                                  (,prod.ctor-name . ,field-calls)))
-          :hints(("Goal" :expand ((,sum.fix ,sum.xvar))))
+          :hints(("Goal" :in-theory (enable ,sum.fix)
+                  :expand ((,sum.fix ,sum.xvar))))
           . ,(and (not (eq prod.guard t))
                   '(:rule-classes ((:rewrite :backchain-limit-lst 0)))))
 
@@ -2243,6 +2227,29 @@
                                                       (symbol-name prod.kind))
                                          sum.fix)))))
 
+        ;; ,@(and (consp prod.fields)
+        ;;        `((defthm ,(intern-in-package-of-symbol
+        ;;                    (concatenate 'string
+        ;;                                 "EQUAL-OF-"
+        ;;                                 (symbol-name sum.fix)
+        ;;                                 "-WHEN-"
+        ;;                                 (symbol-name prod.kind))
+        ;;                    prod.ctor-name)
+        ;;            ,(nice-implies prod.guard
+        ;;                           (equal (equal (,sum.fix ,sum.xvar) ,othervar)
+        ;;                                  (and (,sum.pred ,othervar)
+        ;;                                       ,@(and (not (eq prod.guard t))
+        ;;                                              `(let ((,sum.xvar ,othervar))
+        ;;                                                 (list prod.guard)))
+        ;;                                       . ,(flexprod-equal-of-field-accessors prod.fields sum.xvar)))
+        ;;                           :hints (("goal" :expand ((,sum.pred ,sum.xvar))
+        ;;                                    :in-theory (disable ,(intern-in-package-of-symbol
+        ;;                                                          (concatenate 'string
+        ;;                                                                       (symbol-name sum.fix)
+        ;;                                                                       "-WHEN-"
+        ;;                                                                       (symbol-name prod.kind))
+        ;;                                                          sum.fix))))))))
+
         (defmacro ,prod.ctor-macro (&key . ,(flexprod-fields-macro-args prod.fields))
           (list ',prod.ctor-name
                 . , (flexprod-fields->names prod.fields)))
@@ -2254,8 +2261,42 @@
 
         ,(std::da-make-changer-fn-gen prod.ctor-name field-accs)
         ,(std::da-make-changer prod.ctor-name fieldnames))
-
+      
       (local (in-theory (enable ,prod.ctor-name))))))
+
+;; ------------ Collect accessor/constructor names ---------------
+(defun flexprod-field-accs (fields)
+  (if (atom fields)
+      nil
+    (cons (flexprod-field->acc-name (car fields))
+          (flexprod-field-accs (cdr fields)))))
+
+(defun flexprod-fns (prod)
+  (b* (((flexprod prod) prod))
+    (cons prod.ctor-name
+          (flexprod-field-accs prod.fields))))
+
+(defun flexsum-prod-fns (prods)
+  (if (atom prods)
+      nil
+    (append (flexprod-fns (car prods))
+            (flexsum-prod-fns (cdr prods)))))
+
+(defun flexsum-prod-ctors (prods)
+  (if (atom prods)
+      nil
+    (cons (flexprod->ctor-name (car prods))
+          (flexsum-prod-ctors (cdr prods)))))
+
+(defun flexsum-fns (x)
+  (b* (((flexsum x) x)
+       (fns1
+        (list* x.pred
+               x.fix
+               (flexsum-prod-fns x.prods))))
+    (if x.kind
+        (cons x.kind fns1)
+      fns1)))
 
 ;; ------------ Collect accessor/constructor definitions ---------------
 (defun flexprod-accessor/constructors (prod sum)
@@ -2268,14 +2309,59 @@
     (append (flexprod-accessor/constructors (car prods) sum)
             (flexsum-prods-accessor/constructors (Cdr prods) sum))))
 
-(defun flextypes-sum-accessor/constructors (types)
+(defun flexprod-x-dot-fields (xvar fields)
+  (if (atom fields)
+      nil
+    (cons (let ((name (flexprod-field->name (car fields))))
+            (intern-in-package-of-symbol
+             (concatenate 'string (symbol-name xvar) "."
+                          (symbol-name name))
+             name))
+          (flexprod-x-dot-fields xvar (cdr fields)))))
+
+(defun flexsum-fix-redef-prod-cases (prods xvar)
+  (if (atom prods)
+      nil
+    (b* (((flexprod prod) (car prods)))
+      (cons `(,prod.kind (,prod.ctor-name . ,(flexprod-fields-acc-calls prod.fields xvar)))
+            (flexsum-fix-redef-prod-cases (cdr prods) xvar)))))
+
+(defun flexsum-fix-redef-prod-cases-nokind (prods xvar)
+  (if (atom prods)
+      nil
+    (b* (((flexprod prod) (car prods)))
+      (cons `(,prod.cond (,prod.ctor-name . ,(flexprod-fields-acc-calls prod.fields xvar)))
+            (flexsum-fix-redef-prod-cases-nokind (cdr prods) xvar)))))
+
+(defun flextype-fix-fns (types)
+  (if (atom types)
+      nil
+    (cons (with-flextype-bindings (x (car types)) x.fix)
+          (flextype-fix-fns (cdr types)))))
+
+(defun flexsum-acc/ctor-events (sum types)
+  (declare (ignorable types))
+  (b* (((flexsum sum) sum))
+    (append (flexsum-prods-accessor/constructors sum.prods sum)
+            `((defthmd ,(intern-in-package-of-symbol
+                        (concatenate 'string (symbol-name sum.fix) "-REDEF")
+                        sum.fix)
+                (equal (,sum.fix ,sum.xvar)
+                       ,(if sum.kind
+                            `(case (,sum.kind ,sum.xvar)
+                               . ,(flexsum-fix-redef-prod-cases sum.prods sum.xvar))
+                          (nice-cond (flexsum-fix-redef-prod-cases-nokind sum.prods sum.xvar))))
+                :hints(("Goal" :in-theory (disable . ,(flexsum-fns sum)))
+                       (and stable-under-simplificationp
+                            '(:expand (,sum.fix ,sum.xvar))))
+                :rule-classes :definition)))))
+                
+(defun flextypes-sum-accessor/constructors (types alltypes)
   (if (atom types)
       nil
     (append (and (eq (tag (car types)) :sum)
-                 (flexsum-prods-accessor/constructors
-                  (flexsum->prods (car types)) (car types)))
-            (flextypes-sum-accessor/constructors (cdr types)))))
-
+                 (flexsum-acc/ctor-events (car types) alltypes))
+            (flextypes-sum-accessor/constructors (cdr types) alltypes))))
 
 ;; ------------------ Count definition: flexsum -----------------------
 (defun flextypes-find-count-for-pred (pred types)
@@ -2539,33 +2625,6 @@
 
 
 ;; ------------------ Collect function names -----------------------
-(defun flexprod-field-accs (fields)
-  (if (atom fields)
-      nil
-    (cons (flexprod-field->acc-name (car fields))
-          (flexprod-field-accs (cdr fields)))))
-
-(defun flexprod-fns (prod)
-  (b* (((flexprod prod) prod))
-    (cons prod.ctor-name
-          (flexprod-field-accs prod.fields))))
-
-(defun flexsum-prod-fns (prods)
-  (if (atom prods)
-      nil
-    (append (flexprod-fns (car prods))
-            (flexsum-prod-fns (cdr prods)))))
-
-(defun flexsum-fns (x)
-  (b* (((flexsum x) x)
-       (fns1
-        (list* x.pred
-               x.fix
-               (flexsum-prod-fns x.prods))))
-    (if x.kind
-        (cons x.kind fns1)
-      fns1)))
-
 (defun flexlist-fns (x)
   (b* (((flexlist x) x))
     (list x.pred
@@ -2588,6 +2647,13 @@
     (append (and (eq (caar types) :sum)
                  (flexsum-prod-fns (flexsum->prods (car types))))
             (flextypes-acc/ctors (cdr types)))))
+
+(defun flextypes-ctors (types)
+  (if (atom types)
+      nil
+    (append (and (eq (caar types) :sum)
+                 (flexsum-prod-ctors (flexsum->prods (car types))))
+            (flextypes-ctors (cdr types)))))
 
 
 ;; ------------------ Count events: deftypes -----------------------
@@ -2629,6 +2695,49 @@
         (cons `(,(flexsum->fix (car types)) ,(flexsum->xvar (car types)))
               (flextypes-nokind-expand-fixes (cdr types)))
       (flextypes-nokind-expand-fixes (cdr types)))))
+
+(defun flextypes-expand-fixes (types)
+  (if (atom types)
+      nil
+    (cons (with-flextype-bindings (x (car types))
+            `(,x.fix ,x.xvar))
+          (flextypes-expand-fixes (cdr types)))))
+
+(defun flexprods-ctor-of-fields-thms (prods)
+  (if (atom prods)
+      nil
+    (if (consp (flexprod->fields (car prods)))
+        (cons (intern-in-package-of-symbol
+               (concatenate 'string (symbol-name (flexprod->ctor-name (car prods)))
+                            "-OF-FIELDS")
+               (flexprod->ctor-name (car prods)))
+              (flexprods-ctor-of-fields-thms (cdr prods)))
+      (flexprods-ctor-of-fields-thms (cdr prods)))))
+
+(defun flextypes-ctor-of-fields-thms (types)
+  (if (atom types)
+      nil
+    (append (and (eq (caar types) :sum)
+                 (flexprods-ctor-of-fields-thms (flexsum->prods (car types))))
+            (flextypes-ctor-of-fields-thms (cdr types)))))
+
+(defun flexprods-fix-when-kind-thms (prods sum)
+  (if (atom prods)
+      nil
+    (if (consp (flexprod->fields (car prods)))
+        (cons (intern-in-package-of-symbol
+               (concatenate 'string (symbol-name (flexsum->fix sum))
+                            "-WHEN-" (symbol-name (flexprod->kind (car prods))))
+               (flexsum->fix sum))
+              (flexprods-fix-when-kind-thms (cdr prods) sum))
+      (flexprods-fix-when-kind-thms (cdr prods) sum))))
+
+(defun flextypes-fix-when-kind-thms (types)
+  (if (atom types)
+      nil
+    (append (and (eq (caar types) :sum)
+                 (flexprods-fix-when-kind-thms (flexsum->prods (car types)) (car types)))
+            (flextypes-fix-when-kind-thms (cdr types)))))
              
 (defun flextypes-count (x)
   (b* (((flextypes x) x)
@@ -2639,16 +2748,26 @@
         nil)
        (flagp (consp (cdr defs)))
        (measure-hints
+        ;; original
+        ;; `((and stable-under-simplificationp
+        ;;        '(:in-theory (enable . ,(flextypes-acc/ctors x.types))))
+        ;;   (and stable-under-simplificationp
+        ;;        '(:expand ,(flextypes-nokind-expand-fixes x.types)))) 
         `((and stable-under-simplificationp
-               '(:in-theory (enable . ,(flextypes-acc/ctors x.types))))
-          (and stable-under-simplificationp
-               '(:expand ,(flextypes-nokind-expand-fixes x.types))))))
+               '(:expand ,(flextypes-expand-fixes x.types)
+                 :in-theory (e/d  ,(flextypes-ctors x.types))
+                 )))
+        )
+       (prepwork `((local (in-theory (e/d ,(flextypes-fix-when-kind-thms x.types)
+                                          ,(flextypes-ctor-of-fields-thms x.types)))))))
     (if flagp
         (let ((defines-name (intern-in-package-of-symbol
                              (concatenate 'string (symbol-name x.name) "-COUNT")
                              x.name)))
           `((defines ,defines-name
               :hints ,measure-hints
+              :prepwork ,prepwork
+                                                
               ,@defs
               ///
               (verify-guards+ ,(cadr (car defs)))
@@ -2673,6 +2792,7 @@
        (append
         (car defs)
         `(:hints ,measure-hints
+          :prepwork ,prepwork
           ///
           (verify-guards+ ,(cadr (car defs))
                           :hints ((and stable-under-simplificationp
@@ -2727,7 +2847,6 @@
   (b* (((flextypes x) x))
     `(with-output :off (prove event observation)
        :summary (acl2::form time)
-       :gag-mode nil
        (defsection ,x.name
          (with-output :summary (acl2::form)
            (progn
@@ -2746,7 +2865,7 @@
 
              ,@(flextype-collect-events :post-fix-events x.kwd-alist x.types)
 
-             ,@(flextypes-sum-accessor/constructors x.types)
+             ,@(flextypes-sum-accessor/constructors x.types x.types)
 
              (local (in-theory (disable . ,(flextypes-fns x.types))))
              
@@ -2774,7 +2893,6 @@
        ((flexsum x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
-                                  :prepwork (cdr (assoc :prepwork x.kwd-alist))
                                   :no-count (not x.count)
                                   :kwd-alist nil
                                   :recp x.recp)))
@@ -2792,7 +2910,6 @@
        ((flexlist x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
-                                  :prepwork (cdr (assoc :prepwork x.kwd-alist))
                                   :no-count (not x.count)
                                   :kwd-alist nil
                                   :recp x.recp)))
@@ -2810,7 +2927,6 @@
        ((flexalist x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
-                                  :prepwork (cdr (assoc :prepwork x.kwd-alist))
                                   :no-count (not x.count)
                                   :kwd-alist nil
                                   :recp x.recp)))
@@ -2828,7 +2944,6 @@
        ((flexsum x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
-                                  :prepwork '((local (in-theory (enable equal-of-strip-cars))))
                                   :no-count (not x.count)
                                   :kwd-alist nil
                                   :recp x.recp)))
@@ -2847,9 +2962,9 @@
        ((flexsum x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
-                                  :prepwork '((local (in-theory (enable equal-of-strip-cars))))
+                                  
                                   :no-count (not x.count)
-                                  :kwd-alist nil
+                                  :kwd-alist '((:prepwork . ((local (in-theory (enable equal-of-strip-cars))))))
                                   :recp x.recp)))
     (deftypes-events flextypes wrld)))
 
@@ -3551,5 +3666,8 @@ function.  This is @(':rewrite') by default; you may wish to change it to
 @('integerp').</li>
 </ul>
 ")
+
+
+
 
 
