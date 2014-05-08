@@ -2890,6 +2890,11 @@
        (fixtype-al (append our-fixtypes
                            (get-fixtypes-alist wrld)))
        (x (parse-flexsum (cdr whole) nil our-fixtypes fixtype-al))
+       (x (if (or (flexsum->recp x)
+                  (member :count (cdr whole)))
+              x
+            ;; don't make a count if it's not recursive
+            (change-flexsum x :count nil)))
        ((flexsum x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
@@ -2907,6 +2912,9 @@
        (fixtype-al (append our-fixtypes
                            (get-fixtypes-alist wrld)))
        (x (parse-flexlist (cdr whole) nil our-fixtypes fixtype-al))
+       (x (if (member :count (cdr whole))
+              x
+            (change-flexlist x :count nil)))
        ((flexlist x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
@@ -2924,6 +2932,9 @@
        (fixtype-al (append our-fixtypes
                            (get-fixtypes-alist wrld)))
        (x (parse-flexalist (cdr whole) nil our-fixtypes fixtype-al))
+       (x (if (member :count (cdr whole))
+              x
+            (change-flexalist x :count nil)))
        ((flexalist x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
@@ -2941,6 +2952,11 @@
        (fixtype-al (cons fixtype
                          (get-fixtypes-alist wrld)))
        (x (parse-tagsum (cdr whole) nil (list fixtype) fixtype-al))
+       (x (if (or (flexsum->recp x)
+                  (member :count (cdr whole)))
+              x
+            ;; don't make a count if it's not recursive
+            (change-flexsum x :count nil)))
        ((flexsum x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
@@ -2958,7 +2974,9 @@
        (fixtype-al (cons fixtype
                          (get-fixtypes-alist wrld)))
        (x (parse-defprod (cdr whole) nil (list fixtype) fixtype-al))
-       (x (change-flexsum x :count nil)) ;; no count for a single product
+       (x (if (member :count (cdr whole))
+              x
+            (change-flexsum x :count nil))) ;; no count for a single product
        ((flexsum x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
