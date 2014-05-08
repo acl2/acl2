@@ -6,6 +6,9 @@
 
 (in-package "ACL2")
 
+;; Jared added this because this book doesn't certify in ACL2(r).
+;; cert_param: (non-acl2r)
+
 ;Data has separate package namespace 'defdata' and which implements
 ;custom data definitions, type constructors(product and union)
 (include-book "defdata")
