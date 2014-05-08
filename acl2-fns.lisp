@@ -902,6 +902,32 @@ notation causes an error and (b) the use of ,. is not permitted."
                (backquote (car l))
                (backquote-lst (cdr l))))))
 
+(defvar *read-object-comma-count* nil)
+
+(defun acl2-comma-reader (stream)
+  (when *read-object-comma-count*
+    (incf *read-object-comma-count*))
+  (when (< *backquote-counter* 0)
+    (let* ((pathname (and (typep stream 'file-stream)
+                          (pathname stream)))
+           (posn (and pathname
+                      (file-position stream))))
+      (clear-input stream)
+      (cond
+       (posn
+        (error "Illegal comma encountered by READ: file ~a, position ~s."
+               pathname posn))
+       (*read-object-comma-count*
+        (error
+         "Illegal comma: ~:r comma processed while reading top-level form."
+         *read-object-comma-count*))
+       (t (error "Illegal comma encountered by READ.")))))
+  (case (peek-char nil stream t nil t)
+    (#\@ (read-char stream t nil t)
+     (list *comma-atsign* (read stream t nil t)))
+    (#\. (error ",. not allowed in ACL2 backquote forms."))
+    (otherwise (list *comma* (read stream t nil t)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR ACL2 CHARACTER READER
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

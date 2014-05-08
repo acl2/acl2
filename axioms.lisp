@@ -16672,7 +16672,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (wormhole-er 'read-object (list channel))))
          (return-from
           read-object
-          (let* ((read-object-eof
+          (let* ((*read-object-comma-count* 0)
+                 (read-object-eof
 
 ; Suggestion from Bob Boyer: By using dynamic-extent [see declaration below],
 ; we make the cons more 'secret' or 'new'.  (Added August 2009: the
