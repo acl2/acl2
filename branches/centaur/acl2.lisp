@@ -1571,14 +1571,7 @@ which is saved just in case it's needed later.")
      #'(lambda (stream char)
          (declare (ignore char))
          (let ((*backquote-counter* (1- *backquote-counter*)))
-           (cond ((< *backquote-counter* 0)
-                  (clear-input stream)
-                  (error "Illegal comma encountered by READ.")))
-           (case (peek-char nil stream t nil t)
-             (#\@ (read-char stream t nil t)
-              (list *comma-atsign* (read stream t nil t)))
-             (#\. (error ",. not allowed in ACL2 backquote forms."))
-             (otherwise (list *comma* (read stream t nil t)))))))
+           (acl2-comma-reader stream))))
 
 ;  Restrict #.
 

@@ -1301,7 +1301,19 @@
 ; We get ready to handle errors in such a way that they return to the
 ; top level logic loop if we are under it.
 
-(defvar *acl2-error-p* nil)
+(defvar *acl2-error-msg*
+  "~%The message above might explain the error.  If not, and~%~
+   if you didn't cause an explicit interrupt (Control-C),~%~
+   then the root cause may be call of a :program mode~%~
+   function that has the wrong guard specified, or even no~%~
+   guard specified (i.e., an implicit guard of t).~%~
+   See :DOC guards.~&")
+
+(defvar *acl2-error-msg-certify-book-step1*
+  "~%The message above might explain the error.  If it mentions packages,
+it is probably because Step 1 is performed before any form in the book is
+evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
+1'' and portcullis commands.~&")
 
 (defun interface-er (&rest args)
 
@@ -1313,7 +1325,10 @@
    ((macro-function 'er)
     (eval
      `(let ((state *the-live-state*)
-            (*acl2-error-p* t))
+            (*acl2-error-msg* (if (eq *acl2-error-msg*
+                                      *acl2-error-msg-certify-book-step1*)
+                                  *acl2-error-msg*
+                                nil)))
         (er soft 'acl2-interface
             ,@(let (ans)
                 (dolist (a args)
@@ -1322,7 +1337,6 @@
         (error "ACL2 Halted"))))
    (t (error "ACL2 error:  ~a." args))))
 
-#-acl2-loop-only
 (declaim (inline
 
 ; Here we take a suggestion from Jared Davis and inline built-in functions,
@@ -16658,7 +16672,8 @@
                 (wormhole-er 'read-object (list channel))))
          (return-from
           read-object
-          (let* ((read-object-eof
+          (let* ((*read-object-comma-count* 0)
+                 (read-object-eof
 
 ; Suggestion from Bob Boyer: By using dynamic-extent [see declaration below],
 ; we make the cons more 'secret' or 'new'.  (Added August 2009: the
