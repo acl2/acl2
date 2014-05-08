@@ -56,3 +56,24 @@ These are just some utilities to perform such relocations.</p>")
               (vl-netdecllist-p x))
   :result-type vl-netdecllist-p
   :parents (relocate vl-netdecllist-p))
+
+(defprojection vl-relocate-regdecls (loc x)
+  (change-vl-regdecl x :loc loc)
+  :guard (and (vl-location-p loc)
+              (vl-regdecllist-p x))
+  :result-type vl-regdecllist-p
+  :parents (relocate vl-regdecllist-p))
+
+(defprojection vl-relocate-portdecls (loc x)
+  (change-vl-portdecl x :loc loc)
+  :guard (and (vl-location-p loc)
+              (vl-portdecllist-p x))
+  :result-type vl-portdecllist-p
+  :parents (relocate vl-portdecllist-p))
+
+(defprojection vl-relocate-paramdecls (loc x)
+  (change-vl-paramdecl x :loc loc)
+  :guard (and (vl-location-p loc)
+              (vl-paramdecllist-p x))
+  :result-type vl-paramdecllist-p
+  :parents (relocate vl-paramdecllist-p))

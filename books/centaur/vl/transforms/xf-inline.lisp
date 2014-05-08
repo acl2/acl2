@@ -257,7 +257,14 @@ clever.</p>")
        ;; expressions have been updated to the new names.
        (prefix           (or x.instname "inst"))
        ((mv netdecls nf) (vl-namemangle-netdecls prefix sub.netdecls nf))
-       (netdecls         (vl-relocate-netdecls x.loc netdecls))
+       (netdecls         (vl-relocate-netdecls
+                          ;; Dumb hack: try to make sure that newly introduced net
+                          ;; declarations come BEFORE any uses of them.
+                          (change-vl-location
+                           x.loc
+                           :line (max 1 (- (vl-location->line x.loc) 1))
+                           :col 0)
+                          netdecls))
        (old-names        (vl-netdecllist->names sub.netdecls))
        (new-names        (vl-netdecllist->names netdecls))
        (new-exprs        (vl-make-idexpr-list new-names nil nil))
