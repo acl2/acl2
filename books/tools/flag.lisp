@@ -941,17 +941,21 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
                             :induct
                             (,flag-fn-name ,flag-var . ,formals)
                             :in-theory
-                            (set-difference-theories
-                             (union-theories (theory 'minimal-theory)
-                                             '((:induction ,flag-fn-name)
-                                               (:rewrite expand-all-hides)))
-                             '(;; Jared found mv-nth to be slowing down a couple of flag
-                               ;; function admissions.  Take it out of the minimal theory.
-                               (:definition mv-nth)
-                               ;; Jared found a case where "linear" forced some goals
-                               ;; from an equality, which were unprovable.  So, turn
-                               ;; off forcing.
-                               (:executable-counterpart force))))
+                            '((:induction ,flag-fn-name))
+                            ;; (set-difference-theories
+                            ;;  (union-theories (theory 'minimal-theory)
+                            ;;                  '((:induction ,flag-fn-name)
+                            ;;                    (:rewrite expand-all-hides)))
+                            ;;  '(;; Jared found mv-nth to be slowing down a couple of flag
+                            ;;    ;; function admissions.  Take it out of the minimal theory.
+                            ;;    (:definition mv-nth)
+                            ;;    ;; Jared found a case where "linear" forced some goals
+                            ;;    ;; from an equality, which were unprovable.  So, turn
+                            ;;    ;; off forcing.
+                            ;;    (:executable-counterpart force)
+                            ;;    ;; Turn of NOT to prevent case-splitting and 
+                            ;;    ))
+                            )
                            (flag-expand-computed-hint stable-under-simplificationp
                                                       ACL2::clause
                                                       ',(cons flag-fn-name
