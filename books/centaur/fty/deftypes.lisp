@@ -1352,6 +1352,7 @@
   (b* (((flexsum sum) sum))
     `(define ,sum.pred (,sum.xvar)
        :measure ,sum.measure
+       :progn t
        ;; ,(if sum.kind
        ;;      `(case (,sum.kind ,sum.xvar)
        ;;         . ,(flexsum-pred-cases sum.prods))
@@ -1381,6 +1382,7 @@
        (stdx (intern-in-package-of-symbol "X" list.pred))
        (stda (intern-in-package-of-symbol "A" list.pred)))
     `(define ,list.pred (,list.xvar)
+       :progn t
        :measure ,list.measure
        (if (atom ,list.xvar)
            ,(if list.true-listp
@@ -1433,6 +1435,7 @@
        (stdx (intern-in-package-of-symbol "X" alist.pred))
        (stda (intern-in-package-of-symbol "A" alist.pred)))
     `(define ,alist.pred (,alist.xvar)
+       :progn t
        :measure ,alist.measure
        (if (atom ,alist.xvar)
            ,(if alist.true-listp
@@ -1537,7 +1540,9 @@
            `(defines ,(intern-in-package-of-symbol
                        (concatenate 'string (symbol-name x.name) "-P")
                        x.name)
+              :progn t
               . ,defs))
+        (local (in-theory (disable . ,(flextypelist-predicates x.types))))
         ;; (local (set-default-hints
                 ;; '('(:expand ,(pairlis$
                 ;;               (flextypelist-predicates x.types)
@@ -1595,6 +1600,7 @@
     `((define ,sum.kind ((,sum.xvar ,sum.pred))
         ,@(and (member :kind sum.inline) `(:inline t))
         :guard-hints ((and stable-under-simplificationp '(:expand ((,sum.pred ,sum.xvar)))))
+        :progn t
         ,(if sum.kind-body
              `(mbe :logic ,condform
                    :exec ,sum.kind-body)
@@ -1728,6 +1734,7 @@
                                   (let ((lit (car (last clause))))
                                     (and (eq (car lit) ',sum.pred)
                                          `(:expand (,lit)))))))
+       :progn t
        :verify-guards nil
        (mbe :logic
             ;; ,(if fixprep
@@ -1752,6 +1759,7 @@
                                         (,list.pred ,list.xvar)
                                         (,list.pred nil)))))
        :verify-guards nil
+       :progn t
        (mbe :logic (if (atom ,list.xvar)
                        ,(if list.true-listp
                             nil
@@ -1773,6 +1781,7 @@
                                         (,alist.pred ,alist.xvar)
                                         (,alist.pred nil)))))
        :verify-guards nil
+       :progn t
        (mbe :logic (if (atom ,alist.xvar)
                        ,(if alist.true-listp nil alist.xvar)
                      (if (consp (car ,alist.xvar))
@@ -1980,6 +1989,7 @@
                                (concatenate 'string (symbol-name x.name) "-FIX")
                                x.name)
                       :flag ,flag-name
+                      :progn t
                       . ,defs)
                  (car defs))
                `(///
@@ -2002,6 +2012,7 @@
 
                  . ,(flextypelist-fix-postevents x.types)))
       (local (in-theory (enable . ,(flextypelist-equivs x.types))))
+      (local (in-theory (disable . ,(flextypelist-fixes x.types))))
       )))
 
 
@@ -2028,6 +2039,7 @@
         :returns ,(if x.type
                       `(,x.name ,x.type . ,x.rule-classes)
                     `(x.name))
+        :progn t
         (mbe :logic (b* ((,sum.xvar (and ,prod.guard ,sum.xvar))
                          . ,(flexprod-fields-discard-later-bindings
                              x.name (flexprod-fields-fix-bindings prod.fields)))
@@ -2204,6 +2216,7 @@
                                `(and (,sum.pred ,sum.xvar)
                                      ,prod.guard)) ;; (equal (,sum.kind ,sum.xvar) ,prod.kind)
                         :hints(("Goal" :in-theory (enable ,sum.pred))))
+        :progn t
         (let* ,(flexprod-fields-mbefix-bindings prod.fields)
           ,prod.ctor-body)
         ///
@@ -2460,6 +2473,7 @@
                                                       . ,(flexsum-prod-fns x.prods)))))
         :measure (let ((,x.xvar (,x.fix ,x.xvar)))
                    ,x.measure)
+        :progn t
         ,(if x.kind
              `(case (,x.kind ,x.xvar)
                 . ,(flexsum-prod-counts x.prods x.xvar types))
@@ -2555,6 +2569,7 @@
        :measure (let ((,x.xvar (,x.fix ,x.xvar)))
                   ,x.measure)
        :verify-guards nil
+       :progn t
        (if (atom ,x.xvar)
            1
          (+ 1
@@ -2607,6 +2622,7 @@
         :measure (let ((,x.xvar (,x.fix ,x.xvar)))
                    ,x.measure)
         :verify-guards nil
+        :progn t
         (let ((,x.xvar (mbe :logic (,x.fix ,x.xvar) :exec ,x.xvar)))
           (if (atom ,x.xvar)
               0
@@ -2829,7 +2845,7 @@
           `((defines ,defines-name
               :hints ,measure-hints
               :prepwork ,prepwork
-                                                
+              :progn t
               ,@defs
               ///
               (local (in-theory (disable . ,(flextypes-count-names x.types))))
@@ -2894,6 +2910,211 @@
             (flextypes-collect-defxdoc x.types world))))
 
 
+;; ------------------ Ambient Theory Managment -----------------------
+(defun find-fix-when-pred-thm-aux (fix pred fix-rules)
+  (if (atom fix-rules)
+      (let ((body `(implies (,pred x)
+                            (equal (,fix x) x))))
+        (mv nil `(local (make-event
+                         '(:or (defthm ,(intern-in-package-of-symbol
+                                         (concatenate 'string
+                                                      "TMP-DEFTYPES-"
+                                                      (symbol-name fix)
+                                                      "-WHEN-" (symbol-name pred))
+                                         'fty)
+                                 ,body)
+                           (value-triple
+                            (er hard? 'deftypes
+                                "To use ~x0/~x1 as a fixing function/predicate, we must ~
+                       be able to prove the following: ~x2.  But this proof ~
+                       failed! Please try to prove this rule yourself."
+                                ',fix ',pred ',body)))))))
+    (let ((rune (b* ((rule (car fix-rules))
+                     (subclass (acl2::access acl2::rewrite-rule rule :subclass))
+                     ((unless (eq subclass 'acl2::backchain)) nil)
+                     (lhs (acl2::access acl2::rewrite-rule rule :lhs))
+                     ((unless (symbolp (cadr lhs))) nil)
+                     (var (cadr lhs))
+                     (rhs (acl2::access acl2::rewrite-rule rule :rhs))
+                     ((unless (eq rhs var)) nil)
+                     (hyps (acl2::access acl2::rewrite-rule rule :hyps))
+                     ((unless (and (consp hyps)
+                                   (not (cdr hyps))
+                                   (consp (car hyps))
+                                   (eq pred (caar hyps))
+                                   (eq var (cadr (car hyps)))))
+                      nil)
+                     (equiv (acl2::access acl2::rewrite-rule rule :equiv))
+                     ((unless (eq equiv 'equal)) nil))
+                  (acl2::access acl2::rewrite-rule rule :rune))))
+      (if rune
+          (mv t rune)
+        (find-fix-when-pred-thm-aux fix pred (cdr fix-rules))))))
+
+(defun find-pred-of-fix-thm-aux (fix pred pred-rules)
+  (if (atom pred-rules)
+      (let ((body `(,pred (,fix x))))
+        (mv nil
+            `(local (make-event
+                     '(:or (defthm ,(intern-in-package-of-symbol
+                                     (concatenate 'string
+                                                  "TMP-DEFTYPES-"
+                                                  (symbol-name PRED)
+                                                  "-OF-" (symbol-name fix))
+                                     'fty)
+                             ,body)
+                       (value-triple
+                        (er hard? 'deftypes
+                            "To use ~x0/~x1 as a fixing function/predicate, we must ~
+                       be able to prove the following: ~x2.  But this proof ~
+                       failed! Please try to prove this rule yourself."
+                            ',fix ',pred ',body)))))))
+    (let ((rune (b* ((rule (car pred-rules))
+                     (subclass (acl2::access acl2::rewrite-rule rule :subclass))
+                     ((unless (eq subclass 'acl2::abbreviation)) nil)
+                     (lhs (acl2::access acl2::rewrite-rule rule :lhs))
+                     ((unless (and (consp (cadr lhs))
+                                   (eq fix (car (cadr lhs)))
+                                   (symbolp (cadr (cadr lhs)))))
+                      nil)
+                     (rhs (acl2::access acl2::rewrite-rule rule :rhs))
+                     ((unless (equal rhs ''t)) nil)
+                     (hyps (acl2::access acl2::rewrite-rule rule :hyps))
+                     ((unless (atom hyps))
+                      nil)
+                     (equiv (acl2::access acl2::rewrite-rule rule :equiv))
+                     ((unless (member equiv '(equal iff))) nil))
+                  (acl2::access acl2::rewrite-rule rule :rune))))
+      (if rune
+          (mv t rune)
+        (find-pred-of-fix-thm-aux fix pred (cdr pred-rules))))))
+
+(defun fix-rule-disablep (rule)
+  ;; not including the fix-when-pred rule, which is enabled later
+  (b* (((when (acl2::access acl2::rewrite-rule rule :hyps)) t)
+       ((unless (eq (acl2::access acl2::rewrite-rule rule :subclass)
+                    'acl2::abbreviation))
+        t)
+       (arg (cadr (acl2::access acl2::rewrite-rule rule :lhs)))
+       ((unless (symbolp arg)) t)
+       ((unless (eq (acl2::access acl2::rewrite-rule rule :rhs) arg)) t))
+    nil))
+
+(defun collect-fix-runes-to-disable (rules)
+  (if (atom rules)
+      nil
+    (if (fix-rule-disablep (car rules))
+        (cons (acl2::access acl2::rewrite-rule (car rules) :rune)
+              (collect-fix-runes-to-disable (cdr rules)))
+      (collect-fix-runes-to-disable (cdr rules)))))
+
+
+(defun pred-rule-disablep (rule)
+  ;; disable backchain rules, rules that target (pred x), i.e. where the
+  ;; argument to pred doesn't have a function symbol, and rules that rewrite
+  ;; pred to something other than t
+  (b* (((unless (eq (acl2::access acl2::rewrite-rule rule :subclass)
+                    'acl2::abbreviation))
+        t)
+       ((when (symbolp (cadr (acl2::access acl2::rewrite-rule rule :lhs)))) t)
+       ((unless (equal (acl2::access acl2::rewrite-rule rule :rhs) ''t)) t))
+    nil))
+
+(defun collect-pred-runes-to-disable (rules)
+  (if (atom rules)
+      nil
+    (if (pred-rule-disablep (car rules))
+        (cons (acl2::access acl2::rewrite-rule (car rules) :rune)
+              (collect-pred-runes-to-disable (cdr rules)))
+      (collect-pred-runes-to-disable (cdr rules)))))
+
+(defun flexprod-fields-collect-fix/pred-pairs (fields)
+  (if (atom fields)
+      nil
+    (b* (((flexprod-field x) (car fields)))
+      (if (and x.fix x.type)
+          (cons (cons x.fix x.type)
+                (flexprod-fields-collect-fix/pred-pairs (cdr fields)))
+        (flexprod-fields-collect-fix/pred-pairs (cdr fields))))))
+
+(defun flexprods-collect-fix/pred-pairs (prods)
+  (if (atom prods)
+      nil
+    (append (flexprod-fields-collect-fix/pred-pairs (flexprod->fields (car prods)))
+            (flexprods-collect-fix/pred-pairs (cdr prods)))))
+
+(defun flexsum-collect-fix/pred-pairs (sum)
+  (flexprods-collect-fix/pred-pairs (flexsum->prods sum)))
+
+(defun flexlist-collect-fix/pred-pairs (list)
+  (b* (((flexlist list) list))
+    (and list.elt-type list.elt-fix
+         (list (cons list.elt-fix list.elt-type)))))
+
+(defun flexalist-collect-fix/pred-pairs (alist)
+  (b* (((flexalist alist) alist))
+    (append (and alist.key-type alist.key-fix
+                 (list (cons alist.key-fix alist.key-type)))
+            (and alist.val-type alist.val-fix
+                 (list (cons alist.val-fix alist.val-type))))))
+
+(defun flextypes-collect-fix/pred-pairs-aux (types)
+  (if (atom types)
+      nil
+    (append (with-flextype-bindings (x (car types))
+              (flex*-collect-fix/pred-pairs x))
+            (flextypes-collect-fix/pred-pairs-aux (cdr types)))))
+
+(defun flextypes-collect-fix/pred-pairs (types)
+  (remove-duplicates-equal (flextypes-collect-fix/pred-pairs-aux types)))
+
+(defun collect-disable-runes-fixes (x world)
+  (if (atom x)
+      nil
+    (append (collect-fix-runes-to-disable
+             (getprop (car x) 'acl2::lemmas nil 'acl2::current-acl2-world world))
+            (collect-disable-runes-fixes (cdr x) world))))
+
+(defun collect-disable-runes-preds (x world)
+  (if (atom x)
+      nil
+    (append (collect-pred-runes-to-disable
+             (getprop (car x) 'acl2::lemmas nil 'acl2::current-acl2-world world))
+            (collect-disable-runes-preds (cdr x) world))))
+
+(defun collect-fix/pred-enable-rules (pairs world)
+  ;; returns (mv runes-to-enable thms-to-admit)
+  (if (atom pairs)
+      (mv nil nil)
+    (b* (((cons fix pred) (car pairs))
+         (fix (acl2::deref-macro-name fix (acl2::macro-aliases world)))
+         (pred (acl2::deref-macro-name pred (acl2::macro-aliases world)))
+         (fix-exists (not (eq :none (getprop fix 'acl2::formals :none 'acl2::current-acl2-world world))))
+         (pred-exists (not (eq :none (getprop pred 'acl2::formals :none 'acl2::current-acl2-world world))))
+         ((unless (and fix-exists pred-exists))
+          ;; These pairs include types that we are about to define, so if the
+          ;; function isn't yet defined, don't complain.  But if one is defined
+          ;; but the other isn't, it's strange.
+          (and (or fix-exists pred-exists)
+               (cw "WARNING: ~x0 is defined but ~x1 is not"
+                   (if fix-exists fix pred) (if fix-exists pred fix)))
+          (collect-fix/pred-enable-rules (cdr pairs) world))
+         (fix-rules (getprop fix 'acl2::lemmas nil 'acl2::current-acl2-world world))
+         (pred-rules (getprop pred 'acl2::lemmas nil 'acl2::current-acl2-world world))
+         ((mv fix-rule-exists fix-rule) (find-fix-when-pred-thm-aux fix pred fix-rules))
+         ((mv pred-rule-exists pred-rule) (find-pred-of-fix-thm-aux fix pred pred-rules))
+         ((mv enables thms)
+          (collect-fix/pred-enable-rules (cdr pairs) world))
+         ((mv enables thms)
+          (if fix-rule-exists
+              (mv (cons fix-rule enables) thms)
+            (mv enables (cons fix-rule thms))))
+         ((mv enables thms)
+          (if pred-rule-exists
+              (mv (cons pred-rule enables) thms)
+            (mv enables (cons pred-rule thms)))))
+      (mv enables thms))))
+         
 ;; ------------------ Deftypes-events -----------------------
 ;; --- Flextype-collect-events ---
 (defun flextypelist-append-events (kwd types)
@@ -2908,7 +3129,11 @@
           (flextypelist-append-events kwd types)))
 
 (defun deftypes-events (x world)
-  (b* (((flextypes x) x))
+  (b* (((flextypes x) x)
+       (fix/pred-pairs (flextypes-collect-fix/pred-pairs x.types))
+       (disable-rules (append (collect-disable-runes-fixes (strip-cars fix/pred-pairs) world)
+                              (collect-disable-runes-preds (strip-cdrs fix/pred-pairs) world)))
+       ((mv enable-rules temp-thms) (collect-fix/pred-enable-rules fix/pred-pairs world)))
     `(with-output :off (prove event observation)
        :summary (acl2::form time)
        (defsection ,x.name
@@ -2918,6 +3143,9 @@
              (set-bogus-defun-hints-ok t)
              (set-ignore-ok t)
              (set-irrelevant-formals-ok t)
+             (progn . ,temp-thms)
+             (local (in-theory (disable . ,disable-rules)))
+             (local (in-theory (enable . ,enable-rules)))
 
              ,@(flextypes-predicate-def x)
 
