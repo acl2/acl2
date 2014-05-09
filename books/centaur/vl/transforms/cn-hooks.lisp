@@ -76,6 +76,24 @@ e-conversion)."
 
 
 
+(defsection vl-design-post-unparam-hook
+  :short "Arbitrary hook for adding additional transforms before @(see
+e-conversion)."
+
+  (encapsulate
+    (((vl-design-post-unparam-hook *) => *
+      :formals (x)
+      :guard (vl-design-p x)))
+
+    (local (defun vl-design-post-unparam-hook (x)
+             (vl-design-fix x)))
+
+    (defthm vl-design-p-of-vl-design-post-unparam-hook
+      (vl-design-p (vl-design-post-unparam-hook x))))
+
+  (defattach vl-design-post-unparam-hook vl-design-fix$inline))
+
+
 (defsection vl-design-constcheck-hook
   :short "Beta transform, not ready for public release."
 

@@ -150,6 +150,7 @@
 
        ;;(- (sneaky-save :pre-unparam good))
        (good          (xf-cwtime (vl-design-unparameterize good)))
+       (good          (xf-cwtime (vl-design-post-unparam-hook good)))
        ((mv good bad) (xf-cwtime (vl-design-propagate-errors* good bad)))
 
 
