@@ -262,6 +262,7 @@ its flag in the flag-function.</p>")
      :returns-hints
 
      :verbosep
+     :progn
      )
    *defines-xargs-keywords*))
 
@@ -386,7 +387,7 @@ its flag in the flag-function.</p>")
                        parents
                      (and cliquename (list cliquename)))))
 
-    `((defsection ,guts.name
+    `((defsection-progn ,guts.name
         ,@(and parents `(:parents ,parents))
         ,@(and short   `(:short ,short))
         ,@(and long    `(:long ,long))
@@ -398,7 +399,7 @@ its flag in the flag-function.</p>")
                                                   world)))
                     `(with-output :stack :pop (progn . ,events))))))
         (with-output :stack :pop (progn . ,guts.rest-events))
-      (with-output :on (error) ,(add-signature-from-guts guts))))))
+        (with-output :on (error) ,(add-signature-from-guts guts))))))
 
 (defun collect-fn-defsections (gutslist cliquename process-returns)
   (if (atom gutslist)
@@ -695,11 +696,13 @@ its flag in the flag-function.</p>")
           :flag-mapping flag-mapping
           :flag-defthm-macro thm-macro))
 
-       (ruler-extenders (getarg :ruler-extenders nil kwd-alist)))
+       (ruler-extenders (getarg :ruler-extenders nil kwd-alist))
 
-    `(encapsulate nil
+       (prognp (getarg :progn nil kwd-alist)))
+
+    `(,@(if prognp '(progn) '(encapsulate nil))
        (with-output :stack :pop (progn . ,prepwork))
-       (defsection ,name
+       (defsection-progn ,name
          ,@(and parents `(:parents ,parents))
          ,@(and short   `(:short ,short))
          ,@(and long    `(:long ,long))
@@ -730,7 +733,7 @@ its flag in the flag-function.</p>")
              '(in-theory (enable . ,fnnames))
            '(value-triple :invisible))))
 
-       (defsection rest-events
+       (defsection-progn rest-events
          ,@(and want-xdoc-p `(:extension ,name))
          ,@(and returns-induct
                 `((make-event

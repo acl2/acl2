@@ -284,6 +284,7 @@ some kind of separator!</p>
             :returns
             :prepwork
             :verbosep
+            :progn
             )
           acl2::*xargs-keywords*))
 
@@ -769,10 +770,11 @@ some kind of separator!</p>
                        parents
                      (xdoc::get-default-parents world)))
 
-       (set-ignores (get-set-ignores-from-kwd-alist guts.kwd-alist)))
+       (set-ignores (get-set-ignores-from-kwd-alist guts.kwd-alist))
+       (prognp (getarg :progn nil guts.kwd-alist)))
 
     `(progn
-       (defsection ,guts.name
+       (,(if prognp 'defsection-progn 'defsection) ,guts.name
          ,@(and parents `(:parents ,parents))
          ,@(and short   `(:short ,short))
          ,@(and long    `(:long ,long))
