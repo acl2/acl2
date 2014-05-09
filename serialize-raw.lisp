@@ -1377,14 +1377,15 @@
             (let ((idx (gethash alist seen-cons)))
               (when idx
                 (ser-encode-nat idx stream)
-                (ser-encode-nat (hash-table-count backing-hash-table) stream))))))
+                (ser-encode-nat (hash-table-count backing-hash-table)
+                                stream))))))
     (hl-faltable-maphash fn (hl-hspace-faltable-wrapper))
     (ser-encode-nat 0 stream)))
 
 (defun ser-decode-and-restore-fals (decoder hons-mode stream)
   (declare (type ser-decoder decoder))
 
-; Q: Why don't we restore when hons-mode is never?
+; Q: Why don't we restore when hons-mode is :never?
 ;
 ; A: The keys of a fast alist need to be honsed.  If we didn't smartly (or
 ; dumbly) make them honses when we built the conses, then we may not be able to
@@ -1406,6 +1407,10 @@
             (let ((alist (svref array index))
                   (count (ser-decode-nat stream)))
               (hl-restore-fal-for-serialize alist count)))
+
+; Notice that we make progress reading nats from stream even if hons-mode is
+; :never; we just ignore those nats!
+
           (setq index (ser-decode-nat stream)))))
 
 (defun ser-encode-atoms (encoder)
@@ -1542,7 +1547,8 @@
         (setf (ser-decoder-free decoder) 2))
 
       (ser-print? "; Decoding serialized object of size ~a.~%" arr-size)
-      (ser-time? (ser-decode-and-load-atoms check-packagesp hons-mode decoder stream))
+      (ser-time? (ser-decode-and-load-atoms check-packagesp hons-mode decoder
+                                            stream))
       (ser-time? (ser-decode-and-load-conses hons-mode decoder stream))
 
       (when (eq version :v3)
