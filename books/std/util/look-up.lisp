@@ -30,7 +30,7 @@ of a @(see acl2::stobj)."
   (defund var-is-stobj-p (var world)
     (declare (xargs :guard (and (symbolp var)
                                 (plist-worldp world))))
-    (consp (getprop var 'acl2::stobj nil 'current-acl2-world world)))
+    (consp (getprop var 'acl2::stobj nil 'acl2::current-acl2-world world)))
 
   (local
    (progn
