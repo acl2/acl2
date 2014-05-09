@@ -1722,7 +1722,8 @@
        :measure ,sum.measure
        ,@(and flagp `(:flag ,sum.name))
        :returns (newx ,sum.pred
-                      :hints('(:in-theory (enable ,sum.pred))
+                      :hints('(:in-theory (disable ,sum.fix ,sum.pred)
+                               :expand ((,sum.fix ,sum.xvar)))
                              (and stable-under-simplificationp
                                   (let ((lit (car (last clause))))
                                     (and (eq (car lit) ',sum.pred)
@@ -1745,7 +1746,11 @@
        :measure ,list.measure
        ,@(and flagp `(:flag ,list.name))
        :returns (newx ,list.pred
-                      :hints('(:in-theory (enable ,list.pred))))
+                      :hints('(:in-theory (disable ,list.fix ,list.pred)
+                               :expand ((,list.fix ,list.xvar)
+                                        (:free (a b) (,list.pred (cons a b)))
+                                        (,list.pred ,list.xvar)
+                                        (,list.pred nil)))))
        :verify-guards nil
        (mbe :logic (if (atom ,list.xvar)
                        ,(if list.true-listp
@@ -1762,7 +1767,11 @@
        :measure ,alist.measure
        ,@(and flagp `(:flag ,alist.name))
        :returns (newx ,alist.pred
-                      :hints('(:in-theory (enable ,alist.pred))))
+                      :hints('(:in-theory (disable ,alist.fix ,alist.pred)
+                               :expand ((,alist.fix ,alist.xvar)
+                                        (:free (a b) (,alist.pred (cons a b)))
+                                        (,alist.pred ,alist.xvar)
+                                        (,alist.pred nil)))))
        :verify-guards nil
        (mbe :logic (if (atom ,alist.xvar)
                        ,(if alist.true-listp nil alist.xvar)
@@ -1815,9 +1824,11 @@
       (deffixcong ,x.equiv ,x.equiv (cdr x) x
         :hints (("goal" :expand ((,x.fix x)))))
 
-      (deffixcong ,x.elt-equiv ,x.equiv (cons x y) x)
+      (deffixcong ,x.elt-equiv ,x.equiv (cons x y) x
+        :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b))))))) 
 
-      (deffixcong ,x.equiv ,x.equiv (cons x y) y)
+      (deffixcong ,x.equiv ,x.equiv (cons x y) y
+        :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
 
       (defthm ,(intern-in-package-of-symbol
                 (concatenate 'string "CONSP-OF-"
@@ -1834,7 +1845,8 @@
         ;; bozo make sure this is compatible with defprojection
         (equal (,x.fix (cons ,stda ,stdx))
                (cons (,x.elt-fix ,stda)
-                     (,x.fix ,stdx))))
+                     (,x.fix ,stdx)))
+        :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
 
       (defthm ,(intern-in-package-of-symbol
                 (concatenate 'string "LEN-OF-"
@@ -1850,12 +1862,15 @@
        ;; std::defprojection-compatible variable names
        (stdx (intern-in-package-of-symbol "X" x.pred)))
     `(,@(and x.key-type
-             `((deffixcong ,x.key-equiv ,x.equiv (cons (cons k v) x) k)))
+             `((deffixcong ,x.key-equiv ,x.equiv (cons (cons k v) x) k
+                 :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))))
 
       ,@(and x.val-type
-             `((deffixcong ,x.val-equiv ,x.equiv (cons (cons k v) x) v)))
+             `((deffixcong ,x.val-equiv ,x.equiv (cons (cons k v) x) v
+                 :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))))
 
-      (deffixcong ,x.equiv ,x.equiv (cons x y) y)
+      (deffixcong ,x.equiv ,x.equiv (cons x y) y
+        :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b)))))))
 
       (defthm ,(intern-in-package-of-symbol
                 (concatenate 'string (symbol-name x.fix)
@@ -1865,7 +1880,8 @@
         (equal (,x.fix (cons (cons a b) ,stdx))
                (cons (cons ,(if x.key-fix `(,x.key-fix a) 'a)
                            ,(if x.val-fix `(,x.val-fix b) 'b))
-                     (,x.fix ,stdx)))))))
+                     (,x.fix ,stdx)))
+        :hints (("goal" :Expand ((:free (a b) (,x.fix (cons a b))))))))))
 
 (defun flextypelist-fix-postevents (types)
   (if (atom types)
@@ -1884,7 +1900,8 @@
        (implies (,x.pred ,x.xvar)
                 (equal (,x.fix ,x.xvar) ,x.xvar))
        :hints ('(:expand ((,x.pred ,x.xvar)
-                          (,x.fix ,x.xvar))))
+                          (,x.fix ,x.xvar))
+                 :in-theory (disable ,x.pred ,x.fix)))
        . ,(and flagp `(:flag ,x.name)))))
 
 (defun flexlist-fix-when-pred-thm (x flagp)
@@ -1897,7 +1914,7 @@
                 (equal (,x.fix ,x.xvar) ,x.xvar))
        :hints ('(:expand ((,x.pred ,x.xvar)
                           (,x.fix ,x.xvar))
-                 :in-theory (disable ,x.fix)))
+                 :in-theory (disable ,x.fix ,x.pred)))
        . ,(and flagp `(:flag ,x.name)))))
 
 (defun flexalist-fix-when-pred-thm (x flagp)
@@ -1910,7 +1927,7 @@
                 (equal (,x.fix ,x.xvar) ,x.xvar))
        :hints ('(:expand ((,x.pred ,x.xvar)
                           (,x.fix ,x.xvar))
-                 :in-theory (disable ,x.fix)))
+                 :in-theory (disable ,x.fix ,x.pred)))
        . ,(and flagp `(:flag ,x.name)))))
 
 (defun flextypelist-fix-when-pred-thms (types flagp)
@@ -1966,6 +1983,9 @@
                       . ,defs)
                  (car defs))
                `(///
+                 (local (in-theory (disable . ,(pairlis$
+                                                (make-list (len x.types) :initial-element :d)
+                                                (pairlis$ (flextypelist-fixes x.types) nil)))))
                  ,(if flagp
                       `(,flag-defthm-name . ,fix-when-pred-thms)
                     (if x.recp
@@ -2019,7 +2039,13 @@
              ;;   body)
              :exec ,x.acc-body)
         ///
-        (deffixequiv ,x.acc-name :hints (("goal" :expand ((,sum.fix ,sum.xvar)))))
+        (deffixequiv ,x.acc-name
+          :hints (,@(and sum.kind
+                         `(("goal" 
+                            :in-theory (disable ,sum.kind))))
+                  (and stable-under-simplificationp
+                       '(,@(and sum.kind `(:in-theory (enable ,sum.kind)))
+                         :expand ((,sum.fix ,sum.xvar))))))
 
         ,@(and (not (eq prod.guard t))
                `((defthmd ,(intern-in-package-of-symbol
@@ -2030,7 +2056,9 @@
                             (equal (,x.acc-name ,sum.xvar)
                                    ,(if x.fix
                                         `(,x.fix nil)
-                                      nil)))))))
+                                      nil)))
+                   :hints(("Goal" :in-theory
+                           (disable ,@(and sum.kind `(,sum.kind)))))))))
 
       (local (in-theory (enable ,x.acc-name))))))
 
@@ -2151,6 +2179,19 @@
        (fieldnames (flexprod-fields->names prod.fields))
        (field-accs (pairlis$ fieldnames
                              (flexprod-fields->acc-names prod.fields)))
+       (ctor-of-fields-thmname
+        (intern-in-package-of-symbol
+         (concatenate 'string
+                      (symbol-name prod.ctor-name)
+                      "-OF-FIELDS")
+         prod.ctor-name))
+       (fix-when-kind-thmname
+        (intern-in-package-of-symbol
+         (concatenate 'string
+                      (symbol-name sum.fix)
+                      "-WHEN-"
+                      (symbol-name prod.kind))
+         sum.fix))
        ;; (othervar (intern-in-package-of-symbol
        ;;            (if (equal (symbol-name sum.xvar) "X") "Y" "X")
        ;;            prod.ctor-name))
@@ -2183,11 +2224,7 @@
            ;; special case: we can have an empty product, in which case we don't
            ;; want a rule like (equal (my-const-product) (my-sum-fix x))
            (consp prod.fields)
-           `((defthm ,(intern-in-package-of-symbol
-                       (concatenate 'string
-                                    (symbol-name prod.ctor-name)
-                                    "-OF-FIELDS")
-                       prod.ctor-name)
+           `((defthm ,ctor-of-fields-thmname
                ,(nice-implies prod.guard
                               `(equal (,prod.ctor-name . ,field-calls)
                                       (,sum.fix ,sum.xvar)))
@@ -2196,12 +2233,7 @@
 
         (,(if (atom prod.fields) 'defthm 'defthmd)
                ;; ,(if (eq prod.guard t) 'defthmd 'defthm)
-         ,(intern-in-package-of-symbol
-                  (concatenate 'string
-                               (symbol-name sum.fix)
-                               "-WHEN-"
-                               (symbol-name prod.kind))
-                  sum.fix)
+         ,fix-when-kind-thmname
           ,(nice-implies prod.guard
                          `(equal (,sum.fix ,sum.xvar)
                                  (,prod.ctor-name . ,field-calls)))
@@ -2219,13 +2251,30 @@
                  (and (,sum.pred ,sum.xvar)
                       ,@(and (not (eq prod.guard t)) (list prod.guard))
                       . ,(flexprod-equal-of-field-accessors prod.fields sum.xvar)))
-          :hints (("goal" :expand ((,sum.pred ,sum.xvar))
-                   :in-theory (disable ,(intern-in-package-of-symbol
-                                         (concatenate 'string
-                                                      (symbol-name sum.fix)
-                                                      "-WHEN-"
-                                                      (symbol-name prod.kind))
-                                         sum.fix)))))
+          :hints (("goal" :in-theory (disable ,prod.ctor-name
+                                              ,@(flexprod-fields->acc-names prod.fields)
+                                              ,@(and sum.kind `(,sum.kind))
+                                              ,@(if (consp prod.fields)
+                                                    `(,ctor-of-fields-thmname)
+                                                  `(,fix-when-kind-thmname)))
+                   ,@(if (consp prod.fields)
+                         `(:use ,ctor-of-fields-thmname)
+                       `(:use ,fix-when-kind-thmname)))
+                  (and stable-under-simplificationp
+                       '(:in-theory (e/d (,prod.ctor-name)
+                                         (,@(flexprod-fields->acc-names prod.fields)
+                                            ,@(and sum.kind `(,sum.kind))
+                                            ,@(if (consp prod.fields)
+                                                  `(,ctor-of-fields-thmname)
+                                                `(,fix-when-kind-thmname))))))))
+                                              
+          ;; :hints (("goal" :expand ((,sum.pred ,sum.xvar))
+          ;;          :in-theory (disable ,(intern-in-package-of-symbol
+          ;;                                (concatenate 'string
+          ;;                                             (symbol-name sum.fix)
+          ;;                                             "-WHEN-"
+          ;;                                             (symbol-name prod.kind))
+          ;;                                sum.fix))))
 
         ;; ,@(and (consp prod.fields)
         ;;        `((defthm ,(intern-in-package-of-symbol
@@ -2405,7 +2454,10 @@
        ((unless x.count) nil))
     `((define ,x.count ((,x.xvar ,x.pred))
         :verify-guards nil
-        :returns (count natp :rule-classes :type-prescription)
+        :returns (count natp :rule-classes :type-prescription
+                        :hints ('(:expand (,x.count ,x.xvar)
+                                  :in-theory (disable ,x.count
+                                                      . ,(flexsum-prod-fns x.prods)))))
         :measure (let ((,x.xvar (,x.fix ,x.xvar)))
                    ,x.measure)
         ,(if x.kind
@@ -2497,7 +2549,9 @@
        ((unless x.count) nil)
        (eltcount (flextypes-find-count-for-pred x.elt-type types)))
     `((define ,x.count ((,x.xvar ,x.pred))
-       :returns (count natp :rule-classes :type-prescription)
+       :returns (count natp :rule-classes :type-prescription
+                       :hints ('(:expand (,x.count ,x.xvar)
+                                 :in-theory (disable ,x.count))))
        :measure (let ((,x.xvar (,x.fix ,x.xvar)))
                   ,x.measure)
        :verify-guards nil
@@ -2520,6 +2574,7 @@
            ,(if eltcount
                 `(+ (,eltcount a) (,x.count b))
               `(,x.count b)))
+        :hints (("goal" :expand ((:free (a b) (,x.count (cons a b))))))
         :rule-classes :linear)
 
       ,@(and
@@ -2546,7 +2601,9 @@
        (keycount (flextypes-find-count-for-pred x.key-type types))
        (valcount (flextypes-find-count-for-pred x.val-type types)))
     `((define ,x.count ((,x.xvar ,x.pred))
-        :returns (count natp :rule-classes :type-prescription)
+        :returns (count natp :rule-classes :type-prescription
+                        :hints ('(:expand (,x.count ,x.xvar)
+                                  :in-theory (disable ,x.count))))
         :measure (let ((,x.xvar (,x.fix ,x.xvar)))
                    ,x.measure)
         :verify-guards nil
@@ -2576,7 +2633,9 @@
         (>= (,x.count (cons a b))
             (,x.count b))
         :hints (("goal" :expand ((:free (a b) (,x.count (cons a b)))
-                                 (,x.fix (cons a b)))))
+                                 (,x.fix (cons a b))))
+                (and stable-under-simplificationp
+                     '(:expand ((,x.count b)))))
         :rule-classes :linear)
 
       ,@(and (or keycount valcount)
@@ -2591,6 +2650,7 @@
                                `((,keycount a)))
                            `((,valcount b)))
                        (,x.count c)))
+                 :hints (("goal" :expand ((:free (a b) (,x.count (cons a b))))))
                  :rule-classes :linear)))
       ,@(and
          keycount
@@ -2620,7 +2680,9 @@
         (<= (,x.count (cdr ,x.xvar)) (,x.count ,x.xvar))
         :hints (("goal" :expand ((,x.fix ,x.xvar)
                                  (,x.count ,x.xvar)
-                                 (:free (a b) (,x.count (cons a b))))))
+                                 (,x.count (cdr ,x.xvar))
+                                 (:free (a b) (,x.count (cons a b))))
+                 :in-theory (enable acl2::default-cdr)))
         :rule-classes :linear))))
 
 
@@ -2770,6 +2832,7 @@
                                                 
               ,@defs
               ///
+              (local (in-theory (disable . ,(flextypes-count-names x.types))))
               (verify-guards+ ,(cadr (car defs)))
               (deffixequiv-mutual ,defines-name
                 :hints (;; ("goal" :expand ,(flextypes-count-expands x.types))
@@ -2794,6 +2857,7 @@
         `(:hints ,measure-hints
           :prepwork ,prepwork
           ///
+          (local (in-theory (disable . ,(flextypes-count-names x.types))))
           (verify-guards+ ,(cadr (car defs))
                           :hints ((and stable-under-simplificationp
                                        '(:expand ,(flextypes-nokind-expand-fixes x.types)))))

@@ -155,6 +155,12 @@
 
 (deffixtype nat :fix nfix :pred natp :equiv nat-equiv :define t)
 
+(local (defthm nfix-when-natp
+         (implies (natp x)
+                  (equal (nfix x) X))))
+
+(local (in-theory (disable nfix natp)))
+
 (with-output :off (prove event observation)
   :summary (acl2::form)
   :gag-mode t
@@ -304,6 +310,13 @@
 (deffixtype symbol :pred symbolp :fix symbol-fix :equiv symbol-equiv :define t)
 
 (deffixtype integer :pred integerp :fix ifix :equiv int-equiv :define t)
+
+(local (defthm ifix-when-integerp
+         (implies (integerp x)
+                  (equal (ifix x) x))))
+
+(local (in-theory (disable ifix)))
+
 
 (deftypes intterm
   (defflexsum intterm
