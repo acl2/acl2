@@ -597,13 +597,27 @@ its flag in the flag-function.</p>")
        (new-guts (change-defguts guts1 :kwd-alist kwd-alist)))
     (cons new-guts rest)))
 
+(defun split-///-defines (name args)
+  (b* (((mv main-stuff rest-events) (split-/// name args))
+       ;; Allow two occurrences of ///.  Up to the first is keywords and
+       ;; definitions, up to the second happens after that but before the
+       ;; rest-events from each of the define forms, and the rest happen after
+       ;; that.
+       ((mv rest-events1 rest-events2) (split-/// name rest-events))
+       ((mv rest-events1 rest-events2)
+        (if rest-events2
+            (mv rest-events1 rest-events2)
+          (mv nil rest-events1))))
+    (mv main-stuff rest-events1 rest-events2)))
+
 (defun defines-fn (name args world)
   (declare (xargs :guard (plist-worldp world)))
   (b* ((__function__ 'defines)
        ((unless (symbolp name))
         (raise "Expected name to be a symbol, but found ~x0." name))
 
-       ((mv main-stuff rest-events) (split-/// name args))
+       ((mv main-stuff rest-events1 rest-events2)
+        (split-///-defines name args))
        ((mv kwd-alist defs)
         (extract-keywords name *defines-keywords* main-stuff nil))
        (gutslist (parse-defines name defs '(:flag) world))
@@ -740,9 +754,9 @@ its flag in the flag-function.</p>")
                    (let ((event (returnspec-flag-thm
                                  ',thm-macro ',gutslist ',returns-hints (w state))))
                      `(with-output :stack :pop ,event)))))
-
+         (with-output :stack :pop (progn . ,rest-events1))
          ,@fn-sections
-         (with-output :stack :pop (progn . ,rest-events))))))
+         (with-output :stack :pop (progn . ,rest-events2))))))
 
 
 (defmacro defines (name &rest args)

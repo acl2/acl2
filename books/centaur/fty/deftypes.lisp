@@ -1391,6 +1391,7 @@
          (and (,list.elt-type (car ,list.xvar))
               (,list.pred (cdr ,list.xvar))))
        ///
+       (local (in-theory (disable ,list.pred)))
        (defthm ,(intern-in-package-of-symbol
                  (concatenate 'string (symbol-name list.pred)
                               "-OF-CONS")
@@ -1398,14 +1399,18 @@
          ;; Use special symbols for std::deflist compatibility
          (equal (,list.pred (cons ,stda ,stdx))
                 (and (,list.elt-type ,stda)
-                     (,list.pred ,stdx))))
+                     (,list.pred ,stdx)))
+         :hints (("Goal" :Expand ((,list.pred (cons ,stda ,stdx))))))
 
        (defthm ,(intern-in-package-of-symbol
                  (concatenate 'string (symbol-name list.pred)
                               "-OF-CDR")
                  list.pred)
          (implies (,list.pred ,list.xvar)
-                  (,list.pred (cdr ,list.xvar))))
+                  (,list.pred (cdr ,list.xvar)))
+         :hints (("goal" :expand ((,list.pred ,list.xvar)))
+                 (and stable-under-simplificationp
+                      '(:expand ((,list.pred (cdr ,list.xvar)))))))
 
        (defthm ,(intern-in-package-of-symbol
                  (concatenate 'string (symbol-name list.elt-type)
@@ -1415,6 +1420,7 @@
          (implies (and (consp ,list.xvar)
                        (,list.pred ,list.xvar))
                   (,list.elt-type (car ,list.xvar)))
+         :hints (("goal" :expand ((,list.pred ,list.xvar))))
          :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
 
        ,@(and list.true-listp
@@ -1423,8 +1429,10 @@
                                        "-COMPOUND-RECOGNIZER")
                           list.pred)
                   (implies (,list.pred ,list.xvar)
-                           (or (consp ,list.xvar)
-                               (not ,list.xvar)))
+                           (true-listp ,list.xvar))
+                  :hints (("goal" :expand ((,list.pred ,list.xvar))
+                           :induct (true-listp ,list.xvar)
+                           :in-theory (enable true-listp)))
                   :rule-classes :compound-recognizer))))))
 
 ;; ------------------ Predicate: defalist -----------------------
@@ -1448,6 +1456,7 @@
                      `((,alist.val-type (cdar ,alist.xvar))))
               (,alist.pred (cdr ,alist.xvar))))
        ///
+       (local (in-theory (disable ,alist.pred)))
        (defthm ,(intern-in-package-of-symbol
                  (concatenate 'string (symbol-name alist.pred)
                               "-OF-CONS")
@@ -1459,14 +1468,18 @@
                             `((,alist.key-type (car ,stda))))
                      ,@(and alist.val-type
                             `((,alist.val-type (cdr ,stda))))
-                     (,alist.pred ,stdx))))
+                     (,alist.pred ,stdx)))
+         :hints (("goal" :expand ((,alist.pred (cons ,stda ,stdx))))))
 
        (defthm ,(intern-in-package-of-symbol
                  (concatenate 'string (symbol-name alist.pred)
                               "-OF-CDR")
                  alist.pred)
          (implies (,alist.pred ,alist.xvar)
-                  (,alist.pred (cdr ,alist.xvar))))
+                  (,alist.pred (cdr ,alist.xvar)))
+         :hints (("goal" :expand ((,alist.pred ,alist.xvar)))
+                 (and stable-under-simplificationp
+                      '(:expand ((,alist.pred (cdr ,alist.xvar)))))))
 
        ;; (defthm ,(intern-in-package-of-symbol
        ;;           (concatenate 'string (symbol-name alist.pred)
@@ -1492,6 +1505,7 @@
                   (implies (and (consp ,alist.xvar)
                                 (,alist.pred ,alist.xvar))
                            (,alist.key-type (caar ,alist.xvar)))
+                  :hints (("goal" :expand ((,alist.pred ,alist.xvar))))
                   :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))))
 
        ,@(and alist.val-type
@@ -1503,6 +1517,7 @@
                   (implies (and (consp ,alist.xvar)
                                 (,alist.pred ,alist.xvar))
                            (,alist.val-type (cdar ,alist.xvar)))
+                  :hints (("goal" :expand ((,alist.pred ,alist.xvar))))
                   :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))))
 
        ,@(and alist.true-listp
@@ -1511,8 +1526,10 @@
                                        "-COMPOUND-RECOGNIZER")
                           alist.pred)
                   (implies (,alist.pred ,alist.xvar)
-                           (or (consp ,alist.xvar)
-                               (not ,alist.xvar)))
+                           (true-listp ,alist.xvar))
+                  :hints (("goal" :expand ((,alist.pred ,alist.xvar))
+                           :induct (true-listp ,alist.xvar)
+                           :in-theory (enable true-listp)))
                   :rule-classes :compound-recognizer))))))
 
 
@@ -1534,26 +1551,17 @@
 (defun flextypes-predicate-def (x)
   (b* (((flextypes x) x)
        (defs (flextypelist-predicate-defs x.types)))
-    
-      `(,(if (atom (cdr x.types))
-             (car defs)
-           `(defines ,(intern-in-package-of-symbol
-                       (concatenate 'string (symbol-name x.name) "-P")
-                       x.name)
-              :progn t
-              . ,defs))
-        (local (in-theory (disable . ,(flextypelist-predicates x.types))))
-        ;; (local (set-default-hints
-                ;; '('(:expand ,(pairlis$
-                ;;               (flextypelist-predicates x.types)
-                ;;               (pairlis$ (make-list (len x.types)
-                ;;                                    :initial-element x.xvar)
-                ;;                         nil)))
-        ;;           ;; (and stable-under-simplificationp
-        ;;           ;;      '(:in-theory (enable . ,(flextypelist-predicates x.types))))
-        ;;           )))
-        ;; (local (in-theory (enable . ,(flextypelist-predicates x.types))))
-        )))
+    (if (atom (cdr x.types))
+        `(,(car defs)
+          (local (in-theory (disable . ,(flextypelist-predicates x.types)))))
+      `((defines ,(intern-in-package-of-symbol
+                   (concatenate 'string (symbol-name x.name) "-P")
+                   x.name)
+          :progn t
+          ,@defs
+          ///
+          (local (in-theory (disable . ,(flextypelist-predicates x.types))))
+          ///)))))
 
 
 
@@ -2241,7 +2249,7 @@
                ,(nice-implies prod.guard
                               `(equal (,prod.ctor-name . ,field-calls)
                                       (,sum.fix ,sum.xvar)))
-               :hints(("Goal" :in-theory (enable ,sum.fix)
+               :hints(("Goal" ;; :in-theory (enable ,sum.fix)
                        :expand ((,sum.fix ,sum.xvar)))))))
 
         (,(if (atom prod.fields) 'defthm 'defthmd)
@@ -2250,7 +2258,7 @@
           ,(nice-implies prod.guard
                          `(equal (,sum.fix ,sum.xvar)
                                  (,prod.ctor-name . ,field-calls)))
-          :hints(("Goal" :in-theory (enable ,sum.fix)
+          :hints(("Goal" ;; :in-theory (enable ,sum.fix)
                   :expand ((,sum.fix ,sum.xvar))))
           . ,(and (not (eq prod.guard t))
                   '(:rule-classes ((:rewrite :backchain-limit-lst 0)))))
