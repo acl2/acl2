@@ -5465,17 +5465,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (t ; (equal test 'equal)
     `(remove1-equal ,x ,l))))
 
-(defun pairlis$ (x y)
-
-; CLTL allows its pairlis to construct an alist in any order!  So we
-; have to give this function a different name.
-
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y))))
-  (cond ((endp x) nil)
-        (t (cons (cons (car x) (car y))
-                 (pairlis$ (cdr x) (cdr y))))))
-
 ; Remove-duplicates
 
 (defun remove-duplicates-eq-exec (l)
@@ -5618,6 +5607,35 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond ((stringp x)
          (coerce (revappend (coerce x 'list) nil) 'string))
         (t (revappend x nil))))
+
+(defun pairlis$-tailrec (x y acc)
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y)
+			      (true-listp acc))))
+  (cond ((endp x) (reverse acc))
+        (t (pairlis$-tailrec (cdr x) (cdr y) (cons (cons (car x) (car y)) acc)))))
+
+(defun pairlis$ (x y)
+
+; CLTL allows its pairlis to construct an alist in any order!  So we
+; have to give this function a different name.
+
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y))
+                  :verify-guards nil))
+  (mbe :logic
+       (cond ((endp x) nil)
+             (t (cons (cons (car x) (car y))
+                      (pairlis$ (cdr x) (cdr y)))))
+       :exec
+       (pairlis$-tailrec x y nil)))
+
+(defthm pairlis$-tailrec-is-pairlis$
+  (implies (true-listp acc)
+           (equal (pairlis$-tailrec x y acc)
+                  (revappend acc (pairlis$ x y)))))
+
+(verify-guards pairlis$)
 
 ; Set-difference$
 
@@ -15047,17 +15065,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (prog2$ (check-print-base base 'set-print-base)
           (f-put-global 'print-base base state)))
 
-(defun set-print-base-radix (base state)
-  (declare (xargs :guard (and (print-base-p base)
-                              (state-p state))))
-  (prog2$ (check-print-base base 'set-print-base)
-          (pprogn (f-put-global 'print-base base state)
-                  (f-put-global 'print-radix
-                                (if (int= base 10)
-                                    nil
-                                  t)
-                                state))))
-
 (defmacro set-acl2-print-base (base)
   (declare (ignore base))
   '(er soft 'set-acl2-print-base
@@ -18842,6 +18849,48 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (consp (get-timer name state)))))
   (print-rational-as-decimal (car (get-timer name state)) channel state))
 )
+
+(defthm state-p1-update-print-base
+  (implies (state-p1 state)
+           (state-p1 (update-nth 2
+                                 (add-pair 'print-base val (nth 2 state))
+                                 state)))
+  :hints (("Goal" :in-theory (set-difference-theories
+                              (enable state-p1 global-table)
+                              '(true-listp
+                                ordered-symbol-alistp
+                                assoc
+                                sgetprop
+                                integer-listp
+                                rational-listp
+                                true-list-listp
+                                open-channels-p
+                                all-boundp
+                                plist-worldp
+                                timer-alistp
+                                known-package-alistp
+                                32-bit-integer-listp
+                                file-clock-p
+                                readable-files-p
+                                written-files-p
+                                read-files-p
+                                writeable-files-p))))
+  :rule-classes ((:forward-chaining
+                  :trigger-terms
+                  ((update-nth 2
+                               (add-pair 'print-base val (nth 2 state))
+                               state)))))
+
+(defun set-print-base-radix (base state)
+  (declare (xargs :guard (and (print-base-p base)
+                              (state-p state))))
+  (prog2$ (check-print-base base 'set-print-base)
+          (pprogn (f-put-global 'print-base base state)
+                  (f-put-global 'print-radix
+                                (if (int= base 10)
+                                    nil
+                                  t)
+                                state))))
 
 (defun known-package-alist (state)
 
