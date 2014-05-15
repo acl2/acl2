@@ -341,18 +341,30 @@
           (tshell-kill pid)
           (loop do
                 (setq line (read-line tshell-out))
-                (when (equal line *tshell-exit-line*)
+                (when (str::strsuffixp *tshell-exit-line* line)
+                  ;; We used to try to match *tshell-exit-line* exactly, but
+                  ;; then we found that if we interrupt while the program has
+                  ;; printed partial output, we can end up with a situation
+                  ;; like:
+                  ;;     <partial output>HORRIBLE_STRING_TO_DETECT_WHATEVER
+                  ;; So now we are more permissive.  We don't try to capture
+                  ;; the <partial output> because we're just skipping these
+                  ;; lines anyway.
                   (tshell-debug "TSHELL_RECOVER: TSHELL_EXIT on STDOUT.~%")
+                  (tshell-debug "stdout line: ~s, suffixp: ~a~%"
+                                line (str::strsuffixp *tshell-exit-line* line))
                   (loop-finish))
-                (tshell-debug "TSHELL_RECOVER: Skip ~a.~%" line)))
+                (tshell-debug "TSHELL_RECOVER stdout: Skip ~a.~%" line)))
 
         (when (not stderr-exit)
           (loop do
                 (setq line (read-line tshell-err))
-                (when (equal line *tshell-exit-line*)
+                (when (str::strsuffixp *tshell-exit-line* line)
                   (tshell-debug "TSHELL_RECOVER: TSHELL_EXIT on STDERR.~%")
+                  (tshell-debug "stderr line: ~s, suffixp: ~a~%"
+                                line (str::strsuffixp *tshell-exit-line* line))
                   (loop-finish))
-                (tshell-debug "TSHELL_RECOVER: Skip ~a on stderr.~%" line)))))
+                (tshell-debug "TSHELL_RECOVER stderr: Skip ~a on stderr.~%" line)))))
 
     (tshell-debug "TSHELL_RUN done.~%")
     (tshell-echo-alldone stream)
