@@ -2,7 +2,7 @@
 ; J Strother Moore
 ; Sun Apr 15 17:09:07 2012
 
-; The *Rogers-Program* starting in state Q0 and *example-tape* takes:
+; The *Rogers-tm* starting in state Q0 and *example-tape* takes:
 ; 291,202,253,588,734,484,219,274,297,505,568,945,357,129,888,612,375,663,883 M1 steps
 ; which is between 10^56 and 10^57.
 
@@ -1499,7 +1499,7 @@
                                       (<= 0 (find-k! st tape tm n))))))
 
 (defthm m1-simulation-of-rogers-tm-takes-a-long-time
-  (let ((k (find-k 'Q0 *example-tape* *rogers-program* 78))) 
+  (let ((k (find-k 'Q0 *example-tape* *rogers-tm* 78))) 
     (and
      (equal k
             291202253588734484219274297505568945357129888612375663883)

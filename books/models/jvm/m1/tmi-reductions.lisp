@@ -171,7 +171,7 @@
               (- n 1)))
         (t tape)))
 
-(defconst *rogers-program*
+(defconst *rogers-tm*
   '((Q0 1 0 Q1)
     (Q1 0 R Q2)
     (Q2 1 0 Q3)
@@ -190,12 +190,12 @@
 (defconst *example-tape*
   '(nil . (1 1 1 1 1)))
 
-(defthm rogers-program-demo
+(defthm rogers-tm-demo
   (let ((tape *example-tape*))
     (and (equal (show-tape tape) '([ 1 ] 1 1 1 1))
-         (equal (show-tape (tmi 'Q0 tape *rogers-program* 77))
+         (equal (show-tape (tmi 'Q0 tape *rogers-tm* 77))
                 nil)
-         (equal (show-tape (tmi 'Q0 tape *rogers-program* 78))
+         (equal (show-tape (tmi 'Q0 tape *rogers-tm* 78))
                 '(0 0 0 0 [ 0 ] 0 1 1 1 1 1 1 1 1))))
   :rule-classes nil)
 
