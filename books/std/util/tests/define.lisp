@@ -163,3 +163,126 @@
 
 
 
+
+;; Basic testing of hook installation/removal
+
+(defun my-hook (guts opts state)
+  (declare (xargs :mode :program :stobjs state))
+  (declare (ignore guts opts))
+  (value '(value-triple :invisible)))
+
+(defun my-hook2 (guts opts state)
+  (declare (xargs :mode :program :stobjs state))
+  (declare (ignore guts opts))
+  (value '(value-triple :invisible)))
+
+(assert! (not (get-post-define-hooks-alist (w state))))
+(add-post-define-hook :foo my-hook)
+(assert! (equal (get-post-define-hooks-alist (w state)) '((:foo . my-hook))))
+(add-post-define-hook :bar my-hook2)
+(assert! (equal (get-post-define-hooks-alist (w state)) '((:bar . my-hook2)
+                                                          (:foo . my-hook))))
+(remove-post-define-hook :foo)
+(assert! (equal (get-post-define-hooks-alist (w state)) '((:bar . my-hook2))))
+(add-post-define-hook :foo my-hook)
+(assert! (equal (get-post-define-hooks-alist (w state)) '((:foo . my-hook)
+                                                          (:bar . my-hook2))))
+
+(assert! (let ((guts (make-defguts :name 'myfun)))
+           (equal (post-hook-make-events '(:foo (:bar 3) (:foo 5))
+                                         (get-post-define-hooks-alist (w state))
+                                         guts)
+                  `((make-event (my-hook ',guts 'nil state))
+                    (make-event (my-hook2 ',guts '(3) state))
+                    (make-event (my-hook ',guts '(5) state))))))
+
+
+(assert! (not (get-default-post-define-hooks (w state))))
+(add-default-post-define-hook :bar)
+(assert! (equal (get-default-post-define-hooks (w state))
+                '((:bar . NIL))))
+(add-default-post-define-hook :foo 3)
+(assert! (equal (get-default-post-define-hooks (w state))
+                '((:foo . (3))
+                  (:bar))))
+(remove-default-post-define-hook :bar)
+(assert! (equal (get-default-post-define-hooks (w state))
+                '((:foo . (3)))))
+(remove-default-post-define-hook :foo)
+(assert! (not (get-default-post-define-hooks (w state))))
+
+
+(remove-post-define-hook :foo)
+(remove-post-define-hook :bar)
+(assert! (not (get-post-define-hooks-alist (w state))))
+
+
+
+
+(defun my-hook-1 (guts opts state)
+  ;; Trivial, stupid hook test.
+  ;; To test user-defined options, opts is expected to have a hyp for the theorem.
+  (declare (xargs :mode :program :stobjs state))
+  (b* (((defguts guts) guts)
+       (mksym-package-symbol guts.name)
+       (- (cw "My-hook-1: Proving dumb theorem about ~x0.~%" guts.name))
+       ((unless (tuplep 1 opts))
+        (er soft 'my-hook-1 "Expected a single option (a hyp for the theorem), but got: ~x0." opts))
+       (hyp (first opts))
+       (event `(defthm ,(mksym guts.name '-silly-thm)
+                 (implies ,hyp
+                          (equal (,guts.name-fn . ,guts.raw-formals)
+                                 (,guts.name-fn . ,guts.raw-formals)))
+                 :rule-classes nil)))
+    (value event)))
+
+(add-post-define-hook :silly my-hook-1)
+
+(define hooktest1 (x)
+  :hooks ((:silly (consp a)))
+  x
+  :verbosep nil)
+
+(encapsulate
+  ()
+  (set-enforce-redundancy t)
+  (defthm hooktest1-silly-thm
+    (implies (consp a)
+             (equal (hooktest1 x) (hooktest1 x)))
+    :rule-classes nil))
+
+(define hooktest2 (x)
+  :hooks ((:silly t))
+  x
+  :verbosep nil)
+
+(encapsulate
+  ()
+  (set-enforce-redundancy t)
+  (defthm hooktest2-silly-thm
+    (implies t
+             (equal (hooktest2 x) (hooktest2 x)))
+    :rule-classes nil))
+
+(add-default-post-define-hook :silly (integerp b))
+
+(define hooktest3 (x) x)
+
+(encapsulate
+  ()
+  (set-enforce-redundancy t)
+  (defthm hooktest3-silly-thm
+    (implies (integerp b)
+             (equal (hooktest3 x) (hooktest3 x)))
+    :rule-classes nil))
+
+(define hooktest4 (x)
+  ;; Make sure we can defeat default hooks
+  :hooks nil
+  x)
+
+(assert! (acl2::logical-namep 'hooktest3-silly-thm (w state)))
+(assert! (not (acl2::logical-namep 'hooktest4-silly-thm (w state))))
+
+
+

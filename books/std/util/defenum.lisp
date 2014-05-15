@@ -133,6 +133,17 @@ fast alist or other schemes, based on the elements it is given.</p>")
         (t
          (dumb-collect-duplicates (cdr x) acc))))
 
+(defun strip-p-from-symbol (name)
+  ;; FOO-P --> FOO
+  (let* ((sname (symbol-name name))
+         (len   (length sname)))
+    (if (and (<= 2 len)
+             (equal (char sname (- len 1)) #\P)
+             (equal (char sname (- len 2)) #\-))
+        (intern-in-package-of-symbol (subseq sname 0 (- len 2))
+                                     name)
+      name)))
+
 (defun defenum-fn (name members mode parents short long defaultp default state)
   (declare (xargs :mode :program))
   (b* ((__function__ 'defenum)
@@ -195,9 +206,15 @@ fast alist or other schemes, based on the elements it is given.</p>")
                             (or . ,(defenum-members-to-tests-equal members x)))
                    :rule-classes :forward-chaining))
 
+       (name-without-p (std::strip-p-from-symbol name))
+
        (fixname (intern-in-package-of-symbol
-                 (concatenate 'string (symbol-name name) "-FIX")
+                 (concatenate 'string (symbol-name name-without-p) "-FIX")
                  name))
+       (equivname (intern-in-package-of-symbol
+                   (concatenate 'string (symbol-name name-without-p) "-EQUIV")
+                   name))
+
        (fix `(defund ,fixname (,x)
                (declare (xargs :guard t))
                (if (,name ,x) ,x ',(if defaultp default (car (last members))))))
@@ -237,10 +254,10 @@ fast alist or other schemes, based on the elements it is given.</p>")
 
        ,fix-id
 
-       (fty::deffixtype ,name :pred ,name :fix ,fixname :equiv
-         ,(intern-in-package-of-symbol
-           (concatenate 'string (symbol-name name) "-EQUIV")
-           name)
+       (fty::deffixtype ,name
+         :pred ,name
+         :fix ,fixname
+         :equiv ,equivname
          :define t)
        )))
 

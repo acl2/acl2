@@ -22,6 +22,9 @@
 (include-book "coerce")
 (include-book "std/lists/equiv" :dir :system)
 (include-book "std/lists/rev" :dir :system)
+(include-book "centaur/fty/fixtype" :dir :system)
+(include-book "centaur/fty/basetypes" :dir :system)
+
 (local (include-book "arithmetic"))
 
 (in-theory (disable char<))
@@ -157,6 +160,54 @@ same length and their elements must be @(see chareqv) to one another.</p>
 
 
 ;; BOZO kind of misplaced
+
 (defcong streqv equal (explode x) 1
   :hints(("Goal" :in-theory (enable streqv str-fix))))
+
+(fty::deffixtype character-list
+  :pred character-listp
+  :fix make-character-list
+  :equiv charlisteqv)
+
+(define string-list-fix ((x string-listp))
+  :returns (x-fix string-listp)
+  (mbe :logic (if (atom x)
+                  nil
+                (cons (str-fix (car x))
+                      (string-list-fix (cdr x))))
+       :exec x)
+  ///
+  (defthm string-list-fix-when-atom
+    (implies (atom x)
+             (equal (string-list-fix x)
+                    nil)))
+  (defthm string-list-fix-of-cons
+    (equal (string-list-fix (cons a x))
+           (cons (str-fix a) (string-list-fix x))))
+  (defthm string-list-fix-when-string-listp
+    (implies (string-listp x)
+             (equal (string-list-fix x)
+                    x)))
+  (defthm consp-of-string-list-fix
+    (equal (consp (string-list-fix x))
+           (consp x)))
+  (defthm len-of-string-list-fix
+    (equal (len (string-list-fix x))
+           (len x))))
+
+(defsection string-list-equiv
+
+  (local (in-theory (enable string-list-fix)))
+
+  (fty::deffixtype string-list
+    :pred string-listp
+    :fix string-list-fix
+    :equiv string-list-equiv
+    :define t
+    :forward t)
+
+  (fty::deffixcong string-list-equiv streqv (car x) x)
+  (fty::deffixcong string-list-equiv string-list-equiv (cdr x) x)
+  (fty::deffixcong streqv string-list-equiv (cons x y) x)
+  (fty::deffixcong string-list-equiv string-list-equiv (cons x y) y))
 

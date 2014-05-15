@@ -200,9 +200,7 @@
   (cons 1 x))
 
 (assert! (let ((topic (xdoc::find-topic 'm0 (xdoc::get-xdoc-table (w state)))))
-           (and topic
-                (equal (cdr (assoc :parents topic))
-                       '(acl2::undocumented)))))
+           (not topic)))
 
 (xdoc::set-default-parents foo bar)
 
@@ -230,4 +228,42 @@
 
 (assert! (let ((topic (xdoc::find-topic 'm3 (xdoc::get-xdoc-table (w state)))))
            (not topic)))
+
+
+
+;; Tests of new define syntax
+
+(defprojection new-square-list ((x integer-listp))
+  (square x)
+  :verbosep t)
+
+(local (in-theory (enable nat-listp
+                          (:compound-recognizer acl2::natp-compound-recognizer)
+                          (:type-prescription nfix))))
+
+(defprojection nfix-list ((x nat-listp))
+  (nfix x)
+  :returns (new-x nat-listp))
+
+(defprojection nfix-list2 ((x integer-listp))
+  (nfix x)
+  :returns (new-x nat-listp :hyp :guard))
+
+(local (encapsulate ()
+         (set-enforce-redundancy t)
+         (defthm return-type-of-nfix-list2
+           (implies (and (integer-listp x))
+                    (b* ((new-x (nfix-list2 x)))
+                      (nat-listp new-x))))))
+
+(defprojection ifix-list ((x integer-listp))
+  (nfix x)
+  :returns (new-x nat-listp :hyp (nat-listp x)))
+
+(local (encapsulate ()
+         (set-enforce-redundancy t)
+         (defthm return-type-of-ifix-list
+           (implies (nat-listp x)
+                    (b* ((new-x (ifix-list x)))
+                      (nat-listp new-x))))))
 

@@ -26,6 +26,8 @@
 (include-book "deflist")
 (include-book "std/strings/defs-program" :dir :system)
 (include-book "std/lists/append" :dir :system)
+(include-book "centaur/nrev/pure" :dir :system)
+(include-book "define")
 (set-state-ok t)
 
 (defun variable-or-constant-listp (x)
@@ -63,7 +65,7 @@ generates basic, automatic @(see xdoc) documentation.</p>
 <h4>General form:</h4>
 
 @({
- (defprojection name formals
+ (defprojection name extended-formals
    element
    [keyword options]
    [/// other events]
@@ -74,9 +76,9 @@ generates basic, automatic @(see xdoc) documentation.</p>
   :guard                   t
   :verify-guards           t
   :result-type             nil
+  :returns                 nil
   :mode                    current defun-mode
   :already-definedp        nil
-  :optimize                t
   :parallelize             nil
   :verbosep                nil
   :parents                 nil
@@ -87,9 +89,9 @@ generates basic, automatic @(see xdoc) documentation.</p>
 <h4>Basic Examples</h4>
 
 @({
- (defprojection my-strip-cars (x)
-   (car x)
-   :guard (alistp x))
+    (defprojection my-strip-cars (x)
+      (car x)
+      :guard (alistp x))
 })
 
 <p>defines a new function, @('my-strip-cars'), that is like the built-in ACL2
@@ -100,6 +102,14 @@ way.  It refers to the whole list in the formals and guards, but refers to
 individual elements of the list in the @('element') portion.  This is similar
 to how other macros like @(see deflist), @(see defalist), and @(see
 defmapappend) handle @('x').</p>
+
+<p>A @(see define)-like syntax is also available:</p>
+
+@({
+    (defprojection my-square-list ((x integer-listp))
+      :result (squared-x integer-listp)
+      (* x x))
+})
 
 <h3>Usage and Optional Arguments</h3>
 
@@ -125,6 +135,9 @@ generated that looks like @('(implies (force guard) (nat-listp (name ...)))')
 while @('name') is still enabled.  This is not a very general mechanism, but it
 is often good enough to save a lot of typing.</p>
 
+<p>The optional @(':returns') keyword is similar to that of @(see define), and
+is a more general mechanism than @(':result-type').</p>
+
 <p>The optional @(':already-definedp') keyword can be set if you have already
 defined the function.  This can be used to generate all of the ordinary
 @('defprojection') theorems without generating a @('defund') event, and is
@@ -134,10 +147,6 @@ useful when you are dealing with mutually recursive transformations.</p>
 to introduce the recognizer in logic or program mode.  The default is whatever
 the current default defun-mode is for ACL2, i.e., if you are already in program
 mode, it will default to program mode, etc.</p>
-
-<p>The optional @(':optimize') keyword can be set to @('nil') if you do not
-want the projection to be optimized with @('nreverse').  This will result in a
-slightly slower transformation function, but avoids a ttag.</p>
 
 <p>The optional @(':parallelize') keyword can be set to @('t') if you want to
 try to speed up the execution of new function using parallelism.  This is
@@ -180,7 +189,16 @@ arbitrarily say the @(':result-type') theorem comes first.</p>
 <p>Deprecated.  The optional @(':rest') keyword was a precursor to @('///').
 It is still implemented, but its use is now discouraged.  If both @(':rest')
 and @('///') events are used, we arbitrarily put the @(':rest') events
-first.</p>")
+first.</p>
+
+<p>The optional @(':optimize') keyword was historically used to optionally
+optimize the projection using @('nreverse').  We now use @(see nrev::nrev)
+instead, and since this doesn't require a ttag, the @(':optimize') flag
+now does nothing.</p>")
+
+(defthmd defprojection-append-nil-is-list-fix
+  (equal (append x nil)
+         (list-fix x)))
 
 (deftheory defprojection-theory
   (union-theories '(acl2::append-to-nil
@@ -200,21 +218,23 @@ first.</p>")
     :guard
     :verify-guards
     :result-type
+    :returns
     :mode
     :already-definedp
-    :optimize
     :parallelize
     :verbosep
     :parents
     :short
     :long
-    :rest ;; deprecated
+    :rest     ;; deprecated
+    :optimize ;; deprecated
     ))
 
-(defun defprojection-fn (name formals element kwd-alist other-events state)
+(defun defprojection-fn (name raw-formals element kwd-alist other-events state)
   (declare (xargs :mode :program))
   (b* ((__function__ 'defprojection)
        (mksym-package-symbol name)
+       (world (w state))
 
        ;; Special variables that are reserved by defprojection
        (x   (intern-in-package-of-symbol "X" name))
@@ -223,28 +243,31 @@ first.</p>")
        (y   (intern-in-package-of-symbol "Y" name))
        (acc (intern-in-package-of-symbol "ACC" name))
 
-       ((unless (and (symbol-listp formals)
-                     (no-duplicatesp formals)))
+       (eformals (parse-formals name raw-formals '(:type) world))
+       (formal-names (formallist->names eformals))
+
+       ((unless (no-duplicatesp formal-names))
         (raise "The formals must be a list of unique symbols, but the formals ~
-                are ~x0." formals))
-       ((unless (member x formals))
-        (raise "The formals must contain X, but are ~x0." formals))
-       ((unless (and (not (member a formals))
-                     (not (member n formals))
-                     (not (member y formals))
-                     (not (member acc formals))))
-        (raise "As a special restriction, formals may not mention a, n, or y, ~
-                but the formals are ~x0." formals))
+                are ~x0." formal-names))
+       ((unless (member x formal-names))
+        (raise "The formals must contain X, but are ~x0." formal-names))
+       ((unless (and (not (member a formal-names))
+                     (not (member n formal-names))
+                     (not (member y formal-names))
+                     (not (member acc formal-names))))
+        (raise "As a special restriction, formal-names may not mention a, n, or y, ~
+                but the formals are ~x0." formal-names))
        ((unless (and (consp element)
                      (symbolp (car element))))
         (raise "The element transformation should be a function/macro call, ~
                 but is ~x0." element))
 
        (list-fn   name)
-       (list-args formals)
+       (list-args formal-names)
        (elem-fn   (car element))
        (elem-args (cdr element))
        (exec-fn   (mksym list-fn '-exec))
+       (nrev-fn   (mksym list-fn '-nrev))
        (elem-syms (collect-vars elem-args))
 
        ((unless (variable-or-constant-listp elem-args))
@@ -252,17 +275,18 @@ first.</p>")
                 formals or constants, but are: ~x0." elem-args))
 
        ((unless (and (no-duplicatesp elem-syms)
-                     (subsetp elem-syms formals)
-                     (subsetp formals elem-syms)))
+                     (subsetp elem-syms formal-names)
+                     (subsetp formal-names elem-syms)))
         (raise "The variables in the :element do not agree with the formals:~% ~
                 - formals: ~x0~% ~
-                - element vars: ~x1~%" formals elem-syms))
+                - element vars: ~x1~%" formal-names elem-syms))
 
 
        (nil-preservingp  (getarg :nil-preservingp  nil kwd-alist))
        (guard            (getarg :guard            t   kwd-alist))
        (verify-guards    (getarg :verify-guards    t   kwd-alist))
        (result-type      (getarg :result-type      nil kwd-alist))
+       (returns          (getarg :returns          nil kwd-alist))
        (already-definedp (getarg :already-definedp nil kwd-alist))
        (optimize         (getarg :optimize         t   kwd-alist))
        (parallelize      (getarg :parallelize      nil kwd-alist))
@@ -275,15 +299,14 @@ first.</p>")
                           other-events))
 
        (mode             (getarg :mode
-                                 (default-defun-mode (w state))
+                                 (default-defun-mode world)
                                  kwd-alist))
 
        (parents-p (assoc :parents kwd-alist))
        (parents   (cdr parents-p))
        (parents   (if parents-p
                       parents
-                    (or (xdoc::get-default-parents (w state))
-                        '(acl2::undocumented))))
+                    (xdoc::get-default-parents world)))
 
        ((unless (booleanp verify-guards))
         (raise ":verify-guards must be a boolean, but is ~x0." verify-guards))
@@ -311,46 +334,60 @@ first.</p>")
                  (and parents
                       (str::cat "<p>This is an ordinary @(see std::defprojection).</p>"))))
 
+       (prepwork (if already-definedp
+                     nil
+                   `((define ,exec-fn (,@raw-formals ,acc)
+                       ;; For backwards compatibility we still define a -exec
+                       ;; function, but it produces the elements in the wrong
+                       ;; order so it is usually not what you want.
+                       ;; Previously we required that acc was a true-listp in
+                       ;; the guard.  But on reflection, this really isn't
+                       ;; necessary, and omitting it can simplify the guards of
+                       ;; other functions that are directly calling -exec
+                       ;; functions.
+                       :guard ,guard
+                       :mode ,mode
+                       ;; We tell ACL2 not to normalize because otherwise type
+                       ;; reasoning can rewrite the definition, and ruin some
+                       ;; of our theorems below, e.g., when ELEMENT is known to
+                       ;; be zero always.
+                       :normalize nil
+                       :verify-guards nil
+                       :parents nil
+                       :hooks nil
+                       (if (consp ,x)
+                           (,exec-fn ,@(subst `(cdr ,x) x list-args)
+                                     (cons (,elem-fn ,@(subst `(car ,x) x elem-args))
+                                           ,acc))
+                         ,acc))
+
+                     (define ,nrev-fn (,@raw-formals nrev::nrev)
+                       :guard ,guard
+                       :mode ,mode
+                       :normalize nil
+                       :verify-guards nil
+                       :parents nil
+                       :hooks nil
+                       (if (atom ,x)
+                           (nrev::nrev-fix nrev::nrev)
+                         (let ((nrev::nrev (nrev::nrev-push (,elem-fn ,@(subst `(car ,x) x elem-args)) nrev::nrev)))
+                           (,nrev-fn ,@(subst `(cdr ,x) x list-args) nrev::nrev)))))))
+
        (def  (if already-definedp
                  nil
-               `((defund ,exec-fn (,@list-args ,acc)
-                   (declare (xargs :guard
-                                   ;; Previously we required that acc was a
-                                   ;; true-listp in the guard.  But on reflection,
-                                   ;; this really isn't necessary, and omitting it
-                                   ;; can simplify the guards of other functions
-                                   ;; that are directly calling -exec functions.
-
-                                   ;; ,(if (equal guard t)
-                                   ;;      `(true-listp ,acc)
-                                   ;;    `(and (true-listp ,acc)
-                                   ;;          ,guard))
-                                   ,guard
-
-                                   :mode ,mode
-                                   ;; we tell ACL2 not to normalize because
-                                   ;; otherwise type reasoning can rewrite the
-                                   ;; definition, and ruin some of our theorems
-                                   ;; below, e.g., when ELEMENT is known to be
-                                   ;; zero always.
-                                   :normalize nil
-                                   :verify-guards nil))
-                   (if (consp ,x)
-                       (,exec-fn ,@(subst `(cdr ,x) x list-args)
-                                 (cons (,elem-fn ,@(subst `(car ,x) x elem-args))
-                                       ,acc))
-                     ,acc))
-
-                 (defund ,list-fn (,@list-args)
-                   (declare (xargs :guard ,guard
-                                   :mode ,mode
-                                   ;; we tell ACL2 not to normalize because
-                                   ;; otherwise type reasoning can rewrite the
-                                   ;; definition, and ruin some of our theorems
-                                   ;; below, e.g., when ELEMENT is known to be
-                                   ;; zero.
-                                   :normalize nil
-                                   :verify-guards nil))
+               `((define ,list-fn (,@raw-formals)
+                   ,@(and parents-p `(:parents ,parents))
+                   ,@(and short     `(:short ,short))
+                   ,@(and long      `(:long ,long))
+                   :returns ,returns
+                   :guard ,guard
+                   :mode ,mode
+                   ;; we tell ACL2 not to normalize because otherwise type
+                   ;; reasoning can rewrite the definition, and ruin some of our
+                   ;; theorems below, e.g., when ELEMENT is known to be zero.
+                   :normalize nil
+                   :verify-guards nil
+                   :prepwork ,prepwork
                    ,(if parallelize
                         `(if (consp ,x)
                              (pargs (cons (,elem-fn ,@(subst `(car ,x) x elem-args))
@@ -362,39 +399,19 @@ first.</p>")
                                       (,list-fn ,@(subst `(cdr ,x) x list-args)))
                               nil)
                             :exec
-                            (reverse (,exec-fn ,@list-args nil))))))))
-
-       (ndef      `(defun ,list-fn (,@list-args)
-                     (nreverse (,exec-fn ,@list-args nil))))
-
-       (opt       (and optimize
-                       (not already-definedp)
-                       `((progn
-                           (make-event
-                            (if (acl2::global-val
-                                 'acl2::include-book-path (w state))
-                                ;; We're in an include book.  Don't print.
-                                (value '(value-triple :invisible))
-                              (value
-                               '(value-triple
-                                 (cw "Defprojection: optimizing ~s0:~%  ~p1~%~%"
-                                     ',list-fn ',ndef)))))
-                           (defttag std-optimize)
-                           ;; To justify nreverse, exec-fn must never be memoized
-                           (never-memoize ,exec-fn)
-                           (progn! (set-raw-mode t)
-                                   ,ndef)
-                           (defttag nil)))))
+                            (nrev::with-local-nrev
+                              (,nrev-fn ,@list-args nrev::nrev))))))))
 
        ((when (eq mode :program))
         `(defsection ,name
-           ,@(and parents `(:parents ,parents))
-           ,@(and short   `(:short ,short))
-           ,@(and long    `(:long ,long))
            (program)
            ,@def
-           ,@opt
-           ,@rest))
+           . ,(and rest
+                   `((defsection ,(mksym name '-rest)
+                       ,@(and parents
+                              (not already-definedp)
+                              `(:extension ,name))
+                       . ,rest)))))
 
        (listp-when-not-consp  (mksym list-fn '-when-not-consp))
        (listp-of-cons         (mksym list-fn '-of-cons))
@@ -606,8 +623,12 @@ first.</p>")
                                       ,(mksym 'member-equal-of- elem-fn
                                               '-in- list-fn '-when-member-equal)
                                       ,listp-when-not-consp
-                                      ,listp-of-cons)
-                                    (theory 'defprojection-theory)))))
+                                      ,listp-of-cons
+                                      car-cons
+                                      cdr-cons
+                                      car-cdr-elim
+                                      (:induction len))
+                                    (theory 'minimal-theory)))))
 
           ,@(if nil-preservingp
                 `((defthm ,(mksym 'nth-of- list-fn)
@@ -637,69 +658,99 @@ first.</p>")
                           (union-theories '(,exec-fn
                                             ,listp-when-not-consp
                                             ,listp-of-cons)
-                                          (theory 'defprojection-theory)))))))
+                                          (theory 'defprojection-theory)))))
+
+                (defthm ,(mksym nrev-fn '-removal)
+                  (equal (,nrev-fn ,@list-args nrev::nrev)
+                         (append nrev::nrev (,list-fn ,@list-args)))
+                  :hints(("Goal"
+                          :induct (,nrev-fn ,@list-args nrev::nrev)
+                          :in-theory
+                          (union-theories '(,nrev-fn
+                                            acl2::rcons
+                                            ACL2::NREV-FIX
+                                            ACL2::NREV-PUSH
+					    nrev::nrev$a-push
+                                            nrev::nrev$a-fix
+                                            defprojection-append-nil-is-list-fix
+                                            ,listp-when-not-consp
+                                            ,listp-of-cons)
+                                          (theory 'defprojection-theory)))))
+
+                ))
 
 
           )))
 
     `(defsection ,name
-       ,@(and parents `(:parents ,parents))
-       ,@(and short   `(:short ,short))
-       ,@(and long    `(:long ,long))
        (logic)
        (value-triple (cw "Defprojection: defining ~x0.~%" ',name))
        ,@def
        (set-inhibit-warnings "disable" "double-rewrite" "non-rec") ;; implicitly local
-       ,@main-thms
-       ,@(and (not already-definedp)
-              verify-guards
-              `((value-triple
-                 (cw "Defprojection: verifying guards for ~x0.~%" ',name))
-                (with-output
-                  :stack :pop
-                  :off (acl2::summary)
-                  (progn
-                    (verify-guards ,exec-fn
+
+       (defsection ,(mksym name '-rest)
+         ,@(and parents
+                (not already-definedp)
+                `(:extension ,name))
+         ,@main-thms
+         ,@(and (not already-definedp)
+                verify-guards
+                `((value-triple
+                   (cw "Defprojection: verifying guards for ~x0.~%" ',name))
+                  (with-output
+                    :stack :pop
+                    :off (acl2::summary)
+                    (progn
+                      (verify-guards ,nrev-fn
+                        :hints(("Goal"
+                                :in-theory
+                                (union-theories '()
+                                                (theory 'defprojection-theory)))
+                               (and stable-under-simplificationp
+                                    '(:in-theory (enable )))))
+                      (verify-guards ,list-fn
+                        :hints(("Goal"
+                                :in-theory
+                                (union-theories '(,list-fn
+                                                  ,(mksym nrev-fn '-removal)
+                                                  nrev::nrev-finish
+                                                  nrev::nrev$a-finish
+                                                  acl2::create-nrev
+                                                  acl2::list-fix-when-true-listp
+                                                  ,(mksym 'true-listp-of- list-fn))
+                                                (theory 'defprojection-theory)))
+                               (and stable-under-simplificationp
+                                    '(:in-theory (enable )))))
+                      (verify-guards ,exec-fn
+                        :hints(("Goal"
+                                :in-theory
+                                (union-theories '(,exec-fn)
+                                                (theory 'defprojection-theory)))
+                               (and stable-under-simplificationp
+                                    '(:in-theory (enable )))))
+                      ))))
+
+         (local (in-theory (enable ,list-fn
+                                   ,listp-when-not-consp
+                                   ,listp-of-cons)))
+         ,@(and result-type
+                `((value-triple (cw "Defprojection: proving :result-type theorem.~%"))
+                  (with-output
+                    :stack :pop
+                    (defthm ,(mksym result-type '-of- list-fn)
+                      ,(if (eq guard t)
+                           `(,result-type (,list-fn ,@list-args))
+                         `(implies (force ,guard)
+                                   (,result-type (,list-fn ,@list-args))))
                       :hints(("Goal"
-                              :in-theory
-                              (union-theories '(,exec-fn)
-                                              (theory 'defprojection-theory)))
-                             (and stable-under-simplificationp
-                                  '(:in-theory (enable )))))
-                    (verify-guards ,list-fn
-                      :hints(("Goal"
-                              :in-theory
-                              (union-theories '(,list-fn
-                                                ,(mksym exec-fn '-removal)
-                                                ,(mksym 'true-listp-of- list-fn)
-                                                acl2::reverse-removal
-                                                acl2::revappend-removal
-                                                acl2::rev-of-append
-                                                acl2::rev-of-rev)
-                                              (theory 'defprojection-theory)))
-                             (and stable-under-simplificationp
-                                  '(:in-theory (enable )))))))))
-       ,@opt
-       (local (in-theory (enable ,list-fn
-                                 ,listp-when-not-consp
-                                 ,listp-of-cons)))
-       ,@(and result-type
-              `((value-triple (cw "Defprojection: proving :result-type theorem.~%"))
-                (with-output
-                  :stack :pop
-                  (defthm ,(mksym result-type '-of- list-fn)
-                    ,(if (eq guard t)
-                         `(,result-type (,list-fn ,@list-args))
-                       `(implies (force ,guard)
-                                 (,result-type (,list-fn ,@list-args))))
-                    :hints(("Goal"
-                            :induct (len ,x)
-                            :in-theory (enable (:induction len))))))))
-       . ,(and rest
-               `((value-triple (cw "Defprojection: submitting /// events.~%"))
-                 (with-output
-                   :stack :pop
-                   (progn . ,rest)))))))
+                              :induct (len ,x)
+                              :in-theory (enable (:induction len))))))))
+         . ,(and rest
+                 `((value-triple (cw "Defprojection: submitting /// events.~%"))
+                   (with-output
+                     :stack :pop
+                     (progn . ,rest))))))))
+
 
 (defmacro defprojection (name &rest args)
   (b* ((__function__ 'defprojection)

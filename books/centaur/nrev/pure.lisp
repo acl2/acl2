@@ -104,8 +104,8 @@ solution:</p>
 problem.</li>
 
 <li>Runtime &mdash; perhaps around 1.25x worse than @('nreverse') due to the
-@(see stobj) overhead, but still faster than a traditional @('reverse') based
-solution.</li>
+@(see acl2::stobj) overhead, but still faster than a traditional @('reverse')
+based solution.</li>
 
 </ul>
 

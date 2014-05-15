@@ -63,7 +63,6 @@ generates basic, automatic @(see xdoc) documentation.</p>
    :guard-hints             nil
    :guard-debug             nil
    :mode                    current defun-mode
-   :already-definedp        nil
    :verbosep                nil
    :parents                 nil
    :short                   nil
@@ -130,11 +129,6 @@ behavior or another; see @(see strict-list-recognizers) for details.</p>
 @(':guard-hints') are options for the @(see defun) we introduce.  These are for
 the guards of the new list recognizer, not the element recognizer.</p>
 
-<p>The optional @(':already-definedp') keyword can be set if you have already
-defined the function.  This can be used to generate all of the ordinary
-@('deflist') theorems without generating a @('defund') event, and is useful
-when you are dealing with mutually recursive recognizers.</p>
-
 <p>The optional @(':mode') keyword can be set to @(':logic') or @(':program')
 to introduce the recognizer in logic or program mode.  The default is whatever
 the current default defun-mode is for ACL2, i.e., if you are already in program
@@ -171,7 +165,15 @@ recognizer is enabled during the @('///') section.  Here is an example:</p>
 <p>Deprecated.  The optional @(':rest') keyword was a precursor to @('///').
 It is still implemented, but its use is now discouraged.  If both @(':rest')
 and @('///') events are used, we arbitrarily put the @(':rest') events
-first.</p>")
+first.</p>
+
+<p>Deprecated.  The optional @(':already-definedp') keyword can be set if you
+have already defined the function.  This was previously useful when you wanted
+to generate the ordinary @('deflist') theorems without generating a @('defund')
+event, e.g., because you are dealing with mutually recursive recognizers.  We
+still accept this option for backwards compatibility but it is useless, because
+@('deflist') is now smart enough to notice that the function is already
+defined.</p>")
 
 (defxdoc strict-list-recognizers
   :parents (deflist)
@@ -524,17 +526,38 @@ of which recognizers require true-listp and which don't.</p>")
        (elementp     (car element))
        (elem-formals (cdr element))
 
+       ;; We previously required the user to tell us if the function was
+       ;; already defined.  Now we---you know---actually look to see.  Duh.
+       (looks-already-defined-p
+        (or (not (eq (getprop name 'acl2::formals :none 'acl2::current-acl2-world
+                              (w state))
+                     :none))
+            (not (eq (getprop name 'acl2::macro-args :none 'acl2::current-acl2-world
+                              (w state))
+                     :none))))
+       (already-definedp (getarg :already-definedp :unknown kwd-alist))
+       ((unless (or (eq already-definedp :unknown)
+                    (eq already-definedp looks-already-defined-p)))
+        (raise "Found :already-definedp ~x0, but ~x1 is ~s2."
+               already-definedp name
+               (if looks-already-defined-p
+                   "already defined."
+                 "not defined.")))
+       (already-definedp looks-already-defined-p)
+
        (negatedp         (getarg :negatedp         nil      kwd-alist))
        (true-listp       (getarg :true-listp       nil      kwd-alist))
        (verify-guards    (getarg :verify-guards    t        kwd-alist))
        (guard            (getarg :guard            t        kwd-alist))
        (guard-debug      (getarg :guard-debug      nil      kwd-alist))
        (guard-hints      (getarg :guard-hints      nil      kwd-alist))
-       (already-definedp (getarg :already-definedp nil      kwd-alist))
+
        (elementp-of-nil  (getarg :elementp-of-nil  :unknown kwd-alist))
        (short            (getarg :short            nil      kwd-alist))
        (long             (getarg :long             nil      kwd-alist))
        (theory-hack      (getarg :theory-hack      nil      kwd-alist))
+
+
 
        (rest             (append
                           (getarg :rest nil kwd-alist)

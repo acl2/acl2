@@ -136,7 +136,6 @@ predicate, and if given an object satisfying the predicate, it returns the same
 object.  We also assume that equiv is an equivalence relation (see @(see
 defequiv)).</p>")
 
-
 (def-primitive-aggregate fixtype
   (name               ;; foo  (not necessarily a function)
    pred               ;; foo-p
@@ -168,7 +167,8 @@ defequiv)).</p>")
                       (er hard? 'deffixtype
                           "Failed to prove that ~x0 is idempotent.~%" ',fix)))))
            (,(if execp 'defun 'defun-nx) ,equiv (x y)
-             (declare (xargs :verify-guards nil))
+             (declare (xargs :verify-guards nil
+                             :normalize nil))
              (equal (,fix x) (,fix y)))
            (local (in-theory '(,equiv tmp-deffixtype-idempotent
                                       booleanp-compound-recognizer)))

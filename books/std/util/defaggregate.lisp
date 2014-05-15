@@ -277,6 +277,11 @@ its fields.  The very advanced user can then inspect these fields after
 submitting the aggregate, and perhaps use them to generate additional
 events.</dd>
 
+<dt>:verbosep</dt>
+
+<dd>You can use @(':verbosep t') to turn off output hiding.  This option is
+generally meant for debugging failures in defaggregate.</dd>
+
 <dt>:rest</dt>
 
 <dd>This option is deprecated.  Please use the new @('///') syntax, instead.</dd>
@@ -1047,6 +1052,7 @@ optimization altogether.</p>")
     :long
     :already-definedp
     :extra-field-keywords
+    :verbosep
     ;; deprecated options
     :require
     :rest))
@@ -1137,6 +1143,10 @@ optimization altogether.</p>")
        (honsp (cdr (assoc :hons kwd-alist)))
        ((unless (booleanp honsp))
         (mv (raise "~x0: :hons should be a boolean." name) state))
+
+       (verbosep (cdr (assoc :verbosep kwd-alist)))
+       ((unless (booleanp verbosep))
+        (mv (raise "~x0: :verbosep should be a boolean." name) state))
 
        ;; Expand requirements to include stuff from the field specifiers.
        (old-reqs   (cdr (assoc :require kwd-alist)))
@@ -1317,9 +1327,11 @@ optimization altogether.</p>")
            (value-triple '(defaggregate ,name)))))
     (mv `(with-output
            :stack :push
-           :gag-mode t
-           :off (acl2::summary acl2::observation acl2::prove acl2::proof-tree
-                               acl2::event)
+           ,@(if verbosep
+                 nil
+               '(:gag-mode t
+                 :off (acl2::summary acl2::observation acl2::prove acl2::proof-tree
+                                     acl2::event)))
            ,event)
         state)))
 

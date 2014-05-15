@@ -201,6 +201,16 @@ syntax of these parameters is extended, as shown in the following examples:</p>
 
 ")
 
+(defun fixequiv-post-define-hook (guts user-args state)
+  (declare (xargs :mode :program :stobjs state))
+  (b* (((std::defguts guts) guts))
+    (cw "Fixequiv hook: automatic congruences for ~x0.~%" guts.name)
+    (value `(deffixequiv ,guts.name . ,user-args))))
+
+;; This doesn't set up any kind of default hook, it just establishes :fix
+;; as the name of our hook.
+(std::add-post-define-hook :fix fixequiv-post-define-hook)
+
 (defun fixequivs->events (x)
   (if (atom x)
       nil
@@ -497,4 +507,4 @@ syntax of these parameters is extended, as shown in the following examples:</p>
        (make-event
         (cons 'progn
               (deffixequiv-mutual-fn ',name ',keys state))))))
-       
+

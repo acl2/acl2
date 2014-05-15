@@ -259,3 +259,10 @@
                 (equal (cdr (assoc :parents topic))
                        '(bar)))))
 
+
+
+(defaggregate pancake
+  :tag :pancake
+  ((syrup  booleanp)
+   (butter booleanp))
+  :verbosep t)

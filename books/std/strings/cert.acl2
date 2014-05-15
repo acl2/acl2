@@ -21,4 +21,5 @@
 (include-book "std/portcullis" :dir :system)
 (include-book "cowles/portcullis" :dir :system)
 (include-book "data-structures/portcullis" :dir :system)
+(include-book "centaur/fty/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all

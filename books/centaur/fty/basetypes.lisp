@@ -20,7 +20,9 @@
 
 (in-package "FTY")
 (include-book "std/basic/defs" :dir :system)
+(include-book "std/lists/list-defuns" :dir :system)
 (include-book "fixtype")
+(local (include-book "std/lists/equiv" :dir :system))
 
 (defconst *defbasetype-keys*
   '(:name
@@ -60,8 +62,10 @@
 (defmacro defbasetype (equiv pred &rest keys)
   (defbasetype-fn equiv pred keys))
 
+
 #!ACL2
 (progn
+
   (fty::defbasetype nat-equiv natp :fix nfix)
 
   (fty::defbasetype int-equiv integerp :fix ifix :name int)
@@ -70,8 +74,30 @@
 
   (fty::defbasetype number-equiv acl2-numberp :fix fix)
 
+  (fty::deffixtype true-list :pred true-listp :fix list-fix :equiv list-equiv)
+
   (local (in-theory (enable streqv)))
   (fty::deffixtype string :pred stringp :fix str-fix :equiv streqv)
+
+  (defun true-p (x)
+    (declare (xargs :guard t))
+    (eq x t))
+
+  (defun true-fix (x)
+    (declare (xargs :guard t)
+             (ignore x))
+    t)
+
+  (encapsulate
+    ()
+    ;; bozo gross
+    (local (set-default-hints '('(:in-theory (enable true-fix true-p)))))
+
+    (fty::deffixtype true
+      :pred true-p
+      :fix true-fix
+      :equiv true-equiv
+      :define t))
 
   (defsection symbol-equiv
     (defund symbol-fix (x)
@@ -109,7 +135,6 @@
 
   (fty::deffixtype character :pred characterp :fix char-fix :equiv chareqv)
 
-
   (defsection bool-equiv-is-just-iff
     (defund bool-fix (x)
       (declare (xargs :guard t))
@@ -125,30 +150,32 @@
       (implies (booleanp x)
                (equal (bool-fix x) x)))
 
-    (fty::deffixtype bool :pred booleanp :fix bool-fix :equiv iff))
+    (fty::deffixtype bool :pred booleanp :fix bool-fix :equiv iff)
 
-  (local (defun center-in-n-char-field (str n)
-           (let* ((len (length str)))
-             (if (<= n (length str))
-                 (coerce str 'list)
-               (let* ((diff (- n len))
-                      (pre-num (floor diff 2))
-                      (post-num (- diff pre-num)))
-                 (append (make-list pre-num :initial-element #\Space)
-                         (coerce str 'list)
-                         (make-list post-num :initial-element #\Space)))))))
+    (defcong iff equal (bool-fix x) 1))
+
+  ;; [Jared] unlocalizing these since this book is now included in std/strings/defs-program
+  (defun center-in-n-char-field (str n)
+    (let* ((len (length str)))
+      (if (<= n (length str))
+          (coerce str 'list)
+        (let* ((diff (- n len))
+               (pre-num (floor diff 2))
+               (post-num (- diff pre-num)))
+          (append (make-list pre-num :initial-element #\Space)
+                  (coerce str 'list)
+                  (make-list post-num :initial-element #\Space))))))
 
 
-  (local
-   (defun make-basetypes-table-rchars (table acc)
-     (declare (xargs :mode :program))
-     (b* (((when (atom table)) acc)
-          (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->name (cdar table)))) 18) acc))
-          (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->pred (cdar table)))) 18) acc))
-          (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->fix (cdar table)))) 18) acc))
-          (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->equiv (cdar table)))) 18) acc))
-          (acc (cons #\Newline acc)))
-       (make-basetypes-table-rchars (cdr table) acC)))))
+  (defun make-basetypes-table-rchars (table acc)
+    (declare (xargs :mode :program))
+    (b* (((when (atom table)) acc)
+         (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->name (cdar table)))) 18) acc))
+         (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->pred (cdar table)))) 18) acc))
+         (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->fix (cdar table)))) 18) acc))
+         (acc (revappend (center-in-n-char-field (string-downcase (symbol-name (fty::fixtype->equiv (cdar table)))) 18) acc))
+         (acc (cons #\Newline acc)))
+      (make-basetypes-table-rchars (cdr table) acC))))
 
 (make-event
  `(defxdoc basetypes

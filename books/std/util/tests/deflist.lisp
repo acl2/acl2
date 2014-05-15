@@ -356,10 +356,10 @@
   (consp acl2::x)
   :true-listp t
   :elementp-of-nil nil
-  :already-definedp t)
-
-
-
+  ;; We previously required already-definedp here, but now deflist
+  ;; should be smart enough not to need that.
+  ;; :already-definedp nil
+  )
 
 
 

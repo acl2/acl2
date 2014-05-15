@@ -695,12 +695,12 @@
 
 (defconst *tagprod-formal-keywords* '(:rule-classes :default :reqfix))
 (defconst *tagprod-keywords*
-  '(:layout :hons :inline :base-name :require))
+  '(:layout :hons :inline :base-name :require :short :long)) 
 
 (defun tagsum-prod-to-flexprod (x xvar sum-kwds lastp have-basep our-fixtypes)
   (b* (((cons kind args) x)
        ((mv kwd-alist fields)
-        (extract-keywords 'parse-tagsum *tagprod-keywords* args nil))
+        (extract-keywords 'tagsum-prod *tagprod-keywords* args nil))
        ((when (not (eql (len fields) 1)))
         (er hard? 'parse-tagsum "Should have exactly one set of field specifiers: ~x0~%" fields)
         (mv nil nil))
@@ -1682,20 +1682,21 @@
 
 ;; ((fn (pfunc-fix (car x)))
 ;;  (args (ptermlist-fix (cdr x))))
-(defun flexprod-fields-fix-bindings (fields)
+(defun flexprod-fields-typefix-bindings (fields)
   (b* (((when (atom fields)) nil)
-       ((flexprod-field x) (car fields))
-       (fix-body (if x.fix
-                     `(,x.fix ,x.acc-body)
-                   x.acc-body))
-       (reqfix-body (if (eq x.name x.reqfix)
-                        fix-body
-                      `(let ((,x.name ,fix-body)) ,x.reqfix))))
-    (cons (list (intern-in-package-of-symbol
-                 (concatenate 'string "?" (symbol-name x.name))
-                 x.name)
-                reqfix-body)
-          (flexprod-fields-fix-bindings (cdr fields)))))
+       ((flexprod-field x) (car fields)))
+    (cons `(,x.name ,(if x.fix
+                         `(,x.fix ,x.acc-body)
+                       x.acc-body))
+          (flexprod-fields-typefix-bindings (cdr fields)))))
+
+(defun flexprod-fields-reqfix-bindings (fields)
+  (b* (((when (atom fields)) nil)
+       ((flexprod-field x) (car fields)))
+    (if (eq x.name x.reqfix)
+        (flexprod-fields-reqfix-bindings (cdr fields))
+      (cons (list x.name x.reqfix)
+            (flexprod-fields-reqfix-bindings (cdr fields))))))
 
 ;;-----***
 
@@ -1704,10 +1705,14 @@
 ;;              (cons fn args)))
 (defun flexsum-fix-prod-case (prod)
   (b* (((flexprod prod) prod)
-       (bindings (flexprod-fields-fix-bindings prod.fields)))
-    (if bindings
-        `(b* ,bindings
-           ,prod.ctor-body)
+       (typefix-bindings (flexprod-fields-typefix-bindings prod.fields))
+       (reqfix-bindings (flexprod-fields-reqfix-bindings prod.fields)))
+    (if typefix-bindings
+        `(b* ,typefix-bindings
+           ,(if reqfix-bindings
+                `(let ,reqfix-bindings
+                   ,prod.ctor-body)
+              prod.ctor-body))
       prod.ctor-body)))
 
 (defun flexsum-fix-cases (prods)
@@ -2026,13 +2031,6 @@
 
 ;; ------------------ Product accessors -----------------------
 
-(defun flexprod-fields-discard-later-bindings (name bindings)
-  (if (atom bindings)
-      nil
-    (cons (car bindings)
-          (and (not (eq name (caar bindings)))
-               (flexprod-fields-discard-later-bindings name (cdr bindings))))))
-
 (defun flexprod-field-acc (x prod sum)
   (b* (((flexsum sum) sum)
        ((flexprod prod) prod)
@@ -2048,10 +2046,14 @@
                       `(,x.name ,x.type . ,x.rule-classes)
                     `(x.name))
         :progn t
-        (mbe :logic (b* ((,sum.xvar (and ,prod.guard ,sum.xvar))
-                         . ,(flexprod-fields-discard-later-bindings
-                             x.name (flexprod-fields-fix-bindings prod.fields)))
-                      ,x.name)
+        (mbe :logic ,(if (eq x.reqfix x.name)
+                         `(b* ((,sum.xvar (and ,prod.guard ,sum.xvar)))
+                            ,(if x.fix
+                                 `(,x.fix ,x.acc-body)
+                               x.acc-body))
+                       `(b* ((,sum.xvar (and ,prod.guard ,sum.xvar))
+                             . ,(flexprod-fields-typefix-bindings prod.fields))
+                          ,x.reqfix))
              ;; (let* ((unfixbody (nice-and prod.guard x.acc-body))
              ;;                (body (if x.fix
              ;;                          `(,x.fix ,unfixbody)
@@ -2102,19 +2104,23 @@
               (list x.name)))
           (flexprod-field-names-types (cdr fields)))))
 
-(defun flexprod-fields-mbefix-bindings (fields)
+(defun flexprod-fields-mbe-typefix-bindings (fields)
   (b* (((when (atom fields)) nil)
        ((flexprod-field x) (car fields))
-       ((unless (or x.fix (not (eq x.reqfix x.name))))
-        (flexprod-fields-mbefix-bindings (cdr fields))))
-    (cons `(,x.name (mbe :logic ,(if (eq x.reqfix x.name)
-                                     `(,x.fix ,x.name)
-                                   (if x.fix
-                                       `(let ((,x.name (,x.fix ,x.name)))
-                                          ,x.reqfix)
-                                     x.reqfix))
+       ((unless x.fix)
+        (flexprod-fields-mbe-typefix-bindings (cdr fields))))
+    (cons `(,x.name (mbe :logic (,x.fix ,x.name)
                          :exec ,x.name))
-          (flexprod-fields-mbefix-bindings (cdr fields)))))
+          (flexprod-fields-mbe-typefix-bindings (cdr fields)))))
+
+(defun flexprod-fields-mbe-reqfix-bindings (fields)
+  (b* (((when (atom fields)) nil)
+       ((flexprod-field x) (car fields))
+       ((when (eq x.reqfix x.name))
+        (flexprod-fields-mbe-reqfix-bindings (cdr fields))))
+    (cons `(,x.name (mbe :logic ,x.reqfix
+                         :exec ,x.name))
+          (flexprod-fields-mbe-reqfix-bindings (cdr fields)))))
 
 (defun flexprod-ctor-call (prod)
   (b* (((flexprod prod) prod))
@@ -2212,6 +2218,18 @@
                       "-WHEN-"
                       (symbol-name prod.kind))
          sum.fix))
+
+       (typefixes (flexprod-fields-mbe-typefix-bindings prod.fields))
+       (reqfixes (flexprod-fields-mbe-reqfix-bindings prod.fields))
+
+       (reqfix-body (if reqfixes
+                        `(let ,reqfixes ,prod.ctor-body)
+                      prod.ctor-body))
+
+       (typefix-body (if typefixes
+                         `(b* ,typefixes ,reqfix-body)
+                       reqfix-body))
+
        ;; (othervar (intern-in-package-of-symbol
        ;;            (if (equal (symbol-name sum.xvar) "X") "Y" "X")
        ;;            prod.ctor-name))
@@ -2225,8 +2243,7 @@
                                      ,prod.guard)) ;; (equal (,sum.kind ,sum.xvar) ,prod.kind)
                         :hints(("Goal" :in-theory (enable ,sum.pred))))
         :progn t
-        (let* ,(flexprod-fields-mbefix-bindings prod.fields)
-          ,prod.ctor-body)
+        ,typefix-body
         ///
         (deffixequiv ,prod.ctor-name)
         
@@ -2458,7 +2475,7 @@
   (b* (((when (atom prods)) nil)
        ((flexprod x) (car prods))
        (fieldcounts (flexprod-field-counts x.fields xvar types))
-       (count (if fieldcounts `(+ 1 . ,fieldcounts) 1)))
+       (count (if fieldcounts `(+ ,(+ 1 (len x.fields)) . ,fieldcounts) 1)))
     (cons `(,x.kind ,count)
           (flexsum-prod-counts (cdr prods) xvar types))))
 
@@ -2466,9 +2483,9 @@
   (b* (((when (atom prods)) nil)
        ((flexprod x) (car prods))
        (fieldcounts (flexprod-field-counts x.fields xvar types))
-       (prodcount (if fieldcounts `(+ 1 . ,fieldcounts) 1)))
+       (prodcount (if fieldcounts `(+ ,(+ 1 (len x.fields)) . ,fieldcounts) 1)))
     (cons `(,x.cond ,prodcount)
-          (flexsum-prod-counts (cdr prods) xvar types))))
+          (flexsum-prod-counts-nokind (cdr prods) xvar types))))
 
 (defun flexsum-count (x types)
   (b* (((flexsum x) x)
@@ -2633,7 +2650,7 @@
         :progn t
         (let ((,x.xvar (mbe :logic (,x.fix ,x.xvar) :exec ,x.xvar)))
           (if (atom ,x.xvar)
-              0
+              1
             (+ 1
                ,@(and (or keycount valcount)
                       (if keycount
@@ -3154,6 +3171,9 @@
              (progn . ,temp-thms)
              (local (in-theory (disable . ,disable-rules)))
              (local (in-theory (enable . ,enable-rules)))
+
+             ;; Don't try to automatically define equivalences while we're setting up types
+             (local (std::remove-default-post-define-hook :fix))
 
              ,@(flextypes-predicate-def x)
 

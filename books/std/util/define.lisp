@@ -285,7 +285,7 @@ some kind of separator!</p>
             :prepwork
             :verbosep
             :progn
-            )
+            :hooks)
           acl2::*xargs-keywords*))
 
 
@@ -553,6 +553,8 @@ some kind of separator!</p>
 
 
 
+
+
 ; -------------- Top-Level Macro ----------------------------------------------
 
 (defun formallist->types (x)
@@ -595,6 +597,113 @@ some kind of separator!</p>
   `(table define 'guts-alist
           (cons (cons ',(defguts->name guts) ',guts)
                 (get-define-guts-alist world))))
+
+
+
+; ----------------- Hooks -----------------------------------------------------
+
+; WARNING: Undocumented, experimental feature; all details may change.
+
+; Hook function signature:
+;    my-hook-name : defguts * user-args * state -> (mv er val state)
+
+(defun remove-from-alist (key alist)
+  (cond ((atom alist)
+         nil)
+        ((atom (car alist))
+         (remove-from-alist key (cdr alist)))
+        ((equal (caar alist) key)
+         (remove-from-alist key (cdr alist)))
+        (t
+         (cons (car alist)
+               (remove-from-alist key (cdr alist))))))
+
+(table define 'post-hooks-alist)   ;; Alist of hook keyword -> hook function name
+(table define 'default-post-hooks) ;; List of (hook keyword . default-args)
+
+(defun get-post-define-hooks-alist (world)
+  (cdr (assoc 'post-hooks-alist (table-alist 'define world))))
+
+(defun get-default-post-define-hooks (world)
+  (cdr (assoc 'default-post-hooks (table-alist 'define world))))
+
+(defun add-post-define-hook-fn (kwd fn state)
+  (b* ((world   (w state))
+       (formals (look-up-formals fn world))
+       ((unless (and (tuplep 3 formals)
+                     (equal (third formals) 'state)))
+        (er soft 'add-post-define-hook
+            "~x0 doesn't look like a proper post-define hook function."
+            fn))
+       (alist (get-post-define-hooks-alist world))
+       (look  (cdr (assoc kwd alist)))
+       ((unless look)
+        (value `(table define 'post-hooks-alist
+                       (cons (cons ',kwd ',fn)
+                             (get-post-define-hooks-alist world)))))
+       ((unless (equal (cdr look) fn))
+        (er soft 'add-post-define-hook
+            "~x0 is already a post-define hook bound to ~x1." kwd fn)))
+    (value '(value-triple :redundant))))
+
+(defmacro add-post-define-hook (kwd fn)
+  (declare (xargs :guard (and (keywordp kwd)
+                              (symbolp fn))))
+  `(make-event (add-post-define-hook-fn ',kwd ',fn state)))
+
+(defmacro remove-post-define-hook (kwd)
+  (declare (xargs :guard (keywordp kwd)))
+  `(table define 'post-hooks-alist
+          (remove-from-alist ',kwd (get-post-define-hooks-alist world))))
+
+(defun add-default-post-define-hook-fn (kwd default-args state)
+  (b* ((world (w state))
+       ((unless (assoc kwd (get-post-define-hooks-alist world)))
+        (er soft 'add-default-post-define-hook
+            "~x0 is not the name of a post-define hook." kwd))
+       (current-hooks (get-default-post-define-hooks world))
+       (look (assoc kwd current-hooks))
+       ((unless look)
+        (value `(table define 'default-post-hooks
+                       (cons (cons ',kwd ',default-args)
+                             (get-default-post-define-hooks world)))))
+       ((unless (equal (cdr look) default-args))
+        (er soft 'add-post-define-hook
+            "~x0 is already in use as a default post-define hook." kwd)))
+    (value `(value-triple :redundant))))
+
+(defmacro add-default-post-define-hook (kwd &rest default-args)
+  (declare (xargs :guard (keywordp kwd)))
+  `(make-event (add-default-post-define-hook-fn ',kwd ',default-args state)))
+
+(defmacro remove-default-post-define-hook (kwd)
+  (declare (xargs :guard (keywordp kwd)))
+  `(table define 'default-post-hooks
+          (remove-from-alist ',kwd (get-default-post-define-hooks world))))
+
+(defun post-hook-make-events
+  (hook-specs  ;; a list of either: plain keywords (naming hooks), or (keyword . user-args) pairs
+   hooks-alist ;; the post-define-hooks alist, binds hook keywords to function names
+   guts        ;; the defguts object for the function that has just been defined
+   )
+  ;; Returns a list of make-event forms
+  (b* (((when (atom hook-specs))
+        nil)
+       (spec1 (car hook-specs))
+       ((mv hook-kwd user-args)
+        (if (consp spec1)
+            (mv (car spec1) (cdr spec1))
+          ;; Plain keyword like :hook1
+          (mv spec1 nil)))
+       ((unless (keywordp hook-kwd))
+        (er hard? 'post-hook-make-events "Invalid post-define hook specifier: ~x0" spec1))
+       (look (assoc hook-kwd hooks-alist))
+       ((unless look)
+        (er hard? 'post-hook-make-events "Post-define hook not found: ~x0." hook-kwd))
+       (hook-fn (cdr look))
+       (event1 `(make-event (,hook-fn ',guts ',user-args state))))
+    (cons event1
+          (post-hook-make-events (cdr hook-specs) hooks-alist guts))))
 
 
 (defun parse-define
@@ -770,6 +879,11 @@ some kind of separator!</p>
                        parents
                      (xdoc::get-default-parents world)))
 
+       (hooks-alist (get-post-define-hooks-alist world))
+       (hook-specs  (getarg :hooks
+                            (get-default-post-define-hooks world)
+                            guts.kwd-alist))
+
        (set-ignores (get-set-ignores-from-kwd-alist guts.kwd-alist))
        (prognp (getarg :progn nil guts.kwd-alist)))
 
@@ -815,12 +929,16 @@ some kind of separator!</p>
          ,@(and guts.rest-events
                 `((with-output :stack :pop
                     (progn
-                      . ,guts.rest-events)))))
+                      . ,guts.rest-events))))
+
+         ,@(and hook-specs
+                `((value-triple (cw "; Running post-define hooks.~%"))
+                  .
+                  ,(post-hook-make-events hook-specs hooks-alist guts))))
 
        ;; Now that the section has been submitted, its xdoc exists, so we can
        ;; do the doc generation and prepend it to the xdoc.
-       (with-output :on (error) ,(add-signature-from-guts guts))
-
+       ,(add-signature-from-guts guts)
        )))
 
 (defun define-fn (name args world)
@@ -834,7 +952,7 @@ some kind of separator!</p>
     `(with-output
        :stack :push
        ,@(and (not verbosep)
-              '(:off :all))
+              '(:on (acl2::error) :off :all))
        (make-event
         (define-fn ',name ',args (w state))))))
 
@@ -915,7 +1033,4 @@ some kind of separator!</p>
   (table user-defined-functions-table
          'untranslate-preprocess
          'untranslate-preproc-for-define))
-
-
-
 
