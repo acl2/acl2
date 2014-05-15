@@ -39,7 +39,7 @@ libraries.</p>")
 requires that @('x') is a natural number and, in the execution, it is just a
 no-op that returns @('x')."
 
-  :long "<p>@(call lnfix) is a macro that just expands into</p>
+  :long "<p>@(call lnfix) is an inlined, enabled function that just expands into</p>
 
 @({
      (mbe :logic (nfix x) :exec x)
@@ -70,9 +70,9 @@ has some performance cost.</p>
 <p>By using @(see lnfix) in place of @('nfix') here, you can get the same
 logical definition without this overhead.</p>"
 
-  (defmacro lnfix (x)
-    `(mbe :logic (nfix ,x)
-          :exec ,x)))
+  (defun-inline lnfix (x)
+    (declare (xargs :guard (natp x)))
+    (mbe :logic (nfix x) :exec x)))
 
 
 (defsection lifix
@@ -80,7 +80,7 @@ logical definition without this overhead.</p>"
 requires that @('x') is an integer and, in the execution, it is just a no-op
 that returns @('x')."
 
-  :long "<p>@(call lifix) is a macro that just expands into</p>
+  :long "<p>@(call lifix) is an inlined, enabled function that just expands into</p>
 
 @({
      (mbe :logic (ifix x) :exec x)
@@ -89,9 +89,9 @@ that returns @('x')."
 <p>To understand why you might want this, see the analogous discussion about
 @(see lnfix).</p>"
 
-  (defmacro lifix (x)
-    `(mbe :logic (ifix ,x)
-          :exec ,x)))
+  (defun-inline lifix (x)
+    (declare (xargs :guard (integerp x)))
+    (mbe :logic (ifix x) :exec x)))
 
 
 (defsection true

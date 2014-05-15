@@ -41,8 +41,9 @@
   `(mbe :logic (zp (- (nfix ,max) (nfix ,x)))
         :exec (>= ,x ,max)))
 
-(defmacro lnfix (x)
-  `(mbe :logic (nfix ,x) :exec ,x))
+(defun-inline lnfix (x)
+  (declare (xargs :guard (natp x)))
+  (mbe :logic (nfix x) :exec x))
 
 (defmacro nincr (x)
   `(1+ (lnfix ,x)))

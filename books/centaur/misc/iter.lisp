@@ -306,7 +306,8 @@
               (,returns (,iter . ,iter-formals)))
            ,step-call))
        (defcong int-equiv equal (,iter . ,iter-formals) 1
-         :hints(("Goal" :in-theory (enable ,iter))))
+         :hints(("Goal" :expand ((,iter . ,iter-formals))
+                 :in-theory (enable ,iter))))
        (encapsulate nil
          (set-ignore-ok t)
          (defthm ,thmname
@@ -358,6 +359,7 @@
                                  ifix-positive-to-non-zp
                                  unicity-of-0
                                  fix
+                                 lnfix lifix
                                  (:type-prescription ifix))
                     ;; (,step))
                     ;; (<-0-+-negative-1
