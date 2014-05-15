@@ -46,27 +46,29 @@
          (def-universal-equiv 1d-arr-tmp-equiv
            :equiv-terms ((equal (_fix_ x)))))
 
-        (def-universal-equiv 1d-arr-tmp-list-equiv
-          :qvars (i)
-          :equiv-terms ((1d-arr-tmp-equiv (nth i x))))
+        ;; (def-universal-equiv 1d-arr-tmp-list-equiv
+        ;;   :qvars (i)
+        ;;   :equiv-terms ((1d-arr-tmp-equiv (nth i x))))
 
-        (defcong 1d-arr-tmp-list-equiv 1d-arr-tmp-equiv (nth i x) 2
-          :hints(("Goal" :in-theory (e/d (1d-arr-tmp-list-equiv-necc)
-                                         (1d-arr-tmp-equiv)))))
+        ;; (defcong 1d-arr-tmp-list-equiv 1d-arr-tmp-equiv (nth i x) 2
+        ;;   :hints(("Goal" :in-theory (e/d (1d-arr-tmp-list-equiv-necc)
+        ;;                                  (1d-arr-tmp-equiv)))))
 
-        (defcong 1d-arr-tmp-list-equiv 1d-arr-tmp-list-equiv (update-nth i v x) 3
-          :hints((and stable-under-simplificationp
-                      `(:expand (,(car (last clause)))))))
+        ;; (defcong 1d-arr-tmp-list-equiv 1d-arr-tmp-list-equiv (update-nth i v x) 3
+        ;;   :hints((and stable-under-simplificationp
+        ;;               `(:expand (,(car (last clause)))))))
 
-        (defcong 1d-arr-tmp-equiv 1d-arr-tmp-list-equiv (update-nth i v x) 2
-          :hints((and stable-under-simplificationp
-                      `(:expand (,(car (last clause)))))))
+        ;; (defcong 1d-arr-tmp-equiv 1d-arr-tmp-list-equiv (update-nth i v x) 2
+        ;;   :hints((and stable-under-simplificationp
+        ;;               `(:expand (,(car (last clause)))))))
+
+        ;; (in-theory (enable 1d-arr-tmp-list-equiv))
 
         (:@ :pred
          (defun 1d-arr-tmp-listp (x)
            (if (atom x)
-               t
-             (and (_pred_ (car x))
+               (eq x nil)
+             (and (:@ :pred (_pred_ (car x)))
                   (1d-arr-tmp-listp (cdr x)))))
 
          (defthm _pred_-nth-of-1d-arr-tmp-listp
@@ -83,7 +85,11 @@
          (defthm 1d-arr-tmp-listp-of-resize-list
            (implies (and (1d-arr-tmp-listp x)
                          (_pred_ default))
-                    (1d-arr-tmp-listp (resize-list x n default))))
+                    (1d-arr-tmp-listp (resize-list x n default)))
+           :hints (("goal" :in-theory '(resize-list
+                                        car-cons
+                                        cdr-cons
+                                        1d-arr-tmp-listp))))
            )))
 
      (defstobj _arrname_$c
@@ -105,12 +111,27 @@
         (defthm _slotname_s$cp-of-resize-list
           (implies (and (_slotname_s$cp x)
                         (typep$ default _type-decl_))
-                   (_slotname_s$cp (resize-list x n default))))))
+                   (_slotname_s$cp (resize-list x n default)))
+           :hints (("goal" :in-theory '(resize-list
+                                        car-cons
+                                        cdr-cons
+                                        _slotname_s$cp))))))
 
      (defun _arrname_$ap (_arrname_$a)
        (declare (xargs :guard t :verify-guards t)
                 (ignorable _arrname_$a))
-       t)
+       (:@ :pred
+        (if (atom _arrname_$a)
+            (eq _arrname_$a nil)
+          (and (_pred_ (car _arrname_$a))
+               (_arrname_$ap (cdr _arrname_$a)))))
+       (:@ (not :pred)
+        (true-listp _arrname_$a)))
+
+     (:@ :pred
+      (local (defthm _arrname_$ap-rewrite-to-1d-arr-tmp-listp
+               (equal (_arrname_$ap x)
+                      (1d-arr-tmp-listp x)))))
 
      (defun create-_arrname_$a ()
        (declare (xargs :guard t :verify-guards t))
@@ -154,36 +175,34 @@
                             _arrname_$a)))
 
      (local (defun-nx _arrname_$corr (_arrname_$c _arrname_$a)
-              (and (:@ :pred (1d-arr-tmp-listp (nth 0 _arrname_$c)))
-                   (equal (len _arrname_$a) (len (nth 0 _arrname_$c)))
-                   (1d-arr-tmp-list-equiv _arrname_$a (nth 0 _arrname_$c)))))
+              (equal _arrname_$a (nth 0 _arrname_$c))))
 
      (local (in-theory (disable nth resize-list
                                 (_arrname_$corr))))
 
-     (local (set-default-hints
-             '((and stable-under-simplificationp
-                    (let ((lit (car (last clause))))
-                      (and (consp lit)
-                           (eq (car lit) '1d-arr-tmp-list-equiv)
-                           `(:expand (,lit))))))))
-
-     (local (defthm nths-equal-by-1d-arr-tmp-list-equiv
-              (implies (and (1d-arr-tmp-list-equiv x y)
-                            (:@ :pred (1d-arr-tmp-listp x))
-                            (< (nfix i) (len x)))
-                       (equal (equal (nth i x)
-                                     (:@ :fix (_fix_ (nth i y)))
-                                     (:@ (not :fix) (nth i y)))
-                              t))
-              :hints (("goal" :use 1d-arr-tmp-list-equiv-necc
-                       :in-theory (e/d ((:@ :fix 1d-arr-tmp-equiv))
-                                       (1d-arr-tmp-list-equiv-necc
-                                        (:@ :fix
-                                         1d-arr-tmp-list-equiv-implies-1d-arr-tmp-equiv-nth-2)
-                                        (:@ (not :fix)
-                                         1d-arr-tmp-list-equiv-implies-equal-nth-2)))
-                       :do-not-induct t))))
+     ;; (local (set-default-hints
+     ;;         '((and stable-under-simplificationp
+     ;;                (let ((lit (car (last clause))))
+     ;;                  (and (consp lit)
+     ;;                       (eq (car lit) '1d-arr-tmp-list-equiv)
+     ;;                       `(:expand (,lit))))))))
+     
+     ;; (local (defthm nths-equal-by-1d-arr-tmp-list-equiv
+     ;;          (implies (and (1d-arr-tmp-list-equiv x y)
+     ;;                        (:@ :pred (1d-arr-tmp-listp x))
+     ;;                        (< (nfix i) (len x)))
+     ;;                   (equal (equal (nth i x)
+     ;;                                 (:@ :fix (_fix_ (nth i y)))
+     ;;                                 (:@ (not :fix) (nth i y)))
+     ;;                          t))
+     ;;          :hints (("goal" :use 1d-arr-tmp-list-equiv-necc
+     ;;                   :in-theory (e/d ((:@ :fix 1d-arr-tmp-equiv))
+     ;;                                   (1d-arr-tmp-list-equiv-necc
+     ;;                                    (:@ :fix
+     ;;                                     1d-arr-tmp-list-equiv-implies-1d-arr-tmp-equiv-nth-2)
+     ;;                                    (:@ (not :fix)
+     ;;                                     1d-arr-tmp-list-equiv-implies-equal-nth-2)))
+     ;;                   :do-not-induct t))))
 
      (local (in-theory (enable nth-of-resize-list-split)))
 
