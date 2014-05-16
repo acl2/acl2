@@ -55,7 +55,7 @@
 (defun %aux-debug-split-fn (goals i)
   (declare (xargs :mode :program))
   (if (consp goals)
-      (cons `(defsection ,(ACL2::mksym 'debugging-goal- (ACL2::intern-in-package-of-symbol (STR::string-fix i) 'foo))
+      (cons `(defsection ,(ACL2::mksym 'debugging-goal- (ACL2::intern-in-package-of-symbol (STR::dwim-string-fix i) 'foo))
                (ACL2::value-triple (ACL2::cw "Now Debugging Goal ~x0.~%" ,i))
                (ACL2::value-triple (ACL2::cw "~x0~%" '(ACL2::table tactic-harness 'skeleton (tactic.initial-skeleton (list ',(car goals))))))
                (ACL2::table tactic-harness 'skeleton (tactic.initial-skeleton (list ',(car goals))))

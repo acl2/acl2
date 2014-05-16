@@ -92,7 +92,7 @@
       x
     nil))
 
-(defund string-fix (x)
+(defund dwim-string-fix (x)
   (declare (xargs :guard t))
   (cond ((stringp x)
          x)
@@ -103,32 +103,32 @@
         (t
          "")))
 
-(defund string-list-fix (x)
+(defund dwim-string-list-fix (x)
   (declare (xargs :guard t))
   (if (consp x)
-      (cons (string-fix (car x))
-            (string-list-fix (cdr x)))
+      (cons (dwim-string-fix (car x))
+            (dwim-string-list-fix (cdr x)))
     nil))
 
-(defthm string-listp-of-string-list-fix
-  (equal (string-listp (string-list-fix x))
+(defthm string-listp-of-dwim-string-list-fix
+  (equal (string-listp (dwim-string-list-fix x))
          t)
-  :hints(("Goal" :in-theory (enable string-list-fix))))
+  :hints(("Goal" :in-theory (enable dwim-string-list-fix))))
 
 (defun cat-list (strings)
   ;; Concatenates a list of strings and natural numbers
   (declare (xargs :guard t))
-  (string-append-lst (string-list-fix strings)))
+  (string-append-lst (dwim-string-list-fix strings)))
 
 (defun cat-list-with-separator (strings sep)
   ;; Concatenates the strings together, inserting the separator between each one
   (declare (xargs :guard t))
   (if (consp strings)
       (if (consp (cdr strings))
-          (string-append (string-fix (car strings))
-                         (string-append (string-fix sep)
+          (string-append (dwim-string-fix (car strings))
+                         (string-append (dwim-string-fix sep)
                                         (cat-list-with-separator (cdr strings) sep)))
-        (string-fix (car strings)))
+        (dwim-string-fix (car strings)))
     ""))
 
 ;; This used to be STR::cat, but I renamed it for compatibility with the ACL2
@@ -164,9 +164,9 @@
 
 (defun explode-list (x)
   ;; Coerces a string list into a "character list list"
-  (declare (xargs :guard t))
+  (declare (xargs :guard (string-listp x)))
   (if (consp x)
-      (cons (explode (string-fix (car x)))
+      (cons (explode (car x))
             (explode-list (cdr x)))
     nil))
 
