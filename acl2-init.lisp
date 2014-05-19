@@ -701,7 +701,7 @@ implementations.")
  + WARNING: This is NOT an ACL2 release; it is svn revision ~a.     +
  + The authors of ACL2 consider svn distributions to be experimental; +
  + they may be incomplete, fragile, and unable to pass our own        +
- + regression.  Bug reports should include the following line:        +
+ + regression tests.  Bug reports should include the following line:  +
  +   ACL2 svn revision ~a; community books svn revision ~a        +
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 "
