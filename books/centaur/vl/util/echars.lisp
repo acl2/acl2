@@ -25,7 +25,7 @@
 (include-book "std/util/defprojection" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/strings/cat" :dir :system)
-(include-book "std/strings/natstr" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
 (include-book "centaur/nrev/pure" :dir :system)
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/lists/top" :dir :system))

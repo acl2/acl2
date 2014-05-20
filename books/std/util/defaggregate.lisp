@@ -846,7 +846,8 @@ optimization altogether.</p>")
   (b* ((ctor-name (xdoc::name-low (symbol-name name)))
        ;; +2 to account for the leading paren and trailing space after ctor-name 
        (len       (+ 2 (length ctor-name)))
-       (pad       (str::implode (cons #\Newline (replicate len #\Space))))
+       (pad       (str::implode (cons #\Newline
+                                      (make-list len :initial-element #\Space))))
        (args      (str::join field-strs pad)))
     (str::cat "<code>" *nl* "(" ctor-name " " args ")" *nl* "</code>")))
 

@@ -23,7 +23,7 @@
 
 (in-package "SATLINK")
 (include-book "cnf")
-(include-book "std/strings/natstr" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/strnatless" :dir :system)
 (include-book "std/strings/cat" :dir :system)
 (include-book "std/io/base" :dir :system)

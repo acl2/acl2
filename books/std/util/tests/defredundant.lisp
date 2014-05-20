@@ -98,18 +98,20 @@
 
 
 (defredundant  ;; redundantly introduce the above
-  f1
-  natp-of-f1
-  f2
-  natp-of-f2
-  f3
-  f9))
+  :names (f1
+          natp-of-f1
+          f2
+          natp-of-f2
+          f3
+          f9))
+
+) ;; end of encapsulate
 
 
 ;; basic unit tests to make sure things are working right
 
 (defmacro assert-enabled (rune enabled-p)
-  `(make-event 
+  `(make-event
     (b* ((rune      ',rune)
          (acl2::ens (acl2::ens state))
          (actual    (if (acl2::active-runep rune) t nil))

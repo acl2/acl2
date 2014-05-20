@@ -20,7 +20,7 @@
 
 (in-package "GETOPT")
 (include-book "std/util/top" :dir :system)
-(include-book "std/strings/strval" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
 
 
 (defsection parsers

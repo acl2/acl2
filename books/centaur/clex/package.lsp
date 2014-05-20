@@ -41,7 +41,18 @@
                unsigned-byte-listp
                explode implode
                str::cat str::natstr
-               nat-equiv int-equiv))
+               nat-equiv int-equiv
+
+               str::defcharset
+               str::charset-p
+               str::char-in-charset-p
+               str::code-in-charset-p
+               str::chars-in-charset-p
+               str::count-leading-charset
+               str::str-count-leading-charset
+               str::str-count-leading-charset-fast
+
+               ))
    '(number-char-p digit-char-p sin)))
 
 #!CLEX
@@ -71,13 +82,6 @@
     sin-match-charset*
     sin-match-until-lit
     sin-match-through-lit
-
-    ;; Basic charset stuff (but not more advanced, custom functions)
-    defcharset
-    charset-p
-    char-in-charset-p
-    code-in-charset-p
-    chars-in-charset-p
 
     ;; For lexer progress properties
     strin-left

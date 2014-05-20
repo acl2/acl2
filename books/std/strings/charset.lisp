@@ -1,5 +1,5 @@
-; Centaur Lexer Library
-; Copyright (C) 2013 Centaur Technology
+; ACL2 String Library
+; Copyright (C) 2009-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,16 +18,16 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "CLEX")
+(in-package "STR")
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/deflist" :dir :system)
-(include-book "xdoc/names" :dir :system)
-(include-book "std/strings/case-conversion" :dir :system)
-(local (include-book "arithmetic"))
+(include-book "xdoc/names" :dir :system) ;; bozo?
+(include-book "case-conversion")
+;(local (include-book "arithmetic"))
 
 
 (define charset-p (x)
-  :parents (clex)
+  :parents (std/strings)
   :short "A way to represent a fixed set of characters."
 
   :long "<p>When writing a lexer, it is often useful to introduce character
@@ -59,10 +59,11 @@ wrong.</p>"
          :rule-classes :compound-recognizer
          :hints(("Goal" :in-theory (enable charset-p)))))
 
+(local (xdoc::set-default-parents charset-p))
+
 
 (define char-in-charset-p ((char :type character)
                            (set  charset-p))
-  :parents (charset-p)
   :short "@(call char-in-charset-p) determines if the character @('char') is a
 member of the character set @('set')."
   :inline t
@@ -81,7 +82,6 @@ member of the character set @('set')."
 
 (define code-in-charset-p ((code :type (unsigned-byte 8))
                            (set  charset-p))
-  :parents (charset-p)
   :short "@(call code-in-charset-p) determines if the character whose code is
 @('code') is a member of the character set @('set')."
 
@@ -98,9 +98,8 @@ char-in-charset-p).</p>"
   :guard-hints(("Goal" :in-theory (enable char-in-charset-p))))
 
 
-(deflist chars-in-charset-p (x set)
+(std::deflist chars-in-charset-p (x set)
   (char-in-charset-p x set)
-  :parents (charset-p)
   :short "@(call chars-in-charset-p) recognizes lists of characters @('x')
 where every character is a member of the @(see charset-p) @('set')."
   :guard (and (character-listp x)
@@ -108,7 +107,6 @@ where every character is a member of the @(see charset-p) @('set')."
 
 
 (defxdoc defcharset
-  :parents (charset-p)
   :short "Define a recognizer for a particular set of characters."
 
   :long "<p>@('Defcharset') is a macro for introducing a @(see charset-p) and
@@ -311,7 +309,7 @@ automatically.</p>")
                    :use ((:instance defcharset-lemma2
                                     (i (char-code ,x))))))))
 
-       (deflist ,foo-charlist-p (,x)
+       (std::deflist ,foo-charlist-p (,x)
          (,foo-char-p ,x)
          :guard t
          :parents (,foo-char-p)
@@ -326,7 +324,7 @@ automatically.</p>")
 
 ;; Some unit tests
 
-(include-book "std/strings/digitp" :dir :system)
+(include-book "decimal")
 
 (defcharset whitespace
   (or (eql x #\Newline)

@@ -19,308 +19,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "digitp")
+(include-book "decimal")
 (include-book "tools/mv-nth" :dir :system)
 (local (include-book "arithmetic"))
-
-
-(defsection parse-nat-from-charlist
-  :parents (numbers)
-  :short "Parse a natural number from the beginning of a character list."
-
-  :long "<p>@(call parse-nat-from-charlist) tries to read a natural number from
-the beginning of the character list @('x').</p>
-
-<ul>
-
-<li>@('val') is an accumulator for the value of the digits we have read so far,
-and typically should be set to 0 to begin with.</li>
-
-<li>@('len') is an accumulator for the number of digits we have read, and
-should typically be set to 0 to begin with.</li>
-
-</ul>
-
-<p>We return @('(mv val len rest)'), where @('x') after reading as many digits
-as possible.</p>
-
-<p>See also @(call digit-list-value), which is simpler for interpreting strings
-where all of the characters are digits.</p>"
-
-  (defund parse-nat-from-charlist (x val len)
-    (declare (type integer val)
-             (type integer len)
-             (xargs :guard (and (character-listp x)
-                                (natp val)
-                                (natp len))
-                    :verify-guards nil))
-    (mbe :logic
-         (cond ((atom x)
-                (mv (nfix val) (nfix len) nil))
-               ((digitp (car x))
-                (let ((digit-val (digit-val (car x))))
-                  (parse-nat-from-charlist (cdr x)
-
-; A silly idea I have (for the purposes of strnatless, at least) would be to
-; instead multiply each character by 16, which would mean that the operation
-; could be done via ash and logior.  I think the values produced by such a
-; scheme would be ordered in the same way that the values here are ordered.
-; And, rudimentary speed test suggests it could be as much as 50% faster.  The
-; proof seems difficult, so for now I don't have the patience to attempt it.
-
-                                           (+ digit-val (* 10 (nfix val)))
-                                           (+ 1 (nfix len)))))
-               (t
-                (mv (nfix val) (nfix len) x)))
-         :exec
-         (cond ((atom x)
-                (mv val len nil))
-               (t
-                (let ((code (the (unsigned-byte 8) (char-code (the character (car x))))))
-                  (declare (type (unsigned-byte 8) code))
-                  (if (and (<= (the (unsigned-byte 8) 48) (the (unsigned-byte 8) code))
-                           (<= (the (unsigned-byte 8) code) (the (unsigned-byte 8) 57)))
-                      (let ((digit-val (the (unsigned-byte 8)
-                                         (- (the (unsigned-byte 8) code)
-                                            (the (unsigned-byte 8) 48)))))
-                        (parse-nat-from-charlist
-                         (cdr x)
-                         (the integer (+ (the (unsigned-byte 8) digit-val)
-                                         (the integer (* 10 (the integer val)))))
-                         (the integer (+ 1 (the integer len)))))
-                    (mv val len x)))))))
-
-  (local (in-theory (enable parse-nat-from-charlist)))
-
-  (verify-guards parse-nat-from-charlist
-    :hints(("Goal" :in-theory (enable digitp
-                                      digit-val
-                                      char-fix))))
-
-
-  (encapsulate
-    ()
-    (local (defund leading-digits-value (x val)
-             (declare (xargs :verify-guards nil))
-             (if (consp x)
-                 (if (digitp (car x))
-                     (leading-digits-value (cdr x)
-                                           (+ (digit-val (car x)) (* 10 (nfix val))))
-                   (nfix val))
-               (nfix val))))
-
-    (local (defthm lemma-1
-             (equal (mv-nth 0 (parse-nat-from-charlist x val len))
-                    (leading-digits-value x val))
-             :hints(("Goal" :in-theory (enable leading-digits-value)))))
-
-    (local (defthm lemma-2
-             (equal (leading-digits-value x val)
-                    (digit-list-value1 (take-leading-digits x) val))
-             :hints(("Goal" :in-theory (e/d (leading-digits-value
-                                             digit-list-value1
-                                             take-leading-digits)
-                                            (digit-list-value1-removal))))))
-
-    (defthm val-of-parse-nat-from-charlist
-      (equal (mv-nth 0 (parse-nat-from-charlist x val len))
-             (+ (digit-list-value (take-leading-digits x))
-                (* (nfix val) (expt 10 (len (take-leading-digits x))))))))
-
-
-  (encapsulate
-    ()
-    (local (defund count-leading-digits1 (x len)
-             (declare (xargs :verify-guards nil))
-             (if (consp x)
-                 (if (digitp (car x))
-                     (count-leading-digits1 (cdr x) (+ 1 (nfix len)))
-                   (nfix len))
-               (nfix len))))
-
-    (local (defthm lemma-1
-             (equal (mv-nth 1 (parse-nat-from-charlist x val len))
-                    (count-leading-digits1 x len))
-             :hints(("Goal" :in-theory (enable count-leading-digits1)))))
-
-    (local (defthm lemma-2
-             (equal (count-leading-digits1 x len)
-                    (+ (nfix len)
-                       (len (take-leading-digits x))))
-             :hints(("Goal" :in-theory (enable count-leading-digits1
-                                               take-leading-digits)))))
-
-    (defthm len-of-parse-nat-from-charlist
-      (equal (mv-nth 1 (parse-nat-from-charlist x val len))
-             (+ (nfix len) (len (take-leading-digits x))))))
-
-
-
-  (defthm rest-of-parse-nat-from-charlist
-    (equal (mv-nth 2 (parse-nat-from-charlist x val len))
-           (skip-leading-digits x))
-    :hints(("Goal" :in-theory (enable skip-leading-digits)))))
-
-
-
-(defsection parse-nat-from-string
-  :parents (numbers)
-  :short "Parse a natural number from a string, at some offset."
-
-  :long "<p>@(call parse-nat-from-string) is somewhat elaborate:</p>
-
-<ul>
-
-<li>@('x') is a string that we want to parse a value from</li>
-
-<li>@('val') is an accumulator for the value we have parsed, and it should
-generally be 0 to begin with.</li>
-
-<li>@('len') is an accumulator for the number of characters we have read so
-far, and should generally be 0 to begin with.</li>
-
-<li>@('n') is an offset into @('x') where we should begin parsing.  It must be
-a valid index into the string, i.e., @('0 <= n < (length x)').</li>
-
-<li>@('xl') must be exactly equal to @('(length x)'), and only serves as a
-cache to avoid recomputing the length.</li>
-
-</ul>
-
-<p>We return @('(mv val len)'), the final values of the accumulators, which are
-respectively the natural number we have just parsed and the number of digits
-that we parsed.</p>
-
-<p>Both @('val') and @('len') are guaranteed to be natural numbers; failure is
-indicated by a return @('len') of zero.</p>
-
-<p>Because of leading zeroes, the @('len') may be much larger than you would
-expect based on @('val') alone.  The @('len') argument is generally useful if
-you want to continue parsing through the string, i.e., the @('n') you started
-with plus the @('len') you got out will be the next position in the string
-after the number.</p>
-
-<p>See also @(see parse-nat-from-charlist) for a simpler function that reads a
-number from the start of a character list.  This function also serves as part
-of our logical definition.</p>"
-
-  (local (in-theory (disable acl2::nth-when-bigger
-                             acl2::negative-when-natp
-                             default-+-2
-                             default-+-1
-                             default-<-2
-                             commutativity-of-+
-                             default-<-1
-                             ACL2::|x < y  =>  0 < y-x|
-                             )))
-
-
-  (defund parse-nat-from-string (x val len n xl)
-    (declare (type string x)
-             (type (integer 0 *) val len n xl)
-             (xargs :guard (and (stringp x)
-                                (natp val)
-                                (natp len)
-                                (natp n)
-                                (equal xl (length x))
-                                (<= n xl))
-                    :measure (nfix (- (nfix xl) (nfix n)))
-                    :verify-guards nil))
-
-    (mbe :logic
-         (cond ((zp (- (nfix xl) (nfix n)))
-                (mv (nfix val) (nfix len)))
-               ((digitp (char x n))
-                (let ((digit-val (digit-val (char x n))))
-                  (parse-nat-from-string x
-                                         (+ digit-val (* 10 (nfix val)))
-                                         (+ 1 (nfix len))
-                                         (+ 1 (nfix n))
-                                         (nfix xl))))
-               (t
-                (mv (nfix val) (nfix len))))
-         :exec
-         (cond ((int= n xl)
-                (mv val len))
-               (t
-                (let ((code (the (unsigned-byte 8)
-                              (char-code (the character
-                                           (char (the string x)
-                                                 (the (integer 0 *) n)))))))
-                  (declare (type (unsigned-byte 8) code))
-                  (if (and (<= (the (unsigned-byte 8) 48)
-                               (the (unsigned-byte 8) code))
-                           (<= (the (unsigned-byte 8) code)
-                               (the (unsigned-byte 8) 57)))
-                      (let ((digit-val (the (unsigned-byte 8)
-                                         (- (the (unsigned-byte 8) code)
-                                            (the (unsigned-byte 8) 48)))))
-                        (parse-nat-from-string
-                         (the string x)
-                         (the (integer 0 *)
-                           (+ (the (unsigned-byte 8) digit-val)
-                              (the (integer 0 *) (* 10 (the (integer 0 *) val)))))
-                         (the (integer 0 *) (+ 1 (the (integer 0 *) len)))
-                         (the (integer 0 *) (+ 1 (the (integer 0 *) n)))
-                         (the (integer 0 *) xl)))
-                    (mv val len)))))))
-
-  (local (in-theory (enable parse-nat-from-string)))
-
-  (verify-guards parse-nat-from-string
-    :hints(("Goal" :in-theory (enable digitp digit-val))))
-
-  (defthm natp-of-val-of-parse-nat-from-string
-    (and (integerp (mv-nth 0 (parse-nat-from-string x val len n xl)))
-         (<= 0 (mv-nth 0 (parse-nat-from-string x val len n xl))))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (disable nth nfix))))
-
-  (defthm natp-of-len-of-parse-nat-from-string
-    (and (integerp (mv-nth 1 (parse-nat-from-string x val len n xl)))
-         (<= 0 (mv-nth 1 (parse-nat-from-string x val len n xl))))
-    :rule-classes :type-prescription
-    :hints(("Goal" :in-theory (disable nth nfix))))
-
-  (defthm progress-of-parse-nat-from-string
-    ;; If there's a digit there, we read at least one character.
-    (implies (and (equal xl (length x))
-                  (or (< 0 (nfix len))
-                      (digitp (char x (nfix n)))))
-             (< 0 (mv-nth 1 (parse-nat-from-string x val len n xl))))
-    :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal"
-            :induct (parse-nat-from-string x val len n xl))))
-
-  (defthm val-of-parse-nat-from-string
-    (implies (and (natp val)
-                  (natp len)
-                  (natp n)
-                  (equal xl (len (explode x)))
-                  (<= n xl))
-             (equal (mv-nth 0 (parse-nat-from-string x val len n xl))
-                    (mv-nth 0 (parse-nat-from-charlist (nthcdr n (explode x)) val len))))
-    :hints(("Goal"
-            :induct (parse-nat-from-string x val len n xl)
-            :in-theory (e/d (parse-nat-from-charlist)
-                            (val-of-parse-nat-from-charlist))
-            :do-not '(generalize fertilize))))
-
-  (defthm len-of-parse-nat-from-string
-    (implies (and (natp val)
-                  (natp len)
-                  (natp n)
-                  (equal xl (len (explode x)))
-                  (<= n xl))
-             (equal (mv-nth 1 (parse-nat-from-string x val len n xl))
-                    (mv-nth 1 (parse-nat-from-charlist (nthcdr n (explode x)) val len))))
-    :hints(("Goal"
-            :induct (parse-nat-from-string x val len n xl)
-            :in-theory (e/d (parse-nat-from-charlist)
-                            (len-of-parse-nat-from-charlist))
-            :do-not '(generalize fertilize)))))
-
-
 
 (defsection charlistnat<
   :parents (ordering)
@@ -640,7 +341,7 @@ one index.</p>"
                              expt
                              default-car
                              default-cdr
-                             (:rewrite PROGRESS-OF-PARSE-NAT-FROM-STRING)
+                             ;(:rewrite PROGRESS-OF-PARSE-NAT-FROM-STRING)
                              )))
 
 
@@ -668,8 +369,9 @@ one index.</p>"
                            (xl (length x))
                            (yl (length y)))
                       (nfix (+ (- yl yn) (- xl xn))))
-                    :hints(("Goal" :in-theory (disable val-of-parse-nat-from-string
-                                                       len-of-parse-nat-from-string))))
+                    :hints(("Goal" :in-theory (disable ;val-of-parse-nat-from-string
+                                                       ;len-of-parse-nat-from-string
+                                                       ))))
              (ignorable xl yl))
     (mbe :logic
          (let* ((x  (if (stringp x) x ""))
@@ -843,7 +545,8 @@ one index.</p>"
 
 
 
-(defsection strnat<
+(define strnat< ((x :type string)
+                 (y :type string))
   :parents (ordering)
   :short "Mixed alphanumeric string less-than test."
 
@@ -855,20 +558,17 @@ than the string @('y'), using an ordering that is nice for humans.</p>
 <p>We avoid coercing the strings into character lists, and this is altogether
 pretty fast.</p>"
 
-  (definlined strnat< (x y)
-    (declare (type string x y))
-    (mbe :logic
-         (charlistnat< (explode x) (explode y))
-         :exec
-         (strnat<-aux (the string x)
-                      (the string y)
-                      (the integer 0)
-                      (the integer 0)
-                      (the integer (length (the string x)))
-                      (the integer (length (the string y))))))
-
-  (local (in-theory (enable strnat<)))
-
+  :inline t
+  (mbe :logic
+       (charlistnat< (explode x) (explode y))
+       :exec
+       (strnat<-aux (the string x)
+                    (the string y)
+                    (the integer 0)
+                    (the integer 0)
+                    (the integer (length (the string x)))
+                    (the integer (length (the string y)))))
+  ///
   (defcong streqv equal (strnat< x y) 1)
   (defcong streqv equal (strnat< x y) 2)
 

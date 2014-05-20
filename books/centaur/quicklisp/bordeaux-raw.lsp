@@ -1,5 +1,5 @@
-; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2011 Centaur Technology
+; ACL2 Quicklisp Interface
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,6 +18,6 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "std/portcullis" :dir :system)
-(include-book "centaur/fty/portcullis" :dir :system)
-; cert-flags: ? t :ttags :all
+(in-package "ACL2")
+(ql:quickload :bordeaux-threads)
+

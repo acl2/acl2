@@ -70,7 +70,7 @@ copying and pasting code.")
         (raise "Invalid xargs... ~x0" x))
        ((list* kwd val rest) x)
        ((when (member kwd '(:measure :mode :verify-guards
-                                     :guard-debug :guard-hints 
+                                     :guard-debug :guard-hints
                                      :hints :otf-flg)))
         (redundant-clean-up-xargs rest)))
     (list* kwd val
@@ -97,7 +97,7 @@ copying and pasting code.")
               (redundant-clean-up-decl-args rest))))
     (raise "Bad form in declare: ~x0" x)))
 
-(defun redundant-clean-up-decls 
+(defun redundant-clean-up-decls
   (x ;; list of traditional doc strings and (declare ...) forms
    )
   ;; strip out all measure/mode decls and doc strings
@@ -116,7 +116,7 @@ copying and pasting code.")
     (cons (cons 'declare (redundant-clean-up-decl-args decl1-args))
           (redundant-clean-up-decls rest))))
 
-(defun redundant-defun (event-tuple state)
+(defun redundant-defun (event-tuple force-programp state)
   (b* ((?__function__ 'redundant-defun)
        (world (w state))
        (form  (acl2::access-event-tuple-form event-tuple))
@@ -141,7 +141,8 @@ copying and pasting code.")
 
        ;; figure out the correct :mode and :verify-guards, based on current state
        (symbol-class (getprop fn 'acl2::symbol-class nil 'acl2::current-acl2-world world))
-       (decls (cond ((eq symbol-class :program)
+       (decls (cond ((or force-programp
+                         (eq symbol-class :program))
                      (cons `(declare (xargs :mode :program))
                            decls))
                     ((eq symbol-class :ideal)
@@ -158,7 +159,9 @@ copying and pasting code.")
        ;; enabled.  we won't do anything with type-prescriptions since they're
        ;; completely broken anyway (e.g., the TP you get is based on your
        ;; current theory, not the theory at the DEFUN time anyway.)
-       ((mv enables disables) (name-to-e/ds fn state)))
+       ((mv enables disables) (if force-programp
+                                  (mv nil nil)
+                                (name-to-e/ds fn state))))
     `((defun ,fn ,formals ,@decls ,body)
       (in-theory (e/d ,enables ,disables)))))
 
@@ -219,7 +222,7 @@ copying and pasting code.")
        (?doc    (fourth form)))
     `((defconst ,name ,value))))
 
-(defun redundant-event (name state)
+(defun redundant-event (name force-programp state)
   (b* ((?__function__ 'redundant-event)
        (world       (w state))
        (event-tuple (get-event-tuple name world))
@@ -227,27 +230,31 @@ copying and pasting code.")
        ((unless (consp form))
         (raise "For ~x0: expected a valid event form, but found ~x1." name form))
        (type (car form))
-       ((when (eq type 'defun))    (redundant-defun event-tuple state))
+       ((when (eq type 'defun))    (redundant-defun event-tuple force-programp state))
        ((when (eq type 'defthm))   (redundant-defthm event-tuple state))
        ((when (eq type 'defmacro)) (redundant-defmacro event-tuple state))
        ((when (eq type 'defconst)) (redundant-defconst event-tuple state))
        )
     (raise "For ~x0: unsupported event type: ~x1" name type)))
 
-(defun redundant-events (names state)
+(defun redundant-events (names force-programp state)
   (if (atom names)
       nil
-    (append (redundant-event (car names) state)
-            (redundant-events (cdr names) state))))
+    (append (redundant-event (car names) force-programp state)
+            (redundant-events (cdr names) force-programp state))))
 
-(defun defredundant-fn (names state)
-  (let ((events (redundant-events names state)))
+(defun defredundant-fn (names force-programp state)
+  (let ((events (redundant-events names force-programp state)))
     `(encapsulate
       ()
-      (set-enforce-redundancy t)
-      (logic)
+      ;; This doesn't work with program mode, apparently
+      ;; (set-enforce-redundancy t)
+      ,(if force-programp
+           '(program)
+         '(logic))
       . ,events)))
 
-(defmacro defredundant (&rest names)
-  `(make-event (defredundant-fn ',names state)))
-
+(defmacro defredundant (&key force-programp
+                             names)
+  `(make-event
+    (defredundant-fn ',names ',force-programp state)))

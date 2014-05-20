@@ -21,7 +21,7 @@
 (in-package "STR")
 (include-book "std/util/define" :dir :system)
 (include-book "cat")
-(include-book "natstr")
+(include-book "decimal")
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))

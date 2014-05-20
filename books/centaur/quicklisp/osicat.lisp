@@ -1,4 +1,4 @@
-; Quicklisp setup for Centaur books
+; ACL2 Quicklisp Interface
 ; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:

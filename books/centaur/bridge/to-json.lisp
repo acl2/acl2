@@ -1,5 +1,5 @@
 ; ACL2 Bridge
-; Copyright (C) 2012 Centaur Technology
+; Copyright (C) 2012-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,20 +19,24 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "BRIDGE")
-(include-book "misc/definline" :dir :system)
+(include-book "std/util/defines" :dir :system)
 (include-book "std/strings/cat" :dir :system)
-(include-book "std/strings/natstr" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
 (include-book "std/misc/two-nats-measure" :dir :system)
 (local (include-book "std/strings/explode-atom" :dir :system))
+(local (include-book "std/strings/strtok" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
+
 
 (defsection json-encoding
   :parents (bridge)
   :short "Simple encoder to convert ACL2 Objects into JSON Objects."
 
-  :long "<p>Sensibly converting ACL2 objects into JSON is not at all
+  :long "<h3>Introduction</h3>
+
+<p>Sensibly converting ACL2 objects into JSON is not at all
 straightforward.</p>
 
 <p>On one hand, JSON is very rich.  Should we try to map association lists into
@@ -162,59 +166,52 @@ and so, and the error value was such and so.  In this context, we just want to
 stitch our ACL2 object into a larger piece of JSON text, and strings are
 okay.</p>")
 
+(local (xdoc::set-default-parents json-encoding))
 
+(define json-encode-weird-char
+  :short "Convert special characters into @('\\uXXXX') sequences."
+  ((code :type (unsigned-byte 8)) acc)
+  :returns (new-acc character-listp :hyp (character-listp acc))
+  :long "<p>This lets us properly encode weird things like control
+characters.</p>
 
-(defsection json-encode-weird-char
-  :parents (json-encoding)
-  :long "<p>This accumulates the special \\uXXXX style encoding of a character
-whose code is @('code') onto @('acc').  This lets us properly encode weird
-things like control characters.  We don't have to escape everything this way,
-e.g., using \\n or \\t would be more readable.</p>"
+<p>BOZO we could use more readable encoding like @('\\n') and @('\\t') in some
+cases.  For now we do it dumbly.</p>"
 
-  (local (defthm crock
-           (<= (acl2::loghead 4 code) 15)
-           :rule-classes ((:rewrite) (:linear))
-           :hints(("Goal"
-                   :in-theory (disable acl2::unsigned-byte-p-of-loghead)
-                   :use ((:instance acl2::unsigned-byte-p-of-loghead
-                                    (acl2::size 4)
-                                    (acl2::size1 4)
-                                    (acl2::i code)))))))
+  :prepwork
+  ((local (defthm crock
+            (<= (acl2::loghead 4 code) 15)
+            :rule-classes ((:rewrite) (:linear))
+            :hints(("Goal"
+                    :in-theory (disable acl2::unsigned-byte-p-of-loghead)
+                    :use ((:instance acl2::unsigned-byte-p-of-loghead
+                                     (acl2::size 4)
+                                     (acl2::size1 4)
+                                     (acl2::i code)))))))
 
-  (local (defthm crock2
-           (implies (and (integerp code)
-                         (<= 0 code)
-                         (< code 256))
-                    (<= (acl2::logtail 4 code) 15))
-           :rule-classes ((:rewrite) (:linear))
-           :hints(("Goal"
-                   :in-theory (disable acl2::unsigned-byte-p-of-logtail)
-                   :use ((:instance acl2::unsigned-byte-p-of-logtail
-                                    (acl2::size 4)
-                                    (acl2::size1 4)
-                                    (acl2::i code)))))))
+   (local (defthm crock2
+            (implies (and (integerp code)
+                          (<= 0 code)
+                          (< code 256))
+                     (<= (acl2::logtail 4 code) 15))
+            :rule-classes ((:rewrite) (:linear))
+            :hints(("Goal"
+                    :in-theory (disable acl2::unsigned-byte-p-of-logtail)
+                    :use ((:instance acl2::unsigned-byte-p-of-logtail
+                                     (acl2::size 4)
+                                     (acl2::size1 4)
+                                     (acl2::i code))))))))
 
-  (defund json-encode-weird-char (code acc)
-    (declare (type (unsigned-byte 8) code))
-    ;; Convert a special character into a \uXXXX sequence, where the Xes are hex
-    ;; numbers for the character code.  Since the code is under 256, only two
-    ;; digits are actually needed.
-    (let* ((lo   (logand code #xF))
-           (hi   (logand (ash code -4) #xF))
-           (acc  (cons #\\ acc))
-           (acc  (cons #\u acc))
-           (acc  (cons #\0 acc))
-           (acc  (cons #\0 acc))
-           (acc  (cons (digit-to-char hi) acc))
-           (acc  (cons (digit-to-char lo) acc)))
-      acc))
-
-  (local (in-theory (enable json-encode-weird-char)))
-
-  (defthm character-listp-of-json-encode-weird-char
-    (implies (character-listp acc)
-             (character-listp (json-encode-weird-char x acc))))
-
+  (b* ((lo   (logand code #xF))
+       (hi   (logand (ash code -4) #xF))
+       (acc  (cons #\\ acc))
+       (acc  (cons #\u acc))
+       (acc  (cons #\0 acc))
+       (acc  (cons #\0 acc))
+       (acc  (cons (digit-to-char hi) acc))
+       (acc  (cons (digit-to-char lo) acc)))
+    acc)
+  ///
   (local (defun test (x)
            (let* ((acc (reverse (explode "abc ")))
                   (acc (json-encode-weird-char x acc)))
@@ -234,71 +231,48 @@ e.g., using \\n or \\t would be more readable.</p>"
      (assert! (equal (test 255) "abc \\u00FF")))))
 
 
-(defsection json-encode-char
+(define json-encode-char
   :parents (json-encoding)
+  ((x :type character) acc)
+  :returns (new-acc character-listp :hyp (and (characterp x)
+                                              (character-listp acc)))
+  :inline t
+  (b* (((when (eql x #\\))
+        (cons #\\ (cons #\\ acc)))
+       ((when (eql x #\"))
+        (cons #\" (cons #\\ acc)))
+       ((the (unsigned-byte 8) code) (char-code x))
+       ((when (or (<= code 31)
+                  (>= code 127)))
+        (json-encode-weird-char code acc)))
+    (cons x acc)))
 
-  (definlined json-encode-char (x acc)
-    (declare (type character x))
-    (cond ((eql x #\\)
-           (cons #\\ (cons #\\ acc)))
-          ((eql x #\")
-           (cons #\" (cons #\\ acc)))
-          (t
-           (let ((code (char-code x)))
-             (declare (type (unsigned-byte 8) code))
-             (if (or (<= code 31)
-                     (>= code 127))
-                 (json-encode-weird-char code acc)
-               (cons x acc))))))
+(define json-encode-chars ((x character-listp) acc)
+  :returns (new-acc character-listp
+                    :hyp (and (character-listp x)
+                              (character-listp acc)))
+  (b* (((when (atom x))
+        acc)
+       (acc (json-encode-char (car x) acc)))
+    (json-encode-chars (cdr x) acc)))
 
-  (local (in-theory (enable json-encode-char)))
-
-  (defthm character-listp-of-json-encode-char
-    (implies (and (characterp x)
-                  (character-listp acc))
-             (character-listp (json-encode-char x acc)))))
-
-
-(defsection json-encode-chars
-  :parents (json-encoding)
-
-  (defund json-encode-chars (x acc)
-    (declare (xargs :guard (character-listp x)))
-    (if (atom x)
-        acc
-      (let ((acc (json-encode-char (car x) acc)))
-        (json-encode-chars (cdr x) acc))))
-
-  (local (in-theory (enable json-encode-chars)))
-
-  (defthm character-listp-of-json-encode-chars
-    (implies (and (character-listp x)
-                  (character-listp acc))
-             (character-listp (json-encode-chars x acc)))))
-
-
-
-(defsection json-encode-str
-  :parents (json-encoding)
-  :short "Fast string encoder that doesn't @(see coerce) the string into a
-character list."
-
-  (defund json-encode-str-aux (x n xl acc)
-    (declare (type string x)
-             (xargs :guard (and (stringp x)
-                                (natp n)
-                                (natp xl)
-                                (<= n xl)
-                                (eql xl (length x)))
-                    :measure (nfix (- (nfix xl) (nfix n)))))
-    (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (eql n xl))
-        acc
-      (let ((acc (json-encode-char (char x n) acc)))
-        (json-encode-str-aux x
-                             (+ 1 (mbe :logic (nfix n) :exec n))
-                             xl acc))))
-
+(define json-encode-str-aux
+  :parents (json-encode-string)
+  ((x stringp :type string)
+   (n natp :type (integer 0 *))
+   (xl (equal xl (length x)) :type (integer 0 *))
+   acc)
+  :measure (nfix (- (nfix xl) (nfix n)))
+  :guard (<= n xl)
+  :split-types t
+  (b* (((when (mbe :logic (zp (- (nfix xl) (nfix n)))
+                   :exec (eql n xl)))
+        acc)
+       (acc (json-encode-char (char x n) acc))
+       ((the (integer 0 *) n)
+        (+ 1 (the (integer 0 *) (lnfix n)))))
+    (json-encode-str-aux x n xl acc))
+  ///
   (local (include-book "std/lists/nthcdr" :dir :system))
   (local (include-book "arithmetic/top" :dir :system))
 
@@ -320,48 +294,43 @@ character list."
             :in-theory (enable json-encode-str-aux
                                json-encode-chars)
             :induct (json-encode-str-aux x n xl acc)
-            :expand (json-encode-chars (nthcdr n (explode x)) acc))))
+            :expand (json-encode-chars (nthcdr n (explode x)) acc)))))
 
-  (definline json-encode-str (x acc)
-    (declare (type string x))
-    (mbe :logic (json-encode-chars (explode x) acc)
-         :exec (json-encode-str-aux x 0 (length x) acc))))
+(define json-encode-str
+  :short "Fast string encoder that doesn't @(see coerce) the string into a
+character list."
+  :inline t
+  :enabled t
+  ((x :type string) acc)
+  (mbe :logic (json-encode-chars (explode x) acc)
+       :exec (json-encode-str-aux x 0 (length x) acc)))
 
 
-(defsection json-encode-atom
-  :parents (json-encoding)
-
-  (defund json-encode-atom (x acc)
-    (declare (xargs :guard (atom x)))
-    (let* ((acc (cons #\" acc))
-           (acc (cond ((symbolp x)
-                       (json-encode-str (symbol-name x)
-                                        (if (keywordp x) (cons #\: acc) acc)))
-                      ((integerp x)
-                       ;; We know that the digits are all valid characters so
-                       ;; there's no need to encode the resulting natchars.
-                       (if (< x 0)
-                           (revappend (str::natchars (- x)) (cons #\- acc))
-                         (revappend (str::natchars x) acc)))
-                      ((characterp x)
-                       (json-encode-char x acc))
-                      ((stringp x)
-                       (json-encode-str x acc))
-                      ((acl2-numberp x)
-                       ;; Don't really care about efficiency
-                       (json-encode-chars (explode-atom x 10) acc))
-                      (t
-                       (prog2$
-                        (er hard? 'json-encode-atom "Bad ACL2 object: ~x0" x)
-                        acc)))))
-      (cons #\" acc)))
-
-  (local (in-theory (enable json-encode-atom)))
-
-  (defthm character-listp-of-json-encode-atom
-    (implies (character-listp acc)
-             (character-listp (json-encode-atom x acc))))
-
+(define json-encode-atom ((x atom) acc)
+  :returns (new-acc character-listp :hyp (character-listp acc))
+  (let* ((acc (cons #\" acc))
+         (acc (cond ((symbolp x)
+                     (json-encode-str (symbol-name x)
+                                      (if (keywordp x) (cons #\: acc) acc)))
+                    ((integerp x)
+                     ;; We know that the digits are all valid characters so
+                     ;; there's no need to encode the resulting natchars.
+                     (if (< x 0)
+                         (revappend (str::natchars (- x)) (cons #\- acc))
+                       (revappend (str::natchars x) acc)))
+                    ((characterp x)
+                     (json-encode-char x acc))
+                    ((stringp x)
+                     (json-encode-str x acc))
+                    ((acl2-numberp x)
+                     ;; Don't really care about efficiency
+                     (json-encode-chars (explode-atom x 10) acc))
+                    (t
+                     (progn$
+                      (raise "Bad ACL2 object: ~x0" x)
+                      acc)))))
+    (cons #\" acc))
+  ///
   (local (defun test (x)
            (let* ((acc (reverse (explode "abc ")))
                   (acc (json-encode-atom x acc)))
@@ -382,21 +351,22 @@ character list."
      (assert! (equal (test #c(17/2 -3/8)) "abc \"#C(17/2 -3/8)\"")))))
 
 
-(defsection json-simple-alist-p
-  :parents (json-encoding)
+(define json-simple-alist-p (x)
   :short "A proper alist whose every key is an atom."
+  (if (atom x)
+      (not x)
+    (and (consp (car x))
+         (atom (caar x))
+         (json-simple-alist-p (cdr x)))))
 
-  (defund json-simple-alist-p (x)
-    (declare (xargs :guard t))
-    (if (atom x)
-        (not x)
-      (and (consp (car x))
-           (atom (caar x))
-           (json-simple-alist-p (cdr x))))))
+(define json-comma-and-maybe-newline (acc)
+  (if (and (consp acc)
+           (or (eql (car acc) #\])
+               (eql (car acc) #\})))
+      (cons #\Newline (cons #\, acc))
+    (cons #\, acc)))
 
-
-(defsection json-encode-main
-  :parents (json-encoding)
+(defines json-encode-main
   :short "Main function for JSON encoding."
 
   :long "<p>@(call json-encode) accumulates the JSON encoding of @('x') onto
@@ -408,196 +378,147 @@ the JSON RFC, plain JSON values other than arrays and objects are not valid
 JSON text.  See @(see json-encode) instead, for a function that does something
 to fix up atoms.</p>"
 
-  (local (in-theory (enable json-simple-alist-p)))
+  :prepwork
+  ((local (in-theory (enable json-simple-alist-p
+                             json-comma-and-maybe-newline))))
 
-  (definline json-comma-and-maybe-newline (acc)
-    (declare (xargs :guard t))
-    (if (and (consp acc)
-             (or (eql (car acc) #\])
-                 (eql (car acc) #\})))
-        (cons #\Newline (cons #\, acc))
-      (cons #\, acc)))
+  (define json-encode-main ((x "Any arbitrary ACL2 object.")
+                            (acc "Accumulator, characters in reverse order."))
+    :flag :main
+    :guard-debug t
+    :measure (acl2::two-nats-measure (acl2-count x) 1)
+    (cond ((atom x)
+           (json-encode-atom x acc))
+          ((json-simple-alist-p x)
+           (json-encode-simple-alist x (cons #\{ acc)))
+          ((true-listp x)
+           (json-encode-true-list x (cons #\[ acc)))
+          (t
+           (json-encode-improper-cons-list x (cons #\[ acc)))))
 
-  (local (in-theory (enable json-comma-and-maybe-newline)))
+  (define json-encode-simple-alist ((x json-simple-alist-p) acc)
+    :flag :alist
+    :measure (acl2::two-nats-measure (acl2-count x) 0)
+    (b* (((when (atom x))
+          (cons #\} acc))
+         (acc (json-encode-atom (caar x) acc))
+         (acc (cons #\: acc))
+         (acc (json-encode-main (cdar x) acc))
+         (acc (if (consp (cdr x))
+                  (json-comma-and-maybe-newline acc)
+                acc)))
+      (json-encode-simple-alist (cdr x) acc)))
 
-  (mutual-recursion
+  (define json-encode-true-list ((x true-listp) acc)
+    :flag :true-list
+    :measure (acl2::two-nats-measure (acl2-count x) 0)
+    (b* (((when (atom x))
+          (cons #\] acc))
+         (acc (json-encode-main (car x) acc))
+         (acc (if (consp (cdr x))
+                  (json-comma-and-maybe-newline acc)
+                acc)))
+      (json-encode-true-list (cdr x) acc)))
 
-   (defund json-encode-main (x acc)
-     (declare (xargs :guard t
-                     :guard-debug t
-                     :measure (acl2::two-nats-measure (acl2-count x) 1)))
-     (cond ((atom x)
-            (json-encode-atom x acc))
-           ((json-simple-alist-p x)
-            (json-encode-simple-alist x (cons #\{ acc)))
-           ((true-listp x)
-            (json-encode-true-list x (cons #\[ acc)))
-           (t
-            (json-encode-improper-cons-list x (cons #\[ acc)))))
+  (define json-encode-improper-cons-list ((x (not (true-listp x))) acc)
+    :flag :improper
+    :measure (acl2::two-nats-measure (acl2-count x) 0)
+    (b* (((when (atom x))
+          (let* ((acc (json-encode-atom x acc)))
+            (cons #\] acc)))
+         (acc (json-encode-main (car x) acc))
+         (acc (json-comma-and-maybe-newline acc)))
+      (json-encode-improper-cons-list (cdr x) acc)))
 
-   (defund json-encode-simple-alist (x acc)
-     (declare (xargs :guard (json-simple-alist-p x)
-                     :measure (acl2::two-nats-measure (acl2-count x) 0)))
-     (if (atom x)
-         (cons #\} acc)
-       (let* ((acc (json-encode-atom (caar x) acc))
-              (acc (cons #\: acc))
-              (acc (json-encode-main (cdar x) acc))
-              (acc (if (consp (cdr x))
-                       (json-comma-and-maybe-newline acc)
-                     acc)))
-         (json-encode-simple-alist (cdr x) acc))))
-
-   (defun json-encode-true-list (x acc)
-     (declare (xargs :guard (true-listp x)
-                     :measure (acl2::two-nats-measure (acl2-count x) 0)))
-     (if (atom x)
-         (cons #\] acc)
-       (let* ((acc (json-encode-main (car x) acc))
-              (acc (if (consp (cdr x))
-                       (json-comma-and-maybe-newline acc)
-                     acc)))
-         (json-encode-true-list (cdr x) acc))))
-
-   (defun json-encode-improper-cons-list (x acc)
-     (declare (xargs :guard (not (true-listp x))
-                     :measure (acl2::two-nats-measure (acl2-count x) 0)))
-     (if (atom x)
-         (let* ((acc (json-encode-atom x acc)))
-           (cons #\] acc))
-       (let* ((acc (json-encode-main (car x) acc))
-              (acc (json-comma-and-maybe-newline acc)))
-         (json-encode-improper-cons-list (cdr x) acc)))))
-
-  (local (include-book "std/strings/strtok" :dir :system))
-
-  (local (defun collapse-newlines (x)
-           (string-append-lst (str::strtok x '(#\Newline)))))
-
-  (local (defun test (x)
-           (let* ((acc (reverse (explode "abc ")))
-                  (acc (json-encode-main x acc)))
-             (collapse-newlines
-              (str::rchars-to-string acc)))))
-
-  ;; Same atom tests as above
-  (local
-   (progn
-     (assert! (equal (test nil)   "abc \"NIL\""))
-     (assert! (equal (test t)     "abc \"T\""))
-     (assert! (equal (test 'foo)  "abc \"FOO\""))
-     (assert! (equal (test :foo)  "abc \":FOO\""))
-     (assert! (equal (test "foo") "abc \"foo\""))
-     (assert! (equal (test #\f)   "abc \"f\""))
-     (assert! (equal (test 123)   "abc \"123\""))
-     (assert! (equal (test 0)     "abc \"0\""))
-     (assert! (equal (test -123)  "abc \"-123\""))
-     (assert! (equal (test -1/2)  "abc \"-1/2\""))
-     (assert! (equal (test #c(17/2 -3/8)) "abc \"#C(17/2 -3/8)\""))))
-
-  ;; Basic consp tests
-  (local
-   (progn
-
-     (assert! (equal (test '(a . nil))   "abc [\"A\"]"))
-     (assert! (equal (test '(a . b))     "abc [\"A\",\"B\"]"))
-     (assert! (equal (test '(a b . nil)) "abc [\"A\",\"B\"]"))
-     (assert! (equal (test '(a b . c))   "abc [\"A\",\"B\",\"C\"]"))
-     (assert! (equal (test '(a b c . nil)) "abc [\"A\",\"B\",\"C\"]"))
-     (assert! (equal (test '((a . b) (c . d) . e)) "abc [[\"A\",\"B\"],[\"C\",\"D\"],\"E\"]"))
-     (assert! (equal (test '((a . b))) "abc {\"A\":\"B\"}"))
-     (assert! (equal (test '((a . b) (c . d))) "abc {\"A\":\"B\",\"C\":\"D\"}"))
-
-     (assert! (equal (test '(a ((1 . :foo)
-                                (2 . (:foo :bar :baz))
-                                (3 . ((:foo . a) (:bar . b) (:baz . c))))
-                               15
-                               17/2
-                               . :end))
-                     (concatenate 'string
-                                  "abc [\"A\","
-                                  "{"
-                                  "\"1\":\":FOO\","
-                                  "\"2\":[\":FOO\",\":BAR\",\":BAZ\"],"
-                                  "\"3\":"
-                                  "{"
-                                  "\":FOO\":\"A\","
-                                  "\":BAR\":\"B\","
-                                  "\":BAZ\":\"C\""
-                                  "}"
-                                  "},"
-                                  "\"15\","
-                                  "\"17/2\","
-                                  "\":END\"]")))))
-
-  (local (include-book "tools/flag" :dir :system))
-
-  (local (flag::make-flag flag-json-encode-main
-                          json-encode-main))
-
-  (local
-   (defthm-flag-json-encode-main
-     (defthm l0
-       (implies (character-listp acc)
-                (character-listp (json-encode-main x acc)))
-       :flag json-encode-main)
-     (defthm l1
-       (implies (and (character-listp acc)
-                     ;(json-simple-alist-p x)
-                     )
-                (character-listp (json-encode-simple-alist x acc)))
-       :flag json-encode-simple-alist)
-     (defthm l2
-       (implies (character-listp acc)
-                (character-listp (json-encode-true-list x acc)))
-       :flag json-encode-true-list)
-     (defthm l3
-       (implies (character-listp acc)
-                (character-listp (json-encode-improper-cons-list x acc)))
-       :flag json-encode-improper-cons-list)
-     :hints(("Goal"
-             :expand ((json-encode-main x acc)
-                      (json-encode-simple-alist x acc)
-                      (json-encode-simple-alist nil acc)
-                      (json-encode-true-list x acc)
-                      (json-encode-improper-cons-list x acc))))))
-
-  (defthm character-listp-of-json-encode-main
-    (implies (character-listp acc)
-             (character-listp (json-encode-main x acc))))
-
-  (defthm character-listp-of-json-encode-simple-alist
-    (implies (character-listp acc)
-             (character-listp (json-encode-simple-alist x acc))))
-
-  (defthm character-listp-of-json-encode-true-list
-    (implies (character-listp acc)
-             (character-listp (json-encode-true-list x acc))))
-
-  (defthm character-listp-of-json-encode-improper-cons-list
-    (implies (character-listp acc)
-             (character-listp (json-encode-improper-cons-list x acc)))))
+  ///
+  (defthm-json-encode-main-flag
+    (defthm character-listp-of-json-encode-main
+      (implies (character-listp acc)
+               (character-listp (json-encode-main x acc)))
+      :flag :main)
+    (defthm character-listp-of-json-encode-simple-alist
+      (implies (and (character-listp acc))
+               (character-listp (json-encode-simple-alist x acc)))
+      :flag :alist)
+    (defthm character-listp-of-json-encode-true-list
+      (implies (character-listp acc)
+               (character-listp (json-encode-true-list x acc)))
+      :flag :true-list)
+    (defthm character-listp-of-json-encode-improper-cons-list
+      (implies (character-listp acc)
+               (character-listp (json-encode-improper-cons-list x acc)))
+      :flag :improper)))
 
 
-(defsection json-encode
-  :parents (json-encoding)
+(local
+ (defsection basic-test
+
+   (defun collapse-newlines (x)
+     (string-append-lst (str::strtok x '(#\Newline))))
+
+   (defun test (x)
+     (let* ((acc (reverse (explode "abc ")))
+            (acc (json-encode-main x acc)))
+       (collapse-newlines
+        (str::rchars-to-string acc))))
+
+   ;; Same atom tests as above
+   (local
+    (progn
+      (assert! (equal (test nil)   "abc \"NIL\""))
+      (assert! (equal (test t)     "abc \"T\""))
+      (assert! (equal (test 'foo)  "abc \"FOO\""))
+      (assert! (equal (test :foo)  "abc \":FOO\""))
+      (assert! (equal (test "foo") "abc \"foo\""))
+      (assert! (equal (test #\f)   "abc \"f\""))
+      (assert! (equal (test 123)   "abc \"123\""))
+      (assert! (equal (test 0)     "abc \"0\""))
+      (assert! (equal (test -123)  "abc \"-123\""))
+      (assert! (equal (test -1/2)  "abc \"-1/2\""))
+      (assert! (equal (test #c(17/2 -3/8)) "abc \"#C(17/2 -3/8)\""))))
+
+   ;; Basic consp tests
+   (local
+    (progn
+
+      (assert! (equal (test '(a . nil))   "abc [\"A\"]"))
+      (assert! (equal (test '(a . b))     "abc [\"A\",\"B\"]"))
+      (assert! (equal (test '(a b . nil)) "abc [\"A\",\"B\"]"))
+      (assert! (equal (test '(a b . c))   "abc [\"A\",\"B\",\"C\"]"))
+      (assert! (equal (test '(a b c . nil)) "abc [\"A\",\"B\",\"C\"]"))
+      (assert! (equal (test '((a . b) (c . d) . e)) "abc [[\"A\",\"B\"],[\"C\",\"D\"],\"E\"]"))
+      (assert! (equal (test '((a . b))) "abc {\"A\":\"B\"}"))
+      (assert! (equal (test '((a . b) (c . d))) "abc {\"A\":\"B\",\"C\":\"D\"}"))
+
+      (assert! (equal (test '(a ((1 . :foo)
+                                 (2 . (:foo :bar :baz))
+                                 (3 . ((:foo . a) (:bar . b) (:baz . c))))
+                                15
+                                17/2
+                                . :end))
+                      (concatenate 'string
+                                   "abc [\"A\","
+                                   "{"
+                                   "\"1\":\":FOO\","
+                                   "\"2\":[\":FOO\",\":BAR\",\":BAZ\"],"
+                                   "\"3\":"
+                                   "{"
+                                   "\":FOO\":\"A\","
+                                   "\":BAR\":\"B\","
+                                   "\":BAZ\":\"C\""
+                                   "}"
+                                   "},"
+                                   "\"15\","
+                                   "\"17/2\","
+                                   "\":END\"]")))))))
+
+
+(define json-encode
   :short "Top level wrapper for @(see json-encode-main)."
-
-  :long "<p>@(call json-encode) encodes any ACL2 object X into a JSON
-representation, which it returns as a string.</p>
-
-<p>This wraps up the accumulator used by @(see json-encode-main) and deals with
-getting the characters into the right order.</p>"
-
-  (defund json-encode (x)
-    (declare (xargs :guard t))
-    (let ((acc (json-encode-main x nil)))
-      (str::rchars-to-string acc)))
-
-  (local (in-theory (enable json-encode)))
-
-  (defthm stringp-of-json-encode-simple
-    (stringp (json-encode x))
-    :rule-classes :type-prescription))
-
-
+  ((x "Any ACL2 object."))
+  :returns (x-json "The JSON-encoded version of @('x')."
+                   stringp :rule-classes :type-prescription)
+  :long "<p>This wraps up the accumulator used by @(see json-encode-main) and
+deals with getting the characters into the right order.</p>"
+  (let ((acc (json-encode-main x nil)))
+    (str::rchars-to-string acc)))

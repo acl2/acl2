@@ -1,5 +1,5 @@
-; Centaur Lexer Library
-; Copyright (C) 2013 Centaur Technology
+; ACL2 String Library
+; Copyright (C) 2009-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,14 +18,15 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "CLEX")
+(in-package "STR")
 (include-book "charset")
 (local (include-book "arithmetic"))
+
+(local (xdoc::set-default-parents charset-p))
 
 (define count-leading-charset ((x   character-listp)
                                (set charset-p))
   :returns (num natp :rule-classes :type-prescription)
-  :parents (charset-p)
   :short "Count how many characters at the start of a list are members of a
 particular character set."
   (cond ((atom x)
@@ -95,7 +96,6 @@ particular character set."
    (set charset-p            "Set of characters we're counting."))
   :guard (<= n xl)
   :returns (n natp :rule-classes :type-prescription)
-  :parents (charset-p)
   :short "String version of @(see count-leading-charset)."
   :enabled t
   (declare (type (integer 0 *) xl n)
@@ -123,7 +123,6 @@ particular character set."
    (set charset-p            "Set of characters we're counting."))
   :guard (<= n xl)
   :returns (n natp :rule-classes :type-prescription)
-  :parents (charset-p)
   :short "Fixnum optimized version of @(see str-count-leading-charset)."
   :enabled t
   (declare (type (unsigned-byte 60) n xl)

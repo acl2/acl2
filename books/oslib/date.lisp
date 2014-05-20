@@ -21,7 +21,7 @@
 (in-package "OSLIB")
 (include-book "logic-defs")
 (include-book "std/strings/cat" :dir :system)
-(include-book "std/strings/natstr" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
 ; (depends-on "date-raw.lsp")
 
 (defttag oslib)

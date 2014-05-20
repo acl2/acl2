@@ -326,13 +326,14 @@ now does nothing.</p>")
 
        (short (or short
                   (and parents
-                       (str::cat "@(call " (symbol-name list-fn) ") maps "
-                                 "@(see " (symbol-package-name elem-fn)
-                                 "::" (symbol-name elem-fn) ") across a list."))))
+                       (concatenate 'string "@(call " (symbol-name list-fn) ") maps "
+                                    "@(see " (symbol-package-name elem-fn)
+                                    "::" (symbol-name elem-fn) ") across a list."))))
 
        (long (or long
                  (and parents
-                      (str::cat "<p>This is an ordinary @(see std::defprojection).</p>"))))
+                      (concatenate 'string
+                                   "<p>This is an ordinary @(see std::defprojection).</p>"))))
 
        (prepwork (if already-definedp
                      nil

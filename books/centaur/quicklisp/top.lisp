@@ -1,4 +1,4 @@
-; Quicklisp setup for Centaur books
+; ACL2 Quicklisp Interface
 ; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
@@ -20,6 +20,8 @@
 
 (in-package "ACL2")
 (include-book "base")
+(include-book "bordeaux")
+(include-book "hunchentoot")
 (include-book "iolib")
 (include-book "osicat")
 

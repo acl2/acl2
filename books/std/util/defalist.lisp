@@ -213,7 +213,7 @@ to override it.</p>")
 
        (short (or short
                   (and parents
-                       (str::cat "@(call " (symbol-package-name
+                       (concatenate 'string "@(call " (symbol-package-name
 name) "::" (symbol-name name) ") recognizes association lists where every key
 satisfies @(see " (symbol-package-name keyp) "::" (symbol-name keyp) ") and
 each value satisfies @(see " (symbol-package-name valp) "::" (symbol-name
@@ -221,9 +221,8 @@ valp) ")."))))
 
        (long (or long
                  (and parents
-                      (str::cat "<p>This is an ordinary @(see std::defalist).</p>"
-                                "@(def " (symbol-package-name
-                                name) "::" (symbol-name name) ")"))))
+                      (concatenate 'string "<p>This is an ordinary @(see std::defalist).</p>"
+                                   "@(def " (symbol-package-name name) "::" (symbol-name name) ")"))))
 
        (doc (if (or parents short long)
                 `((defxdoc ,name :parents ,parents :short ,short :long ,long))

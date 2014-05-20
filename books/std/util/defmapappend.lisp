@@ -233,15 +233,15 @@ add theorems into the same section.</p>")
 
        (short (or short
                   (and parents
-                       (str::cat "@(call " (symbol-name name)
-                                 ") applies @(see " (symbol-name transform-fn)
-                                 ") to every member of the list @('x'), "
-                                 "and appends together all the resulting lists."))))
+                       (concatenate 'string  "@(call " (symbol-name name)
+                                    ") applies @(see " (symbol-name transform-fn)
+                                    ") to every member of the list @('x'), "
+                                    "and appends together all the resulting lists."))))
 
        (long (or long
                  (and parents
-                      (str::cat "<p>This is an ordinary @(see std::defmapappend).</p>"
-                                "@(def " (symbol-name name) ")"))))
+                      (concatenate 'string  "<p>This is an ordinary @(see std::defmapappend).</p>"
+                                   "@(def " (symbol-name name) ")"))))
 
        (def
         `((defund ,exec-fn (,@formals ,acc)

@@ -16,7 +16,7 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(include-book "digitp")
+(include-book "decimal")
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "explode-nonnegative-integer"))
 

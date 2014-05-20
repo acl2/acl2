@@ -23,7 +23,11 @@
 
 (defconst *standard-acl2-imports*
   (set-difference-eq-exec
-   (union-eq-exec *acl2-exports*
+   (union-eq-exec (union-eq-exec
+                   '(;; Some symbols ought to be included but aren't.
+                     print-base-p
+                     )
+                   *acl2-exports*)
                   *common-lisp-symbols-from-main-lisp-package*)
    '(
      ;; Various string functions have nasty standard-char-p guards.  We remove
@@ -55,7 +59,7 @@
           a b c d e f g h i j k l m n o p q r s t u v w x y z
           top
           defxdoc defsection lnfix definlined definline
-          define defaggregate unsigned-byte-p signed-byte-p
+          define defines defaggregate unsigned-byte-p signed-byte-p
           char-fix chareqv
           str-fix streqv
           raise
@@ -188,6 +192,7 @@
                     __function__
                     raise
                     define
+                    defines
                     defrule
                     defsection
                     defxdoc

@@ -23,7 +23,7 @@
 (include-book "print-urlencode")
 (include-book "print-htmlencode")
 (include-book "cw-unformatted")
-(include-book "std/strings/natstr" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
 (local (include-book "arithmetic"))
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "std/io/base" :dir :system))
@@ -1225,8 +1225,7 @@ lists.</p>"
   (defthm acc-of-vl-print-natchars-aux
     (equal (mv-nth 0 (vl-print-natchars-aux n acc col))
            (str::revappend-natchars-aux n acc))
-    :hints(("Goal" :in-theory (e/d (str::revappend-natchars-aux)
-                                   (str::revappend-natchars-aux-redef)))))
+    :hints(("Goal" :in-theory (enable str::basic-natchars))))
   (verify-guards vl-print-natchars-aux))
 
 (define vl-print-nat-main ((n natp) &key (ps 'ps))

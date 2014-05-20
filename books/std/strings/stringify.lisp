@@ -21,7 +21,7 @@
 
 (in-package "STR")
 (include-book "cat")
-(include-book "natstr")
+(include-book "decimal")
 
 ; cert_param: (non-acl2r)
 

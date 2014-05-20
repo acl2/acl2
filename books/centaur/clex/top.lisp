@@ -21,7 +21,7 @@
 (in-package "CLEX")
 (include-book "sin")
 (include-book "matchers")
-(include-book "std/strings/natstr" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
 
 (defsection clex
   :parents (acl2::interfacing-tools)

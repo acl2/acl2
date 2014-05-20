@@ -1,5 +1,5 @@
 ; ACL2 Bridge
-; Copyright (C) 2012 Centaur Technology
+; Copyright (C) 2012-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group

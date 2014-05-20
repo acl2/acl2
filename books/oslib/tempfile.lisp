@@ -22,7 +22,7 @@
 (in-package "OSLIB")
 (include-book "getpid")
 (include-book "catpath")
-(include-book "std/strings/natstr" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/cat" :dir :system)
 
 (defsection tempfile

@@ -103,7 +103,7 @@
 (include-book "gl-generic-clause-proc")
 (include-book "centaur/misc/numlist" :dir :system)
 (include-book "shape-spec")
-(include-book "std/strings/natstr" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/strnatless" :dir :system)
 (include-book "defsort/duplicated-members" :dir :system)
 

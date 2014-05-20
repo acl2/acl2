@@ -20,7 +20,10 @@
 
 (in-package "OSLIB")
 (include-book "logic-defs")
+(include-book "centaur/quicklisp/top" :dir :system)
 ; (depends-on "mkdir-raw.lsp")
 
 (defttag oslib)
-(include-raw "mkdir-raw.lsp")
+(include-raw "mkdir-raw.lsp"
+             :do-not-compile t
+             :host-readtable t)

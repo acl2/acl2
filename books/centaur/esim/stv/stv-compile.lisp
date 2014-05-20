@@ -31,7 +31,7 @@
 (include-book "centaur/misc/tuplep" :dir :system)
 (include-book "std/util/defmvtypes" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
-(include-book "std/strings/natstr" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
 (include-book "std/lists/final-cdr" :dir :system)
 (include-book "centaur/vl/util/defs" :dir :system)
 (local (include-book "../esim-sexpr-support-thms"))

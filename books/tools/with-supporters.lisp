@@ -231,7 +231,8 @@
                                  ()
                                  ',local-event
                                  (append named-events
-                                         (cons (cons 'std::defredundant fns)
+                                         (cons `(std::defredundant
+                                                  :names ,fns)
                                                ',events))))))))))
 
 (defmacro with-supporters-after (name &rest events)
@@ -250,7 +251,8 @@
                                                    (w state)
                                                    state)))
                       (value (list* 'progn
-                                    (cons 'std::defredundant fns)
+                                    `(std::defredundant
+                                       :names ,fns)
                                     ',events)))))))))
 
 (defxdoc with-supporters
@@ -350,7 +352,8 @@
    ()
    (local (include-book \"std/lists/duplicity\"
                         :dir :system))
-   (std::defredundant duplicity-exec duplicity)
+   (std::defredundant
+     :names (duplicity-exec duplicity))
    (defthm duplicity-append
      (equal (duplicity a (append x y))
             (+ (duplicity a x) (duplicity a y)))))

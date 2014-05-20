@@ -24,7 +24,7 @@
 (in-package "SATLINK")
 (include-book "cnf")
 (include-book "dimacs")
-(include-book "std/strings/natstr" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/strnatless" :dir :system)
 (include-book "oslib/tempfile" :dir :system)
 (include-book "centaur/misc/tshell" :dir :system)

@@ -1,5 +1,5 @@
-; Quicklisp setup for Centaur books
-; Copyright (C) 2008-2013 Centaur Technology
+; ACL2 Quicklisp Interface
+; Copyright (C) 2008-2014 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group

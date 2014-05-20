@@ -20,11 +20,11 @@
 
 (in-package "CLEX")
 (include-book "linecol")
-(include-book "charset-fns")
 (include-book "charlist-fix")
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/strings/strprefixp" :dir :system)
 (include-book "std/strings/istrprefixp" :dir :system)
+(include-book "std/strings/charset-fns" :dir :system)
 (local (include-book "arithmetic"))
 
 (local (defthm consp-under-iff-when-true-listp
