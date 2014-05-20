@@ -6765,7 +6765,8 @@
   (and (consp form)
        (case (car form)
          ((defun defund defn defproxy defun-nx defun-one-output defstub
-            defmacro defabbrev defun@par defmacro-last defun-overrides)
+            defmacro defabbrev defun@par defmacro-last defun-overrides
+            defun-with-guard-check)
           (our-update-ht (cadr form) form ht))
          (save-def
           (note-fns-in-form (cadr form) ht))

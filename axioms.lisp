@@ -2559,10 +2559,235 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (cons (cdr (car x))
                  (strip-cdrs (cdr x))))))
 
-(defmacro let-mbe (bindings &key logic exec)
-  `(let ,bindings
-     (mbe :logic ,logic
-          :exec ,exec)))
+#-acl2-loop-only
+(defvar *hard-error-returns-nilp*
+
+; For an explanation of the this defvar, see the comment in hard-error, below.
+
+  nil)
+
+#-acl2-loop-only
+(defparameter *ld-level*
+
+; This parameter will always be equal to the number of recursive calls of LD
+; and/or WORMHOLE we are in.  Since each pushes a new frame on
+; *acl2-unwind-protect-stack* the value of *ld-level* should always be the
+; length of the stack.  But *ld-level* is maintained as a special, i.e., it is
+; always bound when we enter LD while the stack is a global.  An abort may
+; possibly rip us out of a call of LD, causing *ld-level* to decrease but not
+; affecting the stack.  It is this violation of the "invariant" between the two
+; that indicates that the stack must be unwound some (to cleanup after an
+; aborted inferior).
+
+; Parallelism blemish: This variable is let-bound in ld-fn (and hence by
+; wormhole).  Perhaps this could present a problem.  For example, we wonder
+; about the case where waterfall-parallelism is enabled and a parent thread
+; gets confused about the value of *ld-level* (or (@ ld-level)) when changed by
+; the child thread.  For a second example, we can imagine (and we may have
+; seen) a case in which there are two threads doing rewriting, and one does a
+; throw (say, because time has expired), which puts the two threads temporarily
+; out of sync in their values of *ld-level*.  Wormholes involve calls of ld and
+; hence also give us concern.  As of this writing we know of no cases where any
+; such problems exist, and there is at least one case, the definition of
+; mt-future, where we explicitly provide bindings to arrange that a child
+; thread receives its *ld-level* and (@ ld-level) from its parent (not from
+; some spurious global values).  Mt-future also has an assertion to check that
+; we keep *ld-level* and (@ ld-level) in sync with each other.
+
+  0)
+
+#-acl2-loop-only
+(defun-one-output throw-raw-ev-fncall (val)
+
+; This function just throws to raw-ev-fncall (or causes an
+; interface-er if there is no raw-ev-fncall).  The coding below
+; actually assumes that we are in a raw-ev-fncall if *ld-level* > 0.
+
+; This assumption may not be entirely true.  If we have a bug in our
+; LD code, e.g., in printing the prompt, we could throw to a
+; nonexistent tag.  We might get the GCL
+
+; Error: The tag RAW-EV-FNCALL is undefined.
+
+  (cond ((or (= *ld-level* 0)
+             (raw-mode-p *the-live-state*))
+         (interface-er "~@0"
+                       (ev-fncall-msg val
+                                      (w *the-live-state*)
+                                      (user-stobj-alist *the-live-state*))))
+        (t
+         (throw 'raw-ev-fncall val))))
+
+(defun hard-error (ctx str alist)
+
+; Logically, this function just returns nil.  The implementation
+; usually signals a hard error, which is sound since it is akin to
+; running out of stack or some other resource problem.
+
+; But if this function is called as part of a proof, e.g.,
+; (thm (equal (car (cons (hard-error 'ctx "Test" nil) y)) nil))
+; we do not want to cause an error!  (Note:  the simpler example
+; (thm (equal (hard-error 'ctx "Test" nil) nil)) can be proved
+; without any special handling of the executable counterpart of
+; hard-error, because we know its type-set is *ts-nil*.  So to cause
+; an error, you have to have the hard-error term used in a place
+; where type-reasoning alone won't do the job.)
+
+; Sometimes hard-error is used in the guard of a function, e.g.,
+; illegal.  Generally evaluating that guard is to signal an error.
+; But if guard-checking-on is nil, then we want to cause no error and
+; just let the guard return nil.  We evaluate the guard even when
+; guard-checking-on is nil (though not for user-defined functions when
+; it is :none) so we know whether to call the raw Lisp version or the
+; ACL2_*1*_ACL2 version of a function.
+
+; Logically speaking the two behaviors of hard-error, nil or error,
+; are indistinguishable.  So we can choose which behavior we want
+; without soundness concerns.  Therefore, we have a raw Lisp special
+; variable, named *hard-error-returns-nilp*, and if it is true, we
+; return nil.  It is up to the environment to somehow set that special
+; variable.
+
+; In ev-fncall we provide the argument hard-error-returns-nilp which
+; is used as the binding of *hard-error-returns-nil* when we invoke
+; the raw code.  This also infects ev and the other functions in the
+; ev-fncall clique, namely ev-lst and ev-acl2-unwind-protect.  It is
+; up to the user of ev-fncall to specify which behavior is desired.
+; Generally speaking, that argument of ev-fncall is set to t in those
+; calls of ev-fncall that are from within the theorem prover and on
+; terms from the conjecture being proved.  Secondly, (up to
+; Version_2.5) in oneify-cltl-code and oneify-cltl-code, when we
+; generated the ACL2_*1*_ACL2 code for a function, we laid down a
+; binding for *hard-error-returns-nil*.  That binding is in effect
+; just when we evaluate the guard of the function.  The binding is t
+; if either it was already (meaning somebody above us has asked for
+; hard-error to be treated this way) or if guard checking is turned
+; off.
+
+; See the comment after ILLEGAL (below) for a discussion of an
+; earlier, inadequate handling of these issues.
+
+  (declare (xargs :guard t))
+  #-acl2-loop-only
+  (cond
+   ((not *hard-error-returns-nilp*)
+
+; We are going to ``cause an error.''  We print an error message with error-fms
+; even though we do not have state.  To do that, we must bind *wormholep* to
+; nil so we don't try to push undo information (or, in the case of error-fms,
+; cause an error for illegal state changes).  If error-fms could evaluate arbitrary
+; forms, e.g., to make legal state changes while in wormholes, then this would be
+; a BAD IDEA.  But error-fms only prints stuff that was created earlier (and passed
+; in via alist).
+
+    (cond ((fboundp 'acl2::error-fms)                        ;;; Print a msg
+           (let ((*standard-output* *error-output*)          ;;; one way ...
+                 (*wormholep* nil)
+                 (fn 'acl2::error-fms))
+             (funcall fn t ctx str alist *the-live-state*)))
+          (t (print (list ctx str alist) *error-output*)))   ;;; or another.
+
+; Once upon a time hard-error took a throw-flg argument and did the
+; following throw-raw-ev-fncall only if the throw-flg was t.  Otherwise,
+; it signalled an interface-er.  Note that in either case it behaved like
+; an error -- interface-er's are rougher because they do not leave you in
+; the ACL2 command loop.  I think this aspect of the old code was a vestige
+; of the pre-*ld-level* days when we didn't know if we could throw or not.
+
+      (throw-raw-ev-fncall 'illegal)))
+  #+acl2-loop-only
+  (declare (ignore ctx str alist))
+  nil)
+
+(defun illegal (ctx str alist)
+
+; We would like to use this function in :common-lisp-compliant function
+; definitions, but prove that it's never called.  Thus we have to make this
+; function :common-lisp-compliant, and its guard is then nil.
+
+; Note on Inadequate Handling of Illegal.
+
+; Once upon a time (pre-Version  2.4) we had hard-error take an additional
+; argument and the programmer used that argument to indicate whether the
+; function was to cause an error or return nil.  When hard-error was used
+; in the :guard of ILLEGAL it was called so as not to cause an error (if
+; guard checking was off) and when it was called in the body of ILLEGAL it
+; was programmed to cause an error.  However, the Rockwell folks, using
+; LETs in support of stobjs, discovered that we caused hard errors on
+; some guard verifications.  Here is a simple example distilled from theirs:
+
+;  (defun foo (i)
+;    (declare (xargs :guard (integerp i)))
+;    (+ 1
+;       (car
+;        (let ((j i))
+;          (declare (type integer j))
+;          (cons j nil)))))
+
+; This function caused a hard error during guard verification.  The
+; troublesome guard conjecture is:
+
+;  (IMPLIES
+;   (INTEGERP I)
+;   (ACL2-NUMBERP
+;    (CAR (LET ((J I))
+;           (PROG2$ (IF (INTEGERP J)
+;                       T
+;                       (ILLEGAL 'VERIFY-GUARDS
+;                                "Some TYPE declaration is violated."
+;                                NIL))
+;                   (LIST J))))))
+
+; The problem was that we eval'd the ILLEGAL during the course of trying
+; to prove this.  A similar challenge is the above mentioned
+; (thm (equal (car (cons (hard-error 'ctx "Test" nil) y)) nil))
+; We leave this note simply in case the current handling of
+; hard errors is found still to be inadequate.
+
+  (declare (xargs :guard (hard-error ctx str alist)))
+  (hard-error ctx str alist))
+
+#-acl2-loop-only
+(defun-one-output intern-in-package-of-symbol (str sym)
+
+; See the Essay on Symbols and Packages below.  We moved this definition from
+; just under that Essay to its present location, in order to support the
+; definition of guard-check-fn.
+
+; In general we require that intern be given an explicit string constant
+; that names a package known at translate time.  This avoids the run-time
+; check that the package is known -- which would require passing state down
+; to intern everywhere.  However, we would like a more general intern
+; mechanism and hence define the following, which is admitted by special
+; decree in translate.  The beauty of this use of intern is that the user
+; supplies a symbol which establishes the existence of the desired package.
+
+  (declare (type string str)
+           (type symbol sym))
+  (let* ((mark (get sym *initial-lisp-symbol-mark*))
+         (pkg (if mark *main-lisp-package* (symbol-package sym))))
+    (multiple-value-bind
+     (ans status)
+     (intern str pkg)
+     (declare (ignore status))
+
+; We next guarantee that if sym is an ACL2 object then so is ans.  We assume
+; that every import of a symbol into a package known to ACL2 is via defpkg,
+; except perhaps for imports into the "COMMON-LISP" package.  So unless sym
+; resides in the "COMMON-LISP" package (whether natively or not), the
+; symbol-package of sym is one of those known to ACL2.  Thus, the only case of
+; concern is the case that sym resides in the "COMMON-LISP" package.  Since sym
+; is an ACL2 object, then by the Invariant on Symbols in the Common Lisp
+; Package (see bad-lisp-objectp), its symbol-package is *main-lisp-package* or
+; else its *initial-lisp-symbol-mark* property is "COMMON-LISP".  So we set the
+; *initial-lisp-symbol-mark* for ans in each of these sub-cases, which
+; preserves the above invariant.
+
+     (when (and (eq pkg *main-lisp-package*)
+                (not (get ans *initial-lisp-symbol-mark*)))
+       (setf (get ans *initial-lisp-symbol-mark*)
+             *main-lisp-package-name-raw*))
+     ans)))
 
 #+acl2-loop-only
 (defun return-last (fn eager-arg last-arg)
@@ -2698,20 +2923,186 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro mbt (x)
   `(mbe1 t ,x))
 
+(defun binary-append (x y)
+  (declare (xargs :guard (true-listp x)))
+  (cond ((endp x) y)
+        (t (cons (car x) (binary-append (cdr x) y)))))
+
+#+acl2-loop-only
+(defmacro append (&rest rst)
+  (cond ((null rst) nil)
+        ((null (cdr rst)) (car rst))
+        (t (xxxjoin 'binary-append rst))))
+
+(defthm true-listp-append
+
+; This rule has the effect of making the system automatically realize that (rev
+; x) is a true-list, for example, where:
+
+;   (defun rev (x)
+;     (if (endp x)
+;         nil
+;       (append (rev (cdr x))
+;               (list (car x)))))
+
+; That in turn means that when it generalizes (rev x) to z it adds (true-listp
+; z).
+
+; That in turn means it can prove
+
+;   (defthm rev-append
+;     (equal (rev (append a b))
+;            (append (rev b) (rev a))))
+;
+; automatically, doing several generalizations and inductions.
+
+  (implies (true-listp b)
+           (true-listp (append a b)))
+  :rule-classes :type-prescription)
+
+(defthm append-to-nil
+  (implies (true-listp x)
+           (equal (append x nil)
+                  x)))
+
+#+acl2-loop-only
+(defmacro concatenate (result-type &rest sequences)
+  (declare (xargs :guard (or (equal result-type ''string)
+                             (equal result-type ''list))))
+  (cond
+   ((equal result-type ''string)
+    (cond ((and sequences (cdr sequences) (null (cddr sequences)))
+
+; Here we optimize for a common case, but more importantly, we avoid expanding
+; to a call of string-append-lst for the call of concatenate in the definition
+; of string-append.
+
+           (list 'string-append (car sequences) (cadr sequences)))
+          (t
+           (list 'string-append-lst (cons 'list sequences)))))
+   ((endp sequences) nil)
+   (t
+
+; Consider the call (concatenate 'list .... '(a . b)).  At one time we tested
+; for (endp (cdr sequences)) here, returning (car sequences) in that case.  And
+; otherwise, we returned (cons 'append sequences).  However, these are both
+; errors, because the last member of sequences might be a non-true-listp, in
+; which case append signals no guard violation but Common Lisp breaks.
+
+    (cons 'append (append sequences (list nil))))))
+
+(defun string-append (str1 str2)
+  (declare (xargs :guard (and (stringp str1)
+                              (stringp str2))))
+  (mbe :logic
+       (coerce (append (coerce str1 'list)
+                       (coerce str2 'list))
+               'string)
+       :exec
+
+; This code may seem circular, since string-append calls the concatenate macro,
+; which expands here into a call of string-append.  However, the :exec case is
+; only called if we are executing the raw Lisp code for string-append, in which
+; case we will be executing the raw Lisp code for concatenate, which of course
+; does not call the ACL2 function string-append.
+
+       (concatenate 'string str1 str2)))
+
+(defun string-listp (x)
+  (declare (xargs :guard t))
+  (cond
+   ((atom x)
+    (eq x nil))
+   (t
+    (and (stringp (car x))
+         (string-listp (cdr x))))))
+
+(defun string-append-lst (x)
+  (declare (xargs :guard (string-listp x)))
+  (cond
+   ((endp x)
+    "")
+   (t
+    (string-append (car x)
+                   (string-append-lst (cdr x))))))
+
+(defun guard-check-fn (sym)
+
+; Below, we call intern-in-package-of-symbol instead of intern or intern$,
+; because those have not yet been defined; they are defined later in this file.
+
+; We intern in package "ACL2", rather than in the package of e, because our
+; intended use of this function is for ACL2 definitions of macros like member,
+; and we expect the guard-check function symbol to be in the "ACL2" package,
+; not the main Lisp package.
+
+  (declare (xargs :guard (symbolp sym)))
+  (intern-in-package-of-symbol
+   (concatenate 'string (symbol-name sym) "$GUARD-CHECK")
+   'acl2::rewrite))
+
+(defun let-mbe-guard-form (logic exec)
+  (declare (ignore logic) ; for guard only
+           (xargs :mode :program
+                  :guard (and (consp logic)
+                              (consp exec)
+                              (symbolp (car exec))
+                              (equal (cdr logic) (cdr exec))))) ; same args
+  (cond ((consp exec)
+         (cons (guard-check-fn (car exec))
+               (cdr exec)))
+        (t (hard-error 'let-mbe-guard-form
+                       "Bad input, ~x0!"
+                       (list (cons #\0 exec))))))
+
+(defmacro let-mbe (bindings &key
+                            logic exec (guardp 't))
+  (cond (guardp
+         `(let ,bindings
+            (mbe :logic
+                 (prog2$ ,(let-mbe-guard-form logic exec)
+                         ,logic)
+                 :exec ,exec)))
+        (t `(let ,bindings
+              (mbe :logic ,logic
+                   :exec ,exec)))))
+
+(defmacro defun-with-guard-check (name args guard body)
+  (let ((decl `(declare (xargs :guard ,guard))))
+    `(progn (defun ,(guard-check-fn name) ,args ,decl
+              (declare (ignore ,@args))
+              t)
+            (defun ,name ,args ,decl ,body))))
+
+(defmacro prog2$ (x y)
+
+; This odd little duck is not as useless as it may seem.  Its original purpose
+; was to serve as a messenger for translate to use to send a message to the
+; guard checker.  Guards that are created by declarations in lets and other
+; places are put into the first arg of a prog2$.  Once the guards required by x
+; have been noted, x's value may be ignored.  If this definition is changed,
+; consider the places prog2$ is mentioned, including the mention of 'prog2$ in
+; distribute-first-if.
+
+; We have since found other uses for prog2$, which are documented in the doc
+; string below.
+
+  `(return-last 'progn ,x ,y))
+
 ; Member
 
-(defun member-eq-exec (x lst)
-  (declare (xargs :guard (if (symbolp x)
-                             (true-listp lst)
-                           (symbol-listp lst))))
+(defun-with-guard-check member-eq-exec (x lst)
+  (if (symbolp x)
+      (true-listp lst)
+    (symbol-listp lst))
   (cond ((endp lst) nil)
         ((eq x (car lst)) lst)
         (t (member-eq-exec x (cdr lst)))))
 
-(defun member-eql-exec (x lst)
-  (declare (xargs :guard (if (eqlablep x)
-                             (true-listp lst)
-                           (eqlable-listp lst))))
+(defun-with-guard-check member-eql-exec (x lst)
+  (if (eqlablep x)
+      (true-listp lst)
+    (eqlable-listp lst))
   (cond ((endp lst) nil)
         ((eql x (car lst)) lst)
         (t (member-eql-exec x (cdr lst)))))
@@ -2755,24 +3146,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Subsetp
 
-(defun subsetp-eq-exec (x y)
-  (declare (xargs :guard (if (symbol-listp y)
-                             (true-listp x)
-                           (if (symbol-listp x)
-                               (true-listp y)
-                             nil))))
+(defun-with-guard-check subsetp-eq-exec (x y)
+  (if (symbol-listp y)
+      (true-listp x)
+    (if (symbol-listp x)
+        (true-listp y)
+      nil))
   (cond ((endp x) t)
         ((member-eq (car x) y)
          (subsetp-eq-exec (cdr x) y))
         (t nil)))
 
-(defun subsetp-eql-exec (x y)
-  (declare (xargs :guard
-                  (if (eqlable-listp y)
-                      (true-listp x)
-                    (if (eqlable-listp x)
-                        (true-listp y)
-                      nil))))
+(defun-with-guard-check subsetp-eql-exec (x y)
+  (if (eqlable-listp y)
+      (true-listp x)
+    (if (eqlable-listp x)
+        (true-listp y)
+      nil))
   (cond ((endp x) t)
         ((member (car x) y)
          (subsetp-eql-exec (cdr x) y))
@@ -2831,18 +3221,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Assoc
 
-(defun assoc-eq-exec (x alist)
-  (declare (xargs :guard (if (symbolp x)
-                             (alistp alist)
-                           (symbol-alistp alist))))
+(defun-with-guard-check assoc-eq-exec (x alist)
+  (if (symbolp x)
+      (alistp alist)
+    (symbol-alistp alist))
   (cond ((endp alist) nil)
         ((eq x (car (car alist))) (car alist))
         (t (assoc-eq-exec x (cdr alist)))))
 
-(defun assoc-eql-exec (x alist)
-  (declare (xargs :guard (if (eqlablep x)
-                             (alistp alist)
-                           (eqlable-alistp alist))))
+(defun-with-guard-check assoc-eql-exec (x alist)
+  (if (eqlablep x)
+      (alistp alist)
+    (eqlable-alistp alist))
   (cond ((endp alist) nil)
         ((eql x (car (car alist))) (car alist))
         (t (assoc-eql-exec x (cdr alist)))))
@@ -3077,21 +3467,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (complex (realpart x)
                (- (imagpart x)))
       x))
-
-(defmacro prog2$ (x y)
-
-; This odd little duck is not as useless as it may seem.  Its original purpose
-; was to serve as a messenger for translate to use to send a message to the
-; guard checker.  Guards that are created by declarations in lets and other
-; places are put into the first arg of a prog2$.  Once the guards required by x
-; have been noted, x's value may be ignored.  If this definition is changed,
-; consider the places prog2$ is mentioned, including the mention of 'prog2$ in
-; distribute-first-if.
-
-; We have since found other uses for prog2$, which are documented in the doc
-; string below.
-
-  `(return-last 'progn ,x ,y))
 
 #-acl2-loop-only
 (defmacro ec-call1-raw (ign x)
@@ -3764,14 +4139,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; No-duplicatesp
 
-(defun no-duplicatesp-eq-exec (l)
-  (declare (xargs :guard (symbol-listp l)))
+(defun-with-guard-check no-duplicatesp-eq-exec (l)
+  (symbol-listp l)
   (cond ((endp l) t)
         ((member-eq (car l) (cdr l)) nil)
         (t (no-duplicatesp-eq-exec (cdr l)))))
 
-(defun no-duplicatesp-eql-exec (l)
-  (declare (xargs :guard (eqlable-listp l)))
+(defun-with-guard-check no-duplicatesp-eql-exec (l)
+  (eqlable-listp l)
   (cond ((endp l) t)
         ((member (car l) (cdr l)) nil)
         (t (no-duplicatesp-eql-exec (cdr l)))))
@@ -3839,18 +4214,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (symbolp (cdr (car x)))
                 (r-symbol-alistp (cdr x))))))
 
-(defun rassoc-eq-exec (x alist)
-  (declare (xargs :guard (if (symbolp x)
-                             (alistp alist)
-                           (r-symbol-alistp alist))))
+(defun-with-guard-check rassoc-eq-exec (x alist)
+  (if (symbolp x)
+      (alistp alist)
+    (r-symbol-alistp alist))
   (cond ((endp alist) nil)
         ((eq x (cdr (car alist))) (car alist))
         (t (rassoc-eq-exec x (cdr alist)))))
 
-(defun rassoc-eql-exec (x alist)
-  (declare (xargs :guard (if (eqlablep x)
-                             (alistp alist)
-                           (r-eqlable-alistp alist))))
+(defun-with-guard-check rassoc-eql-exec (x alist)
+  (if (eqlablep x)
+      (alistp alist)
+    (r-eqlable-alistp alist))
   (cond ((endp alist) nil)
         ((eql x (cdr (car alist))) (car alist))
         (t (rassoc-eql-exec x (cdr alist)))))
@@ -3918,7 +4293,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (standard-char-p (car l))
               (standard-char-listp (cdr l))))
         (t (equal l nil))))
-
 
 (defun character-listp (l)
   (declare (xargs :guard t))
@@ -4734,193 +5108,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (symbolp (pkg-witness x))
   :rule-classes :type-prescription)
 
-#-acl2-loop-only
-(defparameter *ld-level*
-
-; This parameter will always be equal to the number of recursive calls of LD
-; and/or WORMHOLE we are in.  Since each pushes a new frame on
-; *acl2-unwind-protect-stack* the value of *ld-level* should always be the
-; length of the stack.  But *ld-level* is maintained as a special, i.e., it is
-; always bound when we enter LD while the stack is a global.  An abort may
-; possibly rip us out of a call of LD, causing *ld-level* to decrease but not
-; affecting the stack.  It is this violation of the "invariant" between the two
-; that indicates that the stack must be unwound some (to cleanup after an
-; aborted inferior).
-
-; Parallelism blemish: This variable is let-bound in ld-fn (and hence by
-; wormhole).  Perhaps this could present a problem.  For example, we wonder
-; about the case where waterfall-parallelism is enabled and a parent thread
-; gets confused about the value of *ld-level* (or (@ ld-level)) when changed by
-; the child thread.  For a second example, we can imagine (and we may have
-; seen) a case in which there are two threads doing rewriting, and one does a
-; throw (say, because time has expired), which puts the two threads temporarily
-; out of sync in their values of *ld-level*.  Wormholes involve calls of ld and
-; hence also give us concern.  As of this writing we know of no cases where any
-; such problems exist, and there is at least one case, the definition of
-; mt-future, where we explicitly provide bindings to arrange that a child
-; thread receives its *ld-level* and (@ ld-level) from its parent (not from
-; some spurious global values).  Mt-future also has an assertion to check that
-; we keep *ld-level* and (@ ld-level) in sync with each other.
-
-  0)
-
-; For an explanation of the next defvar, see the comment in
-; hard-error, below.
-
-#-acl2-loop-only
-(defvar *hard-error-returns-nilp* nil)
-
-#-acl2-loop-only
-(defun-one-output throw-raw-ev-fncall (val)
-
-; This function just throws to raw-ev-fncall (or causes an
-; interface-er if there is no raw-ev-fncall).  The coding below
-; actually assumes that we are in a raw-ev-fncall if *ld-level* > 0.
-
-; This assumption may not be entirely true.  If we have a bug in our
-; LD code, e.g., in printing the prompt, we could throw to a
-; nonexistent tag.  We might get the GCL
-
-; Error: The tag RAW-EV-FNCALL is undefined.
-
-  (cond ((or (= *ld-level* 0)
-             (raw-mode-p *the-live-state*))
-         (interface-er "~@0"
-                       (ev-fncall-msg val
-                                      (w *the-live-state*)
-                                      (user-stobj-alist *the-live-state*))))
-        (t
-         (throw 'raw-ev-fncall val))))
-
-(defun hard-error (ctx str alist)
-
-; Logically, this function just returns nil.  The implementation
-; usually signals a hard error, which is sound since it is akin to
-; running out of stack or some other resource problem.
-
-; But if this function is called as part of a proof, e.g.,
-; (thm (equal (car (cons (hard-error 'ctx "Test" nil) y)) nil))
-; we do not want to cause an error!  (Note:  the simpler example
-; (thm (equal (hard-error 'ctx "Test" nil) nil)) can be proved
-; without any special handling of the executable counterpart of
-; hard-error, because we know its type-set is *ts-nil*.  So to cause
-; an error, you have to have the hard-error term used in a place
-; where type-reasoning alone won't do the job.)
-
-; Sometimes hard-error is used in the guard of a function, e.g.,
-; illegal.  Generally evaluating that guard is to signal an error.
-; But if guard-checking-on is nil, then we want to cause no error and
-; just let the guard return nil.  We evaluate the guard even when
-; guard-checking-on is nil (though not for user-defined functions when
-; it is :none) so we know whether to call the raw Lisp version or the
-; ACL2_*1*_ACL2 version of a function.
-
-; Logically speaking the two behaviors of hard-error, nil or error,
-; are indistinguishable.  So we can choose which behavior we want
-; without soundness concerns.  Therefore, we have a raw Lisp special
-; variable, named *hard-error-returns-nilp*, and if it is true, we
-; return nil.  It is up to the environment to somehow set that special
-; variable.
-
-; In ev-fncall we provide the argument hard-error-returns-nilp which
-; is used as the binding of *hard-error-returns-nil* when we invoke
-; the raw code.  This also infects ev and the other functions in the
-; ev-fncall clique, namely ev-lst and ev-acl2-unwind-protect.  It is
-; up to the user of ev-fncall to specify which behavior is desired.
-; Generally speaking, that argument of ev-fncall is set to t in those
-; calls of ev-fncall that are from within the theorem prover and on
-; terms from the conjecture being proved.  Secondly, (up to
-; Version_2.5) in oneify-cltl-code and oneify-cltl-code, when we
-; generated the ACL2_*1*_ACL2 code for a function, we laid down a
-; binding for *hard-error-returns-nil*.  That binding is in effect
-; just when we evaluate the guard of the function.  The binding is t
-; if either it was already (meaning somebody above us has asked for
-; hard-error to be treated this way) or if guard checking is turned
-; off.
-
-; See the comment after ILLEGAL (below) for a discussion of an
-; earlier, inadequate handling of these issues.
-
-  (declare (xargs :guard t))
-  #-acl2-loop-only
-  (cond
-   ((not *hard-error-returns-nilp*)
-
-; We are going to ``cause an error.''  We print an error message with error-fms
-; even though we do not have state.  To do that, we must bind *wormholep* to
-; nil so we don't try to push undo information (or, in the case of error-fms,
-; cause an error for illegal state changes).  If error-fms could evaluate arbitrary
-; forms, e.g., to make legal state changes while in wormholes, then this would be
-; a BAD IDEA.  But error-fms only prints stuff that was created earlier (and passed
-; in via alist).
-
-    (cond ((fboundp 'acl2::error-fms)                        ;;; Print a msg
-           (let ((*standard-output* *error-output*)          ;;; one way ...
-                 (*wormholep* nil)
-                 (fn 'acl2::error-fms))
-             (funcall fn t ctx str alist *the-live-state*)))
-          (t (print (list ctx str alist) *error-output*)))   ;;; or another.
-
-; Once upon a time hard-error took a throw-flg argument and did the
-; following throw-raw-ev-fncall only if the throw-flg was t.  Otherwise,
-; it signalled an interface-er.  Note that in either case it behaved like
-; an error -- interface-er's are rougher because they do not leave you in
-; the ACL2 command loop.  I think this aspect of the old code was a vestige
-; of the pre-*ld-level* days when we didn't know if we could throw or not.
-
-      (throw-raw-ev-fncall 'illegal)))
-  #+acl2-loop-only
-  (declare (ignore ctx str alist))
-  nil)
-
-(defun illegal (ctx str alist)
-
-; We would like to use this function in :common-lisp-compliant function
-; definitions, but prove that it's never called.  Thus we have to make this
-; function :common-lisp-compliant, and its guard is then nil.
-
-  (declare (xargs :guard (hard-error ctx str alist)))
-  (hard-error ctx str alist))
-
-; Note on Inadequate Handling of Illegal.
-
-; Once upon a time (pre-Version  2.4) we had hard-error take an additional
-; argument and the programmer used that argument to indicate whether the
-; function was to cause an error or return nil.  When hard-error was used
-; in the :guard of ILLEGAL it was called so as not to cause an error (if
-; guard checking was off) and when it was called in the body of ILLEGAL it
-; was programmed to cause an error.  However, the Rockwell folks, using
-; LETs in support of stobjs, discovered that we caused hard errors on
-; some guard verifications.  Here is a simple example distilled from theirs:
-
-;  (defun foo (i)
-;    (declare (xargs :guard (integerp i)))
-;    (+ 1
-;       (car
-;        (let ((j i))
-;          (declare (type integer j))
-;          (cons j nil)))))
-
-; This function caused a hard error during guard verification.  The
-; troublesome guard conjecture is:
-
-;  (IMPLIES
-;   (INTEGERP I)
-;   (ACL2-NUMBERP
-;    (CAR (LET ((J I))
-;           (PROG2$ (IF (INTEGERP J)
-;                       T
-;                       (ILLEGAL 'VERIFY-GUARDS
-;                                "Some TYPE declaration is violated."
-;                                NIL))
-;                   (LIST J))))))
-
-; The problem was that we eval'd the ILLEGAL during the course of trying
-; to prove this.  A similar challenge is the above mentioned
-; (thm (equal (car (cons (hard-error 'ctx "Test" nil) y)) nil))
-; We leave this note simply in case the current handling of
-; hard errors is found still to be inadequate.
-
 #+acl2-loop-only
 (defmacro intern (x y)
   (declare (xargs :guard (member-equal y
@@ -5153,44 +5340,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; non-symbol are "".
 
 #-acl2-loop-only
-(defun-one-output intern-in-package-of-symbol (str sym)
-
-; In general we require that intern be given an explicit string constant
-; that names a package known at translate time.  This avoids the run-time
-; check that the package is known -- which would require passing state down
-; to intern everywhere.  However, we would like a more general intern
-; mechanism and hence define the following, which is admitted by special
-; decree in translate.  The beauty of this use of intern is that the user
-; supplies a symbol which establishes the existence of the desired package.
-
-  (declare (type string str)
-           (type symbol sym))
-  (let* ((mark (get sym *initial-lisp-symbol-mark*))
-         (pkg (if mark *main-lisp-package* (symbol-package sym))))
-    (multiple-value-bind
-     (ans status)
-     (intern str pkg)
-     (declare (ignore status))
-
-; We next guarantee that if sym is an ACL2 object then so is ans.  We assume
-; that every import of a symbol into a package known to ACL2 is via defpkg,
-; except perhaps for imports into the "COMMON-LISP" package.  So unless sym
-; resides in the "COMMON-LISP" package (whether natively or not), the
-; symbol-package of sym is one of those known to ACL2.  Thus, the only case of
-; concern is the case that sym resides in the "COMMON-LISP" package.  Since sym
-; is an ACL2 object, then by the Invariant on Symbols in the Common Lisp
-; Package (see bad-lisp-objectp), its symbol-package is *main-lisp-package* or
-; else its *initial-lisp-symbol-mark* property is "COMMON-LISP".  So we set the
-; *initial-lisp-symbol-mark* for ans in each of these sub-cases, which
-; preserves the above invariant.
-
-     (when (and (eq pkg *main-lisp-package*)
-                (not (get ans *initial-lisp-symbol-mark*)))
-       (setf (get ans *initial-lisp-symbol-mark*)
-             *main-lisp-package-name-raw*))
-     ans)))
-
-#-acl2-loop-only
 (defun-one-output pkg-imports (pkg)
   (declare (type string pkg))
   (let ((entry (find-non-hidden-package-entry pkg
@@ -5222,42 +5371,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ;  UTILITIES - definitions of the rest of applicative Common Lisp.
 
-(defun binary-append (x y)
-  (declare (xargs :guard (true-listp x)))
-  (cond ((endp x) y)
-        (t (cons (car x) (binary-append (cdr x) y)))))
-
-#+acl2-loop-only
-(defmacro append (&rest rst)
-  (cond ((null rst) nil)
-        ((null (cdr rst)) (car rst))
-        (t (xxxjoin 'binary-append rst))))
-
-(defthm true-listp-append
-
-; This rule has the effect of making the system automatically realize that (rev
-; x) is a true-list, for example, where:
-
-;   (defun rev (x)
-;     (if (endp x)
-;         nil
-;       (append (rev (cdr x))
-;               (list (car x)))))
-
-; That in turn means that when it generalizes (rev x) to z it adds (true-listp
-; z).
-
-; That in turn means it can prove
-
-;   (defthm rev-append
-;     (equal (rev (append a b))
-;            (append (rev b) (rev a))))
-;
-; automatically, doing several generalizations and inductions.
-
-  (implies (true-listp b)
-           (true-listp (append a b)))
-  :rule-classes :type-prescription)
+; Binary-append, append, concatenate, etc. were initially defined here, but
+; have been moved up in support of guard-check-fn.
 
 ; The following lemma originally appeared to be useful for accepting the
 ; definition of make-input-channel.  Then it became useful for accepting the
@@ -5276,72 +5391,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   (and (character-listp x)
                        (character-listp y)))))
 
-(defthm append-to-nil
-  (implies (true-listp x)
-           (equal (append x nil)
-                  x)))
-
-#+acl2-loop-only
-(defmacro concatenate (result-type &rest sequences)
-  (declare (xargs :guard (member-equal result-type
-                                       '('string 'list))))
-  (cond
-   ((equal result-type ''string)
-    (cond ((and sequences (cdr sequences) (null (cddr sequences)))
-
-; Here we optimize for a common case, but more importantly, we avoid expanding
-; to a call of string-append-lst for the call of concatenate in the definition
-; of string-append.
-
-           (list 'string-append (car sequences) (cadr sequences)))
-          (t
-           (list 'string-append-lst (cons 'list sequences)))))
-   ((endp sequences) nil)
-   (t
-
-; Consider the call (concatenate 'list .... '(a . b)).  At one time we tested
-; for (endp (cdr sequences)) here, returning (car sequences) in that case.  And
-; otherwise, we returned (cons 'append sequences).  However, these are both
-; errors, because the last member of sequences might be a non-true-listp, in
-; which case append signals no guard violation but Common Lisp breaks.
-
-    (cons 'append (append sequences (list nil))))))
-
-(defun string-append (str1 str2)
-  (declare (xargs :guard (and (stringp str1)
-                              (stringp str2))))
-  (mbe :logic
-       (coerce (append (coerce str1 'list)
-                       (coerce str2 'list))
-               'string)
-       :exec
-
-; This code may seem circular, since string-append calls the concatenate macro,
-; which expands here into a call of string-append.  However, the :exec case is
-; only called if we are executing the raw Lisp code for string-append, in which
-; case we will be executing the raw Lisp code for concatenate, which of course
-; does not call the ACL2 function string-append.
-
-       (concatenate 'string str1 str2)))
-
-(defun string-listp (x)
-  (declare (xargs :guard t))
-  (cond
-   ((atom x)
-    (eq x nil))
-   (t
-    (and (stringp (car x))
-         (string-listp (cdr x))))))
-
-(defun string-append-lst (x)
-  (declare (xargs :guard (string-listp x)))
-  (cond
-   ((endp x)
-    "")
-   (t
-    (string-append (car x)
-                   (string-append-lst (cdr x))))))
-
 ; We make 1+ and 1- macros in order to head off the potentially common error of
 ; using these as nonrecursive functions on left-hand sides of rewrite rules.
 
@@ -5355,19 +5404,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Remove
 
-(defun remove-eq-exec (x l)
-  (declare (xargs :guard (if (symbolp x)
-                             (true-listp l)
-                           (symbol-listp l))))
+(defun-with-guard-check remove-eq-exec (x l)
+  (if (symbolp x)
+      (true-listp l)
+    (symbol-listp l))
   (cond ((endp l) nil)
         ((eq x (car l))
          (remove-eq-exec x (cdr l)))
         (t (cons (car l) (remove-eq-exec x (cdr l))))))
 
-(defun remove-eql-exec (x l)
-  (declare (xargs :guard (if (eqlablep x)
-                             (true-listp l)
-                           (eqlable-listp l))))
+(defun-with-guard-check remove-eql-exec (x l)
+  (if (eqlablep x)
+      (true-listp l)
+    (eqlable-listp l))
   (cond ((endp l) nil)
         ((eql x (car l))
          (remove-eql-exec x (cdr l)))
@@ -5413,19 +5462,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Remove1
 
-(defun remove1-eq-exec (x l)
-  (declare (xargs :guard (if (symbolp x)
-                             (true-listp l)
-                           (symbol-listp l))))
+(defun-with-guard-check remove1-eq-exec (x l)
+  (if (symbolp x)
+      (true-listp l)
+    (symbol-listp l))
   (cond ((endp l) nil)
         ((eq x (car l))
          (cdr l))
         (t (cons (car l) (remove1-eq-exec x (cdr l))))))
 
-(defun remove1-eql-exec (x l)
-  (declare (xargs :guard (if (eqlablep x)
-                             (true-listp l)
-                           (eqlable-listp l))))
+(defun-with-guard-check remove1-eql-exec (x l)
+  (if (eqlablep x)
+      (true-listp l)
+    (eqlable-listp l))
   (cond ((endp l) nil)
         ((eql x (car l))
          (cdr l))
@@ -5467,15 +5516,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Remove-duplicates
 
-(defun remove-duplicates-eq-exec (l)
-  (declare (xargs :guard (symbol-listp l)))
+(defun-with-guard-check remove-duplicates-eq-exec (l)
+  (symbol-listp l)
   (cond
    ((endp l) nil)
    ((member-eq (car l) (cdr l)) (remove-duplicates-eq-exec (cdr l)))
    (t (cons (car l) (remove-duplicates-eq-exec (cdr l))))))
 
-(defun remove-duplicates-eql-exec (l)
-  (declare (xargs :guard (eqlable-listp l)))
+(defun-with-guard-check remove-duplicates-eql-exec (l)
+  (eqlable-listp l)
   (cond
    ((endp l) nil)
    ((member (car l) (cdr l)) (remove-duplicates-eql-exec (cdr l)))
@@ -5518,7 +5567,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               :exec  (remove-duplicates-eq-exec x)))
    ((equal test ''eql)
     `(let-mbe ((x ,x))
-              :logic (remove-duplicates-logic x)
+              :guardp nil ; handled below
+              :logic (prog2$
+                      (or (stringp x)
+                          (,(guard-check-fn 'remove-duplicates-eql-exec)
+                           x))
+                      (remove-duplicates-logic x))
               :exec  (if (stringp x)
                          (coerce (remove-duplicates-eql-exec (coerce x 'list))
                                  'string)
@@ -5639,21 +5693,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Set-difference$
 
-(defun set-difference-eq-exec (l1 l2)
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2)
-                              (or (symbol-listp l1)
-                                  (symbol-listp l2)))))
+(defun-with-guard-check set-difference-eq-exec (l1 l2)
+  (and (true-listp l1)
+       (true-listp l2)
+       (or (symbol-listp l1)
+           (symbol-listp l2)))
   (cond ((endp l1) nil)
         ((member-eq (car l1) l2)
          (set-difference-eq-exec (cdr l1) l2))
         (t (cons (car l1) (set-difference-eq-exec (cdr l1) l2)))))
 
-(defun set-difference-eql-exec (l1 l2)
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2)
-                              (or (eqlable-listp l1)
-                                  (eqlable-listp l2)))))
+(defun-with-guard-check set-difference-eql-exec (l1 l2)
+  (and (true-listp l1)
+       (true-listp l2)
+       (or (eqlable-listp l1)
+           (eqlable-listp l2)))
   (cond ((endp l1) nil)
         ((member (car l1) l2)
          (set-difference-eql-exec (cdr l1) l2))
@@ -6215,17 +6269,17 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Add-to-set
 
-(defun add-to-set-eq-exec (x lst)
-  (declare (xargs :guard (if (symbolp x)
-                             (true-listp lst)
-                           (symbol-listp lst))))
+(defun-with-guard-check add-to-set-eq-exec (x lst)
+  (if (symbolp x)
+      (true-listp lst)
+    (symbol-listp lst))
   (cond ((member-eq x lst) lst)
         (t (cons x lst))))
 
-(defun add-to-set-eql-exec (x lst)
-  (declare (xargs :guard (if (eqlablep x)
-                             (true-listp lst)
-                           (eqlable-listp lst))))
+(defun-with-guard-check add-to-set-eql-exec (x lst)
+  (if (eqlablep x)
+      (true-listp lst)
+    (eqlable-listp lst))
   (cond ((member x lst) lst)
         (t (cons x lst))))
 
@@ -6469,20 +6523,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Intersectp
 
-(defun intersectp-eq-exec (x y)
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y)
-                              (or (symbol-listp x)
-                                  (symbol-listp y)))))
+(defun-with-guard-check intersectp-eq-exec (x y)
+  (and (true-listp x)
+       (true-listp y)
+       (or (symbol-listp x)
+           (symbol-listp y)))
   (cond ((endp x) nil)
         ((member-eq (car x) y) t)
         (t (intersectp-eq-exec (cdr x) y))))
 
-(defun intersectp-eql-exec (x y)
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y)
-                              (or (eqlable-listp x)
-                                  (eqlable-listp y)))))
+(defun-with-guard-check intersectp-eql-exec (x y)
+  (and (true-listp x)
+       (true-listp y)
+       (or (eqlable-listp x)
+           (eqlable-listp y)))
   (cond ((endp x) nil)
         ((member (car x) y) t)
         (t (intersectp-eql-exec (cdr x) y))))
@@ -6688,22 +6742,22 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Position-ac
 
-(defun position-ac-eq-exec (item lst acc)
-  (declare (xargs :guard (and (true-listp lst)
-                              (or (symbolp item)
-                                  (symbol-listp lst))
-                              (acl2-numberp acc))))
+(defun-with-guard-check position-ac-eq-exec (item lst acc)
+  (and (true-listp lst)
+       (or (symbolp item)
+           (symbol-listp lst))
+       (acl2-numberp acc))
   (cond
    ((endp lst) nil)
    ((eq item (car lst))
     acc)
    (t (position-ac-eq-exec item (cdr lst) (1+ acc)))))
 
-(defun position-ac-eql-exec (item lst acc)
-  (declare (xargs :guard (and (true-listp lst)
-                              (or (eqlablep item)
-                                  (eqlable-listp lst))
-                              (acl2-numberp acc))))
+(defun-with-guard-check position-ac-eql-exec (item lst acc)
+  (and (true-listp lst)
+       (or (eqlablep item)
+           (eqlable-listp lst))
+       (acl2-numberp acc))
   (cond
    ((endp lst) nil)
    ((eql item (car lst))
@@ -6765,17 +6819,17 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Position
 
-(defun position-eq-exec (item lst)
-  (declare (xargs :guard (and (true-listp lst)
-                              (or (symbolp item)
-                                  (symbol-listp lst)))))
+(defun-with-guard-check position-eq-exec (item lst)
+  (and (true-listp lst)
+       (or (symbolp item)
+           (symbol-listp lst)))
   (position-ac-eq-exec item lst 0))
 
-(defun position-eql-exec (item lst)
-  (declare (xargs :guard (or (stringp lst)
-                             (and (true-listp lst)
-                                  (or (eqlablep item)
-                                      (eqlable-listp lst))))))
+(defun-with-guard-check position-eql-exec (item lst)
+  (or (stringp lst)
+      (and (true-listp lst)
+           (or (eqlablep item)
+               (eqlable-listp lst))))
   (if (stringp lst)
       (position-ac item (coerce lst 'list) 0)
     (position-ac item lst 0)))
@@ -9230,18 +9284,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Delete-assoc
 
-(defun delete-assoc-eq-exec (key alist)
-  (declare (xargs :guard (if (symbolp key)
-                             (alistp alist)
-                           (symbol-alistp alist))))
+(defun-with-guard-check delete-assoc-eq-exec (key alist)
+  (if (symbolp key)
+      (alistp alist)
+    (symbol-alistp alist))
   (cond ((endp alist) nil)
         ((eq key (caar alist)) (cdr alist))
         (t (cons (car alist) (delete-assoc-eq-exec key (cdr alist))))))
 
-(defun delete-assoc-eql-exec (key alist)
-  (declare (xargs :guard (if (eqlablep key)
-                             (alistp alist)
-                           (eqlable-alistp alist))))
+(defun-with-guard-check delete-assoc-eql-exec (key alist)
+  (if (eqlablep key)
+      (alistp alist)
+    (eqlable-alistp alist))
   (cond ((endp alist) nil)
         ((eql key (caar alist)) (cdr alist))
         (t (cons (car alist) (delete-assoc-eql-exec key (cdr alist))))))
@@ -18444,10 +18498,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Put-assoc
 
-(defun put-assoc-eq-exec (name val alist)
-  (declare (xargs :guard (if (symbolp name)
-                             (alistp alist)
-                           (symbol-alistp alist))))
+(defun-with-guard-check put-assoc-eq-exec (name val alist)
+  (if (symbolp name)
+      (alistp alist)
+    (symbol-alistp alist))
 
 ; The function trans-eval exploits the fact that the order of the keys
 ; is unchanged.
@@ -18456,10 +18510,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq name (caar alist)) (cons (cons name val) (cdr alist)))
         (t (cons (car alist) (put-assoc-eq-exec name val (cdr alist))))))
 
-(defun put-assoc-eql-exec (name val alist)
-  (declare (xargs :guard (if (eqlablep name)
-                             (alistp alist)
-                           (eqlable-alistp alist))))
+(defun-with-guard-check put-assoc-eql-exec (name val alist)
+  (if (eqlablep name)
+      (alistp alist)
+    (eqlable-alistp alist))
 
 ; The function trans-eval exploits the fact that the order of the keys
 ; is unchanged.
@@ -19730,21 +19784,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Union$
 
-(defun union-eq-exec (l1 l2)
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2)
-                              (or (symbol-listp l1)
-                                  (symbol-listp l2)))))
+(defun-with-guard-check union-eq-exec (l1 l2)
+  (and (true-listp l1)
+       (true-listp l2)
+       (or (symbol-listp l1)
+           (symbol-listp l2)))
   (cond ((endp l1) l2)
         ((member-eq (car l1) l2)
          (union-eq-exec (cdr l1) l2))
         (t (cons (car l1) (union-eq-exec (cdr l1) l2)))))
 
-(defun union-eql-exec (l1 l2)
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2)
-                              (or (eqlable-listp l1)
-                                  (eqlable-listp l2)))))
+(defun-with-guard-check union-eql-exec (l1 l2)
+  (and (true-listp l1)
+       (true-listp l2)
+       (or (eqlable-listp l1)
+           (eqlable-listp l2)))
   (cond ((endp l1) l2)
         ((member (car l1) l2)
          (union-eql-exec (cdr l1) l2))
@@ -19816,6 +19870,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (cond (kwd/val (butlast x 2))
               (t x)))))
 
+(defmacro union-equal-with-union-eq-exec-guard (l1 l2)
+  `(let ((l1 ,l1) (l2 ,l2))
+     (prog2$ (,(guard-check-fn 'union-eq-exec) l1 l2)
+             (union-equal l1 l2))))
+
+(defmacro union-equal-with-union-eql-exec-guard (l1 l2)
+  `(let ((l1 ,l1) (l2 ,l2))
+     (prog2$ (,(guard-check-fn 'union-eql-exec) l1 l2)
+             (union-equal l1 l2))))
+
 (defmacro union$ (&whole form &rest x)
   (mv-let
    (test args)
@@ -19828,12 +19892,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (bindings (pairlis$ vars (pairlis$ args nil))))
          (cond ((equal test ''eq)
                 `(let-mbe ,bindings
-                          :logic ,(xxxjoin 'union-equal vars)
-                          :exec  ,(xxxjoin 'union-eq-exec vars)))
+                          :guardp nil ; guard handled by :logic
+                          :logic
+                          ,(xxxjoin 'union-equal-with-union-eq-exec-guard
+                                    vars)
+                          :exec
+                          ,(xxxjoin 'union-eq-exec vars)))
                ((equal test ''eql)
                 `(let-mbe ,bindings
-                          :logic ,(xxxjoin 'union-equal vars)
-                          :exec  ,(xxxjoin 'union-eql-exec vars)))
+                          :guardp nil ; guard handled by :logic
+                          :logic
+                          ,(xxxjoin 'union-equal-with-union-eql-exec-guard
+                                    vars)
+                          :exec
+                          ,(xxxjoin 'union-eql-exec vars)))
                (t ; (equal test 'equal)
                 (xxxjoin 'union-equal args))))))))
 
@@ -20015,23 +20087,22 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Intersection$
 
-(defun intersection-eq-exec (l1 l2)
-  (declare (xargs :guard
-                  (and (true-listp l1)
-                       (true-listp l2)
-                       (or (symbol-listp l1)
-                           (symbol-listp l2)))))
+(defun-with-guard-check intersection-eq-exec (l1 l2)
+  (and (true-listp l1)
+       (true-listp l2)
+       (or (symbol-listp l1)
+           (symbol-listp l2)))
   (cond ((endp l1) nil)
         ((member-eq (car l1) l2)
          (cons (car l1)
                (intersection-eq-exec (cdr l1) l2)))
         (t (intersection-eq-exec (cdr l1) l2))))
 
-(defun intersection-eql-exec (l1 l2)
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2)
-                              (or (eqlable-listp l1)
-                                  (eqlable-listp l2)))))
+(defun-with-guard-check intersection-eql-exec (l1 l2)
+  (and (true-listp l1)
+       (true-listp l2)
+       (or (eqlable-listp l1)
+           (eqlable-listp l2)))
   (cond ((endp l1) nil)
         ((member (car l1) l2)
          (cons (car l1)
@@ -20059,6 +20130,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (equal (intersection-eql-exec l1 l2)
          (intersection-equal l1 l2)))
 
+(defmacro intersection-equal-with-intersection-eq-exec-guard (l1 l2)
+  `(let ((l1 ,l1) (l2 ,l2))
+     (prog2$ (,(guard-check-fn 'intersection-eq-exec) l1 l2)
+             (intersection-equal l1 l2))))
+
+(defmacro intersection-equal-with-intersection-eql-exec-guard (l1 l2)
+  `(let ((l1 ,l1) (l2 ,l2))
+     (prog2$ (,(guard-check-fn 'intersection-eql-exec) l1 l2)
+             (intersection-equal l1 l2))))
+
 (defmacro intersection$ (&whole form &rest x)
   (mv-let
    (test args)
@@ -20076,12 +20157,22 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (bindings (pairlis$ vars (pairlis$ args nil))))
          (cond ((equal test ''eq)
                 `(let-mbe ,bindings
-                          :logic ,(xxxjoin 'intersection-equal vars)
-                          :exec  ,(xxxjoin 'intersection-eq-exec vars)))
+                          :guardp nil ; guard handled by :logic
+                          :logic
+                          ,(xxxjoin
+                            'intersection-equal-with-intersection-eq-exec-guard
+                            vars)
+                          :exec
+                          ,(xxxjoin 'intersection-eq-exec vars)))
                ((equal test ''eql)
                 `(let-mbe ,bindings
-                          :logic ,(xxxjoin 'intersection-equal vars)
-                          :exec  ,(xxxjoin 'intersection-eql-exec vars)))
+                          :guardp nil ; guard handled by :logic
+                          :logic
+                          ,(xxxjoin
+                            'intersection-equal-with-intersection-eql-exec-guard
+                            vars)
+                          :exec
+                          ,(xxxjoin 'intersection-eql-exec vars)))
                (t ; (equal test 'equal)
                 `(xxxjoin 'intersection-equal ,args))))))))
 
@@ -23845,6 +23936,7 @@ Lisp definition."
  (verify-termination-boot-strap char)
  (verify-termination-boot-strap eqlable-alistp)
  (verify-termination-boot-strap assoc-eql-exec)
+ (verify-termination-boot-strap assoc-eql-exec$guard-check)
  (verify-termination-boot-strap assoc-equal)
  (verify-termination-boot-strap sublis)
  (verify-termination-boot-strap nfix)
