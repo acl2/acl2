@@ -2288,22 +2288,24 @@
                             (st2 env0)))))
   :otf-flg t)
 
-(defthm lemma6
-  (implies (and (good-esim-modulep mod) (not (gpl :x mod)))
-           (not (intersectp-equal (alist-keys (esim-sexpr-fixpoint-out mod))
-                                  (pat-flatten1 (mod-state mod))))))
+(local
+ (defthm lemma6
+   (implies (and (good-esim-modulep mod) (not (gpl :x mod)))
+            (not (intersectp-equal (alist-keys (esim-sexpr-fixpoint-out mod))
+                                   (pat-flatten1 (mod-state mod)))))))
 
-(defthm lemma5
-  (implies (not (intersectp-equal (alist-keys foo) keys))
-           (4v-alists-agree keys
-                            (append foo env0)
-                            (4v-alist-extract keys env0)))
-  :hints (("goal" :do-not-induct t
-           :in-theory (e/d (hons-assoc-equal-iff-member-alist-keys)
-                           (alist-keys-member-hons-assoc-equal
-                            4v-fix)))
-          (witness :ruleset 4v-alists-agree-witnessing)
-          (set-reasoning)))
+(local
+ (defthm lemma5
+   (implies (not (intersectp-equal (alist-keys foo) keys))
+            (4v-alists-agree keys
+                             (append foo env0)
+                             (4v-alist-extract keys env0)))
+   :hints (("goal" :do-not-induct t
+            :in-theory (e/d (hons-assoc-equal-iff-member-alist-keys)
+                            (alist-keys-member-hons-assoc-equal
+                             4v-fix)))
+           (witness :ruleset 4v-alists-agree-witnessing)
+           (set-reasoning))))
 
 (defthm alists-agree-4v-alist-extract
   (4v-alists-agree keys a (4v-alist-extract keys a))
