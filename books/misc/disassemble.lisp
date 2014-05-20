@@ -45,10 +45,16 @@
          ,@forms))
      (otherwise `(progn ,@forms))))
 
- (defun-raw disassemble$-fn (sym recompile args)
+ (defun-raw disassemble$-fn (sym0 recompile args)
    (let* ((state *the-live-state*)
           (wrld (w state))
-          (ctx 'disassemble$))
+          (ctx 'disassemble$)
+          (sym (deref-macro-name sym0 (macro-aliases wrld))))
+     (when (not (eq sym sym0))
+       (observation ctx
+                    "Disassembling function symbol ~x0, which is a macro ~
+                     alias for input symbol ~x1."
+                    sym sym0))
      (when (and args
                 (not (and (eq (car args) :recompile)
                           (null (cddr args)))))
