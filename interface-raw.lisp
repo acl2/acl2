@@ -4441,6 +4441,11 @@
                      (tilde-@-book-stack-msg nil *load-compiled-stack*)))))
   'incomplete)
 
+(defmacro our-handler-bind (bindings &rest forms)
+  #-cltl2 (declare (ignore bindings))
+  #-cltl2 `(progn ,@forms)
+  #+cltl2 `(handler-bind ,bindings ,@forms))
+
 (defun load-compiled-book (file directory-name load-compiled-file ctx state)
 
 ; We are processing include-book-raw underneath include-book-fn (hence
@@ -4567,7 +4572,7 @@
               (multiple-value-bind
                (er val)
                (catch 'my-book-error
-                 (handler-bind
+                 (our-handler-bind
                   ((error (function
                            (lambda (c)
 
