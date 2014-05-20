@@ -23,19 +23,22 @@
 ; REMOVE-ASSOC-EQUAL is like DELETE-ASSOC-EQUAL, but removes all occurrences of
 ; the key from the alist instead of just removing the first occurrence.
 
-(defun remove-assoc-eq-exec (x alist)
-  (declare (xargs :guard (if (symbolp x)
-                             (alistp alist)
-                           (symbol-alistp alist))))
+; Modifications below to remove-assoc-xxx are from Matt K., 5/19/2014, to
+; support changes in let-mbe that provide better guard-checking.
+
+(defun-with-guard-check remove-assoc-eq-exec (x alist)
+  (if (symbolp x)
+      (alistp alist)
+    (symbol-alistp alist))
   (cond ((endp alist) nil)
         ((eq x (car (car alist))) (remove-assoc-eq-exec x (cdr alist)))
         (t (cons (car alist)
                  (remove-assoc-eq-exec x (cdr alist))))))
 
-(defun remove-assoc-eql-exec (x alist)
-  (declare (xargs :guard (if (eqlablep x)
-                             (alistp alist)
-                           (eqlable-alistp alist))))
+(defun-with-guard-check remove-assoc-eql-exec (x alist)
+  (if (eqlablep x)
+      (alistp alist)
+    (eqlable-alistp alist))
   (cond ((endp alist) nil)
         ((eql x (car (car alist))) (remove-assoc-eql-exec x (cdr alist)))
         (t (cons (car alist) (remove-assoc-eql-exec x (cdr alist))))))

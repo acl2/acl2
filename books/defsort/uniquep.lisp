@@ -73,7 +73,10 @@ is probably a much better function to use.</p>"
     ;; Based on the equality-variants documentation, I think this is what we
     ;; want to do so that we can prove theorems about uniquep and have them
     ;; apply to no-duplicatesp.
+    ;; Note (Matt K.): Added :guardp nil on 5/19/2014 for let-mbe mod that
+    ;; provides better guard-checking, to get the old let-mbe behavior.
     `(let-mbe ((x ,x))
+              :guardp nil
               :logic (no-duplicatesp x)
               :exec (uniquep-exec x)))
 
