@@ -77,6 +77,9 @@
   `(serialize-read-fn ,filename ,hons-mode ,verbosep state))
 
 (defun serialize-read-fn (filename hons-mode verbosep state)
+
+; This function returns a single object.
+
   (declare (xargs :guard (and (stringp filename)
                               (member hons-mode '(:never :always :smart))
                               (booleanp verbosep)

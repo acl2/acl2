@@ -12237,7 +12237,9 @@
         INTERN-IN-PACKAGE-OF-SYMBOL
         PKG-IMPORTS
         SYMBOL-LISTP
-        NO-DUPLICATESP-EQUAL NO-DUPLICATESP-EQ-EXEC ; latter maybe not critical
+        NO-DUPLICATESP-EQUAL
+        NO-DUPLICATESP-EQ-EXEC ; not critical?
+        NO-DUPLICATESP-EQ-EXEC$GUARD-CHECK ; not critical?
 
 ; We do not want vestiges of the non-standard version in the standard version.
 
