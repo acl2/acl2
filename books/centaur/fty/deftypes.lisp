@@ -1644,16 +1644,31 @@
 (defun flexsum-case-macro-fn (var-or-binding rest-args sum)
   (b* (((flexsum sum) sum)
        (var (if (consp var-or-binding) (car var-or-binding) var-or-binding))
+       (kinds (flexprods->kinds sum.prods))
        ((mv kwd-alist rest)
-        (extract-keywords sum.case (flexprods->kinds sum.prods)
+        (extract-keywords sum.case
+                          kinds ;; add other allowed keywords here
                           rest-args nil))
-       ((when rest)
-        (er hard? sum.case "Extra arguments: ~x0" rest))
+       ((when (and rest (intersectp kinds ;; remove other allowed keywords here?
+                                    (strip-cars kwd-alist))))
+        ;; We don't know whether the 
+        ;; (sum-case x :kind1 term1 ...) or
+        ;; (sum-case x (:kind1 term1) ...) syntax was intended.
+        (er hard? sum.case "Inconsistent syntax: ~x0" rest-args))
+       ((unless (and (alistp rest)
+                     (true-list-listp rest)
+                     ;; weaken this?
+                     (subsetp (strip-cars rest) kinds)))
+        (er hard? sum.case "Malformed cases: ~x0~%" rest))
+       (kind-kwd-alist (append (pairlis$ (strip-cars rest)
+                                         (pairlis$ (make-list (len rest) :initial-element 'progn$)
+                                                   (strip-cdrs rest)))
+                               kwd-alist))
        (body
         (if sum.kind
             `(case (,sum.kind ,var)
-               . ,(flexsum-case-macro-kinds var sum.prods kwd-alist))
-          (nice-cond (flexsum-case-macro-conds var sum.prods kwd-alist)))))
+               . ,(flexsum-case-macro-kinds var sum.prods kind-kwd-alist))
+          (nice-cond (flexsum-case-macro-conds var sum.prods kind-kwd-alist)))))
     (if (consp var-or-binding)
         `(let* ((,var ,(cadr var-or-binding))) ,body)
       body)))
@@ -3594,10 +3609,10 @@ be inlined as well; @(':all') (not in a list) is also possible.</li>
 <p>An additional top-level keyword, @(':require'), can add a requirement that
 the fields satisfy some relation.  Using this option requires that one or more
 fields be given a @(':reqfix') option; it must be a theorem that applying the
-regular fixing functions followed by the @(':reqfix') of each field yields
-fields that satisfy the requirement.  (It should also be the case that applying
-the reqfixes to fields already satisfying the requirement leaves them
-unchanged.) For example:</p>
+regular fixing functions followed by the @(':reqfix') of each field
+independently yields fields that satisfy the requirement.  (It should also be
+the case that applying the reqfixes to fields already satisfying the
+requirement leaves them unchanged.) For example:</p>
 
 @({
  (defprod sizednum
@@ -3606,11 +3621,32 @@ unchanged.) For example:</p>
    :require (unsigned-byte-p size bits))
  })
 
-<p>As an experimental feature, this has some idiosyncrasies.  For example,
-putting the @('bits') field before the @('size') field in the example above
-will not work: the fields must be listed in dependency order, i.e., since the
-@(':reqfix') of @('bits') accesses @('size'), @('bits') must occur after
-@('size').</p>
+<p>If there is more than one field with a @(':reqfix') option, these reqfixes
+are applied to each field independently, after applying all of their types' fixing functions.
+For example, for the following to succeed:</p>
+
+@({
+ (defprod foo
+   ((a atype :reqfix (afix a b c))
+    (b btype :reqfix (bfix a b c))
+    (c       :reqfix (cfix a b c)))
+   :require (foo-req a b c))
+ })
+
+<p>the following must be a theorem (assuming @('afix') and @('bfix') are the
+fixing functions for @('atype') and @('btype'), respectively):</p>
+
+@({
+  (let ((a (afix a))
+        (b (bfix b)))
+    (let ((a (afix a b c))
+          (b (bfix a b c))
+          (c (cfix a b c)))
+      (foo-req a b c)))
+ })
+
+<p>Notice the LET, rather than LET*, binding the fields to their reqfixes.  It
+would NOT be sufficient for this to be true with a LET*.</p>
 ")
 
 (defxdoc deftagsum

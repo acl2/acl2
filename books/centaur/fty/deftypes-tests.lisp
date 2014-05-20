@@ -351,10 +351,10 @@
   :returns (xx arithterm-p)
   :measure (arithterm-count x)
   (arithterm-case x
-    :num (arithterm-num (* 2 x.val))
-    :plus (arithterm-plus (arithterm-double x.left)
-                          (arithterm-double x.right))
-    :minus (arithterm-minus (arithterm-double x.arg)))
+    (:num (arithterm-num (* 2 x.val)))
+    (:plus (arithterm-plus (arithterm-double x.left)
+                           (arithterm-double x.right)))
+    (:minus (arithterm-minus (arithterm-double x.arg))))
   ///
   (verify-guards arithterm-double)
 
@@ -967,3 +967,23 @@
                                 (true-listp x))
                        :rule-classes :forward-chaining)))
 
+(define cons-fix ((x consp))
+  :returns (xx consp :rule-classes :type-prescription)
+  (mbe :logic (cons (car x) (cdr x))
+       :exec x)
+  ///
+  (defthm cons-fix-when-consp
+    (implies (consp x)
+             (equal (cons-fix x) x)))
+
+  (deffixtype cons :pred consp :fix cons-fix :equiv cons-equiv :define t :forward t))
+
+(local (in-theory (disable double-containment
+                           default-car default-cdr)))
+
+(defprod flarn
+  ((a natp)
+   (b consp :rule-classes :type-prescription)
+   (c cons)
+   (d))
+  :layout :tree)

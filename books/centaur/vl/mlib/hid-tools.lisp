@@ -621,3 +621,20 @@ that may have been installed by @(see vl-expr-follow-hids)."
               (- (vl-resolved->val left) (vl-resolved->val right)))
            1))))
 
+
+
+
+(define vl-hid/id-p ((x vl-expr-p))
+  :short "IDs and non-atomic HIDs can be bit/part-selected from."
+  (or (vl-idexpr-p x)
+      (and (vl-nonatom-p x)
+           (vl-hidexpr-p x)))
+  ///
+  (defthm vl-hid/id-p-when-idexpr
+    (implies (vl-idexpr-p x)
+             (vl-hid/id-p x)))
+  (defthm vl-hid/id-p-when-hidexpr
+    (implies (and (vl-nonatom-p x)
+                  (vl-hidexpr-p x))
+             (vl-hid/id-p x))
+    :hints(("Goal" :in-theory (enable vl-hidexpr-p)))))
