@@ -17087,12 +17087,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;    token face would be read as a hexadecimal number (decimal value 64206) if
 ;    the value of *read-base* were 16.
 ;
-; Now, ACL2 never sets the read-base to 10, and indeed it only allows setting
-; of its own print-base (i.e., state global 'print-base rather than Lisp
-; variable *print-base*).  Nevertheless we take a conservative interpretation
-; of the paragraph immediately above: if the ACL2 print-base is 16, then we
-; print a symbol as though it may be read back in base 16, which could happen
-; if the user submits the result to raw Lisp.
+; Now, ACL2 never sets the read-base to other than 10.  Nevertheless we take a
+; conservative interpretation of the paragraph immediately above: if the ACL2
+; print-base is 16, then we print a symbol as though it may be read back in
+; base 16, which could happen if the user submits the result to raw Lisp.
 ;
 ; Back to the same CLtL2 section as above, we find the following syntax for
 ; numbers.
