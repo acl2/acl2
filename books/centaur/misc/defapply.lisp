@@ -899,10 +899,14 @@ The function ~x0 is missing its ~x1 property; perhaps it is not defined.~%"
  (progn
    ;; (defapply/ev/concrete-ev mything2 (if len mv-list binary-append))
 
-
    (make-event
     `(defapply/ev/concrete-ev
-       everything ,(nthcdr 400 *all-logic-function-syms*)))))
+       everything
+
+       ;; Note: Earlier this was (nthcdr 400 *all-logic-function-syms*), but
+       ;; Allegro CL died with a large rewrite stack.
+
+       ,(take 100 *all-logic-function-syms*)))))
 
 ;;  100:    2.02      97M
 ;;  200:    4.02     204M
