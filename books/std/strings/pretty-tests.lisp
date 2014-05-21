@@ -420,6 +420,8 @@ world" "blah blah"))
        (- (time$ (test-obj-sizes-on-config objs col max eviscp (car configs) state))))
     (test-obj-sizes-on-configs objs col max eviscp (cdr configs) state)))
 
+(comp t)
+
 (make-event
  (let* ((objs *objects*)
         (configs *configs*)
@@ -567,6 +569,8 @@ world" "blah blah"))
   ;; a nice config for debugging mismatches
   (list (change-printconfig (car *configs*)
                             :home-package (pkg-witness "STR"))))
+
+(comp t)
 
 (do-ppr-test *atoms* 0 *configs* nil)
 
