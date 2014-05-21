@@ -1459,3 +1459,86 @@ same outputs when run starting at that initial state.</p>"
 
 
 
+(defsection aignet-print
+  (local (in-theory (disable len)))
+  (defund aignet-print-lit (lit aignet)
+    (declare (xargs :stobjs aignet
+                    :guard (and (litp lit)
+                                (fanin-litp lit aignet))))
+    (b* ((id (lit-id lit))
+         (type (id->type id aignet))
+         ((when (int= type (const-type)))
+          (if (int= (lit-neg lit) 1) "1" "0")))
+      (acl2::msg "~s0~s1~x2"
+                 (if (int= (lit-neg lit) 1) "~" "")
+                 (if (int= type (in-type))
+                     (if (int= (io-id->regp id aignet) 1) "r" "i")
+                   "g")
+                 (if (int= type (in-type))
+                     (io-id->ionum id aignet)
+                   id))))
+
+  (defund aignet-print-gate (n aignet)
+    (declare (Xargs :stobjs aignet
+                    :guard (and (natp n)
+                                (id-existsp n aignet)
+                                (int= (id->type n aignet) (gate-type)))))
+    (b* ((f0 (gate-id->fanin0 n aignet))
+         (f1 (gate-id->fanin1 n aignet)))
+      (acl2::msg "g~x0 = ~@1 & ~@2"
+                 n
+                 (aignet-print-lit f0 aignet)
+                 (aignet-print-lit f1 aignet))))
+
+
+  (local (set-default-hints nil))
+  
+  (defund aignet-print-gates (n aignet)
+    (declare (Xargs :stobjs aignet
+                    :guard (and (natp n)
+                                (<= n (num-nodes aignet)))
+                    :guard-hints (("goal" :in-theory (enable aignet-idp)))
+                    :measure (nfix (- (nfix (num-nodes aignet)) (nfix n)))))
+    (b* (((when (mbe :logic (zp (- (nfix (num-nodes aignet)) (nfix n)))
+                     :exec (= (num-nodes aignet) n)))
+          nil)
+         ((unless (int= (id->type n aignet) (gate-type)))
+          (aignet-print-gates (1+ (lnfix n)) aignet))
+         (- (cw "~@0~%" (aignet-print-gate n aignet))))
+      (aignet-print-gates (1+ (lnfix n)) aignet)))
+
+  (defund aignet-print-outs (n aignet)
+    (declare (Xargs :stobjs aignet
+                    :guard (and (natp n)
+                                (<= n (num-outs aignet)))
+                    :guard-hints (("goal" :in-theory (e/d (lookup-stype-in-bounds))))
+                    :measure (nfix (- (nfix (num-outs aignet)) (nfix n)))))
+    (b* (((when (mbe :logic (zp (- (nfix (num-outs aignet)) (nfix n)))
+                     :exec (= (num-outs aignet) n)))
+          nil)
+         (- (cw "o~x0 = ~@1~%" n (aignet-print-lit
+                                  (co-id->fanin (outnum->id n aignet) aignet)
+                                  aignet))))
+      (aignet-print-outs (1+ (lnfix n)) aignet)))
+
+  (defund aignet-print-regs (n aignet)
+    (declare (Xargs :stobjs aignet
+                    :guard (and (natp n)
+                                (<= n (num-regs aignet)))
+                    :guard-hints (("goal" :in-theory (e/d (lookup-stype-in-bounds))))
+                    :measure (nfix (- (nfix (num-regs aignet)) (nfix n)))))
+    (b* (((when (mbe :logic (zp (- (nfix (num-regs aignet)) (nfix n)))
+                     :exec (= (num-regs aignet) n)))
+          nil)
+         (ri (reg-id->nxst (regnum->id n aignet) aignet))
+         ((when (int= ri 0))
+          (aignet-print-regs (1+ (lnfix n)) aignet))
+         (- (cw "r~x0 = ~@1~%" n
+                (aignet-print-lit (co-id->fanin ri aignet) aignet))))
+      (aignet-print-regs (1+ (lnfix n)) aignet)))
+
+  (defund aignet-print (aignet)
+    (declare (xargs :stobjs aignet))
+    (progn$ (aignet-print-gates 0 aignet)
+            (aignet-print-outs 0 aignet)
+            (aignet-print-regs 0 aignet))))
