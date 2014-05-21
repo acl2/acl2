@@ -41,6 +41,7 @@
 (include-book "octal")
 (include-book "pad")
 (include-book "prefix-lines")
+(include-book "pretty")
 (include-book "strpos")
 (include-book "strrpos")
 (include-book "strprefixp")
