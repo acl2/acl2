@@ -144,6 +144,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Setup typing lemmas
+;
+; Why must these typing lemmas be instantiated via :use hints?  Because they
+; must be rewritten from natp to be about 4V-BOOL-LISTP (and perhaps other
+; functions too).  Perhaps if we made the conclusion describe q, qq, and qqq in
+; terms of 4V-BOOL-LISTP, then we could just enable them and use them as
+; rewrite rules (or tau rules).
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-gl-thm double-reg-decomp-cutpoint-type-with-autohyps
@@ -181,7 +187,35 @@
   :g-bindings (gl::auto-bindings (:nat d 1)))
 (in-theory (disable triple-reg-decomp-cutpoint-type-with-autohyps))
 
-(def-gl-thm triple-reg-decomp-cutpoint-type-with-specific-hyps
+(def-gl-thm triple-reg-decomp-qqq-type-with-autohyps
+  :hyp (force (triple-reg-decomp-stv-autohyps))
+  :concl (b* ((comp1-outs (stv-run (triple-reg-decomp-stv)
+                                   (triple-reg-decomp-stv-autoins)))
+              (q (cdr (assoc 'q comp1-outs)))
+
+              (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                   (triple-reg-decomp-stv-autoins)))
+              (qq (cdr (assoc 'qq comp2-outs)))
+
+              (comp3-ins (triple-reg-decomp-stv-autoins))
+              (comp3-outs (stv-run (triple-reg-decomp-stv)
+                                   comp3-ins))
+              (qqq (cdr (assoc 'qqq comp3-outs))))
+           (natp qqq))
+  :g-bindings (gl::auto-bindings (:nat d 1)))
+(in-theory (disable triple-reg-decomp-qqq-type-with-autohyps))
+
+(def-gl-thm triple-reg-decomp-q-type-with-specific-hyps
+  :hyp (and (force (natp d))
+            (force (< d (expt 2 1))))
+  :concl (b* ((comp1-outs (stv-run (triple-reg-decomp-stv)
+                                   `((d . ,d))))
+              (q (cdr (assoc 'q comp1-outs))))
+           (natp q))
+  :g-bindings (gl::auto-bindings (:nat d 1)))
+(in-theory (disable triple-reg-decomp-q-type-with-specific-hyps))
+
+(def-gl-thm triple-reg-decomp-qq-type-with-specific-hyps
   :hyp (and (force (natp d))
             (force (< d (expt 2 1))))
   :concl (b* ((comp1-outs (stv-run (triple-reg-decomp-stv)
@@ -190,12 +224,45 @@
               (comp2-outs (stv-run (triple-reg-decomp-stv)
                                    `((q . ,q))))
               (qq (cdr (assoc 'qq comp2-outs))))
+           (natp qq))
+  :g-bindings (gl::auto-bindings (:nat d 1)))
+(in-theory (disable triple-reg-decomp-qq-type-with-specific-hyps))
+
+(def-gl-thm triple-reg-decomp-qqq-type-with-specific-hyps
+  :hyp (and (force (natp d))
+            (force (< d (expt 2 1))))
+  :concl (b* ((comp1-outs (stv-run (triple-reg-decomp-stv)
+                                   `((d . ,d))))
+              (q (cdr (assoc 'q comp1-outs)))
+              (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                   `((q . ,q))))
+              (qq (cdr (assoc 'qq comp2-outs)))
+
+              (comp3-outs (stv-run (triple-reg-decomp-stv)
+                                   `((qq . ,qq))))
+              (qqq (cdr (assoc 'qqq comp3-outs))))
+           (natp qqq))
+  :g-bindings (gl::auto-bindings (:nat d 1)))
+(in-theory (disable triple-reg-decomp-qqq-type-with-specific-hyps))
+
+(def-gl-thm triple-reg-decomp-cutpoint-type-with-specific-hyps
+  :hyp (and (force (natp d))
+            (force (< d (expt 2 1))))
+  :concl (b* ((comp1-outs (stv-run (triple-reg-decomp-stv)
+                                   `((d . ,d))))
+              (q (cdr (assoc 'q comp1-outs)))
+              (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                   `((q . ,q))))
+              (qq (cdr (assoc 'qq comp2-outs)))
+
+              (comp3-outs (stv-run (triple-reg-decomp-stv)
+                                   `((qq . ,qq))))
+              (qqq (cdr (assoc 'qqq comp3-outs))))
            (and (natp q)
-                (natp qq)))
+                (natp qq)
+                (natp qqq)))
   :g-bindings (gl::auto-bindings (:nat d 1)))
 (in-theory (disable triple-reg-decomp-cutpoint-type-with-specific-hyps))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; [DOUBLE REG] Scenario 0
@@ -436,57 +503,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; [TRIPLE REG] Scenario 1
 ;
-; This one now works.  It uses specific hyps and specific inputs for both the
-; theorem and in the hyps for the type lemma.
+; This one works when we use STV-DECOMP-THEORY-RAGER.  It uses specific hyps
+; and specific inputs for both the theorem and in the hyps for the type lemma,
+; because we prefer to keep our inputs to a minimum.  We'd be happy to use
+; autohyps and autoins if it resulted in a truly more robust proof attempt, but
+; I don't think it's necessary anymore since FIND-COMPOSITION-IN-ALIST was
+; improved (approx April 2014).
 ;
-; It's pretty obvious from looking at the checkpoint we used to get why this is
-; true.  It looks like the '(not (not (not d[0]))) just needs to be rewritten
-; via sexpr-rewrites once more.  (not (not a)) is already part of
-; *sexpr-rewrites*, so I wasn't sure what to do.  But, enabling some
-; definitions worked, so I'm calling this one good for now.
-;
-; Old checkpoint:
-;
-;; (EQUAL
-;;  (4V-TO-NAT (4V-SEXPR-EVAL-LIST '((NOT (NOT (NOT D[0]))))
-;;                                 (LIST (CONS 'D[0]
-;;                                             (BOOL-TO-4V (LOGBITP 0 D))))))
-;;  (V-TO-NAT
-;;       (BOOL-FROM-4V-LIST
-;;            (4V-SEXPR-EVAL-LIST '((NOT D[0]))
-;;                                (LIST (CONS 'D[0]
-;;                                            (BOOL-TO-4V (LOGBITP 0 D)))))))))
-;
+; Witness the 192-way case-split that occurs, which demonstrates quite clearly
+; that STV-DECOMP-THEORY-RAGER will not scale.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 (defthmd triple-reg-decomp-is-full-via-rewriting-passes
   (implies (and (natp d)
-                (< d (expt 2 1))
-                ;; (b* ((comp1-ins `((d . ,d)))
-                ;;      (comp1-outs (stv-run (triple-reg-decomp-stv)
-                ;;                           comp1-ins))
-                ;;      (q (cdr (assoc 'q comp1-outs)))
-
-                ;;      (comp2-ins `((q . ,q)))
-                ;;      (comp2-outs (stv-run (triple-reg-decomp-stv)
-                ;;                           comp2-ins))
-                ;;      (qq (cdr (assoc 'qq comp2-outs)))
-
-                ;;      ;; (comp3-ins `((qq . ,qq)))
-                ;;      ;; (comp3-outs (stv-run (triple-reg-decomp-stv)
-                ;;      ;;                      comp3-ins))
-                ;;      ;; (comp-qqq (cdr (assoc 'qqq comp3-outs)))
-
-
-                ;;      ;; (full-ins (triple-reg-full-stv-autoins))
-                ;;      ;; (full-outs (stv-run (triple-reg-full-stv)
-                ;;      ;;                     full-ins))
-                ;;      ;; (full-qqq (cdr (assoc 'qqq full-outs)))
-                ;;      )
-                ;;   (and (natp q)
-                ;;        (natp qq)))
-                )
+                (< d (expt 2 1)))
            (b* ((comp1-ins `((d . ,d)))
                 (comp1-outs (stv-run (triple-reg-decomp-stv)
                                      comp1-ins))
@@ -509,15 +539,153 @@
                 (full-qqq (cdr (assoc 'qqq full-outs))))
              (equal comp-qqq full-qqq)))
   :hints (("goal"
-           :use ((:instance triple-reg-decomp-cutpoint-type-with-specific-hyps))
            :in-theory (union-theories (stv-decomp-theory)
                                       (get-ruleset 'stv-decomp-theory-rager
                                                    world)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; [TRIPLE REG] Scenario 2
+;
+; This one shows what happens when we don't cheat with STV-DECOMP-THEORY-RAGER.
+; Note that we have to show that qqq is also a natp via the :use instance hint.
+; Also note that the :use instance hints get rewritten to the three hypotheses
+; of the checkpoint.
+;
+; Presented checkpoint:
+;
+;; (IMPLIES
+;;  (AND (4V-BOOL-LISTP
+;;            (4V-SEXPR-EVAL-LIST '((NOT D[0]))
+;;                                (LIST (CONS 'D[0]
+;;                                            (BOOL-TO-4V (LOGBITP 0 D))))))
+;;       (4V-BOOL-LISTP
+;;            (4V-SEXPR-EVAL-LIST '((NOT (NOT D[0])))
+;;                                (LIST (CONS 'D[0]
+;;                                            (BOOL-TO-4V (LOGBITP 0 D))))))
+;;       (4V-BOOL-LISTP
+;;            (4V-SEXPR-EVAL-LIST '((NOT (NOT (NOT D[0]))))
+;;                                (LIST (CONS 'D[0]
+;;                                            (BOOL-TO-4V (LOGBITP 0 D))))))
+;;       (NATP D)
+;;       (< D 2))
+;;  (EQUAL
+;;   (V-TO-NAT
+;;        (BOOL-FROM-4V-LIST
+;;             (4V-SEXPR-EVAL-LIST '((NOT (NOT (NOT D[0]))))
+;;                                 (LIST (CONS 'D[0]
+;;                                             (BOOL-TO-4V (LOGBITP 0 D)))))))
+;;   (V-TO-NAT
+;;        (BOOL-FROM-4V-LIST
+;;             (4V-SEXPR-EVAL-LIST '((NOT D[0]))
+;;                                 (LIST (CONS 'D[0]
+;;                                             (BOOL-TO-4V (LOGBITP 0 D)))))))))
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+(defthmd triple-reg-decomp-is-full-via-rewriting-fails
+  (implies (and (natp d)
+                (< d (expt 2 1)))
+           (b* ((comp1-ins `((d . ,d)))
+                (comp1-outs (stv-run (triple-reg-decomp-stv)
+                                     comp1-ins))
+                (q (cdr (assoc 'q comp1-outs)))
+
+                (comp2-ins `((q . ,q)))
+                (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                     comp2-ins))
+                (qq (cdr (assoc 'qq comp2-outs)))
+
+                (comp3-ins `((qq . ,qq)))
+                (comp3-outs (stv-run (triple-reg-decomp-stv)
+                                     comp3-ins))
+                (comp-qqq (cdr (assoc 'qqq comp3-outs)))
+
+
+                (full-ins (triple-reg-full-stv-autoins))
+                (full-outs (stv-run (triple-reg-full-stv)
+                                    full-ins))
+                (full-qqq (cdr (assoc 'qqq full-outs))))
+             (equal comp-qqq full-qqq)))
+  :hints (("goal"
+           :use ((:instance triple-reg-decomp-q-type-with-specific-hyps)
+                 (:instance triple-reg-decomp-qq-type-with-specific-hyps)
+                 (:instance triple-reg-decomp-qqq-type-with-specific-hyps)
+                 )
+           :in-theory (stv-decomp-theory))))
+)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; [TRIPLE REG] Scenario 3
+;
+; This one shows what happens when we don't cheat with STV-DECOMP-THEORY-RAGER
+; and also omit the qqq :instance hint.  This scenario give us some insight as
+; to how these :instance hints can be used (but is partly redundant with
+; Scenario 2).
+;
+; Presented checkpoint:
+;
+;; (IMPLIES
+;;  (AND (4V-BOOL-LISTP
+;;            (4V-SEXPR-EVAL-LIST '((NOT D[0]))
+;;                                (LIST (CONS 'D[0]
+;;                                            (BOOL-TO-4V (LOGBITP 0 D))))))
+;;       (4V-BOOL-LISTP
+;;            (4V-SEXPR-EVAL-LIST '((NOT (NOT D[0])))
+;;                                (LIST (CONS 'D[0]
+;;                                            (BOOL-TO-4V (LOGBITP 0 D))))))
+;;       (NATP D)
+;;       (< D 2))
+;;  (EQUAL
+;;   (4V-TO-NAT (4V-SEXPR-EVAL-LIST '((NOT (NOT (NOT D[0]))))
+;;                                  (LIST (CONS 'D[0]
+;;                                              (BOOL-TO-4V (LOGBITP 0 D))))))
+;;   (V-TO-NAT
+;;        (BOOL-FROM-4V-LIST
+;;             (4V-SEXPR-EVAL-LIST '((NOT D[0]))
+;;                                 (LIST (CONS 'D[0]
+;;                                             (BOOL-TO-4V (LOGBITP 0 D)))))))))
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+(defthmd triple-reg-decomp-is-full-via-rewriting-fails
+  (implies (and (natp d)
+                (< d (expt 2 1)))
+           (b* ((comp1-ins `((d . ,d)))
+                (comp1-outs (stv-run (triple-reg-decomp-stv)
+                                     comp1-ins))
+                (q (cdr (assoc 'q comp1-outs)))
+
+                (comp2-ins `((q . ,q)))
+                (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                     comp2-ins))
+                (qq (cdr (assoc 'qq comp2-outs)))
+
+                (comp3-ins `((qq . ,qq)))
+                (comp3-outs (stv-run (triple-reg-decomp-stv)
+                                     comp3-ins))
+                (comp-qqq (cdr (assoc 'qqq comp3-outs)))
+
+
+                (full-ins (triple-reg-full-stv-autoins))
+                (full-outs (stv-run (triple-reg-full-stv)
+                                    full-ins))
+                (full-qqq (cdr (assoc 'qqq full-outs))))
+             (equal comp-qqq full-qqq)))
+  :hints (("goal"
+           :use ((:instance triple-reg-decomp-q-type-with-specific-hyps)
+                 (:instance triple-reg-decomp-qq-type-with-specific-hyps))
+           :in-theory (stv-decomp-theory))))
+)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Utility functions (some redefinitions)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(i-am-here) ; to stop loading of utility functions
 
 (define stv-decomp-4v-env-equiv-meta ((x pseudo-termp))
   (b* (((unless (and (consp x) (eq (car x) '4v-env-equiv)))
