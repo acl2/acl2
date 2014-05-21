@@ -6612,6 +6612,28 @@
                          (pe-fn2 logical-name wrld channel new-ev-wrld state)
                        (value :invisible))))))
 
+(defun pe-fn-main (logical-name wrld channel state)
+  (er-let* ((ev-wrld (er-decode-logical-name logical-name wrld :pe
+                                             state))
+            (cmd-wrld (superior-command-world ev-wrld wrld :pe
+                                              state)))
+    (pprogn
+     (pe-fn1 wrld channel ev-wrld cmd-wrld state)
+     (let ((new-ev-wrld (and (not (eq logical-name :here))
+                             (decode-logical-name
+                              logical-name
+                              (scan-to-event (cdr ev-wrld))))))
+       (if (null new-ev-wrld)
+           (value :invisible)
+         (pprogn
+          (fms "Additional events for the logical name ~x0:~%"
+               (list (cons #\0 logical-name))
+               channel
+               state
+               nil)
+          (pe-fn2 logical-name wrld channel new-ev-wrld
+                  state)))))))
+
 (defun pe-fn (logical-name state)
   (io? history nil (mv erp val state)
        (logical-name)
@@ -6649,26 +6671,33 @@
                  channel state nil)
             (value :invisible)))
           (t
-           (er-let* ((ev-wrld (er-decode-logical-name logical-name wrld :pe
-                                                      state))
-                     (cmd-wrld (superior-command-world ev-wrld wrld :pe
-                                                       state)))
-             (pprogn
-              (pe-fn1 wrld channel ev-wrld cmd-wrld state)
-              (let ((new-ev-wrld (and (not (eq logical-name :here))
-                                      (decode-logical-name
-                                       logical-name
-                                       (scan-to-event (cdr ev-wrld))))))
-                (if (null new-ev-wrld)
-                    (value :invisible)
-                  (pprogn
-                   (fms "Additional events for the logical name ~x0:~%"
-                        (list (cons #\0 logical-name))
-                        channel
-                        state
-                        nil)
-                   (pe-fn2 logical-name wrld channel new-ev-wrld
-                           state)))))))))))
+           (let ((fn (deref-macro-name logical-name (macro-aliases wrld))))
+             (cond
+              ((eq fn logical-name)
+               (pe-fn-main logical-name wrld channel state))
+              (t
+               (pprogn
+                (fms "Note that macro ~x0 is a macro alias for the function ~
+                      ~x1; so we print event information for each in turn.~|"
+                     (list (cons #\0 logical-name)
+                           (cons #\1 fn))
+                     channel
+                     state
+                     nil)
+                (fms "Printing event information for ~x0:~|"
+                     (list (cons #\0 logical-name))
+                     channel
+                     state
+                     nil)
+                (er-progn
+                 (pe-fn-main logical-name wrld channel state)
+                 (pprogn
+                  (fms "Printing event information for ~x0:~|"
+                       (list (cons #\0 fn))
+                       channel
+                       state
+                       nil)
+                  (pe-fn-main fn wrld channel state))))))))))))
 
 (defmacro pe (logical-name)
   (list 'pe-fn logical-name 'state))
