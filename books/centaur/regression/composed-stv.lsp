@@ -549,7 +549,8 @@
 ; This one shows what happens when we don't cheat with STV-DECOMP-THEORY-RAGER.
 ; Note that we have to show that qqq is also a natp via the :use instance hint.
 ; Also note that the :use instance hints get rewritten to the three hypotheses
-; of the checkpoint.
+; of the checkpoint.  The problem is clearly that our theory doesn't equate the
+; triple NOT and the single NOT under the 4V-SEXPR-EVAL-LIST interpreter.
 ;
 ; Presented checkpoint:
 ;
@@ -615,14 +616,53 @@
            :in-theory (stv-decomp-theory))))
 )
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; [TRIPLE REG] Scenario 3
 ;
 ; This one shows what happens when we don't cheat with STV-DECOMP-THEORY-RAGER
+; and try to combine our :use hint lemmas into one lemma.  We get many
+; checkpoints, so I do not include them here.
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+(defthmd triple-reg-decomp-is-full-via-rewriting-fails
+  (implies (and (natp d)
+                (< d (expt 2 1)))
+           (b* ((comp1-ins `((d . ,d)))
+                (comp1-outs (stv-run (triple-reg-decomp-stv)
+                                     comp1-ins))
+                (q (cdr (assoc 'q comp1-outs)))
+
+                (comp2-ins `((q . ,q)))
+                (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                     comp2-ins))
+                (qq (cdr (assoc 'qq comp2-outs)))
+
+                (comp3-ins `((qq . ,qq)))
+                (comp3-outs (stv-run (triple-reg-decomp-stv)
+                                     comp3-ins))
+                (comp-qqq (cdr (assoc 'qqq comp3-outs)))
+
+
+                (full-ins (triple-reg-full-stv-autoins))
+                (full-outs (stv-run (triple-reg-full-stv)
+                                    full-ins))
+                (full-qqq (cdr (assoc 'qqq full-outs))))
+             (equal comp-qqq full-qqq)))
+  :hints (("goal"
+           :use ((:instance triple-reg-decomp-cutpoint-type-with-specific-hyps))
+           :in-theory (stv-decomp-theory)))
+  :otf-flg t)
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; [TRIPLE REG] Scenario 4
+;
+; This one shows what happens when we don't cheat with STV-DECOMP-THEORY-RAGER
 ; and also omit the qqq :instance hint.  This scenario give us some insight as
 ; to how these :instance hints can be used (but is partly redundant with
-; Scenario 2).
+; Scenarios 2 and 3).
 ;
 ; Presented checkpoint:
 ;
