@@ -549,10 +549,13 @@
 ; This one shows what happens when we don't cheat with STV-DECOMP-THEORY-RAGER.
 ; Note that we have to show that qqq is also a natp via the :use instance hint.
 ; Also note that the :use instance hints get rewritten to the three hypotheses
-; of the checkpoint.  The problem is clearly that our theory doesn't equate the
-; triple NOT and the single NOT under the 4V-SEXPR-EVAL-LIST interpreter.
+; of the checkpoint.  The problem was clearly that our theory doesn't equate
+; the triple NOT and the single NOT under the 4V-SEXPR-EVAL-LIST interpreter.
 ;
-; Presented checkpoint:
+; By adding EQUAL-OF-V-TO-NAT-SEXPR-EVAL-LISTS to
+; stv-decomp-proofs-even-better, the Sexpressiong Rewriter is called, and the
+; Triple not is reduced to a single not.  This allows the proofto go through.
+; The checkpoint we used to receive was:
 ;
 ;; (IMPLIES
 ;;  (AND (4V-BOOL-LISTP
@@ -583,8 +586,7 @@
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-fail
-(defthmd triple-reg-decomp-is-full-via-rewriting-fails
+(defthmd triple-reg-decomp-is-full-via-rewriting-used-to-fail
   (implies (and (natp d)
                 (< d (expt 2 1)))
            (b* ((comp1-ins `((d . ,d)))
@@ -614,7 +616,6 @@
                  (:instance triple-reg-decomp-qqq-type-with-specific-hyps)
                  )
            :in-theory (stv-decomp-theory))))
-)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; [TRIPLE REG] Scenario 3
