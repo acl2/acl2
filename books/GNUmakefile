@@ -1081,7 +1081,7 @@ xdoc: $(filter-out xdoc/tests/%, $(filter xdoc/%, $(OK_CERTS)))
 .PHONY: workshops \
         workshop1999 workshop2000 workshop2001 workshop2002 \
         workshop2003 workshop2004 workshop2006 workshop2007 \
-        workshop2009 workshop2011 workshop2013
+        workshop2009 workshop2011 workshop2013 workshop2014
 
 workshops: $(filter workshops/%, $(OK_CERTS))
 workshop1999: $(filter workshops/1999/%, $(OK_CERTS))
@@ -1095,7 +1095,7 @@ workshop2007: $(filter workshops/2007/%, $(OK_CERTS))
 workshop2009: $(filter workshops/2009/%, $(OK_CERTS))
 workshop2011: $(filter workshops/2011/%, $(OK_CERTS))
 workshop2013: $(filter workshops/2013/%, $(OK_CERTS))
-
+workshop2014: $(filter workshops/2014/%, $(OK_CERTS))
 
 
 # Projects targets:
