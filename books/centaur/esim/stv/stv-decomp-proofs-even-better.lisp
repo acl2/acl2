@@ -407,6 +407,33 @@
                          (vars (4v-sexpr-vars-list (sexpr-rewrite-default-list x)))))
            :in-theory (e/d () (sexpr-rewrite-list-correct)))))
 
+(defthmd equal-of-4v-and-v-to-nat-sexpr-eval-lists
+  (implies (and (equal xr (sexpr-rewrite-default-list x))
+                (equal xr (sexpr-rewrite-default-list y))
+                (equal vars (4v-sexpr-vars-1pass-list xr))
+                (4v-env-equiv (4v-alist-extract vars env1)
+                              (4v-alist-extract vars env2))
+; We might want to force the next hypothesis.  After all, if we got to the
+; v-to-nat call in the second argument of the inner equal below, presumably
+; this hypothesis is true in the current context.
+                (4v-bool-listp (4v-sexpr-eval-list y env2)))
+           (equal (equal (4v-to-nat (4v-sexpr-eval-list x env1))
+                         (v-to-nat (bool-from-4v-list (4v-sexpr-eval-list y env2))))
+                  t))
+  :hints (("goal" :use ((:instance sexpr-rewrite-list-correct
+                         (rewrites *sexpr-rewrites*) (x x))
+                        (:instance sexpr-rewrite-list-correct
+                         (rewrites *sexpr-rewrites*) (x y))
+                        (:instance 4v-sexpr-eval-list-of-alist-extract
+                         (x (sexpr-rewrite-default-list x))
+                         (env env1)
+                         (vars (4v-sexpr-vars-list (sexpr-rewrite-default-list x))))
+                        (:instance 4v-sexpr-eval-list-of-alist-extract
+                         (x (sexpr-rewrite-default-list x))
+                         (env env2)
+                         (vars (4v-sexpr-vars-list (sexpr-rewrite-default-list x)))))
+           :in-theory (e/d () (sexpr-rewrite-list-correct)))))
+
 (defthmd 4v-env-equiv-by-witness
   (implies (syntaxp (or (rewriting-positive-literal-fn
                          `(4v-env-equiv ,x ,y) mfc state)
@@ -735,6 +762,7 @@
     4v-sexpr-eval-list-of-composition
     equal-of-4v-to-nat-sexpr-eval-lists
     equal-of-v-to-nat-sexpr-eval-lists
+    equal-of-4v-and-v-to-nat-sexpr-eval-lists
     4v-lookup-rw
     (:t logtail)
     (:t 4v-sexpr-eval-list)
