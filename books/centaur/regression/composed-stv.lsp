@@ -586,7 +586,7 @@
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd triple-reg-decomp-is-full-via-rewriting-used-to-fail
+(defthmd triple-reg-decomp-is-full-via-rewriting-used-to-fail-scenario-2
   (implies (and (natp d)
                 (< d (expt 2 1)))
            (b* ((comp1-ins `((d . ,d)))
@@ -621,13 +621,15 @@
 ; [TRIPLE REG] Scenario 3
 ;
 ; This one shows what happens when we don't cheat with STV-DECOMP-THEORY-RAGER
-; and try to combine our :use hint lemmas into one lemma.  We get many
-; checkpoints, so I do not include them here.
+; and try to combine our :use hint lemmas into one lemma.  The proof initially
+; failed with many checkpoints.  The trick is to let the prover eliminate every
+; LET (i.e., LAMBDA) before attempting to simplify the goal.  We haven't looked
+; into what it is about the rules in (stv-decomp-theory) that causes the proof
+; to fail if we don't delay moving into that theory.
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-fail
-(defthmd triple-reg-decomp-is-full-via-rewriting-fails
+(defthmd triple-reg-decomp-is-full-via-rewriting-used-to-fail-scenario-3
   (implies (and (natp d)
                 (< d (expt 2 1)))
            (b* ((comp1-ins `((d . ,d)))
@@ -650,12 +652,28 @@
                 (full-outs (stv-run (triple-reg-full-stv)
                                     full-ins))
                 (full-qqq (cdr (assoc 'qqq full-outs))))
-             (equal comp-qqq full-qqq)))
-  :hints (("goal"
-           :use ((:instance triple-reg-decomp-cutpoint-type-with-specific-hyps))
-           :in-theory (stv-decomp-theory)))
-  :otf-flg t)
-)
+               (equal comp-qqq full-qqq)))
+  :hints
+  (("goal"
+    :in-theory (theory 'minimal-theory) ; just beta-reduce all LETs
+    :use ((:instance
+           triple-reg-decomp-cutpoint-type-with-specific-hyps)))
+
+; Now a computed hint, to take place after all the LETs have been expanded
+; away.
+
+   (and stable-under-simplificationp
+        '(:in-theory (stv-decomp-theory))))
+
+; Alternatively, we could do this (but we don't; notice "#+skip"):
+
+  #+skip
+  (("goal"
+    :instructions
+    ((:finish (:in-theory (stv-decomp-theory))
+              (:use (:instance
+                     triple-reg-decomp-cutpoint-type-with-specific-hyps))
+              (:then :split :prove))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; [TRIPLE REG] Scenario 4
@@ -688,10 +706,13 @@
 ;;                                 (LIST (CONS 'D[0]
 ;;                                             (BOOL-TO-4V (LOGBITP 0 D)))))))))
 ;
+;; That checkpoint, which equates a call of 4V-TO-NAT to a call of V-TO-NAT, is
+;; what led us to create lemma equal-of-4v-and-v-to-nat-sexpr-eval-lists in the
+;; book centaur/esim/stv/stv-decomp-proofs-even-better.lisp.
+;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(must-fail
-(defthmd triple-reg-decomp-is-full-via-rewriting-fails
+(defthmd triple-reg-decomp-is-full-via-rewriting-used-to-fail-scenario-4
   (implies (and (natp d)
                 (< d (expt 2 1)))
            (b* ((comp1-ins `((d . ,d)))
@@ -714,13 +735,80 @@
                 (full-outs (stv-run (triple-reg-full-stv)
                                     full-ins))
                 (full-qqq (cdr (assoc 'qqq full-outs))))
-             (equal comp-qqq full-qqq)))
+               (equal comp-qqq full-qqq)))
   :hints (("goal"
+           :in-theory
+           (stv-decomp-theory)
            :use ((:instance triple-reg-decomp-q-type-with-specific-hyps)
-                 (:instance triple-reg-decomp-qq-type-with-specific-hyps))
-           :in-theory (stv-decomp-theory))))
-)
+                 (:instance triple-reg-decomp-qq-type-with-specific-hyps)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; [TRIPLE REG] Scenario 5
+;
+; Here we combine Scenarios 3 and 4.  Thus, the defthmd form below looks like
+; the one in Scenario 4 just above, except that the :use hint is for a single
+; lemma that combines the type information for q and qq, as in Scenario 3.
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-gl-thm triple-reg-decomp-cutpoint-type-with-specific-hyps-q-qq
+  :hyp (and (force (natp d))
+            (force (< d (expt 2 1))))
+  :concl (b* ((comp1-outs (stv-run (triple-reg-decomp-stv)
+                                   `((d . ,d))))
+              (q (cdr (assoc 'q comp1-outs)))
+              (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                   `((q . ,q))))
+              (qq (cdr (assoc 'qq comp2-outs))))
+           (and (natp q)
+                (natp qq)))
+  :g-bindings (gl::auto-bindings (:nat d 1)))
+
+(defthmd triple-reg-decomp-is-full-via-rewriting-used-to-fail-scenario-5
+  (implies (and (natp d)
+                (< d (expt 2 1)))
+           (b* ((comp1-ins `((d . ,d)))
+                (comp1-outs (stv-run (triple-reg-decomp-stv)
+                                     comp1-ins))
+                (q (cdr (assoc 'q comp1-outs)))
+
+                (comp2-ins `((q . ,q)))
+                (comp2-outs (stv-run (triple-reg-decomp-stv)
+                                     comp2-ins))
+                (qq (cdr (assoc 'qq comp2-outs)))
+
+                (comp3-ins `((qq . ,qq)))
+                (comp3-outs (stv-run (triple-reg-decomp-stv)
+                                     comp3-ins))
+                (comp-qqq (cdr (assoc 'qqq comp3-outs)))
+
+
+                (full-ins (triple-reg-full-stv-autoins))
+                (full-outs (stv-run (triple-reg-full-stv)
+                                    full-ins))
+                (full-qqq (cdr (assoc 'qqq full-outs))))
+               (equal comp-qqq full-qqq)))
+  :hints
+  (("goal"
+    :in-theory (theory 'minimal-theory) ; just beta-reduce all LETs
+    :use ((:instance
+           triple-reg-decomp-cutpoint-type-with-specific-hyps)))
+
+; Now a computed hint, to take place after all the LETs have been expanded
+; away.
+
+   (and stable-under-simplificationp
+        '(:in-theory (stv-decomp-theory))))
+
+; Alternatively, we could do this (but we don't; notice "#+skip"):
+
+  #+skip
+  (("goal"
+    :instructions
+    ((:finish (:in-theory (stv-decomp-theory))
+              (:use (:instance
+                     triple-reg-decomp-cutpoint-type-with-specific-hyps))
+              (:then :split :prove))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Utility functions (some redefinitions)
