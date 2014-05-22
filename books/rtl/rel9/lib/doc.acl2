@@ -1,1 +1,2 @@
 (include-book "xdoc/top" :dir :system)
+(certify-book "doc" 1)

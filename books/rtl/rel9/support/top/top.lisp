@@ -86,8 +86,10 @@
 
 (include-book "../lib3.delta1/srt")
 
-(include-book "../lib3.delta1/sqrt66")
-
 (include-book "../lib3.delta3/mult")
+
+(include-book "../lib3.delta3/sqrt66")
+
+(include-book "../lib3.delta3/round")
 
 (include-book "../lib3.delta3/gl")

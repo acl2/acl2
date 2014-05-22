@@ -390,9 +390,9 @@
 (defun lognot1 (x)
   (if (equal x 0) 1 0))
 
-(defun true$ () 1)
+(defun true () 1)
 
-(defun false$ () 0)
+(defun false () 0)
 
 (defmacro if1 (x y z) `(if (eql ,x 0) ,z ,y))    
 

@@ -136,7 +136,7 @@
 
 
 ;;;**********************************************************************
-;;;		    	      SQRT66
+;;;		    	      TRUNC-SQRT
 ;;;**********************************************************************
 
 (defund trunc-sqrt (x n)
@@ -148,36 +148,14 @@
           upper
         lower))))
 
-(defund sticky-sqrt (x n)
-  (let ((trunc (trunc-sqrt x (1- n))))
-    (if (< (* trunc trunc) x)
-        (+ trunc (expt 2 (- n)))
-      trunc)))
-
-(defund sqrt66 (x)
-  (let ((e (1+ (fl (/ (expo x) 2)))))
-    (* (expt 2 e)
-       (sticky-sqrt (/ x (expt 2 (* 2 e))) 66))))
-
-(defthmd sqrt66-pos
-  (implies (and (rationalp x)
-                (> x 0))
-           (> (sqrt66 x) 0)))
-
-(defthmd sqrt66-shift
-  (implies (and (rationalp x)
-                (> x 0)
-                (integerp n))
-           (equal (sqrt66 (* (expt 2 (* 2 n)) x))
-                  (* (expt 2 n) (sqrt66 x)))))
-
 (defthm trunc-sqrt-bounds
   (implies (and (rationalp x)
                 (<= 1/4 x)
                 (not (zp n)))
            (and (<= 1/2 (trunc-sqrt x n))
                 (<= (trunc-sqrt x n) (- 1 (expt 2 (- n))))))
-  :rule-classes ())                                
+  :rule-classes ())
+                                
 
 (defthm expo-trunc-sqrt
   (implies (and (rationalp x)
@@ -229,6 +207,17 @@
            (= a (trunc-sqrt x n)))
   :rule-classes ())
 
+
+;;;**********************************************************************
+;;;		    	    STICKY-SQRT
+;;;**********************************************************************
+
+(defund sticky-sqrt (x n)
+  (let ((trunc (trunc-sqrt x (1- n))))
+    (if (< (* trunc trunc) x)
+        (+ trunc (expt 2 (- n)))
+      trunc)))
+
 (defthm sticky-sqrt-bounds
   (implies (and (rationalp x)
                 (<= 1/4 x)
@@ -265,6 +254,23 @@
                (sticky-sqrt x n)))
   :rule-classes ())
 
+#|
+Proof: Let a = trunc-sqrt(n-2, x) and r = sticky-sqrt(x, n).
+Suppose a^2 = x.  Then r = a, l^2 <= x = a^2 = r^2, and l <= r.  
+By sticky-monotone, sticky-exactp-b, and exactp-trunc-sqrt,
+
+  sticky(l, n) <= sticky(r, n) = r.
+
+Thus, we may assume a^2 < x and r = a + 2^(1-n).  By trunc-sqrt-square-bounds, 
+l^2 <= x < (a + 2^(2-n))^2, and hence l < a + 2^(2-n) = fp+(a, n-1).  
+It follows from trunc-upper-pos, trunc-exactp-a, and fp+2 that 
+trunc(l, n-1) <= a.  Thus,
+
+  sticky(l, n) <= trunc(l, n-1) + 2^(1+expo(l)-n)
+               <= a + 2^(1-n)
+                = r.
+|#
+
 (defthm sticky-sqrt-upper
   (implies (and (natp n)
                 (>= n 2)
@@ -277,6 +283,23 @@
            (>= (sticky h n)
                (sticky-sqrt x n)))
   :rule-classes ())
+
+#|
+Proof: Let a = trunc-sqrt(x, n-1) and r = sticky-sqrt(x, n).
+We may assume that h < r; otherwise, by sticky-monotone, 
+sticky-exactp-b, and exactp-trunc-sqrt,
+
+  sticky(h, n) >= sticky(r, n) = r.
+
+If a^2 = x, then r = a, h^2 >= x = a^2 = r^2, and h >= r.  
+Thus, by trunc-sqrt-square-bounds, a^2 < x and r = a + 2^(1-n) = fp+(a, n).
+Since h^2 >= x > a^2, h > a.  It follows from trunc-exactp-c that 
+trunc(h, n-1) >= a.  By fp+2, h is not n-exact, and hence
+
+  sticky(h, n) = trunc(h, n-1) + 2^(1-n)
+              >= a + 2^(1-n)
+               = r.
+|#
 
 (defthmd sticky-sticky-sqrt
   (implies (and (natp n)
@@ -326,26 +349,86 @@
                 (= (sticky-sqrt x m) (trunc-sqrt x n))))
   :rule-classes ())
 
-(defthmd sqrt66-sticky-sqrt
+(defthm exactp-cmp-sticky-sqrt
+  (implies (and (rationalp x) (>= x 1/4) (< x 1)
+                (rationalp y) (> y 0)
+                (integerp n) (> n 1)
+                (exactp y (1- n)))
+           (and (iff (< (* y y) x) (< y (sticky-sqrt x n)))
+                (iff (> (* y y) x) (> y (sticky-sqrt x n)))))
+  :rule-classes ())
+
+
+;;;**********************************************************************
+;;;		    	      QSQRT
+;;;**********************************************************************
+
+(defund qsqrt (x n)
+  (let ((e (1+ (fl (/ (expo x) 2)))))
+    (* (expt 2 e)
+       (sticky-sqrt (/ x (expt 2 (* 2 e))) n))))
+
+(defthmd sqrt-sticky-sqrt
   (implies (and (rationalp x)
                 (<= 1/4 x)
-                (< x 1))
-           (equal (sqrt66 x)
-                  (sticky-sqrt x 66))))
+                (< x 1)
+                (integerp n)
+                (> n 1))
+           (equal (qsqrt x n)
+                  (sticky-sqrt x n))))
 
-(defthm sqrt66-lower
+(defthmd qsqrt-pos
+  (implies (and (rationalp x)
+                (> x 0))
+           (> (qsqrt x n) 0)))
+
+(defthmd qsqrt-shift
+  (implies (and (rationalp x)
+                (> x 0)
+                (integerp k)
+                (integerp n)
+                (> n 1))
+           (equal (qsqrt (* (expt 2 (* 2 k)) x) n)
+                  (* (expt 2 k) (qsqrt x n)))))
+
+(defthm exactp-cmp-qsqrt
+  (implies (and (rationalp x) (> x 0)
+                (rationalp y) (> y 0)
+                (integerp n) (> n 1)
+                (exactp y (1- n)))
+           (and (iff (< (* y y) x) (< y (qsqrt x n)))
+                (iff (> (* y y) x) (> y (qsqrt x n)))))
+  :rule-classes ())
+
+(defthm qsqrt-lower
   (implies (and (rationalp x)
                 (> x 0)
                 (rationalp l)
                 (<= (* l l) x)
                 (common-rounding-mode-p mode)
                 (not (zp k))
-                (<= k 64))
+                (integerp n)
+                (>= n (+ k 2)))
            (<= (rnd l mode k)
-               (rnd (sqrt66 x) mode k)))
+               (rnd (qsqrt x n) mode k)))
   :rule-classes ())
 
-(defthm sqrt66-upper
+#|
+Proof: Let e = fl(expo(x)/2), x0 = x/2^(2*e), and l0 = l/2^e.
+Then 1 <= x0 < 4 and l0^2 = l^2/2^(2*e) <= x/2^(2*e) = x0.
+By sticky-shift and sticky-sqrt-lower, 
+
+  sticky(l, 66) = 2^e * sticky(l0, n) 
+               <= 2^e * sticky-sqrt(x0, n)
+                = sqrt(x, n).
+
+By rnd-sticky and rnd-monotone,
+
+  rnd(l, mode, k) = rnd(sticky(l, n), mode, k)
+                 <= rnd(sqrt(x, n), mode, k)
+|#
+
+(defthm qsqrt-upper
   (implies (and (rationalp x)
                 (> x 0)
                 (rationalp h)
@@ -353,22 +436,9 @@
                 (>= (* h h) x)
                 (common-rounding-mode-p mode)
                 (not (zp k))
-                (<= k 64))
+                (integerp n)
+                (>= n (+ k 2)))
            (>= (rnd h mode k)
-               (rnd (sqrt66 x) mode k)))
-  :rule-classes ())
-
-(defthm rnd-sqrt66-sticky-sqrt
-  (implies (and (rationalp x)
-                (> x 0)
-                (common-rounding-mode-p mode)
-                (not (zp k))
-                (natp n)
-                (>= n (+ k 2))
-                (<= n 66))
-           (let* ((e (1+ (fl (/ (expo x) 2))))
-                  (x0 (/ x (expt 2 (* 2 e)))))
-             (= (* (expt 2 e) (rnd (sticky-sqrt x0 n) mode k))
-                (rnd (sqrt66 x) mode k))))
+               (rnd (qsqrt x n) mode k)))
   :rule-classes ())
 

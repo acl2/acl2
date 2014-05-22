@@ -506,7 +506,10 @@
 	     (equal (bitn x n) 0)))
 
 
-(defthm neg-bitn-2
+;; The rewrite rule neg-bitn-2 has the hypotheses (integerp n) and (< x (- (expt 2 k) (expt 2 n))), 
+;; where n does not occur in the lhs.  When n is bound to a large integer, (expt 2 n) blows up. 
+
+(defthmd neg-bitn-2
     (implies (and (integerp x)
 		  (integerp n)
 		  (integerp k)

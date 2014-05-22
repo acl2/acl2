@@ -26,7 +26,7 @@
 
 (set-enforce-redundancy t)
 
-(local (include-book "../support/lib3.delta2/masc"))
+(local (include-book "../support/lib3.delta3/masc"))
 
 (set-inhibit-warnings "theory") ; avoid warning in the next event
 (local (in-theory nil))
@@ -203,7 +203,7 @@
 (defmacro if1 (x y z) `(if (eql ,x 0) ,z ,y))    
 
 (defmacro in-function (fn term)
-  `(if ,term () (er hard ',fn "Assertion ~x0 failed" ',term)))
+  `(if1 ,term () (er hard ',fn "Assertion ~x0 failed" ',term)))
 
 
 ;;;**********************************************************************
