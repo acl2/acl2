@@ -15056,6 +15056,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro acl2-print-radix (&optional (st 'state))
   `(print-radix ,st))
 
+#+(and allegro (not acl2-loop-only))
+(defvar *check-print-base-warning-printed* nil)
+
 (defun check-print-base (print-base ctx)
 
 ; Warning: Keep this in sync with print-base-p, and keep the format warning
@@ -15069,7 +15072,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  8, 10, or 16"
                 (list (cons #\0 print-base))))
   #+(and (not acl2-loop-only) allegro)
-  (when (> print-base 10)
+  (when (and (> print-base 10)
+             (not *check-print-base-warning-printed*))
     (format
      t
      "NOTE: Printing of numbers in Allegro CL may be a bit slow.  Allegro ~%~
@@ -15079,7 +15083,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       logic in a manner consistent with those other Lisps, and hence ~%~
       Allegro CL's PRINC violates our axioms.  Therefore, ACL2 built on ~%~
       Allegro CL prints radix-16 numbers without using the underlying ~%~
-      lisp's PRINC function.~%"))
+      lisp's PRINC function.~%")
+    (setq *check-print-base-warning-printed* t))
   #+(and (not acl2-loop-only) (not allegro))
   (when (int= print-base 16)
     (let ((*print-base* 16)
@@ -15324,7 +15329,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; See the format call in check-print-base for why we take this extra effort for
 ; Allegro (in short, to print digit characters in upper case).
 
-              (princ (cond ((and (rationalp x)
+              (princ (cond ((and (acl2-numberp x)
                                  (> *print-base* 10))
                             (coerce (explode-atom+ x
                                                    *print-base*
