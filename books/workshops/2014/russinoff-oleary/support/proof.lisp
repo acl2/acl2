@@ -10,6 +10,7 @@
 
 (include-book "imul")                            ;; The IMUL model
 
+; cert-param (hons-only)
 
 ;;***********************************************************************************
 ;; Utility functions
