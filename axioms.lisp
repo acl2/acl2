@@ -15074,6 +15074,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #+(and (not acl2-loop-only) allegro)
   (when (and (> print-base 10)
              (not *check-print-base-warning-printed*))
+
+; We checked in May 2014 with Franz Inc., but they didn't provide a way to
+; print hex digits in upper case.
+
     (format
      t
      "NOTE: Printing of numbers in Allegro CL may be a bit slow.  Allegro ~%~

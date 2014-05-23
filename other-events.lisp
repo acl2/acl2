@@ -24037,10 +24037,21 @@
              fn
              stobj-function)))))
      ((eq formals-default t)
-      (er very-soft ctx
-          "~@0 this symbol does not have an ACL2 function definition.  ~
-           Consider using option :native, :def, or :formals.  See :DOC trace$."
-          (trace$-er-msg fn)))
+      (cond ((getprop fn 'macro-body nil 'current-acl2-world wrld)
+             (er very-soft ctx
+                 "~x0 is an ACL2 macro, hence cannot be traced in ACL2.~@1"
+                 fn
+                 (let ((sym (deref-macro-name fn (macro-aliases wrld))))
+                   (cond ((eq sym fn) "")
+                         (t (msg "  Perhaps you meant instead to trace the ~
+                                  corresponding function, ~x0."
+                                 sym))))))
+            (t
+             (er very-soft ctx
+                 "~@0 this symbol does not have an ACL2 function definition.  ~
+                  Consider using option :native, :def, or :formals.  See :DOC ~
+                  trace$."
+                 (trace$-er-msg fn)))))
      ((and def
            (not (equal (cadr def) formals)))
       (er very-soft ctx
