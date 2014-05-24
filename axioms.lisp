@@ -15056,9 +15056,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro acl2-print-radix (&optional (st 'state))
   `(print-radix ,st))
 
-#+(and allegro (not acl2-loop-only))
-(defvar *check-print-base-warning-printed* nil)
-
 (defun check-print-base (print-base ctx)
 
 ; Warning: Keep this in sync with print-base-p, and keep the format warning
@@ -15071,32 +15068,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 "The value ~x0 is illegal as a print-base, which must be 2, ~
                  8, 10, or 16"
                 (list (cons #\0 print-base))))
-  #+(and (not acl2-loop-only) allegro)
-  (when (and (> print-base 10)
-             (not *check-print-base-warning-printed*))
-
-; We checked in May 2014 with Franz Inc., but they didn't provide a way to
-; print hex digits in upper case.
-
-    (format
-     t
-     "NOTE: Printing of numbers in Allegro CL may be a bit slow.  Allegro ~%~
-      CL's function PRINC prints alphabetic digits in lower case, unlike ~%~
-      other Lisps we have seen.  While Allegro CL is compliant with the ~%~
-      Common Lisp spec in this regard, we have represented printing in the ~%~
-      logic in a manner consistent with those other Lisps, and hence ~%~
-      Allegro CL's PRINC violates our axioms.  Therefore, ACL2 built on ~%~
-      Allegro CL prints radix-16 numbers without using the underlying ~%~
-      lisp's PRINC function.~%")
-    (setq *check-print-base-warning-printed* t))
   #+(and (not acl2-loop-only) (not allegro))
+
+; There is special handling when #+allegro in princ$ and prin1$, which is why
+; we avoid the following test for #+allegro.
+
   (when (int= print-base 16)
     (let ((*print-base* 16)
           (*print-radix* nil))
       (or (equal (prin1-to-string 10) "A")
 
-; If we get here, simply include the underlying Lisp as we handle allegro in
-; the raw Lisp code for princ$.
+; If we get here, a solution is simply to treat the underlying Lisp as we treat
+; #+allegro in the raw Lisp code for princ$ and prin1$.
 
           (illegal 'check-print-base
                    "ERROR:  This Common Lisp does not print in radix 16 using ~
@@ -15265,6 +15248,26 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                    (t (cddr triple))))))
               ,@body)))))
 
+#+(and allegro (not acl2-loop-only))
+(defun allegro-print-number-base-16 (x stream)
+
+; In base 16, Allegro CL's function PRINC prints alphabetic digits in lower
+; case, unlike other Lisps we have seen.  While Allegro CL is compliant with
+; the Common Lisp spec in this regard, we have represented printing in the
+; logic in a manner consistent with those other Lisps, and hence Allegro CL's
+; PRINC violates our axioms.  Therefore, ACL2 built on Allegro CL prints
+; radix-16 numbers without using the underlying lisp's PRINC function.  Thanks
+; to David Margolies of Franz Inc. for passing along a remark from his
+; colleague, which showed how to use format here.
+
+  (if *print-radix*
+      (assert$ (eql *print-base* 16)
+               (cond ((realp x)
+                      (format stream "#x~:@(~x~)" x))
+                     (t (format stream "#C(#x~:@(~x~) #x~:@(~x~))"
+                                (realpart x) (imagpart x)))))
+    (format stream "~:@(~x~)" x)))
+
 ; ?? (v. 1.8) I'm not going to look at many, or any, of the skip-proofs
 ; events on this pass.
 (skip-proofs
@@ -15329,18 +15332,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                (*print-radix* (f-get-global 'print-radix state))
                (*print-case* (f-get-global 'print-case state)))
               #+allegro
-
-; See the format call in check-print-base for why we take this extra effort for
-; Allegro (in short, to print digit characters in upper case).
-
-              (princ (cond ((and (acl2-numberp x)
-                                 (> *print-base* 10))
-                            (coerce (explode-atom+ x
-                                                   *print-base*
-                                                   *print-radix*)
-                                    'string))
-                           (t x))
-                     stream)
+              (cond ((and (acl2-numberp x)
+                          (> *print-base* 10))
+                     (allegro-print-number-base-16 x stream))
+                    (t (princ x stream)))
               #-allegro
               (princ x stream))))
            (cond ((eql x #\Newline)
@@ -19002,19 +18997,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (*print-radix* (f-get-global 'print-radix state))
              (*print-case* (f-get-global 'print-case state)))
             (cond ((acl2-numberp x)
-                   (princ #+allegro
-; See the comment about a similar case in princ$.
-                          (cond
-                           ((and (acl2-numberp x)
-                                 (> *print-base* 10))
-                            (coerce (explode-atom+ x
-                                                   *print-base*
-                                                   *print-radix*)
-                                    'string))
-                           (t x))
-                          #-allegro
-                          x
-                          stream))
+                   #+allegro
+                   (cond ((and (acl2-numberp x)
+                               (> *print-base* 10))
+                          (allegro-print-number-base-16 x stream))
+                         (t (princ x stream)))
+                   #-allegro
+                   (princ x stream))
                   ((characterp x)
                    (princ "#\\" stream)
                    (princ
