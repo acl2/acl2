@@ -10052,65 +10052,71 @@
        (read-object *standard-oi* state))
       (cond
        (erp (mv 'exit nil state))
-       (t (case (if intern-flg
-                    (intern (symbol-name obj) "ACL2")
-                    obj)
-                (nx (if (walkabout-ip (1+ i) x)
-                        (mv 'continue (1+ i) state)
-                        (walkabout-huh state)))
-                (bk (if (= i 0)
-                        (walkabout-huh state)
-                        (mv 'continue (1- i) state)))
-                (0 (mv 'up nil state))
-                (pp (mv 'continue-fullp nil state))
-                (= (mv 'exit xi state))
-                (q (mv 'exit :invisible state))
-                (otherwise
+       (t (let ((obj (cond ((not intern-flg) obj)
+                           ((symbolp obj)
+                            (intern (symbol-name obj) "ACL2"))
+                           ((atom obj) obj)
+                           ((symbolp (car obj)) ; probably always true
+                            (cons (intern (symbol-name (car obj)) "ACL2")
+                                  (cdr obj)))
+                           (t obj))))
+            (case obj
+              (nx (if (walkabout-ip (1+ i) x)
+                      (mv 'continue (1+ i) state)
+                    (walkabout-huh state)))
+              (bk (if (= i 0)
+                      (walkabout-huh state)
+                    (mv 'continue (1- i) state)))
+              (0 (mv 'up nil state))
+              (pp (mv 'continue-fullp nil state))
+              (= (mv 'exit xi state))
+              (q (mv 'exit :invisible state))
+              (otherwise
+               (cond
+                ((and (integerp obj) (> obj 0))
                  (cond
-                  ((and (integerp obj) (> obj 0))
-                   (cond
-                    ((atom xi)
-                     (walkabout-huh state))
-                    ((walkabout-ip (1- obj) xi)
-                     (walkabout1 (1- obj) xi state intern-flg evisc-tuple
-                                 :none))
-                    (t (walkabout-huh state))))
-                  ((and (consp obj)
-                        (eq (car obj) 'pp))
-                   (mv-let (print-level print-length)
-                           (let ((args (cdr obj)))
-                             (case-match args
-                               ((print-level print-length)
-                                (mv print-level print-length))
-                               ((n) (mv n n))
-                               (& (mv :bad nil))))
-                           (cond ((and (or (natp print-level)
-                                           (null print-level))
-                                       (or (natp print-length)
-                                           (null print-length)))
-                                  (mv 'continue-fullp
-                                      (evisc-tuple print-level print-length
-                                                   nil nil)
-                                      state))
-                                 (t (walkabout-huh state)))))
-                  ((and (consp obj)
-                        (eq (car obj) '=)
-                        (consp (cdr obj))
-                        (symbolp (cadr obj))
-                        (null (cddr obj)))
-                   (pprogn
-                    (f-put-global 'walkabout-alist
-                                  (cons (cons (cadr obj) xi)
-                                        (f-get-global 'walkabout-alist
-                                                      state))
-                                  state)
-                    (mv-let (col state)
-                            (fmt1 "(walkabout= ~x0) is~%"
-                                  (list (cons #\0 (cadr obj)))
-                                  0 *standard-co* state (ld-evisc-tuple state))
-                            (declare (ignore col))
-                            (mv 'continue nil state))))
-                  (t (walkabout-huh state))))))))
+                  ((atom xi)
+                   (walkabout-huh state))
+                  ((walkabout-ip (1- obj) xi)
+                   (walkabout1 (1- obj) xi state intern-flg evisc-tuple
+                               :none))
+                  (t (walkabout-huh state))))
+                ((and (consp obj)
+                      (eq (car obj) 'pp))
+                 (mv-let (print-level print-length)
+                         (let ((args (cdr obj)))
+                           (case-match args
+                             ((print-level print-length)
+                              (mv print-level print-length))
+                             ((n) (mv n n))
+                             (& (mv :bad nil))))
+                         (cond ((and (or (natp print-level)
+                                         (null print-level))
+                                     (or (natp print-length)
+                                         (null print-length)))
+                                (mv 'continue-fullp
+                                    (evisc-tuple print-level print-length
+                                                 nil nil)
+                                    state))
+                               (t (walkabout-huh state)))))
+                ((and (consp obj)
+                      (eq (car obj) '=)
+                      (consp (cdr obj))
+                      (symbolp (cadr obj))
+                      (null (cddr obj)))
+                 (pprogn
+                  (f-put-global 'walkabout-alist
+                                (cons (cons (cadr obj) xi)
+                                      (f-get-global 'walkabout-alist
+                                                    state))
+                                state)
+                  (mv-let (col state)
+                          (fmt1 "(walkabout= ~x0) is~%"
+                                (list (cons #\0 (cadr obj)))
+                                0 *standard-co* state (ld-evisc-tuple state))
+                          (declare (ignore col))
+                          (mv 'continue nil state))))
+                (t (walkabout-huh state)))))))))
      (cond
       ((eq signal 'continue)
        (walkabout1 (or val i) x state intern-flg evisc-tuple :none))
@@ -11687,10 +11693,10 @@
      (cond ((or (atom x)
                 (keywordp (car x)))
             (er@par soft ctx
-              "An :expand hint must either be a term, or of one of the forms ~
-               (:free vars term) or (:with name term), or a combination of ~
-               the two forms. The form ~x0 is thus illegal for an :expand ~
-               hint.  See :DOC hints."
+              "An :expand hint must either be a term, the keyword :lambdas, ~
+               one of the forms (:free vars term) or (:with name term), or a ~
+               combination of those final two forms.  The form ~x0 is thus ~
+               illegal for an :expand hint.  See :DOC hints."
               x))
            (t (translate-expand-term1@par nil x nil ctx wrld state))))))
 
