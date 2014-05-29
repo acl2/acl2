@@ -488,7 +488,7 @@
   (b* (((mv ok alist) (match-tree pat x alist)))
     (implies (and ok
                   (member-equal (list :?v var) (match-tree-restrictions pat)))
-             (not (equal (cdr (assoc var alist)) nil))))
+             (cdr (assoc var alist))))
   :hints (("goal" :do-not-induct t)
           (and stable-under-simplificationp
                (let ((lit (cadr clause)))

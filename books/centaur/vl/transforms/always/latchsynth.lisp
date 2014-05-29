@@ -60,7 +60,8 @@ supported.</li>
 (define vl-module-latchsynth
   :short "Synthesize simple latch-like @('always') blocks in a module."
   ((x         vl-module-p)
-   (careful-p booleanp "be careful when processing latches?"))
+   (careful-p booleanp "be careful when processing latches?")
+   vecp)
   :returns (mv (new-x   vl-module-p     :hyp :fguard)
                (addmods vl-modulelist-p :hyp :fguard))
   (b* (((vl-module x) x)
@@ -111,7 +112,7 @@ supported.</li>
 
        ((mv new-alwayses cvtregs delta)
         (vl-latchcode-synth-alwayses x.alwayses scary-regs x.regdecls
-                                     cvtregs delta careful-p))
+                                     cvtregs delta careful-p vecp))
 
        ((vl-delta delta) (vl-free-delta delta))
 
@@ -134,13 +135,14 @@ supported.</li>
     (mv new-x delta.addmods)))
 
 (define vl-modulelist-latchsynth-aux ((x vl-modulelist-p)
-                                      (careful-p booleanp))
+                                      (careful-p booleanp)
+                                      vecp)
   :returns (mv (new-x vl-modulelist-p   :hyp :fguard)
                (addmods vl-modulelist-p :hyp :fguard))
   (b* (((when (atom x))
         (mv nil nil))
-       ((mv car addmods1) (vl-module-latchsynth (car x) careful-p))
-       ((mv cdr addmods2) (vl-modulelist-latchsynth-aux (cdr x) careful-p)))
+       ((mv car addmods1) (vl-module-latchsynth (car x) careful-p vecp))
+       ((mv cdr addmods2) (vl-modulelist-latchsynth-aux (cdr x) careful-p vecp)))
     (mv (cons car cdr)
         (append-without-guard addmods1 addmods2))))
 
@@ -148,7 +150,8 @@ supported.</li>
   :short "Synthesize latch-like @('always') blocks in a module list, perhaps
           adding some new, supporting modules."
   ((x vl-modulelist-p)
-   (careful-p booleanp))
+   (careful-p booleanp)
+   vecp)
   :returns (new-x :hyp :fguard
                   (and (vl-modulelist-p new-x)
                        (no-duplicatesp-equal (vl-modulelist->names new-x))))
@@ -156,7 +159,7 @@ supported.</li>
        ((when dupes)
         (raise "Module names must be unique, but found multiple definitions ~
                 of ~&0." dupes))
-       ((mv new-x addmods) (vl-modulelist-latchsynth-aux x careful-p))
+       ((mv new-x addmods) (vl-modulelist-latchsynth-aux x careful-p vecp))
        (all-mods (union (mergesort new-x) (mergesort addmods)))
        (dupes    (duplicated-members (vl-modulelist->names all-mods)))
        ((when dupes)
@@ -165,11 +168,11 @@ supported.</li>
 
 (define vl-design-latchsynth
   :short "Top-level @(see latchsynth) transform."
-  ((x vl-design-p) &key ((careful-p booleanp) 't))
+  ((x vl-design-p) &key ((careful-p booleanp) 't) vecp)
   :returns (new-x vl-design-p)
   (b* ((x         (vl-design-fix x))
        (careful-p (if careful-p t nil))
        ((vl-design x) x))
-    (change-vl-design x :mods (vl-modulelist-latchsynth x.mods careful-p))))
+    (change-vl-design x :mods (vl-modulelist-latchsynth x.mods careful-p vecp))))
 
 

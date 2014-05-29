@@ -39,7 +39,8 @@
 
 (define vl-design-always-backend ((x vl-design-p)
                                   &key
-                                  ((careful-p booleanp) 't))
+                                  ((careful-p booleanp) 't)
+                                  vecp)
   :returns (new-x vl-design-p)
   :short "Normal way to process @('always') blocks after sizing."
 
@@ -62,7 +63,7 @@ warnings) added.</p>"
 
        ;; Handle edge-triggered blocks
        (x (xf-cwtime (vl-design-edgesplit x)))
-       (x (xf-cwtime (vl-design-edgesynth x)))
+       (x (xf-cwtime (vl-design-edgesynth x :Vecp vecp)))
 
        ;; Handle latch-like blocks.  This is kind of a mess.  I'm not sure
        ;; how many of these transforms are still necessary.  Some of them
@@ -71,7 +72,7 @@ warnings) added.</p>"
        (x (xf-cwtime (vl-design-stmttemps x)))
        (x (xf-cwtime (vl-design-unelse x)))
        (x (xf-cwtime (vl-design-ifmerge x)))
-       (x (xf-cwtime (vl-design-latchsynth x :careful-p careful-p)))
+       (x (xf-cwtime (vl-design-latchsynth x :careful-p careful-p :vecp vecp)))
 
        ;; Any surviving always blocks are just too hard to support.
        (x (xf-cwtime (vl-design-elimalways x))))

@@ -24,6 +24,7 @@
 (include-book "../../toe/toe-wirealist")
 (include-book "../../mlib/stmt-tools")
 (include-book "../../mlib/print-warnings")
+(include-book "../xf-delayredux")
 (include-book "centaur/4v-sexpr/sexpr-building" :dir :system)
 (local (include-book "../../util/arithmetic"))
 
@@ -457,5 +458,242 @@ example:</p>
 
 (vl-pps-modulelist (vl-make-nedgeflop 1 2))
 (vl-pps-modulelist (vl-make-nedgeflop 1 3))
+
+||#
+
+
+#||
+
+module vl_4_bit_3_edge_2_tick_flop (q, d0, d1, d2, clk0, clk1, clk2) ;
+
+output [3:0] q;
+input [3:0] d0;
+input [3:0] d1;
+input [3:0] d2;
+input clk0;
+input clk1;
+input clk2;
+
+wire clk0del;
+wire clk1del;
+wire clk2del;
+wire clk0edge;
+wire clk1edge;
+wire clk2edge;
+wire anyedge;
+wire [3:0] d0del;
+wire [3:0] d1del;
+wire [3:0] d2del;
+wire [3:0] qdel;
+wire [3:0] qreg;
+wire [3:0] dfull;
+
+// note maybe mark these as non-propagating delays:
+// everything that depends on these depends on qreg
+// q only updates when one of the clocks toggles
+vl_1_bit_delay1 clk0delinst (clk0del, clk0);
+vl_1_bit_delay1 clk1delinst (clk1del, clk1);
+vl_1_bit_delay1 clk2delinst (clk2del, clk2);
+vl_4_bit_delay1 d0delinst (d0del, d0);
+vl_4_bit_delay1 d1delinst (d1del, d1);
+vl_4_bit_delay1 d2delinst (d2del, d2);
+vl_4_bit_delay1 qdelinst (qdel, qreg);
+
+// this one is a propagating delay
+vl_4_bit_delay2 qoutinst (q, qreg);
+
+
+assign clk0edge = clk0 & ~clk0del;
+assign clk1edge = clk1 & ~clk1del;
+assign clk2edge = clk2 & ~clk2del;
+assign anyedge = clk0edge | clk1edge | clk2edge;
+
+assign dfull = clk0 ? d0del :
+               clk1 ? d1del :
+                      d2del;
+
+// note for the delays to be strictly non-propagating this
+// must be a conservative mux, otherwise when clks are X
+// a change in d might cause a change in q
+assign qreg = anyedge ? dfull : qdel;
+
+endmodule
+
+
+||#
+
+(define vl-modinsts-add-atts ((x vl-modinstlist-p) (atts vl-atts-p))
+  :returns (xx vl-modinstlist-p :hyp :guard)
+  (if (atom x)
+      nil
+    (cons (change-vl-modinst (car x) :atts (append atts (vl-modinst->atts (car x))))
+          (vl-modinsts-add-atts (cdr x) atts))))
+
+(define vl-nedgeflop-clkedge-assigns ((edges vl-exprlist-p)
+                                      (clks vl-exprlist-p)
+                                      (dels vl-exprlist-p))
+  :guard (and (eql (len edges) (len clks))
+              (eql (len edges) (len dels)))
+  :guard-hints (("goal" :do-not-induct t))
+  :returns (assigns vl-assignlist-p :hyp :guard)
+  (if (atom edges)
+      nil
+    (cons (make-vl-assign :lvalue (car edges)
+                          :expr (make-vl-nonatom
+                                 :op :vl-binary-bitand
+                                 :args (list (car clks)
+                                             (make-vl-nonatom
+                                              :op :vl-unary-bitnot
+                                              :args (list (car dels))
+                                              :finalwidth 1
+                                              :finaltype :vl-unsigned))
+                                 :finalwidth 1
+                                 :finaltype :vl-unsigned)
+                          :loc *vl-fakeloc*)
+          (vl-nedgeflop-clkedge-assigns (cdr edges) (cdr clks) (cdr dels)))))
+
+(define vl-nedgeflop-data-mux ((clks vl-exprlist-p)
+                               (ds vl-exprlist-p)
+                               (width posp))
+  :guard (and (consp clks)
+              (eql (len clks) (len ds)))
+  :returns (x vl-expr-p :hyp :guard)
+  (if (atom (cdr clks))
+      (car ds)
+    (make-vl-nonatom
+     :op :vl-qmark
+     :args (list (car clks)
+                 (car ds)
+                 (vl-nedgeflop-data-mux (cdr clks) (cdr ds) width))
+     :finalwidth width
+     :finaltype :vl-unsigned)))
+                          
+(define vl-nedgeflop-or-edges ((edges vl-exprlist-p))
+  :Guard (consp edges)
+  :returns (x vl-expr-p :hyp :guard)
+  (if (atom (cdr edges))
+      (car edges)
+    (make-vl-nonatom
+     :op :vl-binary-bitor
+     :args (list (car edges)
+                 (vl-nedgeflop-or-edges (cdr edges)))
+     :finalwidth 1
+     :finaltype :vl-unsigned)))
+
+(local (defthm car-of-vl-modulelist-p
+         (implies (and (vl-modulelist-p x)
+                       (consp x))
+                  (Car x))))
+
+(def-vl-modgen vl-make-nedgeflop-vec (width nedges delay)
+  :short "Generate a w-bit wide, n-edge flop with output delay d"
+  :guard (and (posp width) (posp nedges) (natp delay))
+  :body
+  (b* ((name (if (zp delay)
+                 (cat "VL_" (natstr width) "_BIT_" (natstr nedges) "_EDGE_FLOP")
+               (cat "VL_" (natstr width) "_BIT_" (natstr nedges) "_EDGE_" (natstr delay) "_TICK_FLOP")))
+
+       ((mv qexpr qport qportdecl qnetdecl) (vl-occform-mkport "q" :vl-output width))
+       ((mv dexprs dports dportdecls dnetdecls) (vl-occform-mkports "d" 0 nedges :dir :vl-input :width width))
+       ((mv clkexprs clkports clkportdecls clknetdecls) (vl-occform-mkports "clk" 0 nedges :dir :vl-input :width 1))
+       
+       
+       ;; note qregdecls are netdecls not regdecls
+       ((mv qregexpr qregdecls qreginsts qregmods)
+        ;; this represents the final delay of q, which we don't need if
+        ;; delay=0.  in that case rather than creating a new redundant wire we
+        ;; just use q itself in the place of qreg above.
+        (b* (((when (zp delay))
+              (mv qexpr nil nil nil))
+             ((mv qregexpr qregdecl)
+              (vl-occform-mkwire "qreg" width))
+             (ddelnds (vl-make-n-bit-delay-m width delay :vecp t))
+             (ddelnd (Car ddelnds))
+             (qoutinst (vl-simple-inst ddelnd "qoutinst" qexpr qregexpr)))
+          (mv qregexpr (list qregdecl) (list qoutinst) ddelnds)))
+
+       ;; non-propagating atts
+       (clkconcat (make-vl-nonatom
+                   :op :vl-concat
+                   :args clkexprs
+                   :finalwidth nedges
+                   :finaltype :vl-unsigned))
+       (atts (list (cons "VL_NON_PROP_TRIGGERS" clkconcat)
+                   (cons "VL_NON_PROP_BOUND" qregexpr)
+                   (list "VL_STATE_DELAY")))
+
+       ((mv clkdelexprs clkdeldecls) (vl-occform-mkwires "clkdel" 0 nedges :width 1))
+       (del11 *vl-1-bit-delay-1*)
+       (clkdelinsts (vl-modinsts-add-atts
+                     (vl-simple-inst-list del11 "clkdelinst" clkdelexprs clkexprs)
+                     atts))
+
+       ((mv ddelexprs ddeldecls) (vl-occform-mkwires "ddel" 0 nedges :width 1))
+       (delw1s (vl-make-n-bit-delay-1 width :vecp t))
+       (delw1 (car delw1s))
+       (ddelinsts (vl-modinsts-add-atts
+                   (vl-simple-inst-list delw1 "ddelinst" ddelexprs dexprs)
+                   atts))
+
+       ((mv qdelexpr qdeldecl) (vl-occform-mkwire "qdel" width))
+       (qdelinst (change-vl-modinst
+                  (vl-simple-inst delw1 "qdelinst" qdelexpr qregexpr)
+                  :atts atts))
+
+       ((mv clkedgeexprs clkedgedecls) (vl-occform-mkwires "clkedge" 0 nedges :width 1))
+       (clkedge-assigns (vl-nedgeflop-clkedge-assigns clkedgeexprs clkexprs clkdelexprs))
+       (anyedge-rhs (vl-nedgeflop-or-edges clkedgeexprs))
+       ((mv anyedgeexpr anyedgedecl) (vl-occform-mkwire "anyedge" 1))
+       (anyedge-assign (make-vl-assign :lvalue anyedgeexpr :expr anyedge-rhs :loc *vl-fakeloc*))
+       ((mv dfullexpr dfulldecl) (vl-occform-mkwire "dfull" width))
+       (dfull-rhs (vl-nedgeflop-data-mux clkexprs ddelexprs width))
+       (dfull-assign (make-vl-assign :lvalue dfullexpr :expr dfull-rhs :loc *vl-fakeloc*))
+
+       (qassign (make-vl-assign
+                 :lvalue qregexpr
+                 :expr (make-vl-nonatom
+                        :op :vl-qmark
+                        :args (list anyedgeexpr
+                                    dfullexpr
+                                    qdelexpr)
+                        :finalwidth width
+                        :finaltype :vl-unsigned
+                        ;; note that this should be a conservative if-then-else
+                        ;; in order for the delays to be properly non-propagating
+                        :atts (list (list "VL_LATCH_MUX")))
+                 :loc *vl-fakeloc*))
+
+       (mod (make-vl-module :name name
+                            :origname name
+                            :ports (cons qport (append dports clkports))
+                            :portdecls (cons qportdecl (append dportdecls clkportdecls))
+                            :netdecls `(,qnetdecl
+                                        ,@dnetdecls
+                                        ,@clknetdecls
+                                        ,@clkdeldecls
+                                        ,@ddeldecls
+                                        ,@qregdecls
+                                        ,qdeldecl
+                                        ,@clkedgedecls
+                                        ,anyedgedecl
+                                        ,dfulldecl)
+                            :assigns `(,@clkedge-assigns
+                                       ,anyedge-assign
+                                       ,dfull-assign
+                                       ,qassign)
+                            :modinsts `(,@clkdelinsts
+                                        ,@ddelinsts
+                                        ,@qreginsts
+                                        ,qdelinst)
+                            :minloc *vl-fakeloc*
+                            :maxloc *vl-fakeloc*)))
+    (list* mod del11 (append delw1s qregmods))))
+       
+
+#||
+
+(include-book
+ "../../mlib/writer")
+(vl-pps-modulelist (vl-make-nedgeflop-vec 4 3 2))
 
 ||#

@@ -398,7 +398,8 @@ sanity checking."
    (delta      "delta for the new nets, instances, etc."
                vl-delta-p)
    (careful-p  "should we be careful or not?"
-               booleanp))
+               booleanp)
+   vecp)
   :returns (mv (new-x? "nil on success, x unchanged on failure"
                        (equal (vl-always-p new-x?) (if new-x? t nil))
                        :hyp :fguard)
@@ -477,6 +478,21 @@ sanity checking."
         (car lhs-names))
 
        ((mv inst-name nf)    (vl-namefactory-plain-name (cat lhs-name "_latch")   delta.nf))
+
+       ((when vecp)
+        ;; everything is inside the latch instance, no extra delay outside
+        (b* ((addmods (vl-make-n-bit-latch-vec width (or delay 0)))
+             (latchmod (car addmods))
+             (inst (vl-simple-instantiate latchmod inst-name
+                                          (list lhs test rhs)
+                                          :loc x.loc))
+             (delta (change-vl-delta delta
+                                     :nf       nf
+                                     :modinsts (cons inst delta.modinsts)
+                                     :addmods  (append-without-guard addmods
+                                                                     delta.addmods))))
+          (mv nil (append lhs-names cvtregs) delta)))
+
        ((mv next-name nf)    (vl-namefactory-plain-name (cat lhs-name "_next")    nf))
        ((mv delfree-name nf) (vl-namefactory-plain-name (cat lhs-name "_delfree") nf))
 
@@ -534,7 +550,8 @@ sanity checking."
                                      (regs       vl-regdecllist-p)
                                      (cvtregs    string-listp)
                                      (delta      vl-delta-p)
-                                     (careful-p  booleanp))
+                                     (careful-p  booleanp)
+                                     vecp)
   :returns (mv (new-x   vl-alwayslist-p :hyp :fguard)
                (cvtregs string-listp :hyp :fguard)
                (delta   vl-delta-p   :hyp :fguard))
@@ -542,10 +559,10 @@ sanity checking."
         (mv nil cvtregs delta))
        ((mv new-car? cvtregs delta)
         (vl-latchcode-synth-always (car x) scary-regs regs
-                                   cvtregs delta careful-p))
+                                   cvtregs delta careful-p vecp))
        ((mv new-cdr cvtregs delta)
         (vl-latchcode-synth-alwayses (cdr x) scary-regs regs
-                                     cvtregs delta careful-p))
+                                     cvtregs delta careful-p vecp))
        (new-x (if new-car?
                   (cons new-car? new-cdr)
                 new-cdr)))

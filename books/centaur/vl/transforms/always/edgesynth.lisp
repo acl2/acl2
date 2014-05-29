@@ -1705,7 +1705,8 @@ where we convert any negedge signals into posedge signals.</p>"
                              (data-exprs     vl-exprlist-p)
                              (delay          maybe-natp)
                              (loc            vl-location-p)
-                             (delta          vl-delta-p))
+                             (delta          vl-delta-p)
+                             &key vecp)
   :guard (and (vl-idexpr-p target)
               (posp (vl-expr->finalwidth target))
               (same-lengthp priority-edges data-exprs)
@@ -1728,6 +1729,18 @@ where we convert any negedge signals into posedge signals.</p>"
        ((vl-delta delta) delta)
        (nf delta.nf)
        ((mv instname nf)               (vl-namefactory-plain-name (cat name "_inst") nf))
+
+       ((when vecp)
+        ;; vector-oriented version: everything is wrapped in the module, no extra delay assign.
+
+        (b* ((addmods (vl-make-nedgeflop-vec width nedges (or delay 0)))
+             (submod (car addmods))
+             (inst (vl-simple-instantiate
+                    submod instname (cons target (append data-inputs clock-inputs)))))
+          (change-vl-delta delta
+                           :nf nf
+                           :modinsts (cons inst delta.modinsts)
+                           :addmods (append addmods delta.addmods))))
 
        ;; Raw output of the module goes to name_delfree, the "delay-free" output.
 
@@ -1781,7 +1794,8 @@ where we convert any negedge signals into posedge signals.</p>"
    (cvtregs string-listp
             "Accumulator for the names of registers to convert into nets.")
    (delta   vl-delta-p
-            "Delta for new nets, instances, etc."))
+            "Delta for new nets, instances, etc.")
+   &key vecp)
   :returns
   (mv (new-x? (equal (vl-always-p new-x?) (if new-x? t nil))
               "nil on success, x unchanged on failure."
@@ -1989,7 +2003,7 @@ where we convert any negedge signals into posedge signals.</p>"
        ;; new-delta, not the unmodified original delta.
        (cvtregs           (cons target-name cvtregs))
        (delta             (vl-edgesynth-create target-lvalue priority-edges rhslist
-                                               delay x.loc new-delta)))
+                                               delay x.loc new-delta :vecp vecp)))
     (mv nil cvtregs delta)))
 
 
@@ -2005,16 +2019,17 @@ where we convert any negedge signals into posedge signals.</p>"
    (scary-regs string-listp)
    (regs       vl-regdecllist-p)
    (cvtregs    string-listp)
-   (delta      vl-delta-p))
+   (delta      vl-delta-p)
+   &key vecp)
   :returns (mv (new-x   vl-alwayslist-p :hyp :fguard)
                (cvtregs string-listp    :hyp :fguard)
                (delta   vl-delta-p      :hyp :fguard))
   (b* (((when (atom x))
         (mv nil cvtregs delta))
        ((mv new-car? cvtregs delta)
-        (vl-always-edgesynth (car x) scary-regs regs cvtregs delta))
+        (vl-always-edgesynth (car x) scary-regs regs cvtregs delta :vecp vecp))
        ((mv new-cdr cvtregs delta)
-        (vl-alwayslist-edgesynth (cdr x) scary-regs regs cvtregs delta))
+        (vl-alwayslist-edgesynth (cdr x) scary-regs regs cvtregs delta :Vecp vecp))
        (new-x (if new-car?
                   (cons new-car? new-cdr)
                 new-cdr)))
@@ -2022,7 +2037,7 @@ where we convert any negedge signals into posedge signals.</p>"
 
 (define vl-module-edgesynth
   :short "Synthesize edge-triggered @('always') blocks in a module."
-  ((x vl-module-p))
+  ((x vl-module-p) &key vecp)
   :returns (mv (new-x   vl-module-p     :hyp :fguard)
                (addmods vl-modulelist-p :hyp :fguard))
   (b* (((vl-module x) x)
@@ -2102,7 +2117,7 @@ where we convert any negedge signals into posedge signals.</p>"
 
        ((mv new-alwayses cvtregs delta)
         (vl-alwayslist-edgesynth x.alwayses scary-regs x.regdecls
-                                 cvtregs delta))
+                                 cvtregs delta :vecp vecp))
 
        ((vl-delta delta) (vl-free-delta delta))
 
@@ -2124,20 +2139,20 @@ where we convert any negedge signals into posedge signals.</p>"
                                 :warnings delta.warnings)))
     (mv new-x delta.addmods)))
 
-(define vl-modulelist-edgesynth-aux ((x vl-modulelist-p))
+(define vl-modulelist-edgesynth-aux ((x vl-modulelist-p) &key vecp)
   :returns (mv (new-x   vl-modulelist-p :hyp :fguard)
                (addmods vl-modulelist-p :hyp :fguard))
   (b* (((when (atom x))
         (mv nil nil))
-       ((mv car addmods1) (vl-module-edgesynth (car x)))
-       ((mv cdr addmods2) (vl-modulelist-edgesynth-aux (cdr x))))
+       ((mv car addmods1) (vl-module-edgesynth (car x) :vecp vecp))
+       ((mv cdr addmods2) (vl-modulelist-edgesynth-aux (cdr x) :vecp vecp)))
     (mv (cons car cdr)
         (append-without-guard addmods1 addmods2))))
 
 (define vl-modulelist-edgesynth
   :short "Synthesize edge-triggered @('always') blocks in a module list,
           perhaps adding some new, supporting modules."
-  ((x vl-modulelist-p))
+  ((x vl-modulelist-p) &key vecp)
   :returns (new-x :hyp :fguard
                   (and (vl-modulelist-p new-x)
                        (no-duplicatesp-equal (vl-modulelist->names new-x))))
@@ -2146,7 +2161,7 @@ where we convert any negedge signals into posedge signals.</p>"
         (raise "Module names must be unique, but found multiple definitions ~
                 of ~&0." dupes))
        ((mv new-x addmods)
-        (vl-modulelist-edgesynth-aux x))
+        (vl-modulelist-edgesynth-aux x :vecp vecp))
        (all-mods (union (mergesort new-x) (mergesort addmods)))
        (dupes    (duplicated-members (vl-modulelist->names all-mods)))
        ((when dupes)
@@ -2155,10 +2170,10 @@ where we convert any negedge signals into posedge signals.</p>"
 
 (define vl-design-edgesynth
   :short "Top-level @(see edgesynth) transform."
-  ((x vl-design-p))
+  ((x vl-design-p) &key vecp)
   :returns (new-x vl-design-p)
   (b* ((x             (vl-design-fix x))
        ((vl-design x) x)
-       (mods          (vl-modulelist-edgesynth x.mods)))
+       (mods          (vl-modulelist-edgesynth x.mods :vecp vecp)))
     (change-vl-design x :mods mods)))
 
