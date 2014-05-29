@@ -628,7 +628,7 @@ endmodule
                      (vl-simple-inst-list del11 "clkdelinst" clkdelexprs clkexprs)
                      atts))
 
-       ((mv ddelexprs ddeldecls) (vl-occform-mkwires "ddel" 0 nedges :width 1))
+       ((mv ddelexprs ddeldecls) (vl-occform-mkwires "ddel" 0 nedges :width width))
        (delw1s (vl-make-n-bit-delay-1 width :vecp t))
        (delw1 (car delw1s))
        (ddelinsts (vl-modinsts-add-atts
