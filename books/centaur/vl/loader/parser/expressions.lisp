@@ -688,6 +688,7 @@ which you don't know until you've read all the instances of the module,
 etc.</li>
 
 </ul>"
+  :flag-local nil
 
   :hints(("Goal"
           :do-not-induct t

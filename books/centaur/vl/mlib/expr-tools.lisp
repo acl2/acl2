@@ -65,7 +65,7 @@ vl-maybe-expr-p).</p>"
 
   :verify-guards nil
   :flag vl-expr-flag ;; BOZO no way to override this on deftypes
-
+  :flag-local nil
   :prepwork
   ((local (defrule vl-exprlist-count-raw-of-vl-nonatom->args-rw
             (implies (eq (vl-expr-kind x) :nonatom)
@@ -558,7 +558,7 @@ expression are natural numbers."
 
 (defines vl-expr-names-nrev
   :parents (vl-expr-names)
-
+  :flag-local nil
   (define vl-expr-names-nrev ((x vl-expr-p) nrev)
     :measure (vl-expr-count x)
     :flag :expr
@@ -698,7 +698,7 @@ accumulator-style functions to do the collection.  Under the hood, we also use
 
 (defines vl-expr-ops-nrev
   :parents (vl-expr-ops)
-
+  :flag-local nil
   (define vl-expr-ops-nrev ((x vl-expr-p) nrev)
     :measure (vl-expr-count x)
     :flag :expr
@@ -797,7 +797,7 @@ as an operator.</p>"
 
    ///
 
-   (defthm-vl-expr-ops-flag
+   (defthm-vl-expr-flag
      (defthm vl-expr-has-ops-aux-removal
        (equal (vl-expr-has-ops-aux ops x)
               (intersectp-equal ops (vl-expr-ops x)))
@@ -806,6 +806,7 @@ as an operator.</p>"
        (equal (vl-exprlist-has-ops-aux ops x)
               (intersectp-equal ops (vl-exprlist-ops x)))
        :flag :list)
+     :skip-others t
      :hints(("Goal"
              :in-theory (enable vl-expr-ops
                                 vl-exprlist-ops
@@ -967,7 +968,7 @@ but we do not check what kind of identifier it is.</p>"
 
 (defines vl-expr-atoms-nrev
   :parents (vl-expr-atoms)
-
+  :flag-local nil
   (define vl-expr-atoms-nrev ((x vl-expr-p) nrev)
     :measure (vl-expr-count x)
     :flag :expr

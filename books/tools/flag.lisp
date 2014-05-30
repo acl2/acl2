@@ -920,7 +920,7 @@ given.  The following theorem does not have a name: ~x0~%" entry)))))
     `(,@(if local '(progn) '(encapsulate nil))
       ;; use encapsulate instead of progn so set-ignore-ok is local to this
       (logic)
-      ,@(and (not local) '((set-ignore-ok t))) ;; can't wrap this in local --- fubar!
+      (set-ignore-ok t) ;; can't wrap this in local --- fubar!
 
       (,(if local 'local 'id)
        ,(make-flag-body flag-fn-name flag-var alist hints ruler-extenders world))

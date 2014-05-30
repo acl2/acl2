@@ -47,7 +47,7 @@
 ; represent them as expressions.
 
 (defparsers parse-lvalues
-
+ :flag-local nil
  (defparser vl-parse-lvalue ()
    :measure (two-nats-measure (len tokens) 0)
    :verify-guards nil

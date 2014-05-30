@@ -498,7 +498,7 @@ provide a :ctrl when there is one, etc.</p>
 
 (defines vl-stmt-atomicstmts-nrev
   :parents (vl-stmt-atomicstmts)
-
+  :flag-local nil
   (define vl-stmt-atomicstmts-nrev ((x vl-stmt-p) nrev)
     :measure (vl-stmt-count x)
     :flag :stmt

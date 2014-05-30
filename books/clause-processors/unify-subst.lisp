@@ -145,6 +145,7 @@
 
 (defines simple-term-vars
   :verify-guards nil
+  :flag-local nil
   (define simple-term-vars ((x pseudo-termp))
     :returns (vars symbol-listp :hyp :guard)
     (cond ((null x) nil)

@@ -255,6 +255,7 @@ its flag in the flag-function.</p>")
 
      :flag
      :flag-var
+     :flag-local
      :flag-defthm-macro
      :flag-hints
 
@@ -677,6 +678,7 @@ its flag in the flag-function.</p>")
                      (concatenate 'string (symbol-name name) "-FLAG")
                      name)))
        (flag-var          (getarg :flag-var nil kwd-alist))
+       (flag-local        (getarg :flag-local t kwd-alist))
        (flag-defthm-macro (getarg :flag-defthm-macro nil kwd-alist))
        (flag-hints        (or (getarg :flag-hints nil kwd-alist)
                               (getarg :hints nil kwd-alist)
@@ -738,6 +740,7 @@ its flag in the flag-function.</p>")
                                    ,@(and flag-defthm-macro
                                           `(:defthm-macro-name ,flag-defthm-macro))
                                    ,@(and flag-var `(:flag-var ,flag-var))
+                                   ,@(and flag-local `(:local t))
                                    ,@(and ruler-extenders `(:ruler-extenders ,ruler-extenders))
                                    :hints ,flag-hints))))
 

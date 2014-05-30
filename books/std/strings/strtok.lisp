@@ -41,7 +41,7 @@
              (xargs :guard (and (stringp x)
                                 (natp xl)
                                 (natp n)
-                                (= xl (length x))
+                                (<= xl (length x))
                                 (<= n xl)
                                 (character-listp delimiters)
                                 (character-listp curr)

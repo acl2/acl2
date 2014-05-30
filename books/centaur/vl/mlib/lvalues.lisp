@@ -354,7 +354,7 @@ their \"wires\" since they're in a different namespace.</p>")
 ;; BOZO statements should also get initlhs and nextlhs from for loops
 
 (defines vl-stmt-lvalexprs-nrev
-
+  :flag-local nil
   (define vl-stmt-lvalexprs-nrev ((x vl-stmt-p) nrev)
     :measure (vl-stmt-count x)
     :flag :stmt

@@ -416,7 +416,7 @@ expressions within @('(* foo = bar *)')-style attributes.</p>")
 
 (defines vl-stmt-allexprs-nrev
   :verbosep t
-
+  :flag-local nil
   (define vl-stmt-allexprs-nrev ((x vl-stmt-p) nrev)
     :measure (vl-stmt-count x)
     :flag :stmt

@@ -3463,7 +3463,8 @@ minor warning for assignments where the rhs is a constant."
         (progn$ (impossible)
                 (mv nil warnings x))))))
  :prepwork
- ((local (in-theory (disable my-disables)))))
+ ((local (in-theory (disable my-disables))))
+ :flag-local nil)
 
 
 (local (in-theory (e/d (vl-expr-size

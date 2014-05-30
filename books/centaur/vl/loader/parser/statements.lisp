@@ -360,6 +360,7 @@
 ;    expression { ',' expression } ':' statement_or_null
 ;  | 'default' [ ':' ] statement_or_null
 
+  :flag-local nil
  (defparser vl-parse-case-item ()
    ;; Returns a vl-parsed-caseitemlist-p
    :measure (two-nats-measure (len tokens) 0)
